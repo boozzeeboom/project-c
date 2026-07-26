@@ -123,6 +123,9 @@ namespace ProjectC.Input
 
             // Interaction (продолжение)
             PickupItem,       // F — подбор предметов (высший приоритет на F)
+
+            // Camera
+            CameraZoom,       // Колесо мыши — приближение/отдаление камеры
         }
 
         /// <summary>
@@ -187,6 +190,9 @@ namespace ProjectC.Input
 
             // ---- Interaction (продолжение) ----
             new ActionBinding { action = GameAction.PickupItem,     category = ActionCategory.Interaction,  key = Key.F,        mouseButtonRaw = 0, displayName = "F" },
+
+            // ---- Camera ----
+            new ActionBinding { action = GameAction.CameraZoom,     category = ActionCategory.UI,           key = Key.None,     mouseButtonRaw = 0, displayName = "Колесо мыши" },
         };
 
         // ==================== Helper Lookup ====================

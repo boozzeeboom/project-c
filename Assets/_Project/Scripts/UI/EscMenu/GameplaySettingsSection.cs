@@ -28,6 +28,10 @@ namespace ProjectC.UI.EscMenu
             panel.Add(SettingsWidgets.CreateToggle("Инвертировать Y", SettingsManager.InvertY,
                 v => SettingsManager.SetInvertY(v)));
 
+            panel.Add(SettingsWidgets.CreateSlider("Чувств. зума", 0.5f, 15f,
+                SettingsManager.CameraZoomSensitivity,
+                v => SettingsManager.SetCameraZoomSensitivity(v)));
+
             // --- Субтитры ---
             panel.Add(SettingsWidgets.CreateSectionHeader("Доступность"));
 

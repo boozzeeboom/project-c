@@ -14,6 +14,7 @@ namespace ProjectC.Core
     {
         private const string KEY_MOUSE_SENSITIVITY = "Settings.MouseSensitivity";
         private const string KEY_INVERT_Y = "Settings.InvertY";
+        private const string KEY_CAMERA_ZOOM_SENSITIVITY = "Settings.CameraZoomSensitivity";
         private const string KEY_MASTER_VOLUME = "Settings.MasterVolume";
         private const string KEY_SUBTITLES = "Settings.Subtitles";
         private const string KEY_QUALITY_LEVEL = "Settings.QualityLevel";
@@ -30,6 +31,7 @@ namespace ProjectC.Core
 
         public static float MouseSensitivity { get; private set; } = 3f;
         public static bool InvertY { get; private set; } = false;
+        public static float CameraZoomSensitivity { get; private set; } = 3f;
         public static float MasterVolume { get; private set; } = 1f;
         public static bool Subtitles { get; private set; } = false;
         public static int QualityLevel { get; private set; } = 2; // Medium by default
@@ -41,6 +43,7 @@ namespace ProjectC.Core
 
         public static event Action<float> OnMouseSensitivityChanged;
         public static event Action<bool> OnInvertYChanged;
+        public static event Action<float> OnCameraZoomSensitivityChanged;
         public static event Action<float> OnMasterVolumeChanged;
         public static event Action<bool> OnSubtitlesChanged;
 
@@ -84,6 +87,16 @@ namespace ProjectC.Core
             PlayerPrefs.SetInt(KEY_INVERT_Y, value ? 1 : 0);
             PlayerPrefs.Save();
             OnInvertYChanged?.Invoke(value);
+        }
+
+        public static void SetCameraZoomSensitivity(float value)
+        {
+            value = Mathf.Clamp(value, 0.5f, 15f);
+            if (Mathf.Approximately(CameraZoomSensitivity, value)) return;
+            CameraZoomSensitivity = value;
+            PlayerPrefs.SetFloat(KEY_CAMERA_ZOOM_SENSITIVITY, value);
+            PlayerPrefs.Save();
+            OnCameraZoomSensitivityChanged?.Invoke(value);
         }
 
         public static void SetMasterVolume(float value)
@@ -155,6 +168,7 @@ namespace ProjectC.Core
         {
             MouseSensitivity = PlayerPrefs.GetFloat(KEY_MOUSE_SENSITIVITY, 3f);
             InvertY = PlayerPrefs.GetInt(KEY_INVERT_Y, 0) == 1;
+            CameraZoomSensitivity = PlayerPrefs.GetFloat(KEY_CAMERA_ZOOM_SENSITIVITY, 3f);
             MasterVolume = PlayerPrefs.GetFloat(KEY_MASTER_VOLUME, 1f);
             Subtitles = PlayerPrefs.GetInt(KEY_SUBTITLES, 0) == 1;
             QualityLevel = PlayerPrefs.GetInt(KEY_QUALITY_LEVEL, 2);
@@ -170,6 +184,7 @@ namespace ProjectC.Core
         {
             PlayerPrefs.SetFloat(KEY_MOUSE_SENSITIVITY, MouseSensitivity);
             PlayerPrefs.SetInt(KEY_INVERT_Y, InvertY ? 1 : 0);
+            PlayerPrefs.SetFloat(KEY_CAMERA_ZOOM_SENSITIVITY, CameraZoomSensitivity);
             PlayerPrefs.SetFloat(KEY_MASTER_VOLUME, MasterVolume);
             PlayerPrefs.SetInt(KEY_SUBTITLES, Subtitles ? 1 : 0);
             PlayerPrefs.SetInt(KEY_QUALITY_LEVEL, QualityLevel);

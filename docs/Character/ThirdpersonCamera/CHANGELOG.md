@@ -5,6 +5,26 @@
 
 ---
 
+## T-CAM15 — Zoom камеры колёсиком мыши (2026-07-26)
+
+**Коммит:** `a73fa92` — T-CAM15: Zoom камеры колёсиком мыши
+
+**Задача:** Добавить приближение/отдаление камеры колёсиком мыши через кастомный инпут (InputBindingsConfig) с возможностью регулировки чувствительности в меню настроек.
+
+**Изменения:**
+- `InputBindingsConfig.cs` — +`CameraZoom` в GameAction, +default binding
+- `SettingsManager.cs` — +`CameraZoomSensitivity` (0.5–15, default 3f), PlayerPrefs + event
+- `GameplaySettingsSection.cs` — +слайдер «Чувств. зума»
+- `SpringArmCamera.cs` — +`UpdateZoom()`: `<Mouse>/scroll/y`, sensitivity ×0.5, clamp `_targetDistance`
+
+**Результат:**
+- ✅ Zoom колёсиком в walk (2–12m) и ship (6–35m) режимах
+- ✅ Чувствительность настраивается в меню Настройки → Геймплей → «Чувств. зума»
+- ✅ GameAction зарегистрирован в InputBindingsConfig (Rebind-ready)
+- ✅ 0 compile errors
+
+---
+
 ## T-CAM14 — Глубокий аудит: устранение остаточной тряски (2026-07-26)
 
 **Коммит:** `1035f38` — T-CAM14: Deep Audit

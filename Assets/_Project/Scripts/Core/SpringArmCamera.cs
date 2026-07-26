@@ -84,6 +84,16 @@ namespace ProjectC.Core
         [SerializeField] private float lookAtHeightWalk = 1.5f;
         [SerializeField] private float lookAtHeightShip = 4f;
 
+        [Header("Zoom")]
+        [Tooltip("Минимальная дистанция камеры (зум колёсиком)")]
+        [SerializeField] private float zoomMinDistance = 2f;
+        [Tooltip("Максимальная дистанция камеры (зум колёсиком)")]
+        [SerializeField] private float zoomMaxDistance = 12f;
+        [Tooltip("Минимальная дистанция в режиме корабля")]
+        [SerializeField] private float zoomMinDistanceShip = 6f;
+        [Tooltip("Максимальная дистанция в режиме корабля")]
+        [SerializeField] private float zoomMaxDistanceShip = 35f;
+
         private float _yaw, _pitch;
         private float _currentDistance, _currentHeight, _currentLookAtHeight;
         private float _targetDistance, _targetHeight, _targetLookAtHeight;
@@ -99,7 +109,9 @@ namespace ProjectC.Core
         private Vector3 _lastCollisionPos;
 
         private InputAction _lookAction;
+        private InputAction _zoomAction;
         private Vector2 _lookInput;
+        private float _zoomInput;
         private bool _cameraInitialized;
         private Camera _camera;
 
@@ -107,6 +119,7 @@ namespace ProjectC.Core
         private Canvas _cachedCanvas;
         private float _cachedMouseSensitivity = 3f;
         private bool _cachedInvertY = false;
+        private float _cachedZoomSensitivity = 3f;
 
         public Camera CameraComponent => _camera;
         public Transform TargetTransform => target;
@@ -184,12 +197,14 @@ namespace ProjectC.Core
             RefreshSettings();
             SettingsManager.OnMouseSensitivityChanged += v => _cachedMouseSensitivity = v;
             SettingsManager.OnInvertYChanged += v => _cachedInvertY = v;
+            SettingsManager.OnCameraZoomSensitivityChanged += v => _cachedZoomSensitivity = v;
         }
 
         private void RefreshSettings()
         {
             _cachedMouseSensitivity = SettingsManager.MouseSensitivity;
             _cachedInvertY = SettingsManager.InvertY;
+            _cachedZoomSensitivity = SettingsManager.CameraZoomSensitivity;
         }
 
         private void Awake()
@@ -202,11 +217,13 @@ namespace ProjectC.Core
             }
             _cachedMouseSensitivity = mouseSensitivity;
             _cachedInvertY = invertY;
+            _cachedZoomSensitivity = SettingsManager.CameraZoomSensitivity;
             _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
+            _zoomAction = new InputAction("Zoom", binding: "<Mouse>/scroll/y", expectedControlType: "Float");
         }
 
-        private void OnEnable() => _lookAction.Enable();
-        private void OnDisable() => _lookAction.Disable();
+        private void OnEnable() { _lookAction.Enable(); _zoomAction.Enable(); }
+        private void OnDisable() { _lookAction.Disable(); _zoomAction.Disable(); }
 
         private void OnDestroy()
         {
@@ -226,6 +243,7 @@ namespace ProjectC.Core
 
             ReadInput();
             UpdateModeTransition();
+            UpdateZoom();
 
             // T-JITTER03: зажимаем _currentDistance чтобы орбита никогда
             // не заходила внутрь near-clip (nearClipPlane + sphereCastRadius + buffer).
@@ -265,6 +283,21 @@ namespace ProjectC.Core
             _currentDistance = Mathf.SmoothDamp(_currentDistance, _targetDistance, ref _distanceVelocity, modeSwitchSmoothTime);
             _currentHeight = Mathf.SmoothDamp(_currentHeight, _targetHeight, ref _heightVelocity, modeSwitchSmoothTime);
             _currentLookAtHeight = Mathf.SmoothDamp(_currentLookAtHeight, _targetLookAtHeight, ref _lookAtVelocity, modeSwitchSmoothTime);
+        }
+
+        private void UpdateZoom()
+        {
+            _zoomInput = _zoomAction.ReadValue<float>();
+
+            // Dead-zone: отсекаем шум скролла
+            if (Mathf.Abs(_zoomInput) < 0.001f) return;
+
+            float zoomDelta = _zoomInput * _cachedZoomSensitivity * 0.5f;
+            float newTarget = _targetDistance - zoomDelta;
+
+            float minDist = _isShip ? zoomMinDistanceShip : zoomMinDistance;
+            float maxDist = _isShip ? zoomMaxDistanceShip : zoomMaxDistance;
+            _targetDistance = Mathf.Clamp(newTarget, minDist, maxDist);
         }
 
         private void UpdateLag()

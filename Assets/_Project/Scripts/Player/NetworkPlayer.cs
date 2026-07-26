@@ -957,16 +957,9 @@ namespace ProjectC.Player
 
             // Единый Move: локомоция + ветер (гориз.) + гравитация/прыжок (верт.).
             // Y держит keep-grounded (-2) — нет подпрыгивания от отдельных Move.
-            // T-JITTER05: если персонаж стоит на статичной земле без ввода и ветра —
-            // не вызываем Move вообще. Каждый вызов CC.Move с downward-вектором
-            // создаёт микро-пенетрацию → Physics выталкивает → micro-bounce.
-            bool skipMove = !hasInput && groundedForMovement && !_onPlatform && windVel.sqrMagnitude < 0.0001f;
-            if (!skipMove)
-            {
-                Vector3 motion = horizontalVel + windVel;
-                motion.y += _velocity.y;
-                _controller.Move(motion * Time.deltaTime + _platformDelta);
-            }
+            Vector3 motion = horizontalVel + windVel;
+            motion.y += _velocity.y;
+            _controller.Move(motion * Time.deltaTime + _platformDelta);
         }
 
         // ==================== MOVING-PLATFORM CARRY ====================

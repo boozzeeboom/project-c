@@ -86,8 +86,6 @@ namespace ProjectC.Core
         private float _targetDistance, _targetHeight, _targetLookAtHeight;
         private bool _isShip;
 
-        private Vector3 _positionVelocity;
-        private Vector3 _recoveryVelocity;
         private float _distanceVelocity, _heightVelocity, _lookAtVelocity;
 
         private Vector3 _lagTargetPos;
@@ -236,6 +234,12 @@ namespace ProjectC.Core
         private void ReadInput()
         {
             _lookInput = _lookAction.ReadValue<Vector2>();
+
+            // Dead-zone: убиваем шум сенсора (~0.01 magnitude)
+            const float deadZone = 0.01f;
+            if (_lookInput.sqrMagnitude < deadZone * deadZone)
+                return;
+
             float sens = _cachedMouseSensitivity;
             float inv = _cachedInvertY ? -1f : 1f;
             _yaw += _lookInput.x * sens;
@@ -388,11 +392,7 @@ namespace ProjectC.Core
         {
             // Dead-zone 3mm: убиваем микро-осцилляции когда почти на месте
             if (Vector3.Distance(transform.position, cameraTargetPos) < 0.003f)
-            {
-                _positionVelocity = Vector3.zero;
-                _recoveryVelocity = Vector3.zero;
                 return;
-            }
 
             // Защита от near-clip
             float minDist = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
@@ -409,19 +409,23 @@ namespace ProjectC.Core
             float desiredDist = _targetDistance;
             float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
 
+            // Экспоненциальный decay (Lerp) вместо SmoothDamp:
+            // SmoothDamp — critically-damped spring, может давать резонанс
+            // в каскаде с UpdateLag (тоже exp). Exp+exp гарантированно без осцилляций.
+            float smoothTime = ratio < recoveryRatio ? positionSmoothTime * 0.3f : positionSmoothTime;
+            float t = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(smoothTime, 0.001f));
+            Vector3 newPos = Vector3.Lerp(transform.position, cameraTargetPos, t);
+
+            // Clamp к recoverySpeed при восстановлении после коллизии
             if (ratio < recoveryRatio)
             {
-                float fastSmoothTime = positionSmoothTime * 0.3f;
-                transform.position = Vector3.SmoothDamp(
-                    transform.position, cameraTargetPos,
-                    ref _recoveryVelocity, fastSmoothTime, recoverySpeed);
+                float maxStep = recoverySpeed * Time.deltaTime;
+                Vector3 step = newPos - transform.position;
+                if (step.magnitude > maxStep)
+                    newPos = transform.position + step.normalized * maxStep;
             }
-            else
-            {
-                transform.position = Vector3.SmoothDamp(
-                    transform.position, cameraTargetPos,
-                    ref _positionVelocity, positionSmoothTime);
-            }
+
+            transform.position = newPos;
         }
 
         private void UpdateLookAt()

@@ -9,8 +9,14 @@ namespace ProjectC.Core
 {
     /// <summary>
     /// Spring Arm камера от третьего лица.
-    /// Минималистичная версия: старая ThirdPersonCamera + SphereCast коллизии + SmoothDamp.
-    /// Без лага, адаптивной дистанции, occlusion, FOV, auto-center.
+    /// Архитектура: независимый корневой объект (НЕ дочерний игроку — FloatingOriginMP).
+    /// 
+    /// Pipeline: ReadInput → ModeTransition → CameraLag → ComputeDesired
+    ///        → ResolveCollision(+AntiPop) → AdaptiveDistance → SmoothPosition(+Recovery) → LookAt
+    /// 
+    /// Lag = инерция следования за целью (walk 0.15s, ship отключён).
+    /// SmoothDamp = быстрый anti-jitter фильтр позиции камеры (0.04s).
+    /// Два фильтра в РАЗНЫХ временных масштабах — не конфликтуют.
     /// </summary>
     public class SpringArmCamera : MonoBehaviour
     {
@@ -30,25 +36,72 @@ namespace ProjectC.Core
         [SerializeField] private bool invertY = false;
 
         [Header("Collision Avoidance")]
-        [SerializeField] private float sphereCastRadius = 0.3f;
+        [SerializeField] private float sphereCastRadius = 0.4f;
         [SerializeField] private LayerMask collisionMask = ~0;
-        [SerializeField] private float wallOffset = 0.2f;
+        [SerializeField] private float wallOffset = 0.3f;
+
+        [Header("Anti-Pop")]
+        [Tooltip("Гистерезис при выходе из коллизии (сек) — предотвращает дрожание у стен")]
+        [SerializeField] private float antiPopTime = 0.2f;
+
+        [Header("Wall Recovery")]
+        [Tooltip("Максимальная скорость восстановления позиции (m/s)")]
+        [SerializeField] private float recoverySpeed = 10f;
+        [Tooltip("Порог срабатывания recovery: отношение actualDist/desiredDist")]
+        [SerializeField] private float recoveryRatio = 0.4f;
+
+        [Header("Camera Lag")]
+        [Tooltip("Инерция камеры: отставание от цели при движении")]
+        [SerializeField] private bool lagEnabled = true;
+        [Tooltip("Время отставания по горизонтали XZ (walk)")]
+        [SerializeField] private float lagHorizontalTime = 0.15f;
+        [Tooltip("Время отставания по вертикали Y (walk)")]
+        [SerializeField] private float lagVerticalTime = 0.05f;
+        [Tooltip("Меньше отставания при беге")]
+        [SerializeField] private bool dynamicLagEnabled = true;
+
+        [Header("Adaptive Distance")]
+        [Tooltip("Авто-уменьшение дистанции в узких пространствах")]
+        [SerializeField] private bool adaptiveDistanceEnabled = true;
+        [Tooltip("Порог срабатывания: отношение actualDist/desiredDist")]
+        [SerializeField] private float adaptiveThreshold = 0.7f;
+        [Tooltip("Задержка перед уменьшением (гистерезис, сек)")]
+        [SerializeField] private float adaptiveDelay = 0.5f;
+        [Tooltip("Скорость уменьшения дистанции")]
+        [SerializeField] private float adaptiveSpeed = 3f;
+        [Tooltip("Скорость восстановления дистанции")]
+        [SerializeField] private float adaptiveRecoverySpeed = 2f;
 
         [Header("Smoothing")]
-        [SerializeField] private float positionSmoothTime = 0.05f;
+        [Tooltip("Anti-jitter сглаживание позиции камеры (быстрое — инерция в Lag)")]
+        [SerializeField] private float positionSmoothTime = 0.04f;
         [SerializeField] private float modeSwitchSmoothTime = 0.5f;
 
         [Header("LookAt")]
         [SerializeField] private float lookAtHeightWalk = 1.5f;
         [SerializeField] private float lookAtHeightShip = 4f;
 
-        // State
+        // ── Orbit state ──
         private float _yaw, _pitch;
         private float _currentDistance, _currentHeight, _currentLookAtHeight;
         private float _targetDistance, _targetHeight, _targetLookAtHeight;
         private bool _isShip;
+
+        // ── SmoothDamp velocities ──
         private Vector3 _positionVelocity;
+        private Vector3 _recoveryVelocity;
         private float _distanceVelocity, _heightVelocity, _lookAtVelocity;
+
+        // ── Camera Lag ──
+        private Vector3 _lagTargetPos;
+
+        // ── Adaptive Distance ──
+        private float _lastClearTime;
+
+        // ── Collision state ──
+        private float _collisionExitTime;
+        private bool _wasColliding;
+        private Vector3 _lastCollisionPos;
 
         private InputAction _lookAction;
         private Vector2 _lookInput;
@@ -84,7 +137,11 @@ namespace ProjectC.Core
 
         public void SetTarget(Transform newTarget)
         {
-            if (newTarget != null) target = newTarget;
+            if (newTarget != null)
+            {
+                target = newTarget;
+                _lagTargetPos = target.position;
+            }
         }
 
         public void SetTargetMode(Transform newTarget, bool isShip)
@@ -99,6 +156,10 @@ namespace ProjectC.Core
             _targetDistance = isShip ? shipDistance : distance;
             _targetHeight = isShip ? shipHeight : height;
             _targetLookAtHeight = isShip ? lookAtHeightShip : lookAtHeightWalk;
+
+            // При переключении режима — сбрасываем lag на текущую позицию (без рывка)
+            if (target != null)
+                _lagTargetPos = target.position;
         }
 
         public void InitializeCamera()
@@ -115,6 +176,8 @@ namespace ProjectC.Core
             _currentDistance = _targetDistance = distance;
             _currentHeight = _targetHeight = height;
             _currentLookAtHeight = _targetLookAtHeight = lookAtHeightWalk;
+            _lagTargetPos = target.position;
+            _lastClearTime = Time.time;
 
             bool inGame = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
             Cursor.lockState = inGame ? CursorLockMode.Locked : CursorLockMode.None;
@@ -171,8 +234,10 @@ namespace ProjectC.Core
 
             ReadInput();
             UpdateModeTransition();
+            UpdateLag();
             Vector3 desiredPos = ComputeDesiredPosition();
             Vector3 resolvedPos = ResolveCollision(desiredPos);
+            UpdateAdaptiveDistance();
             SmoothPosition(resolvedPos);
             UpdateLookAt();
         }
@@ -195,17 +260,69 @@ namespace ProjectC.Core
             _currentLookAtHeight = Mathf.SmoothDamp(_currentLookAtHeight, _targetLookAtHeight, ref _lookAtVelocity, modeSwitchSmoothTime);
         }
 
+        // ── Camera Lag: инерция следования за целью (только walk, не ship) ──
+        private void UpdateLag()
+        {
+            // Корабль — без лага: камера мгновенно следует за быстрым большим объектом
+            if (!lagEnabled || _isShip || target == null)
+            {
+                _lagTargetPos = target != null ? target.position : Vector3.zero;
+                return;
+            }
+
+            // Детект телепорта: если lagTargetPos далеко — мгновенный снап
+            float initDist = Vector3.Distance(_lagTargetPos, target.position);
+            if (initDist > 100f || _lagTargetPos == Vector3.zero)
+            {
+                _lagTargetPos = target.position;
+                return;
+            }
+
+            Vector3 delta = target.position - _lagTargetPos;
+
+            // Clamp: предотвращаем чрезмерное отставание (телепорт, высокая скорость)
+            float maxLagDist = 10f;
+            if (delta.magnitude > maxLagDist)
+            {
+                delta = delta.normalized * maxLagDist;
+                _lagTargetPos = target.position - delta;
+            }
+
+            // Экспоненциальное сглаживание: framerate-independent, нет overshoot
+            float lagXZ, lagY;
+            if (dynamicLagEnabled)
+            {
+                float speed = delta.magnitude / Mathf.Max(Time.deltaTime, 0.0001f);
+                float speedFactor = Mathf.InverseLerp(0f, 10f, speed);
+                float dynamicMul = Mathf.Lerp(1f, 0.3f, speedFactor);
+                float effXZ = lagHorizontalTime * dynamicMul;
+                float effY = lagVerticalTime * dynamicMul;
+                lagXZ = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effXZ, 0.001f));
+                lagY = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effY, 0.001f));
+            }
+            else
+            {
+                lagXZ = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(lagHorizontalTime, 0.001f));
+                lagY = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(lagVerticalTime, 0.001f));
+            }
+
+            _lagTargetPos.x += delta.x * lagXZ;
+            _lagTargetPos.z += delta.z * lagXZ;
+            _lagTargetPos.y += delta.y * lagY;
+        }
+
         private Vector3 ComputeDesiredPosition()
         {
             float yr = _yaw * Mathf.Deg2Rad;
             float pr = _pitch * Mathf.Deg2Rad;
             Vector3 dir = new Vector3(-Mathf.Sin(yr) * Mathf.Cos(pr), Mathf.Sin(pr), -Mathf.Cos(yr) * Mathf.Cos(pr));
-            return target.position + dir * _currentDistance + Vector3.up * _currentHeight;
+            return _lagTargetPos + dir * _currentDistance + Vector3.up * _currentHeight;
         }
 
+        // ── Collision Avoidance + Anti-Pop гистерезис ──
         private Vector3 ResolveCollision(Vector3 desiredPos)
         {
-            Vector3 from = target.position + Vector3.up * _currentLookAtHeight;
+            Vector3 from = _lagTargetPos + Vector3.up * _currentLookAtHeight;
             Vector3 dir = (desiredPos - from).normalized;
             float maxDist = Vector3.Distance(from, desiredPos);
             if (maxDist < 0.01f) return desiredPos;
@@ -213,20 +330,86 @@ namespace ProjectC.Core
             int mask = collisionMask;
             if (target != null) mask &= ~(1 << target.gameObject.layer);
 
-            if (Physics.SphereCast(from, sphereCastRadius, dir, out RaycastHit hit, maxDist, mask))
-                return hit.point + hit.normal * (sphereCastRadius + wallOffset);
+            float currentTime = Time.time;
+            bool hit = Physics.SphereCast(from, sphereCastRadius, dir, out RaycastHit hitInfo, maxDist, mask);
 
-            return desiredPos;
+            if (hit)
+            {
+                _wasColliding = true;
+                _collisionExitTime = currentTime;
+                _lastCollisionPos = hitInfo.point + hitInfo.normal * (sphereCastRadius + wallOffset);
+                return _lastCollisionPos;
+            }
+            else if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
+            {
+                // Anti-pop: остаёмся прижатыми ещё antiPopTime секунд после выхода из коллизии
+                return _lastCollisionPos;
+            }
+            else
+            {
+                _wasColliding = false;
+                return desiredPos;
+            }
         }
 
-        private void SmoothPosition(Vector3 targetPos)
+        // ── Adaptive Distance: авто-уменьшение дистанции в узких пространствах ──
+        private void UpdateAdaptiveDistance()
         {
-            transform.position = Vector3.SmoothDamp(transform.position, targetPos, ref _positionVelocity, positionSmoothTime);
+            if (!adaptiveDistanceEnabled) return;
+
+            float actualDist = Vector3.Distance(transform.position, _lagTargetPos);
+            float desiredDist = _isShip ? shipDistance : distance;
+            float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
+            float currentTime = Time.time;
+
+            if (ratio < adaptiveThreshold && _wasColliding)
+            {
+                if (currentTime - _lastClearTime > adaptiveDelay)
+                {
+                    float minDist = Mathf.Max(1f, actualDist - wallOffset - sphereCastRadius);
+                    _targetDistance = Mathf.Lerp(
+                        _targetDistance, minDist,
+                        adaptiveSpeed * Time.deltaTime);
+                }
+            }
+            else
+            {
+                float baseDist = _isShip ? shipDistance : distance;
+                _targetDistance = Mathf.Lerp(
+                    _targetDistance, baseDist,
+                    adaptiveRecoverySpeed * Time.deltaTime);
+
+                if (ratio > 0.95f)
+                    _lastClearTime = currentTime;
+            }
+        }
+
+        // ── Smooth Position + Wall Recovery (fast catch-up) ──
+        private void SmoothPosition(Vector3 cameraTargetPos)
+        {
+            float actualDist = Vector3.Distance(cameraTargetPos, _lagTargetPos);
+            float desiredDist = _targetDistance;
+            float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
+
+            if (ratio < recoveryRatio)
+            {
+                // Fast recovery: камера сильно прижата — быстрее отъезжаем
+                float fastSmoothTime = positionSmoothTime * 0.3f;
+                transform.position = Vector3.SmoothDamp(
+                    transform.position, cameraTargetPos,
+                    ref _recoveryVelocity, fastSmoothTime, recoverySpeed);
+            }
+            else
+            {
+                transform.position = Vector3.SmoothDamp(
+                    transform.position, cameraTargetPos,
+                    ref _positionVelocity, positionSmoothTime);
+            }
         }
 
         private void UpdateLookAt()
         {
-            transform.LookAt(target.position + Vector3.up * _currentLookAtHeight);
+            transform.LookAt(_lagTargetPos + Vector3.up * _currentLookAtHeight);
         }
 
         private void SnapCameraToPosition()
@@ -234,6 +417,7 @@ namespace ProjectC.Core
             float yr = _yaw * Mathf.Deg2Rad;
             float pr = _pitch * Mathf.Deg2Rad;
             Vector3 dir = new Vector3(-Mathf.Sin(yr) * Mathf.Cos(pr), Mathf.Sin(pr), -Mathf.Cos(yr) * Mathf.Cos(pr));
+            _lagTargetPos = target.position;
             transform.position = target.position + dir * _currentDistance + Vector3.up * _currentHeight;
             transform.LookAt(target.position + Vector3.up * _currentLookAtHeight);
         }
@@ -263,13 +447,26 @@ namespace ProjectC.Core
             float h = Application.isPlaying ? _currentHeight : height;
             float yr = _yaw * Mathf.Deg2Rad, pr = _pitch * Mathf.Deg2Rad;
             Vector3 dir = new Vector3(-Mathf.Sin(yr) * Mathf.Cos(pr), Mathf.Sin(pr), -Mathf.Cos(yr) * Mathf.Cos(pr));
-            Vector3 from = target.position + Vector3.up * lh;
-            Vector3 desired = target.position + dir * d + Vector3.up * h;
+            Vector3 origin = Application.isPlaying ? _lagTargetPos : target.position;
+            Vector3 from = origin + Vector3.up * lh;
+            Vector3 desired = origin + dir * d + Vector3.up * h;
+
+            // SphereCast origin
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(from, sphereCastRadius);
             Gizmos.DrawLine(from, desired);
-            Gizmos.color = Color.green;
+
+            // Current camera position (red = коллизия, green = чисто)
+            Gizmos.color = _wasColliding ? Color.red : Color.green;
             Gizmos.DrawWireSphere(transform.position, sphereCastRadius);
+
+            // Lag target (серый — показывает отставание)
+            if (Application.isPlaying && lagEnabled && !_isShip)
+            {
+                Gizmos.color = Color.gray;
+                Gizmos.DrawWireSphere(_lagTargetPos, 0.3f);
+                Gizmos.DrawLine(target.position, _lagTargetPos);
+            }
         }
 #endif
     }

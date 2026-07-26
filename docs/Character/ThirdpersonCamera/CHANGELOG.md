@@ -5,6 +5,53 @@
 
 ---
 
+## Итерация от 2026-07-26 (T-CAM10 — Восстановление после выпиливания)
+
+**Задача:** Восстановить Camera Lag + Anti-Pop + Adaptive Distance + Wall Recovery
+с правильной архитектурой (Lag и SmoothDamp в разных временных масштабах).
+
+**Контекст:**
+- T-CAM05: полная реализация всех систем
+- T-CAM06..08: серия «фиксов» дёрганья — лаг выключен, адаптивная дистанция выключена, 
+  SmoothDamp сделан агрессивным
+- T-CAM09: выпилено всё до голого скелета (только SphereCast + SmoothDamp)
+
+**Корневая причина дёрганья в T-CAM05:**
+Lag (0.15s) и SmoothDamp (0.12s) работали с близкими временны́ми константами — 
+получалась система второго порядка с oscillation/overshoot.
+
+**Архитектурное решение:**
+- Lag = основная инерция (walk 0.15s XZ / 0.05s Y), ship — отключён
+- SmoothDamp = быстрый anti-jitter фильтр (0.04s) — только для микро-сглаживания между кадрами
+- Два фильтра в разных временны́х масштабах → не конфликтуют
+
+**Изменения:**
+- `SpringArmCamera.cs` — +UpdateLag() (экспоненциальная формула, framerate-independent)
+- +Anti-Pop гистерезис (0.2s) в ResolveCollision с _lastCollisionPos
+- +Wall Recovery (3× fast SmoothDamp при ratio < 0.4)
+- +Adaptive Distance (авто-уменьшение _targetDistance в узких пространствах)
+- Все расчёты орбиты/LookAt от _lagTargetPos (не от target.position)
+- Корабль: lag отключён всегда (камера мгновенно следует за быстрым большим объектом)
+- Gizmos: отображение _lagTargetPos и состояния коллизии
+
+**Новые параметры инспектора:**
+- Anti-Pop: `antiPopTime = 0.2f`
+- Wall Recovery: `recoverySpeed = 10f`, `recoveryRatio = 0.4f`
+- Camera Lag: `lagEnabled = true`, `lagHorizontalTime = 0.15f`, `lagVerticalTime = 0.05f`, `dynamicLagEnabled = true`
+- Adaptive Distance: `adaptiveDistanceEnabled = true`, `adaptiveThreshold = 0.7f`, `adaptiveDelay = 0.5f`, `adaptiveSpeed = 3f`, `adaptiveRecoverySpeed = 2f`
+- Smoothing: `positionSmoothTime = 0.04f` (было 0.05f)
+- Collision: `sphereCastRadius = 0.4f` (было 0.3f), `wallOffset = 0.3f` (было 0.2f)
+
+**Результат:**
+- ✅ Camera Lag: камера не дёргается за кораблём, плавно следует за пешим персонажем
+- ✅ Anti-Pop: нет дрожания у стен
+- ✅ Adaptive Distance: в узких пространствах камера сама прижимается
+- ✅ Wall Recovery: быстрый отъезд после выхода из-за стены
+- ✅ 0 compile errors
+- ✅ API-контракт сохранён
+
+---
+
 ## Итерация от 2026-07-26 (Phase 3)
 
 **Задача:** Phase 3 — Occlusion Fade

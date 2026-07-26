@@ -1,7 +1,7 @@
 # Investigation: Микротряска персонажа при стоянии (Character Micro-Jitter)
 
 **Дата:** 2026-07-26  
-**Статус:** Тестирование H3 — NT.Interpolate=false для всех (ce6f658)  
+**Статус:** ❌ ПРОБЛЕМА СОХРАНЕНА — все проверенные гипотезы исключены  
 **Тикет:** (связанные T-JITTER01, T-JITTER01-v2, T-JITTER02, T-JITTER02v2, T-JITTER03, T-CAM05v2)
 
 ---
@@ -255,6 +255,48 @@ private void FixedUpdate() {
 
 ---
 
+## 5-бис. Результаты диагностики (2026-07-26)
+
+**Все проверенные гипотезы исключены:**
+
+| Гипотеза | Тест | Результат | Вывод |
+|----------|------|-----------|-------|
+| H1: keep-grounded -2f → CC.Move penetration | -0.5f (T-JITTER04) | ❌ тряска осталась | CC.Move penetration — не причина |
+| H1: CC.Move вообще | skip-Move при стоянии (T-JITTER05) | ❌ тряска осталась | **CC.Move НЕ является источником тряски** |
+| H2: stepOffset tug-of-war | stepOffset=0.01 (T-JITTER06) | ❌ тряска осталась | stepOffset не причастен |
+| H3: NT.Interpolate | Interpolate=false для всех (T-JITTER07) | ❌ тряска осталась | NetworkTransform не причастен |
+| FixedUpdate dirty | no-op Slerp удалён + NT smoothing off (T-JITTER08) | ❌ тряска осталась | Transform dirty не причина |
+
+**Ключевой инсайт:** источник тряски — **НЕ** CharacterController и **НЕ** NetworkTransform. При полном пропуске `CC.Move()` тряска сохраняется.
+
+**Что остаётся (нерасследованные гипотезы):**
+
+### 🆕 H4: Animator bone animation в idle
+
+Idle-анимация `HumanM@Idle01` (Kevin Iglesias) — даже без root motion, кости скелета микро-двигаются (дыхание, перенос веса). Через SkinnedMeshRenderer это даёт видимое смещение вершин меша каждый кадр.
+
+**Проверка:** отключить Animator на `Visual_Model` → если тряска пропала → H4.
+
+### 🆕 H5: CharacterController skinWidth bounce
+
+`skinWidth = 0.08` (префаб). CC постоянно «касается» земли. Даже без Move(), CC резолвит overlaps через skinWidth → микро-толчки.
+
+**Проверка:** `_controller.enabled = false` на 1 кадр при стоянии → если тряска пропала → H5.
+
+### 🆕 H6: Скрипты кастомизации (CharacterCustomisationApplier / CharacterEquipmentVisualApplier)
+
+Модифицируют кости/меш в Update/LateUpdate через Animator API.
+
+**Проверка:** временно отключить оба компонента на префабе.
+
+### 🆕 H7: Floating-point precision / GPU skinning
+
+Персонаж далеко от origin (0,0,0)? FP-ошибки в матрице трансформации → sub-pixel jitter в SkinnedMeshRenderer.
+
+**Проверка:** телепортироваться к origin и проверить.
+
+---
+
 ## 6. Критерии успеха
 
 - [ ] Персонаж стоит на месте — визуально неподвижен (±0.5px на экране)
@@ -273,4 +315,5 @@ private void FixedUpdate() {
 | 2026-07-26 | T-JITTER04 (a3cb625) | H1: keep-grounded -2f → -0.5f (Вариант A) ❌ |
 | 2026-07-26 | T-JITTER05 (89613f8) | H1: skip CC.Move при стоянии (Вариант C) ❌ |
 | 2026-07-26 | T-JITTER06 (99e11ef) | H2: stepOffset 0.3 → 0.01 ❌ |
-| 2026-07-26 | T-JITTER07 (ce6f658) | H3: NT.Interpolate=false для всех клиентов |
+| 2026-07-26 | T-JITTER07 (ce6f658) | H3: NT.Interpolate=false для всех клиентов ❌ |
+| 2026-07-26 | T-JITTER08 (107ce4d) | FixedUpdate no-op Slerp удалён + NT.PositionLerpSmoothing=false ❌ |

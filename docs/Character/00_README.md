@@ -1,34 +1,29 @@
 # Character Progression — каталог документации
 
 > **Подсистема:** Уникальность персонажа (Stats + Progression + Clothing + Modules + Skills)
-> **Версия:** v0.0.1-design (2026-06-14)
-> **Статус:** ✅ **Полностью реализовано (июнь 2026)**
+> **Версия:** v1.0-implemented (2026-06-17, актуализировано 2026-07-26)
+> **Статус:** ✅ **Полностью реализовано.** Код: `StatsServer`, `EquipmentServer`, `SkillsServer` (+World, +ClientState, +DTO), 9 WorldEventBus событий, JsonCharacterDataRepository.
 > **Назначение:** одежда с характеристиками, модули с характеристиками, дерево навыков (социальные/боевые), 3 характеристики (Сила/Ловкость/Интеллект) с геометрическим ростом от действий игрока.
-> **Связанные подсистемы:** Mining (`docs/Mining/`), Crafting (`docs/Crafting_system/`), Exchange (`docs/Markets/`), Quests (`docs/NPC_quests/`), Ship (`docs/Ships/`), Character-menu (`docs/Character-menu/`).
-> **Внешний контракт:** `CharacterWindow` уже имеет 6 табов (character/ship/reputation/contracts/inventory/quests). Новые табы встраиваются как **вложенные sub-tabs** под табом "ПРОГРЕССИЯ".
+> **Ключевые файлы:** `Assets/_Project/Scripts/Stats/`, `Scripts/Equipment/`, `Scripts/Skills/`, `Core/WorldEventBus.cs`, `Core/WorldEvent.cs`.
+> **Связанные подсистемы:** Mining (`docs/Mining/`), Crafting (`docs/Crafting_system/`), Markets (`docs/Markets/`), Quests (`docs/NPC_quests/`), Ship (`docs/Ships/`), Character-menu (`docs/Character-menu/`).
 
 ---
 
-## TL;DR для тех, кто возвращается через неделю
+## TL;DR — актуальное состояние (июль 2026)
 
-**Что сделано в этой сессии (14.06.2026):**
+**Что реализовано (июнь–июль 2026):**
 
-1. Проведён глубокий анализ 3-х сабагентами: (1) RPG entry-points (entry-points для подписки на серверные события), (2) Data-Model (паттерны SO), (3) UI/Player-Controller.
-2. Подтверждено: **`WorldEventBus` уже существует** и `QuestServer` подписан на 7 событий — это **готовая инфраструктура** для подписки на новые события.
-3. Подтверждено: **`CharacterWindow` готов к расширению** — 4 FIX'а UI Toolkit применены, 6 табов работают, P-key занят. Никаких новых keybindings не нужно.
-4. Подтверждено: **ItemData уже имеет `itemType.Equipment`**, но **нет понятия "equippable"** — нужна новая `EquipmentData` + `EquipmentWorld` + `EquipmentServer` (паттерн как `InventoryWorld` + `InventoryServer`).
-5. Спроектированы 3 типа ScriptableObject: `StatsConfig` (геометрический рост), `ClothingItemData`/`ModuleItemData` (расширяют `ItemData`), `SkillNodeConfig` (с `SkillEffect[]`).
-6. Подготовлен roadmap из **18 тикетов T-P01..T-P18** в 4 milestone'ах.
+1. **StatsServer** (`Assets/_Project/Scripts/Stats/StatsServer.cs`) — NetworkBehaviour, подписан на 9 WorldEventBus событий. FixedUpdate distance tracker для walk/pilot XP. Применяет XP через StatsConfig (геометрический рост). Persist в `character_<clientId>.json`.
+2. **EquipmentServer** (`Assets/_Project/Scripts/Equipment/EquipmentServer.cs`) — TryEquip/TryUnequip RPC, валидация skill prerequisites. Stats bonus от одежды/модулей.
+3. **SkillsServer** (`Assets/_Project/Scripts/Skills/SkillsServer.cs`) — Learn/Forget RPC, проверка prerequisites, эффекты.
+4. **9 WorldEventBus событий** добавлено: `MiningCompletedEvent`, `CraftingCompletedEvent`, `ExchangeCompletedEvent`, `MarketTradedEvent`, `QuestAcceptedEvent`, `QuestCompletedEvent`, `ShipPilotTickEvent`, `PlayerJumpedEvent`, `AttackLandedEvent`/`DamageDealtEvent`/`EntityKilledEvent`.
+5. **StatsClientState**, **EquipmentClientState**, **SkillsClientState** — singleton'ы с OnUpdated events → CharacterWindow.
+6. **CharacterWindow** — расширен табом «Прогрессия» с sub-tabs (Статы/Одежда/Модули/Навыки).
+7. **JsonCharacterDataRepository** — атомарная запись через tmp+Move.
 
-**Открыто (нужно от тебя):**
-
-- ❓ Какая формула геометрического роста (10 разделов в 09_OPEN_QUESTIONS.md)
-- ❓ Стартовые значения (1/10/100/1000?)
-- ❓ Стат-бонусы — additive или multiplicative?
-- ❓ Одежда — additive бонусы или % от базовой характеристики?
-- ❓ Модули — это персонажные импланты или модификации корабля?
-- ❓ Какие навыки в MVP (4 combat + 4 social — какие?)
-- ❓ Сколько placeholder-итераций до полноценного сервера?
+**Что ещё открыто:**
+- Часть вопросов из `09_OPEN_QUESTIONS.md` всё ещё актуальна (баланс, формулы).
+- `11_STATS_ARCHITECTURE_AUDIT.md` (2026-07-26) — 7 проблем + план рефакторинга.
 
 ---
 
@@ -36,35 +31,70 @@
 
 ```
 docs/Character/
-├── 00_README.md                    (этот файл — навигация + TL;DR)
-├── 01_CURRENT_STATE_AUDIT.md       (что уже есть в проекте, готовые точки входа)
-├── 02_V2_ARCHITECTURE.md           (серверный hub + DTO + ClientState + WorldEventBus подписки)
-├── 03_DATA_MODEL.md                (StatsConfig, ClothingItemData, ModuleItemData, SkillNodeConfig)
-├── 04_STATS_PROGRESSION.md         (геометрическая формула, источники XP, NPC-spam protection)
-├── 05_CLOTHING_AND_MODULES.md      (слоты, equip/unequip, stat-bonuses)
-├── 06_SKILL_TREE.md                (нодовая система, prerequisites, effects, social/combat)
-├── 07_UI_TABS_IN_CHARACTER_WINDOW.md (расширение CharacterWindow, sub-tabs, row-patterns)
-├── 08_ROADMAP.md                   (тикеты T-P01..T-P18, milestones, оценка)
-├── 09_OPEN_QUESTIONS.md            (10 разделов, 30+ вопросов для тебя)
-├── 10_REFERENCES.md                (file:line индекс всех прочитанных файлов)
-└── 11_STATS_ARCHITECTURE_AUDIT.md  (2026-07-26: аудит архитектуры статов — 7 проблем + план рефакторинга)
+├── 00_README.md                          (этот файл — навигация + TL;DR)
+├── 11_STATS_ARCHITECTURE_AUDIT.md        (2026-07-26: аудит статов — 7 проблем + план)
+├── 12_STATS_ARCHITECTURE_AUDIT_V2.md     (2026-07-09: глубокий trace code STR/DEX/INT)
+├── 14_PLAYTESTS_STATS_AUDIT.md           (2026-07-09: playtest-гайд 10 исправлений)
+├── CHANGELOG.md                          (история изменений)
+├── INVESTIGATION_CHARACTER_MICRO_JITTER.md
+├── INVESTIGATION_GHOST_PLAYER_CLONE.md
+│
+├── Character-menu/                       (CharacterWindow: UI + инвентарь)
+│   ├── CHARACTER_WINDOW_INVENTORY_TAB_REFACTOR.md
+│   ├── recon_visual_bugs.md
+│   ├── recon_visual_fix_plan.md
+│   └── sub_inventory-tab/                (Inventory v2: дизайн, реализация, тесты)
+│
+├── Customisation/                        (кастомизация персонажа)
+│   └── CHANGELOG.md
+│
+├── EquipmentVisual/                      (3D-меши предметов, надевание на персонажа)
+│   ├── 02_CHARACTER_APPLIER.md           (CharacterEquipmentVisualApplier — код + edge cases)
+│   └── EquipmentVisual_BUGS_TICKETS.md
+│
+├── input-system/                         (Input System: ребинд, фазы)
+│   ├── 60_PHASE_1_5_SUMMARY.md
+│   ├── 70_PHASE_2_SUMMARY.md
+│   ├── 80_PHASE_3_SUMMARY.md
+│   └── ITERATIONS.md
+│
+├── respawn/                              (система респавна)
+│   ├── 01_ARCHITECTURE.md
+│   ├── 02_USAGE.md
+│   ├── 03_ARCHITECTURE_AUDIT.md
+│   ├── 04_PLAYER_SHIP_PERSISTENCE_FINAL.md
+│   ├── PLAYER_SHIP_POSITION_PERSISTENCE.md
+│   ├── T-HP01-respawn-fix.md
+│   └── ITERATIONS.md
+│
+├── Skills/                               (боевые навыки + real-time combat)
+│   ├── AUDIT_2026-06-26_CURRENT_STATE_AND_NEXT_STEPS.md
+│   ├── AUDIT_2026-07-24_ITEM_WEAPON_REFACTOR.md
+│   ├── INP06_AOE_DEBUG_VISUALIZATION.md
+│   ├── INP08_ANIMATOR_CLIP_PIPELINE.md
+│   ├── SKILLS_NEXT_STEPS_T-CB_LOG.md
+│   ├── ITERATIONS.md
+│   ├── Battle/                           (боевые навыки: дизайн, skill tree, VFX)
+│   └── real-time-combat/                 (real-time combat engine: MVP + NPC enemies)
+│
+└── ThirdpersonCamera/                    (камера от 3-го лица)
+    └── CHANGELOG.md
 
-└── EquipmentVisual/                (Phase 1+2 — 3D-меши для предметов + надевание на M)
-    ├── 00_DESIGN.md                  (TL;DR + архитектура, начать отсюда)
-    ├── 01_DATA_MODEL.md              (.cs-сигнатуры ItemData visualPrefab + attach-полей)
-    ├── 02_CHARACTER_APPLIER.md       (CharacterEquipmentVisualApplier — полный код + edge cases)
-    └── 03_PHASES.md                  (пошаговый план Phase 1 → Phase 2 с командами верификации)
+Архив дизайн-фазы: docs/archive/Character_design_legacy/ (02-10, 13)
+Архивы подсистем: Character_menu_design_legacy/, Customisation_design_legacy/,
+                  EquipmentVisual_design_legacy/, Input_system_design_legacy/,
+                  Knowledges_legacy/, ThirdpersonCamera_design_legacy/
 ```
 
 ---
 
-## Status bar (actual — 2026-06-17)
+## Status bar (actual — 2026-07-26)
 
-**M1 (Stats core): ✅ DONE (T-P01..T-P06)** • **M2 (Clothing/Modules): ✅ DONE (T-P07..T-P10)** • **M3 (Skill tree): ✅ DONE (T-P11..T-P14)** • **M4 (UI integration): ✅ DONE (T-P15..T-P18)** • обновлено 2026-06-17
+**M1 (Stats core): ✅ DONE (T-P01..T-P06)** • **M2 (Clothing/Modules): ✅ DONE (T-P07..T-P10)** • **M3 (Skill tree): ✅ DONE (T-P11..T-P14)** • **M4 (UI integration): ✅ DONE (T-P15..T-P18)**
 
 ---
 
-## Карта систем — что мы проектируем
+## Карта систем
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -122,40 +152,36 @@ docs/Character/
 
 ---
 
-## Что НЕ входит в scope этой сессии (явные запреты)
+## Архитектурные правила (актуально)
 
-- ❌ **Никакого кода** — это design-doc-only сессия. Код пишется в следующих сессиях по тикетам T-P01..T-P18.
-- ❌ **Не удалять ничего** — additive-only подход (характеристики игрока нигде не пересекаются с существующим Level/XP).
-- ❌ **Не модифицировать `docs/gdd/`** — игровой дизайнер пишет GDD'ы отдельно.
-- ❌ **Не трогать существующие серверы** (`GatheringServer`, `CraftingServer`, `ExchangeServer`, `MarketServer`, `QuestServer`) — только добавляем `WorldEventBus.Publish` в success-ветки (минимальное изменение).
-- ❌ **Не создавать `CharacterMenuWindow`, `CharacterStatsWindow`, `SkillTreeWindow`** — всё внутри существующего `CharacterWindow` (архитектурное правило из `docs/Character-menu/00_OVERVIEW.md:25-33`).
+- ✅ **Additive-only подход** — Stats/Equipment/Skills не пересекаются с Level/XP.
+- ✅ **Не создавать отдельных окон** (`CharacterMenuWindow`, `CharacterStatsWindow`, `SkillTreeWindow`) — всё внутри существующего `CharacterWindow` (архитектурное правило из `docs/Character-menu/00_OVERVIEW.md`).
+- ✅ **WorldEventBus** — все события публикуются из существующих серверов в success-ветках (минимальное изменение).
 
 ---
 
-## Ссылки на исходные анализы
+## История создания
 
-- `C:\Users\leon7\ANALYSIS_CHARACTER_RPG_UI.md` — UI/Player-Controller анализ (6723 слов, 12 секций)
-- `C:\Users\leon7\ANALYSIS_CHARACTER_DATA_MODEL.md` — Data-Model/SO-паттерны анализ (~2400 слов, 12 секций, доставлен inline из-за лимита итераций сабагента)
-- `C:\Users\leon7\ANALYSIS_CHARACTER_ENTRY_POINTS.md` — entry-points для подписки (210 строк, 22 KB, 6 секций)
-
-Все три отчёта — это **сырые материалы** сабагентов. Документы в этом каталоге — **синтезированная версия** с финальными решениями.
+- Исходные анализы сабагентов (14.06.2026): RPG entry-points, Data-Model (SO), UI/Player-Controller.
+- Аудит `11_STATS_ARCHITECTURE_AUDIT.md` (2026-07-26) — наиболее актуальный технический документ.
 
 ---
 
 ## Связанные документы проекта
 
-- `docs/Character-menu/00_OVERVIEW.md` — план 5-табового P-окна (line 25-33 — архитектурное правило "не создавать отдельные окна")
-- `docs/Character-menu/10_DESIGN.md` — UXML/USS дизайн, 4 FIX'а UI Toolkit
-- `docs/Character-menu/sub_inventory-tab/` — Inventory v2 референс (9 файлов)
-- `docs/Mining/ROADMAP.md` — канонический шаблон roadmap'а (структура 8 секций)
+- `docs/Character-menu/00_OVERVIEW.md` — план 5-табового P-окна
+- `docs/Character-menu/10_DESIGN.md` — UXML/USS дизайн
+- `docs/Character-menu/sub_inventory-tab/` — Inventory v2 референс
+- `docs/Mining/ROADMAP.md` — канонический шаблон roadmap'а
 - `docs/NPC_quests/02_V2_ARCHITECTURE.md` — канонический v2 hub-паттерн
 - `docs/NPC_quests/08_ROADMAP.md` — пример roadmap с 22 тикетами
-- `AGENTS.md` — hard rules проекта
-- `MOON_SYSTEM.md` — шаблон технической спецификации подсистемы
 
 ---
 
-## Следующий шаг
+## С чего начать
 
-**Прочитай `01_CURRENT_STATE_AUDIT.md`** — там полная картина что есть в проекте и какие точки входа готовы.
-**Затем `09_OPEN_QUESTIONS.md`** — там 10 разделов с 30+ вопросами для тебя. Твои ответы определят финальный дизайн в следующей сессии.
+- **`11_STATS_ARCHITECTURE_AUDIT.md`** — аудит архитектуры статов: 7 проблем + план рефакторинга (2026-07-26).
+- **`12_STATS_ARCHITECTURE_AUDIT_V2.md`** — глубокий trace code STR/DEX/INT (2026-07-09).
+- **`14_PLAYTESTS_STATS_AUDIT.md`** — playtest-гайд 10 исправлений.
+- **`respawn/01_ARCHITECTURE.md`** — архитектура системы респавна.
+- **`Skills/real-time-combat/00_README.md`** — real-time combat engine.

@@ -77,18 +77,18 @@
 | GDD_00 | README.md |
 | GDD_01 | CONTROLS.md, docs/Ships/Key-subsystem/ |
 | GDD_02 | docs/world/, docs/DayNight/ |
-| GDD_10 | docs/Ships/, SHIP_LORE_AND_MECHANICS.md |
-| GDD_11 | docs/Character-menu/sub_inventory-tab/, docs/MetaRequirement/ |
-| GDD_12 | NETWORK_ARCHITECTURE.md, docs/dev/INTEGRATION_SHIPS_TO_WORLD_0_0.md |
-| GDD_13 | docs/Character-menu/, docs/UI/ |
-| GDD_14 | ART_BIBLE.md, docs/unity6/UNITY6_URP_SETUP.md |
-| GDD_15 | — (будущий документ) |
-| GDD_20 | docs/Character/Skills/, docs/Stats/ |
+| GDD_10 | docs/Ships/Key-subsystem/, docs/Ships/Modul_system/ |
+| GDD_11 | docs/Character/Character-menu/sub_inventory-tab/, docs/MetaRequirement/ |
+| GDD_12 | docs/archive/context_legacy/network.md (NETWORK_ARCHITECTURE.md утрачен) |
+| GDD_13 | docs/Character/Character-menu/, docs/UI/ |
+| GDD_14 | ART_BIBLE.md, docs/unity6/ |
+| GDD_15 | — (запланировано) |
+| GDD_20 | docs/Character/Skills/, docs/Character/11_STATS_ARCHITECTURE_AUDIT.md |
 | GDD_21 | docs/NPC_quests/08_ROADMAP.md |
 | GDD_22 | docs/Markets/, GDD_25_Trade_Routes.md |
 | GDD_23 | docs/NPC_quests/02_V2_ARCHITECTURE.md |
 | GDD_24 | RAG-база книги (PostgreSQL: 192.168.31.227:5432/agency_contacts, таблица book_chunks) |
-| GDD_25 | docs/Character/Skills/20_IMPLEMENTATION.md |
+| GDD_25 | docs/Character/Skills/real-time-combat/ |
 | GDD_25.1 | docs/Markets/TRADE_V2_DESIGN.md, GDD_22_Economy_Trading.md |
 | GDD_26 | docs/Character/Customisation/ |
 

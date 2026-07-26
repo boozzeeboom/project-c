@@ -477,4 +477,4 @@ Assets/_Project/Scripts/Crafting/
 | 25 | **Character Customisation:** P → кнопка "Изменить внешность" | P → кнопка → CustomisationWindow → пол/внешность | 🟢 DONE (T-CUS-06) |
 | 26 | **Crafting:** CraftingStation → CraftingWindow → создать предмет | Подойти к станции → окно крафта → рецепт → создать | 🟢 DONE (T-CRAFT) |
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [CONTROLS.md](../CONTROLS.md) | [SHIP_SYSTEM_DOCUMENTATION.md](../SHIP_SYSTEM_DOCUMENTATION.md) | [`docs/Ships/Key-subsystem/00_OVERVIEW.md`](../Ships/Key-subsystem/00_OVERVIEW.md) | [`docs/NPC_quests/08_ROADMAP.md`](../NPC_quests/08_ROADMAP.md) | [`docs/Character-menu/00_OVERVIEW.md`](../Character-menu/00_OVERVIEW.md)
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [`docs/Ships/Key-subsystem/00_OVERVIEW.md`](../Ships/Key-subsystem/00_OVERVIEW.md) | [`docs/NPC_quests/08_ROADMAP.md`](../NPC_quests/08_ROADMAP.md) | [`docs/Character/Character-menu/00_OVERVIEW.md`](../Character/Character-menu/00_OVERVIEW.md)

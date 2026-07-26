@@ -2,7 +2,7 @@
 
 Документация рыночной подсистемы Project C: The Clouds (Stage 2.5).
 
-Исходный код живёт в `Assets/_Project/Trade/`. Архитектурный дизайн — `docs/dev/TRADE_V2_DESIGN.md`. GDD — `docs/gdd/GDD_22_Economy_Trading.md`.
+Исходный код живёт в `Assets/_Project/Trade/`. Архитектурный дизайн — `docs/Markets/TRADE_V2_DESIGN.md`. GDD — `docs/gdd/GDD_22_Economy_Trading.md`.
 
 ## Навигация
 

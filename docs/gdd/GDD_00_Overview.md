@@ -160,10 +160,10 @@
 
 | Зависит от | Описание |
 |-----------|----------|
-| CONTROLS.md | Карта клавиш |
-| SHIP_SYSTEM_DOCUMENTATION.md | Текущая реализация кораблей |
-| NETWORK_ARCHITECTURE.md | Сетевая архитектура |
 | ART_BIBLE.md | Визуальная спецификация |
+| docs/archive/context_legacy/network.md | Сетевая архитектура (NETWORK_ARCHITECTURE.md утрачен) |
+| docs/Ships/Key-subsystem/00_OVERVIEW.md | Система кораблей (SHIP_SYSTEM_DOCUMENTATION.md утрачен) |
+| docs/gdd/GDD_01_Core_Gameplay.md | Управление, карта клавиш (CONTROLS.md утрачен) |
 
 ---
 

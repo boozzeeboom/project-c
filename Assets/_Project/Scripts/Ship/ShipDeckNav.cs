@@ -188,7 +188,21 @@ namespace ProjectC.Ship
 
             _lastRegisteredShipPos = transform.position;
 
-            _instance = NavMesh.AddNavMeshData(_deckNavMeshData, _navFrameOrigin, Quaternion.identity);
+            // PERF: NavMesh.AddNavMeshData internally calls NavMeshManager.NotifyNavMeshAdded
+            // which logs to console → LogStringToConsole → Application.CallLogCallback (5KB GC alloc).
+            // SetStackTraceLogType убрал ExtractStackTrace, но сам CallLogCallback + аллокация строки остались.
+            // filterLogType = Exception глушит ВСЕ логи (кроме exception) на уровне ILogHandler,
+            // включая логи из C++ native кода — это надёжнее чем logEnabled.
+            var prevFilter = Debug.unityLogger.filterLogType;
+            Debug.unityLogger.filterLogType = LogType.Exception;
+            try
+            {
+                _instance = NavMesh.AddNavMeshData(_deckNavMeshData, _navFrameOrigin, Quaternion.identity);
+            }
+            finally
+            {
+                Debug.unityLogger.filterLogType = prevFilter;
+            }
             if (!_instance.valid)
             {
 #if UNITY_EDITOR

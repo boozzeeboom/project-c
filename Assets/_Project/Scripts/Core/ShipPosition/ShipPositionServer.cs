@@ -181,8 +181,10 @@ namespace ProjectC.Core.ShipPosition
             var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData };
             _repo.SaveAll(wrapper);
 
+#if UNITY_EDITOR
             if (debugMode)
                 Debug.Log($"[ShipPositionServer] Saved: {allData.Count} ships + {playerData.Count} players");
+#endif
         }
 
         // === Restore ===

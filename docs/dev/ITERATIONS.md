@@ -1,5 +1,17 @@
 # Итерации разработки
 
+## Итерация от 2026-07-26
+
+**Задача:** Архитектурный рефакторинг — устранение ритмичных лагов от NavMesh-регистрации и FindObjectsByType.
+
+**Коммит:** `f5a5602` — T-PERF01: Архитектурный рефакторинг — устранение ритмичных лагов от NavMesh-регистрации и FindObjectsByType
+
+**Изменения:**
+- `Assets/_Project/Scripts/Ship/ShipDeckNav.cs` — round-robin очередь регистрации (≤1 AddNavMeshData/кадр) вместо random stagger 0-10s; SetStackTraceLogType(Log, None) через RuntimeInitializeOnLoadMethod
+- `Assets/_Project/Scripts/Core/ShipPosition/ShipPositionServer.cs` — кэш ShipController'ов (GetCachedShips) вместо FindObjectsByType каждый save-тик; InvalidateShipCache() для внешней инвалидации
+- `Assets/_Project/Trade/Scripts/Network/MarketZone.cs` — кэш FindLocalPlayer на 0.5s вместо FindObjectsByType<NetworkPlayer> каждые 0.25s на каждой MarketZone
+- `Assets/_Project/Scripts/UI/UIManager.cs` — #if UNITY_EDITOR на не-guarded Debug.Log в HandleGlobalInput
+
 ## Итерация от 2025-07-18 (вечер)
 
 **Задача:** Исправить runtime-варнинги после теста — kinematic velocity, DontDestroyOnLoad, ShipCargoVisual.

@@ -1,5 +1,15 @@
 # Итерации разработки
 
+## Итерация от 2026-07-26 (fix 2)
+
+**Задача:** Дополнительное подавление GC-аллокаций от `NotifyNavMeshAdded` + чистка debugMode-логов.
+
+**Коммит:** `d9c2244` — T-PERF01-fix: подавление GC-аллокаций от NotifyNavMeshAdded (filterLogType=Exception) + #if UNITY_EDITOR
+
+**Изменения:**
+- `Assets/_Project/Scripts/Ship/ShipDeckNav.cs` — `Register()`: `filterLogType = Exception` на время `AddNavMeshData` — глушит ВСЕ логи включая C++ native
+- `Assets/_Project/Scripts/Core/ShipPosition/ShipPositionServer.cs` — `debugMode`-лог в `Update()` обёрнут в `#if UNITY_EDITOR`
+
 ## Итерация от 2026-07-26
 
 **Задача:** Архитектурный рефакторинг — устранение ритмичных лагов от NavMesh-регистрации и FindObjectsByType.

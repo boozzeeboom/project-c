@@ -1,7 +1,7 @@
 # Investigation: Микротряска персонажа при стоянии (Character Micro-Jitter)
 
 **Дата:** 2026-07-26  
-**Статус:** ❌ ПРОБЛЕМА СОХРАНЕНА — все проверенные гипотезы исключены  
+**Статус:** Тестирование — skinnedMotionVectors=false в коде (5fc5768). Animator подтверждён как источник (T-JITTER10).  
 **Тикет:** (связанные T-JITTER01, T-JITTER01-v2, T-JITTER02, T-JITTER02v2, T-JITTER03, T-CAM05v2)
 
 ---
@@ -317,3 +317,6 @@ Idle-анимация `HumanM@Idle01` (Kevin Iglesias) — даже без root 
 | 2026-07-26 | T-JITTER06 (99e11ef) | H2: stepOffset 0.3 → 0.01 ❌ |
 | 2026-07-26 | T-JITTER07 (ce6f658) | H3: NT.Interpolate=false для всех клиентов ❌ |
 | 2026-07-26 | T-JITTER08 (107ce4d) | FixedUpdate no-op Slerp удалён + NT.PositionLerpSmoothing=false ❌ |
+| 2026-07-26 | T-JITTER09 (53bfdf1) | H5: CC.enabled=false при idle ❌ |
+| 2026-07-26 | T-JITTER10 (83a62ec) | H4/H8: diagnostic — _diagnosticDisableAnimator ✅ Аниматор подтверждён |
+| 2026-07-26 | T-JITTER11 (5fc5768) | skinnedMotionVectors=false в коде — motion vectors усиливают микро-кости |

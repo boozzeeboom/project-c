@@ -1,83 +1,88 @@
 # INVESTIGATION: Микротряска персонажа при standing
 
 **Дата:** 2026-07  
-**Статус:** Исправлено (требует проверки playtest)
+**Статус:** Исправлено v2 — корневая причина найдена (требует playtest)
 
 ---
 
 ## Симптом
 
-Персонаж испытывает микротряску (micro-jitter) когда стоит на месте в пешем режиме. Другие объекты рядом не трясутся. Корабль при пилотировании (клавиша F) не трясётся. NPC-модели не трясутся.
+Персонаж испытывает микротряску (micro-jitter) когда стоит на месте в пешем режиме. NPC тоже трясутся. Предметы с анимацией (крутятся/плавают) — НЕ трясутся. Корабль при пилотировании — НЕ трясётся.
 
 ## Диагноз
 
-### Корневая причина: `ApplyPlatformCarry()` + `DetectGroundPlatform()`
+### v1 (ошибочный): Moving-platform carry → ОТКЛОНЁН
 
-Система moving-platform carry (`NetworkPlayer.cs`, строки 944–1070) предназначена для переноса персонажа вместе с движущейся палубой корабля. Однако она срабатывала и на статичной земле:
+Первая гипотеза — `ApplyPlatformCarry()` ловит статичную геометрию как «платформу». Частично верно (фильтрация sleeping Rigidbody полезна), но не корневая причина: NPC используют отдельный `PlatformRideHelper`, а тряска есть у обоих.
 
-1. **`DetectGroundPlatform()`** — SphereCast вниз через `_platformMask = ~0` (Everything). Находил любой коллайдер с Rigidbody и возвращал его как «движущуюся платформу», даже если Rigidbody спал/стоял на месте.
+### v2 (корневая причина): NetworkTransform.Interpolate конфликтует с прямым движением
 
-2. **`ApplyPlatformCarry()`** — отслеживал дельту `transform.position` этой «платформы» каждый кадр и применял через `_controller.Move()`.
+**Общие компоненты** для игрока и NPC, которых нет у предметов и корабля:
 
-3. **Почему возникала микротряска:**
-   - Статичная геометрия сцены (полы, платформы доков) часто имеет Rigidbody (для коллизий, триггеров).
-   - Даже спящий Rigidbody даёт микроскопические флуктуации `transform.position` из-за:
-     - `RigidbodyInterpolation.Interpolate` на корабле (стр. 507 ShipController)
-     - Floating-point resolution physics solver
-   - Эти флуктуации (<< 1 мм) накапливались в `_platformDelta` и толкали CharacterController.
+| Компонент | Игрок | NPC | Предмет | Корабль |
+|---|---|---|---|---|
+| `CharacterController` | ✅ | ✅ | ❌ | ❌ |
+| `NetworkTransform` `Interpolate=true` | ✅ | ✅ | ❌ | ✅ |
+| Тип движения | `CC.Move()` (прямая запись) | `NavMeshAgent` (прямая запись) | Transform-анимация | `Rigidbody` (физика) |
 
-4. **Почему только персонаж:**
-   - NPC используют другой код движения (не `NetworkPlayer`).
-   - Корабль при пилотировании (F): `_controller.enabled = false`, персонаж припарентен к кораблю напрямую (`transform.SetParent(_currentShip.ShipRoot, true)`) — платформенный carry не активен.
+**Механизм конфликта:**
 
-### Второстепенный фактор
+1. Игрок: `CharacterController.Move()` в `Update()` двигает `transform.position`
+2. NPC: `NavMeshAgent.nextPosition` двигает `transform.position`
+3. `NetworkTransform` с `Interpolate=true` видит расхождение между серверным состоянием и текущим трансформом → интерполирует обратно
 
-`_onPlatform` + `_isGrounded` flicker (строка 869): если SphereCast нестабильно находил/терял платформу между кадрами, `_onPlatform` мигал → `groundedForMovement` терялся → гравитация тянула вниз → микро-подскок.
+На **хосте** (IsServer && IsClient) это создаёт замкнутый цикл:
+```
+CC.Move() → position=X → NT.Interpolate() → position=X±ε → CC.Move() → ...
+```
 
-## Исправление
+4. **Предметы** не трясутся — у них нет `NetworkTransform`
+5. **Корабль** не трясётся — `Rigidbody` двигает трансформ через физический движок, который не конфликтует с `NetworkTransform` (плюс `RigidbodyInterpolation.Interpolate` сглаживает)
 
-Три архитектурных изменения в `NetworkPlayer.cs`:
+6. Комментарий в `NetworkPlayer.cs:238-240` прямо говорит: *«NetworkTransform.Interpolate отключаются ВРУЧНУЮ в Unity Editor на префабе»* — но на префабе `Interpolate=true`. Это баг конфигурации, существовавший с момента создания.
 
-### 1. `DetectGroundPlatform()` — фильтрация стационарных Rigidbody
+## Исправление v2
 
-- Статичные коллайдеры **без** Rigidbody → `null` (не платформа).
-- Спящий Rigidbody (`rb.IsSleeping()`) → `null`.
-- Kinematic Rigidbody с нулевой скоростью → `null`.
-- Non-kinematic Rigidbody с `velocity.sqrMagnitude < 0.0001` → `null`.
-
-Платформа определяется **только** если Rigidbody реально движется.
-
-### 2. `ApplyPlatformCarry()` — фильтр минимальной дельты
+### 1. `NetworkPlayer.OnNetworkSpawn()` — отключение Interpolate для owner
 
 ```csharp
-if (deltaPos.sqrMagnitude < _platformMinDelta * _platformMinDelta)
+if (IsOwner)
 {
-    _platformLastPos = platform.position;  // обновляем кеш, не накапливаем шум
-    _platformLastRot = platform.rotation;
-    return;
+    var nt = GetComponent<NetworkTransform>();
+    if (nt != null) nt.Interpolate = false;
 }
 ```
 
-`_platformMinDelta = 0.0005f` (0.5 мм) — дельты меньше считаются floating-point шумом.
+Owner двигает себя через `CharacterController.Move` — интерполяция не нужна и вредна.
 
-### 3. Новое поле `_platformMinDelta`
+### 2. `NpcBrain.OnNetworkSpawn()` — отключение Interpolate на хосте
 
-Сериализовано в инспекторе с tooltip-документацией. Можно изменить без правки кода.
+```csharp
+if (IsServer && IsClient)
+{
+    var nt = GetComponent<NetworkTransform>();
+    if (nt != null) nt.Interpolate = false;
+}
+```
+
+На хосте `NavMeshAgent` пишет позицию напрямую — `NetworkTransform` не должен интерполировать.
+
+### 3. (v1, оставлено) Moving-platform carry — фильтрация sleeping Rigidbody + delta threshold
+
+Оставлено как защитный слой: `DetectGroundPlatform()` не считает спящие Rigidbody платформами, `ApplyPlatformCarry()` игнорирует дельты < 0.5 мм.
+
+---
 
 ## Стратегия отката
 
-Если тряска не пропала — это означает, что причина **НЕ** в moving-platform carry.  
-Возможные альтернативные причины (для дальнейшего расследования):
+```bash
+git revert <commit-hash>
+```
 
-- **Animator root motion:** если `Apply Root Motion` включён на Animator персонажа и idle-анимация имеет микро-смещения root bone.
-- **CharacterController.Skin Width:** слишком маленький skin width (←0.01) вызывает micro-penetration resolution.
-- **FixedUpdate позиционная коррекция (стр. 816):** `_hasServerPosition` + `positionCorrectionThreshold` — хоть порог и 99999, остаточная логика может вмешиваться.
-- **Камера:** `SpringArmCamera.UpdateLag()` имеет dynamic-lag с `positionSmoothTime = 0.08f` — потенциальный источник визуальной тряски (не трансформа).
+Возвращает все изменения.
 
-Откат: `git revert <commit-hash>` этого коммита.
+## Альтернативные гипотезы (если тряска осталась)
 
-## Верификация
-
-1. Запустить игру, персонаж на земле (не на корабле) — тряска должна исчезнуть.
-2. Персонаж на палубе летящего корабля (НЕ за штурвалом) — должен переноситься вместе с палубой без тряски.
-3. Персонаж за штурвалом (F) — без изменений (CharacterController отключён).
+- **Animation clip:** idle-анимация содержит микро-движения root bone (Kevin Iglesias Mixamo). Отключить Animator для проверки.
+- **CharacterController.minMoveDistance = 0.001:** слишком маленький → micro-penetration resolution.
+- **Камера SpringArmCamera:** `SmoothPosition` с `positionSmoothTime=0.08f` — визуальная тряска, не трансформ.

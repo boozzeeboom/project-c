@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using ProjectC.Combat;  // T-RTC06: PlayerAttacker, PlayerTarget, CombatServer
@@ -238,9 +239,15 @@ namespace ProjectC.Player
             // Skip empty Animators — ищем первый с непустым runtimeAnimatorController (Visual_Model).
             _animator = FindFirstValidAnimator();
 
-            // ПРИМЕЧАНИЕ: NetworkTransform.InterpolatePosition/Rotation/Scale
-            // отключаются ВРУЧНУЮ в Unity Editor на префабе Player.prefab
-            // (API отличается в разных версиях Unity/NGO)
+            // T-JITTER01: NetworkTransform.Interpolate отключается в коде для owner'а,
+            // а не вручную в Editor. Interpolate=true на owner-клиенте «дерётся»
+            // с CharacterController.Move() — NetworkTransform интерполирует трансформ
+            // обратно, создавая микротряску. См. INVESTIGATION_CHARACTER_MICRO_JITTER.md.
+            if (IsOwner)
+            {
+                var nt = GetComponent<NetworkTransform>();
+                if (nt != null) nt.Interpolate = false;
+            }
 
             // FIX (2026-06-04, INVESTIGATION_GHOST_PLAYER_CLONE.md, "second layer"):
             //   На хосте NGO 2.x авто-спавнит scene-placed NetworkObject'ы из BootstrapScene
@@ -979,15 +986,10 @@ namespace ProjectC.Player
                 if (rb.IsSleeping())
                     return null;
 
-                // Kinematic Rigidbody, но без движения — не платформа.
-                // (Kinematic объекты двигаются через MovePosition; если velocity ~0 — стоят.)
-                if (rb.isKinematic && rb.linearVelocity.sqrMagnitude < 0.0001f)
-                    return null;
-
-                // Non-kinematic с околонулевой скоростью — микротряска физики, не платформа.
-                if (!rb.isKinematic && rb.linearVelocity.sqrMagnitude < 0.0001f)
-                    return null;
-
+                // Rigidbody awake — потенциальная платформа (корабль, лифт).
+                // Даже если скорость ~0 сейчас (парящий корабль), он может начать
+                // движение в любой момент. Шум фильтруется в ApplyPlatformCarry()
+                // через _platformMinDelta.
                 return rb.transform;
             }
             return null;

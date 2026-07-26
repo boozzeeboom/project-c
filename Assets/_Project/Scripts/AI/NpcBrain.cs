@@ -34,6 +34,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using ProjectC.Combat;
 using ProjectC.Combat.Core;
 using ProjectC.Skills;
@@ -255,6 +256,16 @@ namespace ProjectC.AI
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            // T-JITTER01: на хосте (IsServer && IsClient) NavMeshAgent.updatePosition
+            // двигает transform напрямую, а NetworkTransform.Interpolate «дерётся»
+            // с ним — создаёт микротряску. См. INVESTIGATION_CHARACTER_MICRO_JITTER.md.
+            if (IsServer && IsClient)
+            {
+                var nt = GetComponent<NetworkTransform>();
+                if (nt != null) nt.Interpolate = false;
+            }
+
             if (!IsServer) { enabled = false; return; }
             ProjectCPerfCounters.ActiveNpcs++;
             if (_attacker == null) _attacker = GetComponent<NpcAttacker>();

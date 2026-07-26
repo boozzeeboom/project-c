@@ -10,14 +10,12 @@ namespace ProjectC.Core
     /// <summary>
     /// Spring Arm камера от третьего лица.
     /// Архитектура: независимый корневой объект (НЕ дочерний игроку — FloatingOriginMP).
-    /// 
     /// Pipeline: ReadInput → ModeTransition → CameraLag → ComputeDesired
-    ///        → ResolveCollision(+AntiPop, цепной SphereCast) → AdaptiveDistance
-    ///        → SmoothPosition(+Recovery, +minDist clamp) → LookAt
-    /// 
-    /// Lag = инерция следования за целью (walk 0.15s, ship отключён).
-    /// SmoothDamp = быстрый anti-jitter фильтр позиции камеры (0.06s).
-    /// Цепной SphereCast: если попали в персонажа — продолжаем искать стену за ним.
+    ///        → ResolveCollision(chain-cast+AntiPop) → AdaptiveDistance
+    ///        → SmoothPosition(dead-zone+Recovery+minDist) → LookAt
+    /// Lag = инерция (walk 0.15s, ship откл). SmoothDamp = anti-jitter (0.08s).
+    /// При падении — вертикальный lag ускоряется в 2.5x.
+    /// Dead-zone 3mm — убивает микро-осцилляции.
     /// </summary>
     public class SpringArmCamera : MonoBehaviour
     {
@@ -59,7 +57,7 @@ namespace ProjectC.Core
         [SerializeField] private float lagHorizontalTime = 0.15f;
         [Tooltip("Время отставания по вертикали Y (walk)")]
         [SerializeField] private float lagVerticalTime = 0.05f;
-        [Tooltip("Меньше отставания при беге")]
+        [Tooltip("Меньше отставания при беге + быстрее Vertical при падении")]
         [SerializeField] private bool dynamicLagEnabled = true;
 
         [Header("Adaptive Distance")]
@@ -76,7 +74,7 @@ namespace ProjectC.Core
 
         [Header("Smoothing")]
         [Tooltip("Anti-jitter сглаживание позиции камеры (быстрое — инерция в Lag)")]
-        [SerializeField] private float positionSmoothTime = 0.06f;
+        [SerializeField] private float positionSmoothTime = 0.08f;
         [SerializeField] private float modeSwitchSmoothTime = 0.5f;
 
         [Header("LookAt")]
@@ -284,6 +282,12 @@ namespace ProjectC.Core
                 float dynamicMul = Mathf.Lerp(1f, 0.3f, speedFactor);
                 float effXZ = lagHorizontalTime * dynamicMul;
                 float effY = lagVerticalTime * dynamicMul;
+
+                // При быстром падении/взлёте (>5 m/s) — ускоряем вертикальный отклик
+                float vertSpeed = Mathf.Abs(delta.y) / Mathf.Max(Time.deltaTime, 0.0001f);
+                if (vertSpeed > 5f)
+                    effY *= 0.4f;
+
                 lagXZ = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effXZ, 0.001f));
                 lagY = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effY, 0.001f));
             }
@@ -317,7 +321,6 @@ namespace ProjectC.Core
             float remainingDist = maxDist;
             Vector3 castOrigin = from;
 
-            // Цепной SphereCast: если попали в персонажа — продолжаем искать стену за ним
             for (int i = 0; i < 2; i++)
             {
                 if (!Physics.SphereCast(castOrigin, sphereCastRadius, dir, out RaycastHit hitInfo, remainingDist, collisionMask))
@@ -338,7 +341,6 @@ namespace ProjectC.Core
                     return _lastCollisionPos;
                 }
 
-                // Попали в себя — продолжаем каст от точки за персонажем
                 float distToHit = hitInfo.distance;
                 remainingDist -= (distToHit + sphereCastRadius + 0.1f);
                 if (remainingDist <= 0f) break;
@@ -384,11 +386,19 @@ namespace ProjectC.Core
 
         private void SmoothPosition(Vector3 cameraTargetPos)
         {
-            // Защита от near-clip: камера не ближе чем nearClip + запас
+            // Dead-zone 3mm: убиваем микро-осцилляции когда почти на месте
+            if (Vector3.Distance(transform.position, cameraTargetPos) < 0.003f)
+            {
+                _positionVelocity = Vector3.zero;
+                _recoveryVelocity = Vector3.zero;
+                return;
+            }
+
+            // Защита от near-clip
             float minDist = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
             Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
-            float distToTarget = Vector3.Distance(cameraTargetPos, lookTarget);
-            if (distToTarget < minDist)
+            float distToLook = Vector3.Distance(cameraTargetPos, lookTarget);
+            if (distToLook < minDist)
             {
                 Vector3 pushDir = (cameraTargetPos - lookTarget).normalized;
                 if (pushDir.sqrMagnitude < 0.0001f) pushDir = Vector3.back;

@@ -223,6 +223,16 @@ namespace ProjectC.Core
 
             ReadInput();
             UpdateModeTransition();
+
+            // T-JITTER03: зажимаем _currentDistance чтобы орбита никогда
+            // не заходила внутрь near-clip (nearClipPlane + sphereCastRadius + buffer).
+            // Без этого ComputeDesiredPosition выдаёт позицию внутри minDist,
+            // SmoothPosition выталкивает → push-Lerp-push цикл → осцилляция вблизи.
+            float minDist = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
+            float heightDiff = _currentHeight - _currentLookAtHeight;
+            float minHorizontalDist = Mathf.Sqrt(Mathf.Max(0f, minDist * minDist - heightDiff * heightDiff));
+            _currentDistance = Mathf.Max(_currentDistance, minHorizontalDist);
+
             UpdateLag();
             Vector3 desiredPos = ComputeDesiredPosition();
             Vector3 resolvedPos = ResolveCollision(desiredPos);

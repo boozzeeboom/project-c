@@ -11,11 +11,14 @@ namespace ProjectC.Core
     /// Spring Arm камера от третьего лица.
     /// Архитектура: независимый корневой объект (НЕ дочерний игроку — FloatingOriginMP).
     /// Pipeline: ReadInput → ModeTransition → CameraLag → ComputeDesired
-    ///        → ResolveCollision(chain-cast+AntiPop) → AdaptiveDistance
-    ///        → SmoothPosition(dead-zone+Recovery+minDist) → LookAt
-    /// Lag = инерция (walk 0.15s, ship откл). SmoothDamp = anti-jitter (0.08s).
+    ///        → ResolveCollision(chain-cast+AntiPop+nearClip) → AdaptiveDistance
+    ///        → SmoothPosition(dead-zone+Recovery) → LookAt
+    /// Lag = инерция (walk 0.15s, ship откл). SmoothDamp = anti-jitter (0.04s).
     /// При падении — вертикальный lag ускоряется в 2.5x.
     /// Dead-zone 3mm — убивает микро-осцилляции.
+    /// T-CAM14: near-clip constraint вынесен в ResolveCollision (единый источник),
+    /// AdaptiveDistance использует _targetDistance вместо базовой дистанции,
+    /// positionSmoothTime 0.08→0.04 (возврат к задумке T-CAM10: Lag/Smooth 3.75×).
     /// </summary>
     public class SpringArmCamera : MonoBehaviour
     {
@@ -74,7 +77,7 @@ namespace ProjectC.Core
 
         [Header("Smoothing")]
         [Tooltip("Anti-jitter сглаживание позиции камеры (быстрое — инерция в Lag)")]
-        [SerializeField] private float positionSmoothTime = 0.08f;
+        [SerializeField] private float positionSmoothTime = 0.04f;
         [SerializeField] private float modeSwitchSmoothTime = 0.5f;
 
         [Header("LookAt")]
@@ -326,7 +329,8 @@ namespace ProjectC.Core
 
         private Vector3 ResolveCollision(Vector3 desiredPos)
         {
-            Vector3 from = _lagTargetPos + Vector3.up * _currentLookAtHeight;
+            Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
+            Vector3 from = lookTarget;
             Vector3 dir = (desiredPos - from).normalized;
             float maxDist = Vector3.Distance(from, desiredPos);
             if (maxDist < 0.01f) return desiredPos;
@@ -335,14 +339,19 @@ namespace ProjectC.Core
             float remainingDist = maxDist;
             Vector3 castOrigin = from;
 
+            // T-CAM14: единый near-clip constraint — здесь, а не в SmoothPosition.
+            // ResolveCollision — authority по позиции: если resolvedPos ближе minDist,
+            // выталкиваем СРАЗУ, чтобы exp-Lerp в SmoothPosition не боролся с push'ем.
+            float nearClipMin = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
+
             for (int i = 0; i < 2; i++)
             {
                 if (!Physics.SphereCast(castOrigin, sphereCastRadius, dir, out RaycastHit hitInfo, remainingDist, collisionMask))
                 {
                     if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
-                        return _lastCollisionPos;
+                        return ClampNearClip(_lastCollisionPos, lookTarget, nearClipMin);
                     _wasColliding = false;
-                    return desiredPos;
+                    return ClampNearClip(desiredPos, lookTarget, nearClipMin);
                 }
 
                 bool hitSelf = hitInfo.transform == target || (target != null && hitInfo.transform.IsChildOf(target));
@@ -352,7 +361,7 @@ namespace ProjectC.Core
                     _wasColliding = true;
                     _collisionExitTime = currentTime;
                     _lastCollisionPos = hitInfo.point + hitInfo.normal * (sphereCastRadius + wallOffset);
-                    return _lastCollisionPos;
+                    return ClampNearClip(_lastCollisionPos, lookTarget, nearClipMin);
                 }
 
                 float distToHit = hitInfo.distance;
@@ -362,9 +371,21 @@ namespace ProjectC.Core
             }
 
             if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
-                return _lastCollisionPos;
+                return ClampNearClip(_lastCollisionPos, lookTarget, nearClipMin);
             _wasColliding = false;
-            return desiredPos;
+            return ClampNearClip(desiredPos, lookTarget, nearClipMin);
+        }
+
+        /// <summary>
+        /// T-CAM14: near-clip constraint — единая точка применения.
+        /// Если позиция ближе minDist к lookTarget — выталкиваем наружу.
+        /// </summary>
+        private static Vector3 ClampNearClip(Vector3 pos, Vector3 lookTarget, float minDist)
+        {
+            float dist = Vector3.Distance(pos, lookTarget);
+            if (dist < minDist && dist > 0.001f)
+                return lookTarget + (pos - lookTarget).normalized * minDist;
+            return pos;
         }
 
         private void UpdateAdaptiveDistance()
@@ -372,7 +393,9 @@ namespace ProjectC.Core
             if (!adaptiveDistanceEnabled) return;
 
             float actualDist = Vector3.Distance(transform.position, _lagTargetPos);
-            float desiredDist = _isShip ? shipDistance : distance;
+            // T-CAM14 fix: использовать _targetDistance (текущую цель), а не базовую дистанцию.
+            // Иначе при уже уменьшенной дистанции ratio всегда < threshold → восстановление невозможно.
+            float desiredDist = _targetDistance;
             float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
             float currentTime = Time.time;
 
@@ -411,6 +434,8 @@ namespace ProjectC.Core
             // Экспоненциальный decay (Lerp) вместо SmoothDamp:
             // SmoothDamp — critically-damped spring, может давать резонанс
             // в каскаде с UpdateLag (тоже exp). Exp+exp гарантированно без осцилляций.
+            // T-CAM14: near-clip constraint вынесен в ResolveCollision — здесь
+            // только чистый exp-Lerp, без дополнительных push'ей.
             float smoothTime = ratio < recoveryRatio ? positionSmoothTime * 0.3f : positionSmoothTime;
             float t = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(smoothTime, 0.001f));
             Vector3 newPos = Vector3.Lerp(transform.position, cameraTargetPos, t);
@@ -423,15 +448,6 @@ namespace ProjectC.Core
                 if (step.magnitude > maxStep)
                     newPos = transform.position + step.normalized * maxStep;
             }
-
-            // Near-clip защита на ФИНАЛЬНОЙ позиции (не на target):
-            // раньше пушили cameraTargetPos каждый кадр → цель прыгала → осцилляция.
-            // Теперь применяем как minimum-distance constraint после Lerp — без рывков.
-            float minDist = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
-            Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
-            float distToLook = Vector3.Distance(newPos, lookTarget);
-            if (distToLook < minDist && distToLook > 0.001f)
-                newPos = lookTarget + (newPos - lookTarget).normalized * minDist;
 
             transform.position = newPos;
         }

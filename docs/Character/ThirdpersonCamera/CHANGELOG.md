@@ -5,6 +5,38 @@
 
 ---
 
+## T-CAM14 — Глубокий аудит: устранение остаточной тряски (2026-07-26)
+
+**Коммит:** `1035f38` — T-CAM14: Deep Audit
+
+**Задача:** Устранить остаточную тряску при приближении к объектам и персонажу.
+
+**Контекст:** 20+ коммитов (T-CAM01..T-JITTER11) исправляли дёрганье. T-JITTER11 обнаружил что часть проблемы — Animator (skinnedMotionVectors=false). Но тряска при приближении к объектам сохранилась.
+
+**Аудит выявил 3 архитектурные проблемы:**
+
+1. **Двойной near-clip constraint (ResolveCollision + SmoothPosition)**: ResolveCollision честно разрешал коллизию (камера могла быть в 0.7m от lookTarget), а SmoothPosition постфактум выталкивал. Каждый кадр: ResolveCollision → внутри minDist → финальный push → следующий кадр заново. Цикл push-Lerp-push.
+
+2. **Adaptive Distance баг**: `UpdateAdaptiveDistance` использовал базовую дистанцию (`distance`/`shipDistance`) вместо текущей цели (`_targetDistance`) для расчёта `ratio`. При уменьшенной дистанции ratio всегда < threshold → восстановление невозможно.
+
+3. **positionSmoothTime 0.08s вместо 0.04s**: T-CAM12→T-CAM13 поднимали smoothTime для «стабильности», но проблема была в near-clip double-constraint (п.1). При 0.08s соотношение Lag/Smooth = 1.875× вместо задуманных 3.75×.
+
+**Изменения:**
+- `SpringArmCamera.cs` — ResolveCollision: +`ClampNearClip()` на всех return-путях (единый источник near-clip)
+- `SpringArmCamera.cs` — SmoothPosition: убран near-clip constraint (только чистый exp-Lerp)
+- `SpringArmCamera.cs` — UpdateAdaptiveDistance: `desiredDist = _targetDistance` вместо базовой дистанции
+- `SpringArmCamera.cs` — `positionSmoothTime = 0.04f` (возврат к задумке T-CAM10)
+
+**Результат:**
+- ✅ Единый авторитетный источник near-clip (ResolveCollision)
+- ✅ SmoothPosition — чистый exp-Lerp без побочных push'ей
+- ✅ Adaptive Distance корректно восстанавливается
+- ✅ Lag/Smooth соотношение 3.75× — гарантированно без резонанса
+- ✅ 0 compile errors
+- ✅ API-контракт сохранён
+
+---
+
 ## Итерация от 2026-07-26 (T-CAM10 — Восстановление после выпиливания)
 
 **Задача:** Восстановить Camera Lag + Anti-Pop + Adaptive Distance + Wall Recovery

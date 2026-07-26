@@ -96,7 +96,7 @@ namespace ProjectC.Player
 
             if (_isGrounded && _velocity.y < 0)
             {
-                _velocity.y = -0.5f;
+                _velocity.y = -2f;
             }
 
             // Направление от камеры
@@ -135,8 +135,9 @@ namespace ProjectC.Player
                 _velocity.y = Mathf.Sqrt(jumpForce * -2f * gravity);
             }
 
-            // Гравитация
-            _velocity.y += gravity * Time.deltaTime;
+            // T-JITTER02: гравитация только в воздухе.
+            if (!_isGrounded)
+                _velocity.y += gravity * Time.deltaTime;
             _controller.Move(_velocity * Time.deltaTime);
         }
 

@@ -877,11 +877,11 @@ namespace ProjectC.Player
             // На движущейся платформе считаем персонажа «на земле»: палуба NPC может
             // колебаться по вертикали (altHold) → isGrounded мигает и персонаж «подпрыгивает».
             bool groundedForMovement = _isGrounded || _onPlatform;
-            // T-JITTER02: keep-grounded смягчён с -2f до -0.5f.
-            // -2f каждый кадр толкал CC в землю → penetration resolution
-            // выталкивал вверх → micro-bounce transform.position → тряска камеры.
-            // -0.5f достаточно для slope-stick без micro-bounce.
-            if (groundedForMovement && _velocity.y < 0) _velocity.y = -0.5f;
+            // T-JITTER02: keep-grounded -2f для slope/platform-stick.
+            // Гравитация применяется ТОЛЬКО в воздухе (!groundedForMovement) —
+            // иначе gravity копился поверх -2f и создавал избыточную пенетрацию
+            // → CharacterController выталкивал вверх → micro-bounce.
+            if (groundedForMovement && _velocity.y < 0) _velocity.y = -2f;
 
             // R2-NONE: animator parameters
             if (_animator != null)
@@ -943,7 +943,11 @@ namespace ProjectC.Player
                 if (_animator != null) _animator.SetTrigger("Jump");
             }
 
-            _velocity.y += gravity * Time.deltaTime;
+            // T-JITTER02: гравитация только в воздухе.
+            // На земле keep-grounded (-2f) сам держит персонажа прижатым —
+            // добавка gravity создавала избыточную пенетрацию в землю.
+            if (!groundedForMovement)
+                _velocity.y += gravity * Time.deltaTime;
 
             // Единый Move: локомоция + ветер (гориз.) + гравитация/прыжок (верт.).
             // Y держит keep-grounded (-2) — нет подпрыгивания от отдельных Move.

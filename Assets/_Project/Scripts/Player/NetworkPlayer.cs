@@ -887,7 +887,7 @@ namespace ProjectC.Player
             // Гравитация применяется ТОЛЬКО в воздухе (!groundedForMovement) —
             // иначе gravity копился поверх -2f и создавал избыточную пенетрацию
             // → CharacterController выталкивал вверх → micro-bounce.
-            if (groundedForMovement && _velocity.y < 0) _velocity.y = -0.5f;
+            if (groundedForMovement && _velocity.y < 0) _velocity.y = -2f;
 
             // R2-NONE: animator parameters
             if (_animator != null)
@@ -957,9 +957,16 @@ namespace ProjectC.Player
 
             // Единый Move: локомоция + ветер (гориз.) + гравитация/прыжок (верт.).
             // Y держит keep-grounded (-2) — нет подпрыгивания от отдельных Move.
-            Vector3 motion = horizontalVel + windVel;
-            motion.y += _velocity.y;
-            _controller.Move(motion * Time.deltaTime + _platformDelta);
+            // T-JITTER05: если персонаж стоит на статичной земле без ввода и ветра —
+            // не вызываем Move вообще. Каждый вызов CC.Move с downward-вектором
+            // создаёт микро-пенетрацию → Physics выталкивает → micro-bounce.
+            bool skipMove = !hasInput && groundedForMovement && !_onPlatform && windVel.sqrMagnitude < 0.0001f;
+            if (!skipMove)
+            {
+                Vector3 motion = horizontalVel + windVel;
+                motion.y += _velocity.y;
+                _controller.Move(motion * Time.deltaTime + _platformDelta);
+            }
         }
 
         // ==================== MOVING-PLATFORM CARRY ====================

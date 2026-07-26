@@ -245,14 +245,13 @@ namespace ProjectC.Player
             // создавая микротряску при каждом расхождении server↔client.
             // Решение: Owner authority — CharacterController.Move() authoritative,
             // сервер только ретранслирует позицию другим клиентам.
-            if (IsOwner)
+            // T-JITTER07: H3 diagnostic — Interpolate=false для всех клиентов.
+            var nt = GetComponent<NetworkTransform>();
+            if (nt != null)
             {
-                var nt = GetComponent<NetworkTransform>();
-                if (nt != null)
-                {
-                    nt.Interpolate = false;
+                nt.Interpolate = false;
+                if (IsOwner)
                     nt.AuthorityMode = NetworkTransform.AuthorityModes.Owner;
-                }
             }
 
             // FIX (2026-06-04, INVESTIGATION_GHOST_PLAYER_CLONE.md, "second layer"):

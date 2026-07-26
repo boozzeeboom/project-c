@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.Netcode;
@@ -21,6 +22,12 @@ namespace ProjectC.Ship
     ///      превышении _navFrameSeparation/2 — пере-регистрируем навмеш (Remove + Add).
     ///      На медленном корабле и большом slot (5000м) это раз в несколько минут; пути
     ///      агентов внутри слота не рвутся.
+    ///
+    /// PERF (2026-07-26): раунд-робин очередь регистрации.
+    ///   NavMesh.AddNavMeshData дорог (6-50ms) + внутри unity вызывает NotifyNavMeshAdded →
+    ///   LogStringToConsole → Editor-консоль. Раньше использовался random stagger 0-10s —
+    ///   при 20+ кораблях это волна спайков на 10 секунд. Теперь статическая очередь:
+    ///   регистрируем строго ≤1 корабль за кадр, гарантированно без кластеризации.
     ///
     /// Компонент вешается на ShipRoot и держит запечённый NavMeshData (bake делается редактором
     /// через NavMeshSurface при корабле в origin/identity — см. §5 доки). Рантайм использует
@@ -52,13 +59,30 @@ namespace ProjectC.Ship
         private NavMeshDataInstance _instance;
         private Vector3 _navFrameOrigin;
         private bool _registered;
-        private bool _registrationFailed;         // PERF: не спамим повторными попытками
-        private float _nextRegistrationAttempt;   // PERF: cooldown между попытками
-        private float _nextReregistrationTime;    // PERF: cooldown на перерегистрацию (Unregister+Register)
+        private bool _registrationFailed;
+        private float _nextReregistrationTime;
         private Vector3 _lastRegisteredShipPos;
 
         // Static slot counter — для старого slot-based режима (не используется при _registerUnderShip=true).
         private static int _nextSlot;
+
+        // === Round-robin очередь регистрации ===
+        // PERF: гарантирует ≤1 AddNavMeshData за кадр (вместо random stagger'а, который кластеризуется).
+        private static readonly Queue<ShipDeckNav> s_pendingRegistrations = new Queue<ShipDeckNav>();
+        private static int s_registrationsThisFrame;
+        private const int MAX_REGISTRATIONS_PER_FRAME = 1;
+
+        // PERF: отключаем ExtractStackTrace для обычных логов в Editor.
+        // NavMeshManager.NotifyNavMeshAdded спамит LogStringToConsole на каждый AddNavMeshData,
+        // а Editor для каждого лога дёргает StackTraceUtility.ExtractStackTrace.
+        // RuntimeInitializeOnLoadMethod — безопасно вызывает SetStackTraceLogType ДО загрузки сцен.
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void ConfigureEditorLogging()
+        {
+            Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+        }
+#endif
 
         /// <summary>true, если навмеш палубы зарегистрирован и валиден.</summary>
         public bool IsReady => _registered && _instance.valid;
@@ -67,20 +91,11 @@ namespace ProjectC.Ship
         public Vector3 NavFrameOrigin => _navFrameOrigin;
 
         // === Конвертации координат ===
-        /// <summary>Мировая позиция → локальная позиция на палубе (относительно ShipRoot).</summary>
         public Vector3 WorldToDeckLocal(Vector3 world) => transform.InverseTransformPoint(world);
-        /// <summary>Локальная позиция на палубе → мировая (с учётом текущей позы корабля, вкл. крен).</summary>
         public Vector3 DeckLocalToWorld(Vector3 deckLocal) => transform.TransformPoint(deckLocal);
-        /// <summary>Локальная позиция на палубе → точка в нав-фрейме (где лежит навмеш).</summary>
         public Vector3 DeckLocalToNav(Vector3 deckLocal) => _navFrameOrigin + deckLocal;
-        /// <summary>Точка нав-фрейма → локальная позиция на палубе.</summary>
         public Vector3 NavToDeckLocal(Vector3 navPos) => navPos - _navFrameOrigin;
 
-        /// <summary>
-        /// Спроецировать мировую точку на навмеш палубы. worldHit — ближайшая точка на палубе
-        /// в мировых координатах (с учётом текущей позы корабля). false, если навмеш не готов
-        /// или точка вне палубы в пределах maxDistance.
-        /// </summary>
         public bool SampleOnDeck(Vector3 world, out Vector3 worldHit, float maxDistance)
         {
             worldHit = world;
@@ -98,11 +113,10 @@ namespace ProjectC.Ship
         {
             base.OnNetworkSpawn();
             if (_registerServerOnly && !IsServer) return;
-            // PERF: размазываем регистрацию по времени — не все корабли в одном кадре.
-            // NavMesh.AddNavMeshData broadcast'ит всем агентам → дорого (6-50ms).
-            // Разброс 0-10s: при 20 кораблях это ~1 регистрация в 0.5s, а не каждые 0.1s.
-            _nextRegistrationAttempt = Time.time + UnityEngine.Random.Range(0f, 10f);
 
+            // PERF: ставим в round-robin очередь вместо random stagger.
+            // Очередь обрабатывается в LateUpdate — строго ≤1 корабль за кадр.
+            s_pendingRegistrations.Enqueue(this);
         }
 
         public override void OnNetworkDespawn()
@@ -113,88 +127,75 @@ namespace ProjectC.Ship
 
         private void OnDisable() => Unregister();
 
-        // T-CREW-05/fix: следим за движением ShipRoot и пере-регистрируем навмеш при выходе за слот.
-        // На статичных кораблях (_navFrameSeparation огромный) LateUpdate пустой; на летающих —
-        // срабатывает раз в несколько минут, перерегистрирует безболезненно.
         private void LateUpdate()
         {
             if (!IsServer) return;
 
-            // PERF: отложенная/повторная регистрация (cooldown после провала)
-            if (!_registered && !_registrationFailed && Time.time >= _nextRegistrationAttempt)
-            {
-                if (_deckNavMeshData == null) { _registrationFailed = true; return; }
-                Register();
-                if (!_registered)
-                {
-                    // Не спамим — следующая попытка через 5 секунд
-                    _nextRegistrationAttempt = Time.time + 5f;
-                }
-                return;
-            }
+            // === Round-robin: обрабатываем очередь регистрации (≤1 за кадр) ===
+            ProcessPendingRegistrations();
 
+            // Уже зарегистрирован — следим за дрейфом
             if (!_registered) return;
-
-            // Проверяем только если наш navFrameOrigin привязан к ShipRoot (не slot-based).
             if (!_registerUnderShip) return;
 
             Vector3 shipPos = transform.position;
-            // Смещение ShipRoot от навмеша (в плоскости XZ — Y нас не интересует, палуба горизонтальна).
             Vector3 delta = shipPos - _lastRegisteredShipPos;
             delta.y = 0f;
             if (delta.sqrMagnitude > (_navFrameSeparation * 0.5f) * (_navFrameSeparation * 0.5f))
             {
-                // PERF: NavMesh.AddNavMeshData broadcast'ит всем агентам (дорого — 20-50ms).
-                // Cooldown 30s между перерегистрациями чтобы не дёргало каждый кадр
-                // при быстром движении.
                 if (Time.time < _nextReregistrationTime)
                     return;
 
                 Unregister();
-                Register();
+                // Re-registration — ставим в очередь, не блокируем кадр
+                s_pendingRegistrations.Enqueue(this);
                 _nextReregistrationTime = Time.time + 30f;
             }
+        }
 
+        /// <summary>
+        /// PERF: обрабатывает очередь pending регистраций. Вызывается из LateUpdate любого ShipDeckNav.
+        /// Гарантирует ≤MAX_REGISTRATIONS_PER_FRAME за кадр.
+        /// </summary>
+        private static void ProcessPendingRegistrations()
+        {
+            s_registrationsThisFrame = 0;
+            while (s_pendingRegistrations.Count > 0 && s_registrationsThisFrame < MAX_REGISTRATIONS_PER_FRAME)
+            {
+                var ship = s_pendingRegistrations.Dequeue();
+                if (ship == null || !ship.IsSpawned || ship._registered || ship._registrationFailed)
+                    continue;
+
+                if (ship._deckNavMeshData == null)
+                {
+                    ship._registrationFailed = true;
+                    continue;
+                }
+
+                ship.Register();
+                s_registrationsThisFrame++;
+            }
         }
 
         private void Register()
         {
             if (_registered) return;
-            if (_deckNavMeshData == null)
-            {
-#if UNITY_EDITOR
-                Debug.LogWarning($"[ShipDeckNav:{name}] Deck NavMesh Data не назначен — навигация по палубе выключена. " +
-                                 $"Запеки палубу и назначь ассет (см. §5 в 01_CREW_ON_MOVING_SHIP.md).", this);
-#endif
-                _registrationFailed = true;
-                return;
-            }
-
 
             if (_registerUnderShip)
-            {
-                // T-CREW-05/fix: навмеш привязан к текущей мировой позиции ShipRoot.
-                // Для движущегося корабля это работает корректно с LateUpdate re-registration.
                 _navFrameOrigin = transform.position;
-            }
             else
-            {
-                // Legacy slot-based режим (для кораблей, остающихся в origin).
                 _navFrameOrigin = new Vector3(_nextSlot++ * _navFrameSeparation, 0f, 0f);
-            }
+
             _lastRegisteredShipPos = transform.position;
 
             _instance = NavMesh.AddNavMeshData(_deckNavMeshData, _navFrameOrigin, Quaternion.identity);
             if (!_instance.valid)
             {
-                // PERF: не спамим warning — NavMesh не работает на больших координатах (>10km от origin).
-                // Это ожидаемо для world0_0. Логируем один раз и не пытаемся перерегистрировать.
 #if UNITY_EDITOR
                 Debug.LogWarning($"[ShipDeckNav:{name}] NavMesh registration failed at {_navFrameOrigin}. " +
                                  $"Ship too far from origin — deck navigation disabled.", this);
 #endif
                 _registrationFailed = true;
-
                 return;
             }
             _registered = true;
@@ -202,7 +203,6 @@ namespace ProjectC.Ship
             Debug.Log($"[ShipDeckNav:{name}] Registered at {_navFrameOrigin}", this);
 #endif
         }
-
 
         private void Unregister()
         {

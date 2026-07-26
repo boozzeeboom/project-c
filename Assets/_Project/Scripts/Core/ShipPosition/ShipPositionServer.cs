@@ -11,6 +11,9 @@
 // Жизненный цикл:
 //   Server start → ScenePlacedObjectSpawner → NpcShipServer (2s) → Restore (3.5s)
 //   Update → Save каждые 5s
+//
+// PERF (2026-07-26): кэш ShipController'ов вместо FindObjectsByType каждый save-тик.
+//   InvalidateShipCache() вызывается извне при спавне/деспавне корабля.
 // =====================================================================================
 
 using System;
@@ -47,6 +50,12 @@ namespace ProjectC.Core.ShipPosition
         private float _nextSaveTime;
         private bool _restoreCompleted;
 
+        // PERF: кэш ShipController'ов вместо FindObjectsByType каждый save-тик.
+        private readonly List<ShipController> _cachedShips = new List<ShipController>();
+        private int _cachedShipsFrame;
+        private const int SHIP_CACHE_TTL_FRAMES = 300; // 5s при 60fps — совпадает с saveIntervalSec
+        private bool _shipCacheDirty = true;
+
         // === Lifecycle ===
 
         private void Awake()
@@ -63,8 +72,6 @@ namespace ProjectC.Core.ShipPosition
 
         private void Start()
         {
-            // Инициализируем таймер чтобы первый save был через saveIntervalSec,
-            // а не на первом же кадре (когда корабли ещё не заспавнены).
             _nextSaveTime = Time.time + saveIntervalSec;
 
             if (NetworkManager.Singleton != null)
@@ -80,6 +87,29 @@ namespace ProjectC.Core.ShipPosition
 
         // === Save ===
 
+        /// <summary>
+        /// PERF: инвалидировать кэш кораблей. Вызывается извне при спавне/деспавне корабля.
+        /// </summary>
+        public void InvalidateShipCache() => _shipCacheDirty = true;
+
+        /// <summary>
+        /// PERF: получить список ShipController'ов с кэшированием на ~5 секунд.
+        /// </summary>
+        private List<ShipController> GetCachedShips()
+        {
+            if (!_shipCacheDirty && _cachedShipsFrame > 0 && Time.frameCount - _cachedShipsFrame < SHIP_CACHE_TTL_FRAMES)
+                return _cachedShips;
+
+            _cachedShips.Clear();
+            var allShips = FindObjectsByType<ShipController>();
+            foreach (var ship in allShips)
+                if (ship != null && ship.IsSpawned)
+                    _cachedShips.Add(ship);
+            _cachedShipsFrame = Time.frameCount;
+            _shipCacheDirty = false;
+            return _cachedShips;
+        }
+
         private void Update()
         {
             if (!IsServerSafe()) return;
@@ -87,8 +117,8 @@ namespace ProjectC.Core.ShipPosition
             if (Time.time < _nextSaveTime) return;
             _nextSaveTime = Time.time + saveIntervalSec;
 
-            var allShips = FindObjectsByType<ShipController>();
-            var allData = new List<ShipPositionSaveData>(allShips.Length);
+            var allShips = GetCachedShips();
+            var allData = new List<ShipPositionSaveData>(allShips.Count);
 
             foreach (var ship in allShips)
             {
@@ -107,11 +137,10 @@ namespace ProjectC.Core.ShipPosition
                     rz = ship.transform.rotation.z,
                     rw = ship.transform.rotation.w,
                     isDocked = ship.IsDocked,
-                    isEngineRunning = ship.IsEngineRunning, // T-PLAYER-PERSIST
+                    isEngineRunning = ship.IsEngineRunning,
                     savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                 };
 
-                // NPC-specific: дополняем из NpcShipController
                 var npc = ship.GetComponent<NpcShipController>();
                 if (npc != null)
                 {
@@ -142,7 +171,6 @@ namespace ProjectC.Core.ShipPosition
                 allData.Add(data);
             }
 
-            // T-PLAYER-PERSIST (D12): забираем players из PlayerPositionServer
             List<PlayerPositionSaveData> playerData = new();
             if (PlayerPositionServer.Instance != null)
             {
@@ -150,8 +178,6 @@ namespace ProjectC.Core.ShipPosition
                 playerData = PlayerPositionServer.Instance.GetPendingPlayers();
             }
 
-            // Единый write (ships + players) — синхронно, ThreadPool не работает:
-            // Application.persistentDataPath — main-thread-only API
             var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData };
             _repo.SaveAll(wrapper);
 
@@ -170,17 +196,14 @@ namespace ProjectC.Core.ShipPosition
         {
             Debug.Log($"[ShipPositionServer] RestoreCoroutine: waiting {restoreDelaySec}s for scenes to load...");
 
-            // Ждём ScenePlacedObjectSpawner + DiscoverNpcShipsDelayed (2s) + запас
             yield return new WaitForSeconds(restoreDelaySec);
 
             Debug.Log("[ShipPositionServer] RestoreCoroutine: loading save...");
 
-            // T-PLAYER-PERSIST (D12): загружаем wrapper с ships + players
             var wrapper = _repo.LoadAllWrapper();
 
             Debug.Log($"[ShipPositionServer] Loaded: {wrapper.ships?.Count ?? 0} ships, {wrapper.players?.Count ?? 0} players");
 
-            // Загружаем players в PlayerPositionServer
             if (PlayerPositionServer.Instance != null)
                 PlayerPositionServer.Instance.LoadSavedPlayers(wrapper.players);
 
@@ -188,14 +211,14 @@ namespace ProjectC.Core.ShipPosition
             if (savedList == null || savedList.Count == 0)
             {
                 Debug.LogWarning("[ShipPositionServer] No saved ships in file. Skip restore.");
-                // FIX: разрешаем save даже без предыдущих данных — иначе save никогда не запустится
                 _restoreCompleted = true;
                 _nextSaveTime = Time.time + saveIntervalSec;
                 yield break;
             }
 
-            var allShips = FindObjectsByType<ShipController>();
-            Debug.Log($"[ShipPositionServer] Found {allShips.Length} ShipControllers in loaded scenes");
+            _shipCacheDirty = true;
+            var allShips = GetCachedShips();
+            Debug.Log($"[ShipPositionServer] Found {allShips.Count} ShipControllers in loaded scenes");
             int restored = 0;
 
             foreach (var ship in allShips)
@@ -216,7 +239,6 @@ namespace ProjectC.Core.ShipPosition
 
             Debug.Log($"[ShipPositionServer] Restored {restored}/{savedList.Count} ships from save");
 
-            // Разрешаем save после restore и сбрасываем таймер (не копим отложенные save)
             _restoreCompleted = true;
             _nextSaveTime = Time.time + saveIntervalSec;
         }
@@ -235,23 +257,18 @@ namespace ProjectC.Core.ShipPosition
                 }
             }
 
-            // restore docking state
             if (data.isDocked && !ship.IsDocked)
                 ship.EnterDocked();
             else if (!data.isDocked && ship.IsDocked)
                 ship.ExitDocked();
 
-            // T-PLAYER-PERSIST: restore engine state + freeze
-            // Если двигатель был включён при последнем save — включаем и замораживаем
-            // (пилотов сейчас нет, сервер только стартовал).
             if (!data.isNpc && data.isEngineRunning)
             {
                 ship.SetEngineRunning(true);
-                // Freeze: velocity уже zero, но нужно также установить _frozenByNoPilot
                 ship.ApplyPersistenceFreeze();
             }
 
-            if (!data.isNpc) return; // всё, player ship готов
+            if (!data.isNpc) return;
 
             var npc = ship.GetComponent<NpcShipController>();
             if (npc != null)

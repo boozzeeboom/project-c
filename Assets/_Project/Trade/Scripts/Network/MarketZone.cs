@@ -221,22 +221,31 @@ namespace ProjectC.Trade.Network
             }
         }
 
+        // PERF: cached local player reference — избегаем FindObjectsByType каждые 0.25s на каждой MarketZone.
+        private static NetworkPlayer _cachedLocalPlayer;
+        private static float _cachedLocalPlayerTime;
+        private const float LOCAL_PLAYER_CACHE_TTL = 0.5f;
+
         private static NetworkPlayer FindLocalPlayer()
         {
+            if (_cachedLocalPlayer != null && Time.unscaledTime - _cachedLocalPlayerTime < LOCAL_PLAYER_CACHE_TTL)
+            {
+                // Проверяем что cached player всё ещё IsOwner (не despawn'нулся)
+                if (_cachedLocalPlayer.IsOwner)
+                    return _cachedLocalPlayer;
+                _cachedLocalPlayer = null;
+            }
+
             var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
             for (int i = 0; i < players.Length; i++)
             {
                 if (players[i] == null || !players[i].IsOwner) continue;
-                // FIX (2026-06-04): skip scene-placed `PlayerSpawner` ghost.
-                // На хосте NGO 2.x ставит OwnerClientId=0 на scene-placed NetworkObject'ы
-                // → `IsOwner==true` (footgun). Ghost сидит в точке спавна вдали от зон,
-                // его GetEffectivePosition() уводит dist за пределы tradeRadius →
-                // LocalPlayerZone никогда не выставляется → рынок «не открывается».
-                // Дискриминатор: наличие `NetworkPlayerSpawner` маркера (см.
-                // NetworkPlayer.OnNetworkSpawn — этот же guard для camera/inventory skip).
                 if (players[i].GetComponent<NetworkPlayerSpawner>() != null) continue;
+                _cachedLocalPlayer = players[i];
+                _cachedLocalPlayerTime = Time.unscaledTime;
                 return players[i];
             }
+            _cachedLocalPlayer = null;
             return null;
         }
 

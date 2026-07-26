@@ -146,21 +146,27 @@ namespace ProjectC.UI
             // 2. CharacterWindow видна → НЕ трогаем, она закроется сама.
             if (IsCharacterWindowVisible())
             {
+#if UNITY_EDITOR
                 Debug.Log("[UIManager] Esc: CharacterWindow visible → nothing");
+#endif
                 return;
             }
 
             // 3. Любое внешнее окно открыто → НЕ трогаем, закроется в своём Update.
             if (IsAnyExternalWindowOpen())
             {
+#if UNITY_EDITOR
                 Debug.Log("[UIManager] Esc: external window open → nothing");
+#endif
                 return;
             }
 
             // 4. Открыть/закрыть EscMenu
             if (ProjectC.UI.EscMenu.EscMenuWindow.Instance != null)
             {
+#if UNITY_EDITOR
                 Debug.Log($"[UIManager] Esc: toggle EscMenu (currently open={ProjectC.UI.EscMenu.EscMenuWindow.Instance.IsOpen()})");
+#endif
                 ProjectC.UI.EscMenu.EscMenuWindow.Instance.Toggle();
             }
         }

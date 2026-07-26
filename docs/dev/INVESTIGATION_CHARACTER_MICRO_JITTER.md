@@ -1,7 +1,7 @@
 # Investigation: Микротряска персонажа при стоянии (Character Micro-Jitter)
 
 **Дата:** 2026-07-26  
-**Статус:** Тестирование H2 — stepOffset 0.01 (99e11ef)  
+**Статус:** Тестирование H3 — NT.Interpolate=false для всех (ce6f658)  
 **Тикет:** (связанные T-JITTER01, T-JITTER01-v2, T-JITTER02, T-JITTER02v2, T-JITTER03, T-CAM05v2)
 
 ---
@@ -272,4 +272,5 @@ private void FixedUpdate() {
 | 2026-07-26 | Диагностика | Первичный анализ кода, 4 гипотезы, 3 варианта фикса |
 | 2026-07-26 | T-JITTER04 (a3cb625) | H1: keep-grounded -2f → -0.5f (Вариант A) ❌ |
 | 2026-07-26 | T-JITTER05 (89613f8) | H1: skip CC.Move при стоянии (Вариант C) ❌ |
-| 2026-07-26 | T-JITTER06 (99e11ef) | H2: stepOffset 0.3 → 0.01 |
+| 2026-07-26 | T-JITTER06 (99e11ef) | H2: stepOffset 0.3 → 0.01 ❌ |
+| 2026-07-26 | T-JITTER07 (ce6f658) | H3: NT.Interpolate=false для всех клиентов |

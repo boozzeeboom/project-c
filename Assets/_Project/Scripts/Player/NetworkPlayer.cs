@@ -244,6 +244,11 @@ namespace ProjectC.Player
             if (_diagnosticDisableAnimator && _animator != null)
                 _animator.enabled = false;
 
+            // T-JITTER11: skinnedMotionVectors усиливает микро-движения костей через
+            // motion vectors для TAA/motion blur → визуальная тряска на idle.
+            var smr = GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (smr != null) smr.skinnedMotionVectors = false;
+
             // T-JITTER01: NetworkTransform на owner'е должен работать в режиме Owner authority.
             // Interpolate=true «дерётся» с CharacterController.Move() — интерполирует обратно.
             // AuthorityMode=Server — даже с Interpolate=false сервер снапает позицию,

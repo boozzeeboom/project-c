@@ -463,6 +463,12 @@ namespace ProjectC.UI.Client
                 RefreshHpFromNetworkVariable();
             }
 
+            // Time info refresh — throttled inside method
+            if (_built && IsVisible())
+            {
+                RefreshTimeInfo();
+            }
+
             // BUGFIX T-P19: Esc проверяем ДО guard'а NetworkManager, чтобы закрытие
             // работало независимо от состояния сети (был баг: Esc не закрывал окно).
             var kb = UnityEngine.InputSystem.Keyboard.current;
@@ -881,6 +887,39 @@ namespace ProjectC.UI.Client
         // ============================================================
         // Section refresh: character
         // ============================================================
+
+        // ────────────────────────────────
+        //  Time Info (header label)
+        // ────────────────────────────────
+
+        private float _lastTimeInfoRefresh = -999f;
+        private const float TIME_INFO_REFRESH_INTERVAL = 2f;
+
+        private void RefreshTimeInfo()
+        {
+            if (_timeInfoLabel == null) return;
+            if (Time.time - _lastTimeInfoRefresh < TIME_INFO_REFRESH_INTERVAL) return;
+            _lastTimeInfoRefresh = Time.time;
+
+            var swc = ProjectC.Core.ServerWeatherController.Instance;
+            if (swc == null)
+            {
+                _timeInfoLabel.text = "—";
+                return;
+            }
+
+            var gt = swc.CurrentGameTime;
+            int hour = Mathf.FloorToInt(swc.TimeOfDay);
+            int minute = Mathf.FloorToInt((swc.TimeOfDay - hour) * 60f);
+
+            string phaseName = "";
+            var dc = ProjectC.Core.DayNightController.Instance;
+            if (dc != null && dc.CurrentPhase != null)
+                phaseName = $" | {dc.CurrentPhase.phaseName}";
+
+            _timeInfoLabel.text =
+                $"{gt.WeekdayName}, {gt.Day}-й день {gt.MonthName}, год {gt.Year} | {hour:D2}:{minute:D2}{phaseName}";
+        }
 
         private void RefreshCharacterStats()
         {
@@ -3331,6 +3370,8 @@ namespace ProjectC.UI.Client
             // FIX: Включаем приём pointer events на root, чтобы клики по окну работали.
             if (_root != null) _root.pickingMode = PickingMode.Position;
             SetVisible(true);
+
+            RefreshTimeInfo();
 
             // FIX: race с RPC — если данные ещё не пришли, показываем placeholder.
             if (_contractState == null || !_contractState.CurrentSnapshot.HasValue)

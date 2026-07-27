@@ -148,6 +148,78 @@ namespace ProjectC.Quests.Triggers
     }
 
     // ============================================================
+    // Calendar triggers (TimeManager — ServerWeatherController publisher)
+    // ============================================================
+
+    /// <summary>
+    /// Fires в конкретный игровой день месяца (1-30).
+    /// </summary>
+    public sealed class GameDayTrigger : IQuestTrigger
+    {
+        public int RequiredDay { get; set; } = 1;
+
+        public string TriggerId => $"GameDay:{RequiredDay}";
+
+        public bool IsSatisfied(QuestInstance instance, ulong playerId)
+        {
+            var swc = ServerWeatherController.Instance;
+            if (swc == null) return false;
+            return swc.CurrentDay == RequiredDay;
+        }
+    }
+
+    /// <summary>
+    /// Fires в конкретный день недели (0=Manday, 6=Sunsrest).
+    /// </summary>
+    public sealed class GameWeekdayTrigger : IQuestTrigger
+    {
+        public int RequiredWeekday { get; set; } = 0;
+
+        public string TriggerId => $"GameWeekday:{RequiredWeekday}";
+
+        public bool IsSatisfied(QuestInstance instance, ulong playerId)
+        {
+            var swc = ServerWeatherController.Instance;
+            if (swc == null) return false;
+            return swc.CurrentWeekday == RequiredWeekday;
+        }
+    }
+
+    /// <summary>
+    /// Fires в конкретный месяц (1-12).
+    /// </summary>
+    public sealed class GameMonthTrigger : IQuestTrigger
+    {
+        public int RequiredMonth { get; set; } = 1;
+
+        public string TriggerId => $"GameMonth:{RequiredMonth}";
+
+        public bool IsSatisfied(QuestInstance instance, ulong playerId)
+        {
+            var swc = ServerWeatherController.Instance;
+            if (swc == null) return false;
+            return swc.CurrentMonth == RequiredMonth;
+        }
+    }
+
+    /// <summary>
+    /// Fires в конкретный год.
+    /// </summary>
+    public sealed class GameYearTrigger : IQuestTrigger
+    {
+        public int RequiredYear { get; set; } = 1;
+
+        public string TriggerId => $"GameYear:{RequiredYear}";
+
+        public bool IsSatisfied(QuestInstance instance, ulong playerId)
+        {
+            var swc = ServerWeatherController.Instance;
+            if (swc == null) return false;
+            return swc.CurrentYear == RequiredYear;
+        }
+    }
+
+    // ============================================================
     // Stubs (T-Q15+ to fill)
     // ============================================================
 

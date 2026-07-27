@@ -90,6 +90,10 @@ namespace ProjectC.Quests
             _handleCustomEvent = OnCustomEvent;
             _handleDialogVisited = OnDialogVisited;
             _handleDayNightChanged = OnDayNightChanged;
+            _handleGameDayChanged = OnGameDayChanged;
+            _handleGameWeekChanged = OnGameWeekChanged;
+            _handleGameMonthChanged = OnGameMonthChanged;
+            _handleGameYearChanged = OnGameYearChanged;
             WorldEventBus.Subscribe(_handleItemAdded);
             WorldEventBus.Subscribe(_handleItemRemoved);
             WorldEventBus.Subscribe(_handleReputationChanged);
@@ -97,6 +101,10 @@ namespace ProjectC.Quests
             WorldEventBus.Subscribe(_handleCustomEvent);
             WorldEventBus.Subscribe(_handleDialogVisited);
             WorldEventBus.Subscribe(_handleDayNightChanged);
+            WorldEventBus.Subscribe(_handleGameDayChanged);
+            WorldEventBus.Subscribe(_handleGameWeekChanged);
+            WorldEventBus.Subscribe(_handleGameMonthChanged);
+            WorldEventBus.Subscribe(_handleGameYearChanged);
 
             // T-Q20: subscribe to QuestWorld events (stage transitions + actions).
             QuestWorld.Instance.OnFireDialogActions += OnWorldFireDialogActions;
@@ -126,6 +134,10 @@ namespace ProjectC.Quests
                 if (_handleCustomEvent != null) WorldEventBus.Unsubscribe(_handleCustomEvent);
                 if (_handleDialogVisited != null) WorldEventBus.Unsubscribe(_handleDialogVisited);
                 if (_handleDayNightChanged != null) WorldEventBus.Unsubscribe(_handleDayNightChanged);
+                if (_handleGameDayChanged != null) WorldEventBus.Unsubscribe(_handleGameDayChanged);
+                if (_handleGameWeekChanged != null) WorldEventBus.Unsubscribe(_handleGameWeekChanged);
+                if (_handleGameMonthChanged != null) WorldEventBus.Unsubscribe(_handleGameMonthChanged);
+                if (_handleGameYearChanged != null) WorldEventBus.Unsubscribe(_handleGameYearChanged);
 
                 // T-Q13: unsubscribe OnClientConnected
                 if (_handleClientConnected != null && NetworkManager.Singleton != null)
@@ -801,6 +813,10 @@ namespace ProjectC.Quests
         private System.Action<CustomEvent> _handleCustomEvent;
         private System.Action<DialogVisitedEvent> _handleDialogVisited;
         private System.Action<DayNightPhaseChangedEvent> _handleDayNightChanged;
+        private System.Action<GameDayChangedEvent> _handleGameDayChanged;
+        private System.Action<GameWeekChangedEvent> _handleGameWeekChanged;
+        private System.Action<GameMonthChangedEvent> _handleGameMonthChanged;
+        private System.Action<GameYearChangedEvent> _handleGameYearChanged;
         private System.Action<ulong> _handleClientConnected; // T-Q13
 
         private void OnItemAdded(ItemAddedEvent ev)
@@ -864,6 +880,50 @@ namespace ProjectC.Quests
             foreach (var clientId in NetworkManager.ConnectedClientsIds)
             {
                 QuestWorld.Instance.TriggerService.Evaluate(clientId, $"DayNightPhase:{ev.NewPhaseName}");
+            }
+        }
+
+        private void OnGameDayChanged(GameDayChangedEvent ev)
+        {
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            if (NetworkManager == null) return;
+            foreach (var clientId in NetworkManager.ConnectedClientsIds)
+            {
+                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameDay:{ev.Day}");
+                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameWeekday:{ev.Weekday}");
+            }
+        }
+
+        private void OnGameWeekChanged(GameWeekChangedEvent ev)
+        {
+            // Hint: GameWeek:0 (week number, 0-based from epoch). Triggers: on new week.
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            if (NetworkManager == null) return;
+            // Полезная нагрузка: можно вычислять номер недели от эпохи
+            int weekNumber = ((ev.Year - 1) * 48) + ((ev.Month - 1) * 4) + ((ev.Day - 1) / 7);
+            foreach (var clientId in NetworkManager.ConnectedClientsIds)
+            {
+                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameWeek:{weekNumber}");
+            }
+        }
+
+        private void OnGameMonthChanged(GameMonthChangedEvent ev)
+        {
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            if (NetworkManager == null) return;
+            foreach (var clientId in NetworkManager.ConnectedClientsIds)
+            {
+                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameMonth:{ev.Month}");
+            }
+        }
+
+        private void OnGameYearChanged(GameYearChangedEvent ev)
+        {
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            if (NetworkManager == null) return;
+            foreach (var clientId in NetworkManager.ConnectedClientsIds)
+            {
+                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameYear:{ev.Year}");
             }
         }
 

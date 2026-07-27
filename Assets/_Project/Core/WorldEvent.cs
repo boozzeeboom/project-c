@@ -141,6 +141,48 @@ namespace ProjectC.Core
         public string NewPhaseName;
     }
 
+    // ============================================================
+    // Calendar events (TimeManager — ServerWeatherController publisher)
+    // ============================================================
+
+    /// <summary>
+    /// Новый игровой день (рассвет). Publisher: ServerWeatherController.AdvanceCalendar().
+    /// </summary>
+    public sealed class GameDayChangedEvent : WorldEvent
+    {
+        public int Day;
+        public int Month;
+        public int Year;
+        public int Weekday;
+    }
+
+    /// <summary>
+    /// Новая игровая неделя (Manday). Publisher: ServerWeatherController.AdvanceCalendar().
+    /// </summary>
+    public sealed class GameWeekChangedEvent : WorldEvent
+    {
+        public int Day;
+        public int Month;
+        public int Year;
+    }
+
+    /// <summary>
+    /// Новый игровой месяц. Publisher: ServerWeatherController.AdvanceCalendar().
+    /// </summary>
+    public sealed class GameMonthChangedEvent : WorldEvent
+    {
+        public int Month;
+        public int Year;
+    }
+
+    /// <summary>
+    /// Новый игровой год. Publisher: ServerWeatherController.AdvanceCalendar().
+    /// </summary>
+    public sealed class GameYearChangedEvent : WorldEvent
+    {
+        public int Year;
+    }
+
     // ============ T-X5 / T-Q15: Contract events (Trade → Quest bridge) ============
     // Publisher: ContractServer (см. T-X5 commit). Subscribers: ContractMetaBridge (T-Q15).
 

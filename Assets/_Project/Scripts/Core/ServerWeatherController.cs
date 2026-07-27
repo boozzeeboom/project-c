@@ -1,3 +1,5 @@
+using System;
+using ProjectC.Core.TimePersistence;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -6,10 +8,14 @@ namespace ProjectC.Core
     /// <summary>
     /// Server-authoritative weather controller.
     /// Broadcasts wind updates to all clients at 0.5 Hz (every 2 seconds).
+    /// Manages game calendar and persists time state to disk.
     /// Must be on a NetworkObject with server authority.
     /// </summary>
     public class ServerWeatherController : NetworkBehaviour
     {
+        private ITimeRepository _timeRepo;
+        private float _nextSaveTime;
+        private const float TIME_SAVE_INTERVAL = 30f;
         [Header("Wind Settings")]
         [SerializeField] private Vector3 _windDirection = Vector3.right;
         [SerializeField] private float _windSpeed = 0f;
@@ -33,6 +39,11 @@ namespace ProjectC.Core
         [SerializeField] private float _timeBroadcastInterval = 5f;
         private float _timeTimer = 0f;
 
+        [Header("Calendar")]
+        [SerializeField] private GameTimeData _gameTime = default;
+        [SerializeField] private float _calendarBroadcastInterval = 10f;
+        private float _calendarTimer = 0f;
+
         [Header("Temperature")]
         [SerializeField] private float _temperature = 20f;
         [SerializeField] private float _tempBroadcastInterval = 10f;
@@ -41,11 +52,23 @@ namespace ProjectC.Core
         // Events for clients to subscribe
         public event System.Action<float> OnTimeOfDayChanged;
         public event System.Action<float> OnTemperatureChanged;
+        public event System.Action<GameTimeData> OnCalendarChanged;
 
         public float TimeOfDay => _timeOfDay;
         public float Temperature => _temperature;
-        public float TotalGameDays { get; private set; }
+
+        /// <summary>Total elapsed game days as float (for backwards compat — MoonController, DayNightController).</summary>
+        public float TotalGameDays => _gameTime.TotalDaysElapsed + _timeOfDay / 24f;
+
         public float DayCycleRealHours => _dayCycleRealHours;
+
+        /// <summary>Current calendar state (server-authoritative).</summary>
+        public GameTimeData CurrentGameTime => _gameTime;
+
+        public int CurrentYear => _gameTime.Year;
+        public int CurrentMonth => _gameTime.Month;
+        public int CurrentDay => _gameTime.Day;
+        public int CurrentWeekday => _gameTime.Weekday;
 
         public override void OnNetworkSpawn()
         {
@@ -60,10 +83,26 @@ namespace ProjectC.Core
                 return;
             }
 
+            // Init calendar from persistence or epoch
+            _timeRepo = new JsonTimeRepository();
+            if (_timeRepo.TryLoad(out var savedTime, out var savedTimeOfDay))
+            {
+                _gameTime = savedTime;
+                _timeOfDay = savedTimeOfDay;
+                Debug.Log($"[ServerWeatherController] Restored time: {_gameTime.WeekdayName}, Day {_gameTime.Day} of {_gameTime.MonthName}, Year {_gameTime.Year} | {_timeOfDay:F2}h");
+            }
+            else if (_gameTime.Year == 0)
+            {
+                _gameTime = GameTimeData.Epoch;
+                Debug.Log("[ServerWeatherController] Starting from epoch — Manday, Day 1 of Зимний Свет, Year 1");
+            }
+
+            _nextSaveTime = Time.time + TIME_SAVE_INTERVAL;
+
             ApplyWindToLocal(_windDirection, _windSpeed);
             BroadcastTimeOfDayClientRpc(_timeOfDay);
+            BroadcastCalendarClientRpc(_gameTime);
             BroadcastTemperatureClientRpc(_temperature);
-            Debug.Log("[ServerWeatherController] Server started, will broadcast wind at 0.5 Hz");
         }
 
         public override void OnNetworkDespawn()
@@ -98,12 +137,11 @@ namespace ProjectC.Core
             if (_enableTimeAutoAdvance && IsServer)
             {
                 float gameHoursPerRealSecond = 24f / (_dayCycleRealHours * 3600f);
-                float prevTimeOfDay = _timeOfDay;
                 _timeOfDay += gameHoursPerRealSecond * Time.deltaTime;
                 if (_timeOfDay >= 24f)
                 {
                     _timeOfDay -= 24f;
-                    TotalGameDays++;
+                    AdvanceCalendar();
                 }
             }
 
@@ -114,11 +152,25 @@ namespace ProjectC.Core
                 _timeTimer = 0f;
             }
 
+            _calendarTimer += Time.deltaTime;
+            if (_calendarTimer >= _calendarBroadcastInterval)
+            {
+                BroadcastCalendarClientRpc(_gameTime);
+                _calendarTimer = 0f;
+            }
+
             _tempTimer += Time.deltaTime;
             if (_tempTimer >= _tempBroadcastInterval)
             {
                 BroadcastTemperatureClientRpc(_temperature);
                 _tempTimer = 0f;
+            }
+
+            // Periodic persistence
+            if (Time.time >= _nextSaveTime)
+            {
+                _nextSaveTime = Time.time + TIME_SAVE_INTERVAL;
+                _timeRepo?.Save(_gameTime, _timeOfDay);
             }
         }
 
@@ -208,11 +260,56 @@ namespace ProjectC.Core
             ApplyWindToLocal(_windDirection, _windSpeed);
         }
 
+        // ────────────────────────────────
+        //  Calendar
+        // ────────────────────────────────
+
+        private void AdvanceCalendar()
+        {
+            var changed = _gameTime.AdvanceDay();
+
+            if ((changed & GameTimeData.Changed.Year) != 0)
+                WorldEventBus.Publish(new GameYearChangedEvent { PlayerId = 0, TimestampUnix = NowUnix(), Year = _gameTime.Year });
+
+            if ((changed & GameTimeData.Changed.Month) != 0)
+                WorldEventBus.Publish(new GameMonthChangedEvent { PlayerId = 0, TimestampUnix = NowUnix(), Month = _gameTime.Month, Year = _gameTime.Year });
+
+            if ((changed & GameTimeData.Changed.Week) != 0)
+                WorldEventBus.Publish(new GameWeekChangedEvent { PlayerId = 0, TimestampUnix = NowUnix(), Day = _gameTime.Day, Month = _gameTime.Month, Year = _gameTime.Year });
+
+            if ((changed & GameTimeData.Changed.Day) != 0)
+                WorldEventBus.Publish(new GameDayChangedEvent { PlayerId = 0, TimestampUnix = NowUnix(), Day = _gameTime.Day, Month = _gameTime.Month, Year = _gameTime.Year, Weekday = _gameTime.Weekday });
+
+            OnCalendarChanged?.Invoke(_gameTime);
+        }
+
+        public void SetGameTime(GameTimeData data, float timeOfDay)
+        {
+            if (!IsServer) return;
+            _gameTime = data;
+            _timeOfDay = Mathf.Clamp(timeOfDay, 0f, 23.999f);
+            BroadcastCalendarClientRpc(_gameTime);
+            BroadcastTimeOfDayClientRpc(_timeOfDay);
+        }
+
+        private static long NowUnix() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        // ────────────────────────────────
+        //  ClientRpc broadcasts
+        // ────────────────────────────────
+
         [ClientRpc]
         private void BroadcastTimeOfDayClientRpc(float time)
         {
             _timeOfDay = time;
             OnTimeOfDayChanged?.Invoke(time);
+        }
+
+        [ClientRpc]
+        private void BroadcastCalendarClientRpc(GameTimeData data)
+        {
+            _gameTime = data;
+            OnCalendarChanged?.Invoke(data);
         }
 
         [ClientRpc]

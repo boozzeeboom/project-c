@@ -912,13 +912,16 @@ namespace ProjectC.UI.Client
             int hour = Mathf.FloorToInt(swc.TimeOfDay);
             int minute = Mathf.FloorToInt((swc.TimeOfDay - hour) * 60f);
 
+            string weekdayName = swc.GetWeekdayName(gt.Weekday);
+            string monthName = swc.GetMonthName(gt.Month);
+
             string phaseName = "";
             var dc = ProjectC.Core.DayNightController.Instance;
             if (dc != null && dc.CurrentPhase != null)
                 phaseName = $" | {dc.CurrentPhase.phaseName}";
 
             _timeInfoLabel.text =
-                $"{gt.WeekdayName}, {gt.Day}-й день {gt.MonthName}, год {gt.Year} | {hour:D2}:{minute:D2}{phaseName}";
+                $"{weekdayName}, {gt.Day}-й день {monthName}, год {gt.Year} | {hour:D2}:{minute:D2}{phaseName}";
         }
 
         private void RefreshCharacterStats()

@@ -5,8 +5,8 @@ using UnityEngine;
 namespace ProjectC.Core
 {
     /// <summary>
-    /// Server-authoritative game calendar. Drives day/week/month/year semantics
-    /// on top of the 24-hour cycle managed by ServerWeatherController.
+    /// Server-authoritative game calendar data (pure data struct).
+    /// Calendar rules (daysPerMonth, monthsPerYear, names) live in CalendarConfig.
     /// </summary>
     [System.Serializable]
     public struct GameTimeData : INetworkSerializable
@@ -14,48 +14,17 @@ namespace ProjectC.Core
         [Tooltip("Game year (1-based)")]
         public int Year;
 
-        [Tooltip("Month of year (1-12)")]
+        [Tooltip("Month of year (1-based)")]
         public int Month;
 
-        [Tooltip("Day of month (1-30)")]
+        [Tooltip("Day of month (1-based)")]
         public int Day;
 
-        [Tooltip("Day of year (1-360)")]
+        [Tooltip("Day of year (1-based)")]
         public int DayOfYear;
 
-        [Tooltip("Day of week (0-6)")]
+        [Tooltip("Day of week (0-based)")]
         public int Weekday;
-
-        // ────────────────────────────────
-        //  Static name tables
-        // ────────────────────────────────
-
-        public static readonly string[] WeekdayNames =
-        {
-            "Manday", "Tirsday", "Wotanday", "Thorsday",
-            "Freyday", "Saturnight", "Sunsrest"
-        };
-
-        public static readonly string[] MonthNames =
-        {
-            "Зимний Свет", "Ледяной Покой", "Пробуждение",
-            "Весенний Ветер", "Цветущий Сад", "Солнечный Зенит",
-            "Жаркий Полдень", "Урожайная Луна", "Золотая Осень",
-            "Туманный Вечер", "Тёмный Холод", "Годоворот"
-        };
-
-        // ────────────────────────────────
-        //  Computed helpers
-        // ────────────────────────────────
-
-        public string WeekdayName =>
-            Weekday >= 0 && Weekday < WeekdayNames.Length ? WeekdayNames[Weekday] : "?";
-
-        public string MonthName =>
-            Month >= 1 && Month <= MonthNames.Length ? MonthNames[Month - 1] : "?";
-
-        /// <summary>Total elapsed game days since epoch (Year 1 Month 1 Day 1 = 0).</summary>
-        public int TotalDaysElapsed => (Year - 1) * 360 + (DayOfYear - 1);
 
         // ────────────────────────────────
         //  Factory
@@ -67,14 +36,14 @@ namespace ProjectC.Core
             Month = 1,
             Day = 1,
             DayOfYear = 1,
-            Weekday = 0 // Manday
+            Weekday = 0
         };
 
         // ────────────────────────────────
         //  Calendar advance
         // ────────────────────────────────
 
-        /// <summary>Advance by one game day. Returns bitmask of what changed.</summary>
+        /// <summary>Bitmask of what changed during day advance.</summary>
         [Flags]
         public enum Changed : byte
         {
@@ -85,23 +54,29 @@ namespace ProjectC.Core
             Year = 1 << 3
         }
 
-        public Changed AdvanceDay()
+        /// <summary>
+        /// Advance by one game day.
+        /// </summary>
+        /// <param name="daysPerMonth">From CalendarConfig.daysPerMonth</param>
+        /// <param name="monthsPerYear">From CalendarConfig.monthsPerYear</param>
+        /// <param name="daysPerWeek">From CalendarConfig.daysPerWeek</param>
+        public Changed AdvanceDay(int daysPerMonth, int monthsPerYear, int daysPerWeek)
         {
             Changed changed = Changed.Day;
 
             Day++;
             DayOfYear++;
-            Weekday = (Weekday + 1) % 7;
+            Weekday = (Weekday + 1) % daysPerWeek;
 
             if (Weekday == 0) changed |= Changed.Week;
 
-            if (Day > 30)
+            if (Day > daysPerMonth)
             {
                 Day = 1;
                 Month++;
                 changed |= Changed.Month;
 
-                if (Month > 12)
+                if (Month > monthsPerYear)
                 {
                     Month = 1;
                     DayOfYear = 1;
@@ -111,6 +86,17 @@ namespace ProjectC.Core
             }
 
             return changed;
+        }
+
+        /// <summary>
+        /// Total elapsed game days since epoch (Year 1 Month 1 Day 1 = 0).
+        /// Requires calendar config for calculation.
+        /// </summary>
+        public int TotalDaysElapsed(int daysPerMonth, int monthsPerYear)
+        {
+            return (Year - 1) * monthsPerYear * daysPerMonth
+                 + (Month - 1) * daysPerMonth
+                 + (Day - 1);
         }
 
         // ────────────────────────────────

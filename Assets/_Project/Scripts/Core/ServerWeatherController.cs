@@ -40,6 +40,7 @@ namespace ProjectC.Core
         private float _timeTimer = 0f;
 
         [Header("Calendar")]
+        [SerializeField] private CalendarConfig _calendarConfig;
         [SerializeField] private GameTimeData _gameTime = default;
         [SerializeField] private float _calendarBroadcastInterval = 10f;
         private float _calendarTimer = 0f;
@@ -58,9 +59,12 @@ namespace ProjectC.Core
         public float Temperature => _temperature;
 
         /// <summary>Total elapsed game days as float (for backwards compat — MoonController, DayNightController).</summary>
-        public float TotalGameDays => _gameTime.TotalDaysElapsed + _timeOfDay / 24f;
+        public float TotalGameDays => _gameTime.TotalDaysElapsed(_calendarConfig?.daysPerMonth ?? 30, _calendarConfig?.monthsPerYear ?? 12) + _timeOfDay / 24f;
 
         public float DayCycleRealHours => _dayCycleRealHours;
+
+        /// <summary>Current calendar config (editable in Inspector).</summary>
+        public CalendarConfig CalendarConfig => _calendarConfig;
 
         /// <summary>Current calendar state (server-authoritative).</summary>
         public GameTimeData CurrentGameTime => _gameTime;
@@ -69,6 +73,12 @@ namespace ProjectC.Core
         public int CurrentMonth => _gameTime.Month;
         public int CurrentDay => _gameTime.Day;
         public int CurrentWeekday => _gameTime.Weekday;
+
+        // Convenience name helpers (delegate to CalendarConfig)
+        public string GetWeekdayName(int weekday) => _calendarConfig != null ? _calendarConfig.GetWeekdayName(weekday) : weekday.ToString();
+        public string GetMonthName(int month) => _calendarConfig != null ? _calendarConfig.GetMonthName(month) : month.ToString();
+        public string CurrentWeekdayName => GetWeekdayName(_gameTime.Weekday);
+        public string CurrentMonthName => GetMonthName(_gameTime.Month);
 
         public override void OnNetworkSpawn()
         {
@@ -89,7 +99,7 @@ namespace ProjectC.Core
             {
                 _gameTime = savedTime;
                 _timeOfDay = savedTimeOfDay;
-                Debug.Log($"[ServerWeatherController] Restored time: {_gameTime.WeekdayName}, Day {_gameTime.Day} of {_gameTime.MonthName}, Year {_gameTime.Year} | {_timeOfDay:F2}h");
+                Debug.Log($"[ServerWeatherController] Restored time: {CurrentWeekdayName}, Day {_gameTime.Day} of {CurrentMonthName}, Year {_gameTime.Year} | {_timeOfDay:F2}h");
             }
             else if (_gameTime.Year == 0)
             {
@@ -266,7 +276,11 @@ namespace ProjectC.Core
 
         private void AdvanceCalendar()
         {
-            var changed = _gameTime.AdvanceDay();
+            int dpm = _calendarConfig != null ? _calendarConfig.daysPerMonth : 30;
+            int mpy = _calendarConfig != null ? _calendarConfig.monthsPerYear : 12;
+            int dpw = _calendarConfig != null ? _calendarConfig.daysPerWeek : 7;
+
+            var changed = _gameTime.AdvanceDay(dpm, mpy, dpw);
 
             if ((changed & GameTimeData.Changed.Year) != 0)
                 WorldEventBus.Publish(new GameYearChangedEvent { PlayerId = 0, TimestampUnix = NowUnix(), Year = _gameTime.Year });

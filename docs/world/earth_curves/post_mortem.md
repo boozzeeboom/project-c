@@ -72,3 +72,29 @@
 - **ShaderGraph Fullscreen Shader** — генерирует гарантированно совместимый шейдер
 - **Тестовая сцена** с контрастным горизонтом для отладки
 - **RenderPipelineManager.endContextRendering** callback — альтернатива RenderFeature
+
+---
+
+## Попытка 5 (❌ Провал): FullScreenPassRendererFeature → endCameraRendering callback
+
+**Дата:** 2026-07-29
+**Результат:** ❌ Серый/белый экран, эффекта не видно
+**Откат:** `afe151f`
+
+**Что пробовали:**
+- FullScreenPassRendererFeature с injectionPoint=AfterRenderingPostProcessing + `_BlitTexture`
+- RenderPipelineManager.endCameraRendering + cmd.Blit + `_MainTex`
+- Pincushion distortion шейдер с `SV_VertexID`
+
+**Почему не сработало:**
+1. FullScreenPassRendererFeature в URP 17 с RenderGraph не пробрасывает `_BlitTexture` надёжно
+2. `cmd.Blit(CameraTarget, CameraTarget, mat)` с `_MainTex` дал серый экран — вероятно, в URP CameraTarget не является валидным источником для Blit на момент endCameraRendering
+3. Ручной fullscreen шейдер (`SV_VertexID`) хрупок — малейшее несовпадение с ожидаемым форматом текстуры ломает всё изображение
+
+**Вывод:**
+Без ShaderGraph Fullscreen Shader (который генерирует гарантированно совместимый с RenderGraph код) и без глубокого понимания URP 17 RenderGraph API надёжно заинжектить fullscreen-проход не удаётся. Ручные HLSL-шейдеры + Blit в URP 17 слишком хрупкая комбинация.
+
+**Рекомендация на будущее:**
+- Использовать **Shader Graph → Fullscreen Shader** (генерирует HLSL, совместимый с RenderGraph)
+- Либо дождаться перехода на Unity 6 LTS где API стабилизировано
+- Тестировать на **отдельной сцене** с явной линией горизонта (без DayNightController)

@@ -1,8 +1,28 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 21 июля 2026 г. | **Текущая версия:** `v0.0.60 — Persistence + Editor Tools + NPC Navigation`
+**Последнее обновление:** 28 июля 2026 г. | **Текущая версия:** `v0.0.70 — SpringArmCamera + Performance + Wind Refactor + TimeManager`
 
-> **Что нового (7–31 июля 2026):** **134 коммита, 17 эпиков.** Подробная ретроспектива: `docs/dev/retrospective_d1850f6c_to_HEAD.md`.
+> **Что нового (22–28 июля 2026):** **71 коммит, 11 направлений.** Версия v0.0.70. Подробная ретроспектива: `docs/dev/RETROSPECTIVE_0.0.70.md`.
+>
+> **🎥 SpringArmCamera (T-CAM01..15):** Полный цикл — 17 коммитов. Collision avoidance (SphereCast), Camera Lag + Anti-Pop + Adaptive Distance, Occlusion Fade (dither shader), FOV Dynamics + Auto-Center, Over-the-shoulder offset, Mouse dead-zone + эксп. decay, Zoom колёсиком, Near-clip защита. Чистка legacy ThirdPersonCamera.cs.
+>
+> **⚡ Performance (T-PERF01..09):** Профилирование 14 подсистем через ProfilerMarker. Runtime HUD + CPU Budget + NGO Metrics. Устранение ритмичных лагов: NavMesh re-registration разброс 0→10s + cooldown 30s, архитектурный рефакторинг FindObjectsByType. Подавление GC-аллокаций NotifyNavMeshAdded (filterLogType=Exception). Guard 15+ unguarded Debug.Log → `_debugLog`/`#if UNITY_EDITOR`. SplineWindZone оптимизация: stagger detection + static ship registry.
+>
+> **🌬️ Wind System Refactor (T-WIND03):** Централизованный процессинг в WindManager с round-robin и per-zone throttling. AABB-предфильтр перед GetNearestPoint. Fix: ZoneRuntimeState struct→class (счётчик не сохранялся в словарь).
+>
+> **🔧 Core Fixes (T-CORE14..17):** ~35 compiler warnings устранено (obsolete APIs, unused fields, CS0253, TMP). Runtime-спам подавлен: downgrade severity для NavMesh/PadStateSync/meziy/KeyRod/StationRoot/ResourceNode. Verbose init/save/restore под `Debug.isDebugBuild`.
+>
+> **🔧 Docking Fix (T-DOCK15):** Retry-cooldown + авто-регистрация в `_occupiedPads` → спам «Pad Occupied» в FixedUpdate устранён.
+>
+> **💾 Persistence Fix (T-PERSIST-FIX):** Deadlock `_restoreCompleted` + ThreadPool persistentDataPath исправлен.
+>
+> **🕐 TimeManager (T-TIME01):** Игровой календарь, персистенция, UI, квестовые триггеры. CalendarConfig ScriptableObject.
+>
+> **📚 Docs Audit (T-DOCS01):** Структуризация docs/dev — 38 файлов → целевые папки. Аудит и очистка — ~180 файлов в архив. Актуализация ссылок в GDD. Переработан Character/00_README.md.
+>
+> **🧹 GIT01:** Бинарные ассеты (scenes, prefabs, shaders) вынесены в Lore VCS.
+>
+> **Предыдущий спринт (7–21 июля 2026):** **134 коммита, 17 эпиков.** Подробная ретроспектива: `docs/dev/retrospective_d1850f6c_to_HEAD.md`.
 >
 > **⚔️ Боевая система:** Полный цикл ranged/throwables (луки, арбалеты, ружья, гранаты) + projectile/throw visuals. Унификация иерархии оружия (3→2 типа). Skill Tree: persistence, cooldown per skill, slot bindings save/load, throwCount consumption. Targeting: Q/E cycling, outline highlight (URP shader), obstruction check.
 >
@@ -36,7 +56,7 @@
 >
 > **💾 Persistence (T-PERSIST, T-PLAYER-PERSIST, T-PSHPER):** Ship Position Persistence (core). Player-ship persistence: freeze → save → restore → ship-proximity respawn. Фиксы: isEngineRunning в DTO, LastShip вместо IsInShip, save-before-restore timing race, UXML-артефакты. Кнопки «СПАСЕНИЕ» (EscMenu) и «Вызвать корабль» (RepairManager, за кредиты). Архитектурная справка.
 >
-> **🌬️ Spline Wind Corridors (T-WIND02):** SplineWindZone — сплайновые ветровые коридоры. reverseDirection, centeringStrength, перф-фикс (один GetNearestPoint + троттлинг), HUD K4 displayName.
+> **🌬️ Spline Wind Corridors (T-WIND02 + T-WIND03):** SplineWindZone — сплайновые ветровые коридоры. T-WIND02: reverseDirection, centeringStrength, HUD K4 displayName. T-WIND03 (v0.0.70): централизованный процессинг в WindManager с round-robin + per-zone throttling, AABB-предфильтр, fix struct→class.
 >
 > **🏛️ Faction Unification + Knowledge System (T-FACTION-UNIFY, T-FACT01, T-KNOW):** NpcFaction → FactionDefinition объединение (A-F). Выпадающий список фракций в редакторах, таб «🏛 Factions» в NpcWorldInspector. Server-authoritative Knowledge System с UI фильтрацией.
 >
@@ -125,9 +145,18 @@
   - ⏳ **Lightning VFX** — ParticleSystem для молний (отложено)
   - ⏳ **Runtime pattern loading** — Addressables для CloudLayerConfig (отложено)
 
-### 1.2 Камера ✅
+### 1.2 Камера ✅ v0.0.70
 - ✅ WorldCamera — свободный полёт, телепортация к пикам (N/B/R/H)
-- ✅ ThirdPersonCamera — орбитальная камера от третьего лица (персонаж/корабль)
+- ✅ **SpringArmCamera** — полный цикл (T-CAM01..15, 17 коммитов, v0.0.70):
+  - ✅ Collision avoidance (SphereCast)
+  - ✅ Camera Lag + Anti-Pop + Adaptive Distance
+  - ✅ Occlusion Fade (dither shader + detection)
+  - ✅ FOV Dynamics + Auto-Center
+  - ✅ Over-the-shoulder offset
+  - ✅ Mouse dead-zone + экспоненциальный decay
+  - ✅ Zoom колёсиком (SettingsManager + InputBindingsConfig)
+  - ✅ Near-clip защита
+  - ✅ Cleanup legacy ThirdPersonCamera.cs
 
 ### 1.3 Контроллер персонажа (пеший режим) ✅
 - ✅ WASD — движение вперёд/назад + стрейф
@@ -262,6 +291,9 @@
 - ✅ Совместимость классов — проверка `IsCompatible` с fallback override из trigger-box
 - ✅ Initial state detection в UI — если `Ship.IsDocked == true`, CommPanel показывает Docked state
 - ✅ Auto-close после одобрения отстыковки — `HandleTakeoffApproved` → `SetOpen(false)`
+
+**Фиксы (v0.0.70):**
+- ✅ **T-DOCK15:** Фикс спама «Pad Occupied» в FixedUpdate — retry-cooldown + авто-регистрация в `_occupiedPads`
 
 **Что НЕ сделано (Phase 2 / Phase 1.5):**
 - ✅ **Departure subsystem** — отдельная подсистема вылета по запросу через T (`08_DEPARTURE_SUBSYSTEM.md`)
@@ -668,6 +700,17 @@
 
 **Stats:** +6 C# файлов, ~2 UXML/USS, 1 SO.
 
+### 1.20 Игровой календарь (TimeManager) ✅ v0.0.70 (T-TIME01, 2026-07-27)
+
+**Цель:** Игровое время с календарём, персистентностью, UI и квестовыми триггерами.
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `TimeManager` | Игровой календарь, персистенция, UI, квестовые триггеры | ✅ |
+| `CalendarConfig` (SO) | Имена и правила календаря в Editor | ✅ |
+
+**Документация:** `docs/dev/RETROSPECTIVE_0.0.70.md` §10.
+
 ---
 
 ## Этап 2: Сетевой фундамент (Недели 7-10) ✅ ЗАВЕРШЁН
@@ -1060,6 +1103,7 @@
 | `restoreDelaySec` 6s + диагностика | Debug-логи в RestoreCoroutine | debug ✅ |
 | Кнопка «СПАСЕНИЕ» | Аварийный респавн на дефолтную точку из EscMenu | ✅ |
 | Кнопка «Вызвать корабль» | Телепорт на ближайший свободный пад за кредиты в RepairManager | ✅ |
+| **Deadlock fix (T-PERSIST-FIX, v0.0.70)** | `_restoreCompleted` + ThreadPool persistentDataPath | ✅ |
 
 **🌬️ Spline Wind Corridors (T-WIND02)**
 
@@ -1070,6 +1114,9 @@
 | `reverseDirection` toggle | Разворот потока на 180° вдоль сплайна | ✅ |
 | `centeringStrength` | Сила центрирующей силы удержания в трубе | ✅ |
 | HUD K4 displayName | Отображение имени сплайнового коридора | ✅ |
+| **T-WIND03 (v0.0.70)** | Централизованный процессинг в WindManager с round-robin + per-zone throttling | ✅ |
+| **T-WIND03 perf** | AABB-предфильтр перед GetNearestPoint (ленивый Bounds сплайна + corridorRadius) | ✅ |
+| **T-WIND03 fix** | ZoneRuntimeState struct→class (счётчик не сохранялся в словарь) | ✅ |
 
 **🏛️ Faction Unification (T-FACTION-UNIFY, T-FACT01)**
 

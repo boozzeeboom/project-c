@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 
@@ -79,3 +80,4 @@ public static class InvestigateAnimator
         return path;
     }
 }
+#endif

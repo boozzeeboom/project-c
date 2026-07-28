@@ -1,7 +1,33 @@
+// ═══════════════════════════════════════════════════════════════════════════
 // ProjectC: Runtime Performance HUD — T-PERF-07
-// Design: docs/world/admin_tool/perfomance/PERFORMANCE_MONITORING_RESEARCH.md §4.2
-// Displays ProjectCPerfCounters metrics + built-in FPS via OnGUI (toggle F3).
-// Minimal overhead: updates once per second.
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// ■ НАЗНАЧЕНИЕ
+//   Отображает ProjectCPerfCounters (NPCs, Ships, Clouds, Chunks, Combats)
+//   + встроенный FPS через OnGUI. Тоггл: F3. Обновление: раз в секунду.
+//
+// ■ КОГДА ИСПОЛЬЗОВАТЬ
+//   - Отладка производительности в DEVELOPMENT_BUILD или Editor
+//   - Мониторинг количества активных сущностей в реальном времени
+//
+// ■ КАК ПОДКЛЮЧИТЬ
+//   Добавить компонент на персистентный GameObject
+//   (например, NetworkManagerController).
+//   В Player-билде класс отключён через #if FALSE.
+//
+// ■ СТАТУС: ⏸ ОТКЛЮЧЁН (#if FALSE)
+//   Причина: нестабилен, требуется доработка интеграции
+//   с ProjectCPerfCounters и тестирование в билде.
+//   Чтобы включить обратно — заменить #if FALSE на
+//   #if DEVELOPMENT_BUILD || UNITY_EDITOR.
+//
+// ■ ЗАВИСИМОСТИ
+//   - ProjectCPerfCounters (Assets/_Project/Scripts/Core/ProjectCPerfCounters.cs)
+//
+// ■ ДИЗАЙН-ДОК
+//   docs/world/admin_tool/perfomance/PERFORMANCE_MONITORING_RESEARCH.md §4.2
+// ═══════════════════════════════════════════════════════════════════════════
+#if FALSE
 using UnityEngine;
 
 namespace ProjectC.Core
@@ -88,3 +114,4 @@ namespace ProjectC.Core
 #endif
     }
 }
+#endif

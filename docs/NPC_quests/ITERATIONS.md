@@ -2,10 +2,18 @@
 
 ## Итерация от 2026-07-20
 
-**Задача:** Детальный анализ QuestRewardItem — переход от tradeItemId (string) к прямой ссылке на TradeItemDefinition (drag-and-drop в инспекторе)
-**Коммит:** `cfef75f861dac258b67c80103f3c03251520d6f9` — T-QREWARD: анализ QuestRewardItem
+**Задача:** Drag-and-drop поля для предметов в наградах и целях квестов (вместо ручного ввода ID)
+**Коммит:** `0326dc9eeb23fe6258faeec96060cab99fb53f05` — T-QREWARD: реализация
 **Изменения:**
-- `docs/NPC_quests/ANALYSIS_QuestRewardItem_refactor.md` — полный анализ (278 строк): две системы предметов, маппинг, план на 8 файлов
+- `Assets/_Project/Quests/Quests/QuestReward.cs` — pickupItem (ItemData) + cargoItem (TradeItemDefinition)
+- `Assets/_Project/Quests/Quests/QuestObjective.cs` — pickupItem (ItemData) для HaveItem/DeliverItem
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — ResolveItemId с ItemData ref; ApplyQuestRewards через ref
+- `Assets/_Project/Quests/Editor/QuestDefinitionValidator.cs` — валидация новых полей + cargoItems
+- `Assets/_Project/Quests/Editor/QuestGraphView.cs` — отображение resolved имён
+- `Assets/_Project/Quests/Editor/QuestNodeGraphView.cs` — отображение resolved имён
+- `Assets/_Project/Quests/Editor/QuestDatabaseWindow.cs` — отображение resolved имён
+- `Assets/_Project/Quests/Editor/QuestCsvExporter.cs` — экспорт resolved имён
+- `docs/NPC_quests/ANALYSIS_QuestRewardItem_refactor.md` — анализ архитектуры
 
 ## Итерация от 2026-07-14
 

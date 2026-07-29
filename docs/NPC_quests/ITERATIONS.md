@@ -1,6 +1,17 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-07-14
+
+**Задача:** Activity Anchors в NpcSocialBrain — Transform-якоря для idle-активностей и patrolWaypointMarkers для hand-placed NPC
+**Коммит:** `fb95076a90349a217d4db7872d928f4b49cf72ee` — T-NPC-S23: Activity Anchors — Transform-якоря для idle-активностей и patrolWaypointMarkers в NpcSocialBrain
+**Изменения:**
+- `Assets/_Project/Scripts/AI/NpcSocialBrain.cs` — добавлены patrolWaypointMarkers, workAnchor, sleepAnchor, sitAnchor, socializeAnchor, wanderAnchor; обновлены Execute* методы
+- `Assets/_Project/Scripts/AI/Editor/NpcSocialBrainEditor.cs` — новые поля в инспекторе, секция Activity Anchors
+- `docs/NPC_quests/T-NPC-S23_activity_anchors.md` — документация
+
 ## Итерация от 2026-07-09
+=======
+REPLACE
 
 **Задача:** DialogWindow: текст NPC всегда виден сверху, кнопки квестов прокручиваются (scroll)
 **Коммит:** `aa2a1ec` — T-UI04: фикс DialogWindow — текст NPC всегда виден, кнопки квестов прокручиваются

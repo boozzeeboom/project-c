@@ -479,7 +479,7 @@ namespace ProjectC.Player
         private AltitudeCorridorData _activeCorridor;
 
         // Wind state — зарегистрированные зоны
-        private List<ProjectC.Ship.WindZone> _activeWindZones = new();
+        private List<ProjectC.Ship.ShipWindZone> _activeWindZones = new();
         private Vector3 _currentWindForce;
 
         // Глобальный ветер (WindManager) — сглаженная текущая сила и дроссель логов
@@ -2213,7 +2213,7 @@ namespace ProjectC.Player
         /// <summary>
         /// Зарегистрировать зону ветра (вызывается из WindZone.OnTriggerEnter)
         /// </summary>
-        public void RegisterWindZone(ProjectC.Ship.WindZone zone)
+        public void RegisterWindZone(ProjectC.Ship.ShipWindZone zone)
         {
             if (!_activeWindZones.Contains(zone))
             {
@@ -2224,7 +2224,7 @@ namespace ProjectC.Player
         /// <summary>
         /// Отрегистрировать зону ветра (вызывается из WindZone.OnTriggerExit)
         /// </summary>
-        public void UnregisterWindZone(ProjectC.Ship.WindZone zone)
+        public void UnregisterWindZone(ProjectC.Ship.ShipWindZone zone)
         {
             _activeWindZones.Remove(zone);
         }

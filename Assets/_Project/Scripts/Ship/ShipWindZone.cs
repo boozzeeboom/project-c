@@ -10,7 +10,7 @@ namespace ProjectC.Ship
     /// Визуализируется в Scene view через Gizmos (стрелка направления, цвет по силе).
     /// </summary>
     [RequireComponent(typeof(Collider))]
-    public class WindZone : MonoBehaviour
+    public class ShipWindZone : MonoBehaviour
     {
         [Header("Данные Зоны")]
         [Tooltip("ScriptableObject с параметрами ветра")]

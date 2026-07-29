@@ -177,11 +177,12 @@ namespace ProjectC.AI
         private float _sleepWakeTime;
         private bool _sleepInitialized;
 
-        // S23: anchor array cycling indices
+        // S23: anchor array indices + timers
         private int _workAnchorIndex;
         private int _sitAnchorIndex;
         private int _sleepAnchorIndex;
         private int _socializeAnchorIndex;
+        private float _sitTimer;
 
         public bool IsFleeing => _isFleeing;
         public GrudgeTable Grudge => _grudgeTable;
@@ -406,8 +407,29 @@ namespace ProjectC.AI
                 case NpcIdleActivity.Work: ExecuteWork(); break;
                 case NpcIdleActivity.Sit: ExecuteSit(); break;
                 case NpcIdleActivity.Sleep: ExecuteSleep(); break;
+
+        /// <summary>Резолвит актуальные точки патруля: Transform[] markers приоритетнее Vector3[].</summary>
             }
         }
+
+        // ── S23 helpers ──
+
+        private static Transform GetAnchorSafe(Transform[] anchors, ref int index)
+        {
+            if (anchors == null || anchors.Length == 0) return null;
+            index = Mathf.Clamp(index, 0, anchors.Length - 1);
+            return anchors[index];
+        }
+
+        private static int NextRandomIndex(int length, int current)
+        {
+            if (length <= 1) return 0;
+            int next;
+            do { next = Random.Range(0, length); } while (next == current);
+            return next;
+        }
+
+        /// <summary>Резолвит актуальные точки патруля: Transform[] markers приоритетнее Vector3[].</summary>
 
         private void ExecuteStandStill()
         {
@@ -424,11 +446,10 @@ namespace ProjectC.AI
             if (_agent == null || !_agent.isOnNavMesh) return;
             if (Time.unscaledTime < _socializeCooldown) return;
 
-            // S23: если заданы socializeAnchors — идём к текущей точке сбора.
+            // S23: если заданы socializeAnchors — идём к точке, тусим, затем random следующая.
             if (socializeAnchors != null && socializeAnchors.Length > 0)
             {
-                int idx = _socializeAnchorIndex % socializeAnchors.Length;
-                Transform anchor = socializeAnchors[idx];
+                Transform anchor = GetAnchorSafe(socializeAnchors, ref _socializeAnchorIndex);
                 if (anchor != null)
                 {
                     if (Vector3.Distance(transform.position, anchor.position) > socializeApproachThreshold)
@@ -439,8 +460,8 @@ namespace ProjectC.AI
                     else
                     {
                         _agent.isStopped = true;
-                        // Дошли — тусим здесь cooldown, потом следующая точка.
-                        _socializeAnchorIndex++;
+                        // Дошли — тусим здесь cooldown, потом random следующая.
+                        _socializeAnchorIndex = NextRandomIndex(socializeAnchors.Length, _socializeAnchorIndex);
                     }
                 }
                 _socializeCooldown = Time.unscaledTime + Random.Range(socializeCooldownMin, socializeCooldownMax);
@@ -483,11 +504,10 @@ namespace ProjectC.AI
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
 
-            // S23: если заданы workAnchors — ходим между точками и работаем на каждой.
+            // S23: если заданы workAnchors — идём к точке, работаем, затем random следующая.
             if (workAnchors != null && workAnchors.Length > 0)
             {
-                int idx = _workAnchorIndex % workAnchors.Length;
-                Transform anchor = workAnchors[idx];
+                Transform anchor = GetAnchorSafe(workAnchors, ref _workAnchorIndex);
                 if (anchor != null)
                 {
                     if (Vector3.Distance(transform.position, anchor.position) > patrolArrivalThreshold)
@@ -497,16 +517,16 @@ namespace ProjectC.AI
                         return;
                     }
 
-                    // На месте — работаем.
+                    // На месте — работаем n+random сек.
                     _agent.isStopped = true;
                     if (Time.unscaledTime > _workAnimTimer)
                     {
                         var anim = GetComponentInChildren<Animator>();
                         if (anim != null) { anim.SetInteger("WorkVariant", Random.Range(0, 3)); anim.SetTrigger("Work"); }
                         _workAnimTimer = Time.unscaledTime + Random.Range(workAnimIntervalMin, workAnimIntervalMax);
+                        // Отработали → random следующая (не текущая).
+                        _workAnchorIndex = NextRandomIndex(workAnchors.Length, _workAnchorIndex);
                     }
-                    // Отработали → следующая точка.
-                    _workAnchorIndex++;
                 }
                 return;
             }
@@ -525,11 +545,10 @@ namespace ProjectC.AI
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
 
-            // S23: если заданы sitAnchors — ходим между точками и сидим (без поиска SitPoint).
+            // S23: если заданы sitAnchors — идём к точке, сидим n+random, затем random следующая.
             if (sitAnchors != null && sitAnchors.Length > 0)
             {
-                int idx = _sitAnchorIndex % sitAnchors.Length;
-                Transform anchor = sitAnchors[idx];
+                Transform anchor = GetAnchorSafe(sitAnchors, ref _sitAnchorIndex);
                 if (anchor != null)
                 {
                     if (Vector3.Distance(transform.position, anchor.position) > patrolArrivalThreshold)
@@ -538,12 +557,13 @@ namespace ProjectC.AI
                         _agent.SetDestination(anchor.position);
                         return;
                     }
-                    // Пришли — сидим.
+                    // Пришли — сидим n+random сек.
                     _agent.isStopped = true;
-                    if (Time.unscaledTime > _sitSearchCooldown + sitSearchInterval)
+                    if (Time.unscaledTime > _sitTimer)
                     {
-                        _sitSearchCooldown = Time.unscaledTime;
-                        _sitAnchorIndex++; // переходим к следующей точке
+                        _sitTimer = Time.unscaledTime + Random.Range(sitSearchInterval, sitSearchInterval * 2f);
+                        // Посидели → random следующая (не текущая).
+                        _sitAnchorIndex = NextRandomIndex(sitAnchors.Length, _sitAnchorIndex);
                     }
                 }
                 return;
@@ -607,9 +627,9 @@ namespace ProjectC.AI
             if (Time.unscaledTime > _sleepWakeTime)
             {
                 _sleepInitialized = false;
-                // S23: переходим к следующей точке сна
+                // S23: проснулись → random следующая точка сна (не текущая).
                 if (sleepAnchors != null && sleepAnchors.Length > 0)
-                    _sleepAnchorIndex++;
+                    _sleepAnchorIndex = NextRandomIndex(sleepAnchors.Length, _sleepAnchorIndex);
                 idleActivity = NpcIdleActivity.StandStill;
                 var anim = GetComponentInChildren<Animator>();
                 if (anim != null) anim.SetBool("IsSleeping", false);

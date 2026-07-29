@@ -251,9 +251,10 @@ public class NpcSocialBrainEditor : Editor
         EditorGUILayout.EndFoldoutHeaderGroup();
 
         // ── 4. Socialize & Work ──
-        _foldoutSocialize = EditorGUILayout.BeginFoldoutHeaderGroup(_foldoutSocialize, "▶ Socialize & Work Tuning");
+        _foldoutSocialize = EditorGUILayout.Foldout(_foldoutSocialize, "▶ Socialize & Work Tuning", true);
         if (_foldoutSocialize)
         {
+            EditorGUI.indentLevel++;
             EditorGUILayout.LabelField("Socialize", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_socializeAnchors, true);
             EditorGUILayout.PropertyField(_socializeSearchRadius);
@@ -278,8 +279,8 @@ public class NpcSocialBrainEditor : Editor
             EditorGUILayout.PropertyField(_sleepAnchors, true);
             EditorGUILayout.PropertyField(_sleepDurationMin);
             EditorGUILayout.PropertyField(_sleepDurationMax);
+            EditorGUI.indentLevel--;
         }
-        EditorGUILayout.EndFoldoutHeaderGroup();
 
         // ── 5. Flee ──
         _foldoutFlee = EditorGUILayout.BeginFoldoutHeaderGroup(_foldoutFlee, "▶ Flee");

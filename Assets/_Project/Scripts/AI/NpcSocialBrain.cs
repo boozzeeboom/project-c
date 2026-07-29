@@ -519,13 +519,18 @@ namespace ProjectC.AI
 
                     // На месте — работаем n+random сек.
                     _agent.isStopped = true;
-                    if (Time.unscaledTime > _workAnimTimer)
+                    if (_workAnimTimer <= 0f)
                     {
+                        // Только что пришли — играем анимацию, ставим таймер.
                         var anim = GetComponentInChildren<Animator>();
                         if (anim != null) { anim.SetInteger("WorkVariant", Random.Range(0, 3)); anim.SetTrigger("Work"); }
                         _workAnimTimer = Time.unscaledTime + Random.Range(workAnimIntervalMin, workAnimIntervalMax);
+                    }
+                    else if (Time.unscaledTime > _workAnimTimer)
+                    {
                         // Отработали → random следующая (не текущая).
                         _workAnchorIndex = NextRandomIndex(workAnchors.Length, _workAnchorIndex);
+                        _workAnimTimer = 0f;
                     }
                 }
                 return;
@@ -559,11 +564,16 @@ namespace ProjectC.AI
                     }
                     // Пришли — сидим n+random сек.
                     _agent.isStopped = true;
-                    if (Time.unscaledTime > _sitTimer)
+                    if (_sitTimer <= 0f)
                     {
+                        // Только что сели — ставим таймер.
                         _sitTimer = Time.unscaledTime + Random.Range(sitSearchInterval, sitSearchInterval * 2f);
+                    }
+                    else if (Time.unscaledTime > _sitTimer)
+                    {
                         // Посидели → random следующая (не текущая).
                         _sitAnchorIndex = NextRandomIndex(sitAnchors.Length, _sitAnchorIndex);
+                        _sitTimer = 0f;
                     }
                 }
                 return;

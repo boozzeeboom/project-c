@@ -1,5 +1,19 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-07-30 (v2)
+
+**Задача:** Drag-and-drop для всех оставшихся строковых ID (NPC, квесты, сцены, диалоги) — KillEntity, ReachLocation, AddNpcAttitude, SwitchDialogTree, OfferQuest, и др.
+**Коммит:** `3fd004e3dd9bd1560d290200ece968dab049038c` — T-QUEDIT v2: drag-and-drop для всех строковых ID
+**Изменения:**
+- `Assets/_Project/Quests/Quests/QuestObjective.cs` — `targetEntity` (NpcDefinition) для KillEntity
+- `Assets/_Project/Quests/Quests/QuestPrerequisite.cs` — `requiredNpc` (NpcDefinition) для NpcAttitudeAtLeast
+- `Assets/_Project/Quests/Dialogue/DialogueAction.cs` — `questRef` (QuestDefinition), `npcRef` (NpcDefinition), `dialogTreeRef` (DialogTree) + методы `GetQuestId()`, `GetNpcId()`, `GetDialogTreeId()`
+- `Assets/_Project/Quests/Editor/QuestObjectiveDrawer.cs` — SceneAsset ObjectField для ReachLocation
+- `Assets/_Project/Quests/Editor/DialogueActionDrawer.cs` — questRef/npcRef/dialogTreeRef поля
+- `Assets/_Project/Quests/Editor/QuestPrerequisiteDrawer.cs` — requiredNpc поле
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — runtime-резолв NpcAttitudeAtLeast, KillEntity через object refs
+- `Assets/_Project/Quests/Network/QuestServer.cs` — резолв через GetQuestId/GetNpcId в FireDialogAction
+
 ## Итерация от 2026-07-29
 
 **Задача:** Кастомный редактор QuestDefinition.asset — удобный для не-технаря (drag-and-drop, контекстно-зависимые поля, сводка, авто-валидация)

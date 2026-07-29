@@ -43,14 +43,14 @@ namespace ProjectC.AI
         [Range(5f, 60f)] public float patrolStuckTimeout = 15f;
 
         [Header("Activity Anchors (T-NPC-S23)")]
-        [Tooltip("Точка для активности Work. NPC идёт сюда и играет рабочую анимацию.")]
-        public Transform workAnchor;
-        [Tooltip("Точка для активности Sleep. NPC идёт сюда и засыпает.")]
-        public Transform sleepAnchor;
-        [Tooltip("Точка для сидения (альтернатива поиску SitPoint). Если задана — NPC сидит здесь.")]
-        public Transform sitAnchor;
-        [Tooltip("Точка сбора для активности Socialize.")]
-        public Transform socializeAnchor;
+        [Tooltip("Точки для Work. NPC ходит между ними и играет рабочую анимацию на каждой.")]
+        public Transform[] workAnchors;
+        [Tooltip("Точки для Sleep. NPC выбирает одну и идёт спать.")]
+        public Transform[] sleepAnchors;
+        [Tooltip("Точки для сидения (приоритет над поиском SitPoint). NPC может сидеть в любом из этих мест.")]
+        public Transform[] sitAnchors;
+        [Tooltip("Точки сбора для Socialize. NPC идёт к одной из них для общения.")]
+        public Transform[] socializeAnchors;
         [Tooltip("Центр зоны блуждания для Wander. Если не задан — используется _brain.SpawnPoint.")]
         public Transform wanderAnchor;
 
@@ -176,6 +176,12 @@ namespace ProjectC.AI
         private float _sitSearchCooldown;
         private float _sleepWakeTime;
         private bool _sleepInitialized;
+
+        // S23: anchor array cycling indices
+        private int _workAnchorIndex;
+        private int _sitAnchorIndex;
+        private int _sleepAnchorIndex;
+        private int _socializeAnchorIndex;
 
         public bool IsFleeing => _isFleeing;
         public GrudgeTable Grudge => _grudgeTable;
@@ -418,11 +424,25 @@ namespace ProjectC.AI
             if (_agent == null || !_agent.isOnNavMesh) return;
             if (Time.unscaledTime < _socializeCooldown) return;
 
-            // S23: если задан socializeAnchor — идём к точке сбора.
-            if (socializeAnchor != null && Vector3.Distance(transform.position, socializeAnchor.position) > socializeApproachThreshold)
+            // S23: если заданы socializeAnchors — идём к текущей точке сбора.
+            if (socializeAnchors != null && socializeAnchors.Length > 0)
             {
-                _agent.isStopped = false;
-                _agent.SetDestination(socializeAnchor.position);
+                int idx = _socializeAnchorIndex % socializeAnchors.Length;
+                Transform anchor = socializeAnchors[idx];
+                if (anchor != null)
+                {
+                    if (Vector3.Distance(transform.position, anchor.position) > socializeApproachThreshold)
+                    {
+                        _agent.isStopped = false;
+                        _agent.SetDestination(anchor.position);
+                    }
+                    else
+                    {
+                        _agent.isStopped = true;
+                        // Дошли — тусим здесь cooldown, потом следующая точка.
+                        _socializeAnchorIndex++;
+                    }
+                }
                 _socializeCooldown = Time.unscaledTime + Random.Range(socializeCooldownMin, socializeCooldownMax);
                 return;
             }
@@ -463,15 +483,35 @@ namespace ProjectC.AI
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
 
-            // S23: если задан workAnchor — сначала идём к нему.
-            if (workAnchor != null && Vector3.Distance(transform.position, workAnchor.position) > patrolArrivalThreshold)
+            // S23: если заданы workAnchors — ходим между точками и работаем на каждой.
+            if (workAnchors != null && workAnchors.Length > 0)
             {
-                _agent.isStopped = false;
-                _agent.SetDestination(workAnchor.position);
+                int idx = _workAnchorIndex % workAnchors.Length;
+                Transform anchor = workAnchors[idx];
+                if (anchor != null)
+                {
+                    if (Vector3.Distance(transform.position, anchor.position) > patrolArrivalThreshold)
+                    {
+                        _agent.isStopped = false;
+                        _agent.SetDestination(anchor.position);
+                        return;
+                    }
+
+                    // На месте — работаем.
+                    _agent.isStopped = true;
+                    if (Time.unscaledTime > _workAnimTimer)
+                    {
+                        var anim = GetComponentInChildren<Animator>();
+                        if (anim != null) { anim.SetInteger("WorkVariant", Random.Range(0, 3)); anim.SetTrigger("Work"); }
+                        _workAnimTimer = Time.unscaledTime + Random.Range(workAnimIntervalMin, workAnimIntervalMax);
+                    }
+                    // Отработали → следующая точка.
+                    _workAnchorIndex++;
+                }
                 return;
             }
 
-            // На месте — работаем.
+            // Без якорей — стоим на месте, работаем.
             _agent.isStopped = true;
             if (Time.unscaledTime > _workAnimTimer)
             {
@@ -485,16 +525,27 @@ namespace ProjectC.AI
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
 
-            // S23: если задан sitAnchor — идём и сидим там (без поиска SitPoint).
-            if (sitAnchor != null)
+            // S23: если заданы sitAnchors — ходим между точками и сидим (без поиска SitPoint).
+            if (sitAnchors != null && sitAnchors.Length > 0)
             {
-                if (Vector3.Distance(transform.position, sitAnchor.position) > patrolArrivalThreshold)
+                int idx = _sitAnchorIndex % sitAnchors.Length;
+                Transform anchor = sitAnchors[idx];
+                if (anchor != null)
                 {
-                    _agent.isStopped = false;
-                    _agent.SetDestination(sitAnchor.position);
-                    return;
+                    if (Vector3.Distance(transform.position, anchor.position) > patrolArrivalThreshold)
+                    {
+                        _agent.isStopped = false;
+                        _agent.SetDestination(anchor.position);
+                        return;
+                    }
+                    // Пришли — сидим.
+                    _agent.isStopped = true;
+                    if (Time.unscaledTime > _sitSearchCooldown + sitSearchInterval)
+                    {
+                        _sitSearchCooldown = Time.unscaledTime;
+                        _sitAnchorIndex++; // переходим к следующей точке
+                    }
                 }
-                _agent.isStopped = true;
                 return;
             }
 
@@ -528,13 +579,21 @@ namespace ProjectC.AI
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
 
-            // S23: если sleepAnchor задан и мы ещё не на месте — идём к нему.
+            // S23: если заданы sleepAnchors — идём к выбранной точке и спим.
             if (!_sleepInitialized)
             {
-                if (sleepAnchor != null && Vector3.Distance(transform.position, sleepAnchor.position) > patrolArrivalThreshold)
+                Vector3? sleepTarget = null;
+                if (sleepAnchors != null && sleepAnchors.Length > 0)
+                {
+                    int idx = _sleepAnchorIndex % sleepAnchors.Length;
+                    if (sleepAnchors[idx] != null)
+                        sleepTarget = sleepAnchors[idx].position;
+                }
+
+                if (sleepTarget.HasValue && Vector3.Distance(transform.position, sleepTarget.Value) > patrolArrivalThreshold)
                 {
                     _agent.isStopped = false;
-                    _agent.SetDestination(sleepAnchor.position);
+                    _agent.SetDestination(sleepTarget.Value);
                     return;
                 }
 
@@ -544,9 +603,13 @@ namespace ProjectC.AI
                 if (anim != null) anim.SetBool("IsSleeping", true);
                 _agent.isStopped = true;
             }
+
             if (Time.unscaledTime > _sleepWakeTime)
             {
                 _sleepInitialized = false;
+                // S23: переходим к следующей точке сна
+                if (sleepAnchors != null && sleepAnchors.Length > 0)
+                    _sleepAnchorIndex++;
                 idleActivity = NpcIdleActivity.StandStill;
                 var anim = GetComponentInChildren<Animator>();
                 if (anim != null) anim.SetBool("IsSleeping", false);

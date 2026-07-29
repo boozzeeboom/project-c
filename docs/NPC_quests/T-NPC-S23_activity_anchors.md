@@ -19,20 +19,28 @@ NPC, не использующие `NpcSpawner` (например, hand-placed �
 
 | Поле | Активность | Поведение |
 |---|---|---|
-| `workAnchor` | Work | NPC идёт к якорю → играет рабочую анимацию |
-| `sleepAnchor` | Sleep | NPC идёт к якорю → засыпает |
-| `sitAnchor` | Sit | NPC идёт к якорю → сидит (без поиска SitPoint) |
-| `socializeAnchor` | Socialize | Точка сбора для общения |
-| `wanderAnchor` | Wander | Центр зоны блуждания (fallback: `_brain.SpawnPoint`) |
+| `workAnchors` (Transform[]) | Work | NPC ходит между точками, на каждой играет анимацию |
+| `sleepAnchors` (Transform[]) | Sleep | NPC идёт к выбранной точке → спит, потом следующая |
+| `sitAnchors` (Transform[]) | Sit | NPC ходит между точками и сидит (без поиска SitPoint) |
+| `socializeAnchors` (Transform[]) | Socialize | Точки сбора для общения |
+| `wanderAnchor` (Transform) | Wander | Центр зоны блуждания (fallback: `_brain.SpawnPoint`) |
+=======
+REPLACE
 
 ### 3. Логика приоритета
 - Если NPC часть `NpcSpawner` → спавнеровские `patrolWaypointMarkers` передаются как `waypointsOverride` в `ApplySpawnerConfig()` и перезаписывают `patrolWaypoints` (старое поведение без изменений).
 - Если NPC hand-placed → дизайнер заполняет `patrolWaypointMarkers` и activity anchors прямо в инспекторе `NpcSocialBrain`.
 
 ### 4. Инспектор
-- В секцию «Idle Activities» добавлено поле `Patrol Waypoint Markers` (Transform[]).
-- При выборе активности Work/Sleep/Sit/Socialize — появляется секция «Activity Anchors (T-NPC-S23)» с соответствующим полем.
-- При выборе Wander — появляется поле `Wander Anchor`.
+- **«Socialize & Work Tuning»**: массивы `Socialize Anchors`, `Work Anchors`, `Sit Anchors`, `Sleep Anchors` — каждый под своим заголовком.
+- **«Idle Activities» → Wander**: поле `Wander Anchor` (одиночное, центр блуждания).
+
+### 5. Циклический обход
+Для массивов (Work, Sit, Sleep, Socialize) NPC последовательно обходит точки:
+- Дошёл до точки → выполняет активность → переходит к следующей.
+- Работает как Loop (по кругу).
+=======
+REPLACE
 
 ## Использование (hand-placed NPC)
 

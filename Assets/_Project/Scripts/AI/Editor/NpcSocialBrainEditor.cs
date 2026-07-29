@@ -47,10 +47,10 @@ public class NpcSocialBrainEditor : Editor
     private SerializedProperty _patrolStuckTimeout;
     private SerializedProperty _wanderCooldownMin;
     private SerializedProperty _wanderCooldownMax;
-    private SerializedProperty _workAnchor;
-    private SerializedProperty _sleepAnchor;
-    private SerializedProperty _sitAnchor;
-    private SerializedProperty _socializeAnchor;
+    private SerializedProperty _workAnchors;
+    private SerializedProperty _sleepAnchors;
+    private SerializedProperty _sitAnchors;
+    private SerializedProperty _socializeAnchors;
     private SerializedProperty _wanderAnchor;
     private SerializedProperty _socializeSearchRadius;
     private SerializedProperty _socializeApproachThreshold;
@@ -123,10 +123,10 @@ public class NpcSocialBrainEditor : Editor
         _patrolStuckTimeout = serializedObject.FindProperty("patrolStuckTimeout");
         _wanderCooldownMin = serializedObject.FindProperty("wanderCooldownMin");
         _wanderCooldownMax = serializedObject.FindProperty("wanderCooldownMax");
-        _workAnchor = serializedObject.FindProperty("workAnchor");
-        _sleepAnchor = serializedObject.FindProperty("sleepAnchor");
-        _sitAnchor = serializedObject.FindProperty("sitAnchor");
-        _socializeAnchor = serializedObject.FindProperty("socializeAnchor");
+        _workAnchors = serializedObject.FindProperty("workAnchors");
+        _sleepAnchors = serializedObject.FindProperty("sleepAnchors");
+        _sitAnchors = serializedObject.FindProperty("sitAnchors");
+        _socializeAnchors = serializedObject.FindProperty("socializeAnchors");
         _wanderAnchor = serializedObject.FindProperty("wanderAnchor");
         _socializeSearchRadius = serializedObject.FindProperty("socializeSearchRadius");
         _socializeApproachThreshold = serializedObject.FindProperty("socializeApproachThreshold");
@@ -247,22 +247,6 @@ public class NpcSocialBrainEditor : Editor
                 EditorGUILayout.PropertyField(_wanderCooldownMin);
                 EditorGUILayout.PropertyField(_wanderCooldownMax);
             }
-
-            // S23: Activity Anchors — visible when relevant activity is selected
-            if (currentActivity == NpcIdleActivity.Work || currentActivity == NpcIdleActivity.Sleep ||
-                currentActivity == NpcIdleActivity.Sit || currentActivity == NpcIdleActivity.Socialize)
-            {
-                EditorGUILayout.Space(4);
-                EditorGUILayout.LabelField("Activity Anchors (T-NPC-S23)", EditorStyles.boldLabel);
-                if (currentActivity == NpcIdleActivity.Work)
-                    EditorGUILayout.PropertyField(_workAnchor);
-                if (currentActivity == NpcIdleActivity.Sleep)
-                    EditorGUILayout.PropertyField(_sleepAnchor);
-                if (currentActivity == NpcIdleActivity.Sit)
-                    EditorGUILayout.PropertyField(_sitAnchor);
-                if (currentActivity == NpcIdleActivity.Socialize)
-                    EditorGUILayout.PropertyField(_socializeAnchor);
-            }
         }
         EditorGUILayout.EndFoldoutHeaderGroup();
 
@@ -271,6 +255,7 @@ public class NpcSocialBrainEditor : Editor
         if (_foldoutSocialize)
         {
             EditorGUILayout.LabelField("Socialize", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_socializeAnchors, true);
             EditorGUILayout.PropertyField(_socializeSearchRadius);
             EditorGUILayout.PropertyField(_socializeApproachThreshold);
             EditorGUILayout.PropertyField(_socializeCooldownMin);
@@ -278,16 +263,19 @@ public class NpcSocialBrainEditor : Editor
 
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField("Work", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_workAnchors, true);
             EditorGUILayout.PropertyField(_workAnimIntervalMin);
             EditorGUILayout.PropertyField(_workAnimIntervalMax);
 
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField("Sit", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_sitAnchors, true);
             EditorGUILayout.PropertyField(_sitSearchInterval);
             EditorGUILayout.PropertyField(_sitSearchRadius);
 
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField("Sleep", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_sleepAnchors, true);
             EditorGUILayout.PropertyField(_sleepDurationMin);
             EditorGUILayout.PropertyField(_sleepDurationMax);
         }

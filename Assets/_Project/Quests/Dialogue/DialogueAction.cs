@@ -14,6 +14,7 @@ using System;
 using UnityEngine;
 using ProjectC.Factions;
 using ProjectC.Items;
+using ProjectC.Quests;
 
 namespace ProjectC.Dialogue
 {
@@ -80,8 +81,17 @@ namespace ProjectC.Dialogue
         [Tooltip("Тип действия (atomic).")]
         public DialogueActionType type = DialogueActionType.EndConversation;
 
-        [Tooltip("Primary string param: questId / itemName (legacy) / npcId / eventId / treeId / market zoneId / flag id.")]
+        [Tooltip("Primary string param: questId / itemName (legacy) / npcId / eventId / treeId / market zoneId / flag id. Оставлено для CSV.")]
         public string stringParam = "";
+
+        [Tooltip("Quest reference (для OfferQuest, AcceptQuest, CompleteObjective, FailQuest, DiscoverQuest). Перетащи QuestDefinition.")]
+        public QuestDefinition questRef;
+
+        [Tooltip("NPC reference (для AddNpcAttitude). Перетащи NpcDefinition.")]
+        public NpcDefinition npcRef;
+
+        [Tooltip("DialogTree reference (для SwitchDialogTree). Перетащи DialogTree.")]
+        public DialogTree dialogTreeRef;
 
         [Tooltip("Secondary string param: objectiveId / service id / dialog nodeId.")]
         public string stageIdParam = "";
@@ -98,5 +108,16 @@ namespace ProjectC.Dialogue
 
         [Tooltip("T-Q27: ItemType for GiveItem (по умолчанию Resources).")]
         public ItemType itemType = ItemType.Resources;
+
+        // ── T-QUEDIT v2: resolution helpers (object-ref priority over string) ──
+
+        /// <summary>Resolve questId: questRef приоритетнее stringParam.</summary>
+        public string GetQuestId() => questRef != null ? questRef.questId : stringParam;
+
+        /// <summary>Resolve npcId: npcRef приоритетнее stringParam.</summary>
+        public string GetNpcId() => npcRef != null ? npcRef.npcId : stringParam;
+
+        /// <summary>Resolve dialog tree id: dialogTreeRef приоритетнее stringParam.</summary>
+        public string GetDialogTreeId() => dialogTreeRef != null ? dialogTreeRef.name : stringParam;
     }
 }

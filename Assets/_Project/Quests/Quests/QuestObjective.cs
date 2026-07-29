@@ -61,8 +61,11 @@ namespace ProjectC.Quests
         [Min(0f)]
         public float targetRadius = 10f;
 
-        [Tooltip("Entity type tag (dlya KillEntity, STUB).")]
+        [Tooltip("Entity type tag (dlya KillEntity, STUB). Оставлено для CSV. targetEntity приоритетнее.")]
         public string targetEntityType = "";
+
+        [Tooltip("NPC/Entity definition (для KillEntity). Перетащи NpcDefinition. Приоритетнее targetEntityType.")]
+        public NpcDefinition targetEntity;
 
         [Tooltip("Faction (dlya ReputationAtLeast).")]
         public FactionId targetFaction = FactionId.None;

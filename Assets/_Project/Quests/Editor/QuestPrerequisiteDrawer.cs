@@ -1,5 +1,5 @@
 // QuestPrerequisiteDrawer — контекстно-зависимый PropertyDrawer для QuestPrerequisite.
-// Показывает только поля, релевантные выбранному QuestPrerequisiteType.
+// T-QUEDIT v2: requiredNpc для NpcAttitudeAtLeast.
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -23,16 +23,14 @@ namespace ProjectC.Quests.Editor
             float y = position.y;
             float w = position.width;
 
-            // Always show type
             EditorGUI.PropertyField(new Rect(position.x, y, w, lineH), typeProp, new GUIContent("Condition"));
             y += lineH + 2;
 
-            // Context-sensitive fields
             switch (type)
             {
                 case QuestPrerequisiteType.QuestCompleted:
                 case QuestPrerequisiteType.QuestActive:
-                    DrawQuestField(property, position, ref y, w, lineH);
+                    DrawQuestRefField(property, position, ref y, w, lineH);
                     break;
 
                 case QuestPrerequisiteType.ReputationAtLeast:
@@ -43,7 +41,7 @@ namespace ProjectC.Quests.Editor
                     break;
 
                 case QuestPrerequisiteType.NpcAttitudeAtLeast:
-                    DrawStringParam(property, position, ref y, w, lineH, "NPC ID");
+                    DrawNpcRefField(property, position, ref y, w, lineH);
                     DrawIntParam(property, position, ref y, w, lineH, "Min Value");
                     break;
 
@@ -70,16 +68,21 @@ namespace ProjectC.Quests.Editor
         {
             var typeProp = property.FindPropertyRelative("type");
             var type = (QuestPrerequisiteType)typeProp.enumValueIndex;
-            int lines = 1; // type always
+            int lines = 1;
 
             switch (type)
             {
                 case QuestPrerequisiteType.QuestCompleted:
                 case QuestPrerequisiteType.QuestActive:
-                    lines += 1; // requiredQuest or stringParam
+                    lines += 1;
+                    if (property.FindPropertyRelative("requiredQuest").objectReferenceValue == null) lines += 1;
                     break;
                 case QuestPrerequisiteType.ReputationAtLeast:
+                    lines += 2; break;
                 case QuestPrerequisiteType.NpcAttitudeAtLeast:
+                    lines += 2;
+                    if (property.FindPropertyRelative("requiredNpc").objectReferenceValue == null) lines += 1;
+                    break;
                 case QuestPrerequisiteType.HaveItem:
                 case QuestPrerequisiteType.PlayerFaction:
                     lines += 2; break;
@@ -104,17 +107,30 @@ namespace ProjectC.Quests.Editor
             y += h + 2;
         }
 
-        private static void DrawQuestField(SerializedProperty property, Rect position, ref float y, float w, float h)
+        private static void DrawQuestRefField(SerializedProperty property, Rect position, ref float y, float w, float h)
         {
             var questProp = property.FindPropertyRelative("requiredQuest");
             EditorGUI.PropertyField(new Rect(position.x, y, w, h), questProp, new GUIContent("Quest (drag .asset)"));
             y += h + 2;
 
-            // Show fallback string only if requiredQuest is null
             if (questProp.objectReferenceValue == null)
             {
                 EditorGUI.PropertyField(new Rect(position.x, y, w, h),
                     property.FindPropertyRelative("stringParam"), new GUIContent("  └ Quest ID (string)"));
+                y += h + 2;
+            }
+        }
+
+        private static void DrawNpcRefField(SerializedProperty property, Rect position, ref float y, float w, float h)
+        {
+            var npcProp = property.FindPropertyRelative("requiredNpc");
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h), npcProp, new GUIContent("NPC (drag .asset)"));
+            y += h + 2;
+
+            if (npcProp.objectReferenceValue == null)
+            {
+                EditorGUI.PropertyField(new Rect(position.x, y, w, h),
+                    property.FindPropertyRelative("stringParam"), new GUIContent("  └ NPC ID (string)"));
                 y += h + 2;
             }
         }

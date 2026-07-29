@@ -1326,8 +1326,9 @@ namespace ProjectC.Quests
                         // T-Q15: real impl — QuestWorld.TryOffer (Discovered → Offered).
                         var qwOffer = QuestWorld.Instance;
                         if (qwOffer == null) break;
-                        var resultOffer = qwOffer.TryOffer(clientId, action.stringParam);
-                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OfferQuest {action.stringParam} to client {clientId} → code={resultOffer.code} msg={resultOffer.message}");
+                        string offerQuestId = action.GetQuestId();
+                        var resultOffer = qwOffer.TryOffer(clientId, offerQuestId);
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OfferQuest {offerQuestId} to client {clientId} → code={resultOffer.code} msg={resultOffer.message}");
                         if (resultOffer.code == (byte)QuestResultCode.Ok)
                         {
                             SendQuestSnapshotToClient(clientId);
@@ -1343,7 +1344,8 @@ namespace ProjectC.Quests
                 case DialogueActionType.AcceptQuest:
                     {
                         // M11: auto-accept quest — TryOffer + TryAccept (no manual P accept needed).
-                        if (string.IsNullOrEmpty(action.stringParam))
+                        string acceptQuestId = action.GetQuestId();
+                        if (string.IsNullOrEmpty(acceptQuestId))
                         {
                             SendDialogActionResultToClient(clientId, new DialogActionResultDto { actionType = (byte)action.type, success = false, resultData = "missing questId" });
                             break;
@@ -1354,9 +1356,9 @@ namespace ProjectC.Quests
                             SendDialogActionResultToClient(clientId, new DialogActionResultDto { actionType = (byte)action.type, success = false, resultData = "QuestWorld null" });
                             break;
                         }
-                        qwAccept.TryOffer(clientId, action.stringParam);
-                        var acceptResult = qwAccept.TryAccept(clientId, action.stringParam, "");
-                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AcceptQuest {action.stringParam} → code={acceptResult.code} {acceptResult.message}");
+                        qwAccept.TryOffer(clientId, acceptQuestId);
+                        var acceptResult = qwAccept.TryAccept(clientId, acceptQuestId, "");
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AcceptQuest {acceptQuestId} → code={acceptResult.code} {acceptResult.message}");
                         SendQuestSnapshotToClient(clientId);
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
@@ -1395,10 +1397,8 @@ namespace ProjectC.Quests
                     break;
                 case DialogueActionType.CompleteObjective:
                     {
-                        // M11 demo: CompleteObjective → server-side mark objective complete (T-Q15 stub real impl).
-                        // stringParam = questId, stageIdParam = objectiveId (quest stage id).
-                        // Если quest помечен TurnInPending (active goal) → trigger QuestWorld.TryTurnIn.
-                        if (string.IsNullOrEmpty(action.stringParam))
+                        string completeQuestId = action.GetQuestId();
+                        if (string.IsNullOrEmpty(completeQuestId))
                         {
                             Debug.LogWarning("[QuestServer] FireDialogAction: CompleteObjective skipped — questId empty");
                             SendDialogActionResultToClient(clientId, new DialogActionResultDto
@@ -1409,8 +1409,6 @@ namespace ProjectC.Quests
                             });
                             break;
                         }
-                        // M11 demo: CompleteObjective action → TryTurnIn (если quest active/Completed).
-                        // Stage check убран — достаточно наличия quest в player log.
                         var sw = ProjectC.Quests.QuestWorld.Instance;
                         bool turnOk = false;
                         if (sw != null)
@@ -1421,30 +1419,29 @@ namespace ProjectC.Quests
                             {
                                 foreach (var p in playerQuests)
                                 {
-                                    if (p.questId == action.stringParam) { questFound = true; break; }
+                                    if (p.questId == completeQuestId) { questFound = true; break; }
                                 }
                             }
                             if (questFound)
                             {
-                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: CompleteObjective quest={action.stringParam} → TryTurnIn");
-                                var turnRes = sw.TryTurnIn(clientId, action.stringParam, string.Empty);
+                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: CompleteObjective quest={completeQuestId} → TryTurnIn");
+                                var turnRes = sw.TryTurnIn(clientId, completeQuestId, string.Empty);
                                 turnOk = turnRes.code == (byte)QuestResultCode.Ok;
                                 if (turnOk)
                                 {
-                                    // Push snapshot so client sees quest in TurnedIn
                                     SendQuestSnapshotToClient(clientId);
                                 }
                             }
                             else if (debugMode)
                             {
-                                Debug.Log($"[QuestServer] FireDialogAction: CompleteObjective quest={action.stringParam} — not in player log, stub");
+                                Debug.Log($"[QuestServer] FireDialogAction: CompleteObjective quest={completeQuestId} — not in player log, stub");
                             }
                         }
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
                             actionType = (byte)action.type,
                             success = turnOk,
-                            resultData = action.stringParam
+                            resultData = completeQuestId
                         });
                     }
                     break;
@@ -1622,7 +1619,7 @@ namespace ProjectC.Quests
                     {
                         // T-Q16: server-side modify npc attitude via QuestWorld (T-Q13).
                         if (QuestWorld.Instance == null) break;
-                        string targetNpcId = action.stringParam;
+                        string targetNpcId = action.GetNpcId();
                         if (string.IsNullOrEmpty(targetNpcId))
                         {
                             Debug.LogWarning($"[QuestServer] FireDialogAction: AddNpcAttitude skipped — npcId empty");

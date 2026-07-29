@@ -45,6 +45,9 @@ namespace ProjectC.Quests
         [Tooltip("Quest reference (для QuestCompleted). Перетащи .asset из Data/Quests/. Приоритетнее stringParam.")]
         public QuestDefinition requiredQuest;
 
+        [Tooltip("NPC reference (для NpcAttitudeAtLeast). Перетащи NpcDefinition. Приоритетнее stringParam.")]
+        public NpcDefinition requiredNpc;
+
         [Tooltip("Numeric param: reputation / NpcAttitude threshold / item count.")]
         public int intParam = 0;
 

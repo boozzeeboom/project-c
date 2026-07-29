@@ -1,6 +1,7 @@
 // QuestObjectiveDrawer — контекстно-зависимый PropertyDrawer для QuestObjective.
 // Показывает только поля, релевантные выбранному objectiveType.
 // Паттерн: как DialogueConditionDrawer.
+// T-QUEDIT v2: SceneAsset для ReachLocation, NpcDefinition для KillEntity.
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -26,7 +27,7 @@ namespace ProjectC.Quests.Editor
             float w = position.width;
             float halfW = w * 0.5f;
 
-            // Always: objectiveId + objectiveType на одной строке
+            // Always: objectiveId + objectiveType
             var idProp = property.FindPropertyRelative("objectiveId");
             var idRect = new Rect(position.x, y, halfW - 4, lineH);
             var typeRect = new Rect(position.x + halfW + 4, y, halfW - 4, lineH);
@@ -43,7 +44,7 @@ namespace ProjectC.Quests.Editor
             switch (type)
             {
                 case QuestObjectiveType.TalkToNpc:
-                    DrawNpcField(property, position, ref y, w, lineH);
+                    DrawNpcField(property, position, ref y, w, lineH, "targetNpc", "targetNpcId", "NPC");
                     DrawOptionalRequired(property, position, ref y, w, lineH);
                     break;
 
@@ -55,13 +56,13 @@ namespace ProjectC.Quests.Editor
 
                 case QuestObjectiveType.DeliverItem:
                     DrawPickupItemField(property, position, ref y, w, lineH);
-                    DrawNpcField(property, position, ref y, w, lineH);
+                    DrawNpcField(property, position, ref y, w, lineH, "targetNpc", "targetNpcId", "NPC");
                     DrawIntField(property, "requiredQuantity", position, ref y, w, lineH, "Qty");
                     DrawOptionalRequired(property, position, ref y, w, lineH);
                     break;
 
                 case QuestObjectiveType.ReachLocation:
-                    DrawStringField(property, "targetSceneId", position, ref y, w, lineH, "Scene ID");
+                    DrawSceneField(property, position, ref y, w, lineH);
                     EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
                         property.FindPropertyRelative("targetPosition"), new GUIContent("Position"));
                     y += lineH + 2;
@@ -86,7 +87,7 @@ namespace ProjectC.Quests.Editor
                     break;
 
                 case QuestObjectiveType.KillEntity:
-                    DrawStringField(property, "targetEntityType", position, ref y, w, lineH, "Entity Type");
+                    DrawNpcField(property, position, ref y, w, lineH, "targetEntity", "targetEntityType", "Entity");
                     DrawIntField(property, "requiredQuantity", position, ref y, w, lineH, "Qty");
                     DrawOptionalRequired(property, position, ref y, w, lineH);
                     break;
@@ -99,43 +100,47 @@ namespace ProjectC.Quests.Editor
         {
             var typeProp = property.FindPropertyRelative("objectiveType");
             var type = (QuestObjectiveType)typeProp.enumValueIndex;
-
-            // Base: ID row + description = 2 lines
-            int lines = 2;
+            int lines = 2; // ID + description
 
             switch (type)
             {
                 case QuestObjectiveType.TalkToNpc:
-                    lines += 2; // Npc field + optional/required
+                    lines += 2; // Npc + optional/required (+maybe fallback)
+                    if (property.FindPropertyRelative("targetNpc").objectReferenceValue == null) lines += 1;
                     break;
                 case QuestObjectiveType.HaveItem:
                     lines += 3; // pickupItem + qty + optional/required
+                    if (property.FindPropertyRelative("pickupItem").objectReferenceValue == null) lines += 1;
                     break;
                 case QuestObjectiveType.DeliverItem:
-                    lines += 4; // pickupItem + Npc + qty + optional/required
+                    lines += 4;
+                    if (property.FindPropertyRelative("pickupItem").objectReferenceValue == null) lines += 1;
+                    if (property.FindPropertyRelative("targetNpc").objectReferenceValue == null) lines += 1;
                     break;
                 case QuestObjectiveType.ReachLocation:
-                    lines += 4; // sceneId + position + radius + optional/required
+                    lines += 4; // scene + position + radius + optional/required
+                    if (property.FindPropertyRelative("targetSceneId").stringValue == "") lines += 0; // SceneAsset always fills string
                     break;
                 case QuestObjectiveType.ReputationAtLeast:
-                    lines += 3; // faction + value + optional/required
+                    lines += 3;
                     break;
                 case QuestObjectiveType.EventDriven:
                 case QuestObjectiveType.WaitForEvent:
-                    lines += 2; // eventId + optional/required
+                    lines += 2;
                     break;
                 case QuestObjectiveType.KillEntity:
-                    lines += 3; // entityType + qty + optional/required
+                    lines += 3; // entity + qty + optional/required
+                    if (property.FindPropertyRelative("targetEntity").objectReferenceValue == null) lines += 1;
                     break;
                 default:
-                    lines += 1; // optional/required only
+                    lines += 1;
                     break;
             }
 
             return (EditorGUIUtility.singleLineHeight + 2) * lines;
         }
 
-        // ── helpers ──
+        // ── general helpers ──
 
         private static void DrawStringField(SerializedProperty property, string propName, Rect position, ref float y, float w, float h, string label)
         {
@@ -151,36 +156,6 @@ namespace ProjectC.Quests.Editor
             y += h + 2;
         }
 
-        private static void DrawPickupItemField(SerializedProperty property, Rect position, ref float y, float w, float h)
-        {
-            var pickupProp = property.FindPropertyRelative("pickupItem");
-            EditorGUI.PropertyField(new Rect(position.x, y, w, h), pickupProp, new GUIContent("Item (drag .asset)"));
-            y += h + 2;
-
-            // Show fallback string only if pickupItem is null
-            if (pickupProp.objectReferenceValue == null)
-            {
-                var fallbackProp = property.FindPropertyRelative("itemTradeItemId");
-                EditorGUI.PropertyField(new Rect(position.x, y, w, h), fallbackProp, new GUIContent("  └ Item ID (string)"));
-                y += h + 2;
-            }
-        }
-
-        private static void DrawNpcField(SerializedProperty property, Rect position, ref float y, float w, float h)
-        {
-            var npcProp = property.FindPropertyRelative("targetNpc");
-            EditorGUI.PropertyField(new Rect(position.x, y, w, h), npcProp, new GUIContent("NPC (drag .asset)"));
-            y += h + 2;
-
-            // Show fallback string only if targetNpc is null
-            if (npcProp.objectReferenceValue == null)
-            {
-                var fallbackProp = property.FindPropertyRelative("targetNpcId");
-                EditorGUI.PropertyField(new Rect(position.x, y, w, h), fallbackProp, new GUIContent("  └ NPC ID (string)"));
-                y += h + 2;
-            }
-        }
-
         private static void DrawOptionalRequired(SerializedProperty property, Rect position, ref float y, float w, float h)
         {
             float halfW = w * 0.5f;
@@ -189,6 +164,76 @@ namespace ProjectC.Quests.Editor
             EditorGUI.PropertyField(new Rect(position.x + halfW + 4, y, halfW - 4, h),
                 property.FindPropertyRelative("optional"), new GUIContent("Optional"));
             y += h + 2;
+        }
+
+        // ── drag-and-drop helpers ──
+
+        private static void DrawPickupItemField(SerializedProperty property, Rect position, ref float y, float w, float h)
+        {
+            var pickupProp = property.FindPropertyRelative("pickupItem");
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h), pickupProp, new GUIContent("Item (drag .asset)"));
+            y += h + 2;
+
+            if (pickupProp.objectReferenceValue == null)
+            {
+                var fallbackProp = property.FindPropertyRelative("itemTradeItemId");
+                EditorGUI.PropertyField(new Rect(position.x, y, w, h), fallbackProp, new GUIContent("  └ Item ID (string)"));
+                y += h + 2;
+            }
+        }
+
+        private static void DrawNpcField(SerializedProperty property, Rect position, ref float y, float w, float h,
+            string refPropName, string stringPropName, string label)
+        {
+            var refProp = property.FindPropertyRelative(refPropName);
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h), refProp, new GUIContent($"{label} (drag .asset)"));
+            y += h + 2;
+
+            if (refProp.objectReferenceValue == null)
+            {
+                var fallbackProp = property.FindPropertyRelative(stringPropName);
+                EditorGUI.PropertyField(new Rect(position.x, y, w, h), fallbackProp, new GUIContent($"  └ {label} ID (string)"));
+                y += h + 2;
+            }
+        }
+
+        private static void DrawSceneField(SerializedProperty property, Rect position, ref float y, float w, float h)
+        {
+            var sceneIdProp = property.FindPropertyRelative("targetSceneId");
+
+            // Show SceneAsset ObjectField — writes scene name to targetSceneId
+            SceneAsset currentScene = null;
+            if (!string.IsNullOrEmpty(sceneIdProp.stringValue))
+            {
+                // Find scene asset by name
+                var guids = AssetDatabase.FindAssets("t:SceneAsset");
+                foreach (var g in guids)
+                {
+                    var path = AssetDatabase.GUIDToAssetPath(g);
+                    var name = System.IO.Path.GetFileNameWithoutExtension(path);
+                    if (name == sceneIdProp.stringValue)
+                    {
+                        currentScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(path);
+                        break;
+                    }
+                }
+            }
+
+            var newScene = (SceneAsset)EditorGUI.ObjectField(
+                new Rect(position.x, y, w, h), new GUIContent("Scene (drag .unity)"), currentScene, typeof(SceneAsset), false);
+            y += h + 2;
+
+            if (newScene != null)
+                sceneIdProp.stringValue = newScene.name;
+            else if (currentScene == null && !string.IsNullOrEmpty(sceneIdProp.stringValue))
+                sceneIdProp.stringValue = "";
+
+            // Show fallback string
+            if (newScene == null)
+            {
+                EditorGUI.PropertyField(new Rect(position.x, y, w, h), sceneIdProp, new GUIContent("  └ Scene ID (string)"));
+                y += h + 2;
+            }
         }
     }
 }

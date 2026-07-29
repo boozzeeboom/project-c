@@ -195,7 +195,10 @@ namespace ProjectC.Quests
                 case QuestPrerequisiteType.ReputationAtLeast:
                     return GetReputation(clientId, prereq.factionParam) >= prereq.intParam;
                 case QuestPrerequisiteType.NpcAttitudeAtLeast:
-                    return GetNpcAttitude(clientId, prereq.stringParam) >= prereq.intParam;
+                {
+                    string npcId = prereq.requiredNpc != null ? prereq.requiredNpc.npcId : prereq.stringParam;
+                    return GetNpcAttitude(clientId, npcId) >= prereq.intParam;
+                }
                 case QuestPrerequisiteType.HaveItem:
                 {
                     // T-Q28: resolve tradeItemId → int itemId via QuestWorld.ResolveItemId
@@ -231,7 +234,7 @@ namespace ProjectC.Quests
                         QuestPrerequisiteType.QuestCompleted => $"Сначала выполните квест «{p.stringParam}»",
                         QuestPrerequisiteType.QuestActive => $"Сначала активируйте квест «{p.stringParam}»",
                         QuestPrerequisiteType.ReputationAtLeast => $"Нужна репутация {p.factionParam} ≥ {p.intParam}",
-                        QuestPrerequisiteType.NpcAttitudeAtLeast => $"Нужно отношение с NPC «{p.stringParam}» ≥ {p.intParam}",
+                        QuestPrerequisiteType.NpcAttitudeAtLeast => $"Нужно отношение с NPC «{(p.requiredNpc != null ? p.requiredNpc.displayName : p.stringParam)}» ≥ {p.intParam}",
                         QuestPrerequisiteType.HaveItem => $"Нужен предмет «{p.stringParam}» ×{p.intParam}",
                         QuestPrerequisiteType.FlagIsSet => $"Не выполнено условие «{p.stringParam}»",
                         _ => $"Не выполнено условие #{i}"
@@ -1100,10 +1103,13 @@ namespace ProjectC.Quests
                     return HasEventOccurred(clientId, obj.eventId);
 
                 case QuestObjectiveType.KillEntity:
+                {
+                    string entityId = obj.targetEntity != null ? obj.targetEntity.npcId : obj.targetEntityType;
                     // STUB: combat system не реализован. Always false.
                     if (Debug.isDebugBuild && Time.frameCount % 600 == 0)
-                        Debug.Log($"[QuestWorld] Objective {obj.objectiveType} ({obj.objectiveId}) is STUB — always unsatisfied");
+                        Debug.Log($"[QuestWorld] Objective {obj.objectiveType} ({obj.objectiveId}) entity={entityId} is STUB — always unsatisfied");
                     return false;
+                }
 
                 default:
                     return false;

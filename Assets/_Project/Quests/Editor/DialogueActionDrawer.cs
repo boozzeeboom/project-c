@@ -1,12 +1,12 @@
 // DialogueActionDrawer — контекстно-зависимый PropertyDrawer для DialogueAction.
-// Показывает только поля, релевантные выбранному DialogueActionType.
-// Паттерн: как DialogueConditionDrawer.
+// T-QUEDIT v2: questRef, npcRef, dialogTreeRef — drag-and-drop поля.
 
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using ProjectC.Dialogue;
 using ProjectC.Factions;
+using ProjectC.Quests;
 
 namespace ProjectC.Quests.Editor
 {
@@ -24,34 +24,25 @@ namespace ProjectC.Quests.Editor
             float y = position.y;
             float w = position.width;
 
-            // Always show type
             EditorGUI.PropertyField(new Rect(position.x, y, w, lineH), typeProp, new GUIContent("Action"));
             y += lineH + 2;
 
-            // Context-sensitive fields
             switch (type)
             {
-                // ── Quest actions ──
+                // ── Quest actions (drag QuestDefinition) ──
                 case DialogueActionType.OfferQuest:
                 case DialogueActionType.AcceptQuest:
-                    DrawStringParam(property, position, ref y, w, lineH, "Quest ID");
+                case DialogueActionType.DiscoverQuest:
+                    DrawQuestRefField(property, position, ref y, w, lineH);
                     break;
 
                 case DialogueActionType.CompleteObjective:
-                    DrawStringParam(property, position, ref y, w, lineH, "Quest ID");
-                    DrawStageIdParam(property, position, ref y, w, lineH);
-                    break;
-
-                case DialogueActionType.DiscoverQuest:
-                    DrawStringParam(property, position, ref y, w, lineH, "Quest ID");
-                    break;
-
                 case DialogueActionType.FailQuest:
-                    DrawStringParam(property, position, ref y, w, lineH, "Quest ID");
+                    DrawQuestRefField(property, position, ref y, w, lineH);
                     DrawStageIdParam(property, position, ref y, w, lineH);
                     break;
 
-                // ── Inventory actions ──
+                // ── Inventory ──
                 case DialogueActionType.GiveItem:
                 case DialogueActionType.TakeItem:
                     EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
@@ -61,11 +52,8 @@ namespace ProjectC.Quests.Editor
                         property.FindPropertyRelative("itemType"), new GUIContent("Item Type"));
                     y += lineH + 2;
                     DrawIntParam(property, position, ref y, w, lineH, "Count");
-                    // Fallback string
                     if (property.FindPropertyRelative("itemId").intValue == 0)
-                    {
                         DrawStringParam(property, position, ref y, w, lineH, "  └ Item Name (fallback)");
-                    }
                     break;
 
                 case DialogueActionType.GiveCargoItem:
@@ -87,7 +75,7 @@ namespace ProjectC.Quests.Editor
                     break;
 
                 case DialogueActionType.AddNpcAttitude:
-                    DrawStringParam(property, position, ref y, w, lineH, "NPC ID");
+                    DrawNpcRefField(property, position, ref y, w, lineH);
                     DrawIntParam(property, position, ref y, w, lineH, "Delta");
                     break;
 
@@ -97,7 +85,6 @@ namespace ProjectC.Quests.Editor
                     break;
 
                 case DialogueActionType.OpenService:
-                    // No params needed
                     break;
 
                 // ── World state ──
@@ -110,11 +97,10 @@ namespace ProjectC.Quests.Editor
                     break;
 
                 case DialogueActionType.SwitchDialogTree:
-                    DrawStringParam(property, position, ref y, w, lineH, "Tree ID");
+                    DrawDialogTreeRefField(property, position, ref y, w, lineH);
                     break;
 
                 case DialogueActionType.EndConversation:
-                    // No params
                     break;
             }
 
@@ -125,45 +111,49 @@ namespace ProjectC.Quests.Editor
         {
             var typeProp = property.FindPropertyRelative("type");
             var type = (DialogueActionType)typeProp.enumValueIndex;
-            int lines = 1; // type always
+            int lines = 1;
 
             switch (type)
             {
                 case DialogueActionType.OfferQuest:
                 case DialogueActionType.AcceptQuest:
                 case DialogueActionType.DiscoverQuest:
-                case DialogueActionType.SetFlag:
-                case DialogueActionType.EmitEvent:
-                case DialogueActionType.SwitchDialogTree:
-                case DialogueActionType.OpenMarket:
-                    lines += 1; break;
-
+                    lines += 1;
+                    if (property.FindPropertyRelative("questRef").objectReferenceValue == null) lines += 1;
+                    break;
                 case DialogueActionType.CompleteObjective:
                 case DialogueActionType.FailQuest:
+                    lines += 2;
+                    if (property.FindPropertyRelative("questRef").objectReferenceValue == null) lines += 1;
+                    break;
+                case DialogueActionType.GiveItem:
+                case DialogueActionType.TakeItem:
+                    lines += 3;
+                    if (property.FindPropertyRelative("itemId").intValue == 0) lines += 1;
+                    break;
                 case DialogueActionType.GiveCargoItem:
                 case DialogueActionType.TakeCargoItem:
                 case DialogueActionType.AddReputation:
                 case DialogueActionType.AddNpcAttitude:
-                    lines += 2; break;
-
-                case DialogueActionType.GiveCredits:
-                    lines += 1; break;
-
-                case DialogueActionType.GiveItem:
-                case DialogueActionType.TakeItem:
-                    lines += 3; // itemId + itemType + count
-                    // +1 more if fallback string shown
-                    if (property.FindPropertyRelative("itemId").intValue == 0) lines += 1;
+                    lines += 2;
+                    if (type == DialogueActionType.AddNpcAttitude && property.FindPropertyRelative("npcRef").objectReferenceValue == null) lines += 1;
                     break;
-
-                case DialogueActionType.EndConversation:
-                case DialogueActionType.OpenService:
-                    // No extra lines
+                case DialogueActionType.SwitchDialogTree:
+                    lines += 1;
+                    if (property.FindPropertyRelative("dialogTreeRef").objectReferenceValue == null) lines += 1;
+                    break;
+                case DialogueActionType.GiveCredits:
+                case DialogueActionType.SetFlag:
+                case DialogueActionType.EmitEvent:
+                case DialogueActionType.OpenMarket:
+                    lines += 1;
                     break;
             }
 
             return (EditorGUIUtility.singleLineHeight + 2) * lines;
         }
+
+        // ── helpers ──
 
         private static void DrawStringParam(SerializedProperty property, Rect position, ref float y, float w, float h, string label)
         {
@@ -184,6 +174,48 @@ namespace ProjectC.Quests.Editor
             EditorGUI.PropertyField(new Rect(position.x, y, w, h),
                 property.FindPropertyRelative("stageIdParam"), new GUIContent("Objective / Stage ID"));
             y += h + 2;
+        }
+
+        private static void DrawQuestRefField(SerializedProperty property, Rect position, ref float y, float w, float h)
+        {
+            var refProp = property.FindPropertyRelative("questRef");
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h), refProp, new GUIContent("Quest (drag .asset)"));
+            y += h + 2;
+
+            if (refProp.objectReferenceValue == null)
+            {
+                EditorGUI.PropertyField(new Rect(position.x, y, w, h),
+                    property.FindPropertyRelative("stringParam"), new GUIContent("  └ Quest ID (string)"));
+                y += h + 2;
+            }
+        }
+
+        private static void DrawNpcRefField(SerializedProperty property, Rect position, ref float y, float w, float h)
+        {
+            var refProp = property.FindPropertyRelative("npcRef");
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h), refProp, new GUIContent("NPC (drag .asset)"));
+            y += h + 2;
+
+            if (refProp.objectReferenceValue == null)
+            {
+                EditorGUI.PropertyField(new Rect(position.x, y, w, h),
+                    property.FindPropertyRelative("stringParam"), new GUIContent("  └ NPC ID (string)"));
+                y += h + 2;
+            }
+        }
+
+        private static void DrawDialogTreeRefField(SerializedProperty property, Rect position, ref float y, float w, float h)
+        {
+            var refProp = property.FindPropertyRelative("dialogTreeRef");
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h), refProp, new GUIContent("Dialog (drag .asset)"));
+            y += h + 2;
+
+            if (refProp.objectReferenceValue == null)
+            {
+                EditorGUI.PropertyField(new Rect(position.x, y, w, h),
+                    property.FindPropertyRelative("stringParam"), new GUIContent("  └ Tree ID (string)"));
+                y += h + 2;
+            }
         }
     }
 }

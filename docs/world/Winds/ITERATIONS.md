@@ -73,7 +73,7 @@
 | Компонент | Файл | Статус |
 |-----------|------|--------|
 | WindManager | `Core/WindManager.cs` | ✅ Готов |
-| WindZone (триггерный) | `Ship/WindZone.cs` | ✅ Готов |
+| ShipWindZone (триггерный) | `Ship/ShipWindZone.cs` | ✅ Готов |
 | SplineWindZone (сплайновый) | `Ship/SplineWindZone.cs` | ✅ Готов |
 | WindZoneData (SO) | `Ship/WindZoneData.cs` | ✅ Готов |
 | Интеграция с ShipController | `Player/ShipController.cs` | ✅ Готов |
@@ -129,4 +129,18 @@
 
 
 **Ожидаемый эффект:** -90% CPU на сплайновый ветер (с 40ms до ~3ms на 2 зоны).
+
+---
+
+## Итерация от 2026-07-29 — T-FIX01
+
+**Задача:** Устранение конфликта WindZone со встроенным компонентом Unity
+**Коммит:** `0106027` — T-FIX01: Переименован WindZone → ShipWindZone для устранения конфликта со встроенным компонентом Unity
+
+**Проблема:**
+После рестарта Unity ошибка: `Script 'WindZone' has the same name as built-in Unity component. AddComponent and GetComponent will not work with this script.`
+
+**Изменения:**
+- `WindZone.cs` → `ShipWindZone.cs` — класс и файл переименованы
+- `ShipController.cs` — ссылки `ProjectC.Ship.WindZone` → `ProjectC.Ship.ShipWindZone`
 

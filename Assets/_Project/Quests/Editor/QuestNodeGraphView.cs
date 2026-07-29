@@ -254,7 +254,7 @@ namespace ProjectC.Quests.Editor
                             var on = MakeEditableNode($"🎯 {obj.objectiveId}", objColor,
                                 new (string label, string value, System.Action<string> onSave)[] {
                                     ("ObjId", obj.objectiveId ?? "", v => Quest.stages[stIdx].objectives[oi].objectiveId = v),
-                                    ("Item", obj.itemTradeItemId ?? "", v => Quest.stages[stIdx].objectives[oi].itemTradeItemId = v),
+                                    ("Item", obj.pickupItem != null ? obj.pickupItem.itemName : (obj.itemTradeItemId ?? ""), v => Quest.stages[stIdx].objectives[oi].itemTradeItemId = v),
                                     ("Npc", obj.targetNpcId ?? "", v => Quest.stages[stIdx].objectives[oi].targetNpcId = v),
                                     ($"[{obj.objectiveType}] ×{obj.requiredQuantity}", $"{obj.requiredQuantity}", v => { if (int.TryParse(v, out var n)) Quest.stages[stIdx].objectives[oi].requiredQuantity = n; })
                                 });
@@ -279,7 +279,16 @@ namespace ProjectC.Quests.Editor
                 var r = Quest.rewards;
                 var rLines = "";
                 if (r.credits > 0) rLines += $"💰 {r.credits} CR  ";
-                if (r.items != null) foreach (var it in r.items) rLines += $"📦 Item ×{it.count}  ";
+                if (r.items != null) foreach (var it in r.items)
+                {
+                    var name = it.pickupItem != null ? it.pickupItem.itemName : it.tradeItemId;
+                    rLines += $"📦 {name} ×{it.count}  ";
+                }
+                if (r.cargoItems != null) foreach (var it in r.cargoItems)
+                {
+                    var name = it.cargoItem != null ? it.cargoItem.displayName : it.tradeItemId;
+                    rLines += $"🚢 Cargo: {name} ×{it.count}  ";
+                }
                 if (r.reputation != null) foreach (var rep in r.reputation) rLines += $"📈 {rep.faction} +{rep.value}  ";
 
                 var rFields = new List<(string label, string value, System.Action<string> onSave)>

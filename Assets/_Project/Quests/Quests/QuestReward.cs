@@ -5,15 +5,23 @@ using System;
 using UnityEngine;
 using ProjectC.Factions;
 using ProjectC.Dialogue;
+using ProjectC.Items;
+using ProjectC.Trade;
 
 namespace ProjectC.Quests
 {
-    /// <summary>Single item reward (id = TradeItemDefinition.itemId, NOT v1 ItemData.int).</summary>
+    /// <summary>Single item reward. Поддерживает два типа: pickupItem (ItemData, инвентарь) и cargoItem (TradeItemDefinition, груз).</summary>
     [Serializable]
     public class QuestRewardItem
     {
-        [Tooltip("TradeItemDefinition.itemId (string).")]
+        [Tooltip("TradeItemDefinition.itemId (string). Оставлено для CSV-импорта. pickupItem/cargoItem приоритетнее.")]
         public string tradeItemId = "";
+
+        [Tooltip("Pickable item (ItemData) — перетащи .asset из Resources/Items/. Для rewards.items[].")]
+        public ItemData pickupItem;
+
+        [Tooltip("Cargo item (TradeItemDefinition) — перетащи .asset из Trade/Data/Items/. Для rewards.cargoItems[].")]
+        public TradeItemDefinition cargoItem;
 
         [Tooltip("Количество.")]
         [Min(1)]

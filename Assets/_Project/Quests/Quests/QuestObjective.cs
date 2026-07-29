@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using ProjectC.Factions;
+using ProjectC.Items;
 
 namespace ProjectC.Quests
 {
@@ -38,8 +39,11 @@ namespace ProjectC.Quests
         [Tooltip("NPC id (dlya TalkToNpc, DeliverItem).")]
         public string targetNpcId = "";
 
-        [Tooltip("Trade item id (dlya DeliverItem, HaveItem).")]
+        [Tooltip("Trade item id (для DeliverItem, HaveItem). Оставлено для CSV-импорта. pickupItem приоритетнее.")]
         public string itemTradeItemId = "";
+
+        [Tooltip("Pickable item (ItemData) для HaveItem/DeliverItem. Перетащи .asset из Resources/Items/.")]
+        public ItemData pickupItem;
 
         [Tooltip("Required quantity.")]
         public int requiredQuantity = 1;

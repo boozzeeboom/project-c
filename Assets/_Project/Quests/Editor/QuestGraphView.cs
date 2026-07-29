@@ -246,8 +246,9 @@ namespace ProjectC.Quests.Editor
                             if (obj == null) continue;
                             float oy = OBJ_OFFSET_Y + j * (OBJ_H + 15f);
                             var oLines = $"[{obj.objectiveType}] ×{obj.requiredQuantity}";
-                            if (!string.IsNullOrEmpty(obj.itemTradeItemId))
-                                oLines += $"\n📦 item: {obj.itemTradeItemId}";
+                            var resolvedItemName = obj.pickupItem != null ? obj.pickupItem.itemName : obj.itemTradeItemId;
+                            if (!string.IsNullOrEmpty(resolvedItemName))
+                                oLines += $"\n📦 item: {resolvedItemName}";
                             if (!string.IsNullOrEmpty(obj.targetNpcId))
                                 oLines += $"\n👤 npc: {obj.targetNpcId}";
                             var on = MakeNode($"🎯 {obj.objectiveId}", oLines, objTitleColor, x + 20, oy, OBJ_W, OBJ_H);
@@ -263,7 +264,16 @@ namespace ProjectC.Quests.Editor
                 var r = Quest.rewards;
                 var rLines = new List<string>();
                 if (r.credits > 0) rLines.Add($"💰 {r.credits} CR");
-                if (r.items != null) foreach (var it in r.items) rLines.Add($"📦 Item ×{it.count}");
+                if (r.items != null) foreach (var it in r.items)
+                {
+                    var name = it.pickupItem != null ? it.pickupItem.itemName : it.tradeItemId;
+                    rLines.Add($"📦 {name} ×{it.count}");
+                }
+                if (r.cargoItems != null) foreach (var it in r.cargoItems)
+                {
+                    var name = it.cargoItem != null ? it.cargoItem.displayName : it.tradeItemId;
+                    rLines.Add($"🚢 Cargo: {name} ×{it.count}");
+                }
                 if (r.reputation != null) foreach (var rep in r.reputation) rLines.Add($"📈 {rep.faction} +{rep.value}");
                 float x = X_STAGE_START + stageCount * STAGE_GAP;
                 var rn = MakeNode("🎁 REWARDS", string.Join("\n", rLines), rewardTitleColor, x, 0, REWARD_W, REWARD_H);

@@ -283,7 +283,19 @@ namespace ProjectC.Quests.Editor
                 rewBox.Add(new Label($"  CR: {q.rewards.credits}"));
                 if (q.rewards.items != null && q.rewards.items.Length > 0)
                 {
-                    foreach (var r in q.rewards.items) rewBox.Add(new Label($"  Item: x{r.count}"));
+                    foreach (var r in q.rewards.items)
+                    {
+                        var name = r.pickupItem != null ? r.pickupItem.itemName : r.tradeItemId;
+                        rewBox.Add(new Label($"  Item: {name} x{r.count}"));
+                    }
+                }
+                if (q.rewards.cargoItems != null && q.rewards.cargoItems.Length > 0)
+                {
+                    foreach (var r in q.rewards.cargoItems)
+                    {
+                        var name = r.cargoItem != null ? r.cargoItem.displayName : r.tradeItemId;
+                        rewBox.Add(new Label($"  Cargo: {name} x{r.count}"));
+                    }
                 }
                 if (q.rewards.reputation != null && q.rewards.reputation.Length > 0)
                 {

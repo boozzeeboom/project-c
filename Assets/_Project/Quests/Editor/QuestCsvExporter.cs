@@ -99,7 +99,7 @@ namespace ProjectC.Quests.Editor
             // Objective data
             var objType = obj != null ? obj.objectiveType.ToString() : "";
             var objId = EscapeCsv(obj?.objectiveId ?? "");
-            var itemName = EscapeCsv(obj?.itemTradeItemId ?? "");
+            var itemName = obj?.pickupItem != null ? EscapeCsv(obj.pickupItem.itemName) : EscapeCsv(obj?.itemTradeItemId ?? "");
             var npcId = EscapeCsv(obj?.targetNpcId ?? "");
             var qty = (obj?.requiredQuantity ?? 1).ToString();
 
@@ -109,7 +109,11 @@ namespace ProjectC.Quests.Editor
                 ? EscapeCsv(string.Join(";", quest.rewards.reputation.Select(r => $"{r.faction}:{r.value}")))
                 : "";
             var rewardItem = quest.rewards?.items != null
-                ? EscapeCsv(string.Join(";", quest.rewards.items.Select(i => $"{i.tradeItemId}:{i.count}")))
+                ? EscapeCsv(string.Join(";", quest.rewards.items.Select(i =>
+                {
+                    var name = i.pickupItem != null ? i.pickupItem.itemName : i.tradeItemId;
+                    return $"{name}:{i.count}";
+                })))
                 : "";
 
             return $"{questId},{displayName},{description},{faction},{oneShot},{prereq},{stageNum},{stageId},{stageDesc},{onEnter},{objType},{objId},{itemName},{npcId},{qty},{onComplete},{rewardCR},{rewardRep},{rewardItem}";

@@ -575,20 +575,32 @@ namespace ProjectC.Quests
                 for (int i = 0; i < reward.items.Length; i++)
                 {
                     var ri = reward.items[i];
-                    if (ri == null || string.IsNullOrEmpty(ri.tradeItemId) || ri.count <= 0) continue;
-                    if (!int.TryParse(ri.tradeItemId, out int legacyIntId))
+                    if (ri == null || ri.count <= 0) continue;
+
+                    // T-QREWARD: resolve item id — pickupItem ref first, then string tradeItemId fallback.
+                    int itemId = 0;
+                    if (ri.pickupItem != null)
                     {
-                        Debug.LogWarning($"[QuestWorld] ApplyQuestRewards: items[{i}] tradeItemId='{ri.tradeItemId}' не конвертируется в int (T-Q19 cleanup: TradeItemDefinition legacy mapping)");
+                        itemId = ResolveItemId(null, ri.pickupItem);
+                    }
+                    if (itemId <= 0 && !string.IsNullOrEmpty(ri.tradeItemId))
+                    {
+                        itemId = ResolveItemId(ri.tradeItemId);
+                    }
+                    if (itemId <= 0)
+                    {
+                        Debug.LogWarning($"[QuestWorld] ApplyQuestRewards: items[{i}] не удалось разрешить item (pickupItem={ri.pickupItem?.name} tradeItemId='{ri.tradeItemId}')");
                         continue;
                     }
+
                     var inv = ProjectC.Items.InventoryWorld.Instance;
                     if (inv == null)
                     {
                         Debug.LogWarning($"[QuestWorld] ApplyQuestRewards: InventoryWorld == null, items[{i}] skipped");
                         break;
                     }
-                    var result = inv.AddItemDirect(clientId, legacyIntId, ProjectC.Items.ItemType.Resources);
-                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: items[{i}] id={legacyIntId} x{ri.count} → code={result.code} message={result.message}");
+                    var result = inv.AddItemDirect(clientId, itemId, ProjectC.Items.ItemType.Resources);
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: items[{i}] id={itemId} x{ri.count} → code={result.code} message={result.message}");
                 }
             }
 
@@ -871,14 +883,33 @@ namespace ProjectC.Quests
         /// Args: clientId, returns Vector3 или Vector3.zero если не найден.</summary>
         public System.Func<ulong, Vector3> PlayerPositionProvider;
 
-        /// <summary>T-Q20: resolve item id from objective.itemTradeItemId. Tries:
+        /// <summary>T-Q20: resolve item id from objective.itemTradeItemId or direct ItemData ref. Tries:
+        /// 0) Direct ItemData ref (pickupItem) — T-QREWARD: priority over string id.
         /// 1) int.TryParse (direct id) — for legacy configs.
         /// 2) T-Q26: ItemRegistry.TryGetIdByName (single source of truth) — preferred.
         /// 3) Resources/Items/ scan — fallback if ItemRegistry not loaded.
         /// Returns 0 если ничего не найдено.
         /// </summary>
-        public static int ResolveItemId(string itemTradeItemId)
+        public static int ResolveItemId(string itemTradeItemId, ProjectC.Items.ItemData pickupItem = null)
         {
+            // 0. Direct ItemData ref (T-QREWARD: drag-and-drop, приоритет).
+            if (pickupItem != null)
+            {
+                var inv = ProjectC.Items.InventoryWorld.Instance;
+                if (inv != null)
+                {
+                    int id = inv.GetOrRegisterItemId(pickupItem);
+                    if (id > 0) return id;
+                }
+                // Fallback: если InventoryWorld нет — ищем в Resources/Items/ по имени
+                var all = Resources.LoadAll<ProjectC.Items.ItemData>("Items");
+                if (all != null)
+                {
+                    for (int i = 0; i < all.Length; i++)
+                        if (all[i] == pickupItem) return i + 1;
+                }
+            }
+
             if (string.IsNullOrEmpty(itemTradeItemId)) return 0;
             // 1. Direct int.
             if (int.TryParse(itemTradeItemId, out int direct) && direct > 0) return direct;
@@ -1021,7 +1052,7 @@ namespace ProjectC.Quests
 
                 case QuestObjectiveType.HaveItem:
                 {
-                    int itemId = ResolveItemId(obj.itemTradeItemId);
+                    int itemId = ResolveItemId(obj.itemTradeItemId, obj.pickupItem);
                     if (itemId <= 0) return false;
                     int count = ProjectC.Items.InventoryWorld.Instance != null
                         ? ProjectC.Items.InventoryWorld.Instance.CountOf(clientId, itemId)
@@ -1033,7 +1064,7 @@ namespace ProjectC.Quests
                 case QuestObjectiveType.DeliverItem:
                 {
                     // Same as HaveItem for MVP (turn-in handled в TryTurnIn).
-                    int itemId = ResolveItemId(obj.itemTradeItemId);
+                    int itemId = ResolveItemId(obj.itemTradeItemId, obj.pickupItem);
                     if (itemId <= 0) return false;
                     int count = ProjectC.Items.InventoryWorld.Instance != null
                         ? ProjectC.Items.InventoryWorld.Instance.CountOf(clientId, itemId)

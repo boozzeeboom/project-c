@@ -204,8 +204,12 @@ namespace ProjectC.Quests.Editor
                         case QuestObjectiveType.DeliverItem:
                             if (string.IsNullOrEmpty(obj.targetNpcId))
                                 result.Add(Severity.Error, $"stage '{st.stageId}' obj '{obj.objectiveId}' (DeliverItem): targetNpcId is empty");
-                            if (string.IsNullOrEmpty(obj.itemTradeItemId))
-                                result.Add(Severity.Warning, $"stage '{st.stageId}' obj '{obj.objectiveId}' (DeliverItem): itemTradeItemId is empty");
+                            if (string.IsNullOrEmpty(obj.itemTradeItemId) && obj.pickupItem == null)
+                                result.Add(Severity.Warning, $"stage '{st.stageId}' obj '{obj.objectiveId}' (DeliverItem): itemTradeItemId is empty and pickupItem is null");
+                            break;
+                        case QuestObjectiveType.HaveItem:
+                            if (string.IsNullOrEmpty(obj.itemTradeItemId) && obj.pickupItem == null)
+                                result.Add(Severity.Warning, $"stage '{st.stageId}' obj '{obj.objectiveId}' (HaveItem): itemTradeItemId is empty and pickupItem is null");
                             break;
                         case QuestObjectiveType.ReachLocation:
                             if (string.IsNullOrEmpty(obj.targetSceneId))
@@ -239,10 +243,24 @@ namespace ProjectC.Quests.Editor
                 {
                     var ri = def.rewards.items[i];
                     if (ri == null) continue;
-                    if (string.IsNullOrEmpty(ri.tradeItemId))
-                        result.Add(Severity.Warning, $"rewards.items[{i}]: tradeItemId is empty");
+                    if (string.IsNullOrEmpty(ri.tradeItemId) && ri.pickupItem == null)
+                        result.Add(Severity.Warning, $"rewards.items[{i}]: tradeItemId is empty and pickupItem is null");
                     if (ri.count <= 0)
                         result.Add(Severity.Error, $"rewards.items[{i}]: count is {ri.count} (must be > 0)");
+                }
+            }
+
+            // Cargo items
+            if (def.rewards.cargoItems != null)
+            {
+                for (int i = 0; i < def.rewards.cargoItems.Length; i++)
+                {
+                    var ri = def.rewards.cargoItems[i];
+                    if (ri == null) continue;
+                    if (string.IsNullOrEmpty(ri.tradeItemId) && ri.cargoItem == null)
+                        result.Add(Severity.Warning, $"rewards.cargoItems[{i}]: tradeItemId is empty and cargoItem is null");
+                    if (ri.count <= 0)
+                        result.Add(Severity.Error, $"rewards.cargoItems[{i}]: count is {ri.count} (must be > 0)");
                 }
             }
 

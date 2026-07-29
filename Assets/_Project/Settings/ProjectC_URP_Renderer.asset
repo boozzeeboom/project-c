@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: EdgeDetectionRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.EdgeDetectionRenderFeature
   m_Active: 1
-  EdgeColor: {r: 0.05, g: 0.05, b: 0.07, a: 1}
-  EdgeWidth: 0.7
+  EdgeColor: {r: 0.10880205, g: 0.10880205, b: 0.14150941, a: 1}
+  EdgeWidth: 1
   MaxEdgeDistance: 500
   DepthFalloff: 0.147
   UseDepthEdges: 1

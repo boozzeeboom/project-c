@@ -82,6 +82,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AdaptiveStrength: 0.6
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
@@ -92,25 +93,29 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 2
     - _Cutoff: 0.5
+    - _DepthFalloff: 0.8
     - _DepthSensitivity: 2.5
-    - _DepthThreshold: 0.06
+    - _DepthThreshold: 0.04
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
-    - _EdgeWidth: 2
+    - _EdgeWidth: 1.5
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _JitterAmount: 0.15
     - _JitterScale: 8
-    - _LineSoftness: 0.06
+    - _LineSoftness: 0.03
+    - _MaxEdgeDistance: 80
     - _Metallic: 0
-    - _NormalSensitivity: 1.5
-    - _NormalThreshold: 0.08
+    - _NormalSensitivity: 0.8
+    - _NormalThreshold: 0.25
     - _OcclusionStrength: 1
     - _Parallax: 0.005
+    - _PencilGrain: 0.08
+    - _PencilTaper: 0.7
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _Smoothness: 0.5
@@ -119,6 +124,10 @@ Material:
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
+    - _UseAdaptiveColor: 0
+    - _UseDepthEdges: 1
+    - _UseNormalEdges: 1
+    - _UsePencilStroke: 0
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1

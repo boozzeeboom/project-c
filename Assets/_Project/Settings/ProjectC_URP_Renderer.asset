@@ -14,13 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.EdgeDetectionRenderFeature
   m_Active: 1
   EdgeColor: {r: 0.05, g: 0.05, b: 0.07, a: 1}
-  EdgeWidth: 1
+  EdgeWidth: 0.7
+  MaxEdgeDistance: 500
+  DepthFalloff: 0.147
+  UseDepthEdges: 1
   DepthSensitivity: 2.5
   DepthThreshold: 0.06
+  UseNormalEdges: 1
   NormalSensitivity: 1.5
   NormalThreshold: 0.08
-  JitterAmount: 0
-  JitterScale: 4.62
+  UseAdaptiveColor: 1
+  AdaptiveStrength: 1
+  UsePencilStroke: 1
+  PencilTaper: 1
+  PencilGrain: 0.3
   LineSoftness: 0.034
   OverrideMaterial: {fileID: 0}
 --- !u!114 &11400000

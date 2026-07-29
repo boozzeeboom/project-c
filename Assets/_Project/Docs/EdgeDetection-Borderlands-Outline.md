@@ -1,7 +1,7 @@
 # Edge Detection — Borderlands-style outline (post-process)
 
 > **URP 17.5 / Unity 6** — полноэкранный пост-процесс обводки в стиле Borderlands.
-> Sobel-фильтр по depth + normal текстурам с pencil-jitter.
+> Sobel-фильтр по depth + normal текстурам. Distance falloff, adaptive color, pencil stroke.
 
 ---
 
@@ -28,7 +28,7 @@
 ## Как работает
 
 ```
-Камера → [Opaque рендер] → [EdgeDetection Pass] → [Transparent / UI / Post-process]
+Камера → [Opaque рендер] → [CopyColorToTemp] → [EdgeDetection Pass] → [Transparent / UI / Post-process]
                                   ↑
                     ConfigureInput(Normal | Depth)
                     → URP генерирует _CameraNormalsTexture
@@ -36,75 +36,109 @@
                     Sobel 3×3 по глубине (Linear01Depth)
                     Sobel 3×3 по нормалям (SampleSceneNormals)
                                   ↓
-                    max(depthEdge, normalEdge) + pencil jitter
+                    max(depthEdge, normalEdge)
+                    → adaptive color: sample _EdgeSourceTex (копия сцены до прохода)
+                    → pencil stroke: tapered ends
+                    → distance falloff: thinner with depth
                                   ↓
                     Blend SrcAlpha OneMinusSrcAlpha поверх сцены
 ```
 
-- **Depth edges**: силуэты объектов и складки (где глубина резко меняется)
-- **Normal edges**: внутренние рёбра геометрии — hard edges, creases (то, чего нет у inverted hull)
-- **Pencil jitter**: лёгкое дрожание линии для «рисованого» эффекта
-
-UV вычисляется в фрагментном шейдере из `SV_POSITION / _ScreenParams` — автоматически корректный Y-flip для DirectX/OpenGL.
+- **Depth edges**: силуэты объектов (где глубина резко меняется)
+- **Normal edges**: внутренние рёбра геометрии — hard edges
+- **Distance falloff**: линия истончается с удалением, исчезает на `Max Edge Distance`
+- **Adaptive color**: обводка затемняет цвет объекта (семплит копию сцены до прохода)
+- **Pencil stroke**: линия сужается к концам грани (как нажим карандаша)
 
 ---
 
 ## Параметры в инспекторе RenderFeature
 
+### Edge
 | Параметр | Дефолт | Описание |
 |---|---|---|
-| `Edge Color` | `(0.05, 0.05, 0.07, 1)` | Цвет линии |
-| `Edge Width` | `2` | Толщина линии в пикселях (1-8) |
-| `Depth Sensitivity` | `2.5` | Множитель глубинных граней |
-| `Depth Threshold` | `0.06` | Порог срабатывания depth-Sobel |
-| `Normal Sensitivity` | `1.5` | Множитель normal-граней |
-| `Normal Threshold` | `0.08` | Порог срабатывания normal-Sobel |
-| `Jitter Amount` | `0.0` | Сила pencil-дрожания (0 = ровные линии) |
-| `Jitter Scale` | `8.0` | Частота шума для jitter |
-| `Line Softness` | `0.06` | Мягкость края линии |
-| `Override Material` | пусто | Опционально: свой материал (иначе создаётся из шейдера) |
+| `Edge Color` | `(0.02, 0.02, 0.04, 1)` | Цвет линии |
+| `Edge Width` | `1.5` | Толщина (0.1–8.0, float) |
+
+### Distance Falloff
+| Параметр | Дефолт | Описание |
+|---|---|---|
+| `Max Edge Distance` | `80` | На каком расстоянии (метры) линия исчезает |
+| `Depth Falloff` | `0.8` | Крутизна затухания (0 = плавно, 2 = резко) |
+
+### Depth Edges
+| Параметр | Дефолт | Описание |
+|---|---|---|
+| `Use Depth Edges` | ✔ | Вкл/выкл depth-Sobel |
+| `Depth Sensitivity` | `2.0` | Множитель глубинных граней |
+| `Depth Threshold` | `0.04` | Порог срабатывания |
+
+### Normal Edges
+| Параметр | Дефолт | Описание |
+|---|---|---|
+| `Use Normal Edges` | ✔ | Вкл/выкл normal-Sobel |
+| `Normal Sensitivity` | `0.8` | Множитель normal-граней |
+| `Normal Threshold` | `0.25` | Порог срабатывания (высокий — только на hard edges) |
+
+### Adaptive Color
+| Параметр | Дефолт | Описание |
+|---|---|---|
+| `Use Adaptive Color` | ☐ | Вкл: обводка цвета объекта |
+| `Adaptive Strength` | `0.6` | 0 = Edge Color, 1 = цвет объекта ×0.35 |
+
+### Pencil Stroke
+| Параметр | Дефолт | Описание |
+|---|---|---|
+| `Use Pencil Stroke` | ☐ | Вкл: линия сужается к концам |
+| `Taper Amount` | `0.7` | Сила сужения (ищет концы грани через Sobel direction) |
+| `Grain Strength` | `0.08` | Текстурная зернистость (0–0.3) |
+
+### Softness
+| Параметр | Дефолт | Описание |
+|---|---|---|
+| `Line Softness` | `0.03` | Мягкость края линии |
+| `Override Material` | — | Свой материал (иначе auto-create) |
 
 ---
 
 ## Параметры материала (`M_EdgeDetection.mat`)
 
-Все параметры дублируются в материале — можно править через MaterialPropertyBlock из кода:
-
 ```
-_EdgeColor         — цвет линии
-_EdgeWidth         — толщина
-_DepthSensitivity  — чувствительность глубины
-_DepthThreshold    — порог глубины
-_NormalSensitivity — чувствительность нормалей
-_NormalThreshold   — порог нормалей
-_JitterAmount      — pencil-дрожание
-_JitterScale       — частота шума
-_LineSoftness      — мягкость края
+_EdgeColor          — цвет линии
+_EdgeWidth          — толщина (float, 0.1–8.0)
+_MaxEdgeDistance    — дистанция исчезновения
+_DepthFalloff       — крутизна distance falloff
+_UseDepthEdges      — 0/1
+_DepthSensitivity   — чувствительность глубины
+_DepthThreshold     — порог глубины
+_UseNormalEdges     — 0/1
+_NormalSensitivity  — чувствительность нормалей
+_NormalThreshold    — порог нормалей
+_UseAdaptiveColor   — 0/1
+_AdaptiveStrength   — сила адаптивного цвета
+_UsePencilStroke    — 0/1
+_PencilTaper        — сила сужения концов
+_PencilGrain        — зернистость
+_LineSoftness       — мягкость края
 ```
 
 ---
 
 ## Per-object обводка (TargetOutline)
 
-Для гарантированного жирного силуэта на конкретном объекте используется отдельная система — **inverted hull**:
+Для гарантированного жирного силуэта на конкретном объекте — **inverted hull**:
 
 | Файл | Назначение |
 |---|---|
 | `Assets/_Project/Shaders/TargetOutline.shader` | Inverted-hull шейдер (Cull Front + extrusion) |
 | `Assets/_Project/Resources/Materials/M_TargetOutline.mat` | Материал для TargetOutline |
 
-### Как применить на персонаже
+### Применение на меше
 
-У `SkinnedMeshRenderer` (или `MeshRenderer`) есть массив **Materials**. Если добавить материал сверх числа submesh'ей — он отрендерит меш повторно:
-
-1. Выделить объект с мешем
-2. В инспекторе → **Materials** → нажать **+**
+1. Выделить объект с `SkinnedMeshRenderer`/`MeshRenderer`
+2. Инспектор → **Materials** → **+**
 3. В новый слот перетащить `M_TargetOutline`
-4. Настроить параметры в материале:
-   - `_OutlineColor` — цвет силуэта
-   - `_OutlineWidth` — толщина
-
-Удаление: выделить слот → **−** или выбрать **None**.
+4. `_OutlineColor` / `_OutlineWidth` — настройка
 
 ---
 
@@ -119,10 +153,32 @@ _LineSoftness      — мягкость края
 
 ---
 
-## Известные особенности
+## Детали реализации
 
-- **`ConfigureInput(Normal | Depth)` обязателен** — без него `_CameraNormalsTexture` не генерируется → normal-Sobel не работает.
-- **`AccessFlags.ReadWrite` обязателен** — `Write` сбрасывает содержимое буфера → сцена затирается.
-- **Не использовать `SetViewProjectionMatrices`** — меняет глобальные матрицы → ломает все последующие пассы (transparent, post-process).
-- UV вычисляется из `SV_POSITION` для автоматического Y-flip под платформу.
-- Если normal-текстура недоступна — шейдер пропускает normal-Sobel (guard против нулевых нормалей).
+### Vertex shader
+Используется `GetFullScreenTriangleVertexPosition(vertexID)` — стандартная SRP-функция, работает с любыми VP-матрицами. Не требуется `SetViewProjectionMatrices`.
+
+### Adaptive color
+Копия сцены создаётся через `RenderGraph.AddCopyPass` (до прохода edge detection) и передаётся в шейдер как `_EdgeSourceTex`:
+
+```csharp
+var sourceTex = renderGraph.CreateTexture(desc);
+RenderGraphUtils.AddCopyPass(renderGraph, colorTarget, sourceTex, "CopyColorForEdge", false);
+// ...
+builder.UseTexture(sourceTex, AccessFlags.Read);
+builder.AllowGlobalStateModification(true);
+// в render func:
+ctx.cmd.SetGlobalTexture(Shader.PropertyToID("_EdgeSourceTex"), data.SourceTex);
+```
+
+### Pencil stroke (tapered ends)
+`SobelDepthDir` вычисляет X/Y градиенты Sobel → направление грани. `PencilTaper` семплит силу грани вдоль направления в обе стороны — если грань обрывается (конец), плавно сужает линию.
+
+### Distance falloff
+`thickness = EdgeWidth × (1 − depth / MaxEdgeDistance)^DepthFalloff`. На `MaxEdgeDistance` метрах линия полностью исчезает.
+
+### Known issues fixed
+- **`SetViewProjectionMatrices`** — не используется. Меняло глобальные матрицы → ломало пост-процессинг.
+- **`AllowGlobalStateModification(true)`** — обязателен для `SetGlobalTexture` в RenderGraph.
+- **`builder.UseTexture`** — обязателен для регистрации `_EdgeSourceTex` в графе рендера.
+- **Normal Threshold 0.25** (было 0.08) — не триггерит на flat-поверхностях.

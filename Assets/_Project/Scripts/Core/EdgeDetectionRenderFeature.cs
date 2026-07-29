@@ -1,12 +1,12 @@
 // EdgeDetectionRenderFeature.cs — URP ScriptableRendererFeature (Unity 6 / URP 17.x)
 // Borderlands-style post-process edge detection via Sobel on depth + normals.
+// Distance-based thickness falloff. Adaptive color. Pencil stroke (tapered ends).
 // Shader: Assets/_Project/Shaders/EdgeDetection.shader
-//
-// Setup: add this feature to your URP Renderer asset (Forward Renderer / Universal Renderer).
 
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 
 namespace ProjectC.Rendering
@@ -15,47 +15,47 @@ namespace ProjectC.Rendering
     [SupportedOnRenderer(typeof(UniversalRendererData))]
     public sealed class EdgeDetectionRenderFeature : ScriptableRendererFeature
     {
-        [Header("Edge Settings")]
-        [ColorUsage(false, false)] public Color EdgeColor = new Color(0.05f, 0.05f, 0.07f, 1f);
-        [Range(1, 8)] public int EdgeWidth = 2;
+        [Header("Edge")]
+        [ColorUsage(false, false)] public Color EdgeColor = new Color(0.02f, 0.02f, 0.04f, 1f);
+        [Range(0.1f, 8f)] public float EdgeWidth = 1.5f;
 
-        [Header("Depth Edge")]
-        [Range(0.1f, 8f)] public float DepthSensitivity = 2.5f;
-        [Range(0f, 0.5f)] public float DepthThreshold = 0.06f;
+        [Header("Distance Falloff")]
+        [Range(1f, 500f)] public float MaxEdgeDistance = 80f;
+        [Range(0f, 2f)] public float DepthFalloff = 0.8f;
 
-        [Header("Normal Edge")]
-        [Range(0.1f, 8f)] public float NormalSensitivity = 1.5f;
-        [Range(0f, 0.5f)] public float NormalThreshold = 0.08f;
+        [Header("Depth Edges")]
+        public bool UseDepthEdges = true;
+        [Range(0.1f, 8f)] public float DepthSensitivity = 2f;
+        [Range(0f, 0.5f)] public float DepthThreshold = 0.04f;
 
-        [Header("Pencil Style")]
-        [Range(0f, 0.5f)] public float JitterAmount = 0.15f;
-        [Range(1f, 20f)] public float JitterScale = 8f;
-        [Range(0.01f, 0.3f)] public float LineSoftness = 0.06f;
+        [Header("Normal Edges")]
+        public bool UseNormalEdges = true;
+        [Range(0.1f, 4f)] public float NormalSensitivity = 0.8f;
+        [Range(0f, 0.8f)] public float NormalThreshold = 0.25f;
+
+        [Header("Adaptive Color")]
+        public bool UseAdaptiveColor = false;
+        [Range(0f, 1f)] public float AdaptiveStrength = 0.6f;
+
+        [Header("Pencil Stroke")]
+        public bool UsePencilStroke = false;
+        [Range(0f, 1f)] public float PencilTaper = 0.7f;
+        [Range(0f, 0.3f)] public float PencilGrain = 0.08f;
+
+        [Header("Softness")]
+        [Range(0.005f, 0.2f)] public float LineSoftness = 0.03f;
 
         [Header("Material")]
-        [Tooltip("Optional: pre-created material. If null, auto-created from Hidden/ProjectC/EdgeDetection shader.")]
         public Material OverrideMaterial;
 
         private Material _material;
 
         public Material GetOrCreateMaterial()
         {
-            if (_material != null && _material.shader != null)
-                return _material;
-
-            if (OverrideMaterial != null)
-            {
-                _material = OverrideMaterial;
-                return _material;
-            }
-
+            if (_material != null && _material.shader != null) return _material;
+            if (OverrideMaterial != null) { _material = OverrideMaterial; return _material; }
             Shader shader = Shader.Find("Hidden/ProjectC/EdgeDetection");
-            if (shader == null)
-            {
-                Debug.LogError("[EdgeDetectionFeature] Shader 'Hidden/ProjectC/EdgeDetection' not found.");
-                return null;
-            }
-
+            if (shader == null) { Debug.LogError("[EdgeDetectionFeature] Shader not found."); return null; }
             _material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
             return _material;
         }
@@ -64,26 +64,34 @@ namespace ProjectC.Rendering
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
-            if (renderingData.cameraData.cameraType == CameraType.Preview)
-                return;
-
+            if (renderingData.cameraData.cameraType == CameraType.Preview) return;
             Material mat = GetOrCreateMaterial();
             if (mat == null) return;
+            ApplyProperties(mat);
 
-            // Push inspector values into material
-            mat.SetColor(Shader.PropertyToID("_EdgeColor"), EdgeColor);
-            mat.SetFloat(Shader.PropertyToID("_EdgeWidth"), EdgeWidth);
-            mat.SetFloat(Shader.PropertyToID("_DepthSensitivity"), DepthSensitivity);
-            mat.SetFloat(Shader.PropertyToID("_DepthThreshold"), DepthThreshold);
-            mat.SetFloat(Shader.PropertyToID("_NormalSensitivity"), NormalSensitivity);
-            mat.SetFloat(Shader.PropertyToID("_NormalThreshold"), NormalThreshold);
-            mat.SetFloat(Shader.PropertyToID("_JitterAmount"), JitterAmount);
-            mat.SetFloat(Shader.PropertyToID("_JitterScale"), JitterScale);
-            mat.SetFloat(Shader.PropertyToID("_LineSoftness"), LineSoftness);
-
-            var pass = new EdgeDetectionPass(mat);
+            var pass = new EdgeDetectionPass(mat, UseAdaptiveColor);
             pass.renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
             renderer.EnqueuePass(pass);
+        }
+
+        private void ApplyProperties(Material mat)
+        {
+            mat.SetColor("_EdgeColor", EdgeColor);
+            mat.SetFloat("_EdgeWidth", EdgeWidth);
+            mat.SetFloat("_MaxEdgeDistance", MaxEdgeDistance);
+            mat.SetFloat("_DepthFalloff", DepthFalloff);
+            mat.SetFloat("_UseDepthEdges", UseDepthEdges ? 1f : 0f);
+            mat.SetFloat("_DepthSensitivity", DepthSensitivity);
+            mat.SetFloat("_DepthThreshold", DepthThreshold);
+            mat.SetFloat("_UseNormalEdges", UseNormalEdges ? 1f : 0f);
+            mat.SetFloat("_NormalSensitivity", NormalSensitivity);
+            mat.SetFloat("_NormalThreshold", NormalThreshold);
+            mat.SetFloat("_UseAdaptiveColor", UseAdaptiveColor ? 1f : 0f);
+            mat.SetFloat("_AdaptiveStrength", AdaptiveStrength);
+            mat.SetFloat("_UsePencilStroke", UsePencilStroke ? 1f : 0f);
+            mat.SetFloat("_PencilTaper", PencilTaper);
+            mat.SetFloat("_PencilGrain", PencilGrain);
+            mat.SetFloat("_LineSoftness", LineSoftness);
         }
 
         protected override void Dispose(bool disposing)
@@ -100,56 +108,66 @@ namespace ProjectC.Rendering
         }
     }
 
-    /// <summary>Fullscreen edge-detection pass using RenderGraph (URP 17.x / Unity 6).</summary>
     internal sealed class EdgeDetectionPass : ScriptableRenderPass
     {
         private const string PassName = "EdgeDetection";
         private Material _material;
+        private readonly bool _needsSourceTex;
+
+        private static readonly int SourceTexId = Shader.PropertyToID("_EdgeSourceTex");
 
         private class PassData
         {
             public Material Material;
+            public TextureHandle SourceTex;
         }
 
-        public EdgeDetectionPass(Material material)
+        public EdgeDetectionPass(Material material, bool needsSourceTex)
         {
             _material = material;
+            _needsSourceTex = needsSourceTex;
             profilingSampler = new ProfilingSampler(PassName);
-            requiresIntermediateTexture = false;
 
-            // Request depth + normal textures from URP
-            ConfigureInput(ScriptableRenderPassInput.Normal | ScriptableRenderPassInput.Depth);
+            var inputs = ScriptableRenderPassInput.Normal | ScriptableRenderPassInput.Depth;
+            ConfigureInput(inputs);
         }
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
             if (_material == null) return;
-
             var resourceData = frameData.Get<UniversalResourceData>();
-            var cameraData = frameData.Get<UniversalCameraData>();
-
-            // We draw on top of the already-rendered color using alpha blending.
             var colorTarget = resourceData.activeColorTexture;
 
-            using (var builder = renderGraph.AddRasterRenderPass<PassData>(PassName, out var passData, profilingSampler))
+            TextureHandle sourceTex = default;
+            if (_needsSourceTex)
+            {
+                var desc = colorTarget.GetDescriptor(renderGraph);
+                desc.depthBufferBits = 0;
+                desc.msaaSamples = (MSAASamples)1;
+                desc.name = "EdgeSourceCopy";
+                sourceTex = renderGraph.CreateTexture(desc);
+                RenderGraphUtils.AddCopyPass(renderGraph, colorTarget, sourceTex,
+                    "CopyColorForEdge", false);
+            }
+
+            using (var builder = renderGraph.AddRasterRenderPass<PassData>(
+                       PassName, out var passData, profilingSampler))
             {
                 passData.Material = _material;
-
-                // Read + Write: Read preserves existing content for blending
+                passData.SourceTex = sourceTex;
                 builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
-
                 builder.AllowPassCulling(false);
+                builder.AllowGlobalStateModification(true);
+
+                if (sourceTex.IsValid())
+                    builder.UseTexture(sourceTex, AccessFlags.Read);
 
                 builder.SetRenderFunc(static (PassData data, RasterGraphContext ctx) =>
                 {
-                    ctx.cmd.DrawProcedural(
-                        Matrix4x4.identity,
-                        data.Material,
-                        0,
-                        MeshTopology.Triangles,
-                        3,
-                        1
-                    );
+                    if (data.SourceTex.IsValid())
+                        ctx.cmd.SetGlobalTexture(SourceTexId, data.SourceTex);
+                    ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 0,
+                        MeshTopology.Triangles, 3, 1);
                 });
             }
         }

@@ -1,4 +1,4 @@
-// Project C: Real-Time Combat Engine — T-NPC-S01
+﻿// Project C: Real-Time Combat Engine — T-NPC-S01
 // NpcSocialBrain: companion MonoBehaviour для NpcBrain.
 // Phase 2: emotion, morale, social triggers, vocal cues, group coordination.
 // Phase 3: threat, cover, surrender, post-combat, social roles.
@@ -32,18 +32,33 @@ namespace ProjectC.AI
         [Header("Patrol (T-NPC-S03)")]
         public NpcIdleActivity idleActivity = NpcIdleActivity.StandStill;
         public PatrolPattern patrolPattern = PatrolPattern.Loop;
+        [Tooltip("Waypoints в мировых координатах. Для scene-placed NPC лучше использовать patrolWaypointMarkers.")]
         public Vector3[] patrolWaypoints;
+        [Tooltip("Transform-маркеры патруля (Empty в сцене). Приоритет над patrolWaypoints. Аналог NpcSpawner.patrolWaypointMarkers.")]
+        public Transform[] patrolWaypointMarkers;
         public float idleAtWaypointSec = 3f;
         public float wanderRadius = 8f;
         [Range(0f, 5f)] public float patrolSpeed = 0f;
         [Range(0.1f, 5f)] public float patrolArrivalThreshold = 1.5f;
         [Range(5f, 60f)] public float patrolStuckTimeout = 15f;
 
+        [Header("Activity Anchors (T-NPC-S23)")]
+        [Tooltip("Точка для активности Work. NPC идёт сюда и играет рабочую анимацию.")]
+        public Transform workAnchor;
+        [Tooltip("Точка для активности Sleep. NPC идёт сюда и засыпает.")]
+        public Transform sleepAnchor;
+        [Tooltip("Точка для сидения (альтернатива поиску SitPoint). Если задана — NPC сидит здесь.")]
+        public Transform sitAnchor;
+        [Tooltip("Точка сбора для активности Socialize.")]
+        public Transform socializeAnchor;
+        [Tooltip("Центр зоны блуждания для Wander. Если не задан — используется _brain.SpawnPoint.")]
+        public Transform wanderAnchor;
+
         [Header("Flee (T-NPC-S04)")]
         public bool canFlee = true;
         [Range(0f, 1f)] public float fleeHpThreshold = 0.25f;
-        public float fleeAllySeekRadius = 30f;
         public float fleeLeash = 80f;
+        public float fleeAllySeekRadius = 30f;
         public float fleeTimeout = 15f;
         [Range(5f, 50f)] public float fleeStraightDistance = 20f;
         [Range(5f, 50f)] public float fleeNearLeashDistance = 20f;
@@ -183,7 +198,6 @@ namespace ProjectC.AI
         {
             AllBrains.Remove(this);
         }
-
 
         public void Tick(NpcBrain brain)
         {
@@ -403,6 +417,16 @@ namespace ProjectC.AI
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
             if (Time.unscaledTime < _socializeCooldown) return;
+
+            // S23: если задан socializeAnchor — идём к точке сбора.
+            if (socializeAnchor != null && Vector3.Distance(transform.position, socializeAnchor.position) > socializeApproachThreshold)
+            {
+                _agent.isStopped = false;
+                _agent.SetDestination(socializeAnchor.position);
+                _socializeCooldown = Time.unscaledTime + Random.Range(socializeCooldownMin, socializeCooldownMax);
+                return;
+            }
+
             if (_socializePartner == null || _socializePartner.IsDead ||
                 Vector3.Distance(transform.position, _socializePartner.transform.position) > socializeSearchRadius)
                 _socializePartner = FindSocializePartner();
@@ -437,7 +461,18 @@ namespace ProjectC.AI
 
         private void ExecuteWork()
         {
-            if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
+            if (_agent == null || !_agent.isOnNavMesh) return;
+
+            // S23: если задан workAnchor — сначала идём к нему.
+            if (workAnchor != null && Vector3.Distance(transform.position, workAnchor.position) > patrolArrivalThreshold)
+            {
+                _agent.isStopped = false;
+                _agent.SetDestination(workAnchor.position);
+                return;
+            }
+
+            // На месте — работаем.
+            _agent.isStopped = true;
             if (Time.unscaledTime > _workAnimTimer)
             {
                 var anim = GetComponentInChildren<Animator>();
@@ -449,6 +484,20 @@ namespace ProjectC.AI
         private void ExecuteSit()
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
+
+            // S23: если задан sitAnchor — идём и сидим там (без поиска SitPoint).
+            if (sitAnchor != null)
+            {
+                if (Vector3.Distance(transform.position, sitAnchor.position) > patrolArrivalThreshold)
+                {
+                    _agent.isStopped = false;
+                    _agent.SetDestination(sitAnchor.position);
+                    return;
+                }
+                _agent.isStopped = true;
+                return;
+            }
+
             if (_sitPoint != null)
             {
                 if (_sitPoint.IsOccupied && _sitPoint._currentOccupant != this) _sitPoint = null;
@@ -477,13 +526,23 @@ namespace ProjectC.AI
 
         private void ExecuteSleep()
         {
+            if (_agent == null || !_agent.isOnNavMesh) return;
+
+            // S23: если sleepAnchor задан и мы ещё не на месте — идём к нему.
             if (!_sleepInitialized)
             {
+                if (sleepAnchor != null && Vector3.Distance(transform.position, sleepAnchor.position) > patrolArrivalThreshold)
+                {
+                    _agent.isStopped = false;
+                    _agent.SetDestination(sleepAnchor.position);
+                    return;
+                }
+
                 _sleepInitialized = true;
                 _sleepWakeTime = Time.unscaledTime + Random.Range(sleepDurationMin, sleepDurationMax);
                 var anim = GetComponentInChildren<Animator>();
                 if (anim != null) anim.SetBool("IsSleeping", true);
-                if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
+                _agent.isStopped = true;
             }
             if (Time.unscaledTime > _sleepWakeTime)
             {
@@ -494,12 +553,27 @@ namespace ProjectC.AI
             }
         }
 
+        /// <summary>Резолвит актуальные точки патруля: Transform[] markers приоритетнее Vector3[].</summary>
+        private Vector3[] ResolvePatrolWaypoints()
+        {
+            if (patrolWaypointMarkers != null && patrolWaypointMarkers.Length > 0)
+            {
+                var result = new System.Collections.Generic.List<Vector3>();
+                for (int i = 0; i < patrolWaypointMarkers.Length; i++)
+                    if (patrolWaypointMarkers[i] != null)
+                        result.Add(patrolWaypointMarkers[i].position);
+                if (result.Count > 0) return result.ToArray();
+            }
+            return patrolWaypoints;
+        }
+
         private void ExecutePatrol()
         {
-            if (patrolWaypoints == null || patrolWaypoints.Length == 0) { idleActivity = NpcIdleActivity.StandStill; return; }
+            var waypoints = ResolvePatrolWaypoints();
+            if (waypoints == null || waypoints.Length == 0) { idleActivity = NpcIdleActivity.StandStill; return; }
             if (_agent == null || !_agent.isOnNavMesh) return;
             if (Time.unscaledTime < _patrolWaitUntil) return;
-            Vector3 tgt = patrolWaypoints[_patrolIndex];
+            Vector3 tgt = waypoints[_patrolIndex];
             if (Vector3.Distance(transform.position, tgt) < patrolArrivalThreshold)
             {
                 _patrolWaitUntil = Time.unscaledTime + idleAtWaypointSec;
@@ -533,18 +607,18 @@ namespace ProjectC.AI
             _agent.SetDestination(tgt);
         }
 
-
         private void AdvancePatrolIndex()
         {
-            if (patrolWaypoints == null || patrolWaypoints.Length == 0) return;
+            var waypoints = ResolvePatrolWaypoints();
+            if (waypoints == null || waypoints.Length == 0) return;
             switch (patrolPattern)
             {
-                case PatrolPattern.Loop: _patrolIndex = (_patrolIndex + 1) % patrolWaypoints.Length; break;
+                case PatrolPattern.Loop: _patrolIndex = (_patrolIndex + 1) % waypoints.Length; break;
                 case PatrolPattern.PingPong:
-                    if (_patrolPingPongForward) { _patrolIndex++; if (_patrolIndex >= patrolWaypoints.Length) { _patrolIndex = Mathf.Max(0, patrolWaypoints.Length - 2); _patrolPingPongForward = false; } }
-                    else { _patrolIndex--; if (_patrolIndex < 0) { _patrolIndex = Mathf.Min(1, patrolWaypoints.Length - 1); _patrolPingPongForward = true; } }
+                    if (_patrolPingPongForward) { _patrolIndex++; if (_patrolIndex >= waypoints.Length) { _patrolIndex = Mathf.Max(0, waypoints.Length - 2); _patrolPingPongForward = false; } }
+                    else { _patrolIndex--; if (_patrolIndex < 0) { _patrolIndex = Mathf.Min(1, waypoints.Length - 1); _patrolPingPongForward = true; } }
                     break;
-                case PatrolPattern.Random: _patrolIndex = Random.Range(0, patrolWaypoints.Length); break;
+                case PatrolPattern.Random: _patrolIndex = Random.Range(0, waypoints.Length); break;
             }
         }
 
@@ -552,8 +626,9 @@ namespace ProjectC.AI
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
             if (Time.unscaledTime < _wanderCooldown) return;
+            Vector3 center = wanderAnchor != null ? wanderAnchor.position : _brain.SpawnPoint;
             Vector2 disc = Random.insideUnitCircle * wanderRadius;
-            Vector3 cand = _brain.SpawnPoint + new Vector3(disc.x, 0, disc.y);
+            Vector3 cand = center + new Vector3(disc.x, 0, disc.y);
             if (NavMesh.SamplePosition(cand, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
             {
                 _wanderTarget = hit.position;
@@ -690,7 +765,6 @@ namespace ProjectC.AI
             }
             return 0;
         }
-
 
         private bool CheckLeaderAggrod(out IDamageTarget target)
         {
@@ -974,4 +1048,3 @@ namespace ProjectC.AI
         public float MoraleValue => _morale.current;
     }
 }
-

@@ -1,4 +1,4 @@
-// Project C: Real-Time Combat Engine — T-NPC-S01
+﻿// Project C: Real-Time Combat Engine — T-NPC-S01
 // NpcSocialBrainEditor: custom editor with foldout groups for NpcSocialBrain.
 //
 // Groups:
@@ -39,6 +39,7 @@ public class NpcSocialBrainEditor : Editor
     private SerializedProperty _idleActivity;
     private SerializedProperty _patrolPattern;
     private SerializedProperty _patrolWaypoints;
+    private SerializedProperty _patrolWaypointMarkers;
     private SerializedProperty _idleAtWaypointSec;
     private SerializedProperty _wanderRadius;
     private SerializedProperty _patrolSpeed;
@@ -46,6 +47,11 @@ public class NpcSocialBrainEditor : Editor
     private SerializedProperty _patrolStuckTimeout;
     private SerializedProperty _wanderCooldownMin;
     private SerializedProperty _wanderCooldownMax;
+    private SerializedProperty _workAnchor;
+    private SerializedProperty _sleepAnchor;
+    private SerializedProperty _sitAnchor;
+    private SerializedProperty _socializeAnchor;
+    private SerializedProperty _wanderAnchor;
     private SerializedProperty _socializeSearchRadius;
     private SerializedProperty _socializeApproachThreshold;
     private SerializedProperty _socializeCooldownMin;
@@ -109,6 +115,7 @@ public class NpcSocialBrainEditor : Editor
         _idleActivity = serializedObject.FindProperty("idleActivity");
         _patrolPattern = serializedObject.FindProperty("patrolPattern");
         _patrolWaypoints = serializedObject.FindProperty("patrolWaypoints");
+        _patrolWaypointMarkers = serializedObject.FindProperty("patrolWaypointMarkers");
         _idleAtWaypointSec = serializedObject.FindProperty("idleAtWaypointSec");
         _wanderRadius = serializedObject.FindProperty("wanderRadius");
         _patrolSpeed = serializedObject.FindProperty("patrolSpeed");
@@ -116,6 +123,11 @@ public class NpcSocialBrainEditor : Editor
         _patrolStuckTimeout = serializedObject.FindProperty("patrolStuckTimeout");
         _wanderCooldownMin = serializedObject.FindProperty("wanderCooldownMin");
         _wanderCooldownMax = serializedObject.FindProperty("wanderCooldownMax");
+        _workAnchor = serializedObject.FindProperty("workAnchor");
+        _sleepAnchor = serializedObject.FindProperty("sleepAnchor");
+        _sitAnchor = serializedObject.FindProperty("sitAnchor");
+        _socializeAnchor = serializedObject.FindProperty("socializeAnchor");
+        _wanderAnchor = serializedObject.FindProperty("wanderAnchor");
         _socializeSearchRadius = serializedObject.FindProperty("socializeSearchRadius");
         _socializeApproachThreshold = serializedObject.FindProperty("socializeApproachThreshold");
         _socializeCooldownMin = serializedObject.FindProperty("socializeCooldownMin");
@@ -219,6 +231,7 @@ public class NpcSocialBrainEditor : Editor
             EditorGUILayout.LabelField("Patrol", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_patrolPattern);
             EditorGUILayout.PropertyField(_patrolWaypoints, true);
+            EditorGUILayout.PropertyField(_patrolWaypointMarkers, true);
             EditorGUILayout.PropertyField(_idleAtWaypointSec);
             EditorGUILayout.PropertyField(_patrolSpeed);
             EditorGUILayout.PropertyField(_patrolArrivalThreshold);
@@ -229,9 +242,26 @@ public class NpcSocialBrainEditor : Editor
             {
                 EditorGUILayout.Space(4);
                 EditorGUILayout.LabelField("Wander", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(_wanderAnchor);
                 EditorGUILayout.PropertyField(_wanderRadius);
                 EditorGUILayout.PropertyField(_wanderCooldownMin);
                 EditorGUILayout.PropertyField(_wanderCooldownMax);
+            }
+
+            // S23: Activity Anchors — visible when relevant activity is selected
+            if (currentActivity == NpcIdleActivity.Work || currentActivity == NpcIdleActivity.Sleep ||
+                currentActivity == NpcIdleActivity.Sit || currentActivity == NpcIdleActivity.Socialize)
+            {
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Activity Anchors (T-NPC-S23)", EditorStyles.boldLabel);
+                if (currentActivity == NpcIdleActivity.Work)
+                    EditorGUILayout.PropertyField(_workAnchor);
+                if (currentActivity == NpcIdleActivity.Sleep)
+                    EditorGUILayout.PropertyField(_sleepAnchor);
+                if (currentActivity == NpcIdleActivity.Sit)
+                    EditorGUILayout.PropertyField(_sitAnchor);
+                if (currentActivity == NpcIdleActivity.Socialize)
+                    EditorGUILayout.PropertyField(_socializeAnchor);
             }
         }
         EditorGUILayout.EndFoldoutHeaderGroup();

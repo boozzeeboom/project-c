@@ -198,12 +198,12 @@ namespace ProjectC.Quests.Editor
                     switch (obj.objectiveType)
                     {
                         case QuestObjectiveType.TalkToNpc:
-                            if (string.IsNullOrEmpty(obj.targetNpcId))
-                                result.Add(Severity.Error, $"stage '{st.stageId}' obj '{obj.objectiveId}' (TalkToNpc): targetNpcId is empty");
+                            if (string.IsNullOrEmpty(obj.targetNpcId) && obj.targetNpc == null)
+                                result.Add(Severity.Error, $"stage '{st.stageId}' obj '{obj.objectiveId}' (TalkToNpc): targetNpcId is empty and targetNpc is null");
                             break;
                         case QuestObjectiveType.DeliverItem:
-                            if (string.IsNullOrEmpty(obj.targetNpcId))
-                                result.Add(Severity.Error, $"stage '{st.stageId}' obj '{obj.objectiveId}' (DeliverItem): targetNpcId is empty");
+                            if (string.IsNullOrEmpty(obj.targetNpcId) && obj.targetNpc == null)
+                                result.Add(Severity.Error, $"stage '{st.stageId}' obj '{obj.objectiveId}' (DeliverItem): targetNpcId is empty and targetNpc is null");
                             if (string.IsNullOrEmpty(obj.itemTradeItemId) && obj.pickupItem == null)
                                 result.Add(Severity.Warning, $"stage '{st.stageId}' obj '{obj.objectiveId}' (DeliverItem): itemTradeItemId is empty and pickupItem is null");
                             break;

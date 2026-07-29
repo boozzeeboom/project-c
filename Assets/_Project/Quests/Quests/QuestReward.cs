@@ -53,8 +53,11 @@ namespace ProjectC.Quests
     {
         public QuestUnlockType unlockType = QuestUnlockType.DialogTree;
 
-        [Tooltip("ID unlocked entity (treeId, sceneId, recipeId, achievementId).")]
+        [Tooltip("ID unlocked entity (treeId, sceneId, recipeId, achievementId). Оставлено для CSV. unlockDialog приоритетнее.")]
         public string unlockId = "";
+
+        [Tooltip("DialogTree reference (для unlockType=DialogTree). Перетащи .asset из Data/Dialogs/. Приоритетнее unlockId.")]
+        public DialogTree unlockDialog;
     }
 
     /// <summary>

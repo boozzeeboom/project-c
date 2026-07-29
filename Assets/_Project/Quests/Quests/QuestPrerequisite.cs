@@ -39,8 +39,11 @@ namespace ProjectC.Quests
     {
         public QuestPrerequisiteType type = QuestPrerequisiteType.QuestCompleted;
 
-        [Tooltip("Primary string param: questId / npcId / itemId / flagId.")]
+        [Tooltip("Primary string param: questId / npcId / itemId / flagId. Оставлено для CSV. requiredQuest приоритетнее.")]
         public string stringParam = "";
+
+        [Tooltip("Quest reference (для QuestCompleted). Перетащи .asset из Data/Quests/. Приоритетнее stringParam.")]
+        public QuestDefinition requiredQuest;
 
         [Tooltip("Numeric param: reputation / NpcAttitude threshold / item count.")]
         public int intParam = 0;

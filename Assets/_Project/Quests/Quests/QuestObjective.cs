@@ -36,8 +36,11 @@ namespace ProjectC.Quests
         [Tooltip("Tekst dlya zhurnala/trackera.")]
         public string description = "";
 
-        [Tooltip("NPC id (dlya TalkToNpc, DeliverItem).")]
+        [Tooltip("NPC id (dlya TalkToNpc, DeliverItem). Оставлено для CSV-импорта. targetNpc приоритетнее.")]
         public string targetNpcId = "";
+
+        [Tooltip("NPC definition (для TalkToNpc, DeliverItem). Перетащи .asset из Data/Npcs/. Приоритетнее targetNpcId.")]
+        public NpcDefinition targetNpc;
 
         [Tooltip("Trade item id (для DeliverItem, HaveItem). Оставлено для CSV-импорта. pickupItem приоритетнее.")]
         public string itemTradeItemId = "";

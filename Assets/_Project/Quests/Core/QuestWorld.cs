@@ -181,13 +181,15 @@ namespace ProjectC.Quests
             {
                 case QuestPrerequisiteType.QuestCompleted:
                 {
-                    var s = GetPlayerQuestState(clientId, prereq.stringParam);
+                    string questId = prereq.requiredQuest != null ? prereq.requiredQuest.questId : prereq.stringParam;
+                    var s = GetPlayerQuestState(clientId, questId);
                     if (!s.HasValue) return false;
                     return s.Value == QuestState.Completed || s.Value == QuestState.TurnedIn;
                 }
                 case QuestPrerequisiteType.QuestActive:
                 {
-                    var s = GetPlayerQuestState(clientId, prereq.stringParam);
+                    string questId = prereq.requiredQuest != null ? prereq.requiredQuest.questId : prereq.stringParam;
+                    var s = GetPlayerQuestState(clientId, questId);
                     return s.HasValue && s.Value == QuestState.Active;
                 }
                 case QuestPrerequisiteType.ReputationAtLeast:
@@ -1048,7 +1050,10 @@ namespace ProjectC.Quests
             switch (obj.objectiveType)
             {
                 case QuestObjectiveType.TalkToNpc:
-                    return HasNpcTalkedTo(clientId, obj.targetNpcId);
+                {
+                    string npcId = obj.targetNpc != null ? obj.targetNpc.npcId : obj.targetNpcId;
+                    return HasNpcTalkedTo(clientId, npcId);
+                }
 
                 case QuestObjectiveType.HaveItem:
                 {

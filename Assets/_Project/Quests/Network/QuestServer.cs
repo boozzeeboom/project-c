@@ -1034,9 +1034,10 @@ namespace ProjectC.Quests
                     for (int o = 0; o < def.stages[s].objectives.Length; o++)
                     {
                         var obj = def.stages[s].objectives[o];
-                        if (obj != null && !string.IsNullOrEmpty(obj.targetNpcId))
+                        string npcId = obj?.targetNpc != null ? obj.targetNpc.npcId : obj?.targetNpcId;
+                        if (!string.IsNullOrEmpty(npcId))
                         {
-                            allNpcIds.Add(obj.targetNpcId);
+                            allNpcIds.Add(npcId);
                         }
                     }
                 }

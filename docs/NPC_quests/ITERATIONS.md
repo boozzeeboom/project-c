@@ -1,5 +1,24 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-07-29
+
+**Задача:** Кастомный редактор QuestDefinition.asset — удобный для не-технаря (drag-and-drop, контекстно-зависимые поля, сводка, авто-валидация)
+**Коммит:** `10c5ff17d8bfcfeb29154a2183342ad33f028c2d` — T-QUEDIT: Кастомный редактор QuestDefinition для не-технарей
+**Изменения:**
+- `Assets/_Project/Quests/Quests/QuestObjective.cs` — добавлен `targetNpc` (NpcDefinition ref)
+- `Assets/_Project/Quests/Quests/QuestPrerequisite.cs` — добавлен `requiredQuest` (QuestDefinition ref)
+- `Assets/_Project/Quests/Quests/QuestReward.cs` — добавлен `unlockDialog` (DialogTree ref) в QuestRewardUnlock
+- `Assets/_Project/Quests/Editor/QuestObjectiveDrawer.cs` — новый: контекстно-зависимый PropertyDrawer
+- `Assets/_Project/Quests/Editor/DialogueActionDrawer.cs` — новый: контекстно-зависимый PropertyDrawer
+- `Assets/_Project/Quests/Editor/QuestPrerequisiteDrawer.cs` — новый: контекстно-зависимый PropertyDrawer
+- `Assets/_Project/Quests/Editor/QuestRewardDrawer.cs` — новый: плоская форма наград
+- `Assets/_Project/Quests/Editor/QuestStageDrawer.cs` — новый: карточки objectives/actions
+- `Assets/_Project/Quests/Editor/QuestDefinitionEditor.cs` — новый: CustomEditor с 3 вкладками + сводка + авто-валидация
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — runtime-резолв targetNpc + requiredQuest
+- `Assets/_Project/Quests/Network/QuestServer.cs` — runtime-резолв targetNpc
+- `Assets/_Project/Quests/Editor/QuestDefinitionValidator.cs` — обновлена валидация для targetNpc
+- `docs/NPC_quests/CUSTOM_EDITOR_PLAN.md` — план реализации
+
 ## Итерация от 2026-07-20
 
 **Задача:** Drag-and-drop поля для предметов в наградах и целях квестов (вместо ручного ввода ID)

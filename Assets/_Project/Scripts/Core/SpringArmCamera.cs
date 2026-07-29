@@ -151,6 +151,17 @@ namespace ProjectC.Core
             }
         }
 
+        /// <summary>
+        /// Мгновенно привязать камеру к цели (без пружины).
+        /// Вызывать после телепорта/респавна/загрузки сохранения.
+        /// </summary>
+        public void Snap()
+        {
+            if (target == null) return;
+            _lagTargetPos = target.position;
+            SnapCameraToPosition();
+        }
+
         public void SetTargetMode(Transform newTarget, bool isShip)
         {
             SetTarget(newTarget);
@@ -240,6 +251,15 @@ namespace ProjectC.Core
         private void LateUpdate()
         {
             if (target == null || Cursor.lockState != CursorLockMode.Locked) return;
+
+            // Auto-snap при большом скачке (телепорт, загрузка сохранения, респавн).
+            // UpdateLag ловит только >100m; здесь обрабатываем 10-100m.
+            float snapDist = Vector3.Distance(_lagTargetPos, target.position);
+            if (snapDist > 10f)
+            {
+                _lagTargetPos = target.position;
+                SnapCameraToPosition();
+            }
 
             ReadInput();
             UpdateModeTransition();

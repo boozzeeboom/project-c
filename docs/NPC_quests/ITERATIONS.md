@@ -1,5 +1,12 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-07-20
+
+**Задача:** Детальный анализ QuestRewardItem — переход от tradeItemId (string) к прямой ссылке на TradeItemDefinition (drag-and-drop в инспекторе)
+**Коммит:** `cfef75f861dac258b67c80103f3c03251520d6f9` — T-QREWARD: анализ QuestRewardItem
+**Изменения:**
+- `docs/NPC_quests/ANALYSIS_QuestRewardItem_refactor.md` — полный анализ (278 строк): две системы предметов, маппинг, план на 8 файлов
+
 ## Итерация от 2026-07-14
 
 **Задача:** Activity Anchors в NpcSocialBrain — Transform-якоря для idle-активностей и patrolWaypointMarkers для hand-placed NPC

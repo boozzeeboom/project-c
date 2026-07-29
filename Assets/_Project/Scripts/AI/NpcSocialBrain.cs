@@ -177,11 +177,15 @@ namespace ProjectC.AI
         private float _sleepWakeTime;
         private bool _sleepInitialized;
 
-        // S23: anchor array indices + timers
+        // S23: anchor state machine — NeedMove / Moving / Active
+        private enum AnchorState : byte { NeedMove, Moving, Active }
         private int _workAnchorIndex;
         private int _sitAnchorIndex;
         private int _sleepAnchorIndex;
         private int _socializeAnchorIndex;
+        private AnchorState _workState;
+        private AnchorState _sitState;
+        private AnchorState _socializeState;
         private float _sitTimer;
 
         public bool IsFleeing => _isFleeing;
@@ -429,6 +433,8 @@ namespace ProjectC.AI
             return next;
         }
 
+        private float AnchorArrivalDist => Mathf.Max(patrolArrivalThreshold, _agent.stoppingDistance + 0.5f);
+
         /// <summary>Резолвит актуальные точки патруля: Transform[] markers приоритетнее Vector3[].</summary>
 
         private void ExecuteStandStill()
@@ -444,30 +450,43 @@ namespace ProjectC.AI
         private void ExecuteSocialize()
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
-            if (Time.unscaledTime < _socializeCooldown) return;
 
-            // S23: если заданы socializeAnchors — идём к точке, тусим, затем random следующая.
+            // S23: стейт-машина NeedMove → Moving → Active → NeedMove...
             if (socializeAnchors != null && socializeAnchors.Length > 0)
             {
                 Transform anchor = GetAnchorSafe(socializeAnchors, ref _socializeAnchorIndex);
-                if (anchor != null)
+                if (anchor == null) return;
+
+                switch (_socializeState)
                 {
-                    float arrivalDist = Mathf.Max(socializeApproachThreshold, _agent.stoppingDistance + 0.5f);
-                    if (Vector3.Distance(transform.position, anchor.position) > arrivalDist)
-                    {
+                    case AnchorState.NeedMove:
                         _agent.isStopped = false;
                         _agent.SetDestination(anchor.position);
-                    }
-                    else
-                    {
+                        _socializeState = AnchorState.Moving;
+                        return;
+
+                    case AnchorState.Moving:
+                        if (_agent.pathPending) return;
+                        if (_agent.remainingDistance > AnchorArrivalDist) return;
+                        // Прибыли — тусим cooldown.
                         _agent.isStopped = true;
-                        // Дошли — тусим здесь cooldown, потом random следующая.
-                        _socializeAnchorIndex = NextRandomIndex(socializeAnchors.Length, _socializeAnchorIndex);
-                    }
+                        _socializeCooldown = Time.unscaledTime + Random.Range(socializeCooldownMin, socializeCooldownMax);
+                        _socializeState = AnchorState.Active;
+                        return;
+
+                    case AnchorState.Active:
+                        _agent.isStopped = true;
+                        if (Time.unscaledTime > _socializeCooldown)
+                        {
+                            _socializeAnchorIndex = NextRandomIndex(socializeAnchors.Length, _socializeAnchorIndex);
+                            _socializeState = AnchorState.NeedMove;
+                        }
+                        return;
                 }
-                _socializeCooldown = Time.unscaledTime + Random.Range(socializeCooldownMin, socializeCooldownMax);
-                return;
             }
+
+            // Legacy: без якорей — ищем партнёра.
+            if (Time.unscaledTime < _socializeCooldown) return;
 
             if (_socializePartner == null || _socializePartner.IsDead ||
                 Vector3.Distance(transform.position, _socializePartner.transform.position) > socializeSearchRadius)
@@ -505,40 +524,43 @@ namespace ProjectC.AI
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
 
-            // S23: если заданы workAnchors — идём к точке, работаем, затем random следующая.
+            // S23: стейт-машина NeedMove → Moving → Active → NeedMove...
             if (workAnchors != null && workAnchors.Length > 0)
             {
                 Transform anchor = GetAnchorSafe(workAnchors, ref _workAnchorIndex);
-                if (anchor != null)
+                if (anchor == null) return;
+
+                switch (_workState)
                 {
-                    float arrivalDist = Mathf.Max(patrolArrivalThreshold, _agent.stoppingDistance + 0.5f);
-                    if (Vector3.Distance(transform.position, anchor.position) > arrivalDist)
-                    {
+                    case AnchorState.NeedMove:
                         _agent.isStopped = false;
                         _agent.SetDestination(anchor.position);
+                        _workState = AnchorState.Moving;
                         return;
-                    }
 
-                    // На месте — работаем n+random сек.
-                    _agent.isStopped = true;
-                    if (_workAnimTimer <= 0f)
-                    {
-                        // Только что пришли — играем анимацию, ставим таймер.
+                    case AnchorState.Moving:
+                        if (_agent.pathPending) return;
+                        if (_agent.remainingDistance > AnchorArrivalDist) return;
+                        // Прибыли!
+                        _agent.isStopped = true;
+                        _workAnimTimer = Time.unscaledTime + Random.Range(workAnimIntervalMin, workAnimIntervalMax);
                         var anim = GetComponentInChildren<Animator>();
                         if (anim != null) { anim.SetInteger("WorkVariant", Random.Range(0, 3)); anim.SetTrigger("Work"); }
-                        _workAnimTimer = Time.unscaledTime + Random.Range(workAnimIntervalMin, workAnimIntervalMax);
-                    }
-                    else if (Time.unscaledTime > _workAnimTimer)
-                    {
-                        // Отработали → random следующая (не текущая).
-                        _workAnchorIndex = NextRandomIndex(workAnchors.Length, _workAnchorIndex);
-                        _workAnimTimer = 0f;
-                    }
+                        _workState = AnchorState.Active;
+                        return;
+
+                    case AnchorState.Active:
+                        _agent.isStopped = true;
+                        if (Time.unscaledTime > _workAnimTimer)
+                        {
+                            _workAnchorIndex = NextRandomIndex(workAnchors.Length, _workAnchorIndex);
+                            _workState = AnchorState.NeedMove;
+                        }
+                        return;
                 }
-                return;
             }
 
-            // Без якорей — стоим на месте, работаем.
+            // Без якорей — стоим, работаем (legacy).
             _agent.isStopped = true;
             if (Time.unscaledTime > _workAnimTimer)
             {
@@ -552,34 +574,38 @@ namespace ProjectC.AI
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
 
-            // S23: если заданы sitAnchors — идём к точке, сидим n+random, затем random следующая.
+            // S23: стейт-машина NeedMove → Moving → Active → NeedMove...
             if (sitAnchors != null && sitAnchors.Length > 0)
             {
                 Transform anchor = GetAnchorSafe(sitAnchors, ref _sitAnchorIndex);
-                if (anchor != null)
+                if (anchor == null) return;
+
+                switch (_sitState)
                 {
-                    float arrivalDist = Mathf.Max(patrolArrivalThreshold, _agent.stoppingDistance + 0.5f);
-                    if (Vector3.Distance(transform.position, anchor.position) > arrivalDist)
-                    {
+                    case AnchorState.NeedMove:
                         _agent.isStopped = false;
                         _agent.SetDestination(anchor.position);
+                        _sitState = AnchorState.Moving;
                         return;
-                    }
-                    // Пришли — сидим n+random сек.
-                    _agent.isStopped = true;
-                    if (_sitTimer <= 0f)
-                    {
-                        // Только что сели — ставим таймер.
+
+                    case AnchorState.Moving:
+                        if (_agent.pathPending) return;
+                        if (_agent.remainingDistance > AnchorArrivalDist) return;
+                        // Прибыли — сидим.
+                        _agent.isStopped = true;
                         _sitTimer = Time.unscaledTime + Random.Range(sitSearchInterval, sitSearchInterval * 2f);
-                    }
-                    else if (Time.unscaledTime > _sitTimer)
-                    {
-                        // Посидели → random следующая (не текущая).
-                        _sitAnchorIndex = NextRandomIndex(sitAnchors.Length, _sitAnchorIndex);
-                        _sitTimer = 0f;
-                    }
+                        _sitState = AnchorState.Active;
+                        return;
+
+                    case AnchorState.Active:
+                        _agent.isStopped = true;
+                        if (Time.unscaledTime > _sitTimer)
+                        {
+                            _sitAnchorIndex = NextRandomIndex(sitAnchors.Length, _sitAnchorIndex);
+                            _sitState = AnchorState.NeedMove;
+                        }
+                        return;
                 }
-                return;
             }
 
             if (_sitPoint != null)

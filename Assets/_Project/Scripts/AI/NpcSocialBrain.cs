@@ -452,8 +452,8 @@ namespace ProjectC.AI
                 Transform anchor = GetAnchorSafe(socializeAnchors, ref _socializeAnchorIndex);
                 if (anchor != null)
                 {
-                    if (_agent.pathPending) { _socializeCooldown = Time.unscaledTime + Random.Range(socializeCooldownMin, socializeCooldownMax); return; }
-                    if (_agent.remainingDistance > socializeApproachThreshold)
+                    float arrivalDist = Mathf.Max(socializeApproachThreshold, _agent.stoppingDistance + 0.5f);
+                    if (Vector3.Distance(transform.position, anchor.position) > arrivalDist)
                     {
                         _agent.isStopped = false;
                         _agent.SetDestination(anchor.position);
@@ -511,8 +511,8 @@ namespace ProjectC.AI
                 Transform anchor = GetAnchorSafe(workAnchors, ref _workAnchorIndex);
                 if (anchor != null)
                 {
-                    if (_agent.pathPending) return;
-                    if (_agent.remainingDistance > patrolArrivalThreshold)
+                    float arrivalDist = Mathf.Max(patrolArrivalThreshold, _agent.stoppingDistance + 0.5f);
+                    if (Vector3.Distance(transform.position, anchor.position) > arrivalDist)
                     {
                         _agent.isStopped = false;
                         _agent.SetDestination(anchor.position);
@@ -558,8 +558,8 @@ namespace ProjectC.AI
                 Transform anchor = GetAnchorSafe(sitAnchors, ref _sitAnchorIndex);
                 if (anchor != null)
                 {
-                    if (_agent.pathPending) return;
-                    if (_agent.remainingDistance > patrolArrivalThreshold)
+                    float arrivalDist = Mathf.Max(patrolArrivalThreshold, _agent.stoppingDistance + 0.5f);
+                    if (Vector3.Distance(transform.position, anchor.position) > arrivalDist)
                     {
                         _agent.isStopped = false;
                         _agent.SetDestination(anchor.position);
@@ -625,8 +625,8 @@ namespace ProjectC.AI
 
                 if (sleepTarget.HasValue)
                 {
-                    if (_agent.pathPending) return;
-                    if (_agent.remainingDistance > patrolArrivalThreshold)
+                    float arrivalDist = Mathf.Max(patrolArrivalThreshold, _agent.stoppingDistance + 0.5f);
+                    if (Vector3.Distance(transform.position, sleepTarget.Value) > arrivalDist)
                     {
                         _agent.isStopped = false;
                         _agent.SetDestination(sleepTarget.Value);
@@ -673,9 +673,9 @@ namespace ProjectC.AI
             if (waypoints == null || waypoints.Length == 0) { idleActivity = NpcIdleActivity.StandStill; return; }
             if (_agent == null || !_agent.isOnNavMesh) return;
             if (Time.unscaledTime < _patrolWaitUntil) return;
-            if (_agent.pathPending) return;
             Vector3 tgt = waypoints[_patrolIndex];
-            if (_agent.remainingDistance < patrolArrivalThreshold)
+            float patrolArrivalDist = Mathf.Max(patrolArrivalThreshold, _agent.stoppingDistance + 0.5f);
+            if (Vector3.Distance(transform.position, tgt) < patrolArrivalDist)
             {
                 _patrolWaitUntil = Time.unscaledTime + idleAtWaypointSec;
                 _patrolStuckTimer = 0f;

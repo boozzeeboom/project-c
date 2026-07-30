@@ -19,7 +19,7 @@ namespace ProjectC.Quests.Editor
         {
             EditorGUI.BeginProperty(position, label, property);
             var typeProp = property.FindPropertyRelative("type");
-            var type = (DialogueConditionType)typeProp.enumValueIndex;
+            var type = (DialogueConditionType)typeProp.intValue;
 
             float lineH = EditorGUIUtility.singleLineHeight;
             float y = position.y;
@@ -86,7 +86,7 @@ namespace ProjectC.Quests.Editor
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             var typeProp = property.FindPropertyRelative("type");
-            var type = (DialogueConditionType)typeProp.enumValueIndex;
+            var type = (DialogueConditionType)typeProp.intValue;
             int lines = 1; // type
 
             switch (type)

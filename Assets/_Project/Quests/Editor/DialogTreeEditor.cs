@@ -426,7 +426,7 @@ namespace ProjectC.Quests.Editor
                 EditorGUI.indentLevel++;
                 var actionTypeProp = actionProp.FindPropertyRelative("type");
                 EditorGUILayout.PropertyField(actionTypeProp, new GUIContent("Action Type"));
-                var atype = (DialogueActionType)actionTypeProp.enumValueIndex;
+                var atype = (DialogueActionType)actionTypeProp.intValue;
                 // Draw context-sensitive action fields manually (bypass PropertyDrawer)
                 switch (atype)
                 {
@@ -502,7 +502,7 @@ namespace ProjectC.Quests.Editor
                     var condProp = condsProp.GetArrayElementAtIndex(ci);
                     var ctypeProp = condProp.FindPropertyRelative("type");
                     EditorGUILayout.PropertyField(ctypeProp, new GUIContent($"  Condition #{ci}"));
-                    var ctype = (DialogueConditionType)ctypeProp.enumValueIndex;
+                    var ctype = (DialogueConditionType)ctypeProp.intValue;
                     switch (ctype)
                     {
                         case DialogueConditionType.HasItem:

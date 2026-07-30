@@ -1480,16 +1480,8 @@ namespace ProjectC.Quests
                         bool ok;
                         if (action.type == DialogueActionType.GiveItem)
                         {
-                            // T-Q27: resolve itemId — prefer action.itemId, fallback на stringParam parse, fallback на name lookup.
-                            int itemId = action.itemId;
-                            if (itemId == 0 && !string.IsNullOrEmpty(action.stringParam))
-                            {
-                                if (!int.TryParse(action.stringParam, out itemId))
-                                {
-                                    // Legacy: stringParam = item name → lookup via ItemRegistry.
-                                    itemId = ProjectC.Quests.QuestWorld.ResolveItemId(action.stringParam);
-                                }
-                            }
+                            // T-QUEDIT v2: resolve itemId — prefer action.itemRef (ItemData) → action.itemId → stringParam.
+                            int itemId = action.GetResolvedItemId();
                             if (itemId <= 0)
                             {
                                 Debug.LogWarning($"[QuestServer] FireDialogAction: GiveItem skipped — invalid itemId='{action.stringParam}' (itemId field={action.itemId})");
@@ -1512,15 +1504,8 @@ namespace ProjectC.Quests
                         }
                         else
                         {
-                            // T-Q27: resolve itemId — same as GiveItem (prefer action.itemId, fallback parse).
-                            int itemId = action.itemId;
-                            if (itemId == 0 && !string.IsNullOrEmpty(action.stringParam))
-                            {
-                                if (!int.TryParse(action.stringParam, out itemId))
-                                {
-                                    itemId = ProjectC.Quests.QuestWorld.ResolveItemId(action.stringParam);
-                                }
-                            }
+                            // T-QUEDIT v2: resolve itemId — itemRef → itemId → stringParam.
+                            int itemId = action.GetResolvedItemId();
                             if (itemId <= 0)
                             {
                                 Debug.LogWarning($"[QuestServer] FireDialogAction: TakeItem skipped — invalid itemId='{action.stringParam}' (itemId field={action.itemId})");

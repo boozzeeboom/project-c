@@ -103,8 +103,11 @@ namespace ProjectC.Dialogue
         public FactionId factionParam = FactionId.None;
 
         // T-Q27: explicit itemId for GiveItem/TakeItem (replaces fragile stringParam=name lookup).
-        [Tooltip("T-Q27: explicit item id (для GiveItem/TakeItem). Если 0 — fallback на stringParam name.")]
+        [Tooltip("T-Q27: explicit item id (для GiveItem/TakeItem). Если 0 — fallback на itemRef/stringParam name.")]
         public int itemId = 0;
+
+        [Tooltip("Item reference (для GiveItem/TakeItem). Перетащи ItemData. Приоритетнее itemId.")]
+        public ItemData itemRef;
 
         [Tooltip("T-Q27: ItemType for GiveItem (по умолчанию Resources).")]
         public ItemType itemType = ItemType.Resources;
@@ -119,5 +122,17 @@ namespace ProjectC.Dialogue
 
         /// <summary>Resolve dialog tree id: dialogTreeRef приоритетнее stringParam.</summary>
         public string GetDialogTreeId() => dialogTreeRef != null ? dialogTreeRef.name : stringParam;
+
+        /// <summary>Resolve item for GiveItem/TakeItem: itemRef приоритетнее itemId/stringParam.</summary>
+        public ItemData GetItemRef() => itemRef;
+
+        /// <summary>Resolve item id: itemRef (ItemData) → itemId (int) → stringParam (name lookup).</summary>
+        public int GetResolvedItemId()
+        {
+            if (itemRef != null) return QuestWorld.ResolveItemId(null, itemRef);
+            if (itemId != 0) return itemId;
+            if (!string.IsNullOrEmpty(stringParam)) return QuestWorld.ResolveItemId(stringParam);
+            return 0;
+        }
     }
 }

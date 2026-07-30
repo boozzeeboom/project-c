@@ -50,7 +50,7 @@ MonoBehaviour:
         factionParam: 0
         questStateParam: 0
       action:
-        type: 10
+        type: 40
         stringParam: 
         questRef: {fileID: 0}
         npcRef: {fileID: 0}
@@ -59,6 +59,7 @@ MonoBehaviour:
         intParam: 0
         factionParam: 0
         itemId: 0
+        itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
     - label: "\u041F\u043E\u043A\u0430."
@@ -84,6 +85,7 @@ MonoBehaviour:
         intParam: 0
         factionParam: 0
         itemId: 0
+        itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
     - label: Continue
@@ -109,10 +111,11 @@ MonoBehaviour:
         intParam: 0
         factionParam: 0
         itemId: 0
+        itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
     onEnterActions:
-    - type: 10
+    - type: 20
       stringParam: 
       questRef: {fileID: 0}
       npcRef: {fileID: 0}
@@ -121,5 +124,6 @@ MonoBehaviour:
       intParam: 0
       factionParam: 0
       itemId: 0
+      itemRef: {fileID: 0}
       itemType: 0
   localizationTable: {fileID: 0}

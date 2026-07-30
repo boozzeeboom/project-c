@@ -46,21 +46,25 @@ namespace ProjectC.Quests.Editor
                 // ── Inventory ──
                 case DialogueActionType.GiveItem:
                 case DialogueActionType.TakeItem:
-                    EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
-                        property.FindPropertyRelative("itemId"), new GUIContent("Item ID"));
-                    y += lineH + 2;
-                    EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
-                        property.FindPropertyRelative("itemType"), new GUIContent("Item Type"));
-                    y += lineH + 2;
-                    DrawInt(property, position, ref y, w, lineH, "Count");
-                    // Always show fallback — dimmed if itemId is set
                     {
-                        bool hasId = property.FindPropertyRelative("itemId").intValue != 0;
+                        var itemRefProp = property.FindPropertyRelative("itemRef");
+                        EditorGUI.PropertyField(new Rect(position.x, y, w, lineH), itemRefProp,
+                            new GUIContent("Item (drag .asset)", "Drag ItemData here. Priority over Item ID."));
+                        y += lineH + 2;
+                        bool hasRef = itemRefProp.objectReferenceValue != null;
+
                         var oldE = GUI.enabled;
-                        GUI.enabled = !hasId;
-                        DrawString(property, position, ref y, w, lineH,
-                            hasId ? "(not used — Item ID set)" : "Item Name (fallback)");
+                        GUI.enabled = !hasRef;
+                        EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
+                            property.FindPropertyRelative("itemId"), new GUIContent(
+                                hasRef ? "  └ Item ID (not used)" : "  └ Item ID (numeric)"));
+                        y += lineH + 2;
                         GUI.enabled = oldE;
+
+                        EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
+                            property.FindPropertyRelative("itemType"), new GUIContent("Item Type"));
+                        y += lineH + 2;
+                        DrawInt(property, position, ref y, w, lineH, "Count");
                     }
                     break;
 

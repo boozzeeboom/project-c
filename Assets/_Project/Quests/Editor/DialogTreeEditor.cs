@@ -352,11 +352,21 @@ namespace ProjectC.Quests.Editor
             var edgesProp = nodeProp.FindPropertyRelative("edges");
             if (edgesProp == null || !edgesProp.isArray) return;
 
+            // Collect sibling node IDs for the target dropdown
+            var nodesProp = serializedObject.FindProperty("nodes");
+            var siblingIds = new System.Collections.Generic.List<string>();
+            for (int n = 0; n < nodesProp.arraySize; n++)
+            {
+                var nodeId = nodesProp.GetArrayElementAtIndex(n).FindPropertyRelative("nodeId").stringValue;
+                if (!string.IsNullOrEmpty(nodeId))
+                    siblingIds.Add(nodeId);
+            }
+
             EditorGUILayout.LabelField("Choices (player replies):",
                 new GUIStyle(EditorStyles.boldLabel));
             EditorGUILayout.HelpBox(
-                "Each choice = one thing the player can say. Clicking it fires the Action, then jumps to the Target Node.\n" +
-                "If Target Node is empty → dialog ends after the Action fires.",
+                "Each choice = one thing the player can say. Set Action, Conditions, and Target Node.\n" +
+                "Empty Target → dialog ends after the Action fires.",
                 MessageType.None);
             EditorGUILayout.Space(2);
 
@@ -369,50 +379,69 @@ namespace ProjectC.Quests.Editor
                 var targetProp = edgeProp.FindPropertyRelative("targetNodeId");
                 var actionProp = edgeProp.FindPropertyRelative("action");
                 var condsProp = edgeProp.FindPropertyRelative("conditions");
+                var hideProp = edgeProp.FindPropertyRelative("hideIfUnavailable");
 
-                string targetId = targetProp?.stringValue ?? "";
-                bool isEnd = string.IsNullOrEmpty(targetId);
+                string currentTarget = targetProp?.stringValue ?? "";
+                bool isEnd = string.IsNullOrEmpty(currentTarget);
 
-                // ── Edge card ──
+                // ── Edge box ──
                 Color edgeColor = isEnd ? EndColor : PlayerColor;
-                var edgeStyle = new GUIStyle(EditorStyles.helpBox)
-                    { padding = new RectOffset(8, 8, 4, 4), margin = new RectOffset(8, 4, 2, 2) };
                 var oldBg = GUI.backgroundColor;
                 GUI.backgroundColor = new Color(edgeColor.r, edgeColor.g, edgeColor.b, 0.06f);
-                EditorGUILayout.BeginVertical(edgeStyle);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 GUI.backgroundColor = oldBg;
 
-                // ── Row 1: arrow + label + target ──
+                // ── Row: arrow + label + target dropdown + delete ──
                 EditorGUILayout.BeginHorizontal();
 
-                EditorGUILayout.LabelField(isEnd ? "🔚" : "➡",
-                    new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold, normal = { textColor = edgeColor } },
+                EditorGUILayout.LabelField("➡",
+                    new GUIStyle(EditorStyles.label)
+                        { fontStyle = FontStyle.Bold, normal = { textColor = edgeColor } },
                     GUILayout.Width(18));
 
-                EditorGUILayout.PropertyField(labelProp,
-                    new GUIContent("", "Player-visible text for this choice (e.g. 'Tell me more.')."), GUILayout.MinWidth(60));
+                EditorGUILayout.PropertyField(labelProp, GUIContent.none, GUILayout.MinWidth(100));
 
-                string targetDisplay = isEnd ? "→ END (dialog closes)" : $"→ {targetId}";
-                EditorGUILayout.LabelField(targetDisplay,
-                    new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = edgeColor } },
-                    GUILayout.Width(isEnd ? 150 : 120));
+                // ── Target Node dropdown ──
+                int selectedIdx = siblingIds.IndexOf(currentTarget);
+                int newIdx = EditorGUILayout.Popup(
+                    new GUIContent("→", "Target node to jump to. '(end)' = dialog closes."),
+                    selectedIdx + 1, // +1 because index 0 = "(end conversation)"
+                    ToTargetChoices(siblingIds),
+                    GUILayout.MinWidth(120));
+                if (newIdx != selectedIdx + 1)
+                {
+                    targetProp.stringValue = (newIdx == 0) ? "" : siblingIds[newIdx - 1];
+                }
 
-                // Delete edge
+                // HideIfUnavailable toggle
+                EditorGUILayout.PropertyField(hideProp, new GUIContent("Hide?", "Hide choice if conditions fail (otherwise grey out)."), GUILayout.Width(50));
+
+                // Delete
                 if (GUILayout.Button("×", GUILayout.Width(20)))
                     { edgesProp.DeleteArrayElementAtIndex(i); break; }
 
                 EditorGUILayout.EndHorizontal();
 
-                // ── Row 2: action summary + conditions + hide toggle ──
-                DrawEdgeMetaRow(edgeProp, actionProp, condsProp);
+                // ── Action ──
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(actionProp,
+                    new GUIContent("Action", "What happens when player selects this choice (OfferQuest, GiveCredits, etc.)"), true);
+                EditorGUI.indentLevel--;
+
+                // ── Conditions ──
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(condsProp,
+                    new GUIContent("Conditions (AND)", "All conditions must be true for this choice to appear."), true);
+                EditorGUI.indentLevel--;
 
                 EditorGUILayout.EndVertical();
+                EditorGUILayout.Space(2);
             }
 
             // Add edge button
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("+ Add Choice", GUILayout.Width(120), GUILayout.Height(22)))
+            if (GUILayout.Button("+ Add Choice", GUILayout.Width(130), GUILayout.Height(22)))
             {
                 edgesProp.arraySize++;
                 var newEdge = edgesProp.GetArrayElementAtIndex(edgesProp.arraySize - 1);
@@ -423,62 +452,13 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawEdgeMetaRow(SerializedProperty edgeProp, SerializedProperty actionProp,
-            SerializedProperty condsProp)
+        private string[] ToTargetChoices(System.Collections.Generic.List<string> siblingIds)
         {
-            var actionTypeProp = actionProp?.FindPropertyRelative("type");
-            if (actionTypeProp == null) return;
-
-            var actionType = (DialogueActionType)actionTypeProp.enumValueIndex;
-            int condCount = condsProp?.arraySize ?? 0;
-            var hideProp = edgeProp.FindPropertyRelative("hideIfUnavailable");
-
-            // Check if there's anything to show
-            bool hasAction = actionType != DialogueActionType.EndConversation;
-            bool hasConditions = condCount > 0;
-
-            if (!hasAction && !hasConditions) return;
-
-            EditorGUILayout.BeginHorizontal();
-            EditorGUI.indentLevel++;
-
-            if (hasAction)
-            {
-                var actStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    normal = { textColor = new Color(0.6f, 0.9f, 0.6f) },
-                    richText = true
-                };
-                EditorGUILayout.LabelField(
-                    new GUIContent($"<b>Action:</b> {actionType}",
-                    "Server-side effect when player selects this choice (e.g. OfferQuest, GiveCredits, SetFlag)."),
-                    actStyle);
-            }
-
-            if (hasConditions)
-            {
-                var condStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    normal = { textColor = new Color(1f, 0.8f, 0.4f) },
-                    richText = true
-                };
-                EditorGUILayout.LabelField(
-                    new GUIContent(
-                        condCount == 1 ? $"<b>Condition:</b> must be met" : $"<b>Conditions ({condCount}):</b> all must be met (AND)",
-                        "All conditions must be true for this choice to appear. If any fails, the choice is hidden or greyed out."),
-                    condStyle, GUILayout.MinWidth(200));
-            }
-
-            GUILayout.FlexibleSpace();
-
-            // Hide toggle
-            var hideContent = new GUIContent(
-                hideProp.boolValue ? "Hide if locked" : "Show grey if locked",
-                "If ON: choice is hidden when conditions fail.\nIf OFF: choice appears greyed out.");
-            hideProp.boolValue = EditorGUILayout.Toggle(hideContent, hideProp.boolValue, GUILayout.Width(120));
-
-            EditorGUI.indentLevel--;
-            EditorGUILayout.EndHorizontal();
+            var choices = new string[1 + siblingIds.Count];
+            choices[0] = "(end conversation)";
+            for (int i = 0; i < siblingIds.Count; i++)
+                choices[1 + i] = siblingIds[i];
+            return choices;
         }
     }
 }

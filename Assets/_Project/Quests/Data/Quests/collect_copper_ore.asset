@@ -23,8 +23,8 @@ MonoBehaviour:
   - stageId: collect
     description: 
     objectives:
-    - objectiveId: gather_copper
-      objectiveType: 3
+    - objectiveId: 
+      objectiveType: 1
       description: 
       targetNpcId: 
       targetNpc: {fileID: 0}

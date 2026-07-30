@@ -1230,9 +1230,11 @@ namespace ProjectC.Quests
             // Resolve speaker
             string speakerNpcId = "";
             string speakerText = "";
-            if (node.speaker != null && node.speaker.speakerKind == SpeakerRef.Kind.Npc && !string.IsNullOrEmpty(node.speaker.refId))
+            if (node.speaker != null && node.speaker.speakerKind == SpeakerRef.Kind.Npc)
             {
-                speakerNpcId = node.speaker.refId;
+                string resolvedNpcId = node.speaker.GetResolvedNpcId();
+                if (!string.IsNullOrEmpty(resolvedNpcId))
+                    speakerNpcId = resolvedNpcId;
             }
             speakerText = node.text ?? "";
 
@@ -1284,18 +1286,23 @@ namespace ProjectC.Quests
                 case DialogueConditionType.HasItem:
                 {
                     int itemId = 0;
-                    if (!string.IsNullOrEmpty(c.stringParam)) int.TryParse(c.stringParam, out itemId);
+                    // Priority: requiredItem (ItemData ref) → stringParam (numeric/name)
+                    if (c.requiredItem != null)
+                        itemId = QuestWorld.ResolveItemId(null, c.requiredItem);
+                    if (itemId == 0 && !string.IsNullOrEmpty(c.stringParam))
+                        int.TryParse(c.stringParam, out itemId);
                     return InventoryWorld.Instance != null
                         && InventoryWorld.Instance.CountOf(clientId, itemId) >= c.intParam;
                 }
                 case DialogueConditionType.QuestStateEquals:
                 {
                     // Real impl: check quest state by questId and questStateParam.
+                    string questId = c.GetResolvedQuestId();
                     var quests = w.GetPlayerQuests(clientId);
-                    if (quests == null || string.IsNullOrEmpty(c.stringParam)) return true; // unknown questId → allow (stub)
+                    if (quests == null || string.IsNullOrEmpty(questId)) return true; // unknown questId → allow (stub)
                     for (int i = 0; i < quests.Count; i++)
                     {
-                        if (quests[i].questId == c.stringParam)
+                        if (quests[i].questId == questId)
                             return (byte)quests[i].state == (byte)c.questStateParam;
                     }
                     return false; // quest not in player log → not in this state → edge hidden via hideIfUnavailable

@@ -11,10 +11,15 @@
 // OR-логика: создай два edges с разными atomic conditions.
 // NOT-логика: используй инвертированные atomic типы (ReputationAtMost,
 //   !QuestStateEquals → отдельный атомарный). Полный NOT — future v2.
+//
+// T-QUEDIT v2: requiredQuest, requiredNpc, requiredItem — drag-and-drop поля
+// поверх stringParam (string остаётся для CSV-импорта, object-ref приоритетнее).
 
 using System;
 using UnityEngine;
 using ProjectC.Factions;
+using ProjectC.Quests;
+using ProjectC.Items;
 
 namespace ProjectC.Dialogue
 {
@@ -89,8 +94,17 @@ namespace ProjectC.Dialogue
         [Tooltip("Тип условия (atomic). См. enum docs.")]
         public DialogueConditionType type = DialogueConditionType.HasItem;
 
-        [Tooltip("Primary string param: itemId / questId / npcId / treeId / sceneId / flagId / phaseName.")]
+        [Tooltip("Primary string param: itemId / questId / npcId / treeId / sceneId / flagId / phaseName. Оставлено для CSV. requiredQuest/requiredNpc/requiredItem приоритетнее.")]
         public string stringParam = "";
+
+        [Tooltip("Quest reference (для QuestStateEquals, QuestStageEquals, QuestCompleted, QuestDiscovered). Перетащи .asset из Data/Quests/. Приоритетнее stringParam.")]
+        public QuestDefinition requiredQuest;
+
+        [Tooltip("NPC reference (для NpcAttitudeAtLeast). Перетащи NpcDefinition. Приоритетнее stringParam.")]
+        public NpcDefinition requiredNpc;
+
+        [Tooltip("Item reference (для HasItem, CargoHasItem). Перетащи ItemData из Resources/Items/. Приоритетнее stringParam.")]
+        public ItemData requiredItem;
 
         [Tooltip("Secondary string param: stageId (для QuestStageEquals, WasNodeVisited).")]
         public string stageIdParam = "";
@@ -103,5 +117,16 @@ namespace ProjectC.Dialogue
 
         [Tooltip("Quest state param (для QuestStateEquals).")]
         public QuestStateMirror questStateParam = QuestStateMirror.Active;
+
+        // ── T-QUEDIT v2: resolution helpers (object-ref priority over string) ──
+
+        /// <summary>Resolve questId: requiredQuest приоритетнее stringParam.</summary>
+        public string GetResolvedQuestId() => requiredQuest != null ? requiredQuest.questId : stringParam;
+
+        /// <summary>Resolve npcId: requiredNpc приоритетнее stringParam.</summary>
+        public string GetResolvedNpcId() => requiredNpc != null ? requiredNpc.npcId : stringParam;
+
+        /// <summary>Resolve item name: requiredItem приоритетнее stringParam.</summary>
+        public string GetResolvedItemName() => requiredItem != null ? requiredItem.itemName : stringParam;
     }
 }

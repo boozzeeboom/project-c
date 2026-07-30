@@ -1,7 +1,11 @@
 // T-Q03: SpeakerRef — кто говорит реплику в диалоге.
 // См. docs/NPC_quests/02_V2_ARCHITECTURE.md §2.3.8.
+//
+// T-QUEDIT v2: speakerNpc (NpcDefinition) для drag-and-drop поверх refId.
+// speakerNpc приоритетнее refId; refId оставлен для CSV-импорта.
 
 using UnityEngine;
+using ProjectC.Quests;
 
 namespace ProjectC.Dialogue
 {
@@ -33,7 +37,15 @@ namespace ProjectC.Dialogue
         [Tooltip("Тип говорящего: NPC / Player / Narrator")]
         public Kind speakerKind = Kind.Npc;
 
-        [Tooltip("NPC id (если speakerKind=Npc), иначе ignored")]
+        [Tooltip("NPC id (если speakerKind=Npc), иначе ignored. Оставлено для CSV. speakerNpc приоритетнее.")]
         public string refId = "";
+
+        [Tooltip("NPC definition (для speakerKind=Npc). Перетащи .asset из Data/Npcs/. Приоритетнее refId.")]
+        public NpcDefinition speakerNpc;
+
+        // ── T-QUEDIT v2: resolution helper ──
+
+        /// <summary>Resolve NPC id: speakerNpc приоритетнее refId.</summary>
+        public string GetResolvedNpcId() => speakerNpc != null ? speakerNpc.npcId : refId;
     }
 }

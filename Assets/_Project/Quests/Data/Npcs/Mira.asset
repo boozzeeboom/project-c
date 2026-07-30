@@ -21,17 +21,16 @@ MonoBehaviour:
   defaultDialogTree: {fileID: 11400000, guid: 828fa688c0784fb458e4092c070af689, type: 2}
   questOffers:
   - find_artifact
+  questOfferRefs: []
   questTurnIns:
   - find_artifact
-  services: 1
+  questTurnInRefs: []
+  services: -1
   interactionRadius: 3
   showGreeting: 1
   greetingText: "\u041F\u0440\u0438\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u044E,
     \u0438\u0441\u043A\u0430\u0442\u0435\u043B\u044C \u0437\u043D\u0430\u043D\u0438\u0439."
-  attitudeLinks:
-  - targetFaction: 2
-    deltaOnLike: -5
-    deltaOnDislike: 3
+  attitudeLinks: []
   personalAttitudeMin: -100
   personalAttitudeMax: 200
   voicePrefix: 

@@ -119,37 +119,40 @@ namespace ProjectC.Quests.Editor
 
         private void DrawLegend()
         {
-            _showLegend = EditorGUILayout.Foldout(_showLegend, "Legend / How to read", true,
+            _showLegend = EditorGUILayout.Foldout(_showLegend, "Color coding", true,
                 new GUIStyle(EditorStyles.foldout) { fontStyle = FontStyle.Bold });
             if (!_showLegend) return;
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            EditorGUILayout.BeginHorizontal();
-            DrawLegendChip(NpcColor,     "NPC replica — speaking character");
-            DrawLegendChip(PlayerColor,  "Player choice — what player can say");
-            DrawLegendChip(NarrColor,    "Narrator — system/stage direction");
-            DrawLegendChip(EndColor,     "End conversation — dialog closes");
-            EditorGUILayout.EndHorizontal();
             EditorGUILayout.LabelField(
-                "Cards show a replica + its outgoing choices (edges). Click the foldout arrow to edit.",
+                "Each card is color-coded by who speaks. Choices (edges) are also colored.",
+                EditorStyles.miniLabel);
+            EditorGUILayout.Space(2);
+
+            EditorGUILayout.BeginHorizontal();
+            DrawColorSample(NpcColor,     "🤖 NPC replica");
+            DrawColorSample(PlayerColor,  "👤 Player choice");
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            DrawColorSample(NarrColor,    "📖 Narrator / system");
+            DrawColorSample(EndColor,     "🔚 End conversation");
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(2);
+            EditorGUILayout.LabelField(
+                "Click the ▸ arrow on a card to edit it. Each card shows its text + outgoing choices.",
                 EditorStyles.miniLabel);
             EditorGUILayout.EndVertical();
         }
 
-        private void DrawLegendChip(Color color, string tooltip)
+        private void DrawColorSample(Color color, string label)
         {
-            var chip = new GUIStyle(EditorStyles.miniButton)
-            {
-                normal = { textColor = color },
-                fontSize = 10
-            };
-            GUIContent content = new GUIContent(
-                color == NpcColor ? "🤖 NPC" :
-                color == PlayerColor ? "👤 Player" :
-                color == NarrColor ? "📖 Narrator" :
-                "🔚 End",
-                tooltip);
-            GUILayout.Button(content, chip, GUILayout.Width(80));
+            var oldColor = GUI.color;
+            GUI.color = color;
+            EditorGUILayout.LabelField(label,
+                new GUIStyle(EditorStyles.boldLabel) { fontSize = 10 },
+                GUILayout.Width(200));
+            GUI.color = oldColor;
         }
 
         // ══════════════════════════════════════════

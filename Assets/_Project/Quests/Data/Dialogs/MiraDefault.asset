@@ -40,7 +40,7 @@ MonoBehaviour:
         factionParam: 0
         questStateParam: 2
       conditions:
-      - type: 23
+      - type: 10
         stringParam: 
         requiredQuest: {fileID: 0}
         requiredNpc: {fileID: 0}

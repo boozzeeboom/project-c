@@ -424,14 +424,143 @@ namespace ProjectC.Quests.Editor
 
                 // ── Action ──
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(actionProp,
-                    new GUIContent("Action", "What happens when player selects this choice (OfferQuest, GiveCredits, etc.)"), true);
+                var actionTypeProp = actionProp.FindPropertyRelative("type");
+                EditorGUILayout.PropertyField(actionTypeProp, new GUIContent("Action Type"));
+                var atype = (DialogueActionType)actionTypeProp.enumValueIndex;
+                // Draw context-sensitive action fields manually (bypass PropertyDrawer)
+                switch (atype)
+                {
+                    case DialogueActionType.OfferQuest:
+                    case DialogueActionType.AcceptQuest:
+                    case DialogueActionType.DiscoverQuest:
+                    case DialogueActionType.CompleteObjective:
+                    case DialogueActionType.FailQuest:
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("questRef"),
+                            new GUIContent("Quest (drag .asset)"));
+                        if (actionProp.FindPropertyRelative("questRef").objectReferenceValue == null)
+                            EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("stringParam"),
+                                new GUIContent("Quest ID (string)"));
+                        if (atype == DialogueActionType.CompleteObjective || atype == DialogueActionType.FailQuest)
+                            EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("stageIdParam"),
+                                new GUIContent("Objective/Stage ID"));
+                        break;
+                    case DialogueActionType.GiveItem:
+                    case DialogueActionType.TakeItem:
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("itemId"),
+                            new GUIContent("Item ID (numeric)"));
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("itemType"),
+                            new GUIContent("Item Type"));
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("intParam"),
+                            new GUIContent("Count"));
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("stringParam"),
+                            new GUIContent("Item Name (fallback)"));
+                        break;
+                    case DialogueActionType.GiveCredits:
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("intParam"),
+                            new GUIContent("Credits"));
+                        break;
+                    case DialogueActionType.AddReputation:
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("factionParam"),
+                            new GUIContent("Faction"));
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("intParam"),
+                            new GUIContent("Delta"));
+                        break;
+                    case DialogueActionType.AddNpcAttitude:
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("npcRef"),
+                            new GUIContent("NPC (drag .asset)"));
+                        if (actionProp.FindPropertyRelative("npcRef").objectReferenceValue == null)
+                            EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("stringParam"),
+                                new GUIContent("NPC ID (string)"));
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("intParam"),
+                            new GUIContent("Delta"));
+                        break;
+                    case DialogueActionType.SetFlag:
+                    case DialogueActionType.EmitEvent:
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("stringParam"),
+                            new GUIContent("ID"));
+                        break;
+                    case DialogueActionType.SwitchDialogTree:
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("dialogTreeRef"),
+                            new GUIContent("Dialog Tree (drag .asset)"));
+                        if (actionProp.FindPropertyRelative("dialogTreeRef").objectReferenceValue == null)
+                            EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("stringParam"),
+                                new GUIContent("Tree ID (string)"));
+                        break;
+                    case DialogueActionType.OpenMarket:
+                        EditorGUILayout.PropertyField(actionProp.FindPropertyRelative("stringParam"),
+                            new GUIContent("Zone ID (optional)"));
+                        break;
+                }
                 EditorGUI.indentLevel--;
 
                 // ── Conditions ──
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(condsProp,
-                    new GUIContent("Conditions (AND)", "All conditions must be true for this choice to appear."), true);
+                var condsSizeProp = condsProp.FindPropertyRelative("Array.size");
+                EditorGUILayout.PropertyField(condsSizeProp, new GUIContent("Conditions (AND)"));
+                for (int ci = 0; ci < condsProp.arraySize; ci++)
+                {
+                    var condProp = condsProp.GetArrayElementAtIndex(ci);
+                    var ctypeProp = condProp.FindPropertyRelative("type");
+                    EditorGUILayout.PropertyField(ctypeProp, new GUIContent($"  Condition #{ci}"));
+                    var ctype = (DialogueConditionType)ctypeProp.enumValueIndex;
+                    switch (ctype)
+                    {
+                        case DialogueConditionType.HasItem:
+                        case DialogueConditionType.CargoHasItem:
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("requiredItem"),
+                                new GUIContent("    Item (drag .asset)"));
+                            if (condProp.FindPropertyRelative("requiredItem").objectReferenceValue == null)
+                                EditorGUILayout.PropertyField(condProp.FindPropertyRelative("stringParam"),
+                                    new GUIContent("    Item ID/Name"));
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("intParam"),
+                                new GUIContent("    Quantity"));
+                            break;
+                        case DialogueConditionType.QuestStateEquals:
+                        case DialogueConditionType.QuestStageEquals:
+                        case DialogueConditionType.QuestCompleted:
+                        case DialogueConditionType.QuestDiscovered:
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("requiredQuest"),
+                                new GUIContent("    Quest (drag .asset)"));
+                            if (condProp.FindPropertyRelative("requiredQuest").objectReferenceValue == null)
+                                EditorGUILayout.PropertyField(condProp.FindPropertyRelative("stringParam"),
+                                    new GUIContent("    Quest ID"));
+                            if (ctype == DialogueConditionType.QuestStateEquals)
+                                EditorGUILayout.PropertyField(condProp.FindPropertyRelative("questStateParam"),
+                                    new GUIContent("    State"));
+                            if (ctype == DialogueConditionType.QuestStageEquals)
+                                EditorGUILayout.PropertyField(condProp.FindPropertyRelative("stageIdParam"),
+                                    new GUIContent("    Stage/Node ID"));
+                            break;
+                        case DialogueConditionType.ReputationAtLeast:
+                        case DialogueConditionType.ReputationAtMost:
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("factionParam"),
+                                new GUIContent("    Faction"));
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("intParam"),
+                                new GUIContent("    Value"));
+                            break;
+                        case DialogueConditionType.NpcAttitudeAtLeast:
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("requiredNpc"),
+                                new GUIContent("    NPC (drag .asset)"));
+                            if (condProp.FindPropertyRelative("requiredNpc").objectReferenceValue == null)
+                                EditorGUILayout.PropertyField(condProp.FindPropertyRelative("stringParam"),
+                                    new GUIContent("    NPC ID"));
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("intParam"),
+                                new GUIContent("    Value"));
+                            break;
+                        case DialogueConditionType.FlagIsSet:
+                        case DialogueConditionType.TimeOfDayIn:
+                        case DialogueConditionType.PlayerInZone:
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("stringParam"),
+                                new GUIContent("    ID/Name"));
+                            break;
+                        case DialogueConditionType.WasNodeVisited:
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("stringParam"),
+                                new GUIContent("    Tree ID"));
+                            EditorGUILayout.PropertyField(condProp.FindPropertyRelative("stageIdParam"),
+                                new GUIContent("    Stage/Node ID"));
+                            break;
+                    }
+                }
                 EditorGUI.indentLevel--;
 
                 EditorGUILayout.EndVertical();

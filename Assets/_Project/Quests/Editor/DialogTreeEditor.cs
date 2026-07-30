@@ -68,7 +68,13 @@ namespace ProjectC.Quests.Editor
             {
                 nodesProp.arraySize++;
                 var newProp = nodesProp.GetArrayElementAtIndex(nodesProp.arraySize - 1);
-                newProp.FindPropertyRelative("nodeId").stringValue = "new_node";
+                // Auto-generate unique ID: "new_node", "new_node_2", etc.
+                string baseId = "new_node";
+                string uniqueId = baseId;
+                int counter = 2;
+                while (System.Array.Exists(tree.nodes, n => n != null && n.nodeId == uniqueId))
+                    uniqueId = $"{baseId}_{counter++}";
+                newProp.FindPropertyRelative("nodeId").stringValue = uniqueId;
                 newProp.FindPropertyRelative("text").stringValue = "";
                 newProp.FindPropertyRelative("speaker").FindPropertyRelative("speakerKind").enumValueIndex = 0;
                 newProp.FindPropertyRelative("portraitEmotion").stringValue = "neutral";
@@ -310,6 +316,8 @@ namespace ProjectC.Quests.Editor
                 EditorGUILayout.Space(6);
 
                 EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("nodeId"),
+                    new GUIContent("Node ID", "Unique ID within this tree. Used by edges' targetNodeId to link to this node. No spaces, no special chars."));
                 EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("speaker"),
                     new GUIContent("Speaker", "Who speaks: NPC (drag .asset), Player (auto), or Narrator (system text)"), true);
                 EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("text"),

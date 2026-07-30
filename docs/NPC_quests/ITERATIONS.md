@@ -1,5 +1,18 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-07-21 (T-DLG01)
+
+**Задача:** DialogTreeEditor — карточки нод, drag-and-drop условий и speaker'а
+**Коммит:** `93d7fd11` — T-DLG01: DialogTreeEditor — карточки нод, drag-and-drop условий и speaker'а
+**Изменения:**
+- `Assets/_Project/Quests/Dialogue/DialogueCondition.cs` — +requiredQuest, +requiredNpc, +requiredItem + GetResolved*()
+- `Assets/_Project/Quests/Dialogue/SpeakerRef.cs` — +speakerNpc + GetResolvedNpcId()
+- `Assets/_Project/Quests/Editor/DialogueConditionDrawer.cs` — ObjectField для quest/npc/item
+- `Assets/_Project/Quests/Editor/SpeakerRefDrawer.cs` — NEW: PropertyDrawer
+- `Assets/_Project/Quests/Editor/DialogTreeEditor.cs` — NEW: CustomEditor с карточками нод
+- `Assets/_Project/Quests/Network/QuestServer.cs` — EvaluateSingleCondition + speaker → GetResolved*()
+- `docs/NPC_quests/DIALOGTREE_EDITOR_v2.md` — документация
+
 ## Итерация от 2026-07-21 (T-NPC24)
 
 **Задача:** NpcDefinition — drag-and-drop квестов, кастомный редактор с блоками

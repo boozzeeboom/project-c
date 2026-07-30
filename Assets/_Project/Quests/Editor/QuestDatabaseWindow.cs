@@ -341,15 +341,17 @@ namespace ProjectC.Quests.Editor
         {
             _detailPanel.Add(MakeHeader($"NPC: {n.npcId}", n));
             _detailPanel.Add(MakeField("Display Name", n.displayName));
-            if (n.questOffers != null && n.questOffers.Length > 0)
+            var offerIds = n.GetQuestOfferIds();
+            if (offerIds.Length > 0)
             {
                 _detailPanel.Add(new Label("Quest Offers:"));
-                foreach (var t in n.questOffers) _detailPanel.Add(new Label($"  • {t}"));
+                foreach (var t in offerIds) _detailPanel.Add(new Label($"  • {t}"));
             }
-            if (n.questTurnIns != null && n.questTurnIns.Length > 0)
+            var turnInIds = n.GetQuestTurnInIds();
+            if (turnInIds.Length > 0)
             {
                 _detailPanel.Add(new Label("Quest Turn-Ins:"));
-                foreach (var t in n.questTurnIns) _detailPanel.Add(new Label($"  • {t}"));
+                foreach (var t in turnInIds) _detailPanel.Add(new Label($"  • {t}"));
             }
             var openBtn = new Button(() => Selection.activeObject = n) { text = "Open in Inspector" };
             _detailPanel.Add(openBtn);

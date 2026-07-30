@@ -704,10 +704,12 @@ namespace ProjectC.Editor.Tools
 
                 // Quest summary
                 string questInfo = "";
-                if (npc.questOffers != null && npc.questOffers.Length > 0)
-                    questInfo = $"offers:{npc.questOffers.Length}";
-                if (npc.questTurnIns != null && npc.questTurnIns.Length > 0)
-                    questInfo += (questInfo.Length > 0 ? " " : "") + $"turnIn:{npc.questTurnIns.Length}";
+                var offerIds = npc.GetQuestOfferIds();
+                var turnInIds = npc.GetQuestTurnInIds();
+                if (offerIds.Length > 0)
+                    questInfo = $"offers:{offerIds.Length}";
+                if (turnInIds.Length > 0)
+                    questInfo += (questInfo.Length > 0 ? " " : "") + $"turnIn:{turnInIds.Length}";
                 GUILayout.Label(string.IsNullOrEmpty(questInfo) ? "—" : questInfo, GUILayout.Width(160));
 
                 // Scene
@@ -816,10 +818,12 @@ namespace ProjectC.Editor.Tools
                     entry.questFaction = def.faction.ToString();
                     entry.questDialogTreePath = def.defaultDialogTree != null
                         ? AssetDatabase.GetAssetPath(def.defaultDialogTree) : null;
-                    entry.questOffers = def.questOffers != null && def.questOffers.Length > 0
-                        ? string.Join(", ", def.questOffers) : null;
-                    entry.questTurnIns = def.questTurnIns != null && def.questTurnIns.Length > 0
-                        ? string.Join(", ", def.questTurnIns) : null;
+                    var offerIds = def.GetQuestOfferIds();
+                    var turnInIds = def.GetQuestTurnInIds();
+                    entry.questOffers = offerIds.Length > 0
+                        ? string.Join(", ", offerIds) : null;
+                    entry.questTurnIns = turnInIds.Length > 0
+                        ? string.Join(", ", turnInIds) : null;
                     entry.questServices = def.services != NpcService.None ? def.services.ToString() : null;
                     entry.questGreetingText = def.greetingText;
                     entry.questVoicePrefix = def.voicePrefix;

@@ -250,8 +250,10 @@ namespace ProjectC.Quests
         private ProjectC.Dialogue.DialogTree BuildFallbackDialogTree(NpcDefinition npc, ulong clientId)
         {
             // Empty-NPC: no questOffers, no questTurnIns, no greeting → nothing to show.
-            int offerCount = npc.questOffers != null ? npc.questOffers.Length : 0;
-            int turnInCount = npc.questTurnIns != null ? npc.questTurnIns.Length : 0;
+            var offerIds = npc.GetQuestOfferIds();
+            var turnInIds = npc.GetQuestTurnInIds();
+            int offerCount = offerIds.Length;
+            int turnInCount = turnInIds.Length;
             string greeting = npc.showGreeting ? npc.greetingText : "";
             if (offerCount == 0 && turnInCount == 0 && string.IsNullOrEmpty(greeting)) return null;
 
@@ -264,7 +266,7 @@ namespace ProjectC.Quests
             // T-Q28: фильтрация по availability. Available → "Взять", Locked → "🔒 ...", остальное → скрыть.
             for (int i = 0; i < offerCount; i++)
             {
-                string questId = npc.questOffers[i];
+                string questId = offerIds[i];
                 if (string.IsNullOrEmpty(questId)) continue;
                 var def = w?.GetQuest(questId);
                 if (def == null) { hiddenOffers++; continue; }
@@ -333,7 +335,7 @@ namespace ProjectC.Quests
             // oneShot=true и сдан → скрыть. Не в логе → скрыть.
             for (int i = 0; i < turnInCount; i++)
             {
-                string questId = npc.questTurnIns[i];
+                string questId = turnInIds[i];
                 if (string.IsNullOrEmpty(questId)) continue;
                 var def = w?.GetQuest(questId);
                 if (def == null) { hiddenTurnIns++; continue; }

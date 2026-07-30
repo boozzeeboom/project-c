@@ -468,7 +468,7 @@ namespace ProjectC.Quests
 
         /// <summary>
         /// T-Q15: turn in a Completed quest at the right NPC → TurnedIn.
-        /// validates: state=Completed, NPC is in quest.questTurnIns[].
+        /// validates: state=Completed, NPC is in npc.GetQuestTurnInIds().
         /// Out of scope T-Q15: applying rewards (T-Q16: ApplyQuestRewards).
         /// </summary>
         public QuestResultDto TryTurnIn(ulong clientId, string questId, string toNpcId)
@@ -517,13 +517,14 @@ namespace ProjectC.Quests
                 var npc = Database != null ? Database.GetNpc(toNpcId) : null;
                 if (npc == null)
                     return Fail(QuestResultCode.NotFound, $"NPC '{toNpcId}' not found", questId);
-                // Optional: check npc.questTurnIns contains questId
-                if (npc.questTurnIns != null && npc.questTurnIns.Length > 0)
+                // Optional: check npc.GetQuestTurnInIds() contains questId
+                var turnInIds = npc.GetQuestTurnInIds();
+                if (turnInIds != null && turnInIds.Length > 0)
                 {
                     bool found = false;
-                    for (int i = 0; i < npc.questTurnIns.Length; i++)
+                    for (int i = 0; i < turnInIds.Length; i++)
                     {
-                        if (npc.questTurnIns[i] == questId) { found = true; break; }
+                        if (turnInIds[i] == questId) { found = true; break; }
                     }
                     if (!found)
                         return Fail(QuestResultCode.PrerequisitesNotMet,

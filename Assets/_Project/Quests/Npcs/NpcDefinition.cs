@@ -1,6 +1,10 @@
 // T-Q02: NpcDefinition ScriptableObject (v2-replacement for v1 NpcData).
 // См. docs/NPC_quests/02_V2_ARCHITECTURE.md §2.3.3 + §2.3.3a (AttitudeLink)
 // + §7.1 (пример Mira). T-Q02 добавляет attitudeLinks[] per 09_OPEN_QUESTIONS.md §G.
+//
+// T-QUEDIT v2: questOfferRefs / questTurnInRefs (QuestDefinition[]) для drag-and-drop
+// поверх legacy questOffers / questTurnIns (string[]). GetQuestOfferIds() / GetQuestTurnInIds()
+// возвращают IDs из refs (приоритет) или string-фолбэк.
 
 using System;
 using UnityEngine;
@@ -81,11 +85,49 @@ namespace ProjectC.Quests
         public DialogTree defaultDialogTree;
 
         [Header("Quests")]
-        [Tooltip("QuestId, которые этот NPC может предложить (dialogue offer → QuestServer.TryOffer)")]
+        [Tooltip("QuestId, которые этот NPC может предложить (dialogue offer → QuestServer.TryOffer). Оставлено для CSV-импорта. questOfferRefs приоритетнее.")]
         public string[] questOffers = Array.Empty<string>();
 
-        [Tooltip("QuestId, которые этот NPC может принять как turn-in (objective 'return to <npcId>')")]
+        [Tooltip("Квесты, которые этот NPC может предложить. Перетащи .asset из Data/Quests/. Приоритетнее questOffers (string[]).")]
+        public QuestDefinition[] questOfferRefs = Array.Empty<QuestDefinition>();
+
+        [Tooltip("QuestId, которые этот NPC может принять как turn-in (objective 'return to <npcId>'). Оставлено для CSV-импорта. questTurnInRefs приоритетнее.")]
         public string[] questTurnIns = Array.Empty<string>();
+
+        [Tooltip("Квесты, которые этот NPC может принять (turn-in). Перетащи .asset из Data/Quests/. Приоритетнее questTurnIns (string[]).")]
+        public QuestDefinition[] questTurnInRefs = Array.Empty<QuestDefinition>();
+
+        /// <summary>
+        /// Get all quest IDs that this NPC can offer. Object references take priority over string IDs.
+        /// </summary>
+        public string[] GetQuestOfferIds()
+        {
+            if (questOfferRefs != null && questOfferRefs.Length > 0)
+            {
+                var ids = new System.Collections.Generic.List<string>(questOfferRefs.Length);
+                foreach (var q in questOfferRefs)
+                    if (q != null && !string.IsNullOrEmpty(q.questId))
+                        ids.Add(q.questId);
+                if (ids.Count > 0) return ids.ToArray();
+            }
+            return questOffers ?? Array.Empty<string>();
+        }
+
+        /// <summary>
+        /// Get all quest IDs that this NPC accepts as turn-ins. Object references take priority.
+        /// </summary>
+        public string[] GetQuestTurnInIds()
+        {
+            if (questTurnInRefs != null && questTurnInRefs.Length > 0)
+            {
+                var ids = new System.Collections.Generic.List<string>(questTurnInRefs.Length);
+                foreach (var q in questTurnInRefs)
+                    if (q != null && !string.IsNullOrEmpty(q.questId))
+                        ids.Add(q.questId);
+                if (ids.Count > 0) return ids.ToArray();
+            }
+            return questTurnIns ?? Array.Empty<string>();
+        }
 
         [Header("Services")]
         [Tooltip("Какие сервисы NPC предоставляет (битовая маска). Определяет доступность OpenMarket/OpenService диалоговых action'ов.")]

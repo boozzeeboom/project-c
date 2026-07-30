@@ -1,5 +1,18 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-07-21 (T-NPC24)
+
+**Задача:** NpcDefinition — drag-and-drop квестов, кастомный редактор с блоками
+**Коммит:** `acce9b1` — T-NPC24: NpcDefinition — drag-and-drop квестов, кастомный редактор с блоками
+**Изменения:**
+- `Assets/_Project/Quests/Npcs/NpcDefinition.cs` — +questOfferRefs, +questTurnInRefs (QuestDefinition[]), +GetQuestOfferIds(), +GetQuestTurnInIds()
+- `Assets/_Project/Quests/Editor/NpcDefinitionEditor.cs` — NEW: кастомный Editor с цветными блоками и drag-and-drop
+- `Assets/_Project/Quests/Network/QuestServer.cs` — BuildFallbackDialogTree → GetQuestOfferIds()/GetQuestTurnInIds()
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — TryTurnIn → GetQuestTurnInIds()
+- `Assets/_Project/Editor/Tools/NpcWorldInspectorWindow.cs` → GetQuestOfferIds()/GetQuestTurnInIds()
+- `Assets/_Project/Quests/Editor/QuestDatabaseWindow.cs` → GetQuestOfferIds()/GetQuestTurnInIds()
+- `docs/NPC_quests/NPC_EDITOR_v2.md` — документация
+
 ## Итерация от 2026-07-30 (v2)
 
 **Задача:** Drag-and-drop для всех оставшихся строковых ID (NPC, квесты, сцены, диалоги) — KillEntity, ReachLocation, AddNpcAttitude, SwitchDialogTree, OfferQuest, и др.
@@ -57,7 +70,13 @@
 - `Assets/_Project/Scripts/AI/Editor/NpcSocialBrainEditor.cs` — новые поля в инспекторе, секция Activity Anchors
 - `docs/NPC_quests/T-NPC-S23_activity_anchors.md` — документация
 
+REPLACE
+
+**Задача:** DialogWindow
+=======
 ## Итерация от 2026-07-09
+
+**Задача:** DialogWindow
 =======
 REPLACE
 

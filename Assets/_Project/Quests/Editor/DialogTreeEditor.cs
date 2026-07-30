@@ -1,6 +1,6 @@
 // DialogTreeEditor — кастомный Editor для DialogTree с карточками нод.
-// T-QUEDIT v2: цветовое кодирование (NPC/Player/Narrator), сводка графа,
-// валидация связей, drag-and-drop полей внутри условий/действий.
+// T-QUEDIT v2: легенда цветов, поясняющие хелп-боксы, читаемые лейблы.
+// Без гайда должно быть понятно что какой элемент делает.
 //
 // См. docs/NPC_quests/DIALOGTREE_EDITOR_v2.md
 
@@ -14,17 +14,15 @@ namespace ProjectC.Quests.Editor
     [CustomEditor(typeof(DialogTree))]
     public class DialogTreeEditor : UnityEditor.Editor
     {
+        private bool[] _nodeExpanded;
+        private bool _showLegend = true;
+
         // ── Colors ──
         private static readonly Color NpcColor    = new Color(0.3f, 0.5f, 1.0f, 1f);
         private static readonly Color PlayerColor = new Color(0.3f, 0.8f, 0.4f, 1f);
         private static readonly Color NarrColor   = new Color(0.8f, 0.8f, 0.3f, 1f);
-        private static readonly Color EndColor    = new Color(0.5f, 0.5f, 0.5f, 1f);
+        private static readonly Color EndColor    = new Color(0.55f, 0.55f, 0.55f, 1f);
         private static readonly Color HeaderBg    = new Color(0.18f, 0.22f, 0.32f, 1f);
-        private static readonly Color WarnBg      = new Color(0.9f, 0.5f, 0.2f, 0.3f);
-        private static readonly Color OkBg        = new Color(0.3f, 0.7f, 0.3f, 0.3f);
-
-        private bool[] _nodeExpanded;
-        private bool _showAllNodes = true;
 
         public override void OnInspectorGUI()
         {
@@ -32,36 +30,32 @@ namespace ProjectC.Quests.Editor
             if (tree == null) return;
 
             serializedObject.Update();
-
-            // Sync expanded states
-            int nodeCount = tree.nodes?.Length ?? 0;
-            if (_nodeExpanded == null || _nodeExpanded.Length != nodeCount)
-            {
-                var old = _nodeExpanded;
-                _nodeExpanded = new bool[nodeCount];
-                if (old != null)
-                    for (int i = 0; i < Mathf.Min(old.Length, nodeCount); i++)
-                        _nodeExpanded[i] = old[i];
-            }
+            SyncExpandedState(tree);
 
             DrawHeader(tree);
             EditorGUILayout.Space(6);
+            DrawLegend();
+            EditorGUILayout.Space(4);
             DrawSummary(tree);
-            EditorGUILayout.Space(6);
+            EditorGUILayout.Space(8);
             DrawIdentity(tree);
-            EditorGUILayout.Space(6);
+            EditorGUILayout.Space(8);
 
             // ── Nodes ──
             EditorGUILayout.LabelField("Dialogue Nodes", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Каждая нода — одна реплика в диалоге.\n" +
+                "Рёбра (edges) — варианты ответа игрока, которые ведут к следующей реплике или завершают разговор.",
+                MessageType.Info);
             EditorGUILayout.Space(4);
 
             var nodesProp = serializedObject.FindProperty("nodes");
+            int nodeCount = tree.nodes?.Length ?? 0;
 
             for (int i = 0; i < nodeCount; i++)
             {
                 var nodeProp = nodesProp.GetArrayElementAtIndex(i);
                 if (nodeProp == null) continue;
-
                 var node = tree.nodes[i];
                 DrawNodeCard(node, nodeProp, i, tree.rootNodeId);
             }
@@ -76,16 +70,27 @@ namespace ProjectC.Quests.Editor
                 var newProp = nodesProp.GetArrayElementAtIndex(nodesProp.arraySize - 1);
                 newProp.FindPropertyRelative("nodeId").stringValue = "new_node";
                 newProp.FindPropertyRelative("text").stringValue = "";
-                newProp.FindPropertyRelative("speaker").FindPropertyRelative("speakerKind").enumValueIndex = 0; // Npc
+                newProp.FindPropertyRelative("speaker").FindPropertyRelative("speakerKind").enumValueIndex = 0;
                 newProp.FindPropertyRelative("portraitEmotion").stringValue = "neutral";
             }
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
 
             serializedObject.ApplyModifiedProperties();
+            if (GUI.changed) EditorUtility.SetDirty(tree);
+        }
 
-            if (GUI.changed)
-                EditorUtility.SetDirty(tree);
+        private void SyncExpandedState(DialogTree tree)
+        {
+            int nodeCount = tree.nodes?.Length ?? 0;
+            if (_nodeExpanded == null || _nodeExpanded.Length != nodeCount)
+            {
+                var old = _nodeExpanded;
+                _nodeExpanded = new bool[nodeCount];
+                if (old != null)
+                    for (int i = 0; i < Mathf.Min(old.Length, nodeCount); i++)
+                        _nodeExpanded[i] = old[i];
+            }
         }
 
         // ══════════════════════════════════════════
@@ -94,26 +99,57 @@ namespace ProjectC.Quests.Editor
 
         private void DrawHeader(DialogTree tree)
         {
-            var headerStyle = new GUIStyle(EditorStyles.helpBox)
-            {
-                padding = new RectOffset(12, 12, 10, 10)
-            };
+            var style = new GUIStyle(EditorStyles.helpBox) { padding = new RectOffset(12, 12, 10, 10) };
             var oldBg = GUI.backgroundColor;
             GUI.backgroundColor = HeaderBg;
-            EditorGUILayout.BeginVertical(headerStyle);
+            EditorGUILayout.BeginVertical(style);
             GUI.backgroundColor = oldBg;
 
             var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 15 };
-            var displayName = string.IsNullOrEmpty(tree.displayName) ? "Unnamed Dialog Tree" : tree.displayName;
-            EditorGUILayout.LabelField($"💬 {displayName}", titleStyle);
-
-            var idStyle = new GUIStyle(EditorStyles.miniLabel)
-            {
-                normal = { textColor = new Color(0.5f, 0.7f, 0.9f) }
-            };
-            EditorGUILayout.LabelField($"ID: {tree.treeId}", idStyle);
-
+            var name = string.IsNullOrEmpty(tree.displayName) ? "Unnamed Dialog Tree" : tree.displayName;
+            EditorGUILayout.LabelField($"💬 {name}", titleStyle);
+            EditorGUILayout.LabelField($"Internal ID: {tree.treeId}",
+                new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(0.5f, 0.7f, 0.9f) } });
             EditorGUILayout.EndVertical();
+        }
+
+        // ══════════════════════════════════════════
+        // LEGEND
+        // ══════════════════════════════════════════
+
+        private void DrawLegend()
+        {
+            _showLegend = EditorGUILayout.Foldout(_showLegend, "Legend / How to read", true,
+                new GUIStyle(EditorStyles.foldout) { fontStyle = FontStyle.Bold });
+            if (!_showLegend) return;
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            DrawLegendChip(NpcColor,     "NPC replica — speaking character");
+            DrawLegendChip(PlayerColor,  "Player choice — what player can say");
+            DrawLegendChip(NarrColor,    "Narrator — system/stage direction");
+            DrawLegendChip(EndColor,     "End conversation — dialog closes");
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.LabelField(
+                "Cards show a replica + its outgoing choices (edges). Click the foldout arrow to edit.",
+                EditorStyles.miniLabel);
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawLegendChip(Color color, string tooltip)
+        {
+            var chip = new GUIStyle(EditorStyles.miniButton)
+            {
+                normal = { textColor = color },
+                fontSize = 10
+            };
+            GUIContent content = new GUIContent(
+                color == NpcColor ? "🤖 NPC" :
+                color == PlayerColor ? "👤 Player" :
+                color == NarrColor ? "📖 Narrator" :
+                "🔚 End",
+                tooltip);
+            GUILayout.Button(content, chip, GUILayout.Width(80));
         }
 
         // ══════════════════════════════════════════
@@ -123,75 +159,74 @@ namespace ProjectC.Quests.Editor
         private void DrawSummary(DialogTree tree)
         {
             int nodeCount = tree.nodes?.Length ?? 0;
-            int edgeCount = 0;
-            int endCount = 0;
+            int edgeCount = 0, endCount = 0;
             if (tree.nodes != null)
                 foreach (var n in tree.nodes)
                     if (n?.edges != null)
                     {
                         edgeCount += n.edges.Length;
                         foreach (var e in n.edges)
-                            if (e != null && string.IsNullOrEmpty(e.targetNodeId))
-                                endCount++;
+                            if (e != null && string.IsNullOrEmpty(e.targetNodeId)) endCount++;
                     }
 
-            // Validation
             var unreachable = tree.GetUnreachableNodes();
             int unreachableCount = unreachable?.Length ?? 0;
             bool rootMissing = tree.GetNode(tree.rootNodeId) == null;
 
-            var boxStyle = new GUIStyle(EditorStyles.helpBox)
-            {
-                padding = new RectOffset(10, 10, 6, 6),
-                richText = true
-            };
+            var boxStyle = new GUIStyle(EditorStyles.helpBox) { padding = new RectOffset(10, 10, 6, 6), richText = true };
             EditorGUILayout.BeginHorizontal(boxStyle);
 
             var sb = new System.Text.StringBuilder();
-            sb.Append($"<b>🟢 Nodes:</b> <color=#88ccff>{nodeCount}</color>    ");
-            sb.Append($"<b>➡ Edges:</b> <color=#88ccff>{edgeCount}</color>    ");
-            if (endCount > 0) sb.Append($"<b>🔚 End:</b> {endCount}    ");
+            sb.Append($"Nodes: <b><color=#88ccff>{nodeCount}</color></b>    ");
+            sb.Append($"Choices: <b><color=#88ccff>{edgeCount}</color></b>    ");
+            if (endCount > 0) sb.Append($"(incl. {endCount} end)    ");
+
             if (rootMissing)
-                sb.Append($"<color=#ff6644>❌ Root '{tree.rootNodeId}' missing!</color>");
+                sb.Append($"<color=#ff6644>❌ Root '{tree.rootNodeId}' not found!</color>");
             else if (unreachableCount > 0)
-                sb.Append($"<color=#ff9944>⚠ {unreachableCount} unreachable</color>");
+                sb.Append($"<color=#ff9944>⚠ {unreachableCount} unreachable: {string.Join(", ", unreachable)}</color>");
             else if (nodeCount > 0)
-                sb.Append($"<color=#66cc66>✅ All reachable</color>");
+                sb.Append($"<color=#66cc66>✅ All nodes reachable from '{tree.rootNodeId}'</color>");
+            else
+                sb.Append($"<color=#888888>Empty tree</color>");
 
             EditorGUILayout.LabelField(sb.ToString(), new GUIStyle(EditorStyles.label) { richText = true, fontSize = 11 });
             EditorGUILayout.EndHorizontal();
-
-            // Show unreachable list
-            if (unreachableCount > 0)
-            {
-                EditorGUILayout.HelpBox(
-                    $"Unreachable nodes: {string.Join(", ", unreachable)}\nThese nodes have no path from root '{tree.rootNodeId}'.",
-                    MessageType.Warning);
-            }
         }
 
         // ══════════════════════════════════════════
-        // IDENTITY
+        // IDENTITY (fixed layout — вертикально)
         // ══════════════════════════════════════════
 
         private void DrawIdentity(DialogTree tree)
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            EditorGUILayout.LabelField("Identity", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Tree Identity", EditorStyles.boldLabel);
             EditorGUILayout.Space(2);
 
+            // Row 1: treeId + displayName
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("treeId"), new GUIContent("Tree ID"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("displayName"), new GUIContent("Display Name"));
+            var treeIdProp = serializedObject.FindProperty("treeId");
+            var displayNameProp = serializedObject.FindProperty("displayName");
+            EditorGUILayout.PropertyField(treeIdProp,
+                new GUIContent("Tree ID", "Unique identifier for this dialog tree (e.g. 'mira_default')."), GUILayout.MinWidth(100));
+            EditorGUILayout.PropertyField(displayNameProp,
+                new GUIContent("Display Name", "Human-readable name shown in editor lists."), GUILayout.MinWidth(100));
             EditorGUILayout.EndHorizontal();
 
+            // Row 2: rootNodeId + localizationTable
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("rootNodeId"), new GUIContent("Root Node ID"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("localizationTable"), new GUIContent("Localization Table"));
+            var rootProp = serializedObject.FindProperty("rootNodeId");
+            var locProp = serializedObject.FindProperty("localizationTable");
+            EditorGUILayout.PropertyField(rootProp,
+                new GUIContent("Root Node ID", "nodeId of the first node shown when dialog starts. Must match an existing node."), GUILayout.MinWidth(100));
+            EditorGUILayout.PropertyField(locProp,
+                new GUIContent("Loc Table", "Optional localization table for future translation support."), GUILayout.MinWidth(100));
             EditorGUILayout.EndHorizontal();
 
-            if (tree.GetNode(tree.rootNodeId) == null)
-                EditorGUILayout.HelpBox($"Root node '{tree.rootNodeId}' not found in nodes[]!", MessageType.Error);
+            // Validation
+            if (tree.GetNode(tree.rootNodeId) == null && !string.IsNullOrEmpty(tree.rootNodeId))
+                EditorGUILayout.HelpBox($"Root node '{tree.rootNodeId}' is not in the nodes list! Dialog will fail to start.", MessageType.Error);
 
             EditorGUILayout.EndVertical();
         }
@@ -205,119 +240,103 @@ namespace ProjectC.Quests.Editor
             bool isRoot = node.nodeId == rootNodeId;
             var speaker = node.speaker;
             var speakerKind = speaker != null ? speaker.speakerKind : SpeakerRef.Kind.Npc;
+            string speakerName = speakerKind == SpeakerRef.Kind.Npc && speaker?.speakerNpc != null
+                ? speaker.speakerNpc.displayName : speakerKind.ToString();
 
-            // Determine color
-            Color cardColor;
-            string speakerIcon;
-            switch (speakerKind)
+            Color cardColor = speakerKind switch
             {
-                case SpeakerRef.Kind.Player:
-                    cardColor = PlayerColor;
-                    speakerIcon = "👤";
-                    break;
-                case SpeakerRef.Kind.Narrator:
-                    cardColor = NarrColor;
-                    speakerIcon = "📖";
-                    break;
-                default:
-                    cardColor = NpcColor;
-                    speakerIcon = "🤖";
-                    break;
-            }
+                SpeakerRef.Kind.Player => PlayerColor,
+                SpeakerRef.Kind.Narrator => NarrColor,
+                _ => NpcColor
+            };
+            string speakerLabel = speakerKind switch
+            {
+                SpeakerRef.Kind.Player => "Player",
+                SpeakerRef.Kind.Narrator => "Narrator",
+                _ => $"NPC: {speakerName}"
+            };
+
+            int edgeCount = node.edges?.Length ?? 0;
 
             // ── Card container ──
-            var cardStyle = new GUIStyle(EditorStyles.helpBox)
-            {
-                padding = new RectOffset(10, 10, 8, 8),
-                margin = new RectOffset(0, 0, 2, 6)
-            };
+            var cardStyle = new GUIStyle(EditorStyles.helpBox) { padding = new RectOffset(10, 10, 6, 6), margin = new RectOffset(0, 0, 2, 6) };
             var oldBg = GUI.backgroundColor;
-            GUI.backgroundColor = new Color(cardColor.r, cardColor.g, cardColor.b, 0.08f);
+            GUI.backgroundColor = new Color(cardColor.r, cardColor.g, cardColor.b, 0.07f);
             EditorGUILayout.BeginVertical(cardStyle);
             GUI.backgroundColor = oldBg;
 
-            // ── Card header ──
+            // ── Header row ──
             EditorGUILayout.BeginHorizontal();
 
-            _nodeExpanded[index] = EditorGUILayout.Foldout(_nodeExpanded[index],
-                $"{speakerIcon} {(isRoot ? "🏠 " : "")}{node.nodeId}", true,
+            string foldLabel = isRoot ? $"🏠 {node.nodeId} (ROOT)" : node.nodeId;
+            _nodeExpanded[index] = EditorGUILayout.Foldout(_nodeExpanded[index], foldLabel, true,
                 new GUIStyle(EditorStyles.foldout) { fontStyle = FontStyle.Bold });
 
             GUILayout.FlexibleSpace();
 
             // Speaker badge
-            var badgeStyle = new GUIStyle(EditorStyles.miniButton)
-            {
-                normal = { textColor = cardColor },
-                fontSize = 10
-            };
-            string speakerLabel = speakerKind == SpeakerRef.Kind.Npc && speaker?.speakerNpc != null
-                ? speaker.speakerNpc.displayName
-                : speakerKind.ToString();
-            GUILayout.Button(speakerLabel, badgeStyle, GUILayout.Width(70));
+            var sbStyle = new GUIStyle(EditorStyles.miniButton) { normal = { textColor = cardColor }, fontSize = 10 };
+            GUILayout.Button(new GUIContent(speakerLabel, "Who speaks this replica"), sbStyle);
 
-            // Edge count badge
-            int edgeCount = node.edges?.Length ?? 0;
+            // Choice count
             if (edgeCount > 0)
             {
                 var ecStyle = new GUIStyle(EditorStyles.miniButton) { fontSize = 10 };
-                GUILayout.Button($"➡{edgeCount}", ecStyle, GUILayout.Width(40));
+                GUILayout.Button(new GUIContent($"{edgeCount} choices",
+                    $"{edgeCount} outgoing player choice(s) from this node"), ecStyle);
             }
 
-            // Move up/down
-            if (index > 0 && GUILayout.Button("▲", GUILayout.Width(22)))
-            {
-                var arrProp = serializedObject.FindProperty("nodes");
-                arrProp.MoveArrayElement(index, index - 1);
-                return;
-            }
-            if (index < (serializedObject.FindProperty("nodes").arraySize - 1) && GUILayout.Button("▼", GUILayout.Width(22)))
-            {
-                var arrProp = serializedObject.FindProperty("nodes");
-                arrProp.MoveArrayElement(index, index + 1);
-                return;
-            }
-
-            // Delete
-            if (GUILayout.Button("×", GUILayout.Width(22)))
-            {
-                var arrProp = serializedObject.FindProperty("nodes");
-                arrProp.DeleteArrayElementAtIndex(index);
-                return;
-            }
+            // Move/delete
+            var arrProp = serializedObject.FindProperty("nodes");
+            if (index > 0 && GUILayout.Button("▲", GUILayout.Width(20)))
+                { arrProp.MoveArrayElement(index, index - 1); return; }
+            if (index < arrProp.arraySize - 1 && GUILayout.Button("▼", GUILayout.Width(20)))
+                { arrProp.MoveArrayElement(index, index + 1); return; }
+            if (GUILayout.Button("×", GUILayout.Width(20)))
+                { arrProp.DeleteArrayElementAtIndex(index); return; }
 
             EditorGUILayout.EndHorizontal();
 
             // ── Text preview (always visible) ──
             string preview = node.text ?? "";
-            if (preview.Length > 100) preview = preview.Substring(0, 97) + "...";
+            if (preview.Length > 120) preview = preview.Substring(0, 117) + "...";
             if (!string.IsNullOrEmpty(preview))
             {
-                var textStyle = new GUIStyle(EditorStyles.label)
-                {
-                    wordWrap = true,
-                    fontStyle = FontStyle.Italic,
-                    padding = new RectOffset(18, 4, 0, 4)
-                };
-                EditorGUILayout.LabelField($"\"{preview}\"", textStyle);
+                EditorGUILayout.LabelField($"\"{preview}\"",
+                    new GUIStyle(EditorStyles.label)
+                    {
+                        wordWrap = true,
+                        fontStyle = FontStyle.Italic,
+                        padding = new RectOffset(18, 4, 2, 4),
+                        normal = { textColor = new Color(0.85f, 0.85f, 0.85f) }
+                    });
             }
 
-            // ── Expanded content ──
+            // ── Expanded: full edit ──
             if (_nodeExpanded[index])
             {
-                EditorGUILayout.Space(4);
+                EditorGUILayout.Space(6);
 
-                // Core fields
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("nodeId"), new GUIContent("Node ID"));
-                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("speaker"), new GUIContent("Speaker"), true);
-                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("text"), new GUIContent("Text"));
-                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("portraitEmotion"), new GUIContent("Portrait Emotion"));
-                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("onEnterActions"), new GUIContent("On Enter Actions"), true);
+                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("speaker"),
+                    new GUIContent("Speaker", "Who speaks: NPC (drag .asset), Player (auto), or Narrator (system text)"), true);
+                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("text"),
+                    new GUIContent("Text", "The dialogue text for this replica."));
+                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("portraitEmotion"),
+                    new GUIContent("Portrait Emotion", "Variant name for the NPC portrait (e.g. 'neutral', 'angry'). Empty = default."));
+
+                // On Enter Actions
+                EditorGUILayout.Space(4);
+                EditorGUILayout.HelpBox(
+                    "On Enter Actions fire ONCE when this node is first shown. Use for: voice line cues, ambient sounds, scripted camera moves, etc.",
+                    MessageType.None);
+                EditorGUILayout.PropertyField(nodeProp.FindPropertyRelative("onEnterActions"),
+                    new GUIContent("On Enter Actions", "Server-side effects when this replica appears."), true);
+
                 EditorGUI.indentLevel--;
 
-                // ── Edges ──
-                EditorGUILayout.Space(4);
+                // ── Edges (choices) ──
+                EditorGUILayout.Space(6);
                 DrawEdgesSection(nodeProp);
             }
 
@@ -333,7 +352,13 @@ namespace ProjectC.Quests.Editor
             var edgesProp = nodeProp.FindPropertyRelative("edges");
             if (edgesProp == null || !edgesProp.isArray) return;
 
-            EditorGUILayout.LabelField("Edges (player choices):", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("Choices (player replies):",
+                new GUIStyle(EditorStyles.boldLabel));
+            EditorGUILayout.HelpBox(
+                "Each choice = one thing the player can say. Clicking it fires the Action, then jumps to the Target Node.\n" +
+                "If Target Node is empty → dialog ends after the Action fires.",
+                MessageType.None);
+            EditorGUILayout.Space(2);
 
             for (int i = 0; i < edgesProp.arraySize; i++)
             {
@@ -343,61 +368,43 @@ namespace ProjectC.Quests.Editor
                 var labelProp = edgeProp.FindPropertyRelative("label");
                 var targetProp = edgeProp.FindPropertyRelative("targetNodeId");
                 var actionProp = edgeProp.FindPropertyRelative("action");
-                var condProp = edgeProp.FindPropertyRelative("condition");
                 var condsProp = edgeProp.FindPropertyRelative("conditions");
-                var hideProp = edgeProp.FindPropertyRelative("hideIfUnavailable");
 
                 string targetId = targetProp?.stringValue ?? "";
                 bool isEnd = string.IsNullOrEmpty(targetId);
 
-                // ── Edge row ──
+                // ── Edge card ──
                 Color edgeColor = isEnd ? EndColor : PlayerColor;
                 var edgeStyle = new GUIStyle(EditorStyles.helpBox)
-                {
-                    padding = new RectOffset(8, 8, 4, 4),
-                    margin = new RectOffset(8, 4, 2, 2)
-                };
+                    { padding = new RectOffset(8, 8, 4, 4), margin = new RectOffset(8, 4, 2, 2) };
                 var oldBg = GUI.backgroundColor;
                 GUI.backgroundColor = new Color(edgeColor.r, edgeColor.g, edgeColor.b, 0.06f);
                 EditorGUILayout.BeginVertical(edgeStyle);
                 GUI.backgroundColor = oldBg;
 
-                // Row 1: label → target
+                // ── Row 1: arrow + label + target ──
                 EditorGUILayout.BeginHorizontal();
 
-                // Arrow
-                var arrowStyle = new GUIStyle(EditorStyles.label)
-                {
-                    normal = { textColor = edgeColor },
-                    fontStyle = FontStyle.Bold
-                };
-                EditorGUILayout.LabelField(isEnd ? "🔚" : "➡", arrowStyle, GUILayout.Width(20));
+                EditorGUILayout.LabelField(isEnd ? "🔚" : "➡",
+                    new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold, normal = { textColor = edgeColor } },
+                    GUILayout.Width(18));
 
-                // Label
-                EditorGUILayout.PropertyField(labelProp, GUIContent.none);
+                EditorGUILayout.PropertyField(labelProp,
+                    new GUIContent("", "Player-visible text for this choice (e.g. 'Tell me more.')."), GUILayout.MinWidth(60));
 
-                // Target
-                var targetStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    normal = { textColor = edgeColor }
-                };
-                string targetLabel = isEnd ? "end conversation" : $"→ {targetId}";
-                EditorGUILayout.LabelField(targetLabel, targetStyle, GUILayout.Width(isEnd ? 100 : 140));
+                string targetDisplay = isEnd ? "→ END (dialog closes)" : $"→ {targetId}";
+                EditorGUILayout.LabelField(targetDisplay,
+                    new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = edgeColor } },
+                    GUILayout.Width(isEnd ? 150 : 120));
 
-                // HideIfUnavailable toggle
-                EditorGUILayout.PropertyField(hideProp, new GUIContent("Hide"), GUILayout.Width(50));
-
-                // Delete
-                if (GUILayout.Button("×", GUILayout.Width(22)))
-                {
-                    edgesProp.DeleteArrayElementAtIndex(i);
-                    break;
-                }
+                // Delete edge
+                if (GUILayout.Button("×", GUILayout.Width(20)))
+                    { edgesProp.DeleteArrayElementAtIndex(i); break; }
 
                 EditorGUILayout.EndHorizontal();
 
-                // Row 2: compact action + condition info
-                DrawEdgeMeta(edgeProp, actionProp, condProp, condsProp);
+                // ── Row 2: action summary + conditions + hide toggle ──
+                DrawEdgeMetaRow(edgeProp, actionProp, condsProp);
 
                 EditorGUILayout.EndVertical();
             }
@@ -405,7 +412,7 @@ namespace ProjectC.Quests.Editor
             // Add edge button
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("+ Add Choice", GUILayout.Width(110), GUILayout.Height(22)))
+            if (GUILayout.Button("+ Add Choice", GUILayout.Width(120), GUILayout.Height(22)))
             {
                 edgesProp.arraySize++;
                 var newEdge = edgesProp.GetArrayElementAtIndex(edgesProp.arraySize - 1);
@@ -416,54 +423,60 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawEdgeMeta(SerializedProperty edgeProp, SerializedProperty actionProp,
-            SerializedProperty condProp, SerializedProperty condsProp)
+        private void DrawEdgeMetaRow(SerializedProperty edgeProp, SerializedProperty actionProp,
+            SerializedProperty condsProp)
         {
             var actionTypeProp = actionProp?.FindPropertyRelative("type");
             if (actionTypeProp == null) return;
 
             var actionType = (DialogueActionType)actionTypeProp.enumValueIndex;
-            int condCount = (condsProp?.arraySize ?? 0);
-            bool hasSingleCond = condProp?.FindPropertyRelative("type") != null &&
-                                 condProp.FindPropertyRelative("type").enumValueIndex != 0; // not default(first)
+            int condCount = condsProp?.arraySize ?? 0;
+            var hideProp = edgeProp.FindPropertyRelative("hideIfUnavailable");
 
-            if (actionType == DialogueActionType.EndConversation && condCount == 0 && !hasSingleCond)
-                return; // nothing interesting
+            // Check if there's anything to show
+            bool hasAction = actionType != DialogueActionType.EndConversation;
+            bool hasConditions = condCount > 0;
+
+            if (!hasAction && !hasConditions) return;
 
             EditorGUILayout.BeginHorizontal();
             EditorGUI.indentLevel++;
 
-            // Action badge
-            var actionBadgeStyle = new GUIStyle(EditorStyles.miniButton)
+            if (hasAction)
             {
-                fontSize = 9,
-                normal = { textColor = new Color(0.7f, 0.9f, 0.7f) }
-            };
-            string actionLabel = actionType == DialogueActionType.EndConversation ? "" : $"⚡ {actionType}";
-            if (!string.IsNullOrEmpty(actionLabel))
-                GUILayout.Button(actionLabel, actionBadgeStyle);
-
-            // Condition badge
-            if (condCount > 0)
-            {
-                var condBadgeStyle = new GUIStyle(EditorStyles.miniButton)
+                var actStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
-                    fontSize = 9,
-                    normal = { textColor = new Color(0.9f, 0.7f, 0.3f) }
+                    normal = { textColor = new Color(0.6f, 0.9f, 0.6f) },
+                    richText = true
                 };
-                GUILayout.Button($"🔒 ×{condCount}", condBadgeStyle);
+                EditorGUILayout.LabelField(
+                    new GUIContent($"<b>Action:</b> {actionType}",
+                    "Server-side effect when player selects this choice (e.g. OfferQuest, GiveCredits, SetFlag)."),
+                    actStyle);
             }
-            else if (hasSingleCond)
+
+            if (hasConditions)
             {
-                var condBadgeStyle = new GUIStyle(EditorStyles.miniButton)
+                var condStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
-                    fontSize = 9,
-                    normal = { textColor = new Color(0.9f, 0.7f, 0.3f) }
+                    normal = { textColor = new Color(1f, 0.8f, 0.4f) },
+                    richText = true
                 };
-                GUILayout.Button("🔒 ×1", condBadgeStyle);
+                EditorGUILayout.LabelField(
+                    new GUIContent(
+                        condCount == 1 ? $"<b>Condition:</b> must be met" : $"<b>Conditions ({condCount}):</b> all must be met (AND)",
+                        "All conditions must be true for this choice to appear. If any fails, the choice is hidden or greyed out."),
+                    condStyle, GUILayout.MinWidth(200));
             }
 
             GUILayout.FlexibleSpace();
+
+            // Hide toggle
+            var hideContent = new GUIContent(
+                hideProp.boolValue ? "Hide if locked" : "Show grey if locked",
+                "If ON: choice is hidden when conditions fail.\nIf OFF: choice appears greyed out.");
+            hideProp.boolValue = EditorGUILayout.Toggle(hideContent, hideProp.boolValue, GUILayout.Width(120));
+
             EditorGUI.indentLevel--;
             EditorGUILayout.EndHorizontal();
         }

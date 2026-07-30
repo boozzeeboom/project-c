@@ -204,27 +204,16 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.LabelField("Tree Identity", EditorStyles.boldLabel);
             EditorGUILayout.Space(2);
 
-            // Row 1: treeId + displayName
-            EditorGUILayout.BeginHorizontal();
-            var treeIdProp = serializedObject.FindProperty("treeId");
-            var displayNameProp = serializedObject.FindProperty("displayName");
-            EditorGUILayout.PropertyField(treeIdProp,
-                new GUIContent("Tree ID", "Unique identifier for this dialog tree (e.g. 'mira_default')."), GUILayout.MinWidth(100));
-            EditorGUILayout.PropertyField(displayNameProp,
-                new GUIContent("Display Name", "Human-readable name shown in editor lists."), GUILayout.MinWidth(100));
-            EditorGUILayout.EndHorizontal();
+            // Each field gets full width — no cramped horizontal pairs
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("treeId"),
+                new GUIContent("Tree ID", "Unique identifier for this dialog tree (e.g. 'mira_default')."));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("displayName"),
+                new GUIContent("Display Name", "Human-readable name shown in editor lists."));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("rootNodeId"),
+                new GUIContent("Root Node ID", "nodeId of the first node shown when dialog starts. Must match an existing node."));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("localizationTable"),
+                new GUIContent("Localization Table", "Optional localization table for future translation support."));
 
-            // Row 2: rootNodeId + localizationTable
-            EditorGUILayout.BeginHorizontal();
-            var rootProp = serializedObject.FindProperty("rootNodeId");
-            var locProp = serializedObject.FindProperty("localizationTable");
-            EditorGUILayout.PropertyField(rootProp,
-                new GUIContent("Root Node ID", "nodeId of the first node shown when dialog starts. Must match an existing node."), GUILayout.MinWidth(100));
-            EditorGUILayout.PropertyField(locProp,
-                new GUIContent("Loc Table", "Optional localization table for future translation support."), GUILayout.MinWidth(100));
-            EditorGUILayout.EndHorizontal();
-
-            // Validation
             if (tree.GetNode(tree.rootNodeId) == null && !string.IsNullOrEmpty(tree.rootNodeId))
                 EditorGUILayout.HelpBox($"Root node '{tree.rootNodeId}' is not in the nodes list! Dialog will fail to start.", MessageType.Error);
 

@@ -21,6 +21,7 @@ MonoBehaviour:
     speaker:
       speakerKind: 0
       refId: mira_01
+      speakerNpc: {fileID: 0}
     text: "\u041F\u0440\u0438\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u044E, \u0438\u0441\u043A\u0430\u0442\u0435\u043B\u044C.
       \u0427\u0435\u043C \u043C\u043E\u0433\u0443 \u043F\u043E\u043C\u043E\u0447\u044C?"
     portraitEmotion: neutral
@@ -31,48 +32,25 @@ MonoBehaviour:
       condition:
         type: 10
         stringParam: 1
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
         stageIdParam: 
         intParam: 1
         factionParam: 0
         questStateParam: 2
       conditions:
-      - type: 10
+      - type: 23
         stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
         stageIdParam: 
         intParam: 0
         factionParam: 0
         questStateParam: 0
       action:
-        type: 60
-        stringParam: 
-        questRef: {fileID: 0}
-        npcRef: {fileID: 0}
-        dialogTreeRef: {fileID: 0}
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        itemId: 0
-        itemType: 0
-      hideIfUnavailable: 1
-    - label: "\u041D\u0443 \u0447\u0442\u043E, \u043D\u0430\u0448\u0451\u043B \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
-        \u0412\u0440\u0435\u043C\u0451\u043D?"
-      targetNodeId: check_b
-      condition:
         type: 10
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      conditions:
-      - type: 20
-        stringParam: find_artifact
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      action:
-        type: 60
         stringParam: 
         questRef: {fileID: 0}
         npcRef: {fileID: 0}
@@ -88,6 +66,9 @@ MonoBehaviour:
       condition:
         type: 10
         stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
         stageIdParam: 
         intParam: 0
         factionParam: 0
@@ -105,5 +86,40 @@ MonoBehaviour:
         itemId: 0
         itemType: 0
       hideIfUnavailable: 1
-    onEnterActions: []
+    - label: Continue
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions:
+    - type: 10
+      stringParam: 
+      questRef: {fileID: 0}
+      npcRef: {fileID: 0}
+      dialogTreeRef: {fileID: 0}
+      stageIdParam: 
+      intParam: 0
+      factionParam: 0
+      itemId: 0
+      itemType: 0
   localizationTable: {fileID: 0}

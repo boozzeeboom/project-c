@@ -60,9 +60,9 @@ namespace ProjectC.Quests.Editor
         {
             var kindProp = property.FindPropertyRelative("speakerKind");
             var kind = (SpeakerRef.Kind)kindProp.enumValueIndex;
-            int lines = 2; // kind + npc field/label
-            if (kind == SpeakerRef.Kind.Npc && property.FindPropertyRelative("speakerNpc").objectReferenceValue == null)
-                lines += 1; // fallback string field
+            // Npc: kind + ObjectField + fallback string = 3
+            // Player/Narrator: kind + label = 2
+            int lines = (kind == SpeakerRef.Kind.Npc) ? 3 : 2;
             return (EditorGUIUtility.singleLineHeight + 2) * lines;
         }
 
@@ -72,12 +72,15 @@ namespace ProjectC.Quests.Editor
             EditorGUI.PropertyField(new Rect(position.x, y, w, h), refProp, new GUIContent("NPC (drag .asset)"));
             y += h + 2;
 
-            if (refProp.objectReferenceValue == null)
-            {
-                EditorGUI.PropertyField(new Rect(position.x, y, w, h),
-                    property.FindPropertyRelative("refId"), new GUIContent("  └ NPC ID (string)"));
-                y += h + 2;
-            }
+            // Always show fallback — dimmed if object ref is set
+            bool hasRef = refProp.objectReferenceValue != null;
+            var oldEnabled = GUI.enabled;
+            GUI.enabled = !hasRef;
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h),
+                property.FindPropertyRelative("refId"),
+                new GUIContent(hasRef ? "  └ (not used — object ref active)" : "  └ NPC ID (string)"));
+            GUI.enabled = oldEnabled;
+            y += h + 2;
         }
     }
 }

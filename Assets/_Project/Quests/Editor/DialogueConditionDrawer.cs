@@ -93,47 +93,32 @@ namespace ProjectC.Quests.Editor
             {
                 case DialogueConditionType.HasItem:
                 case DialogueConditionType.CargoHasItem:
-                    lines += 2; // item field + quantity
-                    if (property.FindPropertyRelative("requiredItem").objectReferenceValue == null)
-                        lines += 1; // fallback string
-                    break;
+                    lines += 3; break; // item ObjectField + fallback string + quantity
 
                 case DialogueConditionType.QuestStateEquals:
-                    lines += 2; // quest + state
-                    if (property.FindPropertyRelative("requiredQuest").objectReferenceValue == null)
-                        lines += 1;
-                    break;
+                    lines += 3; break; // quest ObjectField + fallback string + state
 
                 case DialogueConditionType.QuestStageEquals:
-                    lines += 2; // quest + stage
-                    if (property.FindPropertyRelative("requiredQuest").objectReferenceValue == null)
-                        lines += 1;
-                    break;
+                    lines += 3; break; // quest ObjectField + fallback string + stage
 
                 case DialogueConditionType.QuestCompleted:
                 case DialogueConditionType.QuestDiscovered:
-                    lines += 1; // quest
-                    if (property.FindPropertyRelative("requiredQuest").objectReferenceValue == null)
-                        lines += 1;
-                    break;
+                    lines += 2; break; // quest ObjectField + fallback string
 
                 case DialogueConditionType.ReputationAtLeast:
                 case DialogueConditionType.ReputationAtMost:
                     lines += 2; break; // faction + value
 
                 case DialogueConditionType.NpcAttitudeAtLeast:
-                    lines += 2; // npc + value
-                    if (property.FindPropertyRelative("requiredNpc").objectReferenceValue == null)
-                        lines += 1;
-                    break;
+                    lines += 3; break; // npc ObjectField + fallback string + value
 
                 case DialogueConditionType.TimeOfDayIn:
                 case DialogueConditionType.PlayerInZone:
                 case DialogueConditionType.FlagIsSet:
-                    lines += 1; break;
+                    lines += 1; break; // string field
 
                 case DialogueConditionType.WasNodeVisited:
-                    lines += 2; break;
+                    lines += 2; break; // treeId string + stageId string
 
                 default:
                     lines += 1; break;
@@ -149,12 +134,15 @@ namespace ProjectC.Quests.Editor
             EditorGUI.PropertyField(new Rect(position.x, y, w, h), refProp, new GUIContent("Quest (drag .asset)"));
             y += h + 2;
 
-            if (refProp.objectReferenceValue == null)
-            {
-                EditorGUI.PropertyField(new Rect(position.x, y, w, h),
-                    property.FindPropertyRelative("stringParam"), new GUIContent("  └ Quest ID (string)"));
-                y += h + 2;
-            }
+            // Always show fallback string field (dimmed if object ref is set)
+            bool hasRef = refProp.objectReferenceValue != null;
+            var oldEnabled = GUI.enabled;
+            GUI.enabled = !hasRef;
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h),
+                property.FindPropertyRelative("stringParam"),
+                new GUIContent(hasRef ? "  └ (not used — object ref active)" : "  └ Quest ID (string)"));
+            GUI.enabled = oldEnabled;
+            y += h + 2;
         }
 
         private static void DrawNpcField(SerializedProperty property, Rect position, ref float y, float w, float h)
@@ -163,12 +151,14 @@ namespace ProjectC.Quests.Editor
             EditorGUI.PropertyField(new Rect(position.x, y, w, h), refProp, new GUIContent("NPC (drag .asset)"));
             y += h + 2;
 
-            if (refProp.objectReferenceValue == null)
-            {
-                EditorGUI.PropertyField(new Rect(position.x, y, w, h),
-                    property.FindPropertyRelative("stringParam"), new GUIContent("  └ NPC ID (string)"));
-                y += h + 2;
-            }
+            bool hasRef = refProp.objectReferenceValue != null;
+            var oldEnabled = GUI.enabled;
+            GUI.enabled = !hasRef;
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h),
+                property.FindPropertyRelative("stringParam"),
+                new GUIContent(hasRef ? "  └ (not used — object ref active)" : "  └ NPC ID (string)"));
+            GUI.enabled = oldEnabled;
+            y += h + 2;
         }
 
         private static void DrawItemField(SerializedProperty property, Rect position, ref float y, float w, float h)
@@ -177,12 +167,14 @@ namespace ProjectC.Quests.Editor
             EditorGUI.PropertyField(new Rect(position.x, y, w, h), refProp, new GUIContent("Item (drag .asset)"));
             y += h + 2;
 
-            if (refProp.objectReferenceValue == null)
-            {
-                EditorGUI.PropertyField(new Rect(position.x, y, w, h),
-                    property.FindPropertyRelative("stringParam"), new GUIContent("  └ Item ID/Name (string)"));
-                y += h + 2;
-            }
+            bool hasRef = refProp.objectReferenceValue != null;
+            var oldEnabled = GUI.enabled;
+            GUI.enabled = !hasRef;
+            EditorGUI.PropertyField(new Rect(position.x, y, w, h),
+                property.FindPropertyRelative("stringParam"),
+                new GUIContent(hasRef ? "  └ (not used — object ref active)" : "  └ Item ID/Name (string)"));
+            GUI.enabled = oldEnabled;
+            y += h + 2;
         }
 
         // ── Basic helpers ──

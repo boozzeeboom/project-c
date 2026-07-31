@@ -37,6 +37,9 @@ namespace ProjectC.Quests.Editor
 #pragma warning restore CS0414
         private const string DATABASE_PATH = "Assets/_Project/Quests/Data/QuestDatabase.asset";
 
+        // T-U02: persisted node count for unique naming
+        private int _nodeCounter;
+
         public bool EditMode
         {
             get => _editMode;
@@ -170,6 +173,7 @@ namespace ProjectC.Quests.Editor
             if (nodeList.Count > 0) DeleteElements(nodeList);
             _editButtons.Clear();
             _nodePositions.Clear();
+            _nodeCounter = 0;
         }
 
         private void BuildGraph()
@@ -195,7 +199,8 @@ namespace ProjectC.Quests.Editor
                     ("Name", Quest.displayName, v => Quest.displayName = v),
                     ("Desc", Quest.description ?? "", v => Quest.description = v)
                 },
-                $"id: {Quest.questId}  •  stages: {Quest.stages?.Length ?? 0}");
+                $"id: {Quest.questId}  •  stages: {Quest.stages?.Length ?? 0}",
+                Quest, "", null, QuestNodeKind.QuestRoot);
             // T-Q32: add stage button on quest node
             var addStageBtn = MakeEditButton("+ Add Stage", () => AddStage(), "add-stage");
             qn.extensionContainer.Add(addStageBtn);
@@ -224,7 +229,8 @@ namespace ProjectC.Quests.Editor
                         (stage.objectives != null ? $"🎯 {stage.objectives.Length} objective(s)" : "") +
                         (stage.onEnterActions?.Length > 0 ? $"  ▶ onEnter: {stage.onEnterActions.Length}" : "") +
                         (stage.onCompleteActions?.Length > 0 ? $"  ✓ onComplete: {stage.onCompleteActions.Length}" : "") +
-                        (!string.IsNullOrEmpty(stage.nextStageId) ? $"  → {stage.nextStageId}" : ""));
+                        (!string.IsNullOrEmpty(stage.nextStageId) ? $"  → {stage.nextStageId}" : ""),
+                        Quest, $"stages[{i}]", stage, QuestNodeKind.Stage);
                     // T-Q32: delete stage button
                     var delStageBtn = MakeEditButton("× Stage", () => DeleteStage(si), "stage-del-" + i);
                     sn.extensionContainer.Add(delStageBtn);
@@ -257,7 +263,8 @@ namespace ProjectC.Quests.Editor
                                     ("Item", obj.pickupItem != null ? obj.pickupItem.itemName : (obj.itemTradeItemId ?? ""), v => Quest.stages[stIdx].objectives[oi].itemTradeItemId = v),
                                     ("Npc", obj.targetNpcId ?? "", v => Quest.stages[stIdx].objectives[oi].targetNpcId = v),
                                     ($"[{obj.objectiveType}] ×{obj.requiredQuantity}", $"{obj.requiredQuantity}", v => { if (int.TryParse(v, out var n)) Quest.stages[stIdx].objectives[oi].requiredQuantity = n; })
-                                });
+                                },
+                                sourceData: obj, kind: QuestNodeKind.Objective);
                             // T-Q32: delete objective button
                             var delObjBtn = MakeEditButton("× Obj", () => DeleteObjective(stIdx, oi), "obj-del-" + i + "-" + j);
                             on.extensionContainer.Add(delObjBtn);
@@ -318,7 +325,8 @@ namespace ProjectC.Quests.Editor
                 }
 
                 var rn = MakeEditableNode("🎁 REWARDS", rewardColor,
-                    rFields.ToArray(), rLines);
+                    rFields.ToArray(), rLines,
+                    Quest, "rewards", Quest.rewards, QuestNodeKind.Reward);
                 rn.SetPosition(new Rect(COL4_X, Y_TOP, REWARD_W, REWARD_H));
                 AddElement(rn);
                 var rPort = AddPorts(rn, hasOutput: false, hasInput: true);
@@ -328,17 +336,28 @@ namespace ProjectC.Quests.Editor
         }
 
         /// <summary>
-        /// T-Q30: создать Node с editable полями (Label в view mode, TextField в edit mode).
+        /// T-U02: создать QuestGraphNode с editable полями и SO-привязкой.
         /// fields: list of (labelName, currentValue, onSaveAction).
         /// onSaveAction == null → поле только для просмотра. metaLine: строка снизу (всегда видна).
         /// </summary>
-        private Node MakeEditableNode(string title, Color titleColor,
+        private QuestGraphNode MakeEditableNode(string title, Color titleColor,
             (string label, string value, System.Action<string> onSave)[] fields,
-            string metaLine = "")
+            string metaLine = "",
+            ScriptableObject owner = null, string sourcePath = "", object sourceData = null,
+            QuestNodeKind kind = QuestNodeKind.Stage)
         {
-            var n = new Node { title = title };
+            var n = new QuestGraphNode
+            {
+                title = title,
+                OwnerAsset = owner ?? Quest,
+                SourcePath = sourcePath,
+                SourceData = sourceData,
+                NodeKind = kind,
+                PersistKey = $"qnode_{_nodeCounter++}"
+            };
             n.titleContainer.style.backgroundColor = new StyleColor(titleColor);
             n.extensionContainer.style.backgroundColor = new StyleColor(titleColor * 0.6f);
+            n.viewDataKey = n.PersistKey;
 
             if (fields != null)
             {
@@ -446,7 +465,7 @@ namespace ProjectC.Quests.Editor
             Debug.Log($"[QuestNodeGraph] Reverted {Quest.questId}");
         }
 
-        // ========== T-Q32: Add/Delete CRUD ==========
+        // ========== T-U02: Incremental Add/Delete CRUD (no full rebuild) ==========
 
         /// <summary>Create a small edit-only button (hidden in view mode).</summary>
         private VisualElement MakeEditButton(string text, System.Action onClick, string name)
@@ -464,27 +483,99 @@ namespace ProjectC.Quests.Editor
             return btn;
         }
 
+        // ── Stage CRUD ──
+
         private void AddStage()
         {
             if (Quest == null) return;
             var list = Quest.stages?.ToList() ?? new List<QuestStage>();
-            list.Add(new QuestStage { stageId = "new_stage", description = "" });
+            var newStage = new QuestStage { stageId = "new_stage", description = "" };
+            list.Add(newStage);
             Quest.stages = list.ToArray();
             EditorUtility.SetDirty(Quest);
-            AssetDatabase.SaveAssets();
-            LoadQuest(Quest);
+
+            // Add single stage node without full rebuild
+            var stageNodes = this.nodes.ToList().Where(n => n is QuestGraphNode qn && qn.NodeKind == QuestNodeKind.Stage).Cast<QuestGraphNode>().ToList();
+            int idx = list.Count - 1;
+            int stageCount = list.Count;
+
+            float y = 0f;
+            if (stageNodes.Count > 0)
+            {
+                var last = stageNodes[stageNodes.Count - 1];
+                y = last.GetPosition().y + last.GetPosition().height + 30f;
+            }
+
+            var stageColor = new Color(0.20f, 0.55f, 0.30f);
+            var sn = MakeEditableNode($"STAGE {idx+1}/{stageCount}", stageColor,
+                new (string label, string value, System.Action<string> onSave)[] {
+                    ("ID", newStage.stageId, v => { int si = idx; Quest.stages[si].stageId = v; }),
+                    ("Desc", newStage.description ?? "", v => { int si = idx; Quest.stages[si].description = v; })
+                },
+                "", Quest, $"stages[{idx}]", newStage, QuestNodeKind.Stage);
+
+            sn.SetPosition(new Rect(360f, y, 240f, 160f));
+            var sPort = AddPorts(sn, hasOutput: true, hasInput: true);
+            AddElement(sn);
+
+            // Add delete / add-objective buttons
+            var delStageBtn = MakeEditButton("× Stage", () => DeleteStage(idx), "stage-del-" + idx);
+            sn.extensionContainer.Add(delStageBtn);
+            _editButtons.Add(delStageBtn);
+            var addObjBtn = MakeEditButton("+ Objective", () => AddObjective(idx), "stage-add-" + idx);
+            sn.extensionContainer.Add(addObjBtn);
+            _editButtons.Add(addObjBtn);
+
+            // Connect to previous stage
+            if (stageNodes.Count > 0)
+            {
+                var prevOut = GetOutputPort(stageNodes[stageNodes.Count - 1]);
+                if (prevOut != null && sPort.input != null)
+                    ConnectPorts(prevOut, sPort.input);
+            }
+
+            // Connect reward to this stage if it was connected to previous last
+            var rewardNode = this.nodes.ToList().FirstOrDefault(n => n is QuestGraphNode qn && qn.NodeKind == QuestNodeKind.Reward);
+            if (rewardNode != null && stageNodes.Count > 0)
+            {
+                // Remove old reward edge and reconnect
+                var rewardIn = GetInputPort(rewardNode);
+                if (rewardIn != null)
+                {
+                    var oldEdges = this.edges.ToList().Where(e => e.input == rewardIn).ToList();
+                    foreach (var e in oldEdges) RemoveElement(e);
+                    ConnectPorts(sPort.output, rewardIn);
+                }
+            }
+
+            MarkDirtyRepaint();
         }
 
         private void DeleteStage(int index)
         {
             if (Quest == null || Quest.stages == null || index < 0 || index >= Quest.stages.Length) return;
+
+            // Remove from SO
             var list = Quest.stages.ToList();
             list.RemoveAt(index);
             Quest.stages = list.ToArray();
             EditorUtility.SetDirty(Quest);
-            AssetDatabase.SaveAssets();
-            LoadQuest(Quest);
+
+            // Find and remove the corresponding node
+            var stageNodes = this.nodes.ToList().Where(n => n is QuestGraphNode qn && qn.NodeKind == QuestNodeKind.Stage).Cast<QuestGraphNode>().ToList();
+            if (index < stageNodes.Count)
+            {
+                var targetNode = stageNodes[index];
+                // Remove all edges connected to this node
+                var connectedEdges = this.edges.ToList().Where(e => e.input != null && e.input.node == targetNode || e.output != null && e.output.node == targetNode).ToList();
+                foreach (var e in connectedEdges) RemoveElement(e);
+                RemoveElement(targetNode);
+            }
+
+            MarkDirtyRepaint();
         }
+
+        // ── Objective CRUD ──
 
         private void AddObjective(int stageIndex)
         {
@@ -492,11 +583,42 @@ namespace ProjectC.Quests.Editor
             var stage = Quest.stages[stageIndex];
             if (stage == null) return;
             var list = stage.objectives?.ToList() ?? new List<QuestObjective>();
-            list.Add(new QuestObjective { objectiveId = "new_objective", objectiveType = QuestObjectiveType.HaveItem, requiredQuantity = 1 });
+            var newObj = new QuestObjective { objectiveId = "new_objective", objectiveType = QuestObjectiveType.HaveItem, requiredQuantity = 1 };
+            list.Add(newObj);
             stage.objectives = list.ToArray();
             EditorUtility.SetDirty(Quest);
-            AssetDatabase.SaveAssets();
-            LoadQuest(Quest);
+
+            // Find the stage node
+            var stageNodes = this.nodes.ToList().Where(n => n is QuestGraphNode qn && qn.NodeKind == QuestNodeKind.Stage).Cast<QuestGraphNode>().ToList();
+            if (stageIndex >= stageNodes.Count) { LoadQuest(Quest); return; }
+            var stageNode = stageNodes[stageIndex];
+            var stageRect = stageNode.GetPosition();
+
+            float oy = stageRect.y;
+            for (int j = 0; j < list.Count - 1; j++)
+                oy += 100f + 15f;
+
+            var objColor = new Color(0.55f, 0.40f, 0.10f);
+            int oi = list.Count - 1; int stIdx = stageIndex;
+            var on = MakeEditableNode($"🎯 {newObj.objectiveId}", objColor,
+                new (string label, string value, System.Action<string> onSave)[] {
+                    ("ObjId", newObj.objectiveId ?? "", v => Quest.stages[stIdx].objectives[oi].objectiveId = v),
+                    ("Qty", $"{newObj.requiredQuantity}", v => { if (int.TryParse(v, out var n)) Quest.stages[stIdx].objectives[oi].requiredQuantity = n; })
+                },
+                sourceData: newObj, kind: QuestNodeKind.Objective);
+
+            on.SetPosition(new Rect(720f, oy, 220f, 100f));
+            var oPort = AddPorts(on, hasOutput: false, hasInput: true);
+            AddElement(on);
+
+            var sPort = GetOutputPort(stageNode);
+            if (sPort != null) ConnectPorts(sPort, oPort.input);
+
+            var delObjBtn = MakeEditButton("× Obj", () => DeleteObjective(stIdx, oi), "obj-del-" + stageIndex + "-" + oi);
+            on.extensionContainer.Add(delObjBtn);
+            _editButtons.Add(delObjBtn);
+
+            MarkDirtyRepaint();
         }
 
         private void DeleteObjective(int stageIndex, int objIndex)
@@ -504,12 +626,27 @@ namespace ProjectC.Quests.Editor
             if (Quest == null || Quest.stages == null || stageIndex < 0 || stageIndex >= Quest.stages.Length) return;
             var stage = Quest.stages[stageIndex];
             if (stage == null || stage.objectives == null || objIndex < 0 || objIndex >= stage.objectives.Length) return;
+
             var list = stage.objectives.ToList();
             list.RemoveAt(objIndex);
             stage.objectives = list.ToArray();
             EditorUtility.SetDirty(Quest);
-            AssetDatabase.SaveAssets();
-            LoadQuest(Quest);
+
+            // Find the objective node (by SourceData match or approximate)
+            var stageNodes = this.nodes.ToList().Where(n => n is QuestGraphNode qn && qn.NodeKind == QuestNodeKind.Stage).Cast<QuestGraphNode>().ToList();
+            if (stageIndex < stageNodes.Count)
+            {
+                var objNodes = this.nodes.ToList().Where(n => n is QuestGraphNode qn && qn.NodeKind == QuestNodeKind.Objective).ToList();
+                if (objIndex < objNodes.Count)
+                {
+                    var target = objNodes[objIndex];
+                    var connectedEdges = this.edges.ToList().Where(e => e.input != null && e.input.node == target || e.output != null && e.output.node == target).ToList();
+                    foreach (var e in connectedEdges) RemoveElement(e);
+                    RemoveElement(target);
+                }
+            }
+
+            MarkDirtyRepaint();
         }
 
         private struct NodePorts { public Port input; public Port output; }

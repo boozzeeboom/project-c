@@ -1,5 +1,14 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-07-22 (T-U01, Unified Quest Graph)
+
+**Задача:** T-U01: Model-driven OnGraphViewChanged — разрешить все мутации, убрать _suppressReadOnly
+**Коммит:** `e821c7e3` — T-U01: Model-driven OnGraphViewChanged
+**Изменения:**
+- `Assets/_Project/Quests/Editor/QuestNodeGraphView.cs` — убран `_suppressReadOnly`; переписан `OnGraphViewChanged` (разрешены все мутации); добавлены virtual хуки `OnEdgeCreated/Deleted`, `OnNodeDeleted/Moved`; добавлен `_nodePositions` словарь; упрощён `ClearAllElements`
+- `docs/NPC_quests/T-U01_model_driven_graphview.md` — документация тикета
+- `docs/NPC_quests/UNIFIED_QUEST_GRAPH_PLAN.md` — план всего unified-рефакторинга
+
 ## Итерация от 2026-07-21 (T-DLG01)
 
 **Задача:** DialogTreeEditor — карточки нод, drag-and-drop условий и speaker'а

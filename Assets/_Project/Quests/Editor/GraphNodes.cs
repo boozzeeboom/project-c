@@ -163,7 +163,9 @@ namespace ProjectC.Quests.Editor
             // Full-width TextArea — fills available height
             var textProp = np.FindPropertyRelative("text");
             EditorGUILayout.LabelField("Text:");
-            float availH = Mathf.Max(60f, resolvedStyle.height - 150f);
+            float h = resolvedStyle.height; if (float.IsNaN(h) || h <= 0f) h = 280f;
+            float availH = Mathf.Max(60f, h - 150f);
+
             var textRect = EditorGUILayout.GetControlRect(false, availH, EditorStyles.textArea);
             textProp.stringValue = EditorGUI.TextArea(textRect, textProp.stringValue, EditorStyles.textArea);
 
@@ -274,7 +276,9 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.LabelField("Description:");
             var descProp = sp.FindPropertyRelative("description");
-            float availH = Mathf.Max(40f, resolvedStyle.height - 220f);
+            float h = resolvedStyle.height; if (float.IsNaN(h) || h <= 0f) h = 350f;
+            float availH = Mathf.Max(40f, h - 220f);
+
             var descRect = EditorGUILayout.GetControlRect(false, availH, EditorStyles.textArea);
             descProp.stringValue = EditorGUI.TextArea(descRect, descProp.stringValue, EditorStyles.textArea);
 

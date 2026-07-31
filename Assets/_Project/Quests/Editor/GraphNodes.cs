@@ -161,12 +161,9 @@ namespace ProjectC.Quests.Editor
             var nodesProp = so.FindProperty("nodes"); if (NodeIndex >= nodesProp.arraySize) return;
             var np = nodesProp.GetArrayElementAtIndex(NodeIndex);
             EditorGUILayout.PropertyField(np.FindPropertyRelative("speaker"), new GUIContent("Speaker"), true);
-            var textProp = np.FindPropertyRelative("text");
-            float nodeH = GetPosition().height;
-            float textH = Mathf.Max(60f, nodeH - 150f);
-            var textRect = EditorGUILayout.GetControlRect(false, textH, EditorStyles.textArea);
-            textProp.stringValue = EditorGUI.TextArea(textRect, textProp.stringValue, EditorStyles.textArea);
+            EditorGUILayout.PropertyField(np.FindPropertyRelative("text"), new GUIContent("Text"));
             EditorGUILayout.Space(2);
+
 
 
             EditorGUILayout.LabelField("Choices:", EditorStyles.boldLabel);
@@ -274,11 +271,8 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("stageId"), new GUIContent("ID"), GUILayout.MinWidth(80));
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("nextStageId"), new GUIContent("→ Next"), GUILayout.MinWidth(80));
             EditorGUILayout.EndHorizontal();
-            var descProp = sp.FindPropertyRelative("description");
-            float nodeH = GetPosition().height;
-            float descH = Mathf.Max(40f, nodeH - 220f);
-            var descRect = EditorGUILayout.GetControlRect(false, descH, EditorStyles.textArea);
-            descProp.stringValue = EditorGUI.TextArea(descRect, descProp.stringValue, EditorStyles.textArea);
+            EditorGUILayout.PropertyField(sp.FindPropertyRelative("description"), new GUIContent("Desc"));
+
 
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("objectives"), new GUIContent("Objectives"), true);
 

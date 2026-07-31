@@ -47,9 +47,29 @@ namespace ProjectC.Quests.Editor
             p.portName = name; p.portColor = color; p.userData = (semantic, userData); inputContainer.Add(p); return p;
         }
 
+        protected void AddPinButton(ScriptableObject asset)
+        {
+            if (asset == null) return;
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.justifyContent = Justify.FlexEnd;
+            row.style.paddingRight = 4;
+            row.style.paddingTop = 0;
+            row.style.paddingBottom = 0;
+            row.style.height = 18;
+            var btn = new Button(() => { Selection.activeObject = asset; EditorGUIUtility.PingObject(asset); });
+            btn.text = "📌 " + asset.name;
+            btn.style.fontSize = 9;
+            btn.style.height = 16;
+            btn.tooltip = "Ping asset: " + AssetDatabase.GetAssetPath(asset);
+            row.Add(btn);
+            extensionContainer.Insert(0, row);
+        }
+
         public static PortSemantic GetSemantic(Port p) => p?.userData is (PortSemantic sem, _) ? sem : (PortSemantic)(-1);
         public static object GetPortData(Port p) => p?.userData is (_, object data) ? data : null;
     }
+
 
     // ═══════════════ NpcNode ═══════════════
 
@@ -65,18 +85,25 @@ namespace ProjectC.Quests.Editor
             MakeOutPort("→ Dialog", PortSemantic.NpcDefaultDialog, GraphNodeColors.PortPurple);
             MakeOutPort("→ Offers Quest", PortSemantic.NpcOffersQuest, GraphNodeColors.PortOrange);
             MakeInPort("← Quest target", PortSemantic.NpcTargetedBy, GraphNodeColors.PortBlue);
-            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 50f; ea.style.flexGrow = 1;
+            AddPinButton(Npc);
+            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 130f; ea.style.flexGrow = 1;
             extensionContainer.style.paddingLeft = 4; extensionContainer.style.paddingRight = 4; extensionContainer.Add(ea);
             RefreshExpandedState(); expanded = true;
         }
         private void DrawEditor()
         {
             var so = new SerializedObject(Npc); so.Update();
+            EditorGUILayout.PropertyField(so.FindProperty("npcId"), new GUIContent("ID"));
+            EditorGUILayout.PropertyField(so.FindProperty("displayName"), new GUIContent("Name"));
             EditorGUILayout.PropertyField(so.FindProperty("faction"), new GUIContent("Faction"));
+            EditorGUILayout.PropertyField(so.FindProperty("portrait"), new GUIContent("Portrait"));
             EditorGUILayout.PropertyField(so.FindProperty("defaultDialogTree"), new GUIContent("Dialog Tree"));
+            EditorGUILayout.PropertyField(so.FindProperty("services"), new GUIContent("Services"));
+            EditorGUILayout.PropertyField(so.FindProperty("interactionRadius"), new GUIContent("Radius"));
             if (so.ApplyModifiedProperties()) EditorUtility.SetDirty(Npc);
         }
     }
+
 
     // ═══════════════ DialogNode ═══════════════
 
@@ -111,7 +138,9 @@ namespace ProjectC.Quests.Editor
                     MakeOutPort(label, PortSemantic.DialogEdgeAction, c, ei);
                 }
             if (edges == null || edges.Length == 0) MakeOutPort("→", PortSemantic.DialogEdgeAction, GraphNodeColors.PortGreen, 0);
+            AddPinButton(Tree);
             var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 80f; ea.style.flexGrow = 1;
+
             extensionContainer.style.paddingLeft = 4; extensionContainer.style.paddingRight = 4; extensionContainer.Add(ea);
             RefreshExpandedState(); expanded = true;
         }
@@ -164,8 +193,9 @@ namespace ProjectC.Quests.Editor
             var btnRow = new VisualElement(); btnRow.style.flexDirection = FlexDirection.Row; btnRow.style.paddingLeft = 4; btnRow.style.paddingTop = 2; btnRow.style.paddingBottom = 2;
             var addBtn = new Button(() => OnAddStage?.Invoke(Quest)) { text = "+ Stage" }; addBtn.style.fontSize = 10; addBtn.style.height = 20;
             btnRow.Add(addBtn); extensionContainer.Add(btnRow);
-
+            AddPinButton(Quest);
             var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 40f; ea.style.flexGrow = 1;
+
             extensionContainer.style.paddingLeft = 4; extensionContainer.style.paddingRight = 4; extensionContainer.Add(ea);
             RefreshExpandedState(); expanded = true;
         }
@@ -207,8 +237,9 @@ namespace ProjectC.Quests.Editor
             var addStageBtn = new Button(() => OnAddStageAfter?.Invoke(Info)) { text = "+ Stage" }; addStageBtn.style.fontSize = 10; addStageBtn.style.height = 20; addStageBtn.style.marginLeft = 4; btnRow.Add(addStageBtn);
             if (num > 1) { var delBtn = new Button(() => OnDeleteStage?.Invoke(Info)) { text = "× Stage" }; delBtn.style.fontSize = 10; delBtn.style.height = 20; delBtn.style.marginLeft = 4; delBtn.style.color = new StyleColor(new Color(0.9f, 0.4f, 0.3f)); btnRow.Add(delBtn); }
             extensionContainer.Add(btnRow);
-
+            AddPinButton(Quest);
             var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 120f; ea.style.flexGrow = 1;
+
             extensionContainer.style.paddingLeft = 4; extensionContainer.style.paddingRight = 4; extensionContainer.Add(ea);
             RefreshExpandedState(); expanded = true;
         }
@@ -242,7 +273,9 @@ namespace ProjectC.Quests.Editor
             Quest = info.quest; Info = info; PersistKey = $"reward_{Quest.questId}";
             title = "🎁 Rewards"; titleContainer.style.backgroundColor = new StyleColor(GraphNodeColors.Reward);
             MakeInPort("← Last Stage", PortSemantic.StageIn, GraphNodeColors.PortGray);
+            AddPinButton(Quest);
             var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 40f; ea.style.flexGrow = 1;
+
             extensionContainer.style.paddingLeft = 4; extensionContainer.style.paddingRight = 4; extensionContainer.Add(ea);
             RefreshExpandedState(); expanded = true;
         }

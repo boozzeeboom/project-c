@@ -51,8 +51,8 @@ MonoBehaviour:
         questStateParam: 0
       action:
         type: 10
-        stringParam: 
-        questRef: {fileID: 0}
+        stringParam: collect_copper_ore
+        questRef: {fileID: 11400000, guid: f32e985aca4b07a41a0c87fa6658dac4, type: 2}
         npcRef: {fileID: 0}
         dialogTreeRef: {fileID: 0}
         stageIdParam: 

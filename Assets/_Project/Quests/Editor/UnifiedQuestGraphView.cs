@@ -182,7 +182,8 @@ namespace ProjectC.Quests.Editor
 
         private void ApplyLayout()
         {
-            const float NPC_H = 130f, DLG_H = 200f, Q_H = 140f, STAGE_H = 290f, REWARD_H = 140f;
+            const float NPC_H = 210f, DLG_H = 200f, Q_H = 140f, STAGE_H = 290f, REWARD_H = 140f;
+
 
             float x = 0f, y = 0f;
 

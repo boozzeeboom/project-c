@@ -1,10 +1,11 @@
 // QuestNodeGraphView + QuestNodeGraphWindow
 // GraphView-based implementation (Nodes + Edges) — чистая попытка с нуля.
-// Все уроки из v1-v6 учтены:
+// T-U01: Model-driven OnGraphViewChanged — разрешить все мутации,
+//       сохранять позиции нод, убрать _suppressReadOnly.
 // 1) Ports + Edges через граф с schedule repaint на след. кадр
 // 2) expanded=true + RefreshExpandedState в правильном порядке
-// 3) _suppressReadOnly для ClearGraph
-// 4) Vertical layout (flow сверху-вниз)
+// 3) Model-driven: graphViewChanged разрешает всё, хуки для SO-мутаций
+// 4) Vertical layout (flow сверху-вниз) → BFS авто-лейаут (T-U03)
 // 5) Первый и единственный output port на node (Multi capacity)
 
 #if UNITY_EDITOR
@@ -22,7 +23,9 @@ namespace ProjectC.Quests.Editor
     public class QuestNodeGraphView : GraphView
     {
         public QuestDefinition Quest { get; private set; }
-        private bool _suppressReadOnly;
+
+        // T-U01: node position tracking (serializable for persistence)
+        protected readonly Dictionary<string, Vector2> _nodePositions = new Dictionary<string, Vector2>();
 
         // T-Q30: edit state
         private bool _editMode;
@@ -158,18 +161,15 @@ namespace ProjectC.Quests.Editor
             MarkDirtyRepaint();
         }
 
+        // T-U01: no more _suppressReadOnly — graphViewChanged allows all deletions
         private void ClearAllElements()
         {
-            _suppressReadOnly = true;
-            try
-            {
-                var edgeList = new List<GraphElement>(this.edges.ToList());
-                var nodeList = new List<GraphElement>(this.nodes.ToList());
-                if (edgeList.Count > 0) DeleteElements(edgeList);
-                if (nodeList.Count > 0) DeleteElements(nodeList);
-            }
-            finally { _suppressReadOnly = false; }
+            var edgeList = new List<GraphElement>(this.edges.ToList());
+            var nodeList = new List<GraphElement>(this.nodes.ToList());
+            if (edgeList.Count > 0) DeleteElements(edgeList);
+            if (nodeList.Count > 0) DeleteElements(nodeList);
             _editButtons.Clear();
+            _nodePositions.Clear();
         }
 
         private void BuildGraph()
@@ -556,24 +556,60 @@ namespace ProjectC.Quests.Editor
             AddElement(edge);
         }
 
+        // T-U01: Model-driven — разрешить все мутации, вызывать хуки для SO-обновлений
         private GraphViewChange OnGraphViewChanged(GraphViewChange change)
         {
-            if (_suppressReadOnly) return change;
-            // T-Q34: allow user-created edges, block only deletion of auto-edges
+            // --- Edge creation ---
+            if (change.edgesToCreate != null)
+            {
+                foreach (var edge in change.edgesToCreate)
+                {
+                    if (edge != null) OnEdgeCreated(edge);
+                }
+            }
+
+            // --- Edge / Node deletion ---
             if (change.elementsToRemove != null)
             {
-                // Remove auto edges from deletion list (protect programmatic connections)
-                change.elementsToRemove.RemoveAll(e =>
+                foreach (var elem in change.elementsToRemove)
                 {
-                    if (e is Edge edge && edge.viewDataKey == "auto") return true;
-                    return false;
-                });
-                // Also protect nodes (readonly)
-                change.elementsToRemove.RemoveAll(e => e is Node);
+                    if (elem is Edge edge)
+                        OnEdgeDeleted(edge);
+                    else if (elem is Node node)
+                        OnNodeDeleted(node);
+                }
             }
-            // Block moving nodes
-            if (change.movedElements != null) change.movedElements.Clear();
+
+            // --- Node movement ---
+            if (change.movedElements != null)
+            {
+                foreach (var elem in change.movedElements)
+                {
+                    if (elem is Node node)
+                        OnNodeMoved(node, node.GetPosition());
+                }
+            }
+
             return change;
+        }
+
+        // ── T-U01 mutation hooks (virtual — overridden in T-U02/Unified) ──
+
+        /// <summary>Called when an edge is created by the user in the graph.</summary>
+        protected virtual void OnEdgeCreated(Edge edge) { }
+
+        /// <summary>Called when an edge is deleted (user or programmatic).</summary>
+        protected virtual void OnEdgeDeleted(Edge edge) { }
+
+        /// <summary>Called when a node is deleted from the graph.</summary>
+        protected virtual void OnNodeDeleted(Node node) { }
+
+        /// <summary>Called when a node is moved. newPos is the new Rect position.</summary>
+        protected virtual void OnNodeMoved(Node node, Rect newPos)
+        {
+            string key = node.viewDataKey;
+            if (!string.IsNullOrEmpty(key))
+                _nodePositions[key] = newPos.position;
         }
 
         // T-Q34: allow drag-connecting between compatible ports

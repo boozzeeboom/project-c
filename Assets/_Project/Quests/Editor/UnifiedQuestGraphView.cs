@@ -57,6 +57,111 @@ namespace ProjectC.Quests.Editor
             RestorePositions();
         }
 
+        /// <summary>Partial rebuild: only stage chain for one quest. Avoids full clear/rebuild for 100+ stages.</summary>
+        private void RebuildStagesForQuest(QuestDefinition quest)
+        {
+            // 1. Remove old stage & reward nodes for this quest
+            var toRemove = new List<GraphElement>();
+            foreach (var n in nodes)
+            {
+                if (n is StageGraphNode sgn && sgn.Quest == quest) toRemove.Add(sgn);
+                if (n is RewardGraphNode rgn && rgn.Quest == quest) toRemove.Add(rgn);
+            }
+            foreach (var e in edges.ToList())
+            {
+                if (e.output?.node is StageGraphNode os && os.Quest == quest) toRemove.Add(e);
+                if (e.input?.node is StageGraphNode ins && ins.Quest == quest) toRemove.Add(e);
+                if (e.output?.node is RewardGraphNode or && or.Quest == quest) toRemove.Add(e);
+                if (e.input?.node is RewardGraphNode ir && ir.Quest == quest) toRemove.Add(e);
+            }
+            foreach (var el in toRemove) RemoveElement(el);
+
+            // 2. Remove from _nodeMap
+            var keysToRemove = _nodeMap.Where(kv => (kv.Key is StageNodeInfo si && si.quest == quest) || (kv.Key is RewardNodeInfo ri && ri.quest == quest)).Select(kv => kv.Key).ToList();
+            foreach (var k in keysToRemove) _nodeMap.Remove(k);
+
+            // 3. Rebuild model lists for this quest
+            Model.StageNodes.RemoveAll(s => s.quest == quest);
+            Model.RewardNodes.RemoveAll(r => r.quest == quest);
+            if (quest.stages != null)
+                for (int si = 0; si < quest.stages.Length; si++)
+                    if (quest.stages[si] != null)
+                        Model.StageNodes.Add(new StageNodeInfo { quest = quest, stageIndex = si });
+            if (QuestGraphModel.HasReward(quest.rewards))
+
+                Model.RewardNodes.Add(new RewardNodeInfo { quest = quest });
+
+            // 4. Sync edges: remove old quest stage edges, add new ones
+            Model.Edges.RemoveAll(e => (e.fromNode is StageNodeInfo fsi && fsi.quest == quest) || (e.toNode is StageNodeInfo tsi && tsi.quest == quest) || (e.fromNode is RewardNodeInfo fri && fri.quest == quest) || (e.toNode is RewardNodeInfo tri && tri.quest == quest));
+            Model.BuildQuestEdges();
+
+            // 5. Create new visual nodes
+            foreach (var si in Model.StageNodes.Where(s => s.quest == quest))
+            {
+                var sn = new StageGraphNode(si);
+                sn.StageCount = () => Model.StageNodes.Count(s2 => s2.quest == quest);
+                sn.OnDeleteStage = s => { Model.DeleteStage(s); RebuildStagesForQuest(quest); };
+                sn.OnAddStageAfter = s => { Model.AddStage(s.quest, s.stageIndex); RebuildStagesForQuest(quest); };
+                sn.OnAddObjective = s => { Model.AddObjective(s); /* no rebuild needed — IMGUI reads from SO */ };
+                AddElement(sn); _nodeMap[si] = sn;
+            }
+            foreach (var ri in Model.RewardNodes.Where(r => r.quest == quest))
+            {
+                var rn = new RewardGraphNode(ri); AddElement(rn); _nodeMap[ri] = rn;
+            }
+
+            // 6. Create edges for this quest
+            foreach (var ei in Model.Edges)
+            {
+                bool isStageEdge = (ei.fromNode is StageNodeInfo fsi && fsi.quest == quest) || (ei.toNode is StageNodeInfo tsi && tsi.quest == quest) || (ei.fromNode is RewardNodeInfo fri && fri.quest == quest) || (ei.toNode is RewardNodeInfo tri && tri.quest == quest);
+                if (isStageEdge) { var ve = CreateVisualEdge(ei); if (ve != null) AddElement(ve); }
+                // Also handle QuestRoot → Stage0 edges
+                if (ei.fromNode is QuestNodeInfo qni && qni.quest == quest && ei.toNode is StageNodeInfo) { var ve = CreateVisualEdge(ei); if (ve != null) AddElement(ve); }
+            }
+
+            // 7. Reposition quest's stages
+            RepositionQuestChain(quest);
+        }
+
+        private void RepositionQuestChain(QuestDefinition quest)
+        {
+            const float Q_H = 150f, STAGE_H = 310f, REWARD_H = 150f;
+            // Find the quest root node position
+            var qi = Model.QuestNodes.FirstOrDefault(q => q.quest == quest);
+            if (qi == null || !_nodeMap.TryGetValue(qi, out var qNode)) return;
+            var qRect = qNode.GetPosition();
+            float qx = qRect.x, qy = qRect.y + Q_H + V_GAP;
+
+            var stages = Model.StageNodes.Where(s => s.quest == quest).OrderBy(s => s.stageIndex).ToList();
+            foreach (var si in stages)
+            {
+                if (_nodeMap.TryGetValue(si, out var sNode)) { sNode.SetPosition(new Rect(qx, qy, NODE_W, STAGE_H)); qy += STAGE_H + V_GAP; }
+            }
+            var reward = Model.RewardNodes.FirstOrDefault(r => r.quest == quest);
+            if (reward != null && _nodeMap.TryGetValue(reward, out var rNode)) rNode.SetPosition(new Rect(qx, qy, NODE_W, REWARD_H));
+        }
+
+        /// <summary>Rebuild a single dialog node — refresh ports after adding/removing choices.</summary>
+        private void RebuildDialogNode(DialogNodeInfo di)
+        {
+            if (!_nodeMap.TryGetValue(di, out var oldNode)) return;
+            var conn = edges.ToList().Where(e => e.output?.node == oldNode || e.input?.node == oldNode).ToList();
+            foreach (var e in conn) RemoveElement(e);
+            var pos = oldNode.GetPosition(); RemoveElement(oldNode); _nodeMap.Remove(di);
+
+            var nn = new DialogGraphNode(di);
+            nn.OnModified = () => schedule.Execute(() => RebuildDialogNode(di)).StartingIn(0);
+            nn.SetPosition(pos); AddElement(nn); _nodeMap[di] = nn;
+
+            // Rebuild edges touching this dialog node
+            Model.BuildGraph(); // need fresh edge list
+            foreach (var ei in Model.Edges)
+                if ((ei.fromNode == di || ei.toNode == di) && _nodeMap.TryGetValue(ei.fromNode, out var f) && _nodeMap.TryGetValue(ei.toNode, out var t))
+                { var ve = CreateVisualEdge(ei); if (ve != null) AddElement(ve); }
+            MarkDirtyRepaint();
+        }
+
+
         private void SavePositions()
         {
             _savedPositions.Clear();
@@ -114,7 +219,8 @@ namespace ProjectC.Quests.Editor
 
         // ── Build ──
 
-        const float NODE_W = 260f, H_GAP = 40f, V_GAP = 20f;
+        const float NODE_W = 260f, H_GAP = 60f, V_GAP = 40f;
+
 
 
         private void ClearGraphElements()
@@ -127,22 +233,25 @@ namespace ProjectC.Quests.Editor
         private void BuildVisualGraph()
         {
             foreach (var ni in Model.NpcNodes) { var n = new NpcGraphNode(ni); AddElement(n); _nodeMap[ni] = n; }
-            foreach (var di in Model.DialogNodes) { var n = new DialogGraphNode(di); n.OnModified = () => schedule.Execute(() => Rebuild()).StartingIn(0); AddElement(n); _nodeMap[di] = n; }
+            foreach (var di in Model.DialogNodes) { var n = new DialogGraphNode(di); n.OnModified = () => schedule.Execute(() => RebuildDialogNode(di)).StartingIn(0); AddElement(n); _nodeMap[di] = n; }
+
 
 
             foreach (var qi in Model.QuestNodes)
             {
                 var qn = new QuestRootGraphNode(qi);
-                qn.OnAddStage = q => { Debug.Log($"[GraphView] +Stage clicked: {q.questId}, stages before={q.stages?.Length ?? 0}"); Model.AddStage(q); Debug.Log($"[GraphView] +Stage done: stages after={q.stages?.Length ?? 0}"); Rebuild(); };
+                qn.OnAddStage = q => { Model.AddStage(q); RebuildStagesForQuest(q); };
+
                 AddElement(qn); _nodeMap[qi] = qn;
             }
             foreach (var si in Model.StageNodes)
             {
                 var sn = new StageGraphNode(si);
                 sn.StageCount = () => Model.StageNodes.Count(s => s.quest == si.quest);
-                sn.OnDeleteStage = s => { Debug.Log($"[GraphView] ×Stage clicked: {s.quest.questId} idx={s.stageIndex}, stages before={s.quest.stages?.Length ?? 0}"); Model.DeleteStage(s); Debug.Log($"[GraphView] ×Stage done: stages after={s.quest.stages?.Length ?? 0}"); Rebuild(); };
-                sn.OnAddStageAfter = s => { Model.AddStage(s.quest, s.stageIndex); Rebuild(); };
-                sn.OnAddObjective = s => { Model.AddObjective(s); Rebuild(); };
+                sn.OnDeleteStage = s => { Model.DeleteStage(s); RebuildStagesForQuest(s.quest); };
+                sn.OnAddStageAfter = s => { Model.AddStage(s.quest, s.stageIndex); RebuildStagesForQuest(s.quest); };
+                sn.OnAddObjective = s => { Model.AddObjective(s); /* IMGUI reads from SO, no visual rebuild needed */ };
+
                 AddElement(sn); _nodeMap[si] = sn;
             }
 
@@ -190,7 +299,8 @@ namespace ProjectC.Quests.Editor
 
         private void ApplyLayout()
         {
-            const float NPC_H = 210f, DLG_H = 200f, Q_H = 140f, STAGE_H = 290f, REWARD_H = 140f;
+            const float NPC_H = 230f, DLG_H = 220f, Q_H = 150f, STAGE_H = 310f, REWARD_H = 150f;
+
 
             float x = 0f, y = 0f;
 
@@ -223,17 +333,16 @@ namespace ProjectC.Quests.Editor
             if (change.edgesToCreate != null) foreach (var e in change.edgesToCreate) if (e != null) HandleEdgeCreated(e);
             if (change.elementsToRemove != null)
             {
-                bool needRebuild = false;
                 foreach (var el in change.elementsToRemove)
                 {
                     if (el is Edge e) HandleEdgeDeleted(e);
-                    else if (el is StageGraphNode sgn) { Debug.Log($"[GraphView] Delete key: {sgn.Quest.questId} stage idx={sgn.StageIndex}"); Model.DeleteStage(sgn.Info); needRebuild = true; }
+                    else if (el is StageGraphNode sgn) { Model.DeleteStage(sgn.Info); RebuildStagesForQuest(sgn.Quest); }
                     else if (el is NpcGraphNode ngn) { Debug.Log($"[GraphView] Delete key: NPC {ngn.Npc.npcId} — removing from graph (SO untouched)"); }
                     else if (el is QuestRootGraphNode qgn) { Debug.Log($"[GraphView] Delete key: Quest {qgn.Quest.questId} — removing from graph (SO untouched)"); }
                     else if (el is DialogGraphNode dgn) { Debug.Log($"[GraphView] Delete key: Dialog node — removing from graph (SO untouched)"); }
                 }
-                if (needRebuild) schedule.Execute(() => Rebuild()).StartingIn(50);
             }
+
             return change;
         }
 
@@ -253,7 +362,6 @@ namespace ProjectC.Quests.Editor
               (PortSemantic.StageTargetNpc, _) => GraphNodeColors.PortBlue,
               _ => GraphNodeColors.PortGreen };
 
-            if (fs == PortSemantic.DialogEdgeAction && fn is DialogGraphNode dgn) schedule.Execute(() => Rebuild()).StartingIn(20);
 
             Debug.Log($"[UG] Connected {fs}→{ts}");
         }
@@ -264,7 +372,8 @@ namespace ProjectC.Quests.Editor
             var fs = BaseGraphNode.GetSemantic(edge.output); var ts = BaseGraphNode.GetSemantic(edge.input);
             int ei = BaseGraphNode.GetPortData(edge.output) is int i ? i : -1;
             object fi = GetNodeInfo(fn), ti = GetNodeInfo(tn);
-            if (fi != null && ti != null) { Model.RemoveConnection(fi, fs, ti, ts, ei); if (fs == PortSemantic.DialogEdgeAction && fn is DialogGraphNode dgn) schedule.Execute(() => Rebuild()).StartingIn(20); }
+            if (fi != null && ti != null) { Model.RemoveConnection(fi, fs, ti, ts, ei); if (fs == PortSemantic.DialogEdgeAction && fn is DialogGraphNode dgn) schedule.Execute(() => RebuildDialogNode(dgn.Info)).StartingIn(20); }
+
 
         }
 
@@ -302,8 +411,9 @@ namespace ProjectC.Quests.Editor
                 var asset = GetNodeAsset(target); if (asset != null)
                 { evt.menu.AppendSeparator(); evt.menu.AppendAction("📋 Select Asset", _ => { Selection.activeObject = asset; EditorGUIUtility.PingObject(asset); });
                   evt.menu.AppendAction("📋 Duplicate Asset", _ => { var c = DuplicateAsset(asset); if (c is NpcDefinition nc) AddNpc(nc); else if (c is QuestDefinition qc) AddQuest(qc); else if (c is Dialogue.DialogTree dc) AddDialogTree(dc); }); }
-                if (target is DialogGraphNode dgn) { evt.menu.AppendSeparator(); evt.menu.AppendAction("➕ Add Choice", _ => { var nd = dgn.DialogueNode; if (nd == null) return; var l = nd.edges?.ToList() ?? new List<Dialogue.DialogueEdge>(); l.Add(new Dialogue.DialogueEdge { label = "New Choice", hideIfUnavailable = true }); nd.edges = l.ToArray(); EditorUtility.SetDirty(dgn.Tree); Rebuild(); }); }
-                if (target is StageGraphNode sgn) { evt.menu.AppendSeparator(); evt.menu.AppendAction("➕ Add Objective", _ => { Model.AddObjective(sgn.Info); Rebuild(); }); }
+                if (target is DialogGraphNode dgn) { evt.menu.AppendSeparator(); evt.menu.AppendAction("➕ Add Choice", _ => { var nd = dgn.DialogueNode; if (nd == null) return; var l = nd.edges?.ToList() ?? new List<Dialogue.DialogueEdge>(); l.Add(new Dialogue.DialogueEdge { label = "New Choice", hideIfUnavailable = true }); nd.edges = l.ToArray(); EditorUtility.SetDirty(dgn.Tree); RebuildDialogNode(dgn.Info); }); }
+                if (target is StageGraphNode sgn) { evt.menu.AppendSeparator(); evt.menu.AppendAction("➕ Add Objective", _ => { Model.AddObjective(sgn.Info); /* IMGUI reads from SO */ }); }
+
             }
             else
             { evt.menu.AppendSeparator(); evt.menu.AppendAction("🆕 New NPC...", _ => { var a = CreateNewNpcAsset(); if (a != null) AddNpc(a); });

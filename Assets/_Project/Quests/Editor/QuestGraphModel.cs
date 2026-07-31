@@ -229,7 +229,8 @@ namespace ProjectC.Quests.Editor
             }
         }
 
-        private void BuildQuestEdges()
+        internal void BuildQuestEdges()
+
         {
             foreach (var quest in _quests)
             {
@@ -344,6 +345,8 @@ namespace ProjectC.Quests.Editor
             return new StageNodeInfo { quest = quest, stageIndex = list.IndexOf(s) };
         }
 
+
+
         public void DeleteStage(StageNodeInfo sni)
         {
             var quest = sni.quest;
@@ -385,7 +388,8 @@ namespace ProjectC.Quests.Editor
         private static DialogueEdge GetEdge(DialogNodeInfo dni, int edgeIndex)
         { var node = dni.Node; if (node?.edges == null || edgeIndex < 0 || edgeIndex >= node.edges.Length) return null; return node.edges[edgeIndex]; }
 
-        private static bool HasReward(QuestReward r) => r != null && (r.credits > 0 || (r.items != null && r.items.Length > 0) || (r.cargoItems != null && r.cargoItems.Length > 0) || (r.reputation != null && r.reputation.Length > 0));
+        internal static bool HasReward(QuestReward r)
+ => r != null && (r.credits > 0 || (r.items != null && r.items.Length > 0) || (r.cargoItems != null && r.cargoItems.Length > 0) || (r.reputation != null && r.reputation.Length > 0));
     }
 }
 #endif

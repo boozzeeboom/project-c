@@ -161,7 +161,13 @@ namespace ProjectC.Quests.Editor
             var nodesProp = so.FindProperty("nodes"); if (NodeIndex >= nodesProp.arraySize) return;
             var np = nodesProp.GetArrayElementAtIndex(NodeIndex);
             EditorGUILayout.PropertyField(np.FindPropertyRelative("speaker"), new GUIContent("Speaker"), true);
+            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PropertyField(np.FindPropertyRelative("text"), new GUIContent("Text"));
+            if (GUILayout.Button("✎", GUILayout.Width(24), GUILayout.Height(18)))
+
+                TextEditPopup.Show("Edit Dialog Text", np.FindPropertyRelative("text"), () => EditorUtility.SetDirty(Tree));
+            EditorGUILayout.EndHorizontal();
+
             EditorGUILayout.Space(2);
 
 
@@ -271,7 +277,13 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("stageId"), new GUIContent("ID"), GUILayout.MinWidth(80));
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("nextStageId"), new GUIContent("→ Next"), GUILayout.MinWidth(80));
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("description"), new GUIContent("Desc"));
+            if (GUILayout.Button("✎", GUILayout.Width(24), GUILayout.Height(18)))
+                TextEditPopup.Show("Edit Stage Description", sp.FindPropertyRelative("description"), () => EditorUtility.SetDirty(Quest));
+
+            EditorGUILayout.EndHorizontal();
+
 
 
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("objectives"), new GUIContent("Objectives"), true);
@@ -310,5 +322,55 @@ namespace ProjectC.Quests.Editor
 
     }
 
+    // ── Text Edit Popup ──
+    public class TextEditPopup : EditorWindow
+    {
+        private SerializedObject _so;
+        private string _propPath;
+        private string _text;
+        private System.Action _onChanged;
+        private Vector2 _scroll;
+
+        public static void Show(string title, SerializedProperty prop, System.Action onChanged)
+        {
+            var w = GetWindow<TextEditPopup>(true, title, true);
+            w._so = prop.serializedObject;
+            w._propPath = prop.propertyPath;
+            w._text = prop.stringValue;
+            w._onChanged = onChanged;
+            w.minSize = new Vector2(500, 300);
+            w.Show();
+        }
+
+        private void OnGUI()
+        {
+            _so.Update();
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
+            _text = EditorGUILayout.TextArea(_text, EditorStyles.textArea,
+                GUILayout.ExpandHeight(true), GUILayout.MinHeight(200));
+            EditorGUILayout.EndScrollView();
+            if (_so.FindProperty(_propPath) is { } prop)
+            {
+                if (prop.stringValue != _text)
+                {
+                    prop.stringValue = _text;
+                    if (_so.ApplyModifiedProperties()) _onChanged?.Invoke();
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_so == null) return;
+            _so.Update();
+            if (_so.FindProperty(_propPath) is { } prop && prop.stringValue != _text)
+            {
+                prop.stringValue = _text;
+                if (_so.ApplyModifiedProperties()) _onChanged?.Invoke();
+            }
+        }
+    }
+
 }
 #endif
+

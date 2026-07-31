@@ -278,8 +278,7 @@ namespace ProjectC.Quests.Editor
             title = "🎁 Rewards"; titleContainer.style.backgroundColor = new StyleColor(GraphNodeColors.Reward);
             MakeInPort("← Last Stage", PortSemantic.StageIn, GraphNodeColors.PortGray);
             AddPinButton(Quest);
-            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 40f; ea.style.flexGrow = 1;
-
+            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 70f; ea.style.flexGrow = 1;
             extensionContainer.style.paddingLeft = 4; extensionContainer.style.paddingRight = 4; extensionContainer.Add(ea);
             RefreshExpandedState(); expanded = true;
         }
@@ -287,11 +286,14 @@ namespace ProjectC.Quests.Editor
         {
             var so = new SerializedObject(Quest); so.Update();
             var rp = so.FindProperty("rewards");
-            EditorGUILayout.PropertyField(rp.FindPropertyRelative("credits"), new GUIContent("Credits"));
-            EditorGUILayout.PropertyField(rp.FindPropertyRelative("items"), new GUIContent("Items"), true);
-            EditorGUILayout.PropertyField(rp.FindPropertyRelative("reputation"), new GUIContent("Reputation"), true);
+            var oldW = EditorGUIUtility.labelWidth; EditorGUIUtility.labelWidth = 70;
+            EditorGUILayout.PropertyField(rp.FindPropertyRelative("credits"));
+            EditorGUILayout.PropertyField(rp.FindPropertyRelative("items"), true);
+            EditorGUILayout.PropertyField(rp.FindPropertyRelative("reputation"), true);
+            EditorGUIUtility.labelWidth = oldW;
             if (so.ApplyModifiedProperties()) EditorUtility.SetDirty(Quest);
         }
     }
+
 }
 #endif

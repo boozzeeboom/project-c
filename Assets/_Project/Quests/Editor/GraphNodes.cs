@@ -144,7 +144,8 @@ namespace ProjectC.Quests.Editor
                 }
             if (edges == null || edges.Length == 0) MakeOutPort("→", PortSemantic.DialogEdgeAction, GraphNodeColors.PortGreen, 0);
             AddPinButton(Tree);
-            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 80f; ea.style.flexGrow = 1; ea.style.width = Length.Percent(100);
+            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 120f; ea.style.flexGrow = 1; ea.style.width = Length.Percent(100);
+
 
 
 
@@ -161,7 +162,8 @@ namespace ProjectC.Quests.Editor
             // Full-width TextArea for dialog text
             var textProp = np.FindPropertyRelative("text");
             EditorGUILayout.LabelField("Text:");
-            var textRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textArea, GUILayout.ExpandWidth(true), GUILayout.Height(60));
+            var textRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textArea, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+
             textProp.stringValue = EditorGUI.TextArea(textRect, textProp.stringValue, EditorStyles.textArea);
             EditorGUILayout.Space(2);
             EditorGUILayout.LabelField("Choices:", EditorStyles.boldLabel);
@@ -269,7 +271,8 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.LabelField("Description:");
             var descProp = sp.FindPropertyRelative("description");
-            var descRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textArea, GUILayout.ExpandWidth(true), GUILayout.Height(40));
+            var descRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textArea, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+
             descProp.stringValue = EditorGUI.TextArea(descRect, descProp.stringValue, EditorStyles.textArea);
 
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("objectives"), new GUIContent("Objectives"), true);

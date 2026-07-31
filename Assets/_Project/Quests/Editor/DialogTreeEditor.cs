@@ -32,6 +32,16 @@ namespace ProjectC.Quests.Editor
             serializedObject.Update();
             SyncExpandedState(tree);
 
+            // T-U10: Open in Unified Graph
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("🔗 Unified Graph", GUILayout.Width(130), GUILayout.Height(22)))
+            {
+                UnifiedQuestGraphIntegration.OpenUnified(tree);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+
             DrawHeader(tree);
             EditorGUILayout.Space(6);
             DrawLegend();

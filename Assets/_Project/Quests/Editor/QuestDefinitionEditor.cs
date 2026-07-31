@@ -101,6 +101,12 @@ namespace ProjectC.Quests.Editor
             GUILayout.FlexibleSpace();
 
             // Quick buttons
+            // T-U10: Open in Unified Graph
+            if (GUILayout.Button("🔗 Unified Graph", GUILayout.Width(120)))
+            {
+                UnifiedQuestGraphIntegration.OpenUnified(def);
+            }
+
             if (GUILayout.Button("Validate", GUILayout.Width(70)))
             {
                 _lastValidation = QuestDefinitionValidator.Validate(def);

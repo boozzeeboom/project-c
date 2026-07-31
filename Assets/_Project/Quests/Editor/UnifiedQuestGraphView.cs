@@ -404,5 +404,229 @@ namespace ProjectC.Quests.Editor
             }
         }
     }
+
+    // ===== T-U09: UnifiedQuestGraphWindow =====
+
+    public class UnifiedQuestGraphWindow : EditorWindow
+    {
+        private UnifiedQuestGraphView _graph;
+        private UnityEditor.UIElements.ObjectField _questField;
+        private UnityEditor.UIElements.ObjectField _dialogField;
+        private UnityEditor.UIElements.ObjectField _npcField;
+        private Button _editBtn;
+        private Button _saveBtn;
+        private Button _revertBtn;
+        private Label _statusLabel;
+
+        [MenuItem("Tools/Project C/Quests/Unified Quest Graph", priority = 100)]
+        public static void Open()
+        {
+            var w = GetWindow<UnifiedQuestGraphWindow>();
+            w.titleContent = new GUIContent("Unified Quest Graph");
+            w.minSize = new Vector2(900, 600);
+            w.Show();
+        }
+
+        private void OnEnable()
+        {
+            var root = rootVisualElement;
+            root.Clear();
+            root.style.flexGrow = 1;
+
+            // ── Toolbar ──
+            var toolbar = new VisualElement();
+            toolbar.style.flexDirection = FlexDirection.Row;
+            toolbar.style.flexWrap = Wrap.Wrap;
+            toolbar.style.paddingTop = 4; toolbar.style.paddingBottom = 4;
+            toolbar.style.paddingLeft = 6; toolbar.style.paddingRight = 6;
+            toolbar.style.backgroundColor = new StyleColor(new Color(0.18f, 0.18f, 0.18f, 1f));
+
+            _questField = new UnityEditor.UIElements.ObjectField("Quest")
+                { objectType = typeof(QuestDefinition), allowSceneObjects = false };
+            _questField.style.width = 200;
+            _questField.RegisterValueChangedCallback(_ => TryLoadUnified());
+            toolbar.Add(_questField);
+
+            _dialogField = new UnityEditor.UIElements.ObjectField("Dialog")
+                { objectType = typeof(DialogTree), allowSceneObjects = false };
+            _dialogField.style.width = 200; _dialogField.style.marginLeft = 4;
+            _dialogField.RegisterValueChangedCallback(_ => TryLoadUnified());
+            toolbar.Add(_dialogField);
+
+            _npcField = new UnityEditor.UIElements.ObjectField("NPC")
+                { objectType = typeof(NpcDefinition), allowSceneObjects = false };
+            _npcField.style.width = 160; _npcField.style.marginLeft = 4;
+            toolbar.Add(_npcField);
+
+            var fitBtn = new Button(() => _graph?.FrameAll()) { text = "⊡ Fit" };
+            fitBtn.style.marginLeft = 6;
+            toolbar.Add(fitBtn);
+
+            _editBtn = new Button(() =>
+            {
+                if (_graph == null) return;
+                _graph.EditMode = !_graph.EditMode;
+                _editBtn.text = _graph.EditMode ? "🔒 View" : "✏️ Edit";
+                _saveBtn.style.display = _graph.EditMode ? DisplayStyle.Flex : DisplayStyle.None;
+                _revertBtn.style.display = _graph.EditMode ? DisplayStyle.Flex : DisplayStyle.None;
+            }) { text = "✏️ Edit" };
+            _editBtn.style.marginLeft = 4;
+            toolbar.Add(_editBtn);
+
+            _saveBtn = new Button(() => _graph?.SaveQuest()) { text = "💾 Save All" };
+            _saveBtn.style.marginLeft = 4;
+            _saveBtn.style.display = DisplayStyle.None;
+            toolbar.Add(_saveBtn);
+
+            _revertBtn = new Button(() =>
+            {
+                if (_graph?.Quest != null)
+                {
+                    var path = AssetDatabase.GetAssetPath(_graph.Quest);
+                    var fresh = AssetDatabase.LoadAssetAtPath<QuestDefinition>(path);
+                    if (fresh != null) _graph.LoadQuest(fresh);
+                }
+            }) { text = "↩️ Revert" };
+            _revertBtn.style.marginLeft = 4;
+            _revertBtn.style.display = DisplayStyle.None;
+            toolbar.Add(_revertBtn);
+
+            root.Add(toolbar);
+
+            // ── Graph view ──
+            _graph = new UnifiedQuestGraphView();
+            _graph.style.flexGrow = 1;
+            root.Add(_graph);
+
+            // ── Status bar ──
+            _statusLabel = new Label("Open a Quest + DialogTree to begin");
+            _statusLabel.style.position = Position.Absolute;
+            _statusLabel.style.bottom = 4;
+            _statusLabel.style.left = 6;
+            _statusLabel.style.color = new StyleColor(new Color(0.5f, 0.5f, 0.5f, 1f));
+            _statusLabel.style.fontSize = 10;
+            root.Add(_statusLabel);
+
+            _graph.RegisterCallback<GeometryChangedEvent>(_ => UpdateStatusBar());
+        }
+
+        private void TryLoadUnified()
+        {
+            var quest = _questField.value as QuestDefinition;
+            var dialog = _dialogField.value as DialogTree;
+            var npc = _npcField.value as NpcDefinition;
+
+            if (quest != null && dialog != null)
+            {
+                _graph.LoadUnified(quest, dialog, npc);
+                UpdateStatusBar();
+            }
+            else if (quest != null && dialog == null)
+            {
+                // T-U06: auto-resolve DialogTree from NPC
+                if (npc != null && npc.defaultDialogTree != null)
+                {
+                    _dialogField.value = npc.defaultDialogTree;
+                    _graph.LoadUnified(quest, npc.defaultDialogTree, npc);
+                }
+                else
+                {
+                    _graph.LoadQuest(quest);
+                }
+                UpdateStatusBar();
+            }
+        }
+
+        private void UpdateStatusBar()
+        {
+            if (_graph == null || _statusLabel == null) return;
+            int nodeCount = _graph.nodes.ToList().Count;
+            int edgeCount = _graph.edges.ToList().Count;
+            string questId = _graph.Quest?.questId ?? "—";
+            string dialogId = _graph.DialogTree?.treeId ?? "—";
+            _statusLabel.text = $"Nodes: {nodeCount}  |  Edges: {edgeCount}  |  Quest: {questId}  |  Dialog: {dialogId}";
+        }
+
+        public void LoadUnified(QuestDefinition quest, DialogTree dialogTree, NpcDefinition npc = null)
+        {
+            if (_questField != null) _questField.value = quest;
+            if (_dialogField != null) _dialogField.value = dialogTree;
+            if (_npcField != null) _npcField.value = npc;
+            if (_graph != null) _graph.LoadUnified(quest, dialogTree, npc);
+            UpdateStatusBar();
+        }
+    }
+
+    /// <summary>
+    /// T-U10: Static integration helper — opens the Unified Quest Graph from any editor.
+    /// Resolves the DialogTree from the quest's associated NPCs if not provided directly.
+    /// </summary>
+    public static class UnifiedQuestGraphIntegration
+    {
+        /// <summary>Open unified graph for a QuestDefinition (auto-resolves DialogTree from NPCs).</summary>
+        public static void OpenUnified(QuestDefinition quest)
+        {
+            if (quest == null) return;
+
+            DialogTree dialogTree = null;
+            NpcDefinition npc = null;
+
+            // Search all NpcDefinitions for one that offers this quest
+            var npcGuids = AssetDatabase.FindAssets("t:NpcDefinition");
+            foreach (var guid in npcGuids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var candidate = AssetDatabase.LoadAssetAtPath<NpcDefinition>(path);
+                if (candidate == null) continue;
+
+                var offerIds = candidate.GetQuestOfferIds();
+                if (offerIds != null && offerIds.Contains(quest.questId))
+                {
+                    npc = candidate;
+                    dialogTree = candidate.defaultDialogTree;
+                    break;
+                }
+            }
+
+            var w = EditorWindow.GetWindow<UnifiedQuestGraphWindow>();
+            w.titleContent = new GUIContent($"Unified: {quest.questId}");
+            w.LoadUnified(quest, dialogTree, npc);
+            w.Show();
+        }
+
+        /// <summary>Open unified graph for a DialogTree (auto-resolves Quest from OfferQuest edges).</summary>
+        public static void OpenUnified(DialogTree dialogTree)
+        {
+            if (dialogTree == null) return;
+
+            // Find the quest this dialog links to via OfferQuest
+            QuestDefinition quest = null;
+            if (dialogTree.nodes != null)
+            {
+                foreach (var node in dialogTree.nodes)
+                {
+                    if (node?.edges == null) continue;
+                    foreach (var edge in node.edges)
+                    {
+                        if (edge?.action != null &&
+                            edge.action.type == DialogueActionType.OfferQuest &&
+                            edge.action.questRef != null)
+                        {
+                            quest = edge.action.questRef;
+                            break;
+                        }
+                    }
+                    if (quest != null) break;
+                }
+            }
+
+            var w = EditorWindow.GetWindow<UnifiedQuestGraphWindow>();
+            w.titleContent = new GUIContent($"Unified: {dialogTree.treeId}");
+            w.LoadUnified(quest, dialogTree, null);
+            w.Show();
+        }
+    }
 }
 #endif
+
+

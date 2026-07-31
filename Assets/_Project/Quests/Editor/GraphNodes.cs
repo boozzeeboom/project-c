@@ -203,7 +203,7 @@ namespace ProjectC.Quests.Editor
             if (num > 1) { var delBtn = new Button(() => OnDeleteStage?.Invoke(Info)) { text = "× Stage" }; delBtn.style.fontSize = 10; delBtn.style.height = 20; delBtn.style.marginLeft = 4; delBtn.style.color = new StyleColor(new Color(0.9f, 0.4f, 0.3f)); btnRow.Add(delBtn); }
             extensionContainer.Add(btnRow);
 
-            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 60f; ea.style.flexGrow = 1;
+            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 120f; ea.style.flexGrow = 1;
             extensionContainer.style.paddingLeft = 4; extensionContainer.style.paddingRight = 4; extensionContainer.Add(ea);
             RefreshExpandedState(); expanded = true;
         }
@@ -214,15 +214,19 @@ namespace ProjectC.Quests.Editor
             var so = new SerializedObject(Quest); so.Update();
             var stagesProp = so.FindProperty("stages"); if (StageIndex >= stagesProp.arraySize) return;
             var sp = stagesProp.GetArrayElementAtIndex(StageIndex);
-            EditorGUILayout.PropertyField(sp.FindPropertyRelative("stageId"), new GUIContent("Stage ID"));
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PropertyField(sp.FindPropertyRelative("stageId"), new GUIContent("ID"), GUILayout.MinWidth(80));
+            EditorGUILayout.PropertyField(sp.FindPropertyRelative("nextStageId"), new GUIContent("→ Next"), GUILayout.MinWidth(80));
+            EditorGUILayout.EndHorizontal();
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("description"), new GUIContent("Desc"));
-            EditorGUILayout.PropertyField(sp.FindPropertyRelative("nextStageId"), new GUIContent("Next Stage ID"));
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("objectives"), new GUIContent("Objectives"), true);
             if (so.ApplyModifiedProperties()) EditorUtility.SetDirty(Quest);
         }
     }
 
     // ═══════════════ RewardNode ═══════════════
+
+
 
     public class RewardGraphNode : BaseGraphNode
     {

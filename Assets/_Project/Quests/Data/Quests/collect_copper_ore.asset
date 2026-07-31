@@ -24,7 +24,7 @@ MonoBehaviour:
     description: 
     objectives:
     - objectiveId: 
-      objectiveType: 1
+      objectiveType: 0
       description: 
       targetNpcId: 
       targetNpc: {fileID: 0}
@@ -59,6 +59,18 @@ MonoBehaviour:
       eventId: 
       optional: 0
       required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: stage_1
+  - stageId: stage_1
+    description: 
+    objectives: []
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: 
+  - stageId: stage_2
+    description: 
+    objectives: []
     onEnterActions: []
     onCompleteActions: []
     nextStageId: 

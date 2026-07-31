@@ -40,7 +40,32 @@ namespace ProjectC.Quests.Editor
         public void AddDialogTree(Dialogue.DialogTree t) { Model.AddDialogTree(t); Rebuild(); }
 
         public void ClearAll() { Model.Clear(); ClearGraphElements(); }
-        public void Rebuild() { ClearGraphElements(); Model.BuildGraph(); BuildVisualGraph(); }
+        private readonly Dictionary<string, Rect> _savedPositions = new();
+
+        public void Rebuild()
+        {
+            SavePositions();
+            ClearGraphElements();
+            Model.BuildGraph();
+            BuildVisualGraph();
+            RestorePositions();
+        }
+
+        private void SavePositions()
+        {
+            _savedPositions.Clear();
+            foreach (var n in nodes)
+                if (n is BaseGraphNode bn && !string.IsNullOrEmpty(bn.PersistKey))
+                    _savedPositions[bn.PersistKey] = n.GetPosition();
+        }
+
+        private void RestorePositions()
+        {
+            foreach (var n in nodes)
+                if (n is BaseGraphNode bn && !string.IsNullOrEmpty(bn.PersistKey) && _savedPositions.TryGetValue(bn.PersistKey, out var r))
+                    n.SetPosition(r);
+        }
+
         public void SaveAll() { AssetDatabase.SaveAssets(); Debug.Log($"[UnifiedGraph] Saved all. Nodes: {Model.TotalNodeCount}, Edges: {Model.Edges.Count}"); }
 
         public static NpcDefinition CreateNewNpcAsset()
@@ -83,7 +108,8 @@ namespace ProjectC.Quests.Editor
 
         // ── Build ──
 
-        const float NODE_W = 250f, H_GAP = 40f, V_GAP = 20f;
+        const float NODE_W = 260f, H_GAP = 40f, V_GAP = 20f;
+
 
         private void ClearGraphElements()
         {
@@ -151,7 +177,8 @@ namespace ProjectC.Quests.Editor
 
         private void ApplyLayout()
         {
-            const float NPC_H = 130f, DLG_H = 200f, Q_H = 130f, STAGE_H = 210f, REWARD_H = 130f;
+            const float NPC_H = 130f, DLG_H = 200f, Q_H = 140f, STAGE_H = 290f, REWARD_H = 140f;
+
             float x = 0f, y = 0f;
 
             foreach (var ni in Model.NpcNodes) { if (_nodeMap.TryGetValue(ni, out var n)) n.SetPosition(new Rect(x, y, NODE_W, NPC_H)); y += NPC_H + V_GAP; }

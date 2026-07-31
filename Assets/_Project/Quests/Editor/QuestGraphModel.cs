@@ -244,9 +244,13 @@ namespace ProjectC.Quests.Editor
         {
             var list = quest.stages?.ToList() ?? new List<QuestStage>();
             var s = new QuestStage { stageId = $"stage_{list.Count}", description = "" };
+            // Chain: previous last stage → new stage
+            if (list.Count > 0 && list[list.Count - 1] != null)
+                list[list.Count - 1].nextStageId = s.stageId;
             list.Add(s); quest.stages = list.ToArray(); EditorUtility.SetDirty(quest);
             return new StageNodeInfo { quest = quest, stageIndex = list.Count - 1 };
         }
+
 
         public void DeleteStage(StageNodeInfo sni)
         {

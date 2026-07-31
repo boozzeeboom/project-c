@@ -54,8 +54,9 @@ namespace ProjectC.Quests.Editor
                     if (n?.edges != null) foreach (var e in n.edges)
                         if (e?.action?.type == DialogueActionType.SwitchDialogTree && e.action.dialogTreeRef != null && !_dialogs.Contains(e.action.dialogTreeRef))
                         { _dialogs.Add(e.action.dialogTreeRef); AutoLoadFromDialog(e.action.dialogTreeRef); }
-            if (npc.questOfferRefs != null) foreach (var q in npc.questOfferRefs) if (q != null && !_quests.Contains(q)) _quests.Add(q);
-            if (npc.questTurnInRefs != null) foreach (var q in npc.questTurnInRefs) if (q != null && !_quests.Contains(q)) _quests.Add(q);
+            if (npc.questOfferRefs != null) foreach (var q in npc.questOfferRefs) if (q != null) AddQuest(q);
+            if (npc.questTurnInRefs != null) foreach (var q in npc.questTurnInRefs) if (q != null) AddQuest(q);
+
         }
 
         private void AutoLoadFromDialog(DialogTree t)
@@ -63,17 +64,19 @@ namespace ProjectC.Quests.Editor
             if (t?.nodes == null) return;
             foreach (var n in t.nodes)
                 if (n?.edges != null) foreach (var e in n.edges)
-                    if (e?.action?.type == DialogueActionType.OfferQuest && e.action.questRef != null && !_quests.Contains(e.action.questRef))
-                        _quests.Add(e.action.questRef);
+                    if (e?.action?.type == DialogueActionType.OfferQuest && e.action.questRef != null)
+                        AddQuest(e.action.questRef); // full chain: loads quest's NPC targets too
         }
+
 
         public void AddQuest(QuestDefinition q)
         {
             if (q == null || _quests.Contains(q)) return; _quests.Add(q);
             if (q.stages != null) foreach (var s in q.stages)
                 if (s?.objectives != null) foreach (var o in s.objectives)
-                    if (o?.targetNpc != null && !_npcs.Contains(o.targetNpc)) _npcs.Add(o.targetNpc);
+                    if (o?.targetNpc != null) AddNpc(o.targetNpc);
         }
+
 
         public void AddDialogTree(DialogTree t) { if (t != null && !_dialogs.Contains(t)) { _dialogs.Add(t); AutoLoadFromDialog(t); } }
 

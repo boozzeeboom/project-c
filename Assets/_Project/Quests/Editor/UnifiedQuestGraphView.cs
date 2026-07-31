@@ -325,12 +325,16 @@ namespace ProjectC.Quests.Editor
         {
             var root = rootVisualElement; root.Clear(); root.style.flexGrow = 1;
             var tb = new VisualElement() { style = { flexDirection = FlexDirection.Row, paddingTop = 4, paddingBottom = 4, paddingLeft = 6, paddingRight = 6, backgroundColor = new StyleColor(new Color(0.18f, 0.18f, 0.18f, 1f)), flexWrap = Wrap.Wrap } };
-            _npcF = new ObjectField("+NPC") { objectType = typeof(NpcDefinition), allowSceneObjects = false }; _npcF.style.width = 150;
+            _npcF = new ObjectField("NPC") { objectType = typeof(NpcDefinition), allowSceneObjects = false };
+            _npcF.labelElement.style.minWidth = 28; _npcF.labelElement.style.maxWidth = 28; _npcF.style.width = 170;
             _npcF.RegisterValueChangedCallback(e => { if (e.newValue is NpcDefinition v) { _graph.AddNpc(v); _npcF.SetValueWithoutNotify(null); Upd(); } }); tb.Add(_npcF);
-            _questF = new ObjectField("+Quest") { objectType = typeof(QuestDefinition), allowSceneObjects = false }; _questF.style.width = 150; _questF.style.marginLeft = 4;
+            _questF = new ObjectField("Qst") { objectType = typeof(QuestDefinition), allowSceneObjects = false };
+            _questF.labelElement.style.minWidth = 22; _questF.labelElement.style.maxWidth = 22; _questF.style.width = 170; _questF.style.marginLeft = 4;
             _questF.RegisterValueChangedCallback(e => { if (e.newValue is QuestDefinition v) { _graph.AddQuest(v); _questF.SetValueWithoutNotify(null); Upd(); } }); tb.Add(_questF);
-            _dialogF = new ObjectField("+Dialog") { objectType = typeof(Dialogue.DialogTree), allowSceneObjects = false }; _dialogF.style.width = 150; _dialogF.style.marginLeft = 4;
+            _dialogF = new ObjectField("Dlg") { objectType = typeof(Dialogue.DialogTree), allowSceneObjects = false };
+            _dialogF.labelElement.style.minWidth = 22; _dialogF.labelElement.style.maxWidth = 22; _dialogF.style.width = 170; _dialogF.style.marginLeft = 4;
             _dialogF.RegisterValueChangedCallback(e => { if (e.newValue is Dialogue.DialogTree v) { _graph.AddDialogTree(v); _dialogF.SetValueWithoutNotify(null); Upd(); } }); tb.Add(_dialogF);
+
 
             var sep = new Label("│"); sep.style.color = new StyleColor(new Color(0.4f, 0.4f, 0.4f)); sep.style.marginLeft = 8; sep.style.marginRight = 4; tb.Add(sep);
             tb.Add(MkBtn("🆕 NPC", () => { var a = UnifiedQuestGraphView.CreateNewNpcAsset(); if (a != null) _graph.AddNpc(a); }));

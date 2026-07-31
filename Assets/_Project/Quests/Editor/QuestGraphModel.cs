@@ -239,62 +239,101 @@ namespace ProjectC.Quests.Editor
             return false;
         }
 
-        // ── Stage/Objective CRUD ──
+        // ── Stage/Objective CRUD (SerializedObject API — canonical editor path) ──
 
         public StageNodeInfo AddStage(QuestDefinition quest, int afterIndex = -1)
         {
-            Undo.RecordObject(quest, "Add Quest Stage");
-            var list = quest.stages?.ToList() ?? new List<QuestStage>();
-            var s = new QuestStage { stageId = $"stage_{list.Count}", description = "" };
-            if (afterIndex < 0 || afterIndex >= list.Count - 1)
+            var so = new SerializedObject(quest);
+            var stagesProp = so.FindProperty("stages");
+            int curCount = stagesProp.arraySize;
+
+            int targetIdx = (afterIndex < 0 || afterIndex >= curCount - 1) ? curCount : afterIndex + 1;
+            if (targetIdx > curCount) targetIdx = curCount; // clamp
+
+            string newId = $"stage_{targetIdx}";
+            // Ensure unique ID
+            int suffix = targetIdx;
+            while (HasStageId(quest, newId)) { suffix++; newId = $"stage_{suffix}"; }
+
+            stagesProp.InsertArrayElementAtIndex(targetIdx);
+            var elem = stagesProp.GetArrayElementAtIndex(targetIdx);
+            elem.FindPropertyRelative("stageId").stringValue = newId;
+            elem.FindPropertyRelative("description").stringValue = "";
+            elem.FindPropertyRelative("nextStageId").stringValue = "";
+
+            // Chain: previous stage → new
+            if (targetIdx > 0)
             {
-                if (list.Count > 0 && list[list.Count - 1] != null)
-                    list[list.Count - 1].nextStageId = s.stageId;
-                list.Add(s);
+                var prev = stagesProp.GetArrayElementAtIndex(targetIdx - 1);
+                var prevNextId = prev.FindPropertyRelative("nextStageId").stringValue;
+                prev.FindPropertyRelative("nextStageId").stringValue = newId;
+                // New stage inherits previous' old nextStageId
+                elem.FindPropertyRelative("nextStageId").stringValue = prevNextId;
             }
-            else
-            {
-                s.nextStageId = list[afterIndex].nextStageId;
-                list[afterIndex].nextStageId = s.stageId;
-                list.Insert(afterIndex + 1, s);
-            }
-            quest.stages = list.ToArray();
-            EditorUtility.SetDirty(quest); AssetDatabase.SaveAssets();
-            // debug removed
-            return new StageNodeInfo { quest = quest, stageIndex = list.IndexOf(s) };
+
+            so.ApplyModifiedProperties();
+            AssetDatabase.SaveAssets();
+            return new StageNodeInfo { quest = quest, stageIndex = targetIdx };
+        }
+
+        private static bool HasStageId(QuestDefinition quest, string id)
+        {
+            if (quest.stages == null) return false;
+            foreach (var s in quest.stages) if (s != null && s.stageId == id) return true;
+            return false;
         }
 
         public void DeleteStage(StageNodeInfo sni)
         {
             var quest = sni.quest;
-            var list = quest.stages?.ToList() ?? new List<QuestStage>();
-            if (sni.stageIndex < 0 || sni.stageIndex >= list.Count) return;
-            Undo.RecordObject(quest, "Delete Quest Stage");
-            if (sni.stageIndex > 0 && list[sni.stageIndex - 1] != null)
-                list[sni.stageIndex - 1].nextStageId = list[sni.stageIndex]?.nextStageId ?? "";
-            list.RemoveAt(sni.stageIndex);
-            quest.stages = list.ToArray();
-            EditorUtility.SetDirty(quest); AssetDatabase.SaveAssets();
-            // debug removed
+            var so = new SerializedObject(quest);
+            var stagesProp = so.FindProperty("stages");
+            int before = stagesProp.arraySize;
+            if (sni.stageIndex < 0 || sni.stageIndex >= before) return;
+
+            // Fix chain: previous stage's nextStageId → deleted stage's nextStageId
+            if (sni.stageIndex > 0)
+            {
+                var prev = stagesProp.GetArrayElementAtIndex(sni.stageIndex - 1);
+                var deleted = stagesProp.GetArrayElementAtIndex(sni.stageIndex);
+                prev.FindPropertyRelative("nextStageId").stringValue =
+                    deleted.FindPropertyRelative("nextStageId").stringValue;
+            }
+
+            stagesProp.DeleteArrayElementAtIndex(sni.stageIndex);
+            so.ApplyModifiedProperties();
+            AssetDatabase.SaveAssets();
         }
 
         public void AddObjective(StageNodeInfo sni)
         {
-            var stage = sni.Stage; if (stage == null) return;
-            Undo.RecordObject(sni.quest, "Add Objective");
-            var list = stage.objectives?.ToList() ?? new List<QuestObjective>();
-            list.Add(new QuestObjective { objectiveId = $"obj_{list.Count}", objectiveType = QuestObjectiveType.HaveItem, requiredQuantity = 1 });
-            stage.objectives = list.ToArray();
-            EditorUtility.SetDirty(sni.quest); AssetDatabase.SaveAssets();
+            var so = new SerializedObject(sni.quest);
+            var stagesProp = so.FindProperty("stages");
+            if (sni.stageIndex >= stagesProp.arraySize) return;
+            var stageProp = stagesProp.GetArrayElementAtIndex(sni.stageIndex);
+            var objectivesProp = stageProp.FindPropertyRelative("objectives");
+            objectivesProp.InsertArrayElementAtIndex(objectivesProp.arraySize);
+            var elem = objectivesProp.GetArrayElementAtIndex(objectivesProp.arraySize - 1);
+            elem.FindPropertyRelative("objectiveId").stringValue = $"obj_{objectivesProp.arraySize - 1}";
+            elem.FindPropertyRelative("objectiveType").enumValueIndex = (int)QuestObjectiveType.HaveItem;
+            elem.FindPropertyRelative("requiredQuantity").intValue = 1;
+            so.ApplyModifiedProperties();
+            AssetDatabase.SaveAssets();
         }
 
         public void DeleteObjective(StageNodeInfo sni, int objIndex)
         {
-            var stage = sni.Stage; if (stage?.objectives == null || objIndex < 0 || objIndex >= stage.objectives.Length) return;
-            Undo.RecordObject(sni.quest, "Delete Objective");
-            var list = stage.objectives.ToList(); list.RemoveAt(objIndex); stage.objectives = list.ToArray();
-            EditorUtility.SetDirty(sni.quest); AssetDatabase.SaveAssets();
+            var so = new SerializedObject(sni.quest);
+            var stagesProp = so.FindProperty("stages");
+            if (sni.stageIndex >= stagesProp.arraySize) return;
+            var stageProp = stagesProp.GetArrayElementAtIndex(sni.stageIndex);
+            var objectivesProp = stageProp.FindPropertyRelative("objectives");
+            if (objIndex < 0 || objIndex >= objectivesProp.arraySize) return;
+            objectivesProp.DeleteArrayElementAtIndex(objIndex);
+            so.ApplyModifiedProperties();
+            AssetDatabase.SaveAssets();
         }
+
 
         private static DialogueEdge GetEdge
 (DialogNodeInfo dni, int edgeIndex)
@@ -304,3 +343,4 @@ namespace ProjectC.Quests.Editor
     }
 }
 #endif
+

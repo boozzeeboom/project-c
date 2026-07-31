@@ -144,7 +144,8 @@ namespace ProjectC.Quests.Editor
                 }
             if (edges == null || edges.Length == 0) MakeOutPort("→", PortSemantic.DialogEdgeAction, GraphNodeColors.PortGreen, 0);
             AddPinButton(Tree);
-            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 120f; ea.style.flexGrow = 1; ea.style.width = Length.Percent(100);
+            var ea = new IMGUIContainer(DrawEditor); ea.style.flexGrow = 1; ea.style.width = Length.Percent(100);
+
 
 
 
@@ -159,12 +160,13 @@ namespace ProjectC.Quests.Editor
             var nodesProp = so.FindProperty("nodes"); if (NodeIndex >= nodesProp.arraySize) return;
             var np = nodesProp.GetArrayElementAtIndex(NodeIndex);
             EditorGUILayout.PropertyField(np.FindPropertyRelative("speaker"), new GUIContent("Speaker"), true);
-            // Full-width TextArea for dialog text
+            // Full-width TextArea — fills available height
             var textProp = np.FindPropertyRelative("text");
             EditorGUILayout.LabelField("Text:");
-            var textRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textArea, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-
+            float availH = Mathf.Max(60f, resolvedStyle.height - 150f);
+            var textRect = EditorGUILayout.GetControlRect(false, availH, EditorStyles.textArea);
             textProp.stringValue = EditorGUI.TextArea(textRect, textProp.stringValue, EditorStyles.textArea);
+
             EditorGUILayout.Space(2);
             EditorGUILayout.LabelField("Choices:", EditorStyles.boldLabel);
 
@@ -252,7 +254,8 @@ namespace ProjectC.Quests.Editor
             if (num > 1) { var delBtn = new Button(() => OnDeleteStage?.Invoke(Info)) { text = "× Stage" }; delBtn.style.fontSize = 10; delBtn.style.height = 20; delBtn.style.marginLeft = 4; delBtn.style.color = new StyleColor(new Color(0.9f, 0.4f, 0.3f)); btnRow.Add(delBtn); }
             extensionContainer.Add(btnRow);
             AddPinButton(Quest);
-            var ea = new IMGUIContainer(DrawEditor); ea.style.minHeight = 120f; ea.style.flexGrow = 1; ea.style.width = Length.Percent(100);
+            var ea = new IMGUIContainer(DrawEditor); ea.style.flexGrow = 1; ea.style.width = Length.Percent(100);
+
 
 
             extensionContainer.style.paddingLeft = 4; extensionContainer.style.paddingRight = 4; extensionContainer.Add(ea);
@@ -271,9 +274,10 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.LabelField("Description:");
             var descProp = sp.FindPropertyRelative("description");
-            var descRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textArea, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-
+            float availH = Mathf.Max(40f, resolvedStyle.height - 220f);
+            var descRect = EditorGUILayout.GetControlRect(false, availH, EditorStyles.textArea);
             descProp.stringValue = EditorGUI.TextArea(descRect, descProp.stringValue, EditorStyles.textArea);
+
 
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("objectives"), new GUIContent("Objectives"), true);
             if (so.ApplyModifiedProperties()) EditorUtility.SetDirty(Quest);

@@ -125,7 +125,8 @@ namespace ProjectC.Quests.Editor
 
         private void RepositionQuestChain(QuestDefinition quest)
         {
-            const float Q_H = 150f, STAGE_H = 330f, REWARD_H = 170f;
+            const float Q_H = 150f, STAGE_H = 350f, REWARD_H = 170f;
+
 
 
             // Find the quest root node position
@@ -302,7 +303,8 @@ namespace ProjectC.Quests.Editor
 
         private void ApplyLayout()
         {
-            const float NPC_H = 230f, DLG_H = 250f, Q_H = 150f, STAGE_H = 330f, REWARD_H = 170f;
+            const float NPC_H = 230f, DLG_H = 280f, Q_H = 150f, STAGE_H = 350f, REWARD_H = 170f;
+
 
 
 

@@ -32,8 +32,9 @@ namespace ProjectC.Quests.Editor
 
         protected BaseGraphNode()
         {
-            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable;
+            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Resizable;
         }
+
 
         protected Port MakeOutPort(string name, PortSemantic semantic, Color color, object userData = null)
         {
@@ -93,18 +94,15 @@ namespace ProjectC.Quests.Editor
         private void DrawEditor()
         {
             var so = new SerializedObject(Npc); so.Update();
-            var oldW = EditorGUIUtility.labelWidth; EditorGUIUtility.labelWidth = 60;
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(so.FindProperty("npcId"), GUIContent.none, GUILayout.MinWidth(70));
-            EditorGUILayout.PropertyField(so.FindProperty("displayName"), GUIContent.none, GUILayout.MinWidth(70));
-            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.PropertyField(so.FindProperty("npcId"));
+            EditorGUILayout.PropertyField(so.FindProperty("displayName"));
             EditorGUILayout.PropertyField(so.FindProperty("faction"));
             EditorGUILayout.PropertyField(so.FindProperty("portrait"));
             EditorGUILayout.PropertyField(so.FindProperty("defaultDialogTree"));
             EditorGUILayout.PropertyField(so.FindProperty("services"));
-            EditorGUIUtility.labelWidth = oldW;
             if (so.ApplyModifiedProperties()) EditorUtility.SetDirty(Npc);
         }
+
     }
 
 
@@ -286,13 +284,12 @@ namespace ProjectC.Quests.Editor
         {
             var so = new SerializedObject(Quest); so.Update();
             var rp = so.FindProperty("rewards");
-            var oldW = EditorGUIUtility.labelWidth; EditorGUIUtility.labelWidth = 70;
             EditorGUILayout.PropertyField(rp.FindPropertyRelative("credits"));
             EditorGUILayout.PropertyField(rp.FindPropertyRelative("items"), true);
             EditorGUILayout.PropertyField(rp.FindPropertyRelative("reputation"), true);
-            EditorGUIUtility.labelWidth = oldW;
             if (so.ApplyModifiedProperties()) EditorUtility.SetDirty(Quest);
         }
+
     }
 
 }

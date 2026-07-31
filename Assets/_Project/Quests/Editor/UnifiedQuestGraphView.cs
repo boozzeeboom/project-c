@@ -220,7 +220,8 @@ namespace ProjectC.Quests.Editor
 
         // ── Build ──
 
-        const float NODE_W = 260f, H_GAP = 60f, V_GAP = 40f;
+        const float NODE_W = 300f, H_GAP = 60f, V_GAP = 40f;
+
 
 
 

@@ -98,7 +98,88 @@ namespace ProjectC.Quests.Editor
                 if (HasReward(quest.rewards)) RewardNodes.Add(new RewardNodeInfo { quest = quest });
             }
             BuildNpcEdges(); BuildDialogEdges(); BuildQuestEdges();
+            _childrenCache = null;
         }
+
+        // ── BFS tree: children map for layout ──
+
+        private Dictionary<object, List<object>> _childrenCache;
+
+        public Dictionary<object, List<object>> GetChildrenMap()
+        {
+            if (_childrenCache != null) return _childrenCache;
+            _childrenCache = new Dictionary<object, List<object>>();
+
+            // NPC → its dialog nodes
+            foreach (var npc in _npcs)
+            {
+                var ni = NpcNodes.FirstOrDefault(n => n.npc == npc);
+                if (ni == null) continue;
+                var list = new List<object>();
+                if (npc.defaultDialogTree != null)
+                {
+                    foreach (var di in DialogNodes.Where(d => d.tree == npc.defaultDialogTree))
+                        list.Add(di);
+                }
+                // Also add SwitchDialogTree destinations
+                if (npc.defaultDialogTree?.nodes != null)
+                    foreach (var n in npc.defaultDialogTree.nodes)
+                        if (n?.edges != null)
+                            foreach (var e in n.edges)
+                                if (e?.action?.type == DialogueActionType.SwitchDialogTree && e.action.dialogTreeRef != null)
+                                    foreach (var di in DialogNodes.Where(d => d.tree == e.action.dialogTreeRef))
+                                        if (!list.Contains(di)) list.Add(di);
+                if (list.Count > 0) _childrenCache[ni] = list;
+            }
+
+            // DialogNode → Quest (OfferQuest) + Dialog (SwitchDialogTree)
+            foreach (var di in DialogNodes)
+            {
+                var list = new List<object>();
+                var node = di.Node;
+                if (node?.edges != null)
+                    foreach (var e in node.edges)
+                    {
+                        if (e?.action?.type == DialogueActionType.OfferQuest && e.action.questRef != null)
+                        { var qi = QuestNodes.FirstOrDefault(q => q.quest == e.action.questRef); if (qi != null && !list.Contains(qi)) list.Add(qi); }
+                        if (e?.action?.type == DialogueActionType.SwitchDialogTree && e.action.dialogTreeRef != null)
+                        { foreach (var di2 in DialogNodes.Where(d => d.tree == e.action.dialogTreeRef)) if (!list.Contains(di2)) list.Add(di2); }
+                    }
+                if (list.Count > 0) _childrenCache[di] = list;
+            }
+
+            // Quest → Stage 0
+            foreach (var qi in QuestNodes)
+            {
+                var s0 = StageNodes.FirstOrDefault(s => s.quest == qi.quest && s.stageIndex == 0);
+                if (s0 != null) _childrenCache[qi] = new List<object> { s0 };
+            }
+
+            // Stage[i] → Stage[i+1] | Reward
+            foreach (var si in StageNodes)
+            {
+                var list = new List<object>();
+                var next = StageNodes.FirstOrDefault(s => s.quest == si.quest && s.stageIndex == si.stageIndex + 1);
+                if (next != null) list.Add(next);
+                else { var ri = RewardNodes.FirstOrDefault(r => r.quest == si.quest); if (ri != null) list.Add(ri); }
+                if (list.Count > 0) _childrenCache[si] = list;
+            }
+
+            return _childrenCache;
+        }
+
+        public List<object> GetRoots()
+        {
+            var roots = new List<object>();
+            var children = GetChildrenMap();
+            var allWithParents = new HashSet<object>();
+            foreach (var kv in children) foreach (var c in kv.Value) allWithParents.Add(c);
+            foreach (var ni in NpcNodes) if (!allWithParents.Contains(ni)) roots.Add(ni);
+            foreach (var di in DialogNodes) if (!allWithParents.Contains(di)) roots.Add(di);
+            foreach (var qi in QuestNodes) if (!allWithParents.Contains(qi)) roots.Add(qi);
+            return roots;
+        }
+
 
         private void BuildNpcEdges()
         {

@@ -41,6 +41,24 @@ MonoBehaviour:
       eventId: 
       optional: 0
       required: 0
+    - objectiveId: 
+      objectiveType: 4
+      description: 
+      targetNpcId: Zipun
+      targetNpc: {fileID: 11400000, guid: 59409174383a88b47b03a3348fc9b073, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 11400000, guid: dc03220f180edc9418e5a3996bd4c7c3, type: 2}
+      requiredQuantity: 0
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 0
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 0
     onEnterActions: []
     onCompleteActions: []
     nextStageId: 

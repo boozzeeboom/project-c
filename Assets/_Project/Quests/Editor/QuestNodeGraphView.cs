@@ -154,7 +154,7 @@ namespace ProjectC.Quests.Editor
             }
         }
 
-        private void ForceAllNodesExpanded()
+        protected void ForceAllNodesExpanded()
         {
             foreach (var n in nodes.Cast<Node>())
             {
@@ -165,7 +165,7 @@ namespace ProjectC.Quests.Editor
         }
 
         // T-U01: no more _suppressReadOnly — graphViewChanged allows all deletions
-        private void ClearAllElements()
+        protected void ClearAllElements()
         {
             var edgeList = new List<GraphElement>(this.edges.ToList());
             var nodeList = new List<GraphElement>(this.nodes.ToList());

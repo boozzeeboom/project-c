@@ -238,6 +238,48 @@ namespace ProjectC.Quests.Editor
             BuildDialogEdgesForNode(di);
         }
 
+        public void RebuildEdgesForStage(StageNodeInfo si)
+        {
+            Edges.RemoveAll(e => e.fromNode == si || e.toNode == si);
+            // Rebuild: Stage[i] → Stage[i+1] | Reward + Stage → TargetNPC
+            var quest = si.quest; int idx = si.stageIndex;
+            var next = StageNodes.FirstOrDefault(s => s.quest == quest && s.stageIndex == idx + 1);
+            if (next != null)
+                Edges.Add(new EdgeInfo { fromNode = si, fromPort = PortSemantic.StageNext, toNode = next, toPort = PortSemantic.StageIn });
+            else
+            {
+                var ri = RewardNodes.FirstOrDefault(r => r.quest == quest);
+                if (ri != null)
+                    Edges.Add(new EdgeInfo { fromNode = si, fromPort = PortSemantic.StageNext, toNode = ri, toPort = PortSemantic.StageIn });
+            }
+            // Stage → TargetNPC
+            var stage = si.Stage;
+            if (stage?.objectives != null)
+            {
+                var talkObj = stage.objectives.FirstOrDefault(o => o != null && o.targetNpc != null && (o.objectiveType == QuestObjectiveType.TalkToNpc || o.objectiveType == QuestObjectiveType.DeliverItem));
+                if (talkObj != null)
+                {
+                    var npcNode = NpcNodes.FirstOrDefault(n => n.npc == talkObj.targetNpc);
+                    if (npcNode != null)
+                        Edges.Add(new EdgeInfo { fromNode = si, fromPort = PortSemantic.StageTargetNpc, toNode = npcNode, toPort = PortSemantic.NpcTargetedBy });
+                }
+            }
+            // Prev stage → this stage
+            var prev = StageNodes.FirstOrDefault(s => s.quest == quest && s.stageIndex == idx - 1);
+            if (prev != null)
+            {
+                Edges.RemoveAll(e => e.fromNode == prev && e.toPort == PortSemantic.StageIn);
+                Edges.Add(new EdgeInfo { fromNode = prev, fromPort = PortSemantic.StageNext, toNode = si, toPort = PortSemantic.StageIn });
+            }
+            else if (idx == 0)
+            {
+                var qNode = QuestNodes.FirstOrDefault(q => q.quest == quest);
+                if (qNode != null)
+                    Edges.Add(new EdgeInfo { fromNode = qNode, fromPort = PortSemantic.StageNext, toNode = si, toPort = PortSemantic.StageIn });
+            }
+        }
+
+
 
         internal void BuildQuestEdges()
 

@@ -168,6 +168,17 @@ namespace ProjectC.Quests.Editor
 
 
 
+        private void RebuildStageEdgesVisual(StageNodeInfo si)
+        {
+            if (!_nodeMap.TryGetValue(si, out var stageNode)) return;
+            var conn = edges.ToList().Where(e => e.output?.node == stageNode || e.input?.node == stageNode).ToList();
+            foreach (var e in conn) RemoveElement(e);
+            foreach (var ei in Model.Edges)
+                if ((ei.fromNode == si || ei.toNode == si) && _nodeMap.TryGetValue(ei.fromNode, out var f) && _nodeMap.TryGetValue(ei.toNode, out var t))
+                { var ve = CreateVisualEdge(ei); if (ve != null) AddElement(ve); }
+            MarkDirtyRepaint();
+        }
+
         private void SavePositions()
         {
             _savedPositions.Clear();

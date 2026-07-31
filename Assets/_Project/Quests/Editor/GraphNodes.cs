@@ -238,7 +238,9 @@ namespace ProjectC.Quests.Editor
         public QuestStage Stage => Quest?.stages != null && StageIndex >= 0 && StageIndex < Quest.stages.Length ? Quest.stages[StageIndex] : null;
         public System.Action<StageNodeInfo> OnDeleteStage, OnAddStageAfter;
         public System.Action<StageNodeInfo> OnAddObjective;
+        public System.Action<StageNodeInfo> OnModified;
         public System.Func<int> StageCount;
+
 
         public StageGraphNode(StageNodeInfo info)
         {
@@ -287,8 +289,8 @@ namespace ProjectC.Quests.Editor
 
 
             EditorGUILayout.PropertyField(sp.FindPropertyRelative("objectives"), new GUIContent("Objectives"), true);
+            if (so.ApplyModifiedProperties()) { EditorUtility.SetDirty(Quest); OnModified?.Invoke(Info); }
 
-            if (so.ApplyModifiedProperties()) EditorUtility.SetDirty(Quest);
         }
     }
 

@@ -37,7 +37,10 @@ namespace ProjectC.Quests.Editor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("🔗 Unified Graph", GUILayout.Width(130), GUILayout.Height(22)))
             {
-                UnifiedQuestGraphIntegration.OpenUnified(tree);
+                var w = EditorWindow.GetWindow<UnifiedQuestGraphWindow>();
+                w.titleContent = new GUIContent($"Unified: {tree.treeId}");
+                w.LoadUnified(null, tree, null);
+                w.Show();
             }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(2);

@@ -22,7 +22,7 @@ namespace ProjectC.Quests.Editor
 {
     public class QuestNodeGraphView : GraphView
     {
-        public QuestDefinition Quest { get; private set; }
+        public QuestDefinition Quest { get; protected set; }
 
         // T-U01: node position tracking (serializable for persistence)
         protected readonly Dictionary<string, Vector2> _nodePositions = new Dictionary<string, Vector2>();
@@ -30,7 +30,7 @@ namespace ProjectC.Quests.Editor
         // T-Q30: edit state
         private bool _editMode;
         // T-Q32: button visibility helpers
-        private readonly List<VisualElement> _editButtons = new List<VisualElement>();
+        protected readonly List<VisualElement> _editButtons = new List<VisualElement>();
         // T-Q33: multi-quest mode
 #pragma warning disable CS0414
         private bool _showAllMode;
@@ -38,7 +38,7 @@ namespace ProjectC.Quests.Editor
         private const string DATABASE_PATH = "Assets/_Project/Quests/Data/QuestDatabase.asset";
 
         // T-U02: persisted node count for unique naming
-        private int _nodeCounter;
+        protected int _nodeCounter;
 
         public bool EditMode
         {
@@ -426,7 +426,7 @@ namespace ProjectC.Quests.Editor
         /// fields: list of (labelName, currentValue, onSaveAction).
         /// onSaveAction == null → поле только для просмотра. metaLine: строка снизу (всегда видна).
         /// </summary>
-        private QuestGraphNode MakeEditableNode(string title, Color titleColor,
+        protected QuestGraphNode MakeEditableNode(string title, Color titleColor,
             (string label, string value, System.Action<string> onSave)[] fields,
             string metaLine = "",
             ScriptableObject owner = null, string sourcePath = "", object sourceData = null,
@@ -735,10 +735,10 @@ namespace ProjectC.Quests.Editor
             MarkDirtyRepaint();
         }
 
-        private struct NodePorts { public Port input; public Port output; }
+        protected struct NodePorts { public Port input; public Port output; }
 
         // T-U04: meaningful port names + color coding
-        private NodePorts AddPorts(Node n, bool hasOutput, bool hasInput,
+        protected NodePorts AddPorts(Node n, bool hasOutput, bool hasInput,
             string inputName = "← Prev", string outputName = "→ Next")
         {
             var result = new NodePorts();
@@ -761,21 +761,21 @@ namespace ProjectC.Quests.Editor
             return result;
         }
 
-        private Port GetOutputPort(Node n)
+        protected Port GetOutputPort(Node n)
         {
             foreach (var child in n.outputContainer.Children())
                 if (child is Port p && p.direction == Direction.Output) return p;
             return null;
         }
 
-        private Port GetInputPort(Node n)
+        protected Port GetInputPort(Node n)
         {
             foreach (var child in n.inputContainer.Children())
                 if (child is Port p && p.direction == Direction.Input) return p;
             return null;
         }
 
-        private void ConnectPorts(Port output, Port input, bool isAuto = true)
+        protected void ConnectPorts(Port output, Port input, bool isAuto = true)
         {
             if (output == null || input == null) return;
             var edge = output.ConnectTo(input);
@@ -853,7 +853,7 @@ namespace ProjectC.Quests.Editor
             return compatible;
         }
 
-        private static bool HasReward(QuestReward r) => r != null && (r.credits > 0 || (r.items != null && r.items.Length > 0) || (r.reputation != null && r.reputation.Length > 0));
+        protected static bool HasReward(QuestReward r) => r != null && (r.credits > 0 || (r.items != null && r.items.Length > 0) || (r.reputation != null && r.reputation.Length > 0));
     }
 
     // ===== Window =====

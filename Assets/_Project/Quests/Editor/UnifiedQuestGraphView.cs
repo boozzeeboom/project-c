@@ -1,8 +1,8 @@
-// T-U05 v3: DialogNodeView с IMGUI — переиспользует PropertyDrawer'ы для drag-and-drop.
-// T-U05: UnifiedQuestGraphView — Quest + Dialog в одном графе.
-// T-U08: ConditionNodeView.
-// T-U09: UnifiedQuestGraphWindow.
-// T-U10: UnifiedQuestGraphIntegration.
+// Unified Quest Graph v4 — multi-NPC нодовый редактор.
+// NpcCardNode (IMGUI: faction, dialogTree, questOffers) +
+// DialogNodeView (IMGUI: SpeakerRefDrawer, Conditions, Actions) +
+// Quest nodes (из базового QuestNodeGraphView).
+// Авто-рёбра: NPC→Dialog, Dialog→Quest, Objective→NPC, SwitchDialogTree.
 
 #if UNITY_EDITOR
 using System.Collections.Generic;
@@ -15,24 +15,75 @@ using ProjectC.Dialogue;
 
 namespace ProjectC.Quests.Editor
 {
-    /// <summary>
-    /// DialogNodeView v3 — GraphView Node с IMGUI-редактором внутри.
-    /// Переиспользует SpeakerRefDrawer, DialogueConditionDrawer, DialogueActionDrawer.
-    /// Редактирует DialogueNode напрямую через SerializedProperty.
-    /// </summary>
+    // ═══════════════════════════════════════════
+    // NpcCardNode
+    // ═══════════════════════════════════════════
+
+    public class NpcCardNode : QuestGraphNode
+    {
+        public NpcDefinition Npc { get; private set; }
+        public SerializedObject SerializedNpc { get; private set; }
+
+        private static readonly Color NpcColor = new Color(0.55f, 0.35f, 0.7f);
+
+        public NpcCardNode(NpcDefinition npc)
+        {
+            Npc = npc;
+            OwnerAsset = npc;
+            SourceData = npc;
+            NodeKind = QuestNodeKind.QuestRoot;
+            PersistKey = $"npc_{npc.npcId}";
+            viewDataKey = PersistKey;
+            SerializedNpc = new SerializedObject(npc);
+
+            title = $"👤 {npc.displayName}";
+            titleContainer.style.backgroundColor = new StyleColor(NpcColor);
+
+            var editorArea = new IMGUIContainer(DrawNpcEditor);
+            editorArea.style.minHeight = 100f;
+            editorArea.style.flexGrow = 1;
+            extensionContainer.style.paddingLeft = 4;
+            extensionContainer.style.paddingRight = 4;
+            extensionContainer.Add(editorArea);
+
+            var outPort = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Multi, typeof(bool));
+            outPort.portName = "→ Dialog";
+            outPort.portColor = new Color(0.5f, 0.4f, 0.85f);
+            outputContainer.Add(outPort);
+
+            RefreshExpandedState();
+            expanded = true;
+        }
+
+        private void DrawNpcEditor()
+        {
+            if (SerializedNpc == null) return;
+            SerializedNpc.Update();
+            var fp = SerializedNpc.FindProperty("faction");
+            var dp = SerializedNpc.FindProperty("defaultDialogTree");
+            var or = SerializedNpc.FindProperty("questOfferRefs");
+            var tr = SerializedNpc.FindProperty("questTurnInRefs");
+            if (fp != null) EditorGUILayout.PropertyField(fp, new GUIContent("Faction"));
+            if (dp != null) EditorGUILayout.PropertyField(dp, new GUIContent("Dialog Tree"));
+            if (or != null) EditorGUILayout.PropertyField(or, new GUIContent("Offers Quests"), true);
+            if (tr != null) EditorGUILayout.PropertyField(tr, new GUIContent("Turns In Quests"), true);
+            if (SerializedNpc.ApplyModifiedProperties()) EditorUtility.SetDirty(Npc);
+        }
+    }
+
+    // ═══════════════════════════════════════════
+    // DialogNodeView
+    // ═══════════════════════════════════════════
+
     public class DialogNodeView : QuestGraphNode
     {
         public DialogueNode DialogueNode { get; private set; }
         public DialogTree DialogTree { get; private set; }
-        public SerializedObject SerializedTree { get; private set; }
         public SerializedProperty NodeProperty { get; private set; }
+        public SerializedObject SerializedTree { get; private set; }
 
         private readonly List<Port> _outputPorts = new List<Port>();
-        private IMGUIContainer _editorArea;
-        private VisualElement _contentArea;
-
         private static readonly Color DialogColor = new Color(0.3f, 0.5f, 1.0f);
-        private const float MIN_EDITOR_HEIGHT = 200f;
 
         public DialogNodeView(DialogueNode node, DialogTree tree, int nodeIndex, SerializedProperty nodeProp)
         {
@@ -47,194 +98,135 @@ namespace ProjectC.Quests.Editor
             NodeProperty = nodeProp?.Copy();
             SerializedTree = nodeProp?.serializedObject;
 
-            // Title
-            string speakerName = ResolveSpeakerName(node);
-            string textPreview = node.text?.Length > 50 ? node.text.Substring(0, 47) + "..." : (node.text ?? "");
-            title = $"🤖 {speakerName}: \"{textPreview}\"";
-
+            SetTitle();
             titleContainer.style.backgroundColor = new StyleColor(DialogColor);
 
-            // Content area (below title, holds IMGUI editor when expanded)
-            _contentArea = new VisualElement();
-            _contentArea.style.paddingLeft = 4;
-            _contentArea.style.paddingRight = 4;
-            _contentArea.style.paddingTop = 2;
-            _contentArea.style.paddingBottom = 4;
-            extensionContainer.Add(_contentArea);
+            var editorArea = new IMGUIContainer(DrawNodeEditor);
+            editorArea.style.minHeight = 240f;
+            editorArea.style.flexGrow = 1;
+            extensionContainer.style.paddingLeft = 4;
+            extensionContainer.style.paddingRight = 4;
+            extensionContainer.Add(editorArea);
 
-            // Input port
             var inPort = Port.Create<Edge>(Orientation.Vertical, Direction.Input, Port.Capacity.Single, typeof(bool));
             inPort.portName = "← In";
             inPort.portColor = new Color(0.55f, 0.55f, 0.55f);
             inputContainer.Add(inPort);
 
-            // Output ports (one per DialogueEdge)
             RebuildOutputPorts();
-
-            RebuildEditor();
-
             RefreshExpandedState();
             expanded = true;
         }
 
-        /// <summary>Rebuild output ports from DialogueEdge array.</summary>
+        private void SetTitle()
+        {
+            string sn = ResolveSpeakerName(DialogueNode);
+            string tp = DialogueNode?.text?.Length > 40 ? DialogueNode.text.Substring(0, 37) + "..." : (DialogueNode?.text ?? "");
+            title = $"🤖 {sn}: \"{tp}\"";
+        }
+
         public void RebuildOutputPorts()
         {
-            // Clear old ports
-            foreach (var p in _outputPorts)
-            {
-                if (p.parent != null) p.parent.Remove(p);
-            }
+            foreach (var p in _outputPorts) { if (p.parent != null) p.parent.Remove(p); }
             _outputPorts.Clear();
-
             var edges = DialogueNode?.edges;
-            if (edges != null && edges.Length > 0)
+            if (edges != null)
             {
-                foreach (var edge in edges)
+                foreach (var e in edges)
                 {
-                    if (edge == null) continue;
-                    var outPort = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Single, typeof(bool));
-                    string label = string.IsNullOrEmpty(edge.label) ? "→" : edge.label;
-                    if (label.Length > 18) label = label.Substring(0, 15) + "...";
-                    outPort.portName = label;
-                    outPort.portColor = new Color(0.35f, 0.7f, 0.35f);
-                    outputContainer.Add(outPort);
-                    _outputPorts.Add(outPort);
+                    if (e == null) continue;
+                    var p = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Single, typeof(bool));
+                    string l = string.IsNullOrEmpty(e.label) ? "→" : e.label;
+                    if (l.Length > 18) l = l.Substring(0, 15) + "...";
+                    p.portName = l;
+                    p.portColor = new Color(0.35f, 0.7f, 0.35f);
+                    outputContainer.Add(p);
+                    _outputPorts.Add(p);
                 }
             }
-
-            // Always have at least one output for dead-end
             if (_outputPorts.Count == 0)
             {
-                var outPort = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Single, typeof(bool));
-                outPort.portName = "→ End";
-                outPort.portColor = new Color(0.9f, 0.3f, 0.3f);
-                outputContainer.Add(outPort);
-                _outputPorts.Add(outPort);
+                var p = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Single, typeof(bool));
+                p.portName = "→ End";
+                p.portColor = new Color(0.9f, 0.3f, 0.3f);
+                outputContainer.Add(p);
+                _outputPorts.Add(p);
             }
         }
 
-        /// <summary>Rebuild the IMGUI editor area from SerializedProperty.</summary>
-        public void RebuildEditor()
-        {
-            if (_editorArea != null)
-                _contentArea.Remove(_editorArea);
-
-            if (NodeProperty == null || SerializedTree == null)
-            {
-                // Fallback: simple text preview
-                _editorArea = null;
-                var textLabel = new Label(DialogueNode?.text ?? "(empty)");
-                textLabel.style.fontSize = 10;
-                textLabel.style.color = new StyleColor(new Color(0.85f, 0.85f, 0.95f, 1f));
-                textLabel.style.whiteSpace = WhiteSpace.Normal;
-                textLabel.style.paddingTop = 4;
-                _contentArea.Add(textLabel);
-                return;
-            }
-
-            _editorArea = new IMGUIContainer(DrawNodeEditor);
-            _editorArea.style.minHeight = MIN_EDITOR_HEIGHT;
-            _editorArea.style.flexGrow = 1;
-            _contentArea.Add(_editorArea);
-        }
+        public IReadOnlyList<Port> GetOutputPorts() => _outputPorts;
 
         private void DrawNodeEditor()
         {
             if (NodeProperty == null || SerializedTree == null) return;
-
             SerializedTree.Update();
 
             var sp = NodeProperty.FindPropertyRelative("speaker");
-            if (sp != null)
-                EditorGUILayout.PropertyField(sp, new GUIContent("Speaker"), true);
+            if (sp != null) EditorGUILayout.PropertyField(sp, new GUIContent("Speaker"), true);
 
-            var textProp = NodeProperty.FindPropertyRelative("text");
-            if (textProp != null)
-                EditorGUILayout.PropertyField(textProp, new GUIContent("Text"));
+            var tp = NodeProperty.FindPropertyRelative("text");
+            if (tp != null) EditorGUILayout.PropertyField(tp, new GUIContent("Text"));
 
-            var emotionProp = NodeProperty.FindPropertyRelative("portraitEmotion");
-            if (emotionProp != null)
-                EditorGUILayout.PropertyField(emotionProp, new GUIContent("Portrait Emotion"));
+            var ep = NodeProperty.FindPropertyRelative("portraitEmotion");
+            if (ep != null) EditorGUILayout.PropertyField(ep, new GUIContent("Emotion"));
 
-            // On Enter Actions
-            EditorGUILayout.Space(4);
-            var onEnterProp = NodeProperty.FindPropertyRelative("onEnterActions");
-            if (onEnterProp != null)
-                EditorGUILayout.PropertyField(onEnterProp, new GUIContent("On Enter Actions"), true);
+            var oe = NodeProperty.FindPropertyRelative("onEnterActions");
+            if (oe != null) EditorGUILayout.PropertyField(oe, new GUIContent("On Enter Actions"), true);
 
-            // Edges
             EditorGUILayout.Space(6);
-            EditorGUILayout.LabelField("Choices (player replies):", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Choices:", EditorStyles.boldLabel);
 
             var edgesProp = NodeProperty.FindPropertyRelative("edges");
             if (edgesProp != null && edgesProp.isArray)
             {
                 for (int i = 0; i < edgesProp.arraySize; i++)
                 {
-                    var edgeProp = edgesProp.GetArrayElementAtIndex(i);
-                    if (edgeProp == null) continue;
-
+                    var edgeP = edgesProp.GetArrayElementAtIndex(i);
+                    if (edgeP == null) continue;
                     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-                    // Edge label
-                    EditorGUILayout.PropertyField(edgeProp.FindPropertyRelative("label"),
-                        new GUIContent($"Choice {i+1}"));
+                    EditorGUILayout.PropertyField(edgeP.FindPropertyRelative("label"), new GUIContent($"Choice {i+1}"));
 
-                    // Target node
-                    var targetProp = edgeProp.FindPropertyRelative("targetNodeId");
-                    if (targetProp != null)
+                    var tgtP = edgeP.FindPropertyRelative("targetNodeId");
+                    if (tgtP != null)
                     {
-                        string currentTarget = targetProp.stringValue;
-                        var nodeIds = GetSiblingNodeIds();
-                        int selIdx = nodeIds.IndexOf(currentTarget);
-                        int newIdx = EditorGUILayout.Popup("→ Target",
-                            selIdx + 1,
-                            ToTargetChoices(nodeIds));
-                        if (newIdx != selIdx + 1)
-                            targetProp.stringValue = (newIdx == 0) ? "" : nodeIds[newIdx - 1];
+                        var ids = GetSiblingIds();
+                        int sel = ids.IndexOf(tgtP.stringValue);
+                        int nw = EditorGUILayout.Popup("→ Target", sel + 1, ToChoices(ids));
+                        if (nw != sel + 1) tgtP.stringValue = (nw == 0) ? "" : ids[nw - 1];
                     }
 
-                    // Condition
-                    var condProp = edgeProp.FindPropertyRelative("conditions");
-                    if (condProp != null)
-                        EditorGUILayout.PropertyField(condProp, new GUIContent("Conditions"), true);
+                    var cp = edgeP.FindPropertyRelative("conditions");
+                    if (cp != null) EditorGUILayout.PropertyField(cp, new GUIContent("Conditions"), true);
 
-                    // Action
-                    var actionProp = edgeProp.FindPropertyRelative("action");
-                    if (actionProp != null)
-                        EditorGUILayout.PropertyField(actionProp, new GUIContent("Action"), true);
+                    var ap = edgeP.FindPropertyRelative("action");
+                    if (ap != null) EditorGUILayout.PropertyField(ap, new GUIContent("Action"), true);
 
-                    // Hide if unavailable
-                    EditorGUILayout.PropertyField(edgeProp.FindPropertyRelative("hideIfUnavailable"),
-                        new GUIContent("Hide if unavailable"));
+                    EditorGUILayout.PropertyField(edgeP.FindPropertyRelative("hideIfUnavailable"), new GUIContent("Hide if unavailable"));
 
-                    // Delete edge button
                     if (GUILayout.Button("× Remove Choice", GUILayout.Width(120)))
                     {
                         edgesProp.DeleteArrayElementAtIndex(i);
                         SerializedTree.ApplyModifiedProperties();
                         EditorUtility.SetDirty(DialogTree);
                         RebuildOutputPorts();
+                        SetTitle();
                         GUIUtility.ExitGUI();
                         return;
                     }
 
                     EditorGUILayout.EndVertical();
-                    EditorGUILayout.Space(4);
+                    EditorGUILayout.Space(3);
                 }
 
-
-                // Add edge button
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("+ Add Choice", GUILayout.Width(120)))
                 {
                     edgesProp.arraySize++;
-                    var newEdge = edgesProp.GetArrayElementAtIndex(edgesProp.arraySize - 1);
-                    newEdge.FindPropertyRelative("label").stringValue = "New Choice";
-                    newEdge.FindPropertyRelative("targetNodeId").stringValue = "";
-                    newEdge.FindPropertyRelative("hideIfUnavailable").boolValue = true;
+                    var ne = edgesProp.GetArrayElementAtIndex(edgesProp.arraySize - 1);
+                    ne.FindPropertyRelative("label").stringValue = "New Choice";
+                    ne.FindPropertyRelative("hideIfUnavailable").boolValue = true;
                     SerializedTree.ApplyModifiedProperties();
                     EditorUtility.SetDirty(DialogTree);
                     RebuildOutputPorts();
@@ -245,342 +237,364 @@ namespace ProjectC.Quests.Editor
                 EditorGUILayout.EndHorizontal();
             }
 
-            bool changed = SerializedTree.ApplyModifiedProperties();
-            if (changed)
+            if (SerializedTree.ApplyModifiedProperties())
             {
                 EditorUtility.SetDirty(DialogTree);
-                // Update title preview
-                string speakerName = ResolveSpeakerName(DialogueNode);
-                string textPreview = DialogueNode.text?.Length > 50
-                    ? DialogueNode.text.Substring(0, 47) + "..."
-                    : (DialogueNode.text ?? "");
-                title = $"🤖 {speakerName}: \"{textPreview}\"";
+                SetTitle();
             }
         }
 
-        private List<string> GetSiblingNodeIds()
+        private List<string> GetSiblingIds()
         {
             var ids = new List<string>();
             if (DialogTree?.nodes == null) return ids;
             foreach (var n in DialogTree.nodes)
-                if (n != null && !string.IsNullOrEmpty(n.nodeId))
-                    ids.Add(n.nodeId);
+                if (n != null && !string.IsNullOrEmpty(n.nodeId)) ids.Add(n.nodeId);
             return ids;
         }
 
-        private string[] ToTargetChoices(List<string> ids)
+        private string[] ToChoices(List<string> ids)
         {
-            var result = new string[ids.Count + 1];
-            result[0] = "(end conversation)";
-            for (int i = 0; i < ids.Count; i++)
-                result[i + 1] = ids[i];
-            return result;
+            var r = new string[ids.Count + 1];
+            r[0] = "(end conversation)";
+            for (int i = 0; i < ids.Count; i++) r[i + 1] = ids[i];
+            return r;
         }
 
-        public IReadOnlyList<Port> GetOutputPorts() => _outputPorts;
-
-        private static string ResolveSpeakerName(DialogueNode node)
+        private static string ResolveSpeakerName(DialogueNode n)
         {
-            if (node?.speaker == null) return "???";
-            if (node.speaker.speakerNpc != null)
-                return node.speaker.speakerNpc.displayName;
-            if (!string.IsNullOrEmpty(node.speaker.refId))
-                return node.speaker.refId;
-            return node.speaker.speakerKind.ToString();
+            if (n?.speaker == null) return "???";
+            if (n.speaker.speakerNpc != null) return n.speaker.speakerNpc.displayName;
+            if (!string.IsNullOrEmpty(n.speaker.refId)) return n.speaker.refId;
+            return n.speaker.speakerKind.ToString();
         }
     }
 
-    /// <summary>
-    /// T-U08: ConditionNodeView — жёлтая нода для условий if/else.
-    /// </summary>
-    public class ConditionNodeView : QuestGraphNode
-    {
-        public DialogueCondition[] Conditions { get; private set; }
-
-        private static readonly Color ConditionColor = new Color(0.9f, 0.7f, 0.2f);
-
-        public ConditionNodeView(DialogueCondition[] conditions, DialogTree tree)
-        {
-            Conditions = conditions ?? new DialogueCondition[0];
-            OwnerAsset = tree;
-            SourceData = conditions;
-            NodeKind = QuestNodeKind.Condition;
-            PersistKey = $"cond_{tree.treeId}_{System.Guid.NewGuid():N}";
-            viewDataKey = PersistKey;
-
-            var summaryParts = new List<string>();
-            foreach (var c in Conditions)
-                if (c != null) summaryParts.Add($"{c.type}");
-            string summary = summaryParts.Count > 0 ? string.Join(" & ", summaryParts) : "Condition";
-
-            title = $"🔷 {summary}";
-            titleContainer.style.backgroundColor = new StyleColor(ConditionColor);
-
-            var inPort = Port.Create<Edge>(Orientation.Vertical, Direction.Input, Port.Capacity.Single, typeof(bool));
-            inPort.portName = "← In";
-            inPort.portColor = new Color(0.55f, 0.55f, 0.55f);
-            inputContainer.Add(inPort);
-
-            var truePort = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Single, typeof(bool));
-            truePort.portName = "✓ True";
-            truePort.portColor = new Color(0.2f, 0.8f, 0.3f);
-            outputContainer.Add(truePort);
-
-            var falsePort = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Single, typeof(bool));
-            falsePort.portName = "✗ False";
-            falsePort.portColor = new Color(0.9f, 0.25f, 0.25f);
-            outputContainer.Add(falsePort);
-
-            RefreshExpandedState();
-            expanded = true;
-        }
-
-        public Port GetTruePort()
-        {
-            foreach (var child in outputContainer.Children())
-                if (child is Port p && p.portName == "✓ True") return p;
-            return null;
-        }
-
-        public Port GetFalsePort()
-        {
-            foreach (var child in outputContainer.Children())
-                if (child is Port p && p.portName == "✗ False") return p;
-            return null;
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════
     // UnifiedQuestGraphView
-    // ═══════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════
 
     public class UnifiedQuestGraphView : QuestNodeGraphView
     {
-        public DialogTree DialogTree { get; private set; }
-        public NpcDefinition NpcContext { get; private set; }
+        private readonly List<NpcCardNode> _npcCards = new List<NpcCardNode>();
+        private readonly Dictionary<string, List<DialogNodeView>> _dialogGroups = new Dictionary<string, List<DialogNodeView>>();
+        private readonly List<QuestDefinition> _loadedQuests = new List<QuestDefinition>();
 
-        private readonly Dictionary<string, DialogNodeView> _dialogNodes = new Dictionary<string, DialogNodeView>();
-        private SerializedObject _dialogSerializedObject;
-        private static readonly Color DialogQuestEdgeColor = new Color(0.9f, 0.5f, 0.1f);
+        private static readonly Color NpcDialogC = new Color(0.5f, 0.4f, 0.85f);
+        private static readonly Color DialogQuestC = new Color(0.9f, 0.5f, 0.1f);
+        private static readonly Color QuestNpcC = new Color(0.3f, 0.8f, 0.5f);
+        private static readonly Color SwitchDlgC = new Color(0.8f, 0.4f, 0.8f);
 
-        /// <summary>
-        /// Load quest + dialog tree. Any can be null.
-        /// </summary>
-        public void LoadUnified(QuestDefinition quest, DialogTree dialogTree, NpcDefinition npcContext = null)
+        public NpcDefinition[] LoadedNpcs => _npcCards.Select(c => c.Npc).ToArray();
+        public DialogTree[] LoadedDialogs => _dialogGroups.Values
+            .SelectMany(v => v).Select(v => v.DialogTree).Distinct().ToArray();
+        public QuestDefinition[] LoadedQuests => _loadedQuests.ToArray();
+
+        public void AddNpc(NpcDefinition npc)
         {
-            NpcContext = npcContext;
-            DialogTree = dialogTree;
-            _dialogSerializedObject = dialogTree != null ? new SerializedObject(dialogTree) : null;
+            if (npc == null || _npcCards.Any(c => c.Npc == npc)) return;
 
-            if (quest != null)
-                LoadQuest(quest);
-            else
-                ClearAllElements();
+            var card = new NpcCardNode(npc);
+            _npcCards.Add(card);
+            AddElement(card);
 
-            if (dialogTree != null)
+            if (npc.defaultDialogTree != null && !_dialogGroups.ContainsKey(npc.defaultDialogTree.treeId))
             {
-                LoadDialogTree(dialogTree);
-                if (quest != null)
-                    CreateDialogQuestEdges(dialogTree);
+                LoadDialogTreeInternal(npc.defaultDialogTree, card);
             }
 
-            ApplyUnifiedLayout();
-
-            schedule.Execute(() =>
+            if (npc.questOfferRefs != null)
             {
-                ForceAllNodesExpanded();
-                MarkDirtyRepaint();
-                FrameAll();
-            }).StartingIn(100);
+                foreach (var q in npc.questOfferRefs)
+                {
+                    if (q != null && !_loadedQuests.Contains(q))
+                        AddQuestInternal(q);
+                }
+            }
+
+            ApplyLayout();
+            schedule.Execute(() => { MarkDirtyRepaint(); FrameAll(); }).StartingIn(100);
         }
 
-        /// <summary>
-        /// Add a new dialog node to the DialogTree + graph.
-        /// </summary>
-        public void AddDialogNode()
+        public void AddQuest(QuestDefinition q)
         {
-            if (DialogTree == null)
-            {
-                Debug.LogWarning("[UnifiedGraph] No DialogTree loaded. Select a DialogTree first.");
-                return;
-            }
-
-            // Create SO
-            _dialogSerializedObject?.Update();
-            var nodesProp = _dialogSerializedObject?.FindProperty("nodes");
-
-            var list = DialogTree.nodes?.ToList() ?? new List<DialogueNode>();
-            var newNode = new DialogueNode
-            {
-                nodeId = GenerateUniqueNodeId(list),
-                speaker = new SpeakerRef { speakerKind = SpeakerRef.Kind.Npc },
-                text = "",
-                portraitEmotion = "neutral",
-                edges = new DialogueEdge[0]
-            };
-            list.Add(newNode);
-            DialogTree.nodes = list.ToArray();
-            EditorUtility.SetDirty(DialogTree);
-            _dialogSerializedObject = new SerializedObject(DialogTree);
-
-            // Create view
-            var nodesSp = _dialogSerializedObject.FindProperty("nodes");
-            var nodeProp = nodesSp.GetArrayElementAtIndex(list.Count - 1);
-            var view = new DialogNodeView(newNode, DialogTree, list.Count - 1, nodeProp);
-            _dialogNodes[newNode.nodeId] = view;
-            AddElement(view);
-
-            // Rebuild all edges
-            RebuildAllDialogEdges();
-
-            ApplyUnifiedLayout();
+            if (q == null || _loadedQuests.Contains(q)) return;
+            AddQuestInternal(q);
+            ApplyLayout();
             MarkDirtyRepaint();
         }
 
-        private string GenerateUniqueNodeId(List<DialogueNode> existing)
+        public void ClearAll()
         {
-            string baseId = "new_node";
-            if (!existing.Any(n => n?.nodeId == baseId)) return baseId;
-            int counter = 2;
-            while (existing.Any(n => n?.nodeId == $"{baseId}_{counter}"))
-                counter++;
-            return $"{baseId}_{counter}";
+            _npcCards.Clear();
+            _dialogGroups.Clear();
+            _loadedQuests.Clear();
+            ClearAllElements();
         }
 
-        private void LoadDialogTree(DialogTree tree)
+        private void LoadDialogTreeInternal(DialogTree tree, NpcCardNode npcCard)
         {
-            _dialogNodes.Clear();
-            if (tree.nodes == null || tree.nodes.Length == 0) return;
+            var so = new SerializedObject(tree);
+            var nodesProp = so.FindProperty("nodes");
+            var views = new List<DialogNodeView>();
 
-            _dialogSerializedObject = new SerializedObject(tree);
-            var nodesProp = _dialogSerializedObject.FindProperty("nodes");
-
-            for (int i = 0; i < tree.nodes.Length; i++)
+            if (tree.nodes != null)
             {
-                var node = tree.nodes[i];
-                if (node == null) continue;
-
-                var nodeProp = nodesProp.GetArrayElementAtIndex(i);
-                var view = new DialogNodeView(node, tree, i, nodeProp);
-                _dialogNodes[node.nodeId] = view;
-                AddElement(view);
-            }
-
-            RebuildAllDialogEdges();
-        }
-
-        /// <summary>Rebuild ALL edges between dialog nodes from the DialogueEdge data.</summary>
-        private void RebuildAllDialogEdges()
-        {
-            // Remove old dialog edges
-            var oldEdges = this.edges.ToList()
-                .Where(e => e.viewDataKey == "dialog")
-                .ToList();
-            foreach (var e in oldEdges) RemoveElement(e);
-
-            // Rebuild
-            foreach (var kvp in _dialogNodes)
-            {
-                var sourceView = kvp.Value;
-                var sourceNode = sourceView.DialogueNode;
-                if (sourceNode?.edges == null) continue;
-
-                var outputPorts = sourceView.GetOutputPorts();
-                for (int ei = 0; ei < sourceNode.edges.Length && ei < outputPorts.Count; ei++)
+                for (int i = 0; i < tree.nodes.Length; i++)
                 {
-                    var edge = sourceNode.edges[ei];
-                    if (edge == null || string.IsNullOrEmpty(edge.targetNodeId)) continue;
-                    if (!_dialogNodes.TryGetValue(edge.targetNodeId, out var targetView)) continue;
-
-                    var targetInput = targetView.inputContainer.Children().FirstOrDefault() as Port;
-                    if (targetInput != null)
-                    {
-                        var graphEdge = outputPorts[ei].ConnectTo(targetInput);
-                        graphEdge.viewDataKey = "dialog";
-                        graphEdge.edgeControl.inputColor = new Color(0.35f, 0.5f, 0.9f);
-                        graphEdge.edgeControl.outputColor = new Color(0.35f, 0.5f, 0.9f);
-                        AddElement(graphEdge);
-                    }
+                    if (tree.nodes[i] == null) continue;
+                    var v = new DialogNodeView(tree.nodes[i], tree, i, nodesProp.GetArrayElementAtIndex(i));
+                    views.Add(v);
+                    AddElement(v);
                 }
             }
+            _dialogGroups[tree.treeId] = views;
+
+            // NPC → Dialog root
+            if (views.Count > 0)
+            {
+                var root = views.FirstOrDefault(v => v.DialogueNode.nodeId == tree.rootNodeId) ?? views[0];
+                var ri = root.inputContainer.Children().FirstOrDefault() as Port;
+                var co = npcCard.outputContainer.Children().FirstOrDefault() as Port;
+                if (ri != null && co != null) AddEdge(co, ri, "npc-dialog", NpcDialogC, NpcDialogC);
+
+                RebuildDialogEdges(tree, views);
+                CreateDialogToQuestEdges(tree, views);
+                CreateSwitchDialogEdges(tree, views);
+            }
         }
 
-        private void CreateDialogQuestEdges(DialogTree tree)
+        private void AddQuestInternal(QuestDefinition q)
         {
-            if (tree.nodes == null || Quest?.stages == null || Quest.stages.Length == 0) return;
+            _loadedQuests.Add(q);
 
-            var questStageNodes = this.nodes.ToList()
-                .Where(n => n is QuestGraphNode qn && qn.NodeKind == QuestNodeKind.Stage)
-                .Cast<QuestGraphNode>()
-                .ToList();
-            if (questStageNodes.Count == 0) return;
+            var questColor = new Color(0.20f, 0.35f, 0.60f);
+            var stageColor = new Color(0.20f, 0.55f, 0.30f);
+            var objColor = new Color(0.55f, 0.40f, 0.10f);
+            var rewardColor = new Color(0.65f, 0.40f, 0.10f);
 
-            // Remove old dialog-quest edges
-            var oldDqEdges = this.edges.ToList()
-                .Where(e => e.viewDataKey == "dialog-quest")
-                .ToList();
-            foreach (var e in oldDqEdges) RemoveElement(e);
+            var qn = MakeEditableNode($"📜 {q.questId}", questColor,
+                new (string, string, System.Action<string>)[] {
+                    ("Name", q.displayName, v => q.displayName = v),
+                    ("Desc", q.description ?? "", v => q.description = v)
+                },
+                $"stages: {q.stages?.Length ?? 0}", q, "", null, QuestNodeKind.QuestRoot);
+            AddElement(qn);
+            var qPort = AddPorts(qn, true, false);
 
-            var stageInput = questStageNodes[0].inputContainer.Children().FirstOrDefault() as Port;
-            if (stageInput == null) return;
+            var stages = new List<QuestGraphNode>();
 
-            foreach (var node in tree.nodes)
+            if (q.stages != null)
             {
-                if (node?.edges == null) continue;
-                foreach (var edge in node.edges)
+                for (int i = 0; i < q.stages.Length; i++)
                 {
-                    if (edge?.action == null) continue;
-                    if (edge.action.type != DialogueActionType.OfferQuest) continue;
-                    if (edge.action.GetQuestId() != Quest.questId) continue;
+                    var s = q.stages[i];
+                    if (s == null) continue;
+                    int si = i;
+                    var sn = MakeEditableNode($"🟢 {s.stageId}", stageColor,
+                        new (string, string, System.Action<string>)[] {
+                            ("ID", s.stageId, v => q.stages[si].stageId = v),
+                            ("Desc", s.description ?? "", v => q.stages[si].description = v)
+                        },
+                        $"objectives: {s.objectives?.Length ?? 0}",
+                        q, $"stages[{i}]", s, QuestNodeKind.Stage);
+                    AddElement(sn);
+                    var sp = AddPorts(sn, true, true);
+                    stages.Add(sn);
 
-                    if (_dialogNodes.TryGetValue(node.nodeId, out var dialogView))
+                    if (i == 0) ConnectPorts(qPort.output, sp.input);
+                    if (i > 0) ConnectPorts(GetOutputPort(stages[i - 1]), sp.input);
+
+                    if (s.objectives != null)
                     {
-                        var outputPorts = dialogView.GetOutputPorts();
-                        int idx = System.Array.IndexOf(node.edges, edge);
-                        Port dialogOut = idx >= 0 && idx < outputPorts.Count ? outputPorts[idx] : outputPorts.FirstOrDefault();
-                        if (dialogOut != null)
+                        for (int j = 0; j < s.objectives.Length; j++)
                         {
-                            var graphEdge = dialogOut.ConnectTo(stageInput);
-                            graphEdge.viewDataKey = "dialog-quest";
-                            graphEdge.edgeControl.inputColor = DialogQuestEdgeColor;
-                            graphEdge.edgeControl.outputColor = DialogQuestEdgeColor;
-                            AddElement(graphEdge);
+                            var o = s.objectives[j];
+                            if (o == null) continue;
+                            int oi = j; int stIdx = i;
+                            string ti = o.targetNpc != null ? $"→ {o.targetNpc.displayName}" : "";
+                            var on = MakeEditableNode($"🎯 {o.objectiveType}", objColor,
+                                new (string, string, System.Action<string>)[] {
+                                    ("Npc", o.targetNpcId ?? "", v => q.stages[stIdx].objectives[oi].targetNpcId = v),
+                                    ("Qty", $"{o.requiredQuantity}", v => { if (int.TryParse(v, out var n)) q.stages[stIdx].objectives[oi].requiredQuantity = n; })
+                                },
+                                ti, q, $"stages[{stIdx}].objectives[{oi}]", o, QuestNodeKind.Objective);
+                            AddElement(on);
+                            var op = AddPorts(on, false, true);
+                            ConnectPorts(sp.output, op.input);
+
+                            // Auto-edge: Objective → NPC
+                            if (o.targetNpc != null)
+                                CreateObjectiveNpcEdge(on, o.targetNpc);
                         }
                     }
                 }
             }
+
+            if (q.rewards != null && HasReward(q.rewards))
+            {
+                var r = q.rewards;
+                var rn = MakeEditableNode("🎁 REWARDS", rewardColor,
+                    new (string, string, System.Action<string>)[] {
+                        ("Credits", r.credits.ToString(), v => { if (int.TryParse(v, out var n)) r.credits = n; })
+                    },
+                    $"💰 {r.credits} CR", q, "rewards", r, QuestNodeKind.Reward);
+                AddElement(rn);
+                var rp = AddPorts(rn, false, true);
+                if (stages.Count > 0) ConnectPorts(GetOutputPort(stages[stages.Count - 1]), rp.input);
+            }
         }
 
-        private void ApplyUnifiedLayout()
+        private void CreateObjectiveNpcEdge(QuestGraphNode objNode, NpcDefinition targetNpc)
         {
-            const float DLG_X = 0f;
-            const float DLG_W = 380f;
-            const float DLG_Y_START = 0f;
-            const float DLG_Y_GAP = 40f;
+            var npcCard = _npcCards.FirstOrDefault(c => c.Npc == targetNpc);
+            if (npcCard == null) return;
 
-            float dlgY = DLG_Y_START;
-            foreach (var kvp in _dialogNodes.OrderBy(k => k.Key))
-            {
-                var view = kvp.Value;
-                float h = 400f; // tall enough for IMGUI editor
-                view.SetPosition(new Rect(DLG_X, dlgY, DLG_W, h));
-                dlgY += h + DLG_Y_GAP;
-            }
+            // Add output port to objective
+            var objOut = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Single, typeof(bool));
+            objOut.portName = "→ NPC";
+            objOut.portColor = QuestNpcC;
+            objNode.outputContainer.Add(objOut);
 
-            if (_dialogNodes.Count > 0)
+            // Add input port to NPC card
+            var npcIn = Port.Create<Edge>(Orientation.Vertical, Direction.Input, Port.Capacity.Multi, typeof(bool));
+            npcIn.portName = "← Quest";
+            npcIn.portColor = QuestNpcC;
+            npcCard.inputContainer.Add(npcIn);
+
+            AddEdge(objOut, npcIn, "quest-npc", QuestNpcC, QuestNpcC);
+        }
+
+        private void RebuildDialogEdges(DialogTree tree, List<DialogNodeView> views)
+        {
+            var nodeMap = views.ToDictionary(v => v.DialogueNode.nodeId, v => v);
+            // Remove old internal dialog edges
+            var old = edges.ToList().Where(e => e.viewDataKey == "dialog-internal").ToList();
+            foreach (var e in old) RemoveElement(e);
+
+            foreach (var src in views)
             {
-                float questShiftX = DLG_W + 60f;
-                foreach (var n in this.nodes.ToList())
+                var srcNode = src.DialogueNode;
+                if (srcNode?.edges == null) continue;
+                var outPorts = src.GetOutputPorts();
+                for (int ei = 0; ei < srcNode.edges.Length && ei < outPorts.Count; ei++)
                 {
-                    if (n is QuestGraphNode qn &&
-                        qn.NodeKind != QuestNodeKind.Dialog &&
-                        qn.NodeKind != QuestNodeKind.Condition)
+                    var ed = srcNode.edges[ei];
+                    if (ed == null || string.IsNullOrEmpty(ed.targetNodeId)) continue;
+                    if (!nodeMap.TryGetValue(ed.targetNodeId, out var tgt)) continue;
+                    var ti = tgt.inputContainer.Children().FirstOrDefault() as Port;
+                    if (ti != null) AddEdge(outPorts[ei], ti, "dialog-internal",
+                        new Color(0.35f, 0.5f, 0.9f), new Color(0.35f, 0.5f, 0.9f));
+                }
+            }
+        }
+
+        private void CreateDialogToQuestEdges(DialogTree tree, List<DialogNodeView> views)
+        {
+            if (tree.nodes == null) return;
+            foreach (var n in tree.nodes)
+            {
+                if (n?.edges == null) continue;
+                for (int ei = 0; ei < n.edges.Length; ei++)
+                {
+                    var ed = n.edges[ei];
+                    if (ed?.action?.type == DialogueActionType.OfferQuest && ed.action.questRef != null)
                     {
-                        var pos = n.GetPosition();
-                        if (pos.x < questShiftX)
-                            n.SetPosition(new Rect(questShiftX, pos.y, pos.width, pos.height));
+                        var src = views.FirstOrDefault(v => v.DialogueNode.nodeId == n.nodeId);
+                        if (src == null) continue;
+                        var outPorts = src.GetOutputPorts();
+                        if (ei >= outPorts.Count) continue;
+                        var q = ed.action.questRef;
+                        if (q.stages == null || q.stages.Length == 0) continue;
+                        var stageN = nodes.ToList().FirstOrDefault(x =>
+                            x is QuestGraphNode gn && gn.NodeKind == QuestNodeKind.Stage && gn.OwnerAsset == q);
+                        if (stageN == null) continue;
+                        var si = (stageN as Node)?.inputContainer.Children().FirstOrDefault() as Port;
+                        if (si != null) AddEdge(outPorts[ei], si, "dialog-quest", DialogQuestC, DialogQuestC);
                     }
                 }
+            }
+        }
+
+        private void CreateSwitchDialogEdges(DialogTree tree, List<DialogNodeView> views)
+        {
+            if (tree.nodes == null) return;
+            foreach (var n in tree.nodes)
+            {
+                if (n?.edges == null) continue;
+                for (int ei = 0; ei < n.edges.Length; ei++)
+                {
+                    var ed = n.edges[ei];
+                    if (ed?.action?.type == DialogueActionType.SwitchDialogTree && ed.action.dialogTreeRef != null)
+                    {
+                        var src = views.FirstOrDefault(v => v.DialogueNode.nodeId == n.nodeId);
+                        if (src == null) continue;
+                        var outPorts = src.GetOutputPorts();
+                        if (ei >= outPorts.Count) continue;
+                        var tt = ed.action.dialogTreeRef;
+                        if (!_dialogGroups.TryGetValue(tt.treeId, out var tViews)) continue;
+                        var tgt = tViews.FirstOrDefault(v => v.DialogueNode.nodeId == tt.rootNodeId) ?? tViews.FirstOrDefault();
+                        if (tgt == null) continue;
+                        var ti = tgt.inputContainer.Children().FirstOrDefault() as Port;
+                        if (ti != null) AddEdge(outPorts[ei], ti, "switch-dialog", SwitchDlgC, SwitchDlgC);
+                    }
+                }
+            }
+        }
+
+        private void AddEdge(Port o, Port i, string key, Color ic, Color oc)
+        {
+            if (o == null || i == null) return;
+            var e = o.ConnectTo(i);
+            e.viewDataKey = key;
+            e.edgeControl.inputColor = ic;
+            e.edgeControl.outputColor = oc;
+            AddElement(e);
+        }
+
+        private void ApplyLayout()
+        {
+            float x = 0f;
+            const float NPC_W = 280f, NPC_H = 220f;
+            const float DLG_W = 360f, DLG_H = 420f;
+            const float GAP = 30f;
+
+            foreach (var card in _npcCards)
+            {
+                card.SetPosition(new Rect(x, 0f, NPC_W, NPC_H));
+
+                if (card.Npc.defaultDialogTree != null &&
+                    _dialogGroups.TryGetValue(card.Npc.defaultDialogTree.treeId, out var dvs))
+                {
+                    float dy = NPC_H + GAP;
+                    foreach (var dv in dvs)
+                    {
+                        dv.SetPosition(new Rect(x, dy, DLG_W, DLG_H));
+                        dy += DLG_H + 20f;
+                    }
+                }
+
+                x += NPC_W + DLG_W + GAP;
+            }
+
+            // Quest nodes right of NPCs
+            float qx = x + GAP;
+            float qy = 0f;
+            foreach (var q in _loadedQuests)
+            {
+                var qns = nodes.ToList().Where(n => n is QuestGraphNode gn &&
+                    (gn.NodeKind == QuestNodeKind.QuestRoot || gn.NodeKind == QuestNodeKind.Stage ||
+                     gn.NodeKind == QuestNodeKind.Objective || gn.NodeKind == QuestNodeKind.Reward) &&
+                    gn.OwnerAsset == q).ToList();
+
+                float cy = qy;
+                foreach (var n in qns)
+                {
+                    var p = n.GetPosition();
+                    n.SetPosition(new Rect(qx, cy, 240f, p.height > 0 ? p.height : 140f));
+                    cy += (p.height > 0 ? p.height : 140f) + 15f;
+                }
+                qx += 300f;
             }
         }
 
@@ -588,52 +602,53 @@ namespace ProjectC.Quests.Editor
         {
             base.OnEdgeCreated(edge);
 
-            if (edge.output?.node is DialogNodeView dlgNode &&
-                edge.input?.node is QuestGraphNode questNode &&
-                questNode.NodeKind == QuestNodeKind.Stage)
+            if (edge.output?.node is DialogNodeView dlg &&
+                edge.input?.node is QuestGraphNode qn && qn.NodeKind == QuestNodeKind.Stage)
             {
-                edge.viewDataKey = "dialog-quest";
-                edge.edgeControl.inputColor = DialogQuestEdgeColor;
-                edge.edgeControl.outputColor = DialogQuestEdgeColor;
-
-                if (DialogTree != null && Quest != null)
+                var q = qn.OwnerAsset as QuestDefinition;
+                if (q != null)
                 {
-                    var dialogNode = dlgNode.DialogueNode;
-                    if (dialogNode != null)
+                    var list = dlg.DialogueNode.edges?.ToList() ?? new List<DialogueEdge>();
+                    list.Add(new DialogueEdge
                     {
-                        var edgesList = dialogNode.edges?.ToList() ?? new List<DialogueEdge>();
-                        edgesList.Add(new DialogueEdge
-                        {
-                            label = $"Offer: {Quest.displayName}",
-                            action = new DialogueAction
-                            {
-                                type = DialogueActionType.OfferQuest,
-                                questRef = Quest,
-                                stringParam = Quest.questId
-                            }
-                        });
-                        dialogNode.edges = edgesList.ToArray();
-                        dlgNode.RebuildOutputPorts();
-                        EditorUtility.SetDirty(DialogTree);
-                    }
+                        label = $"Offer: {q.displayName}",
+                        action = new DialogueAction { type = DialogueActionType.OfferQuest, questRef = q, stringParam = q.questId }
+                    });
+                    dlg.DialogueNode.edges = list.ToArray();
+                    dlg.RebuildOutputPorts();
+                    EditorUtility.SetDirty(dlg.DialogTree);
                 }
+                edge.viewDataKey = "dialog-quest";
+                edge.edgeControl.inputColor = DialogQuestC;
+                edge.edgeControl.outputColor = DialogQuestC;
+            }
+
+            if (edge.output?.node is QuestGraphNode objN && objN.NodeKind == QuestNodeKind.Objective &&
+                edge.input?.node is NpcCardNode npcC)
+            {
+                var obj = objN.SourceData as QuestObjective;
+                if (obj != null)
+                {
+                    obj.targetNpc = npcC.Npc;
+                    obj.targetNpcId = npcC.Npc.npcId;
+                    EditorUtility.SetDirty(objN.OwnerAsset);
+                }
+                edge.viewDataKey = "quest-npc";
+                edge.edgeControl.inputColor = QuestNpcC;
+                edge.edgeControl.outputColor = QuestNpcC;
             }
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════
     // UnifiedQuestGraphWindow
-    // ═══════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════
 
     public class UnifiedQuestGraphWindow : EditorWindow
     {
         private UnifiedQuestGraphView _graph;
-        private UnityEditor.UIElements.ObjectField _questField;
-        private UnityEditor.UIElements.ObjectField _dialogField;
         private UnityEditor.UIElements.ObjectField _npcField;
-        private Button _editBtn;
-        private Button _saveBtn;
-        private Button _revertBtn;
+        private UnityEditor.UIElements.ObjectField _questField;
         private Label _statusLabel;
 
         [MenuItem("Tools/Project C/Quests/Unified Quest Graph", priority = 100)]
@@ -641,7 +656,7 @@ namespace ProjectC.Quests.Editor
         {
             var w = GetWindow<UnifiedQuestGraphWindow>();
             w.titleContent = new GUIContent("Unified Quest Graph");
-            w.minSize = new Vector2(1000, 700);
+            w.minSize = new Vector2(1200, 750);
             w.Show();
         }
 
@@ -651,96 +666,53 @@ namespace ProjectC.Quests.Editor
             root.Clear();
             root.style.flexGrow = 1;
 
-            // ── Toolbar ──
-            var toolbar = new VisualElement();
-            toolbar.style.flexDirection = FlexDirection.Row;
-            toolbar.style.flexWrap = Wrap.Wrap;
-            toolbar.style.paddingTop = 4; toolbar.style.paddingBottom = 4;
-            toolbar.style.paddingLeft = 6; toolbar.style.paddingRight = 6;
-            toolbar.style.backgroundColor = new StyleColor(new Color(0.18f, 0.18f, 0.18f, 1f));
+            var tb = new VisualElement();
+            tb.style.flexDirection = FlexDirection.Row;
+            tb.style.paddingTop = 4; tb.style.paddingBottom = 4;
+            tb.style.paddingLeft = 6; tb.style.paddingRight = 6;
+            tb.style.backgroundColor = new StyleColor(new Color(0.18f, 0.18f, 0.18f, 1f));
 
-            _questField = new UnityEditor.UIElements.ObjectField("Quest")
-                { objectType = typeof(QuestDefinition), allowSceneObjects = false };
-            _questField.style.width = 160;
-            _questField.RegisterValueChangedCallback(_ => TryLoadUnified());
-            toolbar.Add(_questField);
-
-            _dialogField = new UnityEditor.UIElements.ObjectField("Dialog")
-                { objectType = typeof(DialogTree), allowSceneObjects = false };
-            _dialogField.style.width = 160; _dialogField.style.marginLeft = 4;
-            _dialogField.RegisterValueChangedCallback(_ => TryLoadUnified());
-            toolbar.Add(_dialogField);
-
-            _npcField = new UnityEditor.UIElements.ObjectField("NPC")
+            _npcField = new UnityEditor.UIElements.ObjectField("+NPC")
                 { objectType = typeof(NpcDefinition), allowSceneObjects = false };
-            _npcField.style.width = 140; _npcField.style.marginLeft = 4;
-            _npcField.RegisterValueChangedCallback(_ => TryLoadUnified());
-            toolbar.Add(_npcField);
+            _npcField.style.width = 180;
+            _npcField.RegisterValueChangedCallback(evt =>
+            {
+                if (evt.newValue is NpcDefinition npc) { _graph.AddNpc(npc); _npcField.SetValueWithoutNotify(null); UpdateStatus(); }
+            });
+            tb.Add(_npcField);
 
-            // + Add Dialog Node
-            var addDlgBtn = new Button(() => _graph?.AddDialogNode()) { text = "+ Dialog" };
-            addDlgBtn.style.marginLeft = 8;
-            addDlgBtn.style.fontSize = 10;
-            toolbar.Add(addDlgBtn);
+            _questField = new UnityEditor.UIElements.ObjectField("+Quest")
+                { objectType = typeof(QuestDefinition), allowSceneObjects = false };
+            _questField.style.width = 180; _questField.style.marginLeft = 4;
+            _questField.RegisterValueChangedCallback(evt =>
+            {
+                if (evt.newValue is QuestDefinition q) { _graph.AddQuest(q); _questField.SetValueWithoutNotify(null); UpdateStatus(); }
+            });
+            tb.Add(_questField);
 
             var fitBtn = new Button(() => _graph?.FrameAll()) { text = "⊡ Fit" };
-            fitBtn.style.marginLeft = 4;
-            toolbar.Add(fitBtn);
+            fitBtn.style.marginLeft = 6; tb.Add(fitBtn);
 
-            _editBtn = new Button(() =>
-            {
-                if (_graph == null) return;
-                _graph.EditMode = !_graph.EditMode;
-                _editBtn.text = _graph.EditMode ? "🔒 View" : "✏️ Edit";
-                _saveBtn.style.display = _graph.EditMode ? DisplayStyle.Flex : DisplayStyle.None;
-                _revertBtn.style.display = _graph.EditMode ? DisplayStyle.Flex : DisplayStyle.None;
-            }) { text = "✏️ Edit" };
-            _editBtn.style.marginLeft = 4;
-            toolbar.Add(_editBtn);
-
-            _saveBtn = new Button(() =>
+            var saveBtn = new Button(() =>
             {
                 _graph?.SaveQuest();
-                if (_graph?.DialogTree != null)
-                {
-                    EditorUtility.SetDirty(_graph.DialogTree);
-                    AssetDatabase.SaveAssets();
-                }
+                foreach (var n in _graph?.LoadedNpcs ?? new NpcDefinition[0]) EditorUtility.SetDirty(n);
+                foreach (var d in _graph?.LoadedDialogs ?? new DialogTree[0]) EditorUtility.SetDirty(d);
+                AssetDatabase.SaveAssets();
                 Debug.Log("[UnifiedGraph] Saved all.");
             }) { text = "💾 Save All" };
-            _saveBtn.style.marginLeft = 4;
-            _saveBtn.style.display = DisplayStyle.None;
-            toolbar.Add(_saveBtn);
+            saveBtn.style.marginLeft = 4; tb.Add(saveBtn);
 
-            _revertBtn = new Button(() =>
-            {
-                var quest = _graph?.Quest;
-                var dialog = _graph?.DialogTree;
-                var npc = _graph?.NpcContext;
-                if (quest != null)
-                {
-                    var qPath = AssetDatabase.GetAssetPath(quest);
-                    var freshQuest = AssetDatabase.LoadAssetAtPath<QuestDefinition>(qPath);
-                    DialogTree freshDialog = null;
-                    if (dialog != null)
-                    {
-                        var dPath = AssetDatabase.GetAssetPath(dialog);
-                        freshDialog = AssetDatabase.LoadAssetAtPath<DialogTree>(dPath);
-                    }
-                    _graph?.LoadUnified(freshQuest, freshDialog, npc);
-                }
-            }) { text = "↩️ Revert" };
-            _revertBtn.style.marginLeft = 4;
-            _revertBtn.style.display = DisplayStyle.None;
-            toolbar.Add(_revertBtn);
+            var clearBtn = new Button(() => { _graph?.ClearAll(); UpdateStatus(); }) { text = "✕ Clear" };
+            clearBtn.style.marginLeft = 4; tb.Add(clearBtn);
 
-            root.Add(toolbar);
+            root.Add(tb);
 
             _graph = new UnifiedQuestGraphView();
             _graph.style.flexGrow = 1;
             root.Add(_graph);
 
-            _statusLabel = new Label("Select NPC, Quest, or DialogTree to begin");
+            _statusLabel = new Label("Drag NPC into '+NPC' field above to start building");
             _statusLabel.style.position = Position.Absolute;
             _statusLabel.style.bottom = 4; _statusLabel.style.left = 6;
             _statusLabel.style.color = new StyleColor(new Color(0.5f, 0.5f, 0.5f, 1f));
@@ -748,149 +720,22 @@ namespace ProjectC.Quests.Editor
             root.Add(_statusLabel);
         }
 
-        private void TryLoadUnified()
-        {
-            var quest = _questField.value as QuestDefinition;
-            var dialog = _dialogField.value as DialogTree;
-            var npc = _npcField.value as NpcDefinition;
-
-            if (npc != null)
-            {
-                if (dialog == null)
-                {
-                    dialog = npc.defaultDialogTree;
-                    _dialogField.SetValueWithoutNotify(dialog);
-                }
-                if (quest == null && npc.questOfferRefs != null && npc.questOfferRefs.Length > 0)
-                {
-                    quest = npc.questOfferRefs[0];
-                    _questField.SetValueWithoutNotify(quest);
-                }
-                _graph.LoadUnified(quest, dialog, npc);
-            }
-            else if (quest != null && dialog != null)
-            {
-                _graph.LoadUnified(quest, dialog, npc);
-            }
-            else if (quest != null)
-            {
-                DialogTree resolvedDialog = null;
-                NpcDefinition resolvedNpc = null;
-                foreach (var guid in AssetDatabase.FindAssets("t:NpcDefinition"))
-                {
-                    var path = AssetDatabase.GUIDToAssetPath(guid);
-                    var candidate = AssetDatabase.LoadAssetAtPath<NpcDefinition>(path);
-                    if (candidate == null) continue;
-                    if (candidate.GetQuestOfferIds()?.Contains(quest.questId) == true)
-                    {
-                        resolvedNpc = candidate;
-                        resolvedDialog = candidate.defaultDialogTree;
-                        break;
-                    }
-                }
-                if (resolvedDialog != null)
-                {
-                    _dialogField.SetValueWithoutNotify(resolvedDialog);
-                    _npcField.SetValueWithoutNotify(resolvedNpc);
-                }
-                _graph.LoadUnified(quest, resolvedDialog, resolvedNpc);
-            }
-            else if (dialog != null)
-            {
-                QuestDefinition resolvedQuest = null;
-                if (dialog.nodes != null)
-                {
-                    foreach (var node in dialog.nodes)
-                    {
-                        if (node?.edges == null) continue;
-                        foreach (var edge in node.edges)
-                        {
-                            if (edge?.action?.type == DialogueActionType.OfferQuest && edge.action.questRef != null)
-                            {
-                                resolvedQuest = edge.action.questRef;
-                                break;
-                            }
-                        }
-                        if (resolvedQuest != null) break;
-                    }
-                }
-                if (resolvedQuest != null) _questField.SetValueWithoutNotify(resolvedQuest);
-                _graph.LoadUnified(resolvedQuest, dialog, npc);
-            }
-            else
-            {
-                _graph.LoadUnified(null, null, null);
-            }
-
-            UpdateStatusBar();
-        }
-
-        private void UpdateStatusBar()
+        private void UpdateStatus()
         {
             if (_graph == null || _statusLabel == null) return;
-            int nodeCount = _graph.nodes.ToList().Count;
-            int edgeCount = _graph.edges.ToList().Count;
-            string questId = _graph.Quest?.questId ?? "—";
-            string dialogId = _graph.DialogTree?.treeId ?? "—";
-            string npcName = _graph.NpcContext?.displayName ?? "—";
-            _statusLabel.text = $"NPC: {npcName}  |  Nodes: {nodeCount}  |  Edges: {edgeCount}  |  Quest: {questId}  |  Dialog: {dialogId}";
+            int nc = _graph.nodes.ToList().Count;
+            int ec = _graph.edges.ToList().Count;
+            int npcC = _graph.LoadedNpcs?.Length ?? 0;
+            int qC = _graph.LoadedQuests?.Length ?? 0;
+            int dC = _graph.LoadedDialogs?.Length ?? 0;
+            _statusLabel.text = $"NPCs: {npcC}  |  Quests: {qC}  |  Dialogs: {dC}  |  Nodes: {nc}  |  Edges: {ec}";
         }
 
         public void LoadUnified(QuestDefinition quest, DialogTree dialogTree, NpcDefinition npc = null)
         {
-            _questField.SetValueWithoutNotify(quest);
-            _dialogField.SetValueWithoutNotify(dialogTree);
-            _npcField.SetValueWithoutNotify(npc);
-            _graph?.LoadUnified(quest, dialogTree, npc);
-            UpdateStatusBar();
-        }
-    }
-
-    public static class UnifiedQuestGraphIntegration
-    {
-        public static void OpenUnified(QuestDefinition quest)
-        {
-            if (quest == null) return;
-            DialogTree dialogTree = null;
-            NpcDefinition npc = null;
-            foreach (var guid in AssetDatabase.FindAssets("t:NpcDefinition"))
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                var candidate = AssetDatabase.LoadAssetAtPath<NpcDefinition>(path);
-                if (candidate?.GetQuestOfferIds()?.Contains(quest.questId) == true)
-                {
-                    npc = candidate;
-                    dialogTree = candidate.defaultDialogTree;
-                    break;
-                }
-            }
-            var w = EditorWindow.GetWindow<UnifiedQuestGraphWindow>();
-            w.titleContent = new GUIContent($"Unified: {quest.questId}");
-            w.LoadUnified(quest, dialogTree, npc);
-            w.Show();
-        }
-
-        public static void OpenUnified(DialogTree dialogTree)
-        {
-            if (dialogTree == null) return;
-            QuestDefinition quest = null;
-            if (dialogTree.nodes != null)
-            {
-                foreach (var node in dialogTree.nodes)
-                {
-                    if (node?.edges == null) continue;
-                    foreach (var edge in node.edges)
-                    {
-                        if (edge?.action?.type == DialogueActionType.OfferQuest && edge.action.questRef != null)
-                        { quest = edge.action.questRef; break; }
-                    }
-                    if (quest != null) break;
-                }
-            }
-            var w = EditorWindow.GetWindow<UnifiedQuestGraphWindow>();
-            w.titleContent = new GUIContent($"Unified: {dialogTree.treeId}");
-            w.LoadUnified(quest, dialogTree, null);
-            w.Show();
+            if (npc != null) _graph.AddNpc(npc);
+            if (quest != null) _graph.AddQuest(quest);
+            UpdateStatus();
         }
     }
 }

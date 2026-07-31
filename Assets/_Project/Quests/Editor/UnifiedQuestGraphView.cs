@@ -186,50 +186,34 @@ namespace ProjectC.Quests.Editor
 
         // ── Layout (columns: NPC | Dialog | Quest→Stages↓→Reward) ──
 
-        // ── BFS Tree Layout ──
-
-        private float GetNodeHeight(object info) => info switch
-        {
-            NpcNodeInfo => 210f, DialogNodeInfo => 200f, QuestNodeInfo => 140f,
-            StageNodeInfo => 290f, RewardNodeInfo => 140f, _ => 140f
-        };
+        // ── Layout (columns: NPC | Dialog | Quest→Stages↓→Reward) ──
 
         private void ApplyLayout()
         {
-            var children = Model.GetChildrenMap();
-            var roots = Model.GetRoots();
-            var visited = new HashSet<object>();
-            float cursorX = 0f;
+            const float NPC_H = 210f, DLG_H = 200f, Q_H = 140f, STAGE_H = 290f, REWARD_H = 140f;
 
-            foreach (var root in roots)
+            float x = 0f, y = 0f;
+
+            foreach (var ni in Model.NpcNodes) { if (_nodeMap.TryGetValue(ni, out var n)) n.SetPosition(new Rect(x, y, NODE_W, NPC_H)); y += NPC_H + V_GAP; }
+            x += NODE_W + H_GAP; y = 0f;
+            foreach (var g in Model.DialogNodes.GroupBy(d => d.tree))
+            { float gy = y; foreach (var di in g) { if (_nodeMap.TryGetValue(di, out var n)) n.SetPosition(new Rect(x, gy, NODE_W, DLG_H)); gy += DLG_H + V_GAP; } y = gy; }
+            x += NODE_W + H_GAP; y = 0f;
+
+            foreach (var qi in Model.QuestNodes)
             {
-                LayoutSubtree(root, children, visited, cursorX, 0f, 0);
-                cursorX += NODE_W + H_GAP * 2;
+                float qx = x, qy = 0f;
+                if (_nodeMap.TryGetValue(qi, out var qNode)) qNode.SetPosition(new Rect(qx, qy, NODE_W, Q_H));
+                qy += Q_H + V_GAP;
+                var stages = Model.StageNodes.Where(s => s.quest == qi.quest).OrderBy(s => s.stageIndex).ToList();
+                foreach (var si in stages)
+                { if (_nodeMap.TryGetValue(si, out var sNode)) sNode.SetPosition(new Rect(qx, qy, NODE_W, STAGE_H)); qy += STAGE_H + V_GAP; }
+                var reward = Model.RewardNodes.FirstOrDefault(r => r.quest == qi.quest);
+                if (reward != null && _nodeMap.TryGetValue(reward, out var rNode)) rNode.SetPosition(new Rect(qx, qy, NODE_W, REWARD_H));
+                x += NODE_W + H_GAP + 60f;
             }
-
-            // Orphan nodes (no parent AND no children) — place at the end
-            foreach (var ni in Model.NpcNodes) if (!visited.Contains(ni)) { if (_nodeMap.TryGetValue(ni, out var n)) n.SetPosition(new Rect(cursorX, 0f, NODE_W, GetNodeHeight(ni))); cursorX += NODE_W + H_GAP; visited.Add(ni); }
-            foreach (var di in Model.DialogNodes) if (!visited.Contains(di)) { if (_nodeMap.TryGetValue(di, out var n)) n.SetPosition(new Rect(cursorX, 0f, NODE_W, GetNodeHeight(di))); cursorX += NODE_W + H_GAP; visited.Add(di); }
-            foreach (var qi in Model.QuestNodes) if (!visited.Contains(qi)) { if (_nodeMap.TryGetValue(qi, out var n)) n.SetPosition(new Rect(cursorX, 0f, NODE_W, GetNodeHeight(qi))); cursorX += NODE_W + H_GAP; visited.Add(qi); }
         }
 
-        private float LayoutSubtree(object node, Dictionary<object, List<object>> children, HashSet<object> visited, float x, float y, int depth)
-        {
-            if (visited.Contains(node)) return y;
-            visited.Add(node);
-
-            float h = GetNodeHeight(node);
-            float indent = depth * 30f;
-            if (_nodeMap.TryGetValue(node, out var vn)) vn.SetPosition(new Rect(x + indent, y, NODE_W, h));
-            float nextY = y + h + V_GAP;
-
-            if (children.TryGetValue(node, out var kidList))
-                foreach (var kid in kidList)
-                    if (!visited.Contains(kid))
-                        nextY = LayoutSubtree(kid, children, visited, x, nextY, depth + 1);
-
-            return Math.Max(nextY, y + h + V_GAP);
-        }
 
 
         // ── Callbacks ──

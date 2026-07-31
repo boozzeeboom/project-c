@@ -1,6 +1,102 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-07-31 (T-QEDIT v5 — Unified Quest Graph, 14 коммитов)
+
+**Задача:** Единый визуальный редактор NPC↔Dialog↔Quest — модель-ориентированный GraphView
+**Коммиты:** `a13ed07f`…`d0083ed4` (14 коммитов, v5.1–v5.12)
+**Документация:** `UNIFIED_QUEST_GRAPH_PLAN.md` — план, сверка в конце секции
+
+### v5.1 – Контекстное меню, создание ассетов, вёрстка
+- `UnifiedQuestGraphView.cs` + `QuestGraphModel.cs` + `GraphNodes.cs` — новые файлы
+- Правый клик → New NPC/Quest/Dialog (создание .asset через SaveFilePanel)
+- 5 типов нод: NpcNode, DialogNode, QuestRootNode, StageNode, RewardNode
+- Цветовое кодирование: NPC=фиолет, Dialog=синий, Quest=тёмно-синий, Stage=зелёный, Reward=золотой
+
+### v5.2 – Убраны Objective-ноды, стейджи в цепочку
+- **Решение:** Objective-ноды удалены из графа. Objectives редактируются ТОЛЬКО внутри StageNode (IMGUI PropertyField).
+- StageNode: кнопки `+Obj`, `+Stage`, `×Stage`
+- QuestRoot→Stage0→Stage1→...→Last Stage→Reward — вертикальная цепочка
+- **Расхождение с планом (T-U07):** план предполагал отдельные Objective-ноды; v5.2 упростил — objectives внутри Stage
+
+### v5.3 – Цепочка стейджей, сохранение позиций
+- `AddStage()` проставляет `nextStageId` у предыдущего → цепочка не рвётся
+- `PersistKey`-based сохранение позиций при `Rebuild()`
+- Stage ID + Next Stage ID в одной строке IMGUI (компактно)
+
+### v5.4 – Undo.RecordObject + AssetDatabase.SaveAssets в CRUD
+- `Undo.RecordObject()` перед каждой мутацией
+- `AssetDatabase.SaveAssets()` после каждой мутации
+- `schedule.Execute` для отложенного `Rebuild()` (избегает конфликта с UI-событием)
+
+### v5.5 – CRUD через SerializedObject API
+- `DeleteArrayElementAtIndex` / `InsertArrayElementAtIndex` + `ApplyModifiedProperties()`
+- Эксперимент: оказался избыточным, откачен в v5.7
+
+### v5.6 – EditorApplication.delayCall для колбэков
+- `delayCall` вместо `schedule.Execute` — гарантирует вызов после UI-события
+
+### v5.7 – Прямой CRUD + Diagnostic.Log
+- Возврат к прямому `quest.stages = list.ToArray()` (быстрее, без SerializedObject overhead)
+- Синхронные колбэки с `Debug.Log` до/после мутации
+
+### v5.8 – Delete key → Model.DeleteStage
+- **Корневая проблема:** пользователь жал Delete на клавиатуре → GraphView удалял визуал, НЕ трогая SO
+- `OnGraphViewChanged` теперь перехватывает удаление StageGraphNode → вызывает `Model.DeleteStage()`
+- **Сверка с T-U01:** план требовал «разрешить удаление edges; при удалении — удалять из SO» ✅
+
+### v5.9 – Порты диалога + связь Dialog→Quest (не Stage)
+- DialogNode: `OnModified` → `Rebuild()` при `+/-Choice` (порты сразу обновляются)
+- **Исправление:** `BuildDialogEdges` соединяет `DialogEdgeAction → QuestOfferedBy` (QuestRoot), а не `→StageIn`
+- **Сверка с T-U07:** план: «drag edge от DialogNode к QuestStageNode → OfferQuest» ✅ (но к QuestRoot, не к Stage)
+
+### v5.10 – 📌 Пин на каждой ноде
+- `BaseGraphNode.AddPinButton()` — кнопка `📌 AssetName` пингует ассет в Project-окне
+- NpcGraphNode: расширенный IMGUI (ID, Name, Faction, Portrait, DialogTree, Services)
+- **Не по плану:** добавлено для удобства навигации
+
+### v5.11 – Авто-загрузка из диалогов + Undo/Redo
+- `AutoLoadFromDialog`: при загрузке диалога сканирует `OfferQuest` → загружает quests
+- `Undo.undoRedoPerformed` → `Rebuild()` графа при Ctrl+Z / Ctrl+Y
+
+### v5.12 – Рекурсивная авто-загрузка всей цепочки
+- `AddQuest` → `AddNpc(targetNpc)` (а не `_npcs.Add`)
+- `AutoLoadFromDialog` → `AddQuest(q)` (а не `_quests.Add`)
+- `AddNpc` → `AddQuest(q)` для offerRefs/turnInRefs
+- Полный граф: Mira→Dialog→Quest→Objectives→Zipun→... (рекурсивно)
+
+### Сверка с UNIFIED_QUEST_GRAPH_PLAN.md
+
+| Тикет | Статус | Комментарий |
+|---|---|---|
+| T-U01 Model-driven OnGraphViewChanged | ✅ v5.8 | Удаление нод → мутация SO |
+| T-U02 Node↔SO binding | ✅ v5.2 | BaseGraphNode + PersistKey; но CRUD = полный Rebuild (не инкрементальный) |
+| T-U03 Авто-лейаут | ✅ v5.2–5.3 | Колоночный (не BFS-дерево), позиции сохраняются |
+| T-U04 Осмысленные порты | ✅ v5.1 | Именованные порты с цветами |
+| T-U05 DialogNodeView | ✅ v5.2 | Синие ноды, Speaker+text, порты на каждый DialogueEdge |
+| T-U06 Загрузка DialogTree | ✅ v5.12 | Рекурсивная загрузка всей цепочки NPC↔Dialog↔Quest |
+| T-U07 Связи Dialog↔Quest | ✅ v5.9 | Оранжевые рёбра Dialog→Quest (QuestOfferedBy, не StageIn) |
+| T-U08 ConditionNodeView | ❌ | Не реализован |
+| T-U09 UnifiedQuestGraphWindow | ✅ v5.2 | Toolbar с ObjectField'ами, статус-бар |
+| T-U10 Интеграция | ✅ v5.2 | Кнопка «Unified Graph» в QuestDefinitionEditor |
+
+### Расхождения с планом
+1. **ConditionNode (T-U08):** не реализован. План: жёлтая ромбовидная нода с True/False портами.
+2. **Инкрементальный CRUD:** план предполагал добавление/удаление ОДНОЙ ноды без Rebuild. Текущая реализация: полный `Rebuild()` (быстро, т.к. графы маленькие).
+3. **Пунктирные рёбра:** план: «dash» для Dialog↔Quest. Реализация: сплошные оранжевые.
+4. **BFS-лейаут:** план: древовидный. Реализация: колоночный (NPC | Dialog | Quest↓).
+5. **Objective-ноды:** план предполагал отдельные ноды. Решение v5.2: objectives внутри Stage (упрощение).
+
+### Дополнительно (не в плане)
+- Undo/Redo (Ctrl+Z/Y) через `Undo.undoRedoPerformed`
+- Пин 📌 на каждой ноде
+- Delete key → мутация SO
+- Создание ассетов через контекстное меню
+- Рекурсивная авто-загрузка всей цепочки зависимостей
+
+---
+
 ## Итерация от 2026-07-22 (T-U01, Unified Quest Graph)
+
 
 **Задача:** T-U01: Model-driven OnGraphViewChanged — разрешить все мутации, убрать _suppressReadOnly
 **Коммит:** `e821c7e3` — T-U01: Model-driven OnGraphViewChanged

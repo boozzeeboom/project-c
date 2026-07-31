@@ -125,18 +125,19 @@ namespace ProjectC.Quests.Editor
             foreach (var qi in Model.QuestNodes)
             {
                 var qn = new QuestRootGraphNode(qi);
-                qn.OnAddStage = q => EditorApplication.delayCall += () => { Model.AddStage(q); Rebuild(); };
+                qn.OnAddStage = q => { Debug.Log($"[GraphView] +Stage clicked: {q.questId}, stages before={q.stages?.Length ?? 0}"); Model.AddStage(q); Debug.Log($"[GraphView] +Stage done: stages after={q.stages?.Length ?? 0}"); Rebuild(); };
                 AddElement(qn); _nodeMap[qi] = qn;
             }
             foreach (var si in Model.StageNodes)
             {
                 var sn = new StageGraphNode(si);
                 sn.StageCount = () => Model.StageNodes.Count(s => s.quest == si.quest);
-                sn.OnDeleteStage = s => EditorApplication.delayCall += () => { Model.DeleteStage(s); Rebuild(); };
-                sn.OnAddStageAfter = s => EditorApplication.delayCall += () => { Model.AddStage(s.quest, s.stageIndex); Rebuild(); };
-                sn.OnAddObjective = s => EditorApplication.delayCall += () => { Model.AddObjective(s); Rebuild(); };
+                sn.OnDeleteStage = s => { Debug.Log($"[GraphView] ×Stage clicked: {s.quest.questId} idx={s.stageIndex}, stages before={s.quest.stages?.Length ?? 0}"); Model.DeleteStage(s); Debug.Log($"[GraphView] ×Stage done: stages after={s.quest.stages?.Length ?? 0}"); Rebuild(); };
+                sn.OnAddStageAfter = s => { Model.AddStage(s.quest, s.stageIndex); Rebuild(); };
+                sn.OnAddObjective = s => { Model.AddObjective(s); Rebuild(); };
                 AddElement(sn); _nodeMap[si] = sn;
             }
+
 
 
             foreach (var ri in Model.RewardNodes) { var n = new RewardGraphNode(ri); AddElement(n); _nodeMap[ri] = n; }

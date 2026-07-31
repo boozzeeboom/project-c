@@ -1,10 +1,11 @@
-// QuestGraphModel v5.2 — pure C# adapter. No ObjectiveNodeInfo (objectives live inside StageNode).
-// Stage→NPC edge: StageNode has "→ Target NPC" port based on its first TalkToNpc/DeliverItem objective.
-
+// QuestGraphModel v5.7 — pure C# adapter. Direct array mutation + SetDirty + SaveAssets.
+// CRUD uses direct managed-object modification (tested: SerializedObject works but
+// delayCall callbacks sometimes fail; direct mutation is simpler and reliable).
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 using ProjectC.Dialogue;
 
 namespace ProjectC.Quests.Editor
@@ -137,13 +138,11 @@ namespace ProjectC.Quests.Editor
             foreach (var quest in _quests)
             {
                 if (quest.stages == null || quest.stages.Length == 0) continue;
-                // Quest root → Stage 0
                 var qNode = QuestNodes.First(n => n.quest == quest);
                 var s0 = StageNodes.FirstOrDefault(s => s.quest == quest && s.stageIndex == 0);
                 if (qNode?.quest != null && s0?.quest != null)
                     Edges.Add(new EdgeInfo { fromNode = qNode, fromPort = PortSemantic.StageNext, toNode = s0, toPort = PortSemantic.StageIn });
 
-                // Stage → next stage (via stage.nextStageId)
                 for (int si = 0; si < quest.stages.Length; si++)
                 {
                     var stage = quest.stages[si]; if (stage == null) continue;
@@ -154,7 +153,6 @@ namespace ProjectC.Quests.Editor
                         if (thisStage?.quest != null && nextStage?.quest != null)
                             Edges.Add(new EdgeInfo { fromNode = thisStage, fromPort = PortSemantic.StageNext, toNode = nextStage, toPort = PortSemantic.StageIn });
                     }
-                    // Stage → NPC (first TalkToNpc/DeliverItem objective)
                     if (stage.objectives != null && thisStage?.quest != null)
                     {
                         var talkObj = stage.objectives.FirstOrDefault(o => o != null && o.targetNpc != null && (o.objectiveType == QuestObjectiveType.TalkToNpc || o.objectiveType == QuestObjectiveType.DeliverItem));
@@ -167,7 +165,6 @@ namespace ProjectC.Quests.Editor
                     }
                 }
 
-                // Last stage → Reward
                 if (RewardNodes.Any(r => r.quest == quest))
                 {
                     int lastIdx = quest.stages.Length - 1;
@@ -179,8 +176,6 @@ namespace ProjectC.Quests.Editor
             }
         }
 
-        // ── Write-through ──
-
         public bool SetConnection(object fromNode, PortSemantic fromPort, object toNode, PortSemantic toPort, int edgeIndex = -1)
         {
             if (fromPort == PortSemantic.DialogEdgeAction && toPort == PortSemantic.StageIn && fromNode is DialogNodeInfo dni)
@@ -189,13 +184,13 @@ namespace ProjectC.Quests.Editor
                 QuestDefinition quest = (toNode as StageNodeInfo)?.quest ?? (toNode as QuestNodeInfo)?.quest;
                 if (quest == null) return false;
                 edge.action = new DialogueAction { type = DialogueActionType.OfferQuest, questRef = quest, stringParam = quest.questId };
-                EditorUtility.SetDirty(dni.tree); AssetDatabase.SaveAssets(); return true;
+                EditorUtility.SetDirty(dni.tree); return true;
             }
             if (fromPort == PortSemantic.DialogEdgeAction && toPort == PortSemantic.DialogIn && fromNode is DialogNodeInfo fromDni && toNode is DialogNodeInfo toDni)
             {
                 var edge = GetEdge(fromDni, edgeIndex); if (edge == null) return false;
-                if (fromDni.tree == toDni.tree) { edge.targetNodeId = toDni.Node?.nodeId ?? ""; EditorUtility.SetDirty(fromDni.tree); AssetDatabase.SaveAssets(); return true; }
-                else { edge.action = new DialogueAction { type = DialogueActionType.SwitchDialogTree, dialogTreeRef = toDni.tree }; edge.targetNodeId = ""; EditorUtility.SetDirty(fromDni.tree); AssetDatabase.SaveAssets(); return true; }
+                if (fromDni.tree == toDni.tree) { edge.targetNodeId = toDni.Node?.nodeId ?? ""; EditorUtility.SetDirty(fromDni.tree); return true; }
+                else { edge.action = new DialogueAction { type = DialogueActionType.SwitchDialogTree, dialogTreeRef = toDni.tree }; edge.targetNodeId = ""; EditorUtility.SetDirty(fromDni.tree); return true; }
             }
             if (fromPort == PortSemantic.StageTargetNpc && toPort == PortSemantic.NpcTargetedBy && fromNode is StageNodeInfo sni && toNode is NpcNodeInfo nni)
             {
@@ -203,144 +198,84 @@ namespace ProjectC.Quests.Editor
                 var obj = stage.objectives.FirstOrDefault(o => o != null && (o.objectiveType == QuestObjectiveType.TalkToNpc || o.objectiveType == QuestObjectiveType.DeliverItem));
                 if (obj == null) { obj = new QuestObjective { objectiveId = "talk_to", objectiveType = QuestObjectiveType.TalkToNpc }; var list = stage.objectives.ToList(); list.Add(obj); stage.objectives = list.ToArray(); }
                 obj.targetNpc = nni.npc; obj.targetNpcId = nni.npc.npcId; obj.objectiveType = QuestObjectiveType.TalkToNpc;
-                EditorUtility.SetDirty(sni.quest); AssetDatabase.SaveAssets(); return true;
+                EditorUtility.SetDirty(sni.quest); return true;
             }
             if (fromPort == PortSemantic.NpcOffersQuest && toPort == PortSemantic.QuestOfferedBy && fromNode is NpcNodeInfo nni2 && toNode is QuestNodeInfo qni2)
             {
                 var list = nni2.npc.questOfferRefs?.ToList() ?? new List<QuestDefinition>(); if (!list.Contains(qni2.quest)) list.Add(qni2.quest);
-                nni2.npc.questOfferRefs = list.ToArray(); EditorUtility.SetDirty(nni2.npc); AssetDatabase.SaveAssets(); return true;
+                nni2.npc.questOfferRefs = list.ToArray(); EditorUtility.SetDirty(nni2.npc); return true;
             }
             if (fromPort == PortSemantic.StageNext && toPort == PortSemantic.StageIn && fromNode is StageNodeInfo fromSni && toNode is StageNodeInfo toSni)
             {
-                fromSni.Stage.nextStageId = toSni.Stage?.stageId ?? ""; EditorUtility.SetDirty(fromSni.quest); AssetDatabase.SaveAssets(); return true;
+                fromSni.Stage.nextStageId = toSni.Stage?.stageId ?? ""; EditorUtility.SetDirty(fromSni.quest); return true;
             }
             return false;
         }
 
-        public bool RemoveConnection
-(object fromNode, PortSemantic fromPort, object toNode, PortSemantic toPort, int edgeIndex = -1)
+        public bool RemoveConnection(object fromNode, PortSemantic fromPort, object toNode, PortSemantic toPort, int edgeIndex = -1)
         {
             if (fromPort == PortSemantic.DialogEdgeAction && fromNode is DialogNodeInfo dni)
-            {
-                var edge = GetEdge(dni, edgeIndex); if (edge == null) return false;
-                edge.action = null; EditorUtility.SetDirty(dni.tree); return true;
-            }
+            { var edge = GetEdge(dni, edgeIndex); if (edge == null) return false; edge.action = null; EditorUtility.SetDirty(dni.tree); return true; }
             if (fromPort == PortSemantic.StageTargetNpc && fromNode is StageNodeInfo sni && toPort == PortSemantic.NpcTargetedBy)
-            {
-                var stage = sni.Stage; if (stage?.objectives == null) return false;
-                var obj = stage.objectives.FirstOrDefault(o => o != null && o.targetNpc != null); if (obj == null) return false;
-                obj.targetNpc = null; obj.targetNpcId = ""; EditorUtility.SetDirty(sni.quest); return true;
-            }
+            { var stage = sni.Stage; if (stage?.objectives == null) return false; var obj = stage.objectives.FirstOrDefault(o => o != null && o.targetNpc != null); if (obj == null) return false; obj.targetNpc = null; obj.targetNpcId = ""; EditorUtility.SetDirty(sni.quest); return true; }
             if (fromPort == PortSemantic.NpcOffersQuest && fromNode is NpcNodeInfo nni && toNode is QuestNodeInfo qni)
-            {
-                var list = nni.npc.questOfferRefs?.ToList() ?? new List<QuestDefinition>(); list.Remove(qni.quest);
-                nni.npc.questOfferRefs = list.ToArray(); EditorUtility.SetDirty(nni.npc); return true;
-            }
+            { var list = nni.npc.questOfferRefs?.ToList() ?? new List<QuestDefinition>(); list.Remove(qni.quest); nni.npc.questOfferRefs = list.ToArray(); EditorUtility.SetDirty(nni.npc); return true; }
             return false;
         }
 
-        // ── Stage/Objective CRUD (SerializedObject API — canonical editor path) ──
+        // ── CRUD: direct managed array mutation ──
 
         public StageNodeInfo AddStage(QuestDefinition quest, int afterIndex = -1)
         {
-            var so = new SerializedObject(quest);
-            var stagesProp = so.FindProperty("stages");
-            int curCount = stagesProp.arraySize;
-
-            int targetIdx = (afterIndex < 0 || afterIndex >= curCount - 1) ? curCount : afterIndex + 1;
-            if (targetIdx > curCount) targetIdx = curCount; // clamp
-
-            string newId = $"stage_{targetIdx}";
-            // Ensure unique ID
-            int suffix = targetIdx;
-            while (HasStageId(quest, newId)) { suffix++; newId = $"stage_{suffix}"; }
-
-            stagesProp.InsertArrayElementAtIndex(targetIdx);
-            var elem = stagesProp.GetArrayElementAtIndex(targetIdx);
-            elem.FindPropertyRelative("stageId").stringValue = newId;
-            elem.FindPropertyRelative("description").stringValue = "";
-            elem.FindPropertyRelative("nextStageId").stringValue = "";
-
-            // Chain: previous stage → new
-            if (targetIdx > 0)
-            {
-                var prev = stagesProp.GetArrayElementAtIndex(targetIdx - 1);
-                var prevNextId = prev.FindPropertyRelative("nextStageId").stringValue;
-                prev.FindPropertyRelative("nextStageId").stringValue = newId;
-                // New stage inherits previous' old nextStageId
-                elem.FindPropertyRelative("nextStageId").stringValue = prevNextId;
-            }
-
-            so.ApplyModifiedProperties();
-            AssetDatabase.SaveAssets();
-            return new StageNodeInfo { quest = quest, stageIndex = targetIdx };
-        }
-
-        private static bool HasStageId(QuestDefinition quest, string id)
-        {
-            if (quest.stages == null) return false;
-            foreach (var s in quest.stages) if (s != null && s.stageId == id) return true;
-            return false;
+            var list = quest.stages?.ToList() ?? new List<QuestStage>();
+            var s = new QuestStage { stageId = UniqueStageId(quest, list.Count), description = "" };
+            if (afterIndex < 0 || afterIndex >= list.Count - 1) { if (list.Count > 0 && list[list.Count - 1] != null) list[list.Count - 1].nextStageId = s.stageId; list.Add(s); }
+            else { s.nextStageId = list[afterIndex].nextStageId; list[afterIndex].nextStageId = s.stageId; list.Insert(afterIndex + 1, s); }
+            quest.stages = list.ToArray();
+            EditorUtility.SetDirty(quest); AssetDatabase.SaveAssets();
+            return new StageNodeInfo { quest = quest, stageIndex = list.IndexOf(s) };
         }
 
         public void DeleteStage(StageNodeInfo sni)
         {
             var quest = sni.quest;
-            var so = new SerializedObject(quest);
-            var stagesProp = so.FindProperty("stages");
-            int before = stagesProp.arraySize;
-            if (sni.stageIndex < 0 || sni.stageIndex >= before) return;
-
-            // Fix chain: previous stage's nextStageId → deleted stage's nextStageId
-            if (sni.stageIndex > 0)
-            {
-                var prev = stagesProp.GetArrayElementAtIndex(sni.stageIndex - 1);
-                var deleted = stagesProp.GetArrayElementAtIndex(sni.stageIndex);
-                prev.FindPropertyRelative("nextStageId").stringValue =
-                    deleted.FindPropertyRelative("nextStageId").stringValue;
-            }
-
-            stagesProp.DeleteArrayElementAtIndex(sni.stageIndex);
-            so.ApplyModifiedProperties();
-            AssetDatabase.SaveAssets();
+            var list = quest.stages?.ToList() ?? new List<QuestStage>();
+            if (sni.stageIndex < 0 || sni.stageIndex >= list.Count) return;
+            if (sni.stageIndex > 0 && list[sni.stageIndex - 1] != null)
+                list[sni.stageIndex - 1].nextStageId = list[sni.stageIndex]?.nextStageId ?? "";
+            list.RemoveAt(sni.stageIndex);
+            quest.stages = list.ToArray();
+            EditorUtility.SetDirty(quest); AssetDatabase.SaveAssets();
         }
 
         public void AddObjective(StageNodeInfo sni)
         {
-            var so = new SerializedObject(sni.quest);
-            var stagesProp = so.FindProperty("stages");
-            if (sni.stageIndex >= stagesProp.arraySize) return;
-            var stageProp = stagesProp.GetArrayElementAtIndex(sni.stageIndex);
-            var objectivesProp = stageProp.FindPropertyRelative("objectives");
-            objectivesProp.InsertArrayElementAtIndex(objectivesProp.arraySize);
-            var elem = objectivesProp.GetArrayElementAtIndex(objectivesProp.arraySize - 1);
-            elem.FindPropertyRelative("objectiveId").stringValue = $"obj_{objectivesProp.arraySize - 1}";
-            elem.FindPropertyRelative("objectiveType").enumValueIndex = (int)QuestObjectiveType.HaveItem;
-            elem.FindPropertyRelative("requiredQuantity").intValue = 1;
-            so.ApplyModifiedProperties();
-            AssetDatabase.SaveAssets();
+            var stage = sni.Stage; if (stage == null) return;
+            var list = stage.objectives?.ToList() ?? new List<QuestObjective>();
+            list.Add(new QuestObjective { objectiveId = $"obj_{list.Count}", objectiveType = QuestObjectiveType.HaveItem, requiredQuantity = 1 });
+            stage.objectives = list.ToArray();
+            EditorUtility.SetDirty(sni.quest); AssetDatabase.SaveAssets();
         }
 
         public void DeleteObjective(StageNodeInfo sni, int objIndex)
         {
-            var so = new SerializedObject(sni.quest);
-            var stagesProp = so.FindProperty("stages");
-            if (sni.stageIndex >= stagesProp.arraySize) return;
-            var stageProp = stagesProp.GetArrayElementAtIndex(sni.stageIndex);
-            var objectivesProp = stageProp.FindPropertyRelative("objectives");
-            if (objIndex < 0 || objIndex >= objectivesProp.arraySize) return;
-            objectivesProp.DeleteArrayElementAtIndex(objIndex);
-            so.ApplyModifiedProperties();
-            AssetDatabase.SaveAssets();
+            var stage = sni.Stage; if (stage?.objectives == null || objIndex < 0 || objIndex >= stage.objectives.Length) return;
+            var list = stage.objectives.ToList(); list.RemoveAt(objIndex); stage.objectives = list.ToArray();
+            EditorUtility.SetDirty(sni.quest); AssetDatabase.SaveAssets();
         }
 
+        private static string UniqueStageId(QuestDefinition quest, int fallback)
+        {
+            var set = new HashSet<string>();
+            if (quest.stages != null) foreach (var s in quest.stages) if (s != null) set.Add(s.stageId);
+            int n = fallback; while (set.Contains($"stage_{n}")) n++;
+            return $"stage_{n}";
+        }
 
-        private static DialogueEdge GetEdge
-(DialogNodeInfo dni, int edgeIndex)
+        private static DialogueEdge GetEdge(DialogNodeInfo dni, int edgeIndex)
         { var node = dni.Node; if (node?.edges == null || edgeIndex < 0 || edgeIndex >= node.edges.Length) return null; return node.edges[edgeIndex]; }
 
         private static bool HasReward(QuestReward r) => r != null && (r.credits > 0 || (r.items != null && r.items.Length > 0) || (r.cargoItems != null && r.cargoItems.Length > 0) || (r.reputation != null && r.reputation.Length > 0));
     }
 }
 #endif
-

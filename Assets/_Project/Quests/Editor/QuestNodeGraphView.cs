@@ -176,24 +176,117 @@ namespace ProjectC.Quests.Editor
             _nodeCounter = 0;
         }
 
+        // T-U03: auto-layout constants
+        private const float V_GAP = 40f;
+        private const float H_GAP = 60f;
+        private const float NODE_W = 240f;
+
+        /// <summary>
+        /// T-U03: BFS-based auto-layout.
+        /// Places nodes in layers, respecting manual positions from _nodePositions.
+        /// </summary>
+        private void ApplyAutoLayout(List<QuestGraphNode> orderedNodes, QuestGraphNode rootNode)
+        {
+            if (orderedNodes == null || orderedNodes.Count == 0) return;
+
+            var children = new Dictionary<QuestGraphNode, List<QuestGraphNode>>();
+            foreach (var n in orderedNodes)
+                children[n] = new List<QuestGraphNode>();
+
+            foreach (var edge in this.edges.ToList())
+            {
+                if (edge.output?.node is QuestGraphNode parent &&
+                    edge.input?.node is QuestGraphNode child &&
+                    children.ContainsKey(parent))
+                {
+                    if (!children[parent].Contains(child))
+                        children[parent].Add(child);
+                }
+            }
+
+            var visited = new HashSet<QuestGraphNode>();
+            var queue = new Queue<QuestGraphNode>();
+            var layer = new Dictionary<QuestGraphNode, int>();
+            var layerNodes = new SortedDictionary<int, List<QuestGraphNode>>();
+
+            if (rootNode != null)
+            {
+                queue.Enqueue(rootNode);
+                layer[rootNode] = 0;
+                visited.Add(rootNode);
+            }
+            else if (orderedNodes.Count > 0)
+            {
+                queue.Enqueue(orderedNodes[0]);
+                layer[orderedNodes[0]] = 0;
+                visited.Add(orderedNodes[0]);
+            }
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                int curLayer = layer[current];
+
+                if (!layerNodes.ContainsKey(curLayer))
+                    layerNodes[curLayer] = new List<QuestGraphNode>();
+                layerNodes[curLayer].Add(current);
+
+                if (children.TryGetValue(current, out var kids))
+                {
+                    foreach (var child in kids)
+                    {
+                        if (!visited.Contains(child))
+                        {
+                            visited.Add(child);
+                            layer[child] = curLayer + 1;
+                            queue.Enqueue(child);
+                        }
+                    }
+                }
+            }
+
+            int maxLayer = layerNodes.Count > 0 ? layerNodes.Keys.Max() : 0;
+            foreach (var n in orderedNodes)
+            {
+                if (!visited.Contains(n))
+                {
+                    maxLayer++;
+                    if (!layerNodes.ContainsKey(maxLayer))
+                        layerNodes[maxLayer] = new List<QuestGraphNode>();
+                    layerNodes[maxLayer].Add(n);
+                    visited.Add(n);
+                }
+            }
+
+            float x = 0f;
+            foreach (var kvp in layerNodes)
+            {
+                float y = 0f;
+                foreach (var n in kvp.Value)
+                {
+                    if (_nodePositions.TryGetValue(n.PersistKey, out var manualPos))
+                        n.SetPosition(new Rect(manualPos.x, manualPos.y, NODE_W, n.GetPosition().height));
+                    else
+                        n.SetPosition(new Rect(x, y, NODE_W, n.GetPosition().height));
+                    y += n.GetPosition().height + V_GAP;
+                }
+                x += NODE_W + H_GAP;
+            }
+        }
+
         private void BuildGraph()
         {
             if (Quest == null) return;
 
-            const float QUEST_W = 240f, QUEST_H = 140f;
-            const float STAGE_W = 240f, STAGE_H = 160f;
-            const float OBJ_W = 220f, OBJ_H = 100f;
-            const float REWARD_W = 240f, REWARD_H = 130f;
-            const float COL1_X = 0f, COL2_X = 360f, COL3_X = 720f, COL4_X = 1100f;
-            const float Y_TOP = 0f;
-            const float ROW_GAP = 30f;
+            // T-U03: positions set by ApplyAutoLayout, not fixed columns
+            var allNodes = new List<QuestGraphNode>();
 
             var questColor = new Color(0.20f, 0.35f, 0.60f);
             var stageColor = new Color(0.20f, 0.55f, 0.30f);
             var objColor = new Color(0.55f, 0.40f, 0.10f);
             var rewardColor = new Color(0.65f, 0.40f, 0.10f);
 
-            // Quest node
+            // Quest root node
             var qn = MakeEditableNode("📜 QUEST", questColor,
                 new (string label, string value, System.Action<string> onSave)[] {
                     ("Name", Quest.displayName, v => Quest.displayName = v),
@@ -201,17 +294,15 @@ namespace ProjectC.Quests.Editor
                 },
                 $"id: {Quest.questId}  •  stages: {Quest.stages?.Length ?? 0}",
                 Quest, "", null, QuestNodeKind.QuestRoot);
-            // T-Q32: add stage button on quest node
             var addStageBtn = MakeEditButton("+ Add Stage", () => AddStage(), "add-stage");
             qn.extensionContainer.Add(addStageBtn);
             _editButtons.Add(addStageBtn);
-            qn.SetPosition(new Rect(COL1_X, Y_TOP, QUEST_W, QUEST_H));
             AddElement(qn);
             var qPort = AddPorts(qn, hasOutput: true, hasInput: false);
+            allNodes.Add(qn);
 
             int stageCount = Quest.stages?.Length ?? 0;
-            var stageNodes = new List<Node>();
-            float y = Y_TOP;
+            var stageNodes = new List<QuestGraphNode>();
 
             if (Quest.stages != null)
             {
@@ -220,7 +311,7 @@ namespace ProjectC.Quests.Editor
                     var stage = Quest.stages[i];
                     if (stage == null) continue;
 
-                    int si = i; // capture
+                    int si = i;
                     var sn = MakeEditableNode($"STAGE {i+1}/{stageCount}", stageColor,
                         new (string label, string value, System.Action<string> onSave)[] {
                             ("ID", stage.stageId, v => Quest.stages[si].stageId = v),
@@ -231,32 +322,28 @@ namespace ProjectC.Quests.Editor
                         (stage.onCompleteActions?.Length > 0 ? $"  ✓ onComplete: {stage.onCompleteActions.Length}" : "") +
                         (!string.IsNullOrEmpty(stage.nextStageId) ? $"  → {stage.nextStageId}" : ""),
                         Quest, $"stages[{i}]", stage, QuestNodeKind.Stage);
-                    // T-Q32: delete stage button
                     var delStageBtn = MakeEditButton("× Stage", () => DeleteStage(si), "stage-del-" + i);
                     sn.extensionContainer.Add(delStageBtn);
                     _editButtons.Add(delStageBtn);
-                    // T-Q32: add objective button
                     var addObjBtn = MakeEditButton("+ Objective", () => AddObjective(si), "stage-add-" + i);
                     sn.extensionContainer.Add(addObjBtn);
                     _editButtons.Add(addObjBtn);
-                    sn.SetPosition(new Rect(COL2_X, y, STAGE_W, STAGE_H));
                     AddElement(sn);
                     var sPort = AddPorts(sn, hasOutput: true, hasInput: true);
+                    allNodes.Add(sn);
 
                     if (i == 0) ConnectPorts(qPort.output, sPort.input);
                     if (i > 0) ConnectPorts(GetOutputPort(stageNodes[i-1]), sPort.input);
                     stageNodes.Add(sn);
 
-                    // Objectives — below stage, column 3
                     if (stage.objectives != null)
                     {
-                        float oy = y;
                         for (int j = 0; j < stage.objectives.Length; j++)
                         {
                             var obj = stage.objectives[j];
                             if (obj == null) continue;
 
-                            int oi = j; int stIdx = i; // capture
+                            int oi = j; int stIdx = i;
                             var on = MakeEditableNode($"🎯 {obj.objectiveId}", objColor,
                                 new (string label, string value, System.Action<string> onSave)[] {
                                     ("ObjId", obj.objectiveId ?? "", v => Quest.stages[stIdx].objectives[oi].objectiveId = v),
@@ -265,22 +352,19 @@ namespace ProjectC.Quests.Editor
                                     ($"[{obj.objectiveType}] ×{obj.requiredQuantity}", $"{obj.requiredQuantity}", v => { if (int.TryParse(v, out var n)) Quest.stages[stIdx].objectives[oi].requiredQuantity = n; })
                                 },
                                 sourceData: obj, kind: QuestNodeKind.Objective);
-                            // T-Q32: delete objective button
                             var delObjBtn = MakeEditButton("× Obj", () => DeleteObjective(stIdx, oi), "obj-del-" + i + "-" + j);
                             on.extensionContainer.Add(delObjBtn);
                             _editButtons.Add(delObjBtn);
-                            on.SetPosition(new Rect(COL3_X, oy, OBJ_W, OBJ_H));
                             AddElement(on);
                             var oPort = AddPorts(on, hasOutput: false, hasInput: true);
                             ConnectPorts(sPort.output, oPort.input);
-                            oy += OBJ_H + 15f;
+                            allNodes.Add(on);
                         }
                     }
-                    y += STAGE_H + ROW_GAP + (stage.objectives?.Length ?? 0) * (OBJ_H + 15f);
                 }
             }
 
-            // Reward — column 4
+            // Reward
             if (Quest.rewards != null && HasReward(Quest.rewards))
             {
                 var r = Quest.rewards;
@@ -302,7 +386,6 @@ namespace ProjectC.Quests.Editor
                 {
                     ("Credits", r.credits.ToString(), v => { if (int.TryParse(v, out var n)) r.credits = n; })
                 };
-                // T-Q30 fix: reputation fields (array, indexed)
                 if (r.reputation != null)
                 {
                     for (int ri = 0; ri < r.reputation.Length; ri++)
@@ -327,12 +410,15 @@ namespace ProjectC.Quests.Editor
                 var rn = MakeEditableNode("🎁 REWARDS", rewardColor,
                     rFields.ToArray(), rLines,
                     Quest, "rewards", Quest.rewards, QuestNodeKind.Reward);
-                rn.SetPosition(new Rect(COL4_X, Y_TOP, REWARD_W, REWARD_H));
                 AddElement(rn);
                 var rPort = AddPorts(rn, hasOutput: false, hasInput: true);
                 if (stageNodes.Count > 0)
                     ConnectPorts(GetOutputPort(stageNodes[stageNodes.Count-1]), rPort.input);
+                allNodes.Add(rn);
             }
+
+            // T-U03: Apply BFS-based auto-layout
+            ApplyAutoLayout(allNodes, qn);
         }
 
         /// <summary>
@@ -651,20 +737,24 @@ namespace ProjectC.Quests.Editor
 
         private struct NodePorts { public Port input; public Port output; }
 
-        private NodePorts AddPorts(Node n, bool hasOutput, bool hasInput)
+        // T-U04: meaningful port names + color coding
+        private NodePorts AddPorts(Node n, bool hasOutput, bool hasInput,
+            string inputName = "← Prev", string outputName = "→ Next")
         {
             var result = new NodePorts();
             if (hasInput)
             {
                 var port = Port.Create<Edge>(Orientation.Vertical, Direction.Input, Port.Capacity.Multi, typeof(bool));
-                port.portName = "";
+                port.portName = inputName;
+                port.portColor = new Color(0.55f, 0.55f, 0.55f); // gray default
                 n.inputContainer.Add(port);
                 result.input = port;
             }
             if (hasOutput)
             {
                 var port = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Multi, typeof(bool));
-                port.portName = "";
+                port.portName = outputName;
+                port.portColor = new Color(0.35f, 0.70f, 0.35f); // green = success
                 n.outputContainer.Add(port);
                 result.output = port;
             }

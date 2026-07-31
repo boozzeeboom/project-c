@@ -50,7 +50,7 @@ MonoBehaviour:
         factionParam: 0
         questStateParam: 0
       action:
-        type: 40
+        type: 21
         stringParam: 
         questRef: {fileID: 0}
         npcRef: {fileID: 0}
@@ -114,16 +114,5 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    onEnterActions:
-    - type: 20
-      stringParam: 
-      questRef: {fileID: 0}
-      npcRef: {fileID: 0}
-      dialogTreeRef: {fileID: 0}
-      stageIdParam: 
-      intParam: 0
-      factionParam: 0
-      itemId: 0
-      itemRef: {fileID: 0}
-      itemType: 0
+    onEnterActions: []
   localizationTable: {fileID: 0}

@@ -41,6 +41,24 @@ MonoBehaviour:
       eventId: 
       optional: 0
       required: 1
+    - objectiveId: new_objective
+      objectiveType: 4
+      description: 
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
     onEnterActions: []
     onCompleteActions: []
     nextStageId: 

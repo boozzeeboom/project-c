@@ -21,7 +21,8 @@ MonoBehaviour:
   defaultDialogTree: {fileID: 11400000, guid: 828fa688c0784fb458e4092c070af689, type: 2}
   questOffers:
   - find_artifact
-  questOfferRefs: []
+  questOfferRefs:
+  - {fileID: 11400000, guid: f32e985aca4b07a41a0c87fa6658dac4, type: 2}
   questTurnIns:
   - find_artifact
   questTurnInRefs: []

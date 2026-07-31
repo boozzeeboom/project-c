@@ -1,29 +1,26 @@
-// UnifiedQuestGraphView v5 + UnifiedQuestGraphWindow
-// Single GraphView-based unified editor for NPCs + Dialogs + Quests.
-// Uses QuestGraphModel as the read/write adapter. All connections are object-ref based.
+// UnifiedQuestGraphView v5 — single GraphView-based unified editor for NPCs + Dialogs + Quests.
+// Uses QuestGraphModel as the read/write adapter. All connections are object-ref based,
+// persisted in the three SOs (NpcDefinition, DialogTree, QuestDefinition).
 //
 // Architecture: ARCHITECTURE_PLAN.md
+// Replaces: v4 UnifiedQuestGraphView (DEPRECATED — see UnifiedQuestGraphView_DEPRECATED.cs)
 
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ProjectC.Quests.Editor
 {
-    // ═══════════════════════════════════════════
-    // UnifiedQuestGraphView
-    // ═══════════════════════════════════════════
-
     public class UnifiedQuestGraphView : GraphView
     {
         public QuestGraphModel Model { get; } = new();
 
         private readonly Dictionary<object, BaseGraphNode> _nodeMap = new();
+        private readonly Dictionary<EdgeInfo, Edge> _edgeMap = new();
         private bool _editMode;
 
         private const float NODE_W = 250f;
@@ -53,7 +50,7 @@ namespace ProjectC.Quests.Editor
 
         public void AddNpc(NpcDefinition npc) { Model.AddNpc(npc); Rebuild(); }
         public void AddQuest(QuestDefinition q) { Model.AddQuest(q); Rebuild(); }
-        public void AddDialogTree(Dialogue.DialogTree t) { Model.AddDialogTree(t); Rebuild(); }
+        public void AddDialogTree(DialogTree t) { Model.AddDialogTree(t); Rebuild(); }
 
         public void ClearAll()
         {
@@ -71,7 +68,7 @@ namespace ProjectC.Quests.Editor
         public void SaveAll()
         {
             AssetDatabase.SaveAssets();
-            Debug.Log($"[UnifiedGraph] Saved all. Nodes: {Model.TotalNodeCount}, Edges: {Model.Edges.Count}");
+            Debug.Log($"[UnifiedGraph] Saved all assets. Nodes: {Model.TotalNodeCount}, Edges: {Model.Edges.Count}");
         }
 
         // ── Build ──
@@ -81,10 +78,13 @@ namespace ProjectC.Quests.Editor
             foreach (var e in edges.ToList()) RemoveElement(e);
             foreach (var n in nodes.ToList()) RemoveElement(n);
             _nodeMap.Clear();
+            _edgeMap.Clear();
         }
 
         private void BuildVisualGraph()
         {
+            // ── Create nodes ──
+
             foreach (var ni in Model.NpcNodes)
             {
                 var node = new NpcGraphNode(ni);
@@ -127,12 +127,18 @@ namespace ProjectC.Quests.Editor
                 _nodeMap[ri] = node;
             }
 
+            // ── Create edges ──
             foreach (var edgeInfo in Model.Edges)
             {
                 var edge = CreateVisualEdge(edgeInfo);
-                if (edge != null) AddElement(edge);
+                if (edge != null)
+                {
+                    AddElement(edge);
+                    _edgeMap[edgeInfo] = edge;
+                }
             }
 
+            // ── Layout ──
             ApplyLayout();
             schedule.Execute(() => { MarkDirtyRepaint(); FrameAll(); }).StartingIn(50);
         }
@@ -144,11 +150,13 @@ namespace ProjectC.Quests.Editor
 
             Port fromPort = FindPort(fromNode, Direction.Output, info.fromPort, info.extraIndex);
             Port toPort = FindPort(toNode, Direction.Input, info.toPort, -1);
+
             if (fromPort == null || toPort == null) return null;
 
             var edge = fromPort.ConnectTo(toPort);
             edge.viewDataKey = "model-edge";
 
+            // Color coding
             Color c = GraphNodeColors.PortGray;
             switch (info.fromPort)
             {
@@ -174,6 +182,7 @@ namespace ProjectC.Quests.Editor
                     var pd = BaseGraphNode.GetPortData(p);
                     if (ps == semantic)
                     {
+                        // If extraIndex matters, match it
                         if (extraIndex >= 0 && pd is int idx && idx != extraIndex) continue;
                         return p;
                     }
@@ -182,22 +191,30 @@ namespace ProjectC.Quests.Editor
             return null;
         }
 
-        // ── Layout ──
+        // ── Auto-layout ──
 
         private void ApplyLayout()
         {
-            float x = 0f, y = 0f;
-            const float NPC_H = 160f, DLG_H = 260f, Q_H = 160f;
-            const float STAGE_H = 220f, OBJ_H = 180f, REWARD_H = 160f;
+            float x = 0f;
+            float y = 0f;
+            const float NPC_H = 160f;
+            const float DLG_H = 270f;
+            const float Q_H = 200f;
+            const float STAGE_H = 260f;
+            const float OBJ_H = 200f;
+            const float REWARD_H = 200f;
 
+            // Column 0: NPCs
             foreach (var ni in Model.NpcNodes)
             {
                 if (_nodeMap.TryGetValue(ni, out var node))
                     node.SetPosition(new Rect(x, y, NODE_W, NPC_H));
                 y += NPC_H + V_GAP;
             }
-            x += NODE_W + H_GAP; y = 0f;
+            x += NODE_W + H_GAP;
+            y = 0f;
 
+            // Column 1: Dialog nodes (grouped by tree)
             var treeGroups = Model.DialogNodes.GroupBy(d => d.tree);
             foreach (var group in treeGroups)
             {
@@ -210,15 +227,20 @@ namespace ProjectC.Quests.Editor
                 }
                 y = gy;
             }
-            x += NODE_W + H_GAP; y = 0f;
+            x += NODE_W + H_GAP;
+            y = 0f;
 
+            // Column 2+: Quests (each quest occupies its own sub-column)
             foreach (var qi in Model.QuestNodes)
             {
-                float qx = x, qy = y;
+                float qx = x;
+                float qy = y;
+
                 if (_nodeMap.TryGetValue(qi, out var qNode))
                     qNode.SetPosition(new Rect(qx, qy, NODE_W, Q_H));
                 qy += Q_H + V_GAP;
 
+                // Stages
                 var stages = Model.StageNodes.Where(s => s.quest == qi.quest).OrderBy(s => s.stageIndex);
                 foreach (var si in stages)
                 {
@@ -226,19 +248,21 @@ namespace ProjectC.Quests.Editor
                         sNode.SetPosition(new Rect(qx, qy, NODE_W, STAGE_H));
                     qy += STAGE_H + V_GAP;
 
+                    // Objectives for this stage
                     var objs = Model.ObjectiveNodes.Where(o => o.quest == qi.quest && o.stageIndex == si.stageIndex);
                     foreach (var oi in objs)
                     {
                         if (_nodeMap.TryGetValue(oi, out var oNode))
-                            oNode.SetPosition(new Rect(qx + NODE_W + 30, qy - STAGE_H - V_GAP, NODE_W * 0.85f, OBJ_H));
+                            oNode.SetPosition(new Rect(qx + NODE_W + 30, qy - STAGE_H - V_GAP, NODE_W * 0.8f, OBJ_H));
                     }
                 }
 
+                // Reward
                 var reward = Model.RewardNodes.FirstOrDefault(r => r.quest == qi.quest);
                 if (reward != null && _nodeMap.TryGetValue(reward, out var rNode))
                     rNode.SetPosition(new Rect(qx, qy, NODE_W, REWARD_H));
 
-                x += NODE_W + H_GAP + (NODE_W * 0.85f) + H_GAP;
+                x += NODE_W + H_GAP + (NODE_W * 0.8f) + H_GAP;
             }
         }
 
@@ -246,13 +270,23 @@ namespace ProjectC.Quests.Editor
 
         private GraphViewChange OnGraphViewChanged(GraphViewChange change)
         {
+            // Edge creation
             if (change.edgesToCreate != null)
+            {
                 foreach (var edge in change.edgesToCreate)
+                {
                     if (edge != null) HandleEdgeCreated(edge);
+                }
+            }
 
+            // Edge/node deletion
             if (change.elementsToRemove != null)
+            {
                 foreach (var elem in change.elementsToRemove)
+                {
                     if (elem is Edge edge) HandleEdgeDeleted(edge);
+                }
+            }
 
             return change;
         }
@@ -260,31 +294,55 @@ namespace ProjectC.Quests.Editor
         private void HandleEdgeCreated(Edge edge)
         {
             if (edge.output?.node is not BaseGraphNode fromNode ||
-                edge.input?.node is not BaseGraphNode toNode) { TryRemove(edge); return; }
+                edge.input?.node is not BaseGraphNode toNode)
+            {
+                // Remove incompatible edges
+                if (edge.output != null && edge.input != null)
+                    RemoveElement(edge);
+                return;
+            }
 
             var fromSem = BaseGraphNode.GetSemantic(edge.output);
             var toSem = BaseGraphNode.GetSemantic(edge.input);
             int edgeIdx = BaseGraphNode.GetPortData(edge.output) is int ei ? ei : -1;
 
+            // Find the model-level node infos
             object fromInfo = GetNodeInfo(fromNode);
             object toInfo = GetNodeInfo(toNode);
-            if (fromInfo == null || toInfo == null) { TryRemove(edge); return; }
 
+            if (fromInfo == null || toInfo == null)
+            {
+                RemoveElement(edge);
+                return;
+            }
+
+            // Attempt write-through
             bool ok = Model.SetConnection(fromInfo, fromSem, toInfo, toSem, edgeIdx);
-            if (!ok) { TryRemove(edge); Debug.LogWarning($"[UnifiedGraph] Cannot connect {fromSem} → {toSem}"); return; }
+            if (!ok)
+            {
+                // Connection not supported
+                RemoveElement(edge);
+                Debug.LogWarning($"[UnifiedGraph] Cannot connect {fromSem} → {toSem}");
+                return;
+            }
 
+            // Style the edge
             edge.viewDataKey = "user-edge";
             Color c = fromSem switch
             {
                 PortSemantic.DialogEdgeAction => GraphNodeColors.PortOrange,
                 PortSemantic.ObjectiveTarget => GraphNodeColors.PortBlue,
+                PortSemantic.NpcOffersQuest => GraphNodeColors.PortOrange,
                 _ => GraphNodeColors.PortGreen,
             };
             edge.edgeControl.inputColor = c;
             edge.edgeControl.outputColor = c;
 
+            // Rebuild dialog node ports if we modified its edges
             if (fromSem == PortSemantic.DialogEdgeAction && fromNode is DialogGraphNode dgn)
+            {
                 schedule.Execute(() => RebuildSingleDialogNode(dgn)).StartingIn(20);
+            }
 
             Debug.Log($"[UnifiedGraph] Connected {fromSem} → {toSem}");
         }
@@ -300,58 +358,64 @@ namespace ProjectC.Quests.Editor
 
             object fromInfo = GetNodeInfo(fromNode);
             object toInfo = GetNodeInfo(toNode);
+
             if (fromInfo != null && toInfo != null)
             {
                 Model.RemoveConnection(fromInfo, fromSem, toInfo, toSem, edgeIdx);
+
                 if (fromSem == PortSemantic.DialogEdgeAction && fromNode is DialogGraphNode dgn)
                     schedule.Execute(() => RebuildSingleDialogNode(dgn)).StartingIn(20);
             }
         }
 
-        private static object GetNodeInfo(BaseGraphNode node) => node switch
+        private static object GetNodeInfo(BaseGraphNode node)
         {
-            NpcGraphNode n => n.Info,
-            DialogGraphNode n => n.Info,
-            QuestRootGraphNode n => n.Info,
-            StageGraphNode n => n.Info,
-            ObjectiveGraphNode n => n.Info,
-            RewardGraphNode n => n.Info,
-            _ => null
-        };
+            return node switch
+            {
+                NpcGraphNode n => n.Info,
+                DialogGraphNode n => n.Info,
+                QuestRootGraphNode n => n.Info,
+                StageGraphNode n => n.Info,
+                ObjectiveGraphNode n => n.Info,
+                RewardGraphNode n => n.Info,
+                _ => null
+            };
+        }
 
         private void RebuildSingleDialogNode(DialogGraphNode oldNode)
         {
+            // Remove old node
             var connectedEdges = edges.ToList().Where(e =>
-                e.output?.node == oldNode || e.input?.node == oldNode).ToList();
+                (e.output?.node == oldNode) || (e.input?.node == oldNode)).ToList();
             foreach (var e in connectedEdges) RemoveElement(e);
             var pos = oldNode.GetPosition();
             RemoveElement(oldNode);
             _nodeMap.Remove(oldNode.Info);
 
+            // Create new node with updated ports
             var newNode = new DialogGraphNode(oldNode.Info);
             newNode.SetPosition(pos);
             AddElement(newNode);
             _nodeMap[oldNode.Info] = newNode;
 
+            // Rebuild edges for this dialog tree
             Model.BuildGraph();
             foreach (var edgeInfo in Model.Edges)
             {
                 if (_nodeMap.TryGetValue(edgeInfo.fromNode, out var fn) &&
-                    _nodeMap.TryGetValue(edgeInfo.toNode, out var tn) &&
-                    (fn == newNode || tn == newNode))
+                    _nodeMap.TryGetValue(edgeInfo.toNode, out var tn))
                 {
-                    var visEdge = CreateVisualEdge(edgeInfo);
-                    if (visEdge != null) AddElement(visEdge);
+                    if (fn == newNode || tn == newNode)
+                    {
+                        var visEdge = CreateVisualEdge(edgeInfo);
+                        if (visEdge != null) AddElement(visEdge);
+                    }
                 }
             }
             MarkDirtyRepaint();
         }
 
-        private static void TryRemove(Edge edge)
-        {
-            try { if (edge != null && edge.parent != null) edge.parent.Remove(edge); }
-            catch { }
-        }
+        // ── Port compatibility ──
 
         public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
         {
@@ -364,122 +428,6 @@ namespace ProjectC.Quests.Editor
                 all.Add(p);
             }
             return all;
-        }
-    }
-
-    // ═══════════════════════════════════════════
-    // UnifiedQuestGraphWindow
-    // ═══════════════════════════════════════════
-
-    public class UnifiedQuestGraphWindow : EditorWindow
-    {
-        private UnifiedQuestGraphView _graph;
-        private ObjectField _npcField;
-        private ObjectField _questField;
-        private ObjectField _dialogField;
-        private Button _editBtn;
-        private Label _statusLabel;
-
-        [MenuItem("Tools/Project C/Quests/Unified Quest Graph", priority = 100)]
-        public static void Open()
-        {
-            var w = GetWindow<UnifiedQuestGraphWindow>();
-            w.titleContent = new GUIContent("Unified Quest Graph");
-            w.minSize = new Vector2(1200, 750);
-            w.Show();
-        }
-
-        private void OnEnable()
-        {
-            var root = rootVisualElement;
-            root.Clear();
-            root.style.flexGrow = 1;
-
-            // ── Toolbar ──
-            var toolbar = new VisualElement();
-            toolbar.style.flexDirection = FlexDirection.Row;
-            toolbar.style.paddingTop = 4; toolbar.style.paddingBottom = 4;
-            toolbar.style.paddingLeft = 6; toolbar.style.paddingRight = 6;
-            toolbar.style.backgroundColor = new StyleColor(new Color(0.18f, 0.18f, 0.18f, 1f));
-            toolbar.style.flexWrap = Wrap.Wrap;
-
-            _npcField = new ObjectField("+NPC")
-                { objectType = typeof(NpcDefinition), allowSceneObjects = false };
-            _npcField.style.width = 160;
-            _npcField.RegisterValueChangedCallback(evt =>
-            {
-                if (evt.newValue is NpcDefinition npc) { _graph.AddNpc(npc); _npcField.SetValueWithoutNotify(null); UpdateStatus(); }
-            });
-            toolbar.Add(_npcField);
-
-            _questField = new ObjectField("+Quest")
-                { objectType = typeof(QuestDefinition), allowSceneObjects = false };
-            _questField.style.width = 160; _questField.style.marginLeft = 4;
-            _questField.RegisterValueChangedCallback(evt =>
-            {
-                if (evt.newValue is QuestDefinition q) { _graph.AddQuest(q); _questField.SetValueWithoutNotify(null); UpdateStatus(); }
-            });
-            toolbar.Add(_questField);
-
-            _dialogField = new ObjectField("+Dialog")
-                { objectType = typeof(Dialogue.DialogTree), allowSceneObjects = false };
-            _dialogField.style.width = 160; _dialogField.style.marginLeft = 4;
-            _dialogField.RegisterValueChangedCallback(evt =>
-            {
-                if (evt.newValue is Dialogue.DialogTree t) { _graph.AddDialogTree(t); _dialogField.SetValueWithoutNotify(null); UpdateStatus(); }
-            });
-            toolbar.Add(_dialogField);
-
-            _editBtn = new Button(() =>
-            {
-                if (_graph == null) return;
-                _graph.EditMode = !_graph.EditMode;
-                _editBtn.text = _graph.EditMode ? "🔒 View" : "✏️ Edit";
-            }) { text = "✏️ Edit" };
-            _editBtn.style.marginLeft = 6;
-            toolbar.Add(_editBtn);
-
-            var saveBtn = new Button(() => _graph?.SaveAll()) { text = "💾 Save All" };
-            saveBtn.style.marginLeft = 4; toolbar.Add(saveBtn);
-
-            var fitBtn = new Button(() => _graph?.FrameAll()) { text = "⊡ Fit" };
-            fitBtn.style.marginLeft = 4; toolbar.Add(fitBtn);
-
-            var refreshBtn = new Button(() => _graph?.Rebuild()) { text = "🔄 Refresh" };
-            refreshBtn.style.marginLeft = 4; toolbar.Add(refreshBtn);
-
-            var clearBtn = new Button(() => { _graph?.ClearAll(); UpdateStatus(); }) { text = "✕ Clear" };
-            clearBtn.style.marginLeft = 4; toolbar.Add(clearBtn);
-
-            root.Add(toolbar);
-
-            // ── Graph ──
-            _graph = new UnifiedQuestGraphView();
-            _graph.style.flexGrow = 1;
-            root.Add(_graph);
-
-            // ── Status bar ──
-            _statusLabel = new Label("Drag assets into +NPC / +Quest / +Dialog fields above to start");
-            _statusLabel.style.position = Position.Absolute;
-            _statusLabel.style.bottom = 4; _statusLabel.style.left = 6;
-            _statusLabel.style.color = new StyleColor(new Color(0.5f, 0.5f, 0.5f, 1f));
-            _statusLabel.style.fontSize = 10;
-            root.Add(_statusLabel);
-        }
-
-        private void UpdateStatus()
-        {
-            if (_graph == null || _statusLabel == null) return;
-            var m = _graph.Model;
-            _statusLabel.text = $"NPCs: {m.NpcNodes.Count}  |  Dialogs: {m.DialogNodes.Count}  |  Quests: {m.QuestNodes.Count}  |  Nodes: {_graph.nodes.ToList().Count}  |  Edges: {_graph.edges.ToList().Count}";
-        }
-
-        public void LoadUnified(QuestDefinition quest, Dialogue.DialogTree dialogTree, NpcDefinition npc = null)
-        {
-            if (npc != null) _graph.AddNpc(npc);
-            if (dialogTree != null) _graph.AddDialogTree(dialogTree);
-            if (quest != null) _graph.AddQuest(quest);
-            UpdateStatus();
         }
     }
 }

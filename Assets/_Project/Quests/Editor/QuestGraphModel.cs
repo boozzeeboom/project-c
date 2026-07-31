@@ -203,31 +203,41 @@ namespace ProjectC.Quests.Editor
         private void BuildDialogEdges()
         {
             foreach (var dn in DialogNodes)
-            {
-                var node = dn.Node; if (node?.edges == null) continue;
-                for (int ei = 0; ei < node.edges.Length; ei++)
-                {
-                    var edge = node.edges[ei]; if (edge == null) continue;
-                    if (!string.IsNullOrEmpty(edge.targetNodeId))
-                    {
-                        var target = DialogNodes.FirstOrDefault(d => d.tree == dn.tree && d.Node != null && d.Node.nodeId == edge.targetNodeId);
-                        if (target?.tree != null) Edges.Add(new EdgeInfo { fromNode = dn, fromPort = PortSemantic.DialogEdgeAction, toNode = target, toPort = PortSemantic.DialogIn, extraIndex = ei });
-                    }
-                    if (edge.action != null && edge.action.type == DialogueActionType.OfferQuest && edge.action.questRef != null)
-                    {
-                        var questNode = QuestNodes.FirstOrDefault(n => n.quest == edge.action.questRef);
-                        if (questNode?.quest != null) Edges.Add(new EdgeInfo { fromNode = dn, fromPort = PortSemantic.DialogEdgeAction, toNode = questNode, toPort = PortSemantic.QuestOfferedBy, extraIndex = ei });
-                    }
+                BuildDialogEdgesForNode(dn);
+        }
 
-                    if (edge.action != null && edge.action.type == DialogueActionType.SwitchDialogTree && edge.action.dialogTreeRef != null)
-                    {
-                        var targetTree = edge.action.dialogTreeRef;
-                        var targetRoot = DialogNodes.FirstOrDefault(d => d.tree == targetTree && d.Node != null && d.Node.nodeId == targetTree.rootNodeId);
-                        if (targetRoot?.tree != null) Edges.Add(new EdgeInfo { fromNode = dn, fromPort = PortSemantic.DialogEdgeAction, toNode = targetRoot, toPort = PortSemantic.DialogIn, extraIndex = ei });
-                    }
+        private void BuildDialogEdgesForNode(DialogNodeInfo dn)
+        {
+            var node = dn.Node; if (node?.edges == null) return;
+            for (int ei = 0; ei < node.edges.Length; ei++)
+            {
+                var edge = node.edges[ei]; if (edge == null) continue;
+                if (!string.IsNullOrEmpty(edge.targetNodeId))
+                {
+                    var target = DialogNodes.FirstOrDefault(d => d.tree == dn.tree && d.Node != null && d.Node.nodeId == edge.targetNodeId);
+                    if (target?.tree != null) Edges.Add(new EdgeInfo { fromNode = dn, fromPort = PortSemantic.DialogEdgeAction, toNode = target, toPort = PortSemantic.DialogIn, extraIndex = ei });
+                }
+                if (edge.action != null && edge.action.type == DialogueActionType.OfferQuest && edge.action.questRef != null)
+                {
+                    var questNode = QuestNodes.FirstOrDefault(n => n.quest == edge.action.questRef);
+                    if (questNode?.quest != null) Edges.Add(new EdgeInfo { fromNode = dn, fromPort = PortSemantic.DialogEdgeAction, toNode = questNode, toPort = PortSemantic.QuestOfferedBy, extraIndex = ei });
+                }
+
+                if (edge.action != null && edge.action.type == DialogueActionType.SwitchDialogTree && edge.action.dialogTreeRef != null)
+                {
+                    var targetTree = edge.action.dialogTreeRef;
+                    var targetRoot = DialogNodes.FirstOrDefault(d => d.tree == targetTree && d.Node != null && d.Node.nodeId == targetTree.rootNodeId);
+                    if (targetRoot?.tree != null) Edges.Add(new EdgeInfo { fromNode = dn, fromPort = PortSemantic.DialogEdgeAction, toNode = targetRoot, toPort = PortSemantic.DialogIn, extraIndex = ei });
                 }
             }
         }
+
+        public void RebuildEdgesForDialog(DialogNodeInfo di)
+        {
+            Edges.RemoveAll(e => e.fromNode == di || e.toNode == di);
+            BuildDialogEdgesForNode(di);
+        }
+
 
         internal void BuildQuestEdges()
 

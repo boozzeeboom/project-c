@@ -149,6 +149,7 @@ namespace ProjectC.Quests.Editor
         private void RebuildDialogNode(DialogNodeInfo di)
         {
             if (!_nodeMap.TryGetValue(di, out var oldNode)) return;
+            // Remove old visual edges
             var conn = edges.ToList().Where(e => e.output?.node == oldNode || e.input?.node == oldNode).ToList();
             foreach (var e in conn) RemoveElement(e);
             var pos = oldNode.GetPosition(); RemoveElement(oldNode); _nodeMap.Remove(di);
@@ -157,13 +158,14 @@ namespace ProjectC.Quests.Editor
             nn.OnModified = () => schedule.Execute(() => RebuildDialogNode(di)).StartingIn(0);
             nn.SetPosition(pos); AddElement(nn); _nodeMap[di] = nn;
 
-            // Rebuild edges touching this dialog node
-            Model.BuildGraph(); // need fresh edge list
+            // Targeted edge rebuild — no full BuildGraph() to avoid nuking all edges
+            Model.RebuildEdgesForDialog(di);
             foreach (var ei in Model.Edges)
                 if ((ei.fromNode == di || ei.toNode == di) && _nodeMap.TryGetValue(ei.fromNode, out var f) && _nodeMap.TryGetValue(ei.toNode, out var t))
                 { var ve = CreateVisualEdge(ei); if (ve != null) AddElement(ve); }
             MarkDirtyRepaint();
         }
+
 
 
         private void SavePositions()
@@ -399,13 +401,13 @@ namespace ProjectC.Quests.Editor
             var pos = old.GetPosition(); RemoveElement(old); _nodeMap.Remove(old.Info);
             var nn = new DialogGraphNode(old.Info); nn.OnModified = () => schedule.Execute(() => Rebuild()).StartingIn(0); nn.SetPosition(pos); AddElement(nn); _nodeMap[old.Info] = nn;
 
-
-            Model.BuildGraph();
+            Model.RebuildEdgesForDialog(old.Info);
             foreach (var ei in Model.Edges)
                 if (_nodeMap.TryGetValue(ei.fromNode, out var f) && _nodeMap.TryGetValue(ei.toNode, out var t) && (f == nn || t == nn))
                 { var ve = CreateVisualEdge(ei); if (ve != null) AddElement(ve); }
             MarkDirtyRepaint();
         }
+
 
         static void TryRemove(Edge e) { try { if (e?.parent != null) e.parent.Remove(e); } catch { } }
 

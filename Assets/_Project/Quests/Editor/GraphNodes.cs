@@ -36,7 +36,14 @@ namespace ProjectC.Quests.Editor
     {
         public string PersistKey;
 
-        protected Port MakeOutPort(string name, PortSemantic semantic, Color color, object userData = null)
+        protected BaseGraphNode()
+        {
+            // Enable standard GraphView operations: selectable, movable, deletable (via Del key or context menu)
+            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable;
+        }
+
+        protected Port MakeOutPort
+(string name, PortSemantic semantic, Color color, object userData = null)
         {
             var p = Port.Create<Edge>(Orientation.Vertical, Direction.Output, Port.Capacity.Multi, typeof(bool));
             p.portName = name;

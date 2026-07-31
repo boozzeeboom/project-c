@@ -209,9 +209,22 @@ namespace ProjectC.Quests.Editor
         private GraphViewChange OnGraphViewChanged(GraphViewChange change)
         {
             if (change.edgesToCreate != null) foreach (var e in change.edgesToCreate) if (e != null) HandleEdgeCreated(e);
-            if (change.elementsToRemove != null) foreach (var el in change.elementsToRemove) if (el is Edge e) HandleEdgeDeleted(e);
+            if (change.elementsToRemove != null)
+            {
+                bool needRebuild = false;
+                foreach (var el in change.elementsToRemove)
+                {
+                    if (el is Edge e) HandleEdgeDeleted(e);
+                    else if (el is StageGraphNode sgn) { Debug.Log($"[GraphView] Delete key: {sgn.Quest.questId} stage idx={sgn.StageIndex}"); Model.DeleteStage(sgn.Info); needRebuild = true; }
+                    else if (el is NpcGraphNode ngn) { Debug.Log($"[GraphView] Delete key: NPC {ngn.Npc.npcId} — removing from graph (SO untouched)"); }
+                    else if (el is QuestRootGraphNode qgn) { Debug.Log($"[GraphView] Delete key: Quest {qgn.Quest.questId} — removing from graph (SO untouched)"); }
+                    else if (el is DialogGraphNode dgn) { Debug.Log($"[GraphView] Delete key: Dialog node — removing from graph (SO untouched)"); }
+                }
+                if (needRebuild) schedule.Execute(() => Rebuild()).StartingIn(50);
+            }
             return change;
         }
+
 
         private void HandleEdgeCreated(Edge edge)
         {

@@ -121,7 +121,8 @@ namespace ProjectC.Quests.Editor
         private void BuildVisualGraph()
         {
             foreach (var ni in Model.NpcNodes) { var n = new NpcGraphNode(ni); AddElement(n); _nodeMap[ni] = n; }
-            foreach (var di in Model.DialogNodes) { var n = new DialogGraphNode(di); AddElement(n); _nodeMap[di] = n; }
+            foreach (var di in Model.DialogNodes) { var n = new DialogGraphNode(di); n.OnModified = () => schedule.Execute(() => RebuildSingleDialogNode(n)).StartingIn(0); AddElement(n); _nodeMap[di] = n; }
+
             foreach (var qi in Model.QuestNodes)
             {
                 var qn = new QuestRootGraphNode(qi);
@@ -235,7 +236,12 @@ namespace ProjectC.Quests.Editor
             if (fi == null || ti == null) { TryRemove(edge); return; }
             if (!Model.SetConnection(fi, fs, ti, ts, ei)) { TryRemove(edge); Debug.LogWarning($"[UG] Cannot connect {fs}→{ts}"); return; }
             edge.viewDataKey = "user-edge";
-            edge.edgeControl.inputColor = edge.edgeControl.outputColor = fs switch { PortSemantic.DialogEdgeAction => GraphNodeColors.PortOrange, PortSemantic.StageTargetNpc => GraphNodeColors.PortBlue, _ => GraphNodeColors.PortGreen };
+            edge.edgeControl.inputColor = edge.edgeControl.outputColor = (fs, ts) switch
+            { (PortSemantic.DialogEdgeAction, PortSemantic.QuestOfferedBy) => GraphNodeColors.PortOrange,
+              (PortSemantic.DialogEdgeAction, _) => GraphNodeColors.PortGreen,
+              (PortSemantic.StageTargetNpc, _) => GraphNodeColors.PortBlue,
+              _ => GraphNodeColors.PortGreen };
+
             if (fs == PortSemantic.DialogEdgeAction && fn is DialogGraphNode dgn) schedule.Execute(() => RebuildSingleDialogNode(dgn)).StartingIn(20);
             Debug.Log($"[UG] Connected {fs}→{ts}");
         }
@@ -260,7 +266,8 @@ namespace ProjectC.Quests.Editor
             var conn = edges.ToList().Where(e => e.output?.node == old || e.input?.node == old).ToList();
             foreach (var e in conn) RemoveElement(e);
             var pos = old.GetPosition(); RemoveElement(old); _nodeMap.Remove(old.Info);
-            var nn = new DialogGraphNode(old.Info); nn.SetPosition(pos); AddElement(nn); _nodeMap[old.Info] = nn;
+            var nn = new DialogGraphNode(old.Info); nn.OnModified = () => schedule.Execute(() => RebuildSingleDialogNode(nn)).StartingIn(0); nn.SetPosition(pos); AddElement(nn); _nodeMap[old.Info] = nn;
+
             Model.BuildGraph();
             foreach (var ei in Model.Edges)
                 if (_nodeMap.TryGetValue(ei.fromNode, out var f) && _nodeMap.TryGetValue(ei.toNode, out var t) && (f == nn || t == nn))

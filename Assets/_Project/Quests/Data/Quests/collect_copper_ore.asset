@@ -61,49 +61,7 @@ MonoBehaviour:
       required: 1
     onEnterActions: []
     onCompleteActions: []
-    nextStageId: stage_1
-  - stageId: stage_1
-    description: 
-    objectives: []
-    onEnterActions: []
-    onCompleteActions: []
     nextStageId: 
-  - stageId: stage_2
-    description: 
-    objectives: []
-    onEnterActions: []
-    onCompleteActions: []
-    nextStageId: stage_3
-  - stageId: stage_3
-    description: 
-    objectives: []
-    onEnterActions: []
-    onCompleteActions: []
-    nextStageId: stage_4
-  - stageId: stage_4
-    description: 
-    objectives: []
-    onEnterActions: []
-    onCompleteActions: []
-    nextStageId: stage_5
-  - stageId: stage_5
-    description: 
-    objectives: []
-    onEnterActions: []
-    onCompleteActions: []
-    nextStageId: stage_7
-  - stageId: stage_7
-    description: 
-    objectives: []
-    onEnterActions: []
-    onCompleteActions: []
-    nextStageId: stage_6
-  - stageId: stage_6
-    description: 
-    objectives: []
-    onEnterActions: []
-    onCompleteActions: []
-    nextStageId: stage_7
   rewards:
     credits: 200
     items:

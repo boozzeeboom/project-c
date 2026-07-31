@@ -120,9 +120,10 @@ namespace ProjectC.Quests.Editor
                     }
                     if (edge.action != null && edge.action.type == DialogueActionType.OfferQuest && edge.action.questRef != null)
                     {
-                        var firstStage = StageNodes.FirstOrDefault(s => s.quest == edge.action.questRef && s.stageIndex == 0);
-                        if (firstStage?.quest != null) Edges.Add(new EdgeInfo { fromNode = dn, fromPort = PortSemantic.DialogEdgeAction, toNode = firstStage, toPort = PortSemantic.StageIn, extraIndex = ei });
+                        var questNode = QuestNodes.FirstOrDefault(n => n.quest == edge.action.questRef);
+                        if (questNode?.quest != null) Edges.Add(new EdgeInfo { fromNode = dn, fromPort = PortSemantic.DialogEdgeAction, toNode = questNode, toPort = PortSemantic.QuestOfferedBy, extraIndex = ei });
                     }
+
                     if (edge.action != null && edge.action.type == DialogueActionType.SwitchDialogTree && edge.action.dialogTreeRef != null)
                     {
                         var targetTree = edge.action.dialogTreeRef;
@@ -178,14 +179,13 @@ namespace ProjectC.Quests.Editor
 
         public bool SetConnection(object fromNode, PortSemantic fromPort, object toNode, PortSemantic toPort, int edgeIndex = -1)
         {
-            if (fromPort == PortSemantic.DialogEdgeAction && toPort == PortSemantic.StageIn && fromNode is DialogNodeInfo dni)
+            if (fromPort == PortSemantic.DialogEdgeAction && toPort == PortSemantic.QuestOfferedBy && fromNode is DialogNodeInfo dni && toNode is QuestNodeInfo qni)
             {
                 var edge = GetEdge(dni, edgeIndex); if (edge == null) return false;
-                QuestDefinition quest = (toNode as StageNodeInfo)?.quest ?? (toNode as QuestNodeInfo)?.quest;
-                if (quest == null) return false;
-                edge.action = new DialogueAction { type = DialogueActionType.OfferQuest, questRef = quest, stringParam = quest.questId };
+                edge.action = new DialogueAction { type = DialogueActionType.OfferQuest, questRef = qni.quest, stringParam = qni.quest.questId };
                 EditorUtility.SetDirty(dni.tree); return true;
             }
+
             if (fromPort == PortSemantic.DialogEdgeAction && toPort == PortSemantic.DialogIn && fromNode is DialogNodeInfo fromDni && toNode is DialogNodeInfo toDni)
             {
                 var edge = GetEdge(fromDni, edgeIndex); if (edge == null) return false;

@@ -85,11 +85,13 @@ namespace ProjectC.Quests.Editor
         public readonly DialogTree Tree;
         public readonly int NodeIndex;
         public readonly DialogNodeInfo Info;
+        public System.Action OnModified;
         public DialogueNode DialogueNode => Tree?.nodes != null && NodeIndex >= 0 && NodeIndex < Tree.nodes.Length ? Tree.nodes[NodeIndex] : null;
 
         public DialogGraphNode(DialogNodeInfo info)
         {
             Tree = info.tree; NodeIndex = info.nodeIndex; Info = info;
+
             var node = DialogueNode;
             PersistKey = $"dlg_{Tree.treeId}_{node?.nodeId ?? NodeIndex.ToString()}";
             string speaker = node?.speaker?.speakerNpc != null ? node.speaker.speakerNpc.displayName : (node?.speaker?.speakerKind.ToString() ?? "Npc");
@@ -132,10 +134,12 @@ namespace ProjectC.Quests.Editor
                     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                     EditorGUILayout.PropertyField(edgeP.FindPropertyRelative("label"), new GUIContent($"Choice {i+1}"));
                     EditorGUILayout.PropertyField(edgeP.FindPropertyRelative("action"), new GUIContent("Action"), true);
-                    if (GUILayout.Button("× Remove", GUILayout.Width(80))) { ep.DeleteArrayElementAtIndex(i); so.ApplyModifiedProperties(); EditorUtility.SetDirty(Tree); GUIUtility.ExitGUI(); return; }
+                    if (GUILayout.Button("× Remove", GUILayout.Width(80))) { ep.DeleteArrayElementAtIndex(i); so.ApplyModifiedProperties(); EditorUtility.SetDirty(Tree); OnModified?.Invoke(); GUIUtility.ExitGUI(); return; }
+
                     EditorGUILayout.EndVertical();
                 }
-                if (GUILayout.Button("+ Add Choice", GUILayout.Width(100))) { ep.arraySize++; so.ApplyModifiedProperties(); EditorUtility.SetDirty(Tree); GUIUtility.ExitGUI(); return; }
+                if (GUILayout.Button("+ Add Choice", GUILayout.Width(100))) { ep.arraySize++; so.ApplyModifiedProperties(); EditorUtility.SetDirty(Tree); OnModified?.Invoke(); GUIUtility.ExitGUI(); return; }
+
             }
             if (so.ApplyModifiedProperties()) EditorUtility.SetDirty(Tree);
         }

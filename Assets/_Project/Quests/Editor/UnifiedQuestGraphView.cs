@@ -121,7 +121,8 @@ namespace ProjectC.Quests.Editor
         private void BuildVisualGraph()
         {
             foreach (var ni in Model.NpcNodes) { var n = new NpcGraphNode(ni); AddElement(n); _nodeMap[ni] = n; }
-            foreach (var di in Model.DialogNodes) { var n = new DialogGraphNode(di); n.OnModified = () => schedule.Execute(() => RebuildSingleDialogNode(n)).StartingIn(0); AddElement(n); _nodeMap[di] = n; }
+            foreach (var di in Model.DialogNodes) { var n = new DialogGraphNode(di); n.OnModified = () => schedule.Execute(() => Rebuild()).StartingIn(0); AddElement(n); _nodeMap[di] = n; }
+
 
             foreach (var qi in Model.QuestNodes)
             {
@@ -242,7 +243,8 @@ namespace ProjectC.Quests.Editor
               (PortSemantic.StageTargetNpc, _) => GraphNodeColors.PortBlue,
               _ => GraphNodeColors.PortGreen };
 
-            if (fs == PortSemantic.DialogEdgeAction && fn is DialogGraphNode dgn) schedule.Execute(() => RebuildSingleDialogNode(dgn)).StartingIn(20);
+            if (fs == PortSemantic.DialogEdgeAction && fn is DialogGraphNode dgn) schedule.Execute(() => Rebuild()).StartingIn(20);
+
             Debug.Log($"[UG] Connected {fs}→{ts}");
         }
 
@@ -252,7 +254,8 @@ namespace ProjectC.Quests.Editor
             var fs = BaseGraphNode.GetSemantic(edge.output); var ts = BaseGraphNode.GetSemantic(edge.input);
             int ei = BaseGraphNode.GetPortData(edge.output) is int i ? i : -1;
             object fi = GetNodeInfo(fn), ti = GetNodeInfo(tn);
-            if (fi != null && ti != null) { Model.RemoveConnection(fi, fs, ti, ts, ei); if (fs == PortSemantic.DialogEdgeAction && fn is DialogGraphNode dgn) schedule.Execute(() => RebuildSingleDialogNode(dgn)).StartingIn(20); }
+            if (fi != null && ti != null) { Model.RemoveConnection(fi, fs, ti, ts, ei); if (fs == PortSemantic.DialogEdgeAction && fn is DialogGraphNode dgn) schedule.Execute(() => Rebuild()).StartingIn(20); }
+
         }
 
         static object GetNodeInfo(BaseGraphNode n) => n switch
@@ -266,7 +269,8 @@ namespace ProjectC.Quests.Editor
             var conn = edges.ToList().Where(e => e.output?.node == old || e.input?.node == old).ToList();
             foreach (var e in conn) RemoveElement(e);
             var pos = old.GetPosition(); RemoveElement(old); _nodeMap.Remove(old.Info);
-            var nn = new DialogGraphNode(old.Info); nn.OnModified = () => schedule.Execute(() => RebuildSingleDialogNode(nn)).StartingIn(0); nn.SetPosition(pos); AddElement(nn); _nodeMap[old.Info] = nn;
+            var nn = new DialogGraphNode(old.Info); nn.OnModified = () => schedule.Execute(() => Rebuild()).StartingIn(0); nn.SetPosition(pos); AddElement(nn); _nodeMap[old.Info] = nn;
+
 
             Model.BuildGraph();
             foreach (var ei in Model.Edges)

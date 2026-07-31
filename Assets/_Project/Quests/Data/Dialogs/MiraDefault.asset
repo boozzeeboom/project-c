@@ -50,7 +50,7 @@ MonoBehaviour:
         factionParam: 0
         questStateParam: 0
       action:
-        type: 21
+        type: 60
         stringParam: 
         questRef: {fileID: 0}
         npcRef: {fileID: 0}

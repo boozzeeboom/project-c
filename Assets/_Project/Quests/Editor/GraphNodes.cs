@@ -189,7 +189,8 @@ namespace ProjectC.Quests.Editor
         public StageGraphNode(StageNodeInfo info)
         {
             Quest = info.quest; StageIndex = info.stageIndex; Info = info;
-            PersistKey = $"stage_{Quest.questId}_{StageIndex}";
+            PersistKey = $"stage_{Quest.questId}_{Stage?.stageId ?? StageIndex.ToString()}";
+
             int num = StageCount?.Invoke() ?? 1;
             title = $"🟢 Stage {StageIndex+1}/{num}: {Stage?.stageId ?? "?"}";
             titleContainer.style.backgroundColor = new StyleColor(GraphNodeColors.Stage);

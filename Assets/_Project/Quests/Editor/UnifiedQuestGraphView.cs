@@ -125,18 +125,19 @@ namespace ProjectC.Quests.Editor
             foreach (var qi in Model.QuestNodes)
             {
                 var qn = new QuestRootGraphNode(qi);
-                qn.OnAddStage = q => { Model.AddStage(q); Rebuild(); };
+                qn.OnAddStage = q => schedule.Execute(() => { Model.AddStage(q); Rebuild(); }).StartingIn(0);
                 AddElement(qn); _nodeMap[qi] = qn;
             }
             foreach (var si in Model.StageNodes)
             {
                 var sn = new StageGraphNode(si);
                 sn.StageCount = () => Model.StageNodes.Count(s => s.quest == si.quest);
-                sn.OnDeleteStage = s => { Model.DeleteStage(s); Rebuild(); };
-                sn.OnAddStageAfter = s => { Model.AddStage(s.quest); Rebuild(); };
-                sn.OnAddObjective = s => { Model.AddObjective(s); Rebuild(); };
+                sn.OnDeleteStage = s => schedule.Execute(() => { Model.DeleteStage(s); Rebuild(); }).StartingIn(0);
+                sn.OnAddStageAfter = s => schedule.Execute(() => { Model.AddStage(s.quest, s.stageIndex); Rebuild(); }).StartingIn(0);
+                sn.OnAddObjective = s => schedule.Execute(() => { Model.AddObjective(s); Rebuild(); }).StartingIn(0);
                 AddElement(sn); _nodeMap[si] = sn;
             }
+
             foreach (var ri in Model.RewardNodes) { var n = new RewardGraphNode(ri); AddElement(n); _nodeMap[ri] = n; }
 
             foreach (var ei in Model.Edges) { var e = CreateVisualEdge(ei); if (e != null) AddElement(e); }

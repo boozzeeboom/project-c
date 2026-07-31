@@ -189,13 +189,13 @@ namespace ProjectC.Quests.Editor
                 QuestDefinition quest = (toNode as StageNodeInfo)?.quest ?? (toNode as QuestNodeInfo)?.quest;
                 if (quest == null) return false;
                 edge.action = new DialogueAction { type = DialogueActionType.OfferQuest, questRef = quest, stringParam = quest.questId };
-                EditorUtility.SetDirty(dni.tree); return true;
+                EditorUtility.SetDirty(dni.tree); AssetDatabase.SaveAssets(); return true;
             }
             if (fromPort == PortSemantic.DialogEdgeAction && toPort == PortSemantic.DialogIn && fromNode is DialogNodeInfo fromDni && toNode is DialogNodeInfo toDni)
             {
                 var edge = GetEdge(fromDni, edgeIndex); if (edge == null) return false;
-                if (fromDni.tree == toDni.tree) { edge.targetNodeId = toDni.Node?.nodeId ?? ""; EditorUtility.SetDirty(fromDni.tree); return true; }
-                else { edge.action = new DialogueAction { type = DialogueActionType.SwitchDialogTree, dialogTreeRef = toDni.tree }; edge.targetNodeId = ""; EditorUtility.SetDirty(fromDni.tree); return true; }
+                if (fromDni.tree == toDni.tree) { edge.targetNodeId = toDni.Node?.nodeId ?? ""; EditorUtility.SetDirty(fromDni.tree); AssetDatabase.SaveAssets(); return true; }
+                else { edge.action = new DialogueAction { type = DialogueActionType.SwitchDialogTree, dialogTreeRef = toDni.tree }; edge.targetNodeId = ""; EditorUtility.SetDirty(fromDni.tree); AssetDatabase.SaveAssets(); return true; }
             }
             if (fromPort == PortSemantic.StageTargetNpc && toPort == PortSemantic.NpcTargetedBy && fromNode is StageNodeInfo sni && toNode is NpcNodeInfo nni)
             {
@@ -203,21 +203,22 @@ namespace ProjectC.Quests.Editor
                 var obj = stage.objectives.FirstOrDefault(o => o != null && (o.objectiveType == QuestObjectiveType.TalkToNpc || o.objectiveType == QuestObjectiveType.DeliverItem));
                 if (obj == null) { obj = new QuestObjective { objectiveId = "talk_to", objectiveType = QuestObjectiveType.TalkToNpc }; var list = stage.objectives.ToList(); list.Add(obj); stage.objectives = list.ToArray(); }
                 obj.targetNpc = nni.npc; obj.targetNpcId = nni.npc.npcId; obj.objectiveType = QuestObjectiveType.TalkToNpc;
-                EditorUtility.SetDirty(sni.quest); return true;
+                EditorUtility.SetDirty(sni.quest); AssetDatabase.SaveAssets(); return true;
             }
             if (fromPort == PortSemantic.NpcOffersQuest && toPort == PortSemantic.QuestOfferedBy && fromNode is NpcNodeInfo nni2 && toNode is QuestNodeInfo qni2)
             {
                 var list = nni2.npc.questOfferRefs?.ToList() ?? new List<QuestDefinition>(); if (!list.Contains(qni2.quest)) list.Add(qni2.quest);
-                nni2.npc.questOfferRefs = list.ToArray(); EditorUtility.SetDirty(nni2.npc); return true;
+                nni2.npc.questOfferRefs = list.ToArray(); EditorUtility.SetDirty(nni2.npc); AssetDatabase.SaveAssets(); return true;
             }
             if (fromPort == PortSemantic.StageNext && toPort == PortSemantic.StageIn && fromNode is StageNodeInfo fromSni && toNode is StageNodeInfo toSni)
             {
-                fromSni.Stage.nextStageId = toSni.Stage?.stageId ?? ""; EditorUtility.SetDirty(fromSni.quest); return true;
+                fromSni.Stage.nextStageId = toSni.Stage?.stageId ?? ""; EditorUtility.SetDirty(fromSni.quest); AssetDatabase.SaveAssets(); return true;
             }
             return false;
         }
 
-        public bool RemoveConnection(object fromNode, PortSemantic fromPort, object toNode, PortSemantic toPort, int edgeIndex = -1)
+        public bool RemoveConnection
+(object fromNode, PortSemantic fromPort, object toNode, PortSemantic toPort, int edgeIndex = -1)
         {
             if (fromPort == PortSemantic.DialogEdgeAction && fromNode is DialogNodeInfo dni)
             {
@@ -238,42 +239,65 @@ namespace ProjectC.Quests.Editor
             return false;
         }
 
-        // ── Stage CRUD (called from UI) ──
+        // ── Stage/Objective CRUD ──
 
-        public StageNodeInfo AddStage(QuestDefinition quest)
+        public StageNodeInfo AddStage(QuestDefinition quest, int afterIndex = -1)
         {
+            Undo.RecordObject(quest, "Add Quest Stage");
             var list = quest.stages?.ToList() ?? new List<QuestStage>();
             var s = new QuestStage { stageId = $"stage_{list.Count}", description = "" };
-            // Chain: previous last stage → new stage
-            if (list.Count > 0 && list[list.Count - 1] != null)
-                list[list.Count - 1].nextStageId = s.stageId;
-            list.Add(s); quest.stages = list.ToArray(); EditorUtility.SetDirty(quest);
-            return new StageNodeInfo { quest = quest, stageIndex = list.Count - 1 };
+            if (afterIndex < 0 || afterIndex >= list.Count - 1)
+            {
+                if (list.Count > 0 && list[list.Count - 1] != null)
+                    list[list.Count - 1].nextStageId = s.stageId;
+                list.Add(s);
+            }
+            else
+            {
+                s.nextStageId = list[afterIndex].nextStageId;
+                list[afterIndex].nextStageId = s.stageId;
+                list.Insert(afterIndex + 1, s);
+            }
+            quest.stages = list.ToArray();
+            EditorUtility.SetDirty(quest); AssetDatabase.SaveAssets();
+            // debug removed
+            return new StageNodeInfo { quest = quest, stageIndex = list.IndexOf(s) };
         }
-
 
         public void DeleteStage(StageNodeInfo sni)
         {
-            var list = sni.quest.stages.ToList();
+            var quest = sni.quest;
+            var list = quest.stages?.ToList() ?? new List<QuestStage>();
             if (sni.stageIndex < 0 || sni.stageIndex >= list.Count) return;
-            list.RemoveAt(sni.stageIndex); sni.quest.stages = list.ToArray(); EditorUtility.SetDirty(sni.quest);
+            Undo.RecordObject(quest, "Delete Quest Stage");
+            if (sni.stageIndex > 0 && list[sni.stageIndex - 1] != null)
+                list[sni.stageIndex - 1].nextStageId = list[sni.stageIndex]?.nextStageId ?? "";
+            list.RemoveAt(sni.stageIndex);
+            quest.stages = list.ToArray();
+            EditorUtility.SetDirty(quest); AssetDatabase.SaveAssets();
+            // debug removed
         }
 
         public void AddObjective(StageNodeInfo sni)
         {
             var stage = sni.Stage; if (stage == null) return;
+            Undo.RecordObject(sni.quest, "Add Objective");
             var list = stage.objectives?.ToList() ?? new List<QuestObjective>();
             list.Add(new QuestObjective { objectiveId = $"obj_{list.Count}", objectiveType = QuestObjectiveType.HaveItem, requiredQuantity = 1 });
-            stage.objectives = list.ToArray(); EditorUtility.SetDirty(sni.quest);
+            stage.objectives = list.ToArray();
+            EditorUtility.SetDirty(sni.quest); AssetDatabase.SaveAssets();
         }
 
         public void DeleteObjective(StageNodeInfo sni, int objIndex)
         {
             var stage = sni.Stage; if (stage?.objectives == null || objIndex < 0 || objIndex >= stage.objectives.Length) return;
-            var list = stage.objectives.ToList(); list.RemoveAt(objIndex); stage.objectives = list.ToArray(); EditorUtility.SetDirty(sni.quest);
+            Undo.RecordObject(sni.quest, "Delete Objective");
+            var list = stage.objectives.ToList(); list.RemoveAt(objIndex); stage.objectives = list.ToArray();
+            EditorUtility.SetDirty(sni.quest); AssetDatabase.SaveAssets();
         }
 
-        private static DialogueEdge GetEdge(DialogNodeInfo dni, int edgeIndex)
+        private static DialogueEdge GetEdge
+(DialogNodeInfo dni, int edgeIndex)
         { var node = dni.Node; if (node?.edges == null || edgeIndex < 0 || edgeIndex >= node.edges.Length) return null; return node.edges[edgeIndex]; }
 
         private static bool HasReward(QuestReward r) => r != null && (r.credits > 0 || (r.items != null && r.items.Length > 0) || (r.cargoItems != null && r.cargoItems.Length > 0) || (r.reputation != null && r.reputation.Length > 0));

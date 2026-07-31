@@ -256,7 +256,8 @@ Nodes: 12  |  Edges: 18  |  ✅ All reachable  |  Quest: collect_copper_ore  |  
 | **T-U05** | 1 | DialogNodeView | 3 | T-U02, T-U04 |
 | **T-U06** | 1 | Загрузка DialogTree в граф | 2 | T-U05 |
 | **T-U07** | 1 | Связи Dialog↔Quest | 1.5 | T-U06 |
-| **T-U08** | 1 | ConditionNodeView | 1.5 | T-U05 |
+| **T-U08** | 1 | ~~ConditionNodeView~~ → 🚫 Отменён (см. T-U08_CONDITION_NODE_ANALYSIS.md) | — | — |
+
 | **T-U09** | 2 | UnifiedQuestGraphWindow | 1.5 | T-U06, T-U07 |
 | **T-U10** | 2 | Интеграция с редакторами | 0.5 | T-U09 |
 | **Итого** | | | **~17 часов** | |

@@ -75,16 +75,16 @@
 | T-U05 DialogNodeView | ✅ v5.2 | Синие ноды, Speaker+text, порты на каждый DialogueEdge |
 | T-U06 Загрузка DialogTree | ✅ v5.12 | Рекурсивная загрузка всей цепочки NPC↔Dialog↔Quest |
 | T-U07 Связи Dialog↔Quest | ✅ v5.9 | Оранжевые рёбра Dialog→Quest (QuestOfferedBy, не StageIn) |
-| T-U08 ConditionNodeView | ❌ | Не реализован |
 | T-U09 UnifiedQuestGraphWindow | ✅ v5.2 | Toolbar с ObjectField'ами, статус-бар |
 | T-U10 Интеграция | ✅ v5.2 | Кнопка «Unified Graph» в QuestDefinitionEditor |
 
 ### Расхождения с планом
-1. **ConditionNode (T-U08):** не реализован. План: жёлтая ромбовидная нода с True/False портами.
-2. **Инкрементальный CRUD:** план предполагал добавление/удаление ОДНОЙ ноды без Rebuild. Текущая реализация: полный `Rebuild()` (быстро, т.к. графы маленькие).
-3. **Пунктирные рёбра:** план: «dash» для Dialog↔Quest. Реализация: сплошные оранжевые.
-4. **BFS-лейаут:** план: древовидный. Реализация: колоночный (NPC | Dialog | Quest↓).
-5. **Objective-ноды:** план предполагал отдельные ноды. Решение v5.2: objectives внутри Stage (упрощение).
+1. **ConditionNode (T-U08):** 🚫 Отменён. См. анализ [`T-U08_CONDITION_NODE_ANALYSIS.md`](T-U08_CONDITION_NODE_ANALYSIS.md). Ветвление уже работает через `DialogueEdge.conditions[]`. ConditionNode — визуальная абстракция с дорогой ценой (mapping, NOT-логика, синхронизация). Вместо неё: цветовые индикаторы условий на портах.
+2. **Инкрементальный CRUD:** план предполагал добавление/удаление ОДНОЙ ноды без Rebuild. Текущая реализация: полный `Rebuild()` (быстро, т.к. графы маленькие). Ок.
+3. **Пунктирные рёбра:** план: «dash» для Dialog↔Quest. Реализация: сплошные оранжевые. Минор.
+4. **BFS-лейаут:** план: древовидный. Реализация: колоночный (NPC | Dialog | Quest↓). Ок.
+5. **Objective-ноды:** план предполагал отдельные ноды. Решение v5.2: objectives внутри Stage (упрощение). Ок.
+
 
 ### Дополнительно (не в плане)
 - Undo/Redo (Ctrl+Z/Y) через `Undo.undoRedoPerformed`

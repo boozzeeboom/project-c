@@ -33,7 +33,10 @@ namespace ProjectC.Quests.Editor
         protected BaseGraphNode()
         {
             capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Resizable;
+            style.minWidth = 200;
+            style.minHeight = 60;
         }
+
 
 
         protected Port MakeOutPort(string name, PortSemantic semantic, Color color, object userData = null)

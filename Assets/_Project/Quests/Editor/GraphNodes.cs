@@ -93,16 +93,20 @@ namespace ProjectC.Quests.Editor
         private void DrawEditor()
         {
             var so = new SerializedObject(Npc); so.Update();
-            EditorGUILayout.PropertyField(so.FindProperty("npcId"), new GUIContent("ID"));
-            EditorGUILayout.PropertyField(so.FindProperty("displayName"), new GUIContent("Name"));
-            EditorGUILayout.PropertyField(so.FindProperty("faction"), new GUIContent("Faction"));
-            EditorGUILayout.PropertyField(so.FindProperty("portrait"), new GUIContent("Portrait"));
-            EditorGUILayout.PropertyField(so.FindProperty("defaultDialogTree"), new GUIContent("Dialog Tree"));
-            EditorGUILayout.PropertyField(so.FindProperty("services"), new GUIContent("Services"));
-            EditorGUILayout.PropertyField(so.FindProperty("interactionRadius"), new GUIContent("Radius"));
+            var oldW = EditorGUIUtility.labelWidth; EditorGUIUtility.labelWidth = 60;
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PropertyField(so.FindProperty("npcId"), GUIContent.none, GUILayout.MinWidth(70));
+            EditorGUILayout.PropertyField(so.FindProperty("displayName"), GUIContent.none, GUILayout.MinWidth(70));
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.PropertyField(so.FindProperty("faction"));
+            EditorGUILayout.PropertyField(so.FindProperty("portrait"));
+            EditorGUILayout.PropertyField(so.FindProperty("defaultDialogTree"));
+            EditorGUILayout.PropertyField(so.FindProperty("services"));
+            EditorGUIUtility.labelWidth = oldW;
             if (so.ApplyModifiedProperties()) EditorUtility.SetDirty(Npc);
         }
     }
+
 
 
     // ═══════════════ DialogNode ═══════════════

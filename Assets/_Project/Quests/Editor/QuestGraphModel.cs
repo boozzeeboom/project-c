@@ -47,14 +47,24 @@ namespace ProjectC.Quests.Editor
         public void AddNpc(NpcDefinition npc)
         {
             if (npc == null || _npcs.Contains(npc)) return; _npcs.Add(npc);
-            if (npc.defaultDialogTree != null && !_dialogs.Contains(npc.defaultDialogTree)) _dialogs.Add(npc.defaultDialogTree);
+            if (npc.defaultDialogTree != null && !_dialogs.Contains(npc.defaultDialogTree))
+            { _dialogs.Add(npc.defaultDialogTree); AutoLoadFromDialog(npc.defaultDialogTree); }
             if (npc.defaultDialogTree?.nodes != null)
                 foreach (var n in npc.defaultDialogTree.nodes)
                     if (n?.edges != null) foreach (var e in n.edges)
                         if (e?.action?.type == DialogueActionType.SwitchDialogTree && e.action.dialogTreeRef != null && !_dialogs.Contains(e.action.dialogTreeRef))
-                            _dialogs.Add(e.action.dialogTreeRef);
+                        { _dialogs.Add(e.action.dialogTreeRef); AutoLoadFromDialog(e.action.dialogTreeRef); }
             if (npc.questOfferRefs != null) foreach (var q in npc.questOfferRefs) if (q != null && !_quests.Contains(q)) _quests.Add(q);
             if (npc.questTurnInRefs != null) foreach (var q in npc.questTurnInRefs) if (q != null && !_quests.Contains(q)) _quests.Add(q);
+        }
+
+        private void AutoLoadFromDialog(DialogTree t)
+        {
+            if (t?.nodes == null) return;
+            foreach (var n in t.nodes)
+                if (n?.edges != null) foreach (var e in n.edges)
+                    if (e?.action?.type == DialogueActionType.OfferQuest && e.action.questRef != null && !_quests.Contains(e.action.questRef))
+                        _quests.Add(e.action.questRef);
         }
 
         public void AddQuest(QuestDefinition q)
@@ -65,7 +75,8 @@ namespace ProjectC.Quests.Editor
                     if (o?.targetNpc != null && !_npcs.Contains(o.targetNpc)) _npcs.Add(o.targetNpc);
         }
 
-        public void AddDialogTree(DialogTree t) { if (t != null && !_dialogs.Contains(t)) _dialogs.Add(t); }
+        public void AddDialogTree(DialogTree t) { if (t != null && !_dialogs.Contains(t)) { _dialogs.Add(t); AutoLoadFromDialog(t); } }
+
 
         public void Clear() { _npcs.Clear(); _dialogs.Clear(); _quests.Clear(); NpcNodes.Clear(); DialogNodes.Clear(); QuestNodes.Clear(); StageNodes.Clear(); RewardNodes.Clear(); Edges.Clear(); }
 
@@ -179,7 +190,13 @@ namespace ProjectC.Quests.Editor
 
         public bool SetConnection(object fromNode, PortSemantic fromPort, object toNode, PortSemantic toPort, int edgeIndex = -1)
         {
+            // Auto-record undo for the affected asset
+            if (fromNode is DialogNodeInfo d) Undo.RecordObject(d.tree, "Connect Dialog Edge");
+            else if (fromNode is StageNodeInfo s) Undo.RecordObject(s.quest, "Connect Stage");
+            else if (fromNode is NpcNodeInfo n) Undo.RecordObject(n.npc, "Connect NPC");
+
             if (fromPort == PortSemantic.DialogEdgeAction && toPort == PortSemantic.QuestOfferedBy && fromNode is DialogNodeInfo dni && toNode is QuestNodeInfo qni)
+
             {
                 var edge = GetEdge(dni, edgeIndex); if (edge == null) return false;
                 edge.action = new DialogueAction { type = DialogueActionType.OfferQuest, questRef = qni.quest, stringParam = qni.quest.questId };
@@ -214,7 +231,12 @@ namespace ProjectC.Quests.Editor
 
         public bool RemoveConnection(object fromNode, PortSemantic fromPort, object toNode, PortSemantic toPort, int edgeIndex = -1)
         {
+            if (fromNode is DialogNodeInfo d) Undo.RecordObject(d.tree, "Disconnect Dialog Edge");
+            else if (fromNode is StageNodeInfo s) Undo.RecordObject(s.quest, "Disconnect Stage");
+            else if (fromNode is NpcNodeInfo n) Undo.RecordObject(n.npc, "Disconnect NPC");
+
             if (fromPort == PortSemantic.DialogEdgeAction && fromNode is DialogNodeInfo dni)
+
             { var edge = GetEdge(dni, edgeIndex); if (edge == null) return false; edge.action = null; EditorUtility.SetDirty(dni.tree); return true; }
             if (fromPort == PortSemantic.StageTargetNpc && fromNode is StageNodeInfo sni && toPort == PortSemantic.NpcTargetedBy)
             { var stage = sni.Stage; if (stage?.objectives == null) return false; var obj = stage.objectives.FirstOrDefault(o => o != null && o.targetNpc != null); if (obj == null) return false; obj.targetNpc = null; obj.targetNpcId = ""; EditorUtility.SetDirty(sni.quest); return true; }
@@ -227,7 +249,9 @@ namespace ProjectC.Quests.Editor
 
         public StageNodeInfo AddStage(QuestDefinition quest, int afterIndex = -1)
         {
+            Undo.RecordObject(quest, "Add Stage");
             var list = quest.stages?.ToList() ?? new List<QuestStage>();
+
             var s = new QuestStage { stageId = UniqueStageId(quest, list.Count), description = "" };
             if (afterIndex < 0 || afterIndex >= list.Count - 1) { if (list.Count > 0 && list[list.Count - 1] != null) list[list.Count - 1].nextStageId = s.stageId; list.Add(s); }
             else { s.nextStageId = list[afterIndex].nextStageId; list[afterIndex].nextStageId = s.stageId; list.Insert(afterIndex + 1, s); }
@@ -239,7 +263,9 @@ namespace ProjectC.Quests.Editor
         public void DeleteStage(StageNodeInfo sni)
         {
             var quest = sni.quest;
+            Undo.RecordObject(quest, "Delete Stage");
             var list = quest.stages?.ToList() ?? new List<QuestStage>();
+
             if (sni.stageIndex < 0 || sni.stageIndex >= list.Count) return;
             if (sni.stageIndex > 0 && list[sni.stageIndex - 1] != null)
                 list[sni.stageIndex - 1].nextStageId = list[sni.stageIndex]?.nextStageId ?? "";

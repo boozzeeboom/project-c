@@ -25,7 +25,9 @@ namespace ProjectC.Quests.Editor
 
         public UnifiedQuestGraphView()
         {
+            Undo.undoRedoPerformed += OnUndoRedo;
             SetupZoom(0.2f, 2.5f);
+
             this.AddManipulator(new ContentDragger()); this.AddManipulator(new SelectionDragger());
             this.AddManipulator(new RectangleSelector()); this.AddManipulator(new ContentZoomer());
             var grid = new GridBackground(); Insert(0, grid); grid.StretchToParentSize();
@@ -39,7 +41,11 @@ namespace ProjectC.Quests.Editor
         public void AddQuest(QuestDefinition q) { Model.AddQuest(q); Rebuild(); }
         public void AddDialogTree(Dialogue.DialogTree t) { Model.AddDialogTree(t); Rebuild(); }
 
+        ~UnifiedQuestGraphView() { Undo.undoRedoPerformed -= OnUndoRedo; }
+        private void OnUndoRedo() { if (this != null) schedule.Execute(() => Rebuild()).StartingIn(0); }
+
         public void ClearAll() { Model.Clear(); ClearGraphElements(); }
+
         private readonly Dictionary<string, Rect> _savedPositions = new();
 
         public void Rebuild()

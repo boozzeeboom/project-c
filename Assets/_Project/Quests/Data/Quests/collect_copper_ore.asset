@@ -20,45 +20,9 @@ MonoBehaviour:
   faction: 0
   minReputation: 0
   stages:
-  - stageId: collect
+  - stageId: stage_0
     description: 
-    objectives:
-    - objectiveId: 
-      objectiveType: 0
-      description: 
-      targetNpcId: 
-      targetNpc: {fileID: 0}
-      itemTradeItemId: "\u041C\u0435\u0434\u043D\u0430\u044F \u0440\u0443\u0434\u0430"
-      pickupItem: {fileID: 0}
-      requiredQuantity: 3
-      targetSceneId: 
-      targetPosition: {x: 0, y: 0, z: 0}
-      targetRadius: 10
-      targetEntityType: 
-      targetEntity: {fileID: 0}
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 1
-    - objectiveId: new_objective
-      objectiveType: 4
-      description: 
-      targetNpcId: 
-      targetNpc: {fileID: 0}
-      itemTradeItemId: 
-      pickupItem: {fileID: 0}
-      requiredQuantity: 1
-      targetSceneId: 
-      targetPosition: {x: 0, y: 0, z: 0}
-      targetRadius: 10
-      targetEntityType: 
-      targetEntity: {fileID: 0}
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 1
+    objectives: []
     onEnterActions: []
     onCompleteActions: []
     nextStageId: 

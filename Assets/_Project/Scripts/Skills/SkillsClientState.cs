@@ -101,6 +101,10 @@ namespace ProjectC.Skills
                 : new HashSet<string>();
 
             OnSkillsUpdated?.Invoke(CurrentSkills);
+
+            // V3.11: синхронизация списка навыков для окна биндинга (только изученные)
+            ProjectC.Skills.SkillInputService.Instance?.SetKnownSkills(CurrentSkills);
+
             if (Debug.isDebugBuild)
             {
                 Debug.Log($"[SkillsClientState] OnSkillsSnapshotReceived: {CurrentSkills.Count} learned, {KnownSkillIds.Count} known");

@@ -43,6 +43,7 @@ namespace ProjectC.Crafting.UI
         private string _selectedRecipeKey = null;
         private bool _built;
         private bool _subscribed;
+        private bool _knowledgeSubscribed;
 
         public bool IsOpen { get; private set; }
 
@@ -73,7 +74,16 @@ namespace ProjectC.Crafting.UI
         private void OnDestroy()
         {
             TryUnsubscribe();
+            TryUnsubscribeKnowledge();
             if (Instance == this) Instance = null;
+        }
+
+        private void TryUnsubscribeKnowledge()
+        {
+            if (!_knowledgeSubscribed) return;
+            var state = RecipeKnowledgeClientState.Instance;
+            if (state != null) state.OnRecipeKnowledgeUpdated -= OnRecipeKnowledgeChanged;
+            _knowledgeSubscribed = false;
         }
 
         private void TrySubscribe()
@@ -108,12 +118,28 @@ namespace ProjectC.Crafting.UI
         {
             if (!_built) EnsureBuilt();
             if (!_subscribed) TrySubscribe();
+            if (!_knowledgeSubscribed) TrySubscribeKnowledge();
             // T-C06: ESC закрывает окно
             if (IsOpen && UnityEngine.InputSystem.Keyboard.current != null
                 && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 Close();
             }
+        }
+
+        private void TrySubscribeKnowledge()
+        {
+            var state = RecipeKnowledgeClientState.Instance;
+            if (state == null) return;
+            state.OnRecipeKnowledgeUpdated += OnRecipeKnowledgeChanged;
+            _knowledgeSubscribed = true;
+        }
+
+        private void OnRecipeKnowledgeChanged(HashSet<string> knownIds)
+        {
+            // Если окно открыто и станция активна — перестроить список рецептов
+            if (!IsOpen || _currentStationNetId == 0 || _recipeList == null) return;
+            BuildRecipeList();
         }
 
         private void EnsureBuilt()
@@ -284,6 +310,7 @@ namespace ProjectC.Crafting.UI
         {
             var list = new List<KeyValuePair<string, string>>();
             if (_currentConfig == null) return list;
+            var known = RecipeKnowledgeClientState.Instance?.KnownRecipeIds;
             for (int i = 0; i < _currentConfig.AllowedRecipes.Count; i++)
             {
                 var r = _currentConfig.AllowedRecipes[i];
@@ -291,6 +318,14 @@ namespace ProjectC.Crafting.UI
                 // V3: use stable string recipeId from RecipeClientRegistry (NOT CraftingWorld.RegisterRecipe on client!)
                 string recipeId = RecipeClientRegistry.GetRecipeId(r);
                 if (string.IsNullOrEmpty(recipeId)) continue;
+
+                // V3.9: knowledge gate — рецепты с KnowledgeUnlockType != None скрыты до открытия
+                if (r.KnowledgeUnlockType != RecipeKnowledgeUnlockType.None)
+                {
+                    bool isKnown = known != null && known.Contains(recipeId);
+                    if (!isKnown) continue;
+                }
+
                 string displayName = CraftingClientState.Instance != null
                     ? CraftingClientState.Instance.GetRecipeDisplayName(recipeId)
                     : r.DisplayName;

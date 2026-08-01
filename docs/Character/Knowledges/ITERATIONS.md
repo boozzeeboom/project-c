@@ -121,3 +121,27 @@
 
 **Статус:** План утверждён, ожидает реализацию.
 
+---
+
+## Итерация от 2026-08-03: V3.0 — Стабильный строковый recipeId
+
+**Задача:** Реализация шага V3.0 плана — стабильный строковый ключ рецепта для knowledge-системы.
+
+**Коммит:** `467e20b3` — T-KNOW-V3.0: стабильный строковый recipeId
+
+**Изменения (14 файлов):**
+- `RecipeData.cs` — +recipeId (string), enum сдвиг None=0
+- `RecipeClientRegistry.cs` — registry на Dictionary<string, RecipeData>
+- `CraftingWorld.cs` — _knownRecipes на HashSet<string>, все методы на string
+- `CraftingJob.cs` — RecipeId int → string
+- `CraftingSnapshotDto.cs` — activeRecipeId int → string (NetworkSerialize)
+- `RecipeKnowledgeDto.cs` — int[] → string[] (NetworkSerialize)
+- `RecipeKnowledgeClientState.cs` — HashSet<int> → HashSet<string>
+- `CraftingServer.cs` — StartCraftRpc(string), BuildSnapshot, SendRecipeKnowledge
+- `CraftingStation.cs` — _activeRecipeId NetworkVariable<string>
+- `CraftingClientState.cs` — RequestStartCraft(string), GetRecipe/DisplayName на string
+- `CraftingWindow.cs` — _selectedRecipeKey (string), RecipeClientRegistry вместо RegisterRecipe
+- `CharacterWindow.cs` — RecipeKnowledgeItem.recipeId → string
+- `QuestSaveData.cs` — knownRecipes List<int> → List<string>
+- `CraftingProgressController.cs` — activeRecipeId null-check
+

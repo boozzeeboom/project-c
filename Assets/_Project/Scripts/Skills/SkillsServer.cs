@@ -67,6 +67,10 @@ namespace ProjectC.Skills
             _world = new SkillsWorld();
             if (_config != null) _world.LoadAllSkills(_config);
 
+            // V3: KnowledgeManager — единый фасад
+            if (Knowledge.KnowledgeManager.Instance == null)
+                new Knowledge.KnowledgeManager();
+
             if (Debug.isDebugBuild)
             {
                 Debug.Log($"[SkillsServer] OnNetworkSpawn — IsServer=true, skillsLoaded={_world?.SkillCount ?? 0}, maxOps={_maxOpsPerSec}/sec");
@@ -78,6 +82,7 @@ namespace ProjectC.Skills
             if (!IsServer) return;
             // NOTE: SkillsWorld.Reset() moved to StatsServer.OnNetworkDespawn
             // (runs AFTER flush save, when SkillsWorld is still alive)
+            Knowledge.KnowledgeManager.Reset();
             if (Instance == this) Instance = null;
         }
 

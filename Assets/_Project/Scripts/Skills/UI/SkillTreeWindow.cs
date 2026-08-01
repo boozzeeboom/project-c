@@ -244,14 +244,27 @@ namespace ProjectC.Skills.UI
         {
             _filteredSkills.Clear();
             var learned = SkillsClientState.Instance?.CurrentSkills ?? new HashSet<string>();
+            var knownIds = SkillsClientState.Instance?.KnownSkillIds ?? new HashSet<string>();
             foreach (var s in _allSkillConfigs)
             {
                 if (s == null) continue;
                 if (!MatchesDiscipline(s)) continue;
                 if (!MatchesSearch(s)) continue;
+                // V3: knowledge gate
+                if (!IsSkillVisible(s, learned, knownIds)) continue;
                 _filteredSkills.Add(s);
             }
             RebuildSkillList();
+        }
+
+        private bool IsSkillVisible(SkillNodeConfig s, HashSet<string> learned, HashSet<string> knownIds)
+        {
+            // None = visible to everyone
+            if (s.knowledgeUnlockType == KnowledgeUnlockType.None) return true;
+            // Learned = implicitly known
+            if (learned != null && learned.Contains(s.skillId)) return true;
+            // Explicitly known
+            return knownIds != null && knownIds.Contains(s.skillId);
         }
 
         private bool MatchesDiscipline(SkillNodeConfig s)

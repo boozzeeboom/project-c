@@ -223,13 +223,24 @@ namespace ProjectC.Skills.UI
         private void ApplyFilterAndSearch()
         {
             _filteredSkills.Clear();
+            var learned = SkillsClientState.Instance?.CurrentSkills ?? new HashSet<string>();
+            var knownIds = SkillsClientState.Instance?.KnownSkillIds ?? new HashSet<string>();
             foreach (var s in _allSkillConfigs)
             {
                 if (s == null) continue;
                 if (!MatchesSearch(s)) continue;
+                // V3: knowledge gate
+                if (!IsSkillVisible(s, learned, knownIds)) continue;
                 _filteredSkills.Add(s);
             }
             RebuildSkillTree();
+        }
+
+        private bool IsSkillVisible(SkillNodeConfig s, HashSet<string> learned, HashSet<string> knownIds)
+        {
+            if (s.knowledgeUnlockType == KnowledgeUnlockType.None) return true;
+            if (learned != null && learned.Contains(s.skillId)) return true;
+            return knownIds != null && knownIds.Contains(s.skillId);
         }
 
         private bool MatchesSearch(SkillNodeConfig s)

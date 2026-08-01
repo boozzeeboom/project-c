@@ -2364,7 +2364,14 @@ namespace ProjectC.UI.Client
                     }
                     else
                     {
-                        // Social — оставляем как было (LEARNED/AVAILABLE/LOCKED)
+                        // Social — V3: knowledge gate
+                        if (skill.knowledgeUnlockType != ProjectC.Skills.KnowledgeUnlockType.None)
+                        {
+                            var knownIds = ProjectC.Skills.SkillsClientState.Instance?.KnownSkillIds;
+                            bool isKnown = knownIds != null && knownIds.Contains(skill.skillId);
+                            bool learnedCheck = learned != null && learned.Contains(skill.skillId);
+                            if (!learnedCheck && !isKnown) continue;
+                        }
                         bool isLearned = learned != null && learned.Contains(skill.skillId);
                         string state = isLearned ? "LEARNED" : (CanLearn(skill, learned, intTier) ? "AVAILABLE" : "LOCKED");
                         _skillsSocialCache.Add(new SkillRow

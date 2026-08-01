@@ -12,22 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf7e9d290de1b474b84a61e9ad0a2a80, type: 3}
   m_Name: QuestDatabase
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestDatabase
-  factions:
-  - {fileID: 11400000, guid: f62f046b1ff73e245aa9373014122de8, type: 2}
-  - {fileID: 11400000, guid: ebf417a0dc597fb41a620e277abd3e71, type: 2}
-  - {fileID: 11400000, guid: 28c0968ce62999c428e0f95c10fbbbb4, type: 2}
-  - {fileID: 11400000, guid: da33f2fb82104954f84d56578574f344, type: 2}
-  - {fileID: 11400000, guid: 52d26a5460fa81c4b8b59ee4d00d10d5, type: 2}
-  - {fileID: 11400000, guid: 7c153a48dcec3c14c836d2a60a71f9bb, type: 2}
-  - {fileID: 11400000, guid: 7b29b08d5a8c1ed42badb7f7cb4909f7, type: 2}
-  - {fileID: 11400000, guid: 25a83e33e7112654290c9ef34af57039, type: 2}
-  - {fileID: 11400000, guid: e6290d9962fa94d4f977ebd87fe52812, type: 2}
-  - {fileID: 11400000, guid: fd6d432aeaa21144caa6784e3657224f, type: 2}
-  - {fileID: 11400000, guid: b2861b85384e5bb4fadf0337a451f98f, type: 2}
-  - {fileID: 11400000, guid: 9aec6076066846442b0c9a1b21cbcdd0, type: 2}
-  - {fileID: 11400000, guid: 33e2e94e1d8aadd4cb90a7a67ea0de73, type: 2}
-  - {fileID: 11400000, guid: f8064c6e98a752846aeb1b4d13e9a077, type: 2}
-  - {fileID: 11400000, guid: 2116bb03ac503b349a7fa6ce8b02728c, type: 2}
+  factions: []
   npcs:
   - {fileID: 11400000, guid: 8093066045efca3469b59d4b77790700, type: 2}
   - {fileID: 11400000, guid: 59409174383a88b47b03a3348fc9b073, type: 2}

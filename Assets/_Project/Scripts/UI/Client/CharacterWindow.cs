@@ -295,6 +295,9 @@ namespace ProjectC.UI.Client
             if (characterWindowUxml == null) characterWindowUxml = Resources.Load<VisualTreeAsset>("UI/CharacterWindow");
             if (characterWindowUss  == null) characterWindowUss  = Resources.Load<StyleSheet>("UI/CharacterWindow");
             if (Instance == null) Instance = this;
+            // T-KNOWLEDGE-V2: инициализируем каталог фракций
+            if (ProjectC.Knowledge.FactionCatalog.Instance == null)
+                new ProjectC.Knowledge.FactionCatalog();
         }
 
         private void OnEnable()
@@ -1079,18 +1082,6 @@ namespace ProjectC.UI.Client
         // T-Q13: Section refresh: reputation (read from ReputationClientState)
         // ============================================================
 
-        /// <summary>
-        /// 5 фракций GDD-23 как fallback (если snapshot ещё не пришёл). Placeholder — UI не пустой.
-        /// </summary>
-        private static readonly (string id, string name, Color color)[] FactionFallback = new[]
-        {
-            ("merchants",  "Гильдия Торговцев",   new Color(0.60f, 0.80f, 0.40f)),
-            ("engineers",  "Мануфактура «Аврора»", new Color(0.40f, 0.60f, 0.90f)),
-            ("military",   "Военный Анклав",      new Color(0.80f, 0.40f, 0.40f)),
-            ("resistance", "Сопротивление",       new Color(0.70f, 0.50f, 0.90f)),
-            ("smugglers",  "Чёрный Рынок",        new Color(0.55f, 0.55f, 0.55f)),
-        };
-
         private void RefreshReputationCache()
         {
             _reputationCache.Clear();
@@ -1114,13 +1105,13 @@ namespace ProjectC.UI.Client
                         // T-KNOW: only known factions
                         if (!knownIds.Contains(factionByte)) continue;
 
-                        var fb = FindFactionFallback((FactionId)factionByte);
+                        var factionDef = ProjectC.Knowledge.FactionCatalog.Instance?.Get((FactionId)factionByte);
                         _reputationCache.Add(new ReputationListItem
                         {
-                            factionId = fb.id,
-                            displayName = fb.name,
+                            factionId = factionDef != null ? factionDef.factionId.ToString() : factionByte.ToString(),
+                            displayName = factionDef != null ? factionDef.displayName : factionByte.ToString(),
                             value = e.value,
-                            color = fb.color
+                            color = factionDef != null ? factionDef.color : new Color(0.5f, 0.5f, 0.5f)
                         });
                     }
                 }
@@ -1128,13 +1119,13 @@ namespace ProjectC.UI.Client
                 if (_reputationCache.Count == 0)
                 {
                     // Если после фильтрации пусто — показываем хотя бы Neutral
-                    var neutralFb = FindFactionFallback(FactionId.Neutral);
+                    var neutralDef = ProjectC.Knowledge.FactionCatalog.Instance?.Get(FactionId.Neutral);
                     _reputationCache.Add(new ReputationListItem
                     {
-                        factionId = neutralFb.id,
-                        displayName = neutralFb.name,
+                        factionId = "Neutral",
+                        displayName = neutralDef != null ? neutralDef.displayName : "Neutral",
                         value = GetRepValueForFaction(repState.CurrentReputation.Value.entries, (byte)FactionId.Neutral),
-                        color = neutralFb.color
+                        color = neutralDef != null ? neutralDef.color : new Color(0.5f, 0.5f, 0.5f)
                     });
                 }
             }
@@ -1156,21 +1147,7 @@ namespace ProjectC.UI.Client
             return 0;
         }
 
-        private static (string id, string name, Color color) FindFactionFallback(FactionId id)
-        {
-            // Маппинг FactionId → fallback. GDD-23 5 фракций. None → "Unknown".
-            switch (id)
-            {
-                case FactionId.GuildOfSuccess:  return FactionFallback[0]; // merchants
-                case FactionId.GuildOfCreation: return FactionFallback[1]; // engineers
-                case FactionId.GuildOfStrength: return FactionFallback[2]; // military
-                case FactionId.Resistance:      return FactionFallback[3];
-                case FactionId.Underground:     return FactionFallback[4]; // smugglers
-                default: return ("unknown", id.ToString(), new Color(0.5f, 0.5f, 0.5f));
-            }
-        }
-
-        // T-Q13: handlers + refresh для NpcAttitude под-секции.
+        // T-KNOWLEDGE-V2: handlers + refresh для NpcAttitude под-секции.
         private void HandleReputationSnapshot(ReputationSnapshotDto snapshot)
         {
             RefreshReputationCache();

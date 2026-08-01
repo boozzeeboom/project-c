@@ -1,6 +1,6 @@
 // Project C: Knowledge System V2
-// FactionCatalog: загружает все FactionDefinition из Resources и предоставляет lookup.
-// Замена FindFactionFallback в CharacterWindow.cs.
+// FactionCatalog: загружает FactionDefinition из Resources и предоставляет lookup.
+// Использует существующий ProjectC.Factions.FactionDefinition (не Knowledge-дубликат).
 // Design: docs/Character/Knowledges/05_KNOWLEDGE_SYSTEM_V2_RESEARCH_REVIEW.md §4.6
 
 using System.Collections.Generic;
@@ -12,6 +12,7 @@ namespace ProjectC.Knowledge
     /// <summary>
     /// Singleton-каталог определений фракций. Загружается один раз из Resources/Data/Factions/.
     /// Используется CharacterWindow для отображения фракций во вкладке «Знания».
+    /// Замена хардкода FindFactionFallback().
     /// </summary>
     public class FactionCatalog
     {
@@ -64,16 +65,16 @@ namespace ProjectC.Knowledge
 
         public string GetDisplayName(FactionId factionId)
         {
-            if (TryGet(factionId, out var def))
-                return def.ResolvedDisplayName;
-            return factionId.ToString(); // fallback
+            if (TryGet(factionId, out var def) && !string.IsNullOrEmpty(def.displayName))
+                return def.displayName;
+            return factionId.ToString();
         }
 
         public Color GetColor(FactionId factionId)
         {
             if (TryGet(factionId, out var def))
                 return def.color;
-            return Color.white;
+            return new Color(0.5f, 0.5f, 0.5f);
         }
 
         public int Count => _byFactionId.Count;

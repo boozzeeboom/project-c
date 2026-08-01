@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a3acb807d9a04c4f825515d41e111f8, type: 3}
+  m_Name: Faction_Bandits
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Factions.FactionDefinition
+  factionId: 12
+  displayName: "\u0411\u0430\u043D\u0434\u0438\u0442\u044B"
+  color: {r: 0.85, g: 0.3, b: 0.2, a: 1}
+  iconSprite: {fileID: 0}
+  loreDescription: "\u0420\u0430\u0437\u0431\u043E\u0439\u043D\u0438\u043A\u0438,
+    \u0433\u0440\u0430\u0431\u044F\u0449\u0438\u0435 \u043A\u0430\u0440\u0430\u0432\u0430\u043D\u044B
+    \u0438 \u043E\u0434\u0438\u043D\u043E\u043A\u0438\u0445 \u043F\u0443\u0442\u043D\u0438\u043A\u043E\u0432."
+  defaultAttitude: 0
+  reputationThresholds: []
+  defaultCombatRelation: 2
+  combatRelations:
+  - targetFaction: 13
+    relation: 2
+  - targetFaction: 14
+    relation: 2
+  - targetFaction: 10
+    relation: 0
+  - targetFaction: 15
+    relation: 2
+  - targetFaction: 1
+    relation: 2

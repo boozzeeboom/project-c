@@ -1,11 +1,7 @@
 // Project C: Skills/Social — T-SOC-01
 // SocialSkillTreeWindow: полноэкранный overlay для просмотра/изучения/забывания социальных навыков.
-// Упрощённая копия SkillTreeWindow (T-INP-09):
-//   - только SkillCategory.Social
-//   - нет slot overview (все социальные навыки пассивные)
-//   - нет bind-кнопок
-//   - нет AOE-форматирования
-// Design: docs/Character/Social-skills/01_IMPLEMENTATION.md
+// РЕЮЗ ресурсов SkillTreeWindow (UXML+USS) — ТОЛЬКО скрываем ненужные элементы.
+// Все социальные навыки пассивные → нет слотов, нет bind-кнопок, нет чипов дисциплин.
 
 using System;
 using System.Collections.Generic;
@@ -21,14 +17,13 @@ namespace ProjectC.Skills.UI
     {
         public static SocialSkillTreeWindow Instance { get; private set; }
 
-        [Header("Resources paths")]
-        [SerializeField] private string _uxmlResourcePath = "UI/SocialSkillTreeWindow";
-        [SerializeField] private string _ussResourcePath = "UI/SocialSkillTreeWindow";
+        // T-SOC-01: реюз SkillTreeWindow ресурсов — та же вёрстка, те же стили.
+        private const string UxmlPath = "UI/SkillTreeWindow";
+        private const string UssPath  = "UI/SkillTreeWindow";
 
         private UIDocument _doc;
         private VisualElement _rootContainer;
-        private VisualElement _rootInner;
-        private bool _built = false;
+        private bool _built;
 
         private readonly List<SkillNodeConfig> _allSkillConfigs = new List<SkillNodeConfig>();
         private readonly List<SkillNodeConfig> _filteredSkills = new List<SkillNodeConfig>();
@@ -37,12 +32,10 @@ namespace ProjectC.Skills.UI
 
         private VisualElement _treeContent;
         private readonly Dictionary<string, VisualElement> _treeNodeRefs = new Dictionary<string, VisualElement>();
-        // Pan: minimal drag-to-pan, no zoom/fit. Only changes scrollOffset.
         private ScrollView _treeScroll;
-        private bool _isPanning = false;
+        private bool _isPanning;
         private Vector2 _panStartMouse;
         private Vector2 _panStartScroll;
-        // Zoom: plain wheel. transform.scale on _treeContent.
         private float _zoom = 1.0f;
         private VisualElement _detailName;
         private Label _detailDesc;
@@ -79,15 +72,15 @@ namespace ProjectC.Skills.UI
             if (_doc == null) _doc = GetComponent<UIDocument>();
             if (_doc == null || _doc.rootVisualElement == null) return;
 
-            var uxml = Resources.Load<VisualTreeAsset>(_uxmlResourcePath);
-            var uss = Resources.Load<StyleSheet>(_ussResourcePath);
-            if (uxml == null) { Debug.LogError("[SocialSkillTreeWindow] UXML not found"); return; }
+            var uxml = Resources.Load<VisualTreeAsset>(UxmlPath);
+            var uss  = Resources.Load<StyleSheet>(UssPath);
+            if (uxml == null) { Debug.LogError("[SocialSkillTreeWindow] SkillTreeWindow UXML not found"); return; }
 
             _doc.rootVisualElement.Clear();
             if (uss != null) _doc.rootVisualElement.styleSheets.Add(uss);
 
             _rootContainer = uxml.CloneTree();
-            _rootContainer.name = "social-skill-tree-container";
+            // T-SOC-01: реюз — у корня UXML имя "skill-tree-root", не меняем.
             if (uss != null && !_rootContainer.styleSheets.Contains(uss))
                 _rootContainer.styleSheets.Add(uss);
             _doc.rootVisualElement.Add(_rootContainer);
@@ -100,8 +93,28 @@ namespace ProjectC.Skills.UI
             _rootContainer.pickingMode = PickingMode.Ignore;
             _rootContainer.style.display = DisplayStyle.None;
 
-            // Cache UI refs
-            _rootInner = _rootContainer.Q<VisualElement>("social-skill-tree-root");
+            // === T-SOC-01: скрываем ненужные элементы (реюз боевого UXML) ===
+            // Slot overview column — не нужен (все социальные навыки пассивные)
+            var slotCol = _rootContainer.Q<VisualElement>(className: "stw-slot-overview-col");
+            if (slotCol != null) slotCol.style.display = DisplayStyle.None;
+
+            // Filter chips row — не нужен (социальные навыки не имеют CombatDiscipline)
+            var chipRow = _rootContainer.Q<VisualElement>(className: "stw-chip-row");
+            if (chipRow != null) chipRow.style.display = DisplayStyle.None;
+
+            // Bind buttons — не нужны
+            var bindNames = new[] { "btn-bind-primary", "btn-bind-secondary", "btn-bind-slot1", "btn-bind-slot2", "btn-bind-slot3", "btn-bind-slot4" };
+            foreach (var bn in bindNames)
+            {
+                var b = _rootContainer.Q<VisualElement>(bn);
+                if (b != null) b.style.display = DisplayStyle.None;
+            }
+
+            // Заголовок: «Социальные навыки» вместо «Дерево навыков»
+            var titleLabel = _rootContainer.Q<Label>(className: "stw-title");
+            if (titleLabel != null) titleLabel.text = "Социальные навыки";
+
+            // === Кешируем UI refs (те же имена что в SkillTreeWindow.uxml) ===
             _treeContent = _rootContainer.Q<VisualElement>("tree-content");
             _treeContent.generateVisualContent += OnTreePaintEdges;
             _treeScroll = _rootContainer.Q<ScrollView>("tree-canvas-scroll");
@@ -122,7 +135,7 @@ namespace ProjectC.Skills.UI
 
             _built = true;
             SetOpen(false);
-            Debug.Log($"[SocialSkillTreeWindow] Built. uxml={uxml.name} uss={(uss != null ? uss.name : "<none>")}");
+            Debug.Log($"[SocialSkillTreeWindow] Built (reusing SkillTreeWindow UXML+USS). uxml={uxml.name} uss={(uss != null ? uss.name : "<none>")}");
         }
 
         public void Toggle() { if (IsOpen()) SetOpen(false); else SetOpen(true); }
@@ -210,7 +223,6 @@ namespace ProjectC.Skills.UI
         private void ApplyFilterAndSearch()
         {
             _filteredSkills.Clear();
-            var learned = SkillsClientState.Instance?.CurrentSkills ?? new HashSet<string>();
             foreach (var s in _allSkillConfigs)
             {
                 if (s == null) continue;
@@ -290,8 +302,6 @@ namespace ProjectC.Skills.UI
             bool isLearned = learned.Contains(s.skillId);
             bool isAvailable = !isLearned && CanLearn(s, learned);
             node.AddToClassList(isLearned ? "tree-node-learned" : (isAvailable ? "tree-node-available" : "tree-node-locked"));
-
-            // All social skills are passive
             node.AddToClassList("tree-node-passive");
 
             node.name = "tree-node-" + s.skillId;
@@ -304,7 +314,6 @@ namespace ProjectC.Skills.UI
             title.AddToClassList("tree-node-title");
             node.Add(title);
 
-            // [P] badge — all social skills are passive
             var typeBadge = new Label { text = "P" };
             typeBadge.AddToClassList("tree-node-type-badge");
             typeBadge.AddToClassList("tree-node-type-passive");
@@ -368,7 +377,6 @@ namespace ProjectC.Skills.UI
             if (_detailName != null) _detailName.Q<Label>()!.text = s.displayName ?? s.skillId;
             if (_detailDesc != null) _detailDesc.text = s.description ?? "(нет описания)";
 
-            // Type line: all social skills are passive
             string typeLine = "Тип: Пассивный (применяется автоматически)";
             string effectsLine = $"Эффекты: {FormatEffectsText(s)}";
             if (_detailEffects != null) _detailEffects.text = $"{typeLine}\n{effectsLine}";

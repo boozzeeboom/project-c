@@ -51,16 +51,18 @@ namespace ProjectC.Skills
     }
 
     /// <summary>
-    /// T-KNOWLEDGE-V2: способ открытия знания о навыке.
-    /// None = виден и изучаем сразу (текущее поведение).
+    /// T-KNOWLEDGE-V3: способ открытия знания о навыке.
+    /// Hidden = скрыт по умолчанию (нужно открыть через KnowledgeManager / триггер).
+    /// AlwaysVisible = виден всегда без открытия.
     /// </summary>
     public enum KnowledgeUnlockType : byte
     {
-        None = 0,         // по умолчанию: виден и изучаем сразу
-        LearnFirst = 1,   // открывается при изучении любого prerequisite-навыка
-        Blueprint = 2,    // открывается предметом/документом (id в knowledgeUnlockId)
-        NpcTeach = 3,     // открывается обучением у NPC (id в knowledgeUnlockId)
-        QuestReward = 4,  // открывается наградой квеста (id в knowledgeUnlockId)
+        Hidden = 0,        // СКРЫТ по умолчанию (V3: новый default, "всё скрыто")
+        LearnFirst = 1,    // открывается при изучении любого prerequisite-навыка
+        Blueprint = 2,     // открывается предметом/документом (id в knowledgeUnlockId)
+        NpcTeach = 3,      // открывается обучением у NPC (id в knowledgeUnlockId)
+        QuestReward = 4,   // открывается наградой квеста (id в knowledgeUnlockId)
+        AlwaysVisible = 5, // ВСЕГДА виден (backward-compat для старых навыков)
     }
 
     /// <summary>
@@ -131,9 +133,9 @@ namespace ProjectC.Skills
         [Tooltip("SkillEffect[] — additive/multiplicative stat bonuses + ability/passive unlocks.")]
         public SkillEffect[] effects = Array.Empty<SkillEffect>();
 
-        [Header("Knowledge Unlock (T-KNOWLEDGE-V2)")]
-        [Tooltip("Как игрок узнаёт о существовании этого навыка. None = виден сразу.")]
-        public KnowledgeUnlockType knowledgeUnlockType = KnowledgeUnlockType.None;
+        [Header("Knowledge Unlock (T-KNOWLEDGE-V3)")]
+        [Tooltip("Как игрок узнаёт о навыке. Hidden = скрыт по умолчанию. AlwaysVisible = виден всегда.")]
+        public KnowledgeUnlockType knowledgeUnlockType = KnowledgeUnlockType.Hidden;
 
         [Tooltip("ID источника: предмет / NPC / квест / рецепт. Зависит от knowledgeUnlockType.")]
         public string knowledgeUnlockId = "";

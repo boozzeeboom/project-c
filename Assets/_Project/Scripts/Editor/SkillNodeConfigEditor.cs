@@ -31,6 +31,10 @@ namespace ProjectC.Editor
         private SerializedProperty _requiredDexterityTier;
         private SerializedProperty _requiredIntelligenceTier;
 
+        private SerializedProperty _knowledgeUnlockType;
+        private SerializedProperty _knowledgeUnlockId;
+        private SerializedProperty _knowledgeUnlockDescription;
+
         private SerializedProperty _treeX;
         private SerializedProperty _treeY;
 
@@ -77,6 +81,7 @@ namespace ProjectC.Editor
         // --- Foldout state (per-asset, survives re-select) ---
         private static bool _foldoutIdentity = true;
         private static bool _foldoutCategory = true;
+        private static bool _foldoutKnowledge = true;
         private static bool _foldoutCost = true;
         private static bool _foldoutLayout;
         private static bool _foldoutCombatCore = true;
@@ -108,6 +113,10 @@ namespace ProjectC.Editor
             _requiredStrengthTier = serializedObject.FindProperty("_requiredStrengthTier");
             _requiredDexterityTier = serializedObject.FindProperty("_requiredDexterityTier");
             _requiredIntelligenceTier = serializedObject.FindProperty("_requiredIntelligenceTier");
+
+            _knowledgeUnlockType = serializedObject.FindProperty("knowledgeUnlockType");
+            _knowledgeUnlockId = serializedObject.FindProperty("knowledgeUnlockId");
+            _knowledgeUnlockDescription = serializedObject.FindProperty("knowledgeUnlockDescription");
 
             _treeX = serializedObject.FindProperty("treeX");
             _treeY = serializedObject.FindProperty("treeY");
@@ -211,6 +220,34 @@ namespace ProjectC.Editor
             EditorGUILayout.PropertyField(_effects);
             Rect r = EditorGUILayout.GetControlRect(false, 1f);
             EditorGUI.DrawRect(r, new Color(0.3f, 0.3f, 0.3f, 0.5f));
+
+            EditorGUILayout.Space(2);
+
+            // ═══════════════════════════════════════════
+            //  Group 3.5: KNOWLEDGE UNLOCK (always, V3)
+            // ═══════════════════════════════════════════
+            _foldoutKnowledge = EditorGUILayout.BeginFoldoutHeaderGroup(_foldoutKnowledge, "🔒 Knowledge Unlock (V3)");
+            if (_foldoutKnowledge)
+            {
+                EditorGUILayout.PropertyField(_knowledgeUnlockType);
+                if ((KnowledgeUnlockType)_knowledgeUnlockType.enumValueIndex != KnowledgeUnlockType.AlwaysVisible
+                    && (KnowledgeUnlockType)_knowledgeUnlockType.enumValueIndex != KnowledgeUnlockType.Hidden)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(_knowledgeUnlockId);
+                    EditorGUILayout.PropertyField(_knowledgeUnlockDescription);
+                    EditorGUI.indentLevel--;
+                }
+                // HelpBox hints
+                var ut = (KnowledgeUnlockType)_knowledgeUnlockType.enumValueIndex;
+                if (ut == KnowledgeUnlockType.Hidden)
+                    EditorGUILayout.HelpBox("Скрыт по умолчанию. Игрок увидит навык только после открытия знания (триггер, NPC, квест).", MessageType.Info);
+                else if (ut == KnowledgeUnlockType.AlwaysVisible)
+                    EditorGUILayout.HelpBox("Виден всегда без открытия. Используйте для базовых/стартовых навыков.", MessageType.Info);
+                else if (ut == KnowledgeUnlockType.LearnFirst)
+                    EditorGUILayout.HelpBox("Откроется автоматически при изучении любого prerequisite-навыка.", MessageType.Info);
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space(2);
 

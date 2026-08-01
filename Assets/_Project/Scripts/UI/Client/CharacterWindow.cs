@@ -2365,7 +2365,7 @@ namespace ProjectC.UI.Client
                     else
                     {
                         // Social — V3: knowledge gate
-                        if (skill.knowledgeUnlockType != ProjectC.Skills.KnowledgeUnlockType.None)
+                        if (skill.knowledgeUnlockType != ProjectC.Skills.KnowledgeUnlockType.AlwaysVisible)
                         {
                             var knownIds = ProjectC.Skills.SkillsClientState.Instance?.KnownSkillIds;
                             bool isKnown = knownIds != null && knownIds.Contains(skill.skillId);

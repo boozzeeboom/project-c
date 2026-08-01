@@ -259,8 +259,8 @@ namespace ProjectC.Skills.UI
 
         private bool IsSkillVisible(SkillNodeConfig s, HashSet<string> learned, HashSet<string> knownIds)
         {
-            // None = visible to everyone
-            if (s.knowledgeUnlockType == KnowledgeUnlockType.None) return true;
+            // AlwaysVisible = виден всем без открытия
+            if (s.knowledgeUnlockType == KnowledgeUnlockType.AlwaysVisible) return true;
             // Learned = implicitly known
             if (learned != null && learned.Contains(s.skillId)) return true;
             // Explicitly known

@@ -100,3 +100,24 @@
 
 **Статус:** Компиляция чистая. Фаза A (data + server) завершена.
 
+---
+
+## Итерация от 2026-08-02: V3 Integration Plan
+
+**Задача:** Глубокий аудит V2 + план V3-интеграции: KnowledgeManager, KnowledgeRevealTrigger, knowledge-фильтры в SkillTreeWindow/SocialSkillTreeWindow/CharacterWindow.
+
+**Документ:** `07_KNOWLEDGE_SYSTEM_V3_INTEGRATION_PLAN.md`
+
+**Ключевые находки аудита (7 проблем):**
+1. 🔴 SkillTreeWindow.ApplyFilterAndSearch — нет knowledge-фильтра (все навыки видны)
+2. 🔴 SocialSkillTreeWindow.ApplyFilterAndSearch — та же проблема
+3. 🔴 CharacterWindow social-колонка — нет knowledge-фильтра
+4. 🔴 Нет KnowledgeRevealTrigger для trigger zone / событий
+5. 🟡 Разрозненные API (4 метода в 3 классах) — нужен KnowledgeManager фасад
+6. 🟡 KnowledgeUnlockType.Blueprint/NpcTeach/QuestReward — dead code
+7. 🟡 RecipeKnowledgeUnlockType — dead code
+
+**План:** 10 шагов, ~7 модифицируемых + 3 новых файла, ~11.5 часов.
+
+**Статус:** План утверждён, ожидает реализацию.
+

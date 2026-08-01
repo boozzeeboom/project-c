@@ -136,6 +136,10 @@ namespace ProjectC.Core
             // T-KNOWLEDGE-V2: RecipeKnowledgeClientState — клиентский кеш известных рецептов
             CreateRecipeKnowledgeClientState();
 
+            // T-KNOWLEDGE-V3: FactionCatalog — клиентский каталог определений фракций
+            if (ProjectC.Knowledge.FactionCatalog.Instance == null)
+                new ProjectC.Knowledge.FactionCatalog();
+
             // T-DOCK-03: DockingClientState — клиентская проекция DockingServer.
             // Принимает DockingAssignmentDto + DockingStatusDto от DockingServer (T-DOCK-01).
             // Подписка в CommPanelWindow (T-DOCK-07) на events OnAwaitingConfirmation/OnStatusReceived.

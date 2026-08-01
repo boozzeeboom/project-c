@@ -30,8 +30,6 @@ namespace ProjectC.Skills
 
         // T-KNOWLEDGE-V2: known (not learned) skill IDs
         public HashSet<string> KnownSkillIds { get; private set; } = new HashSet<string>();
-=======
-
 
         // R4: client-side skill config cache (избегает Resources.LoadAll на каждый клик)
         private readonly Dictionary<string, SkillNodeConfig> _skillConfigCache = new Dictionary<string, SkillNodeConfig>();
@@ -108,8 +106,6 @@ namespace ProjectC.Skills
                 Debug.Log($"[SkillsClientState] OnSkillsSnapshotReceived: {CurrentSkills.Count} learned, {KnownSkillIds.Count} known");
             }
         }
-=======
-
 
         /// <summary>
         /// Server → client handler. Вызывается из NetworkPlayer.ReceiveSkillResultTargetRpc.
@@ -136,7 +132,5 @@ namespace ProjectC.Skills
             CurrentSkills.Clear();
             KnownSkillIds.Clear();
         }
-=======
-
     }
 }

@@ -119,13 +119,7 @@ namespace ProjectC.Crafting
         [Tooltip("Подсказка 'как узнать' для UI.")]
         [SerializeField] private string _knowledgeUnlockDescription = "";
 
-
-        [Tooltip("MVP: 0 = нет требования. Phase 2: минимальный уровень навыка для крафта.")]
-=======
         [Header("Skill Gate (Phase 2)")]
-        [Tooltip("MVP: 0 = нет требования. Phase 2: минимальный уровень навыка для крафта.")]
-=======
-
         [Tooltip("MVP: 0 = нет требования. Phase 2: минимальный уровень навыка для крафта.")]
         [Min(0)] [SerializeField] private int _requiredSkillLevel = 0;
 

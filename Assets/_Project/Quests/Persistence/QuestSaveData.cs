@@ -69,6 +69,4 @@ namespace ProjectC.Quests.Persistence
         // === T-KNOWLEDGE-V2: Recipe knowledge ===
         public List<int> knownRecipes = new List<int>();    // recipeId (int, из CraftingWorld.RegisterRecipe)
     }
-=======
-
 }

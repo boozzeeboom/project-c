@@ -70,7 +70,6 @@ namespace ProjectC.Skills.Dto
             {
                 if (learnedSkillIds[i] != other.learnedSkillIds[i]) return false;
             }
-            // knownSkillIds
             if ((knownSkillIds == null) != (other.knownSkillIds == null)) return false;
             if (knownSkillIds == null) return true;
             if (knownSkillIds.Length != other.knownSkillIds.Length) return false;
@@ -84,8 +83,6 @@ namespace ProjectC.Skills.Dto
         public override bool Equals(object obj) => obj is SkillsSnapshotDto o && Equals(o);
         public override int GetHashCode() => (learnedSkillIds?.Length ?? 0) ^ (knownSkillIds?.Length ?? 0);
     }
-=======
-
 
     [Serializable]
     public struct SkillResultDto : INetworkSerializable, IEquatable<SkillResultDto>

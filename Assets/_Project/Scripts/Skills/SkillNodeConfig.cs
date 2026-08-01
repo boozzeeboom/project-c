@@ -142,8 +142,6 @@ namespace ProjectC.Skills
         public string knowledgeUnlockDescription = "";
 
         [Header("XP Cost to Learn")]
-=======
-
         [Tooltip("XP spent from Intelligence pool (per SkillsWorld.TryLearnSkill → StatsServer.ApplyXpDirect). " +
                  "0 = free (starter skill).")]
         [SerializeField, Min(0f)] private float _learnXpCost = 50f;

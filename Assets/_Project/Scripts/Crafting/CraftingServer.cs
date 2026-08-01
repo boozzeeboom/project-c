@@ -253,11 +253,9 @@ namespace ProjectC.Crafting
             }
 
             // FIX T-C07: вызываем станцию, а не мутируем job напрямую.
-            // station.ServerStartCraft синхронизирует и _replicatedState (NetworkVariable) и job в CraftingWorld.
             var station = CraftingWorld.GetStationRaw(stationNetId);
             if (station == null) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Станция не найдена", stationNetId)); return; }
 
-            // B4: MetaRequirement tool check (станция с требованиями по инструменту)
             var csComponent = station.GetComponent<ProjectC.Crafting.CraftingStation>();
 
             // T-KNOWLEDGE-V2: проверка AllowedRecipes станции
@@ -275,6 +273,7 @@ namespace ProjectC.Crafting
                 }
             }
 
+            // B4: MetaRequirement tool check
             if (csComponent != null && !csComponent.CanStartCraft(clientId, out string metaReason))
             {
                 SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.MetaReqDenied, metaReason ?? "Требования не выполнены", stationNetId));

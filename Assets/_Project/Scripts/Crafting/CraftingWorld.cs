@@ -35,8 +35,6 @@ namespace ProjectC.Crafting
         private static Dictionary<ulong, HashSet<int>> _knownRecipes = new Dictionary<ulong, HashSet<int>>();
 
         public static bool IsInitialized { get; private set; }
-=======
-
 
         // ==========================================================
         // Lifecycle
@@ -48,6 +46,7 @@ namespace ProjectC.Crafting
             _idsByRecipe.Clear();
             _stations.Clear();
             _jobs.Clear();
+            _knownRecipes.Clear();
             _nextRecipeId = 1;
             IsInitialized = true;
         }
@@ -61,8 +60,6 @@ namespace ProjectC.Crafting
             _knownRecipes.Clear();
             IsInitialized = false;
         }
-=======
-
 
         // ==========================================================
         // Recipe registry
@@ -238,4 +235,3 @@ namespace ProjectC.Crafting
         }
     }
 }
-=======

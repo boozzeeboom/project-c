@@ -1,5 +1,5 @@
 // Project C: Character Progression — T-P12
-// SkillsWorld: POCO singleton — server-side per-player learned skills state.
+// SkillsWorld: POCO singleton — server-side per-player learned + known skills state.
 // Design: docs/Character/06_SKILL_TREE.md §3, docs/Character/08_ROADMAP.md T-P12
 //
 // Pattern: копия StatsWorld (T-P03) + EquipmentWorld (T-P09) для per-player state storage.
@@ -8,6 +8,10 @@
 //   - LoadAllSkills(SkillsConfig): Resources.LoadAll<SkillNodeConfig> → Dictionary<skillId, config>
 //   - GrantDefaultSkills(clientId, SkillsConfig): per Q3.2 = no-op (defaultSkills = empty)
 //   - GetLearnedSkillIds(clientId): HashSet<string>
+//   - GetKnownSkillIds(clientId): HashSet<string> (T-KNOWLEDGE-V2)
+//   - IsSkillKnown(clientId, skillId): bool
+//   - UnlockSkillKnowledge(clientId, skillId): bool
+//   - AutoOnSkillLearned(clientId, learnedSkillId): auto-unlock LearnFirst skills
 //   - TryLearnSkill(clientId, skillId, out reason): 5-step validation
 //       1. Skill exists?
 //       2. Already learned? (no-op deny)
@@ -32,8 +36,6 @@ namespace ProjectC.Skills
 
         // T-KNOWLEDGE-V2: known (but not learned) skill IDs per player
         private Dictionary<ulong, HashSet<string>> _knownPerPlayer = new Dictionary<ulong, HashSet<string>>();
-=======
-
 
         public SkillsWorld()
         {
@@ -92,19 +94,6 @@ namespace ProjectC.Skills
                 _learnedPerPlayer[clientId] = learned;
             }
             return learned;
-        }
-
-        public void GrantDefaultSkills(ulong clientId, SkillsConfig config)
-        {
-            // Q3.2: defaultSkills = empty by default. No-op.
-            // Если designer добавит starter skills в .asset — они применятся здесь.
-            if (config == null) return;
-            if (config.defaultSkills == null || config.defaultSkills.Length == 0) return;
-            var learned = GetLearnedSkillIds(clientId);
-            foreach (var skill in config.defaultSkills)
-            {
-                if (skill != null) learned.Add(skill.skillId);
-            }
         }
 
         // === T-KNOWLEDGE-V2: Known skills (knowledge, not learned) ===
@@ -174,9 +163,20 @@ namespace ProjectC.Skills
                 Debug.Log($"[SkillsWorld] AutoOnSkillLearned: player={clientId} learned='{learnedSkillId}' → unlocked {unlocked} skills via LearnFirst");
         }
 
-        // === TryLearnSkill (5-step per roadmap §3.3) ===
-=======
+        public void GrantDefaultSkills(ulong clientId, SkillsConfig config)
+        {
+            // Q3.2: defaultSkills = empty by default. No-op.
+            // Если designer добавит starter skills в .asset — они применятся здесь.
+            if (config == null) return;
+            if (config.defaultSkills == null || config.defaultSkills.Length == 0) return;
+            var learned = GetLearnedSkillIds(clientId);
+            foreach (var skill in config.defaultSkills)
+            {
+                if (skill != null) learned.Add(skill.skillId);
+            }
+        }
 
+        // === TryLearnSkill (5-step per roadmap §3.3) ===
 
         public bool TryLearnSkill(ulong clientId, string skillId, out string reason)
         {
@@ -266,8 +266,6 @@ namespace ProjectC.Skills
             AutoOnSkillLearned(clientId, skillId);
 
             return true;
-=======
-
         }
 
         // === TryForgetSkill (Q3.4 free respec) ===
@@ -303,11 +301,9 @@ namespace ProjectC.Skills
                 learnedSkillIds = new List<string>(learned).ToArray(),
                 knownSkillIds = known.Count > 0 ? new List<string>(known).ToArray() : null,
             };
-            Debug.Log($"[SkillsWorld.BuildSaveData] client={clientId} learnedCount={learned.Count} knownCount={known.Count} ids=[{string.Join(",", learned)}]");
+            Debug.Log($"[SkillsWorld.BuildSaveData] client={clientId} learnedCount={learned.Count} knownCount={known.Count}");
             return save;
         }
-=======
-
 
         public void LoadPlayer(ulong clientId, CharacterSaveData data)
         {
@@ -345,8 +341,31 @@ namespace ProjectC.Skills
             _learnedPerPlayer.Remove(clientId);
             _knownPerPlayer.Remove(clientId);
         }
-=======
 
+        /// <summary>
+        /// T-KNOWLEDGE-V2: apply death skill knowledge loss.
+        /// Для каждого known skill бросаем Random < lossChance — удаляем из known.
+        /// LEARNED навыки не трогаем (игрок сохраняет изученные).
+        /// Возвращает количество потерянных знаний.
+        /// </summary>
+        public int ApplyDeathSkillKnowledgeLoss(ulong clientId, float lossChance, System.Random rng)
+        {
+            var known = GetKnownSkillIds(clientId);
+            if (known.Count == 0) return 0;
+
+            var toRemove = new List<string>();
+            foreach (var skillId in known)
+            {
+                if (rng.NextDouble() < lossChance)
+                    toRemove.Add(skillId);
+            }
+            foreach (var id in toRemove)
+                known.Remove(id);
+
+            if (toRemove.Count > 0)
+                Debug.Log($"[SkillsWorld] Death skill knowledge loss: player={clientId} lost={toRemove.Count} remaining={known.Count}");
+            return toRemove.Count;
+        }
 
         /// <summary>
         /// P7 fix: sum additive StatMod bonuses from learned skills for combat path.

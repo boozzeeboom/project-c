@@ -1321,14 +1321,17 @@ namespace ProjectC.Quests
                 data.knownNpcs.AddRange(knownNpcsSet);
             }
 
-            // T-KNOWLEDGE-V2: known recipes (delegated to CraftingWorld)
-            data.knownRecipes = ProjectC.Crafting.CraftingWorld.BuildRecipeKnowledgeSave(clientId);
-
             // T-KNOW: Neutral (11) auto-known для новых персонажей — гарантируем что всегда в сейве
-=======
-
             if (!data.knownFactions.Contains((int)FactionId.Neutral))
                 data.knownFactions.Add((int)FactionId.Neutral);
+
+            // T-KNOWLEDGE-V2: known recipes (from CraftingWorld)
+            var knownRecipeIds = Crafting.CraftingWorld.GetKnownRecipeIds(clientId);
+            if (knownRecipeIds != null && knownRecipeIds.Count > 0)
+            {
+                foreach (var rid in knownRecipeIds)
+                    data.knownRecipes.Add(rid);
+            }
 
             return data;
         }
@@ -1476,114 +1479,39 @@ namespace ProjectC.Quests
                 _knownNpcs[clientId] = new HashSet<string>();
             }
 
-            // T-KNOWLEDGE-V2: restore known recipes (delegated to CraftingWorld)
-            ProjectC.Crafting.CraftingWorld.LoadRecipeKnowledge(clientId, data.knownRecipes);
+            // T-KNOWLEDGE-V2: restore known recipes
+            Crafting.CraftingWorld.LoadRecipeKnowledge(clientId, data.knownRecipes);
 
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] LoadPlayer: client={clientId} restored {data.quests?.Count ?? 0} quests, {data.reputation?.Count ?? 0} factions, {data.npcAttitude?.Count ?? 0} npcAttitudes");
-=======
-
             return true;
         }
 
         // ============ T-KNOWLEDGE-V2: Death Knowledge Loss ============
 
         /// <summary>
-        /// T-KNOWLEDGE-V2: вызывается при смерти игрока (после успешного респавна).
-        /// Теряет часть знаний о фракциях, NPC и рецептах согласно конфигу.
-        /// Навыки (learned) НЕ теряются (ADR-7).
-        /// Возвращает строку с логом потерь для дебага.
+        /// При смерти персонажа — потеря знания (рецепты/навыки) с вероятностью lossChance.
+        /// Вызывается из PlayerTarget.TriggerDeathRespawn.
+        /// Возвращает количество потерянных знаний (recipes + skills суммарно).
         /// </summary>
-        public string ApplyDeathKnowledgeLoss(ulong clientId, ProjectC.Knowledge.KnowledgeLossConfig config)
+        public int ApplyDeathKnowledgeLoss(ulong clientId, float lossChance, System.Random rng)
         {
-            if (config == null || !config.enabled)
-                return "KnowledgeLossConfig is null or disabled — no loss applied";
+            int totalLost = 0;
 
-            System.Random rng = config.randomSeed != 0
-                ? new System.Random(config.randomSeed)
-                : new System.Random();
+            // Recipe loss (CraftingWorld)
+            if (Crafting.CraftingWorld.IsInitialized)
+                totalLost += Crafting.CraftingWorld.ApplyDeathRecipeLoss(clientId, lossChance, rng);
 
-            int factionsLost = 0;
-            int npcsLost = 0;
-            int recipesLost = 0;
+            // Skill knowledge loss (SkillsWorld)
+            if (Skills.SkillsWorld.Instance != null)
+                totalLost += Skills.SkillsWorld.Instance.ApplyDeathSkillKnowledgeLoss(clientId, lossChance, rng);
 
-            // --- Factions ---
-            if (_knownFactions.TryGetValue(clientId, out var factionSet) && factionSet.Count > 0)
-            {
-                var candidates = new List<FactionId>();
-                foreach (var fid in factionSet)
-                {
-                    // Пропускаем защищённые
-                    if (config.neverForgetFactions != null && Array.IndexOf(config.neverForgetFactions, fid) >= 0)
-                        continue;
-                    // Neutral всегда защищён
-                    if (fid == FactionId.Neutral)
-                        continue;
-                    candidates.Add(fid);
-                }
+            if (totalLost > 0 && Debug.isDebugBuild)
+                Debug.Log($"[QuestWorld] ApplyDeathKnowledgeLoss: client={clientId} totalLost={totalLost}");
 
-                // Сколько минимум оставить (от числа незащищённых)
-                int toKeep = Math.Min(config.minRetainFactions, candidates.Count);
-                int toRemove = candidates.Count - toKeep;
-
-                // Перемешиваем и удаляем последние toRemove
-                Shuffle(candidates, rng);
-                for (int i = 0; i < toRemove; i++)
-                {
-                    if (rng.NextDouble() < config.factionLossChance)
-                    {
-                        factionSet.Remove(candidates[i]);
-                        factionsLost++;
-                    }
-                }
-            }
-
-            // --- NPCs ---
-            if (_knownNpcs.TryGetValue(clientId, out var npcSet) && npcSet.Count > 0)
-            {
-                var candidates = new List<string>();
-                foreach (var npc in npcSet)
-                {
-                    if (config.neverForgetNpcs != null && Array.IndexOf(config.neverForgetNpcs, npc) >= 0)
-                        continue;
-                    candidates.Add(npc);
-                }
-
-                int toKeep = Math.Min(config.minRetainNpcs, candidates.Count);
-                int toRemove = candidates.Count - toKeep;
-
-                Shuffle(candidates, rng);
-                for (int i = 0; i < toRemove; i++)
-                {
-                    if (rng.NextDouble() < config.npcLossChance)
-                    {
-                        npcSet.Remove(candidates[i]);
-                        npcsLost++;
-                    }
-                }
-            }
-
-            // --- Recipes (delegated to CraftingWorld) ---
-            recipesLost = ProjectC.Crafting.CraftingWorld.ApplyDeathRecipeLoss(clientId, config.recipeLossChance, rng);
-
-            string log = $"[QuestWorld] DeathKnowledgeLoss: player={clientId} factions=-{factionsLost} npcs=-{npcsLost} recipes=-{recipesLost}";
-            Debug.Log(log);
-            return log;
-        }
-
-        private static void Shuffle<T>(List<T> list, System.Random rng)
-        {
-            int n = list.Count;
-            while (n > 1)
-            {
-                n--;
-                int k = rng.Next(n + 1);
-                (list[k], list[n]) = (list[n], list[k]);
-            }
+            return totalLost;
         }
 
         // ============ Shutdown ============
-=======
-
 
         /// <summary>
         /// Cleanup on QuestServer.OnNetworkDespawn. T-Q05: clears singleton.

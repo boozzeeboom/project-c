@@ -189,8 +189,6 @@ namespace ProjectC.Skills
                 learnedSkillIds = new List<string>(_world.GetLearnedSkillIds(clientId)).ToArray(),
                 knownSkillIds = new List<string>(_world.GetKnownSkillIds(clientId)).ToArray(),
             };
-=======
-
 
             var mi = typeof(NetworkPlayer).GetMethod("ReceiveSkillsSnapshotTargetRpc");
             if (mi != null)
@@ -200,7 +198,7 @@ namespace ProjectC.Skills
             }
             else if (Debug.isDebugBuild)
             {
-                Debug.Log($"[SkillsServer] (T-P13 stub) skills snapshot for {clientId}: {snap.learnedSkillIds.Length} learned");
+                Debug.Log($"[SkillsServer] (T-P13 stub) skills snapshot for {clientId}: {snap.learnedSkillIds.Length} learned, {snap.knownSkillIds.Length} known");
             }
         }
 

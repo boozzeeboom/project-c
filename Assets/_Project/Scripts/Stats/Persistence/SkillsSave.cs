@@ -18,8 +18,6 @@ namespace ProjectC.Stats.Persistence
         // null для старых сейвов = пустой массив (backward compat)
         public string[] knownSkillIds = null;
 
-        // T-P12: NPC dialog cooldowns TBD
-=======
- (Q1.4 unique-event уже в StatsWorld, но timestamps персистить для сохранения между сессиями)
+        // T-P12: NPC dialog cooldowns TBD (Q1.4 unique-event уже в StatsWorld, но timestamps персистить для сохранения между сессиями)
     }
 }

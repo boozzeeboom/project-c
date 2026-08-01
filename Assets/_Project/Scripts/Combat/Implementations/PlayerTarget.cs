@@ -315,46 +315,15 @@ namespace ProjectC.Combat
                 if (statsServer != null) statsServer.RecomputeAndSendSnapshot(_clientId);
             }
 
-            // T-KNOWLEDGE-V2: потеря знаний при смерти (после успешного респавна)
-            ApplyDeathKnowledgeLoss();
+            // T-KNOWLEDGE-V2: apply death knowledge loss
+            var questWorld = ProjectC.Quests.QuestWorld.Instance;
+            if (questWorld != null)
+            {
+                var rng = new System.Random(System.DateTime.UtcNow.Millisecond + (int)_clientId);
+                questWorld.ApplyDeathKnowledgeLoss(_clientId, 0.25f, rng);
+            }
 
             if (_debugLog) Debug.Log($"[PlayerTarget] TriggerDeathRespawn DONE. client={_clientId}");
-        }
-
-        /// <summary>
-        /// T-KNOWLEDGE-V2: потеря знаний при смерти.
-        /// Вызывается ТОЛЬКО после успешного респавна (не при выгрузке/шатдауне).
-        /// Загружает KnowledgeLossConfig из Resources, применяет потерю,
-        /// сохраняет и бродкастит изменения.
-        /// </summary>
-        private void ApplyDeathKnowledgeLoss()
-        {
-            if (_clientId == 0) return;
-
-            var qw = ProjectC.Quests.QuestWorld.Instance;
-            if (qw == null)
-            {
-                if (_debugLog) Debug.LogWarning($"[PlayerTarget] ApplyDeathKnowledgeLoss: QuestWorld.Instance is null, skipping. client={_clientId}");
-                return;
-            }
-
-            var config = Resources.Load<ProjectC.Knowledge.KnowledgeLossConfig>("Data/Knowledge/KnowledgeLossConfig");
-            if (config == null)
-            {
-                if (_debugLog) Debug.LogWarning($"[PlayerTarget] ApplyDeathKnowledgeLoss: KnowledgeLossConfig not found at Resources/Data/Knowledge/KnowledgeLossConfig.asset, skipping.");
-                return;
-            }
-
-            string log = qw.ApplyDeathKnowledgeLoss(_clientId, config);
-            if (_debugLog) Debug.Log($"[PlayerTarget] {log}");
-
-            // Сохраняем и бродкастим изменения
-            qw.SavePlayer(_clientId);
-            var qs = UnityEngine.Object.FindObjectOfType<ProjectC.Quests.Network.QuestServer>();
-            if (qs != null)
-            {
-                qs.BroadcastKnowledgeChange(_clientId);
-            }
         }
     }
 }

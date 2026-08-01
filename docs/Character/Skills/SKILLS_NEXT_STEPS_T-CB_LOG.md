@@ -276,3 +276,18 @@ SkillTreeWindow: FOUND
 - ❌ Real Receive*TargetRpc вместо reflection
 - ❌ Drag-to-slot — Phase 2
 - ❌ Toasts на learn/forget — пока Debug.Log
+
+
+## Сессия #9 (2026-07-28) — Кастомный Editor для SkillNodeConfig (T-SKILL-EDITOR)
+
+**Задача:** Адаптивный инспектор: скрывать/показывать группы полей в зависимости от Social/Combat category.
+**Коммит:** `71b49721` — T-SKILL-EDITOR: Кастомный Editor для SkillNodeConfig с адаптивными группами Social/Combat
+
+**Изменения:**
+- `Assets/_Project/Scripts/Editor/SkillNodeConfigEditor.cs` (новый, ~310 строк) — `[CustomEditor(typeof(SkillNodeConfig))]` с:
+  - Кнопка «🗣 SOCIAL / ⚔ COMBAT» в шапке инспектора
+  - 12 foldout-групп с условной видимостью по category/isActive/subtype/aoeFormula
+  - Авто-сброс combat-полей при переключении Combat→Social
+  - Валидация: warning при пустом skillId/attackClip/aoeSize=0
+  - Disabled-поля для нерелевантных AOE-параметров
+- `docs/Character/Skills/CUSTOM_EDITOR_DESIGN.md` (новый) — документация дизайна редактора

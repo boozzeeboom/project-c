@@ -74,3 +74,29 @@
 - SO-ассеты: KnowledgeLossConfig.asset, FactionDefinition для каждой фракции
 - Фаза B (UI): вкладка «Знания» в CharacterWindow
 
+---
+
+## Итерация от 2026-08-01 (вечер): V2 Implementation — Phase A Reground
+
+**Задача:** Перезапись всех файлов Phase A после повреждения merge-конфликтами через `replace_in_file`
+
+**Коммит:** `a6397959` — T-KNOWLEDGE-V2 Phase A: навыки/рецепты knowledge, death loss, CraftingWorld/SkillsWorld гейты, персистенс
+
+**Изменения (12 файлов):**
+| Файл | Изменение |
+|------|-----------|
+| `Scripts/Skills/SkillNodeConfig.cs` | +enum KnowledgeUnlockType, +3 поля |
+| `Scripts/Crafting/RecipeData.cs` | +enum RecipeKnowledgeUnlockType, +3 поля + свойства |
+| `Scripts/Stats/Persistence/SkillsSave.cs` | +knownSkillIds |
+| `Quests/Persistence/QuestSaveData.cs` | +knownRecipes |
+| `Scripts/Skills/SkillsWorld.cs` | +_knownPerPlayer, +IsSkillKnown, +UnlockSkillKnowledge, +AutoOnSkillLearned, +ApplyDeathSkillKnowledgeLoss, +persist |
+| `Scripts/Skills/Dto/SkillsDto.cs` | +knownSkillIds, refactor SerializeStringArray |
+| `Scripts/Skills/SkillsClientState.cs` | +KnownSkillIds HashSet, +ClearState |
+| `Scripts/Skills/SkillsServer.cs` | SendSnapshotToOwner включает knownSkillIds |
+| `Scripts/Crafting/CraftingWorld.cs` | +_knownRecipes, +IsRecipeKnown, +UnlockRecipeKnowledge, +ApplyDeathRecipeLoss, +LoadRecipeKnowledge |
+| `Scripts/Crafting/CraftingServer.cs` | StartCraftRpc: +IsRecipeKnown gate, +AllowedRecipes gate |
+| `Quests/Core/QuestWorld.cs` | +knownRecipes persist, +ApplyDeathKnowledgeLoss |
+| `Scripts/Combat/Implementations/PlayerTarget.cs` | +ApplyDeathKnowledgeLoss hook (25% loss) в TriggerDeathRespawn |
+
+**Статус:** Компиляция чистая. Фаза A (data + server) завершена.
+

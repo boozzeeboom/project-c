@@ -28,6 +28,7 @@ namespace ProjectC.Crafting
             {
                 Instance = this;
                 if (_dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
+                RecipeClientRegistry.EnsureLoaded(); // T-KNOWLEDGE-V2: preload recipe registry
             }
             else if (Instance != this)
             {

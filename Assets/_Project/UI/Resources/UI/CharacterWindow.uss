@@ -1375,3 +1375,36 @@
 .open-customisation-btn:hover {
     background-color: rgba(170, 130, 230, 0.8) !important;
 }
+
+/* === T-KNOWLEDGE-V2: Knowledge section styles === */
+.knowledge-scroll {
+    flex-grow: 1 !important;
+    padding: 4px !important;
+}
+.knowledge-section-title {
+    font-size: 12px !important;
+    -unity-font-style: bold !important;
+    color: rgba(160, 200, 240, 0.9) !important;
+    margin-top: 8px !important;
+    margin-bottom: 2px !important;
+}
+.knowledge-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 2px 6px !important;
+    min-height: 22px !important;
+}
+.knowledge-name {
+    font-size: 12px !important;
+    color: rgb(220, 225, 235) !important;
+    flex-shrink: 0 !important;
+}
+.knowledge-hint {
+    font-size: 10px !important;
+    color: rgba(150, 170, 190, 0.7) !important;
+    margin-left: 8px !important;
+    -unity-font-style: italic !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}

@@ -44,6 +44,7 @@ using ProjectC.Quests.Dto;
 using ProjectC.Quests.UI;
 using ProjectC.Reputation;
 using ProjectC.Skills;
+using ProjectC.Crafting;
 using ProjectC.Trade;
 using ProjectC.Trade.Client;
 using ProjectC.Trade.Dto;
@@ -88,7 +89,7 @@ namespace ProjectC.UI.Client
         // --- Sections (6 табов) ---
         private VisualElement _characterSection;
         private VisualElement _shipSection;
-        private VisualElement _reputationSection;
+        private VisualElement _knowledgeSection;
         private VisualElement _contractsSection;
         private VisualElement _inventorySection;
         private VisualElement _questsSection;
@@ -97,15 +98,17 @@ namespace ProjectC.UI.Client
         // --- Tab buttons ---
         private Button _tabCharacter;
         private Button _tabShip;
-        private Button _tabReputation;
+        private Button _tabKnowledge;
         private Button _tabContracts;
         private Button _tabInventory;
         private Button _tabQuests;
         // T-P16: 4 sub-tab buttons (now unused — removed in UXML refactor)
 
         // --- ListViews ---
-        private ListView _reputationList;
-        private ListView _npcAttitudeList; // T-Q13
+        private ListView _knowledgeFactionsList;
+        private ListView _knowledgeNpcList;
+        private ListView _knowledgeSkillsList;
+        private ListView _knowledgeRecipesList;
         private ListView _contractsList;
         private ListView _inventoryList;  // Сессия 2 ROLLBACK: обратно на ListView
         private ListView _questsActiveList;
@@ -158,7 +161,7 @@ namespace ProjectC.UI.Client
         // ============================================================
         // State
         // ============================================================
-        // Допустимые значения _activeTab: "character" | "ship" | "reputation" | "contracts" | "inventory".
+        // Допустимые значения _activeTab: "character" | "ship" | "knowledge" | "contracts" | "inventory".
         // Новый таб = добавить Button + Section + case в SwitchTab.
         private string _activeTab = "character";
         /// <summary>T-P19: публичный геттер для InventoryTab и других табов.</summary>
@@ -178,6 +181,8 @@ namespace ProjectC.UI.Client
         private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
         private List<ReputationListItem> _reputationCache = new List<ReputationListItem>();
         private List<NpcAttitudeListItem> _npcAttitudeCache = new List<NpcAttitudeListItem>(); // T-Q13
+        private List<SkillKnowledgeItem> _skillsKnowledgeCache = new List<SkillKnowledgeItem>();
+        private List<RecipeKnowledgeItem> _recipesKnowledgeCache = new List<RecipeKnowledgeItem>();
         private List<QuestListItem> _questsActiveCache = new List<QuestListItem>();
         private List<QuestListItem> _questsCompletedCache = new List<QuestListItem>();
         private List<QuestListItem> _questsFailedCache = new List<QuestListItem>();
@@ -239,6 +244,21 @@ namespace ProjectC.UI.Client
         public string displayName;
         public int value; // -100..+200 (NpcAttitude.MinValue..MaxValue)
         public Color color;
+        }
+
+        // T-KNOWLEDGE-V2: skill knowledge row
+        private struct SkillKnowledgeItem
+        {
+            public string skillId;
+            public string displayName;
+            public string unlockHint; // «как узнать» из knowledgeUnlockDescription
+        }
+
+        // T-KNOWLEDGE-V2: recipe knowledge row
+        private struct RecipeKnowledgeItem
+        {
+            public int recipeId;
+            public string displayName;
         }
 
         // T-Q11: quest log projection для4 под-секций (Active/Completed/Failed/Discovered).
@@ -330,6 +350,9 @@ namespace ProjectC.UI.Client
         // T-Q13: subscribe flags для ReputationClientState и NpcAttitudeClientState.
         private bool _isReputationSubscribed = false;
         private bool _isNpcAttitudeSubscribed = false;
+        // T-KNOWLEDGE-V2: subscribe flags
+        private bool _isSkillsKnowledgeSubscribed = false;
+        private bool _isRecipeKnowledgeSubscribed = false;
 
         // BUGFIX 2026-06-05: lazy-subscribe встроен в Update ниже (строка 255+).
         // Helpers Subscribe/Unsubscribe оставлены для идемпотентности.
@@ -391,6 +414,42 @@ namespace ProjectC.UI.Client
         _isNpcAttitudeSubscribed = false;
         }
 
+        // T-KNOWLEDGE-V2: Skills knowledge subscription
+        private void SubscribeSkillsKnowledge()
+        {
+            if (_isSkillsKnowledgeSubscribed) return;
+            var state = SkillsClientState.Instance;
+            if (state == null) return;
+            state.OnSkillsUpdated += HandleSkillsKnowledgeSnapshot;
+            _isSkillsKnowledgeSubscribed = true;
+        }
+        private void UnsubscribeSkillsKnowledge()
+        {
+            if (!_isSkillsKnowledgeSubscribed) return;
+            var state = SkillsClientState.Instance;
+            if (state == null) { _isSkillsKnowledgeSubscribed = false; return; }
+            state.OnSkillsUpdated -= HandleSkillsKnowledgeSnapshot;
+            _isSkillsKnowledgeSubscribed = false;
+        }
+
+        // T-KNOWLEDGE-V2: Recipe knowledge subscription
+        private void SubscribeRecipeKnowledge()
+        {
+            if (_isRecipeKnowledgeSubscribed) return;
+            var state = Crafting.RecipeKnowledgeClientState.Instance;
+            if (state == null) return;
+            state.OnRecipeKnowledgeUpdated += HandleRecipeKnowledgeSnapshot;
+            _isRecipeKnowledgeSubscribed = true;
+        }
+        private void UnsubscribeRecipeKnowledge()
+        {
+            if (!_isRecipeKnowledgeSubscribed) return;
+            var state = Crafting.RecipeKnowledgeClientState.Instance;
+            if (state == null) { _isRecipeKnowledgeSubscribed = false; return; }
+            state.OnRecipeKnowledgeUpdated -= HandleRecipeKnowledgeSnapshot;
+            _isRecipeKnowledgeSubscribed = false;
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
@@ -421,6 +480,26 @@ namespace ProjectC.UI.Client
                 {
                     SubscribeNpcAttitude();
                     Debug.Log("[CharacterWindow] Lazy-subscribed to NpcAttitudeClientState.OnNpcAttitudeUpdated");
+                }
+            }
+
+            // T-KNOWLEDGE-V2: lazy-subscribe Skills + Recipe knowledge
+            if (_built && !_isSkillsKnowledgeSubscribed)
+            {
+                var skillsState = SkillsClientState.Instance;
+                if (skillsState != null)
+                {
+                    SubscribeSkillsKnowledge();
+                    Debug.Log("[CharacterWindow] Lazy-subscribed to SkillsClientState.OnSkillsUpdated");
+                }
+            }
+            if (_built && !_isRecipeKnowledgeSubscribed)
+            {
+                var recipeState = Crafting.RecipeKnowledgeClientState.Instance;
+                if (recipeState != null)
+                {
+                    SubscribeRecipeKnowledge();
+                    Debug.Log("[CharacterWindow] Lazy-subscribed to RecipeKnowledgeClientState.OnRecipeKnowledgeUpdated");
                 }
             }
 
@@ -533,7 +612,7 @@ namespace ProjectC.UI.Client
 
             _characterSection = _root.Q<VisualElement>("character-section");
             _shipSection = _root.Q<VisualElement>("ship-section");
-            _reputationSection = _root.Q<VisualElement>("reputation-section");
+            _knowledgeSection = _root.Q<VisualElement>("knowledge-section");
             _contractsSection = _root.Q<VisualElement>("contracts-section");
             _inventorySection = _root.Q<VisualElement>("inventory-section");
             _questsSection = _root.Q<VisualElement>("quests-section");
@@ -562,13 +641,15 @@ namespace ProjectC.UI.Client
 
             _tabCharacter = _root.Q<Button>("tab-character");
             _tabShip = _root.Q<Button>("tab-ship");
-            _tabReputation = _root.Q<Button>("tab-reputation");
+            _tabKnowledge = _root.Q<Button>("tab-knowledge");
             _tabContracts = _root.Q<Button>("tab-contracts");
             _tabInventory = _root.Q<Button>("tab-inventory");
             _tabQuests = _root.Q<Button>("tab-quests");
 
-            _reputationList = _root.Q<ListView>("reputation-list");
-            _npcAttitudeList = _root.Q<ListView>("npc-attitude-list"); // T-Q13
+            _knowledgeFactionsList = _root.Q<ListView>("knowledge-factions-list");
+            _knowledgeNpcList = _root.Q<ListView>("knowledge-npc-list");
+            _knowledgeSkillsList = _root.Q<ListView>("knowledge-skills-list");
+            _knowledgeRecipesList = _root.Q<ListView>("knowledge-recipes-list");
             _contractsList = _root.Q<ListView>("contracts-list");
             _inventoryList = _root.Q<ListView>("inventory-list");
             _questsActiveList = _root.Q<ListView>("quests-active-list");
@@ -603,7 +684,7 @@ namespace ProjectC.UI.Client
             // ---- Tab subscriptions ----
             if (_tabCharacter != null) _tabCharacter.clicked += () => SwitchTab("character");
             if (_tabShip != null) _tabShip.clicked += () => SwitchTab("ship");
-            if (_tabReputation != null) _tabReputation.clicked += () => SwitchTab("reputation");
+            if (_tabKnowledge != null) _tabKnowledge.clicked += () => SwitchTab("knowledge");
             if (_tabContracts != null) _tabContracts.clicked += () => SwitchTab("contracts");
             if (_tabInventory != null) _tabInventory.clicked += () => SwitchTab("inventory");
             if (_tabQuests != null) _tabQuests.clicked += () => SwitchTab("quests");
@@ -628,20 +709,30 @@ namespace ProjectC.UI.Client
                         _myShipsTab = new MyShipsTab();
                         _myShipsTab.BuildUI(this, _root);
 
-            // T-Q13: NpcAttitude + Reputation listviews (остаются в CharacterWindow)
-            if (_reputationList != null)
+            // T-KNOWLEDGE-V2: Knowledge listviews (Фракции, NPC, Навыки, Рецепты)
+            if (_knowledgeFactionsList != null)
             {
-                _reputationList.makeItem = MakeReputationRow;
-                _reputationList.bindItem = BindReputationRow;
-                _reputationList.fixedItemHeight = 32;
+                _knowledgeFactionsList.makeItem = MakeReputationRow;
+                _knowledgeFactionsList.bindItem = BindReputationRow;
+                _knowledgeFactionsList.fixedItemHeight = 32;
             }
-
-            // ---- ListView: NpcAttitude (T-Q13, под-секция "Отношения к NPC") ----
-            if (_npcAttitudeList != null)
+            if (_knowledgeNpcList != null)
             {
-            _npcAttitudeList.makeItem = MakeNpcAttitudeRow;
-            _npcAttitudeList.bindItem = BindNpcAttitudeRow;
-            _npcAttitudeList.fixedItemHeight =28;
+                _knowledgeNpcList.makeItem = MakeNpcAttitudeRow;
+                _knowledgeNpcList.bindItem = BindNpcAttitudeRow;
+                _knowledgeNpcList.fixedItemHeight = 28;
+            }
+            if (_knowledgeSkillsList != null)
+            {
+                _knowledgeSkillsList.makeItem = MakeKnowledgeSkillRow;
+                _knowledgeSkillsList.bindItem = BindKnowledgeSkillRow;
+                _knowledgeSkillsList.fixedItemHeight = 28;
+            }
+            if (_knowledgeRecipesList != null)
+            {
+                _knowledgeRecipesList.makeItem = MakeKnowledgeRecipeRow;
+                _knowledgeRecipesList.bindItem = BindKnowledgeRecipeRow;
+                _knowledgeRecipesList.fixedItemHeight = 28;
             }
 
             // ---- ListView: Quests (T-Q11:4 под-секции, общий row factory) ----
@@ -763,7 +854,7 @@ namespace ProjectC.UI.Client
         _activeTab = tab;
         bool isCharacter = tab == "character";
         bool isShip = tab == "ship";
-        bool isReputation = tab == "reputation";
+        bool isKnowledge = tab == "knowledge";
         bool isContracts = tab == "contracts";
         bool isInventory = tab == "inventory";
         bool isQuests = tab == "quests";
@@ -771,7 +862,7 @@ namespace ProjectC.UI.Client
         // ---- Sections visibility ----
         if (_characterSection != null) _characterSection.style.display = isCharacter ? DisplayStyle.Flex : DisplayStyle.None;
         if (_shipSection != null) _shipSection.style.display = isShip ? DisplayStyle.Flex : DisplayStyle.None;
-        if (_reputationSection != null) _reputationSection.style.display = isReputation ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_knowledgeSection != null) _knowledgeSection.style.display = isKnowledge ? DisplayStyle.Flex : DisplayStyle.None;
         // T-P19: Contracts/Inventory/Quests display переехали в табы
         if (_contractsSection != null) _contractsSection.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
         if (_inventorySection != null) _inventorySection.style.display = isInventory ? DisplayStyle.Flex : DisplayStyle.None;
@@ -793,7 +884,7 @@ namespace ProjectC.UI.Client
         }
         SetActiveTabVisual(_tabCharacter, isCharacter);
         SetActiveTabVisual(_tabShip, isShip);
-        SetActiveTabVisual(_tabReputation, isReputation);
+        SetActiveTabVisual(_tabKnowledge, isKnowledge);
         SetActiveTabVisual(_tabContracts, isContracts);
         SetActiveTabVisual(_tabInventory, isInventory);
         SetActiveTabVisual(_tabQuests, isQuests);
@@ -822,7 +913,7 @@ namespace ProjectC.UI.Client
         if (isShip) {
             if (_myShipsTab != null) _myShipsTab.OnTabShown();
         }
-        if (isReputation) { RefreshReputationCache(); RefreshNpcAttitudeCache(); }
+        if (isKnowledge) { RefreshReputationCache(); RefreshNpcAttitudeCache(); RefreshSkillsKnowledgeCache(); RefreshRecipesKnowledgeCache(); }
         // T-P19: Contracts/Inventory refresh — в OnTabShown табов
         if (isQuests) RefreshQuestsCache();
         }
@@ -1047,10 +1138,10 @@ namespace ProjectC.UI.Client
                     });
                 }
             }
-            if (_reputationList != null)
+            if (_knowledgeFactionsList != null)
             {
-                _reputationList.itemsSource = _reputationCache;
-                _reputationList.Rebuild();
+                _knowledgeFactionsList.itemsSource = _reputationCache;
+                _knowledgeFactionsList.Rebuild();
             }
         }
 
@@ -1083,7 +1174,7 @@ namespace ProjectC.UI.Client
         private void HandleReputationSnapshot(ReputationSnapshotDto snapshot)
         {
             RefreshReputationCache();
-            if (_messageLabel != null && IsVisible() && _activeTab == "reputation")
+            if (_messageLabel != null && IsVisible() && _activeTab == "knowledge")
             {
                 _messageLabel.text = snapshot.entries != null
                     ? $"Фракций: {snapshot.entries.Length}"
@@ -1095,7 +1186,7 @@ namespace ProjectC.UI.Client
         private void HandleNpcAttitudeSnapshot(NpcAttitudeSnapshotDto snapshot)
         {
             RefreshNpcAttitudeCache();
-            if (_messageLabel != null && IsVisible() && _activeTab == "reputation")
+            if (_messageLabel != null && IsVisible() && _activeTab == "knowledge")
             {
                 _messageLabel.text = snapshot.entries != null
                     ? $"Отношений: {snapshot.entries.Length}"
@@ -1135,10 +1226,10 @@ namespace ProjectC.UI.Client
                     }
                 }
             }
-            if (_npcAttitudeList != null)
+            if (_knowledgeNpcList != null)
             {
-                _npcAttitudeList.itemsSource = _npcAttitudeCache;
-                _npcAttitudeList.Rebuild();
+                _knowledgeNpcList.itemsSource = _npcAttitudeCache;
+                _knowledgeNpcList.Rebuild();
             }
         }
 
@@ -1625,8 +1716,8 @@ namespace ProjectC.UI.Client
 
         private void BindReputationRow(VisualElement row, int index)
         {
-            if (_reputationList == null) return;
-            var src = _reputationList.itemsSource as List<ReputationListItem>;
+            if (_knowledgeFactionsList == null) return;
+            var src = _knowledgeFactionsList.itemsSource as List<ReputationListItem>;
             if (src == null || index < 0 || index >= src.Count) return;
             var r = src[index];
 
@@ -1683,8 +1774,8 @@ namespace ProjectC.UI.Client
 
         private void BindNpcAttitudeRow(VisualElement row, int index)
         {
-            if (_npcAttitudeList == null) return;
-            var src = _npcAttitudeList.itemsSource as List<NpcAttitudeListItem>;
+            if (_knowledgeNpcList == null) return;
+            var src = _knowledgeNpcList.itemsSource as List<NpcAttitudeListItem>;
             if (src == null || index < 0 || index >= src.Count) return;
             var r = src[index];
 
@@ -1710,6 +1801,49 @@ namespace ProjectC.UI.Client
                 posFill.style.width = new Length(posPct, LengthUnit.Percent);
                 posFill.style.backgroundColor = new Color(0.25f, 0.85f, 0.25f);
             }
+        }
+
+        // ============================================================
+        // T-KNOWLEDGE-V2: Knowledge skill row factory
+        // ============================================================
+
+        private VisualElement MakeKnowledgeSkillRow()
+        {
+            var row = new VisualElement();
+            row.AddToClassList("knowledge-row");
+            var name = new Label { name = "ks-name" }; name.AddToClassList("knowledge-name"); row.Add(name);
+            var hint = new Label { name = "ks-hint" }; hint.AddToClassList("knowledge-hint"); row.Add(hint);
+            return row;
+        }
+
+        private void BindKnowledgeSkillRow(VisualElement row, int index)
+        {
+            if (_knowledgeSkillsList == null) return;
+            var src = _knowledgeSkillsList.itemsSource as List<SkillKnowledgeItem>;
+            if (src == null || index < 0 || index >= src.Count) return;
+            var item = src[index];
+            var name = row.Q<Label>("ks-name");
+            if (name != null) name.text = item.displayName;
+            var hint = row.Q<Label>("ks-hint");
+            if (hint != null) hint.text = item.unlockHint;
+        }
+
+        private VisualElement MakeKnowledgeRecipeRow()
+        {
+            var row = new VisualElement();
+            row.AddToClassList("knowledge-row");
+            var name = new Label { name = "kr-name" }; name.AddToClassList("knowledge-name"); row.Add(name);
+            return row;
+        }
+
+        private void BindKnowledgeRecipeRow(VisualElement row, int index)
+        {
+            if (_knowledgeRecipesList == null) return;
+            var src = _knowledgeRecipesList.itemsSource as List<RecipeKnowledgeItem>;
+            if (src == null || index < 0 || index >= src.Count) return;
+            var item = src[index];
+            var name = row.Q<Label>("kr-name");
+            if (name != null) name.text = item.displayName;
         }
 
         // ============================================================
@@ -1852,6 +1986,75 @@ namespace ProjectC.UI.Client
             _inventoryList.itemsSource = filteredList;
             }
             _inventoryList.RefreshItems();
+            }
+
+            // ============================================================
+            // T-KNOWLEDGE-V2: Skills & Recipes knowledge cache + handlers
+            // ============================================================
+
+            private void HandleSkillsKnowledgeSnapshot(HashSet<string> learnedSkills)
+            {
+                RefreshSkillsKnowledgeCache();
+            }
+
+            private void HandleRecipeKnowledgeSnapshot(HashSet<int> knownRecipes)
+            {
+                RefreshRecipesKnowledgeCache();
+            }
+
+            private void RefreshSkillsKnowledgeCache()
+            {
+                _skillsKnowledgeCache.Clear();
+                var state = SkillsClientState.Instance;
+                if (state == null) return;
+
+                var knownIds = state.KnownSkillIds;
+                if (knownIds == null || knownIds.Count == 0) return;
+
+                foreach (var skillId in knownIds)
+                {
+                    if (!state.TryGetSkillConfig(skillId, out var cfg)) continue;
+                    _skillsKnowledgeCache.Add(new SkillKnowledgeItem
+                    {
+                        skillId = skillId,
+                        displayName = cfg.displayName ?? skillId,
+                        unlockHint = cfg.knowledgeUnlockDescription ?? "",
+                    });
+                }
+
+                if (_knowledgeSkillsList != null)
+                {
+                    _knowledgeSkillsList.itemsSource = _skillsKnowledgeCache;
+                    _knowledgeSkillsList.Rebuild();
+                }
+            }
+
+            private void RefreshRecipesKnowledgeCache()
+            {
+                _recipesKnowledgeCache.Clear();
+                var state = Crafting.RecipeKnowledgeClientState.Instance;
+                if (state == null) return;
+                Crafting.RecipeClientRegistry.EnsureLoaded();
+
+                var knownIds = state.KnownRecipeIds;
+                if (knownIds == null || knownIds.Count == 0) return;
+
+                foreach (var recipeId in knownIds)
+                {
+                    var recipe = Crafting.RecipeClientRegistry.GetRecipe(recipeId);
+                    if (recipe == null) continue;
+                    _recipesKnowledgeCache.Add(new RecipeKnowledgeItem
+                    {
+                        recipeId = recipeId,
+                        displayName = recipe.DisplayName ?? $"Recipe #{recipeId}",
+                    });
+                }
+
+                if (_knowledgeRecipesList != null)
+                {
+                    _knowledgeRecipesList.itemsSource = _recipesKnowledgeCache;
+                    _knowledgeRecipesList.Rebuild();
+                }
             }
 
             // ============================================================

@@ -30,6 +30,11 @@ namespace ProjectC.Skills
         private Dictionary<string, SkillNodeConfig> _skillsById = new Dictionary<string, SkillNodeConfig>();
         private Dictionary<ulong, HashSet<string>> _learnedPerPlayer = new Dictionary<ulong, HashSet<string>>();
 
+        // T-KNOWLEDGE-V2: known (but not learned) skill IDs per player
+        private Dictionary<ulong, HashSet<string>> _knownPerPlayer = new Dictionary<ulong, HashSet<string>>();
+=======
+
+
         public SkillsWorld()
         {
             if (Instance != null)
@@ -102,7 +107,76 @@ namespace ProjectC.Skills
             }
         }
 
+        // === T-KNOWLEDGE-V2: Known skills (knowledge, not learned) ===
+
+        public HashSet<string> GetKnownSkillIds(ulong clientId)
+        {
+            if (!_knownPerPlayer.TryGetValue(clientId, out var known))
+            {
+                known = new HashSet<string>();
+                _knownPerPlayer[clientId] = known;
+            }
+            return known;
+        }
+
+        public bool IsSkillKnown(ulong clientId, string skillId)
+        {
+            if (string.IsNullOrEmpty(skillId)) return false;
+            // Implicitly known if learned
+            if (GetLearnedSkillIds(clientId).Contains(skillId)) return true;
+            // Explicitly known
+            return GetKnownSkillIds(clientId).Contains(skillId);
+        }
+
+        /// <summary>
+        /// T-KNOWLEDGE-V2: открыть знание о навыке (клиент увидит его в SkillTreeWindow).
+        /// Если unlockType = None — виден всегда (known = true по умолчанию).
+        /// </summary>
+        public bool UnlockSkillKnowledge(ulong clientId, string skillId)
+        {
+            if (string.IsNullOrEmpty(skillId)) return false;
+            if (!TryGetSkill(skillId, out var skill)) return false;
+
+            var known = GetKnownSkillIds(clientId);
+            if (known.Contains(skillId)) return false; // уже известно
+
+            known.Add(skillId);
+            Debug.Log($"[SkillsWorld] Knowledge unlocked: player={clientId} skill='{skill.displayName ?? skillId}'");
+            return true;
+        }
+
+        /// <summary>
+        /// T-KNOWLEDGE-V2: после изучения навыка X — открыть знание о всех навыках S,
+        /// у которых knowledgeUnlockType == LearnFirst и S.prerequisites содержит X.
+        /// Обход по прямым ссылкам конфигов (prerequisites — SkillNodeConfig[]).
+        /// </summary>
+        public void AutoOnSkillLearned(ulong clientId, string learnedSkillId)
+        {
+            if (string.IsNullOrEmpty(learnedSkillId)) return;
+            int unlocked = 0;
+            foreach (var kv in _skillsById)
+            {
+                var skill = kv.Value;
+                if (skill.knowledgeUnlockType != KnowledgeUnlockType.LearnFirst) continue;
+                if (skill.prerequisites == null) continue;
+
+                foreach (var prereq in skill.prerequisites)
+                {
+                    if (prereq != null && prereq.skillId == learnedSkillId)
+                    {
+                        if (UnlockSkillKnowledge(clientId, skill.skillId))
+                            unlocked++;
+                        break;
+                    }
+                }
+            }
+            if (unlocked > 0 && Debug.isDebugBuild)
+                Debug.Log($"[SkillsWorld] AutoOnSkillLearned: player={clientId} learned='{learnedSkillId}' → unlocked {unlocked} skills via LearnFirst");
+        }
+
         // === TryLearnSkill (5-step per roadmap §3.3) ===
+=======
+
 
         public bool TryLearnSkill(ulong clientId, string skillId, out string reason)
         {
@@ -187,7 +261,13 @@ namespace ProjectC.Skills
             // All checks passed
             learned.Add(skillId);
             Debug.Log($"[SkillsWorld] Player {clientId} learned skill '{skill.displayName ?? skillId}' (XP cost: {skill.LearnXpCost})");
+
+            // T-KNOWLEDGE-V2: auto-unlock knowledge of skills with LearnFirst prerequisite = this skill
+            AutoOnSkillLearned(clientId, skillId);
+
             return true;
+=======
+
         }
 
         // === TryForgetSkill (Q3.4 free respec) ===
@@ -217,13 +297,17 @@ namespace ProjectC.Skills
         public SkillsSave BuildSaveData(ulong clientId)
         {
             var learned = GetLearnedSkillIds(clientId);
+            var known = GetKnownSkillIds(clientId);
             var save = new SkillsSave
             {
                 learnedSkillIds = new List<string>(learned).ToArray(),
+                knownSkillIds = known.Count > 0 ? new List<string>(known).ToArray() : null,
             };
-            Debug.Log($"[SkillsWorld.BuildSaveData] client={clientId} learnedCount={learned.Count} ids=[{string.Join(",", learned)}]");
+            Debug.Log($"[SkillsWorld.BuildSaveData] client={clientId} learnedCount={learned.Count} knownCount={known.Count} ids=[{string.Join(",", learned)}]");
             return save;
         }
+=======
+
 
         public void LoadPlayer(ulong clientId, CharacterSaveData data)
         {
@@ -244,9 +328,25 @@ namespace ProjectC.Skills
             {
                 Debug.Log($"[SkillsWorld.LoadPlayer] client={clientId} data.skills.learnedSkillIds is null");
             }
+
+            // T-KNOWLEDGE-V2: restore known skill IDs (null = backward compat: empty set)
+            var known = GetKnownSkillIds(clientId);
+            known.Clear();
+            if (data.skills.knownSkillIds != null)
+            {
+                foreach (var id in data.skills.knownSkillIds)
+                    if (!string.IsNullOrEmpty(id)) known.Add(id);
+                Debug.Log($"[SkillsWorld.LoadPlayer] client={clientId} loaded {known.Count} known skills");
+            }
         }
 
-        public void RemovePlayer(ulong clientId) => _learnedPerPlayer.Remove(clientId);
+        public void RemovePlayer(ulong clientId)
+        {
+            _learnedPerPlayer.Remove(clientId);
+            _knownPerPlayer.Remove(clientId);
+        }
+=======
+
 
         /// <summary>
         /// P7 fix: sum additive StatMod bonuses from learned skills for combat path.

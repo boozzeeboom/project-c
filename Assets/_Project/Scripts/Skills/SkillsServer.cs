@@ -187,7 +187,10 @@ namespace ProjectC.Skills
             var snap = new SkillsSnapshotDto
             {
                 learnedSkillIds = new List<string>(_world.GetLearnedSkillIds(clientId)).ToArray(),
+                knownSkillIds = new List<string>(_world.GetKnownSkillIds(clientId)).ToArray(),
             };
+=======
+
 
             var mi = typeof(NetworkPlayer).GetMethod("ReceiveSkillsSnapshotTargetRpc");
             if (mi != null)

@@ -51,6 +51,19 @@ namespace ProjectC.Skills
     }
 
     /// <summary>
+    /// T-KNOWLEDGE-V2: способ открытия знания о навыке.
+    /// None = виден и изучаем сразу (текущее поведение).
+    /// </summary>
+    public enum KnowledgeUnlockType : byte
+    {
+        None = 0,         // по умолчанию: виден и изучаем сразу
+        LearnFirst = 1,   // открывается при изучении любого prerequisite-навыка
+        Blueprint = 2,    // открывается предметом/документом (id в knowledgeUnlockId)
+        NpcTeach = 3,     // открывается обучением у NPC (id в knowledgeUnlockId)
+        QuestReward = 4,  // открывается наградой квеста (id в knowledgeUnlockId)
+    }
+
+    /// <summary>
     /// T-INP-02: AOE формула для active skill'ов. Семантика aoeSize/aoeConeAngleDeg/aoeWidth
     /// зависит от выбранной формулы (см. Tooltip'ы на SkillNodeConfig).
     /// SingleTarget = legacy mode (raycast → 1 цель). Cone/Sphere/Line/Box = multi-target.
@@ -118,7 +131,19 @@ namespace ProjectC.Skills
         [Tooltip("SkillEffect[] — additive/multiplicative stat bonuses + ability/passive unlocks.")]
         public SkillEffect[] effects = Array.Empty<SkillEffect>();
 
+        [Header("Knowledge Unlock (T-KNOWLEDGE-V2)")]
+        [Tooltip("Как игрок узнаёт о существовании этого навыка. None = виден сразу.")]
+        public KnowledgeUnlockType knowledgeUnlockType = KnowledgeUnlockType.None;
+
+        [Tooltip("ID источника: предмет / NPC / квест / рецепт. Зависит от knowledgeUnlockType.")]
+        public string knowledgeUnlockId = "";
+
+        [Tooltip("Подсказка 'как узнать' для UI (показывается если навык неизвестен).")]
+        public string knowledgeUnlockDescription = "";
+
         [Header("XP Cost to Learn")]
+=======
+
         [Tooltip("XP spent from Intelligence pool (per SkillsWorld.TryLearnSkill → StatsServer.ApplyXpDirect). " +
                  "0 = free (starter skill).")]
         [SerializeField, Min(0f)] private float _learnXpCost = 50f;

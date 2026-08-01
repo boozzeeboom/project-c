@@ -18,19 +18,26 @@ namespace ProjectC.Skills.Dto
     public struct SkillsSnapshotDto : INetworkSerializable, IEquatable<SkillsSnapshotDto>
     {
         public string[] learnedSkillIds;
+        // T-KNOWLEDGE-V2: known (but not learned) skill IDs
+        public string[] knownSkillIds;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
-            // null-safe string array serialize (NGO 2.x null-string pitfall)
-            int len = learnedSkillIds?.Length ?? 0;
+            SerializeStringArray(serializer, ref learnedSkillIds);
+            SerializeStringArray(serializer, ref knownSkillIds);
+        }
+
+        private static void SerializeStringArray<T>(BufferSerializer<T> serializer, ref string[] arr) where T : IReaderWriter
+        {
+            int len = arr?.Length ?? 0;
             serializer.SerializeValue(ref len);
             if (serializer.IsReader)
             {
-                learnedSkillIds = new string[len];
+                arr = new string[len];
             }
             for (int i = 0; i < len; i++)
             {
-                string s = learnedSkillIds[i] ?? string.Empty;
+                string s = arr[i] ?? string.Empty;
                 int sLen = s.Length;
                 serializer.SerializeValue(ref sLen);
                 if (sLen > 0)
@@ -39,7 +46,7 @@ namespace ProjectC.Skills.Dto
                     {
                         var bytes = new byte[sLen];
                         for (int j = 0; j < sLen; j++) serializer.SerializeValue(ref bytes[j]);
-                        learnedSkillIds[i] = System.Text.Encoding.UTF8.GetString(bytes);
+                        arr[i] = System.Text.Encoding.UTF8.GetString(bytes);
                     }
                     else
                     {
@@ -49,7 +56,7 @@ namespace ProjectC.Skills.Dto
                 }
                 else if (serializer.IsReader)
                 {
-                    learnedSkillIds[i] = string.Empty;
+                    arr[i] = string.Empty;
                 }
             }
         }
@@ -63,12 +70,22 @@ namespace ProjectC.Skills.Dto
             {
                 if (learnedSkillIds[i] != other.learnedSkillIds[i]) return false;
             }
+            // knownSkillIds
+            if ((knownSkillIds == null) != (other.knownSkillIds == null)) return false;
+            if (knownSkillIds == null) return true;
+            if (knownSkillIds.Length != other.knownSkillIds.Length) return false;
+            for (int i = 0; i < knownSkillIds.Length; i++)
+            {
+                if (knownSkillIds[i] != other.knownSkillIds[i]) return false;
+            }
             return true;
         }
 
         public override bool Equals(object obj) => obj is SkillsSnapshotDto o && Equals(o);
-        public override int GetHashCode() => learnedSkillIds?.Length ?? 0;
+        public override int GetHashCode() => (learnedSkillIds?.Length ?? 0) ^ (knownSkillIds?.Length ?? 0);
     }
+=======
+
 
     [Serializable]
     public struct SkillResultDto : INetworkSerializable, IEquatable<SkillResultDto>

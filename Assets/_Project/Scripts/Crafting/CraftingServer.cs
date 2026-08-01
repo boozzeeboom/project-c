@@ -235,6 +235,13 @@ namespace ProjectC.Crafting
             var recipe = CraftingWorld.GetRecipe(recipeId);
             if (recipe == null) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Рецепт не найден", stationNetId)); return; }
 
+            // T-KNOWLEDGE-V2: проверка знания рецепта (серверный гейт)
+            if (!CraftingWorld.IsRecipeKnown(clientId, recipeId))
+            {
+                SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.MetaReqDenied, "Рецепт неизвестен", stationNetId));
+                return;
+            }
+
             // T-C07c: валидация buffer — должен быть не пуст
             if (job.Buffer.Count == 0) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.InvalidArgs, "Нет ингредиентов на станции", stationNetId)); return; }
 
@@ -252,6 +259,22 @@ namespace ProjectC.Crafting
 
             // B4: MetaRequirement tool check (станция с требованиями по инструменту)
             var csComponent = station.GetComponent<ProjectC.Crafting.CraftingStation>();
+
+            // T-KNOWLEDGE-V2: проверка AllowedRecipes станции
+            if (csComponent != null && csComponent.Config != null && csComponent.Config.AllowedRecipes != null)
+            {
+                bool allowed = false;
+                foreach (var allowedRecipe in csComponent.Config.AllowedRecipes)
+                {
+                    if (allowedRecipe == recipe) { allowed = true; break; }
+                }
+                if (!allowed)
+                {
+                    SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.MetaReqDenied, "Рецепт недоступен на этой станции", stationNetId));
+                    return;
+                }
+            }
+
             if (csComponent != null && !csComponent.CanStartCraft(clientId, out string metaReason))
             {
                 SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.MetaReqDenied, metaReason ?? "Требования не выполнены", stationNetId));

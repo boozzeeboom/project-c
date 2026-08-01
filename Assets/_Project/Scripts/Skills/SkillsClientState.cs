@@ -28,6 +28,11 @@ namespace ProjectC.Skills
         /// <summary>Current set of learned skill IDs (mirrors server state).</summary>
         public HashSet<string> CurrentSkills { get; private set; } = new HashSet<string>();
 
+        // T-KNOWLEDGE-V2: known (not learned) skill IDs
+        public HashSet<string> KnownSkillIds { get; private set; } = new HashSet<string>();
+=======
+
+
         // R4: client-side skill config cache (избегает Resources.LoadAll на каждый клик)
         private readonly Dictionary<string, SkillNodeConfig> _skillConfigCache = new Dictionary<string, SkillNodeConfig>();
 
@@ -92,12 +97,19 @@ namespace ProjectC.Skills
             CurrentSkills = snapshot.learnedSkillIds != null
                 ? new HashSet<string>(snapshot.learnedSkillIds)
                 : new HashSet<string>();
+
+            KnownSkillIds = snapshot.knownSkillIds != null
+                ? new HashSet<string>(snapshot.knownSkillIds)
+                : new HashSet<string>();
+
             OnSkillsUpdated?.Invoke(CurrentSkills);
             if (Debug.isDebugBuild)
             {
-                Debug.Log($"[SkillsClientState] OnSkillsSnapshotReceived: {CurrentSkills.Count} skills learned");
+                Debug.Log($"[SkillsClientState] OnSkillsSnapshotReceived: {CurrentSkills.Count} learned, {KnownSkillIds.Count} known");
             }
         }
+=======
+
 
         /// <summary>
         /// Server → client handler. Вызывается из NetworkPlayer.ReceiveSkillResultTargetRpc.
@@ -122,6 +134,9 @@ namespace ProjectC.Skills
         public void ClearState()
         {
             CurrentSkills.Clear();
+            KnownSkillIds.Clear();
         }
+=======
+
     }
 }

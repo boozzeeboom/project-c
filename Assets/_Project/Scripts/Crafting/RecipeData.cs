@@ -47,6 +47,18 @@ namespace ProjectC.Crafting
         Combat = 4,
     }
 
+    /// <summary>
+    /// T-KNOWLEDGE-V2: способ открытия знания о рецепте.
+    /// Blueprint (default) — текущее поведение: рецепт доступен через станцию.
+    /// </summary>
+    public enum RecipeKnowledgeUnlockType : byte
+    {
+        Blueprint = 0,   // чертёж/предмет (по умолчанию)
+        NpcTeach = 1,    // обучение у NPC
+        QuestReward = 2, // награда квеста (совпадает с QuestUnlockType.Recipe)
+        Station = 3,     // знание при первом использовании станции
+    }
+
     /// <summary>Один ингредиент рецепта (что и сколько нужно положить в буфер).</summary>
     [System.Serializable]
     public struct RecipeIngredient
@@ -97,7 +109,23 @@ namespace ProjectC.Crafting
         [Tooltip("Сколько секунд серверного времени нужно для крафта. Умножается на station.craftSpeedMultiplier.")]
         [Min(1f)] [SerializeField] private float _craftSeconds = 600f;
 
+        [Header("Knowledge Unlock (T-KNOWLEDGE-V2)")]
+        [Tooltip("Как игрок узнаёт о рецепте. Blueprint = доступен через станцию по умолчанию.")]
+        [SerializeField] private RecipeKnowledgeUnlockType _knowledgeUnlockType = RecipeKnowledgeUnlockType.Blueprint;
+
+        [Tooltip("ID источника: предмет / NPC / квест / станция.")]
+        [SerializeField] private string _knowledgeUnlockId = "";
+
+        [Tooltip("Подсказка 'как узнать' для UI.")]
+        [SerializeField] private string _knowledgeUnlockDescription = "";
+
+
+        [Tooltip("MVP: 0 = нет требования. Phase 2: минимальный уровень навыка для крафта.")]
+=======
         [Header("Skill Gate (Phase 2)")]
+        [Tooltip("MVP: 0 = нет требования. Phase 2: минимальный уровень навыка для крафта.")]
+=======
+
         [Tooltip("MVP: 0 = нет требования. Phase 2: минимальный уровень навыка для крафта.")]
         [Min(0)] [SerializeField] private int _requiredSkillLevel = 0;
 
@@ -119,6 +147,10 @@ namespace ProjectC.Crafting
         public float CraftSeconds => _craftSeconds;
         public int RequiredSkillLevel => _requiredSkillLevel;
         public SkillType RequiredSkill => _requiredSkill;
+
+        public RecipeKnowledgeUnlockType KnowledgeUnlockType => _knowledgeUnlockType;
+        public string KnowledgeUnlockId => _knowledgeUnlockId;
+        public string KnowledgeUnlockDescription => _knowledgeUnlockDescription;
 
         public int[] IngredientItemIds => _ingredientItemIds;
         public int[] OutputItemIds => _outputItemIds;

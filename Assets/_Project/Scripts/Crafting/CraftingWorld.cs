@@ -31,7 +31,12 @@ namespace ProjectC.Crafting
         // ----- Job registry (stationNetId -> CraftingJob, server-only state) -----
         private static Dictionary<ulong, CraftingJob> _jobs = new Dictionary<ulong, CraftingJob>();
 
+        // ----- T-KNOWLEDGE-V2: recipe knowledge (per-player) -----
+        private static Dictionary<ulong, HashSet<int>> _knownRecipes = new Dictionary<ulong, HashSet<int>>();
+
         public static bool IsInitialized { get; private set; }
+=======
+
 
         // ==========================================================
         // Lifecycle
@@ -53,8 +58,11 @@ namespace ProjectC.Crafting
             _idsByRecipe.Clear();
             _stations.Clear();
             _jobs.Clear();
+            _knownRecipes.Clear();
             IsInitialized = false;
         }
+=======
+
 
         // ==========================================================
         // Recipe registry
@@ -150,5 +158,84 @@ namespace ProjectC.Crafting
                 }
             }
         }
+
+        // ==========================================================
+        // T-KNOWLEDGE-V2: Recipe knowledge (per-player)
+        // ==========================================================
+
+        private static HashSet<int> GetKnownRecipeSet(ulong clientId)
+        {
+            if (!_knownRecipes.TryGetValue(clientId, out var set))
+            {
+                set = new HashSet<int>();
+                _knownRecipes[clientId] = set;
+            }
+            return set;
+        }
+
+        public static bool IsRecipeKnown(ulong clientId, int recipeId)
+        {
+            return GetKnownRecipeSet(clientId).Contains(recipeId);
+        }
+
+        public static bool UnlockRecipeKnowledge(ulong clientId, int recipeId)
+        {
+            var set = GetKnownRecipeSet(clientId);
+            if (set.Add(recipeId))
+            {
+                if (Debug.isDebugBuild)
+                    Debug.Log($"[CraftingWorld] Recipe knowledge unlocked: player={clientId} recipeId={recipeId}");
+                return true;
+            }
+            return false;
+        }
+
+        public static HashSet<int> GetKnownRecipeIds(ulong clientId)
+            => GetKnownRecipeSet(clientId);
+
+        /// <summary>
+        /// Apply death recipe loss: удаляет recipeId из known set если Random < lossChance.
+        /// Возвращает количество потерянных рецептов.
+        /// </summary>
+        public static int ApplyDeathRecipeLoss(ulong clientId, float lossChance, System.Random rng)
+        {
+            var set = GetKnownRecipeSet(clientId);
+            if (set.Count == 0) return 0;
+
+            var toRemove = new List<int>();
+            foreach (var id in set)
+            {
+                if (rng.NextDouble() < lossChance)
+                    toRemove.Add(id);
+            }
+            foreach (var id in toRemove)
+                set.Remove(id);
+
+            if (toRemove.Count > 0)
+                Debug.Log($"[CraftingWorld] Death recipe loss: player={clientId} lost={toRemove.Count} remaining={set.Count}");
+            return toRemove.Count;
+        }
+
+        /// <summary>Build knownRecipeIds list for persistence (called by QuestWorld.BuildSaveData).</summary>
+        public static List<int> BuildRecipeKnowledgeSave(ulong clientId)
+        {
+            var set = GetKnownRecipeSet(clientId);
+            return new List<int>(set);
+        }
+
+        /// <summary>Load knownRecipeIds from persistence (called by QuestWorld.LoadPlayer).</summary>
+        public static void LoadRecipeKnowledge(ulong clientId, List<int> knownRecipeIds)
+        {
+            var set = GetKnownRecipeSet(clientId);
+            set.Clear();
+            if (knownRecipeIds != null)
+            {
+                foreach (var id in knownRecipeIds)
+                    set.Add(id);
+            }
+            if (Debug.isDebugBuild)
+                Debug.Log($"[CraftingWorld] LoadRecipeKnowledge: player={clientId} count={set.Count}");
+        }
     }
 }
+=======

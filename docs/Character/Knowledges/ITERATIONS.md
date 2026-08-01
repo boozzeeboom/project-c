@@ -145,3 +145,24 @@
 - `QuestSaveData.cs` — knownRecipes List<int> → List<string>
 - `CraftingProgressController.cs` — activeRecipeId null-check
 
+---
+
+## Итерация от 2026-08-03: V3.1–V3.11 — Полная интеграция Knowledge System V3
+
+**Задача:** Реализация шагов V3.1–V3.11 плана — KnowledgeManager, KnowledgeRevealTrigger, knowledge-фильтры UI, toast, editor UX.
+
+**Коммит:** `8605b008` — T-KNOW-V3: полная интеграция
+
+**Изменения (11 файлов: 7 modified + 4 new):**
+- **NEW** `Knowledge/KnowledgeManager.cs` — POCO-синглтон, Unlock/UnlockAll + SavePlayer + SendSnapshots
+- **NEW** `Knowledge/KnowledgeRevealTrigger.cs` — server-authoritative MonoBehaviour trigger zone
+- **NEW** `Knowledge/KnowledgeToast.cs` — UI toast с diff до/после для 4 типов знаний
+- **NEW** `Knowledge/Editor/KnowledgeRevealTriggerEditor.cs` — кастомный инспектор
+- `Skills/UI/SkillTreeWindow.cs` — ApplyFilterAndSearch: +IsSkillVisible knowledge gate
+- `Skills/UI/SocialSkillTreeWindow.cs` — ApplyFilterAndSearch: +IsSkillVisible knowledge gate
+- `UI/Client/CharacterWindow.cs` — knowledge gate в social-колонке RefreshSkillsCache
+- `Skills/SkillsServer.cs` — OnNetworkSpawn: +KnowledgeManager, OnNetworkDespawn: +Reset
+- `Skills/SkillsClientState.cs` — OnSkillsSnapshotReceived → SkillInputService.SetKnownSkills
+- `Crafting/UI/CraftingWindow.cs` — GetRecipeDisplayList: knowledge gate + live-ребилд по OnRecipeKnowledgeUpdated
+- `docs/Character/Knowledges/ITERATIONS.md` — запись итерации V3.0
+

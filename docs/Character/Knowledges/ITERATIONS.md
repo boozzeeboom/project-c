@@ -36,3 +36,41 @@
 
 **Оценка:** 12 шагов, ~19 файлов (3 новых), ~12-14 часов.
 **Статус:** Анализ завершён, ожидает approval перед реализацией.
+
+## Итерация от 2026-08-01: V2 Implementation — Phase A (Data + Server)
+
+**Задача:** Реализация Фазы A плана из `05_KNOWLEDGE_SYSTEM_V2_RESEARCH_REVIEW.md`
+
+**Коммиты:**
+- `2bbd5571` — T-KNOWLEDGE-V2 Phase A: skills/recipes knowledge, death loss, CraftingWorld gates
+- `c1ece4bc` — T-KNOWLEDGE-V2 A13: death knowledge loss hook in PlayerTarget.TriggerDeathRespawn
+
+**Изменения (17 файлов: 12 modified + 5 new):**
+
+| Файл | Изменение |
+|------|-----------|
+| `Scripts/Skills/SkillNodeConfig.cs` | +enum KnowledgeUnlockType, +3 поля |
+| `Scripts/Crafting/RecipeData.cs` | +enum RecipeKnowledgeUnlockType, +3 поля + свойства |
+| `Scripts/Stats/Persistence/SkillsSave.cs` | +knownSkillIds (backward-compat) |
+| `Quests/Persistence/QuestSaveData.cs` | +knownRecipes |
+| `Scripts/Skills/SkillsWorld.cs` | +_knownPerPlayer, +5 knowledge-методов, +BuildSaveData/LoadPlayer |
+| `Scripts/Skills/Dto/SkillsDto.cs` | +knownSkillIds, refactor NetworkSerialize |
+| `Scripts/Skills/SkillsClientState.cs` | +KnownSkillIds, +handle knownSkillIds |
+| `Scripts/Skills/SkillsServer.cs` | SendSnapshotToOwner включает knownSkillIds |
+| `Scripts/Crafting/CraftingWorld.cs` | +_knownRecipes, +7 knowledge-методов |
+| `Scripts/Crafting/CraftingServer.cs` | StartCraftRpc: +IsRecipeKnown gate, +AllowedRecipes gate |
+| `Quests/Core/QuestWorld.cs` | +ApplyDeathKnowledgeLoss, +Shuffle, +knownRecipes persist |
+| `Scripts/Combat/Implementations/PlayerTarget.cs` | +ApplyDeathKnowledgeLoss(), hook в TriggerDeathRespawn |
+| **NEW** `Scripts/Knowledge/KnowledgeLossConfig.cs` | SO конфига потери знаний |
+| **NEW** `Scripts/Knowledge/FactionDefinition.cs` | SO данных фракции |
+| **NEW** `Scripts/Knowledge/FactionCatalog.cs` | каталог фракций из Resources |
+| **NEW** `Scripts/Crafting/Dto/RecipeKnowledgeDto.cs` | DTO для сети |
+| **NEW** `Scripts/Crafting/RecipeKnowledgeClientState.cs` | client-side state |
+
+**Оставшиеся задачи:**
+- NMC auto-spawn RecipeKnowledgeClientState
+- NetworkPlayer ReceiveRecipeKnowledgeTargetRpc
+- QuestServer SendRecipeKnowledgeToClient
+- SO-ассеты: KnowledgeLossConfig.asset, FactionDefinition для каждой фракции
+- Фаза B (UI): вкладка «Знания» в CharacterWindow
+

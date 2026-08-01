@@ -66,7 +66,7 @@ namespace ProjectC.Quests.Persistence
         public List<int> knownFactions = new List<int>();   // FactionId как int для JsonUtility
         public List<string> knownNpcs = new List<string>();
 
-        // === T-KNOWLEDGE-V2: Recipe knowledge ===
-        public List<int> knownRecipes = new List<int>();    // recipeId (int, из CraftingWorld.RegisterRecipe)
+        // === T-KNOWLEDGE-V3: Recipe knowledge (string keys) ===
+        public List<string> knownRecipes = new List<string>();  // recipeId (string, V3 stable key)
     }
 }

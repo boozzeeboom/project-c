@@ -11,14 +11,13 @@ using ProjectC.Core;
 
 namespace ProjectC.Crafting
 {
-    /// <summary>Server-only. Holds all recipe -> int-id mapping + all active station jobs.
+    /// <summary>Server-only. Holds all recipe -> string-id mapping + all active station jobs.
     /// Created/initialized by CraftingServer.OnNetworkSpawn; Shutdown by OnNetworkDespawn.</summary>
     public static class CraftingWorld
     {
-        // ----- Recipe registry (recipeData -> compact int id, like InventoryWorld._itemDatabase) -----
-        private static Dictionary<int, RecipeData> _recipesById = new Dictionary<int, RecipeData>();
-        private static Dictionary<RecipeData, int> _idsByRecipe = new Dictionary<RecipeData, int>();
-        private static int _nextRecipeId = 1;
+        // ----- Recipe registry (recipeId (string) -> recipe, V3 stable key) -----
+        private static Dictionary<string, RecipeData> _recipesById = new Dictionary<string, RecipeData>();
+        private static Dictionary<RecipeData, string> _idsByRecipe = new Dictionary<RecipeData, string>();
 
         // T2: Item registry удалён — используем InventoryWorld.Instance.GetOrRegisterItemId() / GetItemDefinition()
         // во избежание двойного маппинга ItemData→int.
@@ -31,8 +30,8 @@ namespace ProjectC.Crafting
         // ----- Job registry (stationNetId -> CraftingJob, server-only state) -----
         private static Dictionary<ulong, CraftingJob> _jobs = new Dictionary<ulong, CraftingJob>();
 
-        // ----- T-KNOWLEDGE-V2: recipe knowledge (per-player) -----
-        private static Dictionary<ulong, HashSet<int>> _knownRecipes = new Dictionary<ulong, HashSet<int>>();
+        // ----- T-KNOWLEDGE-V3: recipe knowledge (per-player) — string key -----
+        private static Dictionary<ulong, HashSet<string>> _knownRecipes = new Dictionary<ulong, HashSet<string>>();
 
         public static bool IsInitialized { get; private set; }
 
@@ -47,7 +46,6 @@ namespace ProjectC.Crafting
             _stations.Clear();
             _jobs.Clear();
             _knownRecipes.Clear();
-            _nextRecipeId = 1;
             IsInitialized = true;
         }
 
@@ -62,20 +60,25 @@ namespace ProjectC.Crafting
         }
 
         // ==========================================================
-        // Recipe registry
+        // Recipe registry (V3: string recipeId)
         // ==========================================================
-        /// <summary>Register a RecipeData asset. Returns compact int id (used in DTOs).</summary>
-        public static int RegisterRecipe(RecipeData recipe)
+        /// <summary>Register a RecipeData asset. Returns stable string recipeId.</summary>
+        public static string RegisterRecipe(RecipeData recipe)
         {
-            if (recipe == null) return -1;
-            if (_idsByRecipe.TryGetValue(recipe, out int existing)) return existing;
-            int id = _nextRecipeId++;
+            if (recipe == null) return null;
+            if (string.IsNullOrEmpty(recipe.RecipeId))
+            {
+                Debug.LogError($"[CraftingWorld] RegisterRecipe: recipe '{recipe.name}' has empty recipeId — skipping.");
+                return null;
+            }
+            if (_idsByRecipe.TryGetValue(recipe, out string existing)) return existing;
+            string id = recipe.RecipeId;
             _idsByRecipe[recipe] = id;
             _recipesById[id] = recipe;
             return id;
         }
 
-        public static RecipeData GetRecipe(int recipeId)
+        public static RecipeData GetRecipe(string recipeId)
         {
             _recipesById.TryGetValue(recipeId, out var r);
             return r;
@@ -145,7 +148,7 @@ namespace ProjectC.Crafting
                             {
                                 PlayerId = job.OwnerClientId,
                                 StationNetId = job.StationNetId,
-                                RecipeId = job.RecipeId.ToString(),
+                                RecipeId = job.RecipeId ?? "",
                                 ResultItemName = job.ResultItemName ?? "",
                                 Quantity = totalQty,
                                 TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds()
@@ -157,26 +160,28 @@ namespace ProjectC.Crafting
         }
 
         // ==========================================================
-        // T-KNOWLEDGE-V2: Recipe knowledge (per-player)
+        // T-KNOWLEDGE-V3: Recipe knowledge (per-player) — string key
         // ==========================================================
 
-        private static HashSet<int> GetKnownRecipeSet(ulong clientId)
+        private static HashSet<string> GetKnownRecipeSet(ulong clientId)
         {
             if (!_knownRecipes.TryGetValue(clientId, out var set))
             {
-                set = new HashSet<int>();
+                set = new HashSet<string>();
                 _knownRecipes[clientId] = set;
             }
             return set;
         }
 
-        public static bool IsRecipeKnown(ulong clientId, int recipeId)
+        public static bool IsRecipeKnown(ulong clientId, string recipeId)
         {
+            if (string.IsNullOrEmpty(recipeId)) return false;
             return GetKnownRecipeSet(clientId).Contains(recipeId);
         }
 
-        public static bool UnlockRecipeKnowledge(ulong clientId, int recipeId)
+        public static bool UnlockRecipeKnowledge(ulong clientId, string recipeId)
         {
+            if (string.IsNullOrEmpty(recipeId)) return false;
             var set = GetKnownRecipeSet(clientId);
             if (set.Add(recipeId))
             {
@@ -187,7 +192,7 @@ namespace ProjectC.Crafting
             return false;
         }
 
-        public static HashSet<int> GetKnownRecipeIds(ulong clientId)
+        public static HashSet<string> GetKnownRecipeIds(ulong clientId)
             => GetKnownRecipeSet(clientId);
 
         /// <summary>
@@ -199,7 +204,7 @@ namespace ProjectC.Crafting
             var set = GetKnownRecipeSet(clientId);
             if (set.Count == 0) return 0;
 
-            var toRemove = new List<int>();
+            var toRemove = new List<string>();
             foreach (var id in set)
             {
                 if (rng.NextDouble() < lossChance)
@@ -214,21 +219,24 @@ namespace ProjectC.Crafting
         }
 
         /// <summary>Build knownRecipeIds list for persistence (called by QuestWorld.BuildSaveData).</summary>
-        public static List<int> BuildRecipeKnowledgeSave(ulong clientId)
+        public static List<string> BuildRecipeKnowledgeSave(ulong clientId)
         {
             var set = GetKnownRecipeSet(clientId);
-            return new List<int>(set);
+            return new List<string>(set);
         }
 
         /// <summary>Load knownRecipeIds from persistence (called by QuestWorld.LoadPlayer).</summary>
-        public static void LoadRecipeKnowledge(ulong clientId, List<int> knownRecipeIds)
+        public static void LoadRecipeKnowledge(ulong clientId, List<string> knownRecipeIds)
         {
             var set = GetKnownRecipeSet(clientId);
             set.Clear();
             if (knownRecipeIds != null)
             {
                 foreach (var id in knownRecipeIds)
-                    set.Add(id);
+                {
+                    if (!string.IsNullOrEmpty(id))
+                        set.Add(id);
+                }
             }
             if (Debug.isDebugBuild)
                 Debug.Log($"[CraftingWorld] LoadRecipeKnowledge: player={clientId} count={set.Count}");

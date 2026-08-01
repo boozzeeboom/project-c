@@ -1,6 +1,6 @@
-// Project C: Crafting — T-KNOWLEDGE-V2
-// RecipeKnowledgeDto: server -> client sync payload for known recipe IDs.
-// INetworkSerializable struct. Design: docs/Character/Knowledges/05_KNOWLEDGE_SYSTEM_V2_RESEARCH_REVIEW.md §4.5
+// Project C: Crafting — T-KNOWLEDGE-V3
+// RecipeKnowledgeDto: server -> client sync payload for known recipe IDs (string keys).
+// INetworkSerializable struct. Design: docs/Character/Knowledges/07_KNOWLEDGE_SYSTEM_V3_INTEGRATION_PLAN.md
 
 using System;
 using Unity.Netcode;
@@ -10,7 +10,7 @@ namespace ProjectC.Crafting.Dto
     [Serializable]
     public struct RecipeKnowledgeDto : INetworkSerializable, IEquatable<RecipeKnowledgeDto>
     {
-        public int[] knownRecipeIds;
+        public string[] knownRecipeIds;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -18,14 +18,14 @@ namespace ProjectC.Crafting.Dto
             serializer.SerializeValue(ref len);
             if (serializer.IsReader)
             {
-                knownRecipeIds = new int[len];
+                knownRecipeIds = new string[len];
             }
             for (int i = 0; i < len; i++)
             {
-                int val = knownRecipeIds[i];
+                string val = knownRecipeIds[i] ?? "";
                 serializer.SerializeValue(ref val);
                 if (serializer.IsReader)
-                    knownRecipeIds[i] = val;
+                    knownRecipeIds[i] = string.IsNullOrEmpty(val) ? null : val;
             }
         }
 

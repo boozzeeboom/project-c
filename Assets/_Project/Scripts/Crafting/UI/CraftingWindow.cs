@@ -40,7 +40,7 @@ namespace ProjectC.Crafting.UI
         // state
         private ulong _currentStationNetId;
         private CraftingStationConfig _currentConfig;
-        private int _selectedRecipeId = -1;
+        private string _selectedRecipeKey = null;
         private bool _built;
         private bool _subscribed;
 
@@ -208,7 +208,7 @@ namespace ProjectC.Crafting.UI
             // Тост прогресса продолжает получать snapshot'ы даже при закрытом окне.
             _currentStationNetId = 0;
             _currentConfig = null;
-            _selectedRecipeId = -1;
+            _selectedRecipeKey = null;
             IsOpen = false;
         }
 
@@ -225,7 +225,7 @@ namespace ProjectC.Crafting.UI
 
             _currentStationNetId = newStationNetId;
             _currentConfig = newConfig;
-            _selectedRecipeId = -1;
+            _selectedRecipeKey = null;
 
             // Reset UI
             if (_stationNameLabel != null) _stationNameLabel.text = newConfig != null ? newConfig.DisplayName : "Станция";
@@ -280,19 +280,21 @@ namespace ProjectC.Crafting.UI
             _recipeList.selectionChanged += OnRecipeSelected;
         }
 
-        private List<KeyValuePair<int, string>> GetRecipeDisplayList()
+        private List<KeyValuePair<string, string>> GetRecipeDisplayList()
         {
-            var list = new List<KeyValuePair<int, string>>();
+            var list = new List<KeyValuePair<string, string>>();
             if (_currentConfig == null) return list;
             for (int i = 0; i < _currentConfig.AllowedRecipes.Count; i++)
             {
                 var r = _currentConfig.AllowedRecipes[i];
                 if (r == null) continue;
-                int recipeId = CraftingWorld.RegisterRecipe(r);
+                // V3: use stable string recipeId from RecipeClientRegistry (NOT CraftingWorld.RegisterRecipe on client!)
+                string recipeId = RecipeClientRegistry.GetRecipeId(r);
+                if (string.IsNullOrEmpty(recipeId)) continue;
                 string displayName = CraftingClientState.Instance != null
                     ? CraftingClientState.Instance.GetRecipeDisplayName(recipeId)
                     : r.DisplayName;
-                list.Add(new KeyValuePair<int, string>(recipeId, $"{displayName} ({r.CraftSeconds:0.#}с)"));
+                list.Add(new KeyValuePair<string, string>(recipeId, $"{displayName} ({r.CraftSeconds:0.#}с)"));
             }
             return list;
         }
@@ -301,12 +303,12 @@ namespace ProjectC.Crafting.UI
         {
             foreach (var s in sel)
             {
-                if (s is KeyValuePair<int, string> pair)
+                if (s is KeyValuePair<string, string> pair)
                 {
-                    _selectedRecipeId = pair.Key;
+                    _selectedRecipeKey = pair.Key;
                     var recipe = CraftingClientState.Instance != null
-                        ? CraftingClientState.Instance.GetRecipe(_selectedRecipeId)
-                        : CraftingWorld.GetRecipe(_selectedRecipeId);
+                        ? CraftingClientState.Instance.GetRecipe(_selectedRecipeKey)
+                        : CraftingWorld.GetRecipe(_selectedRecipeKey);
                     if (recipe != null) BuildIngredientsPanel(recipe);
                     return;
                 }
@@ -414,7 +416,7 @@ namespace ProjectC.Crafting.UI
                 _messageLabel.text = "✅ Готово: " + snap.resultItemName + " — нажмите «Забрать»";
             }
             // Message при Empty после Collect
-            if (state == CraftingJobState.Empty && snap.activeRecipeId == -1 && _messageLabel != null)
+            if (state == CraftingJobState.Empty && string.IsNullOrEmpty(snap.activeRecipeId) && _messageLabel != null)
             {
                 _messageLabel.text = "Выберите рецепт и добавьте ингредиенты";
             }
@@ -465,13 +467,13 @@ namespace ProjectC.Crafting.UI
                     _startBtn.style.display = DisplayStyle.Flex;
                     _cancelBtn.style.display = DisplayStyle.None;
                     _collectBtn.style.display = DisplayStyle.None;
-                    _startBtn.SetEnabled(_selectedRecipeId >= 0);
+                    _startBtn.SetEnabled(!string.IsNullOrEmpty(_selectedRecipeKey));
                     break;
                 case CraftingJobState.Buffered:
                     _startBtn.style.display = DisplayStyle.Flex;
                     _cancelBtn.style.display = DisplayStyle.Flex;
                     _collectBtn.style.display = DisplayStyle.None;
-                    _startBtn.SetEnabled(_selectedRecipeId >= 0);
+                    _startBtn.SetEnabled(!string.IsNullOrEmpty(_selectedRecipeKey));
                     break;
                 case CraftingJobState.InProgress:
                     _startBtn.style.display = DisplayStyle.None;
@@ -493,8 +495,8 @@ namespace ProjectC.Crafting.UI
 
         private void OnStartClicked()
         {
-            if (_currentStationNetId == 0 || _selectedRecipeId < 0) return;
-            CraftingClientState.Instance?.RequestStartCraft(_currentStationNetId, _selectedRecipeId);
+            if (_currentStationNetId == 0 || string.IsNullOrEmpty(_selectedRecipeKey)) return;
+            CraftingClientState.Instance?.RequestStartCraft(_currentStationNetId, _selectedRecipeKey);
             if (_messageLabel != null) _messageLabel.text = "Крафт запущен…";
         }
 

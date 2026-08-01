@@ -51,8 +51,8 @@ namespace ProjectC.Crafting
         /// <summary>Кеш последнего snapshot'а для каждой подписанной станции. UI читает отсюда при открытии окна.</summary>
         private readonly Dictionary<ulong, CraftingSnapshotDto> _snapshots = new Dictionary<ulong, CraftingSnapshotDto>();
 
-        /// <summary>T3: клиентский кеш рецептов (загружается из Resources один раз).</summary>
-        private readonly Dictionary<int, RecipeData> _recipeCache = new Dictionary<int, RecipeData>();
+        /// <summary>T3: клиентский кеш рецептов (загружается из Resources один раз). V3: string key.</summary>
+        private readonly Dictionary<string, RecipeData> _recipeCache = new Dictionary<string, RecipeData>();
         private bool _recipesLoaded;
 
         /// <summary>Текущая станция, с которой работает игрок (выбрана через F).</summary>
@@ -64,7 +64,7 @@ namespace ProjectC.Crafting
         /// <summary>Получить snapshot. Если нет — возвращает default (state=Empty).</summary>
         public CraftingSnapshotDto GetSnapshot(ulong stationNetId)
         {
-            return _snapshots.TryGetValue(stationNetId, out var s) ? s : new CraftingSnapshotDto { stationNetId = stationNetId, jobState = (byte)CraftingJobState.Empty, activeRecipeId = -1 };
+            return _snapshots.TryGetValue(stationNetId, out var s) ? s : new CraftingSnapshotDto { stationNetId = stationNetId, jobState = (byte)CraftingJobState.Empty, activeRecipeId = null };
         }
 
         // ==========================================================
@@ -117,7 +117,7 @@ namespace ProjectC.Crafting
             CraftingServer.Instance.AddIngredientRpc(stationNetId, itemId, quantity, (byte)source);
         }
 
-        public void RequestStartCraft(ulong stationNetId, int recipeId)
+        public void RequestStartCraft(ulong stationNetId, string recipeId)
         {
             if (CraftingServer.Instance == null) return;
             // Restart timeout — InProgress должен прийти в течение _serverTimeoutSec
@@ -144,23 +144,24 @@ namespace ProjectC.Crafting
             foreach (var r in all)
             {
                 if (r == null) continue;
-                int recipeId = CraftingWorld.RegisterRecipe(r);
+                string recipeId = r.RecipeId;
+                if (string.IsNullOrEmpty(recipeId)) continue;
                 if (!_recipeCache.ContainsKey(recipeId))
                     _recipeCache[recipeId] = r;
             }
             _recipesLoaded = true;
         }
 
-        /// <summary>Получить RecipeData по id (из клиентского кеша).</summary>
-        public RecipeData GetRecipe(int recipeId)
+        /// <summary>Получить RecipeData по id (из клиентского кеша). V3: string key.</summary>
+        public RecipeData GetRecipe(string recipeId)
         {
             EnsureRecipesLoaded();
             _recipeCache.TryGetValue(recipeId, out var r);
             return r;
         }
 
-        /// <summary>Получить отображаемое имя рецепта (для UI).</summary>
-        public string GetRecipeDisplayName(int recipeId)
+        /// <summary>Получить отображаемое имя рецепта (для UI). V3: string key.</summary>
+        public string GetRecipeDisplayName(string recipeId)
         {
             var r = GetRecipe(recipeId);
             return r != null ? r.DisplayName : "?";

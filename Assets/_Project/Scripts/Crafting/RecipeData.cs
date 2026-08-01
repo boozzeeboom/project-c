@@ -48,15 +48,17 @@ namespace ProjectC.Crafting
     }
 
     /// <summary>
-    /// T-KNOWLEDGE-V2: способ открытия знания о рецепте.
-    /// Blueprint (default) — текущее поведение: рецепт доступен через станцию.
+    /// T-KNOWLEDGE-V3: способ открытия знания о рецепте.
+    /// None = всегда виден (включая все старые ассеты с value=0 — backward compat).
+    /// Blueprint = скрыт, открывается чертежом/предметом.
     /// </summary>
     public enum RecipeKnowledgeUnlockType : byte
     {
-        Blueprint = 0,   // чертёж/предмет (по умолчанию)
-        NpcTeach = 1,    // обучение у NPC
-        QuestReward = 2, // награда квеста (совпадает с QuestUnlockType.Recipe)
-        Station = 3,     // знание при первом использовании станции
+        None = 0,        // всегда виден (backward compat: старые ассеты со значением 0)
+        Blueprint = 1,   // скрыт, открывается чертежом/предметом
+        NpcTeach = 2,    // скрыт, открывается обучением у NPC
+        QuestReward = 3, // скрыт, открывается наградой квеста
+        Station = 4,     // скрыт, открывается первым использованием станции
     }
 
     /// <summary>Один ингредиент рецепта (что и сколько нужно положить в буфер).</summary>
@@ -109,9 +111,13 @@ namespace ProjectC.Crafting
         [Tooltip("Сколько секунд серверного времени нужно для крафта. Умножается на station.craftSpeedMultiplier.")]
         [Min(1f)] [SerializeField] private float _craftSeconds = 600f;
 
-        [Header("Knowledge Unlock (T-KNOWLEDGE-V2)")]
-        [Tooltip("Как игрок узнаёт о рецепте. Blueprint = доступен через станцию по умолчанию.")]
-        [SerializeField] private RecipeKnowledgeUnlockType _knowledgeUnlockType = RecipeKnowledgeUnlockType.Blueprint;
+        [Header("Identity (V3)")]
+        [Tooltip("Стабильный строковый id рецепта (например 'recipe_health_potion'). Обязателен для knowledge-системы.")]
+        [SerializeField] private string _recipeId = "";
+
+        [Header("Knowledge Unlock (T-KNOWLEDGE-V3)")]
+        [Tooltip("Как игрок узнаёт о рецепте. None = виден всегда. Blueprint/NpcTeach/QuestReward/Station = скрыт до открытия.")]
+        [SerializeField] private RecipeKnowledgeUnlockType _knowledgeUnlockType = RecipeKnowledgeUnlockType.None;
 
         [Tooltip("ID источника: предмет / NPC / квест / станция.")]
         [SerializeField] private string _knowledgeUnlockId = "";
@@ -142,6 +148,7 @@ namespace ProjectC.Crafting
         public int RequiredSkillLevel => _requiredSkillLevel;
         public SkillType RequiredSkill => _requiredSkill;
 
+        public string RecipeId => _recipeId;
         public RecipeKnowledgeUnlockType KnowledgeUnlockType => _knowledgeUnlockType;
         public string KnowledgeUnlockId => _knowledgeUnlockId;
         public string KnowledgeUnlockDescription => _knowledgeUnlockDescription;
@@ -211,6 +218,9 @@ namespace ProjectC.Crafting
                     }
                 }
             }
+
+            if (string.IsNullOrEmpty(_recipeId))
+                Debug.LogWarning("[RecipeData] " + name + ": recipeId пуст. Knowledge-система не сможет идентифицировать рецепт.");
 
             // Сбрасываем кеш id — пере-ResolveItemIds будет на сервере
             _ingredientItemIds = null;

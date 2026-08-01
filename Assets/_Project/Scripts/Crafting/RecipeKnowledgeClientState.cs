@@ -1,7 +1,7 @@
-// Project C: Crafting — T-KNOWLEDGE-V2
-// RecipeKnowledgeClientState: client-side projection of known recipe IDs.
+// Project C: Crafting — T-KNOWLEDGE-V3
+// RecipeKnowledgeClientState: client-side projection of known recipe IDs (string keys).
 // Auto-spawned singleton (pattern: SkillsClientState, CraftingClientState).
-// Design: docs/Character/Knowledges/05_KNOWLEDGE_SYSTEM_V2_RESEARCH_REVIEW.md §4.5
+// Design: docs/Character/Knowledges/07_KNOWLEDGE_SYSTEM_V3_INTEGRATION_PLAN.md
 
 using System;
 using System.Collections.Generic;
@@ -16,11 +16,11 @@ namespace ProjectC.Crafting
 
         [SerializeField] private bool _dontDestroyOnLoad = true;
 
-        // Кеш известных recipe IDs (int, из CraftingWorld.RegisterRecipe)
-        public HashSet<int> KnownRecipeIds { get; private set; } = new HashSet<int>();
+        // Кеш известных recipe IDs (string, V3 stable key)
+        public HashSet<string> KnownRecipeIds { get; private set; } = new HashSet<string>();
 
         // Событие: сервер прислал обновлённый список известных рецептов
-        public event Action<HashSet<int>> OnRecipeKnowledgeUpdated;
+        public event Action<HashSet<string>> OnRecipeKnowledgeUpdated;
 
         private void Awake()
         {
@@ -28,7 +28,7 @@ namespace ProjectC.Crafting
             {
                 Instance = this;
                 if (_dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
-                RecipeClientRegistry.EnsureLoaded(); // T-KNOWLEDGE-V2: preload recipe registry
+                RecipeClientRegistry.EnsureLoaded(); // T-KNOWLEDGE-V3: preload recipe registry
             }
             else if (Instance != this)
             {
@@ -47,8 +47,8 @@ namespace ProjectC.Crafting
         public void OnRecipeKnowledgeReceived(RecipeKnowledgeDto dto)
         {
             KnownRecipeIds = dto.knownRecipeIds != null
-                ? new HashSet<int>(dto.knownRecipeIds)
-                : new HashSet<int>();
+                ? new HashSet<string>(dto.knownRecipeIds)
+                : new HashSet<string>();
             OnRecipeKnowledgeUpdated?.Invoke(KnownRecipeIds);
             if (Debug.isDebugBuild)
             {

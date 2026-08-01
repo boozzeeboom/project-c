@@ -257,7 +257,7 @@ namespace ProjectC.UI.Client
         // T-KNOWLEDGE-V2: recipe knowledge row
         private struct RecipeKnowledgeItem
         {
-            public int recipeId;
+            public string recipeId;
             public string displayName;
         }
 
@@ -1974,7 +1974,7 @@ namespace ProjectC.UI.Client
                 RefreshSkillsKnowledgeCache();
             }
 
-            private void HandleRecipeKnowledgeSnapshot(HashSet<int> knownRecipes)
+            private void HandleRecipeKnowledgeSnapshot(HashSet<string> knownRecipes)
             {
                 RefreshRecipesKnowledgeCache();
             }
@@ -2023,7 +2023,7 @@ namespace ProjectC.UI.Client
                     _recipesKnowledgeCache.Add(new RecipeKnowledgeItem
                     {
                         recipeId = recipeId,
-                        displayName = recipe.DisplayName ?? $"Recipe #{recipeId}",
+                        displayName = recipe.DisplayName ?? recipeId,
                     });
                 }
 

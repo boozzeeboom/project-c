@@ -224,7 +224,7 @@ namespace ProjectC.Crafting
         private void HandleSnapshotForToast(ProjectC.Crafting.CraftingSnapshotDto snap)
         {
             if ((ProjectC.Crafting.CraftingJobState)snap.jobState == ProjectC.Crafting.CraftingJobState.Empty
-                && snap.activeRecipeId == -1)
+                && string.IsNullOrEmpty(snap.activeRecipeId))
             {
                 if (_activeCoroutine != null) StopCoroutine(_activeCoroutine);
                 _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);

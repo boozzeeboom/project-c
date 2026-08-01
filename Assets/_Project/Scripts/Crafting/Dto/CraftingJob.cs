@@ -8,7 +8,7 @@ namespace ProjectC.Crafting
     {
         public ulong StationNetId;
         public ulong OwnerClientId;
-        public int RecipeId;               // -1 = none
+        public string RecipeId;            // null = none (V3: string key)
         public CraftingJobState State;
         public float StartTime;            // NetworkManager.ServerTime.Time when started
         public float Duration;             // recipe.CraftSeconds / station.SpeedMultiplier
@@ -25,7 +25,7 @@ namespace ProjectC.Crafting
         public void Reset()
         {
             OwnerClientId = 0;
-            RecipeId = -1;
+            RecipeId = null;
             State = CraftingJobState.Empty;
             StartTime = 0f;
             Duration = 0f;

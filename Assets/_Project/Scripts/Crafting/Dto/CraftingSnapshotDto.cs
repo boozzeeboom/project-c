@@ -9,7 +9,7 @@ namespace ProjectC.Crafting
         public ulong stationNetId;
         public byte jobState;          // CraftingJobState
         public ulong ownerClientId;    // 0 = no owner
-        public int activeRecipeId;     // -1 = none
+        public string activeRecipeId;  // null = none (V3: string key)
         public float startTime;        // server time (NetworkManager.ServerTime.Time)
         public float duration;         // seconds
         public float progress;         // T-C07: server-computed 0..1, client uses directly (fixes clock drift)
@@ -22,7 +22,9 @@ namespace ProjectC.Crafting
             s.SerializeValue(ref stationNetId);
             s.SerializeValue(ref jobState);
             s.SerializeValue(ref ownerClientId);
-            s.SerializeValue(ref activeRecipeId);
+            var recipeIdStr = activeRecipeId ?? "";
+            s.SerializeValue(ref recipeIdStr);
+            if (s.IsReader) activeRecipeId = string.IsNullOrEmpty(recipeIdStr) ? null : recipeIdStr;
             s.SerializeValue(ref startTime);
             s.SerializeValue(ref duration);
             s.SerializeValue(ref progress);

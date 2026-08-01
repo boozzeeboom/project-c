@@ -122,7 +122,7 @@ namespace ProjectC.Crafting
                 // Race fix: станция ещё не зарегистрирована (ScenePlacedObjectSpawner спавнит с задержкой).
                 // Отправляем пустой snapshot (state=Empty) — клиент не зависнет в timeout, UI обновится.
                 Debug.LogWarning($"[CraftingServer] Subscribe: station {stationNetId} not in CraftingWorld yet (race). Sending empty snapshot.");
-                var emptySnap = new CraftingSnapshotDto { stationNetId = stationNetId, jobState = (byte)CraftingJobState.Empty, activeRecipeId = -1 };
+                var emptySnap = new CraftingSnapshotDto { stationNetId = stationNetId, jobState = (byte)CraftingJobState.Empty, activeRecipeId = null };
                 SendSnapshotToClient(clientId, emptySnap);
                 return;
             }
@@ -220,9 +220,9 @@ namespace ProjectC.Crafting
             if (_debugMode) Debug.Log($"[CraftingServer] AddIngredient: client={clientId} station={stationNetId} itemId={itemId} qty={quantity} item={itemData.itemName}");
         }
 
-        /// <summary>Запустить крафт: buffer -> committed, state -> InProgress.</summary>
+        /// <summary>Запустить крафт: buffer -> committed, state -> InProgress. V3: string recipeId.</summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void StartCraftRpc(ulong stationNetId, int recipeId, RpcParams rpcParams = default)
+        public void StartCraftRpc(ulong stationNetId, string recipeId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.RateLimited, "Слишком частые операции", stationNetId)); return; }
@@ -530,7 +530,7 @@ namespace ProjectC.Crafting
             var knownIds = CraftingWorld.GetKnownRecipeIds(clientId);
             var dto = new Dto.RecipeKnowledgeDto
             {
-                knownRecipeIds = new List<int>(knownIds).ToArray(),
+                knownRecipeIds = new List<string>(knownIds).ToArray(),
             };
             netPlayer.ReceiveRecipeKnowledgeTargetRpc(dto);
             if (_debugMode) Debug.Log($"[CraftingServer] SendRecipeKnowledge: client={clientId} known={dto.knownRecipeIds.Length}");
@@ -605,7 +605,7 @@ namespace ProjectC.Crafting
         private CraftingSnapshotDto BuildSnapshot(ulong stationNetId)
         {
             var job = CraftingWorld.GetJob(stationNetId);
-            if (job == null) return new CraftingSnapshotDto { stationNetId = stationNetId, jobState = (byte)CraftingJobState.Empty, activeRecipeId = -1 };
+            if (job == null) return new CraftingSnapshotDto { stationNetId = stationNetId, jobState = (byte)CraftingJobState.Empty, activeRecipeId = null };
 
             // Server-computed progress (fixes clock drift between ServerTime.Time and Time.realtimeSinceStartup)
             float progress = 0f;

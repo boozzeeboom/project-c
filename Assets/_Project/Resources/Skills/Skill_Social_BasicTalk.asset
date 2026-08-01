@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439 \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440"
   description: Tactical bonus
   icon: {fileID: 0}
-  category: 0
+  category: 1
   discipline: 0
   subtype: 0
   requiredWeaponMask: 0
@@ -33,7 +33,9 @@ MonoBehaviour:
   _requiredIntelligenceTier: 0
   treeX: 100
   treeY: 200
+  _allowSelfDamage: 0
   isActive: 0
+  cooldownSeconds: 0.5
   attackClip: {fileID: 0}
   attackClipSpeed: 1
   aoeFormula: 0
@@ -45,3 +47,19 @@ MonoBehaviour:
   throwRange: 25
   throwScatter: 3
   throwCount: 1
+  rangedMaxRange: 30
+  rangedHitChance: 70
+  castVfxPrefab: {fileID: 0}
+  castSpawnPoint: 0
+  castVfxDuration: 0.3
+  castVfxDelay: 0
+  projectileVfxPrefab: {fileID: 0}
+  projectileSpeed: 30
+  projectileArcHeight: 0
+  projectileTrailMaterial: {fileID: 0}
+  impactVfxPrefab: {fileID: 0}
+  impactScaleByDamage: 0
+  impactColorByDamageType: 1
+  impactVfxDuration: 0.5
+  twoDVfxAnimation: {fileID: 0}
+  twoDFps: 12

@@ -24,31 +24,13 @@ MonoBehaviour:
     description: 
     objectives:
     - objectiveId: 
-      objectiveType: 0
-      description: 
-      targetNpcId: Zipun
-      targetNpc: {fileID: 11400000, guid: 59409174383a88b47b03a3348fc9b073, type: 2}
-      itemTradeItemId: 
-      pickupItem: {fileID: 0}
-      requiredQuantity: 0
-      targetSceneId: 
-      targetPosition: {x: 0, y: 0, z: 0}
-      targetRadius: 0
-      targetEntityType: 
-      targetEntity: {fileID: 0}
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 0
-    - objectiveId: 
       objectiveType: 4
       description: 
-      targetNpcId: Zipun
-      targetNpc: {fileID: 11400000, guid: 59409174383a88b47b03a3348fc9b073, type: 2}
+      targetNpcId: 
+      targetNpc: {fileID: 0}
       itemTradeItemId: 
-      pickupItem: {fileID: 11400000, guid: dc03220f180edc9418e5a3996bd4c7c3, type: 2}
-      requiredQuantity: 0
+      pickupItem: {fileID: 11400000, guid: bb6444eab0664674b82a056989b8f4ee, type: 2}
+      requiredQuantity: 3
       targetSceneId: 
       targetPosition: {x: 0, y: 0, z: 0}
       targetRadius: 0
@@ -64,11 +46,7 @@ MonoBehaviour:
     nextStageId: 
   rewards:
     credits: 200
-    items:
-    - tradeItemId: 
-      pickupItem: {fileID: 0}
-      cargoItem: {fileID: 0}
-      count: 0
+    items: []
     cargoItems:
     - tradeItemId: 
       pickupItem: {fileID: 0}

@@ -683,6 +683,8 @@ namespace ProjectC.UI.Client
             InitSkillFilterChips();
             // T-INP-09: кнопка [ИЗУЧИТЬ НАВЫК] → SkillTreeWindow overlay
             InitOpenSkillTreeButton();
+            // T-SOC-01: кнопка [ИЗУЧИТЬ НАВЫК] (социальные) → SocialSkillTreeWindow overlay
+            InitOpenSocialSkillTreeButton();
             // T-CUS-06: кнопка [ИЗМЕНИТЬ ВНЕШНОСТЬ] → CustomisationWindow overlay (выбор М/Ж + L3/L4)
             InitOpenCustomisationButton();
 
@@ -2443,6 +2445,26 @@ namespace ProjectC.UI.Client
                     else if (Debug.isDebugBuild)
                     {
                         Debug.LogWarning("[CharacterWindow] SkillTreeWindow.Instance==null (auto-spawn not yet run)");
+                    }
+                });
+            }
+
+            /// <summary>T-SOC-01: кнопка [ИЗУЧИТЬ НАВЫК] в social-колонке → открывает SocialSkillTreeWindow overlay.</summary>
+            private void InitOpenSocialSkillTreeButton()
+            {
+                var root = _root;
+                if (root == null) return;
+                var btn = root.Q<VisualElement>("open-social-skill-tree-btn");
+                if (btn == null) return;
+                btn.RegisterCallback<ClickEvent>(_ => {
+                    var sstw = ProjectC.Skills.UI.SocialSkillTreeWindow.Instance;
+                    if (sstw != null)
+                    {
+                        sstw.Show();
+                    }
+                    else if (Debug.isDebugBuild)
+                    {
+                        Debug.LogWarning("[CharacterWindow] SocialSkillTreeWindow.Instance==null (auto-spawn not yet run)");
                     }
                 });
             }

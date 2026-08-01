@@ -152,6 +152,8 @@ namespace ProjectC.Core
             CreateSkillVfxService();
             // T-INP-09: SkillTreeWindow overlay
             CreateSkillTreeWindow();
+            // T-SOC-01: SocialSkillTreeWindow overlay
+            CreateSocialSkillTreeWindow();
             // T-INP-13: InputBindingsRuntime singleton (нужен ДО SkillInputService.Update polling)
             CreateInputBindingsRuntime();
             // T-INP-14: EscMenu + KeybindingsWindow (Phase 2.1)
@@ -640,6 +642,32 @@ namespace ProjectC.Core
             // в SkillTreeWindow.EnsureBuilt(). Let SkillTreeWindow клонирует сам через CloneTree + Add.
             go.AddComponent<SkillTreeWindow>();
             Debug.Log("[NMC] Created [SkillTreeWindow] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-SOC-01: Создать SocialSkillTreeWindow как root GameObject с UIDocument.
+        /// Упрощённый аналог CreateSkillTreeWindow — только социальные навыки, без биндов.
+        /// </summary>
+        private void CreateSocialSkillTreeWindow()
+        {
+            var existing = FindObjectsByType<SocialSkillTreeWindow>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] SocialSkillTreeWindow already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root SocialSkillTreeWindow in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[SocialSkillTreeWindow]");
+            var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();
+            doc.panelSettings = Resources.Load<UnityEngine.UIElements.PanelSettings>("UI/SkillTreePanelSettings");
+            go.AddComponent<SocialSkillTreeWindow>();
+            Debug.Log("[NMC] Created [SocialSkillTreeWindow] as root GameObject");
         }
 
         /// <summary>

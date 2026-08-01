@@ -104,6 +104,7 @@
     <ui:ScrollView name="skills-social-scroll" class="skills-scroll">
      <ui:VisualElement name="skills-social-container" class="skills-container" />
     </ui:ScrollView>
+    <ui:Label name="open-social-skill-tree-btn" text="ИЗУЧИТЬ НАВЫК" class="open-skill-tree-btn" />
    </ui:VisualElement>
   </ui:VisualElement>
 		

@@ -1,0 +1,372 @@
+/* SocialSkillTreeWindow — overlay styles.
+   Simplified copy of SkillTreeWindow.uss: no slot overview, no bind buttons.
+   All social skills are passive — no AOE formatting needed either.
+*/
+
+/* === Root container (full-screen overlay) === */
+.stw-root {
+    position: absolute !important;
+    top: 4% !important;
+    left: 50% !important;
+    translate: -50% 0 !important;
+    width: 880px !important;
+    max-width: 96% !important;
+    max-height: 92% !important;
+    background-color: rgba(15, 20, 30, 0.96) !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.5) !important;
+    border-radius: 4px !important;
+    flex-direction: column !important;
+    padding: 8px !important;
+    display: flex !important;
+}
+
+/* === TOP === */
+.stw-top {
+    flex-direction: column !important;
+    flex-shrink: 0 !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.3) !important;
+    padding-bottom: 4px !important;
+    margin-bottom: 4px !important;
+}
+.stw-top-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-bottom: 4px !important;
+}
+.stw-title {
+    font-size: 16px !important;
+    color: rgb(220, 230, 240) !important;
+    -unity-font-style: bold !important;
+    flex-grow: 1 !important;
+}
+.stw-search {
+    margin-top: 2px !important;
+    height: 22px !important;
+    font-size: 11px !important;
+}
+
+/* === MIDDLE (tree + detail) === */
+.stw-middle {
+    flex-direction: row !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+}
+.stw-list-col {
+    flex-grow: 2 !important;
+    flex-shrink: 1 !important;
+    flex-basis: 0 !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    margin-right: 4px !important;
+}
+.stw-detail-col {
+    overflow: hidden !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    flex-basis: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    flex-direction: column !important;
+    background-color: rgba(25, 32, 48, 0.6) !important;
+    border-radius: 3px !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+    padding: 6px !important;
+}
+.stw-detail-scroll {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    flex-basis: 0 !important;
+    min-height: 0 !important;
+    margin-bottom: 4px !important;
+}
+.stw-section-title {
+    font-size: 12px !important;
+    color: rgb(180, 200, 220) !important;
+    -unity-font-style: bold !important;
+    margin-bottom: 2px !important;
+    flex-shrink: 0 !important;
+}
+.stw-scroll {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+    background-color: rgba(15, 20, 30, 0.4) !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+    border-radius: 3px !important;
+}
+
+/* === Detail panel === */
+.stw-detail-header {
+    flex-direction: column !important;
+    margin-bottom: 6px !important;
+    padding-bottom: 6px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.3) !important;
+    flex-shrink: 0 !important;
+}
+.stw-detail-name {
+    font-size: 14px !important;
+    color: rgb(230, 240, 250) !important;
+    -unity-font-style: bold !important;
+    margin-bottom: 2px !important;
+}
+.stw-detail-desc {
+    font-size: 11px !important;
+    color: rgb(190, 200, 210) !important;
+    white-space: normal !important;
+    -unity-font-style: italic !important;
+}
+.stw-detail-stats {
+    flex-direction: column !important;
+    margin-bottom: 6px !important;
+    flex-shrink: 0 !important;
+    padding: 4px !important;
+    background-color: rgba(35, 45, 65, 0.4) !important;
+    border-radius: 2px !important;
+}
+.stw-detail-effects {
+    font-size: 11px !important;
+    color: rgb(150, 220, 150) !important;
+    margin-bottom: 2px !important;
+    white-space: normal !important;
+}
+.stw-detail-cost {
+    font-size: 11px !important;
+    color: rgb(200, 200, 150) !important;
+    margin-bottom: 2px !important;
+}
+.stw-detail-tier {
+    font-size: 11px !important;
+    color: rgb(180, 200, 220) !important;
+    margin-bottom: 0 !important;
+}
+.stw-detail-prereq, .stw-detail-deps {
+    flex-direction: column !important;
+    margin-bottom: 4px !important;
+    flex-shrink: 0 !important;
+}
+.stw-detail-prereq-title, .stw-detail-deps-title {
+    font-size: 10px !important;
+    color: rgb(180, 160, 100) !important;
+    -unity-font-style: bold !important;
+    margin-bottom: 2px !important;
+}
+.stw-detail-prereq-container, .stw-detail-deps-container {
+    flex-direction: column !important;
+    padding-left: 8px !important;
+}
+.stw-prereq-have {
+    font-size: 10px !important;
+    color: rgb(150, 220, 150) !important;
+    margin-bottom: 1px !important;
+}
+.stw-prereq-missing {
+    font-size: 10px !important;
+    color: rgb(220, 150, 150) !important;
+    margin-bottom: 1px !important;
+}
+.stw-detail-actions {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding-top: 3px !important;
+    border-top-width: 1px !important;
+    border-top-color: rgba(80, 100, 130, 0.3) !important;
+    gap: 4px !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+/* === Buttons === */
+.stw-btn {
+    height: 26px !important;
+    padding: 4px 12px !important;
+    font-size: 12px !important;
+    -unity-text-align: middle-center !important;
+    -unity-font-style: bold !important;
+    border-width: 1px !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
+}
+.stw-btn-learn {
+    background-color: rgba(60, 140, 80, 0.6) !important;
+    border-color: rgba(80, 180, 100, 0.6) !important;
+    color: rgb(200, 255, 200) !important;
+}
+.stw-btn-learn:hover {
+    background-color: rgba(80, 180, 100, 0.85) !important;
+}
+.stw-btn-forget {
+    background-color: rgba(180, 80, 60, 0.5) !important;
+    border-color: rgba(220, 100, 80, 0.5) !important;
+    color: rgb(255, 200, 180) !important;
+}
+.stw-btn-forget:hover {
+    background-color: rgba(220, 100, 80, 0.8) !important;
+}
+#btn-forget, #btn-learn {
+    flex-basis: 100% !important;
+    text-align: center !important;
+}
+.stw-btn-close {
+    background-color: rgba(60, 80, 110, 0.6) !important;
+    border-color: rgba(120, 140, 170, 0.5) !important;
+    color: rgb(210, 220, 230) !important;
+    width: 100% !important;
+    height: 28px !important;
+    text-align: center !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+}
+.stw-btn-close:hover {
+    background-color: rgba(90, 120, 160, 0.8) !important;
+}
+
+/* === BOTTOM === */
+.stw-bottom {
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+    flex-shrink: 0 !important;
+    padding-top: 3px !important;
+    border-top-width: 1px !important;
+    border-top-color: rgba(80, 100, 130, 0.3) !important;
+    margin-top: 2px !important;
+}
+
+/* === Tree nodes === */
+.tree-content {
+    width: 2000px !important;
+    height: 2000px !important;
+    background-color: rgba(10, 15, 25, 0.3) !important;
+}
+.tree-node {
+    position: absolute !important;
+    width: 140px !important;
+    min-height: 28px !important;
+    background-color: rgba(25, 32, 48, 0.9) !important;
+    border-width: 2px !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+}
+.tree-node:hover {
+    background-color: rgba(60, 90, 130, 0.8) !important;
+}
+.tree-node-learned {
+    border-color: rgb(60, 180, 100) !important;
+}
+.tree-node-available {
+    border-color: rgb(200, 200, 60) !important;
+}
+.tree-node-locked {
+    border-color: rgba(100, 100, 110, 0.5) !important;
+}
+.tree-node-selected {
+    border-color: rgb(100, 180, 255) !important;
+    border-width: 3px !important;
+    background-color: rgba(40, 60, 100, 0.9) !important;
+}
+.tree-node-badge {
+    width: 18px !important;
+    font-size: 12px !important;
+    -unity-text-align: middle-center !important;
+    flex-shrink: 0 !important;
+    margin-right: 4px !important;
+}
+.tree-node-title {
+    font-size: 10px !important;
+    color: rgb(220, 220, 230) !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    flex-grow: 1 !important;
+}
+
+/* All social skills are passive → amber accent on all nodes */
+.tree-node-passive {
+    border-top-color: rgb(220, 170, 60) !important;
+    background-color: rgba(35, 32, 22, 0.85) !important;
+}
+.tree-node-type-badge {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 9px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+    border-width: 1px !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+    margin-left: 3px !important;
+}
+.tree-node-type-passive {
+    background-color: rgba(180, 130, 40, 0.85) !important;
+    border-color: rgb(220, 170, 60) !important;
+    color: rgb(255, 240, 200) !important;
+}
+
+/* === Thin scrollbars === */
+.unity-scroll-view .unity-scroller {
+    width: 6px !important;
+    max-width: 6px !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.unity-scroll-view .unity-scroller--vertical {
+    width: 6px !important;
+    max-width: 6px !important;
+}
+.unity-scroll-view .unity-scroller--horizontal {
+    height: 6px !important;
+    max-height: 6px !important;
+}
+.unity-scroll-view .unity-scroller__low-button,
+.unity-scroll-view .unity-scroller__high-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.unity-scroll-view .unity-scroller__slider {
+    background-color: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.unity-scroll-view .unity-slider__input {
+    background-color: transparent !important;
+}
+.unity-scroll-view .unity-base-slider__drag-container {
+    background-color: transparent !important;
+}
+.unity-scroll-view .unity-base-slider__tracker {
+    background-color: transparent !important;
+}
+.unity-scroll-view .unity-base-slider__dragger-border {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+.unity-scroll-view .unity-base-slider__dragger {
+    background-color: rgba(100, 160, 220, 0.4) !important;
+    border-radius: 3px !important;
+    width: 4px !important;
+    max-width: 4px !important;
+    min-width: 4px !important;
+    min-height: 24px !important;
+    border-width: 0 !important;
+}
+.unity-scroll-view .unity-base-slider__dragger:hover {
+    background-color: rgba(120, 180, 240, 0.6) !important;
+}

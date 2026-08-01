@@ -226,6 +226,14 @@ namespace ProjectC.UI
             }
             catch { }
 
+            // SocialSkillTreeWindow (T-SOC-01)
+            try
+            {
+                var sst = ProjectC.Skills.UI.SocialSkillTreeWindow.Instance;
+                if (sst != null && sst.IsOpen()) return true;
+            }
+            catch { }
+
             // RepairManagerWindow (ремонтный менеджер в доке)
             try
             {

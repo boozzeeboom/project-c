@@ -77,7 +77,6 @@ namespace ProjectC.Editor
         // --- Foldout state (per-asset, survives re-select) ---
         private static bool _foldoutIdentity = true;
         private static bool _foldoutCategory = true;
-        private static bool _foldoutPrereqs = true;
         private static bool _foldoutCost = true;
         private static bool _foldoutLayout;
         private static bool _foldoutCombatCore = true;
@@ -205,14 +204,13 @@ namespace ProjectC.Editor
 
             // ═══════════════════════════════════════════
             //  Group 3: PREREQUISITES & EFFECTS (always)
+            //  Arrays use their own built-in foldout — no BeginFoldoutHeaderGroup wrapper
             // ═══════════════════════════════════════════
-            _foldoutPrereqs = EditorGUILayout.BeginFoldoutHeaderGroup(_foldoutPrereqs, "🔗 Prerequisites & Effects");
-            if (_foldoutPrereqs)
-            {
-                EditorGUILayout.PropertyField(_prerequisites);
-                EditorGUILayout.PropertyField(_effects);
-            }
-            EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUILayout.LabelField("🔗 Prerequisites & Effects", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_prerequisites);
+            EditorGUILayout.PropertyField(_effects);
+            Rect r = EditorGUILayout.GetControlRect(false, 1f);
+            EditorGUI.DrawRect(r, new Color(0.3f, 0.3f, 0.3f, 0.5f));
 
             EditorGUILayout.Space(2);
 

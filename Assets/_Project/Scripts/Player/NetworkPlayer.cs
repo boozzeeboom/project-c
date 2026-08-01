@@ -2052,6 +2052,17 @@ namespace ProjectC.Player
         }
 
         // ==========================================================
+        // T-KNOWLEDGE-V2: Recipe knowledge RPC
+        // ==========================================================
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveRecipeKnowledgeTargetRpc(ProjectC.Crafting.Dto.RecipeKnowledgeDto dto, RpcParams rpcParams = default)
+        {
+            if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveRecipeKnowledge: {dto.knownRecipeIds?.Length ?? 0} recipes known");
+            ProjectC.Crafting.RecipeKnowledgeClientState.Instance?.OnRecipeKnowledgeReceived(dto);
+        }
+
+        // ==========================================================
         // T-G07: Gather animation (player scale pulse)
         // ==========================================================
 

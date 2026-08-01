@@ -318,6 +318,11 @@ namespace ProjectC.Crafting
 
             SendResultToClient(clientId, CraftingResultDto.Ok(stationNetId));
             SendSnapshotToClient(clientId, BuildSnapshot(stationNetId));
+
+            // T-KNOWLEDGE-V2: auto-unlock recipe knowledge + broadcast
+            if (CraftingWorld.UnlockRecipeKnowledge(clientId, recipeId))
+                SendRecipeKnowledgeToClient(clientId);
+
             Debug.Log($"[CraftingServer] StartCraft: client={clientId} station={stationNetId} recipe={recipeId} duration={duration}s");
         }
 
@@ -503,6 +508,32 @@ namespace ProjectC.Crafting
             if (NetworkManager == null) return null;
             if (!NetworkManager.ConnectedClients.TryGetValue(clientId, out var cc)) return null;
             return cc.PlayerObject != null ? cc.PlayerObject.GetComponent<NetworkPlayer>() : null;
+        }
+
+        // ==========================================================
+        // T-KNOWLEDGE-V2: Recipe knowledge broadcast
+        // ==========================================================
+
+        /// <summary>
+        /// Server -> client: push актуальный список известных рецептов.
+        /// Вызывается после UnlockRecipeKnowledge или ApplyDeathRecipeLoss.
+        /// </summary>
+        public void SendRecipeKnowledgeToClient(ulong clientId)
+        {
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null)
+            {
+                if (_debugMode) Debug.LogWarning($"[CraftingServer] SendRecipeKnowledge: no NetworkPlayer for client {clientId}");
+                return;
+            }
+
+            var knownIds = CraftingWorld.GetKnownRecipeIds(clientId);
+            var dto = new Dto.RecipeKnowledgeDto
+            {
+                knownRecipeIds = new List<int>(knownIds).ToArray(),
+            };
+            netPlayer.ReceiveRecipeKnowledgeTargetRpc(dto);
+            if (_debugMode) Debug.Log($"[CraftingServer] SendRecipeKnowledge: client={clientId} known={dto.knownRecipeIds.Length}");
         }
 
         // ==========================================================

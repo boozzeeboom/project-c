@@ -1160,6 +1160,10 @@ namespace ProjectC.Quests
                 QuestWorld.Instance.LoadPlayer(clientId);
             }
 
+            // T-KNOWLEDGE-V2: push initial recipe knowledge after load
+            if (Crafting.CraftingServer.Instance != null)
+                Crafting.CraftingServer.Instance.SendRecipeKnowledgeToClient(clientId);
+
             // Небольшая задержка не нужна — SendTo.Owner RPC дождётся готовности client'а.
             BroadcastBothChange(clientId);
             // T-Q15 fix: push initial quest snapshot (rep+attitude уже отправлено выше).

@@ -133,6 +133,9 @@ namespace ProjectC.Core
             // Подписка в CharacterWindow (T-P14) на events OnSkillsUpdated/OnSkillResult.
             CreateSkillsClientState();
 
+            // T-KNOWLEDGE-V2: RecipeKnowledgeClientState — клиентский кеш известных рецептов
+            CreateRecipeKnowledgeClientState();
+
             // T-DOCK-03: DockingClientState — клиентская проекция DockingServer.
             // Принимает DockingAssignmentDto + DockingStatusDto от DockingServer (T-DOCK-01).
             // Подписка в CommPanelWindow (T-DOCK-07) на events OnAwaitingConfirmation/OnStatusReceived.
@@ -465,6 +468,30 @@ namespace ProjectC.Core
             var go = new GameObject("[SkillsClientState]");
             go.AddComponent<ProjectC.Skills.SkillsClientState>();
             Debug.Log("[NMC] Created [SkillsClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-KNOWLEDGE-V2: Создать RecipeKnowledgeClientState как root GameObject.
+        /// Паттерн идентичен CreateSkillsClientState.
+        /// </summary>
+        private void CreateRecipeKnowledgeClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Crafting.RecipeKnowledgeClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] RecipeKnowledgeClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root RecipeKnowledgeClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[RecipeKnowledgeClientState]");
+            go.AddComponent<ProjectC.Crafting.RecipeKnowledgeClientState>();
+            Debug.Log("[NMC] Created [RecipeKnowledgeClientState] as root GameObject");
         }
 
         /// <summary>

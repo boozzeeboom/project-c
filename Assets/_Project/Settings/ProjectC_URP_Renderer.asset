@@ -13,24 +13,24 @@ MonoBehaviour:
   m_Name: VolumetricCloudsRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.VolumetricCloudsRenderFeature
   m_Active: 1
-  CloudBottomY: 800
+  CloudBottomY: 100
   CloudTopY: 2000
   CloudNoise3D: {fileID: 11700000, guid: 9cec13d467e433748ad1e8856e9403f7, type: 2}
-  RaymarchSteps: 45
+  RaymarchSteps: 30
   MaxRayDistance: 20000
-  DensityMultiplier: 3
-  LightAbsorption: 0.043
-  Opacity: 0.63
+  DensityMultiplier: 0.53
+  LightAbsorption: 0.01
+  Opacity: 0.72
   ColorIntensity: 3
-  HeightEdgeSoftness: 0.278
-  NoiseTileSize: 2413
+  HeightEdgeSoftness: 0.261
+  NoiseTileSize: 1025
   CoverageScale: 0.0001
-  CoverageThreshold: 0.494
+  CoverageThreshold: 0.37
   HalfResRender: 1
   TemporalReprojection: 1
   BlueNoiseDither: 1
   BlueNoiseTexture: {fileID: 2800000, guid: cf8182677e251df47bf344fc5ab478b2, type: 3}
-  WindSpeedMultiplier: 0.007
+  WindSpeedMultiplier: 0.01
   DebugDensityDirect: 0
   DayRampTop: {r: 1, g: 1, b: 1, a: 1}
   DayRampMid: {r: 0.831, g: 0.902, b: 0.945, a: 1}

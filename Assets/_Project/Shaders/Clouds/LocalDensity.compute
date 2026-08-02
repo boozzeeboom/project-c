@@ -1,0 +1,126 @@
+// LocalDensity.compute — Phase 2.1
+// Toroidal 3D density buffer: wind advection + Gaussian splat application.
+// Ping-pong: _DensityPrev → AdvectAndRelax → _DensityNext + ApplySplats.
+// Toroidal addressing: window follows player, no data copy (snowflow pattern).
+
+#pragma kernel AdvectAndRelax
+#pragma kernel ApplySplats
+#pragma target 5.0
+
+// ── Input / Output ──
+RWTexture3D<float> _DensityPrev;   // read from previous frame
+RWTexture3D<float> _DensityNext;   // write into current frame
+
+// ── Toroidal Window ──
+float3 _Center;                    // world-space center of the toroidal window
+float  _TexelSize;                 // world units per texel
+uint   _Resolution;                // texture resolution (e.g. 96)
+
+// ── Advection ──
+float3 _WindDirection;             // normalized
+float  _AdvectionStrength;         // how strongly wind moves the field
+float  _RelaxationRate;            // relaxation per second
+float  _DeltaTime;                 // frame delta time
+
+// ── Splats ──
+struct SplatData
+{
+    float3 center;
+    float  radius;
+    float  amount;
+};
+StructuredBuffer<SplatData> _Splats;
+uint _SplatCount;
+
+// ── Helper: worldPos → toroidal UVW ──
+// Torus: uvw = (worldPos - Center) / (Resolution * TexelSize) + 0.5; uvw = frac(uvw);
+float3 WorldToToroidalUvw(float3 worldPos)
+{
+    float windowSize = (float)_Resolution * _TexelSize;
+    float3 uvw = (worldPos - _Center) / windowSize + 0.5;
+    return frac(uvw);
+}
+
+float3 ToroidalUvwToWorld(float3 uvw)
+{
+    float windowSize = (float)_Resolution * _TexelSize;
+    return _Center + (uvw - 0.5) * windowSize;
+}
+
+// ─────────────────────────────────────────────────
+// Kernel: AdvectAndRelax
+// Reads _DensityPrev, applies wind advection + relaxation, writes _DensityNext
+// ─────────────────────────────────────────────────
+[numthreads(8, 8, 8)]
+void AdvectAndRelax(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Resolution || id.y >= _Resolution || id.z >= _Resolution)
+        return;
+
+    // Normalized UVW for this cell [0..1]
+    float3 uvw = (float3(id) + 0.5) / (float)_Resolution;
+
+    // World position of this cell
+    float3 worldPos = ToroidalUvwToWorld(uvw);
+
+    // Wind offset in texel units
+    // windOffset = WindDirection * AdvectionStrength * DeltaTime (world units)
+    // convert world offset to UVW offset: worldOffset / windowSize
+    float windowSize = (float)_Resolution * _TexelSize;
+    float3 windWorldOffset = _WindDirection * _AdvectionStrength * _DeltaTime;
+    float3 windUvwOffset = windWorldOffset / windowSize;
+
+    // Sample previous frame with wind advection (toroidal wrap via frac)
+    float3 sampleUvw = frac(uvw + windUvwOffset);
+    float sample = _DensityPrev[uint3(sampleUvw * (float)_Resolution)];
+
+    // Relaxation: exponential decay toward zero
+    float relaxed = max(0.0, sample - _RelaxationRate * _DeltaTime);
+
+    _DensityNext[id] = relaxed;
+}
+
+// ─────────────────────────────────────────────────
+// Kernel: ApplySplats
+// Reads _DensityNext (already contains advected+relaxed data from previous kernel),
+// applies all Gaussian splats idempotently, writes back.
+// ─────────────────────────────────────────────────
+[numthreads(8, 8, 8)]
+void ApplySplats(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Resolution || id.y >= _Resolution || id.z >= _Resolution)
+        return;
+
+    float density = _DensityNext[id];
+
+    float3 uvw = (float3(id) + 0.5) / (float)_Resolution;
+    float3 worldPos = ToroidalUvwToWorld(uvw);
+
+    // Accumulate all splats for this cell
+    for (uint i = 0; i < _SplatCount; i++)
+    {
+        SplatData splat = _Splats[i];
+        float d = length(worldPos - splat.center);
+        // Toroidal wrap: also check the closest periodic copy
+        float windowSize = (float)_Resolution * _TexelSize;
+        // For each dimension, check ±windowSize offset
+        float3 offsets[3] = {
+            float3(-windowSize, 0, 0), float3(windowSize, 0, 0),
+            float3(0, -windowSize, 0), float3(0, windowSize, 0),
+            float3(0, 0, -windowSize), float3(0, 0, windowSize)
+        };
+        float minDist = d;
+        for (uint j = 0; j < 6; j++)
+        {
+            float distJ = length(worldPos + offsets[j] - splat.center);
+            minDist = min(minDist, distJ);
+        }
+
+        // Gaussian falloff: exp(-d² / (2 * σ²)) where σ = radius/3
+        float sigma = splat.radius * 0.33333;
+        float gauss = exp(-(minDist * minDist) / max(2.0 * sigma * sigma, 0.001));
+        density += splat.amount * gauss;
+    }
+
+    _DensityNext[id] = max(0.0, density);
+}

@@ -78,3 +78,32 @@ Assets/_Project/
 └── Textures/
     └── BlueNoise64.png              1.6 ⏳ (сгенерировать через меню)
 ```
+
+---
+
+## Phase 2 — Интерактивность
+
+### 2.1 ✅ LocalDensityBuffer — 2026-08-03
+
+**Создано:**
+- `Assets/_Project/Scripts/World/Clouds/LocalDensityBuffer.cs` — MonoBehaviour singleton,
+  тор-окно 96³ (RHalf), ping-pong, SplatDensity API, CPU-зеркало (Phase 2.5).
+- `Assets/_Project/Shaders/Clouds/LocalDensity.compute` — 2 kernel'а:
+  `AdvectAndRelax` (адвекция ветром + релаксация) и `ApplySplats` (гауссовы сплаты).
+
+**Детали:**
+- RT: `RenderTextureFormat.RHalf`, `dimension=Tex3D`, `enableRandomWrite=true`
+- Тор: `uvw = (worldPos - Center) / (Res * TexelSize) + 0.5; uvw = frac(uvw);`
+- Ветер читается из `WindManager.Instance.CurrentWindDirection`
+- Сплаты: `StructuredBuffer<SplatData>` (Vector3 center, float radius, float amount),
+  гауссово ядро exp(-d²/2σ²) с σ = radius/3
+- CPU-зеркало: `float[] _cpuDensity` (Res³), обновляется синхронно со сплатами,
+  релаксация в Update
+- `SampleDensity(Vector3)` — трилинейная интерполяция по 8 соседям с тор-адресацией
+
+**Приёмка:** ⏳ требуется Play Mode тест пользователем
+  - Объект с LocalDensityBuffer в сцене
+  - SplatDensity тестовым вызовом → пятно затухает за ~1–2 с
+  - Ветер двигает пятно
+
+**Коммит:** ⏳

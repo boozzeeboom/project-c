@@ -110,7 +110,10 @@ Shader "ProjectC/OcclusionDither"
                 surfaceData.smoothness = 0.5;
                 surfaceData.occlusion = 1;
 
-                return half4(UniversalFragmentPBR(lightingInput, surfaceData), color.a);
+                // URP 17: UniversalFragmentPBR returns half4 (RGB + alpha)
+                half4 litColor = UniversalFragmentPBR(lightingInput, surfaceData);
+                litColor.a = color.a;
+                return litColor;
             }
             ENDHLSL
         }

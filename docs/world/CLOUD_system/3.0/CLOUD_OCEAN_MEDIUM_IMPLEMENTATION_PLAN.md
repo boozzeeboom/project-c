@@ -1,6 +1,6 @@
 # CLOUD_system 3.0 — «Cloud Ocean Medium» — Implementation Plan
 
-**Версия:** 3.0 (Cloud Ocean Medium) | **Дата:** 2026-08-02 | **Status:** 🟡 Design — Awaiting Approval
+**Версия:** 3.0 (Cloud Ocean Medium) | **Дата:** 2026-08-02 | **Status:** 🟢 Фаза 1 (Визуальное ядро) — в работе, рендер-конвейер жив
 **Автор:** Mavis (по решению сессии 2026-08-01)
 **Направление:** НОВОЕ. Не продолжение 1.0/2.0 (mesh/billboard/Veil) — те анализы вели «в лор», а не в ядро. 3.0 документирует ядро визуала мира.
 
@@ -169,8 +169,56 @@ LocalDensityBuffer (compute)
 - Asset-store системы (Enviro/Azure/COZY) — референс-прототип возможен, ядро — своё
 - Физика облаков (плотность → физика полёта) — отдельный тикет, после 3.0
 
+## Приложение A — Фаза 1: что сделано дополнительно (2026-08-02)
+
+### A.1 Статус задач Фазы 1
+
+| # | Задача | Статус | Примечание |
+|---|---|---|---|
+| 1.1 | HLSL-порт Perlin/Worley | ✅ | `CloudNoise.hlsl` — `Perlin3D` (ветка period=0 корректна), `Worley3D`, `Fbm`; сигнатуры сверены с C#-эталоном |
+| 1.2 | Бейк 3D-шума | ✅ (с фиксом) | **Баг 0xCD**: 8 МБ данных `CloudNoise3D.asset` = 0xCD, `m_ImageContentsHash`=0, `m_StreamData size:0` → пиксели не записаны, density=0. Фикс `CloudNoiseBaker.cs`: 12-арг `Graphics.CopyTexture` (в Unity 6000.4.1f1 только 4 перегрузки; срез 3D-текстуры — через `srcElement`; 8-арг с `srcSlice` не существует) |
+| 1.3 | Renderer Feature | ✅ | `VolumetricCloudsRenderFeature`, RenderGraph API (`RecordRenderGraph`), шаблон `EdgeDetectionRenderFeature.cs` |
+| 1.4 | Реймарч + height profile + coverage + wind | ✅ | Полоса **800–2000** (решение пользователя: оставить); coverage — процедурный 2D FBM по XZ (`CloudCoverage2D`); ветер — `WindManager` |
+| 1.5 | Light marching + HG + multi-scatter + рампы | ✅ | 6 light steps, `HG(g=0.7)`, `MultiScatterApprox`, Ghibli-рампы день/закат (выбор §2: Вариант A) |
+| 1.6 | Half-res + blue-noise + temporal | 🔄 переработано | MRT-композит → single-target + ping-pong история (см. A.4) |
+| 1.7 | Перф-замер | ⏳ | Открыт — после подтверждения видимости |
+
+### A.2 Диагностический путь «почему ничего не видно»
+
+1. **Pass 1 рендерит облака — доказано рантаймом** (DIAG2, редакторный тест вне пайплайна): `alphaMin=0, alphaMax=1, alphaMean=0.13, nonBlack=13.9%` — реймарч, плотность, геометрия лучей корректны.
+2. **Событие пасса** (`RenderPassEvent`): `AfterRenderingOpaques`=300 < `BeforeRenderingSkybox`=350 → skybox рисовался **поверх** облаков и затирал их звёздным куполом («звёздное небо вместо облаков»). Перенесено на `BeforeRenderingTransparents`=450.
+3. **Бинарный тест** (`DebugDensityDirect`): Pass 0 (B&W плотность) напрямую в цвет камеры — **виден контрастно** ⇒ пасс исполняется, реймарч жив в реальном пайплайне; теряется именно композит.
+4. **Убийца композита — MRT**: Pass 2 писал MRT (colorTarget + cloudFinal) c `Blend 0 SrcAlpha OneMinusSrcAlpha` / `Blend 1 One Zero` — в реальном RenderGraph-пайплайне результат не доходил до экрана. Рабочий эталон Edge Detection — **один таргет**, `Blend SrcAlpha OneMinusSrcAlpha`.
+
+### A.3 Изолированный тест конвейера (вне RenderGraph)
+
+Воспроизведение Pass A→B→C на обычных RenderTexture с синтетической камерой (строго вниз с Y=2500, temporal 0.9, незаполненная история): `alphaMean=1.0`, 100% покрытие, **NaN=0** — шейдер-логика доказанно корректна; ломалась именно RenderGraph-интеграция.
+
+### A.4 Архитектурные изменения
+
+1. **Композит — single-target**: Pass 2, `Blend SrcAlpha OneMinusSrcAlpha`, `SV_Target0` → colorTarget (структурно как Edge Detection).
+2. **История — ping-pong из 2 RT** (`_CloudHistoryA/B`, свап по `_historyIdx`): Pass B читает RT прошлого кадра, Pass C пишет в другой. Причина: RenderGraph запрещает read+write одной текстуры в одном пассе (грабли №3 в `rendergraph-volumetric-clouds-pitfalls.md`); старая MRT-схема (`cloudFinal` + `AddCopyPass`) убрана.
+3. **Pass 3 (новый)** — raw result → history RT, `Blend One Zero` (RT не очищается RenderGraph'ом). Тот же фрагмент `CompositeClouds` (вынесен в общий HLSLINCLUDE).
+4. **Первый кадр**: `_TemporalBlend=0`, пока нет валидного `_PrevViewProj` — иначе `lerp(current, history=0, 0.9)` даёт еле видные 0.1×current.
+5. **Debug-тумблер** `DebugDensityDirect` (Inspector рендерера) — бинарный тест, оставлен для будущих сессий (по умолчанию выкл).
+
+### A.5 Уроки (для Фазы 2)
+
+- Облака обязаны рендериться **после** skybox (`BeforeRenderingTransparents`=450); иначе купол затирает слой.
+- MRT-бленд (`Blend 0/Blend 1`) в RenderGraph-пассе ненадёжен; **single-target + отдельный пасс на историю** — рабочая схема.
+- Половина «невидимости» — пайплайн-интеграция, не шейдер: изолированный тест вне RenderGraph + бинарный debug-тумблер дают ответ за один плейтест.
+- В half-res пассе `_ScreenParams` неверен — нужен явный `_CloudTargetSize` (уже в коде).
+- Бленд-состояние композита сверять с рабочим эталоном `EdgeDetectionRenderFeature` (та же путаница была при его создании — урок пользователя).
+
+### A.6 Проверка
+
+- Компиляция: Unity → Console → 0 ошибок (2 предупреждения сторонние: `EscMenuStyles` USS, кастомный toolbar-элемент).
+- Плейтест: Play → Y=2500, взгляд вниз → облачная завеса 800–2000; спуск в полосу (~1200–1500) → облака вокруг.
+- Если снова пусто: Inspector → `ProjectC_URP_Renderer` → `VolumetricCloudsRenderFeature` → Debug → **DebugDensityDirect** = true (бинарный тест).
+
 ## 8. История
 
 | Дата | Сессия | Изменения |
 |---|---|---|
 | 2026-08-02 | Анализ snowflow_demo + рефрейм «облака = среда» | Создан план 3.0. Решение: Путь 3 «Cloud Ocean Medium», 3 фазы, дизайн-выбор стиля открыт |
+| 2026-08-02 | Фаза 1 — реализация + дебаг видимости | См. Приложение A: 1.1–1.6 готовы (с фиксами), 1.7 открыт; композит переведён с MRT на single-target + ping-pong история |

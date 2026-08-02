@@ -64,6 +64,10 @@ namespace ProjectC.World.Clouds
             Color[] allPixels = new Color[size * size * size];
             for (int z = 0; z < size; z++)
             {
+                // Region-copy overload in Unity 6000.4.1f1 (verified via unity_reflect):
+                // CopyTexture(src, srcElement, srcMip, srcX, srcY, srcWidth, srcHeight,
+                //             dst, dstElement, dstMip, dstX, dstY) — 12 args, no srcSlice.
+                // For a 3D RT, srcElement addresses the depth slice z.
                 Graphics.CopyTexture(rt, z, 0, 0, 0, size, size, slice2D, 0, 0, 0, 0);
                 Color[] slice = slice2D.GetPixels(0);
                 int sliceOffset = z * size * size;

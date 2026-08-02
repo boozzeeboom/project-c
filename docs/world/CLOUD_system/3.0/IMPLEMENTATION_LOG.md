@@ -106,4 +106,4 @@ Assets/_Project/
   - SplatDensity тестовым вызовом → пятно затухает за ~1–2 с
   - Ветер двигает пятно
 
-**Коммит:** ⏳
+**Коммит:** `04624af9` — T-CLOUD02: Phase 2.1 — LocalDensityBuffer

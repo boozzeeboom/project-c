@@ -1,10 +1,8 @@
-// VolumetricCloudsRenderFeature.cs — CLOUD_system 3.0
+// VolumetricCloudsRenderFeature.cs — CLOUD_system 3.0 TUNING
 // URP ScriptableRendererFeature (RenderGraph API).
-//
-// Phase 1.3–1.6: volumetric clouds with Ghibli-style ramps.
-//
-// DIAGNOSTIC MODE: Pass 1 rendered directly to colorTarget (no cloudRT, no composite).
-// This proves whether the raymarch math works. If clouds appear → cloudRT was the issue.
+// All tuning parameters exposed in inspector.
+// Shader global-only uniforms set via Shader.SetGlobal* (NOT mat.Set*)
+// to avoid material-slot shadowing issues.
 
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -31,19 +29,19 @@ namespace ProjectC.Rendering
         [Header("Density")]
         [Range(0.1f, 10f)] public float DensityMultiplier = 1f;
         [Range(0.001f, 0.5f)] public float LightAbsorption = 0.05f;
-        [Range(0.1f, 3f)] public float Opacity = 1f;
-        [Range(0.1f, 3f)] public float ColorIntensity = 1f;
-        [Range(0.01f, 0.5f)] public float HeightEdgeSoftness = 0.15f;
+        [Range(0.1f, 5f)] public float Opacity = 1f;
+        [Range(0.1f, 5f)] public float ColorIntensity = 1f;
 
-        [Header("Noise / Coverage")]
+        [Header("Shape")]
+        [Range(0.01f, 0.5f)] public float HeightEdgeSoftness = 0.15f;
         [Tooltip("World units per 3D-noise tile (128 texels).")]
         [Range(256f, 4096f)] public float NoiseTileSize = 1024f;
         [Tooltip("World scale of the 2D coverage FBM.")]
         [Range(0.0001f, 0.01f)] public float CoverageScale = 0.0008f;
-        [Tooltip("Coverage cutoff: below → clear sky hole.")]
+        [Tooltip("Coverage cutoff: below = clear sky hole.")]
         [Range(0.1f, 0.9f)] public float CoverageThreshold = 0.5f;
 
-        [Header("Phase 1.6: Quality")]
+        [Header("Quality")]
         public bool HalfResRender = true;
         public bool TemporalReprojection = true;
         public bool BlueNoiseDither = true;
@@ -55,7 +53,7 @@ namespace ProjectC.Rendering
         [Header("Debug")]
         public bool DebugDensityDirect = false;
 
-        [Header("Phase 1.5: Ghibli Ramps")]
+        [Header("Ghibli Ramps")]
         [ColorUsage(false, false)] public Color DayRampTop = Color.white;
         [ColorUsage(false, false)] public Color DayRampMid = new Color(0.831f, 0.902f, 0.945f);
         [ColorUsage(false, false)] public Color DayRampBot = new Color(0.663f, 0.8f, 0.89f);
@@ -67,40 +65,38 @@ namespace ProjectC.Rendering
         public Material OverrideMaterial;
 
         private Material _material;
-
-        private RTHandle _cloudHistoryA;
-        private RTHandle _cloudHistoryB;
+        private RTHandle _cloudHistoryA, _cloudHistoryB;
         private int _historyIdx;
 
         // Shader property IDs
-        private static readonly int CloudNoise3DId     = Shader.PropertyToID("_CloudNoise3D");
-        private static readonly int CloudBottomYId     = Shader.PropertyToID("_CloudBottomY");
-        private static readonly int CloudTopYId        = Shader.PropertyToID("_CloudTopY");
-        private static readonly int RaymarchStepsId    = Shader.PropertyToID("_RaymarchSteps");
-        private static readonly int MaxRayDistanceId   = Shader.PropertyToID("_MaxRayDistance");
-        private static readonly int DensityMultId      = Shader.PropertyToID("_DensityMultiplier");
-        private static readonly int LightAbsorptionId  = Shader.PropertyToID("_LightAbsorption");
-        private static readonly int HeightEdgeId       = Shader.PropertyToID("_HeightEdgeSoftness");
-        private static readonly int NoiseTileSizeId    = Shader.PropertyToID("_NoiseTileSize");
-        private static readonly int CoverageScaleId    = Shader.PropertyToID("_CoverageScale");
+        private static readonly int CloudNoise3DId      = Shader.PropertyToID("_CloudNoise3D");
+        private static readonly int CloudBottomYId      = Shader.PropertyToID("_CloudBottomY");
+        private static readonly int CloudTopYId         = Shader.PropertyToID("_CloudTopY");
+        private static readonly int RaymarchStepsId     = Shader.PropertyToID("_RaymarchSteps");
+        private static readonly int MaxRayDistanceId    = Shader.PropertyToID("_MaxRayDistance");
+        private static readonly int DensityMultId       = Shader.PropertyToID("_DensityMultiplier");
+        private static readonly int LightAbsorptionId   = Shader.PropertyToID("_LightAbsorption");
+        private static readonly int HeightEdgeId        = Shader.PropertyToID("_HeightEdgeSoftness");
+        private static readonly int NoiseTileSizeId     = Shader.PropertyToID("_NoiseTileSize");
+        private static readonly int CoverageScaleId     = Shader.PropertyToID("_CoverageScale");
         private static readonly int CoverageThresholdId = Shader.PropertyToID("_CoverageThreshold");
-        private static readonly int TemporalBlendId    = Shader.PropertyToID("_TemporalBlend");
-        private static readonly int WindOffsetId       = Shader.PropertyToID("_WindOffset");
-        private static readonly int SunDirectionId     = Shader.PropertyToID("_SunDirection");
-        private static readonly int DayRampTopId       = Shader.PropertyToID("_DayRampTop");
-        private static readonly int DayRampMidId       = Shader.PropertyToID("_DayRampMid");
-        private static readonly int DayRampBotId       = Shader.PropertyToID("_DayRampBot");
-        private static readonly int SunsetRampTopId    = Shader.PropertyToID("_SunsetRampTop");
-        private static readonly int SunsetRampMidId    = Shader.PropertyToID("_SunsetRampMid");
-        private static readonly int SunsetRampBotId    = Shader.PropertyToID("_SunsetRampBot");
-        internal static readonly int BlueNoiseTexId     = Shader.PropertyToID("_BlueNoiseTex");
-        internal static readonly int CloudHistoryRTId   = Shader.PropertyToID("_CloudHistoryRT");
-        internal static readonly int PrevViewProjId     = Shader.PropertyToID("_PrevViewProj");
-        internal static readonly int CloudRTId          = Shader.PropertyToID("_CloudRT");
-        internal static readonly int CloudTargetSizeId  = Shader.PropertyToID("_CloudTargetSize");
-        internal static readonly int ViewToWorldId      = Shader.PropertyToID("_Cloud_ViewToWorld");
-        internal static readonly int InvProjectionId    = Shader.PropertyToID("_Cloud_InvProj");
-        internal static readonly int CloudOpacityId     = Shader.PropertyToID("_CloudOpacity");
+        private static readonly int TemporalBlendId     = Shader.PropertyToID("_TemporalBlend");
+        private static readonly int WindOffsetId        = Shader.PropertyToID("_WindOffset");
+        private static readonly int SunDirectionId      = Shader.PropertyToID("_SunDirection");
+        private static readonly int DayRampTopId        = Shader.PropertyToID("_DayRampTop");
+        private static readonly int DayRampMidId        = Shader.PropertyToID("_DayRampMid");
+        private static readonly int DayRampBotId        = Shader.PropertyToID("_DayRampBot");
+        private static readonly int SunsetRampTopId     = Shader.PropertyToID("_SunsetRampTop");
+        private static readonly int SunsetRampMidId     = Shader.PropertyToID("_SunsetRampMid");
+        private static readonly int SunsetRampBotId     = Shader.PropertyToID("_SunsetRampBot");
+        internal static readonly int BlueNoiseTexId      = Shader.PropertyToID("_BlueNoiseTex");
+        internal static readonly int CloudHistoryRTId    = Shader.PropertyToID("_CloudHistoryRT");
+        internal static readonly int PrevViewProjId      = Shader.PropertyToID("_PrevViewProj");
+        internal static readonly int CloudRTId           = Shader.PropertyToID("_CloudRT");
+        internal static readonly int CloudTargetSizeId   = Shader.PropertyToID("_CloudTargetSize");
+        internal static readonly int ViewToWorldId       = Shader.PropertyToID("_Cloud_ViewToWorld");
+        internal static readonly int InvProjectionId     = Shader.PropertyToID("_Cloud_InvProj");
+        internal static readonly int CloudOpacityId      = Shader.PropertyToID("_CloudOpacity");
         internal static readonly int CloudColorIntensityId = Shader.PropertyToID("_CloudColorIntensity");
 
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
@@ -111,11 +107,7 @@ namespace ProjectC.Rendering
             if (_material != null && _material.shader != null) return _material;
             if (OverrideMaterial != null) { _material = OverrideMaterial; return _material; }
             Shader shader = Shader.Find("Hidden/ProjectC/VolumetricClouds");
-            if (shader == null)
-            {
-                Debug.LogError("[VolumetricClouds] Shader not found.");
-                return null;
-            }
+            if (shader == null) { Debug.LogError("[VolumetricClouds] Shader not found."); return null; }
             _material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
             return _material;
         }
@@ -127,7 +119,6 @@ namespace ProjectC.Rendering
             if (renderingData.cameraData.cameraType == CameraType.Preview) return;
             Material mat = GetOrCreateMaterial();
             if (mat == null) return;
-
             ApplyProperties(mat, renderingData.cameraData.camera);
 
             Camera cam = renderingData.cameraData.camera;
@@ -149,67 +140,32 @@ namespace ProjectC.Rendering
 
         private static void EnsureHistoryRT(ref RTHandle handle, int w, int h, string name)
         {
-            if (handle != null && handle.rt != null && handle.rt.width == w && handle.rt.height == h)
-                return;
+            if (handle != null && handle.rt != null && handle.rt.width == w && handle.rt.height == h) return;
             handle?.Release();
             var rt = new RenderTexture(w, h, 0, RenderTextureFormat.ARGB32)
-            {
-                name = name,
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.HideAndDontSave
-            };
+            { name = name, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.HideAndDontSave };
             rt.Create();
             handle = RTHandles.Alloc(rt, true);
         }
 
         private void ApplyProperties(Material mat, Camera camera)
         {
+            // Material properties (in shader Properties — mat.Set*)
             mat.SetFloat(CloudBottomYId, CloudBottomY);
             mat.SetFloat(CloudTopYId, CloudTopY);
             mat.SetInt(RaymarchStepsId, RaymarchSteps);
             mat.SetFloat(MaxRayDistanceId, MaxRayDistance);
             mat.SetFloat(HeightEdgeId, HeightEdgeSoftness);
-            mat.SetFloat(NoiseTileSizeId, NoiseTileSize);
             mat.SetFloat(CoverageScaleId, CoverageScale);
             mat.SetFloat(CoverageThresholdId, CoverageThreshold);
-            mat.SetFloat(TemporalBlendId,
-                (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
+            mat.SetFloat(TemporalBlendId, (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
 
-            // Global-only (NOT in shader Properties — Shader.SetGlobal* to avoid shadowing)
+            // Global-only (NOT in shader Properties — Shader.SetGlobal* to avoid material-slot shadowing)
+            Shader.SetGlobalFloat(NoiseTileSizeId, NoiseTileSize);
             Shader.SetGlobalFloat(DensityMultId, DensityMultiplier);
             Shader.SetGlobalFloat(LightAbsorptionId, LightAbsorption);
             Shader.SetGlobalFloat(CloudOpacityId, Opacity);
             Shader.SetGlobalFloat(CloudColorIntensityId, ColorIntensity);
-            if (Time.frameCount % 120 == 0)
-                Debug.Log($"[VolClouds] Opacity={Opacity:F2} ColorIntensity={ColorIntensity:F2} DensityMult={DensityMultiplier:F2}");
-
-            if (CloudNoise3D != null)
-                mat.SetTexture(CloudNoise3DId, CloudNoise3D);
-
-            Vector3 windDir = Vector3.right;
-            float windSpeed = 1f;
-            if (WindManager.Instance != null)
-            {
-                windDir = WindManager.Instance.CurrentWindDirection.normalized;
-                windSpeed = Mathf.Max(WindManager.Instance.CurrentWindSpeed, 0.1f);
-            }
-            float windMult = WindSpeedMultiplier * 0.05f;
-            Vector4 windOffset;
-            if (OverrideMaterial != null)
-                windOffset = (Vector4)(windDir * windSpeed * Time.time * windMult);
-            else
-            {
-                windOffset = mat.GetVector(WindOffsetId);
-                windOffset += (Vector4)(windDir * windSpeed * Time.deltaTime * windMult);
-            }
-            mat.SetVector(WindOffsetId, windOffset);
-
-            Vector3 sunDir = RenderSettings.sun != null
-                ? RenderSettings.sun.transform.forward
-                : new Vector3(0.3f, 0.7f, -0.6f).normalized;
-            mat.SetVector(SunDirectionId, sunDir);
-
             Shader.SetGlobalColor(DayRampTopId, DayRampTop);
             Shader.SetGlobalColor(DayRampMidId, DayRampMid);
             Shader.SetGlobalColor(DayRampBotId, DayRampBot);
@@ -217,18 +173,33 @@ namespace ProjectC.Rendering
             Shader.SetGlobalColor(SunsetRampMidId, SunsetRampMid);
             Shader.SetGlobalColor(SunsetRampBotId, SunsetRampBot);
 
-            if (BlueNoiseTexture != null)
-                mat.SetTexture(BlueNoiseTexId, BlueNoiseTexture);
+            if (Time.frameCount % 120 == 0)
+                Debug.Log($"[VolClouds] Dens={DensityMultiplier:F2} Absorb={LightAbsorption:F3} Opacity={Opacity:F2} Color={ColorIntensity:F2} CovThresh={CoverageThreshold:F2}");
+
+            if (CloudNoise3D != null)
+                mat.SetTexture(CloudNoise3DId, CloudNoise3D);
+
+            Vector3 windDir = Vector3.right; float windSpeed = 1f;
+            if (WindManager.Instance != null)
+            { windDir = WindManager.Instance.CurrentWindDirection.normalized; windSpeed = Mathf.Max(WindManager.Instance.CurrentWindSpeed, 0.1f); }
+            float windMult = WindSpeedMultiplier * 0.05f;
+            Vector4 windOffset;
+            if (OverrideMaterial != null)
+                windOffset = (Vector4)(windDir * windSpeed * Time.time * windMult);
+            else
+            { windOffset = mat.GetVector(WindOffsetId); windOffset += (Vector4)(windDir * windSpeed * Time.deltaTime * windMult); }
+            mat.SetVector(WindOffsetId, windOffset);
+
+            Vector3 sunDir = RenderSettings.sun != null ? RenderSettings.sun.transform.forward : new Vector3(0.3f, 0.7f, -0.6f).normalized;
+            mat.SetVector(SunDirectionId, sunDir);
+
+            if (BlueNoiseTexture != null) mat.SetTexture(BlueNoiseTexId, BlueNoiseTexture);
             if (mat.shader != null)
-            {
-                var kw = new LocalKeyword(mat.shader, "_BLUE_NOISE_ON");
-                mat.SetKeyword(kw, BlueNoiseDither && BlueNoiseTexture != null);
-            }
+            { var kw = new LocalKeyword(mat.shader, "_BLUE_NOISE_ON"); mat.SetKeyword(kw, BlueNoiseDither && BlueNoiseTexture != null); }
 
             Matrix4x4 proj = GL.GetGPUProjectionMatrix(camera.projectionMatrix, false);
             Matrix4x4 view = camera.worldToCameraMatrix;
-            if (_prevViewProjValid)
-                mat.SetMatrix(PrevViewProjId, _prevViewProj);
+            if (_prevViewProjValid) mat.SetMatrix(PrevViewProjId, _prevViewProj);
             _prevViewProj = proj * view;
             _prevViewProjValid = true;
         }
@@ -237,11 +208,7 @@ namespace ProjectC.Rendering
         {
             if (disposing)
             {
-                if (_material != null)
-                {
-                    Object.DestroyImmediate(_material);
-                    _material = null;
-                }
+                if (_material != null) { Object.DestroyImmediate(_material); _material = null; }
                 if (_cloudHistoryA != null) { _cloudHistoryA.Release(); _cloudHistoryA = null; }
                 if (_cloudHistoryB != null) { _cloudHistoryB.Release(); _cloudHistoryB = null; }
             }
@@ -251,28 +218,20 @@ namespace ProjectC.Rendering
     internal sealed class VolumetricCloudsPass : ScriptableRenderPass
     {
         private const string PassName = "VolumetricClouds";
-
         private Material _material;
-        private readonly bool _halfRes;
-        private readonly bool _temporal;
-        private readonly bool _debugDirect;
+        private readonly bool _halfRes, _temporal, _debugDirect;
         private readonly Matrix4x4 _prevVp;
         private readonly bool _prevVpValid;
-        private RTHandle _historyRead;
-        private RTHandle _historyWrite;
-        private readonly float _opacity;
-        private readonly float _colorIntensity;
+        private RTHandle _historyRead, _historyWrite;
+        private readonly float _opacity, _colorIntensity;
 
         private class PassData
         {
             public Material Material;
-            public TextureHandle CloudRT;
-            public TextureHandle HistoryRT;
+            public TextureHandle CloudRT, HistoryRT;
             public Vector4 TargetSize;
-            public Matrix4x4 ViewToWorld;
-            public Matrix4x4 InvProjection;
-            public float Opacity;
-            public float ColorIntensity;
+            public Matrix4x4 ViewToWorld, InvProjection;
+            public float Opacity, ColorIntensity;
         }
 
         public VolumetricCloudsPass(Material material, bool halfRes, bool temporal,
@@ -280,16 +239,10 @@ namespace ProjectC.Rendering
             RTHandle historyRead, RTHandle historyWrite,
             float opacity, float colorIntensity)
         {
-            _material = material;
-            _halfRes = halfRes;
-            _temporal = temporal;
-            _debugDirect = debugDirect;
-            _prevVp = prevVp;
-            _prevVpValid = prevVpValid;
-            _historyRead = historyRead;
-            _historyWrite = historyWrite;
-            _opacity = opacity;
-            _colorIntensity = colorIntensity;
+            _material = material; _halfRes = halfRes; _temporal = temporal;
+            _debugDirect = debugDirect; _prevVp = prevVp; _prevVpValid = prevVpValid;
+            _historyRead = historyRead; _historyWrite = historyWrite;
+            _opacity = opacity; _colorIntensity = colorIntensity;
             profilingSampler = new ProfilingSampler(PassName);
             ConfigureInput(ScriptableRenderPassInput.Depth);
         }
@@ -297,73 +250,52 @@ namespace ProjectC.Rendering
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
             if (_material == null) return;
-
             var resourceData = frameData.Get<UniversalResourceData>();
             var colorTarget = resourceData.activeColorTexture;
             if (!colorTarget.IsValid()) return;
             var cameraData = frameData.Get<UniversalCameraData>();
             var cam = cameraData.camera;
-
             Matrix4x4 viewToWorld = cam.cameraToWorldMatrix;
             Matrix4x4 invProj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false).inverse;
 
-            // --- DEBUG: Pass 0 (B&W density) straight to camera ---
+            // DEBUG: Pass 0 (B&W) straight to camera
             if (_debugDirect)
             {
-                int cw = Mathf.Max(1, cam.pixelWidth);
-                int ch = Mathf.Max(1, cam.pixelHeight);
-                Vector4 fullSize = new Vector4(cw, ch, 1f / cw, 1f / ch);
-                using (var builder = renderGraph.AddRasterRenderPass<PassData>(
-                    "VolumetricClouds_DebugDirect", out var dbgData, profilingSampler))
+                int cw = Mathf.Max(1, cam.pixelWidth), ch = Mathf.Max(1, cam.pixelHeight);
+                Vector4 fs = new Vector4(cw, ch, 1f / cw, 1f / ch);
+                using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_Debug", out var d, profilingSampler))
                 {
-                    dbgData.Material = _material;
-                    dbgData.TargetSize = fullSize;
-                    dbgData.ViewToWorld = viewToWorld;
-                    dbgData.InvProjection = invProj;
+                    d.Material = _material; d.TargetSize = fs; d.ViewToWorld = viewToWorld; d.InvProjection = invProj;
                     builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
-                    builder.AllowPassCulling(false);
-                    builder.AllowGlobalStateModification(true);
-                    builder.SetRenderFunc(static (PassData data, RasterGraphContext ctx) =>
+                    builder.AllowPassCulling(false); builder.AllowGlobalStateModification(true);
+                    builder.SetRenderFunc(static (PassData p, RasterGraphContext ctx) =>
                     {
-                        ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, data.TargetSize);
-                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, data.ViewToWorld);
-                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, data.InvProjection);
-                        ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 0,
-                            MeshTopology.Triangles, 3, 1);
+                        ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, p.TargetSize);
+                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, p.ViewToWorld);
+                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, p.InvProjection);
+                        ctx.cmd.DrawProcedural(Matrix4x4.identity, p.Material, 0, MeshTopology.Triangles, 3, 1);
                     });
                 }
                 return;
             }
 
-            // --- DIRECT: Pass 1 raymarch straight to colorTarget (bypass cloudRT) ---
-            // DIAGNOSTIC: if clouds appear → raymarch works, cloudRT was the issue.
-            // If still barely visible → raymarch math is broken (lighting/accumulation).
-            int cw2 = Mathf.Max(1, cam.pixelWidth);
-            int ch2 = Mathf.Max(1, cam.pixelHeight);
-            Vector4 fs = new Vector4(cw2, ch2, 1f / cw2, 1f / ch2);
-            using (var builder = renderGraph.AddRasterRenderPass<PassData>(
-                "VolumetricClouds_Direct", out var passData, profilingSampler))
+            // Pass 1 → colorTarget direct (cloudRT/history bypassed for tuning)
+            int cw2 = Mathf.Max(1, cam.pixelWidth), ch2 = Mathf.Max(1, cam.pixelHeight);
+            Vector4 fs2 = new Vector4(cw2, ch2, 1f / cw2, 1f / ch2);
+            using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_Direct", out var pd, profilingSampler))
             {
-                passData.Material = _material;
-                passData.TargetSize = fs;
-                passData.ViewToWorld = viewToWorld;
-                passData.InvProjection = invProj;
-                passData.Opacity = _opacity;
-                passData.ColorIntensity = _colorIntensity;
-
+                pd.Material = _material; pd.TargetSize = fs2; pd.ViewToWorld = viewToWorld; pd.InvProjection = invProj;
+                pd.Opacity = _opacity; pd.ColorIntensity = _colorIntensity;
                 builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
-                builder.AllowPassCulling(false);
-                builder.AllowGlobalStateModification(true);
-
-                builder.SetRenderFunc(static (PassData data, RasterGraphContext ctx) =>
+                builder.AllowPassCulling(false); builder.AllowGlobalStateModification(true);
+                builder.SetRenderFunc(static (PassData p, RasterGraphContext ctx) =>
                 {
-                    ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, data.TargetSize);
-                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, data.ViewToWorld);
-                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, data.InvProjection);
-                    ctx.cmd.SetGlobalFloat(VolumetricCloudsRenderFeature.CloudOpacityId, data.Opacity);
-                    ctx.cmd.SetGlobalFloat(VolumetricCloudsRenderFeature.CloudColorIntensityId, data.ColorIntensity);
-                    ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 1,
-                        MeshTopology.Triangles, 3, 1);
+                    ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, p.TargetSize);
+                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, p.ViewToWorld);
+                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, p.InvProjection);
+                    ctx.cmd.SetGlobalFloat(VolumetricCloudsRenderFeature.CloudOpacityId, p.Opacity);
+                    ctx.cmd.SetGlobalFloat(VolumetricCloudsRenderFeature.CloudColorIntensityId, p.ColorIntensity);
+                    ctx.cmd.DrawProcedural(Matrix4x4.identity, p.Material, 1, MeshTopology.Triangles, 3, 1);
                 });
             }
         }

@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.VolumetricCloudsRenderFeature
   m_Active: 1
   CloudBottomY: 800
-  CloudTopY: 2000
+  CloudTopY: 2119
   CloudNoise3D: {fileID: 11700000, guid: 9cec13d467e433748ad1e8856e9403f7, type: 2}
   RaymarchSteps: 48
   MaxRayDistance: 5000
-  DensityMultiplier: 1.1
-  LightAbsorption: 0.185
+  DensityMultiplier: 2.38
+  LightAbsorption: 0.193
   HeightEdgeSoftness: 0.137
   NoiseTileSize: 3061
   CoverageScale: 0.00043

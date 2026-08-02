@@ -53,6 +53,9 @@ namespace ProjectC.Rendering
         public bool BlueNoiseDither = true;
         public Texture2D BlueNoiseTexture;
 
+        [Header("Wind")]
+        [Range(0f, 5f)] public float WindSpeedMultiplier = 1f;
+
         [Header("Debug")]
         [Tooltip("Draw Pass 0 (B&W density) directly to the camera color, skipping MRT/temporal/history. Binary test.")]
         public bool DebugDensityDirect = false;
@@ -103,6 +106,8 @@ namespace ProjectC.Rendering
         internal static readonly int PrevViewProjId     = Shader.PropertyToID("_PrevViewProj");
         internal static readonly int CloudRTId          = Shader.PropertyToID("_CloudRT");
         internal static readonly int CloudTargetSizeId  = Shader.PropertyToID("_CloudTargetSize");
+        internal static readonly int ViewToWorldId      = Shader.PropertyToID("_Cloud_ViewToWorld");
+        internal static readonly int InvProjectionId    = Shader.PropertyToID("_Cloud_InvProj");
 
         // Phase 1.6: temporal state
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
@@ -196,16 +201,17 @@ namespace ProjectC.Rendering
                 windDir = WindManager.Instance.CurrentWindDirection.normalized;
                 windSpeed = Mathf.Max(WindManager.Instance.CurrentWindSpeed, 0.1f);
             }
+            float windMult = WindSpeedMultiplier * 0.05f;
             Vector4 windOffset;
             if (OverrideMaterial != null)
             {
                 // Shared asset — never mutate it; derive deterministically from time
-                windOffset = (Vector4)(windDir * windSpeed * Time.time * 0.05f);
+                windOffset = (Vector4)(windDir * windSpeed * Time.time * windMult);
             }
             else
             {
                 windOffset = mat.GetVector(WindOffsetId);
-                windOffset += (Vector4)(windDir * windSpeed * Time.deltaTime * 0.05f);
+                windOffset += (Vector4)(windDir * windSpeed * Time.deltaTime * windMult);
             }
             mat.SetVector(WindOffsetId, windOffset);
 
@@ -283,6 +289,8 @@ namespace ProjectC.Rendering
             public TextureHandle CloudRT;
             public TextureHandle HistoryRT;
             public Vector4 TargetSize;
+            public Matrix4x4 ViewToWorld;
+            public Matrix4x4 InvProjection;
         }
 
         public VolumetricCloudsPass(Material material, bool halfRes, bool temporal,
@@ -298,6 +306,7 @@ namespace ProjectC.Rendering
             _historyRead = historyRead;
             _historyWrite = historyWrite;
             profilingSampler = new ProfilingSampler(PassName);
+            ConfigureInput(ScriptableRenderPassInput.Depth);
         }
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
@@ -309,6 +318,11 @@ namespace ProjectC.Rendering
             if (!colorTarget.IsValid()) return;
             var cameraData = frameData.Get<UniversalCameraData>();
             var cam = cameraData.camera;
+
+            // Camera matrices for world-space ray reconstruction (URP RenderGraph does NOT
+            // set UNITY_MATRIX_I_P / UNITY_MATRIX_I_V automatically in custom passes).
+            Matrix4x4 viewToWorld = cam.cameraToWorldMatrix;
+            Matrix4x4 invProj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false).inverse;
 
             // Determine resolution
             int w = _halfRes ? Mathf.Max(1, cam.pixelWidth / 2) : cam.pixelWidth;
@@ -347,12 +361,16 @@ namespace ProjectC.Rendering
                 {
                     dbgData.Material = _material;
                     dbgData.TargetSize = fullSize;
+                    dbgData.ViewToWorld = viewToWorld;
+                    dbgData.InvProjection = invProj;
                     builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
                     builder.AllowPassCulling(false);
                     builder.AllowGlobalStateModification(true);
                     builder.SetRenderFunc(static (PassData data, RasterGraphContext ctx) =>
                     {
                         ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, data.TargetSize);
+                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, data.ViewToWorld);
+                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, data.InvProjection);
                         ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 0,
                             MeshTopology.Triangles, 3, 1);
                     });
@@ -367,6 +385,8 @@ namespace ProjectC.Rendering
                 passData.Material = _material;
                 passData.CloudRT = cloudRT;
                 passData.TargetSize = targetSize;
+                passData.ViewToWorld = viewToWorld;
+                passData.InvProjection = invProj;
 
                 builder.SetRenderAttachment(cloudRT, 0, AccessFlags.Write);
                 builder.AllowPassCulling(false);
@@ -375,6 +395,8 @@ namespace ProjectC.Rendering
                 builder.SetRenderFunc(static (PassData data, RasterGraphContext ctx) =>
                 {
                     ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, data.TargetSize);
+                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, data.ViewToWorld);
+                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, data.InvProjection);
                     // Pass 1: colored light-march (Phase 1.5)
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 1,
                         MeshTopology.Triangles, 3, 1);
@@ -390,6 +412,8 @@ namespace ProjectC.Rendering
                 compData.Material = _material;
                 compData.CloudRT = cloudRT;
                 compData.HistoryRT = historyRead;
+                compData.ViewToWorld = viewToWorld;
+                compData.InvProjection = invProj;
 
                 builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
                 builder.UseTexture(cloudRT, AccessFlags.Read);
@@ -403,6 +427,8 @@ namespace ProjectC.Rendering
                     ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudRTId, data.CloudRT);
                     if (data.HistoryRT.IsValid())
                         ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudHistoryRTId, data.HistoryRT);
+                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, data.ViewToWorld);
+                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, data.InvProjection);
                     // Pass 2: composite — blends result onto the camera color (SrcAlpha)
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 2,
                         MeshTopology.Triangles, 3, 1);
@@ -420,6 +446,8 @@ namespace ProjectC.Rendering
                     histData.Material = _material;
                     histData.CloudRT = cloudRT;
                     histData.HistoryRT = historyRead;
+                    histData.ViewToWorld = viewToWorld;
+                    histData.InvProjection = invProj;
 
                     builder.SetRenderAttachment(historyWrite, 0, AccessFlags.Write);
                     builder.UseTexture(cloudRT, AccessFlags.Read);
@@ -433,6 +461,8 @@ namespace ProjectC.Rendering
                         ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudRTId, data.CloudRT);
                         if (data.HistoryRT.IsValid())
                             ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudHistoryRTId, data.HistoryRT);
+                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, data.ViewToWorld);
+                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, data.InvProjection);
                         // Pass 3: raw result into history (One Zero — RT not cleared by RenderGraph)
                         ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 3,
                             MeshTopology.Triangles, 3, 1);

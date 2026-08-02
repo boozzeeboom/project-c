@@ -143,10 +143,8 @@ namespace ProjectC.Rendering
 
             if (BlueNoiseTexture != null)
                 mat.SetTexture(BlueNoiseTexId, BlueNoiseTexture);
-            mat.SetKeyword(new LocalKeyword(mat.shader, "_BLUE_NOISE_ON"), BlueNoiseDither && BlueNoiseTexture != null);
-
-            // Temporal reprojection
-            mat.SetKeyword(new LocalKeyword(mat.shader, "_TEMPORAL_ON"), TemporalReprojection);
+            // Keywords (_BLUE_NOISE_ON, _TEMPORAL_ON) deferred to Phase 1.6
+            // — shader must declare #pragma shader_feature_local first
         }
 
         /// <summary>

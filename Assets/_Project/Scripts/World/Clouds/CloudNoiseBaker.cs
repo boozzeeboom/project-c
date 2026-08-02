@@ -64,7 +64,11 @@ namespace ProjectC.World.Clouds
                     return;
                 }
 
-                Color[] pixels = req.GetData<Color>().ToArray();
+                // Use Color32 because RGBA8 UNORM → 4 bytes/pixel (Color is 16 bytes)
+                Color32[] pixels32 = req.GetData<Color32>().ToArray();
+                Color[] pixels = new Color[pixels32.Length];
+                for (int i = 0; i < pixels32.Length; i++)
+                    pixels[i] = pixels32[i];
                 tex3D.SetPixels(pixels);
                 tex3D.Apply(false, true);
 

@@ -48,43 +48,45 @@ namespace ProjectC.World.Clouds
             int threadGroups = Mathf.CeilToInt(size / 8.0f);
             compute.Dispatch(kernel, threadGroups, threadGroups, threadGroups);
 
-            // Readback: copy to Texture3D
+            // Force GPU to finish before readback
+            GL.Flush();
+
+            // Readback: copy slice-by-slice via Graphics.CopyTexture
+            // AsyncGPUReadback on Texture3D reads only 1 slice; synchronous CopyTexture is reliable.
             Texture3D tex3D = new Texture3D(size, size, size, TextureFormat.RGBA32, false);
             tex3D.wrapMode = TextureWrapMode.Repeat;
             tex3D.filterMode = FilterMode.Trilinear;
             tex3D.anisoLevel = 0;
 
-            // ReadPixels-style approach for Texture3D: use AsyncGPUReadback
-            AsyncGPUReadback.Request(rt, 0, (req) =>
+            Texture2D slice2D = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            RenderTexture.active = null; // No active RT interference
+
+            Color[] allPixels = new Color[size * size * size];
+            for (int z = 0; z < size; z++)
             {
-                if (req.hasError)
-                {
-                    Debug.LogError("[CloudNoiseBaker] GPU readback failed.");
-                    RenderTexture.ReleaseTemporary(rt);
-                    return;
-                }
+                Graphics.CopyTexture(rt, z, 0, 0, 0, size, size, slice2D, 0, 0, 0, 0);
+                Color[] slice = slice2D.GetPixels(0);
+                int sliceOffset = z * size * size;
+                System.Array.Copy(slice, 0, allPixels, sliceOffset, slice.Length);
+            }
 
-                // Use Color32 because RGBA8 UNORM → 4 bytes/pixel (Color is 16 bytes)
-                Color32[] pixels32 = req.GetData<Color32>().ToArray();
-                Color[] pixels = new Color[pixels32.Length];
-                for (int i = 0; i < pixels32.Length; i++)
-                    pixels[i] = pixels32[i];
-                tex3D.SetPixels(pixels);
-                tex3D.Apply(false, true);
+            tex3D.SetPixels(allPixels);
+            tex3D.Apply(false, true);
 
-                // Ensure directory exists
-                string dir = System.IO.Path.GetDirectoryName(OutputPath);
-                if (!System.IO.Directory.Exists(dir))
-                    System.IO.Directory.CreateDirectory(dir);
+            Object.DestroyImmediate(slice2D);
+            RenderTexture.ReleaseTemporary(rt);
 
-                // Save as asset
-                AssetDatabase.CreateAsset(tex3D, OutputPath);
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
+            // Ensure directory exists
+            string dir = System.IO.Path.GetDirectoryName(OutputPath);
+            if (!System.IO.Directory.Exists(dir))
+                System.IO.Directory.CreateDirectory(dir);
 
-                Debug.Log($"[CloudNoiseBaker] Baked {size}³ Texture3D → {OutputPath}");
-                RenderTexture.ReleaseTemporary(rt);
-            });
+            // Save as asset
+            AssetDatabase.CreateAsset(tex3D, OutputPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log($"[CloudNoiseBaker] Baked {size}³ Texture3D → {OutputPath}");
         }
 
         /// <summary>

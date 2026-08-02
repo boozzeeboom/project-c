@@ -96,6 +96,11 @@ namespace ProjectC.World.Clouds
             {
                 _kernelAdvect = _compute.FindKernel("AdvectAndRelax");
                 _kernelSplat  = _compute.FindKernel("ApplySplats");
+                if (_kernelAdvect < 0 || _kernelSplat < 0)
+                {
+                    Debug.LogError($"[LocalDensityBuffer] Kernel not found. Advect={_kernelAdvect}, Splat={_kernelSplat}. Shader may have compilation errors.");
+                    _compute = null;
+                }
             }
             else
             {
@@ -117,7 +122,7 @@ namespace ProjectC.World.Clouds
 
         private void Update()
         {
-            if (_compute == null || _densityA == null) return;
+            if (_compute == null || _densityA == null || _kernelAdvect < 0) return;
 
             // Update toroidal center
             if (FollowTarget != null)

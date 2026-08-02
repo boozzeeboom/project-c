@@ -72,7 +72,9 @@ void AdvectAndRelax(uint3 id : SV_DispatchThreadID)
 
     // Sample previous frame with wind advection (toroidal wrap via frac)
     float3 sampleUvw = frac(uvw + windUvwOffset);
-    float sample = _DensityPrev[uint3(sampleUvw * (float)_Resolution)];
+    float3 sampleTexel = sampleUvw * (float)_Resolution;
+    sampleTexel = clamp(sampleTexel, 0.0, (float)_Resolution - 1.0);
+    float sample = _DensityPrev[uint3(sampleTexel)];
 
     // Relaxation: exponential decay toward zero
     float relaxed = max(0.0, sample - _RelaxationRate * _DeltaTime);
@@ -104,7 +106,7 @@ void ApplySplats(uint3 id : SV_DispatchThreadID)
         // Toroidal wrap: also check the closest periodic copy
         float windowSize = (float)_Resolution * _TexelSize;
         // For each dimension, check ±windowSize offset
-        float3 offsets[3] = {
+        float3 offsets[6] = {
             float3(-windowSize, 0, 0), float3(windowSize, 0, 0),
             float3(0, -windowSize, 0), float3(0, windowSize, 0),
             float3(0, 0, -windowSize), float3(0, 0, windowSize)

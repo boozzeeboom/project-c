@@ -94,6 +94,52 @@ namespace ProjectC.World.Clouds
         /// Bakes a slice and compares mean absolute error.
         /// Acceptance threshold: mean abs error < 1e-2 per slice.
         /// </summary>
+        private const string BlueNoiseOutputPath = "Assets/_Project/Textures/BlueNoise64.png";
+
+        [MenuItem("ProjectC/Clouds/Generate Blue Noise 64×64")]
+        public static void GenerateBlueNoise()
+        {
+            int size = 64;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Repeat;
+            tex.filterMode = FilterMode.Point;
+
+            // Simple uniform random noise (acceptable for dithering per plan 1.6)
+            var rng = new System.Random(42);
+            Color[] pixels = new Color[size * size];
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                float v = (float)rng.NextDouble();
+                pixels[i] = new Color(v, v, v, 1f);
+            }
+            tex.SetPixels(pixels);
+            tex.Apply(false);
+
+            byte[] pngData = tex.EncodeToPNG();
+            string dir = System.IO.Path.GetDirectoryName(BlueNoiseOutputPath);
+            if (!System.IO.Directory.Exists(dir))
+                System.IO.Directory.CreateDirectory(dir);
+            System.IO.File.WriteAllBytes(BlueNoiseOutputPath, pngData);
+
+            Object.DestroyImmediate(tex);
+            AssetDatabase.Refresh();
+
+            // Set import settings: point filter, no compression, sRGB off
+            TextureImporter importer = AssetImporter.GetAtPath(BlueNoiseOutputPath) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Default;
+                importer.filterMode = FilterMode.Point;
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.mipmapEnabled = false;
+                importer.sRGBTexture = false;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.SaveAndReimport();
+            }
+
+            Debug.Log($"[CloudNoiseBaker] Generated BlueNoise64 → {BlueNoiseOutputPath}");
+        }
+
         [MenuItem("ProjectC/Clouds/Compare HLSL vs C# Noise (Statistical)")]
         public static void CompareStatistical()
         {

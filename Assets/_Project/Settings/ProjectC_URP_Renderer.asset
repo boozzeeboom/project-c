@@ -15,7 +15,7 @@ MonoBehaviour:
   m_Active: 1
   CloudBottomY: 800
   CloudTopY: 2000
-  CloudNoise3D: {fileID: 0}
+  CloudNoise3D: {fileID: 11700000, guid: 9cec13d467e433748ad1e8856e9403f7, type: 2}
   RaymarchSteps: 48
   MaxRayDistance: 5000
   DensityMultiplier: 1

@@ -12,3 +12,12 @@
 - `Assets/_Project/Scenes/BootstrapScene.unity`: сериализовано новое поле
 
 **Результат:** Upper слой (6000-8000m) теперь рендерит 80 camera-facing quads вместо 3D-сфер. Middle и Lower слои без изменений.
+
+## Итерация от 2026-08-02
+
+**Задача:** Детальный план реализации Cloud Ocean Medium 3.0 — Фаза 1 (Визуальное ядро)
+
+**Коммит:** `a4e18df` — T-CLOUD01: детальный план реализации Cloud Ocean Medium 3.0 (Фаза 1)
+
+**Изменения:**
+- `docs/world/CLOUD_system/3.0/CLOUD_OCEAN_MEDIUM_DETAILED_STEPS.md`: создан документ с 7 пошаговыми задачами Фазы 1

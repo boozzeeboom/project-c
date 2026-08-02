@@ -14,8 +14,11 @@
 
 **Путь:** `Assets/_Project/Shaders/Clouds/CloudNoise.hlsl`
 
-**Вход:** `Assets/CloudGenerator/CloudGenerator_v7.0/CloudGenerator_v7.0/CloudMath.cs`
-- `Hash3(int,int,int,int)` → `uint Hash3(uint3, uint)`
+**Вход (ВАЖНО):** `Assets/CloudGenerator/CloudGenerator_v7.0/CloudGenerator_v7.0/CloudMath.cs` — double/hash-seeded вариант.
+⚠️ НЕ `src/CloudMath.cs` — это старый float/perm-table вариант (фиксированный seed 1337, функции без seed/freq
+параметров). Подписи ниже есть только в v7.0. (Общий план §3.2 ссылается на `src/CloudMath.cs` — поправить там.)
+
+- `Hash3(int,int,int,int)` → `uint Hash3(uint3, uint)` — **порт на uint-арифметику**: C# использует `long` (64-бит) + double-mod; в HLSL 64-бит недоступен → multiply-shift uint-хэш (напр. `u = x*374761393u ^ y*668265263u ^ z*2147483647u; u = (u ^ (u>>13)) * 1274126177u`). Сохранить семантику переполнения int32 как в C# unchecked (HLSL int оборачивается так же)
 - `Fade3(double)` → `float Fade3(float)`
 - `Grad3(int,double,double,double)` → `float Grad3(uint,float3)`
 - `Perlin3D(double,double,double,int)` → `float Perlin3D(float3, uint seed)`
@@ -23,11 +26,14 @@
 - `Worley3D(double,double,double,double,int)` → `float Worley3D(float3 p, float freq, uint seed)` — **2 версии**: low-freq + high-freq (разные freq: 4 и 16)
 - `InvertedWorley(...)` → `float InvertedWorley(float3, float, uint)`
 
+**Точность:** v7.0 — double, HLSL — float32 → **бит-точного совпадения с C# не будет и не нужно**. Приёмка — статистическая (см. ниже), не покадровая.
+
 **Создать:**
-1. `Assets/_Project/Shaders/Clouds/CloudNoise.hlsl` — include-файл со всеми функциями
+1. `Assets/_Project/Shaders/Clouds/CloudNoise.hlsl` — include-файл со всеми функциями (float32, uint-хэш)
 2. `Assets/_Project/Shaders/Clouds/CloudCommon.hlsl` — общие хелперы (remap, height profile, фазовые функции)
 
-**Приёмка:** визуальное сравнение C# vs HLSL через bake-текстуру (см. 1.2).
+**Приёмка:** статистическое сравнение C# v7.0 vs HLSL через две bake-текстуры (см. 1.2):
+mean abs error < 1e-2 по срезам; точного совпадения не ждать (double→float).
 
 ---
 
@@ -41,44 +47,49 @@
      - G = Worley low-freq (freq=4)
      - B = Worley high-freq (freq=16)  
      - A = Inverted Worley (erosion)
-   - Тайлинг через `fract(pos / size)` — бесшовный
-2. `Assets/_Project/Scripts/World/Clouds/CloudNoiseBaker.cs` — Editor-скрипт:
+   - **Remap в [0,1] перед записью в UNORM** (Perlin возвращает [-1,1]): `channel * 0.5 + 0.5`
+   - **Бесшовность — периодическим хэшем, НЕ fract:** `fract()` при сэмплинге даёт повторение, но НЕ бесшовность — непериодический шум даёт швы на границах тайла. Внутри noise-функций применять `mod(cellIndex, texSize)` к индексам ячеек хэша → шум становится периодическим с периодом texSize. Приёмка: срезы на границе тайла совпадают (первый и последний слой/строка идентичны)
+2. `Assets/_Project/Scripts/World/Clouds/CloudNoiseBaker.cs` — Editor-скрипт (namespace `ProjectC.World.Clouds`):
    - `[MenuItem("ProjectC/Clouds/Bake 3D Noise Texture")]`
-   - Создаёт `RenderTexture.descriptor` 128³ RGBAHalf
+   - Создаёт `RenderTexture.descriptor` 128³ **RGBA8 UNORM** (совпадает с общим планом §3.2; RGBAHalf — только если позже появится бандинг; 256³ RGBA8 = 64 МБ — не увлекаться)
    - Диспатчит compute shader
+   - **Readback GPU→CPU:** `AsyncGPUReadback` (или `RenderTexture.active` + `ReadPixels` послойно) → `Texture3D` 128³
    - `AssetDatabase.CreateAsset(texture3D, "Assets/_Project/Data/Clouds/CloudNoise3D.asset")`
+   - Настройки импорта: `wrapMode = Repeat`, `filterMode = Trilinear`
+   - (Опционально, для приёмки 1.1) второй MenuItem: bake той же текстуры из C# v7.0 `CloudMath` → сравнение срезов, mean abs error
 
-**Приёмка:** сгенерированная `CloudNoise3D.asset` без швов при тайлинге (проверить просмотром срезов).
+**Приёмка:** сгенерированная `CloudNoise3D.asset` без швов при тайлинге (сравнить срезы на противоположных гранях тайла; проверить просмотром срезов).
 
 ---
 
 ### 1.3 — `VolumetricCloudsRenderFeature` + `VolumetricClouds.shader` (скелет)
 
 **Создать:**
-1. `Assets/_Project/Scripts/Rendering/VolumetricCloudsRenderFeature.cs`
-   - Копирует паттерн `EdgeDetectionRenderFeature.cs`
-   - `RenderPassEvent.AfterOpaques` (или `BeforeRenderingTransparents` — уточнить)
-   - Fullscreen triangle pass (как EdgeDetection: `GetFullScreenTriangleVertexPosition`)
+1. `Assets/_Project/Scripts/Rendering/VolumetricCloudsRenderFeature.cs` (namespace `ProjectC.Rendering`)
+   - Копирует паттерн `EdgeDetectionRenderFeature.cs` (он лежит в `Scripts/Core/`, но новый subsystem — в `Scripts/Rendering/`; namespace тот же)
+   - `RenderPassEvent.AfterRenderingOpaques` (или `BeforeRenderingTransparents` — уточнить)
+   - Fullscreen triangle pass (как EdgeDetection: `SV_VertexID` + `DrawProcedural` / `GetFullScreenTriangleVertexPosition`)
    - Параметры в инспекторе:
      - `CloudNoise3D` (Texture3D reference)
      - `_CloudBottomY` / `_CloudTopY` (float)
      - `_RaymarchSteps` (int, 32–64)
      - `_MaxRayDistance` (float, 5000)
      - `_DensityMultiplier` (float)
-     - `_WindOffset` (Vector3) — читается из `WindManager`
+     - `_WindOffset` (Vector3) — читается из `WindManager.Instance.CurrentWindDirection` (⚠️ null-guard: в сценах без WindManager не падать; можно подписаться на `WindManager.OnWindUpdated`)
      - Ghibli-рампы: `_DayRampTop/Mid/Bot`, `_SunsetRampTop/Mid/Bot` (Color)
 
 2. `Assets/_Project/Shaders/Clouds/VolumetricClouds.shader`
    - `Shader "Hidden/ProjectC/VolumetricClouds"`
-   - Fullscreen pass (как EdgeDetection.shader: `GetFullScreenTriangleVertexPosition`)
+   - Fullscreen pass (как EdgeDetection.shader: `SV_VertexID`, `Cull Off / ZWrite Off / ZTest Always`)
    - `#include "CloudNoise.hlsl"` + `#include "CloudCommon.hlsl"`
    - На этом этапе: **только плотность (ч/б)**, без освещения
-   - Реконструкция луча: `UNITY_MATRIX_I_P` + `UNITY_MATRIX_I_V` (паттерн из VeilRaymarch.shader)
+   - Реконструкция луча: `UNITY_MATRIX_I_P` + `UNITY_MATRIX_I_V` + `_WorldSpaceCameraPos` (паттерн из VeilRaymarch.shader, строки 245–257)
+   - **Slab intersection (обязательно):** пересечь луч с горизонтальными плоскостями Y=CloudBottomY/CloudTopY → tMin/tMax (паттерн VeilRaymarch.shader, строки 263–296). Без этого каждый пиксель маршит полные `_MaxRayDistance`
    - Функция `density(p)` = shapeNoise × heightProfile × windScroll
    - Early-exit: при `transmittance < 0.01`
 
 **Подключение:**
-- Добавить `VolumetricCloudsRenderFeature` в `ProjectC_URP_Renderer.asset` через Inspector (или кодом)
+- Добавить `VolumetricCloudsRenderFeature` в `ProjectC_URP_Renderer.asset` через Inspector (рядом с EdgeDetectionRenderFeature — там уже добавлен, паттерн проверен)
 
 **Приёмка:** 0 ошибок компиляции, ч/б плотность видна в Game View на высоте 800–2000.
 
@@ -162,10 +173,12 @@ float3 lighting = cloudColor * hg * ms * lightTransmittance + ambient + silverLi
 
 3. **Temporal reprojection:**
    - `_CloudHistoryRT` — предыдущий кадр
-   - `_CameraMotionVectors` — из URP (или ручной расчёт через `UNITY_MATRIX_I_VP`)
-   - Репроекция: `float2 historyUV = uv - motionVector.xy`
+   - **Motion vectors: НЕ рассчитывать на встроенный URP pass** — в URP 17 camera motion vectors из коробки нет (проверить `MotionVectorRenderPass`, если есть — ок). Надёжный путь (стандарт для кастомного volumetrics):
+     - В RenderFeature (C#) кэшировать `prevViewProj = currentViewProj` каждый кадр (`GL.GetGPUProjectionMatrix` + `camera.worldToCameraMatrix`)
+     - Передавать `_PrevViewProj` uniform'ом в шейдер
+     - Репроекция: `clipPosPrev = mul(_PrevViewProj, float4(worldPos, 1))` → `historyUV = clipPosPrev.xy / clipPosPrev.w * 0.5 + 0.5`
    - Blend: `lerp(current, history, 0.9)` (90% история, 10% новый)
-   - Фоллбек при дисавкклюжене: проверка глубины history vs current
+   - Фоллбек при дисавкклюжене: проверка глубины history vs current (и clamp UV к экрану)
 
 **Приёмка:** нет бандинга, нет мерцания при движении камеры. Качество сопоставимо с full-res но за полцены.
 
@@ -228,9 +241,12 @@ Assets/_Project/
 
 ## Риски и заметки
 
+- **Источник шума:** порт идёт из `Assets/CloudGenerator/CloudGenerator_v7.0/.../CloudMath.cs`, НЕ из `src/CloudMath.cs` (в общем плане §3.2 ссылка на `src/` — поправить, иначе возьмут не тот файл).
 - **URP Render Graph:** EdgeDetectionRenderFeature использует RenderGraph API (`RecordRenderGraph`). Нужно сохранить этот паттерн.
 - **RenderPassEvent:** `AfterOpaques` vs `BeforeTransparents` — зависит от того, должны ли облака перекрывать полупрозрачные объекты. По умолчанию `AfterOpaques`.
-- **Texture3D в URP:** может потребоваться `#pragma enable_d3d11_debug_symbols` или специфичные настройки импорта. Проверить поддержку `TEXTURE3D` в URP 17.
+- **Texture3D в URP:** `TEXTURE3D`/`SAMPLER3D` поддерживаются в URP 17 (DX11/Vulkan) — отдельная настройка не нужна. Проверить `#pragma target` в compute (Shader Model 5.0).
+- **Float precision на больших координатах (новое):** сцены 80 000×80 000, world-координаты ломают float32 при сэмплинге шума далеко от начала координат. Сэмплить шум в **camera-relative пространстве**: `samplePos -= floor(cameraPos / tileSize) * tileSize` (шум тайлится → бесшовно). Обязательно для реймарча на высоте слоя вдали от origin.
 - **Blue Noise:** если 64×64 текстура недоступна — сгенерировать через `CloudNoiseBaker` или взять из `Packages/com.unity.render-pipelines.core/Runtime/Textures/BlueNoise64`.
-- **Temporal reprojection:** требует motion vectors. В URP есть `MotionVectors` pass; проверить, включены ли в рендерере.
-- **GDD-14 рампы:** уточнить точные цвета из `GDD_14_Visual_Art_Pipeline.md`.
+- **Temporal reprojection:** motion vectors — ручной кэш предыдущей VP-матрицы в C# (см. 1.6); встроенный URP camera motion vector pass не гарантирован.
+- **GDD-14 рампы:** в GDD-14 только базовые цвета `#FFFFFF` (день) / `#FFB6C1` (закат). Тройки top/mid/bot в 1.5 — **предложение**, расширяющее GDD; подтвердить точные цвета у дизайнера перед Фазой 1.5.
+- **WindManager:** в тестовых сценах может отсутствовать — RenderFeature должен null-guard'ить `WindManager.Instance` (или подписаться на `OnWindUpdated`).

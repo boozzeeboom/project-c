@@ -1,0 +1,51 @@
+// BakeCloudNoise.compute — Phase 1.2
+// Bakes a seamless 3D noise texture (128³ RGBA8 UNORM) from HLSL noise functions.
+// Channels: R=PerlinFBM, G=WorleyLow(freq=4), B=WorleyHigh(freq=16), A=InvertedWorley
+// Seamless via periodic hashing (Hash3Periodic), NOT fract().
+
+#pragma kernel BakeNoise
+#pragma target 5.0
+
+#include "CloudNoise.hlsl"
+
+// Output: RGBA8 UNORM texture
+RWTexture3D<float4> _NoiseOutput : register(u0);
+
+// Bounds
+uint _TexSize;
+
+// Seamless: use mod(cellIndex, texSize) inside noise — period equals texSize
+// This makes the texture tileable without seams at edges.
+
+[numthreads(8, 8, 8)]
+void BakeNoise(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _TexSize || id.y >= _TexSize || id.z >= _TexSize)
+        return;
+
+    // Normalize position to [0, texSize] range for sampling
+    // At the boundary (id = _TexSize), wrap to 0 via periodic hash
+    float3 p = (float3)id;
+
+    uint period = _TexSize;
+
+    // ---- Channel R: Perlin FBM (base mass) ----
+    // Remap from [-1..1] to [0..1] for UNORM storage
+    float fbmVal = Fbm(p, 5, 0.5, 2.0, 42u, period);
+    float perlin01 = fbmVal * 0.5 + 0.5;
+
+    // ---- Channel G: Worley low frequency (freq=4) ----
+    float worleyLow = Worley3D(p, 4.0, 123u, period);
+    // Worley returns distance; normalize to ~[0..1] — typical max dist ~0.7 for freq=4
+    worleyLow = saturate(worleyLow);
+
+    // ---- Channel B: Worley high frequency (freq=16) ----
+    float worleyHigh = Worley3D(p, 16.0, 456u, period);
+    worleyHigh = saturate(worleyHigh);
+
+    // ---- Channel A: Inverted Worley (erosion) ----
+    float invWorley = InvertedWorley(p, 8.0, 789u, period);
+    invWorley = saturate(invWorley);
+
+    _NoiseOutput[id] = float4(perlin01, worleyLow, worleyHigh, invWorley);
+}

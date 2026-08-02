@@ -222,3 +222,67 @@ LocalDensityBuffer (compute)
 |---|---|---|
 | 2026-08-02 | Анализ snowflow_demo + рефрейм «облака = среда» | Создан план 3.0. Решение: Путь 3 «Cloud Ocean Medium», 3 фазы, дизайн-выбор стиля открыт |
 | 2026-08-02 | Фаза 1 — реализация + дебаг видимости | См. Приложение A: 1.1–1.6 готовы (с фиксами), 1.7 открыт; композит переведён с MRT на single-target + ping-pong история |
+| 2026-08-02 | Диагностика: материал → шейдер | См. Приложение B: цепочка mat.SetFloat→шейдер сломана для половины свойств; фикс: Shader.SetGlobal* + удаление из Properties; cloudRT/history отключены (Pass 1 напрямую в экран) |
+
+## Приложение B — Диагностика «mat.SetFloat не доходит до шейдера» (2026-08-02)
+
+### B.1 Контекст
+
+После A.4 облака были «едва заметны», слайдеры Density/Opacity/ColorIntensity не влияли на картинку. Дебаг-режим (Pass 0, B&W) работал контрастно, но Pass 1 (цветной реймарч) давал почти прозрачный результат.
+
+### B.2 Диагностическая цепочка
+
+| Шаг | Тест | Результат | Вывод |
+|---|---|---|---|
+| 1 | Pass 2 = сплошной зелёный (без cloudRT) | ✅ Экран позеленел | Pass 2 исполняется, Blend работает |
+| 2 | Pass 1 = сплошной белый (без реймарча) | ✅ Экран побелел | Pass 1 шейдер исполняется, вершинный шейдер жив |
+| 3 | Pass 1 = world ray direction как RGB | ✅ Градиент (синий вперёд, зелёный вверх, розовый вниз) | `_Cloud_InvProj`/`_Cloud_ViewToWorld` доходят, `GetWorldRay` корректен |
+| 4 | Pass 1 = slab hit test (зелёный/красный) | ✅ Зелёный внизу, красный вверху | `RaySlabIntersection` работает, `_CloudBottomY`/`_CloudTopY` доходят |
+| 5 | Pass 1 = coverage/heightFade/density в одной точке | R=есть, G=много, B=мало | Плотность низкая — либо `_DensityMultiplier` не доходит, либо шум слабый |
+| 6 | Pass 1 = реймарч с хардкодом Density×8, Opacity=5 | ✅ Облака видны (плоские, ч/б, без depth-test) | Реймарч-цикл работает; проблема в доставке uniform'ов из C# |
+| 7 | Pass 1 = реймарч с хардкодом Density×3, Opacity=2 + depth-test | ✅ Облака видны, не перекрывают геометрию | Depth-test работает (`SampleSceneDepth` + `_CameraDepthTexture`) |
+| 8 | Переход на `Shader.SetGlobal*` + удаление из Properties | ⏳ Тестируется | Гипотеза: Properties-слот материала «тенит» глобальные uniform'ы |
+
+### B.3 Корневые причины и фиксы
+
+**Проблема 1: `mat.SetFloat`/`mat.SetColor` не доходят до шейдера для части свойств.**
+- `_CloudBottomY`, `_CloudTopY`, `_HeightEdgeSoftness`, `_CoverageScale/Threshold` — работают через `mat.SetFloat`
+- `_DensityMultiplier`, `_LightAbsorption`, `_CloudOpacity`, `_CloudColorIntensity`, Ghibli-рампы (`_DayRamp*`, `_SunsetRamp*`) — НЕ работают
+- **Фикс:** удалены из Properties-блока шейдера; передаются через `Shader.SetGlobalFloat`/`Shader.SetGlobalColor` в `ApplyProperties`
+
+**Проблема 2: `replace_in_file` оставляет `=======` маркеры конфликтов в .shader и .cs файлах.**
+- **Фикс:** все правки шейдера и C# — через `write_to_file` (полная перезапись)
+
+**Проблема 3: cloudRT + Pass 2/3 композит не проверены (отключены для диагностики).**
+- Pass 1 сейчас рендерит напрямую в colorTarget (`Blend SrcAlpha OneMinusSrcAlpha`)
+- `VolumetricCloudsPass.RecordRenderGraph` — упрощён до одного пасса
+- half-res, temporal reprojection, история — отключены, будут возвращены после подтверждения визуала
+
+### B.4 Архитектурные изменения (относительно A.4)
+
+1. **Матрицы:** `UNITY_MATRIX_I_P`/`UNITY_MATRIX_I_V` → `_Cloud_InvProj`/`_Cloud_ViewToWorld` (устанавливаются через `cmd.SetGlobalMatrix` в RenderFunc — в RenderGraph-пассах Unity их не выставляет автоматически)
+2. **Properties шейдера:** убраны `_DensityMultiplier`, `_LightAbsorption`, `_CloudOpacity`, `_CloudColorIntensity`, `_DayRampTop/Mid/Bot`, `_SunsetRampTop/Mid/Bot` — теперь global-only через `Shader.SetGlobal*`
+3. **Pass 1 Blend:** `Blend One Zero` → `Blend SrcAlpha OneMinusSrcAlpha` (прозрачность вне слаба)
+4. **Depth-test:** добавлен в Pass 1 (не рисует облака над геометрией выше `_CloudTopY`)
+5. **cloudRT/history:** отключены; Pass 1 → colorTarget напрямую
+
+### B.5 Текущие визуальные проблемы (НЕ решены)
+
+1. **Облака выглядят плоско** — alpha быстро насыщается до 0.99 (один шаг), нет объёма
+2. **«Вырезанные куски»** — coverage threshold создаёт бинарные области; между «дырками» нет плавных переходов плотности
+3. **Нет плотного слоя сверху** — при взгляде вниз облака = плоскость, а не толстый слой
+4. **При спуске внутрь** — всё красится в один тон (alpha=0.99 на первом же шаге, цвет усредняется)
+5. **Просвечивает skydome** — в дырках coverage видна обратная сторона неба вместо плотной облачной массы
+
+**Причина:** текущая формула накопления `accumulated.a += stepAbsorption * _CloudOpacity` с `stepAbsorption ≈ 1.0` (плотность × 3 × 0.12 × 3 ≈ высокая) насыщает alpha мгновенно. Нужна перенастройка:
+- Уменьшить density boost (сейчас ×3 в `CloudDensity`)
+- Увеличить количество шагов с ненулевым вкладом (сейчас early-exit при `accumulated.a >= 0.99`)
+- Рассмотреть soft-пороги coverage вместо `smoothstep`
+- Возможно — вернуть multi-layer подход (несколько октав с разной плотностью)
+
+### B.6 Следующие шаги
+
+1. Подтвердить что `Shader.SetGlobal*` фикс работает (цветные облака, слайдеры реагируют)
+2. Настроить формулу накопления для объёмности
+3. Вернуть cloudRT + half-res + temporal reprojection
+4. Сравнить с оригинальным VeilRaymarchController — зачем заменяли?

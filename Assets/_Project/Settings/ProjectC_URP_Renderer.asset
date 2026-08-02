@@ -16,19 +16,21 @@ MonoBehaviour:
   CloudBottomY: 800
   CloudTopY: 2000
   CloudNoise3D: {fileID: 11700000, guid: 9cec13d467e433748ad1e8856e9403f7, type: 2}
-  RaymarchSteps: 48
-  MaxRayDistance: 5000
-  DensityMultiplier: 2.38
-  LightAbsorption: 0.193
-  HeightEdgeSoftness: 0.137
+  RaymarchSteps: 17
+  MaxRayDistance: 20000
+  DensityMultiplier: 1.93
+  LightAbsorption: 0.087
+  Opacity: 1.32
+  ColorIntensity: 2.23
+  HeightEdgeSoftness: 0.272
   NoiseTileSize: 3061
-  CoverageScale: 0.00043
+  CoverageScale: 0.00047
   CoverageThreshold: 0.494
   HalfResRender: 1
   TemporalReprojection: 1
   BlueNoiseDither: 1
   BlueNoiseTexture: {fileID: 2800000, guid: cf8182677e251df47bf344fc5ab478b2, type: 3}
-  WindSpeedMultiplier: 0.1
+  WindSpeedMultiplier: 0.003
   DebugDensityDirect: 0
   DayRampTop: {r: 1, g: 1, b: 1, a: 1}
   DayRampMid: {r: 0.831, g: 0.902, b: 0.945, a: 1}

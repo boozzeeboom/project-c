@@ -1,16 +1,10 @@
 // VolumetricCloudsRenderFeature.cs — CLOUD_system 3.0
 // URP ScriptableRendererFeature (RenderGraph API).
-// Phase 1.3: B&W density fullscreen pass
-// Phase 1.4: height profile + wind + procedural coverage
-// Phase 1.5: colored light-march pass with Ghibli ramps
-// Phase 1.6: half-res render + blue-noise dither + temporal reprojection (MRT history)
 //
-// FIXES 2026-08-02 (post-implementation debug):
-//  - _PrevViewProj теперь реально передаётся в материал (предыдущий кадр, ДО обновления)
-//  - _CloudHistoryRT (persistent, full-res) импортируется в RenderGraph и используется
-//    как MRT-таргет 1 в композите — настоящий temporal ping-pong
-//  - Pass 1: _CloudTargetSize (полуразрешение) → корректные UV реймарча
-//  - Добавлены NoiseTileSize / CoverageScale / CoverageThreshold / _TemporalBlend
+// Phase 1.3–1.6: volumetric clouds with Ghibli-style ramps.
+//
+// DIAGNOSTIC MODE: Pass 1 rendered directly to colorTarget (no cloudRT, no composite).
+// This proves whether the raymarch math works. If clouds appear → cloudRT was the issue.
 
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -37,14 +31,16 @@ namespace ProjectC.Rendering
         [Header("Density")]
         [Range(0.1f, 10f)] public float DensityMultiplier = 1f;
         [Range(0.001f, 0.5f)] public float LightAbsorption = 0.05f;
+        [Range(0.1f, 3f)] public float Opacity = 1f;
+        [Range(0.1f, 3f)] public float ColorIntensity = 1f;
         [Range(0.01f, 0.5f)] public float HeightEdgeSoftness = 0.15f;
 
         [Header("Noise / Coverage")]
-        [Tooltip("World units per 3D-noise tile (128 texels). ~1024 → cloud masses 64–256 m.")]
+        [Tooltip("World units per 3D-noise tile (128 texels).")]
         [Range(256f, 4096f)] public float NoiseTileSize = 1024f;
-        [Tooltip("World scale of the 2D coverage FBM (1/x = feature size in m).")]
+        [Tooltip("World scale of the 2D coverage FBM.")]
         [Range(0.0001f, 0.01f)] public float CoverageScale = 0.0008f;
-        [Tooltip("Coverage cutoff: below → clear sky hole. Lower = more clouds.")]
+        [Tooltip("Coverage cutoff: below → clear sky hole.")]
         [Range(0.1f, 0.9f)] public float CoverageThreshold = 0.5f;
 
         [Header("Phase 1.6: Quality")]
@@ -57,7 +53,6 @@ namespace ProjectC.Rendering
         [Range(0f, 5f)] public float WindSpeedMultiplier = 1f;
 
         [Header("Debug")]
-        [Tooltip("Draw Pass 0 (B&W density) directly to the camera color, skipping MRT/temporal/history. Binary test.")]
         public bool DebugDensityDirect = false;
 
         [Header("Phase 1.5: Ghibli Ramps")]
@@ -73,9 +68,6 @@ namespace ProjectC.Rendering
 
         private Material _material;
 
-        // Phase 1.6: ping-pong history RTs — composite (Pass B) READS one, history
-        // pass (Pass C) WRITES the other; they swap each frame. Two textures avoid
-        // the RenderGraph "read + write the same texture" conflict (see pitfall #3).
         private RTHandle _cloudHistoryA;
         private RTHandle _cloudHistoryB;
         private int _historyIdx;
@@ -108,8 +100,9 @@ namespace ProjectC.Rendering
         internal static readonly int CloudTargetSizeId  = Shader.PropertyToID("_CloudTargetSize");
         internal static readonly int ViewToWorldId      = Shader.PropertyToID("_Cloud_ViewToWorld");
         internal static readonly int InvProjectionId    = Shader.PropertyToID("_Cloud_InvProj");
+        internal static readonly int CloudOpacityId     = Shader.PropertyToID("_CloudOpacity");
+        internal static readonly int CloudColorIntensityId = Shader.PropertyToID("_CloudColorIntensity");
 
-        // Phase 1.6: temporal state
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
         private bool _prevViewProjValid;
 
@@ -137,22 +130,19 @@ namespace ProjectC.Rendering
 
             ApplyProperties(mat, renderingData.cameraData.camera);
 
-            // Ensure persistent ping-pong history RTs (full-res)
             Camera cam = renderingData.cameraData.camera;
             int hw = Mathf.Max(1, cam.pixelWidth);
             int hh = Mathf.Max(1, cam.pixelHeight);
             EnsureHistoryRT(ref _cloudHistoryA, hw, hh, "_CloudHistoryA");
             EnsureHistoryRT(ref _cloudHistoryB, hw, hh, "_CloudHistoryB");
 
-            // Swap: Pass B reads the PREVIOUS frame's written RT, Pass C writes the other.
             RTHandle readHandle = _historyIdx == 0 ? _cloudHistoryA : _cloudHistoryB;
             RTHandle writeHandle = _historyIdx == 0 ? _cloudHistoryB : _cloudHistoryA;
             _historyIdx ^= 1;
 
             var pass = new VolumetricCloudsPass(mat, HalfResRender, TemporalReprojection,
-                DebugDensityDirect, _prevViewProj, _prevViewProjValid, readHandle, writeHandle);
-            // IMPORTANT: render AFTER the skybox (AfterRenderingOpaques=300 < BeforeRenderingSkybox=350 —
-            // the skybox would overwrite the clouds with the star dome). Clouds sit between sky and transparents.
+                DebugDensityDirect, _prevViewProj, _prevViewProjValid, readHandle, writeHandle,
+                Opacity, ColorIntensity);
             pass.renderPassEvent = RenderPassEvent.BeforeRenderingTransparents;
             renderer.EnqueuePass(pass);
         }
@@ -170,7 +160,7 @@ namespace ProjectC.Rendering
                 hideFlags = HideFlags.HideAndDontSave
             };
             rt.Create();
-            handle = RTHandles.Alloc(rt, true); // transferOwnership → Release() frees RT
+            handle = RTHandles.Alloc(rt, true);
         }
 
         private void ApplyProperties(Material mat, Camera camera)
@@ -179,21 +169,24 @@ namespace ProjectC.Rendering
             mat.SetFloat(CloudTopYId, CloudTopY);
             mat.SetInt(RaymarchStepsId, RaymarchSteps);
             mat.SetFloat(MaxRayDistanceId, MaxRayDistance);
-            mat.SetFloat(DensityMultId, DensityMultiplier);
-            mat.SetFloat(LightAbsorptionId, LightAbsorption);
             mat.SetFloat(HeightEdgeId, HeightEdgeSoftness);
             mat.SetFloat(NoiseTileSizeId, NoiseTileSize);
             mat.SetFloat(CoverageScaleId, CoverageScale);
             mat.SetFloat(CoverageThresholdId, CoverageThreshold);
-            // First frame (no valid _PrevViewProj yet) → _TemporalBlend=0 so the
-            // composite writes `current` un-attenuated (0.9×history=0 would make it faint).
             mat.SetFloat(TemporalBlendId,
                 (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
+
+            // Global-only (NOT in shader Properties — Shader.SetGlobal* to avoid shadowing)
+            Shader.SetGlobalFloat(DensityMultId, DensityMultiplier);
+            Shader.SetGlobalFloat(LightAbsorptionId, LightAbsorption);
+            Shader.SetGlobalFloat(CloudOpacityId, Opacity);
+            Shader.SetGlobalFloat(CloudColorIntensityId, ColorIntensity);
+            if (Time.frameCount % 120 == 0)
+                Debug.Log($"[VolClouds] Opacity={Opacity:F2} ColorIntensity={ColorIntensity:F2} DensityMult={DensityMultiplier:F2}");
 
             if (CloudNoise3D != null)
                 mat.SetTexture(CloudNoise3DId, CloudNoise3D);
 
-            // Wind (null-guard)
             Vector3 windDir = Vector3.right;
             float windSpeed = 1f;
             if (WindManager.Instance != null)
@@ -204,10 +197,7 @@ namespace ProjectC.Rendering
             float windMult = WindSpeedMultiplier * 0.05f;
             Vector4 windOffset;
             if (OverrideMaterial != null)
-            {
-                // Shared asset — never mutate it; derive deterministically from time
                 windOffset = (Vector4)(windDir * windSpeed * Time.time * windMult);
-            }
             else
             {
                 windOffset = mat.GetVector(WindOffsetId);
@@ -215,21 +205,18 @@ namespace ProjectC.Rendering
             }
             mat.SetVector(WindOffsetId, windOffset);
 
-            // Sun direction
             Vector3 sunDir = RenderSettings.sun != null
                 ? RenderSettings.sun.transform.forward
                 : new Vector3(0.3f, 0.7f, -0.6f).normalized;
             mat.SetVector(SunDirectionId, sunDir);
 
-            // Ghibli ramps
-            mat.SetColor(DayRampTopId, DayRampTop);
-            mat.SetColor(DayRampMidId, DayRampMid);
-            mat.SetColor(DayRampBotId, DayRampBot);
-            mat.SetColor(SunsetRampTopId, SunsetRampTop);
-            mat.SetColor(SunsetRampMidId, SunsetRampMid);
-            mat.SetColor(SunsetRampBotId, SunsetRampBot);
+            Shader.SetGlobalColor(DayRampTopId, DayRampTop);
+            Shader.SetGlobalColor(DayRampMidId, DayRampMid);
+            Shader.SetGlobalColor(DayRampBotId, DayRampBot);
+            Shader.SetGlobalColor(SunsetRampTopId, SunsetRampTop);
+            Shader.SetGlobalColor(SunsetRampMidId, SunsetRampMid);
+            Shader.SetGlobalColor(SunsetRampBotId, SunsetRampBot);
 
-            // Blue noise (Phase 1.6 — shader declares _BLUE_NOISE_ON via multi_compile_local)
             if (BlueNoiseTexture != null)
                 mat.SetTexture(BlueNoiseTexId, BlueNoiseTexture);
             if (mat.shader != null)
@@ -238,7 +225,6 @@ namespace ProjectC.Rendering
                 mat.SetKeyword(kw, BlueNoiseDither && BlueNoiseTexture != null);
             }
 
-            // Temporal: set PREVIOUS frame VP into the material, then store current for next frame
             Matrix4x4 proj = GL.GetGPUProjectionMatrix(camera.projectionMatrix, false);
             Matrix4x4 view = camera.worldToCameraMatrix;
             if (_prevViewProjValid)
@@ -256,16 +242,8 @@ namespace ProjectC.Rendering
                     Object.DestroyImmediate(_material);
                     _material = null;
                 }
-                if (_cloudHistoryA != null)
-                {
-                    _cloudHistoryA.Release();
-                    _cloudHistoryA = null;
-                }
-                if (_cloudHistoryB != null)
-                {
-                    _cloudHistoryB.Release();
-                    _cloudHistoryB = null;
-                }
+                if (_cloudHistoryA != null) { _cloudHistoryA.Release(); _cloudHistoryA = null; }
+                if (_cloudHistoryB != null) { _cloudHistoryB.Release(); _cloudHistoryB = null; }
             }
         }
     }
@@ -282,6 +260,8 @@ namespace ProjectC.Rendering
         private readonly bool _prevVpValid;
         private RTHandle _historyRead;
         private RTHandle _historyWrite;
+        private readonly float _opacity;
+        private readonly float _colorIntensity;
 
         private class PassData
         {
@@ -291,11 +271,14 @@ namespace ProjectC.Rendering
             public Vector4 TargetSize;
             public Matrix4x4 ViewToWorld;
             public Matrix4x4 InvProjection;
+            public float Opacity;
+            public float ColorIntensity;
         }
 
         public VolumetricCloudsPass(Material material, bool halfRes, bool temporal,
             bool debugDirect, Matrix4x4 prevVp, bool prevVpValid,
-            RTHandle historyRead, RTHandle historyWrite)
+            RTHandle historyRead, RTHandle historyWrite,
+            float opacity, float colorIntensity)
         {
             _material = material;
             _halfRes = halfRes;
@@ -305,6 +288,8 @@ namespace ProjectC.Rendering
             _prevVpValid = prevVpValid;
             _historyRead = historyRead;
             _historyWrite = historyWrite;
+            _opacity = opacity;
+            _colorIntensity = colorIntensity;
             profilingSampler = new ProfilingSampler(PassName);
             ConfigureInput(ScriptableRenderPassInput.Depth);
         }
@@ -319,38 +304,10 @@ namespace ProjectC.Rendering
             var cameraData = frameData.Get<UniversalCameraData>();
             var cam = cameraData.camera;
 
-            // Camera matrices for world-space ray reconstruction (URP RenderGraph does NOT
-            // set UNITY_MATRIX_I_P / UNITY_MATRIX_I_V automatically in custom passes).
             Matrix4x4 viewToWorld = cam.cameraToWorldMatrix;
             Matrix4x4 invProj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false).inverse;
 
-            // Determine resolution
-            int w = _halfRes ? Mathf.Max(1, cam.pixelWidth / 2) : cam.pixelWidth;
-            int h = _halfRes ? Mathf.Max(1, cam.pixelHeight / 2) : cam.pixelHeight;
-
-            // Create half-res cloud RT (transient)
-            var desc = colorTarget.GetDescriptor(renderGraph);
-            desc.width = w;
-            desc.height = h;
-            desc.depthBufferBits = 0;
-            desc.msaaSamples = MSAASamples.None;
-            desc.name = "_CloudRT";
-            TextureHandle cloudRT = renderGraph.CreateTexture(desc);
-
-            // Import ping-pong history RTs (full-res):
-            // _historyRead  = the RT written LAST frame → sampled by composite (Pass B)
-            // _historyWrite = the OTHER RT → written this frame by history pass (Pass C)
-            // (Ping-pong: never read+write the same texture across the frame.)
-            TextureHandle historyRead = default;
-            TextureHandle historyWrite = default;
-            if (_historyRead != null && _historyRead.rt != null)
-                historyRead = renderGraph.ImportTexture(_historyRead);
-            if (_historyWrite != null && _historyWrite.rt != null)
-                historyWrite = renderGraph.ImportTexture(_historyWrite);
-
-            Vector4 targetSize = new Vector4(w, h, 1f / Mathf.Max(w, 1), 1f / Mathf.Max(h, 1));
-
-            // --- DEBUG: Pass 0 (B&W density) straight to camera color — no MRT/temporal/history ---
+            // --- DEBUG: Pass 0 (B&W density) straight to camera ---
             if (_debugDirect)
             {
                 int cw = Mathf.Max(1, cam.pixelWidth);
@@ -378,17 +335,23 @@ namespace ProjectC.Rendering
                 return;
             }
 
-            // --- Pass A: Raymarch → _CloudRT (half-res) ---
+            // --- DIRECT: Pass 1 raymarch straight to colorTarget (bypass cloudRT) ---
+            // DIAGNOSTIC: if clouds appear → raymarch works, cloudRT was the issue.
+            // If still barely visible → raymarch math is broken (lighting/accumulation).
+            int cw2 = Mathf.Max(1, cam.pixelWidth);
+            int ch2 = Mathf.Max(1, cam.pixelHeight);
+            Vector4 fs = new Vector4(cw2, ch2, 1f / cw2, 1f / ch2);
             using (var builder = renderGraph.AddRasterRenderPass<PassData>(
-                PassName, out var passData, profilingSampler))
+                "VolumetricClouds_Direct", out var passData, profilingSampler))
             {
                 passData.Material = _material;
-                passData.CloudRT = cloudRT;
-                passData.TargetSize = targetSize;
+                passData.TargetSize = fs;
                 passData.ViewToWorld = viewToWorld;
                 passData.InvProjection = invProj;
+                passData.Opacity = _opacity;
+                passData.ColorIntensity = _colorIntensity;
 
-                builder.SetRenderAttachment(cloudRT, 0, AccessFlags.Write);
+                builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
                 builder.AllowPassCulling(false);
                 builder.AllowGlobalStateModification(true);
 
@@ -397,77 +360,11 @@ namespace ProjectC.Rendering
                     ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, data.TargetSize);
                     ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, data.ViewToWorld);
                     ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, data.InvProjection);
-                    // Pass 1: colored light-march (Phase 1.5)
+                    ctx.cmd.SetGlobalFloat(VolumetricCloudsRenderFeature.CloudOpacityId, data.Opacity);
+                    ctx.cmd.SetGlobalFloat(VolumetricCloudsRenderFeature.CloudColorIntensityId, data.ColorIntensity);
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 1,
                         MeshTopology.Triangles, 3, 1);
                 });
-            }
-
-            // --- Pass B: Upsample + temporal composite → colorTarget (SINGLE target) ---
-            // Same structure as the proven EdgeDetection pass: one attachment, DrawProcedural,
-            // blend state from the shader (Pass 2 = SrcAlpha OneMinusSrcAlpha).
-            using (var builder = renderGraph.AddRasterRenderPass<PassData>(
-                "VolumetricClouds_Composite", out var compData, profilingSampler))
-            {
-                compData.Material = _material;
-                compData.CloudRT = cloudRT;
-                compData.HistoryRT = historyRead;
-                compData.ViewToWorld = viewToWorld;
-                compData.InvProjection = invProj;
-
-                builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
-                builder.UseTexture(cloudRT, AccessFlags.Read);
-                if (historyRead.IsValid())
-                    builder.UseTexture(historyRead, AccessFlags.Read);
-                builder.AllowPassCulling(false);
-                builder.AllowGlobalStateModification(true);
-
-                builder.SetRenderFunc(static (PassData data, RasterGraphContext ctx) =>
-                {
-                    ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudRTId, data.CloudRT);
-                    if (data.HistoryRT.IsValid())
-                        ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudHistoryRTId, data.HistoryRT);
-                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, data.ViewToWorld);
-                    ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, data.InvProjection);
-                    // Pass 2: composite — blends result onto the camera color (SrcAlpha)
-                    ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 2,
-                        MeshTopology.Triangles, 3, 1);
-                });
-            }
-
-            // --- Pass C: raw composite result → ping-pong history RT (single target) ---
-            // Pass 3 = same composite fragment, Blend One Zero. Reads the OPPOSITE history
-            // texture (historyRead) while writing historyWrite — legal in RenderGraph.
-            if (historyWrite.IsValid())
-            {
-                using (var builder = renderGraph.AddRasterRenderPass<PassData>(
-                    "VolumetricClouds_History", out var histData, profilingSampler))
-                {
-                    histData.Material = _material;
-                    histData.CloudRT = cloudRT;
-                    histData.HistoryRT = historyRead;
-                    histData.ViewToWorld = viewToWorld;
-                    histData.InvProjection = invProj;
-
-                    builder.SetRenderAttachment(historyWrite, 0, AccessFlags.Write);
-                    builder.UseTexture(cloudRT, AccessFlags.Read);
-                    if (historyRead.IsValid())
-                        builder.UseTexture(historyRead, AccessFlags.Read);
-                    builder.AllowPassCulling(false);
-                    builder.AllowGlobalStateModification(true);
-
-                    builder.SetRenderFunc(static (PassData data, RasterGraphContext ctx) =>
-                    {
-                        ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudRTId, data.CloudRT);
-                        if (data.HistoryRT.IsValid())
-                            ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudHistoryRTId, data.HistoryRT);
-                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, data.ViewToWorld);
-                        ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, data.InvProjection);
-                        // Pass 3: raw result into history (One Zero — RT not cleared by RenderGraph)
-                        ctx.cmd.DrawProcedural(Matrix4x4.identity, data.Material, 3,
-                            MeshTopology.Triangles, 3, 1);
-                    });
-                }
             }
         }
     }

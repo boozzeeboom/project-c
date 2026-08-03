@@ -56,6 +56,10 @@ namespace ProjectC.World.Clouds
         // ── CPU mirror (Phase 2.5) ──
         private float[] _cpuDensity;
 
+        // ── Debug readback ──
+        private float _lastReadbackTime;
+        private const float ReadbackInterval = 2f;
+
         // ── Shader property IDs ──
         private static readonly int DensityPrevId    = Shader.PropertyToID("_DensityPrev");
         private static readonly int DensityNextId    = Shader.PropertyToID("_DensityNext");
@@ -173,6 +177,20 @@ namespace ProjectC.World.Clouds
             // ── CPU mirror relaxation ──
             RelaxCpuMirror(dt);
             SyncCpuFromSplats();
+
+            // ── Debug readback: check CPU mirror center value ──
+            _lastReadbackTime += dt;
+            if (_verboseLogging && _lastReadbackTime > ReadbackInterval)
+            {
+                _lastReadbackTime = 0f;
+                int centerIdx = (Resolution / 2) + (Resolution / 2) * Resolution + (Resolution / 2) * Resolution * Resolution;
+                float centerVal = _cpuDensity != null && centerIdx < _cpuDensity.Length ? _cpuDensity[centerIdx] : -1f;
+                float maxVal = 0f;
+                if (_cpuDensity != null)
+                    for (int i = 0; i < _cpuDensity.Length; i++)
+                        if (_cpuDensity[i] > maxVal) maxVal = _cpuDensity[i];
+                Debug.Log($"[LocalDensityBuffer] CPU mirror: center={centerVal:F4} max={maxVal:F4} centerWorld={Center} splatQueue={_splatQueueCount}");
+            }
 
             // Debug: test splat at camera position (key T)
             if (_verboseLogging && Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame && Camera.main != null)

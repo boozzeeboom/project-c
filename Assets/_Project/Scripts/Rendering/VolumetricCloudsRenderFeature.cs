@@ -111,6 +111,7 @@ namespace ProjectC.Rendering
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
         private bool _prevViewProjValid;
         private bool _loggedOnce;
+        private bool _addOnceLogged;
 
         public Material GetOrCreateMaterial()
         {
@@ -122,10 +123,19 @@ namespace ProjectC.Rendering
             return _material;
         }
 
-        public override void Create() { _prevViewProjValid = false; }
+        public override void Create()
+        {
+            _prevViewProjValid = false;
+            Debug.Log("[VolClouds] Create() called — RenderFeature initialized.");
+        }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
+            if (!_addOnceLogged)
+            {
+                _addOnceLogged = true;
+                Debug.Log($"[VolClouds] AddRenderPasses() called! cameraType={renderingData.cameraData.cameraType} cam={renderingData.cameraData.camera?.name} frameCount={Time.frameCount}");
+            }
             if (renderingData.cameraData.cameraType == CameraType.Preview) return;
             Material mat = GetOrCreateMaterial();
             if (mat == null) return;

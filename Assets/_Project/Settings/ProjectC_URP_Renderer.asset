@@ -38,7 +38,7 @@ MonoBehaviour:
   SunsetRampTop: {r: 1, g: 0.714, b: 0.757, a: 1}
   SunsetRampMid: {r: 1, g: 0.557, b: 0.655, a: 1}
   SunsetRampBot: {r: 0.804, g: 0.361, b: 0.361, a: 1}
-  LocalDensityInfluence: 1
+  LocalDensityInfluence: 2
   OverrideMaterial: {fileID: 0}
 --- !u!114 &-597003445878171204
 MonoBehaviour:

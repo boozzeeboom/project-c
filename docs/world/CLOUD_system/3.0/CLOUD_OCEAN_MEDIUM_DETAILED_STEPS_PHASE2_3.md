@@ -161,6 +161,63 @@ float SampleLocalDensity(float3 worldPos)
 
 ---
 
+### 2.2 Статус отладки (2026-08-03)
+
+**🟡 Пайплайн работает end-to-end, но визуального разреза нет.** Все логические звенья проверены:
+
+#### Что реализовано (код)
+
+| Компонент | Статус |
+|---|---|
+| `LocalDensityBuffer.cs` (ComputeShader, ping-pong, тор, CPU mirror) | ✅ Работает |
+| `LocalDensity.compute` (AdvectAndRelax + ApplySplats) | ✅ Работает |
+| `ShipWakeCloudCutter.cs` (сплаты при движении корабля) | ✅ Работает |
+| `VolumetricCloudsRenderFeature.cs` (читает Instance, передаёт RT в шейдер) | ✅ Работает |
+| `VolumetricClouds.shader` — `SampleLocalDensity()` + вычитание в `CloudDensity()` | ✅ Работает |
+| `_LocalDensityRT/center/size/influence` в ShaderLab Properties + `mat.Set*` | ✅ Работает |
+
+#### Хронология отладки
+
+1. **CPU mirror readback** (каждые 2 с): значения `center=33…40`, `max=33…40`, `centerWorld` у корабля, `splatQueue=0`.
+   → Плотность **накапливается** в центре, сплаты обрабатываются.
+
+2. **Лог `[VolClouds] Dens=...`** (каждые 120 кадров): `LocalDensity OK: RT=True size=1920`.
+   → `LocalDensityBuffer.Instance` и `GetDensityRT()` живы в `ApplyProperties`.
+
+3. **Шейдер:** `SampleLocalDensity` сэмплирует `_LocalDensityRT` с UVW = `(worldPos - center)/size + 0.5`.
+   `CloudDensity` делает `density = max(0, density - local * influence)`.
+   RT добавлен в ShaderLab Properties (`[HideInInspector] _LocalDensityRT ... 3D`), используется `mat.SetTexture` (не `Shader.SetGlobalTexture` — потому что без Properties TEXTURE3D не биндится в URP).
+
+4. **Лог `Create()` + `AddRenderPasses()`**: `Create()` вызывается, `AddRenderPasses` → `Dens=` лог появляется.
+   → RenderFeature гарантированно исполняется.
+
+5. **`DebugDensityDirect = true`**: B&W проход показывает **белую область у корабля**.
+   → RT доходит до шейдера, сэмплируется, значения ненулевые.
+
+6. **Увеличены `CutAmount = 1.0`, `LocalDensityInfluence = 2.0`**: визуального разреза по-прежнему нет.
+
+#### Разрыв: B&W показывает плотность, цветной проход — нет разреза
+
+Оба прохода (`VolumetricClouds_BW` — Pass 0, `VolumetricClouds_Color` — Pass 1)
+вызывают **одну и ту же** `CloudDensity()` с **одним и тем же** `_LocalDensityRT`.
+B&W подтверждает, что RT сэмплируется корректно.
+
+**Гипотеза:** в цветном проходе плотность обнуляется у корабля (как и задумано),
+но визуально разрез не заметен — возможно, из-за крупного шага рэймарча
+(30 шагов / 20000 юнитов = ~667 юнитов/шаг), и разрез попадает в 1–2 шага,
+а остальной столб облака перекрывает дыру. Либо `_LocalDensityInfluence` сбрасывается
+в 0 в цветном проходе (маловероятно — один материал, один `ApplyProperties`).
+
+**Следующие шаги для диагностики:**
+- Проверить `_LocalDensityInfluence` непосредственно в шейдере (вывести как цвет).
+- Уменьшить `MaxRayDistance` до 3000 и увеличить `RaymarchSteps` до 64 — чтобы
+  разрез занимал больше шагов.
+- Проверить blending: `Blend SrcAlpha OneMinusSrcAlpha` — если accumulated.a=0,
+  пиксель должен стать прозрачным и показать небо. Возможно, небо за облаками
+  тоже облачное (нет синего фона).
+
+---
+
 ### 2.3 — VFX Graph: конденсационные следы (первый .vfx)
 
 **Цель:** первый .vfx в проекте; след тянется за кораблём.

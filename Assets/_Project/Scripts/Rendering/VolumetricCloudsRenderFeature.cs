@@ -281,9 +281,13 @@ namespace ProjectC.Rendering
         private static readonly Vector4[] _sunMidCache = new Vector4[4];
         private static readonly Vector4[] _sunBotCache = new Vector4[4];
 
+        private int _frameCount;
+
         private void ApplyProperties(Material mat, Camera camera)
         {
             EnsureLayerDefaults();
+            _frameCount++;
+
             // ── Collect active layers ──
             CloudLayerDef[] layers = { Layer0, Layer1, Layer2, Layer3 };
             int count = Mathf.Clamp(ActiveLayerCount, 1, 4);
@@ -308,7 +312,17 @@ namespace ProjectC.Rendering
             mat.SetFloat(MaxRayDistanceId, MaxRayDistance);
             mat.SetFloat(HeightEdgeId, HeightEdgeSoftness);
             mat.SetFloat(CoverageScaleId, CoverageScale);
-            Shader.SetGlobalFloat(DepthFadeId, DepthFadeDistance);
+
+            // DepthFade via material (global uniform may be stripped by compiler)
+            mat.SetFloat(DepthFadeId, DepthFadeDistance);
+
+            // Unconditional first-frame dump
+            if (_frameCount == 1)
+            {
+                for (int i = 0; i < count; i++)
+                    Debug.LogWarning($"[VolClouds] Layer[{i}]: bottom={_boundsCache[i].x:F0} top={_boundsCache[i].y:F0} covThresh={_boundsCache[i].z:F2} densMult={_boundsCache[i].w:F2}");
+                Debug.LogWarning($"[VolClouds] DepthFade={DepthFadeDistance:F0} Opacity={Opacity:F2} ColorInt={ColorIntensity:F2}");
+            }
             mat.SetFloat(TemporalBlendId, (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
 
             // Layer arrays

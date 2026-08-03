@@ -13,6 +13,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         _MaxRayDistance ("Max Ray Distance", Float) = 5000.0
         _HeightEdgeSoftness ("Height Edge Softness", Range(0.01, 1.5)) = 0.3
         _CoverageScale ("Coverage Scale", Float) = 0.0008
+        _DepthFadeDistance ("Depth Fade Distance", Range(10, 2000)) = 200
         [HideInInspector] _BlueNoiseTex ("Blue Noise", 2D) = "black" {}
         [HideInInspector] _WindOffset ("Wind Offset", Vector) = (0, 0, 0, 0)
         [HideInInspector] _LocalDensityRT ("Local Density", 3D) = "" {}
@@ -347,7 +348,9 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
                         float3 ambient = cloudColor * 0.25;
                         float silver = SilverLining(cosTheta, 0.3);
+                        // DEBUG: if DepthFade slider is at minimum → green tint (confirms uniform reaches shader)
                         float3 lighting = (cloudColor * hg * ms * lightTransmittance + ambient + silver * cloudColor) * _CloudColorIntensity;
+                        if (_DepthFadeDistance < 11.0) lighting = lighting * 0.3 + float3(0, 1, 0) * 0.7;
 
                         float stepTransmittance = BeerLambert(density, stepSize, _LightAbsorption);
                         float stepAbsorption = (1.0 - stepTransmittance) * depthFade;

@@ -107,6 +107,8 @@ namespace ProjectC.Rendering
 
         [Header("Debug")]
         public bool DebugDensityDirect = false;
+        [Tooltip("0 = all layers. Bit 0 = layer0, bit1 = layer1, …")]
+        public int DebugLayerMask = 0;
 
         [Header("Phase 2.2: Local Density")]
         [Tooltip("Используется singleton LocalDensityBuffer.Instance (не требует ручного назначения).")]
@@ -161,6 +163,7 @@ namespace ProjectC.Rendering
         private static readonly int LayerSunsetMidId    = Shader.PropertyToID("_LayerSunsetMid");
         private static readonly int LayerSunsetBotId    = Shader.PropertyToID("_LayerSunsetBot");
         private static readonly int LayerCountId        = Shader.PropertyToID("_LayerCount");
+        private static readonly int DebugLayerMaskId    = Shader.PropertyToID("_DebugLayerMask");
 
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
         private bool _prevViewProjValid;
@@ -266,6 +269,7 @@ namespace ProjectC.Rendering
             mat.SetVectorArray(LayerSunsetMidId, _sunMidCache);
             mat.SetVectorArray(LayerSunsetBotId, _sunBotCache);
             mat.SetInt(LayerCountId, count);
+            mat.SetInt(DebugLayerMaskId, DebugLayerMask);
 
             Shader.SetGlobalFloat(NoiseTileSizeId, NoiseTileSize);
             Shader.SetGlobalFloat(LightAbsorptionId, LightAbsorption);

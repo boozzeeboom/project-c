@@ -189,6 +189,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
             if (dispFactor > 0.001)
             {
                 float3 disp = SampleLocalDisplacement(worldPos);
+                disp.y *= 0.15; // suppress vertical displacement (wake is horizontal)
                 worldPos = worldPos + disp * _LocalDisplacementStrength * dispFactor;
             }
         #endif

@@ -55,28 +55,28 @@ namespace ProjectC.Rendering
         [Range(1, 4)] public int ActiveLayerCount = 4;
         public CloudLayerDef Layer0 = new CloudLayerDef
         {
-            BottomY = 800f, TopY = 1200f,
+            BottomY = 700f, TopY = 1500f,
             DensityMultiplier = 1.5f, CoverageThreshold = 0.35f,
             DayRampTop = Color.white, DayRampMid = new Color(0.7f, 0.75f, 0.8f), DayRampBot = new Color(0.4f, 0.45f, 0.55f),
             SunsetRampTop = Color.white, SunsetRampMid = new Color(0.9f, 0.55f, 0.45f), SunsetRampBot = new Color(0.5f, 0.2f, 0.2f)
         };
         public CloudLayerDef Layer1 = new CloudLayerDef
         {
-            BottomY = 1200f, TopY = 2500f,
+            BottomY = 1000f, TopY = 2800f,
             DensityMultiplier = 1f, CoverageThreshold = 0.5f,
             DayRampTop = Color.white, DayRampMid = new Color(0.831f, 0.902f, 0.945f), DayRampBot = new Color(0.663f, 0.8f, 0.89f),
             SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.714f, 0.757f), SunsetRampBot = new Color(0.804f, 0.361f, 0.361f)
         };
         public CloudLayerDef Layer2 = new CloudLayerDef
         {
-            BottomY = 2500f, TopY = 4500f,
+            BottomY = 2200f, TopY = 4800f,
             DensityMultiplier = 0.6f, CoverageThreshold = 0.65f,
             DayRampTop = Color.white, DayRampMid = new Color(0.88f, 0.92f, 0.96f), DayRampBot = new Color(0.75f, 0.82f, 0.9f),
             SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.8f, 0.75f), SunsetRampBot = new Color(0.85f, 0.55f, 0.45f)
         };
         public CloudLayerDef Layer3 = new CloudLayerDef
         {
-            BottomY = 4500f, TopY = 7000f,
+            BottomY = 4000f, TopY = 7200f,
             DensityMultiplier = 0.3f, CoverageThreshold = 0.75f,
             DayRampTop = Color.white, DayRampMid = new Color(0.9f, 0.93f, 0.97f), DayRampBot = new Color(0.8f, 0.85f, 0.92f),
             SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.85f, 0.8f), SunsetRampBot = new Color(0.9f, 0.65f, 0.55f)
@@ -92,7 +92,7 @@ namespace ProjectC.Rendering
         [Range(0.1f, 5f)] public float ColorIntensity = 1f;
 
         [Header("Shape")]
-        [Range(0.01f, 0.5f)] public float HeightEdgeSoftness = 0.15f;
+        [Range(0.01f, 1.5f)] public float HeightEdgeSoftness = 0.3f;
         [Tooltip("World units per 3D-noise tile (128 texels).")]
         [Range(256f, 4096f)] public float NoiseTileSize = 1024f;
         [Tooltip("World scale of the 2D coverage FBM.")]
@@ -184,7 +184,7 @@ namespace ProjectC.Rendering
             if (Layer0.BottomY < 1f && Layer0.TopY < 1f)
             {
                 Layer0 = new CloudLayerDef {
-                    BottomY = 800f, TopY = 1200f, DensityMultiplier = 1.5f, CoverageThreshold = 0.35f,
+                    BottomY = 700f, TopY = 1500f, DensityMultiplier = 1.5f, CoverageThreshold = 0.35f,
                     DayRampTop = Color.white, DayRampMid = new Color(0.7f, 0.75f, 0.8f), DayRampBot = new Color(0.4f, 0.45f, 0.55f),
                     SunsetRampTop = Color.white, SunsetRampMid = new Color(0.9f, 0.55f, 0.45f), SunsetRampBot = new Color(0.5f, 0.2f, 0.2f)
                 };
@@ -192,7 +192,7 @@ namespace ProjectC.Rendering
             if (Layer1.BottomY < 1f && Layer1.TopY < 1f)
             {
                 Layer1 = new CloudLayerDef {
-                    BottomY = 1200f, TopY = 2500f, DensityMultiplier = 1f, CoverageThreshold = 0.5f,
+                    BottomY = 1000f, TopY = 2800f, DensityMultiplier = 1f, CoverageThreshold = 0.5f,
                     DayRampTop = Color.white, DayRampMid = new Color(0.831f, 0.902f, 0.945f), DayRampBot = new Color(0.663f, 0.8f, 0.89f),
                     SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.714f, 0.757f), SunsetRampBot = new Color(0.804f, 0.361f, 0.361f)
                 };
@@ -200,7 +200,7 @@ namespace ProjectC.Rendering
             if (Layer2.BottomY < 1f && Layer2.TopY < 1f)
             {
                 Layer2 = new CloudLayerDef {
-                    BottomY = 2500f, TopY = 4500f, DensityMultiplier = 0.6f, CoverageThreshold = 0.65f,
+                    BottomY = 2200f, TopY = 4800f, DensityMultiplier = 0.6f, CoverageThreshold = 0.65f,
                     DayRampTop = Color.white, DayRampMid = new Color(0.88f, 0.92f, 0.96f), DayRampBot = new Color(0.75f, 0.82f, 0.9f),
                     SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.8f, 0.75f), SunsetRampBot = new Color(0.85f, 0.55f, 0.45f)
                 };
@@ -208,7 +208,7 @@ namespace ProjectC.Rendering
             if (Layer3.BottomY < 1f && Layer3.TopY < 1f)
             {
                 Layer3 = new CloudLayerDef {
-                    BottomY = 4500f, TopY = 7000f, DensityMultiplier = 0.3f, CoverageThreshold = 0.75f,
+                    BottomY = 4000f, TopY = 7200f, DensityMultiplier = 0.3f, CoverageThreshold = 0.75f,
                     DayRampTop = Color.white, DayRampMid = new Color(0.9f, 0.93f, 0.97f), DayRampBot = new Color(0.8f, 0.85f, 0.92f),
                     SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.85f, 0.8f), SunsetRampBot = new Color(0.9f, 0.65f, 0.55f)
                 };

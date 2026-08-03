@@ -18,8 +18,8 @@ MonoBehaviour:
   Layer0:
     BottomY: 800
     TopY: 1200
-    DensityMultiplier: 1.5
-    CoverageThreshold: 0.35
+    DensityMultiplier: 0.39
+    CoverageThreshold: 0.1
     DayRampTop: {r: 1, g: 1, b: 1, a: 1}
     DayRampMid: {r: 0.7, g: 0.75, b: 0.8, a: 1}
     DayRampBot: {r: 0.4, g: 0.45, b: 0.55, a: 1}
@@ -29,8 +29,8 @@ MonoBehaviour:
   Layer1:
     BottomY: 1200
     TopY: 2500
-    DensityMultiplier: 1
-    CoverageThreshold: 0.5
+    DensityMultiplier: 1.48
+    CoverageThreshold: 0.346
     DayRampTop: {r: 1, g: 1, b: 1, a: 1}
     DayRampMid: {r: 0.831, g: 0.902, b: 0.945, a: 1}
     DayRampBot: {r: 0.663, g: 0.8, b: 0.89, a: 1}
@@ -40,8 +40,8 @@ MonoBehaviour:
   Layer2:
     BottomY: 2500
     TopY: 4500
-    DensityMultiplier: 0.6
-    CoverageThreshold: 0.65
+    DensityMultiplier: 1.05
+    CoverageThreshold: 0.496
     DayRampTop: {r: 1, g: 1, b: 1, a: 1}
     DayRampMid: {r: 0.88, g: 0.92, b: 0.96, a: 1}
     DayRampBot: {r: 0.75, g: 0.82, b: 0.9, a: 1}
@@ -52,16 +52,18 @@ MonoBehaviour:
     BottomY: 4500
     TopY: 7000
     DensityMultiplier: 0.3
-    CoverageThreshold: 0.75
+    CoverageThreshold: 0.435
     DayRampTop: {r: 1, g: 1, b: 1, a: 1}
     DayRampMid: {r: 0.9, g: 0.93, b: 0.97, a: 1}
     DayRampBot: {r: 0.8, g: 0.85, b: 0.92, a: 1}
     SunsetRampTop: {r: 1, g: 1, b: 1, a: 1}
     SunsetRampMid: {r: 1, g: 0.85, b: 0.8, a: 1}
     SunsetRampBot: {r: 0.9, g: 0.65, b: 0.55, a: 1}
-  RaymarchSteps: 30
+  RaymarchSteps: 37
   MaxRayDistance: 20000
-  LightAbsorption: 0.01
+  LightAbsorption: 0.014
+  Opacity: 1
+  ColorIntensity: 3.01
   HeightEdgeSoftness: 0.261
   NoiseTileSize: 1024
   CoverageScale: 0.0001
@@ -71,7 +73,7 @@ MonoBehaviour:
   BlueNoiseTexture: {fileID: 2800000, guid: cf8182677e251df47bf344fc5ab478b2, type: 3}
   WindSpeedMultiplier: 0.01
   DebugDensityDirect: 0
-  DebugLayerMask: 4
+  DebugLayerMask: 0
   LocalDensityInfluence: 2
   DisplacementStrength: 1000
   OverrideMaterial: {fileID: 0}

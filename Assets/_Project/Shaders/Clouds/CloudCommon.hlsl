@@ -41,7 +41,10 @@ float HeightProfile(float y, float cloudBottom, float cloudTop, float peakPositi
 float HeightProfileSimple(float y, float cloudBottom, float cloudTop, float edgeSoftness)
 {
     float range = cloudTop - cloudBottom;
-    float fade = range * edgeSoftness;
+    // Min 100m fade so narrow layers don't have razor-sharp edges
+    float fade = max(100.0, range * edgeSoftness);
+    // Clamp fade to half the range (prevents full-layer fade)
+    fade = min(fade, range * 0.45);
     float bottom = smoothstep(cloudBottom, cloudBottom + fade, y);
     float top = 1.0 - smoothstep(cloudTop - fade, cloudTop, y);
     return bottom * top;

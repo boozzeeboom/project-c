@@ -33,6 +33,14 @@ namespace ProjectC.World.Clouds
             if (ShipTransform == null)
                 ShipTransform = transform;
             _lastPos = ShipTransform.position;
+
+            // Point LocalDensityBuffer window at the ship (not camera)
+            var ld = LocalDensityBuffer.Instance;
+            if (ld != null && ld.FollowTarget == null)
+            {
+                ld.FollowTarget = ShipTransform;
+                Debug.Log($"[ShipWakeCloudCutter] LocalDensityBuffer.FollowTarget → {ShipTransform.name}");
+            }
         }
 
         private void Update()

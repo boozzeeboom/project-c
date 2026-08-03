@@ -37,6 +37,9 @@ namespace ProjectC.Core
 
         public static Dictionary<ushort, StormController> ClientControllers { get; } = new Dictionary<ushort, StormController>();
 
+        /// <summary>Событие молнии (Phase 2.4). Вызывается при TriggerLightning().</summary>
+        public static event System.Action<StormController> OnLightningTriggered;
+
         private void Awake()
         {
             if (_logDebug) Debug.Log($"[StormController] Awake on {gameObject.name}");
@@ -140,6 +143,8 @@ namespace ProjectC.Core
             {
                 _lightningVFX.Emit(Random.Range(5, 15));
             }
+
+            OnLightningTriggered?.Invoke(this);
 
             StartCoroutine(LightningFlashEffect());
         }

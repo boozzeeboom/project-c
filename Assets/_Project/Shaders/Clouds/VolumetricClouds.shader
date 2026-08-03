@@ -60,6 +60,8 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         float4 _LayerSunsetBot[4];
         int _LayerCount;
         int _DebugLayerMask; // bit 0=layer0, bit1=layer1, … 0 = all
+        int _LayerNoiseMask; // bit=0 → shared noise, bit=1 → independent noise per layer
+        float _DebugDensityScale; // debug pass multiplier
 
         // === Global-only ===
         float _NoiseTileSize;
@@ -170,7 +172,10 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         // so cloud shapes are uncorrelated — lower layers fill upper-layer holes.
         float LayerNoiseShape(float3 samplePos, int layerIndex)
         {
-            float seed = (float)(layerIndex) * 137.0 + 1.0;
+            // LayerNoiseMask bit=0 → shared noise (same sample as layer 0 → beautiful uniform blanket)
+            // LayerNoiseMask bit=1 → independent noise (unique pattern per layer)
+            int useOwnNoise = (_LayerNoiseMask >> layerIndex) & 1;
+            float seed = useOwnNoise ? ((float)(layerIndex) * 137.0 + 1.0) : 0.0;
             float3 layerPos = samplePos + float3(seed, seed * 1.7, seed * 0.3);
             float3 uvw = layerPos / _NoiseTileSize;
             uvw = frac(uvw);
@@ -269,7 +274,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                     float3 c;
                     totalDensity += CloudDensity(rayOrigin + rayDir * t, rayOrigin, covNoise, rampBlend, c) * stepSize;
                 }
-                float d = saturate(totalDensity * 0.005);
+                float d = saturate(totalDensity * _DebugDensityScale);
                 return float4(d.xxx, d);
             }
             ENDHLSL
@@ -329,9 +334,6 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
                     if (density > 0.001)
                     {
-                        // Soft depth fade: clouds near scene geometry gradually fade out
-                        float depthFade = saturate((sceneLinear - t) / max(_DepthFadeDistance, 1e-4));
-
                         float lightStepSize = min(stepSize * 3.0, 200.0);
                         float lightTransmittance = 1.0;
                         for (int j = 0; j < LIGHT_STEPS; j++)
@@ -348,18 +350,21 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
                         float3 ambient = cloudColor * 0.25;
                         float silver = SilverLining(cosTheta, 0.3);
-                        // DEBUG: if DepthFade slider is at minimum → green tint (confirms uniform reaches shader)
                         float3 lighting = (cloudColor * hg * ms * lightTransmittance + ambient + silver * cloudColor) * _CloudColorIntensity;
-                        if (_DepthFadeDistance < 11.0) lighting = lighting * 0.3 + float3(0, 1, 0) * 0.7;
 
                         float stepTransmittance = BeerLambert(density, stepSize, _LightAbsorption);
-                        float stepAbsorption = (1.0 - stepTransmittance) * depthFade;
+                        float stepAbsorption = 1.0 - stepTransmittance;
                         float transmittance = 1.0 - accumulated.a;
                         accumulated.rgb += lighting * transmittance * stepAbsorption;
                         accumulated.a   += stepAbsorption * _CloudOpacity;
                     }
                 }
 
+                // Post-loop depth fade: cloud opacity scales with how much cloud is in front of geometry
+                float cloudThickness = tMax - tMin;
+                float depthFade = saturate(cloudThickness / max(_DepthFadeDistance, 1e-4));
+                accumulated.rgb *= depthFade;
+                accumulated.a   *= depthFade;
                 return accumulated;
             }
             ENDHLSL

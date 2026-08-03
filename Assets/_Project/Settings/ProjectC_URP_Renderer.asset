@@ -67,7 +67,7 @@ MonoBehaviour:
   HeightEdgeSoftness: 0.991
   NoiseTileSize: 1024
   CoverageScale: 0.0001
-  DepthFadeDistance: 200
+  DepthFadeDistance: 10
   HalfResRender: 1
   TemporalReprojection: 1
   BlueNoiseDither: 1

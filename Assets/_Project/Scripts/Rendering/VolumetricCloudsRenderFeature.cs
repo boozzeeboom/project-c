@@ -70,14 +70,14 @@ namespace ProjectC.Rendering
         public CloudLayerDef Layer2 = new CloudLayerDef
         {
             BottomY = 2200f, TopY = 4800f,
-            DensityMultiplier = 0.6f, CoverageThreshold = 0.65f,
+            DensityMultiplier = 1.0f, CoverageThreshold = 0.45f,
             DayRampTop = Color.white, DayRampMid = new Color(0.88f, 0.92f, 0.96f), DayRampBot = new Color(0.75f, 0.82f, 0.9f),
             SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.8f, 0.75f), SunsetRampBot = new Color(0.85f, 0.55f, 0.45f)
         };
         public CloudLayerDef Layer3 = new CloudLayerDef
         {
             BottomY = 4000f, TopY = 7200f,
-            DensityMultiplier = 0.3f, CoverageThreshold = 0.75f,
+            DensityMultiplier = 0.5f, CoverageThreshold = 0.65f,
             DayRampTop = Color.white, DayRampMid = new Color(0.9f, 0.93f, 0.97f), DayRampBot = new Color(0.8f, 0.85f, 0.92f),
             SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.85f, 0.8f), SunsetRampBot = new Color(0.9f, 0.65f, 0.55f)
         };
@@ -97,8 +97,12 @@ namespace ProjectC.Rendering
         [Range(256f, 4096f)] public float NoiseTileSize = 1024f;
         [Tooltip("World scale of the 2D coverage FBM.")]
         [Range(0.0001f, 0.01f)] public float CoverageScale = 0.0008f;
-        [Tooltip("Distance over which clouds fade out when approaching scene geometry.")]
-        [Range(10f, 2000f)] public float DepthFadeDistance = 200f;
+        [Tooltip("Distance over which clouds fade in front of scene geometry. 0=off.")]
+        [Range(0f, 1000f)] public float DepthFadeDistance = 200f;
+        [Tooltip("Bitmask: bit=1 → layer uses unique noise pattern. 0 → all layers share noise (beautiful uniform look).")]
+        public int LayerNoiseMask = 0;
+        [Tooltip("Debug pass density multiplier — raise to see faint upper layers.")]
+        [Range(0.001f, 0.05f)] public float DebugDensityScale = 0.005f;
 
         [Header("Quality")]
         public bool HalfResRender = true;
@@ -147,6 +151,8 @@ namespace ProjectC.Rendering
         internal static readonly int CloudHistoryRTId    = Shader.PropertyToID("_CloudHistoryRT");
         internal static readonly int PrevViewProjId      = Shader.PropertyToID("_PrevViewProj");
         internal static readonly int CloudRTId           = Shader.PropertyToID("_CloudRT");
+        internal static readonly int LayerNoiseMaskId    = Shader.PropertyToID("_LayerNoiseMask");
+        internal static readonly int DebugDensityScaleId = Shader.PropertyToID("_DebugDensityScale");
         internal static readonly int CloudOpacityId      = Shader.PropertyToID("_CloudOpacity");
         internal static readonly int CloudColorIntensityId = Shader.PropertyToID("_CloudColorIntensity");
         internal static readonly int CloudTargetSizeId   = Shader.PropertyToID("_CloudTargetSize");
@@ -203,7 +209,7 @@ namespace ProjectC.Rendering
             if (Layer2.BottomY < 1f && Layer2.TopY < 1f)
             {
                 Layer2 = new CloudLayerDef {
-                    BottomY = 2200f, TopY = 4800f, DensityMultiplier = 0.6f, CoverageThreshold = 0.65f,
+                    BottomY = 2200f, TopY = 4800f, DensityMultiplier = 1.0f, CoverageThreshold = 0.45f,
                     DayRampTop = Color.white, DayRampMid = new Color(0.88f, 0.92f, 0.96f), DayRampBot = new Color(0.75f, 0.82f, 0.9f),
                     SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.8f, 0.75f), SunsetRampBot = new Color(0.85f, 0.55f, 0.45f)
                 };
@@ -211,7 +217,7 @@ namespace ProjectC.Rendering
             if (Layer3.BottomY < 1f && Layer3.TopY < 1f)
             {
                 Layer3 = new CloudLayerDef {
-                    BottomY = 4000f, TopY = 7200f, DensityMultiplier = 0.3f, CoverageThreshold = 0.75f,
+                    BottomY = 4000f, TopY = 7200f, DensityMultiplier = 0.5f, CoverageThreshold = 0.65f,
                     DayRampTop = Color.white, DayRampMid = new Color(0.9f, 0.93f, 0.97f), DayRampBot = new Color(0.8f, 0.85f, 0.92f),
                     SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.85f, 0.8f), SunsetRampBot = new Color(0.9f, 0.65f, 0.55f)
                 };
@@ -281,12 +287,9 @@ namespace ProjectC.Rendering
         private static readonly Vector4[] _sunMidCache = new Vector4[4];
         private static readonly Vector4[] _sunBotCache = new Vector4[4];
 
-        private int _frameCount;
-
         private void ApplyProperties(Material mat, Camera camera)
         {
             EnsureLayerDefaults();
-            _frameCount++;
 
             // ── Collect active layers ──
             CloudLayerDef[] layers = { Layer0, Layer1, Layer2, Layer3 };
@@ -313,16 +316,9 @@ namespace ProjectC.Rendering
             mat.SetFloat(HeightEdgeId, HeightEdgeSoftness);
             mat.SetFloat(CoverageScaleId, CoverageScale);
 
-            // DepthFade via material (global uniform may be stripped by compiler)
             mat.SetFloat(DepthFadeId, DepthFadeDistance);
-
-            // Unconditional first-frame dump
-            if (_frameCount == 1)
-            {
-                for (int i = 0; i < count; i++)
-                    Debug.LogWarning($"[VolClouds] Layer[{i}]: bottom={_boundsCache[i].x:F0} top={_boundsCache[i].y:F0} covThresh={_boundsCache[i].z:F2} densMult={_boundsCache[i].w:F2}");
-                Debug.LogWarning($"[VolClouds] DepthFade={DepthFadeDistance:F0} Opacity={Opacity:F2} ColorInt={ColorIntensity:F2}");
-            }
+            mat.SetInt(LayerNoiseMaskId, LayerNoiseMask);
+            mat.SetFloat(DebugDensityScaleId, DebugDensityScale);
             mat.SetFloat(TemporalBlendId, (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
 
             // Layer arrays
@@ -352,7 +348,7 @@ namespace ProjectC.Rendering
             if (Time.frameCount % 120 == 0)
             {
                 var ldInst = LocalDensityBuffer.Instance;
-                Debug.Log($"[VolClouds] Layers={count} Bottom={globalBottom:F0} Top={globalTop:F0} Absorb={LightAbsorption:F3} Steps={RaymarchSteps} DepthFade={DepthFadeDistance:F0}" +
+                Debug.Log($"[VolClouds] Layers={count} Bot={globalBottom:F0} Top={globalTop:F0} Absorb={LightAbsorption:F3} Steps={RaymarchSteps} DpFade={DepthFadeDistance:F0} NoiseMask={LayerNoiseMask:X}" +
                     (ldInst != null ? $" | LD OK: RT={ldInst.GetDensityRT()!=null}" : " | LD: NULL"));
             }
 

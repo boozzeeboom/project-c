@@ -50,7 +50,7 @@ namespace ProjectC.World.Clouds
 
         // ── Splat buffer ──
         private ComputeBuffer _splatBuffer;
-        private SplatData[] _splatQueue = new SplatData[16];
+        private SplatData[] _splatQueue = new SplatData[64];
         private int _splatQueueCount;
 
         // ── CPU mirror (Phase 2.5) ──

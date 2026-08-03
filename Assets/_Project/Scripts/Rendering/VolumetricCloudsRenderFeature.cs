@@ -308,7 +308,7 @@ namespace ProjectC.Rendering
             mat.SetFloat(MaxRayDistanceId, MaxRayDistance);
             mat.SetFloat(HeightEdgeId, HeightEdgeSoftness);
             mat.SetFloat(CoverageScaleId, CoverageScale);
-            mat.SetFloat(DepthFadeId, DepthFadeDistance);
+            Shader.SetGlobalFloat(DepthFadeId, DepthFadeDistance);
             mat.SetFloat(TemporalBlendId, (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
 
             // Layer arrays
@@ -332,12 +332,13 @@ namespace ProjectC.Rendering
             {
                 for (int i = 0; i < count; i++)
                     Debug.Log($"[VolClouds] Layer[{i}]: bottom={_boundsCache[i].x:F0} top={_boundsCache[i].y:F0} covThresh={_boundsCache[i].z:F2} densMult={_boundsCache[i].w:F2}");
+                Debug.Log($"[VolClouds] DepthFade={DepthFadeDistance:F0} Opacity={Opacity:F2} ColorInt={ColorIntensity:F2}");
             }
 
             if (Time.frameCount % 120 == 0)
             {
                 var ldInst = LocalDensityBuffer.Instance;
-                Debug.Log($"[VolClouds] Layers={count} Bottom={globalBottom:F0} Top={globalTop:F0} Absorb={LightAbsorption:F3} Steps={RaymarchSteps}" +
+                Debug.Log($"[VolClouds] Layers={count} Bottom={globalBottom:F0} Top={globalTop:F0} Absorb={LightAbsorption:F3} Steps={RaymarchSteps} DepthFade={DepthFadeDistance:F0}" +
                     (ldInst != null ? $" | LD OK: RT={ldInst.GetDensityRT()!=null}" : " | LD: NULL"));
             }
 

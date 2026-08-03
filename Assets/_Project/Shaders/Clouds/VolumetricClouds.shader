@@ -13,7 +13,6 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         _MaxRayDistance ("Max Ray Distance", Float) = 5000.0
         _HeightEdgeSoftness ("Height Edge Softness", Range(0.01, 1.5)) = 0.3
         _CoverageScale ("Coverage Scale", Float) = 0.0008
-        _DepthFadeDistance ("Depth Fade Distance", Range(10, 2000)) = 200
         [HideInInspector] _BlueNoiseTex ("Blue Noise", 2D) = "black" {}
         [HideInInspector] _WindOffset ("Wind Offset", Vector) = (0, 0, 0, 0)
         [HideInInspector] _LocalDensityRT ("Local Density", 3D) = "" {}

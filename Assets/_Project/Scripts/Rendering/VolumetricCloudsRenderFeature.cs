@@ -10,6 +10,7 @@ using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 using ProjectC.Core;
+using ProjectC.World.Clouds;
 
 namespace ProjectC.Rendering
 {
@@ -61,6 +62,10 @@ namespace ProjectC.Rendering
         [ColorUsage(false, false)] public Color SunsetRampMid = new Color(1f, 0.714f, 0.757f);
         [ColorUsage(false, false)] public Color SunsetRampBot = new Color(0.804f, 0.361f, 0.361f);
 
+        [Header("Phase 2.2: Local Density")]
+        public LocalDensityBuffer LocalDensity;
+        [Range(0f, 2f)] public float LocalDensityInfluence = 1f;
+
         [Header("Material")]
         public Material OverrideMaterial;
 
@@ -98,6 +103,10 @@ namespace ProjectC.Rendering
         internal static readonly int InvProjectionId     = Shader.PropertyToID("_Cloud_InvProj");
         internal static readonly int CloudOpacityId      = Shader.PropertyToID("_CloudOpacity");
         internal static readonly int CloudColorIntensityId = Shader.PropertyToID("_CloudColorIntensity");
+        internal static readonly int LocalDensityRTId     = Shader.PropertyToID("_LocalDensityRT");
+        internal static readonly int LocalDensityCenterId = Shader.PropertyToID("_LocalDensityCenter");
+        internal static readonly int LocalDensitySizeId   = Shader.PropertyToID("_LocalDensitySize");
+        internal static readonly int LocalDensityInfluenceId = Shader.PropertyToID("_LocalDensityInfluence");
 
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
         private bool _prevViewProjValid;
@@ -178,6 +187,23 @@ namespace ProjectC.Rendering
 
             if (CloudNoise3D != null)
                 mat.SetTexture(CloudNoise3DId, CloudNoise3D);
+
+            // Phase 2.2: LocalDensityBuffer → shader
+            if (LocalDensity != null)
+            {
+                var rt = LocalDensity.GetDensityRT();
+                if (rt != null)
+                {
+                    mat.SetTexture(LocalDensityRTId, rt);
+                    mat.SetVector(LocalDensityCenterId, LocalDensity.Center);
+                    mat.SetFloat(LocalDensitySizeId, LocalDensity.Resolution * LocalDensity.TexelSize);
+                    mat.SetFloat(LocalDensityInfluenceId, LocalDensityInfluence);
+                }
+            }
+            else
+            {
+                mat.SetFloat(LocalDensityInfluenceId, 0f); // disable local density if not assigned
+            }
 
             Vector3 windDir = Vector3.right; float windSpeed = 1f;
             if (WindManager.Instance != null)

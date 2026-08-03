@@ -23,7 +23,7 @@ MonoBehaviour:
   Opacity: 0.72
   ColorIntensity: 3
   HeightEdgeSoftness: 0.261
-  NoiseTileSize: 1025
+  NoiseTileSize: 1024
   CoverageScale: 0.0001
   CoverageThreshold: 0.37
   HalfResRender: 1
@@ -39,6 +39,7 @@ MonoBehaviour:
   SunsetRampMid: {r: 1, g: 0.557, b: 0.655, a: 1}
   SunsetRampBot: {r: 0.804, g: 0.361, b: 0.361, a: 1}
   LocalDensityInfluence: 2
+  DisplacementStrength: 1000
   OverrideMaterial: {fileID: 0}
 --- !u!114 &-597003445878171204
 MonoBehaviour:

@@ -66,6 +66,10 @@ namespace ProjectC.Rendering
         [Tooltip("Используется singleton LocalDensityBuffer.Instance (не требует ручного назначения).")]
         [Range(0f, 2f)] public float LocalDensityInfluence = 1f;
 
+        [Header("Phase 2.2B: Displacement (Variant B)")]
+        [Tooltip("Множитель силы displacement. Применимо только когда LocalDensityBuffer.Mode = Displacement.")]
+        [Range(0f, 1000f)] public float DisplacementStrength = 300f;
+
         [Header("Material")]
         public Material OverrideMaterial;
 
@@ -107,6 +111,10 @@ namespace ProjectC.Rendering
         internal static readonly int LocalDensityCenterId = Shader.PropertyToID("_LocalDensityCenter");
         internal static readonly int LocalDensitySizeId   = Shader.PropertyToID("_LocalDensitySize");
         internal static readonly int LocalDensityInfluenceId = Shader.PropertyToID("_LocalDensityInfluence");
+        internal static readonly int LocalDisplacementRTId     = Shader.PropertyToID("_LocalDisplacementRT");
+        internal static readonly int LocalDisplacementCenterId = Shader.PropertyToID("_LocalDisplacementCenter");
+        internal static readonly int LocalDisplacementSizeId   = Shader.PropertyToID("_LocalDisplacementSize");
+        internal static readonly int LocalDisplacementStrengthId = Shader.PropertyToID("_LocalDisplacementStrength");
 
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
         private bool _prevViewProjValid;
@@ -210,15 +218,35 @@ namespace ProjectC.Rendering
                 var rt = ld.GetDensityRT();
                 if (rt != null)
                 {
-                    mat.SetTexture(LocalDensityRTId, rt);
-                    mat.SetVector(LocalDensityCenterId, ld.Center);
-                    mat.SetFloat(LocalDensitySizeId, ld.Resolution * ld.TexelSize);
-                    mat.SetFloat(LocalDensityInfluenceId, LocalDensityInfluence);
+                    bool isDisp = ld.BufferMode == LocalDensityBuffer.Mode.Displacement;
+
+                    if (isDisp)
+                    {
+                        mat.SetTexture(LocalDisplacementRTId, rt);
+                        mat.SetVector(LocalDisplacementCenterId, ld.Center);
+                        mat.SetFloat(LocalDisplacementSizeId, ld.Resolution * ld.TexelSize);
+                        mat.SetFloat(LocalDisplacementStrengthId, DisplacementStrength);
+                    }
+                    else
+                    {
+                        mat.SetTexture(LocalDensityRTId, rt);
+                        mat.SetVector(LocalDensityCenterId, ld.Center);
+                        mat.SetFloat(LocalDensitySizeId, ld.Resolution * ld.TexelSize);
+                        mat.SetFloat(LocalDensityInfluenceId, LocalDensityInfluence);
+                    }
+
+                    // Keyword via LocalKeyword (local multi_compile)
+                    if (mat.shader != null)
+                    {
+                        var kwDisp = new LocalKeyword(mat.shader, "_LOCALDENSITY_DISPLACEMENT");
+                        mat.SetKeyword(kwDisp, isDisp);
+                    }
 
                     if (!_loggedOnce)
                     {
                         _loggedOnce = true;
-                        Debug.Log($"[VolClouds] LocalDensity VIA MAT: RT={rt.name} {rt.width}x{rt.height}x{rt.volumeDepth} center={ld.Center} size={ld.Resolution * ld.TexelSize} influence={LocalDensityInfluence}");
+                        Debug.Log($"[VolClouds] LocalDensity VIA MAT: mode={ld.BufferMode} RT={rt.name} {rt.width}x{rt.height}x{rt.volumeDepth} center={ld.Center} size={ld.Resolution * ld.TexelSize}" +
+                            (isDisp ? $" dispStrength={DisplacementStrength}" : $" influence={LocalDensityInfluence}"));
                     }
                 }
                 else if (!_loggedOnce)

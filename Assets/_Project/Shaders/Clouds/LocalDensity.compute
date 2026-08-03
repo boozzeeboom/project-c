@@ -5,11 +5,17 @@
 
 #pragma kernel AdvectAndRelax
 #pragma kernel ApplySplats
+#pragma kernel AdvectAndRelax_Disp
+#pragma kernel ApplySplats_Disp
 #pragma target 5.0
 
 // ── Input / Output ──
-RWTexture3D<float> _DensityPrev;   // read from previous frame
-RWTexture3D<float> _DensityNext;   // write into current frame
+RWTexture3D<float> _DensityPrev;   // read from previous frame (density mode)
+RWTexture3D<float> _DensityNext;   // write into current frame (density mode)
+
+// ── Displacement mode (RGBAHalf: RGB=displacement vector, A=unused) ──
+RWTexture3D<float4> _DensityPrevDisp;  // read from previous frame (displacement mode)
+RWTexture3D<float4> _DensityNextDisp;  // write into current frame (displacement mode)
 
 // ── Toroidal Window ──
 float3 _Center;                    // world-space center of the toroidal window
@@ -125,4 +131,86 @@ void ApplySplats(uint3 id : SV_DispatchThreadID)
     }
 
     _DensityNext[id] = max(0.0, density);
+}
+
+// ─────────────────────────────────────────────────
+// Kernel: AdvectAndRelax_Disp  (Variant B: displacement)
+// Reads _DensityPrevDisp, applies wind advection + multiplicative relaxation,
+// writes _DensityNextDisp.
+// ─────────────────────────────────────────────────
+[numthreads(8, 8, 8)]
+void AdvectAndRelax_Disp(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Resolution || id.y >= _Resolution || id.z >= _Resolution)
+        return;
+
+    float3 uvw = (float3(id) + 0.5) / (float)_Resolution;
+    float windowSize = (float)_Resolution * _TexelSize;
+    float3 windWorldOffset = _WindDirection * _AdvectionStrength * _DeltaTime;
+    float3 windUvwOffset = windWorldOffset / windowSize;
+
+    float3 sampleUvw = frac(uvw + windUvwOffset);
+    float3 sampleTexel = sampleUvw * (float)_Resolution;
+    sampleTexel = clamp(sampleTexel, 0.0, (float)_Resolution - 1.0);
+    float4 prev = _DensityPrevDisp[uint3(sampleTexel)];
+
+    // Multiplicative decay toward zero (preserves direction, shrinks magnitude)
+    float decay = max(0.0, 1.0 - _RelaxationRate * _DeltaTime);
+    float4 relaxed = prev * decay;
+
+    _DensityNextDisp[id] = relaxed;
+}
+
+// ─────────────────────────────────────────────────
+// Kernel: ApplySplats_Disp  (Variant B: displacement)
+// Reads _DensityNextDisp (already advected+relaxed),
+// accumulates displacement vectors: push AWAY from each splat center.
+// ─────────────────────────────────────────────────
+[numthreads(8, 8, 8)]
+void ApplySplats_Disp(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Resolution || id.y >= _Resolution || id.z >= _Resolution)
+        return;
+
+    float4 current = _DensityNextDisp[id];
+    float3 displacement = current.rgb;
+
+    float3 uvw = (float3(id) + 0.5) / (float)_Resolution;
+    float3 worldPos = ToroidalUvwToWorld(uvw);
+    float windowSize = (float)_Resolution * _TexelSize;
+
+    for (uint i = 0; i < _SplatCount; i++)
+    {
+        SplatData splat = _Splats[i];
+        float3 toCell = worldPos - splat.center;
+        float d = length(toCell);
+
+        // Toroidal wrap: check closest periodic copy of splat center
+        float3 offsets[6] = {
+            float3(-windowSize, 0, 0), float3(windowSize, 0, 0),
+            float3(0, -windowSize, 0), float3(0, windowSize, 0),
+            float3(0, 0, -windowSize), float3(0, 0, windowSize)
+        };
+        float minDist = d;
+        float3 bestToCell = toCell;
+        for (uint j = 0; j < 6; j++)
+        {
+            float3 altToCell = worldPos + offsets[j] - splat.center;
+            float distJ = length(altToCell);
+            if (distJ < minDist)
+            {
+                minDist = distJ;
+                bestToCell = altToCell;
+            }
+        }
+
+        float sigma = splat.radius * 0.33333;
+        float gauss = exp(-(minDist * minDist) / max(2.0 * sigma * sigma, 0.001));
+
+        // Radial push: direction FROM splat center TO cell
+        float3 pushDir = normalize(bestToCell + 0.0001);
+        displacement += pushDir * splat.amount * gauss;
+    }
+
+    _DensityNextDisp[id] = float4(displacement, 0);
 }

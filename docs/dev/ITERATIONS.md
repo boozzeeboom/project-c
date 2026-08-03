@@ -1,5 +1,18 @@
 # Итерации структуризации документации
 
+## Итерация от 2026-08-04 (T-CLOUD02)
+
+**Задача:** Variant B — Cloud Displacement Interaction. Альтернативный метод интерактивности облаков: displacement (сдвиг 3D-шума) вместо вычитания плотности. A/B-переключение через `LocalDensityBuffer.Mode`.
+**Коммит:** `f8778102` — T-CLOUD02: Variant B — Cloud Displacement Interaction
+**Изменения:**
+- `LocalDensity.compute` — +2 ядра: AdvectAndRelax_Disp + ApplySplats_Disp (radial push от сплатов)
+- `LocalDensityBuffer.cs` — enum Mode, RGBAHalf RT, CPU mirror только для Density
+- `VolumetricClouds.shader` — SampleLocalDisplacement(), keyword _LOCALDENSITY_DISPLACEMENT
+- `VolumetricCloudsRenderFeature.cs` — DisplacementStrength (0-1000, default 300)
+- `ShipWakeCloudCutter.cs` — конус плотнее: 16 сегментов, i=0 у корабля, радиус 50-200
+- `IMPLEMENTATION_LOG.md` — запись фазы 2.2B
+- **⚠️ Перф-нота:** рост CutRadius → O(radius³). Будущий фикс: indirect dispatch или analytical displacement.
+
 ## Итерация от 2026-07-31 (T-CAM15)
 
 **Задача:** Починка SpringArmCamera — камера не успевает за персонажем при телепортациях/загрузке сохранений.

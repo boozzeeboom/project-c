@@ -22,19 +22,19 @@ namespace ProjectC.World.Clouds
         public Transform ShipTransform;
 
         [Header("Splat")]
-        [Tooltip("Positive = mark area for cloud cutting. Buffer is max(0, val), so negative values are silently clamped to 0.")]
-        [Range(10f, 200f)] public float CutRadius = 30f;
-        [Range(0f, 1f)] public float CutAmount = 0.4f;
+        [Tooltip("Density mode: positive = density to subtract. Displacement mode: push force magnitude.")]
+        [Range(10f, 300f)] public float CutRadius = 50f;
+        [Range(0f, 1f)] public float CutAmount = 1.0f;
         [Range(1f, 30f)] public float MinSpeed = 5f;
         [Range(0.05f, 1f)] public float SplatInterval = 0.1f;
 
         [Header("Wake Cone")]
         [Tooltip("Сколько сплатов укладывается позади корабля (длина конуса).")]
-        [Range(2, 16)] public int ConeSegments = 8;
+        [Range(4, 32)] public int ConeSegments = 16;
         [Tooltip("Шаг между сплатами конуса, в долях CutRadius.")]
-        [Range(0.3f, 3f)] public float ConeSpacing = 0.5f;
+        [Range(0.2f, 2f)] public float ConeSpacing = 0.35f;
         [Tooltip("Рост радиуса на каждый сегмент конуса (в долях CutRadius).")]
-        [Range(0f, 1f)] public float ConeRadiusGrowth = 0.25f;
+        [Range(0f, 1f)] public float ConeRadiusGrowth = 0.2f;
 
         private Vector3 _lastPos;
         private float _timer;
@@ -73,13 +73,13 @@ namespace ProjectC.World.Clouds
 
             Vector3 dir = delta.normalized;
 
-            // Wake cone: splats BEHIND the ship (opposite to movement direction)
-            int count = Mathf.Max(2, ConeSegments);
+            // Wake cone: splats start AT the ship, extend backward in movement direction
+            int count = Mathf.Max(4, ConeSegments);
             float step = CutRadius * Mathf.Max(0.1f, ConeSpacing);
-            for (int i = 1; i <= count; i++)
+            for (int i = 0; i < count; i++)
             {
                 Vector3 p = pos - dir * (step * i);
-                float r = CutRadius * (1f + ConeRadiusGrowth * (i - 1));
+                float r = CutRadius * (1f + ConeRadiusGrowth * i);
                 ld.SplatDensity(p, r, CutAmount);
             }
         }

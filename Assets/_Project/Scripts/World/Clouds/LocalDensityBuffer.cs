@@ -16,7 +16,17 @@ namespace ProjectC.World.Clouds
     /// </summary>
     public class LocalDensityBuffer : MonoBehaviour
     {
+        public enum Mode
+        {
+            Density,       // Variant A: scalar subtraction (RFloat)
+            Displacement   // Variant B: vector displacement (RGBAHalf)
+        }
+
         public static LocalDensityBuffer Instance { get; private set; }
+
+        [Header("Mode")]
+        [Tooltip("Density = variant A (subtract). Displacement = variant B (push noise coords).")]
+        public Mode BufferMode = Mode.Density;
 
         [Header("Buffer")]
         [Range(48, 128)] public int Resolution = 96;
@@ -27,7 +37,8 @@ namespace ProjectC.World.Clouds
         [Range(0f, 1f)] public float RelaxationRate = 0.05f;
 
         [Header("Splat")]
-        public float MaxSplatRadius = 150f;
+        [Tooltip("Максимальный радиус сплата. При CutRadius > этого значения сплаты обрезаются.")]
+        public float MaxSplatRadius = 300f;
 
         [Header("Target")]
         [Tooltip("Transform to follow (player/camera). If null, uses Camera.main.")]
@@ -47,6 +58,8 @@ namespace ProjectC.World.Clouds
         // ── Kernels ──
         private int _kernelAdvect;
         private int _kernelSplat;
+        private int _kernelAdvectDisp;
+        private int _kernelSplatDisp;
 
         // ── Splat buffer ──
         private ComputeBuffer _splatBuffer;
@@ -63,6 +76,8 @@ namespace ProjectC.World.Clouds
         // ── Shader property IDs ──
         private static readonly int DensityPrevId    = Shader.PropertyToID("_DensityPrev");
         private static readonly int DensityNextId    = Shader.PropertyToID("_DensityNext");
+        private static readonly int DensityPrevDispId = Shader.PropertyToID("_DensityPrevDisp");
+        private static readonly int DensityNextDispId = Shader.PropertyToID("_DensityNextDisp");
         private static readonly int CenterId         = Shader.PropertyToID("_Center");
         private static readonly int TexelSizeId      = Shader.PropertyToID("_TexelSize");
         private static readonly int ResolutionId     = Shader.PropertyToID("_Resolution");
@@ -104,11 +119,17 @@ namespace ProjectC.World.Clouds
             {
                 _kernelAdvect = _compute.FindKernel("AdvectAndRelax");
                 _kernelSplat  = _compute.FindKernel("ApplySplats");
-                if (_kernelAdvect < 0 || _kernelSplat < 0)
+                _kernelAdvectDisp = _compute.FindKernel("AdvectAndRelax_Disp");
+                _kernelSplatDisp  = _compute.FindKernel("ApplySplats_Disp");
+                bool densityOk = _kernelAdvect >= 0 && _kernelSplat >= 0;
+                bool dispOk    = _kernelAdvectDisp >= 0 && _kernelSplatDisp >= 0;
+                if (!densityOk)
                 {
-                    Debug.LogError($"[LocalDensityBuffer] Kernel not found. Advect={_kernelAdvect}, Splat={_kernelSplat}. Shader may have compilation errors.");
+                    Debug.LogError($"[LocalDensityBuffer] Density kernels not found. Advect={_kernelAdvect}, Splat={_kernelSplat}. Shader may have compilation errors.");
                     _compute = null;
                 }
+                if (!dispOk)
+                    Debug.LogWarning($"[LocalDensityBuffer] Displacement kernels not found (variant B disabled). AdvDisp={_kernelAdvectDisp}, SplatDisp={_kernelSplatDisp}");
             }
             else
             {
@@ -133,7 +154,11 @@ namespace ProjectC.World.Clouds
 
         private void Update()
         {
-            if (_compute == null || _densityA == null || _kernelAdvect < 0) return;
+            if (_compute == null || _densityA == null) return;
+            bool isDisp = BufferMode == Mode.Displacement;
+            int kAdv = isDisp ? _kernelAdvectDisp : _kernelAdvect;
+            int kSpl = isDisp ? _kernelSplatDisp : _kernelSplat;
+            if (kAdv < 0 || kSpl < 0) return;
 
             // Update toroidal center
             if (FollowTarget != null)
@@ -148,25 +173,28 @@ namespace ProjectC.World.Clouds
 
             float dt = Mathf.Min(Time.deltaTime, 0.1f); // cap to avoid spikes
 
-            // ── Dispatch AdvectAndRelax ──
+            // ── Dispatch Advection ──
             var prev = _pingPong ? _densityB : _densityA;
             var next = _pingPong ? _densityA : _densityB;
 
-            _compute.SetTexture(_kernelAdvect, DensityPrevId, prev);
-            _compute.SetTexture(_kernelAdvect, DensityNextId, next);
-            SetCommonParams(_kernelAdvect, windDir, dt);
-            int groups = Mathf.CeilToInt(Resolution / 8f);
-            _compute.Dispatch(_kernelAdvect, groups, groups, groups);
+            int prevId = isDisp ? DensityPrevDispId : DensityPrevId;
+            int nextId = isDisp ? DensityNextDispId : DensityNextId;
 
-            // ── Dispatch ApplySplats ──
+            _compute.SetTexture(kAdv, prevId, prev);
+            _compute.SetTexture(kAdv, nextId, next);
+            SetCommonParams(kAdv, windDir, dt);
+            int groups = Mathf.CeilToInt(Resolution / 8f);
+            _compute.Dispatch(kAdv, groups, groups, groups);
+
+            // ── Dispatch Splats ──
             if (_splatQueueCount > 0)
             {
                 SyncSplatBuffer();
-                _compute.SetTexture(_kernelSplat, DensityNextId, next);
-                SetCommonParams(_kernelSplat, windDir, dt);
-                _compute.SetBuffer(_kernelSplat, SplatsId, _splatBuffer);
+                _compute.SetTexture(kSpl, nextId, next);
+                SetCommonParams(kSpl, windDir, dt);
+                _compute.SetBuffer(kSpl, SplatsId, _splatBuffer);
                 _compute.SetInt(SplatCountId, _splatQueueCount);
-                _compute.Dispatch(_kernelSplat, groups, groups, groups);
+                _compute.Dispatch(kSpl, groups, groups, groups);
                 _splatQueueCount = 0;
             }
 
@@ -174,22 +202,32 @@ namespace ProjectC.World.Clouds
             _pingPong = !_pingPong;
             _activeReadRT = _pingPong ? _densityB : _densityA;
 
-            // ── CPU mirror relaxation ──
-            RelaxCpuMirror(dt);
-            SyncCpuFromSplats();
+            // ── CPU mirror (density mode only) ──
+            if (!isDisp)
+            {
+                RelaxCpuMirror(dt);
+                SyncCpuFromSplats();
+            }
 
             // ── Debug readback: check CPU mirror center value ──
             _lastReadbackTime += dt;
             if (_verboseLogging && _lastReadbackTime > ReadbackInterval)
             {
                 _lastReadbackTime = 0f;
-                int centerIdx = (Resolution / 2) + (Resolution / 2) * Resolution + (Resolution / 2) * Resolution * Resolution;
-                float centerVal = _cpuDensity != null && centerIdx < _cpuDensity.Length ? _cpuDensity[centerIdx] : -1f;
-                float maxVal = 0f;
-                if (_cpuDensity != null)
-                    for (int i = 0; i < _cpuDensity.Length; i++)
-                        if (_cpuDensity[i] > maxVal) maxVal = _cpuDensity[i];
-                Debug.Log($"[LocalDensityBuffer] CPU mirror: center={centerVal:F4} max={maxVal:F4} centerWorld={Center} splatQueue={_splatQueueCount}");
+                if (isDisp)
+                {
+                    Debug.Log($"[LocalDensityBuffer] Displacement mode active. centerWorld={Center} splatQueue={_splatQueueCount}");
+                }
+                else
+                {
+                    int centerIdx = (Resolution / 2) + (Resolution / 2) * Resolution + (Resolution / 2) * Resolution * Resolution;
+                    float centerVal = _cpuDensity != null && centerIdx < _cpuDensity.Length ? _cpuDensity[centerIdx] : -1f;
+                    float maxVal = 0f;
+                    if (_cpuDensity != null)
+                        for (int i = 0; i < _cpuDensity.Length; i++)
+                            if (_cpuDensity[i] > maxVal) maxVal = _cpuDensity[i];
+                    Debug.Log($"[LocalDensityBuffer] CPU mirror: center={centerVal:F4} max={maxVal:F4} centerWorld={Center} splatQueue={_splatQueueCount}");
+                }
             }
 
             // Debug: test splat at camera position (key T)
@@ -210,7 +248,10 @@ namespace ProjectC.World.Clouds
             if (_densityA != null) _densityA.Release();
             if (_densityB != null) _densityB.Release();
 
-            var desc = new RenderTextureDescriptor(Resolution, Resolution, RenderTextureFormat.RFloat, 0)
+            bool isDisp = BufferMode == Mode.Displacement;
+            var fmt = isDisp ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.RFloat;
+
+            var desc = new RenderTextureDescriptor(Resolution, Resolution, fmt, 0)
             {
                 dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
                 volumeDepth = Resolution,
@@ -231,6 +272,9 @@ namespace ProjectC.World.Clouds
             // Clear both
             ClearRT(_densityA);
             ClearRT(_densityB);
+
+            if (_verboseLogging)
+                Debug.Log($"[LocalDensityBuffer] RT created: mode={BufferMode} fmt={fmt} res={Resolution}");
         }
 
         private void ClearRT(RenderTexture rt)
@@ -298,8 +342,9 @@ namespace ProjectC.World.Clouds
             if (_verboseLogging && Time.frameCount % 60 == 0)
                 Debug.Log($"[LocalDensityBuffer] Splat at {worldPos} r={radius} amount={amount} queue={_splatQueueCount}");
 
-            // CPU mirror (Phase 2.5)
-            ApplySplatToCpu(worldPos, radius, amount);
+            // CPU mirror — only for Density mode (displacement stores vectors, not scalars)
+            if (BufferMode == Mode.Density)
+                ApplySplatToCpu(worldPos, radius, amount);
         }
 
         /// <summary>

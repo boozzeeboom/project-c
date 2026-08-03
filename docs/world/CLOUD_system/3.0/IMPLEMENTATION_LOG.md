@@ -107,3 +107,32 @@ Assets/_Project/
   - Ветер двигает пятно
 
 **Коммит:** `04624af9` — T-CLOUD02: Phase 2.1 — LocalDensityBuffer
+
+---
+
+### 2.2B ✅ Variant B — Cloud Displacement Interaction — 2026-08-04
+
+**Задача:** альтернативный (B) метод интерактивности: вместо вычитания плотности — displacement (сдвиг координат 3D-шума), чтобы облака видимо расходились за кораблём.
+
+**Архитектура:**
+- Displacement = radial push от центра сплата: `direction = normalize(cellPos - splatCenter)`, `magnitude = Gaussian(dist, radius) * amount`
+- Формат RT: RGBAHalf (RGB = вектор, A = резерв). Density-режим: RFloat.
+- Единый source of truth: `LocalDensityBuffer.Mode` enum — RenderFeature и шейдер реагируют автоматически.
+
+**Изменённые файлы:**
+
+| Файл | Изменение |
+|---|---|
+| `LocalDensity.compute` | +2 kernel: `AdvectAndRelax_Disp` (мультипликативная релаксация векторов), `ApplySplats_Disp` (radial push) |
+| `LocalDensityBuffer.cs` | +`enum Mode { Density, Displacement }`, RGBAHalf RT в disp-режиме, dispatch правильных ядер, CPU mirror только для Density |
+| `VolumetricClouds.shader` | +`SampleLocalDisplacement()`, keyword `_LOCALDENSITY_DISPLACEMENT`, сдвиг worldPos до сэмплирования шума |
+| `VolumetricCloudsRenderFeature.cs` | +`DisplacementStrength` (0-1000, default 300), keyword по Mode |
+| `ShipWakeCloudCutter.cs` | Дефолты: `ConeSegments=16`, `ConeSpacing=0.35`, `CutRadius=50`, `CutAmount=1.0`, сплаты с i=0 (прямо у корабля). Конус: 0-280 юнитов, радиус 50-200. |
+
+**A/B Switching:**
+- `LocalDensityBuffer` inspector → `Mode` = `Density` (A) / `Displacement` (B)
+- Параметр тюнинга: `DisplacementStrength` на ассете RenderFeature (в URP Renderer Data)
+
+**⚠️ Известная проблема — производительность:**
+Рост `CutRadius` квадратично увеличивает количество затронутых ячеек. При radius=200 и TexelSize=20 — сфера диаметром ~23 ячейки = O(23³) = 12k ячеек на сплат на GPU (в худшем случае). Решение для будущей итерации: либо indirect dispatch с bounding box сплатов вместо полного 128³, либо переход на analytical displacement в шейдере (вычислять displacement по формуле сплата напрямую, без 3D-текстуры).
+

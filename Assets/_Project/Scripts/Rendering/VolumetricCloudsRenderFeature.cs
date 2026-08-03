@@ -14,24 +14,80 @@ using ProjectC.World.Clouds;
 
 namespace ProjectC.Rendering
 {
+    /// <summary>
+    /// Per-layer cloud configuration. Each layer has independent bounds,
+    /// density, coverage threshold, and Ghibli color ramps.
+    /// </summary>
+    [System.Serializable]
+    public struct CloudLayerDef
+    {
+        [Header("Bounds")]
+        [Tooltip("Нижняя граница слоя (world Y).")]
+        [Range(100f, 10000f)] public float BottomY;
+        [Tooltip("Верхняя граница слоя (world Y). Должна быть > BottomY.")]
+        [Range(200f, 10000f)] public float TopY;
+
+        [Header("Density")]
+        [Tooltip("Множитель плотности для этого слоя.")]
+        [Range(0.1f, 10f)] public float DensityMultiplier;
+        [Tooltip("Порог coverage: ниже = дырка, выше = облако. Нижние слои — меньше порог (плотнее).")]
+        [Range(0.1f, 0.9f)] public float CoverageThreshold;
+
+        [Header("Day Ramp")]
+        [ColorUsage(false, false)] public Color DayRampTop;
+        [ColorUsage(false, false)] public Color DayRampMid;
+        [ColorUsage(false, false)] public Color DayRampBot;
+
+        [Header("Sunset Ramp")]
+        [ColorUsage(false, false)] public Color SunsetRampTop;
+        [ColorUsage(false, false)] public Color SunsetRampMid;
+        [ColorUsage(false, false)] public Color SunsetRampBot;
+    }
+
     [DisallowMultipleRendererFeature("Volumetric Clouds")]
     [SupportedOnRenderer(typeof(UniversalRendererData))]
     public sealed class VolumetricCloudsRenderFeature : ScriptableRendererFeature
     {
-        [Header("Cloud Layer")]
-        [Range(100f, 5000f)] public float CloudBottomY = 800f;
-        [Range(200f, 10000f)] public float CloudTopY = 2000f;
         public Texture3D CloudNoise3D;
+
+        [Header("Cloud Layers")]
+        [Tooltip("Сколько слоёв активно (1–4). Неактивные слои игнорируются.")]
+        [Range(1, 4)] public int ActiveLayerCount = 4;
+        public CloudLayerDef Layer0 = new CloudLayerDef
+        {
+            BottomY = 800f, TopY = 1200f,
+            DensityMultiplier = 1.5f, CoverageThreshold = 0.35f,
+            DayRampTop = Color.white, DayRampMid = new Color(0.7f, 0.75f, 0.8f), DayRampBot = new Color(0.4f, 0.45f, 0.55f),
+            SunsetRampTop = Color.white, SunsetRampMid = new Color(0.9f, 0.55f, 0.45f), SunsetRampBot = new Color(0.5f, 0.2f, 0.2f)
+        };
+        public CloudLayerDef Layer1 = new CloudLayerDef
+        {
+            BottomY = 1200f, TopY = 2500f,
+            DensityMultiplier = 1f, CoverageThreshold = 0.5f,
+            DayRampTop = Color.white, DayRampMid = new Color(0.831f, 0.902f, 0.945f), DayRampBot = new Color(0.663f, 0.8f, 0.89f),
+            SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.714f, 0.757f), SunsetRampBot = new Color(0.804f, 0.361f, 0.361f)
+        };
+        public CloudLayerDef Layer2 = new CloudLayerDef
+        {
+            BottomY = 2500f, TopY = 4500f,
+            DensityMultiplier = 0.6f, CoverageThreshold = 0.65f,
+            DayRampTop = Color.white, DayRampMid = new Color(0.88f, 0.92f, 0.96f), DayRampBot = new Color(0.75f, 0.82f, 0.9f),
+            SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.8f, 0.75f), SunsetRampBot = new Color(0.85f, 0.55f, 0.45f)
+        };
+        public CloudLayerDef Layer3 = new CloudLayerDef
+        {
+            BottomY = 4500f, TopY = 7000f,
+            DensityMultiplier = 0.3f, CoverageThreshold = 0.75f,
+            DayRampTop = Color.white, DayRampMid = new Color(0.9f, 0.93f, 0.97f), DayRampBot = new Color(0.8f, 0.85f, 0.92f),
+            SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.85f, 0.8f), SunsetRampBot = new Color(0.9f, 0.65f, 0.55f)
+        };
 
         [Header("Raymarch")]
         [Range(8, 128)] public int RaymarchSteps = 48;
         [Range(500f, 20000f)] public float MaxRayDistance = 5000f;
 
-        [Header("Density")]
-        [Range(0.1f, 10f)] public float DensityMultiplier = 1f;
+        [Header("Density (Global)")]
         [Range(0.001f, 0.5f)] public float LightAbsorption = 0.05f;
-        [Range(0.1f, 5f)] public float Opacity = 1f;
-        [Range(0.1f, 5f)] public float ColorIntensity = 1f;
 
         [Header("Shape")]
         [Range(0.01f, 0.5f)] public float HeightEdgeSoftness = 0.15f;
@@ -39,8 +95,6 @@ namespace ProjectC.Rendering
         [Range(256f, 4096f)] public float NoiseTileSize = 1024f;
         [Tooltip("World scale of the 2D coverage FBM.")]
         [Range(0.0001f, 0.01f)] public float CoverageScale = 0.0008f;
-        [Tooltip("Coverage cutoff: below = clear sky hole.")]
-        [Range(0.1f, 0.9f)] public float CoverageThreshold = 0.5f;
 
         [Header("Quality")]
         public bool HalfResRender = true;
@@ -53,14 +107,6 @@ namespace ProjectC.Rendering
 
         [Header("Debug")]
         public bool DebugDensityDirect = false;
-
-        [Header("Ghibli Ramps")]
-        [ColorUsage(false, false)] public Color DayRampTop = Color.white;
-        [ColorUsage(false, false)] public Color DayRampMid = new Color(0.831f, 0.902f, 0.945f);
-        [ColorUsage(false, false)] public Color DayRampBot = new Color(0.663f, 0.8f, 0.89f);
-        [ColorUsage(false, false)] public Color SunsetRampTop = Color.white;
-        [ColorUsage(false, false)] public Color SunsetRampMid = new Color(1f, 0.714f, 0.757f);
-        [ColorUsage(false, false)] public Color SunsetRampBot = new Color(0.804f, 0.361f, 0.361f);
 
         [Header("Phase 2.2: Local Density")]
         [Tooltip("Используется singleton LocalDensityBuffer.Instance (не требует ручного назначения).")]
@@ -83,21 +129,13 @@ namespace ProjectC.Rendering
         private static readonly int CloudTopYId         = Shader.PropertyToID("_CloudTopY");
         private static readonly int RaymarchStepsId     = Shader.PropertyToID("_RaymarchSteps");
         private static readonly int MaxRayDistanceId    = Shader.PropertyToID("_MaxRayDistance");
-        private static readonly int DensityMultId       = Shader.PropertyToID("_DensityMultiplier");
         private static readonly int LightAbsorptionId   = Shader.PropertyToID("_LightAbsorption");
         private static readonly int HeightEdgeId        = Shader.PropertyToID("_HeightEdgeSoftness");
         private static readonly int NoiseTileSizeId     = Shader.PropertyToID("_NoiseTileSize");
         private static readonly int CoverageScaleId     = Shader.PropertyToID("_CoverageScale");
-        private static readonly int CoverageThresholdId = Shader.PropertyToID("_CoverageThreshold");
         private static readonly int TemporalBlendId     = Shader.PropertyToID("_TemporalBlend");
         private static readonly int WindOffsetId        = Shader.PropertyToID("_WindOffset");
         private static readonly int SunDirectionId      = Shader.PropertyToID("_SunDirection");
-        private static readonly int DayRampTopId        = Shader.PropertyToID("_DayRampTop");
-        private static readonly int DayRampMidId        = Shader.PropertyToID("_DayRampMid");
-        private static readonly int DayRampBotId        = Shader.PropertyToID("_DayRampBot");
-        private static readonly int SunsetRampTopId     = Shader.PropertyToID("_SunsetRampTop");
-        private static readonly int SunsetRampMidId     = Shader.PropertyToID("_SunsetRampMid");
-        private static readonly int SunsetRampBotId     = Shader.PropertyToID("_SunsetRampBot");
         internal static readonly int BlueNoiseTexId      = Shader.PropertyToID("_BlueNoiseTex");
         internal static readonly int CloudHistoryRTId    = Shader.PropertyToID("_CloudHistoryRT");
         internal static readonly int PrevViewProjId      = Shader.PropertyToID("_PrevViewProj");
@@ -105,8 +143,6 @@ namespace ProjectC.Rendering
         internal static readonly int CloudTargetSizeId   = Shader.PropertyToID("_CloudTargetSize");
         internal static readonly int ViewToWorldId       = Shader.PropertyToID("_Cloud_ViewToWorld");
         internal static readonly int InvProjectionId     = Shader.PropertyToID("_Cloud_InvProj");
-        internal static readonly int CloudOpacityId      = Shader.PropertyToID("_CloudOpacity");
-        internal static readonly int CloudColorIntensityId = Shader.PropertyToID("_CloudColorIntensity");
         internal static readonly int LocalDensityRTId     = Shader.PropertyToID("_LocalDensityRT");
         internal static readonly int LocalDensityCenterId = Shader.PropertyToID("_LocalDensityCenter");
         internal static readonly int LocalDensitySizeId   = Shader.PropertyToID("_LocalDensitySize");
@@ -115,6 +151,16 @@ namespace ProjectC.Rendering
         internal static readonly int LocalDisplacementCenterId = Shader.PropertyToID("_LocalDisplacementCenter");
         internal static readonly int LocalDisplacementSizeId   = Shader.PropertyToID("_LocalDisplacementSize");
         internal static readonly int LocalDisplacementStrengthId = Shader.PropertyToID("_LocalDisplacementStrength");
+
+        // Multi-layer arrays
+        private static readonly int LayerBoundsId       = Shader.PropertyToID("_LayerBounds");
+        private static readonly int LayerDayTopId       = Shader.PropertyToID("_LayerDayTop");
+        private static readonly int LayerDayMidId       = Shader.PropertyToID("_LayerDayMid");
+        private static readonly int LayerDayBotId       = Shader.PropertyToID("_LayerDayBot");
+        private static readonly int LayerSunsetTopId    = Shader.PropertyToID("_LayerSunsetTop");
+        private static readonly int LayerSunsetMidId    = Shader.PropertyToID("_LayerSunsetMid");
+        private static readonly int LayerSunsetBotId    = Shader.PropertyToID("_LayerSunsetBot");
+        private static readonly int LayerCountId        = Shader.PropertyToID("_LayerCount");
 
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
         private bool _prevViewProjValid;
@@ -160,8 +206,7 @@ namespace ProjectC.Rendering
             _historyIdx ^= 1;
 
             var pass = new VolumetricCloudsPass(mat, HalfResRender, TemporalReprojection,
-                DebugDensityDirect, _prevViewProj, _prevViewProjValid, readHandle, writeHandle,
-                Opacity, ColorIntensity);
+                DebugDensityDirect, _prevViewProj, _prevViewProjValid, readHandle, writeHandle);
             pass.renderPassEvent = RenderPassEvent.BeforeRenderingTransparents;
             renderer.EnqueuePass(pass);
         }
@@ -176,36 +221,60 @@ namespace ProjectC.Rendering
             handle = RTHandles.Alloc(rt, true);
         }
 
+        private static readonly Vector4[] _boundsCache = new Vector4[4];
+        private static readonly Vector4[] _dayTopCache = new Vector4[4];
+        private static readonly Vector4[] _dayMidCache = new Vector4[4];
+        private static readonly Vector4[] _dayBotCache = new Vector4[4];
+        private static readonly Vector4[] _sunTopCache = new Vector4[4];
+        private static readonly Vector4[] _sunMidCache = new Vector4[4];
+        private static readonly Vector4[] _sunBotCache = new Vector4[4];
+
         private void ApplyProperties(Material mat, Camera camera)
         {
-            // Material properties (in shader Properties — mat.Set*)
-            mat.SetFloat(CloudBottomYId, CloudBottomY);
-            mat.SetFloat(CloudTopYId, CloudTopY);
+            // ── Collect active layers ──
+            CloudLayerDef[] layers = { Layer0, Layer1, Layer2, Layer3 };
+            int count = Mathf.Clamp(ActiveLayerCount, 1, 4);
+            float globalBottom = float.MaxValue, globalTop = float.MinValue;
+            for (int i = 0; i < count; i++)
+            {
+                var l = layers[i];
+                globalBottom = Mathf.Min(globalBottom, l.BottomY);
+                globalTop    = Mathf.Max(globalTop, l.TopY);
+                _boundsCache[i]  = new Vector4(l.BottomY, l.TopY, l.CoverageThreshold, l.DensityMultiplier);
+                _dayTopCache[i]  = l.DayRampTop;
+                _dayMidCache[i]  = l.DayRampMid;
+                _dayBotCache[i]  = l.DayRampBot;
+                _sunTopCache[i]  = l.SunsetRampTop;
+                _sunMidCache[i]  = l.SunsetRampMid;
+                _sunBotCache[i]  = l.SunsetRampBot;
+            }
+
+            mat.SetFloat(CloudBottomYId, globalBottom);
+            mat.SetFloat(CloudTopYId, globalTop);
             mat.SetInt(RaymarchStepsId, RaymarchSteps);
             mat.SetFloat(MaxRayDistanceId, MaxRayDistance);
             mat.SetFloat(HeightEdgeId, HeightEdgeSoftness);
             mat.SetFloat(CoverageScaleId, CoverageScale);
-            mat.SetFloat(CoverageThresholdId, CoverageThreshold);
             mat.SetFloat(TemporalBlendId, (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
 
-            // Global-only (NOT in shader Properties — Shader.SetGlobal* to avoid material-slot shadowing)
+            // Layer arrays
+            mat.SetVectorArray(LayerBoundsId, _boundsCache);
+            mat.SetVectorArray(LayerDayTopId, _dayTopCache);
+            mat.SetVectorArray(LayerDayMidId, _dayMidCache);
+            mat.SetVectorArray(LayerDayBotId, _dayBotCache);
+            mat.SetVectorArray(LayerSunsetTopId, _sunTopCache);
+            mat.SetVectorArray(LayerSunsetMidId, _sunMidCache);
+            mat.SetVectorArray(LayerSunsetBotId, _sunBotCache);
+            mat.SetInt(LayerCountId, count);
+
             Shader.SetGlobalFloat(NoiseTileSizeId, NoiseTileSize);
-            Shader.SetGlobalFloat(DensityMultId, DensityMultiplier);
             Shader.SetGlobalFloat(LightAbsorptionId, LightAbsorption);
-            Shader.SetGlobalFloat(CloudOpacityId, Opacity);
-            Shader.SetGlobalFloat(CloudColorIntensityId, ColorIntensity);
-            Shader.SetGlobalColor(DayRampTopId, DayRampTop);
-            Shader.SetGlobalColor(DayRampMidId, DayRampMid);
-            Shader.SetGlobalColor(DayRampBotId, DayRampBot);
-            Shader.SetGlobalColor(SunsetRampTopId, SunsetRampTop);
-            Shader.SetGlobalColor(SunsetRampMidId, SunsetRampMid);
-            Shader.SetGlobalColor(SunsetRampBotId, SunsetRampBot);
 
             if (Time.frameCount % 120 == 0)
             {
                 var ldInst = LocalDensityBuffer.Instance;
-                Debug.Log($"[VolClouds] Dens={DensityMultiplier:F2} Absorb={LightAbsorption:F3} Opacity={Opacity:F2} Color={ColorIntensity:F2} CovThresh={CoverageThreshold:F2}" +
-                    (ldInst != null ? $" | LocalDensity OK: RT={ldInst.GetDensityRT()!=null} size={ldInst.Resolution*ldInst.TexelSize}" : " | LocalDensity: NULL"));
+                Debug.Log($"[VolClouds] Layers={count} Bottom={globalBottom:F0} Top={globalTop:F0} Absorb={LightAbsorption:F3} Steps={RaymarchSteps}" +
+                    (ldInst != null ? $" | LD OK: RT={ldInst.GetDensityRT()!=null}" : " | LD: NULL"));
             }
 
             if (CloudNoise3D != null)
@@ -305,7 +374,6 @@ namespace ProjectC.Rendering
         private readonly Matrix4x4 _prevVp;
         private readonly bool _prevVpValid;
         private RTHandle _historyRead, _historyWrite;
-        private readonly float _opacity, _colorIntensity;
 
         private class PassData
         {
@@ -313,18 +381,15 @@ namespace ProjectC.Rendering
             public TextureHandle CloudRT, HistoryRT;
             public Vector4 TargetSize;
             public Matrix4x4 ViewToWorld, InvProjection;
-            public float Opacity, ColorIntensity;
         }
 
         public VolumetricCloudsPass(Material material, bool halfRes, bool temporal,
             bool debugDirect, Matrix4x4 prevVp, bool prevVpValid,
-            RTHandle historyRead, RTHandle historyWrite,
-            float opacity, float colorIntensity)
+            RTHandle historyRead, RTHandle historyWrite)
         {
             _material = material; _halfRes = halfRes; _temporal = temporal;
             _debugDirect = debugDirect; _prevVp = prevVp; _prevVpValid = prevVpValid;
             _historyRead = historyRead; _historyWrite = historyWrite;
-            _opacity = opacity; _colorIntensity = colorIntensity;
             profilingSampler = new ProfilingSampler(PassName);
             ConfigureInput(ScriptableRenderPassInput.Depth);
         }
@@ -367,7 +432,6 @@ namespace ProjectC.Rendering
             using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_Direct", out var pd, profilingSampler))
             {
                 pd.Material = _material; pd.TargetSize = fs2; pd.ViewToWorld = viewToWorld; pd.InvProjection = invProj;
-                pd.Opacity = _opacity; pd.ColorIntensity = _colorIntensity;
                 builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
                 builder.AllowPassCulling(false); builder.AllowGlobalStateModification(true);
                 builder.SetRenderFunc(static (PassData p, RasterGraphContext ctx) =>
@@ -375,8 +439,6 @@ namespace ProjectC.Rendering
                     ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, p.TargetSize);
                     ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, p.ViewToWorld);
                     ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, p.InvProjection);
-                    ctx.cmd.SetGlobalFloat(VolumetricCloudsRenderFeature.CloudOpacityId, p.Opacity);
-                    ctx.cmd.SetGlobalFloat(VolumetricCloudsRenderFeature.CloudColorIntensityId, p.ColorIntensity);
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, p.Material, 1, MeshTopology.Triangles, 3, 1);
                 });
             }

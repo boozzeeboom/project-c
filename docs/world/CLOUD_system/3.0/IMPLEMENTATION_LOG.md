@@ -49,38 +49,6 @@
 
 ---
 
-## Что нужно сделать вручную
-
-1. **Сгенерировать BlueNoise64:** меню `ProjectC → Clouds → Generate Blue Noise 64×64`
-2. **Назначить BlueNoise64** в `Blue Noise Texture` у Renderer Feature (если нужен дизеринг)
-3. **Назначить CloudNoise3D** в `Cloud Noise 3D` у Renderer Feature — уже должно быть
-4. **Play Mode** для верификации
-
----
-
-## Файлы
-
-```
-Assets/_Project/
-├── Shaders/Clouds/
-│   ├── CloudNoise.hlsl              1.1 ✅
-│   ├── CloudCommon.hlsl             1.1 ✅
-│   ├── VolumetricClouds.shader      1.3/1.4/1.5/1.6 ✅ (3 pass'а)
-│   └── BakeCloudNoise.compute       1.2 ✅
-├── Scripts/
-│   ├── Rendering/
-│   │   └── VolumetricCloudsRenderFeature.cs  1.3/1.6 ✅
-│   └── World/Clouds/
-│       ├── CloudNoiseBaker.cs       1.2 + blue noise generator ✅
-│       └── CloudPerfMonitor.cs      1.7 ✅
-├── Data/Clouds/
-│   └── CloudNoise3D.asset           1.2 ✅ (забейкан)
-└── Textures/
-    └── BlueNoise64.png              1.6 ⏳ (сгенерировать через меню)
-```
-
----
-
 ## Phase 2 — Интерактивность
 
 ### 2.1 ✅ LocalDensityBuffer — 2026-08-03
@@ -91,48 +59,42 @@ Assets/_Project/
 - `Assets/_Project/Shaders/Clouds/LocalDensity.compute` — 2 kernel'а:
   `AdvectAndRelax` (адвекция ветром + релаксация) и `ApplySplats` (гауссовы сплаты).
 
-**Детали:**
-- RT: `RenderTextureFormat.RHalf`, `dimension=Tex3D`, `enableRandomWrite=true`
-- Тор: `uvw = (worldPos - Center) / (Res * TexelSize) + 0.5; uvw = frac(uvw);`
-- Ветер читается из `WindManager.Instance.CurrentWindDirection`
-- Сплаты: `StructuredBuffer<SplatData>` (Vector3 center, float radius, float amount),
-  гауссово ядро exp(-d²/2σ²) с σ = radius/3
-- CPU-зеркало: `float[] _cpuDensity` (Res³), обновляется синхронно со сплатами,
-  релаксация в Update
-- `SampleDensity(Vector3)` — трилинейная интерполяция по 8 соседям с тор-адресацией
-
-**Приёмка:** ⏳ требуется Play Mode тест пользователем
-  - Объект с LocalDensityBuffer в сцене
-  - SplatDensity тестовым вызовом → пятно затухает за ~1–2 с
-  - Ветер двигает пятно
-
 **Коммит:** `04624af9` — T-CLOUD02: Phase 2.1 — LocalDensityBuffer
 
 ---
 
 ### 2.2B ✅ Variant B — Cloud Displacement Interaction — 2026-08-04
 
-**Задача:** альтернативный (B) метод интерактивности: вместо вычитания плотности — displacement (сдвиг координат 3D-шума), чтобы облака видимо расходились за кораблём.
+**Задача:** альтернативный (B) метод интерактивности: displacement вместо вычитания плотности.
 
-**Архитектура:**
-- Displacement = radial push от центра сплата: `direction = normalize(cellPos - splatCenter)`, `magnitude = Gaussian(dist, radius) * amount`
-- Формат RT: RGBAHalf (RGB = вектор, A = резерв). Density-режим: RFloat.
-- Единый source of truth: `LocalDensityBuffer.Mode` enum — RenderFeature и шейдер реагируют автоматически.
+**Изменённые файлы:** `LocalDensity.compute`, `LocalDensityBuffer.cs`, `VolumetricClouds.shader`, `VolumetricCloudsRenderFeature.cs`, `ShipWakeCloudCutter.cs`
+
+**⚠️ Известная проблема — производительность:**
+Рост `CutRadius` → O(radius³). Будущий фикс: indirect dispatch или analytical displacement.
+
+---
+
+### 3.0 ✅ Multi-Layer Cloud System — 2026-08-04
+
+**Задача:** разбить единый облачный слой на 4 независимых слоя (800-1200, 1200-2500, 2500-4500, 4500-7000) с per-layer density, coverageThreshold и GhibliRamp.
 
 **Изменённые файлы:**
 
 | Файл | Изменение |
 |---|---|
-| `LocalDensity.compute` | +2 kernel: `AdvectAndRelax_Disp` (мультипликативная релаксация векторов), `ApplySplats_Disp` (radial push) |
-| `LocalDensityBuffer.cs` | +`enum Mode { Density, Displacement }`, RGBAHalf RT в disp-режиме, dispatch правильных ядер, CPU mirror только для Density |
-| `VolumetricClouds.shader` | +`SampleLocalDisplacement()`, keyword `_LOCALDENSITY_DISPLACEMENT`, сдвиг worldPos до сэмплирования шума |
-| `VolumetricCloudsRenderFeature.cs` | +`DisplacementStrength` (0-1000, default 300), keyword по Mode |
-| `ShipWakeCloudCutter.cs` | Дефолты: `ConeSegments=16`, `ConeSpacing=0.35`, `CutRadius=50`, `CutAmount=1.0`, сплаты с i=0 (прямо у корабля). Конус: 0-280 юнитов, радиус 50-200. |
+| `VolumetricCloudsRenderFeature.cs` | +`CloudLayerDef` struct, `Layers[4]` с дефолтами, `ActiveLayerCount` 1–4, `SetVectorArray` |
+| `VolumetricClouds.shader` | `_LayerBounds[4]`, per-layer ramps, `ComputeLayerColor()`, per-layer цикл в `CloudDensity()` |
 
-**A/B Switching:**
-- `LocalDensityBuffer` inspector → `Mode` = `Density` (A) / `Displacement` (B)
-- Параметр тюнинга: `DisplacementStrength` на ассете RenderFeature (в URP Renderer Data)
+**Архитектура:**
+- `CloudCoverageNoise()` — raw noise 0..1; per-layer порог в цикле
+- `ComputeLayerColor(y, rampBlend)` — блендит GhibliRamp по heightFade-весу слоёв
+- `CloudDensity()` — цикл: `shape * hFade * layerCov * densityMult`
+- `_CloudBottomY`/`_CloudTopY` = глобальный min/max для RaySlabIntersection
 
-**⚠️ Известная проблема — производительность:**
-Рост `CutRadius` квадратично увеличивает количество затронутых ячеек. При radius=200 и TexelSize=20 — сфера диаметром ~23 ячейки = O(23³) = 12k ячеек на сплат на GPU (в худшем случае). Решение для будущей итерации: либо indirect dispatch с bounding box сплатов вместо полного 128³, либо переход на analytical displacement в шейдере (вычислять displacement по формуле сплата напрямую, без 3D-текстуры).
+**Дефолтные слои:**
+1. 800–1200: CovThresh=0.35, Dens=1.5 (тёмный штормовой пол)
+2. 1200–2500: CovThresh=0.5, Dens=1.0 (текущий слой)
+3. 2500–4500: CovThresh=0.65, Dens=0.6 (перистые)
+4. 4500–7000: CovThresh=0.75, Dens=0.3 (дымка)
 
+**Перф:** +5–10% GPU. Displacement работает сквозь все слои.

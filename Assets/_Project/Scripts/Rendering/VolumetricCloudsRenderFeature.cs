@@ -193,22 +193,22 @@ namespace ProjectC.Rendering
             if (CloudNoise3D != null)
                 mat.SetTexture(CloudNoise3DId, CloudNoise3D);
 
-            // Phase 2.2: LocalDensityBuffer → shader (global, NOT mat — not in Properties)
+            // Phase 2.2: LocalDensityBuffer → shader (via mat.Set* — now in Properties)
             var ld = LocalDensityBuffer.Instance;
             if (ld != null)
             {
                 var rt = ld.GetDensityRT();
                 if (rt != null)
                 {
-                    Shader.SetGlobalTexture(LocalDensityRTId, rt);
-                    Shader.SetGlobalVector(LocalDensityCenterId, ld.Center);
-                    Shader.SetGlobalFloat(LocalDensitySizeId, ld.Resolution * ld.TexelSize);
-                    Shader.SetGlobalFloat(LocalDensityInfluenceId, LocalDensityInfluence);
+                    mat.SetTexture(LocalDensityRTId, rt);
+                    mat.SetVector(LocalDensityCenterId, ld.Center);
+                    mat.SetFloat(LocalDensitySizeId, ld.Resolution * ld.TexelSize);
+                    mat.SetFloat(LocalDensityInfluenceId, LocalDensityInfluence);
 
                     if (!_loggedOnce)
                     {
                         _loggedOnce = true;
-                        Debug.Log($"[VolClouds] LocalDensity GLOBALS SET: RT={rt.name} {rt.width}x{rt.height}x{rt.volumeDepth} center={ld.Center} size={ld.Resolution * ld.TexelSize} influence={LocalDensityInfluence}");
+                        Debug.Log($"[VolClouds] LocalDensity VIA MAT: RT={rt.name} {rt.width}x{rt.height}x{rt.volumeDepth} center={ld.Center} size={ld.Resolution * ld.TexelSize} influence={LocalDensityInfluence}");
                     }
                 }
                 else if (!_loggedOnce)

@@ -97,6 +97,8 @@ namespace ProjectC.Rendering
         [Range(256f, 4096f)] public float NoiseTileSize = 1024f;
         [Tooltip("World scale of the 2D coverage FBM.")]
         [Range(0.0001f, 0.01f)] public float CoverageScale = 0.0008f;
+        [Tooltip("Distance over which clouds fade out when approaching scene geometry.")]
+        [Range(10f, 2000f)] public float DepthFadeDistance = 200f;
 
         [Header("Quality")]
         public bool HalfResRender = true;
@@ -137,6 +139,7 @@ namespace ProjectC.Rendering
         private static readonly int HeightEdgeId        = Shader.PropertyToID("_HeightEdgeSoftness");
         private static readonly int NoiseTileSizeId     = Shader.PropertyToID("_NoiseTileSize");
         private static readonly int CoverageScaleId     = Shader.PropertyToID("_CoverageScale");
+        private static readonly int DepthFadeId         = Shader.PropertyToID("_DepthFadeDistance");
         private static readonly int TemporalBlendId     = Shader.PropertyToID("_TemporalBlend");
         private static readonly int WindOffsetId        = Shader.PropertyToID("_WindOffset");
         private static readonly int SunDirectionId      = Shader.PropertyToID("_SunDirection");
@@ -305,6 +308,7 @@ namespace ProjectC.Rendering
             mat.SetFloat(MaxRayDistanceId, MaxRayDistance);
             mat.SetFloat(HeightEdgeId, HeightEdgeSoftness);
             mat.SetFloat(CoverageScaleId, CoverageScale);
+            mat.SetFloat(DepthFadeId, DepthFadeDistance);
             mat.SetFloat(TemporalBlendId, (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
 
             // Layer arrays

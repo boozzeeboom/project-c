@@ -63,8 +63,8 @@ MonoBehaviour:
   MaxRayDistance: 20000
   LightAbsorption: 0.014
   Opacity: 1
-  ColorIntensity: 3.01
-  HeightEdgeSoftness: 0.261
+  ColorIntensity: 5
+  HeightEdgeSoftness: 0.991
   NoiseTileSize: 1024
   CoverageScale: 0.0001
   HalfResRender: 1

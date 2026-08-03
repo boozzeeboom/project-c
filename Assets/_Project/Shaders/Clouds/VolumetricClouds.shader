@@ -11,8 +11,9 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         _CloudTopY ("Cloud Top Y", Float) = 7000.0
         _RaymarchSteps ("Raymarch Steps", Int) = 48
         _MaxRayDistance ("Max Ray Distance", Float) = 5000.0
-        _HeightEdgeSoftness ("Height Edge Softness", Range(0.01, 0.5)) = 0.15
+        _HeightEdgeSoftness ("Height Edge Softness", Range(0.01, 1.5)) = 0.3
         _CoverageScale ("Coverage Scale", Float) = 0.0008
+        _DepthFadeDistance ("Depth Fade Distance", Range(10, 2000)) = 200
         [HideInInspector] _BlueNoiseTex ("Blue Noise", 2D) = "black" {}
         [HideInInspector] _WindOffset ("Wind Offset", Vector) = (0, 0, 0, 0)
         [HideInInspector] _LocalDensityRT ("Local Density", 3D) = "" {}
@@ -29,7 +30,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
     {
         Cull Off
         ZWrite Off
-        ZTest Always
+        ZTest LEqual
 
         HLSLINCLUDE
         #pragma target 5.0
@@ -46,6 +47,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         float _MaxRayDistance;
         float _HeightEdgeSoftness;
         float _CoverageScale;
+        float _DepthFadeDistance;
         float4 _WindOffset;
 
         // === Multi-layer arrays (max 4 layers) ===
@@ -301,9 +303,10 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                     return float4(0, 0, 0, 0);
 
                 float sceneDepth = SampleSceneDepth(uv);
+                float sceneLinear = 1e9; // no geometry = huge
                 if (sceneDepth < 0.999)
                 {
-                    float sceneLinear = LinearEyeDepth(sceneDepth, _ZBufferParams);
+                    sceneLinear = LinearEyeDepth(sceneDepth, _ZBufferParams);
                     tMax = min(tMax, sceneLinear);
                     if (tMax <= tMin) return float4(0, 0, 0, 0);
                 }
@@ -326,6 +329,9 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
                     if (density > 0.001)
                     {
+                        // Soft depth fade: clouds near scene geometry gradually fade out
+                        float depthFade = saturate((sceneLinear - t) / max(_DepthFadeDistance, 1e-4));
+
                         float lightStepSize = min(stepSize * 3.0, 200.0);
                         float lightTransmittance = 1.0;
                         for (int j = 0; j < LIGHT_STEPS; j++)
@@ -345,7 +351,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                         float3 lighting = (cloudColor * hg * ms * lightTransmittance + ambient + silver * cloudColor) * _CloudColorIntensity;
 
                         float stepTransmittance = BeerLambert(density, stepSize, _LightAbsorption);
-                        float stepAbsorption = 1.0 - stepTransmittance;
+                        float stepAbsorption = (1.0 - stepTransmittance) * depthFade;
                         float transmittance = 1.0 - accumulated.a;
                         accumulated.rgb += lighting * transmittance * stepAbsorption;
                         accumulated.a   += stepAbsorption * _CloudOpacity;

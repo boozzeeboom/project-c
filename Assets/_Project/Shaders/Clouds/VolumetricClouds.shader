@@ -62,6 +62,8 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         // === Global-only ===
         float _NoiseTileSize;
         float _LightAbsorption;
+        float _CloudOpacity;
+        float _CloudColorIntensity;
         float3 _SunDirection;
 
         TEXTURE3D(_CloudNoise3D);
@@ -180,8 +182,15 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                            float rampBlend, out float3 layerColor)
         {
         #if defined(_LOCALDENSITY_DISPLACEMENT)
-            float3 disp = SampleLocalDisplacement(worldPos);
-            worldPos = worldPos + disp * _LocalDisplacementStrength;
+            // Gate displacement to ship altitude (±400m). Upper layers unaffected.
+            float shipY = _LocalDisplacementCenter.y;
+            float dispRange = 400.0;
+            float dispFactor = 1.0 - saturate(abs(worldPos.y - shipY) / dispRange);
+            if (dispFactor > 0.001)
+            {
+                float3 disp = SampleLocalDisplacement(worldPos);
+                worldPos = worldPos + disp * _LocalDisplacementStrength * dispFactor;
+            }
         #endif
 
             float3 samplePos = CameraRelativePosition(worldPos, cameraPos, _NoiseTileSize);
@@ -332,13 +341,13 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
                         float3 ambient = cloudColor * 0.25;
                         float silver = SilverLining(cosTheta, 0.3);
-                        float3 lighting = cloudColor * hg * ms * lightTransmittance + ambient + silver * cloudColor;
+                        float3 lighting = (cloudColor * hg * ms * lightTransmittance + ambient + silver * cloudColor) * _CloudColorIntensity;
 
                         float stepTransmittance = BeerLambert(density, stepSize, _LightAbsorption);
                         float stepAbsorption = 1.0 - stepTransmittance;
                         float transmittance = 1.0 - accumulated.a;
                         accumulated.rgb += lighting * transmittance * stepAbsorption;
-                        accumulated.a   += stepAbsorption;
+                        accumulated.a   += stepAbsorption * _CloudOpacity;
                     }
                 }
 

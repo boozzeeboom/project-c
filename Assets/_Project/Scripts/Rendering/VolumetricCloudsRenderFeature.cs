@@ -88,6 +88,8 @@ namespace ProjectC.Rendering
 
         [Header("Density (Global)")]
         [Range(0.001f, 0.5f)] public float LightAbsorption = 0.05f;
+        [Range(0.1f, 5f)] public float Opacity = 1f;
+        [Range(0.1f, 5f)] public float ColorIntensity = 1f;
 
         [Header("Shape")]
         [Range(0.01f, 0.5f)] public float HeightEdgeSoftness = 0.15f;
@@ -142,6 +144,8 @@ namespace ProjectC.Rendering
         internal static readonly int CloudHistoryRTId    = Shader.PropertyToID("_CloudHistoryRT");
         internal static readonly int PrevViewProjId      = Shader.PropertyToID("_PrevViewProj");
         internal static readonly int CloudRTId           = Shader.PropertyToID("_CloudRT");
+        internal static readonly int CloudOpacityId      = Shader.PropertyToID("_CloudOpacity");
+        internal static readonly int CloudColorIntensityId = Shader.PropertyToID("_CloudColorIntensity");
         internal static readonly int CloudTargetSizeId   = Shader.PropertyToID("_CloudTargetSize");
         internal static readonly int ViewToWorldId       = Shader.PropertyToID("_Cloud_ViewToWorld");
         internal static readonly int InvProjectionId     = Shader.PropertyToID("_Cloud_InvProj");
@@ -316,6 +320,8 @@ namespace ProjectC.Rendering
 
             Shader.SetGlobalFloat(NoiseTileSizeId, NoiseTileSize);
             Shader.SetGlobalFloat(LightAbsorptionId, LightAbsorption);
+            Shader.SetGlobalFloat(CloudOpacityId, Opacity);
+            Shader.SetGlobalFloat(CloudColorIntensityId, ColorIntensity);
 
             // One-time layer dump for diagnostics
             if (!_loggedOnce)

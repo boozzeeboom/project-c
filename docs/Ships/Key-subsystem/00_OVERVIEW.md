@@ -95,7 +95,8 @@
 
 **KeyRodInstanceWorld** (`static class`, server-only) — единственный источник правды:
 - `Dictionary<int, KeyRodInstance> _instancesById`
-- `Dictionary<ulong, int> _primaryInstanceByShipId` — shipNetId → instanceId (1:1)
+- `Dictionary<ulong, int> _primaryInstanceByShipId` — shipNetId → instanceId (1:1, runtime lookup)
+- `Dictionary<string, int> _instancesByPersistentId` — persistentShipId → instanceId (стабильный, rebind при старте сессии)
 - `Dictionary<ulong, List<int>> _instancesByPlayer` — clientId → instanceIds
 - Event `OnOwnershipChanged` (для внутренней подписки)
 - Persistence через `IKeyRodInstanceRepository` (`KeyRodInstances.json`)
@@ -103,7 +104,7 @@
 **ShipController.OnNetworkSpawn** (сервер):
 - Читает `_keyItemData` (ItemData, inspector field)
 - Корутина `CreateKeyInstanceWhenReady()` ждёт инициализации `KeyRodInstanceWorld`
-- Создаёт `KeyRodInstance` → `CreateInstance(itemId, shipNetId, OWNER_NONE)`
+- Создаёт `KeyRodInstance` → `CreateInstance(itemId, shipNetId, OWNER_NONE, ShipPersistentId)` (с rebind по стабильному ID)
 
 **ShipOwnershipRequirement** (NetworkBehaviour на каждом ShipController):
 - Server-only проверка: `KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetId)`
@@ -131,7 +132,7 @@
 
 | Файл | Назначение |
 |------|-----------|
-| `KeyRodInstance.cs` | POCO: itemId, instanceId, registeredShipId, ownerPlayerId, state |
+| `KeyRodInstance.cs` | POCO: itemId, instanceId, registeredShipId, persistentShipId, ownerPlayerId, state |
 | `KeyRodInstanceWorld.cs` | Static facade, server-only, 3 индекса + persistence |
 | `KeyRodInstanceRepository.cs` | JSON-персистентность |
 | `ShipOwnershipRequirement.cs` | NetworkBehaviour, проверка владения |
@@ -221,7 +222,7 @@ if (Keyboard.current.fKey.wasPressedThisFrame) {
 
 ### 6.3 Хот-сварка scene-placed NetworkObject (известный footgun)
 
-В `docs/dev/INTEGRATION_SHIPS_TO_WORLD_0_0.md` задокументировано: scene-placed `NetworkObject` в scene НЕ спавнится NGO, его спавнит `ScenePlacedObjectSpawner` в BootstrapScene. **Это значит:** `NetworkObject.NetworkObjectId` у кораблей стабилен после `ScenePlacedObjectSpawner` отработал — но **между запусками Editor / билдами** может отличаться. Это нормально для MVP (ID сохраняется в текущей сессии). TODO для persistence — отдельный тикет.
+В `docs/dev/INTEGRATION_SHIPS_TO_WORLD_0_0.md` задокументировано: scene-placed `NetworkObject` в scene НЕ спавнится NGO, его спавнит `ScenePlacedObjectSpawner` в BootstrapScene. **Это значит:** `NetworkObject.NetworkObjectId` у кораблей стабилен после `ScenePlacedObjectSpawner` отработал — но **между запусками Editor / билдами** может отличаться. ✅ **РЕШЕНО (T-KEY-PERSIST-FIX, 2026-07-14):** `persistentShipId` (стабильный `{sceneName}/{gameObject.name}`) с rebind-логикой в `KeyRodInstanceWorld.CreateInstance`. При старте сессии существующий instance перепривязывается к новому netId.
 
 ### 6.4 Disconnect / Reconnect
 
@@ -302,8 +303,8 @@ if (!_inShip) {  // посадка
 
 - Hot-wire / угон без ключа.
 - Передача ключа другому игроку через прямой drop (нужен trade/transfer RPC).
-- Persistence ключа между сессиями (сейчас — серверный singleton, при рестарте теряется).
-- Уникальный `ShipInstanceId` через `string` (сейчас — `NetworkObjectId`, меняется между запусками Editor).
+- ✅ Persistence ключа между сессиями — реализована (JSON + rebind по persistentShipId).
+- ✅ Уникальный `ShipInstanceId` — реализован через `ShipPersistentId` (`{sceneName}/{gameObject.name}`).
 - Отдельный `ItemType.Key` (семантика ограничиваемся `Equipment` + явный `ItemData` с пометкой в description).
 - UI-таб «ключи» в CharacterWindow (сейчас ключ показывается в общем секторе Equipment TAB-колеса).
 - Взлом замка / изготовление дубликата ключа.

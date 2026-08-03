@@ -689,6 +689,34 @@ var compositeKey = (dto.itemId, groupKey2);
 
 ---
 
+
+
+---
+
+## 2026-07-14 — T-KEY-PERSIST-FIX: persistentShipId rebind (critical bugfix)
+
+**Контекст**: баг «ключ в инвентаре есть, а корабль заблокирован — пишет нет ключа». Проявлялся при перезаходе: после ~2 рестартов доступ к кораблю терялся.
+
+**Root cause**: `KeyRodInstance.registeredShipId` использовал `NetworkObjectId` — динамический идентификатор, меняющийся каждый сеанс. При перезаходе:
+1. Корабль получал новый `NetworkObjectId`
+2. `CreateKeyInstanceWhenReady()` создавал НОВЫЙ instance с `owner=NONE` (не находил существующий — старый netId уже недействителен)
+3. Инвентарь игрока (`inventory_{clientId}.json`) хранил старый `instanceId` → ссылался на instance с прошлым netId
+4. `IsOwnerOfShip(clientId, новыйNetId)` → находил новый instance (owner=NONE) → отказ
+
+**Почему возникла**: документация `00_OVERVIEW.md` §6.3, `20_UNIQUE_KEY_INSTANCE.md` §6, `21_SHIP_OWNERSHIP_MODEL.md` §4 — все три файла предупреждали: «NetworkObjectId меняется между запусками, TODO для persistence — отдельный тикет». T-KEY-PERSIST (v5) реализовал JSON-персистентность, но **без rebind-логики**. P1 Refactor (2026-07-21) удалил `KeyRodInstanceBinding` (имел ссылку на GameObject корабля), усугубив разрыв.
+
+**Fix** (`4b95e65`):
+- `KeyRodInstance.cs`: + поле `persistentShipId` (стабильный `ShipPersistentId` = `{sceneName}/{gameObject.name}`)
+- `KeyRodInstanceRepository.cs`: + `persistentShipId` в DTO и `SaveAll`
+- `KeyRodInstanceWorld.cs`: + индекс `_instancesByPersistentId`; `CreateInstance` принимает `persistentShipId`, при нахождении существующего instance по стабильному ID делает **rebind** `registeredShipId` на актуальный netId, сохраняя `ownerPlayerId`; очистка stale-инстансов (без `persistentShipId`, из дофиксовой эры)
+- `ShipController.cs`: `CreateKeyInstanceWhenReady` передаёт `ShipPersistentId`
+
+**Файлы**: `KeyRodInstance.cs`, `KeyRodInstanceRepository.cs`, `KeyRodInstanceWorld.cs`, `ShipController.cs` (4 файла, +95/-17 строк)
+
+**Архитектурный принцип**: `NetworkObjectId` эфемерен (сессионный). Для persistence всегда использовать стабильный ID (`ShipPersistentId`). Runtime-индексы (`_primaryInstanceByShipId`) используют netId для O(1) lookup; rebind синхронизирует их при старте сессии.
+
+---
+
 ## 2026-06-19 — Phase G: Документация и планы
 
 **Что добавлено**:

@@ -35,6 +35,8 @@ namespace ProjectC.World.Clouds
         [Header("Advection")]
         [Range(0f, 5f)] public float AdvectionStrength = 0.5f;
         [Range(0f, 1f)] public float RelaxationRate = 0.05f;
+        [Tooltip("Faster relaxation for displacement mode (old vectors decay quickly).")]
+        [Range(0f, 5f)] public float DisplacementRelaxationRate = 1.5f;
 
         [Header("Splat")]
         [Tooltip("Максимальный радиус сплата. При CutRadius > этого значения сплаты обрезаются.")]
@@ -309,7 +311,8 @@ namespace ProjectC.World.Clouds
             _compute.SetInt(ResolutionId, Resolution);
             _compute.SetVector(WindDirectionId, windDir);
             _compute.SetFloat(AdvectionStrengthId, AdvectionStrength);
-            _compute.SetFloat(RelaxationRateId, RelaxationRate);
+            float relax = BufferMode == Mode.Displacement ? DisplacementRelaxationRate : RelaxationRate;
+            _compute.SetFloat(RelaxationRateId, relax);
             _compute.SetFloat(DeltaTimeId, dt);
         }
 

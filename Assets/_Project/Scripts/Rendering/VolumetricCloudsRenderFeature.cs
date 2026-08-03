@@ -116,7 +116,7 @@ namespace ProjectC.Rendering
 
         [Header("Phase 2.2B: Displacement (Variant B)")]
         [Tooltip("Множитель силы displacement. Применимо только когда LocalDensityBuffer.Mode = Displacement.")]
-        [Range(0f, 1000f)] public float DisplacementStrength = 300f;
+        [Range(0f, 1000f)] public float DisplacementStrength = 150f;
 
         [Header("Material")]
         public Material OverrideMaterial;
@@ -170,6 +170,47 @@ namespace ProjectC.Rendering
         private bool _loggedOnce;
         private bool _addOnceLogged;
 
+        /// <summary>
+        /// Unity does NOT run field initializers for new fields on existing
+        /// ScriptableObject assets (deserialization uses default(T)).
+        /// This method fills hardcoded defaults when bounds are zero.
+        /// </summary>
+        private void EnsureLayerDefaults()
+        {
+            if (Layer0.BottomY < 1f && Layer0.TopY < 1f)
+            {
+                Layer0 = new CloudLayerDef {
+                    BottomY = 800f, TopY = 1200f, DensityMultiplier = 1.5f, CoverageThreshold = 0.35f,
+                    DayRampTop = Color.white, DayRampMid = new Color(0.7f, 0.75f, 0.8f), DayRampBot = new Color(0.4f, 0.45f, 0.55f),
+                    SunsetRampTop = Color.white, SunsetRampMid = new Color(0.9f, 0.55f, 0.45f), SunsetRampBot = new Color(0.5f, 0.2f, 0.2f)
+                };
+            }
+            if (Layer1.BottomY < 1f && Layer1.TopY < 1f)
+            {
+                Layer1 = new CloudLayerDef {
+                    BottomY = 1200f, TopY = 2500f, DensityMultiplier = 1f, CoverageThreshold = 0.5f,
+                    DayRampTop = Color.white, DayRampMid = new Color(0.831f, 0.902f, 0.945f), DayRampBot = new Color(0.663f, 0.8f, 0.89f),
+                    SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.714f, 0.757f), SunsetRampBot = new Color(0.804f, 0.361f, 0.361f)
+                };
+            }
+            if (Layer2.BottomY < 1f && Layer2.TopY < 1f)
+            {
+                Layer2 = new CloudLayerDef {
+                    BottomY = 2500f, TopY = 4500f, DensityMultiplier = 0.6f, CoverageThreshold = 0.65f,
+                    DayRampTop = Color.white, DayRampMid = new Color(0.88f, 0.92f, 0.96f), DayRampBot = new Color(0.75f, 0.82f, 0.9f),
+                    SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.8f, 0.75f), SunsetRampBot = new Color(0.85f, 0.55f, 0.45f)
+                };
+            }
+            if (Layer3.BottomY < 1f && Layer3.TopY < 1f)
+            {
+                Layer3 = new CloudLayerDef {
+                    BottomY = 4500f, TopY = 7000f, DensityMultiplier = 0.3f, CoverageThreshold = 0.75f,
+                    DayRampTop = Color.white, DayRampMid = new Color(0.9f, 0.93f, 0.97f), DayRampBot = new Color(0.8f, 0.85f, 0.92f),
+                    SunsetRampTop = Color.white, SunsetRampMid = new Color(1f, 0.85f, 0.8f), SunsetRampBot = new Color(0.9f, 0.65f, 0.55f)
+                };
+            }
+        }
+
         public Material GetOrCreateMaterial()
         {
             if (_material != null && _material.shader != null) return _material;
@@ -182,6 +223,7 @@ namespace ProjectC.Rendering
 
         public override void Create()
         {
+            EnsureLayerDefaults();
             _prevViewProjValid = false;
             Debug.Log("[VolClouds] Create() called — RenderFeature initialized.");
         }
@@ -234,6 +276,7 @@ namespace ProjectC.Rendering
 
         private void ApplyProperties(Material mat, Camera camera)
         {
+            EnsureLayerDefaults();
             // ── Collect active layers ──
             CloudLayerDef[] layers = { Layer0, Layer1, Layer2, Layer3 };
             int count = Mathf.Clamp(ActiveLayerCount, 1, 4);

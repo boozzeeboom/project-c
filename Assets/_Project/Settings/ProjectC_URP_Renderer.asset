@@ -71,6 +71,7 @@ MonoBehaviour:
   BlueNoiseTexture: {fileID: 2800000, guid: cf8182677e251df47bf344fc5ab478b2, type: 3}
   WindSpeedMultiplier: 0.01
   DebugDensityDirect: 0
+  DebugLayerMask: 4
   LocalDensityInfluence: 2
   DisplacementStrength: 1000
   OverrideMaterial: {fileID: 0}

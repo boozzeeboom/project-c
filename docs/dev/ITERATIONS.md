@@ -1,6 +1,16 @@
 # Итерации структуризации документации
 
-## Итерация от 2026-08-04 (T-CLOUD02)
+## Итерация от 2026-08-04 (T-CLOUD02) #2
+
+**Задача:** Multi-Layer Cloud System — 4 слоя (800-1200, 1200-2500, 2500-4500, 4500-7000) с per-layer coverage/density/ramps.
+**Коммит:** `d2ec02f4` — T-CLOUD02: Multi-Layer Cloud System (4 слоя 800-7000)
+**Изменения:**
+- `VolumetricCloudsRenderFeature.cs` — `CloudLayerDef` struct, `Layers[4]`, `ActiveLayerCount` 1-4
+- `VolumetricClouds.shader` — `_LayerBounds[4]`, `ComputeLayerColor()`, per-layer цикл
+- `IMPLEMENTATION_LOG.md` — запись фазы 3.0
+- **Перф:** +5-10% GPU. Displacement работает сквозь все слои.
+
+## Итерация от 2026-08-04 (T-CLOUD02) #1
 
 **Задача:** Variant B — Cloud Displacement Interaction. Альтернативный метод интерактивности облаков: displacement (сдвиг 3D-шума) вместо вычитания плотности. A/B-переключение через `LocalDensityBuffer.Mode`.
 **Коммит:** `f8778102` — T-CLOUD02: Variant B — Cloud Displacement Interaction

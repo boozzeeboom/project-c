@@ -1,7 +1,7 @@
 // ShipContrailVfx.cs — Phase 2.3
 // Drives the VFX Graph condensation trail behind the ship.
-// Reads speed from Rigidbody, wind from WindManager.
-// Trail only emits when ship is undocked and above MinSpeed.
+// Uses Play/Stop for emission control (Simple_Trail template).
+// VFX GameObject is moved to trail position each frame.
 
 using UnityEngine;
 using UnityEngine.VFX;
@@ -12,13 +12,13 @@ namespace ProjectC.Ship
 {
     /// <summary>
     /// Управляет VFX Graph конденсационного следа за кораблём.
-    /// Подписывается на ShipController (IsDocked) или работает автономно
-    /// с любым Transform + Rigidbody.
+    /// Использует Play()/Stop() для контроля эмиссии и двигает
+    /// VFX-GameObject за кораблём.
     /// </summary>
     public class ShipContrailVfx : MonoBehaviour
     {
         [Header("VFX")]
-        [Tooltip("VisualEffect компонент с Contrail.vfx (или ссылка на ассет в VisualEffect.visualEffectAsset).")]
+        [Tooltip("VisualEffect компонент с Contrail.vfx.")]
         public VisualEffect Vfx;
 
         [Header("Ship")]
@@ -27,19 +27,13 @@ namespace ProjectC.Ship
 
         [Header("Emit Conditions")]
         [Range(0f, 30f)] public float MinSpeed = 5f;
-        [Range(0.1f, 2f)] public float EmitRate = 0.05f; // секунд между эмитами
 
         [Header("Trail Offset")]
         [Tooltip("Смещение точки спавна относительно корабля (локальное). Z назад, Y вверх.")]
         public Vector3 SpawnOffset = new Vector3(0f, -2f, -15f);
 
         private Rigidbody _rb;
-        private float _emitTimer;
-
-        // VFX property IDs
-        private static readonly int EmitId     = Shader.PropertyToID("Emit");
-        private static readonly int SpawnPosId = Shader.PropertyToID("SpawnPos");
-        private static readonly int WindVecId  = Shader.PropertyToID("WindVector");
+        private bool _wasEmitting;
 
         private void Start()
         {
@@ -50,6 +44,9 @@ namespace ProjectC.Ship
                 Ship = GetComponent<ShipController>();
 
             _rb = Ship != null ? Ship.GetComponent<Rigidbody>() : GetComponent<Rigidbody>();
+
+            if (Vfx != null)
+                Vfx.Stop();
         }
 
         private void Update()
@@ -62,25 +59,33 @@ namespace ProjectC.Ship
             bool docked = Ship != null && Ship.IsDocked;
             bool shouldEmit = !docked && speed > MinSpeed;
 
-            Vfx.SetBool(EmitId, shouldEmit);
+            // Play/Stop control
+            if (shouldEmit && !_wasEmitting)
+            {
+                Vfx.Play();
+                _wasEmitting = true;
+            }
+            else if (!shouldEmit && _wasEmitting)
+            {
+                Vfx.Stop();
+                _wasEmitting = false;
+            }
 
-            if (!shouldEmit) return;
+            // Move VFX GameObject to trail position
+            if (shouldEmit)
+            {
+                Vector3 shipPos = Ship != null ? Ship.transform.position : transform.position;
+                Quaternion shipRot = Ship != null ? Ship.transform.rotation : transform.rotation;
+                Vfx.transform.position = shipPos + shipRot * SpawnOffset;
+                Vfx.transform.rotation = shipRot;
+            }
+        }
 
-            // Throttled spawn
-            _emitTimer += Time.deltaTime;
-            if (_emitTimer < EmitRate) return;
-            _emitTimer = 0f;
-
-            Vector3 shipPos = Ship != null ? Ship.transform.position : transform.position;
-            Quaternion shipRot = Ship != null ? Ship.transform.rotation : transform.rotation;
-
-            Vector3 spawnWorld = shipPos + shipRot * SpawnOffset;
-            Vfx.SetVector3(SpawnPosId, spawnWorld);
-
-            Vector3 windVec = Vector3.zero;
-            if (WindManager.Instance != null)
-                windVec = WindManager.Instance.CurrentWindDirection.normalized * WindManager.Instance.CurrentWindSpeed;
-            Vfx.SetVector3(WindVecId, windVec);
+        private void OnDisable()
+        {
+            if (Vfx != null)
+                Vfx.Stop();
+            _wasEmitting = false;
         }
     }
 }

@@ -183,7 +183,11 @@ namespace ProjectC.Rendering
             Shader.SetGlobalColor(SunsetRampBotId, SunsetRampBot);
 
             if (Time.frameCount % 120 == 0)
-                Debug.Log($"[VolClouds] Dens={DensityMultiplier:F2} Absorb={LightAbsorption:F3} Opacity={Opacity:F2} Color={ColorIntensity:F2} CovThresh={CoverageThreshold:F2}");
+            {
+                var ldInst = LocalDensityBuffer.Instance;
+                Debug.Log($"[VolClouds] Dens={DensityMultiplier:F2} Absorb={LightAbsorption:F3} Opacity={Opacity:F2} Color={ColorIntensity:F2} CovThresh={CoverageThreshold:F2}" +
+                    (ldInst != null ? $" | LocalDensity OK: RT={ldInst.GetDensityRT()!=null} size={ldInst.Resolution*ldInst.TexelSize}" : " | LocalDensity: NULL"));
+            }
 
             if (CloudNoise3D != null)
                 mat.SetTexture(CloudNoise3DId, CloudNoise3D);

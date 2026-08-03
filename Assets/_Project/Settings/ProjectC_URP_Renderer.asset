@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.VolumetricCloudsRenderFeature
   m_Active: 1
   CloudBottomY: 100
-  CloudTopY: 2000
+  CloudTopY: 2500
   CloudNoise3D: {fileID: 11700000, guid: 9cec13d467e433748ad1e8856e9403f7, type: 2}
   RaymarchSteps: 30
   MaxRayDistance: 20000
@@ -38,6 +38,7 @@ MonoBehaviour:
   SunsetRampTop: {r: 1, g: 0.714, b: 0.757, a: 1}
   SunsetRampMid: {r: 1, g: 0.557, b: 0.655, a: 1}
   SunsetRampBot: {r: 0.804, g: 0.361, b: 0.361, a: 1}
+  LocalDensityInfluence: 1
   OverrideMaterial: {fileID: 0}
 --- !u!114 &-597003445878171204
 MonoBehaviour:

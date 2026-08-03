@@ -1,64 +1,71 @@
 // ShipWakeCloudCutter.cs — Phase 2.2
 // Demo: ship cuts clouds via LocalDensityBuffer.SplatDensity.
-// Throttled to ~10 splats/sec to avoid compute queue overflow.
+// Uses singleton Instance (no inspector assignment needed).
+// Speed measured via position delta (no hasChanged flag).
 
 using UnityEngine;
 
 namespace ProjectC.World.Clouds
 {
     /// <summary>
-    /// Демо-компонент: корабль «режет» локальное облачное поле,
-    /// вызывая SplatDensity с отрицательным amount при движении.
-    /// Разрез визуально зарастает за 1–2 с (релаксация LocalDensityBuffer).
+    /// Демо-компонент: корабль «режет» локальное облачное поле.
+    /// SplatDensity с отрицательным amount при движении.
+    /// Разрез визуально зарастает за 1–2 с (релаксация).
     /// </summary>
     public class ShipWakeCloudCutter : MonoBehaviour
     {
         [Header("Target")]
-        [Tooltip("Transform корабля (или любого движущегося объекта). Если null — использует свой transform.")]
+        [Tooltip("Transform корабля. Если null — использует свой transform.")]
         public Transform ShipTransform;
 
         [Header("Splat")]
+        [Tooltip("Positive = mark area for cloud cutting. Buffer is max(0, val), so negative values are silently clamped to 0.")]
         [Range(10f, 200f)] public float CutRadius = 30f;
-        [Range(-1f, 0f)] public float CutAmount = -0.4f;
+        [Range(0f, 1f)] public float CutAmount = 0.4f;
         [Range(1f, 30f)] public float MinSpeed = 5f;
         [Range(0.05f, 1f)] public float SplatInterval = 0.1f;
 
-        [Header("References")]
-        public LocalDensityBuffer LocalDensity;
-
+        private Vector3 _lastPos;
         private float _timer;
 
         private void Start()
         {
-            if (LocalDensity == null)
-                LocalDensity = LocalDensityBuffer.Instance;
-
             if (ShipTransform == null)
                 ShipTransform = transform;
+            _lastPos = ShipTransform.position;
         }
 
         private void Update()
         {
-            if (LocalDensity == null) return;
+            var ld = LocalDensityBuffer.Instance;
+            if (ld == null) return;
 
             _timer += Time.deltaTime;
             if (_timer < SplatInterval) return;
             _timer = 0f;
 
-            float speed = ShipTransform.hasChanged
-                ? (ShipTransform.position - _lastPos).magnitude / Mathf.Max(SplatInterval, 0.001f)
-                : 0f;
+            Vector3 pos = ShipTransform.position;
+            float dist = Vector3.Distance(pos, _lastPos);
+            float speed = dist / Mathf.Max(SplatInterval, 0.001f);
+            _lastPos = pos;
 
             if (speed < MinSpeed) return;
 
-            Vector3 pos = ShipTransform.position;
-            LocalDensity.SplatDensity(pos, CutRadius, CutAmount);
+            ld.SplatDensity(pos, CutRadius, CutAmount);
         }
 
-        private Vector3 _lastPos;
-        private void LateUpdate()
+        // Debug: press Space to test-splat
+        private void OnDrawGizmosSelected()
         {
-            _lastPos = ShipTransform.position;
+            if (Application.isPlaying && UnityEngine.Input.GetKey(KeyCode.Space))
+            {
+                var ld = LocalDensityBuffer.Instance;
+                if (ld != null)
+                {
+                    ld.SplatDensity(transform.position, CutRadius, CutAmount);
+                    Debug.Log($"[ShipWakeCloudCutter] Test splat at {transform.position}, r={CutRadius}, amount={CutAmount}");
+                }
+            }
         }
     }
 }

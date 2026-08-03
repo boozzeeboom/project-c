@@ -32,6 +32,9 @@ namespace ProjectC.World.Clouds
         [Tooltip("Transform to follow (player/camera). If null, uses Camera.main.")]
         public Transform FollowTarget;
 
+        [Header("Debug")]
+        [SerializeField] private bool _verboseLogging = true;
+
         [Header("Compute")]
         [SerializeField] private ComputeShader _compute;
 
@@ -109,6 +112,9 @@ namespace ProjectC.World.Clouds
 
             CreateTextures();
             _cpuDensity = new float[Resolution * Resolution * Resolution];
+
+            if (_verboseLogging)
+                Debug.Log($"[LocalDensityBuffer] Awake OK. Compute={_compute != null} Kernels: Adv={_kernelAdvect} Splat={_kernelSplat} RT={_densityA != null} Res={Resolution}");
         }
 
         private void OnDestroy()
@@ -166,6 +172,14 @@ namespace ProjectC.World.Clouds
             // ── CPU mirror relaxation ──
             RelaxCpuMirror(dt);
             SyncCpuFromSplats();
+
+            // Debug: test splat at camera position (key T)
+            if (_verboseLogging && UnityEngine.Input.GetKeyDown(KeyCode.T) && Camera.main != null)
+            {
+                Vector3 camPos = Camera.main.transform.position;
+                SplatDensity(camPos, 100f, 0.5f);
+                Debug.Log($"[LocalDensityBuffer] DEBUG SPLAT at camera {camPos} r=100 amount=0.5 totalQueue={_splatQueueCount}");
+            }
         }
 
         // ═══════════════════════════════════════════
@@ -177,7 +191,7 @@ namespace ProjectC.World.Clouds
             if (_densityA != null) _densityA.Release();
             if (_densityB != null) _densityB.Release();
 
-            var desc = new RenderTextureDescriptor(Resolution, Resolution, RenderTextureFormat.RHalf, 0)
+            var desc = new RenderTextureDescriptor(Resolution, Resolution, RenderTextureFormat.RFloat, 0)
             {
                 dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
                 volumeDepth = Resolution,
@@ -261,6 +275,9 @@ namespace ProjectC.World.Clouds
                 radius = radius,
                 amount = amount
             };
+
+            if (_verboseLogging && Time.frameCount % 60 == 0)
+                Debug.Log($"[LocalDensityBuffer] Splat at {worldPos} r={radius} amount={amount} queue={_splatQueueCount}");
 
             // CPU mirror (Phase 2.5)
             ApplySplatToCpu(worldPos, radius, amount);

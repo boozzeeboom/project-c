@@ -192,22 +192,22 @@ namespace ProjectC.Rendering
             if (CloudNoise3D != null)
                 mat.SetTexture(CloudNoise3DId, CloudNoise3D);
 
-            // Phase 2.2: LocalDensityBuffer → shader (singleton)
+            // Phase 2.2: LocalDensityBuffer → shader (global, NOT mat — not in Properties)
             var ld = LocalDensityBuffer.Instance;
             if (ld != null)
             {
                 var rt = ld.GetDensityRT();
                 if (rt != null)
                 {
-                    mat.SetTexture(LocalDensityRTId, rt);
-                    mat.SetVector(LocalDensityCenterId, ld.Center);
-                    mat.SetFloat(LocalDensitySizeId, ld.Resolution * ld.TexelSize);
-                    mat.SetFloat(LocalDensityInfluenceId, LocalDensityInfluence);
+                    Shader.SetGlobalTexture(LocalDensityRTId, rt);
+                    Shader.SetGlobalVector(LocalDensityCenterId, ld.Center);
+                    Shader.SetGlobalFloat(LocalDensitySizeId, ld.Resolution * ld.TexelSize);
+                    Shader.SetGlobalFloat(LocalDensityInfluenceId, LocalDensityInfluence);
                 }
             }
             else
             {
-                mat.SetFloat(LocalDensityInfluenceId, 0f);
+                Shader.SetGlobalFloat(LocalDensityInfluenceId, 0f);
             }
 
             Vector3 windDir = Vector3.right; float windSpeed = 1f;

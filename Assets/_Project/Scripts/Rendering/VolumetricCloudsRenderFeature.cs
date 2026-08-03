@@ -110,6 +110,7 @@ namespace ProjectC.Rendering
 
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
         private bool _prevViewProjValid;
+        private bool _loggedOnce;
 
         public Material GetOrCreateMaterial()
         {
@@ -203,11 +204,23 @@ namespace ProjectC.Rendering
                     Shader.SetGlobalVector(LocalDensityCenterId, ld.Center);
                     Shader.SetGlobalFloat(LocalDensitySizeId, ld.Resolution * ld.TexelSize);
                     Shader.SetGlobalFloat(LocalDensityInfluenceId, LocalDensityInfluence);
+
+                    if (!_loggedOnce)
+                    {
+                        _loggedOnce = true;
+                        Debug.Log($"[VolClouds] LocalDensity GLOBALS SET: RT={rt.name} {rt.width}x{rt.height}x{rt.volumeDepth} center={ld.Center} size={ld.Resolution * ld.TexelSize} influence={LocalDensityInfluence}");
+                    }
+                }
+                else if (!_loggedOnce)
+                {
+                    _loggedOnce = true;
+                    Debug.LogWarning("[VolClouds] LocalDensity RT is NULL!");
                 }
             }
-            else
+            else if (!_loggedOnce)
             {
-                Shader.SetGlobalFloat(LocalDensityInfluenceId, 0f);
+                _loggedOnce = true;
+                Debug.LogWarning("[VolClouds] LocalDensityBuffer.Instance is NULL!");
             }
 
             Vector3 windDir = Vector3.right; float windSpeed = 1f;

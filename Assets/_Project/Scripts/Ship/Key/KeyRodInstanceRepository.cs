@@ -52,6 +52,8 @@ namespace ProjectC.Ship.Key
         public ulong  originalOwnerId;
         public int    state;           // (int)KeyRodInstanceState
         public long   createdAtUnix;
+        /// <summary>Стабильный идентификатор корабля (T-KEY-PERSIST-FIX).</summary>
+        public string persistentShipId;
     }
 
     /// <summary>
@@ -110,12 +112,13 @@ namespace ProjectC.Ship.Key
             {
                 dtoList.Add(new KeyRodInstanceSaveData
                 {
-                    itemId          = inst.itemId,
+                    itemId           = inst.itemId,
                     registeredShipId = inst.registeredShipId,
-                    ownerPlayerId   = inst.ownerPlayerId,
-                    originalOwnerId = inst.originalOwnerId,
-                    state           = (int)inst.state,
-                    createdAtUnix   = inst.createdAtUnix,
+                    ownerPlayerId    = inst.ownerPlayerId,
+                    originalOwnerId  = inst.originalOwnerId,
+                    state            = (int)inst.state,
+                    createdAtUnix    = inst.createdAtUnix,
+                    persistentShipId = inst.persistentShipId ?? "",
                 });
             }
 

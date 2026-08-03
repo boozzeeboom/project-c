@@ -52,8 +52,14 @@ namespace ProjectC.Ship.Key
         public int itemId;
 
         /// <summary>NetworkObjectId корабля, к которому привязан этот ключ.
-        /// 0 = не привязан (salvage/orphaned instance, TODO).</summary>
+        /// 0 = не привязан (salvage/orphaned instance, TODO).
+        /// НЕстабилен между сессиями — для persistence использовать persistentShipId.</summary>
         public ulong registeredShipId;
+
+        /// <summary>Стабильный идентификатор корабля (ShipPersistentId: sceneName/gameObject.name).
+        /// Не меняется между сессиями. Используется для перепривязки registeredShipId при спавне
+        /// (T-KEY-PERSIST-FIX: NetworkObjectId нестабилен между сессиями).</summary>
+        public string persistentShipId;
 
         /// <summary>ClientId текущего владельца. Меняется при передаче (drop → pickup другого).
         /// OWNER_NONE = ulong.MaxValue = ключ в мире, не в чьём-то инвентаре.</summary>

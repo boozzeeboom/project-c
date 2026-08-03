@@ -848,9 +848,9 @@ namespace ProjectC.Player
                 ? ProjectC.Items.InventoryWorld.Instance.GetOrRegisterItemId(_keyItemData) : -1;
             if (itemId > 0)
             {
-                int instId = KeyRodInstanceWorld.CreateInstance(itemId, NetworkObjectId, KeyRodInstance.OWNER_NONE);
+                int instId = KeyRodInstanceWorld.CreateInstance(itemId, NetworkObjectId, KeyRodInstance.OWNER_NONE, ShipPersistentId);
                 if (Debug.isDebugBuild)
-                    Debug.Log($"[ShipController] Created KeyRodInstance: id={instId}, ship={NetworkObjectId}, item={_keyItemData.name}");
+                    Debug.Log($"[ShipController] Created KeyRodInstance: id={instId}, ship={NetworkObjectId}, persistentId='{ShipPersistentId}', item={_keyItemData.name}");
             }
         }
 

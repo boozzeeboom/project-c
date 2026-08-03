@@ -43,6 +43,9 @@ namespace ProjectC.Ship.Key
         private static readonly Dictionary<int, KeyRodInstance> _instancesById = new Dictionary<int, KeyRodInstance>();
         private static readonly Dictionary<ulong, int> _primaryInstanceByShipId = new Dictionary<ulong, int>();
         private static readonly Dictionary<ulong, List<int>> _instancesByPlayer = new Dictionary<ulong, List<int>>();
+        /// <summary>T-KEY-PERSIST-FIX: стабильный индекс persistentShipId → instanceId.
+        /// Используется для перепривязки registeredShipId при спавне корабля в новой сессии.</summary>
+        private static readonly Dictionary<string, int> _instancesByPersistentId = new Dictionary<string, int>();
         private static int _nextInstanceId = 1;
         public static bool IsInitialized { get; private set; }
 
@@ -68,6 +71,7 @@ namespace ProjectC.Ship.Key
             _instancesById.Clear();
             _primaryInstanceByShipId.Clear();
             _instancesByPlayer.Clear();
+            _instancesByPersistentId.Clear();
             _nextInstanceId = 1;
             _repository = repository;
             IsInitialized = true;
@@ -89,11 +93,16 @@ namespace ProjectC.Ship.Key
                         originalOwnerId  = dto.originalOwnerId,
                         state            = (KeyRodInstanceState)dto.state,
                         createdAtUnix    = dto.createdAtUnix,
+                        persistentShipId = string.IsNullOrEmpty(dto.persistentShipId) ? null : dto.persistentShipId,
                     };
                     _instancesById[inst.instanceId] = inst;
 
                     if (inst.registeredShipId != 0)
                         _primaryInstanceByShipId[inst.registeredShipId] = inst.instanceId;
+
+                    // T-KEY-PERSIST-FIX: индекс по стабильному persistentShipId
+                    if (!string.IsNullOrEmpty(inst.persistentShipId))
+                        _instancesByPersistentId[inst.persistentShipId] = inst.instanceId;
 
                     if (inst.ownerPlayerId != KeyRodInstance.OWNER_NONE
                         && inst.state == KeyRodInstanceState.Active)
@@ -122,6 +131,7 @@ namespace ProjectC.Ship.Key
             _instancesById.Clear();
             _primaryInstanceByShipId.Clear();
             _instancesByPlayer.Clear();
+            _instancesByPersistentId.Clear();
             _nextInstanceId = 1;
             _repository = null;
             IsInitialized = false;
@@ -247,7 +257,10 @@ namespace ProjectC.Ship.Key
         /// <param name="itemId">→ ItemData definition. Должен быть зарегистрирован в InventoryWorld._itemDatabase.</param>
         /// <param name="registeredShipId">NetworkObjectId корабля. 0 = без привязки (TODO, фаза 2).</param>
         /// <param name="ownerPlayerId">ClientId владельца. OWNER_NONE = ключ в мире (drop / pickup ещё не подобран).</param>
-        public static int CreateInstance(int itemId, ulong registeredShipId, ulong ownerPlayerId)
+        /// <param name="persistentShipId">T-KEY-PERSIST-FIX: стабильный ID корабля (ShipPersistentId).
+        /// Если задан и найден существующий instance — перепривязывает registeredShipId к новому netId,
+        /// сохраняя ownerPlayerId и state. Предотвращает дубликаты при смене NetworkObjectId между сессиями.</param>
+        public static int CreateInstance(int itemId, ulong registeredShipId, ulong ownerPlayerId, string persistentShipId = null)
         {
             if (!IsInitialized)
             {
@@ -256,7 +269,6 @@ namespace ProjectC.Ship.Key
             }
 
             // Валидация: itemId должен быть в ItemDatabase (если InventoryWorld уже готов)
-            // InventoryWorld не имеет HasItemDefinition — используем GetItemDefinition != null.
             if (ProjectC.Items.InventoryWorld.Instance != null
                 && ProjectC.Items.InventoryWorld.Instance.GetItemDefinition(itemId) == null)
             {
@@ -265,13 +277,58 @@ namespace ProjectC.Ship.Key
                 return -1;
             }
 
+            // === T-KEY-PERSIST-FIX: rebind по стабильному persistentShipId ===
+            if (!string.IsNullOrEmpty(persistentShipId) && registeredShipId != 0)
+            {
+                if (_instancesByPersistentId.TryGetValue(persistentShipId, out var existingId))
+                {
+                    var existingInst = GetInstance(existingId);
+                    if (existingInst != null && existingInst.state == KeyRodInstanceState.Active)
+                    {
+                        // Rebind: обновить registeredShipId на актуальный netId новой сессии
+                        ulong oldShipId = existingInst.registeredShipId;
+                        if (oldShipId != registeredShipId)
+                        {
+                            if (oldShipId != 0)
+                                _primaryInstanceByShipId.Remove(oldShipId);
+                            _primaryInstanceByShipId[registeredShipId] = existingId;
+                            existingInst.registeredShipId = registeredShipId;
+                            Debug.Log($"[KeyRodInstanceWorld] CreateInstance: REBIND persistentShipId='{persistentShipId}' " +
+                                      $"instanceId={existingId}, netId {oldShipId} → {registeredShipId}, owner={existingInst.ownerPlayerId}");
+                        }
+                        AutoSave();
+                        return existingId;
+                    }
+                }
+
+                // Не найден по persistentShipId — но может быть stale-инстанс (без persistentShipId)
+                // занимает этот netId. Удаляем его — он из дофиксовой эры.
+                if (_primaryInstanceByShipId.TryGetValue(registeredShipId, out var staleId))
+                {
+                    var staleInst = GetInstance(staleId);
+                    if (staleInst != null && string.IsNullOrEmpty(staleInst.persistentShipId))
+                    {
+                        Debug.LogWarning($"[KeyRodInstanceWorld] CreateInstance: removing stale instance (id={staleId}) " +
+                                         $"with colliding netId={registeredShipId}, no persistentShipId");
+                        _primaryInstanceByShipId.Remove(registeredShipId);
+                        if (staleInst.ownerPlayerId != KeyRodInstance.OWNER_NONE
+                            && _instancesByPlayer.TryGetValue(staleInst.ownerPlayerId, out var playerList))
+                        {
+                            playerList.Remove(staleId);
+                            if (playerList.Count == 0) _instancesByPlayer.Remove(staleInst.ownerPlayerId);
+                        }
+                        _instancesById.Remove(staleId);
+                    }
+                }
+            }
+
             // Проверка: корабль уже привязан? (1:1 в MVP)
             if (registeredShipId != 0
-                && _primaryInstanceByShipId.TryGetValue(registeredShipId, out var existingId))
+                && _primaryInstanceByShipId.TryGetValue(registeredShipId, out var collisionId))
             {
-                Debug.Log($"[KeyRodInstanceWorld] CreateInstance: ship={registeredShipId} already has instance={existingId}. " +
+                Debug.Log($"[KeyRodInstanceWorld] CreateInstance: ship={registeredShipId} already has instance={collisionId}. " +
                                  $"1:1 binding violated. Returning existing instance id.");
-                return existingId;
+                return collisionId;
             }
 
             var inst = new KeyRodInstance
@@ -283,6 +340,7 @@ namespace ProjectC.Ship.Key
                 originalOwnerId = ownerPlayerId,
                 state = KeyRodInstanceState.Active,
                 createdAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                persistentShipId = persistentShipId,
             };
 
             _instancesById[inst.instanceId] = inst;
@@ -290,6 +348,11 @@ namespace ProjectC.Ship.Key
             if (registeredShipId != 0)
             {
                 _primaryInstanceByShipId[registeredShipId] = inst.instanceId;
+            }
+
+            if (!string.IsNullOrEmpty(persistentShipId))
+            {
+                _instancesByPersistentId[persistentShipId] = inst.instanceId;
             }
 
             if (ownerPlayerId != KeyRodInstance.OWNER_NONE)
@@ -303,7 +366,7 @@ namespace ProjectC.Ship.Key
             }
 
             Debug.Log($"[KeyRodInstanceWorld] CreateInstance: id={inst.instanceId}, itemId={itemId}, " +
-                      $"ship={registeredShipId}, owner={ownerPlayerId}");
+                      $"ship={registeredShipId}, persistentShipId='{persistentShipId}', owner={ownerPlayerId}");
 
             OnOwnershipChanged?.Invoke(inst.instanceId, ownerPlayerId);
             AutoSave();  // T-KEY-PERSIST
@@ -402,6 +465,12 @@ namespace ProjectC.Ship.Key
             if (inst.registeredShipId != 0)
             {
                 _primaryInstanceByShipId.Remove(inst.registeredShipId);
+            }
+
+            // Удалить из persistent-индекса
+            if (!string.IsNullOrEmpty(inst.persistentShipId))
+            {
+                _instancesByPersistentId.Remove(inst.persistentShipId);
             }
 
             _instancesById.Remove(instanceId);

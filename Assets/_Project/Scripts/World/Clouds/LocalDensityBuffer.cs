@@ -4,6 +4,7 @@
 // CPU mirror for SampleDensity (used by MeziyHarvestProbe, Phase 2.5).
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 using ProjectC.Core;
 
 namespace ProjectC.World.Clouds
@@ -174,7 +175,7 @@ namespace ProjectC.World.Clouds
             SyncCpuFromSplats();
 
             // Debug: test splat at camera position (key T)
-            if (_verboseLogging && UnityEngine.Input.GetKeyDown(KeyCode.T) && Camera.main != null)
+            if (_verboseLogging && Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame && Camera.main != null)
             {
                 Vector3 camPos = Camera.main.transform.position;
                 SplatDensity(camPos, 100f, 0.5f);

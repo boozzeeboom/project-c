@@ -164,11 +164,15 @@ lore-save.bat
 *.controller
 *.overrideController
 
-# Shader assets
+# Shader assets (generated — exclude project source)
 *.shader
+!Assets/_Project/Shaders/**/*.shader
 *.shadergraph
+!Assets/_Project/Shaders/**/*.shadergraph
 *.hlsl
+!Assets/_Project/Shaders/**/*.hlsl
 *.cginc
+!Assets/_Project/Shaders/**/*.cginc
 
 # Unity metadata (regenerated on import — not needed in VCS)
 *.meta

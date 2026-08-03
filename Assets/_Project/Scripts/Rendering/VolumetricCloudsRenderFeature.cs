@@ -63,7 +63,7 @@ namespace ProjectC.Rendering
         [ColorUsage(false, false)] public Color SunsetRampBot = new Color(0.804f, 0.361f, 0.361f);
 
         [Header("Phase 2.2: Local Density")]
-        public LocalDensityBuffer LocalDensity;
+        [Tooltip("Используется singleton LocalDensityBuffer.Instance (не требует ручного назначения).")]
         [Range(0f, 2f)] public float LocalDensityInfluence = 1f;
 
         [Header("Material")]
@@ -188,21 +188,22 @@ namespace ProjectC.Rendering
             if (CloudNoise3D != null)
                 mat.SetTexture(CloudNoise3DId, CloudNoise3D);
 
-            // Phase 2.2: LocalDensityBuffer → shader
-            if (LocalDensity != null)
+            // Phase 2.2: LocalDensityBuffer → shader (singleton)
+            var ld = LocalDensityBuffer.Instance;
+            if (ld != null)
             {
-                var rt = LocalDensity.GetDensityRT();
+                var rt = ld.GetDensityRT();
                 if (rt != null)
                 {
                     mat.SetTexture(LocalDensityRTId, rt);
-                    mat.SetVector(LocalDensityCenterId, LocalDensity.Center);
-                    mat.SetFloat(LocalDensitySizeId, LocalDensity.Resolution * LocalDensity.TexelSize);
+                    mat.SetVector(LocalDensityCenterId, ld.Center);
+                    mat.SetFloat(LocalDensitySizeId, ld.Resolution * ld.TexelSize);
                     mat.SetFloat(LocalDensityInfluenceId, LocalDensityInfluence);
                 }
             }
             else
             {
-                mat.SetFloat(LocalDensityInfluenceId, 0f); // disable local density if not assigned
+                mat.SetFloat(LocalDensityInfluenceId, 0f);
             }
 
             Vector3 windDir = Vector3.right; float windSpeed = 1f;

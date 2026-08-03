@@ -270,6 +270,13 @@ namespace ProjectC.Rendering
             Shader.SetGlobalFloat(NoiseTileSizeId, NoiseTileSize);
             Shader.SetGlobalFloat(LightAbsorptionId, LightAbsorption);
 
+            // One-time layer dump for diagnostics
+            if (!_loggedOnce)
+            {
+                for (int i = 0; i < count; i++)
+                    Debug.Log($"[VolClouds] Layer[{i}]: bottom={_boundsCache[i].x:F0} top={_boundsCache[i].y:F0} covThresh={_boundsCache[i].z:F2} densMult={_boundsCache[i].w:F2}");
+            }
+
             if (Time.frameCount % 120 == 0)
             {
                 var ldInst = LocalDensityBuffer.Instance;

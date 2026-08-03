@@ -7,6 +7,8 @@
 #pragma kernel ApplySplats
 #pragma kernel AdvectAndRelax_Disp
 #pragma kernel ApplySplats_Disp
+#pragma kernel ClearDensity
+#pragma kernel ClearDisp
 #pragma target 5.0
 
 // ── Input / Output ──
@@ -213,4 +215,22 @@ void ApplySplats_Disp(uint3 id : SV_DispatchThreadID)
     }
 
     _DensityNextDisp[id] = float4(displacement, 0);
+}
+
+// ─────────────────────────────────────────────────
+// Clear kernels — must use compute for 3D UAV RTs
+// (GL.Clear does NOT work on enableRandomWrite 3D textures)
+// ─────────────────────────────────────────────────
+[numthreads(8, 8, 8)]
+void ClearDensity(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Resolution || id.y >= _Resolution || id.z >= _Resolution) return;
+    _DensityNext[id] = 0;
+}
+
+[numthreads(8, 8, 8)]
+void ClearDisp(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Resolution || id.y >= _Resolution || id.z >= _Resolution) return;
+    _DensityNextDisp[id] = float4(0, 0, 0, 0);
 }

@@ -60,6 +60,8 @@ namespace ProjectC.World.Clouds
         private int _kernelSplat;
         private int _kernelAdvectDisp;
         private int _kernelSplatDisp;
+        private int _kernelClearDensity;
+        private int _kernelClearDisp;
 
         // ── Splat buffer ──
         private ComputeBuffer _splatBuffer;
@@ -130,6 +132,8 @@ namespace ProjectC.World.Clouds
                 }
                 if (!dispOk)
                     Debug.LogWarning($"[LocalDensityBuffer] Displacement kernels not found (variant B disabled). AdvDisp={_kernelAdvectDisp}, SplatDisp={_kernelSplatDisp}");
+                _kernelClearDensity = _compute.FindKernel("ClearDensity");
+                _kernelClearDisp    = _compute.FindKernel("ClearDisp");
             }
             else
             {
@@ -277,12 +281,21 @@ namespace ProjectC.World.Clouds
                 Debug.Log($"[LocalDensityBuffer] RT created: mode={BufferMode} fmt={fmt} res={Resolution}");
         }
 
+        /// <summary>
+        /// Clear 3D RT via compute (GL.Clear does not work on UAV 3D textures).
+        /// </summary>
         private void ClearRT(RenderTexture rt)
         {
-            var prevActive = RenderTexture.active;
-            RenderTexture.active = rt;
-            GL.Clear(false, true, Color.clear);
-            RenderTexture.active = prevActive;
+            if (_compute == null) return;
+            bool isDisp = BufferMode == Mode.Displacement;
+            int kClear = isDisp ? _kernelClearDisp : _kernelClearDensity;
+            if (kClear < 0) return;
+
+            int nextId = isDisp ? DensityNextDispId : DensityNextId;
+            _compute.SetTexture(kClear, nextId, rt);
+            _compute.SetInt(ResolutionId, Resolution);
+            int groups = Mathf.CeilToInt(Resolution / 8f);
+            _compute.Dispatch(kClear, groups, groups, groups);
         }
 
         // ═══════════════════════════════════════════

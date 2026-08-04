@@ -6,7 +6,7 @@
 
 **Задача:** Добавить реальный визуал штормовых облаков (тёмные грозовые кластеры) в существующий volumetric raymarch.
 
-**Коммит:** `<pending>` — T-CLOUD35: analytic storm density в VolumetricClouds шейдере
+**Коммит:** `bcd64790` — T-CLOUD35: analytic storm density в VolumetricClouds шейдере
 
 **Изменения:**
 - `Assets/_Project/Shaders/Clouds/VolumetricClouds.shader` — +StormDensity(), +uniforms, инъекция в CloudDensity()

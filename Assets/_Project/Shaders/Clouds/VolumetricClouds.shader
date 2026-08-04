@@ -261,13 +261,13 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         // StormDensity — organic storm cloud density.
         //
         // Pipeline per cell:
-        //   1. Domain warp XZ → irregular boundary instead of perfect circle
-        //   2. Soft envelope → distant containment (cellular shapes the edge)
-        //   3. Vertical envelope → height range
-        //   4. Cellular FBM → internal cauliflower bubble structure
-        //   5. Contrast boost → crisp clusters, not mush
+        //   1. Cellular FBM → defines the PRIMARY shape (bubble cluster, not cylinder)
+        //   2. Domain warp XZ → breaks symmetry of bubble positions
+        //   3. Soft envelope → distant containment clip only
+        //   4. Vertical envelope → height range
         //
-        // All parameters exposed via StormCellDirector inspector → live tweaking.
+        // Key insight: cellular IS the shape, not an internal texture.
+        // Envelope is only a safety clip — the cellular boundary is the visual edge.
         // ---------------------------------------------------------------------------
         float StormDensity(float3 worldPos, out float3 stormColor)
         {
@@ -288,37 +288,32 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                 // Height gate
                 if (worldPos.y < bottomY || worldPos.y > topY) continue;
 
-                // ── 1. Domain warp ──
-                // Warp strength proportional to radius × noise strength
-                float warpStrength = radius * _StormNoiseStrength * 0.8;
-                float2 warp = StormDomainWarp(
-                    worldPos + noiseWind,
-                    _StormNoiseScale * 0.8,    // warp features at ~80% of noise scale
-                    warpStrength);
-                float2 warpedXZ = worldPos.xz + warp;
+                // ── 1. Cellular FBM — the PRIMARY shape ──
+                // Domain warp is embedded in the cellular sampling position
+                float warpStrength = radius * _StormNoiseStrength * 0.5;
+                float2 warp = StormDomainWarp(worldPos + noiseWind, _StormNoiseScale, warpStrength);
+                float3 cellularPos = worldPos + float3(warp.x, warp.y * 0.3, warp.y) + noiseWind;
 
-                // ── 2. Distance from warped XZ ──
-                float distXZ = length(warpedXZ - cellPos.xz);
+                float cellular = StormCellularFbm(cellularPos, _StormNoiseScale);
 
-                // ── 3. Soft envelope (containment only, cellular defines the shape) ──
-                float envelope = 1.0 - smoothstep(radius * 0.5, radius * 1.4, distXZ);
+                // Binary shape from cellular: outside bubble = 0, inside = 1
+                float contrast = _StormClusterContrast;
+                float shape = smoothstep(0.5 - contrast, 0.5 + contrast, cellular);
+                if (shape < 0.01) continue;
+
+                // ── 2. Distant envelope — only clips outliers ──
+                float distXZ = length(worldPos.xz - cellPos.xz);
+                float envelope = 1.0 - smoothstep(radius * 0.7, radius * 1.5, distXZ);
                 if (envelope < 0.001) continue;
 
-                // ── 4. Vertical envelope ──
+                // ── 3. Vertical envelope ──
                 float hRange = topY - bottomY;
-                float vFade = min(hRange * 0.08, 200.0); // 8% of height or 200m
+                float vFade = min(hRange * 0.08, 200.0);
                 float vEnvelope = smoothstep(bottomY, bottomY + vFade, worldPos.y)
                                 * (1.0 - smoothstep(topY - vFade, topY, worldPos.y));
 
-                // ── 5. Cellular FBM — internal bubble structure ──
-                float cellular = StormCellularFbm(worldPos + noiseWind, _StormNoiseScale);
-
-                // ── 6. Contrast: push mids to extremes → crisp clusters ──
-                float contrast = _StormClusterContrast;
-                float cellularShape = smoothstep(0.5 - contrast, 0.5 + contrast, cellular);
-
-                // ── 7. Combine ──
-                float cellDensity = envelope * vEnvelope * cellularShape * intensity * _StormDensityMult;
+                // ── 4. Combine: shape (cellular) × envelope (distant clip) ──
+                float cellDensity = shape * envelope * vEnvelope * intensity * _StormDensityMult;
 
                 if (cellDensity > 0.002)
                 {

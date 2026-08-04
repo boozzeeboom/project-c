@@ -110,21 +110,29 @@ namespace ProjectC.World.Clouds
                 _cells[i] = cell;
             }
 
-            // ── Game View debug: ГИГАНТСКИЕ лучи и сферы ──
+            // ── Game View debug: ВЕРТИКАЛЬНЫЕ СТОЛБЫ 800→5000м ──
+            const float colBot = 800f, colTop = 5000f;
             var playerPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var c = _cells[i];
-                // Огромный крест (500м) на позиции ячейки
-                float cr = 500f;
-                Debug.DrawLine(c.WorldPosition + Vector3.left * cr, c.WorldPosition + Vector3.right * cr, Color.magenta, 0f, false);
-                Debug.DrawLine(c.WorldPosition + Vector3.forward * cr, c.WorldPosition + Vector3.back * cr, Color.magenta, 0f, false);
-                Debug.DrawLine(c.WorldPosition + Vector3.up * cr, c.WorldPosition + Vector3.down * cr, Color.magenta, 0f, false);
-                // Оранжевый луч от игрока к ячейке
-                Debug.DrawLine(playerPos, c.WorldPosition, new Color(1f, 0.5f, 0f, 0.8f), 0f, false);
-                // Фиолетовый луч к земле
-                Vector3 ground = new Vector3(c.WorldPosition.x, 0f, c.WorldPosition.z);
-                Debug.DrawLine(c.WorldPosition, ground, new Color(1f, 0.2f, 1f, 0.5f), 0f, false);
+                Vector3 bot = new Vector3(c.WorldPosition.x, colBot, c.WorldPosition.z);
+                Vector3 top = new Vector3(c.WorldPosition.x, colTop, c.WorldPosition.z);
+                Vector3 mid = new Vector3(c.WorldPosition.x, (colBot + colTop) * 0.5f, c.WorldPosition.z);
+
+                // Столб: вертикальная линия 800→5000 (ярко-розовая)
+                Debug.DrawLine(bot, top, Color.magenta, 0f, false);
+                // Контрастная обводка (белая, чуть смещённая — двойная линия)
+                Debug.DrawLine(bot + Vector3.right * 5f, top + Vector3.right * 5f, Color.white, 0f, false);
+
+                // Гигантский крест в середине столба (300м)
+                const float cr = 300f;
+                Debug.DrawLine(mid + Vector3.left * cr, mid + Vector3.right * cr, Color.yellow, 0f, false);
+                Debug.DrawLine(mid + Vector3.forward * cr, mid + Vector3.back * cr, Color.yellow, 0f, false);
+                Debug.DrawLine(mid + Vector3.left * cr + Vector3.forward * cr, mid + Vector3.right * cr + Vector3.back * cr, Color.yellow, 0f, false);
+
+                // Оранжевый луч от игрока к середине столба
+                Debug.DrawLine(playerPos, mid, new Color(1f, 0.5f, 0f, 0.8f), 0f, false);
             }
 
             // ── Периодический лог (раз в 10 сек) ──
@@ -229,27 +237,33 @@ namespace ProjectC.World.Clouds
         private void OnDrawGizmos()
         {
             if (_cells == null) return;
+            const float colBot = 800f, colTop = 5000f;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var c = _cells[i];
+                Vector3 bot = new Vector3(c.WorldPosition.x, colBot, c.WorldPosition.z);
+                Vector3 top = new Vector3(c.WorldPosition.x, colTop, c.WorldPosition.z);
 
-                // ГИГАНТСКАЯ сфера (250м радиус)
-                Gizmos.color = new Color(1f, 0.1f, 0.7f, 0.12f);
-                Gizmos.DrawSphere(c.WorldPosition, 250f);
-                Gizmos.color = new Color(1f, 0.2f, 0.9f, 0.5f);
-                Gizmos.DrawWireSphere(c.WorldPosition, 250f);
+                // Столб: полупрозрачная сфера по всей высоте
+                for (float y = colBot + 200f; y < colTop; y += 400f)
+                {
+                    Gizmos.color = new Color(1f, 0.15f, 0.7f, 0.08f);
+                    Gizmos.DrawSphere(new Vector3(c.WorldPosition.x, y, c.WorldPosition.z), 180f);
+                }
 
-                // Оранжевый луч к земле
-                Gizmos.color = new Color(1f, 0.5f, 0f, 0.6f);
-                Gizmos.DrawLine(c.WorldPosition, new Vector3(c.WorldPosition.x, 0f, c.WorldPosition.z));
+                // Контур столба
+                Gizmos.color = new Color(1f, 0.3f, 0.9f, 0.4f);
+                Gizmos.DrawLine(bot, top);
 
-                // Яркий центр
+                // Крест в центре
+                Vector3 mid = new Vector3(c.WorldPosition.x, (colBot + colTop) * 0.5f, c.WorldPosition.z);
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawSphere(c.WorldPosition, 40f);
+                Gizmos.DrawLine(mid + Vector3.left * 200f, mid + Vector3.right * 200f);
+                Gizmos.DrawLine(mid + Vector3.forward * 200f, mid + Vector3.back * 200f);
 
                 // Подпись
-                UnityEditor.Handles.Label(c.WorldPosition + Vector3.up * 260f,
-                    $"CELL[{i}] Y={c.WorldPosition.y:F0} I={c.Intensity:F1} ⚡{c.NextLightningTime - c.TimeSinceLightning:F1}s");
+                UnityEditor.Handles.Label(mid + Vector3.up * 50f,
+                    $"CELL[{i}] I={c.Intensity:F1} ⚡{c.NextLightningTime - c.TimeSinceLightning:F1}s");
             }
         }
 #endif

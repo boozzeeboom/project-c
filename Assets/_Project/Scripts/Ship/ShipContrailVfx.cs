@@ -1,6 +1,7 @@
 // ShipContrailVfx.cs — Phase 2.3
 // Drives VFX Graph condensation trails behind the ship.
 // Supports multiple spawn points (center + wings) computed from ship bounds.
+// Finds the largest *enabled* visual mesh in children (skips disabled collider cubes).
 // Uses Play/Stop for emission control (Simple_Trail template).
 // VFX GameObjects are moved to trail positions each frame.
 
@@ -14,6 +15,8 @@ namespace ProjectC.Ship
     /// Управляет VFX Graph конденсационными следами за кораблём.
     /// Поддерживает множественные точки спавна по геометрии корабля:
     /// центр + боковые кромки (крылья).
+    /// Размещается на дочернем GameObject (напр. ContrailVFX), ShipController
+    /// находит через GetComponentInParent.
     ///
     /// Настройка VFX Graph — см. docs/world/CLOUD_system/3.0/CONTRAIL_VFX_GUIDE.md
     /// </summary>
@@ -24,7 +27,7 @@ namespace ProjectC.Ship
         public VisualEffect Vfx;
 
         [Header("Ship")]
-        [Tooltip("ShipController (опционально).")]
+        [Tooltip("ShipController (опционально). Авто-поиск через GetComponentInParent.")]
         public ShipController Ship;
 
         [Header("Emit Conditions")]
@@ -37,14 +40,14 @@ namespace ProjectC.Ship
         [Tooltip("Доля ширины корабля для боковых точек (0.3 = 30% от полуширины).")]
         [Range(0.1f, 1.5f)] public float TrailWidth = 0.6f;
 
-        [Tooltip("Базовое смещение назад от центра корабля (умножается на bounds.extents.z).")]
+        [Tooltip("Смещение назад от центра (доля от half-size.z корабля).")]
         [Range(0.5f, 2f)] public float TrailDepth = 1.1f;
 
         [Header("Adaptive Scale")]
-        [Tooltip("Автоопределение размера корабля из MeshFilter. Отключи для ручного задания.")]
+        [Tooltip("Автоопределение размера корабля по визуальному мешу.")]
         public bool UseShipBounds = true;
 
-        [Tooltip("Ручной размер корабля (если UseShipBounds=false).")]
+        [Tooltip("Ручной размер корабля (если UseShipBounds=false или меш не найден).")]
         public Vector3 ManualBoundsSize = new Vector3(8f, 4f, 15f);
 
         [Header("VFX Parameters")]
@@ -60,39 +63,49 @@ namespace ProjectC.Ship
         // ── Internal ──
         private Rigidbody _rb;
         private bool _wasEmitting;
-        private VisualEffect[] _sideVfxs; // боковые VFX (инстансы)
-        private Vector3[] _spawnOffsets;   // локальные смещения точек спавна
+        private VisualEffect[] _sideVfxs;
+        private Vector3[] _spawnOffsets;
         private Vector3 _shipBoundsSize;
 
         private void Start()
         {
-            if (Vfx == null)
-                Vfx = GetComponent<VisualEffect>();
-
-            if (Ship == null)
-                Ship = GetComponentInParent<ShipController>();
-
+            if (Vfx == null) Vfx = GetComponent<VisualEffect>();
+            if (Ship == null) Ship = GetComponentInParent<ShipController>();
             _rb = Ship != null ? Ship.GetComponent<Rigidbody>() : GetComponent<Rigidbody>();
 
-            // Determine ship size
-            _shipBoundsSize = ManualBoundsSize;
-            if (UseShipBounds && Ship != null)
+            _shipBoundsSize = UseShipBounds && Ship != null
+                ? GetShipVisualSize(Ship.gameObject)
+                : ManualBoundsSize;
+
+            ComputeSpawnOffsets();
+            CreateSideVfxInstances();
+            StopAllVfx();
+        }
+
+        /// <summary>
+        /// Находит размер корабля по самому большому ENABLED MeshRenderer в иерархии.
+        /// Игнорирует выключенные рендереры (dummy-коллайдеры на руте) и мелочь.
+        /// </summary>
+        private Vector3 GetShipVisualSize(GameObject root)
+        {
+            var renderers = root.GetComponentsInChildren<MeshRenderer>(false);
+            Vector3 bestSize = ManualBoundsSize;
+            float bestVolume = 0f;
+
+            foreach (var mr in renderers)
             {
-                var mf = Ship.GetComponentInChildren<MeshFilter>();
-                if (mf != null && mf.sharedMesh != null)
-                    _shipBoundsSize = mf.sharedMesh.bounds.size;
-                else
-                    _shipBoundsSize = ManualBoundsSize;
+                if (!mr.enabled) continue;
+                var mf = mr.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null) continue;
+
+                var sz = mf.sharedMesh.bounds.size;
+                var t = mr.transform;
+                sz = new Vector3(sz.x * t.lossyScale.x, sz.y * t.lossyScale.y, sz.z * t.lossyScale.z);
+                float vol = sz.x * sz.y * sz.z;
+                if (vol > bestVolume) { bestVolume = vol; bestSize = sz; }
             }
 
-            // Compute spawn offsets
-            ComputeSpawnOffsets();
-
-            // Create side VFX instances
-            CreateSideVfxInstances();
-
-            // Stop all
-            StopAllVfx();
+            return bestSize;
         }
 
         private void ComputeSpawnOffsets()
@@ -104,40 +117,33 @@ namespace ProjectC.Ship
             switch (TrailCount)
             {
                 case 1:
-                    _spawnOffsets[0] = new Vector3(0f, 0f, backZ);
-                    break;
+                    _spawnOffsets[0] = new Vector3(0f, 0f, backZ); break;
                 case 2:
                     _spawnOffsets[0] = new Vector3(-halfW, 0f, backZ);
-                    _spawnOffsets[1] = new Vector3( halfW, 0f, backZ);
-                    break;
+                    _spawnOffsets[1] = new Vector3( halfW, 0f, backZ); break;
                 case 3:
                     _spawnOffsets[0] = new Vector3(0f, 0f, backZ);
                     _spawnOffsets[1] = new Vector3(-halfW, 0f, backZ);
-                    _spawnOffsets[2] = new Vector3( halfW, 0f, backZ);
-                    break;
+                    _spawnOffsets[2] = new Vector3( halfW, 0f, backZ); break;
                 case 4:
                     _spawnOffsets[0] = new Vector3(-halfW * 0.7f, 0f, backZ);
                     _spawnOffsets[1] = new Vector3( halfW * 0.7f, 0f, backZ);
                     _spawnOffsets[2] = new Vector3(-halfW, 0f, backZ);
-                    _spawnOffsets[3] = new Vector3( halfW, 0f, backZ);
-                    break;
+                    _spawnOffsets[3] = new Vector3( halfW, 0f, backZ); break;
                 default: // 5
                     _spawnOffsets[0] = new Vector3(0f, 0f, backZ);
                     _spawnOffsets[1] = new Vector3(-halfW * 0.5f, 0f, backZ);
                     _spawnOffsets[2] = new Vector3( halfW * 0.5f, 0f, backZ);
                     _spawnOffsets[3] = new Vector3(-halfW, 0f, backZ);
-                    _spawnOffsets[4] = new Vector3( halfW, 0f, backZ);
-                    break;
+                    _spawnOffsets[4] = new Vector3( halfW, 0f, backZ); break;
             }
         }
 
         private void CreateSideVfxInstances()
         {
-            // First VFX is the main one on this GameObject (index 0)
-            // Additional VFX instances for side trails
             if (TrailCount <= 1) { _sideVfxs = new VisualEffect[0]; return; }
-
             _sideVfxs = new VisualEffect[TrailCount - 1];
+
             for (int i = 1; i < TrailCount; i++)
             {
                 var sideGo = new GameObject($"Contrail_Side{i}");
@@ -148,18 +154,6 @@ namespace ProjectC.Ship
                 var sideVfx = sideGo.AddComponent<VisualEffect>();
                 sideVfx.visualEffectAsset = Vfx != null ? Vfx.visualEffectAsset : null;
                 sideVfx.Stop();
-
-                // Copy renderer settings from main
-                var mainRenderer = Vfx != null ? Vfx.GetComponent<UnityEngine.VFX.VFXRenderer>() : null;
-                if (mainRenderer != null)
-                {
-                    var sideRenderer = sideVfx.GetComponent<UnityEngine.VFX.VFXRenderer>();
-                    if (sideRenderer != null)
-                    {
-                        sideRenderer.castShadows = mainRenderer.castShadows;
-                        sideRenderer.receiveShadows = mainRenderer.receiveShadows;
-                    }
-                }
 
                 _sideVfxs[i - 1] = sideVfx;
             }
@@ -178,38 +172,24 @@ namespace ProjectC.Ship
         {
             if (Vfx == null) return;
 
-            // Determine emission state
-            float speed = 0f;
-            if (_rb != null) speed = _rb.linearVelocity.magnitude;
+            float speed = _rb != null ? _rb.linearVelocity.magnitude : 0f;
             bool docked = Ship != null && Ship.IsDocked;
             bool shouldEmit = !docked && speed > MinSpeed;
 
-            // Scale VFX parameters by ship size
             float sizeScale = Mathf.Max(_shipBoundsSize.z / 15f, 0.5f);
             ApplyVfxScale(sizeScale);
 
-            // Play/Stop control
-            if (shouldEmit && !_wasEmitting)
-            {
-                PlayAllVfx();
-                _wasEmitting = true;
-            }
-            else if (!shouldEmit && _wasEmitting)
-            {
-                StopAllVfx();
-            }
+            if (shouldEmit && !_wasEmitting) { PlayAllVfx(); _wasEmitting = true; }
+            else if (!shouldEmit && _wasEmitting) { StopAllVfx(); }
 
-            // Move VFX GameObjects to trail positions
             if (shouldEmit)
             {
                 Vector3 shipPos = Ship != null ? Ship.transform.position : transform.position;
                 Quaternion shipRot = Ship != null ? Ship.transform.rotation : transform.rotation;
 
-                // Main (center) VFX
                 Vfx.transform.position = shipPos + shipRot * _spawnOffsets[0];
                 Vfx.transform.rotation = shipRot;
 
-                // Side VFX instances
                 for (int i = 1; i < TrailCount; i++)
                 {
                     var sideVfx = _sideVfxs[i - 1];
@@ -231,7 +211,6 @@ namespace ProjectC.Ship
         private void ApplyVfxScale(float scale)
         {
             if (Vfx == null) return;
-
             float lifetime = BaseLifetime * scale;
             float size = BaseSize * scale;
             float spawnRate = BaseSpawnRate * scale;
@@ -249,21 +228,15 @@ namespace ProjectC.Ship
             }
         }
 
-        private void OnDisable()
-        {
-            StopAllVfx();
-        }
+        private void OnDisable() => StopAllVfx();
 
         private void OnDestroy()
         {
-            // Clean up side VFX GameObjects
             if (_sideVfxs != null)
             {
                 foreach (var v in _sideVfxs)
-                {
                     if (v != null && v.gameObject != null)
                         Destroy(v.gameObject);
-                }
                 _sideVfxs = null;
             }
         }
@@ -272,17 +245,10 @@ namespace ProjectC.Ship
         private void OnValidate()
         {
             if (_spawnOffsets == null) return;
-            // Recompute offsets in editor when params change
             if (UseShipBounds && Ship != null)
-            {
-                var mf = Ship.GetComponentInChildren<MeshFilter>();
-                if (mf != null && mf.sharedMesh != null)
-                    _shipBoundsSize = mf.sharedMesh.bounds.size;
-            }
+                _shipBoundsSize = GetShipVisualSize(Ship.gameObject);
             else if (!UseShipBounds)
-            {
                 _shipBoundsSize = ManualBoundsSize;
-            }
             ComputeSpawnOffsets();
         }
 #endif

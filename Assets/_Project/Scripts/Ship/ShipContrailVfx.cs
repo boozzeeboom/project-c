@@ -60,9 +60,14 @@ namespace ProjectC.Ship
         [Tooltip("Базовый spawn rate. Масштабируется.")]
         public float BaseSpawnRate = 40f;
 
+        [Header("Stop Behaviour")]
+        [Tooltip("Задержка перед Stop() после падения скорости. Даёт последним частицам время на fade-in.")]
+        [Range(0f, 2f)] public float StopDelay = 0.4f;
+
         // ── Internal ──
         private Rigidbody _rb;
         private bool _wasEmitting;
+        private float _stopRequestTime = -1f;
         private VisualEffect[] _sideVfxs;
         private Vector3[] _spawnOffsets;
         private Vector3 _shipBoundsSize;
@@ -166,6 +171,7 @@ namespace ProjectC.Ship
                 foreach (var v in _sideVfxs)
                     if (v != null) v.Stop();
             _wasEmitting = false;
+            _stopRequestTime = -1f;
         }
 
         private void Update()
@@ -179,10 +185,24 @@ namespace ProjectC.Ship
             float sizeScale = Mathf.Max(_shipBoundsSize.z / 15f, 0.5f);
             ApplyVfxScale(sizeScale);
 
-            if (shouldEmit && !_wasEmitting) { PlayAllVfx(); _wasEmitting = true; }
-            else if (!shouldEmit && _wasEmitting) { StopAllVfx(); }
+            // Delayed stop: gives last particles time for fade-in (prevents hard tear-off)
+            if (shouldEmit && !_wasEmitting)
+            {
+                PlayAllVfx();
+                _wasEmitting = true;
+                _stopRequestTime = -1f;
+            }
+            else if (!shouldEmit && _wasEmitting)
+            {
+                if (_stopRequestTime < 0f) _stopRequestTime = Time.time;
+                if (Time.time - _stopRequestTime >= StopDelay)
+                {
+                    StopAllVfx();
+                }
+            }
 
-            if (shouldEmit)
+            // Move VFX objects to trail positions (always while emitting or in stop-delay)
+            if (shouldEmit || (_wasEmitting && _stopRequestTime >= 0f))
             {
                 Vector3 shipPos = Ship != null ? Ship.transform.position : transform.position;
                 Quaternion shipRot = Ship != null ? Ship.transform.rotation : transform.rotation;

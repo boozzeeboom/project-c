@@ -62,7 +62,36 @@
 - `Contrail.vfx` — VFX Graph из шаблона Simple_Trail (VFX Graph 17.5.0)
 - `ShipContrailVfx.cs` — управление Play/Stop + движение GameObject за кораблём
 - `Ship_Light_root.prefab` — дочерний ContrailVFX с VisualEffect + ShipContrailVfx
-- **Коммит:** `ad1f2364`
+- **Коммит:** `ad1f2364` (создание), `c331f17c` (фикс обнаружения геометрии)
+
+**🔧 Доработки (T-CLOUD13–14):**
+
+| Коммит | Что |
+|---|---|
+| `c331f17c` | `GetShipVisualSize()` — поиск самого большого ENABLED MeshRenderer (Platform, не корневой Cube) |
+| `cur` | `StopDelay` 0.4s — плавный останов вместо мгновенного Stop() → анти-отрыв |
+
+**Архитектура размещения:**
+- `ShipContrailVfx` — **только** на дочернем `ContrailVFX`, не на руте
+- `ShipController` — авто-поиск через `GetComponentInParent`
+- Боковые VFX создаются в рантайме как `Contrail_Side1`, `Contrail_Side2` (сиблинги ContrailVFX)
+
+**Мульти-точки спавна:**
+- `TrailCount` (1–5) — центр, бока, две пары
+- `TrailWidth` × `TrailDepth` — позиционирование по bounds корабля
+- `GetShipVisualSize()` — берёт bounds с учётом `lossyScale`, игнорирует disabled renderers
+
+**VFX Graph настройка (ручная):**
+- Alpha over Life: fade-in 0→1 (0-15%), fade-out 1→0 (70-100%) — **критично для анти-отрыва**
+- Set Color: белый градиент (не сине-оранжевый)
+- Set Size: 2.5 (масштабируется скриптом)
+- Set Lifetime: 3.5 (масштабируется)
+- Main Texture: Cloud_Noise1.png
+- Blend Mode: Alpha
+
+**Гайд:** `CONTRAIL_VFX_GUIDE.md` — полная инструкция по настройке VFX Graph
+=======
+
 
 ---
 

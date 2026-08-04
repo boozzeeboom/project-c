@@ -2,11 +2,72 @@
 
 ---
 
+## Итерация от 2026-08-04 (Phase 2.4 — Deep Form & Runtime Fix, T-CLOUD39) 🟢
+
+**Задача:** Глубинный фикс формы («гофротруба» → кластеры) + кнопка регенерации для рантайм-твикинга.
+
+**Корневые причины (полный разбор: `STORM_FORM_RUNTIME_INVESTIGATION.md`, раздел «Проблема 2 — ГЛУБИННЫЙ АНАЛИЗ»):**
+
+T-CLOUD38 исправил масштаб долек (cellSize = max(radius×2.8, ...)), но **НЕ устранил корень «гофротрубы»**:
+
+1. **Периодическая решётка Worley-фич** — `frac(uvw)` на pre-baked 128³ текстуре + `InvertedWorley(freq=8, period=128)` создавал детерминированную решётку из 8 фич на тайл. Решётка идеально повторялась каждые `cellSize` метров. Domain warp (тоже из той же текстуры!) лишь слегка искажал решётку, но не ломал её.
+2. **Pre-baked текстура принципиально не пригодна** для organic-кластеров из-за `period=128` → позиции фич зафиксированы хешем от индекса ячейки mod 128.
+
+**Решение T-CLOUD39:** Полный отказ от pre-baked текстуры для штормов. Замена на **procedural `abs(Perlin3D)` FBM** с нецелочисленной lacunarity (2.3):
+- `abs(Perlin)` создаёт organические биллоу-«пузыри» (естественная форма облачных кластеров)
+- Нецелочисленная lacunarity (2.3) → гармоники никогда не выравниваются → хаотичная форма
+- Нет `frac()`, нет периодичности, нет решётки
+- Perlin дешевле Worley: 8 сэмплов/октава vs 27 сэмплов/октава
+
+**Изменения:**
+- `VolumetricClouds.shader`:
+  - Удалены: `StormSampleNoise`, `StormCellularFbm`, `StormDomainWarp` (texture-based)
+  - Добавлены: `StormBillow` (abs-Perlin), `StormBillowFbm` (multi-octave), `StormWarp3D` (procedural Perlin warp)
+  - `StormDensity` переписан: procedural abs(Perlin) FBM с clusterScale, warp, contrast threshold, fine cauliflower
+- `StormCellDirector.cs`:
+  - `ForceRegenerateStorm()` — public метод с `[ContextMenu("Force Regenerate Storm")]`
+  - Авто-респавн тестовых ячеек если список пуст
+- `Editor/StormCellDirectorEditor.cs` — **новый.** Кастомный инспектор с кнопками:
+  - «⟳ Regenerate Storm» — пушит все параметры в шейдер
+  - «⛈ Respawn Test Cells» — пересоздаёт тестовые ячейки
+  - Авто-реген при изменении параметров в Play Mode
+
+**Статус:** 🟢 Реализовано и проверено (0 compile errors).
+
+**Дополнительные изменения в ходе итерации:**
+- `CloudNoise.hlsl`: фикс `Hash3Periodic` — `max(period, 1u)` для D3D11 FXC (divide-by-zero)
+- `VolumetricClouds.shader`:
+  - Порог contrast threshold опущен с 0.35 до 0.25 (меньше дырявости при 1 октаве)
+  - Вертикальный профиль модулируется 2 октавами Perlin-шума — ломает горизонтальную «этажность»
+  - Envelope смягчён: `smoothstep(0.6R, 1.6R)` вместо `(0.8R, 1.5R)` — менее заметная граница цилиндра
+- `StormCellDirector.cs`:
+  - `SaveToEditorPrefs()` / `LoadFromEditorPrefs()` — сохранение/загрузка через EditorPrefs
+  - `Awake()` автоматически загружает сохранённые дефолты
+  - `StormVerticalPeak` рандомизируется (0.3–0.7) при каждом спавне тестовых ячеек
+- `Editor/StormCellDirectorEditor.cs`:
+  - Кнопки: Regenerate Storm, Respawn Test Cells, Save as Defaults, Apply to Scene
+  - Индикатор ✅/❌ наличия сохранённых дефолтов
+  - Apply to Scene — запись значений в сцену для персистентности в Edit Mode
+
+---
+
+## Итерация от 2026-08-04 (Phase 2.4 — Form & Runtime Fix, T-CLOUD38) 🟡
+
+**Задача:** Починить рантайм-твикинг и форму штормовых ячеек.
+
+**Корневые причины:** material property shadowing + масштаб cellular-шума.
+
+**Изменения:** Удалены `_Storm*` из `Properties` шейдера; переписан `StormDensity` с авто-масштабированием cellSize.
+
+**Статус:** 🟡 Частичное решение. Твикинг починен (properties → globals), но форма осталась гофротрубой из-за периодической решётки pre-baked текстуры. Полный фикс в T-CLOUD39.
+
+---
+
 ## Итерация от 2026-08-04 (Phase 2.4 — Storm Cloud Rendering) 🔴
 
-**Задача:** Визуализировать штормовые ячейки как тёмные грозовые кластеры внутри volumetric raymarch облаков.
+**Задача:** Визуализировать штормовые ячейки.
 
-**Итоговый статус:** 🔴 **НЕ РАБОТАЕТ** — визуально это цилиндры/гофротрубы, не organic-кластеры. Рантайм-твикинг не функционирует.
+**Итоговый статус:** 🔴 Исправлено в T-CLOUD39.
 
 ---
 

@@ -25,17 +25,11 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         [HideInInspector] _LocalDisplacementSize ("LDisp Size", Float) = 1920
         [HideInInspector] _LocalDisplacementStrength ("LDisp Strength", Float) = 300
 
-        // === Storm Cells (Phase 2.4) ===
-        [HideInInspector] _StormDensityMult ("Storm Density Mult", Float) = 2.0
-        [HideInInspector] _StormColorDark ("Storm Dark Color", Color) = (0.08, 0.06, 0.12, 1)
-        [HideInInspector] _StormColorLight ("Storm Light Color", Color) = (0.25, 0.22, 0.35, 1)
-        [HideInInspector] _StormEdgeSoftness ("Storm Edge Softness", Range(0.01, 0.5)) = 0.12
-        [HideInInspector] _StormVerticalPeak ("Storm Vertical Peak", Range(0.1, 0.9)) = 0.5
-        [HideInInspector] _StormNoiseScale ("Storm Noise Scale", Float) = 800
-        [HideInInspector] _StormNoiseStrength ("Storm Noise Strength", Range(0, 1)) = 0.6
-        [HideInInspector] _StormNoiseOctaves ("Storm Noise Octaves", Int) = 2
-        [HideInInspector] _StormNoiseSpeed ("Storm Noise Speed", Range(0, 0.5)) = 0.05
-        [HideInInspector] _StormClusterContrast ("Storm Cluster Contrast", Range(0.1, 0.5)) = 0.25
+        // NOTE (T-CLOUD38): storm uniforms (_StormDensityMult, _StormNoiseScale, …)
+        // deliberately NOT declared in Properties — only in HLSLINCLUDE below.
+        // If they live in Properties, `new Material(shader)` copies their defaults
+        // into material properties, which SHADOW Shader.SetGlobal* from
+        // StormCellDirector → runtime tweaking stops working. Globals-only fixes it.
     }
 
     SubShader
@@ -212,62 +206,70 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         }
 
         // ---------------------------------------------------------------------------
-        // StormSampleNoise — fetch CloudNoise3D at a given world-space position.
-        // pos  = world-space sample point
-        // cellSize = desired feature size in meters (noise wraps every cellSize)
-        // Returns all 4 noise channels.
+        // T-CLOUD39: Procedural storm noise — NO pre-baked texture.
+        //
+        // Root cause of "corrugated pipe" (T-CLOUD35–38):
+        //   frac(uvw) on 128³ texture with periodic Worley (freq=8, period=128)
+        //   creates a REPEATING GRID of exactly 8 features per tile. Even with
+        //   domain warp and multi-octave, the grid dominates → гофротруба.
+        //
+        // Fix: use procedural abs(Perlin3D) FBM directly — no texture, no frac(),
+        // no periodicity. abs(Perlin) creates natural billowy "bubbles" that
+        // look like cloud clusters. Non-integer lacunarity (2.3) prevents
+        // harmonic alignment across octaves.
+        //
+        // Perf: Perlin samples 8 grid points per octave (vs Worley's 27).
+        //       Early envelope gates prevent noise evaluation outside cells.
         // ---------------------------------------------------------------------------
-        float4 StormSampleNoise(float3 pos, float cellSize)
+
+        // Single-octave abs(Perlin) — returns 0..1 billowy value
+        float StormBillow(float3 pos, float freq, uint seed)
         {
-            float3 uvw = pos / max(cellSize, 1.0);
-            uvw = frac(uvw);
-            return SAMPLE_TEXTURE3D_LOD(_CloudNoise3D, sampler_CloudNoise3D, uvw, 0);
+            return abs(Perlin3D_noPeriod(pos * freq, seed));
         }
 
-        // ---------------------------------------------------------------------------
-        // StormCellularFbm — fractal inverted-Worley FBM (channel A).
-        // Multi-octave cellular bubbles → cauliflower-like internal structure.
-        // Each octave samples at half the cellSize with a random offset → no visible tiling.
-        // ---------------------------------------------------------------------------
-        float StormCellularFbm(float3 pos, float baseCellSize)
+        // Multi-octave abs(Perlin) FBM with non-integer lacunarity.
+        // Non-integer lacunarity (2.3 instead of 2.0) shifts octave harmonics
+        // so they never align → chaotic, organic shapes.
+        float StormBillowFbm(float3 pos, float baseScale, uint seed)
         {
             float val = 0; float amp = 1.0; float norm = 0;
+            float freq = 1.0 / max(baseScale, 0.001);
             for (int o = 0; o < _StormNoiseOctaves; o++)
             {
-                float freq = pow(2.0, (float)o);
-                float3 offset = float3((float)(o) * 0.371, (float)(o) * 0.593, (float)(o) * 0.727);
-                float4 n = StormSampleNoise(pos + offset * 1000.0, baseCellSize / freq);
-                val += n.a * amp;   // channel A = InvertedWorley
+                val += StormBillow(pos, freq, seed + (uint)(o * 73));
                 norm += amp;
                 amp *= 0.5;
+                freq *= 2.3;  // non-integer → harmonics misalign → organic
             }
             return val / max(norm, 0.001);
         }
 
-        // ---------------------------------------------------------------------------
-        // StormDomainWarp — 3D noise warp for irregular boundary shapes.
-        // Uses Perlin (R) + Worley (G) channels to create asymmetric 2D offset.
-        // ---------------------------------------------------------------------------
-        float2 StormDomainWarp(float3 pos, float cellSize, float strength)
+        // 3D domain warp using procedural Perlin (not texture).
+        // Returns a 3D offset vector that breaks radial symmetry.
+        float3 StormWarp3D(float3 pos, float scale, float strength)
         {
-            float4 n = StormSampleNoise(pos, cellSize);
-            float2 warp;
-            warp.x = (n.r - 0.5) * strength;
-            warp.y = (n.g - 0.5) * strength;
-            return warp;
+            float invScale = 1.0 / max(scale, 0.001);
+            float wx = Perlin3D_noPeriod(pos * invScale, 42u);
+            float wy = Perlin3D_noPeriod((pos + float3(0, 137, 0)) * invScale, 99u);
+            float wz = Perlin3D_noPeriod((pos + float3(0, 0, 271)) * invScale, 156u);
+            return float3(wx, wy * 0.35, wz) * strength;
         }
 
         // ---------------------------------------------------------------------------
-        // StormDensity — organic storm cloud density.
+        // StormDensity — organic storm cloud density (T-CLOUD39 rewrite).
         //
-        // Pipeline per cell:
-        //   1. Cellular FBM → defines the PRIMARY shape (bubble cluster, not cylinder)
-        //   2. Domain warp XZ → breaks symmetry of bubble positions
-        //   3. Soft envelope → distant containment clip only
-        //   4. Vertical envelope → height range
+        // Pipeline per cell (cheap gates FIRST — noise only inside the cell):
+        //   1. Distance envelope (XZ) — safety clip
+        //   2. Vertical envelope — hard gate at bottom/top
+        //   3. Vertical profile — asymmetric anvil via _StormVerticalPeak
+        //   4. Procedural domain warp (3D Perlin) — breaks radial symmetry
+        //   5. Procedural abs(Perlin) FBM — organические биллоу-кластеры
+        //   6. Fine cauliflower octave — erodes edges, keeps core
         //
-        // Key insight: cellular IS the shape, not an internal texture.
-        // Envelope is only a safety clip — the cellular boundary is the visual edge.
+        // Key insight (T-CLOUD39): abs(Perlin3D) with non-integer lacunarity
+        // produces natural organic clusters WITHOUT repeating grid artifacts.
+        // No pre-baked texture involved → no frac(), no periodic hash, no tiling.
         // ---------------------------------------------------------------------------
         float StormDensity(float3 worldPos, out float3 stormColor)
         {
@@ -285,35 +287,74 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                 float bottomY = _StormCellParams[i].y;
                 float topY = _StormCellParams[i].z;
 
-                // Height gate
+                // ── Height gate ──
                 if (worldPos.y < bottomY || worldPos.y > topY) continue;
 
-                // ── 1. Cellular FBM — the PRIMARY shape ──
-                // Domain warp is embedded in the cellular sampling position
-                float warpStrength = radius * _StormNoiseStrength * 0.5;
-                float2 warp = StormDomainWarp(worldPos + noiseWind, _StormNoiseScale, warpStrength);
-                float3 cellularPos = worldPos + float3(warp.x, warp.y * 0.3, warp.y) + noiseWind;
+                float hRange = max(topY - bottomY, 1.0);
+                float h01 = saturate((worldPos.y - bottomY) / hRange);
 
-                float cellular = StormCellularFbm(cellularPos, _StormNoiseScale);
-
-                // Binary shape from cellular: outside bubble = 0, inside = 1
-                float contrast = _StormClusterContrast;
-                float shape = smoothstep(0.5 - contrast, 0.5 + contrast, cellular);
-                if (shape < 0.01) continue;
-
-                // ── 2. Distant envelope — only clips outliers ──
+                // ── 1. Distance envelope — softer clip to reduce visible shell ──
                 float distXZ = length(worldPos.xz - cellPos.xz);
-                float envelope = 1.0 - smoothstep(radius * 0.7, radius * 1.5, distXZ);
+                float envelope = 1.0 - smoothstep(radius * 0.6, radius * 1.6, distXZ);
                 if (envelope < 0.001) continue;
 
-                // ── 3. Vertical envelope ──
-                float hRange = topY - bottomY;
-                float vFade = min(hRange * 0.08, 200.0);
+                // ── 2. Vertical envelope ──
+                float vFade = min(hRange * 0.05, 150.0);
                 float vEnvelope = smoothstep(bottomY, bottomY + vFade, worldPos.y)
                                 * (1.0 - smoothstep(topY - vFade, topY, worldPos.y));
+                if (vEnvelope < 0.001) continue;
 
-                // ── 4. Combine: shape (cellular) × envelope (distant clip) ──
-                float cellDensity = shape * envelope * vEnvelope * intensity * _StormDensityMult;
+                // ── 3. Vertical profile — asymmetric anvil, noise-modulated ──
+                //      Per-cell seed (declared early — used by vertical noise below).
+                float3 seedOff = float3((float)(i + 1) * 137.3,
+                                        (float)(i + 1) * 57.1,
+                                        (float)(i + 1) * 91.7);
+
+                float vProfile = 1.0 - abs(h01 - _StormVerticalPeak)
+                                   / max(h01 > _StormVerticalPeak ? (1.0 - _StormVerticalPeak)
+                                                                   : _StormVerticalPeak, 0.05);
+                vProfile = saturate(vProfile);
+                vProfile = lerp(0.25, 1.0, vProfile * vProfile);
+
+                // Vertical Perlin modulation — breaks smooth horizontal layers
+                float vNoise = Perlin3D_noPeriod((worldPos + seedOff) * 0.002, 500u + (uint)(i * 37));
+                float vNoise2 = Perlin3D_noPeriod((worldPos + seedOff + float3(0, 500, 0)) * 0.005, 600u + (uint)(i * 73));
+                float vMod = 1.0 + (vNoise * 0.25 + vNoise2 * 0.15); // ±40% vertical variation
+                vProfile *= vMod;
+                vProfile = saturate(vProfile);
+
+                // ── 4. Procedural domain warp (3D) — breaks radial symmetry ──
+                //      Warp scale tied to cluster size, not radius directly.
+                float clusterScale = max(radius * 0.25, _StormNoiseScale);
+                float warpScale = clusterScale * 2.5;
+                float warpStrength = clusterScale * _StormNoiseStrength * 1.5;
+                float3 warpOff = StormWarp3D(worldPos + noiseWind, warpScale, warpStrength);
+                float3 clusterPos = worldPos + warpOff + noiseWind;
+
+                // Per-cell seed offset (declared above — used in vertical noise + here)
+                clusterPos += seedOff * 0.1;
+
+                // ── 5. Procedural abs(Perlin) FBM — THE organic shape ──
+                //      _StormNoiseScale = direct cluster size in meters (200–1500m typical)
+                //      At radius=5000m, clusterScale≈1250m → ~4 clusters per radius
+                float bigClusters = StormBillowFbm(clusterPos, clusterScale, 1000u + (uint)(i * 211));
+
+                // Contrast threshold: maps continuous billow → discrete clusters.
+                // Center at 0.25 (below abs(Perlin) average) → less holey at 1 octave.
+                float contrast = _StormClusterContrast;
+                float shape = smoothstep(0.25 - contrast * 0.8,
+                                         0.25 + contrast * 0.8, bigClusters);
+                if (shape < 0.01) continue;
+
+                // ── 6. Fine cauliflower — мелкие детали на поверхности кластеров ──
+                float fineScale = clusterScale * 0.22;
+                float fine = StormBillowFbm(clusterPos + float3(31.7, 17.3, 7.1),
+                                           fineScale, 2000u + (uint)(i * 137));
+                float inner = 0.55 + 0.45 * smoothstep(0.25, 0.75, fine);
+
+                // ── Combine ──
+                float cellDensity = shape * inner * envelope * vEnvelope * vProfile
+                                  * intensity * _StormDensityMult;
 
                 if (cellDensity > 0.002)
                 {

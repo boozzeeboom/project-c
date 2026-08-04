@@ -22,10 +22,13 @@ uint Hash3(uint3 p, uint seed)
     return u & 0x7FFFFFFFu; // 31-bit positive
 }
 
-// Periodic variant: mod cell index by period before hashing
+// Periodic variant: mod cell index by period before hashing.
+// Period is always >= 1 at call sites (Perlin3D: checked, compute shader: _TexSize).
+// max(period, 1u) keeps FXC/D3D11 compiler happy — static analysis sees a constant min.
 uint Hash3Periodic(uint3 p, uint seed, uint period)
 {
-    uint3 mp = p % period;
+    uint safePeriod = max(period, 1u);
+    uint3 mp = p % safePeriod;
     return Hash3(mp, seed);
 }
 

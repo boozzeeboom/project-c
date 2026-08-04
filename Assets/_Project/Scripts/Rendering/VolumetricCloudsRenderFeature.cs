@@ -181,7 +181,6 @@ namespace ProjectC.Rendering
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
         private bool _prevViewProjValid;
         private bool _loggedOnce;
-        private bool _addOnceLogged;
 
         /// <summary>
         /// Unity does NOT run field initializers for new fields on existing
@@ -238,16 +237,10 @@ namespace ProjectC.Rendering
         {
             EnsureLayerDefaults();
             _prevViewProjValid = false;
-            Debug.Log("[VolClouds] Create() called — RenderFeature initialized.");
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
-            if (!_addOnceLogged)
-            {
-                _addOnceLogged = true;
-                Debug.Log($"[VolClouds] AddRenderPasses() called! cameraType={renderingData.cameraData.cameraType} cam={renderingData.cameraData.camera?.name} frameCount={Time.frameCount}");
-            }
             if (renderingData.cameraData.cameraType == CameraType.Preview) return;
             Material mat = GetOrCreateMaterial();
             if (mat == null) return;
@@ -337,21 +330,6 @@ namespace ProjectC.Rendering
             Shader.SetGlobalFloat(CloudOpacityId, Opacity);
             Shader.SetGlobalFloat(CloudColorIntensityId, ColorIntensity);
 
-            // One-time layer dump for diagnostics
-            if (!_loggedOnce)
-            {
-                for (int i = 0; i < count; i++)
-                    Debug.Log($"[VolClouds] Layer[{i}]: bottom={_boundsCache[i].x:F0} top={_boundsCache[i].y:F0} covThresh={_boundsCache[i].z:F2} densMult={_boundsCache[i].w:F2}");
-                Debug.Log($"[VolClouds] DepthFade={DepthFadeDistance:F0} Opacity={Opacity:F2} ColorInt={ColorIntensity:F2}");
-            }
-
-            if (Time.frameCount % 120 == 0)
-            {
-                var ldInst = LocalDensityBuffer.Instance;
-                Debug.Log($"[VolClouds] Layers={count} Bot={globalBottom:F0} Top={globalTop:F0} Absorb={LightAbsorption:F3} Steps={RaymarchSteps} DpFade={DepthFadeDistance:F0} NoiseMask={LayerNoiseMask:X}" +
-                    (ldInst != null ? $" | LD OK: RT={ldInst.GetDensityRT()!=null}" : " | LD: NULL"));
-            }
-
             if (CloudNoise3D != null)
                 mat.SetTexture(CloudNoise3DId, CloudNoise3D);
 
@@ -389,8 +367,6 @@ namespace ProjectC.Rendering
                     if (!_loggedOnce)
                     {
                         _loggedOnce = true;
-                        Debug.Log($"[VolClouds] LocalDensity VIA MAT: mode={ld.BufferMode} RT={rt.name} {rt.width}x{rt.height}x{rt.volumeDepth} center={ld.Center} size={ld.Resolution * ld.TexelSize}" +
-                            (isDisp ? $" dispStrength={DisplacementStrength}" : $" influence={LocalDensityInfluence}"));
                     }
                 }
                 else if (!_loggedOnce)

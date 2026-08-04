@@ -275,26 +275,18 @@ B&W подтверждает, что RT сэмплируется коррект�
   расхождения остаётся невыясненной.
 
 ---
-### 2.3 — VFX Graph: конденсационные следы (первый .vfx)
+### 2.3 ✅ VFX Graph: конденсационные следы — ЗАВЕРШЕНО (2026-08-04)
 
-**Цель:** первый .vfx в проекте; след тянется за кораблём.
+**Статус:** 🟢 Завершено  
+**Коммиты:** `ad1f2364` → `e03e2422` → `c331f17c` → `8996c137` → `87622cf1`  
+**Документация:** `PHASE_2_3_SUMMARY.md`, `CONTRAIL_VFX_GUIDE.md`
 
-**Создать:**
-
-1. `Assets/_Project/VFX/Contrail.vfx` — через MCP `manage_vfx` или вручную (Window → Visual Effects → Graph).
-   - Граф: Spawn (по времени) → Initialize (позиция = спавн-точка за кораблём) → Update (движение назад + лёгкий дрейф по ветру) → Output Particle Quad/Strip.
-   - Свойства графа, которые дёргает C#: `Emit` (bool), `SpawnPos` (Vector3), `WindVector` (Vector3).
-   - Текстура частиц: существующий `Cloud_Noise1.png` (`Assets/_Project/Art/Textures/`) как soft-спрайт.
-
-2. `Assets/_Project/Scripts/Ship/ShipContrailVfx.cs` (namespace `ProjectC.Ship` — след принадлежит кораблю):
-   - Поля: `VisualEffect _vfx; ShipController _ship; float MinSpeed = 5f;`
-   - `Update`:
-     `_vfx.SetBool("Emit", !_ship.IsDocked && currentSpeed > MinSpeed);`
-     `_vfx.SetVector3("SpawnPos", точка позади корабля);`
-     `_vfx.SetVector3("WindVector", WindManager.Instance != null ? WindManager.Instance.CurrentWindDirection * CurrentWindSpeed : Vector3.zero);`
-   - Скорость брать из `ShipTelemetryState` (событие `OnTelemetryStateChanged` уже есть в ShipController, строка 917) или `ship.Rigidbody.velocity.magnitude`.
-
-**Приёмка:** полёт на корабле → белый след тянется и сносится ветром; на стоянке/доке следа нет.
+**Фактическая реализация:**
+- `Contrail.vfx` — Simple_Trail template (VFX Graph 17.5.0), Play/Stop управление
+- `ShipContrailVfx.cs` — мульти-точки спавна (1–5), GetShipVisualSize (авторазмер), StopDelay (анти-отрыв)
+- Side-trail VFX создаются в рантайме
+- Alpha over Life (fade-in), Size over Life (гаснет к концу), Random Size (±30%) → нет плоских квадратов
+- Размещение: только на дочернем ContrailVFX, не на руте
 
 ---
 

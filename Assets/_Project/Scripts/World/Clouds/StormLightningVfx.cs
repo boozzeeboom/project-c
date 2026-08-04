@@ -73,10 +73,11 @@ namespace ProjectC.World.Clouds
         {
             if (Vfx == null) return;
 
-            Vfx.SetVector3(StartPosId, worldPos + Vector3.up * BoltTopOffset);
-            Vfx.SetVector3(EndPosId, worldPos - Vector3.up * BoltBottomOffset);
-            Vfx.SetFloat(SeedId, Random.value);
-            Vfx.SetFloat(IntensityId, Mathf.Clamp01(intensity));
+            // Silently skip if param not yet added to VFX Graph
+            if (Vfx.HasVector3(StartPosId)) Vfx.SetVector3(StartPosId, worldPos + Vector3.up * BoltTopOffset);
+            if (Vfx.HasVector3(EndPosId))   Vfx.SetVector3(EndPosId, worldPos - Vector3.up * BoltBottomOffset);
+            if (Vfx.HasFloat(SeedId))       Vfx.SetFloat(SeedId, Random.value);
+            if (Vfx.HasFloat(IntensityId))  Vfx.SetFloat(IntensityId, Mathf.Clamp01(intensity));
             Vfx.Play();
 
             // Auto-stop after duration

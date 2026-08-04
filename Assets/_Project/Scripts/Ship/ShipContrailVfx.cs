@@ -41,7 +41,7 @@ namespace ProjectC.Ship
                 Vfx = GetComponent<VisualEffect>();
 
             if (Ship == null)
-                Ship = GetComponent<ShipController>();
+                Ship = GetComponentInParent<ShipController>();
 
             _rb = Ship != null ? Ship.GetComponent<Rigidbody>() : GetComponent<Rigidbody>();
 

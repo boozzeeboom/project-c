@@ -37,3 +37,13 @@
 
 **Изменения:**
 - `docs/world/CLOUD_system/3.0/CLOUD_OCEAN_MEDIUM_DETAILED_STEPS.md`: создан документ с 7 пошаговыми задачами Фазы 1
+
+## Итерация от 2026-08-04 (Depth Fix)
+
+**Задача:** Исправить некорректную работу глубины — облака были только за объектами, без depth fade
+
+**Коммит:** `32480d50` — T-CLOUD08: Fix depth — CopyDepthMode AfterTransparents → AfterOpaques
+
+**Изменения:**
+- `Assets/_Project/Settings/ProjectC_URP_Renderer.asset`: `m_CopyDepthMode: 1` → `0` (AfterOpaques вместо AfterTransparents)
+- `docs/world/CLOUD_system/3.0/IMPLEMENTATION_LOG.md`: задокументирован анализ и фикс

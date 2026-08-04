@@ -66,6 +66,34 @@ namespace ProjectC.World.Clouds
         [Tooltip("Цвет маркера.")]
         public Color MarkerColor = new Color(1f, 0f, 1f, 0.8f);
 
+        [Header("Storm Cloud Shader")]
+        [Tooltip("Множитель плотности штормовых облаков в реймарче.")]
+        [Range(0.1f, 10f)] public float StormDensityMultiplier = 1.5f;
+        [Tooltip("Цвет ядра шторма (плотная область).")]
+        public Color StormColorDark = new Color(0.08f, 0.06f, 0.12f, 1f);
+        [Tooltip("Цвет края шторма (разреженная область).")]
+        public Color StormColorLight = new Color(0.25f, 0.22f, 0.35f, 1f);
+        [Tooltip("Мягкость края шторма (0=резкий, 0.5=размытый).")]
+        [Range(0.01f, 0.5f)] public float StormEdgeSoftness = 0.12f;
+        [Tooltip("Где пик плотности по вертикали (0=дно, 0.5=центр, 1=верх).")]
+        [Range(0.1f, 0.9f)] public float StormVerticalPeak = 0.5f;
+        [Tooltip("Максимум ячеек передаваемых в шейдер.")]
+        [Range(1, 8)] public int MaxStormCellsInShader = 8;
+
+        // Shader property IDs
+        private static readonly int StormCellPosId      = Shader.PropertyToID("_StormCellPos");
+        private static readonly int StormCellParamsId   = Shader.PropertyToID("_StormCellParams");
+        private static readonly int StormCellCountId    = Shader.PropertyToID("_StormCellCount");
+        private static readonly int StormDensityMultId  = Shader.PropertyToID("_StormDensityMult");
+        private static readonly int StormColorDarkId    = Shader.PropertyToID("_StormColorDark");
+        private static readonly int StormColorLightId   = Shader.PropertyToID("_StormColorLight");
+        private static readonly int StormEdgeSoftnessId = Shader.PropertyToID("_StormEdgeSoftness");
+        private static readonly int StormVerticalPeakId = Shader.PropertyToID("_StormVerticalPeak");
+
+        // Pre-allocated caches for shader push
+        private static readonly Vector4[] _stormPosCache    = new Vector4[8];
+        private static readonly Vector4[] _stormParamsCache = new Vector4[8];
+
         private readonly List<GameObject> _debugMarkers = new();
 
         /// <summary>Событие: молния в worldPos с интенсивностью [0..1].</summary>
@@ -186,6 +214,9 @@ namespace ProjectC.World.Clouds
                     Debug.DrawLine(playerPos, mid, new Color(1f, 0.5f, 0f, 0.8f), 0f, false);
                 }
             }
+
+            // Push storm cell data to VolumetricClouds shader
+            PushStormCellsToShader();
 
             // Broadcast global storm intensity
             GlobalStormEvents.BroadcastStormIntensity(GetAverageIntensity());
@@ -325,6 +356,40 @@ namespace ProjectC.World.Clouds
         {
             var player = GameObject.FindGameObjectWithTag("Player");
             return player != null ? player.transform.position : Vector3.zero;
+        }
+
+        /// <summary>
+        /// Упаковывает данные ячеек в Vector4-массивы и пушит в глобальные uniform'ы шейдера.
+        /// Вызывается каждый кадр из Update().
+        /// </summary>
+        private void PushStormCellsToShader()
+        {
+            int count = Mathf.Min(_cells.Count, MaxStormCellsInShader);
+
+            for (int i = 0; i < 8; i++)
+            {
+                if (i < count)
+                {
+                    var c = _cells[i];
+                    _stormPosCache[i]    = new Vector4(c.WorldPosition.x, c.WorldPosition.y, c.WorldPosition.z, c.Intensity);
+                    _stormParamsCache[i] = new Vector4(c.Radius, CellBottomY, CellTopY, 0f);
+                }
+                else
+                {
+                    _stormPosCache[i]    = Vector4.zero;
+                    _stormParamsCache[i] = Vector4.zero;
+                }
+            }
+
+            Shader.SetGlobalVectorArray(StormCellPosId, _stormPosCache);
+            Shader.SetGlobalVectorArray(StormCellParamsId, _stormParamsCache);
+            Shader.SetGlobalInt(StormCellCountId, count);
+
+            Shader.SetGlobalFloat(StormDensityMultId, StormDensityMultiplier);
+            Shader.SetGlobalVector(StormColorDarkId, StormColorDark);
+            Shader.SetGlobalVector(StormColorLightId, StormColorLight);
+            Shader.SetGlobalFloat(StormEdgeSoftnessId, StormEdgeSoftness);
+            Shader.SetGlobalFloat(StormVerticalPeakId, StormVerticalPeak);
         }
 
         // ═══════════════════════════════════════════

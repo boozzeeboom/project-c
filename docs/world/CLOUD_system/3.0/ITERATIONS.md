@@ -2,6 +2,35 @@
 
 ---
 
+## Итерация от 2026-08-04 (Storm Cloud Shader — Phase 2.4)
+
+**Задача:** Добавить реальный визуал штормовых облаков (тёмные грозовые кластеры) в существующий volumetric raymarch.
+
+**Коммит:** `<pending>` — T-CLOUD35: analytic storm density в VolumetricClouds шейдере
+
+**Изменения:**
+- `Assets/_Project/Shaders/Clouds/VolumetricClouds.shader` — +StormDensity(), +uniforms, инъекция в CloudDensity()
+- `Assets/_Project/Scripts/World/Clouds/StormCellDirector.cs` — +PushStormCellsToShader(), +инспектор-параметры
+
+**Архитектура:**
+- CPU: StormCellDirector пакует до 8 ячеек в Vector4[8]×2, пушит через Shader.SetGlobal*
+- GPU: StormDensity() проверяет distanceXZ + vertical profile → density + dark color
+- Цвет: lerp(StormColorLight, StormColorDark) по плотности → тёмные грозовые массы
+- Совместимость: добавляется поверх существующих 4 слоёв Ghibli-облаков
+
+**Инспектор-параметры (Storm Cloud Shader):**
+- StormDensityMultiplier (0.1-10) — общая плотность шторма
+- StormColorDark / StormColorLight — цвет ядра и края
+- StormEdgeSoftness (0.01-0.5) — мягкость края
+- StormVerticalPeak (0.1-0.9) — пик плотности по вертикали
+- MaxStormCellsInShader (1-8) — макс. ячеек в шейдер
+
+**Статус:** 🟢 Готово к тестированию. Включить StormDirector → клетки дадут тёмные облака в VolumetricClouds.
+
+---
+=======
+## Итерация от 2026-08-04 (Debug Positioning — завершено)
+
 ## Итерация от 2026-08-04 (Debug Positioning — завершено)
 
 **Задача:** Разобраться почему штормовые ячейки не видны. Настроить дебаг-визуализацию.

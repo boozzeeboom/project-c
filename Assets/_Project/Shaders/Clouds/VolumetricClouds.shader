@@ -24,6 +24,13 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         [HideInInspector] _LocalDisplacementCenter ("LDisp Center", Vector) = (0,0,0,0)
         [HideInInspector] _LocalDisplacementSize ("LDisp Size", Float) = 1920
         [HideInInspector] _LocalDisplacementStrength ("LDisp Strength", Float) = 300
+
+        // === Storm Cells (Phase 2.4) ===
+        [HideInInspector] _StormDensityMult ("Storm Density Mult", Float) = 1.5
+        [HideInInspector] _StormColorDark ("Storm Dark Color", Color) = (0.08, 0.06, 0.12, 1)
+        [HideInInspector] _StormColorLight ("Storm Light Color", Color) = (0.25, 0.22, 0.35, 1)
+        [HideInInspector] _StormEdgeSoftness ("Storm Edge Softness", Range(0.01, 0.5)) = 0.12
+        [HideInInspector] _StormVerticalPeak ("Storm Vertical Peak", Range(0.1, 0.9)) = 0.5
     }
 
     SubShader
@@ -90,6 +97,16 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         TEXTURE2D(_BlueNoiseTex);
         SAMPLER(sampler_BlueNoiseTex);
         float4 _BlueNoiseTex_TexelSize;
+
+        // === Storm Cells (Phase 2.4) ===
+        float4 _StormCellPos[8];
+        float4 _StormCellParams[8];
+        int _StormCellCount;
+        float _StormDensityMult;
+        float4 _StormColorDark;
+        float4 _StormColorLight;
+        float _StormEdgeSoftness;
+        float _StormVerticalPeak;
 
         float4 _CloudTargetSize;
         float4x4 _Cloud_ViewToWorld;
@@ -184,6 +201,59 @@ Shader "Hidden/ProjectC/VolumetricClouds"
             return saturate(s);
         }
 
+        // ---------------------------------------------------------------------------
+        // StormDensity — storm cell density from CPU-driven cell positions.
+        // Soft radial falloff + vertical profile. Outputs blended dark storm color.
+        // ---------------------------------------------------------------------------
+        float StormDensity(float3 worldPos, out float3 stormColor)
+        {
+            float totalDensity = 0;
+            float3 blendedColor = 0;
+            float colorWeight = 0;
+
+            for (int i = 0; i < _StormCellCount; i++)
+            {
+                float3 cellPos = _StormCellPos[i].xyz;
+                float intensity = _StormCellPos[i].w;
+                float radius = _StormCellParams[i].x;
+                float bottomY = _StormCellParams[i].y;
+                float topY = _StormCellParams[i].z;
+
+                // Height gate
+                if (worldPos.y < bottomY || worldPos.y > topY) continue;
+
+                // Horizontal distance falloff
+                float distXZ = length(worldPos.xz - cellPos.xz);
+                float t = 1.0 - distXZ / max(radius, 1.0);
+                if (t <= 0.0) continue;
+
+                // Smooth edge falloff
+                float hFalloff = smoothstep(0.0, _StormEdgeSoftness, t)
+                               * (1.0 - smoothstep(1.0 - _StormEdgeSoftness, 1.0, t));
+
+                // Vertical profile — peak at _StormVerticalPeak
+                float hRange = topY - bottomY;
+                float h01 = (worldPos.y - bottomY) / max(hRange, 1.0);
+                float vProfile = 1.0 - abs(h01 - _StormVerticalPeak)
+                               / max(_StormVerticalPeak, 1.0 - _StormVerticalPeak);
+                vProfile = smoothstep(0.0, 0.3, vProfile);
+
+                float cellDensity = hFalloff * vProfile * intensity * _StormDensityMult;
+
+                if (cellDensity > 0.001)
+                {
+                    totalDensity += cellDensity;
+                    float3 cellColor = lerp(_StormColorLight.rgb, _StormColorDark.rgb,
+                        saturate(cellDensity * 2.0));
+                    blendedColor += cellColor * cellDensity;
+                    colorWeight += cellDensity;
+                }
+            }
+
+            stormColor = colorWeight > 0.001 ? blendedColor / colorWeight : _StormColorDark.rgb;
+            return totalDensity;
+        }
+
         // Density + blended color per step. Returns density; outputs blended layer color.
         float CloudDensity(float3 worldPos, float3 cameraPos, float coverageNoise,
                            float rampBlend, out float3 layerColor)
@@ -238,6 +308,16 @@ Shader "Hidden/ProjectC/VolumetricClouds"
             float local = SampleLocalDensity(worldPos);
             totalDensity = max(0.0, totalDensity - local * _LocalDensityInfluence);
         #endif
+
+            // Phase 2.4: Storm cell density injection
+            float3 stormColor;
+            float stormD = StormDensity(worldPos, stormColor);
+            if (stormD > 0.001)
+            {
+                totalDensity += stormD;
+                float stormWeight = stormD / max(totalDensity, 0.001);
+                layerColor = lerp(layerColor, stormColor, stormWeight);
+            }
 
             return totalDensity;
         }

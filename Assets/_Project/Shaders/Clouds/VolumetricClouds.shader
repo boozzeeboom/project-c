@@ -30,7 +30,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
     {
         Cull Off
         ZWrite Off
-        ZTest LEqual
+        ZTest Always   // manual depth test via SampleSceneDepth in fragment
 
         HLSLINCLUDE
         #pragma target 5.0

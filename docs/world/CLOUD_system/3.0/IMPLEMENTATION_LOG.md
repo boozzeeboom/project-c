@@ -158,6 +158,31 @@ Software depth cull в шейдере не работал — `_CameraDepthTextu
 - Sky: `Linear01Depth = 1.0` → `1.0 < 0.999 = false` → без геометрии ✓
 - Geometry: `Linear01Depth ≈ 0.01-0.99` → `< 0.999 = true` → есть геометрия ✓
 
+---
+
+## 🩹 Depth Fix #3 — ZTest Always (RenderGraph depth attachment) — 2026-08-04
+
+### Проблема
+
+После фиксов #1 и #2 облака всё ещё не отображаются.
+
+### Диагностика
+
+`VolumetricCloudsPass.RecordRenderGraph` устанавливает только color attachment:
+```csharp
+builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
+```
+Depth attachment **не привязан**. `ZTest LEqual` без depth-буфера в RenderGraph = undefined behavior. На многих конфигурациях это означает, что ZTest всегда fail'ит → все фрагменты отбрасываются → облака не рисуются.
+
+До фикса `CopyDepthMode` это могло работать случайно (иной lifetime depth-буфера), но после изменения — нет.
+
+### Исправление
+
+**Файл:** `VolumetricClouds.shader` line 33
+**Изменение:** `ZTest LEqual` → `ZTest Always`
+
+Аппаратный ZTest избыточен: шейдер делает собственный depth-тест через `SampleSceneDepth` → `Linear01Depth` → `tMax = min(tMax, sceneLinear)`. Убираем зависимость от наличия depth-буфера в RenderGraph pass'е.
+
 ### Исправление
 
 **Файл:** `Assets/_Project/Settings/ProjectC_URP_Renderer.asset`

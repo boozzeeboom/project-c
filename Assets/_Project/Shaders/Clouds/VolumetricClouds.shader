@@ -309,7 +309,9 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
                 float sceneDepth = SampleSceneDepth(uv);
                 float sceneLinear = 1e9; // no geometry = huge
-                if (sceneDepth < 0.999)
+                // Linear01Depth → 0=near, 1=far on ALL platforms (reversed-Z safe)
+                float sceneLinear01 = Linear01Depth(sceneDepth, _ZBufferParams);
+                if (sceneLinear01 < 0.999) // 1.0 = sky/far, <1.0 = geometry
                 {
                     sceneLinear = LinearEyeDepth(sceneDepth, _ZBufferParams);
                     tMax = min(tMax, sceneLinear);

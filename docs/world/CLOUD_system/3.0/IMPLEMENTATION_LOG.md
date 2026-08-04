@@ -131,6 +131,33 @@ Software depth cull в шейдере не работал — `_CameraDepthTextu
 
 **Результат:** облака видны только на небе, всегда за объектами, жёсткая граница без blend.
 
+---
+
+## 🩹 Depth Fix #2 — Reverse-Z safe depth check — 2026-08-04
+
+### Проблема
+
+После фикса `CopyDepthMode → AfterOpaques` облака исчезли **полностью** при любом `DepthFadeDistance`.
+
+### Диагностика
+
+Проверка `sceneDepth < 0.999` в шейдере (line 312) написана под не-реверсивный Z (OpenGL):
+- Не-реверсивный: near=0, far=1, sky clear=1 → `1.0 < 0.999 = false` → sky пропускается ✓
+- **Reverse-Z (D3D)**: near=1, far=0, sky clear=0 → `0.0 < 0.999 = true` → sky заходит в блок ✗
+
+В блоке: `LinearEyeDepth(0.0, _ZBufferParams)` → ≈0 (почти камера) → `tMax = min(tMax, 0) = 0` → `tMax ≤ tMin` → `return black` для **каждого** пикселя неба.
+
+До первого фикса depth-текстура была битая (все 1.0 = near), поэтому `1.0 < 0.999 = false` и блок никогда не исполнялся — облака рисовались. После первого фикса текстура корректна (sky=0.0), и баг проявился.
+
+### Исправление
+
+**Файл:** `VolumetricClouds.shader` line 312
+**Изменение:** `sceneDepth < 0.999` → `Linear01Depth(sceneDepth) < 0.999`
+
+`Linear01Depth` нормализует depth в [0=near, 1=far] на **всех** платформах:
+- Sky: `Linear01Depth = 1.0` → `1.0 < 0.999 = false` → без геометрии ✓
+- Geometry: `Linear01Depth ≈ 0.01-0.99` → `< 0.999 = true` → есть геометрия ✓
+
 ### Исправление
 
 **Файл:** `Assets/_Project/Settings/ProjectC_URP_Renderer.asset`

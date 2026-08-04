@@ -110,17 +110,30 @@ namespace ProjectC.World.Clouds
                 _cells[i] = cell;
             }
 
-            // ── Game View debug: яркие лучи от ячеек к земле ──
+            // ── Game View debug: ГИГАНТСКИЕ лучи и сферы ──
+            var playerPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var c = _cells[i];
+                // Огромный крест (500м) на позиции ячейки
+                float cr = 500f;
+                Debug.DrawLine(c.WorldPosition + Vector3.left * cr, c.WorldPosition + Vector3.right * cr, Color.magenta, 0f, false);
+                Debug.DrawLine(c.WorldPosition + Vector3.forward * cr, c.WorldPosition + Vector3.back * cr, Color.magenta, 0f, false);
+                Debug.DrawLine(c.WorldPosition + Vector3.up * cr, c.WorldPosition + Vector3.down * cr, Color.magenta, 0f, false);
+                // Оранжевый луч от игрока к ячейке
+                Debug.DrawLine(playerPos, c.WorldPosition, new Color(1f, 0.5f, 0f, 0.8f), 0f, false);
+                // Фиолетовый луч к земле
                 Vector3 ground = new Vector3(c.WorldPosition.x, 0f, c.WorldPosition.z);
-                Debug.DrawLine(c.WorldPosition, ground, new Color(1f, 0.3f, 1f, 0.7f));
-                Debug.DrawRay(c.WorldPosition, Vector3.up * 150f, Color.yellow);
-                // Cross at center
-                float r = 60f;
-                Debug.DrawLine(c.WorldPosition + Vector3.left * r, c.WorldPosition + Vector3.right * r, Color.magenta);
-                Debug.DrawLine(c.WorldPosition + Vector3.forward * r, c.WorldPosition + Vector3.back * r, Color.magenta);
+                Debug.DrawLine(c.WorldPosition, ground, new Color(1f, 0.2f, 1f, 0.5f), 0f, false);
+            }
+
+            // ── Периодический лог (раз в 10 сек) ──
+            if (_logDebug && Time.frameCount % 600 == 0)
+            {
+                var sb = new System.Text.StringBuilder($"[StormCellDirector] ⛈ {_cells.Count} cells: ");
+                for (int i = 0; i < _cells.Count; i++)
+                    sb.Append($" [{i}]Y={_cells[i].WorldPosition.y:F0}");
+                Debug.Log(sb.ToString());
             }
 
             // Broadcast global storm intensity
@@ -220,25 +233,23 @@ namespace ProjectC.World.Clouds
             {
                 var c = _cells[i];
 
-                // Big semi-transparent sphere — always visible
-                Gizmos.color = new Color(1f, 0.2f, 0.8f, 0.15f);
-                Gizmos.DrawSphere(c.WorldPosition, 80f);
+                // ГИГАНТСКАЯ сфера (250м радиус)
+                Gizmos.color = new Color(1f, 0.1f, 0.7f, 0.12f);
+                Gizmos.DrawSphere(c.WorldPosition, 250f);
+                Gizmos.color = new Color(1f, 0.2f, 0.9f, 0.5f);
+                Gizmos.DrawWireSphere(c.WorldPosition, 250f);
 
-                // Wire sphere
-                Gizmos.color = new Color(1f, 0.3f, 0.9f, 0.6f);
-                Gizmos.DrawWireSphere(c.WorldPosition, 80f);
-
-                // Vertical line to ground level (Y=0)
-                Gizmos.color = new Color(1f, 0.5f, 0f, 0.5f);
+                // Оранжевый луч к земле
+                Gizmos.color = new Color(1f, 0.5f, 0f, 0.6f);
                 Gizmos.DrawLine(c.WorldPosition, new Vector3(c.WorldPosition.x, 0f, c.WorldPosition.z));
 
-                // Bright center dot
+                // Яркий центр
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawSphere(c.WorldPosition, 15f);
+                Gizmos.DrawSphere(c.WorldPosition, 40f);
 
-                // Label (intensity)
-                UnityEditor.Handles.Label(c.WorldPosition + Vector3.up * 90f,
-                    $"[{i}] I={c.Intensity:F1} T={c.NextLightningTime - c.TimeSinceLightning:F1}s");
+                // Подпись
+                UnityEditor.Handles.Label(c.WorldPosition + Vector3.up * 260f,
+                    $"CELL[{i}] Y={c.WorldPosition.y:F0} I={c.Intensity:F1} ⚡{c.NextLightningTime - c.TimeSinceLightning:F1}s");
             }
         }
 #endif

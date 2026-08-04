@@ -67,7 +67,9 @@ MonoBehaviour:
   HeightEdgeSoftness: 0.991
   NoiseTileSize: 1024
   CoverageScale: 0.0001
-  DepthFadeDistance: 10
+  DepthFadeDistance: 0
+  LayerNoiseMask: 0
+  DebugDensityScale: 0.05
   HalfResRender: 1
   TemporalReprojection: 1
   BlueNoiseDither: 1
@@ -158,7 +160,7 @@ MonoBehaviour:
   m_ShadowTransparentReceive: 1
   m_RenderingMode: 0
   m_DepthPrimingMode: 0
-  m_CopyDepthMode: 1
+  m_CopyDepthMode: 0
   m_DepthAttachmentFormat: 0
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0

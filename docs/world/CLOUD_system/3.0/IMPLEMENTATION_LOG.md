@@ -98,3 +98,45 @@
 4. 4500–7000: CovThresh=0.75, Dens=0.3 (дымка)
 
 **Перф:** +5–10% GPU. Displacement работает сквозь все слои.
+
+---
+
+## 🩹 Depth Fix — CopyDepthMode AfterOpaques — 2026-08-04
+
+### Проблема
+
+Облака рендерились **только за 3D-объектами** (на небе), без depth fade на границах геометрии.
+Software depth cull в шейдере не работал — `_CameraDepthTexture` не содержал актуальных данных.
+
+### Диагностика
+
+Стек depth-теста в VolumetricClouds:
+
+| Уровень | Механизм | Где |
+|---|---|---|
+| Hardware ZTest | `ZTest LEqual` на fullscreen triangle | Shader line 33 |
+| Software depth cull | `SampleSceneDepth` → `tMax = min(tMax, sceneLinear)` | Shader lines 310–316 |
+| Depth fade | `cloudThickness / DepthFadeDistance` пост-цикла | Shader lines 363–367 |
+
+Корень проблемы: `m_CopyDepthMode = AfterTransparents` в `ProjectC_URP_Renderer.asset`.
+Облачный pass исполняется на `RenderPassEvent.BeforeRenderingTransparents` — **до** копирования depth-текстуры. `ConfigureInput(ScriptableRenderPassInput.Depth)` теоретически должен форсировать копию, но с RenderGraph API на практике не срабатывает.
+
+**Цепочка отказа:**
+1. `_CameraDepthTexture` содержит значения по умолчанию (1.0 — near plane в reverse-Z)
+2. `SampleSceneDepth(uv)` → 1.0 для всех пикселей
+3. `sceneDepth < 0.999` → **FALSE** всегда — проверка «есть ли геометрия» не срабатывает
+4. `sceneLinear = 1e9`, `tMax` никогда не климпится — **software depth cull выключен**
+5. Единственная защита — hardware `ZTest LEqual`: fullscreen triangle depth=1.0, geometry depth 0.01–0.9 → `1.0 ≤ 0.9 = FALSE` → облака отбрасываются на объектах
+6. Depth fade не работает (нет данных о расстоянии до геометрии)
+
+**Результат:** облака видны только на небе, всегда за объектами, жёсткая граница без blend.
+
+### Исправление
+
+**Файл:** `Assets/_Project/Settings/ProjectC_URP_Renderer.asset`
+**Изменение:** `m_CopyDepthMode: 1` (AfterTransparents) → `m_CopyDepthMode: 0` (AfterOpaques)
+
+Это гарантирует, что `_CameraDepthTexture` заполняется после opaque-геометрии и **до** `BeforeRenderingTransparents`, где работает облачный pass. Теперь:
+- `SampleSceneDepth` возвращает корректную глубину геометрии
+- Software depth cull климпит `tMax` → облака не лезут сквозь объекты
+- Post-loop depth fade имеет данные для плавного перехода на границах

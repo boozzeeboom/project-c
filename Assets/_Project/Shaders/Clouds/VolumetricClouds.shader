@@ -31,6 +31,10 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         [HideInInspector] _StormColorLight ("Storm Light Color", Color) = (0.25, 0.22, 0.35, 1)
         [HideInInspector] _StormEdgeSoftness ("Storm Edge Softness", Range(0.01, 0.5)) = 0.12
         [HideInInspector] _StormVerticalPeak ("Storm Vertical Peak", Range(0.1, 0.9)) = 0.5
+        [HideInInspector] _StormNoiseScale ("Storm Noise Scale", Float) = 500
+        [HideInInspector] _StormNoiseStrength ("Storm Noise Strength", Range(0, 1)) = 0.4
+        [HideInInspector] _StormNoiseOctaves ("Storm Noise Octaves", Int) = 2
+        [HideInInspector] _StormNoiseSpeed ("Storm Noise Speed", Range(0, 0.5)) = 0.05
     }
 
     SubShader
@@ -107,6 +111,10 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         float4 _StormColorLight;
         float _StormEdgeSoftness;
         float _StormVerticalPeak;
+        float _StormNoiseScale;
+        float _StormNoiseStrength;
+        int _StormNoiseOctaves;
+        float _StormNoiseSpeed;
 
         float4 _CloudTargetSize;
         float4x4 _Cloud_ViewToWorld;
@@ -202,14 +210,37 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         }
 
         // ---------------------------------------------------------------------------
-        // StormDensity — storm cell density from CPU-driven cell positions.
-        // Soft radial falloff + vertical profile. Outputs blended dark storm color.
+        // StormShapeNoise — multi-octave 3D noise for organic storm boundaries.
+        // Reuses CloudNoise3D texture. Returns 0..1 value.
+        // ---------------------------------------------------------------------------
+        float StormShapeNoise(float3 pos, float scale)
+        {
+            float val = 0; float amp = 1.0; float norm = 0;
+            for (int o = 0; o < _StormNoiseOctaves; o++)
+            {
+                float freq = pow(2.0, (float)o);
+                float3 samplePos = pos / (scale / freq) + float3((float)(o) * 137.0, 0, (float)(o) * 73.0);
+                float3 uvw = frac(samplePos / _NoiseTileSize);
+                float4 n = SAMPLE_TEXTURE3D_LOD(_CloudNoise3D, sampler_CloudNoise3D, uvw, 0);
+                val += (n.r + n.g + n.b) / 3.0 * amp;
+                norm += amp;
+                amp *= 0.5;
+            }
+            return val / max(norm, 0.001);
+        }
+
+        // ---------------------------------------------------------------------------
+        // StormDensity — storm cell density with noise-modulated organic shape.
+        // Radial falloff warped by 3D noise → irregular clusters, not perfect cylinders.
         // ---------------------------------------------------------------------------
         float StormDensity(float3 worldPos, out float3 stormColor)
         {
             float totalDensity = 0;
             float3 blendedColor = 0;
             float colorWeight = 0;
+
+            // Wind-driven noise offset (shared across cells)
+            float3 noiseWind = _WindOffset.xyz * _StormNoiseSpeed;
 
             for (int i = 0; i < _StormCellCount; i++)
             {
@@ -222,21 +253,30 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                 // Height gate
                 if (worldPos.y < bottomY || worldPos.y > topY) continue;
 
-                // Horizontal distance falloff
+                // ── Noise-modulated effective radius ──
+                float noiseVal = StormShapeNoise(worldPos + noiseWind, _StormNoiseScale);
+                float radiusMod = 1.0 + (noiseVal - 0.5) * _StormNoiseStrength * 2.0;
+                float effectiveRadius = radius * radiusMod;
+
+                // ── Horizontal distance with noise-warped radius ──
                 float distXZ = length(worldPos.xz - cellPos.xz);
-                float t = 1.0 - distXZ / max(radius, 1.0);
+                float t = 1.0 - distXZ / max(effectiveRadius, 1.0);
                 if (t <= 0.0) continue;
 
                 // Smooth edge falloff
                 float hFalloff = smoothstep(0.0, _StormEdgeSoftness, t)
                                * (1.0 - smoothstep(1.0 - _StormEdgeSoftness, 1.0, t));
 
-                // Vertical profile — peak at _StormVerticalPeak
+                // ── Vertical profile with noise breakup ──
                 float hRange = topY - bottomY;
                 float h01 = (worldPos.y - bottomY) / max(hRange, 1.0);
                 float vProfile = 1.0 - abs(h01 - _StormVerticalPeak)
                                / max(_StormVerticalPeak, 1.0 - _StormVerticalPeak);
-                vProfile = smoothstep(0.0, 0.3, vProfile);
+
+                // Noise breaks up vertical profile — wisps and gaps
+                float vertNoise = StormShapeNoise(worldPos + noiseWind + float3(0, 999.0, 0), _StormNoiseScale * 0.5);
+                float vBreakup = lerp(0.3, 1.0, vertNoise);
+                vProfile = smoothstep(0.0, 0.3, vProfile) * vBreakup;
 
                 float cellDensity = hFalloff * vProfile * intensity * _StormDensityMult;
 

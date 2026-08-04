@@ -1,7 +1,7 @@
 // StormCellDirector.cs — Phase 2.4
 // Manages storm cells for lightning VFX. Drives StormLightningVfx via events.
+// Pushes cell data to VolumetricClouds shader for visual storm cloud rendering.
 // Temporary data source; will be replaced by WeatherCellManager in Phase 3.3.
-// Event signature Action<Vector3, float> stays the same for forward compatibility.
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,10 +9,6 @@ using ProjectC.Core;
 
 namespace ProjectC.World.Clouds
 {
-    /// <summary>
-    /// Источник штормовых ячеек. Двигает ячейки по ветру,
-    /// триггерит молнии по таймеру. Временный — в 3.3 заменится на WeatherCellManager.
-    /// </summary>
     public class StormCellDirector : MonoBehaviour
     {
         public static StormCellDirector Instance { get; private set; }
@@ -27,9 +23,7 @@ namespace ProjectC.World.Clouds
         [Range(2000f, 8000f)] public float CellTopY = 5000f;
 
         [Header("Lightning")]
-        [Tooltip("Минимальный интервал между молниями (сек).")]
         [Range(5f, 60f)] public float LightningIntervalMin = 10f;
-        [Tooltip("Максимальный интервал между молниями (сек).")]
         [Range(10f, 120f)] public float LightningIntervalMax = 30f;
 
         [Header("Wind")]
@@ -39,46 +33,40 @@ namespace ProjectC.World.Clouds
         [Header("Test")]
         [Tooltip("При старте создать тестовые ячейки вокруг игрока.")]
         public bool SpawnTestCells = true;
-        [Tooltip("Сколько тестовых ячеек создать.")]
         [Range(0, 5)] public int TestCellCount = 2;
-        [Tooltip("Дистанция тестовых ячеек от игрока.")]
         [Range(500f, 5000f)] public float TestSpawnDistance = 1500f;
-        [Tooltip("Задержка перед спавном тестовых ячеек (сек).")]
         [Range(1f, 60f)] public float TestSpawnDelay = 15f;
 
         [Header("Debug Visuals")]
-        [Tooltip("Создать GameObject-маркеры (столбы) на позициях ячеек.")]
         public bool ShowDebugMarkers = true;
-        [Tooltip("Рисовать столбы в Game View (Debug.DrawLine).")]
         public bool ShowDebugColumns = true;
-        [Tooltip("Рисовать Gizmos в Scene View.")]
         public bool ShowDebugGizmos = true;
-        [Tooltip("Логировать в консоль.")]
         [SerializeField] private bool _logDebug = true;
 
         [Header("Debug Markers")]
-        [Tooltip("Ширина маркера по XZ (м).")]
         [Range(50f, 5000f)] public float MarkerWidth = 500f;
-        [Tooltip("Высота маркера по Y (м). 0 = авто (CellTopY − CellBottomY).")]
         [Range(0f, 10000f)] public float MarkerHeight = 0f;
-        [Tooltip("Вариативность размера (±% от заданного).")]
         [Range(0f, 0.5f)] public float MarkerSizeVariation = 0.1f;
-        [Tooltip("Цвет маркера.")]
         public Color MarkerColor = new Color(1f, 0f, 1f, 0.8f);
 
         [Header("Storm Cloud Shader")]
         [Tooltip("Множитель плотности штормовых облаков в реймарче.")]
         [Range(0.1f, 10f)] public float StormDensityMultiplier = 1.5f;
-        [Tooltip("Цвет ядра шторма (плотная область).")]
         public Color StormColorDark = new Color(0.08f, 0.06f, 0.12f, 1f);
-        [Tooltip("Цвет края шторма (разреженная область).")]
         public Color StormColorLight = new Color(0.25f, 0.22f, 0.35f, 1f);
-        [Tooltip("Мягкость края шторма (0=резкий, 0.5=размытый).")]
         [Range(0.01f, 0.5f)] public float StormEdgeSoftness = 0.12f;
-        [Tooltip("Где пик плотности по вертикали (0=дно, 0.5=центр, 1=верх).")]
         [Range(0.1f, 0.9f)] public float StormVerticalPeak = 0.5f;
-        [Tooltip("Максимум ячеек передаваемых в шейдер.")]
         [Range(1, 8)] public int MaxStormCellsInShader = 8;
+
+        [Header("Storm Noise (Organic Shape)")]
+        [Tooltip("Масштаб шума (м). Меньше = мельче детали кластеров.")]
+        [Range(50f, 5000f)] public float StormNoiseScale = 500f;
+        [Tooltip("Сила деформации (0=ровный цилиндр, 1=макс. хаос).")]
+        [Range(0f, 1f)] public float StormNoiseStrength = 0.4f;
+        [Tooltip("Октавы шума (1=гладко, 3=детально).")]
+        [Range(1, 3)] public int StormNoiseOctaves = 2;
+        [Tooltip("Скорость эволюции шума от ветра.")]
+        [Range(0f, 0.5f)] public float StormNoiseSpeed = 0.05f;
 
         // Shader property IDs
         private static readonly int StormCellPosId      = Shader.PropertyToID("_StormCellPos");
@@ -89,17 +77,17 @@ namespace ProjectC.World.Clouds
         private static readonly int StormColorLightId   = Shader.PropertyToID("_StormColorLight");
         private static readonly int StormEdgeSoftnessId = Shader.PropertyToID("_StormEdgeSoftness");
         private static readonly int StormVerticalPeakId = Shader.PropertyToID("_StormVerticalPeak");
+        private static readonly int StormNoiseScaleId    = Shader.PropertyToID("_StormNoiseScale");
+        private static readonly int StormNoiseStrengthId = Shader.PropertyToID("_StormNoiseStrength");
+        private static readonly int StormNoiseOctavesId  = Shader.PropertyToID("_StormNoiseOctaves");
+        private static readonly int StormNoiseSpeedId    = Shader.PropertyToID("_StormNoiseSpeed");
 
-        // Pre-allocated caches for shader push
         private static readonly Vector4[] _stormPosCache    = new Vector4[8];
         private static readonly Vector4[] _stormParamsCache = new Vector4[8];
 
         private readonly List<GameObject> _debugMarkers = new();
 
-        /// <summary>Событие: молния в worldPos с интенсивностью [0..1].</summary>
         public event System.Action<Vector3, float> OnLightningTriggered;
-
-        // ── Внутренние данные ──
 
         private readonly List<StormCell> _cells = new();
 
@@ -128,7 +116,6 @@ namespace ProjectC.World.Clouds
 
         private System.Collections.IEnumerator SpawnTestCellsDelayed()
         {
-            // Ждём пока сцена загрузится и игрок заспавнится
             yield return new WaitForSeconds(TestSpawnDelay);
 
             Vector3 playerPos = GetPlayerPosition();
@@ -156,16 +143,13 @@ namespace ProjectC.World.Clouds
             {
                 var cell = _cells[i];
 
-                // Движение по ветру
                 cell.WorldPosition += windDir * windSpeed * WindSpeedMultiplier * dt;
                 cell.TimeSinceLightning += dt;
 
                 if (cell.TimeSinceLightning >= cell.NextLightningTime)
                 {
-                    // Триггер молнии
                     OnLightningTriggered?.Invoke(cell.WorldPosition, cell.Intensity);
 
-                    // Сброс таймера с новой случайной задержкой
                     float baseInterval = Random.Range(LightningIntervalMin, LightningIntervalMax);
                     cell.NextLightningTime = Mathf.Max(5f, baseInterval / Mathf.Max(cell.Intensity, 0.1f));
                     cell.TimeSinceLightning = 0f;
@@ -177,10 +161,8 @@ namespace ProjectC.World.Clouds
                 _cells[i] = cell;
             }
 
-            // ── GameObject-маркеры ──
             SyncDebugMarkers();
 
-            // ── Game View debug: ЦИЛИНДРЫ (кольца + вертикали) ──
             if (ShowDebugColumns)
             {
                 var playerPos = GetPlayerPosition();
@@ -192,11 +174,9 @@ namespace ProjectC.World.Clouds
                     Vector3 bot = new Vector3(center.x, CellBottomY, center.z);
                     Vector3 top = new Vector3(center.x, CellTopY, center.z);
 
-                    // Кольца каждые 500м
                     for (float y = CellBottomY; y <= CellTopY; y += 500f)
                         DrawDebugRing(new Vector3(center.x, y, center.z), r, Color.magenta);
 
-                    // Вертикальные рёбра цилиндра (8 шт)
                     for (int seg = 0; seg < 8; seg++)
                     {
                         float a = seg * Mathf.PI * 2f / 8f;
@@ -205,28 +185,20 @@ namespace ProjectC.World.Clouds
                         Debug.DrawLine(bot + new Vector3(x, 0, z), top + new Vector3(x, 0, z), Color.magenta, 0f, false);
                     }
 
-                    // Крест в центре
                     Vector3 mid = new Vector3(center.x, (CellBottomY + CellTopY) * 0.5f, center.z);
                     Debug.DrawLine(mid + Vector3.left * 300f, mid + Vector3.right * 300f, Color.yellow, 0f, false);
                     Debug.DrawLine(mid + Vector3.forward * 300f, mid + Vector3.back * 300f, Color.yellow, 0f, false);
-
-                    // Оранжевый луч от игрока
                     Debug.DrawLine(playerPos, mid, new Color(1f, 0.5f, 0f, 0.8f), 0f, false);
                 }
             }
 
-            // Push storm cell data to VolumetricClouds shader
             PushStormCellsToShader();
-
-            // Broadcast global storm intensity
             GlobalStormEvents.BroadcastStormIntensity(GetAverageIntensity());
         }
 
         private void OnDestroy()
         {
-            if (Instance == this)
-                Instance = null;
-
+            if (Instance == this) Instance = null;
             ClearDebugMarkers();
         }
 
@@ -236,21 +208,15 @@ namespace ProjectC.World.Clouds
 
         private void SyncDebugMarkers()
         {
-            if (!ShowDebugMarkers)
-            {
-                ClearDebugMarkers();
-                return;
-            }
+            if (!ShowDebugMarkers) { ClearDebugMarkers(); return; }
 
             float baseW = MarkerWidth;
             float baseH = MarkerHeight > 0f ? MarkerHeight : (CellTopY - CellBottomY);
             float midY = (CellBottomY + CellTopY) * 0.5f;
 
-            // Create/remove to match cell count
             while (_debugMarkers.Count < _cells.Count)
             {
                 float variation = 1f + Random.Range(-MarkerSizeVariation, MarkerSizeVariation);
-
                 var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = $"StormCellMarker_{_debugMarkers.Count}";
                 cube.transform.localScale = new Vector3(baseW * variation, baseH * variation, baseW * variation);
@@ -268,7 +234,6 @@ namespace ProjectC.World.Clouds
                 _debugMarkers.RemoveAt(_debugMarkers.Count - 1);
             }
 
-            // Sync positions + scale (live-updates from inspector)
             for (int i = 0; i < _cells.Count; i++)
             {
                 Vector3 pos = _cells[i].WorldPosition;
@@ -280,8 +245,7 @@ namespace ProjectC.World.Clouds
 
         private void ClearDebugMarkers()
         {
-            foreach (var m in _debugMarkers)
-                if (m != null) Destroy(m);
+            foreach (var m in _debugMarkers) if (m != null) Destroy(m);
             _debugMarkers.Clear();
         }
 
@@ -289,9 +253,6 @@ namespace ProjectC.World.Clouds
         // Public API
         // ═══════════════════════════════════════════
 
-        /// <summary>
-        /// Добавить ячейку шторма (будет использоваться WeatherCellManager в 3.3).
-        /// </summary>
         public void AddCell(Vector3 worldPos, float radius, float intensity)
         {
             if (_cells.Count >= MaxCells)
@@ -315,7 +276,6 @@ namespace ProjectC.World.Clouds
                 Debug.Log($"[StormCellDirector] Cell added at {worldPos} r={radius} intensity={intensity:F2}. Total={_cells.Count}");
         }
 
-        /// <summary>Удалить ячейку по индексу.</summary>
         public void RemoveCell(int index)
         {
             if (index < 0 || index >= _cells.Count) return;
@@ -335,16 +295,13 @@ namespace ProjectC.World.Clouds
             }
         }
 
-        /// <summary>Read-only доступ к ячейкам (для дебага / 3.3).</summary>
         public IReadOnlyList<StormCell> GetCells() => _cells;
 
-        /// <summary>Средняя интенсивность всех ячеек [0..1].</summary>
         public float GetAverageIntensity()
         {
             if (_cells.Count == 0) return 0f;
             float sum = 0f;
-            for (int i = 0; i < _cells.Count; i++)
-                sum += _cells[i].Intensity;
+            for (int i = 0; i < _cells.Count; i++) sum += _cells[i].Intensity;
             return sum / _cells.Count;
         }
 
@@ -358,10 +315,6 @@ namespace ProjectC.World.Clouds
             return player != null ? player.transform.position : Vector3.zero;
         }
 
-        /// <summary>
-        /// Упаковывает данные ячеек в Vector4-массивы и пушит в глобальные uniform'ы шейдера.
-        /// Вызывается каждый кадр из Update().
-        /// </summary>
         private void PushStormCellsToShader()
         {
             int count = Mathf.Min(_cells.Count, MaxStormCellsInShader);
@@ -390,6 +343,10 @@ namespace ProjectC.World.Clouds
             Shader.SetGlobalVector(StormColorLightId, StormColorLight);
             Shader.SetGlobalFloat(StormEdgeSoftnessId, StormEdgeSoftness);
             Shader.SetGlobalFloat(StormVerticalPeakId, StormVerticalPeak);
+            Shader.SetGlobalFloat(StormNoiseScaleId, StormNoiseScale);
+            Shader.SetGlobalFloat(StormNoiseStrengthId, StormNoiseStrength);
+            Shader.SetGlobalInt(StormNoiseOctavesId, StormNoiseOctaves);
+            Shader.SetGlobalFloat(StormNoiseSpeedId, StormNoiseSpeed);
         }
 
         // ═══════════════════════════════════════════
@@ -398,7 +355,6 @@ namespace ProjectC.World.Clouds
 
         private void SpawnTestCellsAroundPosition(Vector3 center)
         {
-
             for (int i = 0; i < TestCellCount; i++)
             {
                 float angle = (360f / TestCellCount) * i + Random.Range(-30f, 30f);
@@ -431,17 +387,14 @@ namespace ProjectC.World.Clouds
                 Vector3 top = new Vector3(center.x, CellTopY, center.z);
                 Vector3 mid = new Vector3(center.x, (CellBottomY + CellTopY) * 0.5f, center.z);
 
-                // Цепочка сфер по высоте
                 Gizmos.color = new Color(1f, 0.15f, 0.7f, 0.06f);
                 for (float y = CellBottomY + 200f; y < CellTopY; y += 400f)
                     Gizmos.DrawSphere(new Vector3(center.x, y, center.z), r * 0.4f);
 
-                // Кольца
                 Gizmos.color = new Color(1f, 0.3f, 0.9f, 0.3f);
                 for (float y = CellBottomY; y <= CellTopY; y += 500f)
                     DrawGizmoRing(new Vector3(center.x, y, center.z), r);
 
-                // Вертикали
                 for (int seg = 0; seg < 4; seg++)
                 {
                     float a = seg * Mathf.PI * 2f / 4f;
@@ -449,7 +402,6 @@ namespace ProjectC.World.Clouds
                     Gizmos.DrawLine(bot + new Vector3(x, 0, z), top + new Vector3(x, 0, z));
                 }
 
-                // Крест + подпись
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawLine(mid + Vector3.left * 200f, mid + Vector3.right * 200f);
                 Gizmos.DrawLine(mid + Vector3.forward * 200f, mid + Vector3.back * 200f);
@@ -471,10 +423,6 @@ namespace ProjectC.World.Clouds
             }
         }
 #endif
-
-        // ═══════════════════════════════════════════
-        // Data
-        // ═══════════════════════════════════════════
 
         [System.Serializable]
         public struct StormCell

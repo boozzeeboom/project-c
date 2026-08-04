@@ -1,6 +1,6 @@
 # GDD-14: Visual & Art Pipeline — Project C: The Clouds
 
-**Версия:** 1.1 | **Дата:** 14 июля 2026 г. | **Статус:** ✅ Документировано
+**Версия:** 1.2 | **Дата:** 4 августа 2026 г. | **Статус:** ✅ Документировано + Cloud Ocean 3.0 (VolumetricClouds) + Edge Detection
 **Автор:** Малков Леонид Андреевич
 
 ---
@@ -107,6 +107,8 @@
 | **VeilShader.shader** | `Assets/_Project/Shaders/` | ✅ Завеса-шейдер |
 | **VeilRaymarchMesh.shader** | `Assets/_Project/Shaders/` | ✅ Меш-шейдер Завесы |
 | **TargetOutline.shader** | `Assets/_Project/Shaders/` | ✅ Outline для таргетинга |
+| **VolumetricClouds.shader** | `Assets/_Project/Shaders/` | ✅ Cloud Ocean 3.0 — volumetric raymarch (4 слоя, light march, Ghibli-рампы) |
+| **EdgeDetection.shader** | `Assets/_Project/Shaders/` | ✅ Edge Detection (T-VFX01) — Borderlands-style пост-процесс: distance falloff, adaptive color, pencil stroke |
 | **DistantCloudDebug.shader** | `Assets/_Project/Shaders/` | ✅ Дебаг облаков |
 
 ### [🔴 Запланировано] Будущие шейдеры

@@ -1,8 +1,12 @@
 # 📋 Game Design Documents (GDD) — Project C: The Clouds
 
-**Последнее обновление:** 21 июля 2026 г. | **Версия:** `v1.0`
+**Последнее обновление:** 4 августа 2026 г. | **Версия:** `v1.1`
 
-> **Что нового (21 июля 2026):**
+> **Что нового (4 августа 2026):**
+> - **Актуализация под v0.0.85** — Cloud Ocean 3.0 (объёмные облака, штормовые ячейки), Editor Tooling v2 (Unified Quest Graph v5, DialogTreeEditor v2, QuestDefinitionEditor), Knowledge System v2/v3, NPC Activity Anchors, Edge Detection, фиксы (ShipWindZone, T-KEY-FIX)
+> - **Изменены:** GDD_02, GDD_21, GDD_20, GDD_13, GDD_14, GDD_25, GDD_23, GDD_10
+>
+> **Предыдущее обновление (21 июля 2026):**
 > - **Актуализация всех GDD под код** — все 19 документов переписаны в соответствии с фактической реализацией
 > - **Автор:** Малков Леонид Андреевич (замена Qwen Code / Game Design AI во всех документах)
 > - **GDD_25_Trade_Routes.md** — добавлен в индекс (ранее отсутствовал)
@@ -31,20 +35,20 @@
 |---|------|----------|--------|
 | 00 | [GDD_00_Overview.md](GDD_00_Overview.md) | Обзор игры: концепция, пиллары, целевая аудитория, USP | ✅ Актуально |
 | 01 | [GDD_01_Core_Gameplay.md](GDD_01_Core_Gameplay.md) | Core Loop, геймплей, управление, режимы, физика | ✅ Актуально |
-| 02 | [GDD_02_World_Environment.md](GDD_02_World_Environment.md) | Мир: города, пики, фермы, Завеса, погода, цикл дня | ✅ Актуально |
+| 02 | [GDD_02_World_Environment.md](GDD_02_World_Environment.md) | Мир: города, пики, фермы, Завеса, погода, цикл дня, Cloud Ocean 3.0 | ✅ Актуально (v0.0.85) |
 
 ## 🔧 Systems — Технические системы
 
 | # | Файл | Описание | Статус |
 |---|------|----------|--------|
-| 10 | [GDD_10_Ship_System.md](GDD_10_Ship_System.md) | Корабли: классы, физика, управление, AltitudeCorridor, модули | ✅ Актуально |
+| 10 | [GDD_10_Ship_System.md](GDD_10_Ship_System.md) | Корабли: классы, физика, управление, AltitudeCorridor, модули | ✅ Актуально (ShipWindZone, T-KEY-FIX) |
 | 11 | [GDD_11_Inventory_Items.md](GDD_11_Inventory_Items.md) | Инвентарь v2: ItemRegistry, NetworkList, типы предметов | ✅ Актуально |
 | 12 | [GDD_12_Network_Multiplayer.md](GDD_12_Network_Multiplayer.md) | Сеть: NGO 2.x, Host/Client, scene-placed spawn | ✅ Актуально |
 | 12.1 | [GDD_12_1_Scene_World_Streaming.md](GDD_12_1_Scene_World_Streaming.md) | Мир: 24 сцены, 4×6 grid, boundary-based loading | ⚠️ Код готов, не deployed |
-| 13 | [GDD_13_UI_UX_System.md](GDD_13_UI_UX_System.md) | UI/UX: HUD, CharacterWindow, DialogWindow, EscMenu, UI Toolkit | ✅ Актуально |
-| 14 | [GDD_14_Visual_Art_Pipeline.md](GDD_14_Visual_Art_Pipeline.md) | Визуал: URP 17.0.3, шейдеры, постобработка, Day/Night Volume | ✅ Актуально |
+| 13 | [GDD_13_UI_UX_System.md](GDD_13_UI_UX_System.md) | UI/UX: HUD, CharacterWindow (9 табов), DialogWindow, EscMenu, UI Toolkit | ✅ Актуально (таб «Знания», SocialSkillTreeWindow) |
+| 14 | [GDD_14_Visual_Art_Pipeline.md](GDD_14_Visual_Art_Pipeline.md) | Визуал: URP 17.0.3, шейдеры, постобработка, Day/Night Volume | ✅ Актуально (VolumetricClouds, EdgeDetection) |
 | 15 | [GDD_15_Audio_System.md](GDD_15_Audio_System.md) | Аудио: SFX, музыка, эмбиент, позиционный звук | 🔴 Запланировано |
-| 25 | [GDD_25_Combat_Skills.md](GDD_25_Combat_Skills.md) | Бой: ERPR damage, AOE, Ranged/Throwables, TargetLock, SkillTree | ✅ Реализовано |
+| 25 | [GDD_25_Combat_Skills.md](GDD_25_Combat_Skills.md) | Бой: ERPR damage, AOE, Ranged/Throwables, TargetLock, SkillTree | ✅ Реализовано (+ SocialSkillTreeWindow) |
 | 25.1 | [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) | 🆕 Торговля: маршруты, контракты, контрабанда, логистика | 🟡 Частично |
 | 26 | [GDD_26_Character_Customisation.md](GDD_26_Character_Customisation.md) | Кастомизация: пол/пресет/цвета/волосы + Equipment Visual | ✅ Реализовано |
 
@@ -52,10 +56,10 @@
 
 | # | Файл | Описание | Статус |
 |---|------|----------|--------|
-| 20 | [GDD_20_Progression_RPG.md](GDD_20_Progression_RPG.md) | Прогрессия: уровни, навыки, SkillTree, характеристики | ✅ Актуально |
-| 21 | [GDD_21_Quest_Mission_System.md](GDD_21_Quest_Mission_System.md) | Квесты: NPC диалоги, цепочки, триггеры, награды | ✅ Реализовано (M1–M19) |
+| 20 | [GDD_20_Progression_RPG.md](GDD_20_Progression_RPG.md) | Прогрессия: уровни, навыки, SkillTree, характеристики, Knowledge v2/v3 | ✅ Актуально (Knowledge System v3) |
+| 21 | [GDD_21_Quest_Mission_System.md](GDD_21_Quest_Mission_System.md) | Квесты: NPC диалоги, цепочки, триггеры, награды | ✅ Реализовано (M1–M19 + Editor Tooling v2) |
 | 22 | [GDD_22_Economy_Trading.md](GDD_22_Economy_Trading.md) | Экономика: Trade v2, валюта, цены, контракты | ✅ Актуально |
-| 23 | [GDD_23_Faction_Reputation.md](GDD_23_Faction_Reputation.md) | Фракции: гильдии, репутация, ранги, отношения | 🟡 Частично (Stage 1) |
+| 23 | [GDD_23_Faction_Reputation.md](GDD_23_Faction_Reputation.md) | Фракции: гильдии, репутация, ранги, отношения | 🟡 Частично (Stage 1 + Activity Anchors) |
 | 24 | [GDD_24_Narrative_World_Lore.md](GDD_24_Narrative_World_Lore.md) | Нарратив: лор, история, персонажи, сюжет | 🟡 Частично (NPC диалоги) |
 
 ### 🆕 v0.0.20 — Ресурсная система (Mining)

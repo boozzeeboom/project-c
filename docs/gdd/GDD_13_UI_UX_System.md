@@ -1,6 +1,6 @@
 # GDD-13: UI/UX System — Project C: The Clouds
 
-**Версия:** 3.0 | **Дата:** 14 июля 2026 г. | **Статус:** 🟢 Спринты 1-3 завершены + CharacterWindow v2 + DialogWindow + QuestTracker + QuestToast + CustomisationWindow + EscMenuWindow + SkillTreeWindow
+**Версия:** 3.1 | **Дата:** 4 августа 2026 г. | **Статус:** 🟢 Спринты 1-3 завершены + CharacterWindow v2 (9 табов) + DialogWindow + QuestTracker + QuestToast + CustomisationWindow + EscMenuWindow + SkillTreeWindow + SocialSkillTreeWindow
 **Автор:** Малков Леонид Андреевич
 
 ---
@@ -208,7 +208,7 @@ Canvas (Screen Space - Overlay)
 
 P-окно, единый "личный кабинет" игрока. Открывается по клавише P. Реализован на UI Toolkit (UXML+USS) по паттерну с 4 FIX'ами.
 
-### Табы (всего 7+)
+### Табы (всего 9+)
 
 | # | Таб | Серверная сущность | Клиентская проекция | Статус |
 |---|-----|--------------------|----------------------|--------|
@@ -220,6 +220,7 @@ P-окно, единый "личный кабинет" игрока. Откры�
 | 6 | **Квесты (sub-tab)** | QuestServer | QuestClientState (4 под-секции) | 🟢 Реализовано |
 | 7 | **Внешность** | CustomisationClientState | CustomisationClientState → CustomisationWindow | 🟢 Реализовано |
 | 8 | **Навыки** | NetworkSkillTree | SkillTreeWindow | 🟢 Реализовано |
+| 9 | **Знания** | KnowledgeWorld / KnowledgeServer | KnowledgeClientState (открытые знания/навыки/рецепты) | 🟢 Реализовано (T-KNOWLEDGE-V2 Phase B) |
 
 ### Реализация
 

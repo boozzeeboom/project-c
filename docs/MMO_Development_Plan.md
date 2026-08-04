@@ -1,8 +1,20 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 28 июля 2026 г. | **Текущая версия:** `v0.0.70 — SpringArmCamera + Performance + Wind Refactor + TimeManager`
+**Последнее обновление:** 4 августа 2026 г. | **Текущая версия:** `v0.0.85`
 
-> **Что нового (22–28 июля 2026):** **71 коммит, 11 направлений.** Версия v0.0.70. Подробная ретроспектива: `docs/dev/RETROSPECTIVE_0.0.70.md`.
+> **Что нового (28 июля – 4 августа 2026):** **196 коммитов, 2 крупных направления + поддержка.** Версия v0.0.85. Подробная ретроспектива: `docs/dev/RETROSPECTIVE_2026-08-04.md`.
+>
+> **☁️ Cloud Ocean 3.0 (T-CLD01, T-CLOUD02..42):** ~75 коммитов. Объёмная система облаков — 🟢 продакшн-готово. Volumetric raymarch (4 слоя 800–7000м), Ghibli-рампы день/закат, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal. Интерактивность: LocalDensityBuffer (96³), корабельный след (displacement + кильватерный конус), VFX contrail, штормовые ячейки (procedural cellular-форма «цветная капуста», иммунны к displacement, runtime save/load, anti-banding). Источник правды: `docs/world/CLOUD_system/3.0/STATUS.md`.
+>
+> **🧩 Unified Quest Graph v5 (T-QEDIT v1–v5.22, T-U01–U10):** ~41 коммит. Единый нодовый редактор NPC+Dialog+Quest в одном окне GraphView (тонкий слой над существующими SO, Undo/Redo, resizable-ноды). DialogTreeEditor v2 (T-DLG01) — редактируемые рёбра, drag-and-drop. QuestDefinitionEditor (T-QUEDIT), drag-and-drop наград/целей (T-QREWARD), NpcDefinition editor (T-NPC24).
+>
+> **🧠 Knowledge System v2/v3 (T-KNOWLEDGE-V2, T-KNOW-V3):** ~18 коммитов. Знания/скиллы/рецепты: открытие через KnowledgeRevealTrigger, потеря при смерти, гейты крафта, строковый recipeId, KnowledgeToast, кастомные редакторы SkillNodeConfig/QuestDefinition, SocialSkillTreeWindow.
+>
+> **🚶 NPC Activity Anchors (T-NPC-S23):** Transform-якоря Work/Sit/Sleep/Socialize, стейт-машина AnchorState (NeedMove→Moving→Active), random выбор точек.
+>
+> **🔧 Фиксы:** краш билда (InvestigateAnimator → `#if UNITY_EDITOR`), WindZone → ShipWindZone (конфликт с Unity), авто-снап камеры (T-CAM15), persistentShipId (T-KEY-FIX), Edge Detection пост-процесс (T-VFX01), mesh collider combiner.
+>
+> **Предыдущее обновление (22–28 июля 2026):** **71 коммит, 11 направлений.** Версия v0.0.70. Подробная ретроспектива: `docs/dev/RETROSPECTIVE_0.0.70.md`.
 >
 > **🎥 SpringArmCamera (T-CAM01..15):** Полный цикл — 17 коммитов. Collision avoidance (SphereCast), Camera Lag + Anti-Pop + Adaptive Distance, Occlusion Fade (dither shader), FOV Dynamics + Auto-Center, Over-the-shoulder offset, Mouse dead-zone + эксп. decay, Zoom колёсиком, Near-clip защита. Чистка legacy ThirdPersonCamera.cs.
 >
@@ -132,7 +144,8 @@
 ### 1.1 Мир и генерация ✅
 - ✅ Процедурная генерация горных пиков (шум Перлина)
 - ✅ Мелкие острова между пиками
-- ✅ Система облаков: 3 слоя, 890+ облаков, движение, анимация формы
+- ✅ Система облаков: 3 слоя, 890+ облаков, движение, анимация формы (legacy CloudGhibli)
+- ✅ ⭐ **Cloud Ocean 3.0 (v0.0.85)** — volumetric raymarch: `VolumetricClouds.shader` + `VolumetricCloudsRenderFeature`, 4 слоя 800–7000м, Ghibli-рампы, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal, displacement (корабельный след), штормовые ячейки, VFX contrail. Статус 🟢: `docs/world/CLOUD_system/3.0/STATUS.md`
 - ✅ Интеграция с WorldGenerator
 - ✅ **Система штормов (Storm Cloud System):**
   - ✅ StormCloudGenerator — пул штормов (max 5), спавн по паттерну
@@ -142,10 +155,10 @@
   - ✅ RuntimeMeshSampler — runtime sampling меша для ParentMeshPath
   - ⏳ **Parent mesh pattern** — генерация сфер по поверхности меша (отложено)
   - ⏳ **Advanced physics** — collision между сферами (отложено)
-  - ⏳ **Lightning VFX** — ParticleSystem для молний (отложено)
+  - ✅ **Lightning VFX (v0.0.85)** — `LightningBolt.vfx` (VFX Graph) + `StormLightningVfx` (T-CLOUD17..19); прод-интеграция молний в грозовые ячейки → v3.5
   - ⏳ **Runtime pattern loading** — Addressables для CloudLayerConfig (отложено)
 
-### 1.2 Камера ✅ v0.0.70
+### 1.2 Камера ✅ v0.0.85
 - ✅ WorldCamera — свободный полёт, телепортация к пикам (N/B/R/H)
 - ✅ **SpringArmCamera** — полный цикл (T-CAM01..15, 17 коммитов, v0.0.70):
   - ✅ Collision avoidance (SphereCast)
@@ -156,6 +169,7 @@
   - ✅ Mouse dead-zone + экспоненциальный decay
   - ✅ Zoom колёсиком (SettingsManager + InputBindingsConfig)
   - ✅ Near-clip защита
+  - ✅ Авто-снап при телепортации/загрузке сохранения (T-CAM15, 2026-07-31)
   - ✅ Cleanup legacy ThirdPersonCamera.cs
 
 ### 1.3 Контроллер персонажа (пеший режим) ✅
@@ -164,7 +178,7 @@
 - ✅ Space — прыжок
 - ✅ Left Shift — бег
 - ✅ CharacterController + коллизии
-- ✅ **Ветер для персонажа (✅ 2026-07-01)** — `WindManager` + `WindZone` применяются к персонажу через `NetworkPlayer.ProcessMovement`. Правила по состоянию: на палубе/на земле/в прыжке — ветер с разными коэффициентами. Профили: Constant, Gust, Shear.
+- ✅ **Ветер для персонажа (✅ 2026-07-01)** — `WindManager` + `ShipWindZone` (переименован из `WindZone`, T-FIX01 2026-07-29 — конфликт со встроенным Unity WindZone) применяются к персонажу через `NetworkPlayer.ProcessMovement`. Правила по состоянию: на палубе/на земле/в прыжке — ветер с разными коэффициентами. Профили: Constant, Gust, Shear.
 
 ### 1.4 Контроллер корабля ✅ ЗАВЕРШЕНО (Сессии 1-5_4: 12 апреля 2026)
 - ✅ Smooth movement — Mathf.SmoothDamp для frame-rate независимого сглаживания
@@ -235,8 +249,10 @@
   - ✅ Таб "Репутация" — реализован в NPC+Quests v2 (см. секцию 1.7)
   - ✅ Таб "Контракты" — реализован в NPC+Quests v2 (T-Q11..T-Q20+, см. `docs/Character-menu/sub_contracts-tab/`)
   - ✅ Таб "Корабль" — MVP-заглушка (хард-стат), план в `docs/Character-menu/00_OVERVIEW.md` §3
+  - ✅ Таб "Знания" (T-KNOWLEDGE-V2 Phase B, 2026-08-01) — открытые знания/навыки/рецепты игрока
   - ✅ Visual fix 2026-06-05: characterWindowUss привязан к правильному USS-ассету (был UXML-bug); все class-стили с `!important` (UnityDefaultRuntimeTheme fix)
 - ✅ ⭐ **SkillTreeWindow** (UI Toolkit) — интерактивный граф навыков: zoom/pan, learned/available/locked узлы, badge-счётчики, tooltip при наведении. Паттерн — CharacterWindow (Clear+CloneTree+Resources.Load fallback). 5 FIX'ов (см. `docs/Character/Skills/UI_TOOLKIT_GUIDE.md`).
+- ✅ ⭐ **SocialSkillTreeWindow** (T-SOC-01, 2026-08-01) — граф социальных навыков, реюз UXML/USS боевого окна (вёрстка идентична)
 - ✅ ⭐ **Input System Phase 1-2.5** — `InputBindingsConfig` SO (31 биндинг), EscMenu с UI Toolkit окном, полноценный rebinding (Listen → Assign → Save), сброс на defaults, сериализация в PlayerPrefs.
 - ✅ ⭐ UIManager — централизованный менеджер UI (приоритеты, z-ordering, input management)
 - ✅ ⭐ UIFactory — фабрика UI компонентов (8 методов, устранено 120 строк дублирования)
@@ -367,6 +383,8 @@
 
 **Документация:** `docs/MetaRequirement/00_OVERVIEW.md` (517 строк) + `10_IMPLEMENTATION_GUIDE.md` (22 KB) + `20_INSPECTOR_REFERENCE.md` + `30_RUNTIME_FLOW.md` + `40_TESTING_GUIDE.md` + `50_KNOWN_ISSUES.md` + `99_CHANGELOG.md` + `RECIPES.md` (10 рецептов).
 **Преемник:** R2-SHIP-KEY-003 — уникальные экземпляры ключей (2026-06-19, v18-v20 MVP завершён). Каждый корабль имеет уникальный KeyRodInstance (server-side registry `KeyRodInstanceWorld`). Подбор/дроп с передачей instanceId. Persistence через `JsonKeyRodInstanceRepository`. Drop↔pickup реактивирует Lost instance, не создаёт дубль. UI: вкладка "КОРАБЛЬ" в CharacterWindow показывает только корабли игрока (`MyShipsTab`). TAB-колесо: сектор 1 = "ВЛАДЕНИЕ" (Equipment + Key). См. `docs/Ships/Key-subsystem/99_CHANGELOG.md` (v1–v20) + `28_KEY_ARCHITECTURE_REVIEW.md` (глубокий обзор).
+
+**Фикс T-KEY-FIX (2026-08-03):** `persistentShipId` — потеря доступа к кораблю между сессиями устранена (пост-мортем: `docs/Ships/Key-subsystem/00_OVERVIEW.md`).
 
 **Migration guide:** `docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md` (337 строк).
 **Предшественник:** `docs/Ships/Key-subsystem/00_OVERVIEW.md` (Ship Key MVP, R2-SHIP-KEY-001).
@@ -499,7 +517,7 @@
 
 **Документация:** `docs/Markets/Resources_exchanger/01_ANALYSIS.md` + `02_IMPLEMENTATION.md` + `03_FIXES_HISTORY.md`.
 
-### 1.13 NPC + Quests v2 (полная подсистема) ✅ ЗАВЕРШЕНО (M1–M19, 2026-06-09..13) + Аудиты + Dialog Fixes (июль 2026)
+### 1.13 NPC + Quests v2 (полная подсистема) ✅ ЗАВЕРШЕНО (M1–M19, 2026-06-09..13) + Аудиты + Dialog Fixes + Editor Tooling v2 (июль–август 2026)
 **Цель:** Полноценная система квестов и диалогов с NPC, от создания данных до выполнения в игре и редакторского инструментария.
 
 | Компонент | Описание | Статус |
@@ -517,6 +535,9 @@
 | QuestDatabaseWindow | Editor: Tools→Quests→Explorer | ✅ M16 |
 | QuestNodeGraph | Readonly + Editable (M18) | ✅ M17-M18 |
 | CSV Import/Export | 3 входа (quests + npcs + dialogs), 1 кнопка | ✅ M19 |
+| **Unified Quest Graph v5** (T-QEDIT, T-U01–U10) | Единый нодовый редактор NPC+Dialog+Quest в одном окне GraphView, тонкий слой над SO, Undo/Redo, resizable-ноды | ✅ 2026-07-31 |
+| **DialogTreeEditor v2** (T-DLG01) | Карточки нод, drag-and-drop условий/speaker, редактируемые рёбра, PropertyDrawer fix (enumValueIndex→intValue) | ✅ 2026-07-30 |
+| **QuestDefinitionEditor** (T-QUEDIT) | Кастомный редактор для не-технарей, drag-and-drop NPC/квесты/сцены/диалоги | ✅ 2026-07-30 |
 
 **Stats:** ~8400 строк кода, 106 NPC, 802 квеста, 2 DialogTree, 6 CSV файлов.
 
@@ -818,6 +839,7 @@
 
 2. **Облака (Ghibli-стиль):** ✅
    - ✅ CloudGhibli.shader — кастомный URP Unlit шейдер
+   - ✅ ⭐ **Cloud Ocean 3.0 (v0.0.85)** — volumetric raymarch + RenderFeature, 4 слоя, штормовые ячейки, displacement (см. §1.1)
    - ✅ Noise + rim glow + vertex displacement (морфинг форм)
    - ✅ ProceduralNoiseGenerator — FBM noise текстуры (512×512)
    - ✅ Авто-интеграция в CloudLayer.cs
@@ -861,6 +883,7 @@
    - ✅ Moon mesh + phase material (MoonController)
    - ✅ ConstellationController (215 stars, 24 constellations, sky dome radius 900000)
    - ✅ Runtime profile instantiation (prevents asset reset on play/stop)
+   - ✅ **Edge Detection** (T-VFX01, 2026-07-29) — Borderlands-style пост-процесс: distance falloff, adaptive color, pencil stroke (`EdgeDetection.shader` + `EdgeDetectionRenderFeature`)
    - ⏳ Moon orbit angle fine-tuning (low priority — mesh visible, phases work)
 
 **Результат:** Визуально различимый прототип — корабли, облака, пики, персонаж с анимациями.
@@ -1127,8 +1150,10 @@
 | Удалены тулзы миграции | CreateFactionAssets + FactionMigrationTool (чистка техдолга) | ✅ |
 | Таб «🏛 Factions» в NpcWorldInspector | Сканирование, редактирование и создание FactionDefinition SO | T-FACT01 ✅ |
 
-**🧠 Knowledge System (T-KNOW)**
+**🧠 Knowledge System (T-KNOW, T-KNOWLEDGE-V2, T-KNOW-V3)**
 - Server-authoritative faction/NPC knowledge with UI filtering — ✅
+- **v2 Phase A (2026-08-01):** skills/recipes knowledge, death loss, CraftingWorld/SkillsWorld гейты, NetworkPlayer RPC + CraftingServer broadcast, KnowledgeLossConfig.asset — ✅
+- **v3 (2026-08-01..02):** строковый recipeId, KnowledgeManager фасад, KnowledgeRevealTrigger (server-authoritative), knowledge-фильтры SkillTreeWindow, KnowledgeToast, кастомный SkillNodeConfig editor, SocialSkillTreeWindow — ✅
 
 **👤 Civilian NPC [Mira] (T-CNPC-01)**
 
@@ -1138,6 +1163,14 @@
 | Mira — CharacterController + HumanM_Model + Animator | Как у атакующих NPC | ✅ |
 | Руководство по настройке NPC | Чеклист, пошаговая инструкция, data flow | ✅ |
 | Фикс атрибуции `attackerClientId` | Точное списание репутации + снапшоты клиенту | ✅ |
+
+**🚶 NPC Activity Anchors (T-NPC-S23, 2026-07-29)**
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| Activity Anchors v2 | Transform-якоря Work/Sit/Sleep/Socialize, циклический обход | ✅ |
+| AnchorState FSM | NeedMove→Moving→Active + random выбор следующей точки | ✅ |
+| Fixes | remainingDistance вместо Vector3.Distance, таймеры активностей, nested FoldoutHeaderGroup fix | ✅ |
 
 **🎮 Ship Presets & Visual Fixes (T-SHIP04-08, T-ENG02, T-SHIP-SHAKE)**
 
@@ -1239,7 +1272,7 @@
    - ✅ Multi-stage квесты (M13) — `onEnter`/`onComplete` actions, stage transitions
    - ✅ Real-time objective evaluation (tick 5 sec) — `QuestTriggerService` + 8 trigger types
    - ✅ Persistence (M8) — `JsonQuestStateRepository`, immediate save на каждом state change
-   - ✅ Editor tooling: `QuestDatabaseWindow` (M16), `QuestNodeGraph` (M17), **Editable** (M18), **CSV Import/Export** (M19)
+   - ✅ Editor tooling: `QuestDatabaseWindow` (M16), `QuestNodeGraph` (M17), **Editable** (M18), **CSV Import/Export** (M19), **Unified Quest Graph v5** (T-QEDIT, 2026-07-31), **DialogTreeEditor v2** (T-DLG01, 2026-07-30), **QuestDefinitionEditor** (T-QUEDIT, 2026-07-30)
    - ✅ Quest toast notifications (M15): "📜 Accepted", "💚 +5", "💰 +200 CR", "✨ Найден квест"
    - ✅ Item ID single source of truth (M14): `ItemRegistry` SO + 32 items
    - ✅ **Торговые квесты:** ✅ **Quest ↔ Contract мост** — `ContractMetaBridge` (M7): NPC dialog actions `GiveItem`/`TakeItem` + ContractServer events (`ContractAcceptedEvent`/`ContractCompletedEvent`/`ContractFailedEvent`) → quest trigger evaluation
@@ -1361,8 +1394,8 @@
   - game-icons.net (UI-иконки, CC BY 3.0)
   - Krita / Materialize (текстуры)
   - FMOD/Wwise (звук)
-- **Кастомные шейдеры:** CloudGhibli (URP Unlit + noise + rim glow)
-- **Система ветров (Сессия 3 + 2026-07-01):** WindZone, WindZoneData — объёмные триггеры с профилями (Constant, Gust, Shear)
+- **Кастомные шейдеры:** CloudGhibli (URP Unlit + noise + rim glow), VolumetricClouds (URP volumetric raymarch, Cloud Ocean 3.0)
+- **Система ветров (Сессия 3 + 2026-07-01):** ShipWindZone (бывш. WindZone, T-FIX01 2026-07-29 — конфликт со встроенным Unity WindZone), WindZoneData — объёмные триггеры с профилями (Constant, Gust, Shear)
   - ✅ Реализовано для кораблей (ShipController v2.2)
   - ✅ Реализовано для персонажа (2026-07-01) — `NetworkPlayer.ProcessMovement`, правила по состоянию
 - **Art Bible:** [`docs/ART_BIBLE.md`](docs/ART_BIBLE.md)

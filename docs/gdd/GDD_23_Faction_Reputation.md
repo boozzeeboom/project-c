@@ -1,6 +1,6 @@
 # GDD-23: Faction & Reputation — Project C: The Clouds
 
-**Версия:** 3.0 | **Дата:** 14 июля 2026 г. | **Статус:** 🟢 Stage 1 реализован (FactionId, NpcAttitude, ReputationClientState, DialogActions) + NPC FactionSystem (Phase 4)
+**Версия:** 3.1 | **Дата:** 4 августа 2026 г. | **Статус:** 🟢 Stage 1 реализован (FactionId, NpcAttitude, ReputationClientState, DialogActions) + NPC FactionSystem (Phase 4) + Activity Anchors (T-NPC-S23)
 **Автор:** Малков Леонид Андреевич
 
 ---
@@ -263,6 +263,7 @@ complete_thanks node:
 | **CharacterWindow → таб «Репутация»** (T-Q13) | ✅ DONE |
 | **Persistence** (JsonQuestStateRepository) | ✅ DONE |
 | **NPC FactionSystem** (Phase 4, July 2026) | ✅ DONE |
+| **NPC Activity Anchors** (T-NPC-S23, 2026-07-29) | ✅ DONE |
 
 ## 9. Что открыто / TODO
 

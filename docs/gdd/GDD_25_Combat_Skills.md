@@ -1,6 +1,6 @@
 # ⚔ GDD 25: Combat & Skills System
 
-**Версия:** v2.1 | **Последнее обновление:** 14 июля 2026 | **Статус:** ✅ MVP + Расширения (Ranged, Throwables, Targeting, VFX, Damage Numbers, Skill Tree)
+**Версия:** v2.2 | **Последнее обновление:** 4 августа 2026 | **Статус:** ✅ MVP + Расширения (Ranged, Throwables, Targeting, VFX, Damage Numbers, Skill Tree) + SocialSkillTreeWindow (T-SOC-01)
 **Автор:** Малков Леонид Андреевич
 
 ---
@@ -278,6 +278,8 @@ Runtime AnimatorOverrideController — загружает анимации по 
 **Файл:** `Assets/_Project/Scripts/Skills/UI/SkillTreeWindow.cs`
 
 UIDocument overlay-окно (по паттерну CharacterWindow: Clear+CloneTree+Add, Resources.Load fallback). Zoom/pan, node states (Locked/Available/Unlocked), tooltip на hover. Синхронизация через `SkillsClientState`.
+
+**SocialSkillTreeWindow (T-SOC-01, 2026-08-01):** граф социальных навыков, реюз UXML/USS боевого окна (вёрстка идентична).
 
 ### 3.8 SkillInputService
 

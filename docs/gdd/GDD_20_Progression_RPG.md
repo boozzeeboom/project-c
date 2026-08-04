@@ -2,8 +2,8 @@
 
 **Game:** Project C: The Clouds
 **Version:** 3.0
-**Status:** 🟢 Реализовано (T-P01..T-P18 + T-STAT01..05 + T-CB-22/23 + T-HP01)
-**Last Updated:** 14.07.2026
+**Status:** 🟢 Реализовано (T-P01..T-P18 + T-STAT01..05 + T-CB-22/23 + T-HP01 + T-KNOWLEDGE-V2/V3)
+**Last Updated:** 04.08.2026
 **Author:** Малков Леонид Андреевич
 
 ---
@@ -22,6 +22,7 @@
 - **Character Stats** — 3 базовые характеристики с единой формулой `tier × 5 + 10`
 - **Equipment Bonuses** — flat + multiplier поверх base stats
 - **Prestige System** — future, после заполнения всех систем
+- **Knowledge System v2/v3** — знания/навыки/рецепты: открытие через триггеры, потеря при смерти, гейты крафта, строковый recipeId
 
 ### 1.3 Этапы реализации
 
@@ -257,6 +258,22 @@ enum SkillEffect.Type {
 
 - Q3.4: Free respec (без возврата XP). `TryForgetSkill()` — удаляет навык из learned set.
 - XP за навык НЕ возвращается (user decision: XP ≠ currency).
+
+### 4.8 Knowledge System v2/v3 (T-KNOWLEDGE-V2, T-KNOW-V3, 2026-08) ✅
+
+Система знаний как вторая ось прогрессии поверх Skill Tree:
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| KnowledgeManager | Фасад: знания/скиллы/рецепты (строковые ID, server-authoritative) | ✅ v3 |
+| KnowledgeRevealTrigger | Server-authoritative открытие знаний через триггеры | ✅ v3 |
+| Death Loss | Потеря части знаний при смерти (KnowledgeLossConfig.asset) | ✅ v2 Phase A |
+| Гейты крафта | CraftingWorld/SkillsWorld требуют знаний/рецептов | ✅ v2 Phase A |
+| recipeId | Стабильный строковый ID (миграция с числовых) | ✅ v3 |
+| UI | KnowledgeToast, knowledge-фильтры SkillTreeWindow, SocialSkillTreeWindow (T-SOC-01) | ✅ v3 |
+| Editor | Кастомный SkillNodeConfig editor (T-SKILL-EDITOR) | ✅ v3 |
+
+Сеть: `NetworkPlayer` RPC + `CraftingServer` broadcast (v2 Phase A). Документация: `docs/Character/Knowledges/`.
 
 ---
 

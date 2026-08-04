@@ -2,8 +2,8 @@
 
 **Game:** Project C: The Clouds
 **Version:** 2.0
-**Status:** 🟢 Реализовано (M1–M19, 50+ tickets, ~8400 строк кода) + Двойной аудит (июль 2026)
-**Last Updated:** 14.07.2026
+**Status:** 🟢 Реализовано (M1–M19, 50+ tickets, ~8400 строк кода) + Двойной аудит (июль 2026) + Editor Tooling v2 (июль–август 2026)
+**Last Updated:** 04.08.2026
 **Author:** Малков Леонид Андреевич
 
 ---
@@ -252,6 +252,11 @@ XP за квесты идёт через WorldEventBus:
 | QuestDatabaseWindow (M16) | UI Toolkit EditorWindow, TreeView + Detail panel. `Tools > ProjectC > Quests > Quest Database Explorer` |
 | QuestNodeGraphView + QuestGraphView (M17) | Readonly graph viz: `Tools > ProjectC > Quests > Quest Node Graph` + `Assets/ProjectC/Open Quest Graph`. 4 node types: Quest, Stage, Objective, Reward |
 | Editable QuestNodeGraph (M18) | T-Q30..T-Q34: TextField в нодах, save back to SO, add/delete stages/objectives, quest-to-quest prereq edge, drag-create edges |
+| **Unified Quest Graph v5** (T-QEDIT v1–v5.22, T-U01–U10, 2026-07-31) | Единый нодовый редактор NPC+Dialog+Quest в одном окне GraphView (подход A — тонкий слой над SO): Undo/Redo, resizable-ноды, BFS layout, Delete key, pins |
+| **DialogTreeEditor v2** (T-DLG01, 2026-07-30) | Карточки нод, drag-and-drop условий/speaker, редактируемые рёбра, PropertyDrawer fix (enumValueIndex→intValue), +itemRef |
+| **QuestDefinitionEditor** (T-QUEDIT, 2026-07-30) | Кастомный редактор для не-технарей, drag-and-drop NPC/квесты/сцены/диалоги |
+| **NpcDefinition editor** (T-NPC24, 2026-07-30) | Кастомный редактор NpcDefinition с блоками, drag-and-drop квестов |
+| **Drag-and-drop наград** (T-QREWARD, 2026-07-31) | pickupItem→ItemData, cargoItem→TradeItemDefinition |
 
 ---
 
@@ -478,6 +483,7 @@ QuestDatabaseWindow | QuestNodeGraphView | QuestGraphView | QuestGraphWindow
 QuestCsvImporter | QuestCsvExporter | QuestCsvSchema | QuestCsvWindow
 DialogCsvImporter | NpcCsvImporter | DialogueConditionDrawer
 QuestDefinitionValidator | QuestDatabaseAutoDiscover
+**v2 (2026-07-30..31):** UnifiedQuestGraphWindow | DialogTreeEditor | QuestDefinitionEditor | NpcDefinitionEditor | QuestRewardDrawer
 
 ---
 

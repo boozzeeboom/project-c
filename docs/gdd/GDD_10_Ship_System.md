@@ -563,7 +563,7 @@ public struct DockingAssignmentDto : INetworkSerializable {
 ### Фаза 3: Wind & Turbulence (✅ Done)
 | # | Задача | Приоритет | Статус (2026-07-14) |
 |---|--------|-----------|--------------------|
-| 3.1 | WindZone + WindManager (глобальные и локальные зоны) | P1 | ✅ Done (WindZone.cs, WindZoneData.cs) |
+| 3.1 | ShipWindZone + WindManager (глобальные и локальные зоны) | P1 | ✅ Done (ShipWindZone.cs — бывш. WindZone, переименован T-FIX01 2026-07-29 из-за конфликта со встроенным Unity WindZone; WindZoneData.cs) |
 | 3.2 | Wind force application на корабль | P1 | ✅ Done (аддитивно с локальными зонами) |
 | 3.3 | Turbulence near Veil (TurbulenceEffect) | P1 | ✅ Done (TurbulenceEffect.cs) |
 | 3.4 | System degradation at high altitude | P1 | ✅ Done (SystemDegradationEffect.cs) |
@@ -665,7 +665,7 @@ public struct DockingAssignmentDto : INetworkSerializable {
 | **Ship Key Subsystem** | `../Ships/Key-subsystem/00_OVERVIEW.md` | Физический ключ-предмет для запуска (R2-SHIP-KEY-001, 2026-06-06) |
 | **MetaRequirement** | `../MetaRequirement/00_OVERVIEW.md` | Универсальная система требований (R2-META-REQ-001, 2026-06-06) |
 | **NPC + Quests v2** | `../NPC_quests/08_ROADMAP.md` | Квесты используют MetaRequirement pattern (post-MVP, T-Q??) |
-| **Wind System** | `../Ships/Wind/WindZone.cs` | Ветровые течения и зоны ветра |
+| **Wind System** | `../Ships/Wind/ShipWindZone.cs` (бывш. WindZone) | Ветровые течения и зоны ветра |
 | **Ship Cargo** | `../Ships/Cargo/ShipCargoRegistry.md` | Грузовая система кораблей (T-CARGO-06) |
 | **Ship Combat** | `../Ships/damage_subsystem/00_DESIGN.md` | Повреждения, бой и ремонт |
 | **Ship Modules** | `../../Assets/_Project/Scripts/Ship/ShipModule.cs` | Модульная система кораблей (каталог, менеджер, сервер)
@@ -854,6 +854,8 @@ CLIENT:
 - ShipKey теперь построен поверх MetaRequirement для boarding check
 
 **Документация:** `docs/Ships/Key-subsystem/99_CHANGELOG.md` (v1–v20) + `28_KEY_ARCHITECTURE_REVIEW.md` (глубокий обзор 11 проблем) + `29_KEY_REFACTOR_PLAN.md` (план полного рефакторинга, Phase 2).
+
+**Фикс T-KEY-FIX (2026-08-03):** добавлен `persistentShipId` — устранена потеря доступа к кораблю между сессиями (пост-мортем: `docs/Ships/Key-subsystem/00_OVERVIEW.md`).
 
 **Что изменилось для игрока:**
 - 🔑 Каждый ключ теперь **уникален** (нельзя скопировать без специального крафта — Phase 2).

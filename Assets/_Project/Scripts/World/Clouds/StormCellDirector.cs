@@ -20,7 +20,7 @@ namespace ProjectC.World.Clouds
         [Header("Cells")]
         [Range(1, 10)] public int MaxCells = 5;
         [Tooltip("Радиус влияния ячейки (м).")]
-        [Range(500f, 5000f)] public float CellRadius = 5000f;
+        [Range(500f, 50000f)] public float CellRadius = 5000f;
         [Tooltip("Нижняя граница столба (Y).")]
         [Range(100f, 2000f)] public float CellBottomY = 800f;
         [Tooltip("Верхняя граница столба (Y).")]
@@ -57,8 +57,8 @@ namespace ProjectC.World.Clouds
         [SerializeField] private bool _logDebug = true;
 
         [Header("Debug Markers")]
-        [Tooltip("Ширина маркера по XZ (м).")]
-        [Range(50f, 1000f)] public float MarkerWidth = 200f;
+        [Tooltip("Ширина маркера по XZ (м). 0 = авто (CellRadius × 2).")]
+        [Range(0f, 2000f)] public float MarkerWidth = 0f;
         [Tooltip("Высота маркера по Y (м). 0 = авто (CellTopY − CellBottomY).")]
         [Range(0f, 10000f)] public float MarkerHeight = 0f;
         [Tooltip("Вариативность размера (±% от заданного).")]
@@ -214,9 +214,10 @@ namespace ProjectC.World.Clouds
             // Create/remove to match cell count
             while (_debugMarkers.Count < _cells.Count)
             {
+                float baseW = MarkerWidth > 0f ? MarkerWidth : (CellRadius * 2f);
                 float baseH = MarkerHeight > 0f ? MarkerHeight : (CellTopY - CellBottomY);
                 float variation = 1f + Random.Range(-MarkerSizeVariation, MarkerSizeVariation);
-                float w = MarkerWidth * variation;
+                float w = baseW * variation;
                 float h = baseH * variation;
 
                 var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);

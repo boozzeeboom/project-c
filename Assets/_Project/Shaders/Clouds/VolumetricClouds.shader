@@ -379,16 +379,21 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                            float rampBlend, out float3 layerColor)
         {
         #if defined(_LOCALDENSITY_DISPLACEMENT)
-            // Gate displacement to ship altitude (±400m). Upper layers unaffected.
+            // Save original position for storm — displacement should NOT punch holes
+            // through storm clouds (they're dense cores, not scattered wisps).
+            float3 stormPos = worldPos;
+
             float shipY = _LocalDisplacementCenter.y;
             float dispRange = 400.0;
             float dispFactor = 1.0 - saturate(abs(worldPos.y - shipY) / dispRange);
             if (dispFactor > 0.001)
             {
                 float3 disp = SampleLocalDisplacement(worldPos);
-                disp.y *= 0.15; // suppress vertical displacement (wake is horizontal)
+                disp.y *= 0.15;
                 worldPos = worldPos + disp * _LocalDisplacementStrength * dispFactor;
             }
+        #else
+            float3 stormPos = worldPos;
         #endif
 
             float3 samplePos = CameraRelativePosition(worldPos, cameraPos, _NoiseTileSize);
@@ -429,9 +434,9 @@ Shader "Hidden/ProjectC/VolumetricClouds"
             totalDensity = max(0.0, totalDensity - local * _LocalDensityInfluence);
         #endif
 
-            // Phase 2.4: Storm cell density injection
+            // Phase 2.4: Storm cell density injection (uses ORIGINAL position — no displacement)
             float3 stormColor;
-            float stormD = StormDensity(worldPos, stormColor);
+            float stormD = StormDensity(stormPos, stormColor);
             if (stormD > 0.001)
             {
                 totalDensity += stormD;

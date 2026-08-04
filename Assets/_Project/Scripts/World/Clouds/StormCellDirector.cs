@@ -198,9 +198,10 @@ namespace ProjectC.World.Clouds
             // Create/remove to match cell count
             while (_debugMarkers.Count < _cells.Count)
             {
+                float columnH = CellTopY - CellBottomY;
                 var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = $"StormCellMarker_{_debugMarkers.Count}";
-                cube.transform.localScale = new Vector3(200f, 200f, 200f);
+                cube.transform.localScale = new Vector3(200f, columnH, 200f);
                 cube.hideFlags = HideFlags.DontSave;
                 Destroy(cube.GetComponent<Collider>());
                 var mr = cube.GetComponent<MeshRenderer>();
@@ -215,9 +216,13 @@ namespace ProjectC.World.Clouds
                 _debugMarkers.RemoveAt(_debugMarkers.Count - 1);
             }
 
-            // Sync positions
+            // Sync positions — place at column vertical midpoint
+            float midY = (CellBottomY + CellTopY) * 0.5f;
             for (int i = 0; i < _cells.Count; i++)
-                _debugMarkers[i].transform.position = _cells[i].WorldPosition;
+            {
+                Vector3 pos = _cells[i].WorldPosition;
+                _debugMarkers[i].transform.position = new Vector3(pos.x, midY, pos.z);
+            }
         }
 
         private void ClearDebugMarkers()

@@ -1,6 +1,7 @@
 // StormCellDirector.cs — Phase 2.4
 // Manages storm cells for lightning VFX. Drives StormLightningVfx via events.
 // Pushes cell data to VolumetricClouds shader for visual storm cloud rendering.
+// ALL parameters pushed every frame → live tweaking in Play Mode.
 // Temporary data source; will be replaced by WeatherCellManager in Phase 3.3.
 
 using System.Collections.Generic;
@@ -35,7 +36,8 @@ namespace ProjectC.World.Clouds
         public bool SpawnTestCells = true;
         [Range(0, 5)] public int TestCellCount = 2;
         [Range(500f, 5000f)] public float TestSpawnDistance = 1500f;
-        [Range(1f, 60f)] public float TestSpawnDelay = 15f;
+        [Tooltip("Задержка перед спавном тестовых ячеек (0 = мгновенно).")]
+        [Range(0f, 60f)] public float TestSpawnDelay = 2f;
 
         [Header("Debug Visuals")]
         public bool ShowDebugMarkers = true;
@@ -50,24 +52,29 @@ namespace ProjectC.World.Clouds
         public Color MarkerColor = new Color(1f, 0f, 1f, 0.8f);
 
         [Header("Storm Cloud Shader")]
-        [Tooltip("Множитель плотности штормовых облаков в реймарче.")]
-        [Range(0.1f, 10f)] public float StormDensityMultiplier = 1.5f;
+        [Tooltip("Множитель плотности штормовых облаков.")]
+        [Range(0.1f, 10f)] public float StormDensityMultiplier = 2.0f;
+        [Tooltip("Цвет ядра шторма (плотная область).")]
         public Color StormColorDark = new Color(0.08f, 0.06f, 0.12f, 1f);
+        [Tooltip("Цвет края шторма (разреженная область).")]
         public Color StormColorLight = new Color(0.25f, 0.22f, 0.35f, 1f);
+        [Tooltip("Мягкость края шторма.")]
         [Range(0.01f, 0.5f)] public float StormEdgeSoftness = 0.12f;
+        [Tooltip("Пик плотности по вертикали (0=дно, 0.5=центр, 1=верх).")]
         [Range(0.1f, 0.9f)] public float StormVerticalPeak = 0.5f;
+        [Tooltip("Максимум ячеек передаваемых в шейдер.")]
         [Range(1, 8)] public int MaxStormCellsInShader = 8;
 
         [Header("Storm Noise (Organic Shape)")]
-        [Tooltip("Масштаб шума (м). Меньше = мельче детали кластеров.")]
-        [Range(50f, 5000f)] public float StormNoiseScale = 500f;
-        [Tooltip("Сила деформации (0=ровный цилиндр, 1=макс. хаос).")]
-        [Range(0f, 1f)] public float StormNoiseStrength = 0.4f;
+        [Tooltip("Масштаб шума (м). Меньше = мельче детали.")]
+        [Range(50f, 5000f)] public float StormNoiseScale = 800f;
+        [Tooltip("Сила warp-деформации (0=ровный круг, 1=рваные края).")]
+        [Range(0f, 1f)] public float StormNoiseStrength = 0.6f;
         [Tooltip("Октавы шума (1=гладко, 3=детально).")]
         [Range(1, 3)] public int StormNoiseOctaves = 2;
         [Tooltip("Скорость эволюции шума от ветра.")]
         [Range(0f, 0.5f)] public float StormNoiseSpeed = 0.05f;
-        [Tooltip("Контраст cellular-кластеров (0.1=мыльно, 0.5=резкие грозовые дольки).")]
+        [Tooltip("Контраст cellular-кластеров (0.1=мыльно, 0.5=резкие дольки).")]
         [Range(0.1f, 0.5f)] public float StormClusterContrast = 0.25f;
 
         // Shader property IDs
@@ -93,6 +100,7 @@ namespace ProjectC.World.Clouds
         public event System.Action<Vector3, float> OnLightningTriggered;
 
         private readonly List<StormCell> _cells = new();
+        private float _nextPushLogTime;
 
         // ═══════════════════════════════════════════
         // Unity Lifecycle
@@ -107,14 +115,26 @@ namespace ProjectC.World.Clouds
             }
             Instance = this;
 
+            // Push defaults immediately — shader has values from frame 0
+            PushStormCellsToShader();
+
             if (_logDebug)
-                Debug.Log($"[StormCellDirector] Awake. MaxCells={MaxCells}");
+                Debug.Log($"[StormCellDirector] Awake. MaxCells={MaxCells}, noiseStr={StormNoiseStrength}, noiseScale={StormNoiseScale}");
         }
 
         private void Start()
         {
             if (SpawnTestCells && TestCellCount > 0)
-                StartCoroutine(SpawnTestCellsDelayed());
+            {
+                if (TestSpawnDelay <= 0f)
+                {
+                    SpawnTestCellsAroundPosition(GetPlayerPosition());
+                }
+                else
+                {
+                    StartCoroutine(SpawnTestCellsDelayed());
+                }
+            }
         }
 
         private System.Collections.IEnumerator SpawnTestCellsDelayed()
@@ -123,13 +143,17 @@ namespace ProjectC.World.Clouds
 
             Vector3 playerPos = GetPlayerPosition();
             if (_logDebug)
-                Debug.Log($"[StormCellDirector] Spawning test cells at player: {playerPos}");
+                Debug.Log($"[StormCellDirector] Spawning {TestCellCount} test cells at player: {playerPos}");
 
             SpawnTestCellsAroundPosition(playerPos);
         }
 
         private void Update()
         {
+            // Always push to shader — even with 0 cells (zeroes out arrays).
+            // This ensures inspector tweaks are visible immediately.
+            PushStormCellsToShader();
+
             if (_cells.Count == 0) return;
 
             Vector3 windDir = Vector3.right;
@@ -195,7 +219,6 @@ namespace ProjectC.World.Clouds
                 }
             }
 
-            PushStormCellsToShader();
             GlobalStormEvents.BroadcastStormIntensity(GetAverageIntensity());
         }
 
@@ -318,6 +341,10 @@ namespace ProjectC.World.Clouds
             return player != null ? player.transform.position : Vector3.zero;
         }
 
+        /// <summary>
+        /// Packs cell data into Vector4 arrays and pushes to shader globals.
+        /// Called every frame — inspector changes visible immediately in Play Mode.
+        /// </summary>
         private void PushStormCellsToShader()
         {
             int count = Mathf.Min(_cells.Count, MaxStormCellsInShader);
@@ -351,6 +378,15 @@ namespace ProjectC.World.Clouds
             Shader.SetGlobalInt(StormNoiseOctavesId, StormNoiseOctaves);
             Shader.SetGlobalFloat(StormNoiseSpeedId, StormNoiseSpeed);
             Shader.SetGlobalFloat(StormClusterContrastId, StormClusterContrast);
+
+            // Periodic debug log (once per second)
+            if (_logDebug && Time.time > _nextPushLogTime)
+            {
+                _nextPushLogTime = Time.time + 1.0f;
+                Debug.Log($"[StormCellDirector] Shader push: cells={count} " +
+                    $"densMult={StormDensityMultiplier} warpStr={StormNoiseStrength} " +
+                    $"noiseScale={StormNoiseScale} contrast={StormClusterContrast} octaves={StormNoiseOctaves}");
+            }
         }
 
         // ═══════════════════════════════════════════

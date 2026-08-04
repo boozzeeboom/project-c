@@ -26,13 +26,13 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         [HideInInspector] _LocalDisplacementStrength ("LDisp Strength", Float) = 300
 
         // === Storm Cells (Phase 2.4) ===
-        [HideInInspector] _StormDensityMult ("Storm Density Mult", Float) = 1.5
+        [HideInInspector] _StormDensityMult ("Storm Density Mult", Float) = 2.0
         [HideInInspector] _StormColorDark ("Storm Dark Color", Color) = (0.08, 0.06, 0.12, 1)
         [HideInInspector] _StormColorLight ("Storm Light Color", Color) = (0.25, 0.22, 0.35, 1)
         [HideInInspector] _StormEdgeSoftness ("Storm Edge Softness", Range(0.01, 0.5)) = 0.12
         [HideInInspector] _StormVerticalPeak ("Storm Vertical Peak", Range(0.1, 0.9)) = 0.5
-        [HideInInspector] _StormNoiseScale ("Storm Noise Scale", Float) = 500
-        [HideInInspector] _StormNoiseStrength ("Storm Noise Strength", Range(0, 1)) = 0.4
+        [HideInInspector] _StormNoiseScale ("Storm Noise Scale", Float) = 800
+        [HideInInspector] _StormNoiseStrength ("Storm Noise Strength", Range(0, 1)) = 0.6
         [HideInInspector] _StormNoiseOctaves ("Storm Noise Octaves", Int) = 2
         [HideInInspector] _StormNoiseSpeed ("Storm Noise Speed", Range(0, 0.5)) = 0.05
         [HideInInspector] _StormClusterContrast ("Storm Cluster Contrast", Range(0.1, 0.5)) = 0.25

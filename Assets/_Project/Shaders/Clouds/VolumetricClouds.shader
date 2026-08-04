@@ -111,6 +111,8 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         int _StormNoiseOctaves;
         float _StormNoiseSpeed;
         float _StormClusterContrast;
+        float _StormVerticalNoiseStr;   // vertical noise modulation strength (0–1)
+        float _StormVerticalWarp;       // extra Y-axis warp multiplier (0–3)
 
         float4 _CloudTargetSize;
         float4x4 _Cloud_ViewToWorld;
@@ -298,62 +300,64 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                 float envelope = 1.0 - smoothstep(radius * 0.6, radius * 1.6, distXZ);
                 if (envelope < 0.001) continue;
 
-                // ── 2. Vertical envelope ──
-                float vFade = min(hRange * 0.05, 150.0);
-                float vEnvelope = smoothstep(bottomY, bottomY + vFade, worldPos.y)
-                                * (1.0 - smoothstep(topY - vFade, topY, worldPos.y));
-                if (vEnvelope < 0.001) continue;
-
-                // ── 3. Vertical profile — asymmetric anvil, noise-modulated ──
-                //      Per-cell seed (declared early — used by vertical noise below).
+                // ── 2. Vertical profile — soft edges + noise-modulated anvil ──
+                //      Removed separate vEnvelope (was creating hard horizontal bands).
+                //      Soft bottom/top fade built directly into profile.
                 float3 seedOff = float3((float)(i + 1) * 137.3,
                                         (float)(i + 1) * 57.1,
                                         (float)(i + 1) * 91.7);
 
-                float vProfile = 1.0 - abs(h01 - _StormVerticalPeak)
-                                   / max(h01 > _StormVerticalPeak ? (1.0 - _StormVerticalPeak)
-                                                                   : _StormVerticalPeak, 0.05);
-                vProfile = saturate(vProfile);
-                vProfile = lerp(0.25, 1.0, vProfile * vProfile);
+                // Soft edge fades: _StormEdgeSoftness controls fade fraction (0.01–0.5 → 1%–50% of height)
+                float vFadeFrac = _StormEdgeSoftness;
+                float vFadeBot = hRange * vFadeFrac * 0.8;
+                float vFadeTop = hRange * vFadeFrac;
+                float vEdgeBot = smoothstep(bottomY, bottomY + vFadeBot, worldPos.y);
+                float vEdgeTop = 1.0 - smoothstep(topY - vFadeTop, topY, worldPos.y);
+                float vSoftEdge = vEdgeBot * vEdgeTop;
+                if (vSoftEdge < 0.001) continue;
 
-                // Vertical Perlin modulation — breaks smooth horizontal layers
-                float vNoise = Perlin3D_noPeriod((worldPos + seedOff) * 0.002, 500u + (uint)(i * 37));
-                float vNoise2 = Perlin3D_noPeriod((worldPos + seedOff + float3(0, 500, 0)) * 0.005, 600u + (uint)(i * 73));
-                float vMod = 1.0 + (vNoise * 0.25 + vNoise2 * 0.15); // ±40% vertical variation
-                vProfile *= vMod;
-                vProfile = saturate(vProfile);
+                // Asymmetric dome: peak at _StormVerticalPeak, steeper above (anvil)
+                float vPeak = 1.0 - abs(h01 - _StormVerticalPeak)
+                              / max(h01 > _StormVerticalPeak ? (1.0 - _StormVerticalPeak)
+                                                              : _StormVerticalPeak, 0.05);
+                vPeak = saturate(vPeak);
+                vPeak = lerp(0.3, 1.0, vPeak * vPeak);
 
-                // ── 4. Procedural domain warp (3D) — breaks radial symmetry ──
-                //      Warp scale tied to cluster size, not radius directly.
+                // Vertical noise — breaks horizontal contour lines.
+                // _StormVerticalNoiseStr: 0=flat profile, 1=max variation (±50%).
+                float vnStr = _StormVerticalNoiseStr;
+                float vNoise = Perlin3D_noPeriod((worldPos + seedOff) * 0.0015, 500u + (uint)(i * 37));
+                float vNoise2 = Perlin3D_noPeriod((worldPos + seedOff) * 0.004, 600u + (uint)(i * 73));
+                float vMod = lerp(1.0, vNoise * 0.8 + vNoise2 * 0.5 + 0.6, vnStr);
+                float vProfile = saturate(vSoftEdge * vPeak * vMod);
+                if (vProfile < 0.001) continue;
+
+                // ── 3. Procedural domain warp (3D) — breaks radial + horizontal symmetry ──
                 float clusterScale = max(radius * 0.25, _StormNoiseScale);
                 float warpScale = clusterScale * 2.5;
                 float warpStrength = clusterScale * _StormNoiseStrength * 1.5;
                 float3 warpOff = StormWarp3D(worldPos + noiseWind, warpScale, warpStrength);
+                // Extra vertical warp to break horizontal bands (0=off, 3=max)
+                warpOff.y *= _StormVerticalWarp;
                 float3 clusterPos = worldPos + warpOff + noiseWind;
-
-                // Per-cell seed offset (declared above — used in vertical noise + here)
                 clusterPos += seedOff * 0.1;
 
-                // ── 5. Procedural abs(Perlin) FBM — THE organic shape ──
-                //      _StormNoiseScale = direct cluster size in meters (200–1500m typical)
-                //      At radius=5000m, clusterScale≈1250m → ~4 clusters per radius
+                // ── 4. Procedural abs(Perlin) FBM — THE organic shape ──
                 float bigClusters = StormBillowFbm(clusterPos, clusterScale, 1000u + (uint)(i * 211));
 
-                // Contrast threshold: maps continuous billow → discrete clusters.
-                // Center at 0.25 (below abs(Perlin) average) → less holey at 1 octave.
                 float contrast = _StormClusterContrast;
                 float shape = smoothstep(0.25 - contrast * 0.8,
                                          0.25 + contrast * 0.8, bigClusters);
                 if (shape < 0.01) continue;
 
-                // ── 6. Fine cauliflower — мелкие детали на поверхности кластеров ──
+                // ── 5. Fine cauliflower ──
                 float fineScale = clusterScale * 0.22;
                 float fine = StormBillowFbm(clusterPos + float3(31.7, 17.3, 7.1),
                                            fineScale, 2000u + (uint)(i * 137));
                 float inner = 0.55 + 0.45 * smoothstep(0.25, 0.75, fine);
 
-                // ── Combine ──
-                float cellDensity = shape * inner * envelope * vEnvelope * vProfile
+                // ── Combine (NO vEnvelope — vProfile handles full vertical shape) ──
+                float cellDensity = shape * inner * envelope * vProfile
                                   * intensity * _StormDensityMult;
 
                 if (cellDensity > 0.002)

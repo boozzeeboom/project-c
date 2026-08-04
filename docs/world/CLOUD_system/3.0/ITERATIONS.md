@@ -4,6 +4,8 @@
 
 ## Итерация от 2026-08-04 (Phase 2.4 — Deep Form & Runtime Fix, T-CLOUD39) 🟢
 
+**Коммит:** `fbc91eea` — T-CLOUD39: procedural storm form fix + runtime save/load + anti-banding
+
 **Задача:** Глубинный фикс формы («гофротруба» → кластеры) + кнопка регенерации для рантайм-твикинга.
 
 **Корневые причины (полный разбор: `STORM_FORM_RUNTIME_INVESTIGATION.md`, раздел «Проблема 2 — ГЛУБИННЫЙ АНАЛИЗ»):**

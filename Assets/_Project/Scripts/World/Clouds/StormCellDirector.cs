@@ -57,8 +57,8 @@ namespace ProjectC.World.Clouds
         [SerializeField] private bool _logDebug = true;
 
         [Header("Debug Markers")]
-        [Tooltip("Ширина маркера по XZ (м). 0 = авто (CellRadius × 2).")]
-        [Range(0f, 2000f)] public float MarkerWidth = 0f;
+        [Tooltip("Ширина маркера по XZ (м).")]
+        [Range(50f, 5000f)] public float MarkerWidth = 500f;
         [Tooltip("Высота маркера по Y (м). 0 = авто (CellTopY − CellBottomY).")]
         [Range(0f, 10000f)] public float MarkerHeight = 0f;
         [Tooltip("Вариативность размера (±% от заданного).")]
@@ -211,7 +211,7 @@ namespace ProjectC.World.Clouds
                 return;
             }
 
-            float baseW = MarkerWidth > 0f ? MarkerWidth : (CellRadius * 2f);
+            float baseW = MarkerWidth;
             float baseH = MarkerHeight > 0f ? MarkerHeight : (CellTopY - CellBottomY);
             float midY = (CellBottomY + CellTopY) * 0.5f;
 

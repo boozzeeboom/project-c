@@ -79,10 +79,19 @@ namespace ProjectC.World.Clouds
         private void Start()
         {
             if (SpawnTestCells && TestCellCount > 0)
-                SpawnTestCellsAroundCamera();
+                StartCoroutine(SpawnTestCellsDelayed());
+        }
+
+        private System.Collections.IEnumerator SpawnTestCellsDelayed()
+        {
+            // Ждём пока сцена загрузится и камера переместится к кораблю
+            yield return new WaitForSeconds(2f);
+            yield return new WaitUntil(() => Camera.main != null);
 
             if (_logDebug && Camera.main != null)
-                Debug.Log($"[StormCellDirector] Camera pos: {Camera.main.transform.position}");
+                Debug.Log($"[StormCellDirector] Spawning test cells at camera: {Camera.main.transform.position}");
+
+            SpawnTestCellsAroundCamera();
         }
 
         private void Update()
@@ -195,8 +204,8 @@ namespace ProjectC.World.Clouds
                 cube.hideFlags = HideFlags.DontSave;
                 Destroy(cube.GetComponent<Collider>());
                 var mr = cube.GetComponent<MeshRenderer>();
-                mr.material = new Material(Shader.Find("Unlit/Color"));
-                mr.material.color = new Color(1f, 0f, 1f, 0.7f);
+                mr.material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                mr.material.color = new Color(1f, 0f, 1f, 0.8f);
                 _debugMarkers.Add(cube);
             }
 

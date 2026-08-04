@@ -41,12 +41,16 @@ namespace ProjectC.World.Clouds
         [Range(500f, 5000f)] public float TestSpawnDistance = 1500f;
 
         [Header("Debug Visuals")]
+        [Tooltip("Создать GameObject-маркеры (кубы) на позициях ячеек.")]
+        public bool ShowDebugMarkers = true;
         [Tooltip("Рисовать столбы в Game View (Debug.DrawLine).")]
         public bool ShowDebugColumns = true;
         [Tooltip("Рисовать Gizmos в Scene View.")]
         public bool ShowDebugGizmos = true;
         [Tooltip("Логировать в консоль.")]
         [SerializeField] private bool _logDebug = true;
+
+        private readonly List<GameObject> _debugMarkers = new();
 
         /// <summary>Событие: молния в worldPos с интенсивностью [0..1].</summary>
         public event System.Action<Vector3, float> OnLightningTriggered;
@@ -76,6 +80,9 @@ namespace ProjectC.World.Clouds
         {
             if (SpawnTestCells && TestCellCount > 0)
                 SpawnTestCellsAroundCamera();
+
+            if (_logDebug && Camera.main != null)
+                Debug.Log($"[StormCellDirector] Camera pos: {Camera.main.transform.position}");
         }
 
         private void Update()
@@ -116,6 +123,9 @@ namespace ProjectC.World.Clouds
 
                 _cells[i] = cell;
             }
+
+            // ── GameObject-маркеры (кубы, видны всегда) ──
+            SyncDebugMarkers();
 
             // ── Game View debug: ЦИЛИНДРЫ (кольца + вертикали) ──
             if (ShowDebugColumns)
@@ -160,6 +170,52 @@ namespace ProjectC.World.Clouds
         {
             if (Instance == this)
                 Instance = null;
+
+            ClearDebugMarkers();
+        }
+
+        // ═══════════════════════════════════════════
+        // Debug Markers
+        // ═══════════════════════════════════════════
+
+        private void SyncDebugMarkers()
+        {
+            if (!ShowDebugMarkers)
+            {
+                ClearDebugMarkers();
+                return;
+            }
+
+            // Create/remove to match cell count
+            while (_debugMarkers.Count < _cells.Count)
+            {
+                var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                cube.name = $"StormCellMarker_{_debugMarkers.Count}";
+                cube.transform.localScale = new Vector3(200f, 200f, 200f);
+                cube.hideFlags = HideFlags.DontSave;
+                Destroy(cube.GetComponent<Collider>());
+                var mr = cube.GetComponent<MeshRenderer>();
+                mr.material = new Material(Shader.Find("Unlit/Color"));
+                mr.material.color = new Color(1f, 0f, 1f, 0.7f);
+                _debugMarkers.Add(cube);
+            }
+
+            while (_debugMarkers.Count > _cells.Count)
+            {
+                Destroy(_debugMarkers[_debugMarkers.Count - 1]);
+                _debugMarkers.RemoveAt(_debugMarkers.Count - 1);
+            }
+
+            // Sync positions
+            for (int i = 0; i < _cells.Count; i++)
+                _debugMarkers[i].transform.position = _cells[i].WorldPosition;
+        }
+
+        private void ClearDebugMarkers()
+        {
+            foreach (var m in _debugMarkers)
+                if (m != null) Destroy(m);
+            _debugMarkers.Clear();
         }
 
         // ═══════════════════════════════════════════

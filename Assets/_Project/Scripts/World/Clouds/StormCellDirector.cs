@@ -110,6 +110,19 @@ namespace ProjectC.World.Clouds
                 _cells[i] = cell;
             }
 
+            // ── Game View debug: яркие лучи от ячеек к земле ──
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                var c = _cells[i];
+                Vector3 ground = new Vector3(c.WorldPosition.x, 0f, c.WorldPosition.z);
+                Debug.DrawLine(c.WorldPosition, ground, new Color(1f, 0.3f, 1f, 0.7f));
+                Debug.DrawRay(c.WorldPosition, Vector3.up * 150f, Color.yellow);
+                // Cross at center
+                float r = 60f;
+                Debug.DrawLine(c.WorldPosition + Vector3.left * r, c.WorldPosition + Vector3.right * r, Color.magenta);
+                Debug.DrawLine(c.WorldPosition + Vector3.forward * r, c.WorldPosition + Vector3.back * r, Color.magenta);
+            }
+
             // Broadcast global storm intensity
             GlobalStormEvents.BroadcastStormIntensity(GetAverageIntensity());
         }
@@ -195,19 +208,37 @@ namespace ProjectC.World.Clouds
             }
 
             if (_logDebug)
-                Debug.Log($"[StormCellDirector] Spawned {TestCellCount} test cells around camera.");
+                Debug.Log($"[StormCellDirector] ⛈ Spawned {TestCellCount} test cells around camera at Y≈{CellAltitude}." +
+                          $" Open SceneView, look for MAGENTA crosses at Y={CellAltitude}.");
         }
 
 #if UNITY_EDITOR
-        private void OnDrawGizmosSelected()
+        private void OnDrawGizmos()
         {
+            if (_cells == null) return;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var c = _cells[i];
-                Gizmos.color = new Color(0.7f, 0.2f, 1f, 0.3f);
-                Gizmos.DrawWireSphere(c.WorldPosition, c.Radius);
+
+                // Big semi-transparent sphere — always visible
+                Gizmos.color = new Color(1f, 0.2f, 0.8f, 0.15f);
+                Gizmos.DrawSphere(c.WorldPosition, 80f);
+
+                // Wire sphere
+                Gizmos.color = new Color(1f, 0.3f, 0.9f, 0.6f);
+                Gizmos.DrawWireSphere(c.WorldPosition, 80f);
+
+                // Vertical line to ground level (Y=0)
+                Gizmos.color = new Color(1f, 0.5f, 0f, 0.5f);
+                Gizmos.DrawLine(c.WorldPosition, new Vector3(c.WorldPosition.x, 0f, c.WorldPosition.z));
+
+                // Bright center dot
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawWireSphere(c.WorldPosition, 50f);
+                Gizmos.DrawSphere(c.WorldPosition, 15f);
+
+                // Label (intensity)
+                UnityEditor.Handles.Label(c.WorldPosition + Vector3.up * 90f,
+                    $"[{i}] I={c.Intensity:F1} T={c.NextLightningTime - c.TimeSinceLightning:F1}s");
             }
         }
 #endif

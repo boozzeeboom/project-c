@@ -56,3 +56,15 @@
 
 **Изменения:**
 - `Assets/_Project/Shaders/Clouds/VolumetricClouds.shader`: `sceneDepth < 0.999` → `Linear01Depth(sceneDepth) < 0.999` (строки 310-317)
+
+## Итерация от 2026-08-04 (Depth Fix #3 — ZTest + закрытие фаз)
+
+**Задача:** ZTest LEqual без depth-буфера в RenderGraph → облака не отображались. Актуализация документации.
+
+**Коммит:** `e887c4ee` — T-CLOUD10: ZTest LEqual → Always — RenderGraph pass has no depth attachment
+
+**Изменения:**
+- `Assets/_Project/Shaders/Clouds/VolumetricClouds.shader`: `ZTest LEqual` → `ZTest Always`
+- `docs/world/CLOUD_system/3.0/IMPLEMENTATION_LOG.md`: консолидированная документация, статус 🟢
+
+**Итог:** Фазы 1.1–3.0 (включая 2.1 LocalDensityBuffer, 2.2B Displacement, multi-layer) закрыты и верифицированы. Depth работает корректно.

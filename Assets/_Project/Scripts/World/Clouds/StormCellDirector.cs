@@ -67,6 +67,8 @@ namespace ProjectC.World.Clouds
         [Range(1, 3)] public int StormNoiseOctaves = 2;
         [Tooltip("Скорость эволюции шума от ветра.")]
         [Range(0f, 0.5f)] public float StormNoiseSpeed = 0.05f;
+        [Tooltip("Контраст cellular-кластеров (0.1=мыльно, 0.5=резкие грозовые дольки).")]
+        [Range(0.1f, 0.5f)] public float StormClusterContrast = 0.25f;
 
         // Shader property IDs
         private static readonly int StormCellPosId      = Shader.PropertyToID("_StormCellPos");
@@ -81,6 +83,7 @@ namespace ProjectC.World.Clouds
         private static readonly int StormNoiseStrengthId = Shader.PropertyToID("_StormNoiseStrength");
         private static readonly int StormNoiseOctavesId  = Shader.PropertyToID("_StormNoiseOctaves");
         private static readonly int StormNoiseSpeedId    = Shader.PropertyToID("_StormNoiseSpeed");
+        private static readonly int StormClusterContrastId = Shader.PropertyToID("_StormClusterContrast");
 
         private static readonly Vector4[] _stormPosCache    = new Vector4[8];
         private static readonly Vector4[] _stormParamsCache = new Vector4[8];
@@ -347,6 +350,7 @@ namespace ProjectC.World.Clouds
             Shader.SetGlobalFloat(StormNoiseStrengthId, StormNoiseStrength);
             Shader.SetGlobalInt(StormNoiseOctavesId, StormNoiseOctaves);
             Shader.SetGlobalFloat(StormNoiseSpeedId, StormNoiseSpeed);
+            Shader.SetGlobalFloat(StormClusterContrastId, StormClusterContrast);
         }
 
         // ═══════════════════════════════════════════

@@ -35,6 +35,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         [HideInInspector] _StormNoiseStrength ("Storm Noise Strength", Range(0, 1)) = 0.4
         [HideInInspector] _StormNoiseOctaves ("Storm Noise Octaves", Int) = 2
         [HideInInspector] _StormNoiseSpeed ("Storm Noise Speed", Range(0, 0.5)) = 0.05
+        [HideInInspector] _StormClusterContrast ("Storm Cluster Contrast", Range(0.1, 0.5)) = 0.25
     }
 
     SubShader
@@ -115,6 +116,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         float _StormNoiseStrength;
         int _StormNoiseOctaves;
         float _StormNoiseSpeed;
+        float _StormClusterContrast;
 
         float4 _CloudTargetSize;
         float4x4 _Cloud_ViewToWorld;
@@ -210,22 +212,32 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         }
 
         // ---------------------------------------------------------------------------
-        // StormCellularDensity — fractal inverted-Worley FBM.
-        // CloudNoise3D.a = InvertedWorley (1-Worley) → bubble/cell interior density.
-        // Multi-octave sampling creates cauliflower-like cellular clusters.
-        // Returns 0..1 where 1 = deep inside a cell, 0 = at cell boundary.
+        // StormSampleNoise — fetch CloudNoise3D at a given world-space position.
+        // pos  = world-space sample point
+        // cellSize = desired feature size in meters (noise wraps every cellSize)
+        // Returns all 4 noise channels.
         // ---------------------------------------------------------------------------
-        float StormCellularDensity(float3 pos, float scale)
+        float4 StormSampleNoise(float3 pos, float cellSize)
+        {
+            float3 uvw = pos / max(cellSize, 1.0);
+            uvw = frac(uvw);
+            return SAMPLE_TEXTURE3D_LOD(_CloudNoise3D, sampler_CloudNoise3D, uvw, 0);
+        }
+
+        // ---------------------------------------------------------------------------
+        // StormCellularFbm — fractal inverted-Worley FBM (channel A).
+        // Multi-octave cellular bubbles → cauliflower-like internal structure.
+        // Each octave samples at half the cellSize with a random offset → no visible tiling.
+        // ---------------------------------------------------------------------------
+        float StormCellularFbm(float3 pos, float baseCellSize)
         {
             float val = 0; float amp = 1.0; float norm = 0;
             for (int o = 0; o < _StormNoiseOctaves; o++)
             {
                 float freq = pow(2.0, (float)o);
-                float3 samplePos = pos / (scale / freq) + float3((float)(o) * 137.0, 0, (float)(o) * 73.0);
-                float3 uvw = frac(samplePos / _NoiseTileSize);
-                float4 n = SAMPLE_TEXTURE3D_LOD(_CloudNoise3D, sampler_CloudNoise3D, uvw, 0);
-                // InvertedWorley (channel a): high inside bubble, low at borders between bubbles
-                val += n.a * amp;
+                float3 offset = float3((float)(o) * 0.371, (float)(o) * 0.593, (float)(o) * 0.727);
+                float4 n = StormSampleNoise(pos + offset * 1000.0, baseCellSize / freq);
+                val += n.a * amp;   // channel A = InvertedWorley
                 norm += amp;
                 amp *= 0.5;
             }
@@ -234,22 +246,28 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
         // ---------------------------------------------------------------------------
         // StormDomainWarp — 3D noise warp for irregular boundary shapes.
-        // Returns a 2D offset to apply before distance-from-center check.
+        // Uses Perlin (R) + Worley (G) channels to create asymmetric 2D offset.
         // ---------------------------------------------------------------------------
-        float2 StormDomainWarp(float3 pos, float scale, float strength)
+        float2 StormDomainWarp(float3 pos, float cellSize, float strength)
         {
-            float3 uvw = frac(pos / max(scale, 1.0) / _NoiseTileSize);
-            float4 n = SAMPLE_TEXTURE3D_LOD(_CloudNoise3D, sampler_CloudNoise3D, uvw, 0);
-            float2 offset;
-            offset.x = (n.r - 0.5) * strength;
-            offset.y = (n.g - 0.5) * strength;
-            return offset;
+            float4 n = StormSampleNoise(pos, cellSize);
+            float2 warp;
+            warp.x = (n.r - 0.5) * strength;
+            warp.y = (n.g - 0.5) * strength;
+            return warp;
         }
 
         // ---------------------------------------------------------------------------
-        // StormDensity — organic storm cloud density via cellular FBM + domain warp.
-        // Core idea: fractal inverted-Worley creates cauliflower-like bubble clusters.
-        // Domain warp breaks the perfect cylindrical boundary into irregular shapes.
+        // StormDensity — organic storm cloud density.
+        //
+        // Pipeline per cell:
+        //   1. Domain warp XZ → irregular boundary instead of perfect circle
+        //   2. Soft envelope → distant containment (cellular shapes the edge)
+        //   3. Vertical envelope → height range
+        //   4. Cellular FBM → internal cauliflower bubble structure
+        //   5. Contrast boost → crisp clusters, not mush
+        //
+        // All parameters exposed via StormCellDirector inspector → live tweaking.
         // ---------------------------------------------------------------------------
         float StormDensity(float3 worldPos, out float3 stormColor)
         {
@@ -267,36 +285,42 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                 float bottomY = _StormCellParams[i].y;
                 float topY = _StormCellParams[i].z;
 
-                // Height gate (with noise-softened edges)
-                float hRange = topY - bottomY;
-                float fadeRange = hRange * _StormEdgeSoftness * 2.0;
-                if (worldPos.y < bottomY - fadeRange || worldPos.y > topY + fadeRange) continue;
+                // Height gate
+                if (worldPos.y < bottomY || worldPos.y > topY) continue;
 
-                // ── 1. Domain warp — irregularize the boundary ──
-                float warpStrength = radius * _StormNoiseStrength * 0.6;
-                float2 warp = StormDomainWarp(worldPos + noiseWind, _StormNoiseScale, warpStrength);
+                // ── 1. Domain warp ──
+                // Warp strength proportional to radius × noise strength
+                float warpStrength = radius * _StormNoiseStrength * 0.8;
+                float2 warp = StormDomainWarp(
+                    worldPos + noiseWind,
+                    _StormNoiseScale * 0.8,    // warp features at ~80% of noise scale
+                    warpStrength);
                 float2 warpedXZ = worldPos.xz + warp;
 
-                // ── 2. Distance from warped position ──
+                // ── 2. Distance from warped XZ ──
                 float distXZ = length(warpedXZ - cellPos.xz);
 
-                // ── 3. Soft envelope (containment, not hard edge) ──
-                float envelope = 1.0 - smoothstep(radius * 0.5, radius * 1.1, distXZ);
+                // ── 3. Soft envelope (containment only, cellular defines the shape) ──
+                float envelope = 1.0 - smoothstep(radius * 0.5, radius * 1.4, distXZ);
                 if (envelope < 0.001) continue;
 
                 // ── 4. Vertical envelope ──
-                float vEnvelope = smoothstep(bottomY - fadeRange, bottomY, worldPos.y)
-                                * (1.0 - smoothstep(topY, topY + fadeRange, worldPos.y));
+                float hRange = topY - bottomY;
+                float vFade = min(hRange * 0.08, 200.0); // 8% of height or 200m
+                float vEnvelope = smoothstep(bottomY, bottomY + vFade, worldPos.y)
+                                * (1.0 - smoothstep(topY - vFade, topY, worldPos.y));
 
-                // ── 5. Cellular FBM — internal cauliflower structure ──
-                float cellular = StormCellularDensity(worldPos + noiseWind, _StormNoiseScale * 0.7);
-                // Threshold: only keep dense cellular regions, discard thin gaps
-                float cellularShape = smoothstep(0.35, 0.7, cellular);
+                // ── 5. Cellular FBM — internal bubble structure ──
+                float cellular = StormCellularFbm(worldPos + noiseWind, _StormNoiseScale);
 
-                // ── 6. Combine: envelope contains the cellular structure ──
+                // ── 6. Contrast: push mids to extremes → crisp clusters ──
+                float contrast = _StormClusterContrast;
+                float cellularShape = smoothstep(0.5 - contrast, 0.5 + contrast, cellular);
+
+                // ── 7. Combine ──
                 float cellDensity = envelope * vEnvelope * cellularShape * intensity * _StormDensityMult;
 
-                if (cellDensity > 0.001)
+                if (cellDensity > 0.002)
                 {
                     totalDensity += cellDensity;
                     float3 cellColor = lerp(_StormColorLight.rgb, _StormColorDark.rgb,

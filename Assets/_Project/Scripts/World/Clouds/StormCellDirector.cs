@@ -32,16 +32,22 @@ namespace ProjectC.World.Clouds
         [Tooltip("Максимальный интервал между молниями (сек).")]
         [Range(10f, 120f)] public float LightningIntervalMax = 30f;
 
+        [Header("Wind")]
+        [Tooltip("Множитель скорости ветра для движения ячеек.")]
+        [Range(0f, 5f)] public float WindSpeedMultiplier = 1f;
+
         [Header("Test")]
-        [Tooltip("При старте создать тестовые ячейки вокруг камеры.")]
+        [Tooltip("При старте создать тестовые ячейки вокруг игрока.")]
         public bool SpawnTestCells = true;
         [Tooltip("Сколько тестовых ячеек создать.")]
         [Range(0, 5)] public int TestCellCount = 2;
-        [Tooltip("Дистанция тестовых ячеек от камеры.")]
+        [Tooltip("Дистанция тестовых ячеек от игрока.")]
         [Range(500f, 5000f)] public float TestSpawnDistance = 1500f;
+        [Tooltip("Задержка перед спавном тестовых ячеек (сек).")]
+        [Range(1f, 60f)] public float TestSpawnDelay = 15f;
 
         [Header("Debug Visuals")]
-        [Tooltip("Создать GameObject-маркеры (кубы) на позициях ячеек.")]
+        [Tooltip("Создать GameObject-маркеры (столбы) на позициях ячеек.")]
         public bool ShowDebugMarkers = true;
         [Tooltip("Рисовать столбы в Game View (Debug.DrawLine).")]
         public bool ShowDebugColumns = true;
@@ -49,6 +55,16 @@ namespace ProjectC.World.Clouds
         public bool ShowDebugGizmos = true;
         [Tooltip("Логировать в консоль.")]
         [SerializeField] private bool _logDebug = true;
+
+        [Header("Debug Markers")]
+        [Tooltip("Ширина маркера по XZ (м).")]
+        [Range(50f, 1000f)] public float MarkerWidth = 200f;
+        [Tooltip("Высота маркера по Y (м). 0 = авто (CellTopY − CellBottomY).")]
+        [Range(0f, 10000f)] public float MarkerHeight = 0f;
+        [Tooltip("Вариативность размера (±% от заданного).")]
+        [Range(0f, 0.5f)] public float MarkerSizeVariation = 0.1f;
+        [Tooltip("Цвет маркера.")]
+        public Color MarkerColor = new Color(1f, 0f, 1f, 0.8f);
 
         private readonly List<GameObject> _debugMarkers = new();
 
@@ -85,7 +101,7 @@ namespace ProjectC.World.Clouds
         private System.Collections.IEnumerator SpawnTestCellsDelayed()
         {
             // Ждём пока сцена загрузится и игрок заспавнится
-            yield return new WaitForSeconds(15f);
+            yield return new WaitForSeconds(TestSpawnDelay);
 
             Vector3 playerPos = GetPlayerPosition();
             if (_logDebug)
@@ -113,7 +129,7 @@ namespace ProjectC.World.Clouds
                 var cell = _cells[i];
 
                 // Движение по ветру
-                cell.WorldPosition += windDir * windSpeed * dt;
+                cell.WorldPosition += windDir * windSpeed * WindSpeedMultiplier * dt;
                 cell.TimeSinceLightning += dt;
 
                 if (cell.TimeSinceLightning >= cell.NextLightningTime)
@@ -133,7 +149,7 @@ namespace ProjectC.World.Clouds
                 _cells[i] = cell;
             }
 
-            // ── GameObject-маркеры (кубы, видны всегда) ──
+            // ── GameObject-маркеры ──
             SyncDebugMarkers();
 
             // ── Game View debug: ЦИЛИНДРЫ (кольца + вертикали) ──
@@ -198,15 +214,19 @@ namespace ProjectC.World.Clouds
             // Create/remove to match cell count
             while (_debugMarkers.Count < _cells.Count)
             {
-                float columnH = CellTopY - CellBottomY;
+                float baseH = MarkerHeight > 0f ? MarkerHeight : (CellTopY - CellBottomY);
+                float variation = 1f + Random.Range(-MarkerSizeVariation, MarkerSizeVariation);
+                float w = MarkerWidth * variation;
+                float h = baseH * variation;
+
                 var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = $"StormCellMarker_{_debugMarkers.Count}";
-                cube.transform.localScale = new Vector3(200f, columnH, 200f);
+                cube.transform.localScale = new Vector3(w, h, w);
                 cube.hideFlags = HideFlags.DontSave;
                 Destroy(cube.GetComponent<Collider>());
                 var mr = cube.GetComponent<MeshRenderer>();
                 mr.material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-                mr.material.color = new Color(1f, 0f, 1f, 0.8f);
+                mr.material.color = MarkerColor;
                 _debugMarkers.Add(cube);
             }
 

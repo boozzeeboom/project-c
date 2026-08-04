@@ -211,18 +211,18 @@ namespace ProjectC.World.Clouds
                 return;
             }
 
+            float baseW = MarkerWidth > 0f ? MarkerWidth : (CellRadius * 2f);
+            float baseH = MarkerHeight > 0f ? MarkerHeight : (CellTopY - CellBottomY);
+            float midY = (CellBottomY + CellTopY) * 0.5f;
+
             // Create/remove to match cell count
             while (_debugMarkers.Count < _cells.Count)
             {
-                float baseW = MarkerWidth > 0f ? MarkerWidth : (CellRadius * 2f);
-                float baseH = MarkerHeight > 0f ? MarkerHeight : (CellTopY - CellBottomY);
                 float variation = 1f + Random.Range(-MarkerSizeVariation, MarkerSizeVariation);
-                float w = baseW * variation;
-                float h = baseH * variation;
 
                 var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.name = $"StormCellMarker_{_debugMarkers.Count}";
-                cube.transform.localScale = new Vector3(w, h, w);
+                cube.transform.localScale = new Vector3(baseW * variation, baseH * variation, baseW * variation);
                 cube.hideFlags = HideFlags.DontSave;
                 Destroy(cube.GetComponent<Collider>());
                 var mr = cube.GetComponent<MeshRenderer>();
@@ -237,12 +237,13 @@ namespace ProjectC.World.Clouds
                 _debugMarkers.RemoveAt(_debugMarkers.Count - 1);
             }
 
-            // Sync positions — place at column vertical midpoint
-            float midY = (CellBottomY + CellTopY) * 0.5f;
+            // Sync positions + scale (live-updates from inspector)
             for (int i = 0; i < _cells.Count; i++)
             {
                 Vector3 pos = _cells[i].WorldPosition;
-                _debugMarkers[i].transform.position = new Vector3(pos.x, midY, pos.z);
+                var t = _debugMarkers[i].transform;
+                t.position = new Vector3(pos.x, midY, pos.z);
+                t.localScale = new Vector3(baseW, baseH, baseW);
             }
         }
 

@@ -47,3 +47,12 @@
 **Изменения:**
 - `Assets/_Project/Settings/ProjectC_URP_Renderer.asset`: `m_CopyDepthMode: 1` → `0` (AfterOpaques вместо AfterTransparents)
 - `docs/world/CLOUD_system/3.0/IMPLEMENTATION_LOG.md`: задокументирован анализ и фикс
+
+## Итерация от 2026-08-04 (Depth Fix #2 — Reverse-Z)
+
+**Задача:** После фикса CopyDepthMode облака исчезли полностью — depth check в шейдере несовместим с reverse-Z
+
+**Коммит:** `c1c75851` — T-CLOUD09: Fix reverse-Z depth check — sceneDepth < 0.999 → Linear01Depth
+
+**Изменения:**
+- `Assets/_Project/Shaders/Clouds/VolumetricClouds.shader`: `sceneDepth < 0.999` → `Linear01Depth(sceneDepth) < 0.999` (строки 310-317)

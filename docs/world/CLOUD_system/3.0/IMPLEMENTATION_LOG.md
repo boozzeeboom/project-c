@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-02 – 2026-08-04
 **Plan:** `CLOUD_OCEAN_MEDIUM_DETAILED_STEPS.md`
-**Status:** 🟢 Phase 1 + Phase 2 (2.1–2.2B) + Multi-Layer (3.0) — завершены и верифицированы
+**Status:** 🟢 Phase 1 + Phase 2 (2.1–2.3) + Multi-Layer (3.0) — завершены и верифицированы
 
 ---
 
@@ -54,6 +54,15 @@
 - Displacement вместо вычитания плотности
 - Gate по высоте корабля ±400м, vertical suppression (disp.y × 0.15)
 - **Изменённые файлы:** `LocalDensity.compute`, `LocalDensityBuffer.cs`, `VolumetricClouds.shader`, `VolumetricCloudsRenderFeature.cs`, `ShipWakeCloudCutter.cs`
+
+---
+
+### 2.3 ✅ VFX Graph: конденсационные следы — 2026-08-04
+
+- `Contrail.vfx` — VFX Graph из шаблона Simple_Trail (VFX Graph 17.5.0)
+- `ShipContrailVfx.cs` — управление Play/Stop + движение GameObject за кораблём
+- `Ship_Light_root.prefab` — дочерний ContrailVFX с VisualEffect + ShipContrailVfx
+- **Коммит:** `ad1f2364`
 
 ---
 

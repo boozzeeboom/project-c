@@ -68,3 +68,14 @@
 - `docs/world/CLOUD_system/3.0/IMPLEMENTATION_LOG.md`: консолидированная документация, статус 🟢
 
 **Итог:** Фазы 1.1–3.0 (включая 2.1 LocalDensityBuffer, 2.2B Displacement, multi-layer) закрыты и верифицированы. Depth работает корректно.
+
+## Итерация от 2026-08-04 (Phase 2.3 — VFX Contrail)
+
+**Задача:** Создать VFX Graph конденсационного следа за кораблём
+
+**Коммит:** `ad1f2364` — T-CLOUD11: Phase 2.3 — VFX конденсационный след (Contrail.vfx)
+
+**Изменения:**
+- `Assets/_Project/VFX/Contrail.vfx` (NEW) — VFX Graph из шаблона Simple_Trail, частицы спавнятся за кораблём
+- `Assets/_Project/Scripts/Ship/ShipContrailVfx.cs`: `GetComponent<ShipController>` → `GetComponentInParent<ShipController>` (авторезолв на родителе)
+- `Assets/_Project/Prefabs/Ships/Ship_Light_root.prefab`: добавлен дочерний `ContrailVFX` с `VisualEffect` + `ShipContrailVfx`

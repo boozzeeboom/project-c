@@ -228,6 +228,12 @@ namespace ProjectC.Ship
                     if (v != null) v.Play();
         }
 
+        private static void TrySetFloat(VisualEffect vfx, string name, float value)
+        {
+            if (vfx.HasFloat(name))
+                vfx.SetFloat(name, value);
+        }
+
         private void ApplyVfxScale(float scale)
         {
             if (Vfx == null) return;
@@ -235,17 +241,17 @@ namespace ProjectC.Ship
             float baseSize = BaseSize * scale;
             float spawnRate = BaseSpawnRate * scale;
 
-            // Per-frame random size (±30%) → per-particle variation without VFX Random op
-            Vfx.SetFloat("TrailLifetime", lifetime);
-            Vfx.SetFloat("TrailSize", baseSize * Random.Range(0.7f, 1.3f));
-            Vfx.SetFloat("TrailSpawnRate", spawnRate);
+            // SetFloat — silently skip if param not yet added to VFX Graph
+            TrySetFloat(Vfx, "TrailLifetime", lifetime);
+            TrySetFloat(Vfx, "TrailSize", baseSize * Random.Range(0.7f, 1.3f));
+            TrySetFloat(Vfx, "TrailSpawnRate", spawnRate);
 
             foreach (var v in _sideVfxs)
             {
                 if (v == null) continue;
-                v.SetFloat("TrailLifetime", lifetime);
-                v.SetFloat("TrailSize", baseSize * Random.Range(0.7f, 1.3f));
-                v.SetFloat("TrailSpawnRate", spawnRate);
+                TrySetFloat(v, "TrailLifetime", lifetime);
+                TrySetFloat(v, "TrailSize", baseSize * Random.Range(0.7f, 1.3f));
+                TrySetFloat(v, "TrailSpawnRate", spawnRate);
             }
         }
 

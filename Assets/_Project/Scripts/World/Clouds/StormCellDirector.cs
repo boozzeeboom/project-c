@@ -84,14 +84,14 @@ namespace ProjectC.World.Clouds
 
         private System.Collections.IEnumerator SpawnTestCellsDelayed()
         {
-            // Ждём пока сцена загрузится и камера переместится к кораблю
-            yield return new WaitForSeconds(2f);
-            yield return new WaitUntil(() => Camera.main != null);
+            // Ждём пока сцена загрузится и игрок заспавнится
+            yield return new WaitForSeconds(15f);
 
-            if (_logDebug && Camera.main != null)
-                Debug.Log($"[StormCellDirector] Spawning test cells at camera: {Camera.main.transform.position}");
+            Vector3 playerPos = GetPlayerPosition();
+            if (_logDebug)
+                Debug.Log($"[StormCellDirector] Spawning test cells at player: {playerPos}");
 
-            SpawnTestCellsAroundCamera();
+            SpawnTestCellsAroundPosition(playerPos);
         }
 
         private void Update()
@@ -139,7 +139,7 @@ namespace ProjectC.World.Clouds
             // ── Game View debug: ЦИЛИНДРЫ (кольца + вертикали) ──
             if (ShowDebugColumns)
             {
-                var playerPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
+                var playerPos = GetPlayerPosition();
                 for (int i = 0; i < _cells.Count; i++)
                 {
                     var c = _cells[i];
@@ -291,14 +291,21 @@ namespace ProjectC.World.Clouds
         }
 
         // ═══════════════════════════════════════════
+        // Helpers
+        // ═══════════════════════════════════════════
+
+        private static Vector3 GetPlayerPosition()
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            return player != null ? player.transform.position : Vector3.zero;
+        }
+
+        // ═══════════════════════════════════════════
         // Test Spawn
         // ═══════════════════════════════════════════
 
-        private void SpawnTestCellsAroundCamera()
+        private void SpawnTestCellsAroundPosition(Vector3 center)
         {
-            Vector3 center = Camera.main != null
-                ? Camera.main.transform.position
-                : Vector3.zero;
 
             for (int i = 0; i < TestCellCount; i++)
             {

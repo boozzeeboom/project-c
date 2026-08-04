@@ -20,9 +20,11 @@ namespace ProjectC.World.Clouds
         [Header("Cells")]
         [Range(1, 10)] public int MaxCells = 5;
         [Tooltip("Радиус влияния ячейки (м).")]
-        [Range(500f, 5000f)] public float CellRadius = 2000f;
-        [Tooltip("Базовая высота ячеек (Y).")]
-        [Range(500f, 3000f)] public float CellAltitude = 1500f;
+        [Range(500f, 5000f)] public float CellRadius = 5000f;
+        [Tooltip("Нижняя граница столба (Y).")]
+        [Range(100f, 2000f)] public float CellBottomY = 800f;
+        [Tooltip("Верхняя граница столба (Y).")]
+        [Range(2000f, 8000f)] public float CellTopY = 5000f;
 
         [Header("Lightning")]
         [Tooltip("Минимальный интервал между молниями (сек).")]
@@ -38,7 +40,12 @@ namespace ProjectC.World.Clouds
         [Tooltip("Дистанция тестовых ячеек от камеры.")]
         [Range(500f, 5000f)] public float TestSpawnDistance = 1500f;
 
-        [Header("Debug")]
+        [Header("Debug Visuals")]
+        [Tooltip("Рисовать столбы в Game View (Debug.DrawLine).")]
+        public bool ShowDebugColumns = true;
+        [Tooltip("Рисовать Gizmos в Scene View.")]
+        public bool ShowDebugGizmos = true;
+        [Tooltip("Логировать в консоль.")]
         [SerializeField] private bool _logDebug = true;
 
         /// <summary>Событие: молния в worldPos с интенсивностью [0..1].</summary>
@@ -110,38 +117,39 @@ namespace ProjectC.World.Clouds
                 _cells[i] = cell;
             }
 
-            // ── Game View debug: ВЕРТИКАЛЬНЫЕ СТОЛБЫ 800→5000м ──
-            const float colBot = 800f, colTop = 5000f;
-            var playerPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
-            for (int i = 0; i < _cells.Count; i++)
+            // ── Game View debug: ЦИЛИНДРЫ (кольца + вертикали) ──
+            if (ShowDebugColumns)
             {
-                var c = _cells[i];
-                Vector3 bot = new Vector3(c.WorldPosition.x, colBot, c.WorldPosition.z);
-                Vector3 top = new Vector3(c.WorldPosition.x, colTop, c.WorldPosition.z);
-                Vector3 mid = new Vector3(c.WorldPosition.x, (colBot + colTop) * 0.5f, c.WorldPosition.z);
-
-                // Столб: вертикальная линия 800→5000 (ярко-розовая)
-                Debug.DrawLine(bot, top, Color.magenta, 0f, false);
-                // Контрастная обводка (белая, чуть смещённая — двойная линия)
-                Debug.DrawLine(bot + Vector3.right * 5f, top + Vector3.right * 5f, Color.white, 0f, false);
-
-                // Гигантский крест в середине столба (300м)
-                const float cr = 300f;
-                Debug.DrawLine(mid + Vector3.left * cr, mid + Vector3.right * cr, Color.yellow, 0f, false);
-                Debug.DrawLine(mid + Vector3.forward * cr, mid + Vector3.back * cr, Color.yellow, 0f, false);
-                Debug.DrawLine(mid + Vector3.left * cr + Vector3.forward * cr, mid + Vector3.right * cr + Vector3.back * cr, Color.yellow, 0f, false);
-
-                // Оранжевый луч от игрока к середине столба
-                Debug.DrawLine(playerPos, mid, new Color(1f, 0.5f, 0f, 0.8f), 0f, false);
-            }
-
-            // ── Периодический лог (раз в 10 сек) ──
-            if (_logDebug && Time.frameCount % 600 == 0)
-            {
-                var sb = new System.Text.StringBuilder($"[StormCellDirector] ⛈ {_cells.Count} cells: ");
+                var playerPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
                 for (int i = 0; i < _cells.Count; i++)
-                    sb.Append($" [{i}]Y={_cells[i].WorldPosition.y:F0}");
-                Debug.Log(sb.ToString());
+                {
+                    var c = _cells[i];
+                    float r = c.Radius;
+                    Vector3 center = c.WorldPosition;
+                    Vector3 bot = new Vector3(center.x, CellBottomY, center.z);
+                    Vector3 top = new Vector3(center.x, CellTopY, center.z);
+
+                    // Кольца каждые 500м
+                    for (float y = CellBottomY; y <= CellTopY; y += 500f)
+                        DrawDebugRing(new Vector3(center.x, y, center.z), r, Color.magenta);
+
+                    // Вертикальные рёбра цилиндра (8 шт)
+                    for (int seg = 0; seg < 8; seg++)
+                    {
+                        float a = seg * Mathf.PI * 2f / 8f;
+                        float x = Mathf.Cos(a) * r;
+                        float z = Mathf.Sin(a) * r;
+                        Debug.DrawLine(bot + new Vector3(x, 0, z), top + new Vector3(x, 0, z), Color.magenta, 0f, false);
+                    }
+
+                    // Крест в центре
+                    Vector3 mid = new Vector3(center.x, (CellBottomY + CellTopY) * 0.5f, center.z);
+                    Debug.DrawLine(mid + Vector3.left * 300f, mid + Vector3.right * 300f, Color.yellow, 0f, false);
+                    Debug.DrawLine(mid + Vector3.forward * 300f, mid + Vector3.back * 300f, Color.yellow, 0f, false);
+
+                    // Оранжевый луч от игрока
+                    Debug.DrawLine(playerPos, mid, new Color(1f, 0.5f, 0f, 0.8f), 0f, false);
+                }
             }
 
             // Broadcast global storm intensity
@@ -191,6 +199,19 @@ namespace ProjectC.World.Clouds
             _cells.RemoveAt(index);
         }
 
+        private static void DrawDebugRing(Vector3 center, float radius, Color color)
+        {
+            const int segments = 24;
+            float step = Mathf.PI * 2f / segments;
+            for (int i = 0; i < segments; i++)
+            {
+                float a0 = i * step, a1 = (i + 1) * step;
+                Vector3 p0 = center + new Vector3(Mathf.Cos(a0) * radius, 0f, Mathf.Sin(a0) * radius);
+                Vector3 p1 = center + new Vector3(Mathf.Cos(a1) * radius, 0f, Mathf.Sin(a1) * radius);
+                Debug.DrawLine(p0, p1, color, 0f, false);
+            }
+        }
+
         /// <summary>Read-only доступ к ячейкам (для дебага / 3.3).</summary>
         public IReadOnlyList<StormCell> GetCells() => _cells;
 
@@ -218,9 +239,10 @@ namespace ProjectC.World.Clouds
             {
                 float angle = (360f / TestCellCount) * i + Random.Range(-30f, 30f);
                 float dist = TestSpawnDistance + Random.Range(-300f, 300f);
+                float midY = (CellBottomY + CellTopY) * 0.5f;
                 Vector3 pos = center + new Vector3(
                     Mathf.Cos(angle * Mathf.Deg2Rad) * dist,
-                    CellAltitude - center.y + Random.Range(-200f, 200f),
+                    midY - center.y + Random.Range(-200f, 200f),
                     Mathf.Sin(angle * Mathf.Deg2Rad) * dist
                 );
 
@@ -229,41 +251,59 @@ namespace ProjectC.World.Clouds
             }
 
             if (_logDebug)
-                Debug.Log($"[StormCellDirector] ⛈ Spawned {TestCellCount} test cells around camera at Y≈{CellAltitude}." +
-                          $" Open SceneView, look for MAGENTA crosses at Y={CellAltitude}.");
+                Debug.Log($"[StormCellDirector] ⛈ Spawned {TestCellCount} test cells. Columns {CellBottomY}→{CellTopY}m, radius={CellRadius}m.");
         }
 
 #if UNITY_EDITOR
         private void OnDrawGizmos()
         {
-            if (_cells == null) return;
-            const float colBot = 800f, colTop = 5000f;
+            if (!ShowDebugGizmos || _cells == null) return;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var c = _cells[i];
-                Vector3 bot = new Vector3(c.WorldPosition.x, colBot, c.WorldPosition.z);
-                Vector3 top = new Vector3(c.WorldPosition.x, colTop, c.WorldPosition.z);
+                float r = c.Radius;
+                Vector3 center = c.WorldPosition;
+                Vector3 bot = new Vector3(center.x, CellBottomY, center.z);
+                Vector3 top = new Vector3(center.x, CellTopY, center.z);
+                Vector3 mid = new Vector3(center.x, (CellBottomY + CellTopY) * 0.5f, center.z);
 
-                // Столб: полупрозрачная сфера по всей высоте
-                for (float y = colBot + 200f; y < colTop; y += 400f)
+                // Цепочка сфер по высоте
+                Gizmos.color = new Color(1f, 0.15f, 0.7f, 0.06f);
+                for (float y = CellBottomY + 200f; y < CellTopY; y += 400f)
+                    Gizmos.DrawSphere(new Vector3(center.x, y, center.z), r * 0.4f);
+
+                // Кольца
+                Gizmos.color = new Color(1f, 0.3f, 0.9f, 0.3f);
+                for (float y = CellBottomY; y <= CellTopY; y += 500f)
+                    DrawGizmoRing(new Vector3(center.x, y, center.z), r);
+
+                // Вертикали
+                for (int seg = 0; seg < 4; seg++)
                 {
-                    Gizmos.color = new Color(1f, 0.15f, 0.7f, 0.08f);
-                    Gizmos.DrawSphere(new Vector3(c.WorldPosition.x, y, c.WorldPosition.z), 180f);
+                    float a = seg * Mathf.PI * 2f / 4f;
+                    float x = Mathf.Cos(a) * r, z = Mathf.Sin(a) * r;
+                    Gizmos.DrawLine(bot + new Vector3(x, 0, z), top + new Vector3(x, 0, z));
                 }
 
-                // Контур столба
-                Gizmos.color = new Color(1f, 0.3f, 0.9f, 0.4f);
-                Gizmos.DrawLine(bot, top);
-
-                // Крест в центре
-                Vector3 mid = new Vector3(c.WorldPosition.x, (colBot + colTop) * 0.5f, c.WorldPosition.z);
+                // Крест + подпись
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawLine(mid + Vector3.left * 200f, mid + Vector3.right * 200f);
                 Gizmos.DrawLine(mid + Vector3.forward * 200f, mid + Vector3.back * 200f);
-
-                // Подпись
                 UnityEditor.Handles.Label(mid + Vector3.up * 50f,
-                    $"CELL[{i}] I={c.Intensity:F1} ⚡{c.NextLightningTime - c.TimeSinceLightning:F1}s");
+                    $"CELL[{i}] R={r:F0} I={c.Intensity:F1} ⚡{c.NextLightningTime - c.TimeSinceLightning:F1}s");
+            }
+        }
+
+        private static void DrawGizmoRing(Vector3 center, float radius)
+        {
+            const int seg = 32;
+            float step = Mathf.PI * 2f / seg;
+            for (int i = 0; i < seg; i++)
+            {
+                float a0 = i * step, a1 = (i + 1) * step;
+                Vector3 p0 = center + new Vector3(Mathf.Cos(a0) * radius, 0f, Mathf.Sin(a0) * radius);
+                Vector3 p1 = center + new Vector3(Mathf.Cos(a1) * radius, 0f, Mathf.Sin(a1) * radius);
+                Gizmos.DrawLine(p0, p1);
             }
         }
 #endif

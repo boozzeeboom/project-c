@@ -232,18 +232,19 @@ namespace ProjectC.Ship
         {
             if (Vfx == null) return;
             float lifetime = BaseLifetime * scale;
-            float size = BaseSize * scale;
+            float baseSize = BaseSize * scale;
             float spawnRate = BaseSpawnRate * scale;
 
+            // Per-frame random size (±30%) → per-particle variation without VFX Random op
             Vfx.SetFloat("TrailLifetime", lifetime);
-            Vfx.SetFloat("TrailSize", size);
+            Vfx.SetFloat("TrailSize", baseSize * Random.Range(0.7f, 1.3f));
             Vfx.SetFloat("TrailSpawnRate", spawnRate);
 
             foreach (var v in _sideVfxs)
             {
                 if (v == null) continue;
                 v.SetFloat("TrailLifetime", lifetime);
-                v.SetFloat("TrailSize", size);
+                v.SetFloat("TrailSize", baseSize * Random.Range(0.7f, 1.3f));
                 v.SetFloat("TrailSpawnRate", spawnRate);
             }
         }

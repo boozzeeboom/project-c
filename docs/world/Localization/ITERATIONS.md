@@ -80,7 +80,38 @@
 - `DialogWindow.cs`: [Конец] → Loc.Get(ui.dialog.end)
 - Dialogue_Table_ru: 14 ключей из 3 DialogTree (node texts + edge labels)
 
-**Статус:** ✅ Phase 5 завершён. Следующий — Phase 6 (инструмент переводчика CSV).
+**Статус:** ✅ Phase 5 завершён.
+
+## Итерация 6 — 2026-08-05
+
+**Задача:** Phase 6 — Инструмент переводчика (CSV Export/Import)  
+**Тикет:** LOC-10  
+**Коммит:** `10ee059` — LOC-10: Phase 6 — Инструмент переводчика
+
+**Изменения:**
+- `LocalizationToolWindow.cs` — EditorWindow: Export All / Import CSV / Проверить покрытие
+- CSV export: 4 таблицы × 9 локалей → Key | ru | en | zh | es | de | fr | pt | ja | hi
+- CSV import: парсинг с quoted-полями, запись в StringTable entries всех локалей
+- Coverage check: подсчёт ключей без перевода (исключая ru source)
+- Menu: `ProjectC/Localization/Export/Import Tool`
+
+**Статус:** ✅ Phase 6 завершён.
+
+---
+
+## Сводка — все фазы выполнены
+
+| Фаза | Тикет | Коммит | Ключей |
+|---|---|---|---|
+| Phase 0+1 — Инфраструктура | LOC-01/02 | `2459055` | — |
+| Phase 2 — System-сообщения | LOC-03 | `8012159` | 49 sys.* |
+| Phase 3 — UI-строки | LOC-04 | `7b1ff1f`, `df54864` | 70+ ui.* |
+| Phase 4 — SO-данные | LOC-05 | `5925200` | 119 static.* |
+| Phase 5 — Диалоги | LOC-09 | `010fe9a` | 14 dialogue.* |
+| Phase 6 — Инструмент | LOC-10 | `10ee059` | — |
+
+**Всего: 252+ ключей в 4 таблицах, 9 языков, полный цикл export→translate→import.**
+Phase 7 (верификация) — за пользователем (playtests).
 
 ## Статистика
 - 103 файла (103 new)

@@ -895,8 +895,11 @@ namespace ProjectC.Items
         // Result helpers
         // ===========================================================
         private static InventoryResultDto Ok(string message, int itemId, int slotIndex)
-            => new InventoryResultDto { code = (byte)InventoryResultCode.Ok, message = message, itemId = itemId, slotIndex = slotIndex, newCredits = -1f };
-        private static InventoryResultDto Fail(InventoryResultCode code, string message, int itemId, int slotIndex)
-            => new InventoryResultDto { code = (byte)code, message = message, itemId = itemId, slotIndex = slotIndex, newCredits = -1f };
+            => new InventoryResultDto { code = (byte)InventoryResultCode.Ok, message = "ok", itemId = itemId, slotIndex = slotIndex, newCredits = -1f };
+        private static InventoryResultDto Fail(InventoryResultCode code, string debugDetail, int itemId, int slotIndex)
+        {
+            Debug.Log($"[InventoryWorld] Fail: {code} — {debugDetail}");
+            return new InventoryResultDto { code = (byte)code, message = code.ToString(), itemId = itemId, slotIndex = slotIndex, newCredits = -1f };
+        }
     }
 }

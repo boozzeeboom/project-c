@@ -107,28 +107,10 @@ namespace ProjectC.Trade.Client
         // LOCALIZATION
         // ========================================================
 
-        /// <summary>Маппинг ContractResultCode → локализованная строка для UI.</summary>
+        /// <summary>Маппинг ContractResultCode → локализованная строка для UI. (LOC-03)</summary>
         public static string LocalizeResultCode(ContractResultCode code)
         {
-            switch (code)
-            {
-                case ContractResultCode.Ok: return "OK";
-                case ContractResultCode.NotInZone: return "Вы должны быть в зоне NPC-агента";
-                case ContractResultCode.ContractNotFound: return "Контракт не найден";
-                case ContractResultCode.ContractNotPending: return "Контракт уже принят или истёк";
-                case ContractResultCode.ContractNotActive: return "Контракт не активен";
-                case ContractResultCode.ContractNotAssigned: return "Это не ваш контракт";
-                case ContractResultCode.MaxActiveReached: return "Слишком много активных контрактов";
-                case ContractResultCode.TooMuchDebt: return "Слишком большой долг";
-                case ContractResultCode.TimerExpired: return "Время контракта истекло";
-                case ContractResultCode.WrongDestination: return "Вы не в целевой локации";
-                case ContractResultCode.CargoMissing: return "Нет нужного груза";
-                case ContractResultCode.WarehouseFull: return "Нет места на складе";
-                case ContractResultCode.ItemNotFound: return "Товар не найден";
-                case ContractResultCode.RateLimited: return "Слишком много запросов";
-                case ContractResultCode.InternalError: return "Внутренняя ошибка";
-                default: return code.ToString();
-            }
+            return ProjectC.Localization.Loc.Get($"sys.contract.{ProjectC.Localization.Loc.ToSnakeCase(code.ToString())}");
         }
     }
 }

@@ -179,37 +179,7 @@ namespace ProjectC.Trade.Client
 
         public static string LocalizeResultCode(TradeResultCode code)
         {
-            switch (code)
-            {
-                case TradeResultCode.Ok: return "OK";
-                case TradeResultCode.InvalidArgs: return "Некорректный запрос";
-                case TradeResultCode.InternalError: return "Внутренняя ошибка";
-                case TradeResultCode.NotInZone: return "Вы должны быть в зоне рынка";
-                case TradeResultCode.RateLimited: return "Слишком много запросов";
-
-                case TradeResultCode.MarketNotFound: return "Рынок не найден";
-                case TradeResultCode.ItemNotInMarket: return "Товар не продаётся здесь";
-                case TradeResultCode.InsufficientStock: return "Нет в наличии";
-                case TradeResultCode.ItemBuyDisabled: return "Здесь нельзя купить";
-                case TradeResultCode.ItemSellDisabled: return "Здесь нельзя продать";
-                case TradeResultCode.PriceInvalid: return "Ошибка цены";
-                case TradeResultCode.FactionRestricted: return "Торговля для вашей фракции закрыта";
-
-                case TradeResultCode.ItemNotInWarehouse: return "Товара нет на складе";
-                case TradeResultCode.WarehouseFullWeight: return "Склад переполнен по весу";
-                case TradeResultCode.WarehouseFullVolume: return "Склад переполнен по объёму";
-                case TradeResultCode.WarehouseFullTypes: return "Склад переполнен по типам";
-
-                case TradeResultCode.ShipNotFound: return "Корабль не найден";
-                case TradeResultCode.ShipNotInZone: return "Корабль не в зоне причала";
-                case TradeResultCode.ItemNotInCargo: return "Товара нет в трюме";
-                case TradeResultCode.CargoFullWeight: return "Трюм переполнен по весу";
-                case TradeResultCode.CargoFullVolume: return "Трюм переполнен по объёму";
-                case TradeResultCode.CargoFullSlots: return "Трюм переполнен по слотам";
-
-                case TradeResultCode.InsufficientCredits: return "Недостаточно кредитов";
-                default: return code.ToString();
-            }
+            return ProjectC.Localization.Loc.Get($"sys.market.{ProjectC.Localization.Loc.ToSnakeCase(code.ToString())}");
         }
 
         private static NetworkPlayer FindLocalPlayer()

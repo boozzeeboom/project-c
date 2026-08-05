@@ -13,7 +13,7 @@ namespace ProjectC.Localization
     /// <summary>
     /// Core localization helper. All client-facing string access goes through Loc.
     /// Key prefix determines the table: static.* / ui.* / dialogue.* / sys.*
-    /// Fallback chain: translation → ru → passed literal → key itself.
+    /// Fallback chain: translation -> ru -> passed literal -> key itself.
     /// </summary>
     public static class Loc
     {
@@ -88,16 +88,8 @@ namespace ProjectC.Localization
             OnLocaleChanged += handler;
         }
 
-        /// <summary>Walk all Labels whose 'name' starts with 'loc:' and bind them.</summary>
+        /// <summary>Walk all Labels whose 'name' matches a loc key prefix and bind them.</summary>
         public static void BindAll(VisualElement root)
-        {
-            if (root == null) return;
-            EnsureSubscribed();
-            WalkAndBind(root);
-        }
-
-        /// <summary>Walk all Labels and bind those with 'name' = loc key.</summary>
-        public static void BindAllByName(VisualElement root)
         {
             if (root == null) return;
             EnsureSubscribed();
@@ -108,7 +100,6 @@ namespace ProjectC.Localization
         {
             if (el is Label label && !string.IsNullOrEmpty(el.name))
             {
-                // Convention: name = localization key (e.g. "ui.esc_menu.gameplay.title")
                 var name = el.name;
                 if (name.StartsWith("ui.") || name.StartsWith("static.") ||
                     name.StartsWith("dialogue.") || name.StartsWith("sys."))
@@ -120,50 +111,47 @@ namespace ProjectC.Localization
                 WalkAndBind(child);
         }
 
+        /// <summary>Convert PascalCase to snake_case (e.g. InventoryFull -> inventory_full).</summary>
+        public static string ToSnakeCase(string pascal)
+        {
+            if (string.IsNullOrEmpty(pascal)) return pascal;
+            var result = char.ToLower(pascal[0]).ToString();
+            for (int i = 1; i < pascal.Length; i++)
+            {
+                if (char.IsUpper(pascal[i]))
+                    result += "_" + char.ToLower(pascal[i]);
+                else
+                    result += pascal[i];
+            }
+            return result;
+        }
+
         // ===== Internal =====
 
         private static string GetFromTable(string tableName, string entryKey, string fallback)
         {
             var locale = LocalizationSettings.SelectedLocale;
             if (locale == null)
-            {
-                Debug.LogWarning($"[Loc] SelectedLocale is null, returning fallback for '{entryKey}'.");
                 return fallback;
-            }
 
             try
             {
                 var db = LocalizationSettings.StringDatabase;
-                if (db == null)
-                {
-                    Debug.LogWarning($"[Loc] StringDatabase is null, returning fallback for '{entryKey}'.");
-                    return fallback;
-                }
+                if (db == null) return fallback;
 
                 var table = db.GetTable(tableName);
-                if (table == null)
-                {
-                    Debug.LogWarning($"[Loc] Table '{tableName}' not found for key '{entryKey}'.");
-                    return fallback;
-                }
+                if (table == null) return fallback;
 
                 var entry = table.GetEntry(entryKey);
-                if (entry == null)
-                {
-                    // Key not in table — return fallback silently (expected for missing translations).
-                    return fallback;
-                }
+                if (entry == null) return fallback;
 
-                // Get value for current locale from the entry
                 var value = entry.GetLocalizedString();
-                if (!string.IsNullOrEmpty(value))
-                    return value;
+                if (!string.IsNullOrEmpty(value)) return value;
 
                 return fallback;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"[Loc] Error resolving '{tableName}/{entryKey}': {ex.Message}");
                 return fallback;
             }
         }

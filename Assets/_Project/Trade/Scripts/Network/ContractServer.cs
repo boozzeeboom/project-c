@@ -398,34 +398,11 @@ namespace ProjectC.Trade.Network
                 code = (byte)code,
                 contractId = contractId,
                 success = false,
-                message = ContractClientState_LocalizeResultCode(code), // server-side fallback (на случай если клиент не имеет ContractClientState)
+                message = code.ToString(), // server sends code only — client localizes (LOC-03)
                 reward = reward,
                 newCredits = newCredits,
                 newDebt = newDebt
             };
-        }
-
-        /// <summary>Server-side минимальная локализация (на случай если ContractClientState недоступен). Полная — в ContractClientState.LocalizeResultCode.</summary>
-        private static string ContractClientState_LocalizeResultCode(ContractResultCode code)
-        {
-            switch (code)
-            {
-                case ContractResultCode.Ok: return "OK";
-                case ContractResultCode.NotInZone: return "Вы должны быть в зоне NPC-агента";
-                case ContractResultCode.ContractNotFound: return "Контракт не найден";
-                case ContractResultCode.ContractNotPending: return "Контракт уже принят или истёк";
-                case ContractResultCode.ContractNotActive: return "Контракт не активен";
-                case ContractResultCode.ContractNotAssigned: return "Это не ваш контракт";
-                case ContractResultCode.MaxActiveReached: return "Слишком много активных контрактов";
-                case ContractResultCode.TooMuchDebt: return "Слишком большой долг";
-                case ContractResultCode.TimerExpired: return "Время контракта истекло";
-                case ContractResultCode.WrongDestination: return "Вы не в целевой локации";
-                case ContractResultCode.CargoMissing: return "Нет нужного груза";
-                case ContractResultCode.WarehouseFull: return "Нет места на складе";
-                case ContractResultCode.ItemNotFound: return "Товар не найден";
-                case ContractResultCode.RateLimited: return "Слишком много запросов";
-                default: return code.ToString();
-            }
         }
 
         // ========================================================

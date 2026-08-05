@@ -258,26 +258,12 @@ namespace ProjectC.Items.Client
         }
 
         // ============================================================
-        // LOCALIZATION — InventoryResultCode → строка
+        // LOCALIZATION — InventoryResultCode → строка (LOC-03)
         // ============================================================
 
         public static string LocalizeResultCode(InventoryResultCode code)
         {
-            switch (code)
-            {
-                case InventoryResultCode.Ok:                return "OK";
-                case InventoryResultCode.NotInZone:         return "Слишком далеко от предмета";
-                case InventoryResultCode.InventoryFull:     return "Инвентарь полон";
-                case InventoryResultCode.ItemNotFound:      return "Предмет не найден";
-                case InventoryResultCode.NotEnoughQuantity: return "Недостаточно предметов";
-                case InventoryResultCode.InvalidSlot:       return "Неверный слот";
-                case InventoryResultCode.RateLimited:       return "Слишком много запросов";
-                case InventoryResultCode.InternalError:     return "Внутренняя ошибка";
-                case InventoryResultCode.NoPermission:      return "Нет прав на операцию";
-                case InventoryResultCode.ItemNotOwned:      return "Этого предмета нет в инвентаре";
-                case InventoryResultCode.StackOverflow:     return "Стек переполнен";
-                default: return code.ToString();
-            }
+            return ProjectC.Localization.Loc.Get($"sys.inventory.{ProjectC.Localization.Loc.ToSnakeCase(code.ToString())}");
         }
     }
 }

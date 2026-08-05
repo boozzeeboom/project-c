@@ -34,7 +34,24 @@
 - InventoryWorld.Fail: message=code, debugDetail → Debug.Log
 - `Loc.ToSnakeCase()` — public helper
 
-**Статус:** ✅ Phase 2 завершён. Следующий — Phase 3 (UI-строки) или Phase 6 (инструмент переводчика).
+**Статус:** ✅ Phase 2 завершён.
+
+## Итерация 3 — 2026-08-05
+
+**Задача:** Phase 3 — UI-строки (EscMenu + KeybindingsWindow + ключи для character/contract/market/toast/dialog)  
+**Тикет:** LOC-04  
+**Коммит:** `7b1ff1f` + `df54864` — LOC-04: Phase 3 — UI локализация
+
+**Изменения:**
+- `SettingsWidgets.cs` — `MakeLabel()` auto-binds labels с `ui.` префиксом
+- `GameplaySettingsSection.cs` — все label/section → ui.esc_menu.* ключи
+- `AudioSettingsSection.cs` — все label/section → ui.esc_menu.* ключи
+- `GraphicsSettingsSection.cs` — все label/section/AA → ui.esc_menu.* ключи
+- `EscMenuWindow.cs` — навигация, кнопки, exit confirm → Loc.Get/Loc.Bind
+- `KeybindingsWindow.cs` — заголовок, кнопки, секции, ЛКМ/ПКМ/СКМ → ui.keybindings.*
+- UI_Table_ru: 70+ ключей (EscMenu 40+, Keybindings 10, Character 5, Contract 6, Market 3, Toast 3, Dialog 2)
+
+**Статус:** ✅ Phase 3 (EscMenu + Keybindings) завершён. Следующий — Phase 4 (SO-данные).
 
 ## Статистика
 - 103 файла (103 new)

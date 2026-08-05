@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 using ProjectC.Input;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.Settings
 {
@@ -144,7 +145,8 @@ namespace ProjectC.UI.Settings
             var header = new VisualElement();
             header.AddToClassList("kb-embedded-header");
 
-            var title = new Label("Настройки клавиш");
+            var title = new Label("ui.keybindings.title");
+            Loc.Bind(title, "ui.keybindings.title");
             title.AddToClassList("kb-embedded-title");
             header.Add(title);
 
@@ -158,7 +160,7 @@ namespace ProjectC.UI.Settings
                     InputBindingsRuntime.Instance.Save();
                     Debug.Log("[KeybindingsWindow] Manual Save → PlayerPrefs");
                 }
-            }) { text = "СОХР" };
+            }) { text = Loc.Get("ui.keybindings.save") };
             saveBtn.AddToClassList("kb-embedded-btn");
             saveBtn.AddToClassList("kb-embedded-btn-save");
             btnRow.Add(saveBtn);
@@ -171,7 +173,7 @@ namespace ProjectC.UI.Settings
                     RebuildLists();
                     Debug.Log("[KeybindingsWindow] Manual Reload from PlayerPrefs");
                 }
-            }) { text = "ЗАГР" };
+            }) { text = Loc.Get("ui.keybindings.load") };
             reloadBtn.AddToClassList("kb-embedded-btn");
             reloadBtn.AddToClassList("kb-embedded-btn-reload");
             btnRow.Add(reloadBtn);
@@ -184,7 +186,7 @@ namespace ProjectC.UI.Settings
                     RebuildLists();
                     Debug.Log("[KeybindingsWindow] Reset to defaults applied");
                 }
-            }) { text = "СБРОС" };
+            }) { text = Loc.Get("ui.keybindings.reset") };
             resetBtn.AddToClassList("kb-embedded-btn");
             resetBtn.AddToClassList("kb-embedded-btn-reset");
             btnRow.Add(resetBtn);
@@ -197,7 +199,8 @@ namespace ProjectC.UI.Settings
 
             var skillCol = new VisualElement();
             skillCol.AddToClassList("kb-embedded-col");
-            var skillLabel = new Label("Боевые навыки");
+            var skillLabel = new Label("ui.keybindings.combat_skills");
+            Loc.Bind(skillLabel, "ui.keybindings.combat_skills");
             skillLabel.AddToClassList("kb-embedded-section");
             skillCol.Add(skillLabel);
 
@@ -210,7 +213,8 @@ namespace ProjectC.UI.Settings
 
             var actionCol = new VisualElement();
             actionCol.AddToClassList("kb-embedded-col");
-            var actionLabel = new Label("Действия");
+            var actionLabel = new Label("ui.keybindings.actions");
+            Loc.Bind(actionLabel, "ui.keybindings.actions");
             actionLabel.AddToClassList("kb-embedded-section");
             actionCol.Add(actionLabel);
 
@@ -223,7 +227,8 @@ namespace ProjectC.UI.Settings
 
             container.Add(columns);
 
-            var footer = new Label("Сохранение автоматическое. Кликните строку чтобы изменить клавишу.");
+            var footer = new Label("ui.keybindings.footer");
+            Loc.Bind(footer, "ui.keybindings.footer");
             footer.AddToClassList("kb-embedded-footer");
             container.Add(footer);
 
@@ -389,9 +394,9 @@ namespace ProjectC.UI.Settings
             var row = new VisualElement(); row.AddToClassList("kb-row");
             var label = new Label(a.displayName); label.AddToClassList("kb-row-action"); row.Add(label);
             string keyStr = "";
-            if (a.mouseButtonRaw == 1) keyStr = "ЛКМ";
-            else if (a.mouseButtonRaw == 2) keyStr = "ПКМ";
-            else if (a.mouseButtonRaw == 3) keyStr = "СКМ";
+            if (a.mouseButtonRaw == 1) keyStr = Loc.Get("ui.keybindings.lmb");
+            else if (a.mouseButtonRaw == 2) keyStr = Loc.Get("ui.keybindings.rmb");
+            else if (a.mouseButtonRaw == 3) keyStr = Loc.Get("ui.keybindings.mmb");
             else if (a.mouseButtonRaw == 0 && a.key != Key.None) keyStr = a.key.ToString();
             else if (a.mouseButtonRaw != 0) keyStr = $"Mouse{a.mouseButtonRaw}";
             var k = new Label(keyStr); k.AddToClassList("kb-row-key"); row.Add(k);

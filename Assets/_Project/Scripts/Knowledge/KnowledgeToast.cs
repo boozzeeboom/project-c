@@ -2,9 +2,12 @@
 // KnowledgeToast: UI toast «Открыто знание» при получении новых знаний.
 // Подписывается на 4 события клиентских стейтов и показывает diff.
 // Design: docs/Character/Knowledges/07_KNOWLEDGE_SYSTEM_V3_INTEGRATION_PLAN.md §4 V3.8
+// V3.9: UI Toolkit toast (pattern: QuestToast) — runtime-built VisualElement, queue, bottom-center.
 
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 using ProjectC.Skills;
 using ProjectC.Crafting;
 using ProjectC.Reputation;
@@ -13,12 +16,14 @@ using ProjectC.Factions;
 
 namespace ProjectC.Knowledge
 {
+    [RequireComponent(typeof(UIDocument))]
     public class KnowledgeToast : MonoBehaviour
     {
         public static KnowledgeToast Instance { get; private set; }
 
         [Header("Toast Settings")]
         [SerializeField] private float _toastDuration = 3f;
+        [SerializeField] private float _queueDelay = 0.8f;
         [SerializeField] private int _maxToastLines = 3;
 
         // Previous state for diff
@@ -26,6 +31,15 @@ namespace ProjectC.Knowledge
         private HashSet<string> _prevKnownRecipes = new HashSet<string>();
         private HashSet<byte> _prevKnownFactions = new HashSet<byte>();
         private HashSet<string> _prevKnownNpcs = new HashSet<string>();
+
+        // UI Toolkit
+        private UIDocument _doc;
+        private VisualElement _container;
+        private Label _label;
+        private bool _built;
+        private bool _subscribed;
+        private Queue<string> _queue = new Queue<string>();
+        private Coroutine _queueCoroutine;
 
         private void Awake()
         {
@@ -39,13 +53,88 @@ namespace ProjectC.Knowledge
                 Destroy(gameObject);
                 return;
             }
+
+            _doc = GetComponent<UIDocument>();
         }
 
-        private void OnEnable() { TrySubscribe(); }
-        private void OnDisable() { TryUnsubscribe(); }
-        private void OnDestroy() { TryUnsubscribe(); if (Instance == this) Instance = null; }
+        private void OnEnable()
+        {
+            if (Application.isPlaying)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
+        }
 
-        private bool _subscribed;
+        private void OnDisable()
+        {
+            TryUnsubscribe();
+            if (_queueCoroutine != null) { StopCoroutine(_queueCoroutine); _queueCoroutine = null; }
+        }
+
+        private void OnDestroy()
+        {
+            TryUnsubscribe();
+            if (Instance == this) Instance = null;
+        }
+
+        private void Update()
+        {
+            if (!_built) TryBuild();
+            if (!_subscribed) TrySubscribe();
+        }
+
+        private void TryBuild()
+        {
+            if (_doc == null) _doc = GetComponent<UIDocument>();
+            if (_doc == null) return;
+            if (_doc.rootVisualElement == null) return;
+            if (_doc.panelSettings == null) return;
+
+            var root = _doc.rootVisualElement;
+
+            _container = new VisualElement
+            {
+                name = "knowledge-toast",
+                pickingMode = PickingMode.Ignore
+            };
+            _container.style.position = Position.Absolute;
+            _container.style.bottom = 48;
+            _container.style.left = 0;
+            _container.style.right = 0;
+            _container.style.alignItems = Align.Center;
+            _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+
+            _label = new Label
+            {
+                name = "knowledge-toast-label",
+                text = "",
+                pickingMode = PickingMode.Ignore
+            };
+            _label.style.color = new StyleColor(new Color(0.9f, 0.85f, 1f, 1f));
+            _label.style.fontSize = 17;
+            _label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _label.style.whiteSpace = WhiteSpace.Normal;
+            _label.style.backgroundColor = new StyleColor(new Color(0.08f, 0.06f, 0.15f, 0.88f));
+            _label.style.paddingTop = 8;
+            _label.style.paddingBottom = 8;
+            _label.style.paddingLeft = 20;
+            _label.style.paddingRight = 20;
+            _label.style.borderTopLeftRadius = 6;
+            _label.style.borderTopRightRadius = 6;
+            _label.style.borderBottomLeftRadius = 6;
+            _label.style.borderBottomRightRadius = 6;
+            _label.style.textShadow = new TextShadow
+            {
+                offset = new Vector2(1, 1),
+                blurRadius = 2,
+                color = new Color(0, 0, 0, 0.9f)
+            };
+
+            _container.Add(_label);
+            root.Add(_container);
+            _built = true;
+        }
 
         private void TrySubscribe()
         {
@@ -157,8 +246,34 @@ namespace ProjectC.Knowledge
             if (names.Count > _maxToastLines)
                 displayNames += $" и ещё {names.Count - _maxToastLines}";
 
-            string message = $"Открыто знание — {category}: {displayNames}";
+            string message = $"📖 Открыто знание — {category}: {displayNames}";
             Debug.Log($"[KnowledgeToast] {message}");
+            EnqueueToast(message);
+        }
+
+        private void EnqueueToast(string message)
+        {
+            if (!_built) TryBuild();
+            if (_container == null || _label == null) return;
+            _queue.Enqueue(message);
+            if (_queueCoroutine == null) _queueCoroutine = StartCoroutine(ProcessQueue());
+        }
+
+        private IEnumerator ProcessQueue()
+        {
+            while (_queue.Count > 0)
+            {
+                var msg = _queue.Dequeue();
+                _label.text = msg;
+                _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
+                yield return new WaitForSecondsRealtime(_toastDuration);
+                if (_queue.Count == 0)
+                {
+                    _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+                    yield return new WaitForSecondsRealtime(_queueDelay);
+                }
+            }
+            _queueCoroutine = null;
         }
 
         private string GetSkillDisplayName(string skillId)

@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Localization-String-Tables-Hindi
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Localization-String-Tables-Hindi
+  m_GUID: 931eb1f5f68c2f54e804b8cf8860a3e7
+  m_SerializeEntries:
+  - m_GUID: 53ed49f9853766c4b90569bf694cf4e9
+    m_Address: Dialogue_Table_hi
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-hi
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9bedcfb995bd80d4e9e2a92d87438eb4
+    m_Address: UI_Table_hi
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-hi
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e1b4ff928db2bb042a8455380aaf7776
+    m_Address: System_Table_hi
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-hi
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ebeb8228ce67abf4684f88501fc52239
+    m_Address: Static_Table_hi
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-hi
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 1
+  m_Settings: {fileID: 11400000, guid: e1edcd0994cee6e4e8e844d0e60f1414, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 71a9d334acf04c14b9a473d11d5f0545, type: 2}
+    - {fileID: 11400000, guid: 50998eeb1a401704d9929b23153e8c4b, type: 2}

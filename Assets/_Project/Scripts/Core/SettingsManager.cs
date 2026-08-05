@@ -22,6 +22,7 @@ namespace ProjectC.Core
         private const string KEY_VSYNC = "Settings.VSync";
         private const string KEY_ANTI_ALIASING = "Settings.AntiAliasing";
         private const string KEY_RESOLUTION = "Settings.Resolution";
+        private const string KEY_LOCALE = "Settings.Locale";
 
 #pragma warning disable CS0414
         private static bool _initialized = false;
@@ -38,6 +39,7 @@ namespace ProjectC.Core
         public static bool Fullscreen { get; private set; } = true;
         public static bool VSync { get; private set; } = true;
         public static int AntiAliasing { get; private set; } = 0; // Off
+        public static string Locale { get; private set; } = "ru";
 
         // ===== События =====
 
@@ -175,9 +177,10 @@ namespace ProjectC.Core
             Fullscreen = PlayerPrefs.GetInt(KEY_FULLSCREEN, 1) == 1;
             VSync = PlayerPrefs.GetInt(KEY_VSYNC, 1) == 1;
             AntiAliasing = PlayerPrefs.GetInt(KEY_ANTI_ALIASING, 0);
+            Locale = PlayerPrefs.GetString(KEY_LOCALE, "ru");
 
             Debug.Log($"[SettingsManager] Loaded: sens={MouseSensitivity}, invY={InvertY}, vol={MasterVolume}, " +
-                      $"qual={QualityLevel}, fs={Fullscreen}, vsync={VSync}, aa={AntiAliasing}");
+                      $"qual={QualityLevel}, fs={Fullscreen}, vsync={VSync}, aa={AntiAliasing}, locale={Locale}");
         }
 
         public static void Save()
@@ -191,6 +194,7 @@ namespace ProjectC.Core
             PlayerPrefs.SetInt(KEY_FULLSCREEN, Fullscreen ? 1 : 0);
             PlayerPrefs.SetInt(KEY_VSYNC, VSync ? 1 : 0);
             PlayerPrefs.SetInt(KEY_ANTI_ALIASING, AntiAliasing);
+            PlayerPrefs.SetString(KEY_LOCALE, Locale);
             PlayerPrefs.Save();
             Debug.Log("[SettingsManager] Saved");
         }

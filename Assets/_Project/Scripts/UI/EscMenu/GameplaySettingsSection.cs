@@ -38,14 +38,24 @@ namespace ProjectC.UI.EscMenu
             panel.Add(SettingsWidgets.CreateToggle("Субтитры", SettingsManager.Subtitles,
                 v => SettingsManager.SetSubtitles(v)));
 
-            // --- Language: DEFERRED ---
-            var note = new Label("Выбор языка будет доступен после внедрения локализации.");
-            note.style.color = new Color(0.4f, 0.4f, 0.4f);
-            note.style.fontSize = 11;
-            note.style.marginTop = 8;
-            note.style.unityTextAlign = TextAnchor.MiddleCenter;
-            note.style.whiteSpace = WhiteSpace.Normal;
-            panel.Add(note);
+            // --- Language (LOC-02) ---
+            panel.Add(SettingsWidgets.CreateSectionHeader("Язык / Language"));
+            var localeChoices = new System.Collections.Generic.List<string>();
+            foreach (var (code, name) in ProjectC.Localization.LocaleSelector.Locales)
+                localeChoices.Add(name);
+            var savedLocale = SettingsManager.Locale ?? "ru";
+            var selectedIdx = 0;
+            for (int i = 0; i < ProjectC.Localization.LocaleSelector.Locales.Length; i++)
+            {
+                if (ProjectC.Localization.LocaleSelector.Locales[i].code == savedLocale)
+                {
+                    selectedIdx = i;
+                    break;
+                }
+            }
+            panel.Add(SettingsWidgets.CreateDropdown("Язык", localeChoices, selectedIdx,
+                idx => ProjectC.Localization.LocaleSelector.SetLocale(
+                    ProjectC.Localization.LocaleSelector.Locales[idx].code)));
 
             return panel;
         }

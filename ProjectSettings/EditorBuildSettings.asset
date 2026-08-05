@@ -80,4 +80,6 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Project/Scenes/World/WorldScene_3_5.unity
     guid: cf0e42f869b35974995f0411a1fadf30
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: d5dcf644a5506fe43a02f1ff659c5e00, type: 2}
+    com.unity.localization.settings: {fileID: 11400000, guid: 23e24f030853e754faed34dfd155ab37, type: 2}

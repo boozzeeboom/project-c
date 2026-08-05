@@ -51,7 +51,21 @@
 - `KeybindingsWindow.cs` — заголовок, кнопки, секции, ЛКМ/ПКМ/СКМ → ui.keybindings.*
 - UI_Table_ru: 70+ ключей (EscMenu 40+, Keybindings 10, Character 5, Contract 6, Market 3, Toast 3, Dialog 2)
 
-**Статус:** ✅ Phase 3 (EscMenu + Keybindings) завершён. Следующий — Phase 4 (SO-данные).
+**Статус:** ✅ Phase 3 завершён.
+
+## Итерация 4 — 2026-08-05
+
+**Задача:** Phase 4 — SO-данные (мигратор + Static_Table наполнение)  
+**Тикет:** LOC-05  
+**Коммит:** `5925200` — LOC-05: Phase 4 — SO-мигратор + 119 ключей Static_Table
+
+**Изменения:**
+- `LocalizationStringMigrator.cs` — Editor tool: сканирует SO, генерирует derive-ключи в Static_Table
+- Static_Table_ru: +119 ключей (TradeItem 113, NPC 4, Quest 2)
+- Editor menu: `ProjectC/Localization/Migrate SO Strings to Static_Table`
+- Factions/Markets — 0 ключей (имена полей отличаются, требуется доработка)
+
+**Статус:** ✅ Phase 4 (мигратор) завершён. Следующий — Phase 5 (диалоги) или Phase 6 (инструмент переводчика).
 
 ## Статистика
 - 103 файла (103 new)

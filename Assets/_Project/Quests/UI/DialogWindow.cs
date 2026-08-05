@@ -371,7 +371,8 @@ namespace ProjectC.Quests.UI
  // T-Q12: запустить typewriter для speakerText (char-by-char).
  if (_textLabel != null)
  {
- StartTypewriter(_currentStep.speakerText ?? "");
+ var locText = ProjectC.Localization.Loc.Get(_currentStep.speakerText, _currentStep.speakerText);
+StartTypewriter(locText ?? "");
  }
 
  // Clear old options
@@ -395,7 +396,7 @@ namespace ProjectC.Quests.UI
  }
  else
  {
- var btn = new Button(EndConversation) { text = "[ Конец]" };
+ var btn = new Button(EndConversation) { text = ProjectC.Localization.Loc.Get("ui.dialog.end") };
  StyleButton(btn, true);
  _optionsContainer.Add(btn);
  }

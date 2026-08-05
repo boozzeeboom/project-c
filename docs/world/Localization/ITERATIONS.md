@@ -65,7 +65,22 @@
 - Editor menu: `ProjectC/Localization/Migrate SO Strings to Static_Table`
 - Factions/Markets — 0 ключей (имена полей отличаются, требуется доработка)
 
-**Статус:** ✅ Phase 4 (мигратор) завершён. Следующий — Phase 5 (диалоги) или Phase 6 (инструмент переводчика).
+**Статус:** ✅ Phase 4 завершён.
+
+## Итерация 5 — 2026-08-05
+
+**Задача:** Phase 5 — Диалоги (DialogWindow fixes + dialogue.* ключи)  
+**Тикет:** LOC-09  
+**Коммит:** `010fe9a` — LOC-09: Phase 5 — Диалоги
+
+**Изменения:**
+- `DialogWindow.cs`: speakerNpcId → Loc.Get(static.npc.{id}.displayName) вместо сырого ID
+- `DialogWindow.cs`: speakerText → Loc.Get(key, fallback) для локализации реплик
+- `DialogWindow.cs`: [Недоступно] → Loc.Format(ui.dialog.unavailable)
+- `DialogWindow.cs`: [Конец] → Loc.Get(ui.dialog.end)
+- Dialogue_Table_ru: 14 ключей из 3 DialogTree (node texts + edge labels)
+
+**Статус:** ✅ Phase 5 завершён. Следующий — Phase 6 (инструмент переводчика CSV).
 
 ## Статистика
 - 103 файла (103 new)

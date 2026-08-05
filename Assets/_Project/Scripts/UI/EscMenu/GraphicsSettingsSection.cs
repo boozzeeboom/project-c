@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Core;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.EscMenu
 {
@@ -18,18 +19,18 @@ namespace ProjectC.UI.EscMenu
             panel.style.flexDirection = FlexDirection.Column;
 
             // --- Качество ---
-            panel.Add(SettingsWidgets.CreateSectionHeader("Качество"));
+            panel.Add(SettingsWidgets.CreateSectionHeader("ui.esc_menu.section.quality"));
 
             var qualityLevels = QualitySettings.names;
             var qualityChoices = new List<string>(qualityLevels);
             var qualityIndex = SettingsManager.QualityLevel;
             if (qualityIndex >= qualityChoices.Count) qualityIndex = qualityChoices.Count - 1;
 
-            panel.Add(SettingsWidgets.CreateDropdown("Уровень", qualityChoices, qualityIndex,
+            panel.Add(SettingsWidgets.CreateDropdown("ui.esc_menu.label.quality", qualityChoices, qualityIndex,
                 idx => SettingsManager.SetQualityLevel(idx)));
 
             // --- Разрешение ---
-            panel.Add(SettingsWidgets.CreateSectionHeader("Экран"));
+            panel.Add(SettingsWidgets.CreateSectionHeader("ui.esc_menu.section.screen"));
 
             var resolutions = Screen.resolutions;
             var resChoices = new List<string>();
@@ -44,7 +45,7 @@ namespace ProjectC.UI.EscMenu
             }
             if (resChoices.Count == 0) resChoices.Add($"{currentRes.width}×{currentRes.height}");
 
-            panel.Add(SettingsWidgets.CreateDropdown("Разрешение", resChoices, currentResIdx,
+            panel.Add(SettingsWidgets.CreateDropdown("ui.esc_menu.label.resolution", resChoices, currentResIdx,
                 idx =>
                 {
                     if (idx >= 0 && idx < resolutions.Length)
@@ -56,15 +57,20 @@ namespace ProjectC.UI.EscMenu
                 }));
 
             // --- Полный экран ---
-            panel.Add(SettingsWidgets.CreateToggle("Полный экран", SettingsManager.Fullscreen,
+            panel.Add(SettingsWidgets.CreateToggle("ui.esc_menu.label.fullscreen", SettingsManager.Fullscreen,
                 v => SettingsManager.SetFullscreen(v)));
 
             // --- VSync ---
-            panel.Add(SettingsWidgets.CreateToggle("VSync", SettingsManager.VSync,
+            panel.Add(SettingsWidgets.CreateToggle("ui.esc_menu.label.vsync", SettingsManager.VSync,
                 v => SettingsManager.SetVSync(v)));
 
             // --- Сглаживание ---
-            var aaChoices = new List<string> { "Выкл", "2× MSAA", "4× MSAA", "8× MSAA" };
+            var aaChoices = new List<string> {
+                ProjectC.Localization.Loc.Get("ui.esc_menu.aa.off"),
+                ProjectC.Localization.Loc.Get("ui.esc_menu.aa.2x"),
+                ProjectC.Localization.Loc.Get("ui.esc_menu.aa.4x"),
+                ProjectC.Localization.Loc.Get("ui.esc_menu.aa.8x")
+            };
             int aaIdx = SettingsManager.AntiAliasing switch
             {
                 2 => 1,
@@ -72,7 +78,7 @@ namespace ProjectC.UI.EscMenu
                 8 => 3,
                 _ => 0
             };
-            panel.Add(SettingsWidgets.CreateDropdown("Сглаживание", aaChoices, aaIdx,
+            panel.Add(SettingsWidgets.CreateDropdown("ui.esc_menu.label.antialiasing", aaChoices, aaIdx,
                 idx =>
                 {
                     int aa = idx switch { 1 => 2, 2 => 4, 3 => 8, _ => 0 };

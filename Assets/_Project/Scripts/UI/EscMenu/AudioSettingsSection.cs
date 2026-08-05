@@ -3,6 +3,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Core;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.EscMenu
 {
@@ -18,20 +19,21 @@ namespace ProjectC.UI.EscMenu
             panel.style.flexDirection = FlexDirection.Column;
 
             // --- Общая громкость ---
-            panel.Add(SettingsWidgets.CreateSectionHeader("Громкость"));
+            panel.Add(SettingsWidgets.CreateSectionHeader("ui.esc_menu.section.volume"));
 
-            panel.Add(SettingsWidgets.CreateSlider("Общая", 0f, 1f,
+            panel.Add(SettingsWidgets.CreateSlider("ui.esc_menu.label.master_volume", 0f, 1f,
                 SettingsManager.MasterVolume,
                 v => SettingsManager.SetMasterVolume(v)));
 
             // --- Placeholder каналы ---
-            panel.Add(SettingsWidgets.CreateSectionHeader("Каналы (требуется AudioMixer)"));
-            panel.Add(MakePlaceholderSlider("Музыка"));
-            panel.Add(MakePlaceholderSlider("Эффекты"));
-            panel.Add(MakePlaceholderSlider("Голос"));
-            panel.Add(MakePlaceholderSlider("Интерфейс"));
+            panel.Add(SettingsWidgets.CreateSectionHeader("ui.esc_menu.section.channels"));
+            panel.Add(MakePlaceholderSlider("ui.esc_menu.label.music"));
+            panel.Add(MakePlaceholderSlider("ui.esc_menu.label.effects"));
+            panel.Add(MakePlaceholderSlider("ui.esc_menu.label.voice"));
+            panel.Add(MakePlaceholderSlider("ui.esc_menu.label.ui"));
 
-            var note = new Label("Разделение каналов будет доступно после внедрения AudioMixer.");
+            var note = new Label("ui.esc_menu.audio_mixer_note");
+            Loc.Bind(note, "ui.esc_menu.audio_mixer_note");
             note.style.color = new Color(0.4f, 0.4f, 0.4f);
             note.style.fontSize = 11;
             note.style.marginTop = 8;

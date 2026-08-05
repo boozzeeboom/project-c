@@ -5,12 +5,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.UI.Client;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.EscMenu
 {
     /// <summary>
     /// Фабрика виджетов настроек: Slider, Toggle, Dropdown, SectionHeader.
     /// Каждый виджет — готовый VisualElement со стилями и обработчиками.
+    /// Поддерживает локализацию через Loc.Get — если label начинается с "ui.", текст локализуется.
     /// </summary>
     public static class SettingsWidgets
     {
@@ -21,19 +23,31 @@ namespace ProjectC.UI.EscMenu
         private const string USS_CLASS_WIDGET_DROPDOWN = "esc-setting-dropdown";
         private const string USS_CLASS_SECTION_HEADER = "esc-section-header";
 
+        /// <summary>Create a localized label. If text starts with "ui.", treat it as a loc key.</summary>
+        private static Label MakeLabel(string text)
+        {
+            var label = new Label(text);
+            if (text.StartsWith("ui."))
+            {
+                Label locLabel = label;
+                Loc.Bind(locLabel, text, text);
+            }
+            return label;
+        }
+
         // ===== Section Header =====
 
-        /// <summary>Заголовок секции с разделителем.</summary>
+        /// <summary>Заголовок секции с разделителем. Supports loc key (e.g. "ui.esc_menu.section.gameplay").</summary>
         public static VisualElement CreateSectionHeader(string title)
         {
-            var header = new Label(title);
+            var header = MakeLabel(title);
             header.AddToClassList(USS_CLASS_SECTION_HEADER);
             return header;
         }
 
         // ===== Slider =====
 
-        /// <summary>Слайдер с лейблом и значением.</summary>
+        /// <summary>Слайдер с лейблом и значением. Supports loc key.</summary>
         public static VisualElement CreateSlider(string label, float min, float max, float initial,
             Action<float> onChange)
         {
@@ -41,7 +55,7 @@ namespace ProjectC.UI.EscMenu
             row.AddToClassList(USS_CLASS_WIDGET_ROW);
 
             // Label
-            var labelEl = new Label(label);
+            var labelEl = MakeLabel(label);
             labelEl.AddToClassList(USS_CLASS_WIDGET_LABEL);
             row.Add(labelEl);
 
@@ -84,7 +98,7 @@ namespace ProjectC.UI.EscMenu
             var row = new VisualElement();
             row.AddToClassList(USS_CLASS_WIDGET_ROW);
 
-            var labelEl = new Label(label);
+            var labelEl = MakeLabel(label);
             labelEl.AddToClassList(USS_CLASS_WIDGET_LABEL);
             row.Add(labelEl);
 
@@ -107,7 +121,7 @@ namespace ProjectC.UI.EscMenu
             var row = new VisualElement();
             row.AddToClassList(USS_CLASS_WIDGET_ROW);
 
-            var labelEl = new Label(label);
+            var labelEl = MakeLabel(label);
             labelEl.AddToClassList(USS_CLASS_WIDGET_LABEL);
             row.Add(labelEl);
 

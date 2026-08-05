@@ -18,28 +18,28 @@ namespace ProjectC.UI.EscMenu
             panel.style.flexDirection = FlexDirection.Column;
 
             // --- Чувствительность мыши ---
-            panel.Add(SettingsWidgets.CreateSectionHeader("Управление"));
+            panel.Add(SettingsWidgets.CreateSectionHeader("ui.esc_menu.section.gameplay"));
 
-            panel.Add(SettingsWidgets.CreateSlider("Чувств. мыши", 0.1f, 10f,
+            panel.Add(SettingsWidgets.CreateSlider("ui.esc_menu.label.mouse_sens", 0.1f, 10f,
                 SettingsManager.MouseSensitivity,
                 v => SettingsManager.SetMouseSensitivity(v)));
 
             // --- Инвертировать Y ---
-            panel.Add(SettingsWidgets.CreateToggle("Инвертировать Y", SettingsManager.InvertY,
+            panel.Add(SettingsWidgets.CreateToggle("ui.esc_menu.label.invert_y", SettingsManager.InvertY,
                 v => SettingsManager.SetInvertY(v)));
 
-            panel.Add(SettingsWidgets.CreateSlider("Чувств. зума", 0.5f, 15f,
+            panel.Add(SettingsWidgets.CreateSlider("ui.esc_menu.label.zoom_sens", 0.5f, 15f,
                 SettingsManager.CameraZoomSensitivity,
                 v => SettingsManager.SetCameraZoomSensitivity(v)));
 
             // --- Субтитры ---
-            panel.Add(SettingsWidgets.CreateSectionHeader("Доступность"));
+            panel.Add(SettingsWidgets.CreateSectionHeader("ui.esc_menu.section.accessibility"));
 
-            panel.Add(SettingsWidgets.CreateToggle("Субтитры", SettingsManager.Subtitles,
+            panel.Add(SettingsWidgets.CreateToggle("ui.esc_menu.label.subtitles", SettingsManager.Subtitles,
                 v => SettingsManager.SetSubtitles(v)));
 
             // --- Language (LOC-02) ---
-            panel.Add(SettingsWidgets.CreateSectionHeader("Язык / Language"));
+            panel.Add(SettingsWidgets.CreateSectionHeader("ui.esc_menu.section.language"));
             var localeChoices = new System.Collections.Generic.List<string>();
             foreach (var (code, name) in ProjectC.Localization.LocaleSelector.Locales)
                 localeChoices.Add(name);
@@ -53,7 +53,7 @@ namespace ProjectC.UI.EscMenu
                     break;
                 }
             }
-            panel.Add(SettingsWidgets.CreateDropdown("Язык", localeChoices, selectedIdx,
+            panel.Add(SettingsWidgets.CreateDropdown("ui.esc_menu.label.language", localeChoices, selectedIdx,
                 idx => ProjectC.Localization.LocaleSelector.SetLocale(
                     ProjectC.Localization.LocaleSelector.Locales[idx].code)));
 

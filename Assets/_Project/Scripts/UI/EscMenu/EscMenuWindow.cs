@@ -186,7 +186,7 @@ namespace ProjectC.UI.EscMenu
             _currentPanel = panel;
 
             if (title != null && _titleLabel != null)
-                _titleLabel.text = title;
+                _titleLabel.text = ProjectC.Localization.Loc.Get(title, title);
             UpdateBackButton();
 
             // Stagger-анимация для кнопок/строк нового экрана
@@ -265,21 +265,23 @@ namespace ProjectC.UI.EscMenu
             var panel = new VisualElement();
             panel.style.flexDirection = FlexDirection.Column;
 
-            var header = new Label("Настройки");
+            var header = new Label("ui.esc_menu.title");
+            ProjectC.Localization.Loc.Bind(header, "ui.esc_menu.title");
             header.AddToClassList("esc-section-header");
             panel.Add(header);
 
-            panel.Add(MakeSettingsButton("Управление", OpenKeybindingsSubPage));
-            panel.Add(MakeSettingsButton("Графика", NavigateToGraphics));
-            panel.Add(MakeSettingsButton("Звук", NavigateToAudio));
-            panel.Add(MakeSettingsButton("Геймплей", NavigateToGameplay));
+            panel.Add(MakeSettingsButton("ui.esc_menu.button.controls", OpenKeybindingsSubPage));
+            panel.Add(MakeSettingsButton("ui.esc_menu.button.graphics", NavigateToGraphics));
+            panel.Add(MakeSettingsButton("ui.esc_menu.button.audio", NavigateToAudio));
+            panel.Add(MakeSettingsButton("ui.esc_menu.button.gameplay", NavigateToGameplay));
 
-            NavigateTo(panel, "НАСТРОЙКИ");
+            NavigateTo(panel, "ui.esc_menu.settings");
         }
 
-        private static Button MakeSettingsButton(string text, System.Action onClick)
+        private static Button MakeSettingsButton(string locKey, System.Action onClick)
         {
-            var btn = new Button(onClick) { text = text };
+            var btn = new Button(onClick) { text = ProjectC.Localization.Loc.Get(locKey, locKey) };
+            ProjectC.Localization.Loc.OnLocaleChanged += () => btn.text = ProjectC.Localization.Loc.Get(locKey);
             btn.AddToClassList("esc-btn");
             return btn;
         }
@@ -297,22 +299,22 @@ namespace ProjectC.UI.EscMenu
             kbw.OnBackRequested = NavigateBack;
             var page = kbw.BuildEmbeddedContent();
             if (page != null)
-                NavigateTo(page, "УПРАВЛЕНИЕ");
+                NavigateTo(page, "ui.esc_menu.controls");
         }
 
         private void NavigateToGraphics()
         {
-            NavigateTo(GraphicsSettingsSection.Create(), "ГРАФИКА");
+            NavigateTo(GraphicsSettingsSection.Create(), "ui.esc_menu.graphics");
         }
 
         private void NavigateToAudio()
         {
-            NavigateTo(AudioSettingsSection.Create(), "ЗВУК");
+            NavigateTo(AudioSettingsSection.Create(), "ui.esc_menu.audio");
         }
 
         private void NavigateToGameplay()
         {
-            NavigateTo(GameplaySettingsSection.Create(), "ГЕЙМПЛЕЙ");
+            NavigateTo(GameplaySettingsSection.Create(), "ui.esc_menu.gameplay");
         }
 
         // ==================== Rescue ====================
@@ -361,7 +363,8 @@ namespace ProjectC.UI.EscMenu
             panel.style.justifyContent = Justify.Center;
             panel.style.flexGrow = 1;
 
-            var message = new Label("Вы уверены, что хотите выйти в главное меню?\nНесохранённый прогресс будет потерян.");
+            var message = new Label("ui.esc_menu.exit_confirm");
+            ProjectC.Localization.Loc.Bind(message, "ui.esc_menu.exit_confirm");
             message.style.color = new Color(0.85f, 0.85f, 0.85f);
             message.style.fontSize = 14;
             message.style.marginBottom = 20;
@@ -373,21 +376,21 @@ namespace ProjectC.UI.EscMenu
             btnRow.style.flexDirection = FlexDirection.Row;
             btnRow.style.justifyContent = Justify.Center;
 
-            var confirmBtn = new Button(ExecuteExitToMenu) { text = "ВЫЙТИ" };
+            var confirmBtn = new Button(ExecuteExitToMenu) { text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.confirm_exit") };
             confirmBtn.AddToClassList("esc-btn");
             confirmBtn.AddToClassList("esc-btn-warning");
             confirmBtn.style.width = 140;
             confirmBtn.style.marginRight = 12;
             btnRow.Add(confirmBtn);
 
-            var cancelBtn = new Button(NavigateBack) { text = "ОТМЕНА" };
+            var cancelBtn = new Button(NavigateBack) { text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.cancel") };
             cancelBtn.AddToClassList("esc-btn");
             cancelBtn.style.width = 140;
             btnRow.Add(cancelBtn);
 
             panel.Add(btnRow);
 
-            NavigateTo(panel, "ВЫХОД");
+            NavigateTo(panel, "ui.esc_menu.exit");
         }
 
         private void ExecuteExitToMenu()

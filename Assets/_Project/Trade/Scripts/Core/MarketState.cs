@@ -9,8 +9,9 @@ namespace ProjectC.Trade.Core
     /// Живёт в <see cref="TradeWorld"/> (server-only, in-memory).
     ///
     /// Создаётся при инициализации TradeWorld из <see cref="Config.MarketConfig"/>.
-    /// При перезапуске сервера состояние сбрасывается к базовым значениям (как и должно быть —
-    /// цены не должны переживать рестарт; постоянные данные игрока — в <see cref="Repository.IPlayerDataRepository"/>).
+    /// Runtime-состояние (stock, demand/supply factors, events) персистится через
+    /// <see cref="Repository.IPlayerDataRepository.SaveMarkets"/> и переживает рестарт сервера.
+    /// Постоянные данные игрока — в <see cref="Repository.IPlayerDataRepository"/>.
     /// </summary>
     public class MarketState
     {

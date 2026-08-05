@@ -127,6 +127,41 @@ namespace ProjectC.Trade.Repository
             catch (System.Exception e) { Debug.LogError($"[ServerFileRepository] write cargo failed: {e.Message}"); }
         }
 
+        // --- Markets ---
+
+        public bool TryLoadMarkets(out MarketSaveData data)
+        {
+            data = null;
+            string path = Path.Combine(_rootDir, "markets.json");
+            if (!File.Exists(path)) return false;
+            try
+            {
+                string json = File.ReadAllText(path);
+                data = JsonUtility.FromJson<MarketSaveData>(json);
+                return data != null && data.HasData;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[ServerFileRepository] LoadMarkets failed: {e.Message}");
+                return false;
+            }
+        }
+
+        public void SaveMarkets(MarketSaveData data)
+        {
+            if (data == null) return;
+            string path = Path.Combine(_rootDir, "markets.json");
+            try
+            {
+                string json = JsonUtility.ToJson(data);
+                File.WriteAllText(path, json);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ServerFileRepository] SaveMarkets failed: {e.Message}");
+            }
+        }
+
         // --- Contracts ---
 
         public bool TryLoadContracts(out ContractSaveData data)

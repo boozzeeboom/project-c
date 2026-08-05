@@ -32,6 +32,8 @@ namespace ProjectC.Trade.Core
         private readonly List<MarketTrader> _npcTraders = new List<MarketTrader>();
         private readonly List<MarketEvent> _activeEvents = new List<MarketEvent>();
 
+        private bool _marketDirty;
+
         public IReadOnlyDictionary<string, MarketState> Markets => _markets;
         public IReadOnlyList<MarketTrader> NpcTraders => _npcTraders;
         public IReadOnlyList<MarketEvent> ActiveEvents => _activeEvents;
@@ -189,6 +191,7 @@ namespace ProjectC.Trade.Core
             item.availableStock -= quantity;
             PriceFormula.ApplyBuy(item, quantity);
             Repository.SetCargo(npcShipNetworkObjectId, cargo.SaveToList());
+            SaveAll();
 
             OnCargoChanged?.Invoke(npcShipNetworkObjectId);
             Debug.Log($"[TradeWorld] NPC_BUY npc={npcClientId:X} loc={locationId} ship={npcShipNetworkObjectId} item={itemId} qty={quantity} cost={totalCost:F0} (unlimited={useUnlimitedCredits})");
@@ -257,6 +260,7 @@ namespace ProjectC.Trade.Core
             item.availableStock += quantity;
             PriceFormula.ApplySell(item, quantity);
             Repository.SetCargo(npcShipNetworkObjectId, cargo.SaveToList());
+            SaveAll();
 
             // 5. Credits — начисляем только если НЕ unlimited (для будущей экономики NPC).
             //    Сейчас не начисляем (у нас useUnlimited=true), но код пишем готовый.
@@ -329,17 +333,146 @@ namespace ProjectC.Trade.Core
             _activeEvents.Clear();
             if (initDefaultEvents) InitDefaultMarketEvents();
 
+            // Load persisted runtime state (overlays saved fields on config-initialized markets/events)
+            LoadAll();
+
             IsInitialized = true;
             Debug.Log($"[TradeWorld] инициализирован: markets={_markets.Count}, npcTraders={_npcTraders.Count}, events={_activeEvents.Count}");
         }
 
         public void Shutdown()
         {
+            SaveAll();
             _markets.Clear();
             _npcTraders.Clear();
             _activeEvents.Clear();
             if (Instance == this) Instance = null;
             IsInitialized = false;
+        }
+
+        // ========================================================
+        // PERSISTENCE
+        // ========================================================
+
+        /// <summary>
+        /// Save all runtime market state (stock, demand/supply, events) to repository.
+        /// Called after every mutation (buy/sell/npc/event) and on shutdown.
+        /// </summary>
+        public void SaveAll()
+        {
+            if (Repository == null || _markets.Count == 0) return;
+
+            var dto = new Dto.MarketSaveData();
+
+            foreach (var kv in _markets)
+            {
+                var m = kv.Value;
+                if (m == null || m.Items.Count == 0) continue;
+
+                var locEntry = new Dto.MarketLocationSaveEntry { locationId = m.locationId };
+                foreach (var ikv in m.Items)
+                {
+                    var item = ikv.Value;
+                    if (item == null) continue;
+                    locEntry.items.Add(new Dto.MarketItemSaveEntry
+                    {
+                        itemId = item.ItemId,
+                        availableStock = item.availableStock,
+                        demandFactor = item.demandFactor,
+                        supplyFactor = item.supplyFactor,
+                        eventMultiplier = item.eventMultiplier,
+                        version = item.version,
+                    });
+                }
+                dto.markets.Add(locEntry);
+            }
+
+            foreach (var evt in _activeEvents)
+            {
+                if (evt == null) continue;
+                dto.events.Add(new Dto.MarketEventSaveEntry
+                {
+                    eventId = evt.eventId,
+                    isActive = evt.isActive,
+                    remainingSeconds = evt.remainingSeconds,
+                    cooldownRemaining = evt.cooldownRemaining,
+                    startTimeUnscaled = evt.startTimeUnscaled,
+                });
+            }
+
+            Repository.SaveMarkets(dto);
+        }
+
+        /// <summary>
+        /// Load persisted market state and overlay on config-initialized markets/events.
+        /// Called once at end of Initialize(), after markets are created from MarketConfig.
+        ///
+        /// Strategy: markets already have items from config; we overlay saved runtime fields
+        /// (availableStock, demandFactor, supplyFactor, eventMultiplier, version) on matching
+        /// itemId. Items not in config are ignored. Events are matched by eventId.
+        /// </summary>
+        private void LoadAll()
+        {
+            if (Repository == null) return;
+            if (!Repository.TryLoadMarkets(out var dto) || dto == null || !dto.HasData) return;
+
+            int loadedItems = 0;
+
+            // Overlay market item state
+            if (dto.markets != null)
+            {
+                foreach (var locEntry in dto.markets)
+                {
+                    if (string.IsNullOrEmpty(locEntry.locationId)) continue;
+                    var market = GetMarket(locEntry.locationId);
+                    if (market == null) continue;
+                    if (locEntry.items == null) continue;
+
+                    foreach (var itemEntry in locEntry.items)
+                    {
+                        if (string.IsNullOrEmpty(itemEntry.itemId)) continue;
+                        var item = market.GetItem(itemEntry.itemId);
+                        if (item == null) continue; // item not in config — ignore
+
+                        item.availableStock = itemEntry.availableStock;
+                        item.demandFactor = itemEntry.demandFactor;
+                        item.supplyFactor = itemEntry.supplyFactor;
+                        item.eventMultiplier = itemEntry.eventMultiplier;
+                        item.version = itemEntry.version;
+                        item.RecalculatePrice(market.PriceFloorRatio, market.PriceCeilingRatio);
+                        loadedItems++;
+                    }
+                }
+            }
+
+            // Overlay event state
+            if (dto.events != null)
+            {
+                foreach (var evtEntry in dto.events)
+                {
+                    if (string.IsNullOrEmpty(evtEntry.eventId)) continue;
+                    for (int i = 0; i < _activeEvents.Count; i++)
+                    {
+                        var evt = _activeEvents[i];
+                        if (evt == null || evt.eventId != evtEntry.eventId) continue;
+
+                        evt.isActive = evtEntry.isActive;
+                        evt.remainingSeconds = evtEntry.remainingSeconds;
+                        evt.cooldownRemaining = evtEntry.cooldownRemaining;
+                        evt.startTimeUnscaled = evtEntry.startTimeUnscaled;
+
+                        // If event was active when saved, re-apply its effect to markets
+                        if (evt.isActive)
+                        {
+                            foreach (var market in _markets.Values)
+                                evt.ApplyToMarket(market);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            Debug.Log($"[TradeWorld] Loaded markets from repository: items={loadedItems}, events={dto.events?.Count ?? 0}");
         }
 
         private void InitDefaultNPCTraders()
@@ -464,6 +597,7 @@ namespace ProjectC.Trade.Core
             item.availableStock -= quantity;
             PriceFormula.ApplyBuy(item, quantity, market.PriceFloorRatio, market.PriceCeilingRatio);
             Repository.SetWarehouse(clientId, locationId, warehouse.SaveToList());
+            SaveAll();
 
             Debug.Log($"[TradeWorld] BUY client={clientId} loc={locationId} item={itemId} qty={quantity} cost={totalCost:F0} newCredits={newCredits:F0}");
             return TradeResult.Ok(newCredits, item.availableStock, warehouse, null);
@@ -531,6 +665,7 @@ namespace ProjectC.Trade.Core
                 PriceFormula.ApplySell(item, quantity, market.PriceFloorRatio, market.PriceCeilingRatio);
             }
             Repository.SetWarehouse(clientId, locationId, warehouse.SaveToList());
+            SaveAll();
 
             Debug.Log($"[TradeWorld] SELL client={clientId} loc={locationId} item={itemId} qty={quantity} revenue={revenue:F0} newCredits={newCredits:F0} buyAnyItem={isBuyAnyItem}");
             return TradeResult.Ok(newCredits, item != null ? item.availableStock : 0, warehouse, null);
@@ -901,7 +1036,15 @@ namespace ProjectC.Trade.Core
                 {
                     // Снять эффект со всех затронутых рынков
                     foreach (var market in _markets.Values) evt.RemoveFromMarket(market);
+                    _marketDirty = true;
                 }
+            }
+
+            // 5. Persist if dirty (buy/sell/npc/events mutated state)
+            if (_marketDirty)
+            {
+                SaveAll();
+                _marketDirty = false;
             }
         }
 
@@ -909,6 +1052,7 @@ namespace ProjectC.Trade.Core
         {
             evt.Activate(nowUnscaled);
             foreach (var market in _markets.Values) evt.ApplyToMarket(market);
+            SaveAll();
             Debug.Log($"[TradeWorld] Event started: {evt.eventId} ({evt.displayName})");
         }
 

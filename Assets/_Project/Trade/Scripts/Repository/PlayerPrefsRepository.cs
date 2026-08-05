@@ -113,6 +113,33 @@ namespace ProjectC.Trade.Repository
             PlayerPrefs.Save();
         }
 
+        // --- Markets ---
+
+        public bool TryLoadMarkets(out MarketSaveData data)
+        {
+            data = null;
+            string json = PlayerPrefs.GetString("PD2_Markets", "");
+            if (string.IsNullOrEmpty(json)) return false;
+            try
+            {
+                data = JsonUtility.FromJson<MarketSaveData>(json);
+                return data != null && data.HasData;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[PlayerPrefsRepository] LoadMarkets failed: {e.Message}");
+                return false;
+            }
+        }
+
+        public void SaveMarkets(MarketSaveData data)
+        {
+            if (data == null) return;
+            string json = JsonUtility.ToJson(data);
+            PlayerPrefs.SetString("PD2_Markets", json);
+            PlayerPrefs.Save();
+        }
+
         // --- Contracts ---
 
         public bool TryLoadContracts(out ContractSaveData data)

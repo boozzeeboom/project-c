@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using ProjectC.Trade.Core;
+using ProjectC.Trade.Dto;
 using UnityEngine;
 
 namespace ProjectC.Trade.Repository
@@ -124,6 +125,41 @@ namespace ProjectC.Trade.Repository
                 File.WriteAllText(path, JsonUtility.ToJson(data));
             }
             catch (System.Exception e) { Debug.LogError($"[ServerFileRepository] write cargo failed: {e.Message}"); }
+        }
+
+        // --- Contracts ---
+
+        public bool TryLoadContracts(out ContractSaveData data)
+        {
+            data = null;
+            string path = Path.Combine(_rootDir, "contracts.json");
+            if (!File.Exists(path)) return false;
+            try
+            {
+                string json = File.ReadAllText(path);
+                data = JsonUtility.FromJson<ContractSaveData>(json);
+                return data != null && data.HasData;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[ServerFileRepository] LoadContracts failed: {e.Message}");
+                return false;
+            }
+        }
+
+        public void SaveContracts(ContractSaveData data)
+        {
+            if (data == null) return;
+            string path = Path.Combine(_rootDir, "contracts.json");
+            try
+            {
+                string json = JsonUtility.ToJson(data);
+                File.WriteAllText(path, json);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ServerFileRepository] SaveContracts failed: {e.Message}");
+            }
         }
 
         [System.Serializable]

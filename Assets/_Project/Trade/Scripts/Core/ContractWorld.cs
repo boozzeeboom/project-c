@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using ProjectC.Trade.Dto;
 using ProjectC.Trade.Repository;
 using UnityEngine;
@@ -92,17 +93,23 @@ namespace ProjectC.Trade.Core
             LoadAvailableItems();
             BuildItemPriceIndex();
 
-            if (autoInitContracts)
+            // Try to restore persisted contracts first.
+            bool loaded = LoadAll();
+
+            if (!loaded && autoInitContracts)
             {
                 GenerateContractsForAllLocations();
+                SaveAll();
             }
 
             IsInitialized = true;
-            Debug.Log($"[ContractWorld] инициализирован: items={_itemBasePrice.Count}, contracts={_availableContracts.Count}");
+            Debug.Log($"[ContractWorld] инициализирован: items={_itemBasePrice.Count}, contracts={_availableContracts.Count}, loadedFromRepo={loaded}");
         }
 
         public void Shutdown()
         {
+            SaveAll();
+
             _availableContracts.Clear();
             _playerContracts.Clear();
             _playerDebts.Clear();
@@ -111,6 +118,102 @@ namespace ProjectC.Trade.Core
             IsInitialized = false;
             if (Instance == this) Instance = null;
             Debug.Log("[ContractWorld] shutdown");
+        }
+
+        // ========================================================
+        // PERSISTENCE
+        // ========================================================
+
+        /// <summary>
+        /// Save all contract state to IPlayerDataRepository.
+        /// Called after every mutation (accept/complete/fail/tick) and on Shutdown.
+        /// </summary>
+        public void SaveAll()
+        {
+            if (Repository == null) return;
+
+            var data = new ContractSaveData();
+
+            // Contracts
+            data.contracts.AddRange(_availableContracts.Values);
+
+            // Debts
+            foreach (var kvp in _playerDebts)
+            {
+                data.debts.Add(new ContractDebtEntry
+                {
+                    playerId = kvp.Key,
+                    currentDebt = kvp.Value.CurrentDebt,
+                    lastDecayTime = kvp.Value.LastDecayTime
+                });
+            }
+
+            // Player → contract IDs
+            foreach (var kvp in _playerContracts)
+            {
+                data.playerContracts.Add(new PlayerContractEntry
+                {
+                    playerId = kvp.Key,
+                    contractIds = new List<string>(kvp.Value)
+                });
+            }
+
+            // Location → contract IDs
+            foreach (var kvp in _locationContracts)
+            {
+                data.locationContracts.Add(new LocationContractEntry
+                {
+                    locationId = kvp.Key,
+                    contractIds = new List<string>(kvp.Value)
+                });
+            }
+
+            Repository.SaveContracts(data);
+        }
+
+        /// <summary>
+        /// Load contract state from IPlayerDataRepository.
+        /// Returns true if data was found and restored.
+        /// </summary>
+        private bool LoadAll()
+        {
+            if (Repository == null) return false;
+
+            if (!Repository.TryLoadContracts(out var data) || data == null || !data.HasData)
+                return false;
+
+            // Contracts
+            _availableContracts.Clear();
+            foreach (var c in data.contracts)
+            {
+                if (!string.IsNullOrEmpty(c.contractId))
+                    _availableContracts[c.contractId] = c;
+            }
+
+            // Debts — reconstruct ContractDebt objects
+            _playerDebts.Clear();
+            foreach (var d in data.debts)
+            {
+                _playerDebts[d.playerId] = new ContractDebt(d.playerId, d.currentDebt, d.lastDecayTime);
+            }
+
+            // Player → contract IDs
+            _playerContracts.Clear();
+            foreach (var e in data.playerContracts)
+            {
+                _playerContracts[e.playerId] = new List<string>(e.contractIds ?? new List<string>());
+            }
+
+            // Location → contract IDs
+            _locationContracts.Clear();
+            foreach (var e in data.locationContracts)
+            {
+                if (!string.IsNullOrEmpty(e.locationId))
+                    _locationContracts[e.locationId] = new List<string>(e.contractIds ?? new List<string>());
+            }
+
+            Debug.Log($"[ContractWorld] Loaded {_availableContracts.Count} contracts, {_playerDebts.Count} debts from repository");
+            return true;
         }
 
         // ========================================================
@@ -363,6 +466,8 @@ namespace ProjectC.Trade.Core
             _availableContracts[contractId] = contract;
             _playerContracts[clientId].Add(contractId);
 
+            SaveAll();
+
             return ContractOpResult.Ok($"Контракт принят: {contract.GetTypeDisplayName()}", contract);
         }
 
@@ -417,6 +522,8 @@ namespace ProjectC.Trade.Core
                 Repository.SetCredits(clientId, current + contract.reward);
             }
 
+            SaveAll();
+
             return ContractOpResult.Ok($"Контракт завершён! Награда: {contract.reward:F0} CR", contract, contract.reward);
         }
 
@@ -440,6 +547,8 @@ namespace ProjectC.Trade.Core
                 _playerContracts[clientId].Remove(contractId);
 
             HandleFailedContract(contract, clientId);
+
+            SaveAll();
 
             string reason = isManual ? "отменён игроком" : "время истекло";
             return ContractOpResult.Fail(ContractResultCode.Ok, $"Контракт провален: {reason}");
@@ -516,10 +625,17 @@ namespace ProjectC.Trade.Core
             }
 
             // Decay долгов
+            bool anyDecay = false;
             foreach (var d in _playerDebts.Values)
             {
+                float before = d.CurrentDebt;
                 d.CheckAndApplyDecay(now);
+                if (d.CurrentDebt != before) anyDecay = true;
             }
+
+            // Save if anything expired or debts changed
+            if (expired.Count > 0 || anyDecay)
+                SaveAll();
 
             return expired;
         }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ProjectC.Trade.Core;
+using ProjectC.Trade.Dto;
 using UnityEngine;
 
 namespace ProjectC.Trade.Repository
@@ -109,6 +110,33 @@ namespace ProjectC.Trade.Repository
                 var data = new WarehouseSaveData { items = items };
                 PlayerPrefs.SetString(CargoKey(shipNetworkObjectId), JsonUtility.ToJson(data));
             }
+            PlayerPrefs.Save();
+        }
+
+        // --- Contracts ---
+
+        public bool TryLoadContracts(out ContractSaveData data)
+        {
+            data = null;
+            string json = PlayerPrefs.GetString("PD2_Contracts", "");
+            if (string.IsNullOrEmpty(json)) return false;
+            try
+            {
+                data = JsonUtility.FromJson<ContractSaveData>(json);
+                return data != null && data.HasData;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[PlayerPrefsRepository] LoadContracts failed: {e.Message}");
+                return false;
+            }
+        }
+
+        public void SaveContracts(ContractSaveData data)
+        {
+            if (data == null) return;
+            string json = JsonUtility.ToJson(data);
+            PlayerPrefs.SetString("PD2_Contracts", json);
             PlayerPrefs.Save();
         }
 

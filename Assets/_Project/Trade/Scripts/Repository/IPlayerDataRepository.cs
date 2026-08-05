@@ -28,5 +28,9 @@ namespace ProjectC.Trade.Repository
         // --- Cargo (привязан к NetworkObjectId корабля) ---
         bool TryGetCargo(ulong shipNetworkObjectId, out List<WarehouseEntry> items);
         void SetCargo(ulong shipNetworkObjectId, List<WarehouseEntry> items);
+
+        // --- Contracts (T-Q?? persistence) ---
+        bool TryLoadContracts(out ProjectC.Trade.Dto.ContractSaveData data);
+        void SaveContracts(ProjectC.Trade.Dto.ContractSaveData data);
     }
 }

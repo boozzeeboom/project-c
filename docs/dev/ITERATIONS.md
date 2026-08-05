@@ -1,5 +1,17 @@
 # Итерации структуризации документации
 
+## Итерация от 2026-08-05 (T-X5)
+
+**Задача:** Персистенция контрактов — состояние ContractWorld должно переживать перезагрузку сервера.
+**Коммит:** `d972adad` — T-X5: персистенция контрактов через IPlayerDataRepository
+**Изменения:**
+- `ContractSaveData.cs` — новый `[Serializable]` DTO (contracts, debts, playerContracts, locationContracts)
+- `IPlayerDataRepository.cs` — + `SaveContracts` / `TryLoadContracts`
+- `ServerFileRepository.cs` — реализация через JSON `ServerData/contracts.json`
+- `PlayerPrefsRepository.cs` — реализация через `PlayerPrefs`
+- `ContractWorld.cs` — `SaveAll()` / `LoadAll()`, load при `Initialize`, save после мутаций и `Shutdown`
+- `docs/Markets/CONTRACT_PERSISTENCE.md` — документация
+
 ## Итерация от 2026-08-04 (T-CLOUD02) #2
 
 **Задача:** Multi-Layer Cloud System — 4 слоя (800-1200, 1200-2500, 2500-4500, 4500-7000) с per-layer coverage/density/ramps.

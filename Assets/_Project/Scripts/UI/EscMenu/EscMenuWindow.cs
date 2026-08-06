@@ -173,6 +173,9 @@ namespace ProjectC.UI.EscMenu
         {
             if (panel == null) return;
 
+            // Закрываем все открытые дропдауны перед сменой экрана
+            ProjectC.UI.Client.CustomDropdown.CloseAllPopups();
+
             // Прячем текущий
             if (_currentPanel != null)
                 _currentPanel.style.display = DisplayStyle.None;
@@ -217,6 +220,8 @@ namespace ProjectC.UI.EscMenu
         {
             if (_menuStack.Count <= 1) return;
 
+            ProjectC.UI.Client.CustomDropdown.CloseAllPopups();
+
             var old = _menuStack.Pop();
             if (old != null) old.style.display = DisplayStyle.None;
 
@@ -232,6 +237,7 @@ namespace ProjectC.UI.EscMenu
         /// <summary>Сброс на корень меню.</summary>
         public void NavigateToRoot()
         {
+            ProjectC.UI.Client.CustomDropdown.CloseAllPopups();
             while (_menuStack.Count > 1)
             {
                 var old = _menuStack.Pop();

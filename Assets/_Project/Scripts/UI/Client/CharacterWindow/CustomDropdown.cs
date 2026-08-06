@@ -55,14 +55,16 @@ namespace ProjectC.UI.Client
         /// <summary>Закрыть все открытые попапы всех CustomDropdown. Вызывать при скрытии окна.</summary>
         public static void CloseAllPopups()
         {
+            if (_openDropdowns.Count == 0) return;
+            // Snapshot: ClosePopup() modifies _openDropdowns — нельзя итерировать и модифицировать одновременно
             _toRemove.Clear();
             foreach (var dd in _openDropdowns)
-            {
-                if (dd == null) { _toRemove.Add(dd); continue; }
-                try { dd.ClosePopup(); } catch { /* suppressed */ }
-            }
+                _toRemove.Add(dd);
+            _openDropdowns.Clear();
             foreach (var dd in _toRemove)
-                _openDropdowns.Remove(dd);
+            {
+                try { dd?.ClosePopup(); } catch { /* suppressed */ }
+            }
         }
 
         // ===== Public API =====

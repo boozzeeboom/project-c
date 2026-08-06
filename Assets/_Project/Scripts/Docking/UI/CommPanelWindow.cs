@@ -15,6 +15,7 @@ using ProjectC.Docking.Dto;     // DockingAssignmentDto, DockingStatusDto, Docki
 using ProjectC.Docking.Network; // DockingServer, DockingZoneRegistry
 using ProjectC.Network;          // NetworkPlayerSpawner
 using ProjectC.Player;          // NetworkPlayer, NetworkPlayerSpawner
+using ProjectC.Localization;
 
 namespace ProjectC.Docking.UI
 {
@@ -275,13 +276,13 @@ namespace ProjectC.Docking.UI
             if (_message == null) return;
             string msg = assignment.failReason switch
             {
-                "NO_SUITABLE_PAD" => "Диспетчер: «Свободных pad'ов нет, попробуйте позже».",
-                "RATE_LIMITED"    => "Диспетчер: «Слишком частые запросы, подождите».",
-                "STATION_FULL"    => "Диспетчер: «Станция переполнена, попробуйте позже».",
-                "STATION_NOT_FOUND" => "Диспетчер: «Связь потеряна, повторите».",
-                "SHIP_NOT_FOUND"  => "Диспетчер: «Корабль не найден, подойдите ближе».",
-                "NOT_YOUR_SHIP"   => "Диспетчер: «Это не ваш корабль».",
-                _                 => $"Диспетчер: «Ошибка: {assignment.failReason}»."
+                "NO_SUITABLE_PAD" => Loc.Get("ui.docking.fail.no_suitable_pad", "Dispatcher: «No free pads, try later»."),
+                "RATE_LIMITED"    => Loc.Get("ui.docking.fail.rate_limited", "Dispatcher: «Too many requests, wait»."),
+                "STATION_FULL"    => Loc.Get("ui.docking.fail.station_full", "Dispatcher: «Station full, try later»."),
+                "STATION_NOT_FOUND" => Loc.Get("ui.docking.fail.station_not_found", "Dispatcher: «Connection lost, repeat»."),
+                "SHIP_NOT_FOUND"  => Loc.Get("ui.docking.fail.ship_not_found", "Dispatcher: «Ship not found, come closer»."),
+                "NOT_YOUR_SHIP"   => Loc.Get("ui.docking.fail.not_your_ship", "Dispatcher: «This is not your ship»."),
+                _                 => Loc.Format("ui.docking.fail.unknown", assignment.failReason)
             };
             _message.text = msg;
             _currentStatus = DockingStatus.Idle;
@@ -309,7 +310,7 @@ namespace ProjectC.Docking.UI
                     {
                         if (_message != null)
                         {
-                            _message.text = $"Диспетчер: «Борт, вы на чужом pad'е (#{_currentPadId}). Перепаркуйтесь».";
+                            _message.text = Loc.Format("ui.docking.wrong_pad", _currentPadId);
                         }
                     }
                     UpdateUI();
@@ -349,28 +350,25 @@ namespace ProjectC.Docking.UI
             {
                 if (_header != null)
                 {
-                    string stName = "Диспетчерская";
+                    string stName = Loc.Get("ui.docking.dispatcher", "Dispatcher");
                     var st = DockingZoneRegistry.GetStation(_awaitingConfirmation.Value.stationId);
-                    if (st != null) stName = $"{st.DisplayName} — Диспетчерская";
+                    if (st != null) stName = Loc.Format("ui.docking.station_dispatcher", st.DisplayName);
                     _header.text = stName;
                 }
                 if (_message != null)
                 {
                     var a = _awaitingConfirmation.Value;
-                    _message.text = $"Диспетчер: «{a.voiceLine} " +
-                                    $"Подход: высота {(int)a.approachAltitude}, " +
-                                    $"курс {(int)a.approachHeading}. " +
-                                    $"Окно: {(int)a.landingWindowSeconds} сек. Подтверждаете?»";
+                    _message.text = Loc.Format("ui.docking.assignment", a.voiceLine ?? "", (int)a.approachAltitude, (int)a.approachHeading, (int)a.landingWindowSeconds);
                 }
                 if (_progressBar != null) _progressBar.RemoveFromClassList("is-active");
                 if (_primaryButton != null)
                 {
-                    _primaryButton.text = "Хорошо";
+                    _primaryButton.text = Loc.Get("ui.docking.btn.ok", "OK");
                     _primaryButton.style.display = DisplayStyle.Flex;
                 }
                 if (_secondaryButton != null)
                 {
-                    _secondaryButton.text = "Отбой";
+                    _secondaryButton.text = Loc.Get("ui.docking.btn.abort", "Abort");
                     _secondaryButton.style.display = DisplayStyle.Flex;
                 }
                 return;
@@ -404,17 +402,17 @@ namespace ProjectC.Docking.UI
             // Header
             if (_header != null)
             {
-                string stationName = "Диспетчерская";
+                string stationName = Loc.Get("ui.docking.dispatcher", "Dispatcher");
                 if (!string.IsNullOrEmpty(_currentStationId))
                 {
                     var st = DockingZoneRegistry.GetStation(_currentStationId);
-                    if (st != null) stationName = $"{st.DisplayName} — Диспетчерская";
+                    if (st != null) stationName = Loc.Format("ui.docking.station_dispatcher", st.DisplayName);
                 }
                 else
                 {
                     var nearest = DockingZoneRegistry.LocalPlayerStation
                                   ?? DockingZoneRegistry.LocalPlayerShipStation;
-                    if (nearest != null) stationName = $"{nearest.DisplayName} — Диспетчерская";
+                    if (nearest != null) stationName = Loc.Format("ui.docking.station_dispatcher", nearest.DisplayName);
                 }
                 _header.text = stationName;
             }
@@ -444,15 +442,15 @@ namespace ProjectC.Docking.UI
         private string GetMessageForStatus()
         {
             if (_currentStatus == DockingStatus.Idle)
-                return "Диспетчер: «На связи, жду ваших распоряжений».";
+                return Loc.Get("ui.docking.msg.idle", "Dispatcher: «On standby, waiting for your orders».");
             if (_currentStatus == DockingStatus.Assigned)
-                return $"Диспетчер: «Борт, добро. Следуйте к pad #{(string.IsNullOrEmpty(_currentPadId) ? "?" : _currentPadId)}».";
+                return Loc.Format("ui.docking.msg.assigned", string.IsNullOrEmpty(_currentPadId) ? "?" : _currentPadId);
             if (_currentStatus == DockingStatus.Docked)
-                return "Диспетчер: «Стыковка зафиксирована. Двигатели заблокированы. Удачной торговли».";
+                return Loc.Get("ui.docking.msg.docked", "Dispatcher: «Docking confirmed. Engines locked. Happy trading».");
             if (_currentStatus == DockingStatus.WrongPad)
-                return $"Диспетчер: «Борт, вы на чужом pad'е (#{_currentPadId}). Перепаркуйтесь».";
+                return Loc.Format("ui.docking.msg.wrong_pad", _currentPadId);
             if (_currentStatus == DockingStatus.Cancelled)
-                return "Диспетчер: «Окно посадки истекло. Повторите запрос».";
+                return Loc.Get("ui.docking.msg.cancelled", "Dispatcher: «Landing window expired. Repeat request».");
             return "";
         }
 
@@ -462,34 +460,28 @@ namespace ProjectC.Docking.UI
 
             if (_currentStatus == DockingStatus.Idle || _currentStatus == DockingStatus.Cancelled)
             {
-                _primaryButton.text = "Запросить посадку";
-                _primaryButton.style.display = DisplayStyle.Flex;
-                _secondaryButton.text = "Отмена";
+                _primaryButton.text = Loc.Get("ui.docking.btn.request_landing", "Request Landing");
+                _secondaryButton.text = Loc.Get("ui.docking.btn.cancel", "Cancel");
                 _secondaryButton.style.display = DisplayStyle.Flex;
             }
             else if (_currentStatus == DockingStatus.Assigned)
             {
                 _primaryButton.style.display = DisplayStyle.None;
-                _secondaryButton.text = "Отменить запрос";
+                _secondaryButton.text = Loc.Get("ui.docking.btn.cancel_request", "Cancel Request");
                 _secondaryButton.style.display = DisplayStyle.Flex;
             }
             else if (_currentStatus == DockingStatus.Docked)
                                     {
-                                        // T-DOCK-UI-3 v2: в Docked primary = "Отстыковка", secondary = "Закрыть".
-                                        // При нажатии primary: CancelAssignment() → RequestTakeoffRpc →
-                                        // сервер ReleaseAssignment + ExitDocked + SendTakeoffApprovedTargetRpc.
-                                        // HandleTakeoffApproved закроет окно автоматически (см. ниже).
-                                        // Secondary = "Закрыть" если игрок хочет остаться в окне просмотра состояния.
-                                        _primaryButton.text = "Отстыковка";
+                                        _primaryButton.text = Loc.Get("ui.docking.btn.undock", "Undock");
                                         _primaryButton.style.display = DisplayStyle.Flex;
-                                        _secondaryButton.text = "Закрыть";
+                                        _secondaryButton.text = Loc.Get("ui.docking.btn.close", "Close");
                                         _secondaryButton.style.display = DisplayStyle.Flex;
                                     }
                         else if (_currentStatus == DockingStatus.WrongPad)
                         {
-                            _primaryButton.text = "Перепарковаться";
+                            _primaryButton.text = Loc.Get("ui.docking.btn.repark", "Repark");
                             _primaryButton.style.display = DisplayStyle.Flex;
-                            _secondaryButton.text = "Закрыть";
+                            _secondaryButton.text = Loc.Get("ui.docking.btn.close", "Close");
                             _secondaryButton.style.display = DisplayStyle.Flex;
                         }
         }

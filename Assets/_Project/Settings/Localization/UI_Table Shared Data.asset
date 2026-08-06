@@ -871,6 +871,158 @@ MonoBehaviour:
     m_Key: ui.repair.paint_select
     m_Metadata:
       m_Items: []
+  - m_Id: 207445103124480
+    m_Key: ui.knowledge.category_skill
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445166039040
+    m_Key: ui.knowledge.category_recipe
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445170233344
+    m_Key: ui.knowledge.category_faction
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209221973876736
+    m_Key: ui.docking.dispatcher
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222036791296
+    m_Key: ui.docking.station_dispatcher
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222040985600
+    m_Key: ui.docking.btn.request_landing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222045179904
+    m_Key: ui.docking.btn.cancel
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222049374208
+    m_Key: ui.docking.btn.cancel_request
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222057762816
+    m_Key: ui.docking.btn.undock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222061957120
+    m_Key: ui.docking.btn.close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345728
+    m_Key: ui.docking.btn.repark
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345729
+    m_Key: ui.docking.btn.ok
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222078734336
+    m_Key: ui.docking.btn.abort
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222082928640
+    m_Key: ui.docking.assignment
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222087122944
+    m_Key: ui.docking.wrong_pad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222091317248
+    m_Key: ui.docking.msg.idle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222095511552
+    m_Key: ui.docking.msg.assigned
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222099705856
+    m_Key: ui.docking.msg.docked
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222112288768
+    m_Key: ui.docking.msg.wrong_pad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222116483072
+    m_Key: ui.docking.msg.cancelled
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222124871680
+    m_Key: ui.docking.fail.no_suitable_pad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222133260288
+    m_Key: ui.docking.fail.rate_limited
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222141648896
+    m_Key: ui.docking.fail.station_full
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222150037504
+    m_Key: ui.docking.fail.station_not_found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222154231808
+    m_Key: ui.docking.fail.ship_not_found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222158426112
+    m_Key: ui.docking.fail.not_your_ship
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222171009024
+    m_Key: ui.docking.fail.unknown
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222175203328
+    m_Key: ui.quest.objective_none
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222179397632
+    m_Key: ui.quest.objective_counter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222183591936
+    m_Key: ui.quest.objective_simple
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222191980544
+    m_Key: ui.quest.objective_completed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222196174848
+    m_Key: ui.quest.prereq.complete_first
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222204563456
+    m_Key: ui.quest.prereq.activate_first
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222212952064
+    m_Key: ui.quest.prereq.reputation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222217146368
+    m_Key: ui.quest.prereq.npc_attitude
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222225534976
+    m_Key: ui.quest.prereq.have_item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222229729280
+    m_Key: ui.quest.prereq.flag
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222233923584
+    m_Key: ui.quest.prereq.unknown
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

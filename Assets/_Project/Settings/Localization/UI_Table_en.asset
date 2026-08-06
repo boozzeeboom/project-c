@@ -874,6 +874,159 @@ MonoBehaviour:
     m_Localized: "\U0001F3A8 Select color"
     m_Metadata:
       m_Items: []
+  - m_Id: 207445103124480
+    m_Localized: Skill
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445166039040
+    m_Localized: Recipe
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445170233344
+    m_Localized: Faction
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209221973876736
+    m_Localized: Dispatcher
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222036791296
+    m_Localized: "{0} \u2014 Dispatcher"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222040985600
+    m_Localized: Request Landing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222045179904
+    m_Localized: Cancel
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222049374208
+    m_Localized: Cancel Request
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222057762816
+    m_Localized: Undock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222061957120
+    m_Localized: Close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345728
+    m_Localized: Repark
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345729
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222078734336
+    m_Localized: Abort
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222082928640
+    m_Localized: "Dispatcher: \xAB{0} Approach: altitude {1}, heading {2}. Window:
+      {3}s. Confirm?\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222087122944
+    m_Localized: "Dispatcher: \xABShip, you are on the wrong pad (#{0}). Repark.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222091317248
+    m_Localized: "Dispatcher: \xABOn standby, waiting for your orders.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222095511552
+    m_Localized: "Dispatcher: \xABShip, good. Proceed to pad #{0}.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222099705856
+    m_Localized: "Dispatcher: \xABDocking confirmed. Engines locked. Happy trading.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222112288768
+    m_Localized: "Dispatcher: \xABShip, you are on the wrong pad (#{0}). Repark.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222116483072
+    m_Localized: "Dispatcher: \xABLanding window expired. Repeat request.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222124871680
+    m_Localized: "Dispatcher: \xABNo free pads, try later.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222133260288
+    m_Localized: "Dispatcher: \xABToo many requests, wait.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222141648896
+    m_Localized: "Dispatcher: \xABStation full, try later.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222150037504
+    m_Localized: "Dispatcher: \xABConnection lost, repeat.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222154231808
+    m_Localized: "Dispatcher: \xABShip not found, come closer.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222158426112
+    m_Localized: "Dispatcher: \xABThis is not your ship.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222171009024
+    m_Localized: "Dispatcher: \xABError: {0}\xBB."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222175203328
+    m_Localized: 'Objective: (none)'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222179397632
+    m_Localized: 'Objective: {0} ({1}/{2})'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222183591936
+    m_Localized: 'Objective: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222191980544
+    m_Localized: 'Objective: ({0}/{1}) done'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222196174848
+    m_Localized: "Complete quest \xAB{0}\xBB first"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222204563456
+    m_Localized: "Activate quest \xAB{0}\xBB first"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222212952064
+    m_Localized: "Need reputation {0} \u2265 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222217146368
+    m_Localized: "Need attitude with NPC \xAB{0}\xBB \u2265 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222225534976
+    m_Localized: "Need item \xAB{0}\xBB \xD7{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222229729280
+    m_Localized: "Condition \xAB{0}\xBB not met"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222233923584
+    m_Localized: Prerequisite #{0} not met
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Quests.Client;
 using ProjectC.Quests.Dto;
+using ProjectC.Localization;
 
 namespace ProjectC.Quests.UI
 {
@@ -293,7 +294,7 @@ namespace ProjectC.Quests.UI
  private static string BuildObjectiveText(QuestProgressDto q)
  {
  var objs = q.objectives;
- if (objs == null || objs.Length ==0) return "Цель: (нет целей)";
+ if (objs == null || objs.Length ==0) return Loc.Get("ui.quest.objective_none", "Objective: (none)");
  int completed =0;
  foreach (var o in objs) if (o.completed) completed++;
  // T-Q21 fix: первая не-completed objective — показываем current/required для HUD counter.
@@ -303,12 +304,12 @@ namespace ProjectC.Quests.UI
  {
  int req = o.requiredQuantity >0 ? o.requiredQuantity :1;
  // Показываем counter только если requiredQuantity > 1 (для 1-цели counter избыточен).
- if (req >1) return $"Цель: {o.description} ({o.currentValue}/{req})";
- return $"Цель: {o.description}";
+ if (req >1) return Loc.Format("ui.quest.objective_counter", o.description ?? "", o.currentValue, req);
+ return Loc.Format("ui.quest.objective_simple", o.description ?? "");
  }
  }
  // Все completed — выводим общий счётчик.
- return $"Цель: ({completed}/{objs.Length}) выполнено";
+ return Loc.Format("ui.quest.objective_completed", completed, objs.Length);
  }
  }
 }

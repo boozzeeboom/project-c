@@ -261,6 +261,44 @@ namespace ProjectC.Localization.Editor
             added += AddIfMissing(shared, ru, en, "ui.knowledge.category_skill", "Навык", "Skill");
             added += AddIfMissing(shared, ru, en, "ui.knowledge.category_recipe", "Рецепт", "Recipe");
             added += AddIfMissing(shared, ru, en, "ui.knowledge.category_faction", "Фракция", "Faction");
+            // Docking CommPanel
+            added += AddIfMissing(shared, ru, en, "ui.docking.dispatcher", "Диспетчерская", "Dispatcher");
+            added += AddIfMissing(shared, ru, en, "ui.docking.station_dispatcher", "{0} — Диспетчерская", "{0} — Dispatcher");
+            added += AddIfMissing(shared, ru, en, "ui.docking.btn.request_landing", "Запросить посадку", "Request Landing");
+            added += AddIfMissing(shared, ru, en, "ui.docking.btn.cancel", "Отмена", "Cancel");
+            added += AddIfMissing(shared, ru, en, "ui.docking.btn.cancel_request", "Отменить запрос", "Cancel Request");
+            added += AddIfMissing(shared, ru, en, "ui.docking.btn.undock", "Отстыковка", "Undock");
+            added += AddIfMissing(shared, ru, en, "ui.docking.btn.close", "Закрыть", "Close");
+            added += AddIfMissing(shared, ru, en, "ui.docking.btn.repark", "Перепарковаться", "Repark");
+            added += AddIfMissing(shared, ru, en, "ui.docking.btn.ok", "Хорошо", "OK");
+            added += AddIfMissing(shared, ru, en, "ui.docking.btn.abort", "Отбой", "Abort");
+            added += AddIfMissing(shared, ru, en, "ui.docking.assignment", "Диспетчер: «{0} Подход: высота {1}, курс {2}. Окно: {3} сек. Подтверждаете?»", "Dispatcher: «{0} Approach: altitude {1}, heading {2}. Window: {3}s. Confirm?»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.wrong_pad", "Диспетчер: «Борт, вы на чужом pad'е (#{0}). Перепаркуйтесь».", "Dispatcher: «Ship, you are on the wrong pad (#{0}). Repark.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.msg.idle", "Диспетчер: «На связи, жду ваших распоряжений».", "Dispatcher: «On standby, waiting for your orders.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.msg.assigned", "Диспетчер: «Борт, добро. Следуйте к pad #{0}».", "Dispatcher: «Ship, good. Proceed to pad #{0}.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.msg.docked", "Диспетчер: «Стыковка зафиксирована. Двигатели заблокированы. Удачной торговли».", "Dispatcher: «Docking confirmed. Engines locked. Happy trading.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.msg.wrong_pad", "Диспетчер: «Борт, вы на чужом pad'е (#{0}). Перепаркуйтесь».", "Dispatcher: «Ship, you are on the wrong pad (#{0}). Repark.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.msg.cancelled", "Диспетчер: «Окно посадки истекло. Повторите запрос».", "Dispatcher: «Landing window expired. Repeat request.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.fail.no_suitable_pad", "Диспетчер: «Свободных pad'ов нет, попробуйте позже».", "Dispatcher: «No free pads, try later.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.fail.rate_limited", "Диспетчер: «Слишком частые запросы, подождите».", "Dispatcher: «Too many requests, wait.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.fail.station_full", "Диспетчер: «Станция переполнена, попробуйте позже».", "Dispatcher: «Station full, try later.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.fail.station_not_found", "Диспетчер: «Связь потеряна, повторите».", "Dispatcher: «Connection lost, repeat.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.fail.ship_not_found", "Диспетчер: «Корабль не найден, подойдите ближе».", "Dispatcher: «Ship not found, come closer.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.fail.not_your_ship", "Диспетчер: «Это не ваш корабль».", "Dispatcher: «This is not your ship.»");
+            added += AddIfMissing(shared, ru, en, "ui.docking.fail.unknown", "Диспетчер: «Ошибка: {0}».", "Dispatcher: «Error: {0}».");
+            // QuestTracker objectives
+            added += AddIfMissing(shared, ru, en, "ui.quest.objective_none", "Цель: (нет целей)", "Objective: (none)");
+            added += AddIfMissing(shared, ru, en, "ui.quest.objective_counter", "Цель: {0} ({1}/{2})", "Objective: {0} ({1}/{2})");
+            added += AddIfMissing(shared, ru, en, "ui.quest.objective_simple", "Цель: {0}", "Objective: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.objective_completed", "Цель: ({0}/{1}) выполнено", "Objective: ({0}/{1}) done");
+            // QuestWorld prerequisites
+            added += AddIfMissing(shared, ru, en, "ui.quest.prereq.complete_first", "Сначала выполните квест «{0}»", "Complete quest «{0}» first");
+            added += AddIfMissing(shared, ru, en, "ui.quest.prereq.activate_first", "Сначала активируйте квест «{0}»", "Activate quest «{0}» first");
+            added += AddIfMissing(shared, ru, en, "ui.quest.prereq.reputation", "Нужна репутация {0} ≥ {1}", "Need reputation {0} ≥ {1}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.prereq.npc_attitude", "Нужно отношение с NPC «{0}» ≥ {1}", "Need attitude with NPC «{0}» ≥ {1}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.prereq.have_item", "Нужен предмет «{0}» ×{1}", "Need item «{0}» ×{1}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.prereq.flag", "Не выполнено условие «{0}»", "Condition «{0}» not met");
+            added += AddIfMissing(shared, ru, en, "ui.quest.prereq.unknown", "Не выполнено условие #{0}", "Prerequisite #{0} not met");
 
             EditorUtility.SetDirty(shared);
             EditorUtility.SetDirty(ru);

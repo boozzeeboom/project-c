@@ -14,6 +14,7 @@ using ProjectC.Core;
 using ProjectC.Factions;
 using ProjectC.Quests.Dto;
 using ProjectC.Quests.Triggers;
+using ProjectC.Localization;
 
 namespace ProjectC.Quests
 {
@@ -231,13 +232,13 @@ namespace ProjectC.Quests
                 {
                     string reason = p.type switch
                     {
-                        QuestPrerequisiteType.QuestCompleted => $"Сначала выполните квест «{p.stringParam}»",
-                        QuestPrerequisiteType.QuestActive => $"Сначала активируйте квест «{p.stringParam}»",
-                        QuestPrerequisiteType.ReputationAtLeast => $"Нужна репутация {p.factionParam} ≥ {p.intParam}",
-                        QuestPrerequisiteType.NpcAttitudeAtLeast => $"Нужно отношение с NPC «{(p.requiredNpc != null ? p.requiredNpc.displayName : p.stringParam)}» ≥ {p.intParam}",
-                        QuestPrerequisiteType.HaveItem => $"Нужен предмет «{p.stringParam}» ×{p.intParam}",
-                        QuestPrerequisiteType.FlagIsSet => $"Не выполнено условие «{p.stringParam}»",
-                        _ => $"Не выполнено условие #{i}"
+                        QuestPrerequisiteType.QuestCompleted => Loc.Format("ui.quest.prereq.complete_first", p.stringParam ?? ""),
+                        QuestPrerequisiteType.QuestActive => Loc.Format("ui.quest.prereq.activate_first", p.stringParam ?? ""),
+                        QuestPrerequisiteType.ReputationAtLeast => Loc.Format("ui.quest.prereq.reputation", p.factionParam.ToString(), p.intParam),
+                        QuestPrerequisiteType.NpcAttitudeAtLeast => Loc.Format("ui.quest.prereq.npc_attitude", p.requiredNpc != null ? p.requiredNpc.displayName : (p.stringParam ?? "?"), p.intParam),
+                        QuestPrerequisiteType.HaveItem => Loc.Format("ui.quest.prereq.have_item", p.stringParam ?? "", p.intParam),
+                        QuestPrerequisiteType.FlagIsSet => Loc.Format("ui.quest.prereq.flag", p.stringParam ?? ""),
+                        _ => Loc.Format("ui.quest.prereq.unknown", i)
                     };
                     return (false, reason);
                 }

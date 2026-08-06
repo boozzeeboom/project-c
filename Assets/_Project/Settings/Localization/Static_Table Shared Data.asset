@@ -14,7 +14,483 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
   m_TableCollectionName: Static_Table
   m_TableCollectionNameGuidString: 9d41b6a1a903b874193ef27b96e085b6
-  m_Entries: []
+  m_Entries:
+  - m_Id: 33571522650112
+    m_Key: static.item.antigrav_ingot_v01.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571585564672
+    m_Key: static.item.mesium_canister_v01.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571589758976
+    m_Key: static.item.resource_acoustic_felt_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571589758977
+    m_Key: static.item.resource_activated_charcoal_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953280
+    m_Key: static.item.resource_anti_corrosion_enamel_paint_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953281
+    m_Key: static.item.resource_antigrav_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953282
+    m_Key: static.item.resource_antigrav_brass_agl_8_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953283
+    m_Key: static.item.resource_antigrav_bronze_agb_12_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953284
+    m_Key: static.item.resource_antigrav_chips_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953285
+    m_Key: static.item.resource_antigrav_steel_ags_40_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953286
+    m_Key: static.item.resource_asbestos_sheet_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953287
+    m_Key: static.item.resource_aviation_plywood_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953288
+    m_Key: static.item.resource_balaclava_mask_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953289
+    m_Key: static.item.resource_beeswax_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953290
+    m_Key: static.item.resource_black_leaf_tea_primium_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953291
+    m_Key: static.item.resource_book_poetry_above_the_clouds_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953292
+    m_Key: static.item.resource_borosilicate_glass_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953293
+    m_Key: static.item.resource_brass_sheet_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953294
+    m_Key: static.item.resource_buckwheat_porridge_with_butter_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953295
+    m_Key: static.item.resource_butter_pancakes_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953296
+    m_Key: static.item.resource_cafeteria_menu_buffet_no5_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571593953297
+    m_Key: static.item.resource_canvas_apron_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571602341888
+    m_Key: static.item.resource_canvas_tape_measure_20m_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571602341889
+    m_Key: static.item.resource_canvas_tarpaulin_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571602341890
+    m_Key: static.item.resource_cast_iron_bollard_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571602341891
+    m_Key: static.item.resource_cast_iron_frying_pan_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571602341892
+    m_Key: static.item.resource_cast_iron_iron_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571602341893
+    m_Key: static.item.resource_cast_iron_pot_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571602341894
+    m_Key: static.item.resource_cast_iron_weight_set_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536192
+    m_Key: static.item.resource_caustic_alkali_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536193
+    m_Key: static.item.resource_colored_glass_plumb_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536194
+    m_Key: static.item.resource_copper_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536195
+    m_Key: static.item.resource_copper_wire_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536196
+    m_Key: static.item.resource_corrugated_cardboard_box_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536197
+    m_Key: static.item.resource_cover_tarp_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536198
+    m_Key: static.item.resource_dry_white_table_wine_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536199
+    m_Key: static.item.resource_duralumin_aluminum_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536200
+    m_Key: static.item.resource_engineers_square_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536201
+    m_Key: static.item.resource_farm_timber_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536202
+    m_Key: static.item.resource_filter_grade_silk_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536203
+    m_Key: static.item.resource_fireproof_ceramics_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536204
+    m_Key: static.item.resource_galvanized_sheet_steel_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536205
+    m_Key: static.item.resource_glass_vial_50ml_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536206
+    m_Key: static.item.resource_gmag_7_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536207
+    m_Key: static.item.resource_gmag_9_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536208
+    m_Key: static.item.resource_gmag_grease_s_4_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536209
+    m_Key: static.item.resource_granulated_sugar_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536210
+    m_Key: static.item.resource_gray_cast_iron_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536211
+    m_Key: static.item.resource_guild_cloth_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536212
+    m_Key: static.item.resource_imported_olive_oil_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536213
+    m_Key: static.item.resource_industrial_mag_5_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536214
+    m_Key: static.item.resource_iron_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536215
+    m_Key: static.item.resource_lightweight_canvas_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536216
+    m_Key: static.item.resource_mag_graphite_brushes_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536217
+    m_Key: static.item.resource_mag_technical_passport_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536218
+    m_Key: static.item.resource_mezium_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536219
+    m_Key: static.item.resource_mezium_fuel_m_100_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536220
+    m_Key: static.item.resource_mezium_mag_concentrate_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571606536221
+    m_Key: static.item.resource_mezium_neutralizer_n_7_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924800
+    m_Key: static.item.resource_mezium_oil_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924801
+    m_Key: static.item.resource_mezium_resistant_sealant_hm_200_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924802
+    m_Key: static.item.resource_mezium_skin_neutralizer_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924803
+    m_Key: static.item.resource_mountain_wool_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924804
+    m_Key: static.item.resource_multilayer_felt_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924805
+    m_Key: static.item.resource_oak_veneer_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924806
+    m_Key: static.item.resource_plumb_glass_writer_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924807
+    m_Key: static.item.resource_portable_mag_1_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924808
+    m_Key: static.item.resource_poster_caution_mezium_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924809
+    m_Key: static.item.resource_pressed_cork_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924810
+    m_Key: static.item.resource_primium_forged_steel_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924811
+    m_Key: static.item.resource_purified_antigrav_ag_1_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924812
+    m_Key: static.item.resource_raw_antigrav_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924813
+    m_Key: static.item.resource_raw_mezium_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571614924814
+    m_Key: static.item.resource_red_table_wine_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119104
+    m_Key: static.item.resource_refined_mezium_fuel_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119105
+    m_Key: static.item.resource_rigging_impregnation_pt_1_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119106
+    m_Key: static.item.resource_rod_antigrav_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119107
+    m_Key: static.item.resource_round_porthole_glass_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119108
+    m_Key: static.item.resource_salted_butter_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119109
+    m_Key: static.item.resource_seam_sealant_nm_300_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119110
+    m_Key: static.item.resource_sheet_antigrav_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119111
+    m_Key: static.item.resource_shellac_varnish_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119112
+    m_Key: static.item.resource_skol_5_bronze_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119113
+    m_Key: static.item.resource_skol_10_silver_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119114
+    m_Key: static.item.resource_skol_25_gold_silver_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119115
+    m_Key: static.item.resource_soapstone_talc_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571619119116
+    m_Key: static.item.resource_stabilized_mezium_m_1_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313408
+    m_Key: static.item.resource_standard_mag_3_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313409
+    m_Key: static.item.resource_steel_cable_6mm_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313410
+    m_Key: static.item.resource_steel_canister_20l_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313411
+    m_Key: static.item.resource_steel_climbing_carabiner_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313412
+    m_Key: static.item.resource_steel_frame_rib_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313413
+    m_Key: static.item.resource_steel_heels_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313414
+    m_Key: static.item.resource_steel_helmet_with_clips_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313415
+    m_Key: static.item.resource_steel_rivets_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313416
+    m_Key: static.item.resource_steel_ruler_500mm_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313417
+    m_Key: static.item.resource_sulfuric_acid_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313418
+    m_Key: static.item.resource_surgical_silk_suture_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571623313419
+    m_Key: static.item.resource_teak_beam_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571627507712
+    m_Key: static.item.resource_technical_antigrav_ag_2_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571627507713
+    m_Key: static.item.resource_technical_cardboard_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571627507714
+    m_Key: static.item.resource_technical_graphite_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571627507715
+    m_Key: static.item.resource_technical_paraffin_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571627507716
+    m_Key: static.item.resource_technical_pressure_gauge_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571627507717
+    m_Key: static.item.resource_technical_rubber_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571627507718
+    m_Key: static.item.resource_technical_silver_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571627507719
+    m_Key: static.item.resource_technical_tin_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571631702016
+    m_Key: static.item.resource_technical_tweezers_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571631702017
+    m_Key: static.item.resource_tin_bronze_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571631702018
+    m_Key: static.item.resource_underwear_knit_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571631702019
+    m_Key: static.item.resource_universal_solvent_ru_5_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571631702020
+    m_Key: static.item.resource_vegetable_oil_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571631702021
+    m_Key: static.item.resource_wood_box.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571711393792
+    m_Key: static.npc.mira_01.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571711393793
+    m_Key: static.npc.mira_01.greetingText
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571711393794
+    m_Key: static.npc.Zipun.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571711393795
+    m_Key: static.npc.Zipun.greetingText
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571765919744
+    m_Key: static.quest.collect_copper_ore.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33571765919745
+    m_Key: static.quest.collect_copper_ore.description
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

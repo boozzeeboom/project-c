@@ -20,6 +20,7 @@ using ProjectC.Trade.Network;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+using ProjectC.Localization;
 
 namespace ProjectC.Trade.Client
 {
@@ -516,13 +517,13 @@ namespace ProjectC.Trade.Client
             if (_shipNetId == 0) return;
             if (_selectedInvIndex < 0 || _selectedInvIndex >= _invCache.Count)
             {
-                SetStatus("Выберите предмет в инвентаре", false);
+                SetStatus(Loc.Get("ui.cargo.select_inventory"), false);
                 return;
             }
 
             var entry = _invCache[_selectedInvIndex];
             var server = ShipCargoServer.Instance;
-            if (server == null) { SetStatus("Сервер грузового отсека не доступен", false); return; }
+            if (server == null) { SetStatus(Loc.Get("ui.cargo.server_unavailable"), false); return; }
 
             int itemsToSend = _invQty * entry.rate.inventoryQty;
             if (itemsToSend > entry.count) { SetStatus($"Недостаточно (есть {entry.count}, нужно {itemsToSend})", false); return; }
@@ -538,19 +539,19 @@ namespace ProjectC.Trade.Client
             if (_shipNetId == 0) return;
             if (_selectedCargoIndex < 0 || _selectedCargoIndex >= _cargoCache.Count)
             {
-                SetStatus("Выберите ящик в трюме", false);
+                SetStatus(Loc.Get("ui.cargo.select_hold"), false);
                 return;
             }
 
             var entry = _cargoCache[_selectedCargoIndex];
             if (entry.rate.warehouseQty <= 0)
             {
-                SetStatus("Распаковка недоступна: нет курса обмена для этого товара", false);
+                SetStatus(Loc.Get("ui.cargo.unpack_unavailable"), false);
                 return;
             }
 
             var server = ShipCargoServer.Instance;
-            if (server == null) { SetStatus("Сервер грузового отсека не доступен", false); return; }
+            if (server == null) { SetStatus(Loc.Get("ui.cargo.server_unavailable"), false); return; }
 
             int boxesToSend = _cargoQty * entry.rate.warehouseQty;
             if (boxesToSend > entry.count) { SetStatus($"Недостаточно (есть {entry.count}, нужно {boxesToSend})", false); return; }

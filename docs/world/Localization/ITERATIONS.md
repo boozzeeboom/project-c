@@ -113,6 +113,32 @@
 **Всего: 252+ ключей в 4 таблицах, 9 языков, полный цикл export→translate→import.**
 Phase 7 (верификация) — за пользователем (playtests).
 
+## Итерация 7 — 2026-08-06
+
+**Задача:** Диагностика и исправление дропдауна языков в ESC-меню (попап не закрывался, не синхронизировался SettingsManager.Locale)
+**Тикет:** T-LOC-ESC
+**Коммит:** `b08eade` — T-LOC-ESC: фикс дропдауна языков в ESC-меню — попап не закрывался, не синхронизировался SettingsManager.Locale
+
+**Диагностика (5 багов):**
+1. Попап CustomDropdown остаётся в panel.visualTree при закрытии ESC-меню
+2. Попап выходит за границы окна меню (позиционирование в корне панели)
+3. OnButtonPointerDown без StopPropagation — клик всплывает до root
+4. LocaleSelector.SetLocale() не обновляет SettingsManager.Locale
+5. CustomDropdown.Cleanup() нигде не вызывается
+
+**Изменения:**
+- `CustomDropdown.cs`: StopPropagation/StopImmediatePropagation в OnButtonPointerDown; статический HashSet трекинг + CloseAllPopups()
+- `EscMenuWindow.cs`: вызов CustomDropdown.CloseAllPopups() в SetOpen(false)
+- `LocaleSelector.cs`: вызов SettingsManager.SetLocale(code) для синхронизации
+- `SettingsManager.cs`: новый метод SetLocale(code) для обновления свойства Locale
+
+**Статус:** ✅ Исправлено.
+
+**Дополнительные коммиты (2-й раунд):**
+- `1971488` — fix CloseAllPopups (snapshot перед итерацией) + вызовы в NavigateTo/Back/Root
+- `764d29e` — debug-логи в CustomDropdown + GameplaySettingsSection
+- `5089afb` — позиционирование попапа через worldBound вместо ChangeCoordinatesTo
+
 ## Статистика
 - 103 файла (103 new)
 - 3607 строк добавлено

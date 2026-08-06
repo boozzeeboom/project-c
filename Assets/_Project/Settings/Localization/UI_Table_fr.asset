@@ -17,7 +17,216 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: 0ef116caf8db5524187c4ff04bae545f, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 33563784159232
+    m_Localized: "Param\xE8tres"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102272
+    m_Localized: "Param\xE8tres"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102273
+    m_Localized: "Contr\xF4les"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102274
+    m_Localized: Graphismes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102275
+    m_Localized: Audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102276
+    m_Localized: Gameplay
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102277
+    m_Localized: Quitter vers le menu
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102278
+    m_Localized: Annuler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102279
+    m_Localized: "Contr\xF4les"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102280
+    m_Localized: Graphismes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102281
+    m_Localized: Audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102282
+    m_Localized: Gameplay
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102283
+    m_Localized: Quitter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102284
+    m_Localized: "\xCAtes-vous s\xFBr de vouloir quitter vers le menu principal ?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102285
+    m_Localized: "Qualit\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102286
+    m_Localized: "\xC9cran"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102287
+    m_Localized: Gameplay
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102288
+    m_Localized: "Accessibilit\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102289
+    m_Localized: Langue
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102290
+    m_Localized: Volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102291
+    m_Localized: Canaux
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102292
+    m_Localized: "Qualit\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102293
+    m_Localized: "R\xE9solution"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296576
+    m_Localized: "Plein \xE9cran"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296577
+    m_Localized: VSync
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296578
+    m_Localized: "Anti-cr\xE9nelage"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296579
+    m_Localized: "Sensibilit\xE9 de la souris"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296580
+    m_Localized: Inverser Y
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296581
+    m_Localized: "Sensibilit\xE9 du zoom"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296582
+    m_Localized: Sous-titres
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296583
+    m_Localized: Langue
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296584
+    m_Localized: Volume principal
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296585
+    m_Localized: Musique
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296586
+    m_Localized: Effets
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296587
+    m_Localized: Voix
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296588
+    m_Localized: Interface
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296589
+    m_Localized: "Le mixage sera disponible apr\xE8s l'int\xE9gration de l'Audio
+      Mixer"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296590
+    m_Localized: "D\xE9sactiv\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296591
+    m_Localized: 2x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296592
+    m_Localized: 4x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296593
+    m_Localized: 8x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296594
+    m_Localized: Configuration des touches
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296595
+    m_Localized: Enregistrer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296596
+    m_Localized: Charger
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296597
+    m_Localized: "R\xE9initialiser"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296598
+    m_Localized: Clic gauche
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296599
+    m_Localized: Clic droit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296600
+    m_Localized: Clic milieu
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296601
+    m_Localized: "Comp\xE9tences de combat"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296602
+    m_Localized: Actions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296603
+    m_Localized: "Cliquez sur un bouton pour reassigner. \xC9chap \u2014 annuler."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296604
+    m_Localized: Terminer la conversation
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

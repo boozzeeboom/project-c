@@ -17,7 +17,211 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: 1598c453c15dbc14699c06f549db9b85, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 33561275965440
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908480
+    m_Localized: Zu weit vom Gegenstand entfernt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908481
+    m_Localized: Inventar voll
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908482
+    m_Localized: Gegenstand nicht gefunden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908483
+    m_Localized: "Nicht gen\xFCgend Gegenst\xE4nde"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908484
+    m_Localized: "Ung\xFCltiger Slot"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908485
+    m_Localized: Zu viele Anfragen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908486
+    m_Localized: Interner Fehler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908487
+    m_Localized: "Keine Berechtigung f\xFCr diesen Vorgang"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908488
+    m_Localized: Dieser Gegenstand ist nicht im Inventar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908489
+    m_Localized: Stapel voll
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908490
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908491
+    m_Localized: "Sie m\xFCssen sich in der Zone des NPC-Agenten befinden"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908492
+    m_Localized: Vertrag nicht gefunden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908493
+    m_Localized: Vertrag bereits angenommen oder abgelaufen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908494
+    m_Localized: Vertrag ist nicht aktiv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908495
+    m_Localized: Dies ist nicht Ihr Vertrag
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908496
+    m_Localized: "Zu viele aktive Vertr\xE4ge"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908497
+    m_Localized: Zu hohe Schulden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908498
+    m_Localized: Vertragszeit abgelaufen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908499
+    m_Localized: Sie sind nicht am Zielort
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908500
+    m_Localized: Erforderliche Fracht nicht gefunden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908501
+    m_Localized: Kein Platz im Lager
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102784
+    m_Localized: Ware nicht gefunden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102785
+    m_Localized: Zu viele Anfragen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102786
+    m_Localized: Interner Fehler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102787
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102788
+    m_Localized: "Ung\xFCltige Anfrage"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102789
+    m_Localized: Interner Fehler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102790
+    m_Localized: "Sie m\xFCssen sich in der Marktzone befinden"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102791
+    m_Localized: Zu viele Anfragen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102792
+    m_Localized: Markt nicht gefunden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102793
+    m_Localized: Artikel wird hier nicht verkauft
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102794
+    m_Localized: "Nicht vorr\xE4tig"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102795
+    m_Localized: "Kauf hier nicht m\xF6glich"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102796
+    m_Localized: "Verkauf hier nicht m\xF6glich"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102797
+    m_Localized: Preisfehler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102798
+    m_Localized: "Handel f\xFCr Ihre Fraktion gesperrt"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102799
+    m_Localized: Artikel nicht im Lager
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102800
+    m_Localized: Lager-Gewichtslimit erreicht
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102801
+    m_Localized: Lager-Volumenlimit erreicht
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102802
+    m_Localized: Lager-Typenlimit erreicht
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102803
+    m_Localized: Schiff nicht gefunden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102804
+    m_Localized: Schiff ist nicht in der Dockzone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102805
+    m_Localized: Artikel nicht im Frachtraum
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102806
+    m_Localized: Frachtraum-Gewichtslimit erreicht
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102807
+    m_Localized: Frachtraum-Volumenlimit erreicht
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102808
+    m_Localized: Frachtraum-Slotlimit erreicht
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102809
+    m_Localized: "Nicht gen\xFCgend Credits"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102810
+    m_Localized: "Nicht gen\xFCgend Credits"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102811
+    m_Localized: Zu viele Anfragen
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

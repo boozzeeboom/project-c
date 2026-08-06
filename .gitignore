@@ -176,3 +176,4 @@ lore-save.bat
 
 # Unity metadata (regenerated on import — not needed in VCS)
 *.meta
+Assets/_Project/Localization/Export/*

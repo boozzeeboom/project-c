@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Network;
+using ProjectC.Localization;
 
 namespace ProjectC.Trade.Client
 {
@@ -901,8 +902,8 @@ namespace ProjectC.Trade.Client
             if (_messageLabel != null && IsVisible() && _activeTab == "contracts")
             {
                 _messageLabel.text = active.Length == 0 && available.Length == 0
-                    ? "Нет контрактов на этой локации"
-                    : $"Активных: {active.Length} | Доступно: {available.Length}";
+                    ? Loc.Get("ui.market.no_contracts_here")
+                    : Loc.Format("ui.character.active_available", active.Length, available.Length);
                 _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
             }
         }
@@ -1025,7 +1026,7 @@ namespace ProjectC.Trade.Client
             var wh = snap.Value.warehouse[_selectedWarehouseItem];
             int qty = Mathf.Min(GetWarehouseQty(), wh.quantity);
             ulong shipId = GetSelectedShipId();
-            if (shipId == 0) { SetMessage("Сначала выберите корабль", true); return; }
+            if (shipId == 0) { SetMessage(Loc.Get("ui.market.select_ship_first"), true); return; }
             _state.RequestLoadToShip(snap.Value.locationId, wh.itemId, qty, shipId);
         }
 
@@ -1036,7 +1037,7 @@ namespace ProjectC.Trade.Client
             var cargo = SnapCargo(snap.Value);
             if (_selectedCargoItem < 0 || _selectedCargoItem >= cargo.Count) return;
             ulong shipId = GetSelectedShipId();
-            if (shipId == 0) { SetMessage("Сначала выберите корабль", true); return; }
+            if (shipId == 0) { SetMessage(Loc.Get("ui.market.select_ship_first"), true); return; }
             var it = cargo[_selectedCargoItem];
             int qty = Mathf.Min(GetWarehouseQty(), it.quantity);
             _state.RequestUnloadFromShip(snap.Value.locationId, it.itemId, qty, shipId);
@@ -1049,13 +1050,13 @@ namespace ProjectC.Trade.Client
         {
             if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Length)
             {
-                SetMessage("Выберите контракт для принятия");
+                SetMessage(Loc.Get("ui.character.select_contract"));
                 return;
             }
             var c = _contractsCache[_selectedContractItem];
             if (c.state != (byte)ContractState.Pending)
             {
-                SetMessage("Этот контракт уже не доступен для принятия");
+                SetMessage(Loc.Get("ui.character.contract_unavailable"));
                 return;
             }
             var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
@@ -1076,7 +1077,7 @@ namespace ProjectC.Trade.Client
             StartCoroutine(JustTakenPulse(_selectedContractItem));
 
             contractState.RequestAccept(c.contractId);
-            SetMessage("Запрос отправлен...");
+            SetMessage(Loc.Get("ui.character.request_sent"));
         }
 
         /// <summary>
@@ -1100,13 +1101,13 @@ namespace ProjectC.Trade.Client
         {
             if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Length)
             {
-                SetMessage("Выберите активный контракт для сдачи");
+                SetMessage(Loc.Get("ui.character.select_contract"));
                 return;
             }
             var c = _contractsCache[_selectedContractItem];
             if (c.state != (byte)ContractState.Active)
             {
-                SetMessage("Этот контракт не активен");
+                SetMessage(Loc.Get("ui.character.contract_not_active"));
                 return;
             }
             // Сервер сам валидирует что игрок в toLocationId (см. ContractServer.RequestCompleteRpc).
@@ -1114,26 +1115,26 @@ namespace ProjectC.Trade.Client
             var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
             if (contractState == null) return;
             contractState.RequestComplete(c.contractId);
-            SetMessage("Запрос отправлен...");
+            SetMessage(Loc.Get("ui.character.request_sent"));
         }
 
         private void OnFailContractClicked()
         {
             if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Length)
             {
-                SetMessage("Выберите активный контракт");
+                SetMessage(Loc.Get("ui.character.select_contract"));
                 return;
             }
             var c = _contractsCache[_selectedContractItem];
             if (c.state != (byte)ContractState.Active)
             {
-                SetMessage("Этот контракт не активен");
+                SetMessage(Loc.Get("ui.character.contract_not_active"));
                 return;
             }
             var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
             if (contractState == null) return;
             contractState.RequestFail(c.contractId);
-            SetMessage("Запрос отправлен...");
+            SetMessage(Loc.Get("ui.character.request_sent"));
         }
 
         private void SwitchTab(string tab)
@@ -1255,7 +1256,7 @@ namespace ProjectC.Trade.Client
             _myItemsOnly = !_myItemsOnly;
             if (_myItemsToggle != null)
             {
-                _myItemsToggle.text = _myItemsOnly ? "Показать все товары" : "Показать мои товары";
+                _myItemsToggle.text = _myItemsOnly ? Loc.Get("ui.market.show_all") : Loc.Get("ui.market.show_mine");
             }
             ApplyMarketFilter();
         }
@@ -1481,7 +1482,7 @@ namespace ProjectC.Trade.Client
             {
                 if (_messageLabel != null)
                 {
-                    _messageLabel.text = "Загрузка рынка...";
+                    _messageLabel.text = Loc.Get("ui.market.loading");
                     _messageLabel.style.color = new StyleColor(new Color(0.7f, 0.7f, 0.9f));
                 }
             }
@@ -1583,10 +1584,10 @@ namespace ProjectC.Trade.Client
         {
             switch (op)
             {
-                case TradeOp.Buy: return "Куплено";
-                case TradeOp.Sell: return "Продано";
-                case TradeOp.LoadToShip: return "Погрузка";
-                case TradeOp.UnloadFromShip: return "Разгрузка";
+                case TradeOp.Buy: return Loc.Get("ui.market.op.buy");
+                case TradeOp.Sell: return Loc.Get("ui.market.op.sell");
+                case TradeOp.LoadToShip: return Loc.Get("ui.market.op.load");
+                case TradeOp.UnloadFromShip: return Loc.Get("ui.market.op.unload");
                 default: return op.ToString();
             }
         }
@@ -1761,7 +1762,7 @@ namespace ProjectC.Trade.Client
             {
                 if (_messageLabel != null)
                 {
-                    _messageLabel.text = "Выберите предмет в левом списке";
+                    _messageLabel.text = Loc.Get("ui.market.select_left");
                     _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.8f, 0.4f));
                 }
                 return;
@@ -1772,7 +1773,7 @@ namespace ProjectC.Trade.Client
             {
                 if (_messageLabel != null)
                 {
-                    _messageLabel.text = "Нет данных о рынке";
+                    _messageLabel.text = Loc.Get("ui.market.no_data");
                     _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
                 }
                 return;
@@ -1784,7 +1785,7 @@ namespace ProjectC.Trade.Client
             {
                 if (_messageLabel != null)
                 {
-                    _messageLabel.text = "Сервер обменника не доступен";
+                    _messageLabel.text = Loc.Get("ui.market.server_unavailable");
                     _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
                 }
                 return;
@@ -1809,7 +1810,7 @@ namespace ProjectC.Trade.Client
             {
                 if (_messageLabel != null)
                 {
-                    _messageLabel.text = "Выберите товар в правом списке";
+                    _messageLabel.text = Loc.Get("ui.market.select_right");
                     _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.8f, 0.4f));
                 }
                 return;
@@ -1820,7 +1821,7 @@ namespace ProjectC.Trade.Client
             {
                 if (_messageLabel != null)
                 {
-                    _messageLabel.text = "Нет данных о рынке";
+                    _messageLabel.text = Loc.Get("ui.market.no_data");
                     _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
                 }
                 return;
@@ -1832,7 +1833,7 @@ namespace ProjectC.Trade.Client
                 Debug.LogError("[MarketWindow][Unpack] ExchangeServer.Instance == null — RPC не отправляется!");
                 if (_messageLabel != null)
                 {
-                    _messageLabel.text = "Сервер обменника не инициализирован. Подождите пару секунд.";
+                    _messageLabel.text = Loc.Get("ui.market.server_not_ready");
                     _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
                 }
                 return;

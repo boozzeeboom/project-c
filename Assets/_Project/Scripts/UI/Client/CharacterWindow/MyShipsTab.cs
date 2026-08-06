@@ -13,6 +13,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.Client
 {
@@ -278,7 +279,7 @@ namespace ProjectC.UI.Client
 
             // Устанавливаем placeholder если пусто
             if (_emptyLabel != null && _choices.Count == 0)
-                _emptyLabel.text = "Нет доступных кораблей. Найдите ключ в мире.";
+                _emptyLabel.text = Loc.Get("ui.ship.no_ships");
 
             Debug.Log($"[MyShipsTab] RefreshShipList: {_choices.Count} кораблей");
         }private void UpdateVisibility()
@@ -342,12 +343,12 @@ namespace ProjectC.UI.Client
                 if (telemetry.hullMax > 0)
                 {
                     _hullText.text = telemetry.hullCurrent <= 0
-                        ? "Прочность: СЛОМАН"
+                        ? Loc.Get("ui.ship.hull_broken")
                         : $"Прочность: {telemetry.hullCurrent}/{telemetry.hullMax}";
                 }
                 else
                 {
-                    _hullText.text = "Прочность: —";
+                    _hullText.text = Loc.Get("ui.ship.hull_empty");
                 }
             }
 
@@ -363,7 +364,7 @@ namespace ProjectC.UI.Client
             {
                 _fuelText.text = telemetry.fuelMax > 0f
                     ? $"Топливо: {telemetry.fuelNormalized * 100f:F1}% ({telemetry.fuelMax:F0} max)"
-                    : "Топливо: —";
+                    : Loc.Get("ui.ship.fuel_empty");
             }
 
             // T-CARGO-UI-01-3: кастомный cargo bar (bg+fill)
@@ -376,7 +377,7 @@ namespace ProjectC.UI.Client
             {
                 _cargoText.text = telemetry.cargoMax > 0
                     ? $"Груз: {telemetry.cargoUsed}/{telemetry.cargoMax}"
-                    : "Груз: — (нет данных)";
+                    : Loc.Get("ui.ship.cargo_empty");
             }
 
             // T-CARGO-UI-01: детальный список items
@@ -415,7 +416,7 @@ namespace ProjectC.UI.Client
             var mm = sc != null ? sc.ShipModuleManager : null;
             if (mm == null || mm.slots == null || mm.slots.Count == 0)
             {
-                var row = new Label("Модулей: 0");
+                var row = new Label(Loc.Get("ui.ship.modules_zero"));
                 row.AddToClassList("ship-info-row");
                 _modulesContainer.Add(row);
                 return;
@@ -485,7 +486,7 @@ namespace ProjectC.UI.Client
 
             if (isEmpty)
             {
-                var empty = new Label("Трюм пуст");
+                var empty = new Label(Loc.Get("ui.ship.hold_empty"));
                 empty.AddToClassList("ship-cargo-empty");
                 _cargoContainer.Add(empty);
                 return;

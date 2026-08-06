@@ -49,6 +49,7 @@ using ProjectC.Trade;
 using ProjectC.Trade.Client;
 using ProjectC.Trade.Dto;
 using ProjectC.Trade.Network;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.Client
 {
@@ -932,10 +933,18 @@ namespace ProjectC.UI.Client
         // Filter configuration per tab
         // ============================================================
 
-        private List<string> _contractFilterSourceOptions = new List<string> { "Все", "Контракты", "Квесты" };
-        private List<string> _contractFilterStateOptions  = new List<string> { "Все", "Активные", "Доступные" };
+        private List<string> _contractFilterSourceOptions = new List<string> {
+            Loc.Get("ui.character.filter.all"),
+            Loc.Get("ui.character.filter.contracts"),
+            Loc.Get("ui.character.filter.quests")
+        };
+        private List<string> _contractFilterStateOptions  = new List<string> {
+            Loc.Get("ui.character.filter.all"),
+            Loc.Get("ui.character.filter.active"),
+            Loc.Get("ui.character.filter.available")
+        };
         private List<string> _inventoryFilterSourceOptionsCache;  // динамически по ItemType
-        private List<string> _inventoryFilterStateOptions  = new List<string> { "Все типы" };
+        private List<string> _inventoryFilterStateOptions  = new List<string> { Loc.Get("ui.character.filter.all_types") };
 
         private void ConfigureContractFilters()
         {
@@ -943,14 +952,14 @@ namespace ProjectC.UI.Client
             {
                 _filterSource.choices = _contractFilterSourceOptions;
                 if (!_contractFilterSourceOptions.Contains(_filterSource.value))
-                    _filterSource.value = "Все";
+                    _filterSource.value = Loc.Get("ui.character.filter.all");
             }
             if (_filterState != null)
             {
                 _filterState.choices = _contractFilterStateOptions;
                 _filterState.style.display = DisplayStyle.Flex;
                 if (!_contractFilterStateOptions.Contains(_filterState.value))
-                    _filterState.value = "Все";
+                    _filterState.value = Loc.Get("ui.character.filter.all");
             }
             // Подписки на change — только один раз (через RegisterValueChangedCallback в EnsureBuilt).
             // Здесь просто гарантируем актуальные options.
@@ -961,7 +970,7 @@ namespace ProjectC.UI.Client
             // Build dynamic options: "Все типы" + все 8 ItemType (ItemTypeNames)
             if (_inventoryFilterSourceOptionsCache == null)
             {
-                _inventoryFilterSourceOptionsCache = new List<string> { "Все типы" };
+                _inventoryFilterSourceOptionsCache = new List<string> { Loc.Get("ui.character.filter.all_types") };
                 foreach (ItemType t in Enum.GetValues(typeof(ItemType)))
                 {
                     _inventoryFilterSourceOptionsCache.Add(ItemTypeNames.GetDisplayName(t));
@@ -971,7 +980,7 @@ namespace ProjectC.UI.Client
             {
                 _filterSource.choices = _inventoryFilterSourceOptionsCache;
                 if (!_inventoryFilterSourceOptionsCache.Contains(_filterSource.value))
-                    _filterSource.value = "Все типы";
+                    _filterSource.value = Loc.Get("ui.character.filter.all_types");
             }
             if (_filterState != null)
             {
@@ -1028,8 +1037,8 @@ namespace ProjectC.UI.Client
             if (_statName != null)
             {
                 _statName.text = _localPlayer != null
-                    ? (_localPlayer.IsLocalPlayer ? "Игрок (Owner)" : "Игрок")
-                    : "—";
+                    ? (_localPlayer.IsLocalPlayer ? Loc.Get("ui.character.player_owner") : Loc.Get("ui.character.player"))
+                    : Loc.Get("ui.character.no_data");
             }
             // Уровень / опыт — плейсхолдеры (отдельный тикет: серверная модель уровней)
             if (_statLevel != null) _statLevel.text = "1";
@@ -1154,8 +1163,8 @@ namespace ProjectC.UI.Client
             if (_messageLabel != null && IsVisible() && _activeTab == "knowledge")
             {
                 _messageLabel.text = snapshot.entries != null
-                    ? $"Фракций: {snapshot.entries.Length}"
-                    : "Нет данных о репутации";
+                    ? Loc.Format("ui.character.factions_count", snapshot.entries.Length)
+                    : Loc.Get("ui.character.no_reputation");
                 _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
             }
         }
@@ -1166,8 +1175,8 @@ namespace ProjectC.UI.Client
             if (_messageLabel != null && IsVisible() && _activeTab == "knowledge")
             {
                 _messageLabel.text = snapshot.entries != null
-                    ? $"Отношений: {snapshot.entries.Length}"
-                    : "Нет данных об отношениях";
+                    ? Loc.Format("ui.character.attitudes_count", snapshot.entries.Length)
+                    : Loc.Get("ui.character.no_attitude");
                 _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
             }
         }
@@ -1504,7 +1513,7 @@ namespace ProjectC.UI.Client
 
         private void ClearInventoryDetail()
         {
-            if (_invDetailName != null) _invDetailName.text = "Выберите предмет слева";
+            if (_invDetailName != null) _invDetailName.text = Loc.Get("ui.character.select_item_left");
             if (_invDetailType != null) _invDetailType.text = "—";
             if (_invDetailWeight != null) _invDetailWeight.text = "—";
             if (_invDetailStat != null) _invDetailStat.text = "—";
@@ -1542,7 +1551,7 @@ namespace ProjectC.UI.Client
             {
                 if (def is ProjectC.Equipment.ClothingItemData c)
                 {
-                    string sb = "Бонусы: ";
+                    string sb = Loc.Get("ui.character.bonuses");
                     if (c.strengthBonus != 0) sb += $"STR {(c.strengthBonus>=0?"+":"")}{c.strengthBonus:F0} ";
                     if (c.dexterityBonus != 0) sb += $"DEX {(c.dexterityBonus>=0?"+":"")}{c.dexterityBonus:F0} ";
                     if (c.intelligenceBonus != 0) sb += $"INT {(c.intelligenceBonus>=0?"+":"")}{c.intelligenceBonus:F0} ";
@@ -1553,7 +1562,7 @@ namespace ProjectC.UI.Client
                 }
                 else if (def is ProjectC.Equipment.ModuleItemData m)
                 {
-                    string sb = "Бонусы: ";
+                    string sb = Loc.Get("ui.character.bonuses");
                     if (m.strengthBonus != 0) sb += $"STR {(m.strengthBonus>=0?"+":"")}{m.strengthBonus:F0} ";
                     if (m.dexterityBonus != 0) sb += $"DEX {(m.dexterityBonus>=0?"+":"")}{m.dexterityBonus:F0} ";
                     if (m.intelligenceBonus != 0) sb += $"INT {(m.intelligenceBonus>=0?"+":"")}{m.intelligenceBonus:F0} ";
@@ -1583,7 +1592,7 @@ namespace ProjectC.UI.Client
             var qty  = new Label { name = "row-qty"  }; qty.AddToClassList("inventory-qty");   row.Add(qty);
             var equipBtn = new VisualElement { name = "row-equip-btn" };
             equipBtn.AddToClassList("inventory-equip-btn");
-            var equipLabel = new Label { name = "row-equip-label", text = "НАДЕТЬ" };
+            var equipLabel = new Label { name = "row-equip-label", text = Loc.Get("ui.character.equip") };
             equipLabel.AddToClassList("inventory-equip-label");
             equipBtn.Add(equipLabel);
             row.Add(equipBtn);
@@ -1855,8 +1864,8 @@ namespace ProjectC.UI.Client
             if (_messageLabel != null && IsVisible() && _activeTab == "contracts")
             {
                 _messageLabel.text = active.Length == 0 && available.Length == 0
-                    ? "Нет активных или доступных контрактов"
-                    : $"Активных: {active.Length} | Доступно: {available.Length}";
+                    ? Loc.Get("ui.character.no_contracts")
+                    : Loc.Format("ui.character.active_available", active.Length, available.Length);
                 _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
             }
         }
@@ -1897,8 +1906,8 @@ namespace ProjectC.UI.Client
             IEnumerable<ContractDto> src = _contractsCache ?? Array.Empty<ContractDto>();
 
             // Source filter: "Все" / "Контракты" / "Квесты"
-            string source = _filterSource != null ? _filterSource.value : "Все";
-            if (source == "Квесты")
+            string source = _filterSource != null ? _filterSource.value : Loc.Get("ui.character.filter.all");
+            if (source == Loc.Get("ui.character.filter.quests"))
             {
                 // Квесты не реализованы — пустой список + подсказка
                 _contractsList.itemsSource = Array.Empty<ContractDto>();
@@ -1915,10 +1924,17 @@ namespace ProjectC.UI.Client
             // "Все" и "Контракты" — одинаково, всё что есть.
 
             // State filter
-            string state = _filterState != null ? _filterState.value : "Все";
-            if (state == "Активные")
+            var activeLabel = Loc.Get("ui.character.filter.active");
+            var availableLabel = Loc.Get("ui.character.filter.available");
+            string state = _filterState != null ? _filterState.value : Loc.Get("ui.character.filter.all");
+            if (state == activeLabel)
                 src = src.Where(c => c.state == (byte)ContractState.Active);
-            else if (state == "Доступные")
+
+
+            // Search filter
+                src = src.Where(c => c.state == (byte)ContractState.Pending);
+
+            // Search filter
                 src = src.Where(c => c.state == (byte)ContractState.Pending);
 
             // Search filter
@@ -1946,8 +1962,8 @@ namespace ProjectC.UI.Client
             if (_inventoryList == null) return;
             IEnumerable<InventoryTab.InventoryListItem> src = _inventoryTab.InventoryCache;
 
-            string source = _filterSource != null ? _filterSource.value : "Все типы";
-            if (source != "Все типы")
+            string source = _filterSource != null ? _filterSource.value : Loc.Get("ui.character.filter.all_types");
+            if (source != Loc.Get("ui.character.filter.all_types"))
             {
                 src = src.Where(i => ItemTypeNames.GetDisplayName(i.type) == source);
             }
@@ -2536,7 +2552,7 @@ namespace ProjectC.UI.Client
                 row.Add(tier);
 
                 // 6) action button — [Изучить] / [Забыть] / none
-                string btnText = data.State switch { "LEARNED" => "Забыть", "AVAILABLE" => "Изучить", _ => null };
+                string btnText = data.State switch { "LEARNED" => Loc.Get("ui.skill.forget"), "AVAILABLE" => Loc.Get("ui.skill.learn"), _ => null };
                 string btnClass = data.State switch { "LEARNED" => "skill-btn-forget", "AVAILABLE" => "skill-btn-learn", _ => null };
                 if (btnText != null)
                 {
@@ -2850,7 +2866,7 @@ namespace ProjectC.UI.Client
                 // В отличие от Button.clicked, срабатывает на любой click без focusable.
                 var btn = new VisualElement { name = "equip-slot-btn" };
                 btn.AddToClassList("equip-slot-btn");
-                var btnLabel = new Label { text = data.ItemId > 0 ? "СНЯТЬ" : "—" };
+                var btnLabel = new Label { text = data.ItemId > 0 ? Loc.Get("ui.character.unequip") : Loc.Get("ui.character.no_data") };
                 btnLabel.AddToClassList("equip-slot-btn-label");
                 btnLabel.style.flexGrow = 1;
                 btnLabel.style.unityTextAlign = UnityEngine.TextAnchor.MiddleCenter;
@@ -3085,7 +3101,7 @@ namespace ProjectC.UI.Client
             // T-Q12: per-row "Следить" / "Не следить" button (toggle).
             var trackBtn = new Button { name = "row-track-btn" };
             trackBtn.AddToClassList("quest-row-track-btn");
-            trackBtn.text = "Следить";
+            trackBtn.text = Loc.Get("ui.quest.track");
             trackBtn.RegisterCallback<ClickEvent>(OnQuestRowTrackClicked);
             topLine.Add(trackBtn);
 
@@ -3129,7 +3145,7 @@ namespace ProjectC.UI.Client
             {
             var trkInst = QuestTracker.Instance;
             bool isTracked = trkInst != null && trkInst.TrackedQuestId == q.questId;
-            trackBtn.text = isTracked ? "Не следить" : "Следить";
+            trackBtn.text = isTracked ? Loc.Get("ui.quest.untrack") : Loc.Get("ui.quest.track");
             }
 
             // T-Q21: render objectives list under the quest row.
@@ -3304,12 +3320,12 @@ namespace ProjectC.UI.Client
             {
             switch (state)
             {
-            case (byte)QuestState.Discovered: return "ОБНАРУЖЕН";
-            case (byte)QuestState.Offered: return "ПРЕДЛОЖЕН";
-            case (byte)QuestState.Active: return "АКТИВЕН";
-            case (byte)QuestState.Completed: return "ВЫПОЛНЕН";
-            case (byte)QuestState.TurnedIn: return "СДАН";
-            case (byte)QuestState.Failed: return "ПРОВАЛЕН";
+            case (byte)QuestState.Discovered: return Loc.Get("ui.quest.state.discovered");
+            case (byte)QuestState.Offered: return Loc.Get("ui.quest.state.offered");
+            case (byte)QuestState.Active: return Loc.Get("ui.quest.state.active");
+            case (byte)QuestState.Completed: return Loc.Get("ui.quest.state.completed");
+            case (byte)QuestState.TurnedIn: return Loc.Get("ui.quest.state.turned_in");
+            case (byte)QuestState.Failed: return Loc.Get("ui.quest.state.failed");
             default: return state.ToString();
             }
             }
@@ -3436,7 +3452,7 @@ namespace ProjectC.UI.Client
             {
             if (_questsDiscoveredList == null)
             {
-            SetMessage("Список найденных квестов недоступен", true);
+            SetMessage(Loc.Get("ui.quest.discovered_unavailable"), true);
             return;
             }
             var src = _questsDiscoveredList.itemsSource as List<QuestListItem>;
@@ -3460,7 +3476,7 @@ namespace ProjectC.UI.Client
             // T-P19: Отказаться от квеста (reject/abandon — заглушка, серверная часть не реализована)
             private void OnRejectQuestClicked()
             {
-            SetMessage("Отказ от квеста пока не реализован (ждёт серверную часть)");
+            SetMessage(Loc.Get("ui.quest.reject_unavailable"));
             }
 
 
@@ -3473,13 +3489,13 @@ namespace ProjectC.UI.Client
             var src = _contractsList.itemsSource as ContractDto[];
             if (src == null || _selectedContractItem < 0 || _selectedContractItem >= src.Length)
             {
-                SetMessage("Выберите контракт для принятия");
+                SetMessage(Loc.Get("ui.character.select_contract"));
                 return;
             }
             var c = src[_selectedContractItem];
             if (c.state != (byte)ContractState.Pending)
             {
-                SetMessage("Этот контракт уже не доступен для принятия");
+                SetMessage(Loc.Get("ui.character.contract_unavailable"));
                 return;
             }
             if (_contractState == null)
@@ -3496,7 +3512,7 @@ namespace ProjectC.UI.Client
             StartCoroutine(JustTakenPulse(_selectedContractItem));
 
             _contractState.RequestAccept(c.contractId);
-            SetMessage("Запрос отправлен...");
+            SetMessage(Loc.Get("ui.character.request_sent"));
         }
 
         private void OnCompleteContractClicked()
@@ -3505,13 +3521,13 @@ namespace ProjectC.UI.Client
             var src = _contractsList.itemsSource as ContractDto[];
             if (src == null || _selectedContractItem < 0 || _selectedContractItem >= src.Length)
             {
-                SetMessage("Выберите активный контракт для сдачи");
+                SetMessage(Loc.Get("ui.character.select_contract"));
                 return;
             }
             var c = src[_selectedContractItem];
             if (c.state != (byte)ContractState.Active)
             {
-                SetMessage("Этот контракт не активен");
+                SetMessage(Loc.Get("ui.character.contract_not_active"));
                 return;
             }
             if (_contractState == null)
@@ -3520,7 +3536,7 @@ namespace ProjectC.UI.Client
                 return;
             }
             _contractState.RequestComplete(c.contractId);
-            SetMessage("Запрос отправлен...");
+            SetMessage(Loc.Get("ui.character.request_sent"));
         }
 
         private void OnFailContractClicked()
@@ -3529,13 +3545,13 @@ namespace ProjectC.UI.Client
             var src = _contractsList.itemsSource as ContractDto[];
             if (src == null || _selectedContractItem < 0 || _selectedContractItem >= src.Length)
             {
-                SetMessage("Выберите активный контракт");
+                SetMessage(Loc.Get("ui.character.select_contract"));
                 return;
             }
             var c = src[_selectedContractItem];
             if (c.state != (byte)ContractState.Active)
             {
-                SetMessage("Этот контракт не активен");
+                SetMessage(Loc.Get("ui.character.contract_not_active"));
                 return;
             }
             if (_contractState == null)
@@ -3544,7 +3560,7 @@ namespace ProjectC.UI.Client
                 return;
             }
             _contractState.RequestFail(c.contractId);
-            SetMessage("Запрос отправлен...");
+            SetMessage(Loc.Get("ui.character.request_sent"));
         }
 
         private System.Collections.IEnumerator JustTakenPulse(int rowIndex)
@@ -3590,7 +3606,7 @@ namespace ProjectC.UI.Client
             {
                 if (_messageLabel != null && _activeTab == "contracts")
                 {
-                    _messageLabel.text = "Загрузка контрактов...";
+                    _messageLabel.text = Loc.Get("ui.character.loading_contracts");
                     _messageLabel.style.color = new StyleColor(new Color(0.7f, 0.7f, 0.9f));
                 }
             }
@@ -3739,9 +3755,9 @@ namespace ProjectC.UI.Client
         {
             switch (type)
             {
-                case ContractType.Standard: return "[Стандарт]";
-                case ContractType.Urgent:   return "[Срочный]";
-                case ContractType.Receipt:  return "[Расписка]";
+                case ContractType.Standard: return $"[{Loc.Get("ui.contract.type.standard")}]";
+                case ContractType.Urgent:   return $"[{Loc.Get("ui.contract.type.urgent")}]";
+                case ContractType.Receipt:  return $"[{Loc.Get("ui.contract.type.receipt")}]";
                 default: return type.ToString();
             }
         }

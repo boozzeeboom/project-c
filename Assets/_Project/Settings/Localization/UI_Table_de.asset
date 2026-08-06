@@ -17,7 +17,216 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: 0ef116caf8db5524187c4ff04bae545f, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 33563784159232
+    m_Localized: Einstellungen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102272
+    m_Localized: Einstellungen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102273
+    m_Localized: Steuerung
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102274
+    m_Localized: Grafik
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102275
+    m_Localized: Audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102276
+    m_Localized: Gameplay
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102277
+    m_Localized: "Zum Men\xFC"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102278
+    m_Localized: Abbrechen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102279
+    m_Localized: Steuerung
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102280
+    m_Localized: Grafik
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102281
+    m_Localized: Audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102282
+    m_Localized: Gameplay
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102283
+    m_Localized: Beenden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102284
+    m_Localized: "M\xF6chten Sie wirklich zum Hauptmen\xFC zur\xFCckkehren?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102285
+    m_Localized: "Qualit\xE4t"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102286
+    m_Localized: Bildschirm
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102287
+    m_Localized: Gameplay
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102288
+    m_Localized: Barrierefreiheit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102289
+    m_Localized: Sprache
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102290
+    m_Localized: "Lautst\xE4rke"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102291
+    m_Localized: "Kan\xE4le"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102292
+    m_Localized: "Qualit\xE4t"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102293
+    m_Localized: "Aufl\xF6sung"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296576
+    m_Localized: Vollbild
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296577
+    m_Localized: VSync
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296578
+    m_Localized: "Kantengl\xE4ttung"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296579
+    m_Localized: Mausempfindlichkeit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296580
+    m_Localized: Y invertieren
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296581
+    m_Localized: Zoom-Empfindlichkeit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296582
+    m_Localized: Untertitel
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296583
+    m_Localized: Sprache
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296584
+    m_Localized: "Gesamtlautst\xE4rke"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296585
+    m_Localized: Musik
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296586
+    m_Localized: Effekte
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296587
+    m_Localized: Stimme
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296588
+    m_Localized: "Benutzeroberfl\xE4che"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296589
+    m_Localized: "Das Mischen wird nach der Audio Mixer-Integration verf\xFCgbar
+      sein"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296590
+    m_Localized: Aus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296591
+    m_Localized: 2x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296592
+    m_Localized: 4x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296593
+    m_Localized: 8x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296594
+    m_Localized: Tastenbelegung
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296595
+    m_Localized: Speichern
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296596
+    m_Localized: Laden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296597
+    m_Localized: "Zur\xFCcksetzen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296598
+    m_Localized: LMT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296599
+    m_Localized: RMT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296600
+    m_Localized: MMT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296601
+    m_Localized: "Kampff\xE4higkeiten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296602
+    m_Localized: Aktionen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296603
+    m_Localized: "Klicken Sie eine Taste zum Neubelegen. Esc \u2014 abbrechen."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296604
+    m_Localized: "Gespr\xE4ch beenden"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

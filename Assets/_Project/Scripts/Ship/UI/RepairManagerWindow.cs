@@ -15,6 +15,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using ProjectC.Localization;
 using ProjectC.Player;
 using ProjectC.Ship.Key;
 using ProjectC.UI.Client;
@@ -491,7 +492,7 @@ namespace ProjectC.Ship.UI
 
             if (hull == null)
             {
-                if (_hullLabel != null) _hullLabel.text = "Прочность: —";
+                if (_hullLabel != null) _hullLabel.text = Loc.Get("ui.ship.hull_empty");
                 if (_hullBarFill != null) _hullBarFill.style.width = Length.Percent(0);
                 if (_hullBtn != null) _hullBtn.SetEnabled(false);
                 return;
@@ -540,7 +541,7 @@ namespace ProjectC.Ship.UI
             {
                 server.RequestRepairHull(_selectedKeyId, _hullRepairCost);
                 if (_statusLabel != null)
-                    _statusLabel.text = "Запрос на ремонт корпуса отправлен...";
+                    _statusLabel.text = Loc.Get("ui.repair.hull_request");
                 StartCoroutine(DelayedRefresh(0.5f));
             }
         }
@@ -596,7 +597,7 @@ namespace ProjectC.Ship.UI
             if (nearestPad == null)
             {
                 if (_statusLabel != null)
-                    _statusLabel.text = "Нет свободных падов!";
+                    _statusLabel.text = Loc.Get("ui.repair.no_pads");
                 return;
             }
 
@@ -611,7 +612,7 @@ namespace ProjectC.Ship.UI
             else
             {
                 if (_statusLabel != null)
-                    _statusLabel.text = "Корабль не заспавнен.";
+                    _statusLabel.text = Loc.Get("ui.repair.not_spawned");
             }
         }
 
@@ -619,11 +620,11 @@ namespace ProjectC.Ship.UI
         {
             if (_shipClassLabel != null) _shipClassLabel.text = "Класс: —";
             if (_shipPowerLabel != null) _shipPowerLabel.text = "Энергия: —";
-            if (_hullLabel != null) _hullLabel.text = "Прочность: —";
+            if (_hullLabel != null) _hullLabel.text = Loc.Get("ui.ship.hull_empty");
             if (_hullBarFill != null) _hullBarFill.style.width = Length.Percent(0);
             if (_hullBtn != null) _hullBtn.SetEnabled(false);
             if (_slotDropdownContainer != null) _slotDropdownContainer.Clear();
-            if (_installedLabel != null) _installedLabel.text = "Установлено: —";
+            if (_installedLabel != null) _installedLabel.text = "Установлено: " + Loc.Get("ui.character.no_data");
             if (_installedActions != null) _installedActions.Clear();
             ClearModulesView();
         }
@@ -639,13 +640,13 @@ namespace ProjectC.Ship.UI
 
             if (string.IsNullOrEmpty(_selectedSlotName) || _selectedKeyId <= 0)
             {
-                _installedLabel.text = "Установлено: —";
+                _installedLabel.text = "Установлено: " + Loc.Get("ui.character.no_data");
                 return;
             }
 
             if (!_shipByKeyId.TryGetValue(_selectedKeyId, out var sc)) return;
             var mm = sc.ShipModuleManager;
-            if (mm == null) { _installedLabel.text = "Установлено: —"; return; }
+            if (mm == null) { _installedLabel.text = "Установлено: " + Loc.Get("ui.character.no_data"); return; }
 
             ModuleSlot targetSlot = null;
             foreach (var slot in mm.slots)
@@ -656,7 +657,7 @@ namespace ProjectC.Ship.UI
 
             if (targetSlot == null || !targetSlot.isOccupied)
             {
-                _installedLabel.text = "Установлено: пусто";
+                _installedLabel.text = Loc.Get("ui.repair.slot_empty");
                 return;
             }
 
@@ -728,7 +729,7 @@ namespace ProjectC.Ship.UI
 
             if (_activeDatabase == null)
             {
-                var err = new Label("База модулей не задана.");
+                var err = new Label(Loc.Get("ui.repair.no_database"));
                 err.AddToClassList("repair-empty-label");
                 _modulesContainer.Add(err);
                 return;
@@ -736,7 +737,7 @@ namespace ProjectC.Ship.UI
 
             if (!_shipByKeyId.TryGetValue(_selectedKeyId, out var sc))
             {
-                _modulesContainer.Add(new Label("Корабль не выбран."));
+                _modulesContainer.Add(new Label(Loc.Get("ui.repair.no_ship")));
                 return;
             }
 
@@ -814,7 +815,7 @@ namespace ProjectC.Ship.UI
 
                 // Install button
                 var installBtn = new Button(() => OnInstallClicked(slotName, mod.moduleId));
-                installBtn.text = "Установить";
+                installBtn.text = Loc.Get("ui.repair.install");
                 installBtn.AddToClassList("repair-btn");
                 installBtn.AddToClassList("repair-btn-install");
 
@@ -826,7 +827,7 @@ namespace ProjectC.Ship.UI
                 if (neededPower > availPower)
                 {
                     installBtn.SetEnabled(false);
-                    installBtn.tooltip = "Недостаточно энергии";
+                    installBtn.tooltip = Loc.Get("ui.repair.insufficient_power");
                 }
 
                 row.Add(installBtn);
@@ -835,7 +836,7 @@ namespace ProjectC.Ship.UI
 
             if (!any)
             {
-                var none = new Label("Нет совместимых модулей для этого слота.");
+                var none = new Label(Loc.Get("ui.repair.no_modules"));
                 none.AddToClassList("repair-empty-label");
                 _modulesContainer.Add(none);
             }
@@ -863,7 +864,7 @@ namespace ProjectC.Ship.UI
         private void ClearModulesView()
         {
             if (_modulesContainer != null) _modulesContainer.Clear();
-            if (_modulesHeader != null) _modulesHeader.text = "Доступные модули:";
+            if (_modulesHeader != null) _modulesHeader.text = Loc.Get("ui.repair.available_modules");
         }
 
         private IEnumerator DelayedRefresh(float delay)
@@ -876,7 +877,7 @@ namespace ProjectC.Ship.UI
                 if (!string.IsNullOrEmpty(_selectedSlotName))
                     RenderCompatibleModules(_selectedSlotName);
                 if (_statusLabel != null)
-                    _statusLabel.text = "Готово ✓";
+                    _statusLabel.text = Loc.Get("ui.repair.done");
             }
         }
 
@@ -1044,7 +1045,7 @@ namespace ProjectC.Ship.UI
         private void UpdatePaintUI()
         {
             if (_paintCostLabel != null)
-                _paintCostLabel.text = _repaintCost > 0 ? $"Стоимость: {_repaintCost} кр." : "Бесплатно";
+                _paintCostLabel.text = _repaintCost > 0 ? $"Стоимость: {_repaintCost} кр." : Loc.Get("ui.repair.free");
 
             if (_paintApplyBtn != null)
             {
@@ -1078,7 +1079,7 @@ namespace ProjectC.Ship.UI
             {
                 server.RequestRepaintShip(_selectedKeyId, _selectedPaintColor.Value, _repaintCost);
                 if (_statusLabel != null)
-                    _statusLabel.text = $"Запрос на покраску отправлен...";
+                    _statusLabel.text = Loc.Get("ui.repair.paint_request");
                 StartCoroutine(DelayedRefresh(0.5f));
             }
             else

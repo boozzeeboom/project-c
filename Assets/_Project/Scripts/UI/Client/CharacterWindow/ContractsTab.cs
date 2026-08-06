@@ -18,6 +18,7 @@ using ProjectC.Trade.Dto;
 using ProjectC.Trade.Network;
 using UnityEngine;
 using UnityEngine.UIElements;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.Client
 {
@@ -51,7 +52,11 @@ namespace ProjectC.UI.Client
         private int _selectedContractItem = -1;
 
         // Filters — только "Все" | "Активные" | "Завершённые"
-        private List<string> _contractFilterStateOptions  = new List<string> { "Все", "Активные", "Завершённые" };
+        private List<string> _contractFilterStateOptions  = new List<string> {
+            Loc.Get("ui.character.filter.all"),
+            Loc.Get("ui.character.filter.active"),
+            Loc.Get("ui.character.filter.completed")
+        };
 
         // Subscription
         private ContractClientState _contractState;
@@ -185,16 +190,18 @@ namespace ProjectC.UI.Client
             // T-P19: только контракты — source показывает "Контракты" (фикс), state = фильтр
             if (_filterSource != null)
             {
-                _filterSource.choices = new List<string> { "Контракты" };
-                _filterSource.value = "Контракты";
+                var contractLabel = Loc.Get("ui.character.filter.contracts");
+                _filterSource.choices = new List<string> { contractLabel };
+                _filterSource.value = contractLabel;
                 _filterSource.SetEnabled(false);  // readonly
             }
             if (_filterState != null)
             {
                 _filterState.choices = _contractFilterStateOptions;
                 _filterState.style.display = DisplayStyle.Flex;
+                var allLabel = Loc.Get("ui.character.filter.all");
                 if (!_contractFilterStateOptions.Contains(_filterState.value))
-                    _filterState.value = "Все";
+                    _filterState.value = allLabel;
                 _filterState.SetEnabled(true);
             }
         }
@@ -206,10 +213,12 @@ namespace ProjectC.UI.Client
 
             // T-P19: только контракты (квесты убраны)
 
-            string state = _filterState != null ? _filterState.value : "Все";
-            if (state == "Активные")
+            var activeLabel = Loc.Get("ui.character.filter.active");
+            var completedLabel = Loc.Get("ui.character.filter.completed");
+            string state = _filterState != null ? _filterState.value : Loc.Get("ui.character.filter.all");
+            if (state == activeLabel)
                 src = src.Where(c => c.state == (byte)ContractState.Active);
-            else if (state == "Завершённые")
+            else if (state == completedLabel)
                 src = src.Where(c => c.state == (byte)ContractState.Completed);
 
             string search = _filterSearch != null ? (_filterSearch.value ?? "").ToLowerInvariant() : "";
@@ -324,14 +333,7 @@ namespace ProjectC.UI.Client
         private static string ResolveLocationDisplayName(string locationId)
         {
             if (string.IsNullOrEmpty(locationId)) return "?";
-            switch (locationId.ToLowerInvariant())
-            {
-                case "primium":  return "Примум";
-                case "secundus": return "Секундус";
-                case "tertius":  return "Терциус";
-                case "quartus":  return "Квартус";
-                default:         return locationId;
-            }
+            return Loc.Get($"ui.contract.rank.{locationId.ToLowerInvariant()}", locationId);
         }
 
         // ============================================================
@@ -355,8 +357,8 @@ namespace ProjectC.UI.Client
             if (_messageLabel != null && _owner != null && _owner.IsVisible() && _owner.GetActiveTab() == "contracts")
             {
                 _messageLabel.text = _contractsCache.Count == 0
-                    ? "Нет активных контрактов"
-                    : $"Активных: {_contractsCache.Count}";
+                    ? Loc.Get("ui.character.no_active_contracts")
+                    : Loc.Format("ui.character.active_contracts_count", _contractsCache.Count);
                 _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
             }
         }
@@ -393,7 +395,7 @@ namespace ProjectC.UI.Client
             if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Count)
             {
                 if (_messageLabel != null)
-                    _messageLabel.text = "Выберите контракт из списка";
+                    _messageLabel.text = Loc.Get("ui.character.select_contract");
                 return;
             }
             var c = _contractsCache[_selectedContractItem];
@@ -406,7 +408,7 @@ namespace ProjectC.UI.Client
             if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Count)
             {
                 if (_messageLabel != null)
-                    _messageLabel.text = "Выберите контракт из списка";
+                    _messageLabel.text = Loc.Get("ui.character.select_contract");
                 return;
             }
             var c = _contractsCache[_selectedContractItem];
@@ -419,7 +421,7 @@ namespace ProjectC.UI.Client
             if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Count)
             {
                 if (_messageLabel != null)
-                    _messageLabel.text = "Выберите контракт из списка";
+                    _messageLabel.text = Loc.Get("ui.character.select_contract");
                 return;
             }
             var c = _contractsCache[_selectedContractItem];
@@ -459,13 +461,15 @@ namespace ProjectC.UI.Client
 
         private static string GetContractTypeDisplayName(ContractType type)
         {
-            switch (type)
+            string key = type switch
             {
-                case ContractType.Standard: return "Обычный";
-                case ContractType.Urgent: return "Срочный";
-                case ContractType.Receipt: return "Квитанция";
-                default: return type.ToString();
-            }
+                ContractType.Standard => "standard",
+                ContractType.Urgent => "urgent",
+                ContractType.Receipt => "receipt",
+                _ => null
+            };
+            if (key == null) return type.ToString();
+            return Loc.Get($"ui.contract.type.{key}", type.ToString());
         }
 
         private static string GetContractTypeClass(ContractType type)

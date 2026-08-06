@@ -17,7 +17,216 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: 0ef116caf8db5524187c4ff04bae545f, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 33563784159232
+    m_Localized: Ajustes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102272
+    m_Localized: Ajustes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102273
+    m_Localized: Controles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102274
+    m_Localized: "Gr\xE1ficos"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102275
+    m_Localized: Audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102276
+    m_Localized: Jugabilidad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102277
+    m_Localized: "Salir al men\xFA"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102278
+    m_Localized: Cancelar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102279
+    m_Localized: Controles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102280
+    m_Localized: "Gr\xE1ficos"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102281
+    m_Localized: Audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102282
+    m_Localized: Jugabilidad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102283
+    m_Localized: Salir
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102284
+    m_Localized: "\xBFEst\xE1 seguro de que desea salir al men\xFA principal?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102285
+    m_Localized: Calidad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102286
+    m_Localized: Pantalla
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102287
+    m_Localized: Jugabilidad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102288
+    m_Localized: Accesibilidad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102289
+    m_Localized: Idioma
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102290
+    m_Localized: Volumen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102291
+    m_Localized: Canales
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102292
+    m_Localized: Calidad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102293
+    m_Localized: "Resoluci\xF3n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296576
+    m_Localized: Pantalla completa
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296577
+    m_Localized: VSync
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296578
+    m_Localized: Suavizado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296579
+    m_Localized: "Sensibilidad del rat\xF3n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296580
+    m_Localized: Invertir Y
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296581
+    m_Localized: Sensibilidad de zoom
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296582
+    m_Localized: "Subt\xEDtulos"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296583
+    m_Localized: Idioma
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296584
+    m_Localized: Volumen general
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296585
+    m_Localized: "M\xFAsica"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296586
+    m_Localized: Efectos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296587
+    m_Localized: Voz
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296588
+    m_Localized: Interfaz
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296589
+    m_Localized: "La mezcla estar\xE1 disponible despu\xE9s de la integraci\xF3n
+      del Audio Mixer"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296590
+    m_Localized: Apagado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296591
+    m_Localized: 2x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296592
+    m_Localized: 4x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296593
+    m_Localized: 8x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296594
+    m_Localized: "Configuraci\xF3n de teclas"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296595
+    m_Localized: Guardar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296596
+    m_Localized: Cargar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296597
+    m_Localized: Restablecer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296598
+    m_Localized: Click izq.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296599
+    m_Localized: Click der.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296600
+    m_Localized: Click medio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296601
+    m_Localized: Habilidades de combate
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296602
+    m_Localized: Acciones
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296603
+    m_Localized: "Haga clic en un bot\xF3n para reasignar. Esc \u2014 cancelar."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296604
+    m_Localized: "Terminar conversaci\xF3n"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

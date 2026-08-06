@@ -17,7 +17,211 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: 1598c453c15dbc14699c06f549db9b85, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 33561275965440
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908480
+    m_Localized: Too far from the item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908481
+    m_Localized: Inventory full
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908482
+    m_Localized: Item not found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908483
+    m_Localized: Not enough items
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908484
+    m_Localized: Invalid slot
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908485
+    m_Localized: Too many requests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908486
+    m_Localized: Internal error
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908487
+    m_Localized: No permission for this operation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908488
+    m_Localized: This item is not in your inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908489
+    m_Localized: Stack overflow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908490
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908491
+    m_Localized: You must be in the NPC agent's zone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908492
+    m_Localized: Contract not found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908493
+    m_Localized: Contract already accepted or expired
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908494
+    m_Localized: Contract is not active
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908495
+    m_Localized: This is not your contract
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908496
+    m_Localized: Too many active contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908497
+    m_Localized: Too much debt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908498
+    m_Localized: Contract time expired
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908499
+    m_Localized: You are not at the target location
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908500
+    m_Localized: Required cargo not found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908501
+    m_Localized: No space in warehouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102784
+    m_Localized: Goods not found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102785
+    m_Localized: Too many requests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102786
+    m_Localized: Internal error
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102787
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102788
+    m_Localized: Invalid request
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102789
+    m_Localized: Internal error
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102790
+    m_Localized: You must be in the market zone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102791
+    m_Localized: Too many requests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102792
+    m_Localized: Market not found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102793
+    m_Localized: Item not sold here
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102794
+    m_Localized: Out of stock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102795
+    m_Localized: Cannot buy here
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102796
+    m_Localized: Cannot sell here
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102797
+    m_Localized: Price error
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102798
+    m_Localized: Trade is closed for your faction
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102799
+    m_Localized: Item not in warehouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102800
+    m_Localized: Warehouse weight limit reached
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102801
+    m_Localized: Warehouse volume limit reached
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102802
+    m_Localized: Warehouse type limit reached
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102803
+    m_Localized: Ship not found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102804
+    m_Localized: Ship is not in the dock zone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102805
+    m_Localized: Item not in cargo hold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102806
+    m_Localized: Cargo hold weight limit reached
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102807
+    m_Localized: Cargo hold volume limit reached
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102808
+    m_Localized: Cargo hold slot limit reached
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102809
+    m_Localized: Insufficient credits
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102810
+    m_Localized: Insufficient credits
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102811
+    m_Localized: Too many requests
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -99,22 +99,38 @@ namespace ProjectC.UI.EscMenu
             // ПРОДОЛЖИТЬ — закрыть меню
             var continueBtn = rootPanel.Q<Button>("esc-continue-btn");
             if (continueBtn != null)
+            {
                 continueBtn.clicked += Hide;
+                continueBtn.text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.continue", continueBtn.text);
+                ProjectC.Localization.Loc.OnLocaleChanged += () => continueBtn.text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.continue");
+            }
 
             // НАСТРОЙКИ — открыть подменю настроек
             var settingsBtn = rootPanel.Q<Button>("esc-settings-btn");
             if (settingsBtn != null)
+            {
                 settingsBtn.clicked += NavigateToSettingsMenu;
+                settingsBtn.text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.settings", settingsBtn.text);
+                ProjectC.Localization.Loc.OnLocaleChanged += () => settingsBtn.text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.settings");
+            }
 
             // СПАСЕНИЕ — респавн на дефолтную точку если застрял
             var rescueBtn = rootPanel.Q<Button>("esc-rescue-btn");
             if (rescueBtn != null)
+            {
                 rescueBtn.clicked += OnRescueClicked;
+                rescueBtn.text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.rescue", rescueBtn.text);
+                ProjectC.Localization.Loc.OnLocaleChanged += () => rescueBtn.text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.rescue");
+            }
 
             // ВЫХОД В МЕНЮ
             var exitBtn = rootPanel.Q<Button>("esc-exit-btn");
             if (exitBtn != null)
+            {
                 exitBtn.clicked += OnExitToMenuClicked;
+                exitBtn.text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.exit", exitBtn.text);
+                ProjectC.Localization.Loc.OnLocaleChanged += () => exitBtn.text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.exit");
+            }
         }
 
         // ==================== Public API (КРАСНЫЕ ЛИНИИ — НЕ МЕНЯТЬ СИГНАТУРЫ) ====================
@@ -230,7 +246,7 @@ namespace ProjectC.UI.EscMenu
                 _currentPanel.style.display = DisplayStyle.Flex;
 
             if (_menuStack.Count == 1 && _titleLabel != null)
-                _titleLabel.text = "МЕНЮ";
+                _titleLabel.text = ProjectC.Localization.Loc.Get("ui.esc_menu.root_title");
             UpdateBackButton();
         }
 
@@ -250,7 +266,7 @@ namespace ProjectC.UI.EscMenu
                 if (_currentPanel != null) _currentPanel.style.display = DisplayStyle.Flex;
             }
 
-            if (_titleLabel != null) _titleLabel.text = "МЕНЮ";
+            if (_titleLabel != null) _titleLabel.text = ProjectC.Localization.Loc.Get("ui.esc_menu.root_title");
             UpdateBackButton();
         }
 

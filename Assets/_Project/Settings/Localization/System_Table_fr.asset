@@ -17,7 +17,211 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: 1598c453c15dbc14699c06f549db9b85, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 33561275965440
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908480
+    m_Localized: Trop loin de l'objet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908481
+    m_Localized: Inventaire plein
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908482
+    m_Localized: Objet introuvable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908483
+    m_Localized: Pas assez d'objets
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908484
+    m_Localized: Emplacement invalide
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908485
+    m_Localized: "Trop de requ\xEAtes"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908486
+    m_Localized: Erreur interne
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908487
+    m_Localized: "Pas de permission pour cette op\xE9ration"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908488
+    m_Localized: Cet objet n'est pas dans votre inventaire
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908489
+    m_Localized: Pile pleine
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908490
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908491
+    m_Localized: "Vous devez \xEAtre dans la zone de l'agent PNJ"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908492
+    m_Localized: Contrat introuvable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908493
+    m_Localized: "Contrat d\xE9j\xE0 accept\xE9 ou expir\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908494
+    m_Localized: Le contrat n'est pas actif
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908495
+    m_Localized: Ce n'est pas votre contrat
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908496
+    m_Localized: Trop de contrats actifs
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908497
+    m_Localized: Trop de dettes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908498
+    m_Localized: "Le contrat a expir\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908499
+    m_Localized: "Vous n'\xEAtes pas \xE0 la destination cible"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908500
+    m_Localized: Cargaison requise introuvable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908501
+    m_Localized: "Pas de place dans l'entrep\xF4t"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102784
+    m_Localized: Marchandise introuvable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102785
+    m_Localized: "Trop de requ\xEAtes"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102786
+    m_Localized: Erreur interne
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102787
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102788
+    m_Localized: "Requ\xEAte invalide"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102789
+    m_Localized: Erreur interne
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102790
+    m_Localized: "Vous devez \xEAtre dans la zone du march\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102791
+    m_Localized: "Trop de requ\xEAtes"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102792
+    m_Localized: "March\xE9 introuvable"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102793
+    m_Localized: Article non vendu ici
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102794
+    m_Localized: Rupture de stock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102795
+    m_Localized: Achat impossible ici
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102796
+    m_Localized: Vente impossible ici
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102797
+    m_Localized: Erreur de prix
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102798
+    m_Localized: "Le commerce est ferm\xE9 pour votre faction"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102799
+    m_Localized: "Article non disponible \xE0 l'entrep\xF4t"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102800
+    m_Localized: "Limite de poids de l'entrep\xF4t atteinte"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102801
+    m_Localized: "Limite de volume de l'entrep\xF4t atteinte"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102802
+    m_Localized: "Limite de types d'entrep\xF4t atteinte"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102803
+    m_Localized: Vaisseau introuvable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102804
+    m_Localized: Le vaisseau n'est pas dans la zone d'amarrage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102805
+    m_Localized: Article absent de la soute
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102806
+    m_Localized: Limite de poids de la soute atteinte
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102807
+    m_Localized: Limite de volume de la soute atteinte
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102808
+    m_Localized: Limite d'emplacements de la soute atteinte
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102809
+    m_Localized: "Cr\xE9dits insuffisants"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102810
+    m_Localized: "Cr\xE9dits insuffisants"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102811
+    m_Localized: "Trop de requ\xEAtes"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

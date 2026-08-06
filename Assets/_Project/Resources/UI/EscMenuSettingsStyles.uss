@@ -86,24 +86,30 @@
     font-size: 10px !important;
     margin-left: 8px !important;
 }
-.esc-setting-dropdown .custom-dropdown__popup {
-    background-color: rgb(25, 30, 45) !important;
+.custom-dropdown__popup {
+    position: absolute !important;
+    background-color: rgba(25, 30, 45, 0.97) !important;
     border-width: 1px !important;
     border-color: rgb(80, 100, 140) !important;
     border-radius: 4px !important;
-    padding: 4px 0 !important;
+    padding: 4px !important;
+    max-height: 220px !important;
+    flex-direction: column !important;
+    overflow: auto !important;
 }
-.esc-setting-dropdown .custom-dropdown__item {
+.custom-dropdown__item {
     color: rgb(200, 210, 225) !important;
     padding: 6px 12px !important;
     font-size: 13px !important;
+    flex-shrink: 0 !important;
 }
-.esc-setting-dropdown .custom-dropdown__item:hover {
+.custom-dropdown__item:hover {
     background-color: rgba(70, 110, 160, 0.6) !important;
 }
-.esc-setting-dropdown .custom-dropdown__item.selected {
+.custom-dropdown__item.selected {
     color: rgb(140, 200, 250) !important;
     background-color: rgba(60, 100, 150, 0.5) !important;
+    -unity-font-style: bold !important;
 }
 
 /* ===== Keybindings Embedded (T-ESC03d) ===== */

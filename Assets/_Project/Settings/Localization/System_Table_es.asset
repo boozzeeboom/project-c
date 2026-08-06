@@ -17,7 +17,211 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: 1598c453c15dbc14699c06f549db9b85, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 33561275965440
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908480
+    m_Localized: Demasiado lejos del objeto
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908481
+    m_Localized: Inventario lleno
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908482
+    m_Localized: Objeto no encontrado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908483
+    m_Localized: No hay suficientes objetos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908484
+    m_Localized: "Ranura no v\xE1lida"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908485
+    m_Localized: Demasiadas solicitudes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908486
+    m_Localized: Error interno
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908487
+    m_Localized: "Sin permiso para esta operaci\xF3n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908488
+    m_Localized: "Este objeto no est\xE1 en tu inventario"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908489
+    m_Localized: Pila llena
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908490
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908491
+    m_Localized: Debes estar en la zona del agente NPC
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908492
+    m_Localized: Contrato no encontrado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908493
+    m_Localized: Contrato ya aceptado o expirado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908494
+    m_Localized: "El contrato no est\xE1 activo"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908495
+    m_Localized: Este no es tu contrato
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908496
+    m_Localized: Demasiados contratos activos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908497
+    m_Localized: Demasiada deuda
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908498
+    m_Localized: El contrato ha expirado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908499
+    m_Localized: "No est\xE1s en la ubicaci\xF3n de destino"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908500
+    m_Localized: No se encuentra la carga requerida
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908501
+    m_Localized: "Sin espacio en el almac\xE9n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102784
+    m_Localized: "Mercanc\xEDa no encontrada"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102785
+    m_Localized: Demasiadas solicitudes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102786
+    m_Localized: Error interno
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102787
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102788
+    m_Localized: "Solicitud no v\xE1lida"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102789
+    m_Localized: Error interno
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102790
+    m_Localized: Debes estar en la zona del mercado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102791
+    m_Localized: Demasiadas solicitudes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102792
+    m_Localized: Mercado no encontrado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102793
+    m_Localized: "Art\xEDculo no se vende aqu\xED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102794
+    m_Localized: Agotado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102795
+    m_Localized: "No se puede comprar aqu\xED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102796
+    m_Localized: "No se puede vender aqu\xED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102797
+    m_Localized: Error de precio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102798
+    m_Localized: "Comercio cerrado para tu facci\xF3n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102799
+    m_Localized: "Art\xEDculo no est\xE1 en el almac\xE9n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102800
+    m_Localized: "L\xEDmite de peso del almac\xE9n alcanzado"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102801
+    m_Localized: "L\xEDmite de volumen del almac\xE9n alcanzado"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102802
+    m_Localized: "L\xEDmite de tipos del almac\xE9n alcanzado"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102803
+    m_Localized: Nave no encontrada
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102804
+    m_Localized: "La nave no est\xE1 en la zona de atraque"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102805
+    m_Localized: "Art\xEDculo no est\xE1 en la bodega"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102806
+    m_Localized: "L\xEDmite de peso de la bodega alcanzado"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102807
+    m_Localized: "L\xEDmite de volumen de la bodega alcanzado"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102808
+    m_Localized: "L\xEDmite de ranuras de la bodega alcanzado"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102809
+    m_Localized: "Cr\xE9ditos insuficientes"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102810
+    m_Localized: "Cr\xE9ditos insuficientes"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102811
+    m_Localized: Demasiadas solicitudes
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

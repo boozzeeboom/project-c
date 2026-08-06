@@ -14,7 +14,211 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
   m_TableCollectionName: System_Table
   m_TableCollectionNameGuidString: 1598c453c15dbc14699c06f549db9b85
-  m_Entries: []
+  m_Entries:
+  - m_Id: 33561275965440
+    m_Key: sys.inventory.ok
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908480
+    m_Key: sys.inventory.not_in_zone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908481
+    m_Key: sys.inventory.inventory_full
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908482
+    m_Key: sys.inventory.item_not_found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908483
+    m_Key: sys.inventory.not_enough_quantity
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908484
+    m_Key: sys.inventory.invalid_slot
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908485
+    m_Key: sys.inventory.rate_limited
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908486
+    m_Key: sys.inventory.internal_error
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908487
+    m_Key: sys.inventory.no_permission
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908488
+    m_Key: sys.inventory.item_not_owned
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908489
+    m_Key: sys.inventory.stack_overflow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908490
+    m_Key: sys.contract.ok
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908491
+    m_Key: sys.contract.not_in_zone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908492
+    m_Key: sys.contract.contract_not_found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908493
+    m_Key: sys.contract.contract_not_pending
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908494
+    m_Key: sys.contract.contract_not_active
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908495
+    m_Key: sys.contract.contract_not_assigned
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908496
+    m_Key: sys.contract.max_active_reached
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908497
+    m_Key: sys.contract.too_much_debt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908498
+    m_Key: sys.contract.timer_expired
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908499
+    m_Key: sys.contract.wrong_destination
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908500
+    m_Key: sys.contract.cargo_missing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561317908501
+    m_Key: sys.contract.warehouse_full
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102784
+    m_Key: sys.contract.item_not_found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102785
+    m_Key: sys.contract.rate_limited
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102786
+    m_Key: sys.contract.internal_error
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102787
+    m_Key: sys.market.ok
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102788
+    m_Key: sys.market.invalid_args
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102789
+    m_Key: sys.market.internal_error
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102790
+    m_Key: sys.market.not_in_zone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102791
+    m_Key: sys.market.rate_limited
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102792
+    m_Key: sys.market.market_not_found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102793
+    m_Key: sys.market.item_not_in_market
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102794
+    m_Key: sys.market.insufficient_stock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102795
+    m_Key: sys.market.item_buy_disabled
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102796
+    m_Key: sys.market.item_sell_disabled
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102797
+    m_Key: sys.market.price_invalid
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102798
+    m_Key: sys.market.faction_restricted
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102799
+    m_Key: sys.market.item_not_in_warehouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102800
+    m_Key: sys.market.warehouse_full_weight
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102801
+    m_Key: sys.market.warehouse_full_volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102802
+    m_Key: sys.market.warehouse_full_types
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102803
+    m_Key: sys.market.ship_not_found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102804
+    m_Key: sys.market.ship_not_in_zone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102805
+    m_Key: sys.market.item_not_in_cargo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102806
+    m_Key: sys.market.cargo_full_weight
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102807
+    m_Key: sys.market.cargo_full_volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102808
+    m_Key: sys.market.cargo_full_slots
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102809
+    m_Key: sys.market.not_owner
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102810
+    m_Key: sys.market.insufficient_credits
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33561322102811
+    m_Key: sys.market.not_allowed
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

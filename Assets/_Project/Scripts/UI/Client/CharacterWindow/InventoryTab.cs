@@ -21,6 +21,7 @@ using ProjectC.Ship.Key;     // T-KEY-07: KeyRodInstanceWorld fallback
 using ProjectC.Player;       // T-KEY-07: ShipController fallback
 using UnityEngine;
 using UnityEngine.UIElements;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.Client
 {
@@ -57,7 +58,7 @@ namespace ProjectC.UI.Client
         public List<InventoryListItem> InventoryCache => _inventoryCache;
 
         private List<string> _inventoryFilterSourceOptionsCache; // динамически по ItemType
-        private List<string> _inventoryFilterStateOptions = new List<string> { "Все типы" };
+        private List<string> _inventoryFilterStateOptions = new List<string> { Loc.Get("ui.character.filter.all_types") };
 
         // Subscription flags
         private bool _isInventorySubscribed = false;
@@ -545,7 +546,7 @@ namespace ProjectC.UI.Client
             // Build dynamic options: "Все типы" + все 8 ItemType
             if (_inventoryFilterSourceOptionsCache == null)
             {
-                _inventoryFilterSourceOptionsCache = new List<string> { "Все типы" };
+                _inventoryFilterSourceOptionsCache = new List<string> { Loc.Get("ui.character.filter.all_types") };
                 foreach (ItemType t in Enum.GetValues(typeof(ItemType)))
                 {
                     _inventoryFilterSourceOptionsCache.Add(ItemTypeNames.GetDisplayName(t));
@@ -555,7 +556,7 @@ namespace ProjectC.UI.Client
             {
                 _filterSource.choices = _inventoryFilterSourceOptionsCache;
                 if (!_inventoryFilterSourceOptionsCache.Contains(_filterSource.value))
-                    _filterSource.value = "Все типы";
+                    _filterSource.value = Loc.Get("ui.character.filter.all_types");
             }
             if (_filterState != null)
             {
@@ -568,8 +569,9 @@ namespace ProjectC.UI.Client
             if (_inventoryList == null) return;
             IEnumerable<InventoryListItem> src = _inventoryCache;
 
-            string source = _filterSource != null ? _filterSource.value : "Все типы";
-            if (source != "Все типы")
+            string allTypesLabel = Loc.Get("ui.character.filter.all_types");
+            string source = _filterSource != null ? _filterSource.value : allTypesLabel;
+            if (source != allTypesLabel)
             {
                 src = src.Where(i => ItemTypeNames.GetDisplayName(i.type) == source);
             }
@@ -607,14 +609,14 @@ namespace ProjectC.UI.Client
             row.Add(qty);
             var equipBtn = new VisualElement { name = "row-equip-btn" };
             equipBtn.AddToClassList("inventory-equip-btn");
-            var equipLabel = new Label { name = "row-equip-label", text = "НАДЕТЬ" };
+            var equipLabel = new Label { name = "row-equip-label", text = Loc.Get("ui.character.equip") };
             equipLabel.AddToClassList("inventory-equip-label");
             equipBtn.Add(equipLabel);
             row.Add(equipBtn);
             // Кнопка БРОСИТЬ — аналог drop-btn из TAB-колеса (InventoryUI.OnDropClicked)
             var dropBtn = new VisualElement { name = "row-drop-btn" };
             dropBtn.AddToClassList("inventory-drop-btn");
-            var dropLabel = new Label { name = "row-drop-label", text = "БРОСИТЬ" };
+            var dropLabel = new Label { name = "row-drop-label", text = Loc.Get("ui.character.drop") };
             dropLabel.AddToClassList("inventory-drop-label");
             dropBtn.Add(dropLabel);
             row.Add(dropBtn);
@@ -652,7 +654,7 @@ namespace ProjectC.UI.Client
                     // T-P19: проверяем — предмет уже надет?
                     bool isEquipped = IsItemEquipped(item.itemId);
                     var label = equipBtn.Q<Label>("row-equip-label");
-                    if (label != null) label.text = isEquipped ? "СНЯТЬ" : "НАДЕТЬ";
+                    if (label != null) label.text = isEquipped ? Loc.Get("ui.character.unequip") : Loc.Get("ui.character.equip");
                     equipBtn.RemoveFromClassList("equipped");
                     if (isEquipped) equipBtn.AddToClassList("equipped");
 
@@ -911,9 +913,9 @@ namespace ProjectC.UI.Client
 
         private void ClearInventoryDetail()
         {
-            if (_invDetailName != null) _invDetailName.text = "Выберите предмет слева";
-            if (_invDetailType != null) _invDetailType.text = "—";
-            if (_invDetailWeight != null) _invDetailWeight.text = "—";
+            if (_invDetailName != null) _invDetailName.text = Loc.Get("ui.character.select_item_left");
+            if (_invDetailType != null) _invDetailType.text = Loc.Get("ui.character.no_data");
+            if (_invDetailWeight != null) _invDetailWeight.text = Loc.Get("ui.character.no_data");
             if (_invDetailStat != null) _invDetailStat.text = "—";
             if (_invDetailDesc != null) _invDetailDesc.text = "—";
         }
@@ -938,7 +940,7 @@ namespace ProjectC.UI.Client
             {
                 if (def is ProjectC.Equipment.ClothingItemData c)
                 {
-                    string sb = "Бонусы: ";
+                    string sb = Loc.Get("ui.character.bonuses");
                     if (c.strengthBonus != 0) sb += $"STR {(c.strengthBonus >= 0 ? "+" : "")}{c.strengthBonus:F0} ";
                     if (c.dexterityBonus != 0) sb += $"DEX {(c.dexterityBonus >= 0 ? "+" : "")}{c.dexterityBonus:F0} ";
                     if (c.intelligenceBonus != 0) sb += $"INT {(c.intelligenceBonus >= 0 ? "+" : "")}{c.intelligenceBonus:F0} ";
@@ -949,7 +951,7 @@ namespace ProjectC.UI.Client
                 }
                 else if (def is ProjectC.Equipment.ModuleItemData m)
                 {
-                    string sb = "Бонусы: ";
+                    string sb = Loc.Get("ui.character.bonuses");
                     if (m.strengthBonus != 0) sb += $"STR {(m.strengthBonus >= 0 ? "+" : "")}{m.strengthBonus:F0} ";
                     if (m.dexterityBonus != 0) sb += $"DEX {(m.dexterityBonus >= 0 ? "+" : "")}{m.dexterityBonus:F0} ";
                     if (m.intelligenceBonus != 0) sb += $"INT {(m.intelligenceBonus >= 0 ? "+" : "")}{m.intelligenceBonus:F0} ";

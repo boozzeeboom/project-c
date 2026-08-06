@@ -14,7 +14,563 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
   m_TableCollectionName: UI_Table
   m_TableCollectionNameGuidString: 0ef116caf8db5524187c4ff04bae545f
-  m_Entries: []
+  m_Entries:
+  - m_Id: 33563784159232
+    m_Key: ui.esc_menu.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102272
+    m_Key: ui.esc_menu.settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102273
+    m_Key: ui.esc_menu.button.controls
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102274
+    m_Key: ui.esc_menu.button.graphics
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102275
+    m_Key: ui.esc_menu.button.audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102276
+    m_Key: ui.esc_menu.button.gameplay
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102277
+    m_Key: ui.esc_menu.button.confirm_exit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102278
+    m_Key: ui.esc_menu.button.cancel
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102279
+    m_Key: ui.esc_menu.controls
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102280
+    m_Key: ui.esc_menu.graphics
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102281
+    m_Key: ui.esc_menu.audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102282
+    m_Key: ui.esc_menu.gameplay
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102283
+    m_Key: ui.esc_menu.exit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102284
+    m_Key: ui.esc_menu.exit_confirm
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102285
+    m_Key: ui.esc_menu.section.quality
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102286
+    m_Key: ui.esc_menu.section.screen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102287
+    m_Key: ui.esc_menu.section.gameplay
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102288
+    m_Key: ui.esc_menu.section.accessibility
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102289
+    m_Key: ui.esc_menu.section.language
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102290
+    m_Key: ui.esc_menu.section.volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102291
+    m_Key: ui.esc_menu.section.channels
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102292
+    m_Key: ui.esc_menu.label.quality
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563826102293
+    m_Key: ui.esc_menu.label.resolution
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296576
+    m_Key: ui.esc_menu.label.fullscreen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296577
+    m_Key: ui.esc_menu.label.vsync
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296578
+    m_Key: ui.esc_menu.label.antialiasing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296579
+    m_Key: ui.esc_menu.label.mouse_sens
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296580
+    m_Key: ui.esc_menu.label.invert_y
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296581
+    m_Key: ui.esc_menu.label.zoom_sens
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296582
+    m_Key: ui.esc_menu.label.subtitles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296583
+    m_Key: ui.esc_menu.label.language
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296584
+    m_Key: ui.esc_menu.label.master_volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296585
+    m_Key: ui.esc_menu.label.music
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296586
+    m_Key: ui.esc_menu.label.effects
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296587
+    m_Key: ui.esc_menu.label.voice
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296588
+    m_Key: ui.esc_menu.label.ui
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296589
+    m_Key: ui.esc_menu.audio_mixer_note
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296590
+    m_Key: ui.esc_menu.aa.off
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296591
+    m_Key: ui.esc_menu.aa.2x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296592
+    m_Key: ui.esc_menu.aa.4x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296593
+    m_Key: ui.esc_menu.aa.8x
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296594
+    m_Key: ui.keybindings.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296595
+    m_Key: ui.keybindings.save
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296596
+    m_Key: ui.keybindings.load
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296597
+    m_Key: ui.keybindings.reset
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296598
+    m_Key: ui.keybindings.lmb
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296599
+    m_Key: ui.keybindings.rmb
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296600
+    m_Key: ui.keybindings.mmb
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296601
+    m_Key: ui.keybindings.combat_skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296602
+    m_Key: ui.keybindings.actions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296603
+    m_Key: ui.keybindings.footer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 33563830296604
+    m_Key: ui.dialog.end
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513647566848
+    m_Key: ui.esc_menu.button.continue
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513785978880
+    m_Key: ui.esc_menu.button.settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513798561792
+    m_Key: ui.esc_menu.button.rescue
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513802756096
+    m_Key: ui.esc_menu.button.exit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513806950400
+    m_Key: ui.esc_menu.root_title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513815339008
+    m_Key: ui.character.filter.all
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513823727616
+    m_Key: ui.character.filter.contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513827921920
+    m_Key: ui.character.filter.quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513832116224
+    m_Key: ui.character.filter.active
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513844699136
+    m_Key: ui.character.filter.available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513848893440
+    m_Key: ui.character.filter.completed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513853087744
+    m_Key: ui.character.filter.all_types
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513861476352
+    m_Key: ui.character.player_owner
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513869864960
+    m_Key: ui.character.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513874059264
+    m_Key: ui.character.no_data
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513882447872
+    m_Key: ui.character.bonuses
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513890836480
+    m_Key: ui.character.equip
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513895030784
+    m_Key: ui.character.unequip
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513911808000
+    m_Key: ui.character.drop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513920196608
+    m_Key: ui.character.no_reputation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513924390912
+    m_Key: ui.character.no_attitude
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513928585216
+    m_Key: ui.character.no_contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513936973824
+    m_Key: ui.character.select_item_left
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513945362432
+    m_Key: ui.character.select_contract
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513949556736
+    m_Key: ui.character.contract_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513962139648
+    m_Key: ui.character.contract_not_active
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513966333952
+    m_Key: ui.character.request_sent
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513974722560
+    m_Key: ui.character.no_active_contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513983111168
+    m_Key: ui.character.loading_contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513987305472
+    m_Key: ui.quest.state.discovered
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513991499776
+    m_Key: ui.quest.state.offered
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513991499777
+    m_Key: ui.quest.state.active
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513999888384
+    m_Key: ui.quest.state.completed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514004082688
+    m_Key: ui.quest.state.turned_in
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514012471296
+    m_Key: ui.quest.state.failed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514020859904
+    m_Key: ui.quest.track
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514029248512
+    m_Key: ui.quest.untrack
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514033442816
+    m_Key: ui.quest.discovered_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514041831424
+    m_Key: ui.quest.reject_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514050220032
+    m_Key: ui.skill.learn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514054414336
+    m_Key: ui.skill.forget
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514062802944
+    m_Key: ui.contract.type.standard
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514071191552
+    m_Key: ui.contract.type.urgent
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514075385856
+    m_Key: ui.contract.type.receipt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514083774464
+    m_Key: ui.contract.rank.primium
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514092163072
+    m_Key: ui.contract.rank.secundus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514096357376
+    m_Key: ui.contract.rank.tertius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514104745984
+    m_Key: ui.contract.rank.quartus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514113134592
+    m_Key: ui.ship.no_ships
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514113134593
+    m_Key: ui.ship.hull_broken
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514125717504
+    m_Key: ui.ship.hull_empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514125717505
+    m_Key: ui.ship.fuel_empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514134106112
+    m_Key: ui.ship.cargo_empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514134106113
+    m_Key: ui.ship.modules_zero
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514142494720
+    m_Key: ui.ship.hold_empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514146689024
+    m_Key: ui.market.loading
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514150883328
+    m_Key: ui.market.no_data
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514155077632
+    m_Key: ui.market.server_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514163466240
+    m_Key: ui.market.server_not_ready
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514167660544
+    m_Key: ui.market.select_left
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514180243456
+    m_Key: ui.market.select_right
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514188632064
+    m_Key: ui.market.show_all
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514192826368
+    m_Key: ui.market.show_mine
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514197020672
+    m_Key: ui.market.select_ship_first
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514201214976
+    m_Key: ui.market.no_contracts_here
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514205409280
+    m_Key: ui.market.op.buy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514213797888
+    m_Key: ui.market.op.sell
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514217992192
+    m_Key: ui.market.op.load
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514222186496
+    m_Key: ui.market.op.unload
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514226380800
+    m_Key: ui.cargo.select_inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514230575104
+    m_Key: ui.cargo.select_hold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514238963712
+    m_Key: ui.cargo.server_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514247352320
+    m_Key: ui.cargo.unpack_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717250338816
+    m_Key: ui.repair.slot_empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087552
+    m_Key: ui.repair.no_database
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087553
+    m_Key: ui.repair.no_ship
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087554
+    m_Key: ui.repair.install
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087555
+    m_Key: ui.repair.insufficient_power
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087556
+    m_Key: ui.repair.no_modules
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087557
+    m_Key: ui.repair.available_modules
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281856
+    m_Key: ui.repair.done
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281857
+    m_Key: ui.repair.hull_request
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281858
+    m_Key: ui.repair.paint_request
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281859
+    m_Key: ui.repair.no_pads
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281860
+    m_Key: ui.repair.free
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281861
+    m_Key: ui.repair.not_spawned
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281862
+    m_Key: ui.repair.cost_empty
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

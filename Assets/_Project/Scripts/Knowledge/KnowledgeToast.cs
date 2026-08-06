@@ -13,6 +13,7 @@ using ProjectC.Crafting;
 using ProjectC.Reputation;
 using ProjectC.Quests.Dto;
 using ProjectC.Factions;
+using ProjectC.Localization;
 
 namespace ProjectC.Knowledge
 {
@@ -186,14 +187,14 @@ namespace ProjectC.Knowledge
             var state = SkillsClientState.Instance;
             if (state == null) return;
             var current = state.KnownSkillIds ?? new HashSet<string>();
-            DiffAndToast("Навык", _prevKnownSkills, current, GetSkillDisplayName);
+            DiffAndToast(Loc.Get("ui.knowledge.category_skill", "Skill"), _prevKnownSkills, current, GetSkillDisplayName);
             _prevKnownSkills = new HashSet<string>(current);
         }
 
         private void OnRecipesUpdated(HashSet<string> knownRecipes)
         {
             var current = knownRecipes ?? new HashSet<string>();
-            DiffAndToast("Рецепт", _prevKnownRecipes, current, GetRecipeDisplayName);
+            DiffAndToast(Loc.Get("ui.knowledge.category_recipe", "Recipe"), _prevKnownRecipes, current, GetRecipeDisplayName);
             _prevKnownRecipes = new HashSet<string>(current);
         }
 
@@ -202,7 +203,7 @@ namespace ProjectC.Knowledge
             var state = ReputationClientState.Instance;
             if (state == null) return;
             var current = state.KnownFactionIds ?? new HashSet<byte>();
-            DiffAndToastByte("Фракция", _prevKnownFactions, current, GetFactionDisplayName);
+            DiffAndToastByte(Loc.Get("ui.knowledge.category_faction", "Faction"), _prevKnownFactions, current, GetFactionDisplayName);
             _prevKnownFactions = new HashSet<byte>(current);
         }
 

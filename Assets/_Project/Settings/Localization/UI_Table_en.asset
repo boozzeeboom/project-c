@@ -738,6 +738,142 @@ MonoBehaviour:
     m_Localized: Open the market to trade
     m_Metadata:
       m_Items: []
+  - m_Id: 204250939301888
+    m_Localized: "\u2728 Quest discovered: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251073519616
+    m_Localized: Could not accept quest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251086102528
+    m_Localized: "\U0001F4E6 +1 item"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251094491136
+    m_Localized: "\U0001F4E6 +1 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251098685440
+    m_Localized: "\U0001F4E6 -1 item"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251107074048
+    m_Localized: "\U0001F4E6 -1 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251115462656
+    m_Localized: "\U0001F4B0 +{0} CR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251119656960
+    m_Localized: "\U0001F4C8 Reputation +{0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251136434176
+    m_Localized: "\U0001F4C8 {0} +{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251149017088
+    m_Localized: "\U0001F49A Attitude +{0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251161600000
+    m_Localized: "\U0001F49A {0} +{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251169988608
+    m_Localized: "\u2705 Objective completed"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251186765824
+    m_Localized: "\u2705 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251190960128
+    m_Localized: packs
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251207737344
+    m_Localized: boxes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251224514560
+    m_Localized: Learn Skill
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226366640128
+    m_Localized: cr.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226479886336
+    m_Localized: "\U0001F4B0 Credits: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226492469248
+    m_Localized: 'Class: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226500857856
+    m_Localized: 'Power: {0}/{1}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226509246464
+    m_Localized: 'Hull: BROKEN ({0}/{1})'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226517635072
+    m_Localized: 'Hull: {0}/{1}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226526023680
+    m_Localized: "\U0001F527 Repair ({0} cr.)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226530217984
+    m_Localized: "\u2713 Intact"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226538606592
+    m_Localized: Insufficient credits! Need {0}, have {1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226546995200
+    m_Localized: Ship recalled to pad {0}...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226555383808
+    m_Localized: 'Installed: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226567966720
+    m_Localized: "\U0001F4B0 Sell (+{0} cr.)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226580549632
+    m_Localized: Selling module from '{0}' (+{1} cr.)...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226588938240
+    m_Localized: 'Modules for slot ''{0}'':'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226597326848
+    m_Localized: Install request for '{0}' in '{1}' sent...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226601521152
+    m_Localized: 'Cost: {0} cr.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226605715456
+    m_Localized: "\U0001F3A8 Paint ({0} cr.)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226614104064
+    m_Localized: "\U0001F3A8 Select color"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

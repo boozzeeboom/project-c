@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 using ProjectC.Skills.Dto;
+using ProjectC.Localization;
 
 namespace ProjectC.Skills.UI
 {
@@ -85,8 +86,8 @@ namespace ProjectC.Skills.UI
             }
         }
 
-        private void OnEnable() { EnsureBuilt(); TrySubscribeSkills(); }
-        private void OnDisable() { UnsubscribeSkills(); }
+        private void OnEnable() { EnsureBuilt(); TrySubscribeSkills(); Loc.OnLocaleChanged += HandleLocaleChanged; }
+        private void OnDisable() { UnsubscribeSkills(); Loc.OnLocaleChanged -= HandleLocaleChanged; }
         private void OnDestroy() { if (Instance == this) Instance = null; }
         private void Start() { EnsureBuilt(); TrySubscribeSkills(); }
 
@@ -151,6 +152,7 @@ namespace ProjectC.Skills.UI
             InitFilterChips();
             InitSearchField();
             InitActionButtons();
+            BindStaticLabels();
 
             // SetOpen может вызвать EnsureBuilt (по guard) → рекурсия. Ставим _built ДО.
             _built = true;
@@ -346,6 +348,47 @@ namespace ProjectC.Skills.UI
             
         }
 
+        // LOC-13: привязка статических UXML-лейблов к ключам локализации.
+        private void BindStaticLabels()
+        {
+            if (_rootContainer == null) return;
+            Loc.Bind(_rootContainer.Q<Label>(className: "stw-title"), "ui.skill.tree_title");
+            Loc.Bind(_rootContainer.Q<Label>("chip-all"), "ui.character.filter.all");
+            Loc.Bind(_rootContainer.Q<Label>("chip-melee"), "ui.skill.filter.melee");
+            Loc.Bind(_rootContainer.Q<Label>("chip-ranged"), "ui.skill.filter.ranged");
+            Loc.Bind(_rootContainer.Q<Label>("chip-defense"), "ui.skill.filter.defense");
+            Loc.Bind(_rootContainer.Q<Label>("chip-placed"), "ui.skill.filter.placed");
+            Loc.Bind(_rootContainer.Q<Label>("stw-section-slots"), "ui.skill.slots");
+            Loc.Bind(_rootContainer.Q<Label>("stw-section-skills"), "ui.skill.list");
+            Loc.Bind(_rootContainer.Q<Label>("stw-detail-prereq-title"), "ui.skill.required");
+            Loc.Bind(_rootContainer.Q<Label>("stw-detail-deps-title"), "ui.skill.unlocks");
+            Loc.Bind(_rootContainer.Q<Label>("btn-learn"), "ui.skill.learn");
+            Loc.Bind(_rootContainer.Q<Label>("btn-forget"), "ui.skill.forget");
+            Loc.Bind(_rootContainer.Q<Label>("btn-close"), "ui.skill.close");
+            // Placeholder text is set in UXML via placeholder-text attribute
+        }
+
+        // LOC-13: смена языка — перерендер дерева и детальной панели.
+        private void HandleLocaleChanged()
+        {
+            if (!IsOpen()) return;
+            ApplyFilterAndSearch();
+            RebuildSlotOverview();
+            // Placeholder text is set in UXML
+            if (_detailName != null)
+            {
+                if (!string.IsNullOrEmpty(_selectedSkillId))
+                {
+                    var cfg = _allSkillConfigs.Find(s => s != null && s.skillId == _selectedSkillId);
+                    if (cfg != null) UpdateDetailPanel(cfg);
+                }
+                else
+                {
+                    _detailName.Q<Label>()!.text = Loc.Get("ui.skill.select_hint");
+                }
+            }
+        }
+
         private void RebuildSkillList() => RebuildSkillTree();
 
         private void RebuildSkillTree()
@@ -400,7 +443,7 @@ namespace ProjectC.Skills.UI
             badge.AddToClassList("tree-node-badge");
             node.Add(badge);
 
-            var title = new Label { text = s.displayName ?? s.skillId };
+            var title = new Label { text = Loc.Get($"static.skill.{s.skillId}.displayName", s.displayName ?? s.skillId) };
             title.AddToClassList("tree-node-title");
             node.Add(title);
 
@@ -408,7 +451,7 @@ namespace ProjectC.Skills.UI
             var typeBadge = new Label { text = s.isActive ? "A" : "P" };
             typeBadge.AddToClassList("tree-node-type-badge");
             typeBadge.AddToClassList(s.isActive ? "tree-node-type-active" : "tree-node-type-passive");
-            typeBadge.tooltip = s.isActive ? "Активный (биндится на слот)" : "Пассивный (применяется автоматически)";
+            typeBadge.tooltip = s.isActive ? Loc.Get("ui.skill.type_active") : Loc.Get("ui.skill.type_passive");
             node.Add(typeBadge);
 
             var capturedId = s.skillId;
@@ -469,24 +512,25 @@ namespace ProjectC.Skills.UI
             var learned = SkillsClientState.Instance?.CurrentSkills ?? new HashSet<string>();
             bool isLearned = learned.Contains(s.skillId);
             bool canLearn = CanLearn(s, learned);
-            if (_detailName != null) _detailName.Q<Label>()!.text = s.displayName ?? s.skillId;
-            if (_detailDesc != null) _detailDesc.text = s.description ?? "(нет описания)";
+            if (_detailName != null) _detailName.Q<Label>()!.text = Loc.Get($"static.skill.{s.skillId}.displayName", s.displayName ?? s.skillId);
+            if (_detailDesc != null) _detailDesc.text = Loc.Get($"static.skill.{s.skillId}.description", s.description ?? Loc.Get("ui.skill.no_description"));
 
             // T-INP-05: тип навыка (A/P) — первая строка в stats
             // + AOE зона (если есть)
-            string typeStr = s.isActive ? "Активный (биндится на слот)" : "Пассивный (применяется автоматически)";
+            string typeStr = s.isActive ? Loc.Get("ui.skill.type_active") : Loc.Get("ui.skill.type_passive");
             // T-INP-08: показываем имя AnimationClip (если задан) или ничего.
-            string animStr = s.attackClip != null ? $" | Анимация: {s.attackClip.name}" : "";
-            string typeLine = $"Тип: {typeStr}{animStr}";
+            string animStr = s.attackClip != null ? $" | {Loc.Format("ui.skill.animation", s.attackClip.name)}" : "";
+            string typeLine = Loc.Format("ui.skill.type_line", typeStr);
 
             string aoeStr = FormatAoeText(s);
-            string effectsLine = $"Эффекты: {FormatEffectsText(s)}";
+            string effectsLine = Loc.Format("ui.skill.effects_line", FormatEffectsText(s));
             string typeAndAoe = aoeStr.Length > 0
                 ? $"{typeLine}\n{aoeStr}\n{effectsLine}"
                 : $"{typeLine}\n{effectsLine}";
             if (_detailEffects != null) _detailEffects.text = typeAndAoe;
 
-            if (_detailCost != null) _detailCost.text = $"Стоимость: {(s.LearnXpCost > 0 ? s.LearnXpCost.ToString("F0") + " XP" : "Free")}";
+            if (_detailCost != null) _detailCost.text = Loc.Format("ui.skill.cost",
+                s.LearnXpCost > 0 ? $"{s.LearnXpCost:F0} XP" : Loc.Get("ui.skill.free"));
             if (_detailTier != null)
             {
                 var parts = new System.Collections.Generic.List<string>();
@@ -494,8 +538,8 @@ namespace ProjectC.Skills.UI
                 if (s.RequiredDexterityTier > 0) parts.Add($"DEX {s.RequiredDexterityTier}+");
                 if (s.RequiredIntelligenceTier > 0) parts.Add($"INT {s.RequiredIntelligenceTier}+");
                 _detailTier.text = parts.Count > 0
-                    ? $"Требования: {string.Join(", ", parts)}"
-                    : "Требования: нет";
+                    ? Loc.Format("ui.skill.requirements", string.Join(", ", parts))
+                    : Loc.Get("ui.skill.requirements_none");
             }
             if (_detailPrereqContainer != null) RebuildPrereqList(s, learned);
             if (_detailDepsContainer != null) RebuildDependentsList(s);
@@ -559,13 +603,13 @@ namespace ProjectC.Skills.UI
                 case AoeFormula.SingleTarget:
                     return "";
                 case AoeFormula.Cone:
-                    return $"⚔ Зона: Конус {s.aoeConeAngleDeg:F0}° × {s.aoeSize:F1}м вперёд";
+                    return Loc.Format("ui.skill.aoe_cone", s.aoeConeAngleDeg, s.aoeSize);
                 case AoeFormula.Sphere:
-                    return $"💥 Зона: Сфера {s.aoeSize:F1}м радиус (вокруг персонажа)";
+                    return Loc.Format("ui.skill.aoe_sphere", s.aoeSize);
                 case AoeFormula.Line:
-                    return $"➤ Зона: Линия {s.aoeSize:F1}м × {s.aoeWidth:F1}м (древко)";
+                    return Loc.Format("ui.skill.aoe_line", s.aoeSize, s.aoeWidth);
                 case AoeFormula.Box:
-                    return $"▣ Зона: Бокс {s.aoeSize:F1}м × {s.aoeWidth:F1}м";
+                    return Loc.Format("ui.skill.aoe_box", s.aoeSize, s.aoeWidth);
                 default:
                     return "";
             }
@@ -573,7 +617,7 @@ namespace ProjectC.Skills.UI
 
         private string FormatEffectsText(SkillNodeConfig s)
         {
-            if (s.effects == null || s.effects.Length == 0) return "(нет)";
+            if (s.effects == null || s.effects.Length == 0) return Loc.Get("ui.skill.none");
             var parts = new List<string>();
             foreach (var e in s.effects)
             {
@@ -585,7 +629,7 @@ namespace ProjectC.Skills.UI
                 else if ((int)e.type >= 3 && !string.IsNullOrEmpty(e.stringParam))
                     parts.Add($"[{e.stringParam}]");
             }
-            return parts.Count > 0 ? string.Join(" ", parts) : "(нет)";
+            return parts.Count > 0 ? string.Join(" ", parts) : Loc.Get("ui.skill.none");
         }
 
         // =================== T-INP-10: Slot Overview (read-only слева) ===================
@@ -624,7 +668,7 @@ namespace ProjectC.Skills.UI
                 }
                 else
                 {
-                    skillLabel.text = "(пусто)";
+                    skillLabel.text = Loc.Get("ui.skill.empty");
                     skillLabel.AddToClassList("stw-slot-cell-empty");
                 }
                 cell.Add(skillLabel);
@@ -635,9 +679,9 @@ namespace ProjectC.Skills.UI
 
         private string GetDisplayNameForSkillId(string skillId)
         {
-            if (string.IsNullOrEmpty(skillId)) return "(пусто)";
+            if (string.IsNullOrEmpty(skillId)) return Loc.Get("ui.skill.empty");
             var cfg = _allSkillConfigs.Find(s => s != null && s.skillId == skillId);
-            if (cfg != null && !string.IsNullOrEmpty(cfg.displayName)) return cfg.displayName;
+            if (cfg != null && !string.IsNullOrEmpty(cfg.displayName)) return Loc.Get($"static.skill.{skillId}.displayName", cfg.displayName);
             return skillId;  // fallback на raw id
         }
 
@@ -646,13 +690,13 @@ namespace ProjectC.Skills.UI
             _detailPrereqContainer.Clear();
             if (s.prerequisites == null || s.prerequisites.Length == 0)
             {
-                _detailPrereqContainer.Add(new Label { text = "(нет)" });
+                _detailPrereqContainer.Add(new Label { text = Loc.Get("ui.skill.none") });
                 return;
             }
             foreach (var p in s.prerequisites)
             {
                 if (p == null) continue;
-                var l = new Label { text = $"{(learned.Contains(p.skillId) ? "✓" : "✕")} {p.displayName ?? p.skillId}" };
+                var l = new Label { text = $"{(learned.Contains(p.skillId) ? "✓" : "✕")} {Loc.Get($"static.skill.{p.skillId}.displayName", p.displayName ?? p.skillId)}" };
                 l.AddToClassList(learned.Contains(p.skillId) ? "stw-prereq-have" : "stw-prereq-missing");
                 _detailPrereqContainer.Add(l);
             }
@@ -667,10 +711,10 @@ namespace ProjectC.Skills.UI
                 if (other == null || other == s) continue;
                 if (other.prerequisites != null)
                     foreach (var p in other.prerequisites)
-                        if (p != null && p.skillId == s.skillId) { deps.Add(other.displayName ?? other.skillId); break; }
+                        if (p != null && p.skillId == s.skillId) { deps.Add(Loc.Get($"static.skill.{other.skillId}.displayName", other.displayName ?? other.skillId)); break; }
             }
             if (deps.Count == 0)
-                _detailDepsContainer.Add(new Label { text = "(ничего)" });
+                _detailDepsContainer.Add(new Label { text = Loc.Get("ui.skill.nothing") });
             else
                 foreach (var d in deps)
                     _detailDepsContainer.Add(new Label { text = "→ " + d });

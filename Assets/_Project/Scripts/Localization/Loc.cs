@@ -78,6 +78,17 @@ namespace ProjectC.Localization
             label.RegisterCallback<DetachFromPanelEvent>(_ => OnLocaleChanged -= handler);
         }
 
+        /// <summary>Bind a UI Toolkit Button to a localization key. Updates on locale change.</summary>
+        public static void Bind(Button button, string key, string fallback = null)
+        {
+            if (button == null) return;
+            EnsureSubscribed();
+            button.text = Get(key, fallback ?? button.text);
+            Action handler = () => button.text = Get(key, fallback ?? button.text);
+            OnLocaleChanged += handler;
+            button.RegisterCallback<DetachFromPanelEvent>(_ => OnLocaleChanged -= handler);
+        }
+
         /// <summary>Bind a TextMeshProUGUI label to a localization key.</summary>
         public static void Bind(TMP_Text tmpText, string key, string fallback = null)
         {

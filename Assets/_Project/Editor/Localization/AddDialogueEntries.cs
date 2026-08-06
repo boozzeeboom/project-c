@@ -187,7 +187,90 @@ namespace ProjectC.Localization.Editor
             AssetDatabase.SaveAssets();
             Debug.Log($"[AddMarketWindowKeys] Done. Added {added} entries.");
         }
+
+        [MenuItem("ProjectC/Localization/Add Quest & Exchange Keys")]
+        public static void AddQuestExchangeKeys()
+        {
+            var sharedPath = "Assets/_Project/Settings/Localization/UI_Table Shared Data.asset";
+            var ruPath = "Assets/_Project/Settings/Localization/UI_Table_ru.asset";
+            var enPath = "Assets/_Project/Settings/Localization/UI_Table_en.asset";
+
+            var shared = AssetDatabase.LoadAssetAtPath<SharedTableData>(sharedPath);
+            var ru = AssetDatabase.LoadAssetAtPath<StringTable>(ruPath);
+            var en = AssetDatabase.LoadAssetAtPath<StringTable>(enPath);
+
+            int added = 0;
+            // Quest toasts
+            added += AddIfMissing(shared, ru, en, "ui.quest.toast_discovered", "✨ Найден квест: {0}", "✨ Quest discovered: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.cant_accept", "Не удалось взять квест", "Could not accept quest");
+            added += AddIfMissing(shared, ru, en, "ui.quest.give_item", "📦 +1 предмет", "📦 +1 item");
+            added += AddIfMissing(shared, ru, en, "ui.quest.give_item_named", "📦 +1 {0}", "📦 +1 {0}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.take_item", "📦 -1 предмет", "📦 -1 item");
+            added += AddIfMissing(shared, ru, en, "ui.quest.take_item_named", "📦 -1 {0}", "📦 -1 {0}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.credits_gained", "💰 +{0} CR", "💰 +{0} CR");
+            added += AddIfMissing(shared, ru, en, "ui.quest.reputation_gained", "📈 Репутация +{0}", "📈 Reputation +{0}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.reputation_faction_gained", "📈 {0} +{1}", "📈 {0} +{1}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.attitude_gained", "💚 Отношение +{0}", "💚 Attitude +{0}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.attitude_npc_gained", "💚 {0} +{1}", "💚 {0} +{1}");
+            added += AddIfMissing(shared, ru, en, "ui.quest.objective_done", "✅ Цель выполнена", "✅ Objective completed");
+            added += AddIfMissing(shared, ru, en, "ui.quest.objective_done_named", "✅ {0}", "✅ {0}");
+            // Exchange market
+            added += AddIfMissing(shared, ru, en, "ui.market.packs_suffix", "пач.", "packs");
+            added += AddIfMissing(shared, ru, en, "ui.market.boxed_suffix", "ящ.", "boxes");
+            // CharacterWindow buttons
+            added += AddIfMissing(shared, ru, en, "ui.character.btn.learn_skill", "Изучить навык", "Learn Skill");
+
+            EditorUtility.SetDirty(shared);
+            EditorUtility.SetDirty(ru);
+            EditorUtility.SetDirty(en);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[AddQuestExchangeKeys] Done. Added {added} entries.");
+        }
+
+        [MenuItem("ProjectC/Localization/Add Repair Manager Keys")]
+        public static void AddRepairManagerKeys()
+        {
+            var sharedPath = "Assets/_Project/Settings/Localization/UI_Table Shared Data.asset";
+            var ruPath = "Assets/_Project/Settings/Localization/UI_Table_ru.asset";
+            var enPath = "Assets/_Project/Settings/Localization/UI_Table_en.asset";
+
+            var shared = AssetDatabase.LoadAssetAtPath<SharedTableData>(sharedPath);
+            var ru = AssetDatabase.LoadAssetAtPath<StringTable>(ruPath);
+            var en = AssetDatabase.LoadAssetAtPath<StringTable>(enPath);
+
+            int added = 0;
+            added += AddIfMissing(shared, ru, en, "ui.common.credits", "кр.", "cr.");
+            added += AddIfMissing(shared, ru, en, "ui.repair.credits_label", "💰 Кредиты: {0}", "💰 Credits: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.repair.ship_class", "Класс: {0}", "Class: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.repair.ship_power", "Энергия: {0}/{1}", "Power: {0}/{1}");
+            added += AddIfMissing(shared, ru, en, "ui.repair.hull_broken", "Прочность: СЛОМАН ({0}/{1})", "Hull: BROKEN ({0}/{1})");
+            added += AddIfMissing(shared, ru, en, "ui.repair.hull_normal", "Прочность: {0}/{1}", "Hull: {0}/{1}");
+            added += AddIfMissing(shared, ru, en, "ui.repair.hull_repair_btn", "🔧 Починить ({0} кр.)", "🔧 Repair ({0} cr.)");
+            added += AddIfMissing(shared, ru, en, "ui.repair.hull_ok_btn", "✓ Целый", "✓ Intact");
+            added += AddIfMissing(shared, ru, en, "ui.repair.insufficient_funds", "Недостаточно кредитов! Нужно {0}, есть {1}", "Insufficient credits! Need {0}, have {1}");
+            added += AddIfMissing(shared, ru, en, "ui.repair.recalled", "Корабль вызван на пад {0}...", "Ship recalled to pad {0}...");
+            added += AddIfMissing(shared, ru, en, "ui.repair.installed_label", "Установлено: {0}", "Installed: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.repair.sell_btn", "💰 Продать (+{0} кр.)", "💰 Sell (+{0} cr.)");
+            added += AddIfMissing(shared, ru, en, "ui.repair.sell_status", "Продажа модуля из '{0}' (+{1} кр.)...", "Selling module from '{0}' (+{1} cr.)...");
+            added += AddIfMissing(shared, ru, en, "ui.repair.modules_for_slot", "Модули для слота '{0}':", "Modules for slot '{0}':");
+            added += AddIfMissing(shared, ru, en, "ui.repair.install_request", "Запрос на установку '{0}' в '{1}' отправлен...", "Install request for '{0}' in '{1}' sent...");
+            added += AddIfMissing(shared, ru, en, "ui.repair.paint_cost", "Стоимость: {0} кр.", "Cost: {0} cr.");
+            added += AddIfMissing(shared, ru, en, "ui.repair.paint_btn", "🎨 Покрасить ({0} кр.)", "🎨 Paint ({0} cr.)");
+            added += AddIfMissing(shared, ru, en, "ui.repair.paint_select", "🎨 Выберите цвет", "🎨 Select color");
+            // Knowledge toast
+            added += AddIfMissing(shared, ru, en, "ui.knowledge.category_skill", "Навык", "Skill");
+            added += AddIfMissing(shared, ru, en, "ui.knowledge.category_recipe", "Рецепт", "Recipe");
+            added += AddIfMissing(shared, ru, en, "ui.knowledge.category_faction", "Фракция", "Faction");
+
+            EditorUtility.SetDirty(shared);
+            EditorUtility.SetDirty(ru);
+            EditorUtility.SetDirty(en);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[AddRepairManagerKeys] Done. Added {added} entries.");
+        }
     }
 }
+
+
 
 

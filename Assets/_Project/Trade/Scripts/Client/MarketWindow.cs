@@ -1622,7 +1622,8 @@ namespace ProjectC.Trade.Client
             if (index < 0 || index >= _exchangeInvCache.Count) return;
             var item = _exchangeInvCache[index];
             row.Q<Label>("row-label").text = item.displayName;
-            row.Q<Label>("row-qty").text = $"{item.haveQty} → {item.maxPacks} пач.";
+            string packsLabel = Loc.Get("ui.market.packs_suffix", "packs");
+            row.Q<Label>("row-qty").text = $"{item.haveQty} → {item.maxPacks} {packsLabel}";
             row.style.backgroundColor = (index == _selectedExchangeInvItem)
                 ? new StyleColor(new Color(0.4f, 0.8f, 0.8f, 0.4f))
                 : StyleKeyword.Null;
@@ -1636,7 +1637,8 @@ namespace ProjectC.Trade.Client
             if (index < 0 || index >= _exchangeWhCache.Count) return;
             var item = _exchangeWhCache[index];
             row.Q<Label>("row-label").text = item.displayName;
-            row.Q<Label>("row-qty").text = $"{item.haveQty} → {item.maxPacks} пач.";
+            string packsLabel = Loc.Get("ui.market.packs_suffix", "packs");
+            row.Q<Label>("row-qty").text = $"{item.haveQty} → {item.maxPacks} {packsLabel}";
             row.style.backgroundColor = (index == _selectedExchangeWhItem)
                 ? new StyleColor(new Color(0.8f, 0.6f, 0.4f, 0.4f))
                 : StyleKeyword.Null;
@@ -1708,7 +1710,7 @@ namespace ProjectC.Trade.Client
                 if (boxes <= 0) continue;
                 _exchangeWhCache.Add(new ItemRow
                 {
-                    displayName = $"{entry.displayName} (ящ.)",
+                    displayName = entry.displayName + " (" + Loc.Get("ui.market.boxed_suffix", "boxes") + ")",
                     haveQty = entry.quantity,
                     maxPacks = boxes,
                     inventoryQty = whRate.inventoryQty,

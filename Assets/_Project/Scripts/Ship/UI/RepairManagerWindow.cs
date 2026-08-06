@@ -292,7 +292,7 @@ namespace ProjectC.Ship.UI
                 ShipModuleCatalog.Initialize(_activeDatabase);
 
             if (_recallCostLabel != null)
-                _recallCostLabel.text = $"{_shipRecallCost} кр.";
+                _recallCostLabel.text = $"{_shipRecallCost} {Loc.Get("ui.common.credits")}";
 
             RefreshShipList();
             RefreshCredits();
@@ -310,7 +310,7 @@ namespace ProjectC.Ship.UI
                     ? Unity.Netcode.NetworkManager.Singleton.LocalClientId : 0;
                 credits = trade.Repository.GetCredits(myId);
             }
-            _creditsLabel.text = $"💰 Кредиты: {credits:F0}";
+            _creditsLabel.text = Loc.Format("ui.repair.credits_label", $"{credits:F0}");
         }
 
 
@@ -468,11 +468,11 @@ namespace ProjectC.Ship.UI
             if (!_shipByKeyId.TryGetValue(_selectedKeyId, out var sc) || sc == null) return;
 
             if (_shipClassLabel != null)
-                _shipClassLabel.text = $"Класс: {sc.ShipFlightClass}";
+                _shipClassLabel.text = Loc.Format("ui.repair.ship_class", sc.ShipFlightClass.ToString());
 
             var mm = sc.ShipModuleManager;
             if (_shipPowerLabel != null && mm != null)
-                _shipPowerLabel.text = $"Энергия: {mm.currentPowerUsage}/{mm.availablePower}";
+                _shipPowerLabel.text = Loc.Format("ui.repair.ship_power", mm.currentPowerUsage, mm.availablePower);
 
             UpdateHullInfo(sc);
 
@@ -515,8 +515,8 @@ namespace ProjectC.Ship.UI
             if (_hullLabel != null)
             {
                 _hullLabel.text = hull.IsBroken
-                    ? $"Прочность: СЛОМАН ({cur}/{max})"
-                    : $"Прочность: {cur}/{max}";
+                    ? Loc.Format("ui.repair.hull_broken", cur, max)
+                    : Loc.Format("ui.repair.hull_normal", cur, max);
             }
 
             if (_hullBtn != null)
@@ -525,8 +525,8 @@ namespace ProjectC.Ship.UI
                 bool isDocked = sc.IsDocked;
                 _hullBtn.SetEnabled(needsRepair && isDocked);
                 _hullBtn.text = needsRepair
-                    ? $"🔧 Починить ({_hullRepairCost} кр.)"
-                    : "✓ Целый";
+                    ? Loc.Format("ui.repair.hull_repair_btn", _hullRepairCost)
+                    : Loc.Get("ui.repair.hull_ok_btn");
                 _hullBtn.tooltip = !isDocked ? "Корабль должен быть в доке" : string.Empty;
             }
         }
@@ -568,7 +568,7 @@ namespace ProjectC.Ship.UI
             if (credits < _shipRecallCost)
             {
                 if (_statusLabel != null)
-                    _statusLabel.text = $"Недостаточно кредитов! Нужно {_shipRecallCost}, есть {credits:F0}";
+                    _statusLabel.text = Loc.Format("ui.repair.insufficient_funds", _shipRecallCost, $"{credits:F0}");
                 return;
             }
 
@@ -606,7 +606,7 @@ namespace ProjectC.Ship.UI
             {
                 sc.RecallShipToPadServerRpc(nearestPad.transform.position, _shipRecallCost);
                 if (_statusLabel != null)
-                    _statusLabel.text = $"Корабль вызван на пад {nearestPad.PadId}...";
+                    _statusLabel.text = Loc.Format("ui.repair.recalled", nearestPad.PadId);
                 StartCoroutine(DelayedRefresh(1f));
             }
             else
@@ -618,13 +618,13 @@ namespace ProjectC.Ship.UI
 
         private void ClearShipView()
         {
-            if (_shipClassLabel != null) _shipClassLabel.text = "Класс: —";
-            if (_shipPowerLabel != null) _shipPowerLabel.text = "Энергия: —";
+            if (_shipClassLabel != null) _shipClassLabel.text = Loc.Get("ui.repair.ship_class_unknown", "Class: —");
+            if (_shipPowerLabel != null) _shipPowerLabel.text = Loc.Get("ui.repair.ship_power_unknown", "Power: —");
             if (_hullLabel != null) _hullLabel.text = Loc.Get("ui.ship.hull_empty");
             if (_hullBarFill != null) _hullBarFill.style.width = Length.Percent(0);
             if (_hullBtn != null) _hullBtn.SetEnabled(false);
             if (_slotDropdownContainer != null) _slotDropdownContainer.Clear();
-            if (_installedLabel != null) _installedLabel.text = "Установлено: " + Loc.Get("ui.character.no_data");
+            if (_installedLabel != null) _installedLabel.text = Loc.Format("ui.repair.installed_label", Loc.Get("ui.character.no_data"));
             if (_installedActions != null) _installedActions.Clear();
             ClearModulesView();
         }
@@ -640,13 +640,13 @@ namespace ProjectC.Ship.UI
 
             if (string.IsNullOrEmpty(_selectedSlotName) || _selectedKeyId <= 0)
             {
-                _installedLabel.text = "Установлено: " + Loc.Get("ui.character.no_data");
+                _installedLabel.text = Loc.Format("ui.repair.installed_label", Loc.Get("ui.character.no_data"));
                 return;
             }
 
             if (!_shipByKeyId.TryGetValue(_selectedKeyId, out var sc)) return;
             var mm = sc.ShipModuleManager;
-            if (mm == null) { _installedLabel.text = "Установлено: " + Loc.Get("ui.character.no_data"); return; }
+            if (mm == null) { _installedLabel.text = Loc.Format("ui.repair.installed_label", Loc.Get("ui.character.no_data")); return; }
 
             ModuleSlot targetSlot = null;
             foreach (var slot in mm.slots)
@@ -662,13 +662,13 @@ namespace ProjectC.Ship.UI
             }
 
             var mod = targetSlot.installedModule;
-            _installedLabel.text = $"Установлено: {mod.displayName} (★{mod.tier})";
+            _installedLabel.text = Loc.Format("ui.repair.installed_label", $"{mod.displayName} (★{mod.tier})");
 
             // Найти цену продажи
             int sellPrice = ComputeSellPrice(mod.moduleId);
 
             var sellBtn = new Button(() => OnSellClicked(_selectedSlotName, sellPrice));
-            sellBtn.text = $"💰 Продать (+{sellPrice} кр.)";
+            sellBtn.text = Loc.Format("ui.repair.sell_btn", sellPrice);
             sellBtn.AddToClassList("repair-btn");
             sellBtn.AddToClassList("repair-btn-sell");
             _installedActions.Add(sellBtn);
@@ -695,7 +695,7 @@ namespace ProjectC.Ship.UI
             {
                 server.RequestSellModule(_selectedKeyId, slotName, sellCredits);
                 if (_statusLabel != null)
-                    _statusLabel.text = $"Продажа модуля из '{slotName}' (+{sellCredits} кр.)...";
+                    _statusLabel.text = Loc.Format("ui.repair.sell_status", slotName, sellCredits);
                 StartCoroutine(DelayedRefresh(0.5f));
             }
             else
@@ -725,7 +725,7 @@ namespace ProjectC.Ship.UI
             _modulesContainer.Clear();
 
             if (_modulesHeader != null)
-                _modulesHeader.text = $"Модули для слота '{slotName}':";
+                _modulesHeader.text = Loc.Format("ui.repair.modules_for_slot", slotName);
 
             if (_activeDatabase == null)
             {
@@ -852,7 +852,7 @@ namespace ProjectC.Ship.UI
             {
                 server.RequestInstallModule(_selectedKeyId, slotName, moduleId);
                 if (_statusLabel != null)
-                    _statusLabel.text = $"Запрос на установку '{moduleId}' в '{slotName}' отправлен...";
+                    _statusLabel.text = Loc.Format("ui.repair.install_request", moduleId, slotName);
                 StartCoroutine(DelayedRefresh(0.5f));
             }
             else
@@ -1045,12 +1045,12 @@ namespace ProjectC.Ship.UI
         private void UpdatePaintUI()
         {
             if (_paintCostLabel != null)
-                _paintCostLabel.text = _repaintCost > 0 ? $"Стоимость: {_repaintCost} кр." : Loc.Get("ui.repair.free");
+                _paintCostLabel.text = _repaintCost > 0 ? Loc.Format("ui.repair.paint_cost", _repaintCost) : Loc.Get("ui.repair.free");
 
             if (_paintApplyBtn != null)
             {
                 _paintApplyBtn.SetEnabled(_selectedPaintColor.HasValue && _selectedKeyId > 0);
-                string label = _selectedPaintColor.HasValue ? $"🎨 Покрасить ({_repaintCost} кр.)" : "🎨 Выберите цвет";
+                string label = _selectedPaintColor.HasValue ? Loc.Format("ui.repair.paint_btn", _repaintCost) : Loc.Get("ui.repair.paint_select");
                 _paintApplyBtn.text = label;
             }
 

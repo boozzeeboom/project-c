@@ -741,6 +741,142 @@ MonoBehaviour:
     m_Localized: Abra o mercado para negociar
     m_Metadata:
       m_Items: []
+  - m_Id: 204250939301888
+    m_Localized: "\u2728 Miss\xE3o descoberta: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251073519616
+    m_Localized: "N\xE3o foi poss\xEDvel aceitar a miss\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251086102528
+    m_Localized: "\U0001F4E6 +1 item"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251094491136
+    m_Localized: "\U0001F4E6 +1 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251098685440
+    m_Localized: "\U0001F4E6 -1 item"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251107074048
+    m_Localized: "\U0001F4E6 -1 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251115462656
+    m_Localized: "\U0001F4B0 +{0} CR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251119656960
+    m_Localized: "\U0001F4C8 Reputa\xE7\xE3o +{0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251136434176
+    m_Localized: "\U0001F4C8 {0} +{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251149017088
+    m_Localized: "\U0001F49A Atitude +{0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251161600000
+    m_Localized: "\U0001F49A {0} +{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251169988608
+    m_Localized: "\u2705 Objetivo conclu\xEDdo"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251186765824
+    m_Localized: "\u2705 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251190960128
+    m_Localized: pacotes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251207737344
+    m_Localized: caixas
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251224514560
+    m_Localized: Aprender habilidade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226366640128
+    m_Localized: cr.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226479886336
+    m_Localized: "\U0001F4B0 Cr\xE9ditos: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226492469248
+    m_Localized: 'Classe: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226500857856
+    m_Localized: "Pot\xEAncia: {0}/{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226509246464
+    m_Localized: 'Casco: QUEBRADO ({0}/{1})'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226517635072
+    m_Localized: 'Casco: {0}/{1}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226526023680
+    m_Localized: "\U0001F527 Reparar ({0} cr.)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226530217984
+    m_Localized: "\u2713 Intacto"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226538606592
+    m_Localized: "Cr\xE9ditos insuficientes! Precisa de {0}, tem {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226546995200
+    m_Localized: Nave chamada para o pad {0}...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226555383808
+    m_Localized: 'Instalado: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226567966720
+    m_Localized: "\U0001F4B0 Vender (+{0} cr.)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226580549632
+    m_Localized: "Vendendo m\xF3dulo de '{0}' (+{1} cr.)..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226588938240
+    m_Localized: "M\xF3dulos para o slot '{0}':"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226597326848
+    m_Localized: "Solicita\xE7\xE3o de instala\xE7\xE3o de '{0}' em '{1}' enviada..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226601521152
+    m_Localized: 'Custo: {0} cr.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226605715456
+    m_Localized: "\U0001F3A8 Pintar ({0} cr.)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226614104064
+    m_Localized: "\U0001F3A8 Selecionar cor"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

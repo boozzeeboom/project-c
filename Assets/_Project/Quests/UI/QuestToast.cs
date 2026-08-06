@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Quests.Client;
 using ProjectC.Quests.Dto;
+using ProjectC.Localization;
 
 namespace ProjectC.Quests.UI
 {
@@ -145,7 +146,7 @@ namespace ProjectC.Quests.UI
         private void HandleQuestDiscovered(string questId, string displayName)
         {
             string name = string.IsNullOrEmpty(displayName) ? questId : displayName;
-            ShowToast($"✨ Найден квест: {name}");
+            ShowToast(Loc.Format("ui.quest.toast_discovered", name));
         }
 
         private void HandleQuestResult(QuestResultDto result)
@@ -190,7 +191,7 @@ namespace ProjectC.Quests.UI
                 if (result.actionType == (byte)ProjectC.Dialogue.DialogueActionType.OfferQuest
                     || result.actionType == (byte)ProjectC.Dialogue.DialogueActionType.AcceptQuest)
                 {
-                    string reason = string.IsNullOrEmpty(result.resultData) ? "Не удалось взять квест" : result.resultData;
+                    string reason = string.IsNullOrEmpty(result.resultData) ? Loc.Get("ui.quest.cant_accept") : result.resultData;
                     ShowToast($"🔒 {reason}");
                 }
                 return;
@@ -213,22 +214,20 @@ namespace ProjectC.Quests.UI
             // Action type IDs: GiveCredits=30, AddReputation=31, AddNpcAttitude=32, CompleteObjective=11
             switch (r.actionType)
             {
-                case 20: return string.IsNullOrEmpty(data) ? "📦 +1 предмет" : $"📦 +1 {data}";
-                case 21: return string.IsNullOrEmpty(data) ? "📦 -1 предмет" : $"📦 -1 {data}";
-                case 30: return $"💰 +{delta} CR";
+                case 20: return string.IsNullOrEmpty(data) ? Loc.Get("ui.quest.give_item") : Loc.Format("ui.quest.give_item_named", data);
+                case 21: return string.IsNullOrEmpty(data) ? Loc.Get("ui.quest.take_item") : Loc.Format("ui.quest.take_item_named", data);
+                case 30: return Loc.Format("ui.quest.credits_gained", delta);
                 case 31:
-                    // resultData: "{faction}:{newValue}" — e.g. "GuildOfThoughts:75".
-                    if (string.IsNullOrEmpty(data)) return $"📈 Репутация +{delta}";
+                    if (string.IsNullOrEmpty(data)) return Loc.Format("ui.quest.reputation_gained", delta);
                     var fparts = data.Split(':');
-                    if (fparts.Length == 2) return $"📈 {fparts[0]} +{delta}";
-                    return $"📈 {data}";
+                    if (fparts.Length == 2) return Loc.Format("ui.quest.reputation_faction_gained", fparts[0], delta);
+                    return Loc.Format("ui.quest.reputation_gained", data);
                 case 32:
-                    // resultData: "{npcId}:{newAttitude}" — e.g. "mira_01:5".
-                    if (string.IsNullOrEmpty(data)) return $"💚 Отношение +{delta}";
+                    if (string.IsNullOrEmpty(data)) return Loc.Format("ui.quest.attitude_gained", delta);
                     var parts = data.Split(':');
-                    if (parts.Length == 2) return $"💚 {parts[0]} +{delta}";
-                    return $"💚 {data}";
-                case 11: return string.IsNullOrEmpty(data) ? "✅ Цель выполнена" : $"✅ {data}";
+                    if (parts.Length == 2) return Loc.Format("ui.quest.attitude_npc_gained", parts[0], delta);
+                    return Loc.Format("ui.quest.attitude_gained", data);
+                case 11: return string.IsNullOrEmpty(data) ? Loc.Get("ui.quest.objective_done") : Loc.Format("ui.quest.objective_done_named", data);
                 default: return data;
             }
         }

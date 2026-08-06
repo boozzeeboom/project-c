@@ -740,6 +740,142 @@ MonoBehaviour:
     m_Localized: "\xD6ffnen Sie den Markt zum Handeln"
     m_Metadata:
       m_Items: []
+  - m_Id: 204250939301888
+    m_Localized: "\u2728 Quest entdeckt: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251073519616
+    m_Localized: Quest konnte nicht angenommen werden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251086102528
+    m_Localized: "\U0001F4E6 +1 Gegenstand"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251094491136
+    m_Localized: "\U0001F4E6 +1 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251098685440
+    m_Localized: "\U0001F4E6 -1 Gegenstand"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251107074048
+    m_Localized: "\U0001F4E6 -1 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251115462656
+    m_Localized: "\U0001F4B0 +{0} CR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251119656960
+    m_Localized: "\U0001F4C8 Ruf +{0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251136434176
+    m_Localized: "\U0001F4C8 {0} +{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251149017088
+    m_Localized: "\U0001F49A Einstellung +{0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251161600000
+    m_Localized: "\U0001F49A {0} +{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251169988608
+    m_Localized: "\u2705 Ziel abgeschlossen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251186765824
+    m_Localized: "\u2705 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251190960128
+    m_Localized: Pakete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251207737344
+    m_Localized: Kisten
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251224514560
+    m_Localized: "F\xE4higkeit lernen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226366640128
+    m_Localized: Cr.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226479886336
+    m_Localized: "\U0001F4B0 Credits: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226492469248
+    m_Localized: 'Klasse: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226500857856
+    m_Localized: 'Leistung: {0}/{1}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226509246464
+    m_Localized: "H\xFClle: GEBROCHEN ({0}/{1})"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226517635072
+    m_Localized: "H\xFClle: {0}/{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226526023680
+    m_Localized: "\U0001F527 Reparieren ({0} Cr.)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226530217984
+    m_Localized: "\u2713 Intakt"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226538606592
+    m_Localized: "Nicht genug Credits! Ben\xF6tigt: {0}, vorhanden: {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226546995200
+    m_Localized: Schiff zu Pad {0} gerufen...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226555383808
+    m_Localized: 'Installiert: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226567966720
+    m_Localized: "\U0001F4B0 Verkaufen (+{0} Cr.)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226580549632
+    m_Localized: Verkaufe Modul von '{0}' (+{1} Cr.)...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226588938240
+    m_Localized: "Module f\xFCr Slot '{0}':"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226597326848
+    m_Localized: "Installationsanfrage f\xFCr '{0}' in '{1}' gesendet..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226601521152
+    m_Localized: 'Kosten: {0} Cr.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226605715456
+    m_Localized: "\U0001F3A8 Lackieren ({0} Cr.)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226614104064
+    m_Localized: "\U0001F3A8 Farbe w\xE4hlen"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

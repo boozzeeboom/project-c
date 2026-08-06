@@ -56,6 +56,7 @@ namespace ProjectC.Localization.Editor
             added += MigrateFactionsFixed(collection, ruTable);
             added += MigrateMarketsFixed(collection, ruTable);
             added += MigrateItemTypesFixed(collection, ruTable);
+            added += MigrateSkillsFixed(collection, ruTable);
 
             MarkDirtyAndSave(collection, ruTable);
             Debug.Log($"[Repair] Static_Table: {added} keys (SharedData.Entries={collection.SharedData.Entries.Count})");
@@ -393,6 +394,31 @@ namespace ProjectC.Localization.Editor
             }
         }
 
+        // R2-xxx / LOC-13: навыки — static.skill.{skillId}.displayName / .description
+        // Источник: Assets/_Project/Resources/Skills/*.asset (SkillNodeConfig)
+        private static int MigrateSkillsFixed(StringTableCollection collection, StringTable table)
+        {
+            var guids = AssetDatabase.FindAssets("t:SkillNodeConfig", new[] { "Assets/_Project/Resources/Skills" });
+            int added = 0;
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var so = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+                if (so == null) continue;
+
+                var skillId = GetField(so, "skillId");
+                var displayName = GetField(so, "displayName");
+                var description = GetField(so, "description");
+
+                if (!string.IsNullOrEmpty(skillId) && !string.IsNullOrEmpty(displayName))
+                    added += AddEntry(collection, table, $"static.skill.{skillId}.displayName", displayName);
+                if (!string.IsNullOrEmpty(skillId) && !string.IsNullOrEmpty(description))
+                    added += AddEntry(collection, table, $"static.skill.{skillId}.description", description);
+            }
+            Debug.Log($"[Repair] Skills: {added} keys ({guids.Length} assets)");
+            return added;
+        }
+
         private static string GetField(ScriptableObject so, string fieldName)
         {
             var sso = new SerializedObject(so);
@@ -637,6 +663,182 @@ namespace ProjectC.Localization.Editor
             { "ui.cargo.select_hold", "Выберите ящик в трюме" },
             { "ui.cargo.server_unavailable", "Сервер грузового отсека не доступен" },
             { "ui.cargo.unpack_unavailable", "Распаковка недоступна: нет курса обмена для этого товара" },
+
+            // === LOC-13: CharacterWindow tabs/labels (были только в таблицах из temp-скриптов) ===
+            { "ui.character.tab.character", "Персонаж" },
+            { "ui.character.tab.inventory", "Инвентарь" },
+            { "ui.character.tab.knowledge", "Знания" },
+            { "ui.character.tab.quests", "Квесты" },
+            { "ui.character.tab.contracts", "Контракты" },
+            { "ui.character.tab.ship", "Корабль" },
+            { "ui.character.label.player", "Игрок" },
+            { "ui.character.location", "Локация: —" },
+
+            // === LOC-13: MarketWindow buttons/tabs/sections ===
+            { "ui.market.tab.market", "Рынок" },
+            { "ui.market.tab.warehouse", "Склад / Трюм" },
+            { "ui.market.tab.contracts", "Контракты" },
+            { "ui.market.tab.exchanger", "Обменник" },
+            { "ui.market.label.welcome", "Откройте рынок, чтобы торговать" },
+            { "ui.market.btn.buy", "Купить" },
+            { "ui.market.btn.sell", "Продать" },
+            { "ui.market.btn.load", "Погрузить" },
+            { "ui.market.btn.unload", "Разгрузить" },
+            { "ui.market.btn.accept", "Взять" },
+            { "ui.market.btn.complete", "Сдать" },
+            { "ui.market.btn.fail", "Провалить" },
+            { "ui.market.btn.close", "Закрыть" },
+            { "ui.market.section.items", "Товары на рынке" },
+            { "ui.market.section.warehouse", "Ваш склад" },
+            { "ui.market.section.cargo", "Груз корабля" },
+            { "ui.market.section.contracts", "Контракты НП" },
+            { "ui.market.section.exchange", "Ресурсы: конвертация пикаблов ↔ ящики" },
+            { "ui.market.exchange.inv", "Инвентарь (ресурсы)" },
+            { "ui.market.exchange.wh", "Склад (ящики)" },
+            { "ui.market.ship_selector", "Корабль:" },
+            { "ui.market.quantity", "Кол-во:" },
+            { "ui.market.pack", "→ УПАКОВАТЬ" },
+            { "ui.market.unpack", "← РАСПАКОВАТЬ" },
+            { "ui.market.location", "Рынок: {0}" },
+            { "ui.market.credits", "Кредиты: {0:F0} CR" },
+            { "ui.market.warehouse_info", "Склад: {0} типов / {1}" },
+            { "ui.market.speed_info", "Скорость рынка: x{0:F1} | Тик через: {1}с" },
+            { "ui.market.error", "Ошибка: {0}" },
+            { "ui.market.op_ok", "{0}: OK ({1} x{2})" },
+            { "ui.market.taken", " [ВЗЯТ]" },
+            { "ui.market.type.standard", "[Стандарт]" },
+            { "ui.market.type.urgent", "[Срочный]" },
+            { "ui.market.type.receipt", "[Расписка]" },
+            { "ui.market.weight", "{0:F1} / {1:F0} кг" },
+            { "ui.market.slots", "{0} / {1} слотов" },
+            { "ui.market.weight_empty", "— / — кг" },
+            { "ui.market.slots_empty", "— / — слотов" },
+            { "ui.market.packs", "{0} → {1} пач." },
+            { "ui.market.boxed", "{0} (ящ.)" },
+            { "ui.market.exchange_ok", "Обмен: OK (Δ склад={0}, инвентарь={1})" },
+            { "ui.market.pack_request", "Отправлен запрос на упаковку {0}..." },
+            { "ui.market.unpack_request", "Отправлен запрос на распаковку {0}..." },
+            { "ui.market.row.item", "{0}  —  {1:F0} CR  (сток: {2})  (у вас: {3})" },
+            { "ui.market.row.qty", "{0}  —  {1} ед." },
+            { "ui.market.row.qty_ship", "{0}  —  {1} ед.  ({2})" },
+
+            // === LOC-13: RepairManagerWindow (значения из temp-скрипта AddRepairKeys) ===
+            { "ui.repair.available_modules", "Доступные модули:" },
+            { "ui.repair.done", "Готово ✓" },
+            { "ui.repair.free", "Бесплатно" },
+            { "ui.repair.hull_request", "Запрос на ремонт корпуса отправлен..." },
+            { "ui.repair.install", "Установить" },
+            { "ui.repair.insufficient_power", "Недостаточно энергии" },
+            { "ui.repair.no_database", "База модулей не задана." },
+            { "ui.repair.no_modules", "Нет совместимых модулей для этого слота." },
+            { "ui.repair.no_pads", "Нет свободных падов!" },
+            { "ui.repair.no_ship", "Корабль не выбран." },
+            { "ui.repair.not_spawned", "Корабль не заспавнен." },
+            { "ui.repair.paint_request", "Запрос на покраску отправлен..." },
+            { "ui.repair.slot_empty", "Установлено: пусто" },
+            { "ui.repair.title", "🛠 Ремонтный Менеджер" },
+            { "ui.repair.call", "🚁 Вызвать" },
+            { "ui.repair.credits", "💰 Кредиты: {0:F0}" },
+            { "ui.repair.recall_cost", "{0} кр." },
+            { "ui.repair.key_fallback", "🔑 Key #{0}" },
+            { "ui.repair.slot_empty_suffix", " [пусто]" },
+            { "ui.repair.slot_occupied_suffix", " [✓ {0}]" },
+            { "ui.repair.ship_class", "Класс: {0}" },
+            { "ui.repair.ship_class_empty", "Класс: —" },
+            { "ui.repair.power", "Энергия: {0}/{1}" },
+            { "ui.repair.power_empty", "Энергия: —" },
+            { "ui.repair.hull_broken_fmt", "Прочность: СЛОМАН ({0}/{1})" },
+            { "ui.repair.hull_fmt", "Прочность: {0}/{1}" },
+            { "ui.repair.hull_btn", "🔧 Починить ({0} кр.)" },
+            { "ui.repair.hull_ok", "✓ Целый" },
+            { "ui.repair.dock_required", "Корабль должен быть в доке" },
+            { "ui.repair.not_enough_credits", "Недостаточно кредитов! Нужно {0}, есть {1:F0}" },
+            { "ui.repair.recalled_to_pad", "Корабль вызван на пад {0}..." },
+            { "ui.repair.installed_no", "Установлено: —" },
+            { "ui.repair.installed_fmt", "Установлено: {0} (★{1})" },
+            { "ui.repair.sell_btn", "💰 Продать (+{0} кр.)" },
+            { "ui.repair.sell_request", "Продажа модуля из '{0}' (+{1} кр.)..." },
+            { "ui.repair.modules_for_slot", "Модули для слота '{0}':" },
+            { "ui.repair.price_credits", "💰 {0} кр." },
+            { "ui.repair.power_avail", " ⚡ {0} (свободно {1})" },
+            { "ui.repair.install_request", "Запрос на установку '{0}' в '{1}' отправлен..." },
+            { "ui.repair.paint_cost", "Стоимость: {0} кр." },
+            { "ui.repair.paint_btn", "🎨 Покрасить ({0} кр.)" },
+            { "ui.repair.paint_choose", "🎨 Выберите цвет" },
+            { "ui.repair.section.ship", "Корабль:" },
+            { "ui.repair.section.slot", "Слот модуля:" },
+            { "ui.repair.section.paint", "🎨 Цвет корабля:" },
+            { "ui.repair.color.white", "⚪ Белый" },
+            { "ui.repair.color.gray", "🔘 Серый" },
+            { "ui.repair.color.black", "⚫ Чёрный" },
+            { "ui.repair.color.red", "🔴 Красный" },
+            { "ui.repair.color.blue", "🔵 Синий" },
+            { "ui.repair.color.green", "🟢 Зелёный" },
+            { "ui.repair.color.yellow", "🟡 Жёлтый" },
+            { "ui.repair.color.orange", "🟠 Оранжевый" },
+            { "ui.repair.color.purple", "🟣 Фиолетовый" },
+            { "ui.repair.color.turquoise", "🔷 Бирюзовый" },
+
+            // === LOC-13: SkillTreeWindow ===
+            { "ui.skill.tree_title", "Дерево навыков" },
+            { "ui.skill.filter.melee", "⚔ Melee" },
+            { "ui.skill.filter.ranged", "🏹 Ranged" },
+            { "ui.skill.filter.defense", "🛡 Defense" },
+            { "ui.skill.filter.placed", "📍 Placed" },
+            { "ui.skill.search_placeholder", "Поиск по имени или эффекту (STR, +2)..." },
+            { "ui.skill.slots", "Слоты" },
+            { "ui.skill.list", "Навыки" },
+            { "ui.skill.select_hint", "Выберите навык слева" },
+            { "ui.skill.required", "Требуется:" },
+            { "ui.skill.unlocks", "Откроет:" },
+            { "ui.skill.close", "Закрыть" },
+            { "ui.skill.type_active", "Активный (биндится на слот)" },
+            { "ui.skill.type_passive", "Пассивный (применяется автоматически)" },
+            { "ui.skill.no_description", "(нет описания)" },
+            { "ui.skill.type_line", "Тип: {0}" },
+            { "ui.skill.animation", "Анимация: {0}" },
+            { "ui.skill.effects_line", "Эффекты: {0}" },
+            { "ui.skill.cost", "Стоимость: {0}" },
+            { "ui.skill.free", "Free" },
+            { "ui.skill.requirements", "Требования: {0}" },
+            { "ui.skill.requirements_none", "Требования: нет" },
+            { "ui.skill.aoe_cone", "⚔ Зона: Конус {0}° × {1}м вперёд" },
+            { "ui.skill.aoe_sphere", "💥 Зона: Сфера {0}м радиус (вокруг персонажа)" },
+            { "ui.skill.aoe_line", "➤ Зона: Линия {0}м × {1}м (древко)" },
+            { "ui.skill.aoe_box", "▣ Зона: Бокс {0}м × {1}м" },
+            { "ui.skill.none", "(нет)" },
+            { "ui.skill.nothing", "(ничего)" },
+            { "ui.skill.empty", "(пусто)" },
+
+            // === LOC-13: Toasts ===
+            { "ui.toast.knowledge_opened", "📖 Открыто знание — {0}: {1}" },
+            { "ui.toast.category.skill", "Навык" },
+            { "ui.toast.category.recipe", "Рецепт" },
+            { "ui.toast.category.faction", "Фракция" },
+            { "ui.toast.category.npc", "NPC" },
+            { "ui.toast.and_more", " и ещё {0}" },
+            { "ui.gather.progress", "Сбор ресурса…" },
+            { "ui.gather.completed", "✅ Добыто: {0} × {1}" },
+            { "ui.gather.resource", "Ресурс" },
+            { "ui.gather.depleted", " (узел истощён)" },
+            { "ui.gather.denied", "Отказано в доступе" },
+            { "ui.quest.toast.discovered", "✨ Найден квест: {0}" },
+            { "ui.quest.toast.fail_take", "Не удалось взять квест" },
+            { "ui.quest.toast.item_give", "📦 +1 предмет" },
+            { "ui.quest.toast.item_give_named", "📦 +1 {0}" },
+            { "ui.quest.toast.item_take", "📦 -1 предмет" },
+            { "ui.quest.toast.item_take_named", "📦 -1 {0}" },
+            { "ui.quest.toast.credits", "💰 +{0} CR" },
+            { "ui.quest.toast.reputation", "📈 Репутация +{0}" },
+            { "ui.quest.toast.reputation_named", "📈 {0} +{1}" },
+            { "ui.quest.toast.attitude", "💚 Отношение +{0}" },
+            { "ui.quest.toast.attitude_named", "💚 {0} +{1}" },
+            { "ui.quest.toast.objective", "✅ Цель выполнена" },
+            { "ui.quest.toast.objective_named", "✅ {0}" },
+
+            // === LOC-13: MetaRequirement (клиентские fallback'и) ===
+            { "ui.metareq.server_unavailable", "Сервер требований недоступен" },
+            { "ui.metareq.no_access", "Нет доступа" },
         };
     }
 }

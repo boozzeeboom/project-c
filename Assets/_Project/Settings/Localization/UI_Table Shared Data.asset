@@ -735,6 +735,142 @@ MonoBehaviour:
     m_Key: ui.market.label.welcome
     m_Metadata:
       m_Items: []
+  - m_Id: 204250939301888
+    m_Key: ui.quest.toast_discovered
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251073519616
+    m_Key: ui.quest.cant_accept
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251086102528
+    m_Key: ui.quest.give_item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251094491136
+    m_Key: ui.quest.give_item_named
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251098685440
+    m_Key: ui.quest.take_item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251107074048
+    m_Key: ui.quest.take_item_named
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251115462656
+    m_Key: ui.quest.credits_gained
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251119656960
+    m_Key: ui.quest.reputation_gained
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251136434176
+    m_Key: ui.quest.reputation_faction_gained
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251149017088
+    m_Key: ui.quest.attitude_gained
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251161600000
+    m_Key: ui.quest.attitude_npc_gained
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251169988608
+    m_Key: ui.quest.objective_done
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251186765824
+    m_Key: ui.quest.objective_done_named
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251190960128
+    m_Key: ui.market.packs_suffix
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251207737344
+    m_Key: ui.market.boxed_suffix
+    m_Metadata:
+      m_Items: []
+  - m_Id: 204251224514560
+    m_Key: ui.character.btn.learn_skill
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226366640128
+    m_Key: ui.common.credits
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226479886336
+    m_Key: ui.repair.credits_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226492469248
+    m_Key: ui.repair.ship_class
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226500857856
+    m_Key: ui.repair.ship_power
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226509246464
+    m_Key: ui.repair.hull_broken
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226517635072
+    m_Key: ui.repair.hull_normal
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226526023680
+    m_Key: ui.repair.hull_repair_btn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226530217984
+    m_Key: ui.repair.hull_ok_btn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226538606592
+    m_Key: ui.repair.insufficient_funds
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226546995200
+    m_Key: ui.repair.recalled
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226555383808
+    m_Key: ui.repair.installed_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226567966720
+    m_Key: ui.repair.sell_btn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226580549632
+    m_Key: ui.repair.sell_status
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226588938240
+    m_Key: ui.repair.modules_for_slot
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226597326848
+    m_Key: ui.repair.install_request
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226601521152
+    m_Key: ui.repair.paint_cost
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226605715456
+    m_Key: ui.repair.paint_btn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 205226614104064
+    m_Key: ui.repair.paint_select
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

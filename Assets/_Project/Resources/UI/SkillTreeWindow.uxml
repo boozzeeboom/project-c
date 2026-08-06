@@ -23,13 +23,13 @@
    <!-- T-INP-10: LEFT-most — Slot Overview (что на каком слоте).
         Read-only индикатор биндов (assign делается в правой панели через bind-кнопки). -->
    <ui:VisualElement class="stw-slot-overview-col">
-    <ui:Label text="Слоты" class="stw-section-title" />
+    <ui:Label name="stw-section-slots" text="Слоты" class="stw-section-title" />
     <ui:VisualElement name="slot-overview-container" class="stw-slot-overview-container" />
    </ui:VisualElement>
 
    <!-- LEFT-CENTER: tree -->
    <ui:VisualElement class="stw-list-col">
-    <ui:Label text="Навыки" class="stw-section-title" />
+    <ui:Label name="stw-section-skills" text="Навыки" class="stw-section-title" />
     <ui:ScrollView name="tree-canvas-scroll" class="stw-scroll" mode="HorizontalAndVertical">
      <ui:VisualElement name="tree-content" class="tree-content" />
     </ui:ScrollView>
@@ -49,11 +49,11 @@
       <ui:Label name="detail-tier"    text="" class="stw-detail-tier" />
      </ui:VisualElement>
      <ui:VisualElement class="stw-detail-prereq">
-      <ui:Label text="Требуется:" class="stw-detail-prereq-title" />
+      <ui:Label name="stw-detail-prereq-title" text="Требуется:" class="stw-detail-prereq-title" />
       <ui:VisualElement name="detail-prereq-container" class="stw-detail-prereq-container" />
      </ui:VisualElement>
      <ui:VisualElement class="stw-detail-deps">
-      <ui:Label text="Откроет:" class="stw-detail-deps-title" />
+      <ui:Label name="stw-detail-deps-title" text="Откроет:" class="stw-detail-deps-title" />
       <ui:VisualElement name="detail-deps-container" class="stw-detail-deps-container" />
      </ui:VisualElement>
     </ui:ScrollView>

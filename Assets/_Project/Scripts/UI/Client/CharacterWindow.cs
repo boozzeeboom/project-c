@@ -2662,6 +2662,7 @@ namespace ProjectC.UI.Client
                 if (root == null) return;
                 var btn = root.Q<VisualElement>("open-skill-tree-btn");
                 if (btn == null) return;
+                if (btn is Label lbl) lbl.text = Loc.Get("ui.character.btn.learn_skill");
                 btn.RegisterCallback<ClickEvent>(_ => {
                     var stw = ProjectC.Skills.UI.SkillTreeWindow.Instance;
                     if (stw != null)
@@ -2682,6 +2683,7 @@ namespace ProjectC.UI.Client
                 if (root == null) return;
                 var btn = root.Q<VisualElement>("open-social-skill-tree-btn");
                 if (btn == null) return;
+                if (btn is Label lbl) lbl.text = Loc.Get("ui.character.btn.learn_skill");
                 btn.RegisterCallback<ClickEvent>(_ => {
                     var sstw = ProjectC.Skills.UI.SocialSkillTreeWindow.Instance;
                     if (sstw != null)
@@ -2702,6 +2704,7 @@ namespace ProjectC.UI.Client
                 if (root == null) return;
                 var btn = root.Q<VisualElement>("open-customisation-btn");
                 if (btn == null) return;
+                if (btn is Label lbl) lbl.text = Loc.Get("ui.character.btn.customisation");
                 btn.RegisterCallback<ClickEvent>(_ =>
                 {
                     var cw = ProjectC.Customisation.UI.CustomisationWindow.Instance;

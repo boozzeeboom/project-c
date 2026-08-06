@@ -161,7 +161,18 @@ namespace ProjectC.UI.Client
             // Переводим world-координаты в координаты root
             var rootWorld = root.worldBound;
             float popupLeft = btnRect.x - rootWorld.x;
-            float popupTop = btnRect.y - rootWorld.y + btnHeight;
+            float btnTop = btnRect.y - rootWorld.y;
+
+            // Адаптивное направление: если снизу мало места — открываем вверх
+            float screenHeight = root.resolvedStyle.height > 0 ? root.resolvedStyle.height : 1080f;
+            float spaceBelow = screenHeight - (btnTop + btnHeight);
+            float spaceAbove = btnTop;
+            float popupHeight = Mathf.Min(_choices.Count * 30f + 8f, 220f); // ~30px per item + padding
+            float popupTop;
+            if (spaceBelow >= popupHeight || spaceBelow >= spaceAbove)
+                popupTop = btnTop + btnHeight; // вниз
+            else
+                popupTop = btnTop - popupHeight; // вверх
 
             // Popup overlay — USS class + inline fallback styles
             _popupContainer = new VisualElement();
@@ -178,7 +189,7 @@ namespace ProjectC.UI.Client
                 _popupContainer.style.borderBottomLeftRadius = _popupContainer.style.borderBottomRightRadius = 4f;
             _popupContainer.style.paddingTop = _popupContainer.style.paddingBottom = 4f;
             _popupContainer.style.paddingLeft = _popupContainer.style.paddingRight = 4f;
-            _popupContainer.style.maxHeight = 220f;
+            _popupContainer.style.maxHeight = popupHeight;
             _popupContainer.style.flexDirection = FlexDirection.Column;
 
             // Позиционируем под кнопкой
@@ -189,7 +200,7 @@ namespace ProjectC.UI.Client
             // ScrollView для скролла (overflow: auto не работает в UI Toolkit)
             var scrollView = new ScrollView();
             scrollView.style.flexGrow = 1f;
-            scrollView.style.maxHeight = 210f; // 220 - padding
+            scrollView.style.maxHeight = popupHeight - 10f; // минус padding попапа
             scrollView.mode = ScrollViewMode.Vertical;
             scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             scrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;

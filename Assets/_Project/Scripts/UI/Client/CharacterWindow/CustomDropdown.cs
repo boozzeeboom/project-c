@@ -154,10 +154,14 @@ namespace ProjectC.UI.Client
             // Всегда добавляем в корень панели (поверх всего)
             var root = panel.visualTree;
 
-            // Позиция кнопки относительно root через ChangeCoordinatesTo
-            var btnTopLeft = _button.ChangeCoordinatesTo(root, Vector2.zero);
-            float btnHeight = _button.resolvedStyle.height > 0 ? _button.resolvedStyle.height : 24f;
-            float btnWidth = _button.resolvedStyle.width > 10f ? _button.resolvedStyle.width : 200f;
+            // Позиция и размер кнопки: worldBound надёжнее resolvedStyle (может быть 0 до layout)
+            var btnRect = _button.worldBound;
+            float btnWidth = btnRect.width > 10f ? btnRect.width : 200f;
+            float btnHeight = btnRect.height > 0f ? btnRect.height : 24f;
+            // Переводим world-координаты в координаты root
+            var rootWorld = root.worldBound;
+            float popupLeft = btnRect.x - rootWorld.x;
+            float popupTop = btnRect.y - rootWorld.y + btnHeight;
 
             // Popup overlay — USS class + inline fallback styles
             _popupContainer = new VisualElement();
@@ -178,8 +182,8 @@ namespace ProjectC.UI.Client
             _popupContainer.style.flexDirection = FlexDirection.Column;
 
             // Позиционируем под кнопкой
-            _popupContainer.style.left = btnTopLeft.x;
-            _popupContainer.style.top = btnTopLeft.y + btnHeight;
+            _popupContainer.style.left = popupLeft;
+            _popupContainer.style.top = popupTop;
             _popupContainer.style.width = btnWidth;
 
             // Items
@@ -232,7 +236,7 @@ namespace ProjectC.UI.Client
             _popupContainer.BringToFront();
             _popupOpen = true;
             _openDropdowns.Add(this);
-            Debug.Log($"[CustomDropdown] ShowPopup: items={_choices.Count}, pos=({btnTopLeft.x:F0},{btnTopLeft.y:F0}), size=({btnWidth:F0}x{btnHeight:F0}), openCount={_openDropdowns.Count}");
+            Debug.Log($"[CustomDropdown] ShowPopup: items={_choices.Count}, worldBound=({btnRect.x:F0},{btnRect.y:F0},{btnRect.width:F0}x{btnRect.height:F0}), popupPos=({popupLeft:F0},{popupTop:F0}), openCount={_openDropdowns.Count}");
 
             // Закрытие при клике вне попапа
             root.RegisterCallback<PointerDownEvent>(OnRootPointerDown, TrickleDown.TrickleDown);

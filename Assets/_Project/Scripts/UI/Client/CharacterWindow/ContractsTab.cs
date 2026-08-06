@@ -52,11 +52,18 @@ namespace ProjectC.UI.Client
         private int _selectedContractItem = -1;
 
         // Filters — только "Все" | "Активные" | "Завершённые"
-        private List<string> _contractFilterStateOptions  = new List<string> {
-            Loc.Get("ui.character.filter.all"),
-            Loc.Get("ui.character.filter.active"),
-            Loc.Get("ui.character.filter.completed")
-        };
+        // BUGFIX: Loc.Get() в field initializer — до OnEnable → LocalizationSettings может быть не готов.
+        private List<string> _contractFilterStateOptions;
+
+        private void EnsureFilterOptions()
+        {
+            if (_contractFilterStateOptions == null)
+                _contractFilterStateOptions = new List<string> {
+                    Loc.Get("ui.character.filter.all"),
+                    Loc.Get("ui.character.filter.active"),
+                    Loc.Get("ui.character.filter.completed")
+                };
+        }
 
         // Subscription
         private ContractClientState _contractState;
@@ -187,6 +194,7 @@ namespace ProjectC.UI.Client
 
         private void ConfigureContractFilters()
         {
+            EnsureFilterOptions();
             // T-P19: только контракты — source показывает "Контракты" (фикс), state = фильтр
             if (_filterSource != null)
             {

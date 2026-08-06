@@ -226,6 +226,518 @@ MonoBehaviour:
     m_Localized: End Conversation
     m_Metadata:
       m_Items: []
+  - m_Id: 172513647566848
+    m_Localized: CONTINUE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513785978880
+    m_Localized: SETTINGS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513798561792
+    m_Localized: RESCUE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513802756096
+    m_Localized: EXIT TO MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513806950400
+    m_Localized: MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513815339008
+    m_Localized: All
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513823727616
+    m_Localized: Contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513827921920
+    m_Localized: Quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513832116224
+    m_Localized: Active
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513844699136
+    m_Localized: Available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513848893440
+    m_Localized: Completed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513853087744
+    m_Localized: All types
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513861476352
+    m_Localized: Player (Owner)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513869864960
+    m_Localized: Player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513874059264
+    m_Localized: "\u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513882447872
+    m_Localized: 'Bonuses: '
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513890836480
+    m_Localized: EQUIP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513895030784
+    m_Localized: UNEQUIP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513911808000
+    m_Localized: DROP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513920196608
+    m_Localized: No reputation data
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513924390912
+    m_Localized: No attitude data
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513928585216
+    m_Localized: No active or available contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513936973824
+    m_Localized: Select an item on the left
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513945362432
+    m_Localized: Select a contract from the list
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513949556736
+    m_Localized: This contract is no longer available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513962139648
+    m_Localized: This contract is not active
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513966333952
+    m_Localized: Request sent...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513974722560
+    m_Localized: No active contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513983111168
+    m_Localized: Loading contracts...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513987305472
+    m_Localized: DISCOVERED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513991499776
+    m_Localized: OFFERED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513991499777
+    m_Localized: ACTIVE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513999888384
+    m_Localized: COMPLETED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514004082688
+    m_Localized: TURNED IN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514012471296
+    m_Localized: FAILED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514020859904
+    m_Localized: Track
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514029248512
+    m_Localized: Untrack
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514033442816
+    m_Localized: Discovered quests list unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514041831424
+    m_Localized: Quest rejection not yet implemented (awaiting server)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514050220032
+    m_Localized: Learn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514054414336
+    m_Localized: Forget
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514062802944
+    m_Localized: Standard
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514071191552
+    m_Localized: Urgent
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514075385856
+    m_Localized: Receipt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514083774464
+    m_Localized: Primum
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514092163072
+    m_Localized: Secundus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514096357376
+    m_Localized: Tertius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514104745984
+    m_Localized: Quartus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514113134592
+    m_Localized: No available ships. Find a key in the world.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514113134593
+    m_Localized: 'Hull: BROKEN'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514125717504
+    m_Localized: "Hull: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514125717505
+    m_Localized: "Fuel: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514134106112
+    m_Localized: "Cargo: \u2014 (no data)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514134106113
+    m_Localized: 'Modules: 0'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514142494720
+    m_Localized: Hold empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514146689024
+    m_Localized: Loading market...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514150883328
+    m_Localized: No market data
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514155077632
+    m_Localized: Exchange server unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514163466240
+    m_Localized: Exchange server not initialized. Wait a moment.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514167660544
+    m_Localized: Select an item in the left list
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514180243456
+    m_Localized: Select a product in the right list
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514188632064
+    m_Localized: Show all goods
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514192826368
+    m_Localized: Show my goods
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514197020672
+    m_Localized: Select a ship first
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514201214976
+    m_Localized: No contracts at this location
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514205409280
+    m_Localized: Bought
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514213797888
+    m_Localized: Sold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514217992192
+    m_Localized: Loading
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514222186496
+    m_Localized: Unloading
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514226380800
+    m_Localized: Select an item in inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514230575104
+    m_Localized: Select a crate in the hold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514238963712
+    m_Localized: Cargo hold server unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514247352320
+    m_Localized: 'Unpacking unavailable: no exchange rate for this item'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717250338816
+    m_Localized: 'Installed: empty'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087552
+    m_Localized: Module database not set.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087553
+    m_Localized: Ship not selected.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087554
+    m_Localized: Install
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087555
+    m_Localized: Insufficient power
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087556
+    m_Localized: No compatible modules for this slot.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087557
+    m_Localized: 'Available modules:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281856
+    m_Localized: "Done \u2713"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281857
+    m_Localized: Hull repair request sent...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281858
+    m_Localized: Paint request sent...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281859
+    m_Localized: No free pads!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281860
+    m_Localized: Free
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281861
+    m_Localized: Ship not spawned.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281862
+    m_Localized: "Cost: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278142468096
+    m_Localized: 'Active: {0}, available: {1}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278243131392
+    m_Localized: 'Factions: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278251520000
+    m_Localized: 'Attitudes: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 186222331731968
+    m_Localized: 'Active contracts: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200138342400
+    m_Localized: Character
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200289337344
+    m_Localized: Ship
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200301920256
+    m_Localized: Knowledge
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200310308864
+    m_Localized: Contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200318697472
+    m_Localized: Inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200322891776
+    m_Localized: Quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200331280384
+    m_Localized: Player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200343863296
+    m_Localized: Change Appearance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200352251904
+    m_Localized: Knowledge
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200356446208
+    m_Localized: Quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200364834816
+    m_Localized: Clothing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200369029120
+    m_Localized: Modules
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200377417728
+    m_Localized: Stats
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200385806336
+    m_Localized: Combat Skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200394194944
+    m_Localized: Social Skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200402583552
+    m_Localized: Factions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200415166464
+    m_Localized: NPCs
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200419360768
+    m_Localized: Skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200427749376
+    m_Localized: Recipes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200436137984
+    m_Localized: Active
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200440332288
+    m_Localized: Completed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200448720896
+    m_Localized: Failed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200452915200
+    m_Localized: Discovered
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200469692416
+    m_Localized: "Location: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921768345600
+    m_Localized: Market
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921944506368
+    m_Localized: Warehouse / Hold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921957089280
+    m_Localized: Contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921969672192
+    m_Localized: Exchanger
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921973866496
+    m_Localized: Buy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921990643712
+    m_Localized: Sell
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922003226624
+    m_Localized: Load
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922028392448
+    m_Localized: Unload
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922070335488
+    m_Localized: Accept
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922099695616
+    m_Localized: Complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922150027264
+    m_Localized: Fail
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922187776000
+    m_Localized: Close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922275856384
+    m_Localized: Open the market to trade
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -299,6 +299,24 @@ namespace ProjectC.UI.Client
             // T-KNOWLEDGE-V2: инициализируем каталог фракций
             if (ProjectC.Knowledge.FactionCatalog.Instance == null)
                 new ProjectC.Knowledge.FactionCatalog();
+
+            // BUGFIX: Loc.Get() нельзя вызывать в field initializer (конструктор MonoBehaviour)
+            InitFilterOptionCaches();
+        }
+
+        private void InitFilterOptionCaches()
+        {
+            _contractFilterSourceOptions = new List<string> {
+                Loc.Get("ui.character.filter.all"),
+                Loc.Get("ui.character.filter.contracts"),
+                Loc.Get("ui.character.filter.quests")
+            };
+            _contractFilterStateOptions = new List<string> {
+                Loc.Get("ui.character.filter.all"),
+                Loc.Get("ui.character.filter.active"),
+                Loc.Get("ui.character.filter.available")
+            };
+            _inventoryFilterStateOptions = new List<string> { Loc.Get("ui.character.filter.all_types") };
         }
 
         private void OnEnable()
@@ -650,6 +668,16 @@ namespace ProjectC.UI.Client
             _tabInventory = _root.Q<Button>("tab-inventory");
             _tabQuests = _root.Q<Button>("tab-quests");
 
+            // LOC: set tab button text via localization
+            if (_tabCharacter != null) _tabCharacter.text = Loc.Get("ui.character.tab.character");
+            if (_tabShip != null) _tabShip.text = Loc.Get("ui.character.tab.ship");
+            if (_tabKnowledge != null) _tabKnowledge.text = Loc.Get("ui.character.tab.knowledge");
+            if (_tabContracts != null) _tabContracts.text = Loc.Get("ui.character.tab.contracts");
+            if (_tabInventory != null) _tabInventory.text = Loc.Get("ui.character.tab.inventory");
+            if (_tabQuests != null) _tabQuests.text = Loc.Get("ui.character.tab.quests");
+            if (_characterNameLabel != null) _characterNameLabel.text = Loc.Get("ui.character.label.player");
+            if (_locationLabel != null) _locationLabel.text = Loc.Get("ui.character.location");
+
             _knowledgeFactionsList = _root.Q<ListView>("knowledge-factions-list");
             _knowledgeNpcList = _root.Q<ListView>("knowledge-npc-list");
             _knowledgeSkillsList = _root.Q<ListView>("knowledge-skills-list");
@@ -838,9 +866,11 @@ namespace ProjectC.UI.Client
 
             // ---- Initial state ----
             SwitchTab(_activeTab);
-            // REFACTOR 2026-06-05 v2: USS с !important перебивает UnityDefaultRuntimeTheme,
-            // поэтому отдельная программная стилизация больше не нужна.
-            SetVisible(visibleOnStart);
+            // BUGFIX: окно должно быть скрыто при старте (visibleOnStart=false),
+            // но НЕ через SetVisible() — та дёргает Cursor.lockState.
+            // Просто ставим display:none на main-container напрямую.
+            if (_mainContainer != null)
+                _mainContainer.style.display = visibleOnStart ? DisplayStyle.Flex : DisplayStyle.None;
             _doc.rootVisualElement.MarkDirtyRepaint();
             if (_doc.rootVisualElement != null)
             {
@@ -933,18 +963,11 @@ namespace ProjectC.UI.Client
         // Filter configuration per tab
         // ============================================================
 
-        private List<string> _contractFilterSourceOptions = new List<string> {
-            Loc.Get("ui.character.filter.all"),
-            Loc.Get("ui.character.filter.contracts"),
-            Loc.Get("ui.character.filter.quests")
-        };
-        private List<string> _contractFilterStateOptions  = new List<string> {
-            Loc.Get("ui.character.filter.all"),
-            Loc.Get("ui.character.filter.active"),
-            Loc.Get("ui.character.filter.available")
-        };
+        // Initialized lazily in Awake() — Loc.Get() нельзя вызывать в field initializer (конструкторе)
+        private List<string> _contractFilterSourceOptions;
+        private List<string> _contractFilterStateOptions;
         private List<string> _inventoryFilterSourceOptionsCache;  // динамически по ItemType
-        private List<string> _inventoryFilterStateOptions  = new List<string> { Loc.Get("ui.character.filter.all_types") };
+        private List<string> _inventoryFilterStateOptions;
 
         private void ConfigureContractFilters()
         {
@@ -3580,24 +3603,37 @@ namespace ProjectC.UI.Client
         // Visibility (4 FIX'а из MarketWindow)
         // ============================================================
 
+        private bool _showInProgress;
+
         public void Show()
         {
-            // Defensive guard: если _doc == null (Awake не успел), инициализируем лениво.
-            if (_doc == null) _doc = GetComponent<UIDocument>();
-            if (_doc == null)
+            // Guard: prevent recursive Show→EnsureBuilt→Show loop
+            if (_showInProgress) return;
+            _showInProgress = true;
+
+            try
             {
-                Debug.LogError("[CharacterWindow] Show(): нет UIDocument на GameObject");
-                return;
+                // Defensive guard: если _doc == null (Awake не успел), инициализируем лениво.
+                if (_doc == null) _doc = GetComponent<UIDocument>();
+                if (_doc == null)
+                {
+                    Debug.LogError("[CharacterWindow] Show(): нет UIDocument на GameObject");
+                    return;
+                }
+                // FIX: idempotent — если по какой-то причине дерево потеряно, пересоберём.
+                if (!_built || _mainContainer == null || !IsLayoutValid())
+                {
+                    Debug.LogWarning("[CharacterWindow] Show(): UI not built or layout invalid, rebuilding");
+                    EnsureBuilt();
+                }
+                // FIX: Включаем приём pointer events на root, чтобы клики по окну работали.
+                if (_root != null) _root.pickingMode = PickingMode.Position;
+                SetVisible(true);
             }
-            // FIX: idempotent — если по какой-то причине дерево потеряно, пересоберём.
-            if (!_built || _mainContainer == null || !IsLayoutValid())
+            finally
             {
-                Debug.LogWarning("[CharacterWindow] Show(): UI not built or layout invalid, rebuilding");
-                EnsureBuilt();
+                _showInProgress = false;
             }
-            // FIX: Включаем приём pointer events на root, чтобы клики по окну работали.
-            if (_root != null) _root.pickingMode = PickingMode.Position;
-            SetVisible(true);
 
             RefreshTimeInfo();
 

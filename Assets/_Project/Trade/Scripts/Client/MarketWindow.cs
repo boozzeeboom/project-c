@@ -253,6 +253,7 @@ namespace ProjectC.Trade.Client
             _completeBtn = _root.Q<Button>("complete-btn");
             _failBtn = _root.Q<Button>("fail-btn");
             _messageLabel = _root.Q<Label>("message-label");
+            if (_messageLabel != null) _messageLabel.text = Loc.Get("ui.market.label.welcome");
             _qtyLabel = _root.Q<Label>("qty-label-value");
             _warehouseQtyLabel = _root.Q<Label>("warehouse-qty-label-value");
             // R3-qty: круговые кнопки ±
@@ -382,20 +383,20 @@ namespace ProjectC.Trade.Client
             var contractsTabBtn = _root.Q<Button>("tab-contracts");
             // T-E04: 4-й таб ОБМЕННИК
             var exchangeTabBtn = _root.Q<Button>("tab-exchanger");
-            if (marketTabBtn != null) marketTabBtn.clicked += () => SwitchTab("market");
-            if (warehouseTabBtn != null) warehouseTabBtn.clicked += () => SwitchTab("warehouse");
-            if (contractsTabBtn != null) contractsTabBtn.clicked += () => SwitchTab("contracts");
-            if (exchangeTabBtn != null) exchangeTabBtn.clicked += () => SwitchTab("exchange");
+            if (marketTabBtn != null) { marketTabBtn.clicked += () => SwitchTab("market"); marketTabBtn.text = Loc.Get("ui.market.tab.market"); }
+            if (warehouseTabBtn != null) { warehouseTabBtn.clicked += () => SwitchTab("warehouse"); warehouseTabBtn.text = Loc.Get("ui.market.tab.warehouse"); }
+            if (contractsTabBtn != null) { contractsTabBtn.clicked += () => SwitchTab("contracts"); contractsTabBtn.text = Loc.Get("ui.market.tab.contracts"); }
+            if (exchangeTabBtn != null) { exchangeTabBtn.clicked += () => SwitchTab("exchange"); exchangeTabBtn.text = Loc.Get("ui.market.tab.exchanger"); }
 
-            if (_buyBtn != null) _buyBtn.clicked += OnBuyClicked;
-            if (_sellBtn != null) _sellBtn.clicked += OnSellClicked;
-            if (_loadBtn != null) _loadBtn.clicked += OnLoadClicked;
-            if (_unloadBtn != null) _unloadBtn.clicked += OnUnloadClicked;
-            if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
+            if (_buyBtn != null) { _buyBtn.clicked += OnBuyClicked; _buyBtn.text = Loc.Get("ui.market.btn.buy"); }
+            if (_sellBtn != null) { _sellBtn.clicked += OnSellClicked; _sellBtn.text = Loc.Get("ui.market.btn.sell"); }
+            if (_loadBtn != null) { _loadBtn.clicked += OnLoadClicked; _loadBtn.text = Loc.Get("ui.market.btn.load"); }
+            if (_unloadBtn != null) { _unloadBtn.clicked += OnUnloadClicked; _unloadBtn.text = Loc.Get("ui.market.btn.unload"); }
+            if (_closeBtn != null) { _closeBtn.clicked += OnCloseClicked; _closeBtn.text = Loc.Get("ui.market.btn.close"); }
             // C2-refactor: contract action handlers
-            if (_acceptBtn != null) _acceptBtn.clicked += OnAcceptContractClicked;
-            if (_completeBtn != null) _completeBtn.clicked += OnCompleteContractClicked;
-            if (_failBtn != null) _failBtn.clicked += OnFailContractClicked;
+            if (_acceptBtn != null) { _acceptBtn.clicked += OnAcceptContractClicked; _acceptBtn.text = Loc.Get("ui.market.btn.accept"); }
+            if (_completeBtn != null) { _completeBtn.clicked += OnCompleteContractClicked; _completeBtn.text = Loc.Get("ui.market.btn.complete"); }
+            if (_failBtn != null) { _failBtn.clicked += OnFailContractClicked; _failBtn.text = Loc.Get("ui.market.btn.fail"); }
             // T-E04: exchange button handlers
             if (_packBtn != null) _packBtn.clicked += OnPackClicked;
             if (_unpackBtn != null) _unpackBtn.clicked += OnUnpackClicked;

@@ -227,6 +227,519 @@ MonoBehaviour:
     m_Localized: "Gespr\xE4ch beenden"
     m_Metadata:
       m_Items: []
+  - m_Id: 172513647566848
+    m_Localized: FORTSETZEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513785978880
+    m_Localized: EINSTELLUNGEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513798561792
+    m_Localized: RETTUNG
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513802756096
+    m_Localized: "ZUM MEN\xDC"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513806950400
+    m_Localized: "MEN\xDC"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513815339008
+    m_Localized: Alle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513823727616
+    m_Localized: "Vertr\xE4ge"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513827921920
+    m_Localized: Quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513832116224
+    m_Localized: Aktiv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513844699136
+    m_Localized: "Verf\xFCgbar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513848893440
+    m_Localized: Abgeschlossen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513853087744
+    m_Localized: Alle Typen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513861476352
+    m_Localized: Spieler (Besitzer)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513869864960
+    m_Localized: Spieler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513874059264
+    m_Localized: "\u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513882447872
+    m_Localized: 'Boni: '
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513890836480
+    m_Localized: "AUSR\xDCSTEN"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513895030784
+    m_Localized: ABLEGEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513911808000
+    m_Localized: ABLEGEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513920196608
+    m_Localized: Keine Rufdaten
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513924390912
+    m_Localized: Keine Einstellungsdaten
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513928585216
+    m_Localized: "Keine aktiven oder verf\xFCgbaren Vertr\xE4ge"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513936973824
+    m_Localized: "W\xE4hlen Sie links einen Gegenstand"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513945362432
+    m_Localized: "W\xE4hlen Sie einen Vertrag aus der Liste"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513949556736
+    m_Localized: "Dieser Vertrag ist nicht mehr verf\xFCgbar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513962139648
+    m_Localized: Dieser Vertrag ist nicht aktiv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513966333952
+    m_Localized: Anfrage gesendet...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513974722560
+    m_Localized: "Keine aktiven Vertr\xE4ge"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513983111168
+    m_Localized: "Vertr\xE4ge werden geladen..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513987305472
+    m_Localized: ENTDECKT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513991499776
+    m_Localized: ANGEBOTEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513991499777
+    m_Localized: AKTIV
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513999888384
+    m_Localized: ABGESCHLOSSEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514004082688
+    m_Localized: ABGEGEBEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514012471296
+    m_Localized: FEHLGESCHLAGEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514020859904
+    m_Localized: Verfolgen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514029248512
+    m_Localized: Nicht mehr verfolgen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514033442816
+    m_Localized: "Liste der entdeckten Quests nicht verf\xFCgbar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514041831424
+    m_Localized: Quest-Ablehnung noch nicht implementiert (wartet auf Server)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514050220032
+    m_Localized: Lernen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514054414336
+    m_Localized: Vergessen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514062802944
+    m_Localized: Standard
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514071191552
+    m_Localized: Dringend
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514075385856
+    m_Localized: Quittung
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514083774464
+    m_Localized: Primum
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514092163072
+    m_Localized: Secundus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514096357376
+    m_Localized: Tertius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514104745984
+    m_Localized: Quartus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514113134592
+    m_Localized: "Keine verf\xFCgbaren Schiffe. Finden Sie einen Schl\xFCssel in
+      der Welt."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514113134593
+    m_Localized: "H\xFClle: GEBROCHEN"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514125717504
+    m_Localized: "H\xFClle: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514125717505
+    m_Localized: "Treibstoff: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514134106112
+    m_Localized: "Fracht: \u2014 (keine Daten)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514134106113
+    m_Localized: 'Module: 0'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514142494720
+    m_Localized: Frachtraum leer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514146689024
+    m_Localized: Markt wird geladen...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514150883328
+    m_Localized: Keine Marktdaten
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514155077632
+    m_Localized: "Exchange-Server nicht verf\xFCgbar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514163466240
+    m_Localized: Exchange-Server nicht initialisiert. Warten Sie einen Moment.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514167660544
+    m_Localized: "W\xE4hlen Sie einen Gegenstand in der linken Liste"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514180243456
+    m_Localized: "W\xE4hlen Sie ein Produkt in der rechten Liste"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514188632064
+    m_Localized: Alle Waren anzeigen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514192826368
+    m_Localized: Meine Waren anzeigen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514197020672
+    m_Localized: "W\xE4hlen Sie zuerst ein Schiff"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514201214976
+    m_Localized: "Keine Vertr\xE4ge an diesem Ort"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514205409280
+    m_Localized: Gekauft
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514213797888
+    m_Localized: Verkauft
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514217992192
+    m_Localized: Laden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514222186496
+    m_Localized: Entladen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514226380800
+    m_Localized: "W\xE4hlen Sie einen Gegenstand im Inventar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514230575104
+    m_Localized: "W\xE4hlen Sie eine Kiste im Frachtraum"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514238963712
+    m_Localized: "Frachtraum-Server nicht verf\xFCgbar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514247352320
+    m_Localized: "Entpacken nicht verf\xFCgbar: kein Wechselkurs f\xFCr diesen Artikel"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717250338816
+    m_Localized: 'Installiert: leer'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087552
+    m_Localized: Modul-Datenbank nicht festgelegt.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087553
+    m_Localized: "Schiff nicht ausgew\xE4hlt."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087554
+    m_Localized: Installieren
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087555
+    m_Localized: "Ungen\xFCgend Energie"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087556
+    m_Localized: "Keine kompatiblen Module f\xFCr diesen Slot."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087557
+    m_Localized: "Verf\xFCgbare Module:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281856
+    m_Localized: "Fertig \u2713"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281857
+    m_Localized: Rumpfreparaturanfrage gesendet...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281858
+    m_Localized: Lackieranfrage gesendet...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281859
+    m_Localized: Keine freien Pads!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281860
+    m_Localized: Kostenlos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281861
+    m_Localized: Schiff nicht gespawnt.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281862
+    m_Localized: "Kosten: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278142468096
+    m_Localized: "Aktiv: {0}, verf\xFCgbar: {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278243131392
+    m_Localized: 'Fraktionen: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278251520000
+    m_Localized: 'Einstellungen: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 186222331731968
+    m_Localized: "Aktive Vertr\xE4ge: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200138342400
+    m_Localized: Charakter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200289337344
+    m_Localized: Schiff
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200301920256
+    m_Localized: Wissen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200310308864
+    m_Localized: "Vertr\xE4ge"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200318697472
+    m_Localized: Inventar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200322891776
+    m_Localized: Quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200331280384
+    m_Localized: Spieler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200343863296
+    m_Localized: "Aussehen \xE4ndern"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200352251904
+    m_Localized: Wissen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200356446208
+    m_Localized: Quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200364834816
+    m_Localized: Kleidung
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200369029120
+    m_Localized: Module
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200377417728
+    m_Localized: Werte
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200385806336
+    m_Localized: "Kampff\xE4higkeiten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200394194944
+    m_Localized: "Soziale F\xE4higkeiten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200402583552
+    m_Localized: Fraktionen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200415166464
+    m_Localized: NPCs
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200419360768
+    m_Localized: "F\xE4higkeiten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200427749376
+    m_Localized: Rezepte
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200436137984
+    m_Localized: Aktiv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200440332288
+    m_Localized: Abgeschlossen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200448720896
+    m_Localized: Fehlgeschlagen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200452915200
+    m_Localized: Entdeckt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200469692416
+    m_Localized: "Ort: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921768345600
+    m_Localized: Markt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921944506368
+    m_Localized: Lager / Frachtraum
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921957089280
+    m_Localized: "Vertr\xE4ge"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921969672192
+    m_Localized: Umtausch
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921973866496
+    m_Localized: Kaufen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921990643712
+    m_Localized: Verkaufen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922003226624
+    m_Localized: Laden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922028392448
+    m_Localized: Entladen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922070335488
+    m_Localized: Annehmen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922099695616
+    m_Localized: "Abschlie\xDFen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922150027264
+    m_Localized: Scheitern
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922187776000
+    m_Localized: "Schlie\xDFen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922275856384
+    m_Localized: "\xD6ffnen Sie den Markt zum Handeln"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

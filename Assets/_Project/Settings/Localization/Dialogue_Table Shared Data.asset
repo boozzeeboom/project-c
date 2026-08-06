@@ -14,7 +14,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
   m_TableCollectionName: Dialogue_Table
   m_TableCollectionNameGuidString: 95c3c9c61b07ef1488d7184bd4af61f1
-  m_Entries: []
+  m_Entries:
+  - m_Id: 178693698658304
+    m_Key: dialogue.npc.mira_01.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693832876032
+    m_Key: dialogue.npc.mira_01.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693845458944
+    m_Key: dialogue.tree.mira_default.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693853847552
+    m_Key: dialogue.tree.mira_default.node.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693862236160
+    m_Key: dialogue.tree.DialogTree_New.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693870624768
+    m_Key: dialogue.tree.DialogTree_New.node.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693874819072
+    m_Key: dialogue.quest.collect_copper_ore.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693879013376
+    m_Key: dialogue.quest.collect_copper_ore.description
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

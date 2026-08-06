@@ -571,6 +571,170 @@ MonoBehaviour:
     m_Key: ui.repair.cost_empty
     m_Metadata:
       m_Items: []
+  - m_Id: 182278142468096
+    m_Key: ui.character.active_available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278243131392
+    m_Key: ui.character.factions_count
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278251520000
+    m_Key: ui.character.attitudes_count
+    m_Metadata:
+      m_Items: []
+  - m_Id: 186222331731968
+    m_Key: ui.character.active_contracts_count
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200138342400
+    m_Key: ui.character.tab.character
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200289337344
+    m_Key: ui.character.tab.ship
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200301920256
+    m_Key: ui.character.tab.knowledge
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200310308864
+    m_Key: ui.character.tab.contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200318697472
+    m_Key: ui.character.tab.inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200322891776
+    m_Key: ui.character.tab.quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200331280384
+    m_Key: ui.character.label.player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200343863296
+    m_Key: ui.character.btn.customisation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200352251904
+    m_Key: ui.character.section.knowledge
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200356446208
+    m_Key: ui.character.section.quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200364834816
+    m_Key: ui.character.section.clothing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200369029120
+    m_Key: ui.character.section.modules
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200377417728
+    m_Key: ui.character.section.stats
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200385806336
+    m_Key: ui.character.section.combat
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200394194944
+    m_Key: ui.character.section.social
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200402583552
+    m_Key: ui.character.knowledge.factions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200415166464
+    m_Key: ui.character.knowledge.npc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200419360768
+    m_Key: ui.character.knowledge.skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200427749376
+    m_Key: ui.character.knowledge.recipes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200436137984
+    m_Key: ui.character.quests.active
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200440332288
+    m_Key: ui.character.quests.completed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200448720896
+    m_Key: ui.character.quests.failed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200452915200
+    m_Key: ui.character.quests.discovered
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200469692416
+    m_Key: ui.character.location
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921768345600
+    m_Key: ui.market.tab.market
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921944506368
+    m_Key: ui.market.tab.warehouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921957089280
+    m_Key: ui.market.tab.contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921969672192
+    m_Key: ui.market.tab.exchanger
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921973866496
+    m_Key: ui.market.btn.buy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921990643712
+    m_Key: ui.market.btn.sell
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922003226624
+    m_Key: ui.market.btn.load
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922028392448
+    m_Key: ui.market.btn.unload
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922070335488
+    m_Key: ui.market.btn.accept
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922099695616
+    m_Key: ui.market.btn.complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922150027264
+    m_Key: ui.market.btn.fail
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922187776000
+    m_Key: ui.market.btn.close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922275856384
+    m_Key: ui.market.label.welcome
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

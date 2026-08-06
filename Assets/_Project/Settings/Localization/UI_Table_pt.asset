@@ -227,6 +227,520 @@ MonoBehaviour:
     m_Localized: Encerrar conversa
     m_Metadata:
       m_Items: []
+  - m_Id: 172513647566848
+    m_Localized: CONTINUAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513785978880
+    m_Localized: "CONFIGURA\xC7\xD5ES"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513798561792
+    m_Localized: RESGATE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513802756096
+    m_Localized: SAIR PARA O MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513806950400
+    m_Localized: MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513815339008
+    m_Localized: Todos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513823727616
+    m_Localized: Contratos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513827921920
+    m_Localized: "Miss\xF5es"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513832116224
+    m_Localized: Ativos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513844699136
+    m_Localized: "Dispon\xEDveis"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513848893440
+    m_Localized: "Conclu\xEDdos"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513853087744
+    m_Localized: Todos os tipos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513861476352
+    m_Localized: Jogador (Dono)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513869864960
+    m_Localized: Jogador
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513874059264
+    m_Localized: "\u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513882447872
+    m_Localized: "B\xF4nus: "
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513890836480
+    m_Localized: EQUIPAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513895030784
+    m_Localized: DESEQUIPAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513911808000
+    m_Localized: LARGAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513920196608
+    m_Localized: "Sem dados de reputa\xE7\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513924390912
+    m_Localized: Sem dados de atitude
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513928585216
+    m_Localized: "Sem contratos ativos ou dispon\xEDveis"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513936973824
+    m_Localized: "Selecione um item \xE0 esquerda"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513945362432
+    m_Localized: Selecione um contrato da lista
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513949556736
+    m_Localized: "Este contrato n\xE3o est\xE1 mais dispon\xEDvel"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513962139648
+    m_Localized: "Este contrato n\xE3o est\xE1 ativo"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513966333952
+    m_Localized: "Solicita\xE7\xE3o enviada..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513974722560
+    m_Localized: Sem contratos ativos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513983111168
+    m_Localized: Carregando contratos...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513987305472
+    m_Localized: DESCOBERTO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513991499776
+    m_Localized: OFERECIDO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513991499777
+    m_Localized: ATIVO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172513999888384
+    m_Localized: "CONCLU\xCDDO"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514004082688
+    m_Localized: ENTREGUE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514012471296
+    m_Localized: FALHOU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514020859904
+    m_Localized: Rastrear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514029248512
+    m_Localized: Deixar de rastrear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514033442816
+    m_Localized: "Lista de miss\xF5es descobertas indispon\xEDvel"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514041831424
+    m_Localized: "Rejei\xE7\xE3o de miss\xE3o ainda n\xE3o implementada (aguardando
+      servidor)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514050220032
+    m_Localized: Aprender
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514054414336
+    m_Localized: Esquecer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514062802944
+    m_Localized: "Padr\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514071191552
+    m_Localized: Urgente
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514075385856
+    m_Localized: Recibo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514083774464
+    m_Localized: Primum
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514092163072
+    m_Localized: Secundus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514096357376
+    m_Localized: Tertius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514104745984
+    m_Localized: Quartus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514113134592
+    m_Localized: "Sem naves dispon\xEDveis. Encontre uma chave no mundo."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514113134593
+    m_Localized: 'Casco: QUEBRADO'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514125717504
+    m_Localized: "Casco: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514125717505
+    m_Localized: "Combust\xEDvel: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514134106112
+    m_Localized: "Carga: \u2014 (sem dados)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514134106113
+    m_Localized: "M\xF3dulos: 0"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514142494720
+    m_Localized: "Por\xE3o vazio"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514146689024
+    m_Localized: Carregando mercado...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514150883328
+    m_Localized: Sem dados de mercado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514155077632
+    m_Localized: "Servidor de troca indispon\xEDvel"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514163466240
+    m_Localized: "Servidor de troca n\xE3o inicializado. Aguarde um momento."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514167660544
+    m_Localized: Selecione um item na lista esquerda
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514180243456
+    m_Localized: Selecione um produto na lista direita
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514188632064
+    m_Localized: Mostrar todos os itens
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514192826368
+    m_Localized: Mostrar meus itens
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514197020672
+    m_Localized: Selecione uma nave primeiro
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514201214976
+    m_Localized: Sem contratos neste local
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514205409280
+    m_Localized: Comprado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514213797888
+    m_Localized: Vendido
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514217992192
+    m_Localized: Carregando
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514222186496
+    m_Localized: Descarregando
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514226380800
+    m_Localized: "Selecione um item no invent\xE1rio"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514230575104
+    m_Localized: "Selecione uma caixa no por\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514238963712
+    m_Localized: "Servidor do por\xE3o indispon\xEDvel"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 172514247352320
+    m_Localized: "Desempacotamento indispon\xEDvel: sem taxa de c\xE2mbio para este
+      item"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717250338816
+    m_Localized: 'Instalado: vazio'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087552
+    m_Localized: "Banco de dados de m\xF3dulos n\xE3o definido."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087553
+    m_Localized: "Nave n\xE3o selecionada."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087554
+    m_Localized: Instalar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087555
+    m_Localized: "Pot\xEAncia insuficiente"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087556
+    m_Localized: "Sem m\xF3dulos compat\xEDveis para este slot."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717288087557
+    m_Localized: "M\xF3dulos dispon\xEDveis:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281856
+    m_Localized: "Conclu\xEDdo \u2713"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281857
+    m_Localized: "Solicita\xE7\xE3o de reparo do casco enviada..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281858
+    m_Localized: "Solicita\xE7\xE3o de pintura enviada..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281859
+    m_Localized: Sem plataformas livres!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281860
+    m_Localized: "Gr\xE1tis"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281861
+    m_Localized: "Nave n\xE3o spawnada."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 176717292281862
+    m_Localized: "Custo: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278142468096
+    m_Localized: "Ativo: {0}, dispon\xEDveis: {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278243131392
+    m_Localized: "Fac\xE7\xF5es: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 182278251520000
+    m_Localized: 'Atitudes: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 186222331731968
+    m_Localized: 'Contratos ativos: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200138342400
+    m_Localized: Personagem
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200289337344
+    m_Localized: Nave
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200301920256
+    m_Localized: Conhecimento
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200310308864
+    m_Localized: Contratos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200318697472
+    m_Localized: "Invent\xE1rio"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200322891776
+    m_Localized: "Miss\xF5es"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200331280384
+    m_Localized: Jogador
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200343863296
+    m_Localized: "Mudar apar\xEAncia"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200352251904
+    m_Localized: Conhecimento
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200356446208
+    m_Localized: "Miss\xF5es"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200364834816
+    m_Localized: Roupas
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200369029120
+    m_Localized: "M\xF3dulos"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200377417728
+    m_Localized: Atributos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200385806336
+    m_Localized: Habilidades de combate
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200394194944
+    m_Localized: Habilidades sociais
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200402583552
+    m_Localized: "Fac\xE7\xF5es"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200415166464
+    m_Localized: NPCs
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200419360768
+    m_Localized: Habilidades
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200427749376
+    m_Localized: Receitas
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200436137984
+    m_Localized: Ativos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200440332288
+    m_Localized: "Conclu\xEDdos"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200448720896
+    m_Localized: Falhou
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200452915200
+    m_Localized: Descobertos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190200469692416
+    m_Localized: "Local: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921768345600
+    m_Localized: Mercado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921944506368
+    m_Localized: "Armaz\xE9m / Por\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921957089280
+    m_Localized: Contratos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921969672192
+    m_Localized: Trocador
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921973866496
+    m_Localized: Comprar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190921990643712
+    m_Localized: Vender
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922003226624
+    m_Localized: Carregar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922028392448
+    m_Localized: Descarregar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922070335488
+    m_Localized: Aceitar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922099695616
+    m_Localized: Completar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922150027264
+    m_Localized: Falhar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922187776000
+    m_Localized: Fechar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 190922275856384
+    m_Localized: Abra o mercado para negociar
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

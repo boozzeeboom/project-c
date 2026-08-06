@@ -139,6 +139,26 @@ Phase 7 (верификация) — за пользователем (playtests)
 - `764d29e` — debug-логи в CustomDropdown + GameplaySettingsSection
 - `5089afb` — позиционирование попапа через worldBound вместо ChangeCoordinatesTo
 
+## Итерация 8 — 2026-08-06
+
+**Задача:** Phase 8 — Глубокая UI-локализация (все пропущенные окна и строки)  
+**Тикет:** LOC-11  
+**Коммит:** `2046b42` — LOC-11: Phase 8 — глубокая UI-локализация (87 новых ключей, 7 файлов C#)
+
+**Изменения:**
+- UI_Table SharedData: +73 character/contract/market/ship/cargo ключей, +14 repair ключей (всего 139)
+- `EscMenuWindow.cs` — главные кнопки ПРОДОЛЖИТЬ/НАСТРОЙКИ/СПАСЕНИЕ/ВЫХОД + title МЕНЮ
+- `CharacterWindow.cs` — все фильтры, статусы, quest states, track/skill кнопки, сообщения
+- `ContractsTab.cs` — фильтры, типы контрактов, ранги локаций, сообщения
+- `InventoryTab.cs` — фильтры, НАДЕТЬ/СНЯТЬ/БРОСИТЬ, Бонусы, detail
+- `MyShipsTab.cs` — все хардкоженные строки (7)
+- `MarketWindow.cs` — сообщения, названия операций Куплено/Продано/Погрузка/Разгрузка
+- `ShipCargoConsoleWindow.cs` — 4 статусных сообщения
+- `RepairManagerWindow.cs` — 16 строк (ремонт, установка, покраска, статусы)
+- `LocalizationTableRepair.cs` — расширен UIKeyMap до ~130 ключей
+
+**Статус:** ✅ Phase 8 завершён.
+
 ## Статистика
 - 103 файла (103 new)
 - 3607 строк добавлено

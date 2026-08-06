@@ -58,7 +58,13 @@ namespace ProjectC.UI.Client
         public List<InventoryListItem> InventoryCache => _inventoryCache;
 
         private List<string> _inventoryFilterSourceOptionsCache; // динамически по ItemType
-        private List<string> _inventoryFilterStateOptions = new List<string> { Loc.Get("ui.character.filter.all_types") };
+        // BUGFIX: Loc.Get() в field initializer — до OnEnable → LocalizationSettings может быть не готов.
+        private List<string> _inventoryFilterStateOptions;
+
+        private List<string> GetOrCreateInventoryFilterStateOptions()
+        {
+            return _inventoryFilterStateOptions ?? (_inventoryFilterStateOptions = new List<string> { Loc.Get("ui.character.filter.all_types") });
+        }
 
         // Subscription flags
         private bool _isInventorySubscribed = false;

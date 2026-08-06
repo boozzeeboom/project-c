@@ -157,6 +157,14 @@ namespace ProjectC.Core
             PlayerPrefs.Save();
         }
 
+        public static void SetLocale(string code)
+        {
+            if (Locale == code) return;
+            Locale = code;
+            PlayerPrefs.SetString(KEY_LOCALE, code);
+            PlayerPrefs.Save();
+        }
+
         public static void SetResolution(int width, int height, FullScreenMode mode)
         {
             Screen.SetResolution(width, height, mode);

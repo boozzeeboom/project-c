@@ -67,6 +67,7 @@ namespace ProjectC.Localization
             }
 
             LocalizationSettings.SelectedLocale = targetLocale;
+            ProjectC.Core.SettingsManager.SetLocale(code);
             PlayerPrefs.SetString("Settings.Locale", code);
             PlayerPrefs.Save();
             Debug.Log($"[LocaleSelector] Locale set to: {code}");

@@ -48,6 +48,23 @@ namespace ProjectC.UI.Client
         private int _selectedIndex = -1;
         private bool _popupOpen;
 
+        // ===== Статический трекинг открытых попапов =====
+        private static readonly HashSet<CustomDropdown> _openDropdowns = new HashSet<CustomDropdown>();
+        private static readonly List<CustomDropdown> _toRemove = new List<CustomDropdown>();
+
+        /// <summary>Закрыть все открытые попапы всех CustomDropdown. Вызывать при скрытии окна.</summary>
+        public static void CloseAllPopups()
+        {
+            _toRemove.Clear();
+            foreach (var dd in _openDropdowns)
+            {
+                if (dd == null) { _toRemove.Add(dd); continue; }
+                try { dd.ClosePopup(); } catch { /* suppressed */ }
+            }
+            foreach (var dd in _toRemove)
+                _openDropdowns.Remove(dd);
+        }
+
         // ===== Public API =====
 
         public int SelectedIndex => _selectedIndex;
@@ -111,11 +128,13 @@ namespace ProjectC.UI.Client
 
         private void OnButtonPointerDown(PointerDownEvent evt)
         {
+            evt.StopPropagation();
+            evt.StopImmediatePropagation();
             if (_choices.Count == 0) return;
             if (_popupOpen)
                 ClosePopup();
             else
-                ShowPopup();
+                this.schedule.Execute(() => ShowPopup());
         }
 
         private void ShowPopup()
@@ -124,26 +143,41 @@ namespace ProjectC.UI.Client
             var panel = this.panel;
             if (panel == null) return;
 
+            // Force layout update before reading worldBound
+            _button.MarkDirtyRepaint();
+
             ClosePopup(); // clean up any stale popup
 
-            // Ищем main-container (без overflow:hidden) для размещения popup'а
-            var mainContainer = FindMainContainer();
-            if (mainContainer == null) mainContainer = panel.visualTree;
+            // Всегда добавляем в корень панели (поверх всего)
+            var root = panel.visualTree;
 
-            // Позиция кнопки относительно mainContainer
-            var worldPos = _button.LocalToWorld(Vector2.zero);
-            var localPos = mainContainer.WorldToLocal(worldPos);
-            float btnHeight = _button.layout.height > 0 ? _button.layout.height : 24f;
+            // Позиция кнопки относительно root через ChangeCoordinatesTo
+            var btnTopLeft = _button.ChangeCoordinatesTo(root, Vector2.zero);
+            float btnHeight = _button.resolvedStyle.height > 0 ? _button.resolvedStyle.height : 24f;
+            float btnWidth = _button.resolvedStyle.width > 10f ? _button.resolvedStyle.width : 200f;
 
-            // Popup overlay
+            // Popup overlay — USS class + inline fallback styles
             _popupContainer = new VisualElement();
             _popupContainer.AddToClassList("custom-dropdown__popup");
+            _popupContainer.style.position = Position.Absolute;
+            _popupContainer.pickingMode = PickingMode.Position;
+            _popupContainer.style.backgroundColor = new Color(0.1f, 0.12f, 0.18f, 0.97f);
+            _popupContainer.style.borderTopWidth = _popupContainer.style.borderBottomWidth =
+                _popupContainer.style.borderLeftWidth = _popupContainer.style.borderRightWidth = 1f;
+            _popupContainer.style.borderTopColor = _popupContainer.style.borderBottomColor =
+                _popupContainer.style.borderLeftColor = _popupContainer.style.borderRightColor =
+                    new Color(0.31f, 0.39f, 0.55f);
+            _popupContainer.style.borderTopLeftRadius = _popupContainer.style.borderTopRightRadius =
+                _popupContainer.style.borderBottomLeftRadius = _popupContainer.style.borderBottomRightRadius = 4f;
+            _popupContainer.style.paddingTop = _popupContainer.style.paddingBottom = 4f;
+            _popupContainer.style.paddingLeft = _popupContainer.style.paddingRight = 4f;
+            _popupContainer.style.maxHeight = 220f;
+            _popupContainer.style.flexDirection = FlexDirection.Column;
 
-            // Позиционируем под кнопкой в local-координатах mainContainer
-            float btnWidth = _button.layout.width > 10f ? _button.layout.width : 200f;
-            _popupContainer.style.left = localPos.x;
-            _popupContainer.style.top = localPos.y + btnHeight;
-            _popupContainer.style.minWidth = btnWidth;
+            // Позиционируем под кнопкой
+            _popupContainer.style.left = btnTopLeft.x;
+            _popupContainer.style.top = btnTopLeft.y + btnHeight;
+            _popupContainer.style.width = btnWidth;
 
             // Items
             for (int i = 0; i < _choices.Count; i++)
@@ -151,8 +185,18 @@ namespace ProjectC.UI.Client
                 int captureIndex = i; // capture for closure
                 var item = new Label(_choices[i]);
                 item.AddToClassList("custom-dropdown__item");
+                item.style.color = new Color(0.78f, 0.82f, 0.88f);
+                item.style.paddingTop = item.style.paddingBottom = 6f;
+                item.style.paddingLeft = item.style.paddingRight = 12f;
+                item.style.fontSize = 13f;
+                item.style.flexShrink = 0f;
                 if (i == _selectedIndex)
+                {
                     item.AddToClassList("selected");
+                    item.style.color = new Color(0.55f, 0.78f, 0.98f);
+                    item.style.backgroundColor = new Color(0.24f, 0.39f, 0.59f, 0.5f);
+                    item.style.unityFontStyleAndWeight = FontStyle.Bold;
+                }
 
                 item.RegisterCallback<PointerDownEvent>(evt =>
                 {
@@ -161,58 +205,43 @@ namespace ProjectC.UI.Client
                     evt.StopPropagation();
                 });
 
+                var hoverBg = new Color(0.27f, 0.43f, 0.63f, 0.6f);
+                var normalBg = i == _selectedIndex
+                    ? new Color(0.24f, 0.39f, 0.59f, 0.5f)
+                    : new Color(0, 0, 0, 0);
+
                 item.RegisterCallback<PointerEnterEvent>(evt =>
                 {
                     item.AddToClassList("hovered");
+                    item.style.backgroundColor = hoverBg;
                 });
                 item.RegisterCallback<PointerLeaveEvent>(evt =>
                 {
                     item.RemoveFromClassList("hovered");
+                    item.style.backgroundColor = normalBg;
                 });
 
                 _popupContainer.Add(item);
             }
 
-            // Добавляем на mainContainer (без overflow:hidden)
-            mainContainer.Add(_popupContainer);
+            // Добавляем в корень панели и выносим на передний план
+            root.Add(_popupContainer);
+            _popupContainer.BringToFront();
             _popupOpen = true;
+            _openDropdowns.Add(this);
 
-            // Закрытие при клике на root панели
-            var rootForClose = mainContainer;
-            RegisterGlobalPointerDown(rootForClose);
-        }
-
-        private void RegisterGlobalPointerDown(VisualElement rootElement)
-        {
-            if (rootElement == null) return;
-
-            // Вешаем временный callback на root контейнера
-            rootElement.RegisterCallback<PointerDownEvent>(OnRootPointerDown, TrickleDown.TrickleDown);
-        }
-
-        private void UnregisterGlobalPointerDown()
-        {
-            // Ищем main-container для отписки
-            var mc = FindMainContainer();
-            if (mc == null) return;
-            try
-            {
-                mc.UnregisterCallback<PointerDownEvent>(OnRootPointerDown, TrickleDown.TrickleDown);
-            }
-            catch { /* suppressed */ }
+            // Закрытие при клике вне попапа
+            root.RegisterCallback<PointerDownEvent>(OnRootPointerDown, TrickleDown.TrickleDown);
         }
 
         private void OnRootPointerDown(PointerDownEvent evt)
         {
             if (!_popupOpen) return;
 
-            // Если клик внутри popup'а (target — дочерний элемент) — не закрываем
+            // Если клик внутри popup'а — не закрываем
             var target = evt.target as VisualElement;
-            if (target != null && _popupContainer != null)
-            {
-                if (_popupContainer.Contains(target))
-                    return;
-            }
+            if (target != null && _popupContainer != null && _popupContainer.Contains(target))
+                return;
 
             // Если клик внутри кнопки — не закрываем
             if (target != null && _button.Contains(target))
@@ -224,28 +253,20 @@ namespace ProjectC.UI.Client
         private void ClosePopup()
         {
             if (!_popupOpen) return;
-            UnregisterGlobalPointerDown();
+
+            var panel = this.panel;
+            if (panel != null)
+            {
+                try { panel.visualTree.UnregisterCallback<PointerDownEvent>(OnRootPointerDown, TrickleDown.TrickleDown); }
+                catch { /* suppressed */ }
+            }
 
             if (_popupContainer != null && _popupContainer.parent != null)
                 _popupContainer.parent.Remove(_popupContainer);
 
             _popupContainer = null;
             _popupOpen = false;
-        }
-
-        // ===== Helpers =====
-
-        /// <summary>Ручной поиск main-container по parent chain (GetFirstAncestorWhere не существует в Unity 6).</summary>
-        private VisualElement FindMainContainer()
-        {
-            var el = parent;
-            while (el != null)
-            {
-                if (el.name == "main-container")
-                    return el;
-                el = el.parent;
-            }
-            return null;
+            _openDropdowns.Remove(this);
         }
 
         private void UpdateButtonText()

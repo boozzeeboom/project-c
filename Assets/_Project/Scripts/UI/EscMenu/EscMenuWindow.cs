@@ -158,6 +158,7 @@ namespace ProjectC.UI.EscMenu
             }
             else
             {
+                ProjectC.UI.Client.CustomDropdown.CloseAllPopups();
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
                 { UnityEngine.Cursor.lockState = CursorLockMode.Locked; UnityEngine.Cursor.visible = false; }
             }

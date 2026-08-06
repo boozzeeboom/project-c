@@ -105,6 +105,7 @@ namespace ProjectC.UI.Client
             _choices.Clear();
             if (choices != null)
                 _choices.AddRange(choices);
+            Debug.Log($"[CustomDropdown] SetChoices: count={_choices.Count}, defaultIndex={defaultIndex}");
 
             if (defaultIndex >= 0 && defaultIndex < _choices.Count)
                 _selectedIndex = defaultIndex;
@@ -231,6 +232,7 @@ namespace ProjectC.UI.Client
             _popupContainer.BringToFront();
             _popupOpen = true;
             _openDropdowns.Add(this);
+            Debug.Log($"[CustomDropdown] ShowPopup: items={_choices.Count}, pos=({btnTopLeft.x:F0},{btnTopLeft.y:F0}), size=({btnWidth:F0}x{btnHeight:F0}), openCount={_openDropdowns.Count}");
 
             // Закрытие при клике вне попапа
             root.RegisterCallback<PointerDownEvent>(OnRootPointerDown, TrickleDown.TrickleDown);
@@ -269,6 +271,7 @@ namespace ProjectC.UI.Client
             _popupContainer = null;
             _popupOpen = false;
             _openDropdowns.Remove(this);
+            Debug.Log($"[CustomDropdown] ClosePopup: remaining open={_openDropdowns.Count}");
         }
 
         private void UpdateButtonText()

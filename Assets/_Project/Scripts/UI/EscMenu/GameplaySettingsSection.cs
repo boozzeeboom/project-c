@@ -44,6 +44,7 @@ namespace ProjectC.UI.EscMenu
             foreach (var (code, name) in ProjectC.Localization.LocaleSelector.Locales)
                 localeChoices.Add(name);
             var savedLocale = SettingsManager.Locale ?? "ru";
+            UnityEngine.Debug.Log($"[GameplaySettings] LocaleChoices count={localeChoices.Count}, savedLocale={savedLocale}, first={(localeChoices.Count > 0 ? localeChoices[0] : "EMPTY")}");
             var selectedIdx = 0;
             for (int i = 0; i < ProjectC.Localization.LocaleSelector.Locales.Length; i++)
             {

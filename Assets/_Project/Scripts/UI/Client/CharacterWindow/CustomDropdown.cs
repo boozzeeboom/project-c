@@ -186,7 +186,16 @@ namespace ProjectC.UI.Client
             _popupContainer.style.top = popupTop;
             _popupContainer.style.width = btnWidth;
 
-            // Items
+            // ScrollView для скролла (overflow: auto не работает в UI Toolkit)
+            var scrollView = new ScrollView();
+            scrollView.style.flexGrow = 1f;
+            scrollView.style.maxHeight = 210f; // 220 - padding
+            scrollView.mode = ScrollViewMode.Vertical;
+            scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            scrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
+            _popupContainer.Add(scrollView);
+
+            // Items — кладём в ScrollView
             for (int i = 0; i < _choices.Count; i++)
             {
                 int captureIndex = i; // capture for closure
@@ -228,7 +237,7 @@ namespace ProjectC.UI.Client
                     item.style.backgroundColor = normalBg;
                 });
 
-                _popupContainer.Add(item);
+                scrollView.Add(item);
             }
 
             // Добавляем в корень панели и выносим на передний план

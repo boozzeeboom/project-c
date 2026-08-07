@@ -11,4 +11,17 @@
 - `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` — MonoBehaviour + UIDocument + stack-навигация
 - `Assets/_Project/Editor/Localization/AddMainMenuLocKeys.cs` — 9 ключей `ui.main_menu.*` в UI_Table (ru + en)
 - `Assets/_Project/Scenes/BootstrapScene.unity` — MainMenu GameObject добавлен, NetworkTestCanvas отключён
-- `docs/UI/MainMenu/01_implementation.md` — документация реализации
+
+## Итерация от 2026-08-07 (2)
+
+**Задача:** T-UI04 — fix: настройки не открывались (NavigateTo не добавлял панель в дерево)
+**Коммит:** `61c926a6` — T-UI04: fix — Настройки не открывались (панель не добавлялась в визуальное дерево)
+**Изменения:**
+- `MainMenuWindow.cs` — `NavigateTo` добавляет динамические панели в `_contentWindow`, `EscMenuSettingsStyles.uss` загружается
+
+## Итерация от 2026-08-07 (3)
+
+**Задача:** T-UI04 — fix: вёрстка панели настроек (фон, border, скрытие title/subtitle)
+**Изменения:**
+- `MainMenuWindow.cs` — `BuildSettingsPanel`: контейнер 480×460 с backgroundColor/border-radius/border, header с back-btn + title; `SetHeaderVisible(false)` при NavigateTo
+- `docs/UI/MainMenu/01_implementation.md` — полная документация с баг-фиксами

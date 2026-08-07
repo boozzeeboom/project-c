@@ -9,11 +9,6 @@ using ProjectC.UI.EscMenu;
 
 namespace ProjectC.UI.MainMenu
 {
-    /// <summary>
-    /// Main menu shown on BootstrapScene. Buttons: Host (solo), Connect (→ IP screen), Settings, Quit.
-    /// Reuses EscMenu settings sections (Graphics, Audio, Gameplay).
-    /// All texts localized via Loc.Bind/Loc.Get with ui.main_menu.* keys.
-    /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class MainMenuWindow : MonoBehaviour
     {
@@ -29,77 +24,41 @@ namespace ProjectC.UI.MainMenu
         private VisualElement _rootButtons;
         private VisualElement _ipPanel;
         private TextField _ipField;
-        private Button _hostBtn;
-        private Button _connectBtn;
-        private Button _settingsBtn;
-        private Button _quitBtn;
-        private Button _ipConnectBtn;
-        private Button _ipBackBtn;
-        private Label _titleLabel;
-        private Label _subtitleLabel;
+        private Button _hostBtn, _connectBtn, _settingsBtn, _quitBtn;
+        private Button _ipConnectBtn, _ipBackBtn;
+        private Label _titleLabel, _subtitleLabel;
 
         private readonly Stack<VisualElement> _menuStack = new Stack<VisualElement>();
         private VisualElement _currentPanel;
 
-        // ===== Lifecycle =====
-
-        private void Awake()
-        {
-            _doc = GetComponent<UIDocument>();
-        }
-
-        private void OnEnable()
-        {
-            EnsureBuilt();
-        }
-
-        private void Start()
-        {
-            EnsureBuilt();
-            Show();
-        }
-
-        // ===== Build =====
+        private void Awake() { _doc = GetComponent<UIDocument>(); }
+        private void OnEnable() { EnsureBuilt(); }
+        private void Start() { EnsureBuilt(); Show(); }
 
         public void EnsureBuilt()
         {
             if (_built) return;
             if (_doc == null || _doc.rootVisualElement == null) return;
 
-            if (mainUxml == null)
-                mainUxml = Resources.Load<VisualTreeAsset>("UI/MainMenuWindow");
-            if (mainUss == null)
-                mainUss = Resources.Load<StyleSheet>("UI/MainMenuStyles");
-            if (mainUxml == null)
-            {
-                Debug.LogError("[MainMenuWindow] UXML not found");
-                return;
-            }
+            if (mainUxml == null) mainUxml = Resources.Load<VisualTreeAsset>("UI/MainMenuWindow");
+            if (mainUss == null) mainUss = Resources.Load<StyleSheet>("UI/MainMenuStyles");
+            if (mainUxml == null) { Debug.LogError("[MainMenuWindow] UXML not found"); return; }
 
             _doc.rootVisualElement.Clear();
-            if (mainUss != null)
-                _doc.rootVisualElement.styleSheets.Add(mainUss);
-            var settingsUss = Resources.Load<StyleSheet>("UI/EscMenuSettingsStyles");
-            if (settingsUss != null)
-                _doc.rootVisualElement.styleSheets.Add(settingsUss);
+            if (mainUss != null) _doc.rootVisualElement.styleSheets.Add(mainUss);
+            var sUss = Resources.Load<StyleSheet>("UI/EscMenuSettingsStyles");
+            if (sUss != null) _doc.rootVisualElement.styleSheets.Add(sUss);
             _root = mainUxml.CloneTree();
             _root.style.position = Position.Absolute;
-            _root.style.left = 0;
-            _root.style.top = 0;
-            _root.style.right = 0;
-            _root.style.bottom = 0;
+            _root.style.left = 0; _root.style.top = 0; _root.style.right = 0; _root.style.bottom = 0;
             _doc.rootVisualElement.Add(_root);
 
-            // Content window — dynamically created panels are added here
             _contentWindow = _root.Q<VisualElement>("main-menu-window");
-
-            // Query UI elements
             _titleLabel = _root.Q<Label>("main-menu-title");
             _subtitleLabel = _root.Q<Label>("main-menu-subtitle");
             _rootButtons = _root.Q<VisualElement>("main-menu-buttons");
             _ipPanel = _root.Q<VisualElement>("main-ip-panel");
             _ipField = _root.Q<TextField>("main-ip-field");
-
             _hostBtn = _root.Q<Button>("main-host-btn");
             _connectBtn = _root.Q<Button>("main-connect-btn");
             _settingsBtn = _root.Q<Button>("main-settings-btn");
@@ -107,24 +66,16 @@ namespace ProjectC.UI.MainMenu
             _ipConnectBtn = _root.Q<Button>("main-ip-connect-btn");
             _ipBackBtn = _root.Q<Button>("main-ip-back-btn");
 
-            // Wire buttons
             if (_hostBtn != null) _hostBtn.clicked += OnHostClicked;
             if (_connectBtn != null) _connectBtn.clicked += OnConnectClicked;
             if (_settingsBtn != null) _settingsBtn.clicked += OnSettingsClicked;
             if (_quitBtn != null) _quitBtn.clicked += OnQuitClicked;
             if (_ipConnectBtn != null) _ipConnectBtn.clicked += OnIpConnectClicked;
             if (_ipBackBtn != null) _ipBackBtn.clicked += NavigateToRoot;
+            if (_ipField != null) _ipField.value = "127.0.0.1";
 
-            // Set IP field placeholder
-            if (_ipField != null)
-            {
-                _ipField.value = "127.0.0.1";
-            }
-
-            // Localize all static texts
             LocalizeAll();
 
-            // Initialize stack with root panel
             if (_rootButtons != null)
             {
                 _rootButtons.style.display = DisplayStyle.Flex;
@@ -138,54 +89,25 @@ namespace ProjectC.UI.MainMenu
 
         private void LocalizeAll()
         {
-            if (_titleLabel != null)
-                Loc.Bind(_titleLabel, "ui.main_menu.title", _titleLabel.text);
-            if (_subtitleLabel != null)
-                Loc.Bind(_subtitleLabel, "ui.main_menu.subtitle", _subtitleLabel.text);
-            if (_hostBtn != null)
-                Loc.Bind(_hostBtn, "ui.main_menu.button.host", _hostBtn.text);
-            if (_connectBtn != null)
-                Loc.Bind(_connectBtn, "ui.main_menu.button.connect", _connectBtn.text);
-            if (_settingsBtn != null)
-                Loc.Bind(_settingsBtn, "ui.main_menu.button.settings", _settingsBtn.text);
-            if (_quitBtn != null)
-                Loc.Bind(_quitBtn, "ui.main_menu.button.quit", _quitBtn.text);
-            if (_ipConnectBtn != null)
-                Loc.Bind(_ipConnectBtn, "ui.main_menu.button.ip_connect", _ipConnectBtn.text);
-            if (_ipBackBtn != null)
-                Loc.Bind(_ipBackBtn, "ui.main_menu.button.back", _ipBackBtn.text);
+            if (_titleLabel != null) Loc.Bind(_titleLabel, "ui.main_menu.title", _titleLabel.text);
+            if (_subtitleLabel != null) Loc.Bind(_subtitleLabel, "ui.main_menu.subtitle", _subtitleLabel.text);
+            if (_hostBtn != null) Loc.Bind(_hostBtn, "ui.main_menu.button.host", _hostBtn.text);
+            if (_connectBtn != null) Loc.Bind(_connectBtn, "ui.main_menu.button.connect", _connectBtn.text);
+            if (_settingsBtn != null) Loc.Bind(_settingsBtn, "ui.main_menu.button.settings", _settingsBtn.text);
+            if (_quitBtn != null) Loc.Bind(_quitBtn, "ui.main_menu.button.quit", _quitBtn.text);
+            if (_ipConnectBtn != null) Loc.Bind(_ipConnectBtn, "ui.main_menu.button.ip_connect", _ipConnectBtn.text);
+            if (_ipBackBtn != null) Loc.Bind(_ipBackBtn, "ui.main_menu.button.back", _ipBackBtn.text);
         }
 
-        // ===== Show / Hide =====
-
-        public void Show()
-        {
-            if (!_built) EnsureBuilt();
-            if (_root == null) return;
-            _root.style.display = DisplayStyle.Flex;
-            _root.pickingMode = PickingMode.Position;
-            NavigateToRoot();
-        }
-
-        public void Hide()
-        {
-            if (_root == null) return;
-            _root.style.display = DisplayStyle.None;
-            _root.pickingMode = PickingMode.Ignore;
-        }
-
-        // ===== Stack Navigation =====
+        public void Show() { if (!_built) EnsureBuilt(); if (_root == null) return; _root.style.display = DisplayStyle.Flex; _root.pickingMode = PickingMode.Position; NavigateToRoot(); }
+        public void Hide() { if (_root == null) return; _root.style.display = DisplayStyle.None; _root.pickingMode = PickingMode.Ignore; }
 
         private void NavigateTo(VisualElement panel)
         {
             if (panel == null) return;
-
-            if (_currentPanel != null)
-                _currentPanel.style.display = DisplayStyle.None;
-
-            // Add to content window if not already a child
-            if (panel.parent != _contentWindow && _contentWindow != null)
-                _contentWindow.Add(panel);
+            if (_currentPanel != null) _currentPanel.style.display = DisplayStyle.None;
+            SetHeaderVisible(false);
+            if (panel.parent != _contentWindow && _contentWindow != null) _contentWindow.Add(panel);
             panel.style.display = DisplayStyle.Flex;
             _menuStack.Push(panel);
             _currentPanel = panel;
@@ -193,71 +115,23 @@ namespace ProjectC.UI.MainMenu
 
         private void NavigateToRoot()
         {
-            while (_menuStack.Count > 1)
-            {
-                var old = _menuStack.Pop();
-                if (old != null) old.style.display = DisplayStyle.None;
-            }
-
-            if (_menuStack.Count > 0)
-            {
-                _currentPanel = _menuStack.Peek();
-                if (_currentPanel != null) _currentPanel.style.display = DisplayStyle.Flex;
-            }
+            while (_menuStack.Count > 1) { var old = _menuStack.Pop(); if (old != null) old.style.display = DisplayStyle.None; }
+            if (_menuStack.Count > 0) { _currentPanel = _menuStack.Peek(); if (_currentPanel != null) _currentPanel.style.display = DisplayStyle.Flex; }
+            SetHeaderVisible(true);
         }
 
-        // ===== Button Handlers =====
-
-        private void OnHostClicked()
+        private void SetHeaderVisible(bool v)
         {
-            var nmc = FindAnyObjectByType<NetworkManagerController>();
-            if (nmc != null)
-            {
-                nmc.StartHost();
-                Hide();
-            }
-            else
-            {
-                Debug.LogError("[MainMenuWindow] NetworkManagerController not found!");
-            }
+            var d = v ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_titleLabel != null) _titleLabel.style.display = d;
+            if (_subtitleLabel != null) _subtitleLabel.style.display = d;
         }
 
-        private void OnConnectClicked()
-        {
-            if (_ipPanel != null)
-            {
-                if (_ipField != null) _ipField.value = "127.0.0.1";
-                NavigateTo(_ipPanel);
-            }
-        }
-
-        private void OnIpConnectClicked()
-        {
-            var ip = _ipField != null ? _ipField.value.Trim() : "127.0.0.1";
-            if (string.IsNullOrEmpty(ip)) ip = "127.0.0.1";
-
-            Debug.Log($"[MainMenuWindow] Connecting to {ip}:7777...");
-            var nmc = FindAnyObjectByType<NetworkManagerController>();
-            if (nmc != null)
-            {
-                nmc.ConnectToServer(ip, 7777);
-                Hide();
-            }
-            else
-            {
-                Debug.LogError("[MainMenuWindow] NetworkManagerController not found!");
-            }
-        }
-
-        private void OnSettingsClicked()
-        {
-            var settingsPanel = BuildSettingsPanel();
-            NavigateTo(settingsPanel);
-        }
-
-        private void OnQuitClicked()
-        {
-            Debug.Log("[MainMenuWindow] Quit requested.");
+        private void OnHostClicked() { var n = FindAnyObjectByType<NetworkManagerController>(); if (n != null) { n.StartHost(); Hide(); } else Debug.LogError("[MainMenuWindow] NMC not found"); }
+        private void OnConnectClicked() { if (_ipPanel != null) { if (_ipField != null) _ipField.value = "127.0.0.1"; NavigateTo(_ipPanel); } }
+        private void OnIpConnectClicked() { var ip = _ipField?.value?.Trim() ?? "127.0.0.1"; if (string.IsNullOrEmpty(ip)) ip = "127.0.0.1"; var n = FindAnyObjectByType<NetworkManagerController>(); if (n != null) { n.ConnectToServer(ip, 7777); Hide(); } else Debug.LogError("[MainMenuWindow] NMC not found"); }
+        private void OnSettingsClicked() { NavigateTo(BuildSettingsPanel()); }
+        private void OnQuitClicked() {
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -265,38 +139,48 @@ namespace ProjectC.UI.MainMenu
 #endif
         }
 
-        // ===== Settings Panel (reuses EscMenu sections) =====
-
         private VisualElement BuildSettingsPanel()
         {
             var panel = new VisualElement();
             panel.style.flexDirection = FlexDirection.Column;
             panel.style.alignItems = Align.Stretch;
-            panel.style.width = Length.Percent(100);
-            panel.style.paddingTop = 8;
-            panel.style.paddingBottom = 8;
-            panel.style.paddingLeft = 8;
-            panel.style.paddingRight = 8;
+            panel.style.width = 480;
+            panel.style.backgroundColor = new Color(0.071f, 0.086f, 0.125f, 0.95f);
+            panel.style.borderTopLeftRadius = 8; panel.style.borderTopRightRadius = 8;
+            panel.style.borderBottomLeftRadius = 8; panel.style.borderBottomRightRadius = 8;
+            panel.style.borderLeftWidth = 2; panel.style.borderRightWidth = 2;
+            panel.style.borderTopWidth = 2; panel.style.borderBottomWidth = 2;
+            var bc = new Color(0.314f, 0.392f, 0.549f);
+            panel.style.borderLeftColor = bc; panel.style.borderRightColor = bc;
+            panel.style.borderTopColor = bc; panel.style.borderBottomColor = bc;
+            panel.style.paddingTop = 12; panel.style.paddingBottom = 16;
+            panel.style.paddingLeft = 16; panel.style.paddingRight = 16;
+            panel.style.maxHeight = 460;
 
-            // Back button at top
+            var headerRow = new VisualElement();
+            headerRow.style.flexDirection = FlexDirection.Row;
+            headerRow.style.alignItems = Align.Center;
+            headerRow.style.marginBottom = 12;
+
             var backBtn = new Button(NavigateToRoot);
-            Loc.Bind(backBtn, "ui.main_menu.button.back", "← НАЗАД");
-            backBtn.AddToClassList("main-menu-btn");
-            backBtn.AddToClassList("main-menu-btn-back");
-            backBtn.style.width = 120;
-            backBtn.style.marginBottom = 12;
-            panel.Add(backBtn);
+            Loc.Bind(backBtn, "ui.main_menu.button.back", "<- BACK");
+            backBtn.AddToClassList("main-menu-btn"); backBtn.AddToClassList("main-menu-btn-back");
+            backBtn.style.width = 100;
+            headerRow.Add(backBtn);
 
-            // ScrollView for settings content
+            var st = new Label();
+            Loc.Bind(st, "ui.esc_menu.root_title", "SETTINGS");
+            st.style.color = new Color(0.863f, 0.863f, 0.863f);
+            st.style.fontSize = 20; st.style.unityFontStyleAndWeight = FontStyle.Bold;
+            st.style.unityTextAlign = TextAnchor.MiddleCenter; st.style.flexGrow = 1;
+            headerRow.Add(st);
+            panel.Add(headerRow);
+
             var scroll = new ScrollView();
-            scroll.style.flexGrow = 1;
-            scroll.style.width = Length.Percent(100);
-
-            // Add EscMenu settings sections
+            scroll.style.flexGrow = 1; scroll.style.width = Length.Percent(100);
             scroll.Add(GraphicsSettingsSection.Create());
             scroll.Add(AudioSettingsSection.Create());
             scroll.Add(GameplaySettingsSection.Create());
-
             panel.Add(scroll);
             return panel;
         }

@@ -1023,6 +1023,138 @@ MonoBehaviour:
     m_Key: ui.quest.prereq.unknown
     m_Metadata:
       m_Items: []
+  - m_Id: 211225005694976
+    m_Key: ui.crafting.progress_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225064415232
+    m_Key: ui.crafting.crafting_with_name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225068609536
+    m_Key: ui.crafting.completed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225072803840
+    m_Key: ui.crafting.item_fallback
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225081192448
+    m_Key: ui.crafting.denied
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225089581056
+    m_Key: ui.crafting.denied_fallback
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225093775360
+    m_Key: ui.crafting.cancelled
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225102163968
+    m_Key: ui.crafting.interrupted
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225106358272
+    m_Key: ui.crafting.interrupted_fallback
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225114746880
+    m_Key: ui.crafting.started
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225127329792
+    m_Key: ui.crafting.collecting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225135718400
+    m_Key: ui.crafting.station_default
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225139912704
+    m_Key: ui.crafting.select_recipe
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225152495616
+    m_Key: ui.crafting.station_switched
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225156689920
+    m_Key: ui.crafting.btn.all
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225165078528
+    m_Key: ui.crafting.added_item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272832
+    m_Key: ui.crafting.select_recipe_hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272833
+    m_Key: ui.character.credits_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225181855744
+    m_Key: ui.character.inv_type
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225186050048
+    m_Key: ui.character.inv_weight
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225190244352
+    m_Key: ui.character.skill_prereq
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225198632960
+    m_Key: ui.character.quests_not_implemented
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225207021568
+    m_Key: ui.character.no_quests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225211215872
+    m_Key: ui.character.quests_summary
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225223798784
+    m_Key: ui.character.new_quest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225232187392
+    m_Key: ui.character.select_discovered
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225236381696
+    m_Key: ui.character.accept_request
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225244770304
+    m_Key: ui.keybindings.rebind_skill_title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225253158912
+    m_Key: ui.keybindings.rebind_key_title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225257353216
+    m_Key: ui.keybindings.rebind_hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225261547520
+    m_Key: ui.keybindings.select_skill_for_slot
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676837093376
+    m_Key: ui.network.players_count
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676891619328
+    m_Key: ui.network.disconnected
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

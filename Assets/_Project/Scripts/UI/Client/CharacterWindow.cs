@@ -1384,7 +1384,7 @@ namespace ProjectC.UI.Client
             // Cross-tab: обновляем общий credits в header, если есть
             if (_creditsLabel != null)
             {
-                _creditsLabel.text = $"Кредиты: {snap.credits:F0} CR";
+                _creditsLabel.text = Loc.Format("ui.character.credits_label", snap.credits);
             }
             if (_statCredits != null)
             {
@@ -1564,10 +1564,9 @@ namespace ProjectC.UI.Client
                 }
             }
 
-            if (_invDetailName != null) _invDetailName.text = item.displayName;
-            if (_invDetailType != null) _invDetailType.text = $"Тип: {ItemTypeNames.GetDisplayName(item.type)}";
-            if (_invDetailWeight != null) _invDetailWeight.text = $"Вес: {(def != null ? def.weightKg : 0):F1} кг";
-            if (_invDetailDesc != null) _invDetailDesc.text = def != null && !string.IsNullOrEmpty(def.description) ? def.description : "—";
+            if (_invDetailType != null) _invDetailType.text = Loc.Format("ui.character.inv_type", ItemTypeNames.GetDisplayName(item.type));
+            if (_invDetailWeight != null) _invDetailWeight.text = Loc.Format("ui.character.inv_weight", (def != null ? def.weightKg : 0));
+            if (_invDetailDesc != null) _invDetailDesc.text = def != null && !string.IsNullOrEmpty(def.description) ? def.description : "";
 
             // Stat bonuses для ClothingItemData/ModuleItemData
             if (_invDetailStat != null)
@@ -1915,7 +1914,7 @@ namespace ProjectC.UI.Client
             // Обновить credits в header (если операция изменила баланс)
             if (_creditsLabel != null && result.newCredits > 0f)
             {
-                _creditsLabel.text = $"Кредиты: {result.newCredits:F0} CR";
+                _creditsLabel.text = Loc.Format("ui.character.credits_label", result.newCredits);
             }
         }
 
@@ -1939,7 +1938,7 @@ namespace ProjectC.UI.Client
                 _contractsList.Rebuild();
                 if (_messageLabel != null && _activeTab == "contracts")
                 {
-                    _messageLabel.text = "Квесты ещё не реализованы (см. GDD-21)";
+                    _messageLabel.text = Loc.Get("ui.character.quests_not_implemented", "Quests not yet implemented (see GDD-21)");
                     _messageLabel.style.color = new StyleColor(new Color(0.7f, 0.7f, 0.9f));
                 }
                 return;
@@ -2801,7 +2800,7 @@ namespace ProjectC.UI.Client
                 if (prereqLabel != null)
                 {
                     prereqLabel.text = !string.IsNullOrEmpty(data.PrereqNames)
-                        ? $"Нужно: {data.PrereqNames}"
+                        ? Loc.Format("ui.character.skill_prereq", data.PrereqNames)
                         : string.Empty;
                 }
 
@@ -3427,12 +3426,12 @@ namespace ProjectC.UI.Client
             int d = _questsDiscoveredCache.Count;
             if (a + c + f + d ==0)
             {
-            _messageLabel.text = "Нет квестов в журнале. Серверная модель в разработке (T-Q15+)";
+            _messageLabel.text = Loc.Get("ui.character.no_quests", "No quests in journal. Server model in development (T-Q15+)");
             _messageLabel.style.color = new StyleColor(new Color(0.7f,0.7f,0.9f));
             }
             else
             {
-            _messageLabel.text = $"Активных: {a} | Завершённых: {c} | Провалено: {f} | Найдено: {d}";
+            _messageLabel.text = Loc.Format("ui.character.quests_summary", a, c, f, d);
             _messageLabel.style.color = new StyleColor(new Color(0.9f,0.9f,0.9f));
             }
             }
@@ -3468,7 +3467,7 @@ namespace ProjectC.UI.Client
             RefreshQuestsCache();
             if (_messageLabel != null && IsVisible())
             {
-            _messageLabel.text = $"Новый квест: {displayName}";
+            _messageLabel.text = Loc.Format("ui.character.new_quest", displayName);
             _messageLabel.style.color = new StyleColor(new Color(0.9f,0.85f,0.5f));
             }
             }
@@ -3484,7 +3483,7 @@ namespace ProjectC.UI.Client
             var src = _questsDiscoveredList.itemsSource as List<QuestListItem>;
             if (src == null || _selectedDiscoveredQuest <0 || _selectedDiscoveredQuest >= src.Count)
             {
-            SetMessage("Выберите квест в секции 'Найденные' для принятия");
+            SetMessage(Loc.Get("ui.character.select_discovered", "Select a quest in the 'Discovered' section to accept"));
             return;
             }
             var q = src[_selectedDiscoveredQuest];
@@ -3496,7 +3495,7 @@ namespace ProjectC.UI.Client
             }
             // T-Q15 stub: сервер пока не делает TryAccept, но RPC дойдёт, rate-limit OK.
             qs.RequestAcceptQuest(q.questId, "");
-            SetMessage($"Запрос на принятие '{q.displayName}' отправлен...");
+            SetMessage(Loc.Format("ui.character.accept_request", q.displayName ?? ""));
             }
 
             // T-P19: Отказаться от квеста (reject/abandon — заглушка, серверная часть не реализована)

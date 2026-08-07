@@ -877,6 +877,292 @@ MonoBehaviour:
     m_Localized: "\U0001F3A8 Selecionar cor"
     m_Metadata:
       m_Items: []
+  - m_Id: 207445103124480
+    m_Localized: Habilidade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445166039040
+    m_Localized: Receita
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445170233344
+    m_Localized: "Fac\xE7\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209221973876736
+    m_Localized: Despachante
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222036791296
+    m_Localized: "{0} \u2014 Despachante"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222040985600
+    m_Localized: Solicitar pouso
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222045179904
+    m_Localized: Cancelar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222049374208
+    m_Localized: "Cancelar solicita\xE7\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222057762816
+    m_Localized: Desacoplar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222061957120
+    m_Localized: Fechar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345728
+    m_Localized: Reestacionar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345729
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222078734336
+    m_Localized: Abortar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222082928640
+    m_Localized: "Despachante: \xAB{0} Aproxima\xE7\xE3o: altitude {1}, rumo {2}.
+      Janela: {3}s. Confirma?\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222087122944
+    m_Localized: "Despachante: \xABNave, voc\xEA est\xE1 no pad errado (#{0}). Reestacione.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222091317248
+    m_Localized: "Despachante: \xABDe prontid\xE3o, aguardando suas ordens.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222095511552
+    m_Localized: "Despachante: \xABNave, certo. Prossiga para o pad #{0}.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222099705856
+    m_Localized: "Despachante: \xABAcoplamento confirmado. Motores travados. Bom
+      com\xE9rcio.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222112288768
+    m_Localized: "Despachante: \xABNave, voc\xEA est\xE1 no pad errado (#{0}). Reestacione.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222116483072
+    m_Localized: "Despachante: \xABJanela de pouso expirada. Repita a solicita\xE7\xE3o.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222124871680
+    m_Localized: "Despachante: \xABSem pads livres, tente mais tarde.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222133260288
+    m_Localized: "Despachante: \xABMuitas solicita\xE7\xF5es, aguarde.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222141648896
+    m_Localized: "Despachante: \xABEsta\xE7\xE3o cheia, tente mais tarde.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222150037504
+    m_Localized: "Despachante: \xABConex\xE3o perdida, repita.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222154231808
+    m_Localized: "Despachante: \xABNave n\xE3o encontrada, aproxime-se.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222158426112
+    m_Localized: "Despachante: \xABEsta n\xE3o \xE9 a sua nave.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222171009024
+    m_Localized: "Despachante: \xABErro: {0}\xBB."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222175203328
+    m_Localized: 'Objetivo: (nenhum)'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222179397632
+    m_Localized: 'Objetivo: {0} ({1}/{2})'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222183591936
+    m_Localized: 'Objetivo: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222191980544
+    m_Localized: "Objetivo: ({0}/{1}) conclu\xEDdo"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222196174848
+    m_Localized: "Conclua a miss\xE3o \xAB{0}\xBB primeiro"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222204563456
+    m_Localized: "Ative a miss\xE3o \xAB{0}\xBB primeiro"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222212952064
+    m_Localized: "Precisa de reputa\xE7\xE3o {0} \u2265 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222217146368
+    m_Localized: "Precisa de atitude com NPC \xAB{0}\xBB \u2265 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222225534976
+    m_Localized: "Precisa do item \xAB{0}\xBB \xD7{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222229729280
+    m_Localized: "Condi\xE7\xE3o \xAB{0}\xBB n\xE3o atendida"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222233923584
+    m_Localized: "Pr\xE9-requisito #{0} n\xE3o atendido"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225005694976
+    m_Localized: "Fabricando\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225064415232
+    m_Localized: 'Fabricando: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225068609536
+    m_Localized: "\u2705 Conclu\xEDdo: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225072803840
+    m_Localized: Item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225081192448
+    m_Localized: "\u274C {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225089581056
+    m_Localized: Negado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225093775360
+    m_Localized: "Fabrica\xE7\xE3o cancelada"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225102163968
+    m_Localized: "\u26A0 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225106358272
+    m_Localized: Interrompido
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225114746880
+    m_Localized: "Fabrica\xE7\xE3o iniciada\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225127329792
+    m_Localized: "Coletando resultado\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225135718400
+    m_Localized: "Esta\xE7\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225139912704
+    m_Localized: Selecionar receita
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225152495616
+    m_Localized: "Esta\xE7\xE3o trocada"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225156689920
+    m_Localized: Todos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225165078528
+    m_Localized: "Adicionado: {0} \xD7 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272832
+    m_Localized: Selecione uma receita e adicione ingredientes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272833
+    m_Localized: "Cr\xE9ditos: {0:F0} CR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225181855744
+    m_Localized: 'Tipo: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225186050048
+    m_Localized: 'Peso: {0:F1} kg'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225190244352
+    m_Localized: 'Requer: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225198632960
+    m_Localized: "Miss\xF5es ainda n\xE3o implementadas"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225207021568
+    m_Localized: "Sem miss\xF5es no di\xE1rio"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225211215872
+    m_Localized: "Ativo: {0} | Conclu\xEDdo: {1} | Falhou: {2} | Descoberto: {3}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225223798784
+    m_Localized: "Nova miss\xE3o: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225232187392
+    m_Localized: "Selecione uma miss\xE3o em 'Descobertos' para aceitar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225236381696
+    m_Localized: "Solicita\xE7\xE3o de aceita\xE7\xE3o para '{0}' enviada..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225244770304
+    m_Localized: 'Remapear habilidade:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225253158912
+    m_Localized: 'Remapear tecla:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225257353216
+    m_Localized: "\xAB{0}\xBB \u2014 pressione uma tecla"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225261547520
+    m_Localized: Selecione uma habilidade para o slot {0}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676837093376
+    m_Localized: 'Jogadores: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676891619328
+    m_Localized: Desconectado
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

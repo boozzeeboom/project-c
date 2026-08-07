@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using TMPro;
 using UnityEngine.UI;
 using ProjectC.Core;
+using ProjectC.Localization;
 
 namespace ProjectC.UI
 {
@@ -82,7 +83,7 @@ namespace ProjectC.UI
             if (networkManagerController.IsHost)
                 count += 1;
 
-            playerCountText.text = $"Игроков: {count}";
+            playerCountText.text = Loc.Format("ui.network.players_count", count);
         }
 
         private void CreateDisconnectButton()
@@ -209,7 +210,7 @@ namespace ProjectC.UI
         {
             networkManagerController.Disconnect();
             ShowConnectionPanel();
-            UpdateStatus("Отключено");
+            UpdateStatus(Loc.Get("ui.network.disconnected", "Disconnected"));
             ShowReconnectButton();
         }
 

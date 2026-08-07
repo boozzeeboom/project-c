@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using ProjectC.Localization;
 
 namespace ProjectC.Crafting.UI
 {
@@ -203,7 +204,7 @@ namespace ProjectC.Crafting.UI
             if (_root == null) return;
             _currentStationNetId = stationNetId;
             _currentConfig = config;
-            if (_stationNameLabel != null) _stationNameLabel.text = config != null ? config.DisplayName : "Станция";
+            if (_stationNameLabel != null) _stationNameLabel.text = config != null ? config.DisplayName : Loc.Get("ui.crafting.station_default", "Station");
             BuildRecipeList();
             if (_messageLabel != null) _messageLabel.text = "";
             if (_root != null)
@@ -254,11 +255,11 @@ namespace ProjectC.Crafting.UI
             _selectedRecipeKey = null;
 
             // Reset UI
-            if (_stationNameLabel != null) _stationNameLabel.text = newConfig != null ? newConfig.DisplayName : "Станция";
-            if (_recipeTitleLabel != null) _recipeTitleLabel.text = "Выберите рецепт";
+            if (_stationNameLabel != null) _stationNameLabel.text = newConfig != null ? newConfig.DisplayName : Loc.Get("ui.crafting.station_default", "Station");
+            if (_recipeTitleLabel != null) _recipeTitleLabel.text = Loc.Get("ui.crafting.select_recipe", "Select recipe");
             if (_recipeDescLabel != null) _recipeDescLabel.text = "";
             if (_progressBar != null) _progressBar.value = 0f;
-            if (_messageLabel != null) _messageLabel.text = "Станция переключена";
+            if (_messageLabel != null) _messageLabel.text = Loc.Get("ui.crafting.station_switched", "Station switched");
             if (_ingredientsContainer != null) _ingredientsContainer.Clear();
             if (_bufferGrid != null) _bufferGrid.Clear();
             if (_recipeList != null) _recipeList.Clear();
@@ -375,7 +376,7 @@ namespace ProjectC.Crafting.UI
                 plusBtn.style.height = 24;
                 plusBtn.style.fontSize = 12;
 
-                var allBtn = new Button(() => OnAddIngredientClicked(ing.item, int.MaxValue)) { text = "Все" };
+                var allBtn = new Button(() => OnAddIngredientClicked(ing.item, int.MaxValue)) { text = Loc.Get("ui.crafting.btn.all", "All") };
                 allBtn.AddToClassList("crafting-btn");
                 allBtn.AddToClassList("crafting-btn-secondary");
                 allBtn.style.minWidth = 48;
@@ -399,7 +400,7 @@ namespace ProjectC.Crafting.UI
             if (itemId < 0) return;
             if (_currentStationNetId == 0) return;
             CraftingClientState.Instance?.RequestAddIngredient(_currentStationNetId, itemId, qty);
-            if (_messageLabel != null) _messageLabel.text = $"Добавлено: {item.itemName} × {qty}";
+            if (_messageLabel != null) _messageLabel.text = Loc.Format("ui.crafting.added_item", item.itemName ?? "", qty);
         }
 
         private void BuildBufferPanel(CraftingSnapshotDto snap)
@@ -453,7 +454,7 @@ namespace ProjectC.Crafting.UI
             // Message при Empty после Collect
             if (state == CraftingJobState.Empty && string.IsNullOrEmpty(snap.activeRecipeId) && _messageLabel != null)
             {
-                _messageLabel.text = "Выберите рецепт и добавьте ингредиенты";
+                _messageLabel.text = Loc.Get("ui.crafting.select_recipe_hint", "Select a recipe and add ingredients");
             }
         }
 
@@ -476,20 +477,20 @@ namespace ProjectC.Crafting.UI
         private void HandleDenied(ulong stationNetId, string reason)
         {
             if (stationNetId != _currentStationNetId) return;
-            if (_messageLabel != null) _messageLabel.text = "❌ " + (reason ?? "Отказано");
+            if (_messageLabel != null) _messageLabel.text = Loc.Format("ui.crafting.denied", reason ?? Loc.Get("ui.crafting.denied_fallback", "Denied"));
         }
 
         private void HandleCancelled(ulong stationNetId)
         {
             if (stationNetId != _currentStationNetId) return;
-            if (_messageLabel != null) _messageLabel.text = "Крафт отменён";
+            if (_messageLabel != null) _messageLabel.text = Loc.Get("ui.crafting.cancelled", "Crafting cancelled");
             if (_progressBar != null) _progressBar.value = 0f;
         }
 
         private void HandleInterrupted(ulong stationNetId, string reason)
         {
             if (stationNetId != _currentStationNetId) return;
-            if (_messageLabel != null) _messageLabel.text = "⚠ " + (reason ?? "Прервано");
+            if (_messageLabel != null) _messageLabel.text = Loc.Format("ui.crafting.interrupted", reason ?? Loc.Get("ui.crafting.interrupted_fallback", "Interrupted"));
             if (_progressBar != null) _progressBar.value = 0f;
         }
 
@@ -532,7 +533,7 @@ namespace ProjectC.Crafting.UI
         {
             if (_currentStationNetId == 0 || string.IsNullOrEmpty(_selectedRecipeKey)) return;
             CraftingClientState.Instance?.RequestStartCraft(_currentStationNetId, _selectedRecipeKey);
-            if (_messageLabel != null) _messageLabel.text = "Крафт запущен…";
+            if (_messageLabel != null) _messageLabel.text = Loc.Get("ui.crafting.started", "Crafting started…");
         }
 
         private void OnCancelClicked()
@@ -545,7 +546,7 @@ namespace ProjectC.Crafting.UI
         {
             if (_currentStationNetId == 0) return;
             CraftingClientState.Instance?.RequestCollect(_currentStationNetId);
-            if (_messageLabel != null) _messageLabel.text = "Забираете результат…";
+            if (_messageLabel != null) _messageLabel.text = Loc.Get("ui.crafting.collecting", "Collecting result…");
         }
     }
 }

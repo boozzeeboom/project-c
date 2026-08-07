@@ -876,6 +876,291 @@ MonoBehaviour:
     m_Localized: "\U0001F3A8 Seleccionar color"
     m_Metadata:
       m_Items: []
+  - m_Id: 207445103124480
+    m_Localized: Habilidad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445166039040
+    m_Localized: Receta
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445170233344
+    m_Localized: "Facci\xF3n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209221973876736
+    m_Localized: Despachador
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222036791296
+    m_Localized: "{0} \u2014 Despachador"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222040985600
+    m_Localized: Solicitar aterrizaje
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222045179904
+    m_Localized: Cancelar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222049374208
+    m_Localized: Cancelar solicitud
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222057762816
+    m_Localized: Desacoplar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222061957120
+    m_Localized: Cerrar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345728
+    m_Localized: Reestacionar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345729
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222078734336
+    m_Localized: Abortar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222082928640
+    m_Localized: "Despachador: \xAB{0} Aproximaci\xF3n: altitud {1}, rumbo {2}. Ventana:
+      {3}s. \xBFConfirma?\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222087122944
+    m_Localized: "Despachador: \xABNave, est\xE1s en el pad equivocado (#{0}). Reestaciona.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222091317248
+    m_Localized: "Despachador: \xABEn espera, aguardando sus \xF3rdenes.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222095511552
+    m_Localized: "Despachador: \xABNave, bien. Dir\xEDjase al pad #{0}.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222099705856
+    m_Localized: "Despachador: \xABAcople confirmado. Motores bloqueados. Buen comercio.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222112288768
+    m_Localized: "Despachador: \xABNave, est\xE1s en el pad equivocado (#{0}). Reestaciona.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222116483072
+    m_Localized: "Despachador: \xABVentana de aterrizaje expirada. Repita la solicitud.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222124871680
+    m_Localized: "Despachador: \xABSin pads libres, intente m\xE1s tarde.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222133260288
+    m_Localized: "Despachador: \xABDemasiadas solicitudes, espere.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222141648896
+    m_Localized: "Despachador: \xABEstaci\xF3n llena, intente m\xE1s tarde.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222150037504
+    m_Localized: "Despachador: \xABConexi\xF3n perdida, repita.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222154231808
+    m_Localized: "Despachador: \xABNave no encontrada, ac\xE9rquese.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222158426112
+    m_Localized: "Despachador: \xABEsta no es tu nave.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222171009024
+    m_Localized: "Despachador: \xABError: {0}\xBB."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222175203328
+    m_Localized: 'Objetivo: (ninguno)'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222179397632
+    m_Localized: 'Objetivo: {0} ({1}/{2})'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222183591936
+    m_Localized: 'Objetivo: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222191980544
+    m_Localized: 'Objetivo: ({0}/{1}) hecho'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222196174848
+    m_Localized: "Completa la misi\xF3n \xAB{0}\xBB primero"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222204563456
+    m_Localized: "Activa la misi\xF3n \xAB{0}\xBB primero"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222212952064
+    m_Localized: "Necesitas reputaci\xF3n {0} \u2265 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222217146368
+    m_Localized: "Necesitas actitud con NPC \xAB{0}\xBB \u2265 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222225534976
+    m_Localized: "Necesitas objeto \xAB{0}\xBB \xD7{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222229729280
+    m_Localized: "Condici\xF3n \xAB{0}\xBB no cumplida"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222233923584
+    m_Localized: Prerrequisito #{0} no cumplido
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225005694976
+    m_Localized: "Fabricando\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225064415232
+    m_Localized: 'Fabricando: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225068609536
+    m_Localized: "\u2705 Hecho: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225072803840
+    m_Localized: Objeto
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225081192448
+    m_Localized: "\u274C {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225089581056
+    m_Localized: Denegado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225093775360
+    m_Localized: "Fabricaci\xF3n cancelada"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225102163968
+    m_Localized: "\u26A0 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225106358272
+    m_Localized: Interrumpido
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225114746880
+    m_Localized: "Fabricaci\xF3n iniciada\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225127329792
+    m_Localized: "Recogiendo resultado\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225135718400
+    m_Localized: "Estaci\xF3n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225139912704
+    m_Localized: Seleccionar receta
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225152495616
+    m_Localized: "Estaci\xF3n cambiada"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225156689920
+    m_Localized: Todos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225165078528
+    m_Localized: "A\xF1adido: {0} \xD7 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272832
+    m_Localized: "Selecciona una receta y a\xF1ade ingredientes"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272833
+    m_Localized: "Cr\xE9ditos: {0:F0} CR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225181855744
+    m_Localized: 'Tipo: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225186050048
+    m_Localized: 'Peso: {0:F1} kg'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225190244352
+    m_Localized: 'Requiere: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225198632960
+    m_Localized: "Misiones a\xFAn no implementadas"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225207021568
+    m_Localized: Sin misiones en el diario
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225211215872
+    m_Localized: 'Activo: {0} | Completado: {1} | Fallido: {2} | Descubierto: {3}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225223798784
+    m_Localized: "Nueva misi\xF3n: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225232187392
+    m_Localized: "Selecciona una misi\xF3n en 'Descubiertos' para aceptar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225236381696
+    m_Localized: "Solicitud de aceptaci\xF3n para '{0}' enviada..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225244770304
+    m_Localized: 'Reasignar habilidad:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225253158912
+    m_Localized: 'Reasignar tecla:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225257353216
+    m_Localized: "\xAB{0}\xBB \u2014 presiona una tecla"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225261547520
+    m_Localized: Selecciona una habilidad para la ranura {0}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676837093376
+    m_Localized: 'Jugadores: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676891619328
+    m_Localized: Desconectado
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -13,6 +13,7 @@ using UnityEngine.UIElements;
 using Unity.Netcode;
 using ProjectC.Skills;
 using ProjectC.UI;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.Settings
 {
@@ -151,7 +152,7 @@ namespace ProjectC.UI.Settings
             if (_skillsScroll == null || !_activeSlot.HasValue) return;
             _skillsScroll.Clear();
 
-            if (_modalTitle != null) _modalTitle.text = $"Выберите навык для слота {_activeSlot.Value}";
+            if (_modalTitle != null) _modalTitle.text = Loc.Format("ui.keybindings.select_skill_for_slot", _activeSlot.Value.ToString());
 
             var sis = SkillInputService.Instance;
             if (sis == null) return;

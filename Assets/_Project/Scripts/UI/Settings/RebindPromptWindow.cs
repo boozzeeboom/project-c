@@ -11,6 +11,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.UI;
+using ProjectC.Localization;
 
 namespace ProjectC.UI.Settings
 {
@@ -88,9 +89,9 @@ namespace ProjectC.UI.Settings
         {
             if (!_built) EnsureBuilt();
             if (_titleLabel != null)
-                _titleLabel.text = isSkill ? "Переназначение навыка:" : "Переназначение клавиши:";
+                _titleLabel.text = isSkill ? Loc.Get("ui.keybindings.rebind_skill_title", "Remap skill:") : Loc.Get("ui.keybindings.rebind_key_title", "Remap key:");
             if (_hintLabel != null)
-                _hintLabel.text = $"«{actionName}» — нажмите клавишу";
+                _hintLabel.text = Loc.Format("ui.keybindings.rebind_hint", actionName ?? "");
             SetVisible(true);
         }
 

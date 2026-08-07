@@ -876,6 +876,296 @@ MonoBehaviour:
     m_Localized: "\U0001F3A8 Choisir la couleur"
     m_Metadata:
       m_Items: []
+  - m_Id: 207445103124480
+    m_Localized: "Comp\xE9tence"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445166039040
+    m_Localized: Recette
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445170233344
+    m_Localized: Faction
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209221973876736
+    m_Localized: "R\xE9partiteur"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222036791296
+    m_Localized: "{0} \u2014 R\xE9partiteur"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222040985600
+    m_Localized: Demander l'atterrissage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222045179904
+    m_Localized: Annuler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222049374208
+    m_Localized: Annuler la demande
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222057762816
+    m_Localized: "D\xE9sarrimer"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222061957120
+    m_Localized: Fermer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345728
+    m_Localized: Re-stationner
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345729
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222078734336
+    m_Localized: Annuler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222082928640
+    m_Localized: "R\xE9partiteur : \xAB{0} Approche : altitude {1}, cap {2}. Fen\xEAtre
+      : {3}s. Confirmez ?\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222087122944
+    m_Localized: "R\xE9partiteur : \xABVaisseau, vous \xEAtes sur le mauvais pad
+      (#{0}). Re-stationnez.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222091317248
+    m_Localized: "R\xE9partiteur : \xABEn attente, dans l'attente de vos ordres.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222095511552
+    m_Localized: "R\xE9partiteur : \xABVaisseau, bien. Rendez-vous au pad #{0}.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222099705856
+    m_Localized: "R\xE9partiteur : \xABAmarrage confirm\xE9. Moteurs verrouill\xE9s.
+      Bon commerce.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222112288768
+    m_Localized: "R\xE9partiteur : \xABVaisseau, vous \xEAtes sur le mauvais pad
+      (#{0}). Re-stationnez.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222116483072
+    m_Localized: "R\xE9partiteur : \xABFen\xEAtre d'atterrissage expir\xE9e. R\xE9p\xE9tez
+      la demande.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222124871680
+    m_Localized: "R\xE9partiteur : \xABPas de pads libres, r\xE9essayez plus tard.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222133260288
+    m_Localized: "R\xE9partiteur : \xABTrop de demandes, attendez.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222141648896
+    m_Localized: "R\xE9partiteur : \xABStation pleine, r\xE9essayez plus tard.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222150037504
+    m_Localized: "R\xE9partiteur : \xABConnexion perdue, r\xE9p\xE9tez.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222154231808
+    m_Localized: "R\xE9partiteur : \xABVaisseau introuvable, approchez-vous.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222158426112
+    m_Localized: "R\xE9partiteur : \xABCe n'est pas votre vaisseau.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222171009024
+    m_Localized: "R\xE9partiteur : \xABErreur : {0}\xBB."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222175203328
+    m_Localized: 'Objectif : (aucun)'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222179397632
+    m_Localized: 'Objectif : {0} ({1}/{2})'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222183591936
+    m_Localized: 'Objectif : {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222191980544
+    m_Localized: "Objectif : ({0}/{1}) termin\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222196174848
+    m_Localized: "Terminez d'abord la qu\xEAte \xAB{0}\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222204563456
+    m_Localized: "Activez d'abord la qu\xEAte \xAB{0}\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222212952064
+    m_Localized: "R\xE9putation {0} \u2265 {1} requise"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222217146368
+    m_Localized: "Attitude avec PNJ \xAB{0}\xBB \u2265 {1} requise"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222225534976
+    m_Localized: "Besoin de l'objet \xAB{0}\xBB \xD7{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222229729280
+    m_Localized: "Condition \xAB{0}\xBB non remplie"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222233923584
+    m_Localized: "Pr\xE9requis #{0} non rempli"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225005694976
+    m_Localized: "Fabrication\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225064415232
+    m_Localized: 'Fabrication : {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225068609536
+    m_Localized: "\u2705 Termin\xE9 : {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225072803840
+    m_Localized: Objet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225081192448
+    m_Localized: "\u274C {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225089581056
+    m_Localized: "Refus\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225093775360
+    m_Localized: "Fabrication annul\xE9e"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225102163968
+    m_Localized: "\u26A0 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225106358272
+    m_Localized: Interrompu
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225114746880
+    m_Localized: "Fabrication commenc\xE9e\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225127329792
+    m_Localized: "R\xE9cup\xE9ration du r\xE9sultat\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225135718400
+    m_Localized: Station
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225139912704
+    m_Localized: "S\xE9lectionner la recette"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225152495616
+    m_Localized: "Station chang\xE9e"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225156689920
+    m_Localized: Tout
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225165078528
+    m_Localized: "Ajout\xE9 : {0} \xD7 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272832
+    m_Localized: "S\xE9lectionnez une recette et ajoutez des ingr\xE9dients"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272833
+    m_Localized: "Cr\xE9dits : {0:F0} CR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225181855744
+    m_Localized: 'Type : {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225186050048
+    m_Localized: 'Poids : {0:F1} kg'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225190244352
+    m_Localized: "N\xE9cessite : {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225198632960
+    m_Localized: "Qu\xEAtes pas encore impl\xE9ment\xE9es"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225207021568
+    m_Localized: "Aucune qu\xEAte dans le journal"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225211215872
+    m_Localized: "Actif : {0} | Termin\xE9 : {1} | \xC9chou\xE9 : {2} | D\xE9couvert
+      : {3}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225223798784
+    m_Localized: "Nouvelle qu\xEAte : {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225232187392
+    m_Localized: "S\xE9lectionnez une qu\xEAte dans \xAB D\xE9couvert \xBB pour l'accepter"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225236381696
+    m_Localized: "Demande d'acceptation pour \xAB{0}\xBB envoy\xE9e..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225244770304
+    m_Localized: "R\xE9assigner la comp\xE9tence :"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225253158912
+    m_Localized: "R\xE9assigner la touche :"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225257353216
+    m_Localized: "\xAB{0}\xBB \u2014 appuyez sur une touche"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225261547520
+    m_Localized: "S\xE9lectionnez une comp\xE9tence pour l'emplacement {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676837093376
+    m_Localized: 'Joueurs : {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676891619328
+    m_Localized: "D\xE9connect\xE9"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

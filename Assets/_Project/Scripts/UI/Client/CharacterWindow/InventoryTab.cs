@@ -281,7 +281,7 @@ namespace ProjectC.UI.Client
 
             // Cross-tab: обновляем credits в header
             if (_creditsLabel != null)
-                _creditsLabel.text = $"Кредиты: {snap.credits:F0} CR";
+                _creditsLabel.text = Loc.Format("ui.character.credits_label", snap.credits);
             if (_statCredits != null)
                 _statCredits.text = $"{snap.credits:F0} CR";
 

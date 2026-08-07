@@ -876,6 +876,295 @@ MonoBehaviour:
     m_Localized: "\U0001F3A8 Farbe w\xE4hlen"
     m_Metadata:
       m_Items: []
+  - m_Id: 207445103124480
+    m_Localized: "F\xE4higkeit"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445166039040
+    m_Localized: Rezept
+    m_Metadata:
+      m_Items: []
+  - m_Id: 207445170233344
+    m_Localized: Fraktion
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209221973876736
+    m_Localized: Dispatcher
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222036791296
+    m_Localized: "{0} \u2014 Dispatcher"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222040985600
+    m_Localized: Landung anfordern
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222045179904
+    m_Localized: Abbrechen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222049374208
+    m_Localized: Anfrage abbrechen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222057762816
+    m_Localized: Abdocken
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222061957120
+    m_Localized: "Schlie\xDFen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345728
+    m_Localized: Umparken
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222070345729
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222078734336
+    m_Localized: Abbrechen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222082928640
+    m_Localized: "Dispatcher: \xAB{0} Anflug: H\xF6he {1}, Kurs {2}. Fenster: {3}s.
+      Best\xE4tigen?\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222087122944
+    m_Localized: "Dispatcher: \xABSchiff, Sie sind auf dem falschen Pad (#{0}). Parken
+      Sie um.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222091317248
+    m_Localized: "Dispatcher: \xABIn Bereitschaft, warte auf Ihre Befehle.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222095511552
+    m_Localized: "Dispatcher: \xABSchiff, gut. Fahren Sie zu Pad #{0}.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222099705856
+    m_Localized: "Dispatcher: \xABAndocken best\xE4tigt. Triebwerke gesperrt. Viel
+      Erfolg beim Handeln.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222112288768
+    m_Localized: "Dispatcher: \xABSchiff, Sie sind auf dem falschen Pad (#{0}). Parken
+      Sie um.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222116483072
+    m_Localized: "Dispatcher: \xABLandefenster abgelaufen. Wiederholen Sie die Anfrage.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222124871680
+    m_Localized: "Dispatcher: \xABKeine freien Pads, versuchen Sie es sp\xE4ter.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222133260288
+    m_Localized: "Dispatcher: \xABZu viele Anfragen, warten Sie.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222141648896
+    m_Localized: "Dispatcher: \xABStation voll, versuchen Sie es sp\xE4ter.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222150037504
+    m_Localized: "Dispatcher: \xABVerbindung verloren, wiederholen Sie.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222154231808
+    m_Localized: "Dispatcher: \xABSchiff nicht gefunden, kommen Sie n\xE4her.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222158426112
+    m_Localized: "Dispatcher: \xABDies ist nicht Ihr Schiff.\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222171009024
+    m_Localized: "Dispatcher: \xABFehler: {0}\xBB."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222175203328
+    m_Localized: 'Ziel: (keins)'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222179397632
+    m_Localized: 'Ziel: {0} ({1}/{2})'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222183591936
+    m_Localized: 'Ziel: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222191980544
+    m_Localized: 'Ziel: ({0}/{1}) erledigt'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222196174848
+    m_Localized: "Schlie\xDFen Sie zuerst Quest \xAB{0}\xBB ab"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222204563456
+    m_Localized: "Aktivieren Sie zuerst Quest \xAB{0}\xBB"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222212952064
+    m_Localized: "Ben\xF6tige Ruf {0} \u2265 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222217146368
+    m_Localized: "Ben\xF6tige Einstellung mit NPC \xAB{0}\xBB \u2265 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222225534976
+    m_Localized: "Ben\xF6tige Gegenstand \xAB{0}\xBB \xD7{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222229729280
+    m_Localized: "Bedingung \xAB{0}\xBB nicht erf\xFCllt"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 209222233923584
+    m_Localized: "Voraussetzung #{0} nicht erf\xFCllt"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225005694976
+    m_Localized: "Herstellung\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225064415232
+    m_Localized: 'Herstellung: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225068609536
+    m_Localized: "\u2705 Fertig: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225072803840
+    m_Localized: Gegenstand
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225081192448
+    m_Localized: "\u274C {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225089581056
+    m_Localized: Verweigert
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225093775360
+    m_Localized: Herstellung abgebrochen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225102163968
+    m_Localized: "\u26A0 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225106358272
+    m_Localized: Unterbrochen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225114746880
+    m_Localized: "Herstellung gestartet\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225127329792
+    m_Localized: "Ergebnis wird gesammelt\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225135718400
+    m_Localized: Station
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225139912704
+    m_Localized: "Rezept w\xE4hlen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225152495616
+    m_Localized: Station gewechselt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225156689920
+    m_Localized: Alle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225165078528
+    m_Localized: "Hinzugef\xFCgt: {0} \xD7 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272832
+    m_Localized: "W\xE4hlen Sie ein Rezept und f\xFCgen Sie Zutaten hinzu"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272833
+    m_Localized: 'Credits: {0:F0} CR'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225181855744
+    m_Localized: 'Typ: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225186050048
+    m_Localized: 'Gewicht: {0:F1} kg'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225190244352
+    m_Localized: "Ben\xF6tigt: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225198632960
+    m_Localized: Quests noch nicht implementiert
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225207021568
+    m_Localized: Keine Quests im Tagebuch
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225211215872
+    m_Localized: 'Aktiv: {0} | Abgeschlossen: {1} | Fehlgeschlagen: {2} | Entdeckt:
+      {3}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225223798784
+    m_Localized: 'Neue Quest: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225232187392
+    m_Localized: "W\xE4hlen Sie eine Quest in \xABEntdeckt\xBB zum Annehmen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225236381696
+    m_Localized: "Annahme-Anfrage f\xFCr \xAB{0}\xBB gesendet..."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225244770304
+    m_Localized: "F\xE4higkeit neu belegen:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225253158912
+    m_Localized: 'Taste neu belegen:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225257353216
+    m_Localized: "\xAB{0}\xBB \u2014 Taste dr\xFCcken"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225261547520
+    m_Localized: "W\xE4hlen Sie eine F\xE4higkeit f\xFCr Slot {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676837093376
+    m_Localized: 'Spieler: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676891619328
+    m_Localized: Getrennt
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

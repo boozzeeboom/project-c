@@ -1027,6 +1027,138 @@ MonoBehaviour:
     m_Localized: Prerequisite #{0} not met
     m_Metadata:
       m_Items: []
+  - m_Id: 211225005694976
+    m_Localized: "Crafting\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225064415232
+    m_Localized: 'Crafting: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225068609536
+    m_Localized: "\u2705 Done: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225072803840
+    m_Localized: Item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225081192448
+    m_Localized: "\u274C {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225089581056
+    m_Localized: Denied
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225093775360
+    m_Localized: Crafting cancelled
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225102163968
+    m_Localized: "\u26A0 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225106358272
+    m_Localized: Interrupted
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225114746880
+    m_Localized: "Crafting started\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225127329792
+    m_Localized: "Collecting result\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225135718400
+    m_Localized: Station
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225139912704
+    m_Localized: Select recipe
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225152495616
+    m_Localized: Station switched
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225156689920
+    m_Localized: All
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225165078528
+    m_Localized: "Added: {0} \xD7 {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272832
+    m_Localized: Select a recipe and add ingredients
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225169272833
+    m_Localized: 'Credits: {0:F0} CR'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225181855744
+    m_Localized: 'Type: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225186050048
+    m_Localized: 'Weight: {0:F1} kg'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225190244352
+    m_Localized: 'Requires: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225198632960
+    m_Localized: Quests not yet implemented
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225207021568
+    m_Localized: No quests in journal
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225211215872
+    m_Localized: 'Active: {0} | Completed: {1} | Failed: {2} | Discovered: {3}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225223798784
+    m_Localized: 'New quest: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225232187392
+    m_Localized: Select a quest in 'Discovered' section to accept
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225236381696
+    m_Localized: Accept request for '{0}' sent...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225244770304
+    m_Localized: 'Remap skill:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225253158912
+    m_Localized: 'Remap key:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225257353216
+    m_Localized: "\xAB{0}\xBB \u2014 press a key"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211225261547520
+    m_Localized: Select a skill for slot {0}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676837093376
+    m_Localized: 'Players: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 211676891619328
+    m_Localized: Disconnected
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

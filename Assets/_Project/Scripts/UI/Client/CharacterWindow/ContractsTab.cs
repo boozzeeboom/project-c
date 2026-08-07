@@ -390,7 +390,7 @@ namespace ProjectC.UI.Client
 
             if (_creditsLabel != null && result.newCredits > 0f)
             {
-                _creditsLabel.text = $"Кредиты: {result.newCredits:F0} CR";
+                _creditsLabel.text = Loc.Format("ui.character.credits_label", result.newCredits);
             }
         }
 

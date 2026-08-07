@@ -4,6 +4,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
+using ProjectC.Localization;
 
 namespace ProjectC.Crafting
 {
@@ -118,7 +119,7 @@ namespace ProjectC.Crafting
             _label = new Label
             {
                 name = "crafting-progress-label",
-                text = "Крафт…",
+                text = Loc.Get("ui.crafting.progress_label", "Crafting…"),
                 pickingMode = PickingMode.Ignore
             };
             _label.style.color = new StyleColor(Color.white);
@@ -165,7 +166,7 @@ namespace ProjectC.Crafting
             _currentStationNetId = stationNetId;
             if (_activeCoroutine == null)
             {
-                _label.text = string.IsNullOrEmpty(resultItemName) ? "Крафт…" : "Крафт: " + resultItemName;
+                _label.text = string.IsNullOrEmpty(resultItemName) ? Loc.Get("ui.crafting.progress_label", "Crafting…") : Loc.Format("ui.crafting.crafting_with_name", resultItemName);
                 _progressBar.value = 0f;
                 _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
             }
@@ -179,7 +180,7 @@ namespace ProjectC.Crafting
             // FIX T-C07: НЕ прячем тост после _completeDuration — держим до Collect (state=0)
             // Иначе каждый 1Гц snapshot перезапускает корутину, создавая мигание.
             if (_activeCoroutine != null) StopCoroutine(_activeCoroutine);
-            _label.text = "✅ Готово: " + (string.IsNullOrEmpty(resultItemName) ? "Предмет" : resultItemName);
+            _label.text = Loc.Format("ui.crafting.completed", string.IsNullOrEmpty(resultItemName) ? Loc.Get("ui.crafting.item_fallback", "Item") : resultItemName);
             _progressBar.value = 1f;
             _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
             _activeCoroutine = null;
@@ -198,7 +199,7 @@ namespace ProjectC.Crafting
             if (!_built) TryBuild();
             if (_container == null || _progressBar == null) return;
             if (_activeCoroutine != null) StopCoroutine(_activeCoroutine);
-            _activeCoroutine = StartCoroutine(ShowInterruptAndHide("❌ " + (reason ?? "Отказано"), extended: true));
+            _activeCoroutine = StartCoroutine(ShowInterruptAndHide(Loc.Format("ui.crafting.denied", reason ?? Loc.Get("ui.crafting.denied_fallback", "Denied")), extended: true));
         }
 
         private void HandleCancelled(ulong stationNetId)
@@ -212,7 +213,7 @@ namespace ProjectC.Crafting
 
         private IEnumerator ShowCompletedAndHide(string resultItemName)
         {
-            _label.text = "✅ Готово: " + (string.IsNullOrEmpty(resultItemName) ? "Предмет" : resultItemName);
+            _label.text = Loc.Format("ui.crafting.completed", string.IsNullOrEmpty(resultItemName) ? Loc.Get("ui.crafting.item_fallback", "Item") : resultItemName);
             _progressBar.value = 1f;
             _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
             yield return new WaitForSecondsRealtime(_completeDuration);

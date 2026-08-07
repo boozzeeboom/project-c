@@ -299,6 +299,43 @@ namespace ProjectC.Localization.Editor
             added += AddIfMissing(shared, ru, en, "ui.quest.prereq.have_item", "Нужен предмет «{0}» ×{1}", "Need item «{0}» ×{1}");
             added += AddIfMissing(shared, ru, en, "ui.quest.prereq.flag", "Не выполнено условие «{0}»", "Condition «{0}» not met");
             added += AddIfMissing(shared, ru, en, "ui.quest.prereq.unknown", "Не выполнено условие #{0}", "Prerequisite #{0} not met");
+            // Crafting
+            added += AddIfMissing(shared, ru, en, "ui.crafting.progress_label", "Крафт…", "Crafting…");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.crafting_with_name", "Крафт: {0}", "Crafting: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.completed", "✅ Готово: {0}", "✅ Done: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.item_fallback", "Предмет", "Item");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.denied", "❌ {0}", "❌ {0}");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.denied_fallback", "Отказано", "Denied");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.cancelled", "Крафт отменён", "Crafting cancelled");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.interrupted", "⚠ {0}", "⚠ {0}");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.interrupted_fallback", "Прервано", "Interrupted");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.started", "Крафт запущен…", "Crafting started…");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.collecting", "Забираете результат…", "Collecting result…");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.station_default", "Станция", "Station");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.select_recipe", "Выберите рецепт", "Select recipe");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.station_switched", "Станция переключена", "Station switched");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.btn.all", "Все", "All");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.added_item", "Добавлено: {0} × {1}", "Added: {0} × {1}");
+            added += AddIfMissing(shared, ru, en, "ui.crafting.select_recipe_hint", "Выберите рецепт и добавьте ингредиенты", "Select a recipe and add ingredients");
+            // CharacterWindow extra
+            added += AddIfMissing(shared, ru, en, "ui.character.credits_label", "Кредиты: {0:F0} CR", "Credits: {0:F0} CR");
+            added += AddIfMissing(shared, ru, en, "ui.character.inv_type", "Тип: {0}", "Type: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.character.inv_weight", "Вес: {0:F1} кг", "Weight: {0:F1} kg");
+            added += AddIfMissing(shared, ru, en, "ui.character.skill_prereq", "Нужно: {0}", "Requires: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.character.quests_not_implemented", "Квесты ещё не реализованы", "Quests not yet implemented");
+            added += AddIfMissing(shared, ru, en, "ui.character.no_quests", "Нет квестов в журнале", "No quests in journal");
+            added += AddIfMissing(shared, ru, en, "ui.character.quests_summary", "Активных: {0} | Завершённых: {1} | Провалено: {2} | Найдено: {3}", "Active: {0} | Completed: {1} | Failed: {2} | Discovered: {3}");
+            added += AddIfMissing(shared, ru, en, "ui.character.new_quest", "Новый квест: {0}", "New quest: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.character.select_discovered", "Выберите квест в секции 'Найденные' для принятия", "Select a quest in 'Discovered' section to accept");
+            added += AddIfMissing(shared, ru, en, "ui.character.accept_request", "Запрос на принятие '{0}' отправлен...", "Accept request for '{0}' sent...");
+            // Keybindings
+            added += AddIfMissing(shared, ru, en, "ui.keybindings.rebind_skill_title", "Переназначение навыка:", "Remap skill:");
+            added += AddIfMissing(shared, ru, en, "ui.keybindings.rebind_key_title", "Переназначение клавиши:", "Remap key:");
+            added += AddIfMissing(shared, ru, en, "ui.keybindings.rebind_hint", "«{0}» — нажмите клавишу", "«{0}» — press a key");
+            added += AddIfMissing(shared, ru, en, "ui.keybindings.select_skill_for_slot", "Выберите навык для слота {0}", "Select a skill for slot {0}");
+            // NetworkUI
+            added += AddIfMissing(shared, ru, en, "ui.network.players_count", "Игроков: {0}", "Players: {0}");
+            added += AddIfMissing(shared, ru, en, "ui.network.disconnected", "Отключено", "Disconnected");
 
             EditorUtility.SetDirty(shared);
             EditorUtility.SetDirty(ru);

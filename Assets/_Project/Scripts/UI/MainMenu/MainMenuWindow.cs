@@ -23,6 +23,7 @@ namespace ProjectC.UI.MainMenu
 
         private UIDocument _doc;
         private VisualElement _root;
+        private VisualElement _contentWindow;
         private bool _built;
 
         private VisualElement _rootButtons;
@@ -78,6 +79,9 @@ namespace ProjectC.UI.MainMenu
             _doc.rootVisualElement.Clear();
             if (mainUss != null)
                 _doc.rootVisualElement.styleSheets.Add(mainUss);
+            var settingsUss = Resources.Load<StyleSheet>("UI/EscMenuSettingsStyles");
+            if (settingsUss != null)
+                _doc.rootVisualElement.styleSheets.Add(settingsUss);
             _root = mainUxml.CloneTree();
             _root.style.position = Position.Absolute;
             _root.style.left = 0;
@@ -85,6 +89,9 @@ namespace ProjectC.UI.MainMenu
             _root.style.right = 0;
             _root.style.bottom = 0;
             _doc.rootVisualElement.Add(_root);
+
+            // Content window — dynamically created panels are added here
+            _contentWindow = _root.Q<VisualElement>("main-menu-window");
 
             // Query UI elements
             _titleLabel = _root.Q<Label>("main-menu-title");
@@ -176,6 +183,9 @@ namespace ProjectC.UI.MainMenu
             if (_currentPanel != null)
                 _currentPanel.style.display = DisplayStyle.None;
 
+            // Add to content window if not already a child
+            if (panel.parent != _contentWindow && _contentWindow != null)
+                _contentWindow.Add(panel);
             panel.style.display = DisplayStyle.Flex;
             _menuStack.Push(panel);
             _currentPanel = panel;

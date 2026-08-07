@@ -1,0 +1,29 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="UI/MainMenuStyles" />
+    <ui:VisualElement name="main-menu-root" class="main-menu-root">
+        <ui:VisualElement name="main-menu-window" class="main-menu-window">
+            <!-- Title -->
+            <ui:Label name="main-menu-title" text="PROJECT C: THE CLOUDS" class="main-menu-title" />
+            <ui:Label name="main-menu-subtitle" text="Версия Alpha 0.1" class="main-menu-subtitle" />
+
+            <!-- Root Menu Buttons (visible by default) -->
+            <ui:VisualElement name="main-menu-buttons" class="main-menu-buttons">
+                <ui:Button name="main-host-btn" text="ОДИНОЧНАЯ ИГРА" class="main-menu-btn" />
+                <ui:Button name="main-connect-btn" text="ПОДКЛЮЧИТЬСЯ К СЕРВЕРУ" class="main-menu-btn" />
+                <ui:Button name="main-settings-btn" text="НАСТРОЙКИ" class="main-menu-btn" />
+                <ui:Button name="main-quit-btn" text="ВЫХОД" class="main-menu-btn main-menu-btn-warning" />
+            </ui:VisualElement>
+
+            <!-- IP Connect Sub-panel (hidden by default) -->
+            <ui:VisualElement name="main-ip-panel" class="main-ip-panel" style="display: none;">
+                <ui:Label name="main-ip-title" text="ПОДКЛЮЧЕНИЕ К СЕРВЕРУ" class="main-menu-title" />
+                <ui:Label name="main-ip-label" text="Введите IP-адрес сервера:" class="main-ip-label" />
+                <ui:TextField name="main-ip-field" text="" class="main-ip-field" picking-mode="Position" />
+                <ui:VisualElement name="main-ip-buttons" class="main-ip-buttons">
+                    <ui:Button name="main-ip-connect-btn" text="ПОДКЛЮЧИТЬСЯ" class="main-menu-btn" />
+                    <ui:Button name="main-ip-back-btn" text="НАЗАД" class="main-menu-btn main-menu-btn-back" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

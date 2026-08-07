@@ -1632,6 +1632,42 @@ MonoBehaviour:
     m_Localized: 'Cargo hold: {0}'
     m_Metadata:
       m_Items: []
+  - m_Id: 528063811985408
+    m_Localized: 'PROJECT C: THE CLOUDS'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063916843008
+    m_Localized: Alpha 0.1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063921037312
+    m_Localized: SOLO GAME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063925231616
+    m_Localized: CONNECT TO SERVER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063929425920
+    m_Localized: SETTINGS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063933620224
+    m_Localized: QUIT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063937814528
+    m_Localized: CONNECT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063942008832
+    m_Localized: "\u2190 BACK"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063946203136
+    m_Localized: 'Enter server IP:'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -1651,6 +1651,42 @@ MonoBehaviour:
     m_Key: ui.character.btn.fail_contract
     m_Metadata:
       m_Items: []
+  - m_Id: 528063811985408
+    m_Key: ui.main_menu.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063916843008
+    m_Key: ui.main_menu.subtitle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063921037312
+    m_Key: ui.main_menu.button.host
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063925231616
+    m_Key: ui.main_menu.button.connect
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063929425920
+    m_Key: ui.main_menu.button.settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063933620224
+    m_Key: ui.main_menu.button.quit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063937814528
+    m_Key: ui.main_menu.button.ip_connect
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063942008832
+    m_Key: ui.main_menu.button.back
+    m_Metadata:
+      m_Items: []
+  - m_Id: 528063946203136
+    m_Key: ui.main_menu.ip_label
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

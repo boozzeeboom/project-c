@@ -1165,6 +1165,480 @@ MonoBehaviour:
     m_Localized: Getrennt
     m_Metadata:
       m_Items: []
+  - m_Id: 488986047848448
+    m_Localized: "\U0001F4D6 Wissen freigeschaltet \u2014 {0}: {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986156900352
+    m_Localized: und {0} weitere
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986165288960
+    m_Localized: "W\xE4hlen Sie einen Gegenstand zum Benutzen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986169483264
+    m_Localized: "Gegenstandsnutzung \u2014 TODO (Phase 8+)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986177871872
+    m_Localized: "W\xE4hlen Sie einen Gegenstand zum Ablegen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986186260480
+    m_Localized: Netzwerk nicht gestartet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986190454784
+    m_Localized: Spieler nicht gefunden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649088
+    m_Localized: Ablegen...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649089
+    m_Localized: +1 Gegenstand
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986207232000
+    m_Localized: -1 Gegenstand
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426304
+    m_Localized: Ruf
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426305
+    m_Localized: Einstellung
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986219814912
+    m_Localized: Ziel abgeschlossen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986228203520
+    m_Localized: "Nicht verf\xFCgbar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735452532736
+    m_Localized: "\u2192 VERPACKEN"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670080
+    m_Localized: "\u2190 ENTPACKEN"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670081
+    m_Localized: Waren auf dem Markt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670082
+    m_Localized: Ihr Lager
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670083
+    m_Localized: Schiffsfracht
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670084
+    m_Localized: "NPC-Vertr\xE4ge"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670085
+    m_Localized: "Ressourcen: Pickables \u2194 Kisten Konvertierung"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670086
+    m_Localized: 'Anzahl:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670087
+    m_Localized: 'Schiff:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670088
+    m_Localized: Inventar (Ressourcen)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670089
+    m_Localized: Lager (Kisten)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670090
+    m_Localized: Meine Waren anzeigen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670091
+    m_Localized: Alle Waren anzeigen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670092
+    m_Localized: "\u2190 ZUR\xDCCK"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670093
+    m_Localized: Aussehen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670094
+    m_Localized: "K\xF6rper"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670095
+    m_Localized: "M\xC4NNLICH"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670096
+    m_Localized: Basismodell HumanM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670097
+    m_Localized: WEIBLICH
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670098
+    m_Localized: Basismodell HumanF
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670099
+    m_Localized: Proportionen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670100
+    m_Localized: "Gr\xF6\xDFe"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670101
+    m_Localized: "F\xFClle"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670102
+    m_Localized: "ZUR\xDCCKSETZEN"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670103
+    m_Localized: Hautfarbe
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670104
+    m_Localized: "FARBE ZUR\xDCCKSETZEN"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670105
+    m_Localized: SCHLIESSEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670106
+    m_Localized: INVENTAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670107
+    m_Localized: "TAB \u2014 schlie\xDFen \u2022 Sektor klicken \u2014 Gegenstandsliste"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670108
+    m_Localized: RESSOURCEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670109
+    m_Localized: "AUSR\xDCSTUNG"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670110
+    m_Localized: NAHRUNG
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670111
+    m_Localized: TREIBSTOFF
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670112
+    m_Localized: ANTIGRAV
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670113
+    m_Localized: MEZIUM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670114
+    m_Localized: MEDIZIN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670115
+    m_Localized: TECHNIK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670116
+    m_Localized: "W\xE4hlen Sie einen Sektor"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670117
+    m_Localized: BENUTZEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670118
+    m_Localized: ABLEGEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670119
+    m_Localized: SCHLIESSEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670120
+    m_Localized: "Inventar mit TAB \xF6ffnen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670121
+    m_Localized: Spieler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670122
+    m_Localized: "Erlernte Kampff\xE4higkeiten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670123
+    m_Localized: "F\xC4HIGKEIT LERNEN"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670124
+    m_Localized: "Soziale F\xE4higkeiten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670125
+    m_Localized: Meine Schiffe
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670126
+    m_Localized: "Keine verf\xFCgbaren Schiffe. Finden Sie einen Schl\xFCssel in
+      der Welt."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670127
+    m_Localized: Fracht
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670128
+    m_Localized: Installierte Module
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670129
+    m_Localized: Gegenstandsbeschreibung
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670130
+    m_Localized: ABLEHNEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670131
+    m_Localized: ANNEHMEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670132
+    m_Localized: SCHLIESSEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670133
+    m_Localized: "Charaktermen\xFC \xF6ffnen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670134
+    m_Localized: Rezepte
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670135
+    m_Localized: "W\xE4hlen Sie ein Rezept"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670136
+    m_Localized: 'Zutaten:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670137
+    m_Localized: 'Puffer:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670138
+    m_Localized: Herstellung starten
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670139
+    m_Localized: Abbrechen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670140
+    m_Localized: Abholen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670141
+    m_Localized: Frachtraum
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670142
+    m_Localized: Spielerinventar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670143
+    m_Localized: Schiffsfrachtraum
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670144
+    m_Localized: 'Pakete:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670145
+    m_Localized: "\u2192 In den Frachtraum"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670146
+    m_Localized: "\u2190 Aus dem Frachtraum"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670147
+    m_Localized: Bereit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670148
+    m_Localized: "Kampff\xE4higkeiten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670149
+    m_Localized: Aktionen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670150
+    m_Localized: "F\xE4higkeiten auf Slots"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670151
+    m_Localized: "Klicken Sie \u270E auf einen Slot, um eine F\xE4higkeit auszuw\xE4hlen.
+      \u2715 l\xF6scht den Slot."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670152
+    m_Localized: "W\xE4hlen Sie eine F\xE4higkeit"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670153
+    m_Localized: "F\xE4higkeitsbaum"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670154
+    m_Localized: Alle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670155
+    m_Localized: Slots
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670156
+    m_Localized: "F\xE4higkeiten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670157
+    m_Localized: "W\xE4hlen Sie links eine F\xE4higkeit"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670158
+    m_Localized: "Ben\xF6tigt:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670159
+    m_Localized: 'Schaltet frei:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670160
+    m_Localized: Lernen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670161
+    m_Localized: Vergessen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670162
+    m_Localized: "Schlie\xDFen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670163
+    m_Localized: "\U0001F6E0 Reparatur-Manager"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670164
+    m_Localized: 'Schiff:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670165
+    m_Localized: "\U0001F681 Rufen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670166
+    m_Localized: "H\xFClle: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670167
+    m_Localized: "\U0001F527 Reparieren"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670168
+    m_Localized: 'Modul-Slot:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670169
+    m_Localized: "Installiert: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670170
+    m_Localized: "Verf\xFCgbare Module:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670171
+    m_Localized: "\U0001F3A8 Schiffs-Farbe:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670172
+    m_Localized: "Kosten: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670173
+    m_Localized: "\U0001F3A8 Lackieren"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670174
+    m_Localized: "\U0001F4B0 Credits: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670175
+    m_Localized: "Ziel: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670176
+    m_Localized: Ausblenden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670177
+    m_Localized: 'Tasten-Neubelegung:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670178
+    m_Localized: "Taste dr\xFCcken"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670179
+    m_Localized: "(Esc \u2014 abbrechen)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924223143936
+    m_Localized: "Aktuell: Weiblich. \xC4nderungen werden sofort \xFCbernommen."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924256698368
+    m_Localized: "Aktuell: M\xE4nnlich. \xC4nderungen werden sofort \xFCbernommen."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 496973839769600
+    m_Localized: 'Frachtraum: {0}'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

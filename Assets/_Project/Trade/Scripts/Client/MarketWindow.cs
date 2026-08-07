@@ -379,9 +379,7 @@ namespace ProjectC.Trade.Client
 
             var marketTabBtn = _root.Q<Button>("tab-market");
             var warehouseTabBtn = _root.Q<Button>("tab-warehouse");
-            // C2-refactor: 3-й таб КОНТРАКТЫ
             var contractsTabBtn = _root.Q<Button>("tab-contracts");
-            // T-E04: 4-й таб ОБМЕННИК
             var exchangeTabBtn = _root.Q<Button>("tab-exchanger");
             if (marketTabBtn != null) { marketTabBtn.clicked += () => SwitchTab("market"); marketTabBtn.text = Loc.Get("ui.market.tab.market"); }
             if (warehouseTabBtn != null) { warehouseTabBtn.clicked += () => SwitchTab("warehouse"); warehouseTabBtn.text = Loc.Get("ui.market.tab.warehouse"); }
@@ -393,13 +391,34 @@ namespace ProjectC.Trade.Client
             if (_loadBtn != null) { _loadBtn.clicked += OnLoadClicked; _loadBtn.text = Loc.Get("ui.market.btn.load"); }
             if (_unloadBtn != null) { _unloadBtn.clicked += OnUnloadClicked; _unloadBtn.text = Loc.Get("ui.market.btn.unload"); }
             if (_closeBtn != null) { _closeBtn.clicked += OnCloseClicked; _closeBtn.text = Loc.Get("ui.market.btn.close"); }
-            // C2-refactor: contract action handlers
             if (_acceptBtn != null) { _acceptBtn.clicked += OnAcceptContractClicked; _acceptBtn.text = Loc.Get("ui.market.btn.accept"); }
             if (_completeBtn != null) { _completeBtn.clicked += OnCompleteContractClicked; _completeBtn.text = Loc.Get("ui.market.btn.complete"); }
             if (_failBtn != null) { _failBtn.clicked += OnFailContractClicked; _failBtn.text = Loc.Get("ui.market.btn.fail"); }
-            // T-E04: exchange button handlers
-            if (_packBtn != null) _packBtn.clicked += OnPackClicked;
-            if (_unpackBtn != null) _unpackBtn.clicked += OnUnpackClicked;
+            if (_packBtn != null) { _packBtn.clicked += OnPackClicked; _packBtn.text = Loc.Get("ui.market.btn.pack"); }
+            if (_unpackBtn != null) { _unpackBtn.clicked += OnUnpackClicked; _unpackBtn.text = Loc.Get("ui.market.btn.unpack"); }
+
+            // Section titles — override UXML hardcoded text
+            var titleEl = _itemSection?.Q<Label>(className: "section-title");
+            if (titleEl != null) titleEl.text = Loc.Get("ui.market.section.items");
+            titleEl = _warehouseSection?.Q<Label>(className: "section-title");
+            if (titleEl != null) titleEl.text = Loc.Get("ui.market.section.warehouse");
+            titleEl = _cargoSection?.Q<Label>(className: "section-title");
+            if (titleEl != null) titleEl.text = Loc.Get("ui.market.section.cargo");
+            titleEl = _contractsSection?.Q<Label>(className: "section-title");
+            if (titleEl != null) titleEl.text = Loc.Get("ui.market.section.contracts");
+            titleEl = _exchangeSection?.Q<Label>(className: "section-title");
+            if (titleEl != null) titleEl.text = Loc.Get("ui.market.section.exchange");
+            var qtyLabels = _root.Query<Label>(className: "qty-label").ToList();
+            foreach (var l in qtyLabels) l.text = Loc.Get("ui.market.label.qty");
+            var shipLabel = _shipSelectorContainer?.Q<Label>(className: "ship-selector-label");
+            if (shipLabel != null) shipLabel.text = Loc.Get("ui.market.label.ship");
+            var exchangePanelTitles = _exchangeSection?.Query<Label>(className: "exchange-panel-title").ToList();
+            if (exchangePanelTitles != null && exchangePanelTitles.Count >= 2)
+            {
+                exchangePanelTitles[0].text = Loc.Get("ui.market.exchange.inventory");
+                exchangePanelTitles[1].text = Loc.Get("ui.market.exchange.warehouse");
+            }
+            if (_myItemsToggle != null) _myItemsToggle.text = Loc.Get("ui.market.btn.show_mine");
 
             // R3-qty: круговые кнопки ± — market
             if (_marketQtyMinus10 != null) _marketQtyMinus10.clicked += () => AdjustMarketQty(-10);

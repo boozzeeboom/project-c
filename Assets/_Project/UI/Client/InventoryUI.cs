@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using ProjectC.Items;
 using ProjectC.Items.Client;
 using ProjectC.Items.Dto;
+using ProjectC.Localization;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -239,9 +240,17 @@ namespace ProjectC.UI.Client
             }
 
             // Action buttons
-            if (_useBtn != null)   _useBtn.clicked   += OnUseClicked;
-            if (_dropBtn != null)  _dropBtn.clicked  += OnDropClicked;
-            if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
+            if (_useBtn != null)   { _useBtn.clicked   += OnUseClicked;   _useBtn.text = Loc.Get("ui.inventory.btn.use"); }
+            if (_dropBtn != null)  { _dropBtn.clicked  += OnDropClicked;  _dropBtn.text = Loc.Get("ui.inventory.btn.drop"); }
+            if (_closeBtn != null) { _closeBtn.clicked += OnCloseClicked; _closeBtn.text = Loc.Get("ui.inventory.btn.close"); }
+
+            // Localize static text
+            var wheelTitle = _root.Q<Label>("wheel-title");
+            if (wheelTitle != null) wheelTitle.text = Loc.Get("ui.inventory.wheel_title");
+            var wheelHint = _root.Q<Label>("wheel-hint");
+            if (wheelHint != null) wheelHint.text = Loc.Get("ui.inventory.wheel_hint");
+            if (_sublistTitle != null) _sublistTitle.text = Loc.Get("ui.inventory.sublist_placeholder");
+            if (_messageLabel != null) _messageLabel.text = Loc.Get("ui.inventory.welcome");
 
             // Initial state — скрыт, пока Tab не нажат
             SetVisible(visibleOnStart);
@@ -496,12 +505,10 @@ namespace ProjectC.UI.Client
         {
             if (_selectedItemIndex < 0 || _selectedItemIndex >= _sublistCache.Count)
             {
-                SetMessage("Выберите предмет для использования", true);
+                SetMessage(Loc.Get("ui.inventory.select_item_to_use", "Выберите предмет для использования"), true);
                 return;
             }
-            // MVP: пока не реализовано, даём feedback
-            SetMessage("Использование предметов — TODO (Phase 8+)", false);
-            // InventoryClientState.Instance?.RequestUse(_sublistCache[_selectedItemIndex].slotIndex);
+            SetMessage(Loc.Get("ui.inventory.use_todo", "Использование предметов — TODO (Phase 8+)"), false);
         }
 
         // Phase 10 (INVENTORY_V2_DROP_DESIGN.md): бросить предмет в мир перед игроком.
@@ -510,27 +517,26 @@ namespace ProjectC.UI.Client
         {
             if (_selectedItemIndex < 0 || _selectedItemIndex >= _sublistCache.Count)
             {
-                SetMessage("Выберите предмет для броска", true);
+                SetMessage(Loc.Get("ui.inventory.select_item_to_drop", "Выберите предмет для броска"), true);
                 return;
             }
             var state = ProjectC.Items.Client.InventoryClientState.Instance;
             if (state == null)
             {
-                SetMessage("Сеть не запущена", true);
+                SetMessage(Loc.Get("ui.inventory.network_unavailable", "Сеть не запущена"), true);
                 return;
             }
             var localPlayer = FindAnyObjectByType<ProjectC.Player.NetworkPlayer>();
             if (localPlayer == null)
             {
-                SetMessage("Игрок не найден", true);
+                SetMessage(Loc.Get("ui.inventory.player_not_found", "Игрок не найден"), true);
                 return;
             }
             Vector3 playerPos = localPlayer.GetEffectivePosition();
-            // Бросаем в 1.5м перед игроком (forward * 1.5m, на уровне земли)
             Vector3 dropPos = playerPos + localPlayer.transform.forward * 1.5f;
             int slotIndex = _sublistCache[_selectedItemIndex].slotIndex;
             state.RequestDrop(slotIndex, 1, dropPos, playerPos);
-            SetMessage("Бросаю...", false);
+            SetMessage(Loc.Get("ui.inventory.dropping", "Бросаю..."), false);
         }
 
         private void OnCloseClicked() => SetVisible(false);

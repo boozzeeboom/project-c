@@ -164,6 +164,20 @@ namespace ProjectC.Trade.Client
             _cargoQtyMax     = _root.Q<Button>("cargo-qty-max");
             _cargoQtyLabel   = _root.Q<Label>("cargo-qty-label-value");
 
+            // Localize static UXML text
+            if (_storeBtn != null) _storeBtn.text = Loc.Get("ui.cargo.btn.store");
+            if (_retrieveBtn != null) _retrieveBtn.text = Loc.Get("ui.cargo.btn.retrieve");
+            if (_statusLabel != null) _statusLabel.text = Loc.Get("ui.cargo.status.ready");
+            // Column headers
+            foreach (var h in _root.Query<Label>(className: "cargo-console-col-header").ToList())
+            {
+                if (h.text.Contains("Инвентарь")) h.text = Loc.Get("ui.cargo.col.inventory");
+                else if (h.text.Contains("Трюм")) h.text = Loc.Get("ui.cargo.col.hold");
+            }
+            // "Паков:" labels
+            foreach (var l in _root.Query<Label>(className: "qty-label").ToList())
+                l.text = Loc.Get("ui.cargo.label.packs");
+
             // Inventory ListView
             if (_invList != null)
             {
@@ -263,7 +277,7 @@ namespace ProjectC.Trade.Client
             _shipName = shipDisplayName;
 
             if (_titleLabel != null)
-                _titleLabel.text = $"Грузовой отсек: {_shipName}";
+                _titleLabel.text = Loc.Format("ui.cargo.title_format", _shipName);
 
             UnityEngine.Cursor.lockState = CursorLockMode.None;
             UnityEngine.Cursor.visible = true;

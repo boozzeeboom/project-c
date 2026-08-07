@@ -163,6 +163,10 @@ namespace ProjectC.Docking.UI
                         _secondaryButton.clicked += OnSecondaryClicked;
                     }
 
+                    // Localize UXML text
+                    if (_primaryButton != null) _primaryButton.text = Loc.Get("ui.docking.btn.request_landing");
+                    if (_secondaryButton != null) _secondaryButton.text = Loc.Get("ui.docking.btn.cancel");
+
                     _built = true;
                     // Изначально скрыто — Show()/SetOpen(true) переключит на Flex
                     if (_container != null) _container.style.display = DisplayStyle.None;

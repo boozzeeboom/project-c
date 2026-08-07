@@ -60,6 +60,11 @@ namespace ProjectC.UI.Settings
 
             _titleLabel = _root.Q<Label>("prompt-title");
             _hintLabel = _root.Q<Label>("prompt-hint");
+            // Localize UXML text
+            if (_titleLabel != null) _titleLabel.text = Loc.Get("ui.rebind.title");
+            if (_hintLabel != null) _hintLabel.text = Loc.Get("ui.rebind.hint");
+            var cancelLabel = _root.Q<Label>("prompt-cancel");
+            if (cancelLabel != null) cancelLabel.text = Loc.Get("ui.rebind.cancel_hint");
             _built = true;
             SetVisible(false);
             Debug.Log($"[RebindPrompt] Built. uxml={promptUxml.name} uss={(promptUss != null ? promptUss.name : "null")}");

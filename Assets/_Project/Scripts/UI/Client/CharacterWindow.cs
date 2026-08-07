@@ -677,6 +677,12 @@ namespace ProjectC.UI.Client
             if (_tabQuests != null) _tabQuests.text = Loc.Get("ui.character.tab.quests");
             if (_characterNameLabel != null) _characterNameLabel.text = Loc.Get("ui.character.label.player");
             if (_locationLabel != null) _locationLabel.text = Loc.Get("ui.character.location");
+            if (_closeBtn != null) _closeBtn.text = Loc.Get("ui.character.btn.close");
+            if (_acceptQuestBtn != null) _acceptQuestBtn.text = Loc.Get("ui.character.btn.accept");
+            if (_rejectQuestBtn != null) _rejectQuestBtn.text = Loc.Get("ui.character.btn.reject");
+            if (_messageLabel != null) _messageLabel.text = Loc.Get("ui.character.welcome");
+            // Section title overrides — query by className
+            OverrideSectionTitles();
 
             _knowledgeFactionsList = _root.Q<ListView>("knowledge-factions-list");
             _knowledgeNpcList = _root.Q<ListView>("knowledge-npc-list");
@@ -3600,6 +3606,66 @@ namespace ProjectC.UI.Client
         }
 
         private void OnCloseClicked() => SetVisible(false);
+
+        /// <summary>Override UXML hardcoded section titles with Loc.Get() after build.</summary>
+        private void OverrideSectionTitles()
+        {
+            // Character tab: section titles
+            var titles = _characterSection?.Query<Label>(className: "progression-col-title").ToList();
+            if (titles != null && titles.Count >= 5)
+            {
+                titles[0].text = Loc.Get("ui.character.section.clothing");      // "Одежда"
+                titles[1].text = Loc.Get("ui.character.section.modules");       // "Модули"
+                titles[2].text = Loc.Get("ui.character.section.stats");         // "Характеристики"
+                titles[3].text = Loc.Get("ui.character.section.combat_skills"); // "Изученные боевые навыки"
+                titles[4].text = Loc.Get("ui.character.section.social_skills"); // "Социальные навыки"
+            }
+            // Skill tree buttons
+            var skillBtn = _characterSection?.Q<Label>("open-skill-tree-btn");
+            if (skillBtn != null) skillBtn.text = Loc.Get("ui.character.btn.skill_tree");
+            var socialBtn = _characterSection?.Q<Label>("open-social-skill-tree-btn");
+            if (socialBtn != null) socialBtn.text = Loc.Get("ui.character.btn.skill_tree");
+
+            // Ship tab
+            var shipTitle = _shipSection?.Q<Label>(className: "section-title");
+            if (shipTitle != null) shipTitle.text = Loc.Get("ui.character.section.my_ships");
+            var shipEmpty = _shipSection?.Q<Label>("ship-empty-label");
+            if (shipEmpty != null) shipEmpty.text = Loc.Get("ui.character.ship_empty");
+            var cargoHeader = _shipSection?.Q<Label>(className: "ship-info-header");
+            if (cargoHeader != null) cargoHeader.text = Loc.Get("ui.character.section.cargo");
+            var modulesHeader = _shipSection?.Q<Label>(className: "ship-col-header");
+            if (modulesHeader != null) modulesHeader.text = Loc.Get("ui.character.section.installed_modules");
+
+            // Knowledge tab
+            var knowledgeTitle = _knowledgeSection?.Q<Label>(className: "section-title");
+            if (knowledgeTitle != null) knowledgeTitle.text = Loc.Get("ui.character.section.knowledge");
+            var kTitles = _knowledgeSection?.Query<Label>(className: "knowledge-section-title").ToList();
+            if (kTitles != null && kTitles.Count >= 4)
+            {
+                kTitles[0].text = Loc.Get("ui.character.knowledge.factions");
+                kTitles[1].text = Loc.Get("ui.character.knowledge.npc");
+                kTitles[2].text = Loc.Get("ui.character.knowledge.skills");
+                kTitles[3].text = Loc.Get("ui.character.knowledge.recipes");
+            }
+
+            // Inventory tab
+            var invDetailTitle = _inventorySection?.Q<Label>(className: "detail-title");
+            if (invDetailTitle != null) invDetailTitle.text = Loc.Get("ui.character.section.item_desc");
+            var invDetailName = _inventorySection?.Q<Label>("inventory-detail-name");
+            if (invDetailName != null) invDetailName.text = Loc.Get("ui.character.select_item_left");
+
+            // Quests tab
+            var questsTitle = _questsSection?.Q<Label>(className: "section-title");
+            if (questsTitle != null) questsTitle.text = Loc.Get("ui.character.section.quests");
+            var qTitles = _questsSection?.Query<Label>(className: "quests-section-title").ToList();
+            if (qTitles != null && qTitles.Count >= 4)
+            {
+                qTitles[0].text = Loc.Get("ui.character.quests.active");
+                qTitles[1].text = Loc.Get("ui.character.quests.completed");
+                qTitles[2].text = Loc.Get("ui.character.quests.failed");
+                qTitles[3].text = Loc.Get("ui.character.quests.discovered");
+            }
+        }
 
         // ============================================================
         // Visibility (4 FIX'а из MarketWindow)

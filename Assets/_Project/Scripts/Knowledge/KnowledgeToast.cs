@@ -245,9 +245,10 @@ namespace ProjectC.Knowledge
             int count = Mathf.Min(names.Count, _maxToastLines);
             string displayNames = string.Join(", ", names.GetRange(0, count));
             if (names.Count > _maxToastLines)
-                displayNames += $" и ещё {names.Count - _maxToastLines}";
+                displayNames += " " + Loc.Get("ui.knowledge.toast_and_more", "и ещё {0}").Replace("{0}", (names.Count - _maxToastLines).ToString());
 
-            string message = $"📖 Открыто знание — {category}: {displayNames}";
+            string template = Loc.Get("ui.knowledge.toast_format", "📖 Открыто знание — {0}: {1}");
+            string message = string.Format(template, category, displayNames);
             Debug.Log($"[KnowledgeToast] {message}");
             EnqueueToast(message);
         }

@@ -14,6 +14,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections;
+using ProjectC.Localization;
 using ProjectC.Quests.Dto;
 using ProjectC.Quests.Client;
 using ProjectC.Player;
@@ -281,20 +282,20 @@ namespace ProjectC.Quests.UI
      string prefix = r.success ? "✅" : "❌";
      switch (r.actionType)
      {
-         case 20: return string.IsNullOrEmpty(data) ? $"{prefix} +1 предмет" : $"{prefix} +1 {data}";
-         case 21: return string.IsNullOrEmpty(data) ? $"{prefix} -1 предмет" : $"{prefix} -1 {data}";
+         case 20: return string.IsNullOrEmpty(data) ? $"{prefix} {Loc.Get("ui.dialog.action.add_item", "+1 предмет")}" : $"{prefix} +1 {data}";
+         case 21: return string.IsNullOrEmpty(data) ? $"{prefix} {Loc.Get("ui.dialog.action.remove_item", "-1 предмет")}" : $"{prefix} -1 {data}";
          case 30: return $"{prefix} +{delta} CR";
          case 31:
-             if (string.IsNullOrEmpty(data)) return $"{prefix} Репутация +{delta}";
+             if (string.IsNullOrEmpty(data)) return $"{prefix} {Loc.Get("ui.dialog.action.reputation", "Репутация")} +{delta}";
              var fparts = data.Split(':');
              if (fparts.Length == 2) return $"{prefix} {fparts[0]} +{delta}";
              return $"{prefix} {data}";
          case 32:
-             if (string.IsNullOrEmpty(data)) return $"{prefix} Отношение +{delta}";
+             if (string.IsNullOrEmpty(data)) return $"{prefix} {Loc.Get("ui.dialog.action.attitude", "Отношение")} +{delta}";
              var parts = data.Split(':');
              if (parts.Length == 2) return $"{prefix} {parts[0]} +{delta}";
              return $"{prefix} {data}";
-         case 11: return string.IsNullOrEmpty(data) ? $"{prefix} Цель выполнена" : $"{prefix} {data}";
+         case 11: return string.IsNullOrEmpty(data) ? $"{prefix} {Loc.Get("ui.dialog.action.objective_complete", "Цель выполнена")}" : $"{prefix} {data}";
          default: return string.IsNullOrEmpty(data) ? prefix : $"{prefix} {data}";
      }
  }
@@ -388,7 +389,7 @@ StartTypewriter(locText ?? "");
  var opt = _currentStep.options[i];
  var btn = new Button(() => OnOptionClicked(idx));
  btn.text = !opt.available
- ? $"{opt.label} [Недоступно: {opt.unavailableReason}]"
+ ? $"{opt.label} [{Loc.Get("ui.dialog.option_unavailable", "Недоступно")}: {opt.unavailableReason}]"
  : opt.label;
  StyleButton(btn, opt.available);
  _optionsContainer.Add(btn);

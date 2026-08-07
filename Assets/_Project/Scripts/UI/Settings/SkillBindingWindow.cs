@@ -71,6 +71,13 @@ namespace ProjectC.UI.Settings
             var modalCloseBtn = _root.Q<Button>("modal-close-btn");
             if (modalCloseBtn != null) modalCloseBtn.clicked += CloseModal;
 
+            // Localize static UXML text
+            var skTitle = _root.Q<Label>(className: "sk-title");
+            if (skTitle != null) skTitle.text = Loc.Get("ui.skillbinding.title");
+            var skSubtitle = _root.Q<Label>(className: "sk-subtitle");
+            if (skSubtitle != null) skSubtitle.text = Loc.Get("ui.skillbinding.subtitle");
+            if (_modalTitle != null) _modalTitle.text = Loc.Get("ui.skillbinding.modal_title");
+
             _built = true;
             SetOpen(false);
             Debug.Log("[SkillBindingWindow] Built.");

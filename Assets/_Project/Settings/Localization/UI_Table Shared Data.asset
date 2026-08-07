@@ -1155,6 +1155,478 @@ MonoBehaviour:
     m_Key: ui.network.disconnected
     m_Metadata:
       m_Items: []
+  - m_Id: 488986047848448
+    m_Key: ui.knowledge.toast_format
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986156900352
+    m_Key: ui.knowledge.toast_and_more
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986165288960
+    m_Key: ui.inventory.select_item_to_use
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986169483264
+    m_Key: ui.inventory.use_todo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986177871872
+    m_Key: ui.inventory.select_item_to_drop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986186260480
+    m_Key: ui.inventory.network_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986190454784
+    m_Key: ui.inventory.player_not_found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649088
+    m_Key: ui.inventory.dropping
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649089
+    m_Key: ui.dialog.action.add_item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986207232000
+    m_Key: ui.dialog.action.remove_item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426304
+    m_Key: ui.dialog.action.reputation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426305
+    m_Key: ui.dialog.action.attitude
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986219814912
+    m_Key: ui.dialog.action.objective_complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986228203520
+    m_Key: ui.dialog.option_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735452532736
+    m_Key: ui.market.btn.pack
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670080
+    m_Key: ui.market.btn.unpack
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670081
+    m_Key: ui.market.section.items
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670082
+    m_Key: ui.market.section.warehouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670083
+    m_Key: ui.market.section.cargo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670084
+    m_Key: ui.market.section.contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670085
+    m_Key: ui.market.section.exchange
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670086
+    m_Key: ui.market.label.qty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670087
+    m_Key: ui.market.label.ship
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670088
+    m_Key: ui.market.exchange.inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670089
+    m_Key: ui.market.exchange.warehouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670090
+    m_Key: ui.market.btn.show_mine
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670091
+    m_Key: ui.market.btn.show_all
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670092
+    m_Key: ui.esc_menu.button.back
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670093
+    m_Key: ui.custom.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670094
+    m_Key: ui.custom.section.body
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670095
+    m_Key: ui.custom.body.male
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670096
+    m_Key: ui.custom.body.male_desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670097
+    m_Key: ui.custom.body.female
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670098
+    m_Key: ui.custom.body.female_desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670099
+    m_Key: ui.custom.section.proportions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670100
+    m_Key: ui.custom.label.height
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670101
+    m_Key: ui.custom.label.fullness
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670102
+    m_Key: ui.custom.btn.reset_proportions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670103
+    m_Key: ui.custom.section.skin
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670104
+    m_Key: ui.custom.btn.reset_skin
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670105
+    m_Key: ui.custom.btn.close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670106
+    m_Key: ui.inventory.wheel_title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670107
+    m_Key: ui.inventory.wheel_hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670108
+    m_Key: ui.inventory.sector.resources
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670109
+    m_Key: ui.inventory.sector.equipment
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670110
+    m_Key: ui.inventory.sector.food
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670111
+    m_Key: ui.inventory.sector.fuel
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670112
+    m_Key: ui.inventory.sector.antigrav
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670113
+    m_Key: ui.inventory.sector.meziy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670114
+    m_Key: ui.inventory.sector.medical
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670115
+    m_Key: ui.inventory.sector.tech
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670116
+    m_Key: ui.inventory.sublist_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670117
+    m_Key: ui.inventory.btn.use
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670118
+    m_Key: ui.inventory.btn.drop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670119
+    m_Key: ui.inventory.btn.close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670120
+    m_Key: ui.inventory.welcome
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670121
+    m_Key: ui.character.player_name_default
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670122
+    m_Key: ui.character.section.combat_skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670123
+    m_Key: ui.character.btn.skill_tree
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670124
+    m_Key: ui.character.section.social_skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670125
+    m_Key: ui.character.section.my_ships
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670126
+    m_Key: ui.character.ship_empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670127
+    m_Key: ui.character.section.cargo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670128
+    m_Key: ui.character.section.installed_modules
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670129
+    m_Key: ui.character.section.item_desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670130
+    m_Key: ui.character.btn.reject
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670131
+    m_Key: ui.character.btn.accept
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670132
+    m_Key: ui.character.btn.close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670133
+    m_Key: ui.character.welcome
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670134
+    m_Key: ui.crafting.section.recipes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670135
+    m_Key: ui.crafting.recipe_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670136
+    m_Key: ui.crafting.section.ingredients
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670137
+    m_Key: ui.crafting.section.buffer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670138
+    m_Key: ui.crafting.btn.start
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670139
+    m_Key: ui.crafting.btn.cancel
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670140
+    m_Key: ui.crafting.btn.collect
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670141
+    m_Key: ui.cargo.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670142
+    m_Key: ui.cargo.col.inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670143
+    m_Key: ui.cargo.col.hold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670144
+    m_Key: ui.cargo.label.packs
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670145
+    m_Key: ui.cargo.btn.store
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670146
+    m_Key: ui.cargo.btn.retrieve
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670147
+    m_Key: ui.cargo.status.ready
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670148
+    m_Key: ui.keybindings.section.skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670149
+    m_Key: ui.keybindings.section.actions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670150
+    m_Key: ui.skillbinding.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670151
+    m_Key: ui.skillbinding.subtitle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670152
+    m_Key: ui.skillbinding.modal_title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670153
+    m_Key: ui.skilltree.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670154
+    m_Key: ui.skilltree.chip_all
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670155
+    m_Key: ui.skilltree.section.slots
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670156
+    m_Key: ui.skilltree.section.skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670157
+    m_Key: ui.skilltree.detail_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670158
+    m_Key: ui.skilltree.required
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670159
+    m_Key: ui.skilltree.unlocks
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670160
+    m_Key: ui.skilltree.btn.learn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670161
+    m_Key: ui.skilltree.btn.forget
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670162
+    m_Key: ui.skilltree.btn.close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670163
+    m_Key: ui.repair.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670164
+    m_Key: ui.repair.label.ship
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670165
+    m_Key: ui.repair.btn.recall
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670166
+    m_Key: ui.repair.label.hull
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670167
+    m_Key: ui.repair.btn.repair
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670168
+    m_Key: ui.repair.label.slot
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670169
+    m_Key: ui.repair.label.installed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670170
+    m_Key: ui.repair.label.available_modules
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670171
+    m_Key: ui.repair.label.paint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670172
+    m_Key: ui.repair.label.paint_cost
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670173
+    m_Key: ui.repair.btn.paint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670174
+    m_Key: ui.repair.label.credits
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670175
+    m_Key: ui.quest.objective_prefix
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670176
+    m_Key: ui.quest.btn.hide
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670177
+    m_Key: ui.rebind.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670178
+    m_Key: ui.rebind.hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670179
+    m_Key: ui.rebind.cancel_hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924223143936
+    m_Key: ui.custom.status.female
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924256698368
+    m_Key: ui.custom.status.male
+    m_Metadata:
+      m_Items: []
+  - m_Id: 496973839769600
+    m_Key: ui.cargo.title_format
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

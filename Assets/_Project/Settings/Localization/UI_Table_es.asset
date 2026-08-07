@@ -1161,6 +1161,479 @@ MonoBehaviour:
     m_Localized: Desconectado
     m_Metadata:
       m_Items: []
+  - m_Id: 488986047848448
+    m_Localized: "\U0001F4D6 Conocimiento desbloqueado \u2014 {0}: {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986156900352
+    m_Localized: "y {0} m\xE1s"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986165288960
+    m_Localized: Selecciona un objeto para usar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986169483264
+    m_Localized: "Uso de objetos \u2014 TODO (Fase 8+)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986177871872
+    m_Localized: Selecciona un objeto para soltar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986186260480
+    m_Localized: Red no iniciada
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986190454784
+    m_Localized: Jugador no encontrado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649088
+    m_Localized: Soltando...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649089
+    m_Localized: +1 objeto
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986207232000
+    m_Localized: -1 objeto
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426304
+    m_Localized: "Reputaci\xF3n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426305
+    m_Localized: Actitud
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986219814912
+    m_Localized: Objetivo completado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986228203520
+    m_Localized: No disponible
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735452532736
+    m_Localized: "\u2192 EMPAQUETAR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670080
+    m_Localized: "\u2190 DESEMPAQUETAR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670081
+    m_Localized: Productos en el mercado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670082
+    m_Localized: "Tu almac\xE9n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670083
+    m_Localized: Carga de la nave
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670084
+    m_Localized: Contratos de NPC
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670085
+    m_Localized: "Recursos: conversi\xF3n recogibles \u2194 cajas"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670086
+    m_Localized: 'Cant:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670087
+    m_Localized: 'Nave:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670088
+    m_Localized: Inventario (recursos)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670089
+    m_Localized: "Almac\xE9n (cajas)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670090
+    m_Localized: Mostrar mis productos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670091
+    m_Localized: Mostrar todos los productos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670092
+    m_Localized: "\u2190 ATR\xC1S"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670093
+    m_Localized: Apariencia
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670094
+    m_Localized: Cuerpo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670095
+    m_Localized: MASCULINO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670096
+    m_Localized: Modelo base HumanM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670097
+    m_Localized: FEMENINO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670098
+    m_Localized: Modelo base HumanF
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670099
+    m_Localized: Proporciones
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670100
+    m_Localized: Altura
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670101
+    m_Localized: Corpulencia
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670102
+    m_Localized: RESTABLECER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670103
+    m_Localized: Color de piel
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670104
+    m_Localized: RESTABLECER COLOR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670105
+    m_Localized: CERRAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670106
+    m_Localized: INVENTARIO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670107
+    m_Localized: "TAB \u2014 cerrar \u2022 Clic en sector \u2014 lista de objetos"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670108
+    m_Localized: RECURSOS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670109
+    m_Localized: EQUIPAMIENTO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670110
+    m_Localized: COMIDA
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670111
+    m_Localized: COMBUSTIBLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670112
+    m_Localized: ANTIGRAV
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670113
+    m_Localized: MECIO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670114
+    m_Localized: MEDICAMENTOS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670115
+    m_Localized: "TECNOLOG\xCDA"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670116
+    m_Localized: Selecciona un sector
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670117
+    m_Localized: USAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670118
+    m_Localized: SOLTAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670119
+    m_Localized: CERRAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670120
+    m_Localized: Abre el inventario con TAB
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670121
+    m_Localized: Jugador
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670122
+    m_Localized: Habilidades de combate aprendidas
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670123
+    m_Localized: APRENDER HABILIDAD
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670124
+    m_Localized: Habilidades sociales
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670125
+    m_Localized: Mis naves
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670126
+    m_Localized: No hay naves disponibles. Encuentra una llave en el mundo.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670127
+    m_Localized: Carga
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670128
+    m_Localized: "M\xF3dulos instalados"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670129
+    m_Localized: "Descripci\xF3n del objeto"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670130
+    m_Localized: RECHAZAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670131
+    m_Localized: ACEPTAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670132
+    m_Localized: CERRAR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670133
+    m_Localized: "Abre el men\xFA de personaje"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670134
+    m_Localized: Recetas
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670135
+    m_Localized: Selecciona una receta
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670136
+    m_Localized: 'Ingredientes:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670137
+    m_Localized: "B\xFAfer:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670138
+    m_Localized: "Iniciar fabricaci\xF3n"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670139
+    m_Localized: Cancelar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670140
+    m_Localized: Recoger
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670141
+    m_Localized: Bodega de carga
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670142
+    m_Localized: Inventario del jugador
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670143
+    m_Localized: Bodega de la nave
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670144
+    m_Localized: 'Paquetes:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670145
+    m_Localized: "\u2192 A la bodega"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670146
+    m_Localized: "\u2190 De la bodega"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670147
+    m_Localized: Listo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670148
+    m_Localized: Habilidades de combate
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670149
+    m_Localized: Acciones
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670150
+    m_Localized: Habilidades en ranuras
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670151
+    m_Localized: "Haz clic en \u270E en una ranura para elegir una habilidad. \u2715
+      limpia la ranura."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670152
+    m_Localized: Selecciona una habilidad
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670153
+    m_Localized: "\xC1rbol de habilidades"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670154
+    m_Localized: Todos
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670155
+    m_Localized: Ranuras
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670156
+    m_Localized: Habilidades
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670157
+    m_Localized: Selecciona una habilidad a la izquierda
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670158
+    m_Localized: 'Requiere:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670159
+    m_Localized: 'Desbloquea:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670160
+    m_Localized: Aprender
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670161
+    m_Localized: Olvidar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670162
+    m_Localized: Cerrar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670163
+    m_Localized: "\U0001F6E0 Gestor de reparaciones"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670164
+    m_Localized: 'Nave:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670165
+    m_Localized: "\U0001F681 Llamar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670166
+    m_Localized: "Casco: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670167
+    m_Localized: "\U0001F527 Reparar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670168
+    m_Localized: "Ranura de m\xF3dulo:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670169
+    m_Localized: "Instalado: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670170
+    m_Localized: "M\xF3dulos disponibles:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670171
+    m_Localized: "\U0001F3A8 Color de la nave:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670172
+    m_Localized: "Coste: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670173
+    m_Localized: "\U0001F3A8 Pintar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670174
+    m_Localized: "\U0001F4B0 Cr\xE9ditos: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670175
+    m_Localized: "Objetivo: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670176
+    m_Localized: Ocultar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670177
+    m_Localized: "Reasignaci\xF3n de tecla:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670178
+    m_Localized: presiona una tecla
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670179
+    m_Localized: "(Esc \u2014 cancelar)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924223143936
+    m_Localized: 'Actual: Femenino. Los cambios se aplican de inmediato.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924256698368
+    m_Localized: 'Actual: Masculino. Los cambios se aplican de inmediato.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 496973839769600
+    m_Localized: 'Bodega de carga: {0}'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

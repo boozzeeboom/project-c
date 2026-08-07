@@ -1159,6 +1159,479 @@ MonoBehaviour:
     m_Localized: Disconnected
     m_Metadata:
       m_Items: []
+  - m_Id: 488986047848448
+    m_Localized: "\U0001F4D6 Knowledge unlocked \u2014 {0}: {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986156900352
+    m_Localized: and {0} more
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986165288960
+    m_Localized: Select an item to use
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986169483264
+    m_Localized: "Item usage \u2014 TODO (Phase 8+)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986177871872
+    m_Localized: Select an item to drop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986186260480
+    m_Localized: Network not running
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986190454784
+    m_Localized: Player not found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649088
+    m_Localized: Dropping...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649089
+    m_Localized: +1 item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986207232000
+    m_Localized: -1 item
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426304
+    m_Localized: Reputation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426305
+    m_Localized: Attitude
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986219814912
+    m_Localized: Objective completed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986228203520
+    m_Localized: Unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735452532736
+    m_Localized: "\u2192 PACK"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670080
+    m_Localized: "\u2190 UNPACK"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670081
+    m_Localized: Goods on market
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670082
+    m_Localized: Your warehouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670083
+    m_Localized: Ship cargo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670084
+    m_Localized: NPC Contracts
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670085
+    m_Localized: "Resources: pickables \u2194 crates conversion"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670086
+    m_Localized: 'Qty:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670087
+    m_Localized: 'Ship:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670088
+    m_Localized: Inventory (resources)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670089
+    m_Localized: Warehouse (crates)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670090
+    m_Localized: Show my goods
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670091
+    m_Localized: Show all goods
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670092
+    m_Localized: "\u2190 BACK"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670093
+    m_Localized: Appearance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670094
+    m_Localized: Body
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670095
+    m_Localized: MALE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670096
+    m_Localized: Base model HumanM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670097
+    m_Localized: FEMALE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670098
+    m_Localized: Base model HumanF
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670099
+    m_Localized: Proportions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670100
+    m_Localized: Height
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670101
+    m_Localized: Fullness
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670102
+    m_Localized: RESET
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670103
+    m_Localized: Skin color
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670104
+    m_Localized: RESET COLOR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670105
+    m_Localized: CLOSE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670106
+    m_Localized: INVENTORY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670107
+    m_Localized: "TAB \u2014 close \u2022 Click sector \u2014 item list"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670108
+    m_Localized: RESOURCES
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670109
+    m_Localized: EQUIPMENT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670110
+    m_Localized: FOOD
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670111
+    m_Localized: FUEL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670112
+    m_Localized: ANTIGRAV
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670113
+    m_Localized: MEZIUM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670114
+    m_Localized: MEDICAL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670115
+    m_Localized: TECH
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670116
+    m_Localized: Select a sector
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670117
+    m_Localized: USE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670118
+    m_Localized: DROP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670119
+    m_Localized: CLOSE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670120
+    m_Localized: Open inventory with TAB
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670121
+    m_Localized: Player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670122
+    m_Localized: Learned combat skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670123
+    m_Localized: LEARN SKILL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670124
+    m_Localized: Social skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670125
+    m_Localized: My ships
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670126
+    m_Localized: No available ships. Find a key in the world.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670127
+    m_Localized: Cargo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670128
+    m_Localized: Installed modules
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670129
+    m_Localized: Item description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670130
+    m_Localized: REJECT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670131
+    m_Localized: ACCEPT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670132
+    m_Localized: CLOSE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670133
+    m_Localized: Open character menu
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670134
+    m_Localized: Recipes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670135
+    m_Localized: Select a recipe
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670136
+    m_Localized: 'Ingredients:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670137
+    m_Localized: 'Buffer:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670138
+    m_Localized: Start crafting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670139
+    m_Localized: Cancel
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670140
+    m_Localized: Collect
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670141
+    m_Localized: Cargo hold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670142
+    m_Localized: Player inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670143
+    m_Localized: Ship hold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670144
+    m_Localized: 'Packs:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670145
+    m_Localized: "\u2192 To hold"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670146
+    m_Localized: "\u2190 From hold"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670147
+    m_Localized: Ready
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670148
+    m_Localized: Combat Skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670149
+    m_Localized: Actions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670150
+    m_Localized: Skills on slots
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670151
+    m_Localized: "Click \u270E on a slot to choose a skill for it. \u2715 clears
+      the slot."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670152
+    m_Localized: Select a skill
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670153
+    m_Localized: Skill tree
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670154
+    m_Localized: All
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670155
+    m_Localized: Slots
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670156
+    m_Localized: Skills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670157
+    m_Localized: Select a skill on the left
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670158
+    m_Localized: 'Requires:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670159
+    m_Localized: 'Unlocks:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670160
+    m_Localized: Learn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670161
+    m_Localized: Forget
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670162
+    m_Localized: Close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670163
+    m_Localized: "\U0001F6E0 Repair Manager"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670164
+    m_Localized: 'Ship:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670165
+    m_Localized: "\U0001F681 Recall"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670166
+    m_Localized: "Hull: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670167
+    m_Localized: "\U0001F527 Repair"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670168
+    m_Localized: 'Module slot:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670169
+    m_Localized: "Installed: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670170
+    m_Localized: 'Available modules:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670171
+    m_Localized: "\U0001F3A8 Ship color:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670172
+    m_Localized: "Cost: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670173
+    m_Localized: "\U0001F3A8 Paint"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670174
+    m_Localized: "\U0001F4B0 Credits: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670175
+    m_Localized: "Objective: \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670176
+    m_Localized: Hide
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670177
+    m_Localized: 'Key rebinding:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670178
+    m_Localized: press a key
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670179
+    m_Localized: "(Esc \u2014 cancel)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924223143936
+    m_Localized: 'Current: Female. Changes apply immediately.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924256698368
+    m_Localized: 'Current: Male. Changes apply immediately.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 496973839769600
+    m_Localized: 'Cargo hold: {0}'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

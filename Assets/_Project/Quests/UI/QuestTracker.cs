@@ -154,7 +154,8 @@ namespace ProjectC.Quests.UI
  _objectiveLabel = _root.Q<Label>("quest-objective");
  _hideBtn = _root.Q<Button>("hide-btn");
 
- if (_hideBtn != null) _hideBtn.clicked += OnHideClicked;
+ if (_hideBtn != null) { _hideBtn.clicked += OnHideClicked; _hideBtn.text = Loc.Get("ui.quest.btn.hide"); }
+ if (_objectiveLabel != null) _objectiveLabel.text = Loc.Get("ui.quest.objective_prefix");
 
  // Initially hidden (no tracked quest).
  if (_root != null) _root.style.display = DisplayStyle.None;

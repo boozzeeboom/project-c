@@ -85,7 +85,12 @@ namespace ProjectC.UI.EscMenu
 
             // Back button handler
             if (_backBtn != null)
+            {
                 _backBtn.clicked += NavigateBack;
+                _backBtn.text = ProjectC.Localization.Loc.Get("ui.esc_menu.button.back", _backBtn.text);
+            }
+            if (_titleLabel != null)
+                _titleLabel.text = ProjectC.Localization.Loc.Get("ui.esc_menu.root_title", _titleLabel.text);
 
             _built = true;
             SetOpen(false);

@@ -66,6 +66,14 @@ namespace ProjectC.UI.Settings
             _skillListScroll = _root.Q<ScrollView>("skill-list-scroll");
             _actionListScroll = _root.Q<ScrollView>("action-list-scroll");
 
+            // Localize static UXML text
+            var title = _root.Q<Label>(className: "kb-title");
+            if (title != null) title.text = Loc.Get("ui.keybindings.title");
+            var sectionTitles = _root.Query<Label>(className: "kb-section-title").ToList();
+            if (sectionTitles.Count >= 2) { sectionTitles[0].text = Loc.Get("ui.keybindings.section.skills"); sectionTitles[1].text = Loc.Get("ui.keybindings.section.actions"); }
+            var footer = _root.Q<Label>(className: "kb-footer");
+            if (footer != null) footer.text = Loc.Get("ui.keybindings.footer");
+
             var saveBtn = _root.Q<Button>("save-btn");
             if (saveBtn != null)
             {

@@ -1166,6 +1166,479 @@ MonoBehaviour:
     m_Localized: "D\xE9connect\xE9"
     m_Metadata:
       m_Items: []
+  - m_Id: 488986047848448
+    m_Localized: "\U0001F4D6 Connaissance d\xE9bloqu\xE9e \u2014 {0} : {1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986156900352
+    m_Localized: et {0} de plus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986165288960
+    m_Localized: "S\xE9lectionnez un objet \xE0 utiliser"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986169483264
+    m_Localized: "Utilisation d'objets \u2014 TODO (Phase 8+)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986177871872
+    m_Localized: "S\xE9lectionnez un objet \xE0 jeter"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986186260480
+    m_Localized: "R\xE9seau non lanc\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986190454784
+    m_Localized: Joueur introuvable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649088
+    m_Localized: Jeter...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986194649089
+    m_Localized: +1 objet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986207232000
+    m_Localized: -1 objet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426304
+    m_Localized: "R\xE9putation"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986211426305
+    m_Localized: Attitude
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986219814912
+    m_Localized: "Objectif termin\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 488986228203520
+    m_Localized: Indisponible
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735452532736
+    m_Localized: "\u2192 EMBALLER"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670080
+    m_Localized: "\u2190 D\xC9BALLER"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670081
+    m_Localized: "Articles sur le march\xE9"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670082
+    m_Localized: "Votre entrep\xF4t"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670083
+    m_Localized: Cargaison du vaisseau
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670084
+    m_Localized: Contrats PNJ
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670085
+    m_Localized: "Ressources : conversion objets \u2194 caisses"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670086
+    m_Localized: "Qt\xE9 :"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670087
+    m_Localized: 'Vaisseau :'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670088
+    m_Localized: Inventaire (ressources)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670089
+    m_Localized: "Entrep\xF4t (caisses)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670090
+    m_Localized: Afficher mes articles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670091
+    m_Localized: Afficher tous les articles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670092
+    m_Localized: "\u2190 RETOUR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670093
+    m_Localized: Apparence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670094
+    m_Localized: Corps
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670095
+    m_Localized: MASCULIN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670096
+    m_Localized: "Mod\xE8le de base HumanM"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670097
+    m_Localized: "F\xC9MININ"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670098
+    m_Localized: "Mod\xE8le de base HumanF"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670099
+    m_Localized: Proportions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670100
+    m_Localized: Taille
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670101
+    m_Localized: Corpulence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670102
+    m_Localized: "R\xC9INITIALISER"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670103
+    m_Localized: Couleur de peau
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670104
+    m_Localized: "R\xC9INITIALISER LA COULEUR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670105
+    m_Localized: FERMER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670106
+    m_Localized: INVENTAIRE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670107
+    m_Localized: "TAB \u2014 fermer \u2022 Cliquez sur un secteur \u2014 liste d'objets"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670108
+    m_Localized: RESSOURCES
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670109
+    m_Localized: "\xC9QUIPEMENT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670110
+    m_Localized: NOURRITURE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670111
+    m_Localized: CARBURANT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670112
+    m_Localized: ANTIGRAV
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670113
+    m_Localized: "M\xC9SIUM"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670114
+    m_Localized: "M\xC9DICAL"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670115
+    m_Localized: TECH
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670116
+    m_Localized: "S\xE9lectionnez un secteur"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670117
+    m_Localized: UTILISER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670118
+    m_Localized: JETER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670119
+    m_Localized: FERMER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670120
+    m_Localized: Ouvrez l'inventaire avec TAB
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670121
+    m_Localized: Joueur
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670122
+    m_Localized: "Comp\xE9tences de combat apprises"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670123
+    m_Localized: "APPRENDRE COMP\xC9TENCE"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670124
+    m_Localized: "Comp\xE9tences sociales"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670125
+    m_Localized: Mes vaisseaux
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670126
+    m_Localized: "Aucun vaisseau disponible. Trouvez une cl\xE9 dans le monde."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670127
+    m_Localized: Cargaison
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670128
+    m_Localized: "Modules install\xE9s"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670129
+    m_Localized: Description de l'objet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670130
+    m_Localized: REFUSER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670131
+    m_Localized: ACCEPTER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670132
+    m_Localized: FERMER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670133
+    m_Localized: Ouvrez le menu personnage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670134
+    m_Localized: Recettes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670135
+    m_Localized: "S\xE9lectionnez une recette"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670136
+    m_Localized: "Ingr\xE9dients :"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670137
+    m_Localized: 'Tampon :'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670138
+    m_Localized: Commencer la fabrication
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670139
+    m_Localized: Annuler
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670140
+    m_Localized: "R\xE9cup\xE9rer"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670141
+    m_Localized: Soute
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670142
+    m_Localized: Inventaire du joueur
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670143
+    m_Localized: Soute du vaisseau
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670144
+    m_Localized: 'Packs :'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670145
+    m_Localized: "\u2192 Vers la soute"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670146
+    m_Localized: "\u2190 De la soute"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670147
+    m_Localized: "Pr\xEAt"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670148
+    m_Localized: "Comp\xE9tences de combat"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670149
+    m_Localized: Actions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670150
+    m_Localized: "Comp\xE9tences sur les emplacements"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670151
+    m_Localized: "Cliquez \u270E sur un emplacement pour choisir une comp\xE9tence.
+      \u2715 vide l'emplacement."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670152
+    m_Localized: "S\xE9lectionnez une comp\xE9tence"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670153
+    m_Localized: "Arbre de comp\xE9tences"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670154
+    m_Localized: Tout
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670155
+    m_Localized: Emplacements
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670156
+    m_Localized: "Comp\xE9tences"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670157
+    m_Localized: "S\xE9lectionnez une comp\xE9tence \xE0 gauche"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670158
+    m_Localized: "N\xE9cessite :"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670159
+    m_Localized: "D\xE9bloque :"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670160
+    m_Localized: Apprendre
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670161
+    m_Localized: Oublier
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670162
+    m_Localized: Fermer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670163
+    m_Localized: "\U0001F6E0 Gestionnaire de r\xE9paration"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670164
+    m_Localized: 'Vaisseau :'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670165
+    m_Localized: "\U0001F681 Rappeler"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670166
+    m_Localized: "Coque : \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670167
+    m_Localized: "\U0001F527 R\xE9parer"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670168
+    m_Localized: 'Emplacement de module :'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670169
+    m_Localized: "Install\xE9 : \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670170
+    m_Localized: 'Modules disponibles :'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670171
+    m_Localized: "\U0001F3A8 Couleur du vaisseau :"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670172
+    m_Localized: "Co\xFBt : \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670173
+    m_Localized: "\U0001F3A8 Peindre"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670174
+    m_Localized: "\U0001F4B0 Cr\xE9dits : \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670175
+    m_Localized: "Objectif : \u2014"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670176
+    m_Localized: Masquer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670177
+    m_Localized: "R\xE9assignation de touche :"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670178
+    m_Localized: appuyez sur une touche
+    m_Metadata:
+      m_Items: []
+  - m_Id: 489735498670179
+    m_Localized: "(\xC9chap \u2014 annuler)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924223143936
+    m_Localized: "Actuel : F\xE9minin. Les changements s'appliquent imm\xE9diatement."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 490924256698368
+    m_Localized: "Actuel : Masculin. Les changements s'appliquent imm\xE9diatement."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 496973839769600
+    m_Localized: 'Soute : {0}'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -186,9 +186,18 @@ namespace ProjectC.Crafting.UI
             _recipeList = _root.Q<ListView>("recipe-list");
 
             if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
-            if (_startBtn != null) _startBtn.clicked += OnStartClicked;
-            if (_cancelBtn != null) _cancelBtn.clicked += OnCancelClicked;
-            if (_collectBtn != null) _collectBtn.clicked += OnCollectClicked;
+            if (_startBtn != null) { _startBtn.clicked += OnStartClicked; _startBtn.text = Loc.Get("ui.crafting.btn.start"); }
+            if (_cancelBtn != null) { _cancelBtn.clicked += OnCancelClicked; _cancelBtn.text = Loc.Get("ui.crafting.btn.cancel"); }
+            if (_collectBtn != null) { _collectBtn.clicked += OnCollectClicked; _collectBtn.text = Loc.Get("ui.crafting.btn.collect"); }
+
+            // Section title overrides
+            var sectionTitles = _root.Query<Label>(className: "crafting-section-title").ToList();
+            if (sectionTitles.Count >= 4)
+            {
+                sectionTitles[0].text = Loc.Get("ui.crafting.section.recipes");      // "Рецепты"
+                sectionTitles[1].text = Loc.Get("ui.crafting.section.ingredients");  // "Ингредиенты:"
+                sectionTitles[2].text = Loc.Get("ui.crafting.section.buffer");       // "В буфере:"
+            }
 
             // Initial hidden
             if (_root != null) _root.style.display = DisplayStyle.None;

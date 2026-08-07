@@ -13,6 +13,7 @@
 using System;
 using ProjectC.Customisation;
 using ProjectC.Customisation.Dto;
+using ProjectC.Localization;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -133,12 +134,48 @@ namespace ProjectC.Customisation.UI
             _skinBValueLabel = _rootContainer.Q<Label>("cw-skin-b-value");
             _skinPreview = _rootContainer.Q<VisualElement>("cw-skin-preview");
 
+            // Localize UXML hardcoded text
+            OverrideCwLabels();
+
             InitActionButtons();
             LoadWorkingFromSave();
 
             _built = true;
             SetOpen(false);
             Debug.Log($"[CustomisationWindow] Built. uxml={uxml.name} uss={(uss != null ? uss.name : "<none>")}");
+        }
+
+        private void OverrideCwLabels()
+        {
+            var title = _rootContainer.Q<Label>(className: "cw-title");
+            if (title != null) title.text = Loc.Get("ui.custom.title");
+            var sectionTitles = _rootContainer.Query<Label>(className: "cw-section-title").ToList();
+            if (sectionTitles.Count >= 3)
+            {
+                sectionTitles[0].text = Loc.Get("ui.custom.section.body");         // "Пол"
+                sectionTitles[1].text = Loc.Get("ui.custom.section.proportions");  // "Пропорции"
+                sectionTitles[2].text = Loc.Get("ui.custom.section.skin");         // "Цвет кожи"
+            }
+            var sliderLabels = _rootContainer.Query<Label>(className: "cw-slider-label").ToList();
+            if (sliderLabels.Count >= 2)
+            {
+                sliderLabels[0].text = Loc.Get("ui.custom.label.height");    // "Рост"
+                sliderLabels[1].text = Loc.Get("ui.custom.label.fullness");  // "Полнота"
+            }
+            var maleTitle = _maleCard?.Q<Label>(className: "cw-body-card-title");
+            if (maleTitle != null) maleTitle.text = Loc.Get("ui.custom.body.male");
+            var maleDesc = _maleCard?.Q<Label>(className: "cw-body-card-desc");
+            if (maleDesc != null) maleDesc.text = Loc.Get("ui.custom.body.male_desc");
+            var femaleTitle = _femaleCard?.Q<Label>(className: "cw-body-card-title");
+            if (femaleTitle != null) femaleTitle.text = Loc.Get("ui.custom.body.female");
+            var femaleDesc = _femaleCard?.Q<Label>(className: "cw-body-card-desc");
+            if (femaleDesc != null) femaleDesc.text = Loc.Get("ui.custom.body.female_desc");
+            var btnClose = _rootContainer.Q<Label>("btn-close");
+            if (btnClose != null) btnClose.text = Loc.Get("ui.custom.btn.close");
+            var btnResetProportions = _rootContainer.Q<Label>("cw-reset-proportions");
+            if (btnResetProportions != null) btnResetProportions.text = Loc.Get("ui.custom.btn.reset_proportions");
+            var btnResetSkin = _rootContainer.Q<Label>("cw-reset-skin");
+            if (btnResetSkin != null) btnResetSkin.text = Loc.Get("ui.custom.btn.reset_skin");
         }
 
         private void InitActionButtons()
@@ -328,8 +365,8 @@ namespace ProjectC.Customisation.UI
             if (_messageLabel != null)
             {
                 _messageLabel.text = _working.bodyType == CharacterBodyType.Female
-                    ? "Текущий выбор: Женский. Изменения применяются сразу."
-                    : "Текущий выбор: Мужской. Изменения применяются сразу.";
+                    ? Loc.Get("ui.custom.status.female", "Текущий выбор: Женский. Изменения применяются сразу.")
+                    : Loc.Get("ui.custom.status.male", "Текущий выбор: Мужской. Изменения применяются сразу.");
             }
         }
 

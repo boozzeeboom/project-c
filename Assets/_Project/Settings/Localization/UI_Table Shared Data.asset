@@ -1627,6 +1627,30 @@ MonoBehaviour:
     m_Key: ui.cargo.title_format
     m_Metadata:
       m_Items: []
+  - m_Id: 515334191620096
+    m_Key: ui.system.questtracker_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032128
+    m_Key: ui.system.queststate_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032129
+    m_Key: ui.system.contractstate_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032130
+    m_Key: ui.character.btn.accept_contract
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032131
+    m_Key: ui.character.btn.complete_contract
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032132
+    m_Key: ui.character.btn.fail_contract
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

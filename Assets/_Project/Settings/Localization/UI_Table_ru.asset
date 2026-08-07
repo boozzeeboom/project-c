@@ -1772,6 +1772,30 @@ MonoBehaviour:
       {0}"
     m_Metadata:
       m_Items: []
+  - m_Id: 515334191620096
+    m_Localized: "QuestTracker \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032128
+    m_Localized: "QuestClientState \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032129
+    m_Localized: "ContractClientState \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032130
+    m_Localized: "\u0412\u0437\u044F\u0442\u044C"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032131
+    m_Localized: "\u0421\u0434\u0430\u0442\u044C"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 515334330032132
+    m_Localized: "\u041F\u0440\u043E\u0432\u0430\u043B\u0438\u0442\u044C"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

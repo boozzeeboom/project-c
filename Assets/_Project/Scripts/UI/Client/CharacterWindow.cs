@@ -702,6 +702,11 @@ namespace ProjectC.UI.Client
             _rejectQuestBtn = _root.Q<Button>("reject-quest-btn");
             _closeBtn = _root.Q<Button>("close-btn");
 
+            // Localize action buttons (UXML defaults are Russian)
+            if (_acceptBtn != null) _acceptBtn.text = Loc.Get("ui.character.btn.accept_contract");
+            if (_completeBtn != null) _completeBtn.text = Loc.Get("ui.character.btn.complete_contract");
+            if (_failBtn != null) _failBtn.text = Loc.Get("ui.character.btn.fail_contract");
+
             _filterSource          = _root.Q<DropdownField>("filter-source");
             _filterState           = _root.Q<DropdownField>("filter-state");
             _filterSearch          = _root.Q<TextField>("filter-search");
@@ -3233,7 +3238,7 @@ namespace ProjectC.UI.Client
             var trk = QuestTracker.GetOrFindInstance();
             if (trk == null)
             {
-            SetMessage("QuestTracker недоступен", true);
+            SetMessage(Loc.Get("ui.system.questtracker_unavailable"), true);
             return;
             }
             if (trk.TrackedQuestId == questId) trk.Untrack();
@@ -3496,7 +3501,7 @@ namespace ProjectC.UI.Client
             var qs = QuestClientState.Instance;
             if (qs == null)
             {
-            SetMessage("QuestClientState недоступен", true);
+            SetMessage(Loc.Get("ui.system.queststate_unavailable"), true);
             return;
             }
             // T-Q15 stub: сервер пока не делает TryAccept, но RPC дойдёт, rate-limit OK.
@@ -3531,7 +3536,7 @@ namespace ProjectC.UI.Client
             }
             if (_contractState == null)
             {
-                SetMessage("ContractClientState недоступен", true);
+                SetMessage(Loc.Get("ui.system.contractstate_unavailable"), true);
                 return;
             }
 
@@ -3563,7 +3568,7 @@ namespace ProjectC.UI.Client
             }
             if (_contractState == null)
             {
-                SetMessage("ContractClientState недоступен", true);
+                SetMessage(Loc.Get("ui.system.contractstate_unavailable"), true);
                 return;
             }
             _contractState.RequestComplete(c.contractId);
@@ -3587,7 +3592,7 @@ namespace ProjectC.UI.Client
             }
             if (_contractState == null)
             {
-                SetMessage("ContractClientState недоступен", true);
+                SetMessage(Loc.Get("ui.system.contractstate_unavailable"), true);
                 return;
             }
             _contractState.RequestFail(c.contractId);

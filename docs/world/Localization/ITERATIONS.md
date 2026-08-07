@@ -162,3 +162,65 @@ Phase 7 (верификация) — за пользователем (playtests)
 ## Статистика
 - 103 файла (103 new)
 - 3607 строк добавлено
+
+## Итерация 9 — 2026-08-07
+
+**Задача:** Phase 9 — DEEP-UP: финальная обёртка всех оставшихся контроллеров + C# runtime-строк  
+**Тикет:** LOC-12  
+
+**Изменения (C# Runtime — 16 строк в 3 файлах):**
+- `KnowledgeToast.cs` — `"📖 Открыто знание — {0}: {1}"`, `"и ещё {0}"`
+- `DialogWindow.cs` — `"+1/-1 предмет"`, `"Репутация"`, `"Отношение"`, `"Цель выполнена"`, `"[Недоступно:]"`
+- `InventoryUI.cs` — `"Выберите предмет..."`, `"Сеть не запущена"`, `"Игрок не найден"`, `"Бросаю..."`
+
+**Изменения (UXML → Loc.Get — 12 контроллеров, ~180 строк):**
+- `MarketWindow.cs` — section titles, exchange labels, pack/unpack, qty, ship, toggle
+- `CharacterWindow.cs` — 5 отладочных SetMessage(), accept/complete/fail кнопки, section titles (25+), knowledge/quest sub-titles
+- `EscMenuWindow.cs` — back button `"← НАЗАД"`, title `"МЕНЮ"`
+- `InventoryUI.cs` — wheel title/hint, sublist, кнопки ИСПОЛЬЗОВАТЬ/БРОСИТЬ/ЗАКРЫТЬ
+- `CraftingWindow.cs` — `"Рецепты"/"Ингредиенты:"/"В буфере:"`, кнопки крафта
+- `CustomisationWindow.cs` — title, 3 section titles, slider labels, body cards, кнопки, статус
+- `ShipCargoConsoleWindow.cs` — title format, column headers, `"Паков:"`, кнопки store/retrieve
+- `KeybindingsWindow.cs` — title, `"Боевые навыки"/"Действия"`, footer
+- `SkillBindingWindow.cs` — title, subtitle, modal title
+- `RebindPromptWindow.cs` — `"Переназначение клавиши:"`, hint, cancel
+- `QuestTracker.cs` — `"Цель: —"`, `"Скрыть"`
+- `CommPanelWindow.cs` — `"Запросить посадку"`, `"Отмена"`
+
+**Новые ключи в UI_Table:** +134 ключа (cargo 8, system 3, character btn 3, + ранее пропущенные)
+
+**Уже было хорошо (проверено, не требует правок):**
+- `SkillTreeWindow` — `Loc.Bind`
+- `RepairManagerWindow` — `Loc.Get/Loc.Format`
+- `NetworkUI` — `Loc.Format`
+
+**Статус:** ✅ Phase 9 завершён.
+
+## Итерация 10 — 2026-08-07
+
+**Задача:** Фикс оставшихся кнопок CharacterWindow + docs update  
+
+**Изменения:**
+- `CharacterWindow.cs` — 5 отладочных `SetMessage()` (`"QuestTracker недоступен"`, `"QuestClientState недоступен"`, `"ContractClientState недоступен"` ×3) → `Loc.Get("ui.system.*")`
+- `CharacterWindow.cs` — кнопки `_acceptBtn/_completeBtn/_failBtn` → `Loc.Get("ui.character.btn.accept_contract/complete_contract/fail_contract")`
+- Добавлены ключи: `ui.system.questtracker_unavailable`, `ui.system.queststate_unavailable`, `ui.system.contractstate_unavailable`, `ui.character.btn.accept_contract`, `ui.character.btn.complete_contract`, `ui.character.btn.fail_contract`
+
+**Статус:** ✅ Итерация 10 завершена.
+
+## Общая сводка
+
+| Фаза | Тикет | Коммит | Ключей |
+|---|---|---|---|
+| Phase 0+1 — Инфраструктура | LOC-01/02 | `2459055` | — |
+| Phase 2 — System-сообщения | LOC-03 | `8012159` | 49 sys.* |
+| Phase 3 — UI-строки | LOC-04 | `7b1ff1f`, `df54864` | 70+ ui.* |
+| Phase 4 — SO-данные | LOC-05 | `5925200` | 119 static.* |
+| Phase 5 — Диалоги | LOC-09 | `010fe9a` | 14 dialogue.* |
+| Phase 6 — Инструмент | LOC-10 | `10ee059` | — |
+| Phase 8 — Глубокая UI-локализация | LOC-11 | `2046b42` | 87 ui.* |
+| Phase 9 — Финальная обёртка | LOC-12 | _pending_ | 134 ui.* |
+| Iter 10 — Фикс кнопок | LOC-12 | _pending_ | 6 ui.* |
+
+**Всего: ~420+ ключей в UI_Table + 119 в Static_Table + 49 в System_Table + 14 в Dialogue_Table = ~600 ключей.**
+Phase 7 (верификация) — за пользователем (playtests).
+Phase 10 (ассеты: скилы/NPC/квесты) — запланирован, не начат.

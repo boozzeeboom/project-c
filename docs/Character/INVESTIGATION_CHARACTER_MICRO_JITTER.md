@@ -320,3 +320,85 @@ Idle-анимация `HumanM@Idle01` (Kevin Iglesias) — даже без root 
 | 2026-07-26 | T-JITTER09 (53bfdf1) | H5: CC.enabled=false при idle ❌ |
 | 2026-07-26 | T-JITTER10 (83a62ec) | H4/H8: diagnostic — _diagnosticDisableAnimator ✅ Аниматор подтверждён |
 | 2026-07-26 | T-JITTER11 (5fc5768) | skinnedMotionVectors=false в коде — motion vectors усиливают микро-кости |
+| 2026-07 | T-JITTER12 (7487e8ab) | Ресерч №2: edit-mode зонд — humanoid-оценка клипа ГЛАДКАЯ, шум не в данных/аватаре/origin ≤3км |
+| 2026-07 | T-JITTER13 | Runtime-зонд BoneJitterRuntimeProbe + план бинарных тестов (§8.5) |
+
+---
+
+## 8. Ресерч №2 (T-JITTER12/13): изоляция слоя шума измерением
+
+### 8.1 Метод
+
+Все предыдущие тесты были «фиксами вслепую». Добавлен **измерительный инструментарий**:
+
+- **`Assets/_Project/Scripts/Editor/JitterClipProbe.cs`** (edit-mode, без плейтеста):
+  сэмплирует клип через `AnimationMode.SampleAnimationClip` (тот же путь, что окно Animation,
+  корректная humanoid muscle-оценка) и меряет покадровые дельты костей (мм/град),
+  осцилляции (sign-flips) и RMS второй разности (плавность).
+- **`Assets/_Project/Scripts/Debug/BoneJitterRuntimeProbe.cs`** (runtime, вешать на root
+  персонажа/NPC, F9 — пауза): логирует переходы state machine, покадровые дельты костей
+  и дистанцию от origin — различает 3 слоя (state machine / кости / рендер) за 1 сессию.
+
+### 8.2 Измерения (JitterClipProbe, ~90fps с неравномерным dt, 600 шагов)
+
+| Прогон | Hips maxStep | Head | Hand.L | Foot.L | Sign-flips |
+|--------|-------------|------|--------|--------|------------|
+| A) Humanoid Idle01 @ origin | 0.48мм | 1.26мм | 0.68мм | 0.013мм | 0–1 за 6.7с |
+| B) Humanoid Idle01 @ (3000,0,0) | 0.48мм | 1.26мм | 0.68мм | 0.107мм | 0 |
+| C) Generic @Idle @ origin | 5.75мм | 3.64мм | 4.32мм | 8.52мм | 3–8 за 6.7с |
+
+**Выводы:**
+
+1. **Humanoid-оценка клипа математически гладкая** — шум НЕ в данных клипа, НЕ в muscle-конверсии, НЕ в аватаре.
+2. **Расстояние от origin до 3км не влияет** на трансформы костей (CPU-side). H7 ослаблена
+   (остаётся актуальной только если реальные игровые координаты ≫3км — GPU-матрицы float32
+   дают ~0.36мм/3км, ~3.6мм/30км).
+3. Клип НЕ сжат (`animationCompression: 0` на HumanM@Idle01.fbx).
+
+### 8.3 Проверенная конфигурация (факты)
+
+- Unity **6000.5.2f1**, URP. `gpuSkinning: 1`, `meshDeformation: 2` (GPU Deformation включена),
+  GPUResidentDrawerMode: 0 (выкл), TAA на камере выключен (`m_Antialiasing: 0`),
+  Motion Blur volume в проекте не найден.
+- Аватар Humanoid (`HumanM_Model.fbx`, CreateFromThisModel, auto-mapping). Клипы Humanoid
+  (CopyFromOther avatar). SMR: updateWhenOffscreen=false, AABB полноразмерный (1.83×1.93×0.50),
+  52 кости, rootBone=B-hips.
+- Animator (игрок, на Visual_Model): updateMode=Normal, cullingMode=AlwaysAnimate, applyRootMotion=false.
+  Animator (NPC, на child "Visual"): Normal / CullUpdateTransforms / no root motion; внутренний
+  Animator модели у NPC **отключён** (m_Enabled: 0).
+- Скрипты кастомизации/экипировки кости **покадрово не трогают** (только по событиям snapshot).
+- SkillAnimationPlayer в idle неактивен (но см. 8.5, R4).
+- Игрок: `SetBool("IsGrounded", _controller.isGrounded)` **каждый кадр** (NetworkPlayer.cs:904).
+  Переход Idle→Fall по `IsGrounded IfNot` (duration 0.1) — 1 кадр false = цикл блендинга.
+- NPC: `SetFloat("Speed", _agent.velocity.magnitude)` каждый brain-tick (NpcBrain.cs:1243);
+  пороги Idle→Walk 0.1 / Walk→Idle 0.05 — velocity-шум NavMeshAgent может пересекать пороги.
+
+### 8.4 Оставшиеся гипотезы (ранжированы)
+
+| # | Гипотеза | Почему жива | Проверка |
+|---|----------|-------------|----------|
+| R1 | **GPU Deformation/skinning path** (Unity 6.5) — единственный слой между «гладкими костями» и пикселями | Всё выше слоя измерено и чисто | Тест 1 (ниже) — 1 чекбокс |
+| R2 | **Idle↔Fall фликер** от 1-кадровых `_controller.isGrounded=false` (keep-grounded -2f пенетрация) | Не исключён чисто: в T-JITTER09 (CC off) параметры замораживались, но характер тряски тогда не задокументирован | Тест 2 (runtime probe): пачки переходов Idle→Fall→Idle |
+| R3 | **NPC Speed-шум** через пороги 0.05/0.1 → Idle↔Walk блендинг | `velocity.magnitude` у стоящего NavMeshAgent нестабилен | Тот же probe на NPC |
+| R4 | **applyRootMotion=true застревает после скилла** (SkillAnimationPlayer включает, восстанавливает в Restore(); прерванный каст = root motion включён навсегда) | Косвенно | В probe: `rootMotion=True` в стартовом логе |
+| R5 | Реальные координаты ≫3км (GPU float) | FloatingOrigin threshold=150км | Teleport к origin |
+
+### 8.5 План бинарных тестов (плейтест, ~5 минут)
+
+1. **Тест 1 — GPU Deformation Off.** Project Settings → Player → Other Settings → GPU Deformation → **Off**. Play → наблюдать. Тряска пропала → R1. (52 кости × 2 персонажа — CPU skinning бесплатен.)
+2. **Тест 2 — Runtime probe.** Повесить `BoneJitterRuntimeProbe` на игрока и NPC, постоять 30с.
+   - `transitions=N/s` при стоянии → R2/R3 (state machine фликер)
+   - `transitions=0`, `maxStep hips ≫1.3мм` → шум в костях (рантайм-специфика, уточнить)
+   - `transitions=0`, `maxStep ≤1.3мм`, а на экране тряска → слой рендера/камеры → R1/R5
+3. **Тест 3 — Teleport к (0,1,0).** Тряска пропала → R5.
+4. **Тест 4 — После любого скилла** посмотреть стартовый лог probe: `rootMotion=True` → R4.
+
+### 8.6 Фиксы по исходам
+
+- **R1**: GPU Deformation = Off (постоянно) или обновление Unity.
+- **R2**: dead-zone на IsGrounded: сообщать `false` в Animator только после 3+ подряд кадров
+  `isGrounded==false` (или ~0.05с), `true` — сразу. 1-кадровые провалы CC гасятся.
+- **R3**: dead-zone на Speed: `if (speed < 0.15f) speed = 0f` перед SetFloat + `_agent.isStopped=true` в Idle.
+- **R4**: в SkillAnimationPlayer добавить восстановление `applyRootMotion` в OnDisable/по таймауту.
+- **R5**: снизить FloatingOrigin threshold (150км → 3–5км) или включить player roots в shift-набор.
+

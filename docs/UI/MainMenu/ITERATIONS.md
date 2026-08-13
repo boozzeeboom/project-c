@@ -34,3 +34,12 @@
 - `Assets/_Project/Resources/UI/MainMenuWindow.uxml` — контейнер `main-lang-selector` (правый верхний угол)
 - `Assets/_Project/Resources/UI/MainMenuStyles.uss` — стили компактного выпадающего списка языка
 - `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` — `CustomDropdown` с языками из `LocaleSelector` + двусторонняя синхронизация с настройками
+
+## Итерация от 2026-08-13
+
+**Задача:** T-UI06 — MainMenu: кнопки-ссылки в левом нижнем углу
+**Коммит:** `3b0743ef` — T-UI06: MainMenu — кнопки-ссылки в левом нижнем углу
+**Изменения:**
+- `Assets/_Project/Resources/UI/MainMenuWindow.uxml` — контейнер `main-links` (левый нижний угол)
+- `Assets/_Project/Resources/UI/MainMenuStyles.uss` — стили компактных кнопок-ссылок
+- `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` — `BuildLinkButtons()`: 5 кнопок с `Application.OpenURL`

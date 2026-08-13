@@ -79,6 +79,16 @@ Assets/_Project/Editor/Localization/
 - `CustomDropdown` с нативными названиями языков из `LocaleSelector.Locales`
 - Переключение через `LocaleSelector.SetLocale`; двусторонняя синхронизация с настройками (`Loc.OnLocaleChanged`)
 
+## Кнопки-ссылки (левый нижний угол)
+
+- Контейнер `main-links` закреплён в левом нижнем углу (`position: absolute; left: 16px; bottom: 14px`)
+- 5 компактных кнопок с переходом через `Application.OpenURL`:
+  - THEGRAVITY.RU → https://thegravity.ru
+  - PROJECT C → https://thegravity.ru/project-c/
+  - GITHUB → https://github.com/boozzeeboom/project-c
+  - TELEGRAM → https://t.me/thegravity_ru
+  - VK → https://vk.ru/thegravity_ru
+
 ## Изменения в BootstrapScene
 
 - **Добавлен:** `MainMenu` GameObject (UIDocument + MainMenuWindow)

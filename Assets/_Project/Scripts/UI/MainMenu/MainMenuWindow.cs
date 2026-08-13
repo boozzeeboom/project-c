@@ -80,6 +80,7 @@ namespace ProjectC.UI.MainMenu
 
             LocalizeAll();
             BuildLanguageSelector();
+            BuildLinkButtons();
 
             if (_rootButtons != null)
             {
@@ -128,6 +129,35 @@ namespace ProjectC.UI.MainMenu
 
             Loc.OnLocaleChanged += OnLocaleChangedSync;
             Debug.Log("[MainMenuWindow] Language selector built.");
+        }
+
+        private void BuildLinkButtons()
+        {
+            var container = _root.Q<VisualElement>("main-links");
+            if (container == null)
+            {
+                Debug.LogWarning("[MainMenuWindow] main-links not found in UXML.");
+                return;
+            }
+
+            var links = new (string label, string url)[]
+            {
+                ("THEGRAVITY.RU", "https://thegravity.ru"),
+                ("PROJECT C", "https://thegravity.ru/project-c/"),
+                ("GITHUB", "https://github.com/boozzeeboom/project-c"),
+                ("TELEGRAM", "https://t.me/thegravity_ru"),
+                ("VK", "https://vk.ru/thegravity_ru"),
+            };
+
+            foreach (var (label, url) in links)
+            {
+                var urlCopy = url;
+                var btn = new Button(() => Application.OpenURL(urlCopy));
+                btn.text = label;
+                btn.tooltip = urlCopy;
+                btn.AddToClassList("main-link-btn");
+                container.Add(btn);
+            }
         }
 
         private int LocaleIndexForCode(string code)

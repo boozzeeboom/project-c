@@ -110,10 +110,7 @@ namespace ProjectC.Core
 
                 // Автоматически находим worldRoot при старте
                 floatingOrigin.worldRoot = FindWorldRoot();
-                // T-JITTER14: было 100км. На 56км от origin float32 даёт ~6.7мм шума
-                // в world-позициях костей (видимая микротряска). 3км = ~0.36мм — чисто
-                // (edit-mode JitterClipProbe подтвердил 0.48мм @3000м, как у origin).
-                floatingOrigin.threshold = 3000f;
+                floatingOrigin.threshold = 100000f;
                 floatingOrigin.showDebugLogs = true; // Включено для отладки телепортации
 
                 Debug.Log($"[WorldCamera] FloatingOrigin initialized. worldRoot={floatingOrigin.worldRoot?.name ?? "NULL"}");

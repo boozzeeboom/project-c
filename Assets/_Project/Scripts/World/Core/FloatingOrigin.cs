@@ -33,7 +33,9 @@ namespace ProjectC.World.Core
 
         [Header("Threshold")]
         [Tooltip("Расстояние от origin после которого сдвигаем мир")]
-        public float threshold = 100000f;
+        // T-JITTER14: было 100000f. На 56км float32 шумит ~6.7мм на костях (микротряска);
+        // 3км = ~0.36мм — безопасно. Дублирует значение из WorldCamera.cs.
+        public float threshold = 3000f;
 
         [Header("Debug")]
         [Tooltip("Показать debug логи")]

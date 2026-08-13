@@ -1,10 +1,13 @@
 // Project C: Main Menu — replaces NetworkTestCanvas with full-featured main menu.
 // UI Toolkit based, same pattern as EscMenuWindow: UIDocument + stack navigation.
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.Localization.Settings;
 using ProjectC.Core;
 using ProjectC.Localization;
+using ProjectC.UI.Client;
 using ProjectC.UI.EscMenu;
 
 namespace ProjectC.UI.MainMenu
@@ -27,6 +30,7 @@ namespace ProjectC.UI.MainMenu
         private Button _hostBtn, _connectBtn, _settingsBtn, _quitBtn;
         private Button _ipConnectBtn, _ipBackBtn;
         private Label _titleLabel, _subtitleLabel;
+        private CustomDropdown _langDropdown;
 
         private readonly Stack<VisualElement> _menuStack = new Stack<VisualElement>();
         private VisualElement _currentPanel;
@@ -75,6 +79,7 @@ namespace ProjectC.UI.MainMenu
             if (_ipField != null) _ipField.value = "127.0.0.1";
 
             LocalizeAll();
+            BuildLanguageSelector();
 
             if (_rootButtons != null)
             {
@@ -97,6 +102,56 @@ namespace ProjectC.UI.MainMenu
             if (_quitBtn != null) Loc.Bind(_quitBtn, "ui.main_menu.button.quit", _quitBtn.text);
             if (_ipConnectBtn != null) Loc.Bind(_ipConnectBtn, "ui.main_menu.button.ip_connect", _ipConnectBtn.text);
             if (_ipBackBtn != null) Loc.Bind(_ipBackBtn, "ui.main_menu.button.back", _ipBackBtn.text);
+        }
+
+        private void BuildLanguageSelector()
+        {
+            var container = _root.Q<VisualElement>("main-lang-selector");
+            if (container == null)
+            {
+                Debug.LogWarning("[MainMenuWindow] main-lang-selector not found in UXML.");
+                return;
+            }
+
+            _langDropdown = new CustomDropdown();
+            var choices = new List<string>();
+            foreach (var entry in LocaleSelector.Locales)
+                choices.Add(entry.nativeName);
+
+            _langDropdown.SetChoices(choices, LocaleIndexForCode(SettingsManager.Locale));
+            _langDropdown.OnSelectionChanged += idx =>
+            {
+                if (idx < 0 || idx >= LocaleSelector.Locales.Length) return;
+                LocaleSelector.SetLocale(LocaleSelector.Locales[idx].code);
+            };
+            container.Add(_langDropdown);
+
+            Loc.OnLocaleChanged += OnLocaleChangedSync;
+            Debug.Log("[MainMenuWindow] Language selector built.");
+        }
+
+        private int LocaleIndexForCode(string code)
+        {
+            if (string.IsNullOrEmpty(code)) return 0;
+            for (int i = 0; i < LocaleSelector.Locales.Length; i++)
+                if (LocaleSelector.Locales[i].code.Equals(code, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            return 0;
+        }
+
+        private void OnLocaleChangedSync()
+        {
+            if (_langDropdown == null) return;
+            var code = LocalizationSettings.SelectedLocale != null
+                ? LocalizationSettings.SelectedLocale.Identifier.Code
+                : SettingsManager.Locale;
+            _langDropdown.SetSelectedIndex(LocaleIndexForCode(code), fireEvent: false);
+        }
+
+        private void OnDestroy()
+        {
+            Loc.OnLocaleChanged -= OnLocaleChangedSync;
+            if (_langDropdown != null) _langDropdown.Cleanup();
         }
 
         public void Show() { if (!_built) EnsureBuilt(); if (_root == null) return; _root.style.display = DisplayStyle.Flex; _root.pickingMode = PickingMode.Position; NavigateToRoot(); }

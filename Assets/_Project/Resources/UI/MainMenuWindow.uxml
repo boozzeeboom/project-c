@@ -25,5 +25,8 @@
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
+
+        <!-- Language selector (top-right corner) -->
+        <ui:VisualElement name="main-lang-selector" class="main-lang-selector" />
     </ui:VisualElement>
 </ui:UXML>

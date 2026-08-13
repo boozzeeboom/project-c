@@ -17,6 +17,7 @@
 // Убрать с префаба после диагностики (или оставить — no-op без нажатий, ~0 аллокаций).
 using System.Text;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ProjectC.DebugTools
 {
@@ -64,7 +65,8 @@ namespace ProjectC.DebugTools
 
         private void LateUpdate()
         {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.F9))
+            var kb = Keyboard.current;
+            if (kb != null && kb.f9Key.wasPressedThisFrame)
             {
                 _logging = !_logging;
                 Debug.Log($"[JitterProbe] {name}: logging={_logging}");

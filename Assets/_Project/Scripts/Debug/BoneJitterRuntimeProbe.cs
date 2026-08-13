@@ -53,15 +53,21 @@ namespace ProjectC.DebugTools
             if (_animator != null) return true;
             if (_gaveUp) return false;
 
-            // Как FindFirstValidAnimator в NetworkPlayer: первый Animator с контроллером.
+            // Находим humanoid-аниматор по AVATAR (он есть в префабе независимо от
+            // контроллера). Контроллер назначает кастомизация в рантайме; если его ещё
+            // нет — кости будут статичны, и мы явно скажем об этом в логе СТАРТ.
+            Animator withController = null;
             foreach (var a in GetComponentsInChildren<Animator>(true))
             {
-                if (a != null && a.runtimeAnimatorController != null) { _animator = a; break; }
+                if (a == null) continue;
+                if (a.runtimeAnimatorController != null && withController == null) withController = a;
+                if (a.isHuman) { _animator = a; break; }
             }
+            if (_animator == null) _animator = withController;
 
             if (_animator == null)
             {
-                // Ещё не нашли — возможно, контроллер не назначен (игрок). Тихий retry.
+                // Совсем нет аниматора — тихий retry.
                 return false;
             }
 
@@ -85,7 +91,9 @@ namespace ProjectC.DebugTools
 
             _windowStart = Time.unscaledTime;
             _lastStateHash = _animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+            bool hasController = _animator.runtimeAnimatorController != null;
             Debug.Log($"[JitterProbe] {name}: СТАРТ. animator='{GetPath(_animator.transform)}' " +
+                      $"controller={(hasController ? _animator.runtimeAnimatorController.name : "НЕТ (кастомизация не применила)")} " +
                       $"updateMode={_animator.updateMode} culling={_animator.cullingMode} " +
                       $"rootMotion={_animator.applyRootMotion} distOrigin={transform.position.magnitude:F0}m", this);
             return true;

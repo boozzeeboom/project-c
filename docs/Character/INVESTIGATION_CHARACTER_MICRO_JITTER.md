@@ -1,7 +1,7 @@
 # Investigation: Микротряска персонажа при стоянии (Character Micro-Jitter)
 
 **Дата:** 2026-07-26  
-**Статус:** Тестирование — skinnedMotionVectors=false в коде (5fc5768). Animator подтверждён как источник (T-JITTER10).  
+**Статус:** ⛔ НЕ РЕШЕНО (2026-07-26) — первопричина не найдена. Локализовано: humanoid-скиннинг при игре анимации; R1 (GPU Deformation/skinning) и R5 (float-точность) исключены. См. §9.  
 **Тикет:** (связанные T-JITTER01, T-JITTER01-v2, T-JITTER02, T-JITTER02v2, T-JITTER03, T-CAM05v2)
 
 ---
@@ -321,7 +321,8 @@ Idle-анимация `HumanM@Idle01` (Kevin Iglesias) — даже без root 
 | 2026-07-26 | T-JITTER10 (83a62ec) | H4/H8: diagnostic — _diagnosticDisableAnimator ✅ Аниматор подтверждён |
 | 2026-07-26 | T-JITTER11 (5fc5768) | skinnedMotionVectors=false в коде — motion vectors усиливают микро-кости |
 | 2026-07 | T-JITTER12 (7487e8ab) | Ресерч №2: edit-mode зонд — humanoid-оценка клипа ГЛАДКАЯ, шум не в данных/аватаре/origin ≤3км |
-| 2026-07 | T-JITTER13 | Runtime-зонд BoneJitterRuntimeProbe + план бинарных тестов (§8.5) |
+| 2026-07 | T-JITTER13 (acc15f2a, c4e608d6, e56a4f00) | Runtime-зонд BoneJitterRuntimeProbe: Input System fix, ленивый поиск аниматора, поиск по avatar. Замеры: world-дельты костей @56.7км = float32-шум, реальную тряску не видят |
+| 2026-07 | T-JITTER14 (6b2777cb → 109e78dc) | R5 fix (порог FloatingOrigin 100км→3км) ❌ опровергнут → revert. R1 тест (GPU Deformation Off + GPU Skinning Off) ❌ тряска осталась. Итог: ответ НЕ найден (§9) |
 
 ---
 
@@ -401,4 +402,59 @@ Idle-анимация `HumanM@Idle01` (Kevin Iglesias) — даже без root 
 - **R3**: dead-zone на Speed: `if (speed < 0.15f) speed = 0f` перед SetFloat + `_agent.isStopped=true` в Idle.
 - **R4**: в SkillAnimationPlayer добавить восстановление `applyRootMotion` в OnDisable/по таймауту.
 - **R5**: снизить FloatingOrigin threshold (150км → 3–5км) или включить player roots в shift-набор.
+
+---
+
+## 9. Ресерч №2 — результат (T-JITTER13/14): ❌ ответ НЕ найден
+
+### 9.1 Runtime-измерения (BoneJitterRuntimeProbe, плейтест пользователя)
+
+Чистый Idle на `distOrigin=56.7км`:
+
+| | Hips | Head | Hand.L |
+|---|---|---|---|
+| Edit-mode @ origin (клип гладкий) | 0.48мм | 1.26мм | 0.68мм |
+| Runtime @ 56.7км (Idle) | 3.97мм | 7.83мм | 5.55мм |
+| float32 точность на 56.7км | ≈ 6.7мм | | |
+
+**Ключевой вывод о методе:** цифры runtime @56.7км — это **квантование float32 в самом
+измерении** (6.7мм), а не сигнал тряски. Тот же шум был бы у Т-позы и у любых объектов.
+Следствие: `BoneJitterRuntimeProbe` (меряет world-дельты костей) **в принципе не видит**
+реальную тряску, т.к. она возникает не в костях (они гладкие, §8.2), а в вершинах на
+скиннинге. Для R1/R5 зонд непригоден — только визуальный тест.
+
+Переходы `Idle→Fall→Land→Idle` в логе — настоящие падения (Fall длился ~5с), а не
+1-кадровый фликер → **R2 этими данными не подтверждён**.
+
+### 9.2 Результаты бинарных тестов (§8.5)
+
+| Гипотеза | Тест | Результат | Вывод |
+|----------|------|-----------|-------|
+| R5: float-точность на 56км | Тест 3 + косвенные наблюдения | ❌ | Другие объекты рядом, Т-поза при движении, анимированные предметы на тех же координатах НЕ трясутся → артефакт НЕ глобальный |
+| R1: GPU Deformation/skinning | Тест 1 (`meshDeformation=CPU`, `gpuSkinning=false`) | ❌ тряска осталась | GPU-скиннинг/деформация НЕ причина (настройки возвращены к исходным) |
+
+### 9.3 Что осталось неразрешённым
+
+Точка локализации сузилась до **рендер-слоя humanoid-скиннинга при игре анимации**:
+
+- Animator выключен (Т-поза) → тряски НЕТ (подтверждено пользователем).
+- Другие объекты / брошенные предметы / корабль в тех же координатах → тряски НЕТ.
+- Edit-mode humanoid muscle-оценка клипа → ГЛАДКАЯ (0.48мм, §8.2).
+- GPU Deformation Off + GPU Skinning Off → тряска ОСТАЛАСЬ.
+
+Т.е. шум возникает **между гладкими костями и отрендеренными вершинами**, но не в GPU
+Deformation/skinning (выключены — не помогло). Неисследованными остались:
+
+- CPU-скиннинг `SkinnedMeshRenderer` сам по себе (vertex pipeline при 60–140 fps и переменном dt);
+- Animator update timing (флуктуации deltaTime 60–140 fps в muscle-оценке);
+- специфика Idle-клипа (дыхание) на sub-pixel масштабе.
+
+**Итог: первопричина НЕ установлена. Дальнейшая работа остановлена по решению пользователя («больше не кодим»).**
+
+### 9.4 Следы в коде (для будущей сессии)
+
+- `Assets/_Project/Scripts/Debug/BoneJitterRuntimeProbe.cs` — runtime-зонд (оставлен, рабочий, Input System).
+- `Assets/_Project/Scripts/Editor/JitterClipProbe.cs` — edit-mode зонд (оставлен).
+- FloatingOrigin порог ВОЗВРАЩЁН к 100км (revert `109e78dc`) — R5 исключён.
+- GPU Deformation/Skinning ВОЗВРАЩЕНЫ к GPUBatched/True — R1 исключён, проект в исходном состоянии.
 

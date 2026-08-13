@@ -25,3 +25,12 @@
 **Изменения:**
 - `MainMenuWindow.cs` — `BuildSettingsPanel`: контейнер 480×460 с backgroundColor/border-radius/border, header с back-btn + title; `SetHeaderVisible(false)` при NavigateTo
 - `docs/UI/MainMenu/01_implementation.md` — полная документация с баг-фиксами
+
+## Итерация от 2026-08-13
+
+**Задача:** T-UI05 — MainMenu: выбор языка в правом верхнем углу
+**Коммит:** `e0de174c` — T-UI05: MainMenu — выбор языка в правом верхнем углу
+**Изменения:**
+- `Assets/_Project/Resources/UI/MainMenuWindow.uxml` — контейнер `main-lang-selector` (правый верхний угол)
+- `Assets/_Project/Resources/UI/MainMenuStyles.uss` — стили компактного выпадающего списка языка
+- `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` — `CustomDropdown` с языками из `LocaleSelector` + двусторонняя синхронизация с настройками

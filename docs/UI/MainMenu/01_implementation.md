@@ -73,6 +73,12 @@ Assets/_Project/Editor/Localization/
 - Виджеты используют классы из `EscMenuSettingsStyles.uss` (загружается в `rootVisualElement.styleSheets`)
 - Выбор языка (LocaleSelector) — через `GameplaySettingsSection`
 
+## Выбор языка (правый верхний угол)
+
+- Контейнер `main-lang-selector` закреплён в правом верхнем углу (`position: absolute; top: 14px; right: 16px; width: 150px`)
+- `CustomDropdown` с нативными названиями языков из `LocaleSelector.Locales`
+- Переключение через `LocaleSelector.SetLocale`; двусторонняя синхронизация с настройками (`Loc.OnLocaleChanged`)
+
 ## Изменения в BootstrapScene
 
 - **Добавлен:** `MainMenu` GameObject (UIDocument + MainMenuWindow)

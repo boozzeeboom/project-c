@@ -1040,24 +1040,16 @@ namespace ProjectC.Quests
         {
             var w = QuestWorld.Instance;
             if (w == null) return new NpcAttitudeSnapshotDto { entries = null };
-            // T-Q07: iterate questDatabase.questOffers[] to discover known NPC ids.
-            // T-Q15: track all NpcDefinitions globally in QuestWorld, not just quest givers.
+            // S6: discover known NPC ids from questDatabase.npcs (registered NpcDefinitions),
+            // not from quest objectives (objectives may miss NPCs or reference unregistered ids).
             var allNpcIds = new System.Collections.Generic.HashSet<string>();
-            foreach (var def in w.GetAllQuests())
+            if (w.Database != null && w.Database.npcs != null)
             {
-                if (def == null) continue;
-                // Walk all stages for TalkToNpc objectives (NpcId) — defensive
-                for (int s = 0; s < def.stages.Length; s++)
+                for (int i = 0; i < w.Database.npcs.Length; i++)
                 {
-                    for (int o = 0; o < def.stages[s].objectives.Length; o++)
-                    {
-                        var obj = def.stages[s].objectives[o];
-                        string npcId = obj?.targetNpc != null ? obj.targetNpc.npcId : obj?.targetNpcId;
-                        if (!string.IsNullOrEmpty(npcId))
-                        {
-                            allNpcIds.Add(npcId);
-                        }
-                    }
+                    var npc = w.Database.npcs[i];
+                    if (npc != null && !string.IsNullOrEmpty(npc.npcId))
+                        allNpcIds.Add(npc.npcId);
                 }
             }
 

@@ -28,3 +28,14 @@
 
 **Стратегия отката:** `git revert 3866c59`
 
+## Итерация от 2026-08-14
+
+**Задача:** Вынести номер версии в главном меню в поле инспектора (слова локализованы, цифры подставляются)
+**Коммит:** `731db58` — T-UI03: версия в главном меню вынесена в поле инспектора
+**Изменения:**
+- `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` — добавлено поле `versionText` (секция Version), подпись через `Loc.BindFormat`
+- `Assets/_Project/Scripts/Localization/Loc.cs` — добавлен `BindFormat` + `FormatWithFallback`
+- `Assets/_Project/Settings/Localization/UI_Table_ru.asset` — `ui.main_menu.subtitle` → `Версия Alpha {0}`
+- `Assets/_Project/Settings/Localization/UI_Table_en.asset` — `ui.main_menu.subtitle` → `Alpha {0}`
+- `Assets/_Project/Editor/Localization/AddMainMenuLocKeys.cs` — seed обновлён на `{0}`
+

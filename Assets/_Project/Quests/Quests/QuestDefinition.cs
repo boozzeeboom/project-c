@@ -45,8 +45,8 @@ namespace ProjectC.Quests
         public QuestStage[] stages = Array.Empty<QuestStage>();
 
         [Header("Rewards (on TurnedIn)")]
-        [Tooltip("Награды, выдаваемые при TurnedIn transition. " +
-                 "Этот же rewards выдаётся при CompleteObjective(action) если задан (T-Q15-T-Q17).")]
+        [Tooltip("Награды, выдаваемые ТОЛЬКО при TurnedIn transition (QuestWorld.TryTurnIn). " +
+                 "Завершение целей (TryAdvanceStage) награды НЕ выдаёт — единая точка выдачи (C2 fix).")]
         public QuestReward rewards = new QuestReward();
 
         [Header("Prerequisites (AND)")]

@@ -1133,15 +1133,12 @@ namespace ProjectC.Quests
             string toStage = currentStage.nextStageId;
 
             // 1. Fire onCompleteActions of CURRENT stage (before transition).
+            // C2 fix: награды выдаются ТОЛЬКО в TryTurnIn (единая точка). Здесь НЕ применяем
+            // def.rewards — иначе финальный stage с onCompleteActions давал двойную выдачу
+            // (награда применялась здесь и повторно в TryTurnIn).
             if (currentStage.onCompleteActions != null && currentStage.onCompleteActions.Length > 0)
             {
                 OnFireDialogActions?.Invoke(clientId, "", currentStage.onCompleteActions);
-                // Also: if final stage — apply def.rewards
-                if (string.IsNullOrEmpty(toStage) && def.rewards != null)
-                {
-                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] Stage advanced to END: {def.questId} {fromStage} → (final) → rewards");
-                    ApplyQuestRewards(clientId, def.rewards, "");
-                }
             }
 
             // 2. Transition.

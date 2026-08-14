@@ -1,5 +1,17 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (S10 fix)
+
+**Задача:** Добавить `speakerDisplayName` в DialogStepDto и использовать в UI (S10)
+**Коммит:** `5a21cc05bccaa75a43047716e492ec8d70ddda83` — T-QS10: speakerDisplayName в DialogStepDto
+**Изменения:**
+- `Assets/_Project/Quests/Dto/DialogStepDto.cs` — поле `speakerDisplayName` + сериализация
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `BuildDialogStep` резолвит displayName из `questDatabase`
+- `Assets/_Project/Quests/UI/DialogWindow.cs` — показ displayName вместо raw `npcId`
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — S10 отмечен исправленным в P2-плане
+
+---
+
 ## Итерация от 2026-08-13 (S6 fix)
 
 **Задача:** attitude-snapshot строить из `questDatabase.npcs` (S6)

@@ -1,5 +1,15 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (C1 fix)
+
+**Задача:** Закрыть эксплойт C1 — TryTurnIn завершал Active-квест без проверки objectives (сдать любой квест одним RPC)
+**Коммит:** `6524335ac67fc43838e328a075a6e044ce21bb99` — T-QC1: TryTurnIn — проверка objectives перед завершением квеста (C1)
+**Изменения:**
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — `TryTurnIn` проверяет `AreAllRequiredComplete(curStage)` перед `TryAdvanceStage`; невыполненные цели → `Fail(InvalidState)`
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — C1 отмечен исправленным в P0-плане
+
+---
+
 ## Итерация от 2026-08-13 (аудит)
 
 **Задача:** Глубокий аудит квест/NPC/диалоговой подсистемы — server-client корректность, несостыковки, рефакторинг

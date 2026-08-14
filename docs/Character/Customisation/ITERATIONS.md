@@ -1,5 +1,14 @@
 # Iterations — Character Customisation
 
+## Итерация от 2026-08-14 (skill animation после смены пола)
+
+**Задача:** После смены M↔Ж не игрались анимации скиллов — `SkillInputService` кэшировал `_animator` один раз и не перерезолвивал его после whole-model swap.
+
+**Коммит:** `fae7cf574bc25a27895b452b0bd98953d42f8ad5` — T-CUS-03: перерезолв _animator в SkillInputService после whole-model swap
+
+**Изменения:**
+- `Assets/_Project/Scripts/Skills/SkillInputService.cs` — добавлена подписка на `BodySwapped` в `Initialize()` (идемпотентно `-=`/`+=`) + обработчик `OnBodySwapped` (`_animator = newAnimator`) + отписка в `OnDestroy`.
+
 ## Итерация от 2026-08-14 (respawn race fix)
 
 **Задача:** Устранить подхват протухшего неактивного Animator при respawn — `SkillAnimationPlayer` добавляется в `OnNetworkSpawn` уже после whole-model swap, а старый body жив до конца кадра из-за deferred `Destroy`.

@@ -4,7 +4,7 @@
 
 **Задача:** Перейти с mesh-swap на whole-model swap — модель M/Ж меняется целиком (SMR + кости + Animator + avatar), чтобы Blender-раундтрип (`testing.fbx`) не «рвал» меш.
 
-**Коммит:** _(фиксируется git-commit)_
+**Коммит:** `68504650467b3b47408de15b5ed14ec0e418ba63` — T-CUS-03: whole-model swap M/Ж модели тела (вместо sharedMesh)
 
 **Изменения:**
 - `Assets/_Project/Prefabs/NetworkPlayer.prefab` — реструктуризация: стабильный пустой `Visual_Model` (scale-root) + дочерний `Body` (nested HumanM_Model с Animator+avatar+SMR+Rig); `CharacterCustomisationApplier._visualRoot` перевязан на новый `Visual_Model`.

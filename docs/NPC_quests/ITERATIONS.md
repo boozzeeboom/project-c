@@ -1,5 +1,15 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (S11 fix)
+
+**Задача:** NpcController — фильтр IsLocalPlayer в trigger (S11)
+**Коммит:** `9d78db41183687989ec8135872946f7f92b9bb38` — T-QS11: NpcController фильтрует IsLocalPlayer в trigger
+**Изменения:**
+- `Assets/_Project/Quests/NpcController.cs` — `OnTriggerEnter/Exit` реагируют только на local player
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — S11 отмечен исправленным (BootstrapScene-копии отложены)
+
+---
+
 ## Итерация от 2026-08-13 (C4 fix)
 
 **Задача:** Server-side distance check для talk-to-NPC (C4)

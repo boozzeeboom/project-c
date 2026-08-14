@@ -89,6 +89,12 @@ namespace ProjectC.Skills
 
         private void OnDestroy()
         {
+            if (_ownerPlayer != null)
+            {
+                var applier = _ownerPlayer.GetComponent<CharacterCustomisationApplier>();
+                if (applier != null)
+                    applier.BodySwapped -= OnBodySwapped;
+            }
             if (Instance == this) Instance = null;
         }
 
@@ -105,8 +111,24 @@ namespace ProjectC.Skills
                 var ownerAnim = typeof(NetworkPlayer).GetField("_animator", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 _animator = ownerAnim != null ? ownerAnim.GetValue(owner) as Animator : owner.GetComponentInChildren<Animator>();
                 if (_animator == null) _animator = owner.GetComponentInChildren<Animator>();
+
+                // Whole-model swap (T-CUS-03): подписываемся на BodySwapped, чтобы при смене
+                // M↔Ж перерезолвить _animator на НОВЫЙ Animator. Без этого legacy SetTrigger("Attack")
+                // попадает в протухший (destroyed) Animator старого тела и анимация скилла не играется.
+                var applier = owner.GetComponent<CharacterCustomisationApplier>();
+                if (applier != null)
+                {
+                    applier.BodySwapped -= OnBodySwapped; // идемпотентно (re-Initialize при reconnect)
+                    applier.BodySwapped += OnBodySwapped;
+                }
             }
             LoadSlotBindings();
+        }
+
+        private void OnBodySwapped(Animator newAnimator)
+        {
+            // Берём новый Animator напрямую из события (старый body жив до конца кадра из-за deferred Destroy).
+            _animator = newAnimator;
         }
 
         // ==================== INPUT POLLING (Phase 1) ====================

@@ -83,6 +83,7 @@ namespace ProjectC.Player
         // Компоненты
         private CharacterController _controller;
         private Animator _animator;
+        private CharacterCustomisationApplier _customisationApplier;
         private Vector3 _velocity;
         private bool _isGrounded;
         // Moving-platform carry state (owner-only, пеший режим)
@@ -230,6 +231,23 @@ namespace ProjectC.Player
                 skillInput.enabled = enabled;
         }
 
+        private void Awake()
+        {
+            // Whole-model swap: подписываемся в Awake, чтобы гарантированно получить
+            // BodySwapped до того, как CharacterCustomisationApplier.OnEnable применит
+            // снапшот и заменит тело (respawn race).
+            _customisationApplier = GetComponent<CharacterCustomisationApplier>();
+            if (_customisationApplier != null)
+                _customisationApplier.BodySwapped += OnBodySwapped;
+        }
+
+        private void OnBodySwapped(Animator newAnimator)
+        {
+            // Берём НОВЫЙ Animator напрямую из события (не GetComponentInChildren —
+            // старый body ещё жив до конца кадра из-за deferred Destroy).
+            _animator = newAnimator;
+        }
+
         private void OnEnable()
         {
             HideGhostVisualIfNeeded();
@@ -262,7 +280,8 @@ namespace ProjectC.Player
             _controller = GetComponent<CharacterController>();
             // T-INP-08 fix: на префабе первый Animator (на root) часто без controller.
             // Skip empty Animators — ищем первый с непустым runtimeAnimatorController (Visual_Model).
-            _animator = FindFirstValidAnimator();
+            // Не перезатираем, если Awake уже получил новый Animator через BodySwapped (respawn race).
+            if (_animator == null) _animator = FindFirstValidAnimator();
 
             // T-JITTER10: diagnostic — disable Animator to isolate jitter source (H4/H8).
             if (_diagnosticDisableAnimator && _animator != null)
@@ -563,6 +582,12 @@ namespace ProjectC.Player
         {
             if (SkillInputService.Instance == null) return;
             SkillInputService.Instance.TryActivate(SkillInputSlot.Primary);
+        }
+
+        private void OnDestroy()
+        {
+            if (_customisationApplier != null)
+                _customisationApplier.BodySwapped -= OnBodySwapped;
         }
 
         public override void OnNetworkDespawn()

@@ -1,5 +1,21 @@
 # Iterations — Character Customisation
 
+## Итерация от 2026-08-14 (whole-model swap)
+
+**Задача:** Перейти с mesh-swap на whole-model swap — модель M/Ж меняется целиком (SMR + кости + Animator + avatar), чтобы Blender-раундтрип (`testing.fbx`) не «рвал» меш.
+
+**Коммит:** _(фиксируется git-commit)_
+
+**Изменения:**
+- `Assets/_Project/Prefabs/NetworkPlayer.prefab` — реструктуризация: стабильный пустой `Visual_Model` (scale-root) + дочерний `Body` (nested HumanM_Model с Animator+avatar+SMR+Rig); `CharacterCustomisationApplier._visualRoot` перевязан на новый `Visual_Model`.
+- `Assets/_Project/Scripts/Player/CharacterCustomisationApplier.cs` — `ApplyBodyType` переписан на whole-model swap (`Instantiate(targetModel, _visualRoot)` → прямые ссылки на новый Animator/SMR → `SetActive(false)`+`Destroy` старого body → `BodySwapped`); добавлены `public event System.Action<Animator> BodySwapped`, runtime-поле `_currentBody`, переписан `AutoFindRefs`.
+- `Assets/_Project/Scripts/Player/NetworkPlayer.cs` — подписка на `BodySwapped` → `_animator = newAnimator`; guard `if (_animator == null)` в `OnNetworkSpawn` (respawn race).
+- `Assets/_Project/Scripts/Player/CharacterEquipmentVisualApplier.cs` — подписка на `BodySwapped` → `_animator = newAnimator; Reapply()`.
+- `Assets/_Project/Scripts/Skills/SkillAnimationPlayer.cs` — подписка на `BodySwapped` → `_animator = newAnimator; _originalController = null; _overrideCache.Clear()`.
+- `docs/Character/Customisation/08_WHOLE_MODEL_SWAP.md` — документация + Blender export checklist (создан).
+
+**Вне коммита (gitignored `*.prefab`):** `NetworkPlayer.prefab` реструктурирован локально.
+
 ## Итерация от 2026-08-14 (фикс)
 
 **Задача:** Исправление бага «всегда Ж модель и анимации» при переключении М↔Ж в CustomisationWindow.

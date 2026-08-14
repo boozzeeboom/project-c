@@ -25,6 +25,7 @@
 | 2026-06-30 | L4 implementation | **T-CUS-10 (L4 skin color) ✅:** Добавлена секция "Цвет кожи" с 3 RGB слайдерами (0-1, labels 0-255) + preview swatch + кнопка "СБРОСИТЬ ЦВЕТ". Slider → `OnSkinRSliderChanged/G/B` → `_working.skinColorR/G/B` → SaveWorking → JSON + ApplyCustomisationSnapshot → `CharacterCustomisationApplier.ApplyColors` применяет MaterialPropertyBlock с `_BaseColor` (URP/Lit). Убран дубликат `SetPropertyBlock`. ColorsDiffer теперь проверяет только skin (hair/clothing deferred). | T-CUS-10 |
 | 2026-08-14 | Refactor | **Rig swap (модель+avatar) ✅:** `CharacterCustomisationApplier` больше не подменяет `sharedMesh`, а инстанциирует модель тела целиком (SMR + скелет) и ставит новый `avatar` на `Visual_Model.Animator`. Убраны `_maleMesh`/`_femaleMesh`, добавлены `_maleModel`/`_femaleModel` (GameObject = FBX). `CharacterEquipmentVisualApplier` получил `public void Reapply()`. Префаб перепровязан. Детали: `06_RIG_SWAP_REFACTOR_PLAN.md`, `07_RIG_SWAP_IMPLEMENTATION.md`. | T-CUS-03 |
 | 2026-08-14 | Bugfix | **Переключение М↔Ж залипало на Female (mesh-swap фикс):** `ApplyBodyType` переписан с destroy+instantiate на swap только mesh/avatar/controller — скелет M/F идентичен, кости не трогаем. Убран guard, блокировавший повторные смены из-за протухшего `_bodyRenderer` (deferred `Destroy`). `NetworkPlayer` теперь скрывает `Visual_Model` у ghost `PlayerSpawner` (исчезал второй дефолтный мужской меш поверх женского). | T-CUS-03 |
+| 2026-08-14 | Refactor | **Whole-model swap (M/Ж тело целиком) ✅:** `CharacterCustomisationApplier.ApplyBodyType` инстанциирует модель целиком (SMR + кости + Animator + avatar) вместо `sharedMesh`-swap — Blender-раундтрип (`testing.fbx`) больше не «рвёт» меш. Добавлено событие `BodySwapped`; `NetworkPlayer`, `CharacterEquipmentVisualApplier`, `SkillAnimationPlayer` подписаны и перерезолвят `_animator`. Префаб реструктурирован: стабильный `Visual_Model` (scale-root) + swappable `Body`. Детали: `08_WHOLE_MODEL_SWAP.md`. | T-CUS-03 |
 
 ---
 
@@ -39,6 +40,7 @@
 | 2026-06-30 | AnimatorOverrideController для F создаётся через drag-and-drop или Editor script | НЕ дублируем стейт-машину, только подменяем motion-ы |
 | 2026-06-30 | Слайдеры тела через transform.localScale, не через blend shapes | Kevin Iglesias FREE не имеет blend shapes; transform.localScale — универсальное решение |
 | 2026-08-14 | Humanoid-модель меняется целиком (не только меш), avatar ставится на Visual_Model.Animator | Порядок/количество костей FBX-раундтрипа через Blender больше не важен: humanoid-ретаргет + GetBoneTransform резолвят кости по аватару |
+| 2026-08-14 | Новый Animator после swap передаётся через `BodySwapped` (не через `GetComponentInChildren`) | Старый body жив до конца кадра (deferred `Destroy`) — поиск по корню мог бы вернуть протухший Animator |
 
 ---
 

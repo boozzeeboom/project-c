@@ -29,6 +29,7 @@
 //   - Skill → Idle по exit (0.95, 0.2s duration)
 
 using System.Collections.Generic;
+using ProjectC.Player; // CharacterCustomisationApplier (BodySwapped)
 using UnityEngine;
 
 namespace ProjectC.Skills
@@ -87,9 +88,29 @@ namespace ProjectC.Skills
                 }
             }
 
+            // Whole-model swap: подписываемся в Awake, чтобы получить BodySwapped до
+            // CharacterCustomisationApplier.OnEnable (respawn race).
+            var applier = GetComponent<CharacterCustomisationApplier>();
+            if (applier != null)
+                applier.BodySwapped += OnBodySwapped;
+
 #if UNITY_EDITOR
             AutoDetectDefaultSkillClip();
 #endif
+        }
+
+        private void OnBodySwapped(Animator newAnimator)
+        {
+            _animator = newAnimator;
+            _originalController = null;
+            _overrideCache.Clear();
+        }
+
+        private void OnDestroy()
+        {
+            var applier = GetComponent<CharacterCustomisationApplier>();
+            if (applier != null)
+                applier.BodySwapped -= OnBodySwapped;
         }
 
 #if UNITY_EDITOR

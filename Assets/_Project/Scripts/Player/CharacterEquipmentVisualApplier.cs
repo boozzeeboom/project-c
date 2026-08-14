@@ -56,6 +56,12 @@ namespace ProjectC.Player
             {
                 _animator = FindFirstValidAnimator();
             }
+
+            // Whole-model swap: подписываемся в Awake, чтобы гарантированно получить
+            // BodySwapped до CharacterCustomisationApplier.OnEnable (respawn race).
+            var applier = GetComponent<CharacterCustomisationApplier>();
+            if (applier != null)
+                applier.BodySwapped += OnBodySwapped;
         }
 
         private void OnEnable()
@@ -88,6 +94,19 @@ namespace ProjectC.Player
             }
             DestroyAllVisuals();
             _currentItems.Clear();
+        }
+
+        private void OnBodySwapped(Animator newAnimator)
+        {
+            _animator = newAnimator;
+            Reapply();
+        }
+
+        private void OnDestroy()
+        {
+            var applier = GetComponent<CharacterCustomisationApplier>();
+            if (applier != null)
+                applier.BodySwapped -= OnBodySwapped;
         }
 
         // === Snapshot handler ===

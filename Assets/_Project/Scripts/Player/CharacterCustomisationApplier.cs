@@ -58,6 +58,14 @@ namespace ProjectC.Player
         private bool _hasSnapshot;
         private CustomisationClientState _clientState;
 
+        // Событие: тело модели (и его Animator) полностью заменены. Зависимые системы
+        // (NetworkPlayer, CharacterEquipmentVisualApplier, SkillAnimationPlayer) пересчитывают
+        // свои ссылки на Animator.
+        public event System.Action<Animator> BodySwapped;
+
+        // Текущее swappable тело (model root с Animator+avatar+SMR+Rig) — ребёнок _visualRoot.
+        private Transform _currentBody;
+
         // Cached Shader.PropertyToID — поиск по имени в каждом кадре дорого.
         private static readonly int _baseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int _colorId     = Shader.PropertyToID("_Color"); // legacy Standard shader
@@ -71,25 +79,28 @@ namespace ProjectC.Player
 
         private void AutoFindRefs()
         {
+            // _visualRoot — стабильный scale-root (обычно 'Visual_Model').
             if (_visualRoot == null)
             {
-                // Ищем child с SkinnedMeshRenderer (Visual_Model).
-                var smr = GetComponentInChildren<SkinnedMeshRenderer>(true);
-                if (smr != null) _visualRoot = smr.transform;
+                var vm = transform.Find("Visual_Model");
+                if (vm != null) _visualRoot = vm;
             }
 
-            if (_animator == null && _visualRoot != null)
+            // _currentBody — swappable модель (model root с Animator+avatar+SMR+Rig).
+            if (_currentBody == null && _visualRoot != null && _visualRoot.childCount > 0)
             {
-                var animators = _visualRoot.GetComponentsInChildren<Animator>(true);
-                foreach (var a in animators)
-                {
-                    if (a != null && a.runtimeAnimatorController != null) { _animator = a; break; }
-                }
+                _currentBody = _visualRoot.GetChild(0);
             }
 
-            if (_bodyRenderer == null && _visualRoot != null)
+            if (_animator == null && _currentBody != null)
             {
-                _bodyRenderer = _visualRoot.GetComponentInChildren<SkinnedMeshRenderer>(true);
+                _animator = _currentBody.GetComponent<Animator>();
+                if (_animator == null) _animator = _currentBody.GetComponentInChildren<Animator>(true);
+            }
+
+            if (_bodyRenderer == null && _currentBody != null)
+            {
+                _bodyRenderer = _currentBody.GetComponentInChildren<SkinnedMeshRenderer>(true);
             }
         }
 
@@ -205,11 +216,14 @@ namespace ProjectC.Player
                 return;
             }
 
-            // Защита: если ссылка на renderer по какой-то причине протухла — переищем,
-            // иначе повторные смены bodyType будут блокироваться guard-ом выше.
-            if (_bodyRenderer == null)
+            // Защита: если ссылки протухли (напр. после раннего despawn) — переищем.
+            if (_currentBody == null && _visualRoot.childCount > 0)
             {
-                _bodyRenderer = _visualRoot.GetComponentInChildren<SkinnedMeshRenderer>(true);
+                _currentBody = _visualRoot.GetChild(0);
+            }
+            if (_bodyRenderer == null && _currentBody != null)
+            {
+                _bodyRenderer = _currentBody.GetComponentInChildren<SkinnedMeshRenderer>(true);
             }
 
             // === L1: body type (mesh + animator controller) ===
@@ -267,52 +281,58 @@ namespace ProjectC.Player
                 return;
             }
 
-            // M/F модели используют один и тот же скелет (Rig/B-root/B-hips/...), поэтому
-            // НЕ инстанциируем новую модель (иначе кости окажутся на лишний уровень ниже
-            // и Animator их не найдёт). Меняем только меш тела + avatar + controller,
-            // сохраняя существующие кости Visual_Model.
-            var modelSMR = targetModel.GetComponentInChildren<SkinnedMeshRenderer>(true);
-            Mesh targetMesh = modelSMR != null ? modelSMR.sharedMesh : null;
+            // Whole-model swap: инстанциируем FBX целиком (SMR + кости + Animator + avatar).
+            // Скиннинг НЕ ретаргетится через humanoid, поэтому менять только sharedMesh нельзя —
+            // порядок/число костей у Blender-раундтрипа другой, и меш «рвётся».
+            GameObject newBody = Instantiate(targetModel, _visualRoot, worldPositionStays: false);
+            newBody.name = "Body";
 
-            var modelAnimator = targetModel.GetComponent<Animator>();
-            Avatar targetAvatar = modelAnimator != null ? modelAnimator.avatar : null;
+            // Прямые ссылки с НОВОГО инстанса (не GetComponentInChildren по корню — там
+            // ещё может жить старый body из-за deferred Destroy).
+            var newAnimator = newBody.GetComponent<Animator>();
+            if (newAnimator == null) newAnimator = newBody.GetComponentInChildren<Animator>(true);
+            var newSMR = newBody.GetComponentInChildren<SkinnedMeshRenderer>(true);
 
-            // Перекэшировать renderer, если ссылка протухла.
-            if (_bodyRenderer == null)
+            if (newAnimator == null || newSMR == null)
             {
-                _bodyRenderer = _visualRoot.GetComponentInChildren<SkinnedMeshRenderer>(true);
-            }
-            if (_bodyRenderer == null)
-            {
-                if (_logWarnings) Debug.LogWarning("[CharacterCustomisationApplier] Body renderer not found under _visualRoot.", this);
+                if (_logWarnings) Debug.LogWarning($"[CharacterCustomisationApplier] {bodyType} model '{targetModel.name}' has no Animator/SkinnedMeshRenderer — swap aborted.", this);
+                if (Application.isPlaying) Destroy(newBody);
+                else DestroyImmediate(newBody);
                 return;
             }
 
-            // 1. Mesh тела.
-            if (targetMesh != null)
-                _bodyRenderer.sharedMesh = targetMesh;
+            // Avatar уже на модели; задаём controller + материал явно.
+            if (targetCtrl != null) newAnimator.runtimeAnimatorController = targetCtrl;
+            if (targetMaterial != null) newSMR.sharedMaterial = targetMaterial;
 
-            // 2. Материал тела.
-            if (targetMaterial != null)
-                _bodyRenderer.sharedMaterial = targetMaterial;
-
-            // 3. Avatar + controller (скелет тот же, поэтому перепривязка экипировки не нужна).
-            if (_animator != null)
+            // Погасить старый body сразу (иначе кадр рендерятся два тела), затем отложенно удалить.
+            Transform oldBody = _currentBody;
+            if (oldBody != null && oldBody.gameObject != newBody)
             {
-                if (targetAvatar != null) _animator.avatar = targetAvatar;
-                if (targetCtrl != null) _animator.runtimeAnimatorController = targetCtrl;
-                // Reset trigger-ы чтобы не было залипших state-ов после смены controller-а.
-                foreach (var p in _animator.parameters)
-                {
-                    if (p.type == AnimatorControllerParameterType.Trigger)
-                        _animator.ResetTrigger(p.nameHash);
-                }
+                oldBody.gameObject.SetActive(false);
+                if (Application.isPlaying) Destroy(oldBody.gameObject);
+                else DestroyImmediate(oldBody.gameObject);
             }
+
+            // Перекэшировать ссылки на новый body.
+            _currentBody = newBody.transform;
+            _animator = newAnimator;
+            _bodyRenderer = newSMR;
+
+            // Reset trigger-ы чтобы не было залипших state-ов после смены controller-а.
+            foreach (var p in _animator.parameters)
+            {
+                if (p.type == AnimatorControllerParameterType.Trigger)
+                    _animator.ResetTrigger(p.nameHash);
+            }
+
+            // Уведомить зависимые системы (NetworkPlayer / Equipment / Skill) о смене Animator.
+            BodySwapped?.Invoke(newAnimator);
 
             if (Debug.isDebugBuild)
             {
                 Debug.Log($"[CharacterCustomisationApplier] Applied bodyType={bodyType} " +
-                          $"(mesh='{(targetMesh != null ? targetMesh.name : "null")}', " +
+                          $"(model='{targetModel.name}', " +
                           $"mat='{(targetMaterial != null ? targetMaterial.name : "null")}', " +
                           $"ctrl='{(targetCtrl != null ? targetCtrl.name : "null")}').", this);
             }

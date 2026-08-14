@@ -1,5 +1,14 @@
 # Iterations — Character Customisation
 
+## Итерация от 2026-08-14 (respawn race fix)
+
+**Задача:** Устранить подхват протухшего неактивного Animator при respawn — `SkillAnimationPlayer` добавляется в `OnNetworkSpawn` уже после whole-model swap, а старый body жив до конца кадра из-за deferred `Destroy`.
+
+**Коммит:** `4c1b3c5716b75fe22cf7349dfcbaff8d7b7a4057` — T-CUS-03: active-only поиск Animator в SkillAnimationPlayer (respawn race)
+
+**Изменения:**
+- `Assets/_Project/Scripts/Skills/SkillAnimationPlayer.cs` — в `Awake` поиск Animator изменён с `GetComponentsInChildren<Animator>(true)` на `GetComponentsInChildren<Animator>(false)` (только активные), чтобы не подхватывать destroy-pending Animator старого body.
+
 ## Итерация от 2026-08-14 (whole-model swap)
 
 **Задача:** Перейти с mesh-swap на whole-model swap — модель M/Ж меняется целиком (SMR + кости + Animator + avatar), чтобы Blender-раундтрип (`testing.fbx`) не «рвал» меш.

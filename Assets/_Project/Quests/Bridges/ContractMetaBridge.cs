@@ -1,7 +1,7 @@
 // T-Q15: ContractMetaBridge — server-side singleton. Подписывается на ContractAcceptedEvent /
-// ContractCompletedEvent / ContractFailedEvent через WorldEventBus, помечает соответствующие
-// markers в QuestWorld, и вызывает QuestTriggerService.Evaluate(...) для продвижения quest
-// objectives вроде "доставить cargo в порт X".
+// ContractCompletedEvent / ContractFailedEvent через WorldEventBus и помечает соответствующие
+// markers в QuestWorld (для будущих contract-objectives).
+// T-C7: вызов QuestTriggerService.Evaluate(...) удалён — триггерная система мертва (Attach 0 вызовов).
 //
 // См. docs/NPC_quests/08_ROADMAP.md T-Q15, 09_OPEN_QUESTIONS.md §A2.
 //
@@ -15,8 +15,8 @@ using ProjectC.Quests;
 namespace ProjectC.Quests.Bridges
 {
     /// <summary>
-    /// T-Q15: server-side мост между Trade (ContractServer) и Quest (QuestWorld/Triggers).
-    /// On contract accept/complete/fail → mark в QuestWorld + evaluate triggers.
+    /// T-Q15: server-side мост между Trade (ContractServer) и Quest (QuestWorld).
+    /// On contract accept/complete/fail → mark в QuestWorld (для будущих contract-objectives).
     /// </summary>
     public class ContractMetaBridge : MonoBehaviour
     {
@@ -69,18 +69,12 @@ namespace ProjectC.Quests.Bridges
         {
             if (QuestWorld.Instance == null) return;
             QuestWorld.Instance.MarkContractAccepted(ev.PlayerId, ev.ContractId);
-            int advances = QuestWorld.Instance.TriggerService?.Evaluate(ev.PlayerId, $"ContractAccepted:{ev.ContractId}") ?? 0;
-            if (advances > 0 || Debug.isDebugBuild)
-                Debug.Log($"[ContractMetaBridge] OnContractAccepted: client={ev.PlayerId} contract={ev.ContractId} fromNpc={ev.FromNpcId} → {advances} objective(s) advanced");
         }
 
         private void HandleContractCompleted(ContractCompletedEvent ev)
         {
             if (QuestWorld.Instance == null) return;
             QuestWorld.Instance.MarkContractCompleted(ev.PlayerId, ev.ContractId);
-            int advances = QuestWorld.Instance.TriggerService?.Evaluate(ev.PlayerId, $"ContractCompleted:{ev.ContractId}") ?? 0;
-            if (advances > 0 || Debug.isDebugBuild)
-                Debug.Log($"[ContractMetaBridge] OnContractCompleted: client={ev.PlayerId} contract={ev.ContractId} wasReceipt={ev.WasReceipt} → {advances} objective(s) advanced");
         }
 
         private void HandleContractFailed(ContractFailedEvent ev)

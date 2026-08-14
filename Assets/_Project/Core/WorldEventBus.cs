@@ -16,7 +16,8 @@ namespace ProjectC.Core
     /// Server-side world event bus. Single static point для publish/subscribe.
     /// </summary>
     /// <remarks>
-    /// Subscribers: QuestTriggerService (T-Q06), HUD notifications, debug logging.
+    /// Subscribers: QuestServer (T-C7 Mark*/Broadcast*), ContractMetaBridge (T-Q15),
+    ///             HUD notifications, debug logging.
     /// Publishers: InventoryServer (T-X0), MarketServer (T-Q06+), ContractServer (T-X5),
     ///             DayNightController (T-Q06), QuestServer (T-Q06+).
     /// </remarks>

@@ -81,29 +81,16 @@ namespace ProjectC.Quests
             // T-Q18: assign JSON repository (load on client connect, save on every state change).
             QuestWorld.Instance.SetRepository(new ProjectC.Quests.Persistence.JsonQuestStateRepository());
 
-            // T-Q06: subscribe to WorldEventBus → route to QuestTriggerService.Evaluate().
-            _handleItemAdded = OnItemAdded;
-            _handleItemRemoved = OnItemRemoved;
+            // T-C7: keep only Mark*/Broadcast* bus subscribers (reputation/attitude/event/dialog).
+            // Trigger-system Evaluate() removed — Attach() had 0 callers, Evaluate() was a no-op.
             _handleReputationChanged = OnReputationChanged;
             _handleNpcAttitudeChanged = OnNpcAttitudeChanged;
             _handleCustomEvent = OnCustomEvent;
             _handleDialogVisited = OnDialogVisited;
-            _handleDayNightChanged = OnDayNightChanged;
-            _handleGameDayChanged = OnGameDayChanged;
-            _handleGameWeekChanged = OnGameWeekChanged;
-            _handleGameMonthChanged = OnGameMonthChanged;
-            _handleGameYearChanged = OnGameYearChanged;
-            WorldEventBus.Subscribe(_handleItemAdded);
-            WorldEventBus.Subscribe(_handleItemRemoved);
             WorldEventBus.Subscribe(_handleReputationChanged);
             WorldEventBus.Subscribe(_handleNpcAttitudeChanged);
             WorldEventBus.Subscribe(_handleCustomEvent);
             WorldEventBus.Subscribe(_handleDialogVisited);
-            WorldEventBus.Subscribe(_handleDayNightChanged);
-            WorldEventBus.Subscribe(_handleGameDayChanged);
-            WorldEventBus.Subscribe(_handleGameWeekChanged);
-            WorldEventBus.Subscribe(_handleGameMonthChanged);
-            WorldEventBus.Subscribe(_handleGameYearChanged);
 
             // T-Q20: subscribe to QuestWorld events (stage transitions + actions).
             QuestWorld.Instance.OnFireDialogActions += OnWorldFireDialogActions;
@@ -116,7 +103,7 @@ namespace ProjectC.Quests
 
             if (debugMode)
             {
-                Debug.Log($"[QuestServer] OnNetworkSpawn — IsServer=true, questDatabase={questDatabase.quests?.Length ?? 0} quests, maxActive={maxActiveQuestsPerPlayer}, maxOps/min={maxOpsPerMinute}, triggerSubs=7, tickInterval={QuestWorld.Instance.TickInterval}s");
+                Debug.Log($"[QuestServer] OnNetworkSpawn — IsServer=true, questDatabase={questDatabase.quests?.Length ?? 0} quests, maxActive={maxActiveQuestsPerPlayer}, maxOps/min={maxOpsPerMinute}, tickInterval={QuestWorld.Instance.TickInterval}s");
             }
         }
 
@@ -125,18 +112,11 @@ namespace ProjectC.Quests
             base.OnNetworkDespawn();
             if (IsServer)
             {
-                // T-Q06: unsubscribe from bus
-                if (_handleItemAdded != null) WorldEventBus.Unsubscribe(_handleItemAdded);
-                if (_handleItemRemoved != null) WorldEventBus.Unsubscribe(_handleItemRemoved);
+                // T-C7: unsubscribe from bus
                 if (_handleReputationChanged != null) WorldEventBus.Unsubscribe(_handleReputationChanged);
                 if (_handleNpcAttitudeChanged != null) WorldEventBus.Unsubscribe(_handleNpcAttitudeChanged);
                 if (_handleCustomEvent != null) WorldEventBus.Unsubscribe(_handleCustomEvent);
                 if (_handleDialogVisited != null) WorldEventBus.Unsubscribe(_handleDialogVisited);
-                if (_handleDayNightChanged != null) WorldEventBus.Unsubscribe(_handleDayNightChanged);
-                if (_handleGameDayChanged != null) WorldEventBus.Unsubscribe(_handleGameDayChanged);
-                if (_handleGameWeekChanged != null) WorldEventBus.Unsubscribe(_handleGameWeekChanged);
-                if (_handleGameMonthChanged != null) WorldEventBus.Unsubscribe(_handleGameMonthChanged);
-                if (_handleGameYearChanged != null) WorldEventBus.Unsubscribe(_handleGameYearChanged);
 
                 // T-Q13: unsubscribe OnClientConnected
                 if (_handleClientConnected != null && NetworkManager.Singleton != null)
@@ -786,128 +766,43 @@ namespace ProjectC.Quests
         }
 
         // ============================================================
-        // T-Q06: WorldEventBus subscribers → QuestTriggerService.Evaluate
+        // T-C7: WorldEventBus subscribers → Mark*/Broadcast* side-effects only
+        // (trigger-system Evaluate() removed as dead code).
         // ============================================================
 
         // Cached delegate fields (so Unsubscribe can find same instance).
-        private System.Action<ItemAddedEvent> _handleItemAdded;
-        private System.Action<ItemRemovedEvent> _handleItemRemoved;
         private System.Action<ReputationChangedEvent> _handleReputationChanged;
         private System.Action<NpcAttitudeChangedEvent> _handleNpcAttitudeChanged;
         private System.Action<CustomEvent> _handleCustomEvent;
         private System.Action<DialogVisitedEvent> _handleDialogVisited;
-        private System.Action<DayNightPhaseChangedEvent> _handleDayNightChanged;
-        private System.Action<GameDayChangedEvent> _handleGameDayChanged;
-        private System.Action<GameWeekChangedEvent> _handleGameWeekChanged;
-        private System.Action<GameMonthChangedEvent> _handleGameMonthChanged;
-        private System.Action<GameYearChangedEvent> _handleGameYearChanged;
         private System.Action<ulong> _handleClientConnected; // T-Q13
-
-        private void OnItemAdded(ItemAddedEvent ev)
-        {
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            // Hint format: "HaveItem:<itemId>". TriggerService filters by prefix.
-            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"HaveItem:{ev.ItemId}");
-            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnItemAdded player={ev.PlayerId} itemId={ev.ItemId} → {advances} objective(s) advanced");
-        }
-
-        private void OnItemRemoved(ItemRemovedEvent ev)
-        {
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"HaveItem:{ev.ItemId}");
-            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnItemRemoved player={ev.PlayerId} itemId={ev.ItemId} → {advances} objective(s) advanced");
-        }
 
         private void OnReputationChanged(ReputationChangedEvent ev)
         {
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"ReputationAtLeast:{ev.Faction}");
-            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnReputationChanged player={ev.PlayerId} faction={ev.Faction} → {advances} objective(s) advanced");
             // T-CNPC-01: push snapshot so UI (CharacterWindow tab) updates immediately.
             BroadcastReputationChange(ev.PlayerId);
         }
 
         private void OnNpcAttitudeChanged(NpcAttitudeChangedEvent ev)
         {
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"NpcAttitudeAtLeast:{ev.NpcId}");
-            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnNpcAttitudeChanged player={ev.PlayerId} npc={ev.NpcId} → {advances} objective(s) advanced");
             // T-CNPC-01: push snapshot so DialogWindow badge updates immediately after combat penalty.
             BroadcastNpcAttitudeChange(ev.PlayerId);
         }
 
         private void OnCustomEvent(CustomEvent ev)
         {
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            // Mark event occurred (for IsSatisfied check)
+            // C8: mark event occurred (consumed by polling path for WaitForEvent/EventDriven objectives).
+            if (QuestWorld.Instance == null) return;
             QuestWorld.Instance.MarkEventOccurred(ev.PlayerId, ev.EventId);
-            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"Event:{ev.EventId}");
-            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnCustomEvent player={ev.PlayerId} eventId={ev.EventId} → {advances} objective(s) advanced");
         }
 
         private void OnDialogVisited(DialogVisitedEvent ev)
         {
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            // T-Q22: mark NPC as talked-to (consumed by polling path for TalkToNpc objectives).
+            if (QuestWorld.Instance == null) return;
             if (!string.IsNullOrEmpty(ev.NpcId))
             {
                 QuestWorld.Instance.MarkNpcTalked(ev.PlayerId, ev.NpcId);
-            }
-            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"TalkedToNpc:{ev.NpcId}");
-            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnDialogVisited player={ev.PlayerId} npc={ev.NpcId} → {advances} objective(s) advanced");
-        }
-
-        private void OnDayNightChanged(DayNightPhaseChangedEvent ev)
-        {
-            // PlayerId=0 global event. Loop all connected clients (T-Q15: more efficient via per-player iteration).
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            if (NetworkManager == null) return;
-            foreach (var clientId in NetworkManager.ConnectedClientsIds)
-            {
-                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"DayNightPhase:{ev.NewPhaseName}");
-            }
-        }
-
-        private void OnGameDayChanged(GameDayChangedEvent ev)
-        {
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            if (NetworkManager == null) return;
-            foreach (var clientId in NetworkManager.ConnectedClientsIds)
-            {
-                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameDay:{ev.Day}");
-                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameWeekday:{ev.Weekday}");
-            }
-        }
-
-        private void OnGameWeekChanged(GameWeekChangedEvent ev)
-        {
-            // Hint: GameWeek:0 (week number, 0-based from epoch). Triggers: on new week.
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            if (NetworkManager == null) return;
-            // Полезная нагрузка: можно вычислять номер недели от эпохи
-            int weekNumber = ((ev.Year - 1) * 48) + ((ev.Month - 1) * 4) + ((ev.Day - 1) / 7);
-            foreach (var clientId in NetworkManager.ConnectedClientsIds)
-            {
-                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameWeek:{weekNumber}");
-            }
-        }
-
-        private void OnGameMonthChanged(GameMonthChangedEvent ev)
-        {
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            if (NetworkManager == null) return;
-            foreach (var clientId in NetworkManager.ConnectedClientsIds)
-            {
-                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameMonth:{ev.Month}");
-            }
-        }
-
-        private void OnGameYearChanged(GameYearChangedEvent ev)
-        {
-            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
-            if (NetworkManager == null) return;
-            foreach (var clientId in NetworkManager.ConnectedClientsIds)
-            {
-                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"GameYear:{ev.Year}");
             }
         }
 

@@ -13,7 +13,6 @@ using UnityEngine;
 using ProjectC.Core;
 using ProjectC.Factions;
 using ProjectC.Quests.Dto;
-using ProjectC.Quests.Triggers;
 using ProjectC.Localization;
 
 namespace ProjectC.Quests
@@ -90,9 +89,7 @@ namespace ProjectC.Quests
             Instance.RegisterQuests(questDefinitions);
             Instance.Database = database;
             Instance.MaxActiveQuestsPerPlayer = maxActiveQuestsPerPlayer;
-            // T-Q06: create trigger service immediately.
-            Instance.TriggerService = new Triggers.QuestTriggerService(Instance);
-            Debug.Log($"[QuestWorld] Initialized: {Instance._questById.Count} quest definitions registered, maxActive={maxActiveQuestsPerPlayer}, dbNPCs={(database?.npcs?.Length ?? 0)}, TriggerService online.");
+            Debug.Log($"[QuestWorld] Initialized: {Instance._questById.Count} quest definitions registered, maxActive={maxActiveQuestsPerPlayer}, dbNPCs={(database?.npcs?.Length ?? 0)}.");
         }
 
         /// <summary>Reset singleton. Editor/test only.</summary>
@@ -779,9 +776,6 @@ namespace ProjectC.Quests
                 message = message
             };
         }
-
-        /// <summary>T-Q06: trigger service singleton. Created in CreateAndInitialize.</summary>
-        public Triggers.QuestTriggerService TriggerService { get; private set; }
 
         public bool GetFlag(ulong clientId, string flagId)
         {

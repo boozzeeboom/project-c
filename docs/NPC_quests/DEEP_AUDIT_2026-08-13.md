@@ -108,6 +108,8 @@ FireDialogAction.OfferQuest реагирует только на `code==Ok(0)`:
 a) **Удалить** QuestTriggerService + ConcreteTriggers + Evaluate-вызовы (оставив Mark*/Broadcast), зафиксировав polling как каноническую модель — минус ~600 строк мёртвого кода;
 б) Подключить Attach/Detach в TryAccept/TryAdvanceStage и привести MatchesObjective к type-aware matching — имеет смысл только ради мгновенной реакции вместо 5-секундного тика.
 
+**Решение:** ✅ вариант (а) — удалено. См. `T-QC7_remove_dead_trigger_system.md` и `ITERATIONS.md`.
+
 ### C8. EmitEvent не обрабатывается вообще; EventDriven-путь мёртв end-to-end
 
 `DialogueActionType.EmitEvent(51)` **отсутствует в switch** FireDialogAction (проверено перечислением всех case) — действие молча игнорируется, клиенту не шлётся даже stub-result. В проекте нет ни одного `WorldEventBus.Publish(new CustomEvent)`. Следовательно `WaitForEvent`/`EventDriven` objectives (`QuestWorld.cs:1103-1105` → `HasEventOccurred`) не могут быть выполнены никаким способом. §K-дизайн (EventDriven discovery) не работает, несмотря на «✅» в прошлых аудитах.
@@ -225,7 +227,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 - [x] **S5:** задействовать minReputation в ArePrerequisitesMet (или удалить поле); discoverable — фильтровать snapshot (или удалить). ✅ исправлено (см. ITERATIONS.md)
 - [x] **S6:** attitude-snapshot от `questDatabase.npcs`, а не от objectives. ✅ исправлено (см. ITERATIONS.md)
 - [x] **S10:** +speakerDisplayName в DialogStepDto (и quest displayName уже есть в snapshot — использовать в DialogWindow/Toast). ✅ исправлено (см. ITERATIONS.md)
-- [ ] **C7:** решение по триггерам — удалить (рекомендую) или подключить.
+- [x] **C7:** триггерная система удалена (вариант a: polling — канон). ✅ удалено (см. ITERATIONS.md)
 
 ### P3 — техдолг (по желанию)
 - [ ] Split QuestServer/QuestWorld (см. §5.1); убрать reflection (S8) — public API.

@@ -1,7 +1,7 @@
 // T-X0: WorldEvent — base class for full event bus (per D2 / 09_OPEN_QUESTIONS.md §J).
 // См. docs/NPC_quests/02_V2_ARCHITECTURE.md §2.3.12, 06_TRIGGERS_AND_INTEGRATION.md §6.3.
 //
-// T-X0 scope: base + ItemAddedEvent + ItemRemovedEvent (для T-Q06 QuestTriggerService).
+// T-X0 scope: base + ItemAddedEvent + ItemRemovedEvent.
 // Остальные event типы (ReputationChanged, QuestStateChanged, CustomEvent, etc.) — T-Q06+.
 
 using System;

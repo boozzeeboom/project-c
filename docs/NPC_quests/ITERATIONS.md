@@ -1,5 +1,16 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (C4 fix)
+
+**Задача:** Server-side distance check для talk-to-NPC (C4)
+**Коммит:** `94b266e622c62af664e8d51cac42e26d22d81dfb` — T-QC4: server-side distance check для talk-to-NPC
+**Изменения:**
+- `Assets/_Project/Quests/NpcController.cs` — статический реестр `NpcController.Find(npcId)`
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `RequestTalkToNpcRpc` отвергает запрос при дистанции > `interactionDistance`
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — C4 отмечен исправленным в P2-плане
+
+---
+
 ## Итерация от 2026-08-13 (S10 fix)
 
 **Задача:** Добавить `speakerDisplayName` в DialogStepDto и использовать в UI (S10)

@@ -952,12 +952,14 @@ namespace ProjectC.Quests
             var w = QuestWorld.Instance;
             if (w == null) return new QuestSnapshotDto { quests = null, newlyDiscoveredQuestIds = null };
             var playerQuests = w.GetPlayerQuests(clientId);
-            int count = playerQuests.Count;
-            var arr = new QuestProgressDto[count];
-            for (int i = 0; i < count; i++)
+            var list = new List<QuestProgressDto>(playerQuests.Count);
+            for (int i = 0; i < playerQuests.Count; i++)
             {
                 var inst = playerQuests[i];
                 var def = w.GetQuest(inst.questId);
+                // S5: скрыть не-discoverable квест, пока он в Discovered (до accept).
+                if (inst.state == QuestState.Discovered && def != null && !def.discoverable)
+                    continue;
                 // Build objective progress
                 int objCount = inst.objectiveProgress != null ? inst.objectiveProgress.Count : 0;
                 var objArr = new ObjectiveProgressDto[objCount];
@@ -993,7 +995,7 @@ namespace ProjectC.Quests
                     };
                     if (Debug.isDebugBuild) Debug.Log($"[QuestServer] BuildQuestSnapshot: quest={inst.questId} obj={op.objectiveId} desc='{desc}' reqQty={reqQty} curVal={op.currentCount} completed={op.completed}");
                 }
-                arr[i] = new QuestProgressDto
+                list.Add(new QuestProgressDto
                 {
                     questId = inst.questId,
                     displayName = def != null ? def.displayName : "",
@@ -1001,11 +1003,11 @@ namespace ProjectC.Quests
                     currentStageId = inst.currentStageId ?? "",
                     isTracked = inst.isTracked,
                     objectives = objArr
-                };
+                });
             }
             return new QuestSnapshotDto
             {
-                quests = arr,
+                quests = list.ToArray(),
                 newlyDiscoveredQuestIds = null  // T-Q11: populate on EventDriven
             };
         }

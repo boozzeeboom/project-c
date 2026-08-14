@@ -223,7 +223,17 @@ namespace ProjectC.Quests
         /// </summary>
         public (bool met, string reason) ArePrerequisitesMet(ulong clientId, QuestDefinition def)
         {
-            if (def == null || def.prerequisites == null || def.prerequisites.Length == 0) return (true, null);
+            if (def == null) return (true, null);
+
+            // S5: minReputation — pre-prerequisite по faction (в дополнение к prerequisites[]).
+            if (def.faction != FactionId.None && def.minReputation > 0)
+            {
+                int rep = GetReputation(clientId, def.faction);
+                if (rep < def.minReputation)
+                    return (false, Loc.Format("ui.quest.prereq.reputation", def.faction.ToString(), def.minReputation));
+            }
+
+            if (def.prerequisites == null || def.prerequisites.Length == 0) return (true, null);
             for (int i = 0; i < def.prerequisites.Length; i++)
             {
                 var p = def.prerequisites[i];

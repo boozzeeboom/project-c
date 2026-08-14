@@ -222,7 +222,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 - [x] **S1:** AddItemDirect(+count) или цикл; применить в GiveItem и ApplyQuestRewards. ✅ исправлено (см. ITERATIONS.md)
 - [ ] **S2:** подключить RequestRefresh*Rpc к открытию CharacterWindow/DialogWindow ИЛИ удалить RPC.
 - [x] **S3:** DeliverItem — изъятие предметов при turn-in (InventoryServer.TryRemove). ✅ исправлено (см. ITERATIONS.md)
-- [ ] **S5:** задействовать minReputation в ArePrerequisitesMet (или удалить поле); discoverable — фильтровать snapshot (или удалить).
+- [x] **S5:** задействовать minReputation в ArePrerequisitesMet (или удалить поле); discoverable — фильтровать snapshot (или удалить). ✅ исправлено (см. ITERATIONS.md)
 - [ ] **S6:** attitude-snapshot от `questDatabase.npcs`, а не от objectives.
 - [ ] **S10:** +speakerDisplayName в DialogStepDto (и quest displayName уже есть в snapshot — использовать в DialogWindow/Toast).
 - [ ] **C7:** решение по триггерам — удалить (рекомендую) или подключить.

@@ -535,6 +535,11 @@ namespace ProjectC.Quests
                 }
             }
 
+            // S3: consume DeliverItem objective items before finalizing turn-in.
+            if (!ConsumeDeliverItems(clientId, def))
+                return Fail(QuestResultCode.InvalidState,
+                    $"Quest '{questId}' turn-in failed — deliver items missing", questId);
+
             // Transition: Completed → TurnedIn
             if (!QuestStateTransition.IsAllowed(instance.state, QuestState.TurnedIn))
                 return Fail(QuestResultCode.InvalidState, $"Cannot turn-in from {instance.state}", questId);
@@ -645,6 +650,57 @@ namespace ProjectC.Quests
                     Debug.Log($"[QuestWorld] ApplyQuestRewards: unlock type={ul.unlockType} id='{ul.unlockId}' (T-Q19+ impl)");
                 }
             }
+        }
+
+        /// <summary>
+        /// S3: consume DeliverItem objective items on turn-in. Removes requiredQuantity of each
+        /// DeliverItem's item from the player inventory (via InventoryServer.TryRemove).
+        /// Returns false WITHOUT consuming further if any removal fails, so turn-in can be rejected cleanly.
+        /// </summary>
+        private bool ConsumeDeliverItems(ulong clientId, QuestDefinition def)
+        {
+            if (def == null || def.stages == null) return true; // nothing to consume
+            for (int s = 0; s < def.stages.Length; s++)
+            {
+                var stage = def.stages[s];
+                if (stage == null || stage.objectives == null) continue;
+                for (int o = 0; o < stage.objectives.Length; o++)
+                {
+                    var obj = stage.objectives[o];
+                    if (obj == null || obj.objectiveType != QuestObjectiveType.DeliverItem) continue;
+
+                    int itemId = ResolveItemId(obj.itemTradeItemId, obj.pickupItem);
+                    if (itemId <= 0)
+                    {
+                        Debug.LogWarning($"[QuestWorld] ConsumeDeliverItems: quest={def.questId} obj={obj.objectiveId} — не удалось разрешить item, пропускаю");
+                        continue;
+                    }
+
+                    int need = obj.requiredQuantity > 0 ? obj.requiredQuantity : 1;
+                    // ItemData ref несёт точный itemType; строковый tradeItemId → Resources (как в reward-пайплайне).
+                    ProjectC.Items.ItemType itemType =
+                        obj.pickupItem != null ? obj.pickupItem.itemType : ProjectC.Items.ItemType.Resources;
+
+                    bool removed;
+                    var invServer = ProjectC.Items.Network.InventoryServer.Instance;
+                    if (invServer != null)
+                    {
+                        removed = invServer.TryRemove(clientId, itemId, itemType, need);
+                    }
+                    else
+                    {
+                        var inv = ProjectC.Items.InventoryWorld.Instance;
+                        removed = inv != null && inv.RemoveItems(clientId, itemId, itemType, need).IsSuccess;
+                    }
+
+                    if (!removed)
+                    {
+                        Debug.LogWarning($"[QuestWorld] ConsumeDeliverItems: quest={def.questId} obj={obj.objectiveId} — не удалось изъять {need}x item={itemId} ({itemType})");
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         /// <summary>

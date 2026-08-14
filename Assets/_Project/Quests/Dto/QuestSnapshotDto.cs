@@ -1,8 +1,8 @@
 // T-Q07: QuestSnapshotDto — full quest state snapshot for one player.
 // См. docs/NPC_quests/02_V2_ARCHITECTURE.md §2.6 (DTOs), pattern: ContractSnapshotDto (Trade).
 //
-// Server → Client. Sent by QuestServer in response to RequestRefreshQuestsRpc
-// or after every state transition (T-Q15+).
+// Server → Client. Sent by QuestServer on connect (initial push) and after
+// every state transition (T-Q15+). Pull-refresh RPC removed (см. T-QS2).
 
 using Unity.Netcode;
 

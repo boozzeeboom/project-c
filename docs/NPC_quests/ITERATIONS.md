@@ -1,5 +1,16 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (C8 fix)
+
+**Задача:** Реализовать заглушки DiscoverQuest / EmitEvent / FailQuest (C8)
+**Коммит:** `6d9b371b34a54d01d2dc120c0bb666d3a240247c` — T-QC8: реализовать DiscoverQuest / EmitEvent / FailQuest
+**Изменения:**
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — добавлен `TryFailQuest` (валидация перехода Discovered/Offered/Active → Failed)
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `DiscoverQuest` → `TryOffer` + snapshot push; `EmitEvent` → `MarkEventOccurred` + `Publish CustomEvent`; `FailQuest` → `TryFailQuest` + snapshot push
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — C8 отмечен исправленным в P0-плане
+
+---
+
 ## Итерация от 2026-08-13 (C6 fix)
 
 **Задача:** Устранить silent-true у 8 нереализованных типов DialogueCondition (C6)

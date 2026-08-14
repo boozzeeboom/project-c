@@ -82,7 +82,10 @@ namespace ProjectC.Skills
             _skillStateHash = Animator.StringToHash(_skillStateName);
             if (_animator == null)
             {
-                foreach (var a in GetComponentsInChildren<Animator>(true))
+                // Только активные: SkillAnimationPlayer добавляется в OnNetworkSpawn (после
+                // whole-model swap при respawn), и старый body ещё жив (неактивен) до конца
+                // кадра из-за deferred Destroy — его Animator брать нельзя.
+                foreach (var a in GetComponentsInChildren<Animator>(false))
                 {
                     if (a != null && a.runtimeAnimatorController != null) { _animator = a; break; }
                 }

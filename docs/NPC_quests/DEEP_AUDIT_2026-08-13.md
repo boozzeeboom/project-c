@@ -152,7 +152,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 | # | Проблема | Файл:строка | Эффект |
 |---|---|---|---|
 | S1 | **GiveItem игнорирует количество**: `AddItemDirect(clientId, itemId, itemType)` — нет параметра count; лог врёт «x{intParam}». То же в ApplyQuestRewards (ri.count игнорируется). TakeItem количество учитывает — асимметрия | QuestServer.cs:1503, QuestWorld.cs:609 | Награды/действия «выдать N предметов» выдают 1 |
-| S2 | **RequestRefreshQuests/Reputation/NpcAttitudeRpc — 0 клиентских вызовов** (grep). CharacterWindow читает только кэш snapshot | QuestServer.cs:755-793; CharacterWindow.cs:3263+ | Любой пропущенный push (C5) = вечный stale UI до reconnect |
+| S2 | RequestRefreshQuests/Reputation/NpcAttitudeRpc — 0 клиентских вызовов (grep). CharacterWindow читает только кэш snapshot | ~~QuestServer.cs:755-793~~ (3 RPC удалены); CharacterWindow.cs:3263+ | ✅ **удалено** — push-модель покрывает refresh (см. ITERATIONS.md) |
 | S3 | DeliverItem ≡ HaveItem (количество в инвентаре); предметы при turn-in **не изымаются**; `progress.completed` латчится — продал предметы после выполнения, цель остаётся выполненной | QuestWorld.cs:1074-1084, TryTurnIn | «Принеси предмет» не отнимает предмет |
 | S4 | Мёртвые публичные контракты: `QuestState.Offered` никем не устанавливается; `TryAdvanceObjective` вызывается только мёртвым TriggerService; `NotifyQuestDiscoveredRpc` — пустой RPC без вызовов; `QuestResultCode.RateLimit/InventoryFull` не возвращаются нигде | — | Мёртвый API-мусор вводит в заблуждение |
 | S5 | **minReputation и discoverable нигде не проверяются** на сервере (ArePrerequisitesMet их не читает) — поля-обманки в инспекторе | QuestDefinition.cs:40,64 | Гейты «по репутации» молча не работают |
@@ -220,7 +220,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 ### P2 — server-client добивка (1-2 дня)
 - [x] **C4:** server-side distance check (требует server-side реестра NPC — минимум: NetworkObject на NPC + позиция). ✅ исправлено (см. ITERATIONS.md)
 - [x] **S1:** AddItemDirect(+count) или цикл; применить в GiveItem и ApplyQuestRewards. ✅ исправлено (см. ITERATIONS.md)
-- [ ] **S2:** подключить RequestRefresh*Rpc к открытию CharacterWindow/DialogWindow ИЛИ удалить RPC.
+- [x] **S2:** RequestRefresh*Rpc удалены (push-модель покрывает refresh). ✅ удалено (см. ITERATIONS.md)
 - [x] **S3:** DeliverItem — изъятие предметов при turn-in (InventoryServer.TryRemove). ✅ исправлено (см. ITERATIONS.md)
 - [x] **S5:** задействовать minReputation в ArePrerequisitesMet (или удалить поле); discoverable — фильтровать snapshot (или удалить). ✅ исправлено (см. ITERATIONS.md)
 - [x] **S6:** attitude-snapshot от `questDatabase.npcs`, а не от objectives. ✅ исправлено (см. ITERATIONS.md)

@@ -5,8 +5,7 @@
 //   - NetworkBehaviour skeleton (Instance singleton, OnNetworkSpawn/Despawn).
 //   - QuestDatabase SO ref (T-Q09 fills it, T-Q05 just consumes the array).
 //   - All RPCs declared (RequestTalkToNpc, RequestAdvanceDialogue, RequestAcceptQuest,
-//     RequestTurnInQuest, RequestTrackQuest, RequestRefreshQuests, RequestRefreshReputation,
-//     RequestRefreshNpcAttitude, RequestDiscoverQuest). Stub logic — real impl in T-Q06+.
+//     RequestTurnInQuest, RequestTrackQuest, RequestDiscoverQuest). Stub logic — real impl in T-Q06+.
 //   - Rate limiting per-client (copy-paste from ContractServer).
 //   - Place in BootstrapScene.unity via MCP; ScenePlacedObjectSpawner wires NetworkObject.
 //
@@ -773,50 +772,7 @@ namespace ProjectC.Quests
             }
         }
 
-        /// <summary>
-        /// Player requests full quest list snapshot (e.g. при открытии CharacterWindow).
-        /// T-Q07: real impl — build DTO + send TargetRpc to client.
-        /// </summary>
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        public void RequestRefreshQuestsRpc(RpcParams rpcParams = default)
-        {
-            ulong clientId = rpcParams.Receive.SenderClientId;
-            if (!CheckRateLimit(clientId)) return;
-            if (QuestWorld.Instance == null) return;
-            if (debugMode) Debug.Log($"[QuestServer] RequestRefreshQuests client={clientId}");
-            var snapshot = BuildQuestSnapshot(clientId);
-            SendQuestSnapshotToClient(clientId, snapshot);
-        }
 
-        /// <summary>
-        /// Player requests full reputation snapshot.
-        /// T-Q07: real impl — build DTO + send TargetRpc to client.
-        /// </summary>
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        public void RequestRefreshReputationRpc(RpcParams rpcParams = default)
-        {
-            ulong clientId = rpcParams.Receive.SenderClientId;
-            if (!CheckRateLimit(clientId)) return;
-            if (QuestWorld.Instance == null) return;
-            if (debugMode) Debug.Log($"[QuestServer] RequestRefreshReputation client={clientId}");
-            var snapshot = BuildReputationSnapshot(clientId);
-            SendReputationSnapshotToClient(clientId, snapshot);
-        }
-
-        /// <summary>
-        /// Player requests full NpcAttitude snapshot (per NPC relationship values).
-        /// T-Q07: real impl — build DTO + send TargetRpc to client.
-        /// </summary>
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        public void RequestRefreshNpcAttitudeRpc(RpcParams rpcParams = default)
-        {
-            ulong clientId = rpcParams.Receive.SenderClientId;
-            if (!CheckRateLimit(clientId)) return;
-            if (QuestWorld.Instance == null) return;
-            if (debugMode) Debug.Log($"[QuestServer] RequestRefreshNpcAttitude client={clientId}");
-            var snapshot = BuildNpcAttitudeSnapshot(clientId);
-            SendNpcAttitudeSnapshotToClient(clientId, snapshot);
-        }
 
         /// <summary>
         /// Server tells client about a newly Discovered quest (triggered by EventDriven objective).

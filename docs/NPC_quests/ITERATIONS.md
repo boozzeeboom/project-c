@@ -1,5 +1,16 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (C3 fix)
+
+**Задача:** Устранить обход валидации NPC при turn-in (C3) — CompleteObjective передавал пустой toNpcId
+**Коммит:** `8fa6da98af083865c8903311448e79caadb9ad13` — T-QC3: проброс npcId в TryTurnIn + отказ пустому toNpcId
+**Изменения:**
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `FireDialogAction.CompleteObjective` передаёт `npcId` в `TryTurnIn` (вместо `string.Empty`)
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `RequestTurnInQuestRpc` отклоняет пустой `toNpcId` (`InvalidState`)
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — C3 отмечен исправленным в P0-плане
+
+---
+
 ## Итерация от 2026-08-13 (C2 fix)
 
 **Задача:** Устранить двойную выдачу наград (C2) — ApplyQuestRewards вызывался и в TryAdvanceStage, и в TryTurnIn

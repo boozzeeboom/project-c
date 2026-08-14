@@ -1,5 +1,15 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (S3 fix)
+
+**Задача:** Изъятие DeliverItem-предметов при turn-in (S3)
+**Коммит:** `311cb5e62014f428a0a7dcfc121e527870da1ade` — T-QS3: DeliverItem — изъятие предметов при turn-in
+**Изменения:**
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — новый `ConsumeDeliverItems` + вызов в `TryTurnIn` до перехода в `TurnedIn`
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — S3 отмечен исправленным в P2-плане
+
+---
+
 ## Итерация от 2026-08-13 (S1 fix)
 
 **Задача:** Учесть количество предметов в GiveItem и ApplyQuestRewards (S1)

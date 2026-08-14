@@ -1,5 +1,15 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (S6 fix)
+
+**Задача:** attitude-snapshot строить из `questDatabase.npcs` (S6)
+**Коммит:** `16673503d6b520f5b67d7eb3148e5d3ca6d4b0e0` — T-QS6: attitude-snapshot из questDatabase.npcs
+**Изменения:**
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `BuildNpcAttitudeSnapshot` берёт NPC id из `Database.npcs`
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — S6 отмечен исправленным в P2-плане
+
+---
+
 ## Итерация от 2026-08-13 (S5 fix)
 
 **Задача:** Задействовать minReputation и discoverable (S5)

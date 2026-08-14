@@ -1,5 +1,16 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (S1 fix)
+
+**Задача:** Учесть количество предметов в GiveItem и ApplyQuestRewards (S1)
+**Коммит:** `2ee0d3be5a8072ca1d56a80975ade2f9fd8721a7` — T-QS1: GiveItem/ApplyQuestRewards учитывают количество
+**Изменения:**
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `GiveItem` циклит по `intParam` (default 1)
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — `ApplyQuestRewards` циклит по `ri.count`
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — S1 отмечен исправленным в P2-плане
+
+---
+
 ## Итерация от 2026-08-13 (C8 fix)
 
 **Задача:** Реализовать заглушки DiscoverQuest / EmitEvent / FailQuest (C8)

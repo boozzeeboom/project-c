@@ -119,9 +119,18 @@ namespace ProjectC.Quests
             return Registry.TryGetValue(npcId, out var c) ? c : null;
         }
 
+        // S11: реагировать только на local player (remote player'ы, особенно на host,
+        // не должны двигать _playerInRange — иначе E-key выбирает чужого NPC).
+        private static bool IsLocalPlayerCollider(Collider other)
+        {
+            var np = other != null ? other.GetComponentInParent<ProjectC.Player.NetworkPlayer>() : null;
+            return np != null && np.IsLocalPlayer;
+        }
+
         private void OnTriggerEnter(Collider other)
         {
             if (!other.CompareTag("Player")) return;
+            if (!IsLocalPlayerCollider(other)) return;
             _playerInRange = true;
             if (Debug.isDebugBuild) Debug.Log($"[NpcController:{NpcId}] Player entered range");
         }
@@ -129,6 +138,7 @@ namespace ProjectC.Quests
         private void OnTriggerExit(Collider other)
         {
             if (!other.CompareTag("Player")) return;
+            if (!IsLocalPlayerCollider(other)) return;
             _playerInRange = false;
             if (Debug.isDebugBuild) Debug.Log($"[NpcController:{NpcId}] Player exited range");
         }

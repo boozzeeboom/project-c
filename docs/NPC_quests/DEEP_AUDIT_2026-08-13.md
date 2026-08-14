@@ -231,7 +231,8 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 - [ ] Split QuestServer/QuestWorld (см. §5.1); убрать reflection (S8) — public API.
 - [ ] CsvUtils.cs; удалить мёртвое (S4): Offered-state, NotifyQuestDiscoveredRpc, QuestStateMirror→QuestState.
 - [ ] Консолидация граф-редакторов; почистить ITERATIONS.md (merge-артефакты) и дубль в Assets/_Project/Quests/.
-- [ ] Удалить лишние BootstrapScene-копии; NpcController — фильтр IsLocalPlayer в trigger (S11).
+- [ ] Удалить лишние BootstrapScene-копии (ассеты — отложено).
+- [x] NpcController — фильтр IsLocalPlayer в trigger (S11). ✅ исправлено (см. ITERATIONS.md)
 - [ ] Стабы: GiveCargoItem/TakeCargoItem/OpenService — либо реализовать, либо fail=false с явной ошибкой (честнее для контента).
 
 ---

@@ -1,5 +1,16 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (C6 fix)
+
+**Задача:** Устранить silent-true у 8 нереализованных типов DialogueCondition (C6)
+**Коммит:** `e9ef88886d64e5039a0189fee3a17f0e5bba7455` — T-QC6: реализовать недостающие DialogueCondition
+**Изменения:**
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `EvaluateSingleCondition`: реализованы `QuestStageEquals`, `QuestCompleted`, `QuestDiscovered`, `ReputationAtMost`, `NpcAttitudeAtLeast`
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `CargoHasItem`/`PlayerInZone`/`WasNodeVisited` + `default` → `Debug.LogWarning` + `false` (вместо silent true)
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — C6 отмечен исправленным в P0-плане
+
+---
+
 ## Итерация от 2026-08-13 (C5 fix)
 
 **Задача:** Устранить ложный «🔒 Discovered» и отсутствие snapshot-push при успешной выдаче квеста (C5)

@@ -1356,14 +1356,18 @@ namespace ProjectC.Quests
                         string offerQuestId = action.GetQuestId();
                         var resultOffer = qwOffer.TryOffer(clientId, offerQuestId);
                         if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OfferQuest {offerQuestId} to client {clientId} → code={resultOffer.code} msg={resultOffer.message}");
-                        if (resultOffer.code == (byte)QuestResultCode.Ok)
+                        // C5 fix: Discovered (code=7) — это УСПЕХ (новый квест в журнале).
+                        // Ok (0) — уже был в логе (idempotent). Оба → snapshot push + success=true.
+                        bool offerSuccess = resultOffer.code == (byte)QuestResultCode.Ok
+                                            || resultOffer.code == (byte)QuestResultCode.Discovered;
+                        if (offerSuccess)
                         {
                             SendQuestSnapshotToClient(clientId);
                         }
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
                             actionType = (byte)action.type,
-                            success = resultOffer.code == (byte)QuestResultCode.Ok,
+                            success = offerSuccess,
                             resultData = resultOffer.message
                         });
                     }

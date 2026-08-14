@@ -274,6 +274,21 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// Полная перепривязка после смены модели тела: сбрасывает кэш слотов
+        /// и заново спавнит визуалы на костях нового скелета.
+        /// Вызывается из CharacterCustomisationApplier.ApplyBodyType после смены bodyType.
+        /// </summary>
+        public void Reapply()
+        {
+            DestroyAllVisuals();
+            _currentItems.Clear();
+            if (_clientState != null && _clientState.CurrentSnapshot.HasValue)
+            {
+                OnEquipmentUpdated(_clientState.CurrentSnapshot.Value);
+            }
+        }
+
+        /// <summary>
         /// Принудительно переприменить текущий snapshot (для отладки/Editor).
         /// </summary>
         [ContextMenu("DEBUG: Force re-apply current snapshot")]

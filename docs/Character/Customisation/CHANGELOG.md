@@ -23,6 +23,7 @@
 | 2026-06-30 | Bugfix | **Persistence сбрасывалась при перезапуске сервера:** Перешёл на отдельный файл `persistentDataPath/Customisation/customisation_<clientId>.json` (был `character_<clientId>.json` через JsonCharacterDataRepository). StatsServer перезаписывает свой файл при старте — теперь customisation изолирован. | — |
 | 2026-06-30 | Bugfix | **Внешность не актуализировалась при заходе (даже когда JSON есть):** `CharacterCustomisationApplier.OnEnable` теперь сам читает JSON с диска через `LoadSnapshotFromDisk()`. Если файл найден — сразу вызывает `_clientState.ApplyCustomisationSnapshot(snapshot)`, не дожидаясь UI. | — |
 | 2026-06-30 | L4 implementation | **T-CUS-10 (L4 skin color) ✅:** Добавлена секция "Цвет кожи" с 3 RGB слайдерами (0-1, labels 0-255) + preview swatch + кнопка "СБРОСИТЬ ЦВЕТ". Slider → `OnSkinRSliderChanged/G/B` → `_working.skinColorR/G/B` → SaveWorking → JSON + ApplyCustomisationSnapshot → `CharacterCustomisationApplier.ApplyColors` применяет MaterialPropertyBlock с `_BaseColor` (URP/Lit). Убран дубликат `SetPropertyBlock`. ColorsDiffer теперь проверяет только skin (hair/clothing deferred). | T-CUS-10 |
+| 2026-08-14 | Refactor | **Rig swap (модель+avatar) ✅:** `CharacterCustomisationApplier` больше не подменяет `sharedMesh`, а инстанциирует модель тела целиком (SMR + скелет) и ставит новый `avatar` на `Visual_Model.Animator`. Убраны `_maleMesh`/`_femaleMesh`, добавлены `_maleModel`/`_femaleModel` (GameObject = FBX). `CharacterEquipmentVisualApplier` получил `public void Reapply()`. Префаб перепровязан. Детали: `06_RIG_SWAP_REFACTOR_PLAN.md`, `07_RIG_SWAP_IMPLEMENTATION.md`. | T-CUS-03 |
 
 ---
 
@@ -36,6 +37,7 @@
 | 2026-06-30 | Multiplayer sync — Variant A (client-only) для MVP, Variant B (NetworkVariable) — когда потребуется | Минимизация изменений в сетевом коде |
 | 2026-06-30 | AnimatorOverrideController для F создаётся через drag-and-drop или Editor script | НЕ дублируем стейт-машину, только подменяем motion-ы |
 | 2026-06-30 | Слайдеры тела через transform.localScale, не через blend shapes | Kevin Iglesias FREE не имеет blend shapes; transform.localScale — универсальное решение |
+| 2026-08-14 | Humanoid-модель меняется целиком (не только меш), avatar ставится на Visual_Model.Animator | Порядок/количество костей FBX-раундтрипа через Blender больше не важен: humanoid-ретаргет + GetBoneTransform резолвят кости по аватару |
 
 ---
 

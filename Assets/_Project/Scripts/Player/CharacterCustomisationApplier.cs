@@ -31,17 +31,23 @@ namespace ProjectC.Player
         [Tooltip("SkinnedMeshRenderer основного тела персонажа. Если пусто — GetComponentInChildren на _visualRoot.")]
         [SerializeField] private SkinnedMeshRenderer _bodyRenderer;
 
-        [Header("Body meshes (L1)")]
-        [Tooltip("Mesh для Male (HumanM_Model.sharedMesh). Назначить в Inspector из 'Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx'.")]
-        [SerializeField] private Mesh _maleMesh;
-        [Tooltip("Mesh для Female (HumanF_Model.sharedMesh). Назначить в Inspector из 'Assets/Kevin Iglesias/Human Animations/Models/HumanF_Model.fbx'.")]
-        [SerializeField] private Mesh _femaleMesh;
+        [Header("Body models (L1)")]
+        [Tooltip("Модель целиком (FBX/prefab) для Male. Назначить HumanM_Model.fbx.")]
+        [SerializeField] private GameObject _maleModel;
+        [Tooltip("Модель целиком (FBX/prefab) для Female. Назначить HumanF_Model.fbx.")]
+        [SerializeField] private GameObject _femaleModel;
 
         [Header("Override Controllers (L1)")]
         [Tooltip("AnimatorOverrideController для Male. Назначить PlayerAnimation_Default.overrideController.")]
         [SerializeField] private RuntimeAnimatorController _maleController;
         [Tooltip("AnimatorOverrideController для Female. Назначить PlayerAnimation_Female.overrideController.")]
         [SerializeField] private RuntimeAnimatorController _femaleController;
+
+        [Header("Body materials (L1)")]
+        [Tooltip("Материал тела для Male. Если пусто — sharedMaterial на _bodyRenderer не трогается.")]
+        [SerializeField] private Material _maleMaterial;
+        [Tooltip("Материал тела для Female. Если пусто — sharedMaterial на _bodyRenderer не трогается.")]
+        [SerializeField] private Material _femaleMaterial;
 
         [Header("Behavior")]
         [SerializeField] private bool _logWarnings = true;
@@ -214,10 +220,13 @@ namespace ProjectC.Player
             }
 
             // === L4: colors (MaterialPropertyBlock) ===
-            if (!_hasSnapshot || ColorsDiffer(_currentSnapshot, snapshot))
-            {
-                ApplyColors(snapshot);
-            }
+            // TEMP DISABLED (2026-08-14): покраска скина отключена — текстура нового персонажа
+            // уже содержит запечённый цвет, а tint _BaseColor портит картинку. Вернуть, когда
+            // появится отдельный канал/материал под кожу.
+            //if (!_hasSnapshot || ColorsDiffer(_currentSnapshot, snapshot))
+            //{
+            //    ApplyColors(snapshot);
+            //}
 
             // === L4: hair style ===
             if (!_hasSnapshot || _currentSnapshot.hairStyle != snapshot.hairStyle)
@@ -236,25 +245,48 @@ namespace ProjectC.Player
 
         private void ApplyBodyType(CharacterBodyType bodyType)
         {
-            Mesh targetMesh = bodyType == CharacterBodyType.Female ? _femaleMesh : _maleMesh;
+            GameObject targetModel = bodyType == CharacterBodyType.Female ? _femaleModel : _maleModel;
             RuntimeAnimatorController targetCtrl = bodyType == CharacterBodyType.Female ? _femaleController : _maleController;
+            Material targetMaterial = bodyType == CharacterBodyType.Female ? _femaleMaterial : _maleMaterial;
 
-            if (targetMesh == null)
+            if (targetModel == null)
             {
-                if (_logWarnings) Debug.LogWarning($"[CharacterCustomisationApplier] {bodyType} mesh not assigned in Inspector.", this);
+                if (_logWarnings) Debug.LogWarning($"[CharacterCustomisationApplier] {bodyType} model not assigned in Inspector.", this);
+                return;
             }
-            else
+            if (_visualRoot == null)
             {
-                _bodyRenderer.sharedMesh = targetMesh;
+                if (_logWarnings) Debug.LogWarning("[CharacterCustomisationApplier] _visualRoot not assigned.", this);
+                return;
             }
 
-            if (targetCtrl == null)
+            // 1. Уничтожить текущее тело (SMR + Rig). Animator на Visual_Model остаётся.
+            for (int i = _visualRoot.childCount - 1; i >= 0; i--)
             {
-                if (_logWarnings) Debug.LogWarning($"[CharacterCustomisationApplier] {bodyType} controller not assigned in Inspector.", this);
+                var child = _visualRoot.GetChild(i).gameObject;
+                if (Application.isPlaying) Destroy(child);
+                else DestroyImmediate(child);
             }
-            else
+
+            // 2. Инстанциировать новую модель под Visual_Model.
+            GameObject instance = Instantiate(targetModel, _visualRoot, worldPositionStays: false);
+            instance.name = targetModel.name;
+
+            // 3. Забрать avatar у вложенного Animator модели и убрать вложенный Animator.
+            Avatar newAvatar = null;
+            var nested = instance.GetComponentInChildren<Animator>(true);
+            if (nested != null)
             {
-                _animator.runtimeAnimatorController = targetCtrl;
+                newAvatar = nested.avatar;
+                if (Application.isPlaying) Destroy(nested);
+                else DestroyImmediate(nested);
+            }
+
+            // 4. Переключить avatar + controller на главном Animator (Visual_Model).
+            if (_animator != null)
+            {
+                if (newAvatar != null) _animator.avatar = newAvatar;
+                if (targetCtrl != null) _animator.runtimeAnimatorController = targetCtrl;
                 // Reset trigger-ы чтобы не было залипших state-ов после смены controller-а.
                 foreach (var p in _animator.parameters)
                 {
@@ -263,10 +295,20 @@ namespace ProjectC.Player
                 }
             }
 
+            // 5. Перекэшировать renderer + материал.
+            _bodyRenderer = _visualRoot.GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (targetMaterial != null && _bodyRenderer != null)
+                _bodyRenderer.sharedMaterial = targetMaterial;
+
+            // 6. Экипировка была прицеплена к старым костям → переприменить на новые.
+            var equip = GetComponent<CharacterEquipmentVisualApplier>();
+            if (equip != null) equip.Reapply();
+
             if (Debug.isDebugBuild)
             {
                 Debug.Log($"[CharacterCustomisationApplier] Applied bodyType={bodyType} " +
-                          $"(mesh='{(targetMesh != null ? targetMesh.name : "null")}', " +
+                          $"(model='{targetModel.name}', " +
+                          $"mat='{(targetMaterial != null ? targetMaterial.name : "null")}', " +
                           $"ctrl='{(targetCtrl != null ? targetCtrl.name : "null")}').", this);
             }
         }

@@ -1,5 +1,16 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (S2 fix)
+
+**Задача:** Удалить мёртвые RequestRefresh*Rpc (S2)
+**Коммит:** `d2ed11167d61167cde6cd4bf51f06da5206b46bf` — T-QS2: удаление мёртвых Refresh-RPC (RequestRefresh*)
+**Изменения:**
+- `Assets/_Project/Quests/Network/QuestServer.cs` — удалены RequestRefreshQuestsRpc/RequestRefreshReputationRpc/RequestRefreshNpcAttitudeRpc + обновлена шапка
+- `docs/NPC_quests/T-QS2_remove_dead_refresh_rpc.md` — детальная документация + диагностика/rollback
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — S2 отмечен удалённым
+
+---
+
 ## Итерация от 2026-08-13 (S11 fix)
 
 **Задача:** NpcController — фильтр IsLocalPlayer в trigger (S11)

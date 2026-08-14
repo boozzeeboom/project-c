@@ -196,13 +196,20 @@ namespace ProjectC.Player
 
         private void OnCustomisationUpdated(CustomisationSnapshotDto snapshot)
         {
-            if (_bodyRenderer == null || _animator == null)
+            if (_animator == null || _visualRoot == null)
             {
                 if (_logWarnings)
                 {
-                    Debug.LogWarning("[CharacterCustomisationApplier] Body renderer / animator not assigned — visual swap skipped.", this);
+                    Debug.LogWarning("[CharacterCustomisationApplier] Animator / visual root not assigned — visual swap skipped.", this);
                 }
                 return;
+            }
+
+            // Защита: если ссылка на renderer по какой-то причине протухла — переищем,
+            // иначе повторные смены bodyType будут блокироваться guard-ом выше.
+            if (_bodyRenderer == null)
+            {
+                _bodyRenderer = _visualRoot.GetComponentInChildren<SkinnedMeshRenderer>(true);
             }
 
             // === L1: body type (mesh + animator controller) ===
@@ -260,32 +267,39 @@ namespace ProjectC.Player
                 return;
             }
 
-            // 1. Уничтожить текущее тело (SMR + Rig). Animator на Visual_Model остаётся.
-            for (int i = _visualRoot.childCount - 1; i >= 0; i--)
+            // M/F модели используют один и тот же скелет (Rig/B-root/B-hips/...), поэтому
+            // НЕ инстанциируем новую модель (иначе кости окажутся на лишний уровень ниже
+            // и Animator их не найдёт). Меняем только меш тела + avatar + controller,
+            // сохраняя существующие кости Visual_Model.
+            var modelSMR = targetModel.GetComponentInChildren<SkinnedMeshRenderer>(true);
+            Mesh targetMesh = modelSMR != null ? modelSMR.sharedMesh : null;
+
+            var modelAnimator = targetModel.GetComponent<Animator>();
+            Avatar targetAvatar = modelAnimator != null ? modelAnimator.avatar : null;
+
+            // Перекэшировать renderer, если ссылка протухла.
+            if (_bodyRenderer == null)
             {
-                var child = _visualRoot.GetChild(i).gameObject;
-                if (Application.isPlaying) Destroy(child);
-                else DestroyImmediate(child);
+                _bodyRenderer = _visualRoot.GetComponentInChildren<SkinnedMeshRenderer>(true);
+            }
+            if (_bodyRenderer == null)
+            {
+                if (_logWarnings) Debug.LogWarning("[CharacterCustomisationApplier] Body renderer not found under _visualRoot.", this);
+                return;
             }
 
-            // 2. Инстанциировать новую модель под Visual_Model.
-            GameObject instance = Instantiate(targetModel, _visualRoot, worldPositionStays: false);
-            instance.name = targetModel.name;
+            // 1. Mesh тела.
+            if (targetMesh != null)
+                _bodyRenderer.sharedMesh = targetMesh;
 
-            // 3. Забрать avatar у вложенного Animator модели и убрать вложенный Animator.
-            Avatar newAvatar = null;
-            var nested = instance.GetComponentInChildren<Animator>(true);
-            if (nested != null)
-            {
-                newAvatar = nested.avatar;
-                if (Application.isPlaying) Destroy(nested);
-                else DestroyImmediate(nested);
-            }
+            // 2. Материал тела.
+            if (targetMaterial != null)
+                _bodyRenderer.sharedMaterial = targetMaterial;
 
-            // 4. Переключить avatar + controller на главном Animator (Visual_Model).
+            // 3. Avatar + controller (скелет тот же, поэтому перепривязка экипировки не нужна).
             if (_animator != null)
             {
-                if (newAvatar != null) _animator.avatar = newAvatar;
+                if (targetAvatar != null) _animator.avatar = targetAvatar;
                 if (targetCtrl != null) _animator.runtimeAnimatorController = targetCtrl;
                 // Reset trigger-ы чтобы не было залипших state-ов после смены controller-а.
                 foreach (var p in _animator.parameters)
@@ -295,19 +309,10 @@ namespace ProjectC.Player
                 }
             }
 
-            // 5. Перекэшировать renderer + материал.
-            _bodyRenderer = _visualRoot.GetComponentInChildren<SkinnedMeshRenderer>(true);
-            if (targetMaterial != null && _bodyRenderer != null)
-                _bodyRenderer.sharedMaterial = targetMaterial;
-
-            // 6. Экипировка была прицеплена к старым костям → переприменить на новые.
-            var equip = GetComponent<CharacterEquipmentVisualApplier>();
-            if (equip != null) equip.Reapply();
-
             if (Debug.isDebugBuild)
             {
                 Debug.Log($"[CharacterCustomisationApplier] Applied bodyType={bodyType} " +
-                          $"(model='{targetModel.name}', " +
+                          $"(mesh='{(targetMesh != null ? targetMesh.name : "null")}', " +
                           $"mat='{(targetMaterial != null ? targetMaterial.name : "null")}', " +
                           $"ctrl='{(targetCtrl != null ? targetCtrl.name : "null")}').", this);
             }

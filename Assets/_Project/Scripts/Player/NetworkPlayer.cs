@@ -230,6 +230,30 @@ namespace ProjectC.Player
                 skillInput.enabled = enabled;
         }
 
+        private void OnEnable()
+        {
+            HideGhostVisualIfNeeded();
+        }
+
+        /// <summary>
+        /// Scene-placed `PlayerSpawner` (ghost) несёт полный Visual_Model с дефолтным
+        /// мужским HumanM_BodyMesh. Скрываем его по маркеру `NetworkPlayerSpawner`,
+        /// чтобы ghost никогда не рендерился (см. OnNetworkSpawn guard).
+        /// Вызывается и из OnEnable, и из OnNetworkSpawn — покрывает случай, когда
+        /// объект активируется обходным путём либо остаётся неактивным при NGO-spawn.
+        /// </summary>
+        private void HideGhostVisualIfNeeded()
+        {
+            if (GetComponent<NetworkPlayerSpawner>() == null) return;
+
+            var visualRoot = transform.Find("Visual_Model");
+            if (visualRoot != null && visualRoot.gameObject.activeSelf)
+            {
+                visualRoot.gameObject.SetActive(false);
+                Debug.LogWarning($"[NetworkPlayer] Ghost 'PlayerSpawner' visual hidden (Visual_Model disabled) on '{name}'.");
+            }
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -287,6 +311,15 @@ namespace ProjectC.Player
                 // Это scene-placed PlayerSpawner-пустышка, не настоящий игрок.
                 if (_controller != null) _controller.enabled = false;
                 enabled = false; // Update/FixedUpdate тоже не должны крутиться
+
+                // FIX (micro-jitter / второй дефолтный меш при Female):
+                //   Ghost несёт полный Visual_Model (дефолтный мужской HumanM_BodyMesh + Animator).
+                //   Раньше guard выключал только NetworkPlayer + CharacterController, а рендер
+                //   оставался активным → при выборе Female реальный NetworkPlayer(Clone) получал
+                //   женский меш, а поверх рендерился мужской dummy ghost-а («2 персонажа»).
+                //   Прячем Visual_Model целиком (SMR + Animator), чтобы ghost никогда не рисовался.
+                HideGhostVisualIfNeeded();
+
                 Debug.Log($"[NetworkPlayer] Skipping player init for scene-placed 'PlayerSpawner' GameObject (has NetworkPlayerSpawner marker, IsOwner={IsOwner}, IsPlayerObject={networkObject.IsPlayerObject}). См. INVESTIGATION_GHOST_PLAYER_CLONE.md.");
                 return;
             }

@@ -1457,6 +1457,63 @@ namespace ProjectC.Quests
                         });
                     }
                     break;
+                case DialogueActionType.DiscoverQuest:
+                    {
+                        // C8: add quest to log in Discovered state (EventDriven, §K). Same as OfferQuest.
+                        string discoverQuestId = action.GetQuestId();
+                        if (string.IsNullOrEmpty(discoverQuestId))
+                        {
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto { actionType = (byte)action.type, success = false, resultData = "missing questId" });
+                            break;
+                        }
+                        var resultDiscover = w.TryOffer(clientId, discoverQuestId);
+                        bool discoverSuccess = resultDiscover.code == (byte)QuestResultCode.Ok
+                                               || resultDiscover.code == (byte)QuestResultCode.Discovered;
+                        if (discoverSuccess) SendQuestSnapshotToClient(clientId);
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = discoverSuccess,
+                            resultData = resultDiscover.message
+                        });
+                    }
+                    break;
+                case DialogueActionType.EmitEvent:
+                    {
+                        // C8: emit custom event → MarkEventOccurred + Publish CustomEvent (WorldEventBus).
+                        string eventId = action.stringParam;
+                        if (string.IsNullOrEmpty(eventId))
+                        {
+                            Debug.LogWarning("[QuestServer] FireDialogAction: EmitEvent skipped — eventId empty");
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto { actionType = (byte)action.type, success = false, resultData = "missing eventId" });
+                            break;
+                        }
+                        w.MarkEventOccurred(clientId, eventId);
+                        WorldEventBus.Publish(new CustomEvent { PlayerId = clientId, EventId = eventId });
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: EmitEvent '{eventId}' for client {clientId}");
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto { actionType = (byte)action.type, success = true, resultData = eventId });
+                    }
+                    break;
+                case DialogueActionType.FailQuest:
+                    {
+                        // C8: real Active→Failed (also Discovered/Offered→Failed).
+                        string failQuestId = action.GetQuestId();
+                        if (string.IsNullOrEmpty(failQuestId))
+                        {
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto { actionType = (byte)action.type, success = false, resultData = "missing questId" });
+                            break;
+                        }
+                        var failResult = w.TryFailQuest(clientId, failQuestId, action.stageIdParam);
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: FailQuest {failQuestId} → code={failResult.code} {failResult.message}");
+                        if (failResult.code == (byte)QuestResultCode.Ok) SendQuestSnapshotToClient(clientId);
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = failResult.code == (byte)QuestResultCode.Ok,
+                            resultData = failResult.message
+                        });
+                    }
+                    break;
                 case DialogueActionType.CompleteObjective:
                     {
                         string completeQuestId = action.GetQuestId();
@@ -1507,12 +1564,11 @@ namespace ProjectC.Quests
                         });
                     }
                     break;
-                case DialogueActionType.DiscoverQuest:
                 case DialogueActionType.SetFlag:
                 case DialogueActionType.SwitchDialogTree:
                 case DialogueActionType.EndConversation:
                     {
-                        // T-Q15: stubs — SetFlag/SwitchDialogTree/EndConversation/DiscoverQuest — handled elsewhere or out of scope.
+                        // T-Q15: stubs — SetFlag/SwitchDialogTree/EndConversation — handled elsewhere or out of scope.
                         if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: {action.type} (T-Q15 stub — T-Q18+ fill)");
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
@@ -1695,7 +1751,6 @@ namespace ProjectC.Quests
                     break;
                 case DialogueActionType.GiveCargoItem:
                 case DialogueActionType.TakeCargoItem:
-                case DialogueActionType.FailQuest:
                     if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: {action.type} (T-Q10 stub — T-Q15/T-Q16 fill)");
                     SendDialogActionResultToClient(clientId, new DialogActionResultDto
                     {

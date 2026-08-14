@@ -664,6 +664,31 @@ namespace ProjectC.Quests
             return Fail(QuestResultCode.NotFound, $"Quest not in player's log", questId);
         }
 
+        /// <summary>
+        /// C8: transition a quest to Failed. Allowed from Discovered/Offered/Active
+        /// (Failed/TurnedIn are terminal). Used by DialogueAction.FailQuest.
+        /// </summary>
+        public QuestResultDto TryFailQuest(ulong clientId, string questId, string reason)
+        {
+            if (string.IsNullOrEmpty(questId))
+                return Fail(QuestResultCode.NotFound, "questId empty", questId);
+            var playerQuests = GetPlayerQuests(clientId);
+            for (int i = 0; i < playerQuests.Count; i++)
+            {
+                if (playerQuests[i].questId == questId)
+                {
+                    var inst = playerQuests[i];
+                    if (!QuestStateTransition.IsAllowed(inst.state, QuestState.Failed))
+                        return Fail(QuestResultCode.InvalidState, $"Cannot fail from state {inst.state}", questId);
+                    inst.state = QuestState.Failed;
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryFailQuest: client={clientId} quest={questId} reason='{reason}' → Failed");
+                    SavePlayer(clientId); // T-Q18
+                    return Ok(string.IsNullOrEmpty(reason) ? "Failed" : $"Failed: {reason}", questId);
+                }
+            }
+            return Fail(QuestResultCode.NotFound, $"Quest not in player's log", questId);
+        }
+
         // ============ T-Q15: Result helpers (alias for QuestWorld → avoid duplication) ============
 
         private static QuestResultDto Ok(string message, string questId)

@@ -207,7 +207,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 - [x] **C3:** проброс npcId в TryTurnIn из CompleteObjective; отказ пустому toNpcId в RPC. ✅ исправлено (см. ITERATIONS.md)
 - [x] **C5:** `Discovered` = успех в FireDialogAction.OfferQuest → snapshot push + success=true. ✅ исправлено (см. ITERATIONS.md)
 - [x] **C6:** реализовать QuestCompleted/QuestDiscovered/NpcAttitudeAtLeast/ReputationAtMost/QuestStageEquals; для остальных — Warning + false вместо silent true. ✅ исправлено (см. ITERATIONS.md)
-- [ ] **C8:** case EmitEvent (MarkEventOccurred + Publish CustomEvent); DiscoverQuest → TryOffer; FailQuest → реальный Active→Failed.
+- [x] **C8:** case EmitEvent (MarkEventOccurred + Publish CustomEvent); DiscoverQuest → TryOffer; FailQuest → реальный Active→Failed. ✅ исправлено (см. ITERATIONS.md)
 
 ### P1 — контент (0,5 дня, после P0)
 - [ ] Удалить `mira_default.asset` (corrupt) ИЛИ починить и убрать коллизию treeId (D2/D3).

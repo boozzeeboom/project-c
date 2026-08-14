@@ -718,8 +718,22 @@ namespace ProjectC.Quests
             if (QuestWorld.Instance == null) return;
             if (debugMode) Debug.Log($"[QuestServer] RequestTurnInQuest client={clientId} quest={questId} toNpc={toNpcId}");
 
+            // C3 fix: turn-in must target a specific NPC. Empty toNpcId would bypass the
+            // "this NPC accepts this quest" validation in TryTurnIn.
+            if (string.IsNullOrEmpty(toNpcId))
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] RequestTurnInQuest: empty toNpcId from client {clientId} — rejected");
+                SendQuestResultToClient(clientId, new QuestResultDto
+                {
+                    code = (byte)QuestResultCode.InvalidState,
+                    questId = questId ?? "",
+                    message = "Missing turn-in NPC"
+                });
+                return;
+            }
+
             // T-Q15: real impl — call QuestWorld.TryTurnIn.
-            var result = QuestWorld.Instance.TryTurnIn(clientId, questId, toNpcId ?? "");
+            var result = QuestWorld.Instance.TryTurnIn(clientId, questId, toNpcId);
             SendQuestResultToClient(clientId, result);
             if (result.code == (byte)QuestResultCode.Ok)
             {
@@ -1438,7 +1452,7 @@ namespace ProjectC.Quests
                             if (questFound)
                             {
                                 if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: CompleteObjective quest={completeQuestId} → TryTurnIn");
-                                var turnRes = sw.TryTurnIn(clientId, completeQuestId, string.Empty);
+                                var turnRes = sw.TryTurnIn(clientId, completeQuestId, npcId);
                                 turnOk = turnRes.code == (byte)QuestResultCode.Ok;
                                 if (turnOk)
                                 {

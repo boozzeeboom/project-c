@@ -219,7 +219,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 
 ### P2 — server-client добивка (1-2 дня)
 - [ ] **C4:** server-side distance check (требует server-side реестра NPC — минимум: NetworkObject на NPC + позиция).
-- [ ] **S1:** AddItemDirect(+count) или цикл; применить в GiveItem и ApplyQuestRewards.
+- [x] **S1:** AddItemDirect(+count) или цикл; применить в GiveItem и ApplyQuestRewards. ✅ исправлено (см. ITERATIONS.md)
 - [ ] **S2:** подключить RequestRefresh*Rpc к открытию CharacterWindow/DialogWindow ИЛИ удалить RPC.
 - [ ] **S3:** DeliverItem — изъятие предметов при turn-in (InventoryServer.TryRemove).
 - [ ] **S5:** задействовать minReputation в ArePrerequisitesMet (или удалить поле); discoverable — фильтровать snapshot (или удалить).

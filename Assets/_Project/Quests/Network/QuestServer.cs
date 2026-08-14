@@ -1602,12 +1602,23 @@ namespace ProjectC.Quests
                                 });
                                 break;
                             }
-                            // AddItemDirect: server-add to inventory.
-                            if (ProjectC.Items.InventoryWorld.Instance != null)
+                            // S1 fix: honour quantity (intParam). AddItemDirect adds ONE item per call → loop.
+                            int giveCount = action.intParam > 0 ? action.intParam : 1;
+                            var invGive = ProjectC.Items.InventoryWorld.Instance;
+                            if (invGive != null)
                             {
-                                var r = ProjectC.Items.InventoryWorld.Instance.AddItemDirect(clientId, itemId, itemType);
-                                ok = r.IsSuccess;
-                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: GiveItem id={itemId} x{action.intParam} → {r.code} ({r.message})");
+                                ok = true;
+                                for (int n = 0; n < giveCount; n++)
+                                {
+                                    var r = invGive.AddItemDirect(clientId, itemId, itemType);
+                                    if (!r.IsSuccess)
+                                    {
+                                        ok = false;
+                                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: GiveItem id={itemId} x{giveCount} → fail at {n + 1}/{giveCount}: {r.code} ({r.message})");
+                                        break;
+                                    }
+                                }
+                                if (debugMode && ok) Debug.Log($"[QuestServer] FireDialogAction: GiveItem id={itemId} x{giveCount} → ok");
                             }
                             else { ok = false; }
                         }

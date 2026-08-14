@@ -608,8 +608,12 @@ namespace ProjectC.Quests
                         Debug.LogWarning($"[QuestWorld] ApplyQuestRewards: InventoryWorld == null, items[{i}] skipped");
                         break;
                     }
-                    var result = inv.AddItemDirect(clientId, itemId, ProjectC.Items.ItemType.Resources);
-                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: items[{i}] id={itemId} x{ri.count} → code={result.code} message={result.message}");
+                    // S1 fix: honour ri.count. AddItemDirect adds ONE item per call → loop.
+                    for (int n = 0; n < ri.count; n++)
+                    {
+                        var result = inv.AddItemDirect(clientId, itemId, ProjectC.Items.ItemType.Resources);
+                        if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: items[{i}] id={itemId} x{ri.count} ({n + 1}/{ri.count}) → code={result.code} message={result.message}");
+                    }
                 }
             }
 

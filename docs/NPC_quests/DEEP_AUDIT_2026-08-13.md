@@ -206,7 +206,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 - [x] **C2:** единая точка ApplyQuestRewards (убрать из TryAdvanceStage). ✅ исправлено (см. ITERATIONS.md)
 - [x] **C3:** проброс npcId в TryTurnIn из CompleteObjective; отказ пустому toNpcId в RPC. ✅ исправлено (см. ITERATIONS.md)
 - [x] **C5:** `Discovered` = успех в FireDialogAction.OfferQuest → snapshot push + success=true. ✅ исправлено (см. ITERATIONS.md)
-- [ ] **C6:** реализовать QuestCompleted/QuestDiscovered/NpcAttitudeAtLeast/ReputationAtMost/QuestStageEquals; для остальных — Warning + false вместо silent true.
+- [x] **C6:** реализовать QuestCompleted/QuestDiscovered/NpcAttitudeAtLeast/ReputationAtMost/QuestStageEquals; для остальных — Warning + false вместо silent true. ✅ исправлено (см. ITERATIONS.md)
 - [ ] **C8:** case EmitEvent (MarkEventOccurred + Publish CustomEvent); DiscoverQuest → TryOffer; FailQuest → реальный Active→Failed.
 
 ### P1 — контент (0,5 дня, после P0)

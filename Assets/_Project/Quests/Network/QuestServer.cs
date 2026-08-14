@@ -1335,8 +1335,39 @@ namespace ProjectC.Quests
                     if (ctrl == null) ctrl = UnityEngine.Object.FindAnyObjectByType<DayNightController>();
                     return ctrl != null && ctrl.CurrentPhase != null && ctrl.CurrentPhase.phaseName == c.stringParam;
                 }
+                case DialogueConditionType.QuestStageEquals:
+                {
+                    string questId = c.GetResolvedQuestId();
+                    if (string.IsNullOrEmpty(questId)) return false;
+                    var quests = w.GetPlayerQuests(clientId);
+                    if (quests == null) return false;
+                    for (int i = 0; i < quests.Count; i++)
+                    {
+                        if (quests[i].questId == questId)
+                            return string.Equals(quests[i].currentStageId, c.stageIdParam, StringComparison.Ordinal);
+                    }
+                    return false;
+                }
+                case DialogueConditionType.QuestCompleted:
+                {
+                    var st = w.GetPlayerQuestState(clientId, c.GetResolvedQuestId());
+                    return st.HasValue && (st.Value == QuestState.Completed || st.Value == QuestState.TurnedIn);
+                }
+                case DialogueConditionType.QuestDiscovered:
+                    return w.GetPlayerQuestState(clientId, c.GetResolvedQuestId()) == QuestState.Discovered;
+                case DialogueConditionType.ReputationAtMost:
+                    return w.GetReputation(clientId, c.factionParam) <= c.intParam;
+                case DialogueConditionType.NpcAttitudeAtLeast:
+                    return w.GetNpcAttitude(clientId, c.GetResolvedNpcId()) >= c.intParam;
+                // C6: ещё не реализованы — честно false вместо молчаливого true.
+                case DialogueConditionType.CargoHasItem:
+                case DialogueConditionType.PlayerInZone:
+                case DialogueConditionType.WasNodeVisited:
+                    Debug.LogWarning($"[QuestServer] DialogueCondition {c.type} not implemented — evaluating false (was silently true)");
+                    return false;
                 default:
-                    return true; // unknown / unimplemented → allow (T-Q10 stub)
+                    Debug.LogWarning($"[QuestServer] DialogueCondition {c.type} unknown — evaluating false");
+                    return false;
             }
         }
 

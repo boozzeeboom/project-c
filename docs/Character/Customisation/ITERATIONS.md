@@ -1,5 +1,15 @@
 # Iterations — Character Customisation
 
+## Итерация от 2026-08-14 (фикс)
+
+**Задача:** Исправление бага «всегда Ж модель и анимации» при переключении М↔Ж в CustomisationWindow.
+
+**Коммит:** `a0a84bce9a9464a81d83ca0b98f87fa7533d706b` — T-CUS-03: исправление переключения М/Ж модели и анимаций (mesh-swap)
+
+**Изменения:**
+- `Assets/_Project/Scripts/Player/CharacterCustomisationApplier.cs` — `ApplyBodyType` переписан на mesh/avatar/controller swap (без destroy+instantiate и без лишнего уровня иерархии); убран залипающий guard по протухшему `_bodyRenderer`, добавлен защитный перекэш в `OnCustomisationUpdated`.
+- `Assets/_Project/Scripts/Player/NetworkPlayer.cs` — `HideGhostVisualIfNeeded()` скрывает `Visual_Model` у scene-placed `PlayerSpawner` (убирал второй дефолтный мужской меш поверх женского).
+
 ## Итерация от 2026-08-14
 
 **Задача:** Рефакторинг смены модели тела — замена модели целиком (модель + avatar) вместо `sharedMesh`.

@@ -202,7 +202,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 ## 7. Приоритизированный план
 
 ### P0 — блокеры корректности (код, 1-2 дня)
-- [ ] **C1:** `AreAllRequiredComplete`-проверка в TryTurnIn перед TryAdvanceStage.
+- [x] **C1:** `AreAllRequiredComplete`-проверка в TryTurnIn перед TryAdvanceStage. ✅ исправлено (см. ITERATIONS.md)
 - [ ] **C2:** единая точка ApplyQuestRewards (убрать из TryAdvanceStage).
 - [ ] **C3:** проброс npcId в TryTurnIn из CompleteObjective; отказ пустому toNpcId в RPC.
 - [ ] **C5:** `Discovered` = успех в FireDialogAction.OfferQuest → snapshot push + success=true.

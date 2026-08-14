@@ -490,11 +490,10 @@ namespace ProjectC.Quests
             if (instance == null)
                 return Fail(QuestResultCode.NotFound, $"Quest not in player's log", questId);
 
-            // State: Active → Completed (auto-complete if all required objectives satisfied).
-            // T-Q22 fix: вместо прямого state=Completed (который пропускал fire onCompleteActions)
-            // — вызываем TryAdvanceStage. Он сам проверит AreAllRequiredComplete + fire onCompleteActions
-            // + если nextStageId пуст → state=Completed + ApplyQuestRewards. Также для non-final stages —
-            // переведёт в следующий stage без state=Completed.
+            // State: Active → Completed. Turn-in is only valid when the current stage's
+            // required objectives are all complete. C1 fix: TryAdvanceStage does NOT verify
+            // objectives itself — it fires onCompleteActions and advances. So the objective
+            // check MUST happen here, before TryAdvanceStage.
             if (instance.state == QuestState.Active)
             {
                 var def2 = GetQuest(questId);
@@ -503,6 +502,9 @@ namespace ProjectC.Quests
                     var curStage = def2.GetStage(instance.currentStageId);
                     if (curStage != null)
                     {
+                        if (!instance.AreAllRequiredComplete(curStage))
+                            return Fail(QuestResultCode.InvalidState,
+                                $"Quest '{questId}' objectives not complete", questId);
                         TryAdvanceStage(clientId, instance, def2, curStage);
                     }
                 }

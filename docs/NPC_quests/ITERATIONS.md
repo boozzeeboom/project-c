@@ -1,5 +1,15 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (C5 fix)
+
+**Задача:** Устранить ложный «🔒 Discovered» и отсутствие snapshot-push при успешной выдаче квеста (C5)
+**Коммит:** `2a773080f30f94d82cb3b2d5aa2e9f8336e4c6fc` — T-QC5: Discovered = успех в OfferQuest (snapshot push + success=true)
+**Изменения:**
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `FireDialogAction.OfferQuest` считает `Ok` и `Discovered` успехом: push snapshot + `success=true`
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — C5 отмечен исправленным в P0-плане
+
+---
+
 ## Итерация от 2026-08-13 (C3 fix)
 
 **Задача:** Устранить обход валидации NPC при turn-in (C3) — CompleteObjective передавал пустой toNpcId

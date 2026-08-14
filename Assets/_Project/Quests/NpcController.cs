@@ -10,6 +10,7 @@
 //   - Interact(): client → server RequestTalkToNpcRpc через PlayerInteractor.
 //   - Visual placeholder: Cube primitive с `displayName` text (T-Q18: portrait + animator).
 
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using ProjectC.Quests;
@@ -94,6 +95,28 @@ namespace ProjectC.Quests
                 nameLabel.alignment = TextAlignmentOptions.Center;
                 nameLabel.color = Color.yellow;
             }
+        }
+
+        // C4: server-side registry for distance checks (scene-placed NPCs).
+        private static readonly Dictionary<string, NpcController> Registry = new Dictionary<string, NpcController>();
+
+        private void OnEnable()
+        {
+            if (!string.IsNullOrEmpty(NpcId))
+                Registry[NpcId] = this;
+        }
+
+        private void OnDisable()
+        {
+            if (!string.IsNullOrEmpty(NpcId) && Registry.TryGetValue(NpcId, out var c) && c == this)
+                Registry.Remove(NpcId);
+        }
+
+        /// <summary>C4: найти NpcController по npcId (для server-side distance check).</summary>
+        public static NpcController Find(string npcId)
+        {
+            if (string.IsNullOrEmpty(npcId)) return null;
+            return Registry.TryGetValue(npcId, out var c) ? c : null;
         }
 
         private void OnTriggerEnter(Collider other)

@@ -218,7 +218,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 - [ ] Validator: +правила «prereq questId существует в DB», «хотя бы один required objective», «дубликат treeId в Data/Dialogs» (новый DialogTreeValidator).
 
 ### P2 — server-client добивка (1-2 дня)
-- [ ] **C4:** server-side distance check (требует server-side реестра NPC — минимум: NetworkObject на NPC + позиция).
+- [x] **C4:** server-side distance check (требует server-side реестра NPC — минимум: NetworkObject на NPC + позиция). ✅ исправлено (см. ITERATIONS.md)
 - [x] **S1:** AddItemDirect(+count) или цикл; применить в GiveItem и ApplyQuestRewards. ✅ исправлено (см. ITERATIONS.md)
 - [ ] **S2:** подключить RequestRefresh*Rpc к открытию CharacterWindow/DialogWindow ИЛИ удалить RPC.
 - [x] **S3:** DeliverItem — изъятие предметов при turn-in (InventoryServer.TryRemove). ✅ исправлено (см. ITERATIONS.md)

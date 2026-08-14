@@ -512,6 +512,18 @@ namespace ProjectC.Quests
             if (QuestWorld.Instance == null || questDatabase == null) return;
             if (string.IsNullOrEmpty(npcId)) return;
 
+            // C4: server-side distance check — reject if player is too far from the NPC.
+            var npcCtrl = NpcController.Find(npcId);
+            if (npcCtrl != null)
+            {
+                Vector3 playerPos = GetPlayerPosition(clientId);
+                if (!npcCtrl.IsWithinDistance(playerPos))
+                {
+                    if (debugMode) Debug.LogWarning($"[QuestServer] RequestTalkToNpc: client {clientId} too far from NPC '{npcId}' (dist={Vector3.Distance(npcCtrl.transform.position, playerPos):F2}m, max={npcCtrl.InteractionDistance:F2}m) — rejected");
+                    return;
+                }
+            }
+
             if (debugMode) Debug.Log($"[QuestServer] RequestTalkToNpc client={clientId} npc={npcId} treeHint={treeIdHint}");
 
             // T-Q22 fix: mark NPC as talked-to for TalkToNpc objective evaluation.

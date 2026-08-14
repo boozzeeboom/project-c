@@ -1,5 +1,19 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (C7 fix)
+
+**Задача:** Удалить мёртвую триггерную систему (C7)
+**Коммит:** `ffe8b53b04e24387a84b8924c8ef655a83f46539` — T-QC7: удаление мёртвой триггерной системы (QuestTriggerService)
+**Изменения:**
+- `Assets/_Project/Quests/Triggers/` — удалены QuestTriggerService.cs / ConcreteTriggers.cs / IQuestTrigger.cs
+- `Assets/_Project/Quests/Network/QuestServer.cs` — удалены 7 мёртвых bus-handler-ов; в 4 handler-ах оставлены только Mark*/Broadcast*
+- `Assets/_Project/Quests/Bridges/ContractMetaBridge.cs` — удалены 3 Evaluate-вызова (Mark* оставлены)
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — удалён TriggerService (свойство + инициализация)
+- `docs/NPC_quests/T-QC7_remove_dead_trigger_system.md` — документация + диагностика/rollback
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — C7 отмечен удалённым
+
+---
+
 ## Итерация от 2026-08-13 (S2 fix)
 
 **Задача:** Удалить мёртвые RequestRefresh*Rpc (S2)

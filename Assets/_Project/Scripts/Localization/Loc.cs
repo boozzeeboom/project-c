@@ -78,6 +78,25 @@ namespace ProjectC.Localization
             label.RegisterCallback<DetachFromPanelEvent>(_ => OnLocaleChanged -= handler);
         }
 
+        /// <summary>Bind a UI Toolkit Label to a localization key, formatting it with args. Updates on locale change.</summary>
+        public static void BindFormat(Label label, string key, string fallback, params object[] args)
+        {
+            if (label == null) return;
+            EnsureSubscribed();
+            label.text = FormatWithFallback(key, fallback, args);
+            Action handler = () => label.text = FormatWithFallback(key, fallback, args);
+            OnLocaleChanged += handler;
+            label.RegisterCallback<DetachFromPanelEvent>(_ => OnLocaleChanged -= handler);
+        }
+
+        private static string FormatWithFallback(string key, string fallback, params object[] args)
+        {
+            var str = Get(key, fallback);
+            if (args == null || args.Length == 0) return str;
+            try { return string.Format(str, args); }
+            catch (Exception) { return str; }
+        }
+
         /// <summary>Bind a UI Toolkit Button to a localization key. Updates on locale change.</summary>
         public static void Bind(Button button, string key, string fallback = null)
         {

@@ -24,7 +24,7 @@ namespace ProjectC.Localization.Editor
 
             int added = 0;
             added += AddIfMissing(shared, ru, en, "ui.main_menu.title", "PROJECT C: THE CLOUDS", "PROJECT C: THE CLOUDS");
-            added += AddIfMissing(shared, ru, en, "ui.main_menu.subtitle", "Версия Alpha 0.1", "Alpha 0.1");
+            added += AddIfMissing(shared, ru, en, "ui.main_menu.subtitle", "Версия Alpha {0}", "Alpha {0}");
             added += AddIfMissing(shared, ru, en, "ui.main_menu.button.host", "ОДИНОЧНАЯ ИГРА", "SOLO GAME");
             added += AddIfMissing(shared, ru, en, "ui.main_menu.button.connect", "ПОДКЛЮЧИТЬСЯ К СЕРВЕРУ", "CONNECT TO SERVER");
             added += AddIfMissing(shared, ru, en, "ui.main_menu.button.settings", "НАСТРОЙКИ", "SETTINGS");

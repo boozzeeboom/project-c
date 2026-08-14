@@ -1801,7 +1801,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 528063916843008
-    m_Localized: "\u0412\u0435\u0440\u0441\u0438\u044F Alpha 0.1"
+    m_Localized: "\u0412\u0435\u0440\u0441\u0438\u044F Alpha {0}"
     m_Metadata:
       m_Items: []
   - m_Id: 528063921037312

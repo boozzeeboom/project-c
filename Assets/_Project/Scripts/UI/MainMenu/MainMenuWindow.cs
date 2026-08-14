@@ -19,6 +19,10 @@ namespace ProjectC.UI.MainMenu
         [SerializeField] private VisualTreeAsset mainUxml;
         [SerializeField] private StyleSheet mainUss;
 
+        [Header("Version")]
+        [Tooltip("Номер версии, подставляется в локализованную строку ui.main_menu.subtitle (например 0.1.0).")]
+        [SerializeField] private string versionText = "0.1";
+
         private UIDocument _doc;
         private VisualElement _root;
         private VisualElement _contentWindow;
@@ -96,7 +100,7 @@ namespace ProjectC.UI.MainMenu
         private void LocalizeAll()
         {
             if (_titleLabel != null) Loc.Bind(_titleLabel, "ui.main_menu.title", _titleLabel.text);
-            if (_subtitleLabel != null) Loc.Bind(_subtitleLabel, "ui.main_menu.subtitle", _subtitleLabel.text);
+            if (_subtitleLabel != null) Loc.BindFormat(_subtitleLabel, "ui.main_menu.subtitle", _subtitleLabel.text, versionText);
             if (_hostBtn != null) Loc.Bind(_hostBtn, "ui.main_menu.button.host", _hostBtn.text);
             if (_connectBtn != null) Loc.Bind(_connectBtn, "ui.main_menu.button.connect", _connectBtn.text);
             if (_settingsBtn != null) Loc.Bind(_settingsBtn, "ui.main_menu.button.settings", _settingsBtn.text);

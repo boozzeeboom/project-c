@@ -9,8 +9,9 @@ namespace ProjectC.Quests.Dto
     {
         public string treeId;
         public string nodeId;
-        public string speakerNpcId;     // ref into QuestDatabase.npcs (для UI: portrait/name)
-        public string speakerText;      // localized text (T-Q10: plain string, T-Q18: localization key)
+        public string speakerNpcId;        // ref into QuestDatabase.npcs (для UI: portrait)
+        public string speakerDisplayName;  // S10: display name резолвится на сервере (UI не делает lookup)
+        public string speakerText;         // localized text (T-Q10: plain string, T-Q18: localization key)
         public DialogOptionDto[] options; // empty = dialog end
         public bool isEnd;              // true → close dialog window
 
@@ -20,13 +21,15 @@ namespace ProjectC.Quests.Dto
             var tree = treeId;
             var node = nodeId;
             var npc = speakerNpcId;
+            var npcName = speakerDisplayName;
             var text = speakerText;
-            if (s.IsWriter) { tree = treeId ?? ""; node = nodeId ?? ""; npc = speakerNpcId ?? ""; text = speakerText ?? ""; }
+            if (s.IsWriter) { tree = treeId ?? ""; node = nodeId ?? ""; npc = speakerNpcId ?? ""; npcName = speakerDisplayName ?? ""; text = speakerText ?? ""; }
             s.SerializeValue(ref tree);
             s.SerializeValue(ref node);
             s.SerializeValue(ref npc);
+            s.SerializeValue(ref npcName);
             s.SerializeValue(ref text);
-            if (s.IsReader) { treeId = tree ?? ""; nodeId = node ?? ""; speakerNpcId = npc ?? ""; speakerText = text ?? ""; }
+            if (s.IsReader) { treeId = tree ?? ""; nodeId = node ?? ""; speakerNpcId = npc ?? ""; speakerDisplayName = npcName ?? ""; speakerText = text ?? ""; }
             s.SerializeValue(ref isEnd);
             SerializeOptions(ref options, s);
         }

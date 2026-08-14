@@ -362,9 +362,14 @@ namespace ProjectC.Quests.UI
  if (_root == null) return;
 
  if (_npcNameLabel != null)
- _npcNameLabel.text = !string.IsNullOrEmpty(_currentStep.speakerNpcId)
- ? $"💬 {_currentStep.speakerNpcId}"
- : "💬 NPC";
+ {
+ string npcLabel = !string.IsNullOrEmpty(_currentStep.speakerDisplayName)
+     ? _currentStep.speakerDisplayName
+     : _currentStep.speakerNpcId;
+ _npcNameLabel.text = !string.IsNullOrEmpty(npcLabel)
+     ? $"💬 {npcLabel}"
+     : "💬 NPC";
+ }
 
  // T-Q13: update NpcAttitude badge для текущего NPC.
  UpdateNpcAttitudeBadge();

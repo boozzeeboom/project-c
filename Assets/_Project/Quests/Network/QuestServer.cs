@@ -1241,12 +1241,21 @@ namespace ProjectC.Quests
 
             // Resolve speaker
             string speakerNpcId = "";
+            string speakerDisplayName = "";
             string speakerText = "";
             if (node.speaker != null && node.speaker.speakerKind == SpeakerRef.Kind.Npc)
             {
                 string resolvedNpcId = node.speaker.GetResolvedNpcId();
                 if (!string.IsNullOrEmpty(resolvedNpcId))
+                {
                     speakerNpcId = resolvedNpcId;
+                    // S10: resolve display name on server, so client UI doesn't do lookups.
+                    if (questDatabase != null)
+                    {
+                        var npcDef = questDatabase.GetNpc(resolvedNpcId);
+                        if (npcDef != null) speakerDisplayName = npcDef.displayName ?? "";
+                    }
+                }
             }
             speakerText = node.text ?? "";
 
@@ -1255,6 +1264,7 @@ namespace ProjectC.Quests
                 treeId = tree.treeId,
                 nodeId = node.nodeId,
                 speakerNpcId = speakerNpcId,
+                speakerDisplayName = speakerDisplayName,
                 speakerText = speakerText,
                 options = options,
                 isEnd = false

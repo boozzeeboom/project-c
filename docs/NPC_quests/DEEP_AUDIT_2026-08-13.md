@@ -224,7 +224,7 @@ CSV column shift: `speaker.refId` = текст реплики, `text` = обры
 - [x] **S3:** DeliverItem — изъятие предметов при turn-in (InventoryServer.TryRemove). ✅ исправлено (см. ITERATIONS.md)
 - [x] **S5:** задействовать minReputation в ArePrerequisitesMet (или удалить поле); discoverable — фильтровать snapshot (или удалить). ✅ исправлено (см. ITERATIONS.md)
 - [x] **S6:** attitude-snapshot от `questDatabase.npcs`, а не от objectives. ✅ исправлено (см. ITERATIONS.md)
-- [ ] **S10:** +speakerDisplayName в DialogStepDto (и quest displayName уже есть в snapshot — использовать в DialogWindow/Toast).
+- [x] **S10:** +speakerDisplayName в DialogStepDto (и quest displayName уже есть в snapshot — использовать в DialogWindow/Toast). ✅ исправлено (см. ITERATIONS.md)
 - [ ] **C7:** решение по триггерам — удалить (рекомендую) или подключить.
 
 ### P3 — техдолг (по желанию)

@@ -1,5 +1,16 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (S5 fix)
+
+**Задача:** Задействовать minReputation и discoverable (S5)
+**Коммит:** `4c290b30f76bb81ffbfaf53b95d5f2a8891bb1e8` — T-QS5: minReputation + discoverable задействованы
+**Изменения:**
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — `ArePrerequisitesMet` проверяет `def.faction`/`minReputation`
+- `Assets/_Project/Quests/Network/QuestServer.cs` — `BuildQuestSnapshot` скрывает Discovered-квесты при `discoverable=false`
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — S5 отмечен исправленным в P2-плане
+
+---
+
 ## Итерация от 2026-08-13 (S3 fix)
 
 **Задача:** Изъятие DeliverItem-предметов при turn-in (S3)

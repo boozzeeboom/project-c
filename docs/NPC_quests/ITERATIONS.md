@@ -1,5 +1,16 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-13 (C2 fix)
+
+**Задача:** Устранить двойную выдачу наград (C2) — ApplyQuestRewards вызывался и в TryAdvanceStage, и в TryTurnIn
+**Коммит:** `688588d42d02c2a99adaf8a7c3f164f377c9f1b8` — T-QC2: единая точка выдачи наград (убрать двойную выдачу)
+**Изменения:**
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — `TryAdvanceStage` больше не вызывает `ApplyQuestRewards` (выдача только в `TryTurnIn`)
+- `Assets/_Project/Quests/Quests/QuestDefinition.cs` — tooltip `rewards` уточнён (награды только при TurnedIn)
+- `docs/NPC_quests/DEEP_AUDIT_2026-08-13.md` — C2 отмечен исправленным в P0-плане
+
+---
+
 ## Итерация от 2026-08-13 (C1 fix)
 
 **Задача:** Закрыть эксплойт C1 — TryTurnIn завершал Active-квест без проверки objectives (сдать любой квест одним RPC)

@@ -1,0 +1,185 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bec96c5c83d6d5f4f8baed538e2e4fde, type: 3}
+  m_Name: OnboardingAlfaDialog
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
+  treeId: onboarding_alfa
+  displayName: dialogue.tree.onboarding_alfa.displayName
+  rootNodeId: greeting
+  nodes:
+  - nodeId: greeting
+    speaker:
+      speakerKind: 0
+      refId: onboarding_alfa
+      speakerNpc: {fileID: 0}
+    text: dialogue.tree.onboarding_alfa.node.greeting
+    portraitEmotion: thoughtful
+    edges:
+    - label: dialogue.option.onboarding.hear_route
+      targetNodeId: offer
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 10
+        stringParam: onboarding_alfa
+        questRef: {fileID: 11400000, guid: ccd8acda6ffd33c41b7f7d60bf175b3d, type: 2}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialogue.option.onboarding.not_now
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  - nodeId: offer
+    speaker:
+      speakerKind: 0
+      refId: onboarding_alfa
+      speakerNpc: {fileID: 0}
+    text: dialogue.tree.onboarding_alfa.node.offer
+    portraitEmotion: neutral
+    edges:
+    - label: dialogue.option.onboarding.accept
+      targetNodeId: accepted
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions:
+      - type: 23
+        stringParam: onboarding_alfa
+        requiredQuest: {fileID: 11400000, guid: ccd8acda6ffd33c41b7f7d60bf175b3d, type: 2}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 14
+        stringParam: onboarding_alfa
+        questRef: {fileID: 11400000, guid: ccd8acda6ffd33c41b7f7d60bf175b3d, type: 2}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialogue.option.onboarding.decline
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  - nodeId: accepted
+    speaker:
+      speakerKind: 0
+      refId: onboarding_alfa
+      speakerNpc: {fileID: 0}
+    text: dialogue.tree.onboarding_alfa.node.accepted
+    portraitEmotion: encouraging
+    edges:
+    - label: dialogue.option.common.goodbye
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  localizationTable: {fileID: 0}

@@ -47,6 +47,138 @@ MonoBehaviour:
     m_Key: dialogue.quest.collect_copper_ore.description
     m_Metadata:
       m_Items: []
+  - m_Id: 3660517880012800
+    m_Key: dialogue.npc.onboarding_alfa.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372928
+    m_Key: dialogue.npc.onboarding_alfa.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372929
+    m_Key: dialogue.tree.onboarding_alfa.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372930
+    m_Key: dialogue.tree.onboarding_alfa.node.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372931
+    m_Key: dialogue.tree.onboarding_alfa.node.offer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372932
+    m_Key: dialogue.tree.onboarding_alfa.node.accepted
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372933
+    m_Key: dialogue.option.onboarding.hear_route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372934
+    m_Key: dialogue.option.onboarding.not_now
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372935
+    m_Key: dialogue.option.onboarding.accept
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372936
+    m_Key: dialogue.option.onboarding.decline
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372937
+    m_Key: dialogue.option.common.goodbye
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372938
+    m_Key: dialogue.option.common.understood
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372939
+    m_Key: dialogue.option.common.thanks
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372940
+    m_Key: dialogue.tree.mira_default.node.meet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372941
+    m_Key: dialogue.tree.mira_default.node.repair
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372942
+    m_Key: dialogue.tree.mira_default.node.market
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372943
+    m_Key: dialogue.tree.mira_default.node.reward
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372944
+    m_Key: dialogue.option.mira.first_meeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372945
+    m_Key: dialogue.option.mira.repair_route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372946
+    m_Key: dialogue.option.mira.market_route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372947
+    m_Key: dialogue.option.mira.receive_key
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372948
+    m_Key: dialogue.quest.onboarding_alfa.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372949
+    m_Key: dialogue.quest.onboarding_alfa.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372950
+    m_Key: dialogue.quest.onboarding_alfa.stage.meet_mira
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372951
+    m_Key: dialogue.quest.onboarding_alfa.stage.go_repair
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372952
+    m_Key: dialogue.quest.onboarding_alfa.stage.return_from_repair
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372953
+    m_Key: dialogue.quest.onboarding_alfa.stage.go_market
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372954
+    m_Key: dialogue.quest.onboarding_alfa.stage.return_from_market
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372955
+    m_Key: dialogue.quest.onboarding_alfa.objective.talk_mira
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372956
+    m_Key: dialogue.quest.onboarding_alfa.objective.reach_repair
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372957
+    m_Key: dialogue.quest.onboarding_alfa.objective.return_mira_after_repair
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372958
+    m_Key: dialogue.quest.onboarding_alfa.objective.reach_market
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372959
+    m_Key: dialogue.quest.onboarding_alfa.objective.return_mira_after_market
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

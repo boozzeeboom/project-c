@@ -393,9 +393,10 @@ StartTypewriter(locText ?? "");
  int idx = i;
  var opt = _currentStep.options[i];
  var btn = new Button(() => OnOptionClicked(idx));
+ var optionLabel = ProjectC.Localization.Loc.Get(opt.label, opt.label);
  btn.text = !opt.available
- ? $"{opt.label} [{Loc.Get("ui.dialog.option_unavailable", "Недоступно")}: {opt.unavailableReason}]"
- : opt.label;
+ ? $"{optionLabel} [{Loc.Get("ui.dialog.option_unavailable", "Недоступно")}: {opt.unavailableReason}]"
+ : optionLabel;
  StyleButton(btn, opt.available);
  _optionsContainer.Add(btn);
  }

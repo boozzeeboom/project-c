@@ -1087,7 +1087,7 @@ namespace ProjectC.Quests
                 visibleOptions.Add(new DialogOptionDto
                 {
                     index = i,
-                    label = edge.label ?? "",
+                    label = ProjectC.Localization.Loc.Get(edge.label ?? "", edge.label ?? ""),
                     available = available,
                     unavailableReason = available ? "" : "Условие не выполнено"
                 });
@@ -1116,11 +1116,11 @@ namespace ProjectC.Quests
                     if (questDatabase != null)
                     {
                         var npcDef = questDatabase.GetNpc(resolvedNpcId);
-                        if (npcDef != null) speakerDisplayName = npcDef.displayName ?? "";
+                        if (npcDef != null) speakerDisplayName = ProjectC.Localization.Loc.Get(npcDef.displayName, npcDef.displayName ?? "");
                     }
                 }
             }
-            speakerText = node.text ?? "";
+            speakerText = ProjectC.Localization.Loc.Get(node.text ?? "", node.text ?? "");
 
             return new DialogStepDto
             {

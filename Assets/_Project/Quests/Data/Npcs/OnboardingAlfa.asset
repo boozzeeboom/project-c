@@ -10,25 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: da5e4b0f6b8a20541b6d1a4ae82cf468, type: 3}
-  m_Name: Mira
+  m_Name: OnboardingAlfa
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.NpcDefinition
-  npcId: mira_01
-  displayName: dialogue.npc.mira_01.displayName
-  faction: 1
+  npcId: onboarding_alfa
+  displayName: dialogue.npc.onboarding_alfa.displayName
+  faction: 11
   portrait: {fileID: 0}
-  prefab: {fileID: 0}
-  animatorTriggerPrefix: Mira
-  defaultDialogTree: {fileID: 11400000, guid: 828fa688c0784fb458e4092c070af689, type: 2}
-  questOffers: []
-  questOfferRefs: []
-  questTurnIns:
+  prefab: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  animatorTriggerPrefix: OnboardingAlfa
+  defaultDialogTree: {fileID: 11400000, guid: 25e09bb5069388141a2ca5db9d2b6f98, type: 2}
+  questOffers:
   - onboarding_alfa
-  questTurnInRefs:
+  questOfferRefs:
   - {fileID: 11400000, guid: ccd8acda6ffd33c41b7f7d60bf175b3d, type: 2}
-  services: -1
+  questTurnIns: []
+  questTurnInRefs: []
+  services: 0
   interactionRadius: 3
   showGreeting: 1
-  greetingText: dialogue.npc.mira_01.greeting
+  greetingText: dialogue.npc.onboarding_alfa.greeting
   attitudeLinks: []
   personalAttitudeMin: -100
   personalAttitudeMax: 200

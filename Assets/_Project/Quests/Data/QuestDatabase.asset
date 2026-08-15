@@ -16,9 +16,12 @@ MonoBehaviour:
   npcs:
   - {fileID: 11400000, guid: 8093066045efca3469b59d4b77790700, type: 2}
   - {fileID: 11400000, guid: 59409174383a88b47b03a3348fc9b073, type: 2}
+  - {fileID: 11400000, guid: d8d0b835213660d4daa40e13e8f10f9f, type: 2}
   dialogTrees:
   - {fileID: 11400000, guid: 1d61d3ad3078db542bf34042811f83b5, type: 2}
   - {fileID: 11400000, guid: ae91887e1dd1d68428237374889ab7b4, type: 2}
   - {fileID: 11400000, guid: 828fa688c0784fb458e4092c070af689, type: 2}
+  - {fileID: 11400000, guid: 25e09bb5069388141a2ca5db9d2b6f98, type: 2}
   quests:
   - {fileID: 11400000, guid: f32e985aca4b07a41a0c87fa6658dac4, type: 2}
+  - {fileID: 11400000, guid: ccd8acda6ffd33c41b7f7d60bf175b3d, type: 2}

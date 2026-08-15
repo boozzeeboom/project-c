@@ -621,10 +621,11 @@ namespace ProjectC.Quests
                         break;
                     }
                     // S1 fix: honour ri.count. AddItemDirect adds ONE item per call → loop.
+                    var rewardItemType = ri.pickupItem != null ? ri.pickupItem.itemType : ProjectC.Items.ItemType.Resources;
                     for (int n = 0; n < ri.count; n++)
                     {
-                        var result = inv.AddItemDirect(clientId, itemId, ProjectC.Items.ItemType.Resources);
-                        if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: items[{i}] id={itemId} x{ri.count} ({n + 1}/{ri.count}) → code={result.code} message={result.message}");
+                        var result = inv.AddItemDirect(clientId, itemId, rewardItemType);
+                        if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: items[{i}] id={itemId} type={rewardItemType} x{ri.count} ({n + 1}/{ri.count}) → code={result.code} message={result.message}");
                     }
                 }
             }

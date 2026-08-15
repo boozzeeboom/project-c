@@ -17,7 +17,167 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: 95c3c9c61b07ef1488d7184bd4af61f1, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 178693698658304
+    m_Localized: Mira Quietstep
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693832876032
+    m_Localized: I am Mira. Ask me if you need help with the route.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517880012800
+    m_Localized: Onboarding alfa
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372928
+    m_Localized: Onboarding alpha is waiting on the hangar roof.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372929
+    m_Localized: 'First quest guide: onboarding route'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372930
+    m_Localized: After the catastrophe, survival belongs not to the strongest but
+      to those who can find a way. Mira knows the useful contacts in Primium. I can
+      guide you through a short route and give you a light-ship key. The route is
+      optional.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372931
+    m_Localized: First talk to Mira. Then visit RepairManager and return to Mira.
+      After that check MarketZone_Primium and return to Mira again. If you agree,
+      the route will be added to your journal.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372932
+    m_Localized: Route accepted. Find Mira below at Primium. She will confirm each
+      next step.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372933
+    m_Localized: Tell me more and offer the route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372934
+    m_Localized: Not now
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372935
+    m_Localized: Accept the route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372936
+    m_Localized: Decline
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372937
+    m_Localized: Goodbye
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372938
+    m_Localized: Understood
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372939
+    m_Localized: Thanks
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693845458944
+    m_Localized: "Mira \u2014 Primium route"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 178693853847552
+    m_Localized: Are you following the onboarding route? I will give you short but
+      mandatory directions.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372940
+    m_Localized: Good that you made it. Now find RepairManager and approach it. The
+      system will record the visit when you are nearby.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372941
+    m_Localized: "RepairManager is in Primium. Approach the repair station, then
+      return to me \u2014 this checks the first route step."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372942
+    m_Localized: Now check MarketZone_Primium. Look around the market and return
+      to me for the final check.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372943
+    m_Localized: "Route complete. Here is the light-ship key \u2014 it will be useful
+      at the starting pad."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372944
+    m_Localized: I came for the route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372945
+    m_Localized: What should I do at RepairManager?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372946
+    m_Localized: What should I do at MarketZone_Primium?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372947
+    m_Localized: Take the light-ship key
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372948
+    m_Localized: First quest guide
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372949
+    m_Localized: Follow the onboarding route through Mira, RepairManager, and MarketZone_Primium.
+      Mira will give you a light-ship key at the end.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372950
+    m_Localized: Find Mira and talk to her.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372951
+    m_Localized: Visit RepairManager.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372952
+    m_Localized: Return to Mira after RepairManager.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372953
+    m_Localized: Visit MarketZone_Primium.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372954
+    m_Localized: Return to Mira after MarketZone_Primium.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372955
+    m_Localized: Talk to Mira
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372956
+    m_Localized: Reach RepairManager
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372957
+    m_Localized: Return to Mira after RepairManager
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372958
+    m_Localized: Reach MarketZone_Primium
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660517909372959
+    m_Localized: Return to Mira after MarketZone_Primium
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

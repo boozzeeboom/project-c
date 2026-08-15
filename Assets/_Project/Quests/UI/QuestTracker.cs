@@ -282,7 +282,9 @@ namespace ProjectC.Quests.UI
  // Показываем panel с данными.
  _root.style.display = DisplayStyle.Flex;
  if (_nameLabel != null)
- _nameLabel.text = !string.IsNullOrEmpty(tracked.displayName) ? tracked.displayName : tracked.questId;
+ _nameLabel.text = !string.IsNullOrEmpty(tracked.displayName)
+     ? Loc.Get(tracked.displayName, tracked.displayName)
+     : tracked.questId;
 
  // Текущая цель = первая не-completed objective (MVP).
  if (_objectiveLabel != null)
@@ -304,9 +306,10 @@ namespace ProjectC.Quests.UI
  if (!o.completed && !string.IsNullOrEmpty(o.description))
  {
  int req = o.requiredQuantity >0 ? o.requiredQuantity :1;
+ string objectiveText = Loc.Get(o.description, o.description);
  // Показываем counter только если requiredQuantity > 1 (для 1-цели counter избыточен).
- if (req >1) return Loc.Format("ui.quest.objective_counter", o.description ?? "", o.currentValue, req);
- return Loc.Format("ui.quest.objective_simple", o.description ?? "");
+ if (req >1) return Loc.Format("ui.quest.objective_counter", objectiveText, o.currentValue, req);
+ return Loc.Format("ui.quest.objective_simple", objectiveText);
  }
  }
  // Все completed — выводим общий счётчик.

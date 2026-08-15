@@ -1,0 +1,153 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 009489055a12f1d4fb6aee9664b1af28, type: 3}
+  m_Name: onboarding_alfa
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestDefinition
+  questId: onboarding_alfa
+  displayName: dialogue.quest.onboarding_alfa.displayName
+  description: dialogue.quest.onboarding_alfa.description
+  faction: 0
+  minReputation: 0
+  stages:
+  - stageId: meet_mira
+    description: dialogue.quest.onboarding_alfa.stage.meet_mira
+    objectives:
+    - objectiveId: talk_mira_first
+      objectiveType: 0
+      description: dialogue.quest.onboarding_alfa.objective.talk_mira
+      targetNpcId: mira_01
+      targetNpc: {fileID: 11400000, guid: 8093066045efca3469b59d4b77790700, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: go_repair
+  - stageId: go_repair
+    description: dialogue.quest.onboarding_alfa.stage.go_repair
+    objectives:
+    - objectiveId: reach_repair_manager
+      objectiveType: 2
+      description: dialogue.quest.onboarding_alfa.objective.reach_repair
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: WorldScene_0_0
+      targetPosition: {x: 40020.4, y: 2501.84, z: 40139.2}
+      targetRadius: 8
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: return_from_repair
+  - stageId: return_from_repair
+    description: dialogue.quest.onboarding_alfa.stage.return_from_repair
+    objectives:
+    - objectiveId: return_to_mira_after_repair
+      objectiveType: 2
+      description: dialogue.quest.onboarding_alfa.objective.return_mira_after_repair
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: WorldScene_0_0
+      targetPosition: {x: 40009.7, y: 2501.47, z: 39981.83}
+      targetRadius: 7
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: go_market
+  - stageId: go_market
+    description: dialogue.quest.onboarding_alfa.stage.go_market
+    objectives:
+    - objectiveId: reach_market_zone
+      objectiveType: 2
+      description: dialogue.quest.onboarding_alfa.objective.reach_market
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: WorldScene_0_0
+      targetPosition: {x: 40096.5, y: 2510, z: 40140.6}
+      targetRadius: 12
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: return_from_market
+  - stageId: return_from_market
+    description: dialogue.quest.onboarding_alfa.stage.return_from_market
+    objectives:
+    - objectiveId: return_to_mira_after_market
+      objectiveType: 2
+      description: dialogue.quest.onboarding_alfa.objective.return_mira_after_market
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: WorldScene_0_0
+      targetPosition: {x: 40009.7, y: 2501.47, z: 39981.83}
+      targetRadius: 7
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: 
+  rewards:
+    credits: 0
+    items:
+    - tradeItemId: 
+      pickupItem: {fileID: 11400000, guid: b08791afdeeed1049a341e8452da084d, type: 2}
+      cargoItem: {fileID: 0}
+      count: 1
+    cargoItems: []
+    reputation: []
+    unlocks: []
+  prerequisites: []
+  oneShot: 1
+  discoverable: 1

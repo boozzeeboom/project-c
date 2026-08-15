@@ -5,6 +5,25 @@
 
 ---
 
+## T-CAM16 — Стабилизация Spring Arm и игнорирование NPC (2026-08-15)
+
+**Задача:** Устранить пружинящее поведение при ускорении, откат ручного приближения и скачки камеры в толпе NPC.
+
+**Изменения:**
+- `SpringArmCamera.cs` — пользовательская zoom-дистанция отделена от Adaptive Distance; ручное приближение больше не восстанавливается к базовой дистанции.
+- `SpringArmCamera.cs` — минимальная дистанция больше не ограничивается суммой near clip и радиуса sphere cast; near clip установлен в `0.1f`.
+- `SpringArmCamera.cs` — динамический lag использует сглаженную скорость, чтобы резкие сетевые скачки скорости не меняли lag рывком.
+- `SpringArmCamera.cs` — `SphereCast` игнорирует trigger-коллайдеры и NPC с `NavMeshAgent`; цепочка пропускает до 8 игнорируемых коллайдеров.
+- `ThirdPersonCamera.prefab` — `positionSmoothTime=0.04`, `near clip plane=0.1`, `ignoreNavMeshAgents=true`.
+
+**Результат:**
+- Ручной zoom фиксируется на выбранной дистанции.
+- `zoomMinDistance=0.5` становится достижимым.
+- NPC больше не участвуют в spring-arm collision probe.
+- Проект: 0 compile errors.
+
+---
+
 ## T-CAM15 — Zoom камеры колёсиком мыши (2026-07-26)
 
 **Коммит:** `a73fa92` — T-CAM15: Zoom камеры колёсиком мыши

@@ -17,7 +17,7 @@ namespace ProjectC.Core
     /// При падении — вертикальный lag ускоряется в 2.5x.
     /// Dead-zone 3mm — убивает микро-осцилляции.
     /// T-CAM14: near-clip constraint вынесен в ResolveCollision (единый источник),
-    /// AdaptiveDistance использует _targetDistance вместо базовой дистанции,
+    /// AdaptiveDistance работает поверх отдельной пользовательской zoom-дистанции,
     /// positionSmoothTime 0.08→0.04 (возврат к задумке T-CAM10: Lag/Smooth 3.75×).
     /// </summary>
     public class SpringArmCamera : MonoBehaviour
@@ -41,6 +41,8 @@ namespace ProjectC.Core
         [SerializeField] private float sphereCastRadius = 0.4f;
         [Tooltip("Не исключайте слой Default — на нём вся геометрия мира!")]
         [SerializeField] private LayerMask collisionMask = ~0;
+        [Tooltip("Не считать NPC с NavMeshAgent препятствием для камеры")]
+        [SerializeField] private bool ignoreNavMeshAgents = true;
         [SerializeField] private float wallOffset = 0.3f;
 
         [Header("Anti-Pop")]
@@ -97,11 +99,13 @@ namespace ProjectC.Core
         private float _yaw, _pitch;
         private float _currentDistance, _currentHeight, _currentLookAtHeight;
         private float _targetDistance, _targetHeight, _targetLookAtHeight;
+        private float _userDistance;
         private bool _isShip;
 
         private float _distanceVelocity, _heightVelocity, _lookAtVelocity;
 
         private Vector3 _lagTargetPos;
+        private float _lagSpeed;
         private float _lastClearTime;
 
         private float _collisionExitTime;
@@ -171,7 +175,7 @@ namespace ProjectC.Core
         public void SetShipMode(bool isShip)
         {
             _isShip = isShip;
-            _targetDistance = isShip ? shipDistance : distance;
+            _userDistance = _targetDistance = isShip ? shipDistance : distance;
             _targetHeight = isShip ? shipHeight : height;
             _targetLookAtHeight = isShip ? lookAtHeightShip : lookAtHeightWalk;
 
@@ -190,7 +194,7 @@ namespace ProjectC.Core
 
             _yaw = 0f;
             _pitch = 15f;
-            _currentDistance = _targetDistance = distance;
+            _currentDistance = _userDistance = _targetDistance = distance;
             _currentHeight = _targetHeight = height;
             _currentLookAtHeight = _targetLookAtHeight = lookAtHeightWalk;
             _lagTargetPos = target.position;
@@ -224,7 +228,8 @@ namespace ProjectC.Core
             if (_camera != null)
             {
                 _camera.farClipPlane = 1000000f;
-                _camera.nearClipPlane = 0.5f;
+                // 0.5f не позволяет физически приблизить камеру к zoomMinDistance=0.5.
+                _camera.nearClipPlane = 0.1f;
             }
             _cachedMouseSensitivity = mouseSensitivity;
             _cachedInvertY = invertY;
@@ -265,11 +270,10 @@ namespace ProjectC.Core
             UpdateModeTransition();
             UpdateZoom();
 
-            // T-JITTER03: зажимаем _currentDistance чтобы орбита никогда
-            // не заходила внутрь near-clip (nearClipPlane + sphereCastRadius + buffer).
-            // Без этого ComputeDesiredPosition выдаёт позицию внутри minDist,
-            // SmoothPosition выталкивает → push-Lerp-push цикл → осцилляция вблизи.
-            float minDist = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
+            // Не позволяем орбите уйти ближе пользовательского минимума.
+            // Раньше здесь использовалась сумма near-clip + sphereCastRadius + buffer,
+            // поэтому zoomMinDistance=0.5 фактически был недостижим.
+            float minDist = Mathf.Max(0.1f, GetMinimumCameraDistance());
             float heightDiff = _currentHeight - _currentLookAtHeight;
             float minHorizontalDist = Mathf.Sqrt(Mathf.Max(0f, minDist * minDist - heightDiff * heightDiff));
             _currentDistance = Mathf.Max(_currentDistance, minHorizontalDist);
@@ -313,11 +317,11 @@ namespace ProjectC.Core
             if (Mathf.Abs(_zoomInput) < 0.001f) return;
 
             float zoomDelta = _zoomInput * _cachedZoomSensitivity * 0.5f;
-            float newTarget = _targetDistance - zoomDelta;
+            float newTarget = _userDistance - zoomDelta;
 
             float minDist = _isShip ? zoomMinDistanceShip : zoomMinDistance;
             float maxDist = _isShip ? zoomMaxDistanceShip : zoomMaxDistance;
-            _targetDistance = Mathf.Clamp(newTarget, minDist, maxDist);
+            _userDistance = Mathf.Clamp(newTarget, minDist, maxDist);
         }
 
         private void UpdateLag()
@@ -347,8 +351,11 @@ namespace ProjectC.Core
             float lagXZ, lagY;
             if (dynamicLagEnabled)
             {
-                float speed = delta.magnitude / Mathf.Max(Time.deltaTime, 0.0001f);
-                float speedFactor = Mathf.InverseLerp(0f, 10f, speed);
+                float rawSpeed = delta.magnitude / Mathf.Max(Time.deltaTime, 0.0001f);
+                rawSpeed = Mathf.Min(rawSpeed, 30f);
+                float speedLerp = 1f - Mathf.Exp(-Time.deltaTime / 0.1f);
+                _lagSpeed = Mathf.Lerp(_lagSpeed, rawSpeed, speedLerp);
+                float speedFactor = Mathf.InverseLerp(0f, 10f, _lagSpeed);
                 float dynamicMul = Mathf.Lerp(1f, 0.3f, speedFactor);
                 float effXZ = lagHorizontalTime * dynamicMul;
                 float effY = lagVerticalTime * dynamicMul;
@@ -395,11 +402,11 @@ namespace ProjectC.Core
             // T-CAM14: единый near-clip constraint — здесь, а не в SmoothPosition.
             // ResolveCollision — authority по позиции: если resolvedPos ближе minDist,
             // выталкиваем СРАЗУ, чтобы exp-Lerp в SmoothPosition не боролся с push'ем.
-            float nearClipMin = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
+            float nearClipMin = Mathf.Max(0.1f, GetMinimumCameraDistance());
 
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 8; i++)
             {
-                if (!Physics.SphereCast(castOrigin, sphereCastRadius, dir, out RaycastHit hitInfo, remainingDist, collisionMask))
+                if (!Physics.SphereCast(castOrigin, sphereCastRadius, dir, out RaycastHit hitInfo, remainingDist, collisionMask, QueryTriggerInteraction.Ignore))
                 {
                     if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
                         return ClampNearClip(_lastCollisionPos, lookTarget, nearClipMin);
@@ -407,9 +414,7 @@ namespace ProjectC.Core
                     return ClampNearClip(desiredPos, lookTarget, nearClipMin);
                 }
 
-                bool hitSelf = hitInfo.transform == target || (target != null && hitInfo.transform.IsChildOf(target));
-
-                if (!hitSelf)
+                if (!ShouldIgnoreCollision(hitInfo.collider))
                 {
                     _wasColliding = true;
                     _collisionExitTime = currentTime;
@@ -429,6 +434,24 @@ namespace ProjectC.Core
             return ClampNearClip(desiredPos, lookTarget, nearClipMin);
         }
 
+        private float GetMinimumCameraDistance()
+        {
+            return _isShip ? zoomMinDistanceShip : zoomMinDistance;
+        }
+
+        private bool ShouldIgnoreCollision(Collider collider)
+        {
+            if (collider == null) return false;
+
+            Transform hitTransform = collider.transform;
+            if (hitTransform == target || (target != null && hitTransform.IsChildOf(target)))
+                return true;
+
+            // NPC-префабы проекта используют NavMeshAgent + CharacterController.
+            // Их тела не должны быть spring-arm препятствием в толпе.
+            return ignoreNavMeshAgents && collider.GetComponentInParent<UnityEngine.AI.NavMeshAgent>() != null;
+        }
+
         /// <summary>
         /// T-CAM14: near-clip constraint — единая точка применения.
         /// Если позиция ближе minDist к lookTarget — выталкиваем наружу.
@@ -443,12 +466,16 @@ namespace ProjectC.Core
 
         private void UpdateAdaptiveDistance()
         {
-            if (!adaptiveDistanceEnabled) return;
+            if (!adaptiveDistanceEnabled)
+            {
+                _targetDistance = _userDistance;
+                return;
+            }
 
             float actualDist = Vector3.Distance(transform.position, _lagTargetPos);
-            // T-CAM14 fix: использовать _targetDistance (текущую цель), а не базовую дистанцию.
-            // Иначе при уже уменьшенной дистанции ratio всегда < threshold → восстановление невозможно.
-            float desiredDist = _targetDistance;
+            // Адаптивная дистанция работает поверх пользовательского zoom,
+            // но не изменяет сам zoom. Поэтому ручное приближение больше не откатывается.
+            float desiredDist = _userDistance;
             float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
             float currentTime = Time.time;
 
@@ -456,17 +483,17 @@ namespace ProjectC.Core
             {
                 if (currentTime - _lastClearTime > adaptiveDelay)
                 {
-                    float minDist = Mathf.Max(1f, actualDist - wallOffset - sphereCastRadius);
+                    float minDist = Mathf.Max(GetMinimumCameraDistance(), actualDist - wallOffset - sphereCastRadius);
+                    float collisionTarget = Mathf.Min(_targetDistance, minDist);
                     _targetDistance = Mathf.Lerp(
-                        _targetDistance, minDist,
+                        _targetDistance, collisionTarget,
                         adaptiveSpeed * Time.deltaTime);
                 }
             }
             else
             {
-                float baseDist = _isShip ? shipDistance : distance;
                 _targetDistance = Mathf.Lerp(
-                    _targetDistance, baseDist,
+                    _targetDistance, _userDistance,
                     adaptiveRecoverySpeed * Time.deltaTime);
 
                 if (ratio > 0.95f)

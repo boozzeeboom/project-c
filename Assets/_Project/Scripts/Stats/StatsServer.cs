@@ -448,6 +448,30 @@ namespace ProjectC.Stats
         }
 
         /// <summary>
+        /// Load persisted equipment for a player. EquipmentServer calls this from its
+        /// client-connected callback so loading is independent of NetworkBehaviour spawn order.
+        /// </summary>
+        public bool LoadEquipmentForPlayer(ulong clientId)
+        {
+            var equipmentWorld = ProjectC.Equipment.EquipmentWorld.Instance;
+            if (_repo == null || equipmentWorld == null)
+            {
+                Debug.LogWarning($"[StatsServer] Equipment load skipped for client={clientId}: " +
+                                 $"repo={_repo != null}, equipmentWorld={equipmentWorld != null}");
+                return false;
+            }
+
+            if (!_repo.TryLoad(clientId, out var data))
+            {
+                equipmentWorld.SetEquipment(clientId, ProjectC.Equipment.EquipmentData.Empty);
+                return false;
+            }
+
+            equipmentWorld.LoadPlayer(clientId, data);
+            return data.equipment != null;
+        }
+
+        /// <summary>
         /// Recompute effective stats (после equip/unequip/learn/forget) и шлёт snapshot.
         /// SESSION 2: effective = base + equip bonuses. UI использует effective для отображения.
         /// </summary>

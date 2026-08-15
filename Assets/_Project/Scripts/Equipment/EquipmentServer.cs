@@ -50,10 +50,10 @@ namespace ProjectC.Equipment
             Instance = this;
             _world = new EquipmentWorld();
 
-            // SESSION 2: SESSION 1 fix: hook client connect для seed equip items + initial snapshot.
+            // Persistence: load the saved equipment state and push the initial snapshot on connect.
             if (NetworkManager.Singleton != null)
             {
-                NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnectedForSeed;
+                NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnectedForPersistence;
             }
 
             // SESSION 2: auto-register ClothingItemData/ModuleItemData assets в InventoryWorld._itemDatabase.
@@ -119,98 +119,19 @@ namespace ProjectC.Equipment
             }
         }
 
-        /// <summary>
-        /// R2: найти itemId по имени предмета через публичный API InventoryWorld.
-        /// </summary>
-        private int FindItemIdByName(string itemName)
-        {
-            try
-            {
-                var inv = ProjectC.Items.InventoryWorld.Instance;
-                if (inv == null) return -1;
-                foreach (var kvp in inv.GetAllItems())
-                {
-                    if (kvp.Value != null && kvp.Value.itemName == itemName) return kvp.Key;
-                }
-            }
-            catch (System.Exception ex) { Debug.LogWarning($"[EquipmentServer] FindItemIdByName failed: {ex.Message}"); }
-            return -1;
-        }
-
-        private void HandleClientConnectedForSeed(ulong clientId)
+        private void HandleClientConnectedForPersistence(ulong clientId)
         {
             if (!IsServer) return;
-            // SESSION 2: retry until InventoryWorld.Instance доступен (NMC может
-            // создавать EquipmentServer раньше чем InventoryWorld). Schedule delayed try.
-            if (ProjectC.Items.InventoryWorld.Instance == null)
+
+            bool loaded = ProjectC.Stats.StatsServer.Instance != null
+                && ProjectC.Stats.StatsServer.Instance.LoadEquipmentForPlayer(clientId);
+
+            if (Debug.isDebugBuild)
             {
-                System.Collections.IEnumerator Retry()
-                {
-                    for (int i = 0; i < 20; i++)  // 2 sec total
-                    {
-                        yield return new UnityEngine.WaitForSeconds(0.1f);
-                        if (ProjectC.Items.InventoryWorld.Instance != null) { DoSeed(clientId); yield break; }
-                    }
-                    Debug.LogWarning("[EquipmentServer] Seed: InventoryWorld.Instance не появился за 2с");
-                }
-                StartCoroutine(Retry());
-                return;
-            }
-            DoSeed(clientId);
-        }
-
-        private void DoSeed(ulong clientId)
-        {
-            if (!IsServer) return;
-            var inv = ProjectC.Items.InventoryWorld.Instance;
-            if (inv == null) return;
-
-            // SESSION 2 refactor: находим предметы по ИМЕНИ (не по хардкод ID).
-            // Names соответствуют ClothingItemData/ModuleItemData assets в Resources/Items/Clothing/ и /Modules/.
-            // Любой ClothingItemData/ModuleItemData может надеваться — нет привязки к конкретному itemId.
-            var seedNames = new[] { "Рабочая каска", "Кузнечный фартук", "Дорожные сапоги", "Крафт-ассистент" };
-
-            // Add 4 to inventory by name
-            foreach (var name in seedNames)
-            {
-                int id = FindItemIdByName(name);
-                if (id <= 0) { Debug.LogWarning($"[EquipmentServer] Seed: item '{name}' not in db"); continue; }
-                if (!inv.HasItem(clientId, id))
-                {
-                    inv.AddItemDirect(clientId, id, ProjectC.Items.ItemType.Equipment);
-                }
+                Debug.Log($"[EquipmentServer] Equipment persistence load: client={clientId}, loaded={loaded}");
             }
 
-            // Equip "Рабочая каска" to Head by name
-            int helmetId = FindItemIdByName("Рабочая каска");
-            if (helmetId > 0)
-            {
-                if (!inv.HasItem(clientId, helmetId))
-                {
-                    inv.AddItemDirect(clientId, helmetId, ProjectC.Items.ItemType.Equipment);
-                }
-                string equipReason = "";
-                if (_world != null && _world.TryEquip(clientId, helmetId, ProjectC.Equipment.EquipSlot.Head, out equipReason))
-                {
-                    inv.RemoveItems(clientId, helmetId, ProjectC.Items.ItemType.Equipment, 1);
-                }
-                else if (Debug.isDebugBuild)
-                {
-                    Debug.LogWarning($"[EquipmentServer] Seed equip failed: {equipReason}");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("[EquipmentServer] Seed: 'Рабочая каска' not found in db");
-            }
-
-            Debug.Log($"[EquipmentServer] Seeded items for client {clientId}: inv=4 equipped=WorkerHelmet");
-
-            // Push initial snapshot.
-            if (_world != null && _world.GetEquipment(clientId) != null)
-            {
-                SendEquipmentSnapshotToOwner(clientId);
-            }
+            SendEquipmentSnapshotToOwner(clientId);
         }
 
         public override void OnNetworkDespawn()
@@ -220,7 +141,7 @@ namespace ProjectC.Equipment
             if (Instance == this) Instance = null;
             if (NetworkManager.Singleton != null)
             {
-                NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnectedForSeed;
+                NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnectedForPersistence;
             }
         }
 
@@ -281,6 +202,7 @@ namespace ProjectC.Equipment
                 }
             }
 
+            ProjectC.Stats.StatsServer.Instance?.SaveCharacter(clientId);
             SendEquipResult(clientId, EquipResultDto.Equipped(itemId, slot));
             // Recompute effective stats (after equip) — StatsServer T-P05 hook
             TriggerStatsRecompute(clientId);
@@ -338,6 +260,7 @@ namespace ProjectC.Equipment
                 }
             }
 
+            ProjectC.Stats.StatsServer.Instance?.SaveCharacter(clientId);
             SendEquipResult(clientId, EquipResultDto.Unequipped(slot));
             TriggerStatsRecompute(clientId);
             SendEquipmentSnapshotToOwner(clientId);

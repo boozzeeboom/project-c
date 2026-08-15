@@ -50,9 +50,13 @@ Shader "Hidden/ProjectC/EdgeDetection"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareNormalsTexture.hlsl"
 
-        // Adaptive color: bound by RenderFeature via cmd.SetGlobalTexture(_EdgeSourceTex)
+        // Adaptive color: bound by RenderFeature via cmd.SetGlobalTexture(_EdgeSourceTex).
         TEXTURE2D(_EdgeSourceTex);
         SAMPLER(sampler_EdgeSourceTex);
+
+        // Optional per-object mask rendered by EdgeDetectionRenderFeature.
+        TEXTURE2D(_EdgeTargetMask);
+        SAMPLER(sampler_EdgeTargetMask);
 
         half4 _EdgeColor;
         float _EdgeWidth;
@@ -70,6 +74,26 @@ Shader "Hidden/ProjectC/EdgeDetection"
         float _PencilTaper;
         float _PencilGrain;
         float _LineSoftness;
+
+        half4 _TargetEdgeColor;
+        float _UseEdgeTargetMask;
+        float _TargetExcludeFromGlobal;
+        float _TargetUseSettings;
+        float _TargetEdgeWidth;
+        float _TargetMaxEdgeDistance;
+        float _TargetDepthFalloff;
+        float _TargetUseDepthEdges;
+        float _TargetDepthSensitivity;
+        float _TargetDepthThreshold;
+        float _TargetUseNormalEdges;
+        float _TargetNormalSensitivity;
+        float _TargetNormalThreshold;
+        float _TargetUseAdaptiveColor;
+        float _TargetAdaptiveStrength;
+        float _TargetUsePencilStroke;
+        float _TargetPencilTaper;
+        float _TargetPencilGrain;
+        float _TargetLineSoftness;
 
         struct Attributes
         {
@@ -100,7 +124,6 @@ Shader "Hidden/ProjectC/EdgeDetection"
             return Linear01Depth(SampleSceneDepth(uv), _ZBufferParams);
         }
 
-        // --- Depth Sobel (scalar) ---
         float SobelDepth(float2 uv, float2 texelSize, float thickness)
         {
             float2 offsets[8] = {
@@ -115,7 +138,6 @@ Shader "Hidden/ProjectC/EdgeDetection"
             return m;
         }
 
-        // --- Normal Sobel (scalar) ---
         float SobelNormal(float2 uv, float2 texelSize, float thickness)
         {
             float2 offsets[8] = {
@@ -135,7 +157,6 @@ Shader "Hidden/ProjectC/EdgeDetection"
             return m;
         }
 
-        // --- Depth Sobel with direction (X,Y gradients) for pencil taper ---
         float2 SobelDepthDir(float2 uv, float2 texelSize, float thickness)
         {
             float tl = SampleDepthLinear(uv + float2(-1,  1) * texelSize * thickness);
@@ -147,24 +168,18 @@ Shader "Hidden/ProjectC/EdgeDetection"
             float b  = SampleDepthLinear(uv + float2( 0, -1) * texelSize * thickness);
             float br = SampleDepthLinear(uv + float2( 1, -1) * texelSize * thickness);
 
-            // Sobel kernels: Gx = [-1 0 1; -2 0 2; -1 0 1], Gy = [-1 -2 -1; 0 0 0; 1 2 1]
             float gx = (-tl + tr - 2.0 * l + 2.0 * r - bl + br);
             float gy = (-tl - 2.0 * t - tr + bl + 2.0 * b + br);
             return float2(gx, gy);
         }
 
-        // --- Pencil taper: sample edge magnitude along edge direction ---
         float PencilTaper(float2 uv, float2 texelSize, float thickness)
         {
             float2 g = SobelDepthDir(uv, texelSize, thickness);
             float mag = length(g);
             if (mag < 0.0001) return 1.0;
 
-            // Edge runs perpendicular to gradient.
-            // Normalize gradient (points across edge) → edge direction is rotated 90°
             float2 edgeDir = normalize(float2(-g.y, g.x));
-
-            // Sample magnitude along edge in both directions
             float stepDist = thickness * 4.0;
             float2 alongPos = uv + edgeDir * texelSize * stepDist;
             float2 alongNeg = uv - edgeDir * texelSize * stepDist;
@@ -174,13 +189,33 @@ Shader "Hidden/ProjectC/EdgeDetection"
 
             float magA = length(ga);
             float magB = length(gb);
-
-            // Continuity factor: how much edge continues in both directions
             float contA = saturate(magA / (mag + 0.0001));
             float contB = saturate(magB / (mag + 0.0001));
             float continuity = min(contA, contB);
 
             return smoothstep(0.0, 0.6, continuity);
+        }
+
+        float SampleTargetMask(float2 uv)
+        {
+            return SAMPLE_TEXTURE2D(_EdgeTargetMask, sampler_EdgeTargetMask, uv).r;
+        }
+
+        float TargetMaskCoverage(float2 uv, float2 texelSize, float radius)
+        {
+            if (_UseEdgeTargetMask < 0.5) return 0.0;
+
+            float2 offset = texelSize * max(1.0, radius);
+            float coverage = SampleTargetMask(uv);
+            coverage = max(coverage, SampleTargetMask(uv + float2( offset.x, 0)));
+            coverage = max(coverage, SampleTargetMask(uv + float2(-offset.x, 0)));
+            coverage = max(coverage, SampleTargetMask(uv + float2(0,  offset.y)));
+            coverage = max(coverage, SampleTargetMask(uv + float2(0, -offset.y)));
+            coverage = max(coverage, SampleTargetMask(uv + offset));
+            coverage = max(coverage, SampleTargetMask(uv - offset));
+            coverage = max(coverage, SampleTargetMask(uv + float2( offset.x, -offset.y)));
+            coverage = max(coverage, SampleTargetMask(uv + float2(-offset.x,  offset.y)));
+            return step(0.01, coverage);
         }
         ENDHLSL
 
@@ -201,52 +236,80 @@ Shader "Hidden/ProjectC/EdgeDetection"
                 float2 uv = IN.positionCS.xy * rcp(_ScreenParams.xy);
                 float2 texelSize = rcp(_ScreenParams.xy);
 
-                // Distance-based thickness falloff
+                float targetCoverage = TargetMaskCoverage(
+                    uv,
+                    texelSize,
+                    max(_EdgeWidth, _TargetEdgeWidth));
+
+                if (targetCoverage > 0.5 &&
+                    _TargetUseSettings < 0.5 &&
+                    _TargetExcludeFromGlobal > 0.5)
+                    return half4(0, 0, 0, 0);
+
+                float useTarget = (targetCoverage > 0.5 && _TargetUseSettings > 0.5) ? 1.0 : 0.0;
+                float edgeWidth = lerp(_EdgeWidth, _TargetEdgeWidth, useTarget);
+                float maxEdgeDistance = lerp(_MaxEdgeDistance, _TargetMaxEdgeDistance, useTarget);
+                float depthFalloff = lerp(_DepthFalloff, _TargetDepthFalloff, useTarget);
+                float useDepthEdges = lerp(_UseDepthEdges, _TargetUseDepthEdges, useTarget);
+                float depthSensitivity = lerp(_DepthSensitivity, _TargetDepthSensitivity, useTarget);
+                float depthThreshold = lerp(_DepthThreshold, _TargetDepthThreshold, useTarget);
+                float useNormalEdges = lerp(_UseNormalEdges, _TargetUseNormalEdges, useTarget);
+                float normalSensitivity = lerp(_NormalSensitivity, _TargetNormalSensitivity, useTarget);
+                float normalThreshold = lerp(_NormalThreshold, _TargetNormalThreshold, useTarget);
+                float useAdaptiveColor = lerp(_UseAdaptiveColor, _TargetUseAdaptiveColor, useTarget);
+                float adaptiveStrength = lerp(_AdaptiveStrength, _TargetAdaptiveStrength, useTarget);
+                float usePencilStroke = lerp(_UsePencilStroke, _TargetUsePencilStroke, useTarget);
+                float pencilTaper = lerp(_PencilTaper, _TargetPencilTaper, useTarget);
+                float pencilGrain = lerp(_PencilGrain, _TargetPencilGrain, useTarget);
+                float lineSoftness = lerp(_LineSoftness, _TargetLineSoftness, useTarget);
+                half4 edgeColor = lerp(_EdgeColor, _TargetEdgeColor, useTarget);
+
                 float depth = SampleDepthLinear(uv);
-                float thickness = _EdgeWidth * saturate(1.0 - pow(saturate(depth / (_MaxEdgeDistance * 0.01)), _DepthFalloff));
+                float thickness = edgeWidth * saturate(1.0 - pow(
+                    saturate(depth / (maxEdgeDistance * 0.01)), depthFalloff));
                 if (thickness < 0.05) return half4(0, 0, 0, 0);
 
                 float edge = 0;
 
-                if (_UseDepthEdges > 0.5)
+                if (useDepthEdges > 0.5)
                 {
                     float d = SobelDepth(uv, texelSize, thickness);
-                    edge = max(edge, smoothstep(_DepthThreshold - _LineSoftness,
-                                                 _DepthThreshold + _LineSoftness,
-                                                 d * _DepthSensitivity));
+                    edge = max(edge, smoothstep(
+                        depthThreshold - lineSoftness,
+                        depthThreshold + lineSoftness,
+                        d * depthSensitivity));
                 }
 
-                if (_UseNormalEdges > 0.5)
+                if (useNormalEdges > 0.5)
                 {
                     float n = SobelNormal(uv, texelSize, thickness);
-                    edge = max(edge, smoothstep(_NormalThreshold - _LineSoftness,
-                                                 _NormalThreshold + _LineSoftness,
-                                                 n * _NormalSensitivity));
+                    edge = max(edge, smoothstep(
+                        normalThreshold - lineSoftness,
+                        normalThreshold + lineSoftness,
+                        n * normalSensitivity));
                 }
 
                 edge = saturate(edge);
                 if (edge < 0.001) return half4(0, 0, 0, 0);
 
-                // Pencil stroke: taper at endpoints + grain
-                if (_UsePencilStroke > 0.5)
+                if (usePencilStroke > 0.5)
                 {
                     float taper = PencilTaper(uv, texelSize, thickness);
-                    taper = lerp(1.0, taper, _PencilTaper);
+                    taper = lerp(1.0, taper, pencilTaper);
                     edge *= taper;
 
-                    float grain = (Hash2D(uv * _ScreenParams.xy + _Time.y * 0.1) - 0.5) * _PencilGrain;
+                    float grain = (Hash2D(uv * _ScreenParams.xy + _Time.y * 0.1) - 0.5) * pencilGrain;
                     edge = saturate(edge + grain);
                 }
 
-                // Color
-                half3 outlineColor = _EdgeColor.rgb;
-                if (_UseAdaptiveColor > 0.5)
+                half3 outlineColor = edgeColor.rgb;
+                if (useAdaptiveColor > 0.5)
                 {
                     half3 src = SAMPLE_TEXTURE2D(_EdgeSourceTex, sampler_EdgeSourceTex, uv).rgb;
-                    outlineColor = lerp(_EdgeColor.rgb, src * 0.35, _AdaptiveStrength);
+                    outlineColor = lerp(edgeColor.rgb, src * 0.35, adaptiveStrength);
                 }
 
-                return half4(outlineColor, _EdgeColor.a * edge);
+                return half4(outlineColor, edgeColor.a * edge);
             }
             ENDHLSL
         }

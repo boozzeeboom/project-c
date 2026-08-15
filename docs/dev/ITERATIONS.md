@@ -1,5 +1,16 @@
 # Итерации структуризации документации
 
+## Итерация от 2026-08-15 (T-CORE12)
+
+**Задача:** Персональная настройка edge detection для NetworkPlayer и устранение спама `submeshIndex out of range`.
+**Коммит:** `c54e4102` — T-CORE12: Настроить персонификацию edge detection
+**Изменения:**
+- `EdgeDetectionRenderFeature.cs` — маска объектов `EdgeDetectionTarget` и корректная отрисовка всех submesh/material slots через `RasterCommandBuffer`
+- `EdgeDetectionTarget.cs` — per-object параметры и исключение объекта из глобального outline
+- `EdgeDetection.shader` — обработка target mask и отдельных параметров цели
+- `EdgeDetectionMask.shader` — shader маски target-объектов
+- `ProjectC_URP_Renderer.asset` — включение настроек per-object targets
+
 ## Итерация от 2026-08-05 (T-X5)
 
 **Задача:** Персистенция контрактов — состояние ContractWorld должно переживать перезагрузку сервера.

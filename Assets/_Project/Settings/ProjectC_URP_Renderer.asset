@@ -92,7 +92,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 231c514bb64b5f44497bc3931feaee74, type: 3}
   m_Name: EdgeDetectionRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.EdgeDetectionRenderFeature
-  m_Active: 0
+  m_Active: 1
   EdgeColor: {r: 0.10880205, g: 0.10880205, b: 0.14150941, a: 1}
   EdgeWidth: 1
   MaxEdgeDistance: 500

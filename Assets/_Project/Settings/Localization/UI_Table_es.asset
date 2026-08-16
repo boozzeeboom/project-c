@@ -71,7 +71,8 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102284
-    m_Localized: "\xBFEst\xE1 seguro de que desea salir al men\xFA principal?"
+    m_Localized: "\xBFEst\xE1 seguro de que desea volver al men\xFA principal? Esto
+      detendr\xE1 el servidor host."
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102285

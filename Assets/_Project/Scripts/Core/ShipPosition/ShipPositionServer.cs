@@ -116,81 +116,16 @@ namespace ProjectC.Core.ShipPosition
             if (!_restoreCompleted) return;
             if (Time.time < _nextSaveTime) return;
             _nextSaveTime = Time.time + saveIntervalSec;
-
-            var allShips = GetCachedShips();
-            var allData = new List<ShipPositionSaveData>(allShips.Count);
-
-            foreach (var ship in allShips)
-            {
-                if (!ship.IsSpawned) continue;
-
-                var data = new ShipPositionSaveData
-                {
-                    shipId = ship.ShipPersistentId,
-                    sceneName = ship.gameObject.scene.name,
-                    isNpc = false,
-                    px = ship.transform.position.x,
-                    py = ship.transform.position.y,
-                    pz = ship.transform.position.z,
-                    rx = ship.transform.rotation.x,
-                    ry = ship.transform.rotation.y,
-                    rz = ship.transform.rotation.z,
-                    rw = ship.transform.rotation.w,
-                    isDocked = ship.IsDocked,
-                    isEngineRunning = ship.IsEngineRunning,
-                    savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
-                };
-
-                var npc = ship.GetComponent<NpcShipController>();
-                if (npc != null)
-                {
-                    data.isNpc = true;
-                    data.navMode = (int)npc.CurrentMode;
-                    data.dwellTime = npc.DwellTime;
-                    data.dockedSinceTimeOffset = (npc.CurrentMode == NpcShipController.NavMode.Docked
-                        && npc.DockedSinceTime > 0)
-                        ? Time.time - npc.DockedSinceTime
-                        : 0f;
-                    data.scheduleAdvancedAfterDock = npc.ScheduleAdvancedAfterDock;
-                    data.cargoTradeDone = npc.CargoTradeDone;
-                    data.assignedPadId = npc.AssignedPadId ?? "";
-                    data.pxCruise = npc.CruiseTargetPos.x;
-                    data.pyCruise = npc.CruiseTargetPos.y;
-                    data.pzCruise = npc.CruiseTargetPos.z;
-                    data.liftStartY = npc.LiftStartY;
-
-                    var state = PeacefulShip.Core.NpcShipWorld.Instance?.GetNpc(npc.NpcInstanceId);
-                    if (state != null)
-                    {
-                        data.scheduleIndex = state.ScheduleIndex;
-                        data.fromLocationId = state.CurrentRoute.fromLocationId ?? "";
-                        data.toLocationId = state.CurrentRoute.toLocationId ?? "";
-                    }
-                }
-
-                allData.Add(data);
-            }
-
-            List<PlayerPositionSaveData> playerData = new();
-            if (PlayerPositionServer.Instance != null)
-            {
-                PlayerPositionServer.Instance.CollectPlayers();
-                playerData = PlayerPositionServer.Instance.GetPendingPlayers();
-            }
-
-            var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData };
-            _repo.SaveAll(wrapper);
-
-#if UNITY_EDITOR
-            if (debugMode)
-                Debug.Log($"[ShipPositionServer] Saved: {allData.Count} ships + {playerData.Count} players");
-#endif
+            SaveCurrentState();
         }
 
         // === Restore ===
 
         private void OnServerStarted()
         {
+            _restoreCompleted = false;
+            _nextSaveTime = float.PositiveInfinity;
+            PlayerPositionServer.Instance?.BeginRestore();
             StartCoroutine(RestoreCoroutine());
         }
 
@@ -284,5 +219,99 @@ namespace ProjectC.Core.ShipPosition
             var nm = NetworkManager.Singleton;
             return nm != null && nm.IsServer;
         }
-    }
+    
+
+        private void SaveCurrentState()
+        {
+            var allShips = GetCachedShips();
+            var allData = new List<ShipPositionSaveData>(allShips.Count);
+
+            foreach (var ship in allShips)
+            {
+                if (!ship.IsSpawned) continue;
+
+                var data = new ShipPositionSaveData
+                {
+                    shipId = ship.ShipPersistentId,
+                    sceneName = ship.gameObject.scene.name,
+                    isNpc = false,
+                    px = ship.transform.position.x,
+                    py = ship.transform.position.y,
+                    pz = ship.transform.position.z,
+                    rx = ship.transform.rotation.x,
+                    ry = ship.transform.rotation.y,
+                    rz = ship.transform.rotation.z,
+                    rw = ship.transform.rotation.w,
+                    isDocked = ship.IsDocked,
+                    isEngineRunning = ship.IsEngineRunning,
+                    savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                };
+
+                var npc = ship.GetComponent<NpcShipController>();
+                if (npc != null)
+                {
+                    data.isNpc = true;
+                    data.navMode = (int)npc.CurrentMode;
+                    data.dwellTime = npc.DwellTime;
+                    data.dockedSinceTimeOffset = (npc.CurrentMode == NpcShipController.NavMode.Docked
+                        && npc.DockedSinceTime > 0)
+                        ? Time.time - npc.DockedSinceTime
+                        : 0f;
+                    data.scheduleAdvancedAfterDock = npc.ScheduleAdvancedAfterDock;
+                    data.cargoTradeDone = npc.CargoTradeDone;
+                    data.assignedPadId = npc.AssignedPadId ?? "";
+                    data.pxCruise = npc.CruiseTargetPos.x;
+                    data.pyCruise = npc.CruiseTargetPos.y;
+                    data.pzCruise = npc.CruiseTargetPos.z;
+                    data.liftStartY = npc.LiftStartY;
+
+                    var state = PeacefulShip.Core.NpcShipWorld.Instance?.GetNpc(npc.NpcInstanceId);
+                    if (state != null)
+                    {
+                        data.scheduleIndex = state.ScheduleIndex;
+                        data.fromLocationId = state.CurrentRoute.fromLocationId ?? "";
+                        data.toLocationId = state.CurrentRoute.toLocationId ?? "";
+                    }
+                }
+
+                allData.Add(data);
+            }
+
+            List<PlayerPositionSaveData> playerData = new();
+            if (PlayerPositionServer.Instance != null)
+            {
+                PlayerPositionServer.Instance.CollectPlayers();
+                playerData = PlayerPositionServer.Instance.GetPendingPlayers();
+            }
+
+            var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData };
+            _repo.SaveAll(wrapper);
+
+#if UNITY_EDITOR
+            if (debugMode)
+                Debug.Log($"[ShipPositionServer] Saved: {allData.Count} ships + {playerData.Count} players");
+#endif
+        }
+
+
+        public bool SaveNow()
+        {
+            if (!IsServerSafe())
+            {
+                Debug.LogWarning("[ShipPositionServer] SaveNow skipped: server is not active");
+                return false;
+            }
+
+            if (!_restoreCompleted)
+            {
+                Debug.LogWarning("[ShipPositionServer] SaveNow skipped: restore is not complete; refusing to overwrite the last valid save");
+                return false;
+            }
+
+            SaveCurrentState();
+            _nextSaveTime = Time.time + saveIntervalSec;
+            Debug.Log("[ShipPositionServer] SaveNow: current server state persisted before shutdown");
+            return true;
+        }
+}
 }

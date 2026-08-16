@@ -71,7 +71,8 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102284
-    m_Localized: "M\xF6chten Sie wirklich zum Hauptmen\xFC zur\xFCckkehren?"
+    m_Localized: "M\xF6chten Sie wirklich zum Hauptmen\xFC zur\xFCckkehren? Dadurch
+      wird der Host-Server beendet."
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102285

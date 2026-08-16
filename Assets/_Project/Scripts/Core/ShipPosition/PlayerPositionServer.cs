@@ -96,6 +96,13 @@ namespace ProjectC.Core.ShipPosition
             }
         }
 
+        public void BeginRestore()
+        {
+            _dataLoaded = false;
+            _savedPlayers = new List<PlayerPositionSaveData>();
+        }
+
+
         /// <summary>
         /// T-PLAYER-PERSIST (D12): загрузить players из ShipPositionServer.RestoreCoroutine.
         /// Вызывается один раз при старте сервера после загрузки ShipPositions.json.

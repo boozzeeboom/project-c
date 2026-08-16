@@ -71,7 +71,8 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102284
-    m_Localized: "\xCAtes-vous s\xFBr de vouloir quitter vers le menu principal ?"
+    m_Localized: "Voulez-vous vraiment revenir au menu principal ? Cela arr\xEAtera
+      le serveur h\xF4te."
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102285

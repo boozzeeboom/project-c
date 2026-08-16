@@ -1100,7 +1100,64 @@ namespace ProjectC.Core
             }
         }
 
-        private void UpdateStatus(string status)
+                /// <summary>
+        /// Корректно завершает текущую host/client сессию и возвращает UI в BootstrapScene.
+        /// Не перезагружает BootstrapScene: это предотвращает дублирование DontDestroyOnLoad
+        /// NetworkManagerController и сбрасывает ClientSceneLoader перед следующим StartHost.
+        /// </summary>
+        public void ShutdownForMainMenu(Action onComplete = null)
+        {
+            CancelInvoke(nameof(TryReconnect));
+            _isReconnecting = false;
+            _reconnectAttempts = 0;
+            StartCoroutine(ShutdownForMainMenuCoroutine(onComplete));
+        }
+
+private IEnumerator ShutdownForMainMenuCoroutine(Action onComplete)
+        {
+            if (networkManager != null && (networkManager.IsListening || networkManager.IsConnectedClient))
+            {
+                Debug.Log("[NMC] ShutdownForMainMenu: stopping network session");
+
+                // Save while the host and player objects are still alive. NGO.Shutdown()
+                // despawns the player before the next persistence tick can collect it.
+                var shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
+                if (shipPositionServer != null)
+                    shipPositionServer.SaveNow();
+
+                networkManager.Shutdown();
+
+                // NGO завершает часть teardown в следующем кадре.
+                yield return null;
+
+                float timeout = 2f;
+                while (networkManager.IsListening || networkManager.IsConnectedClient)
+                {
+                    if (timeout <= 0f)
+                    {
+                        Debug.LogWarning("[NMC] ShutdownForMainMenu: timeout while waiting for NGO shutdown");
+                        break;
+                    }
+
+                    timeout -= Time.unscaledDeltaTime;
+                    yield return null;
+                }
+            }
+
+            var sceneLoader = ProjectC.World.Scene.ClientSceneLoader.Instance;
+            if (sceneLoader != null)
+            {
+                bool resetComplete = false;
+                sceneLoader.ResetForMainMenu(() => resetComplete = true);
+                while (!resetComplete)
+                    yield return null;
+            }
+
+            UpdateStatus("Отключено");
+            onComplete?.Invoke();
+        }
+
+private void UpdateStatus(string status)
         {
             OnConnectionStatusChanged?.Invoke(status);
         }

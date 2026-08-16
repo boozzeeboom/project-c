@@ -530,7 +530,7 @@ namespace ProjectC.Localization.Editor
             { "ui.esc_menu.audio", "Звук" },
             { "ui.esc_menu.gameplay", "Геймплей" },
             { "ui.esc_menu.exit", "Выход" },
-            { "ui.esc_menu.exit_confirm", "Вы уверены, что хотите выйти в главное меню?" },
+            { "ui.esc_menu.exit_confirm", "Вы уверены, что хотите выйти в главное меню? Это приведёт к остановке хост-сервера." },
             // Section headers
             { "ui.esc_menu.section.quality", "Качество" },
             { "ui.esc_menu.section.screen", "Экран" },

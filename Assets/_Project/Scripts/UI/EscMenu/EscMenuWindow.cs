@@ -34,6 +34,8 @@ namespace ProjectC.UI.EscMenu
         /// <summary>Стек экранов: корень меню + подменю.</summary>
         private readonly Stack<VisualElement> _menuStack = new Stack<VisualElement>();
         private VisualElement _currentPanel;
+        private bool _exitInProgress = false;
+
 
         // ==================== Lifecycle ====================
 
@@ -423,19 +425,47 @@ namespace ProjectC.UI.EscMenu
 
         private void ExecuteExitToMenu()
         {
+            if (_exitInProgress) return;
+            _exitInProgress = true;
+
             Debug.Log("[EscMenuWindow] Exit to menu confirmed");
 
-            // Сетевой shutdown
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            {
-                NetworkManager.Singleton.Shutdown();
-            }
-
-            // Закрыть меню перед загрузкой
+            // Сначала закрываем EscMenu, затем ждём полного завершения NGO shutdown
+            // и выгружаем additive WorldScene через штатный lifecycle.
             Hide();
 
-            // Загрузить BootstrapScene (полный путь для однозначности)
-            UnityEngine.SceneManagement.SceneManager.LoadScene("Assets/_Project/Scenes/BootstrapScene.unity");
+            var networkController = FindAnyObjectByType<ProjectC.Core.NetworkManagerController>();
+            if (networkController != null)
+            {
+                networkController.ShutdownForMainMenu(OnReturnedToMainMenu);
+                return;
+            }
+
+            // Fallback для случаев, когда контроллер уже уничтожен.
+            var sceneLoader = ProjectC.World.Scene.ClientSceneLoader.Instance;
+            if (sceneLoader != null)
+            {
+                sceneLoader.ResetForMainMenu(OnReturnedToMainMenu);
+                return;
+            }
+
+            OnReturnedToMainMenu();
+        }
+
+        private void OnReturnedToMainMenu()
+        {
+            _exitInProgress = false;
+
+            var mainMenu = FindAnyObjectByType<ProjectC.UI.MainMenu.MainMenuWindow>();
+            if (mainMenu != null)
+            {
+                mainMenu.Show();
+                Debug.Log("[EscMenuWindow] Returned to main menu; host lifecycle is idle");
+            }
+            else
+            {
+                Debug.LogWarning("[EscMenuWindow] MainMenuWindow not found after returning to menu");
+            }
         }
     }
 }

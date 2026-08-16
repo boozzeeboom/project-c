@@ -71,7 +71,8 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102284
-    m_Localized: Are you sure you want to exit to the main menu?
+    m_Localized: Are you sure you want to return to the main menu? This will stop
+      the host server.
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102285
@@ -1637,7 +1638,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 528063916843008
-    m_Localized: 'Alpha {0}'
+    m_Localized: Alpha {0}
     m_Metadata:
       m_Items: []
   - m_Id: 528063921037312

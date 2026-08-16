@@ -223,7 +223,17 @@ namespace ProjectC.UI.MainMenu
             if (_langDropdown != null) _langDropdown.Cleanup();
         }
 
-        public void Show() { if (!_built) EnsureBuilt(); if (_root == null) return; _root.style.display = DisplayStyle.Flex; _root.pickingMode = PickingMode.Position; NavigateToRoot(); }
+        public void Show()
+        {
+            if (!_built) EnsureBuilt();
+            if (_root == null) return;
+
+            UnityEngine.Cursor.lockState = CursorLockMode.None;
+            UnityEngine.Cursor.visible = true;
+            _root.style.display = DisplayStyle.Flex;
+            _root.pickingMode = PickingMode.Position;
+            NavigateToRoot();
+        }
         public void Hide() { if (_root == null) return; _root.style.display = DisplayStyle.None; _root.pickingMode = PickingMode.Ignore; }
 
         private void NavigateTo(VisualElement panel)

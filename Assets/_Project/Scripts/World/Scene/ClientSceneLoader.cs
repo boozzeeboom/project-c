@@ -624,7 +624,61 @@ ManageLoadedScenesCount();
             }
         }
 
-        public SceneID GetCurrentScene() => _currentScene;
+                /// <summary>
+        /// Полностью возвращает клиент в BootstrapScene без перезагрузки Bootstrap.
+        /// Сбрасывает внутреннее состояние стриминга, чтобы следующий StartHost
+        /// снова запустил загрузку WorldScene_0_0 через штатный pipeline.
+        /// </summary>
+        public void ResetForMainMenu(System.Action onComplete = null)
+        {
+            StopAllCoroutines();
+            StartCoroutine(ResetForMainMenuCoroutine(onComplete));
+        }
+
+        private IEnumerator ResetForMainMenuCoroutine(System.Action onComplete)
+        {
+            _isTransitioning = true;
+            _isLoadingInitialScene = true;
+            _isInitialized = false;
+            playerTransform = null;
+
+            // Сначала выгружаем сцены, зарегистрированные loader'ом.
+            foreach (var scene in _loadedScenes.ToList())
+                yield return UnloadSceneCoroutine(scene);
+
+            // Защита от рассинхронизации реестра и SceneManager после shutdown.
+            var loadedWorldScenes = new List<UnityEngine.SceneManagement.Scene>();
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (scene.isLoaded && scene.name.StartsWith("WorldScene_"))
+                    loadedWorldScenes.Add(scene);
+            }
+
+            foreach (var scene in loadedWorldScenes)
+            {
+                var asyncOp = SceneManager.UnloadSceneAsync(scene);
+                if (asyncOp == null) continue;
+                while (!asyncOp.isDone)
+                    yield return null;
+            }
+
+            _loadedScenes.Clear();
+            _loadingScenes.Clear();
+            _currentScene = new SceneID(-1, -1);
+            _lastPlayerPos = Vector3.zero;
+            _teleportTarget = Vector3.zero;
+            _lastTeleportTime = 0f;
+            _isLoadingInitialScene = false;
+            _isTransitioning = false;
+
+            if (logSceneLoading)
+                Debug.Log("[CSL] ResetForMainMenu COMPLETE: all WorldScenes unloaded and state reset");
+
+            onComplete?.Invoke();
+        }
+
+public SceneID GetCurrentScene() => _currentScene;
         public bool IsSceneLoaded(SceneID scene) => _loadedScenes.Contains(scene);
         public IEnumerable<SceneID> GetLoadedScenes() => _loadedScenes;
         public void LoadSceneOnly(SceneID scene) => StartCoroutine(LoadSceneAsync(scene));

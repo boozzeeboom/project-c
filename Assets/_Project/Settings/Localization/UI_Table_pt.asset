@@ -71,7 +71,8 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102284
-    m_Localized: Tem certeza que deseja sair para o menu principal?
+    m_Localized: "Tem certeza de que deseja voltar ao menu principal? Isso encerrar\xE1
+      o servidor host."
     m_Metadata:
       m_Items: []
   - m_Id: 33563826102285

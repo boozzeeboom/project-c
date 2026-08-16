@@ -50,3 +50,14 @@
 - Изменённые скрипты: `NetworkManagerController.cs`, `ShipPositionServer.cs`, `PlayerPositionServer.cs`, `EscMenuWindow.cs`, `MainMenuWindow.cs`, `ClientSceneLoader.cs`.
 - Изменённые данные локализации: `LocalizationTableRepair.cs`, `UI_Table_de/en/es/fr/hi/ja/pt/ru/zh.asset`.
 - Проверка Unity: `No compile errors`; ручная проверка полного runtime-цикла выхода и повторного запуска хоста ожидает подтверждения пользователя.
+
+## Исправление от 16 августа 2026
+
+**Задача:** Исправить ситуацию, когда позиция игрока загружается из `ShipPositions.json`, но затем перезаписывается стандартным телепортом `ClientSceneLoader` или stale-состоянием предыдущего host-сеанса.
+**Коммит:** `d409c0e4b44357df5baa1394c6fe7c404fbc656a` — T-PERSIST02: Исправить порядок восстановления позиции игрока
+**Изменения:**
+- Перед каждым новым `StartHost()`/`StartServer()` сбрасываются `_restoreCompleted`, `DataLoaded`, сохранённый список игроков и pending-состояние.
+- `NetworkPlayer` теперь ждёт завершения полного restore кораблей и игроков, а не только загрузки списка игроков.
+- `ClientSceneLoader` после загрузки стартовых сцен ждёт server restore и пропускает default spawn, если для текущего clientId найдена сохранённая позиция.
+- Устранена гонка, подтверждённая логами: после корректного `Player 0 restored to position (39821.23, 2532.83, 39999.52)` выполнялся последующий `Teleport to (39999.50, 3000.00, 39999.50)`.
+- Проверка Unity: `No compile errors`. Runtime-проверку после нового коммита необходимо повторить.

@@ -588,8 +588,10 @@ namespace ProjectC.Player
             SkillInputService.Instance.TryActivate(SkillInputSlot.Primary);
         }
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
+            base.OnDestroy();
+
             if (_customisationApplier != null)
                 _customisationApplier.BodySwapped -= OnBodySwapped;
         }

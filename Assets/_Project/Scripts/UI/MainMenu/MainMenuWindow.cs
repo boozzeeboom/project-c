@@ -30,6 +30,9 @@ namespace ProjectC.UI.MainMenu
         [SerializeField] private string changelogUrl = "https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/changelogs.md";
         [SerializeField] private int changelogTimeoutSeconds = 8;
 
+        private const string CurrentChangelogUrl = "https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/changelogs.md";
+        private const string LegacyChangelogSuffix = "/docs/UI/MainMenu/changelogs.md";
+
         private UIDocument _doc;
         private VisualElement _root;
         private VisualElement _contentWindow;
@@ -217,15 +220,16 @@ namespace ProjectC.UI.MainMenu
 
         private void RefreshChangelog()
         {
-            if (_changelogScroll == null || string.IsNullOrWhiteSpace(changelogUrl)) return;
+            var url = ResolveChangelogUrl();
+            if (_changelogScroll == null || string.IsNullOrWhiteSpace(url)) return;
             if (_changelogCoroutine != null) StopCoroutine(_changelogCoroutine);
-            _changelogCoroutine = StartCoroutine(LoadChangelogCoroutine());
+            _changelogCoroutine = StartCoroutine(LoadChangelogCoroutine(url));
         }
 
-        private IEnumerator LoadChangelogCoroutine()
+        private IEnumerator LoadChangelogCoroutine(string url)
         {
             SetChangelogStatus("Загрузка…");
-            using (var request = UnityWebRequest.Get(changelogUrl))
+            using (var request = UnityWebRequest.Get(url))
             {
                 request.timeout = Mathf.Max(1, changelogTimeoutSeconds);
                 yield return request.SendWebRequest();
@@ -237,7 +241,7 @@ namespace ProjectC.UI.MainMenu
                         : request.error;
                     SetChangelogStatus("Не удалось загрузить changelog");
                     RenderChangelogError($"Проверьте соединение с GitHub.\n{reason}");
-                    Debug.LogWarning($"[MainMenuWindow] Changelog request failed: {reason}");
+                    Debug.LogWarning($"[MainMenuWindow] Changelog request failed ({url}): {reason}");
                 }
                 else
                 {
@@ -247,6 +251,15 @@ namespace ProjectC.UI.MainMenu
             }
 
             _changelogCoroutine = null;
+        }
+
+        private string ResolveChangelogUrl()
+        {
+            if (string.IsNullOrWhiteSpace(changelogUrl)
+                || changelogUrl.EndsWith(LegacyChangelogSuffix, StringComparison.OrdinalIgnoreCase))
+                return CurrentChangelogUrl;
+
+            return changelogUrl;
         }
 
         private void RenderChangelog(string markdown)

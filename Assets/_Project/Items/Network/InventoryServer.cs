@@ -69,7 +69,9 @@ namespace ProjectC.Items.Network
         {
             if (!IsServer) return false;
             if (InventoryWorld.Instance == null) return false;
-            var result = InventoryWorld.Instance.AddItemDirect(clientId, itemId, itemType);
+            var result = itemType == ItemType.Key
+                ? InventoryWorld.Instance.AddKeyItemDirect(clientId, itemId)
+                : InventoryWorld.Instance.AddItemDirect(clientId, itemId, itemType);
             if (result.IsSuccess)
             {
                 // Отправим snapshot клиенту

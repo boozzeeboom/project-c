@@ -621,10 +621,17 @@ namespace ProjectC.Quests
                         break;
                     }
                     // S1 fix: honour ri.count. AddItemDirect adds ONE item per call → loop.
-                    var rewardItemType = ri.pickupItem != null ? ri.pickupItem.itemType : ProjectC.Items.ItemType.Resources;
+                    // Resolve the actual definition too, so a legacy string-only Key reward
+                    // cannot silently fall back to Resources and lose its unique instance.
+                    var rewardDefinition = inv.GetItemDefinition(itemId);
+                    var rewardItemType = rewardDefinition != null
+                        ? rewardDefinition.itemType
+                        : (ri.pickupItem != null ? ri.pickupItem.itemType : ProjectC.Items.ItemType.Resources);
                     for (int n = 0; n < ri.count; n++)
                     {
-                        var result = inv.AddItemDirect(clientId, itemId, rewardItemType);
+                        var result = rewardItemType == ProjectC.Items.ItemType.Key
+                            ? inv.AddKeyItemDirect(clientId, itemId)
+                            : inv.AddItemDirect(clientId, itemId, rewardItemType);
                         if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: items[{i}] id={itemId} type={rewardItemType} x{ri.count} ({n + 1}/{ri.count}) → code={result.code} message={result.message}");
                     }
                 }
@@ -1016,8 +1023,10 @@ namespace ProjectC.Quests
             var registry = ProjectC.Items.ItemRegistry.Instance;
             if (registry == null)
             {
-                // Try load from Resources/ItemRegistry.asset.
+                // Runtime registry lives under Resources/Items/Data/.
                 registry = Resources.Load<ProjectC.Items.ItemRegistry>("ItemRegistry");
+                if (registry == null)
+                    registry = Resources.Load<ProjectC.Items.ItemRegistry>("Items/Data/ItemRegistry");
                 if (registry != null) ProjectC.Items.ItemRegistry.SetInstance(registry);
             }
             if (registry != null && registry.TryGetIdByName(itemTradeItemId, out int regId) && regId > 0)

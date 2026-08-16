@@ -1474,10 +1474,15 @@ namespace ProjectC.Quests
                             var invGive = ProjectC.Items.InventoryWorld.Instance;
                             if (invGive != null)
                             {
+                                var resolvedDefinition = invGive.GetItemDefinition(itemId);
+                                if (resolvedDefinition != null && resolvedDefinition.itemType == ProjectC.Items.ItemType.Key)
+                                    itemType = ProjectC.Items.ItemType.Key;
                                 ok = true;
                                 for (int n = 0; n < giveCount; n++)
                                 {
-                                    var r = invGive.AddItemDirect(clientId, itemId, itemType);
+                                    var r = itemType == ProjectC.Items.ItemType.Key
+                                        ? invGive.AddKeyItemDirect(clientId, itemId)
+                                        : invGive.AddItemDirect(clientId, itemId, itemType);
                                     if (!r.IsSuccess)
                                     {
                                         ok = false;

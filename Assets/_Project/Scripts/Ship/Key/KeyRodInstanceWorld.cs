@@ -187,6 +187,84 @@ namespace ProjectC.Ship.Key
             return 0;
         }
 
+        /// <summary>
+        /// Найти существующий экземпляр ключа по itemId и передать его игроку.
+        /// Если корабль уже загружен, но его экземпляр ещё не успел создаться,
+        /// создаёт его по ShipController.KeyItemData. При нескольких совпадениях
+        /// отказывает безопасно, чтобы не выдать ключ от другого корабля.
+        /// </summary>
+        public static bool TryClaimOrFindInstanceForItem(ulong clientId, int itemId, out int instanceId, out string reason)
+        {
+            instanceId = 0;
+            reason = string.Empty;
+            if (!IsInitialized)
+            {
+                reason = "Сервер ключей не инициализирован";
+                return false;
+            }
+            if (itemId <= 0)
+            {
+                reason = "Некорректный itemId ключа";
+                return false;
+            }
+
+            int matches = 0;
+            int ownedByClient = 0;
+            int available = 0;
+            foreach (var inst in _instancesById.Values)
+            {
+                if (inst == null || inst.itemId != itemId || inst.state != KeyRodInstanceState.Active)
+                    continue;
+                matches++;
+                if (inst.ownerPlayerId == clientId) ownedByClient = ownedByClient == 0 ? inst.instanceId : -1;
+                if (inst.ownerPlayerId == KeyRodInstance.OWNER_NONE) available = available == 0 ? inst.instanceId : -1;
+            }
+
+            if (matches > 1 || ownedByClient < 0 || available < 0)
+            {
+                reason = $"Для itemId={itemId} найдено несколько экземпляров ключа; выдача остановлена для защиты привязки к кораблю";
+                return false;
+            }
+
+            if (ownedByClient > 0)
+            {
+                instanceId = ownedByClient;
+                return true;
+            }
+
+            if (available <= 0)
+            {
+                // Fallback для окна между OnNetworkSpawn и корутиной ShipController.
+                var ships = UnityEngine.Object.FindObjectsOfType<ProjectC.Player.ShipController>(true);
+                for (int i = 0; i < ships.Length; i++)
+                {
+                    var ship = ships[i];
+                    if (ship == null || !ship.IsSpawned || !ship.IsServer || ship.KeyItemData == null)
+                        continue;
+                    int shipItemId = ProjectC.Items.InventoryWorld.Instance != null
+                        ? ProjectC.Items.InventoryWorld.Instance.GetOrRegisterItemId(ship.KeyItemData) : -1;
+                    if (shipItemId != itemId) continue;
+                    available = CreateInstance(itemId, ship.NetworkObjectId, KeyRodInstance.OWNER_NONE, ship.ShipPersistentId);
+                    break;
+                }
+            }
+
+            if (available <= 0)
+            {
+                reason = $"Не найден свободный экземпляр ключа itemId={itemId} у загруженного корабля";
+                return false;
+            }
+
+            if (!TransferInstance(available, KeyRodInstance.OWNER_NONE, clientId))
+            {
+                reason = $"Не удалось передать экземпляр ключа instanceId={available} игроку {clientId}";
+                return false;
+            }
+
+            instanceId = available;
+            return true;
+        }
+
         /// <summary>Получить instanceId, привязанный к конкретному кораблю (1:1 в MVP).
         /// Возвращает 0 если корабль не зарегистрирован (не имеет экземпляра ключа).</summary>
         public static int GetInstanceIdForShip(ulong shipNetworkObjectId)
@@ -285,7 +363,15 @@ namespace ProjectC.Ship.Key
                     var existingInst = GetInstance(existingId);
                     if (existingInst != null && existingInst.state == KeyRodInstanceState.Active)
                     {
-                        // Rebind: обновить registeredShipId на актуальный netId новой сессии
+                        // Rebind: обновить registeredShipId на актуальный netId новой сессии.
+                        // Если кораблю назначили новый уникальный ItemData, мигрируем itemId
+                        // у уже сохранённого экземпляра вместо создания дубликата.
+                        if (existingInst.itemId != itemId)
+                        {
+                            Debug.Log($"[KeyRodInstanceWorld] CreateInstance: migrate persistent key " +
+                                      $"instanceId={existingId}, itemId {existingInst.itemId} → {itemId}");
+                            existingInst.itemId = itemId;
+                        }
                         ulong oldShipId = existingInst.registeredShipId;
                         if (oldShipId != registeredShipId)
                         {

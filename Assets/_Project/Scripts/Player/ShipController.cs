@@ -59,6 +59,9 @@ namespace ProjectC.Player
         [Tooltip("ItemData ключа для этого корабля. OnNetworkSpawn создаёт KeyRodInstance.")]
         [SerializeField] private ProjectC.Items.ItemData _keyItemData;
 
+        /// <summary>ItemData уникального ключа, назначенного этому кораблю.</summary>
+        public ProjectC.Items.ItemData KeyItemData => _keyItemData;
+
         [Header("Display Name (R2-SHIP-KEY-003, Q6)")]
         [Tooltip("Человекочитаемое имя корабля для UI/HUD/toast'ов. " +
                  "Если пусто — клиент сгенерирует fallback из класса (Light/Medium/Heavy/HeavyII). " +

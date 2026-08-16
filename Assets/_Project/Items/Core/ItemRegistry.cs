@@ -31,8 +31,10 @@ namespace ProjectC.Items
         {
             if (Instance == null)
             {
-                // Try load from Resources as fallback.
+                // Runtime registry is stored under Resources/Items/Data/.
                 Instance = Resources.Load<ItemRegistry>("ItemRegistry");
+                if (Instance == null)
+                    Instance = Resources.Load<ItemRegistry>("Items/Data/ItemRegistry");
             }
             if (Instance == null)
             {

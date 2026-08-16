@@ -41,7 +41,7 @@ namespace ProjectC.Items.Editor
         // ============================================================
 
         public const string ITEMS_FOLDER = "Assets/_Project/Resources/Items";
-        public const string ITEM_REGISTRY_PATH = "Assets/_Project/Items/Data/ItemRegistry.asset";
+        public const string ITEM_REGISTRY_PATH = "Assets/_Project/Resources/Items/Data/ItemRegistry.asset";
 
         // T-IE04
         public const string TRADE_ITEMS_FOLDER = "Assets/_Project/Trade/Data/Items";

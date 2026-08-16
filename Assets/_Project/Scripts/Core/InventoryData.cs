@@ -224,6 +224,38 @@ namespace ProjectC.Items
             }
         }
 
+        /// <summary>Исправить legacy Key-слот без instanceId, не создавая дубликат предмета.</summary>
+        public bool SetKeySlotInstanceIdForItem(int itemId, int instanceId)
+        {
+            if (itemId <= 0 || instanceId <= 0 || _keySlots == null) return false;
+            for (int i = 0; i < _keySlots.Count; i++)
+            {
+                var slot = _keySlots[i];
+                if (slot.itemId != itemId || slot.instanceId > 0) continue;
+                slot.instanceId = instanceId;
+                _keySlots[i] = slot;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Синхронизировать itemId слота с мигрировавшим KeyRodInstance.</summary>
+        public bool SetKeySlotItemIdForInstance(int instanceId, int itemId)
+        {
+            if (instanceId <= 0 || itemId <= 0 || _keySlots == null) return false;
+            for (int i = 0; i < _keySlots.Count; i++)
+            {
+                var slot = _keySlots[i];
+                if (slot.instanceId != instanceId) continue;
+                slot.itemId = itemId;
+                _keySlots[i] = slot;
+                if (_keyIds != null && i < _keyIds.Count)
+                    _keyIds[i] = itemId;
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>Получить instanceId для всех Key-слотов (для persistence).</summary>
         public List<int> GetKeyInstanceIds()
         {

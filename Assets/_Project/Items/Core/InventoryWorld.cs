@@ -106,12 +106,65 @@ namespace ProjectC.Items
                 // Save обратно
                 _repository.Save(clientId, loaded);
             }
+            bool repairedLegacyKeys = RepairLegacyKeySlots(clientId, ref loaded);
             if (loaded.TotalCount > 0)
             {
                 _playerInventories[clientId] = loaded;
+                if (repairedLegacyKeys)
+                    SavePlayer(clientId);
                 if (Debug.isDebugBuild) Debug.Log($"[InventoryWorld] Loaded inventory for client {clientId}: {loaded.TotalCount} items");
             }
         }
+
+        /// <summary>
+        /// Мигрировать старые Key-слоты с instanceId=0 после загрузки persistence.
+        /// Старый квестовый grant оставлял именно такой слот и не передавал KeyRodInstance.
+        /// </summary>
+        private bool RepairLegacyKeySlots(ulong clientId, ref InventoryData data)
+        {
+            if (!ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized || data.KeySlotCount == 0)
+                return false;
+
+            bool changed = false;
+            var attemptedItemIds = new HashSet<int>();
+            for (int i = 0; i < data.KeySlotCount; i++)
+            {
+                var slot = data.GetKeySlotAt(i);
+                if (slot.itemId <= 0) continue;
+
+                // Persistence migration: the ship may have received a new unique key
+                // ItemData while the old inventory slot still contains the old itemId.
+                if (slot.instanceId > 0)
+                {
+                    var instance = ProjectC.Ship.Key.KeyRodInstanceWorld.GetInstance(slot.instanceId);
+                    if (instance != null && instance.itemId > 0 && instance.itemId != slot.itemId
+                        && data.SetKeySlotItemIdForInstance(slot.instanceId, instance.itemId))
+                    {
+                        changed = true;
+                        Debug.Log($"[InventoryWorld] Migrated key slot itemId: client={clientId} " +
+                                  $"instanceId={slot.instanceId} {slot.itemId} → {instance.itemId}");
+                    }
+                    continue;
+                }
+
+                if (!attemptedItemIds.Add(slot.itemId))
+                    continue;
+
+                if (ProjectC.Ship.Key.KeyRodInstanceWorld.TryClaimOrFindInstanceForItem(
+                        clientId, slot.itemId, out int instanceId, out string reason)
+                    && data.SetKeySlotInstanceIdForItem(slot.itemId, instanceId))
+                {
+                    changed = true;
+                    Debug.Log($"[InventoryWorld] Repaired legacy key slot: client={clientId} itemId={slot.itemId} instanceId={instanceId}");
+                }
+                else if (Debug.isDebugBuild)
+                {
+                    Debug.LogWarning($"[InventoryWorld] Could not repair legacy key slot: client={clientId} itemId={slot.itemId} reason={reason}");
+                }
+            }
+            return changed;
+        }
+
         /// <summary>T-IE: удалить из InventoryData все itemId, которых нет в _itemDatabase.</summary>
         private void CleanInvalidItems(InventoryData data)
         {
@@ -600,11 +653,53 @@ namespace ProjectC.Items
         // Server-side helpers (для NetworkChestContainer и т.п.)
         // ===========================================================
         /// <summary>
+        /// Выдать уникальный ключ корабля. Ключ нельзя добавлять как обычный itemId:
+        /// сначала должен быть найден/создан и передан игроку KeyRodInstance.
+        /// Также исправляет legacy-слот с instanceId=0, оставшийся от старой выдачи.
+        /// </summary>
+        public InventoryResultDto AddKeyItemDirect(ulong clientId, int itemId)
+        {
+            if (!_itemDatabase.TryGetValue(itemId, out var definition) || definition == null)
+                return Fail(InventoryResultCode.ItemNotFound, $"ID={itemId}", itemId, -1);
+            if (definition.itemType != ItemType.Key)
+                return Fail(InventoryResultCode.ItemNotFound, $"ID={itemId} не является ключом", itemId, -1);
+
+            var data = GetOrCreate(clientId);
+            if (data.TotalCount >= _maxSlots)
+                return Fail(InventoryResultCode.InventoryFull,
+                    $"Инвентарь полон ({data.TotalCount}/{_maxSlots})", itemId, -1);
+
+            for (int i = 0; i < data.KeySlotCount; i++)
+            {
+                var slot = data.GetKeySlotAt(i);
+                if (slot.itemId == itemId && slot.instanceId > 0)
+                    return Fail(InventoryResultCode.InventoryFull,
+                        $"Ключ ID={itemId} уже есть в инвентаре", itemId, -1);
+            }
+
+            if (!ProjectC.Ship.Key.KeyRodInstanceWorld.TryClaimOrFindInstanceForItem(
+                    clientId, itemId, out int instanceId, out string reason))
+            {
+                return Fail(InventoryResultCode.InternalError, reason, itemId, -1);
+            }
+
+            return AddItemDirect(clientId, itemId, instanceId, ItemType.Key);
+        }
+
+        /// <summary>
         /// Добавить предмет напрямую на сервере (для сундуков, квестов, и т.д.).
         /// НЕ вызывается на клиенте — защита через InventoryServer.IsServer.
+        /// Для ItemType.Key автоматически используется уникальный key-aware путь.
         /// </summary>
         public InventoryResultDto AddItemDirect(ulong clientId, int itemId, ItemType itemType)
         {
+            if (itemType == ItemType.Key
+                || (_itemDatabase.TryGetValue(itemId, out var definition) && definition != null
+                    && definition.itemType == ItemType.Key))
+            {
+                return AddKeyItemDirect(clientId, itemId);
+            }
+
             // T-IE DIAG: точное состояние при попытке добавить (даже при fail)
             Debug.Log($"[InventoryWorld] AddItemDirect: client={clientId} itemId={itemType}({itemId}) dbHasItem={_itemDatabase.ContainsKey(itemId)} have={GetOrCreate(clientId).TotalCount}/{_maxSlots}");
             if (!_itemDatabase.ContainsKey(itemId))
@@ -629,14 +724,44 @@ namespace ProjectC.Items
             Debug.Log($"[InventoryWorld] AddItemDirect (with instanceId): client={clientId} itemId={itemId} instanceId={instanceId} type={itemType}");
             if (!_itemDatabase.ContainsKey(itemId))
                 return Fail(InventoryResultCode.ItemNotFound, $"ID={itemId}", itemId, -1);
+
+            if (itemType == ItemType.Key)
+            {
+                if (instanceId <= 0)
+                    return Fail(InventoryResultCode.InternalError, "Для ключа требуется instanceId > 0", itemId, -1);
+                var keyInstance = ProjectC.Ship.Key.KeyRodInstanceWorld.GetInstance(instanceId);
+                if (keyInstance == null || keyInstance.itemId != itemId
+                    || !ProjectC.Ship.Key.KeyRodInstanceWorld.IsOwnerOfInstance(clientId, instanceId))
+                {
+                    return Fail(InventoryResultCode.NoPermission,
+                        $"Экземпляр ключа instanceId={instanceId} не принадлежит игроку {clientId}", itemId, -1);
+                }
+            }
+
             var data = GetOrCreate(clientId);
             if (data.TotalCount >= _maxSlots)
                 return Fail(InventoryResultCode.InventoryFull,
                     $"Инвентарь полон ({data.TotalCount}/{_maxSlots})", itemId, -1);
-            // Если есть instanceId — используем AddKeyItem (Key type), иначе обычный AddItem
-            if (instanceId > 0 && itemType == ItemType.Key)
+
+            if (itemType == ItemType.Key)
             {
-                data.AddKeyItem(itemId, instanceId);
+                if (data.HasKeyInstance(instanceId))
+                    return Fail(InventoryResultCode.InventoryFull,
+                        $"Ключ instanceId={instanceId} уже есть в инвентаре", itemId, -1);
+
+                bool repairedLegacySlot = false;
+                for (int i = 0; i < data.KeySlotCount; i++)
+                {
+                    var slot = data.GetKeySlotAt(i);
+                    if (slot.itemId != itemId) continue;
+                    if (slot.instanceId > 0)
+                        return Fail(InventoryResultCode.InventoryFull,
+                            $"Ключ ID={itemId} уже есть в инвентаре", itemId, -1);
+                    repairedLegacySlot = data.SetKeySlotInstanceIdForItem(itemId, instanceId);
+                    break;
+                }
+                if (!repairedLegacySlot)
+                    data.AddKeyItem(itemId, instanceId);
             }
             else
             {
@@ -848,7 +973,7 @@ namespace ProjectC.Items
                     // Полный fallback: AssetDatabase.LoadAssetAtPath
                     #if UNITY_EDITOR
                     registry = UnityEditor.AssetDatabase.LoadAssetAtPath<ProjectC.Items.ItemRegistry>(
-                        "Assets/_Project/Items/Data/ItemRegistry.asset");
+                        "Assets/_Project/Resources/Items/Data/ItemRegistry.asset");
                     #endif
                 }
                 if (registry != null) ProjectC.Items.ItemRegistry.SetInstance(registry);

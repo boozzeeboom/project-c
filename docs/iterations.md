@@ -23,3 +23,14 @@
 - Статичные точки `RepairManager` и `MarketZone_Primium` оставлены на `ReachLocation`.
 - Гайдлайн сохранён в `docs/dev/TESTS/first-auto-quest/README.md` и дополнен правилом выбора objective по типу цели.
 - Статическая проверка Unity: `No compile errors`.
+
+## Исправление от 16 августа 2026
+
+**Задача:** Исправить выдачу квестового ключа корабля, уникальность ключей кораблей и runtime-загрузку ItemRegistry.
+**Коммит:** `cae0591bf121a9578124b492d2d66f42a02a962c` — T-KEY01: Исправлена выдача ключей кораблей и runtime-регистрация
+**Изменения:**
+- Key-награды теперь передают уникальный `KeyRodInstance` игроку и сохраняют `instanceId` в инвентаре.
+- Добавлена миграция legacy-слотов с `instanceId=0` и защита от неоднозначной привязки ключа к кораблю.
+- `NPC_Ship_HeavyII_03` получил отдельный `Key_heavyII_ship`; `Key_light_ship` остался только у `Ship_Light_root`.
+- `ItemRegistry.asset` перемещён в `Resources/Items/Data` и зарегистрирован новый ключ с ID 2012.
+- Проверка Unity: `No compile errors`; статическая проверка ассетов пройдена.

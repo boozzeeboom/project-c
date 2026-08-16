@@ -71,6 +71,30 @@ namespace ProjectC.Quests
         }
 
         /// <summary>
+        /// Rebuilds the progress map for a newly active stage.
+        /// </summary>
+        public void ResetObjectiveProgress(QuestStage stage)
+        {
+            objectiveProgress.Clear();
+            EnsureObjectiveProgress(stage);
+        }
+
+        /// <summary>
+        /// Ensures the current stage has visible/runtime progress entries.
+        /// This also repairs older saves that predate stage-progress initialization.
+        /// </summary>
+        public void EnsureObjectiveProgress(QuestStage stage)
+        {
+            if (stage == null || stage.objectives == null) return;
+            for (int i = 0; i < stage.objectives.Length; i++)
+            {
+                var obj = stage.objectives[i];
+                if (obj == null || string.IsNullOrEmpty(obj.objectiveId)) continue;
+                GetOrCreateProgress(obj.objectiveId);
+            }
+        }
+
+        /// <summary>
         /// All required objectives completed for current stage? Server evaluates.
         /// </summary>
         public bool AreAllRequiredComplete(QuestStage stage)

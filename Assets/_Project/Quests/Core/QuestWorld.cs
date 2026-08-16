@@ -415,11 +415,14 @@ namespace ProjectC.Quests
                 {
                     if (existing.state == QuestState.Active || existing.state == QuestState.Completed || existing.state == QuestState.TurnedIn)
                     {
+                        if (existing.state == QuestState.Active)
+                            existing.EnsureObjectiveProgress(def.GetStage(existing.currentStageId));
                         return Ok($"Already {existing.state}", questId);
                     }
                     if (!QuestStateTransition.IsAllowed(existing.state, QuestState.Active))
                         return Fail(QuestResultCode.InvalidState,
                             $"Cannot accept from state {existing.state}", questId);
+                    ClearNpcTalkEvents(clientId);
                     existing.state = QuestState.Active;
                     if (string.IsNullOrEmpty(existing.currentStageId))
                     {
@@ -431,6 +434,7 @@ namespace ProjectC.Quests
                             OnFireDialogActions?.Invoke(clientId, fromNpcId ?? "", entry.onEnterActions);
                         }
                     }
+                    existing.EnsureObjectiveProgress(def.GetStage(existing.currentStageId));
                     return Ok("Accepted", questId);
                 }
             }
@@ -452,6 +456,9 @@ namespace ProjectC.Quests
                 return Fail(QuestResultCode.PrerequisitesNotMet, prereqReason, questId);
             }
 
+            // A talk that happened before acceptance must not satisfy the first quest stage.
+            ClearNpcTalkEvents(clientId);
+
             // Create new QuestInstance
             var instance = new QuestInstance
             {
@@ -461,6 +468,7 @@ namespace ProjectC.Quests
             };
             var entryStage = def.GetEntryStage();
             if (entryStage != null) instance.currentStageId = entryStage.stageId;
+            instance.ResetObjectiveProgress(entryStage);
             playerQuests.Add(instance);
 
             // T-Q22 fix: fire onEnterActions of entry stage on accept.
@@ -823,6 +831,13 @@ namespace ProjectC.Quests
         /// <summary>Per-player set of NPC ids the player has talked to at least once.</summary>
         private readonly Dictionary<ulong, HashSet<string>> _npcTalkedTo = new Dictionary<ulong, HashSet<string>>();
 
+        /// <summary>
+        /// Transient per-tick talk events used by TalkToNpc objectives.
+        /// This is intentionally separate from _npcTalkedTo: historical knowledge must not
+        /// complete a later TalkToNpc stage automatically.
+        /// </summary>
+        private readonly Dictionary<ulong, HashSet<string>> _npcTalkEvents = new Dictionary<ulong, HashSet<string>>();
+
         // ============ T-KNOW: Knowledge System ============
 
         /// <summary>T-KNOW: какие фракции игрок «знает» (имеет право видеть в UI).</summary>
@@ -879,9 +894,33 @@ namespace ProjectC.Quests
             return _npcTalkedTo.TryGetValue(clientId, out var set) && set.Contains(npcId);
         }
 
+        /// <summary>
+        /// Returns true only for a talk interaction received since the last quest tick.
+        /// It is not persisted and must not be used for NPC knowledge.
+        /// </summary>
+        public bool HasNpcTalkEvent(ulong clientId, string npcId)
+        {
+            if (string.IsNullOrEmpty(npcId)) return false;
+            return _npcTalkEvents.TryGetValue(clientId, out var set) && set.Contains(npcId);
+        }
+
+        /// <summary>Removes transient talk events after the current tick or quest reset.</summary>
+        public void ClearNpcTalkEvents(ulong clientId)
+        {
+            _npcTalkEvents.Remove(clientId);
+        }
+
         public void MarkNpcTalked(ulong clientId, string npcId)
         {
             if (string.IsNullOrEmpty(npcId)) return;
+
+            if (!_npcTalkEvents.TryGetValue(clientId, out var talkEvents))
+            {
+                talkEvents = new HashSet<string>();
+                _npcTalkEvents[clientId] = talkEvents;
+            }
+            talkEvents.Add(npcId);
+
             if (!_npcTalkedTo.TryGetValue(clientId, out var set))
             {
                 set = new HashSet<string>();
@@ -1067,7 +1106,11 @@ namespace ProjectC.Quests
         /// </summary>
         public void TickPlayer(ulong clientId)
         {
-            if (!_questsByPlayer.TryGetValue(clientId, out var quests) || quests == null) return;
+            if (!_questsByPlayer.TryGetValue(clientId, out var quests) || quests == null)
+            {
+                ClearNpcTalkEvents(clientId);
+                return;
+            }
 
             // Snapshot quest list (TryAdvanceStage может менять state, но не add/remove)
             for (int i = 0; i < quests.Count; i++)
@@ -1083,8 +1126,14 @@ namespace ProjectC.Quests
                 var stage = def.GetStage(inst.currentStageId);
                 if (stage == null) continue;
 
+                // Repairs old saves and guarantees the snapshot has the active stage objective.
+                inst.EnsureObjectiveProgress(stage);
                 EvaluateAndAdvanceStage(clientId, inst, def, stage);
             }
+
+            // TalkToNpc is an interaction event, not an "ever talked" flag.
+            // Keep it available for all active quests in this tick, then consume it globally.
+            ClearNpcTalkEvents(clientId);
         }
 
         /// <summary>
@@ -1158,7 +1207,7 @@ namespace ProjectC.Quests
                 case QuestObjectiveType.TalkToNpc:
                 {
                     string npcId = obj.targetNpc != null ? obj.targetNpc.npcId : obj.targetNpcId;
-                    return HasNpcTalkedTo(clientId, npcId);
+                    return HasNpcTalkEvent(clientId, npcId);
                 }
 
                 case QuestObjectiveType.HaveItem:
@@ -1256,11 +1305,12 @@ namespace ProjectC.Quests
             else
             {
                 instance.currentStageId = toStage;
+                var nextStage = def.GetStage(toStage);
+                instance.ResetObjectiveProgress(nextStage);
                 if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] Stage advanced: {def.questId} {fromStage} → {toStage}");
                 OnStageTransition?.Invoke(clientId, def.questId, fromStage, toStage);
 
                 // 3. Fire onEnterActions of NEW stage.
-                var nextStage = def.GetStage(toStage);
                 if (nextStage != null && nextStage.onEnterActions != null && nextStage.onEnterActions.Length > 0)
                 {
                     OnFireDialogActions?.Invoke(clientId, "", nextStage.onEnterActions);
@@ -1473,6 +1523,7 @@ namespace ProjectC.Quests
             _contractsCompleted.Remove(clientId);
             _contractsAccepted.Remove(clientId);
             _npcTalkedTo.Remove(clientId);
+            _npcTalkEvents.Remove(clientId);
             _knownFactions.Remove(clientId);
             _knownNpcs.Remove(clientId);
             var flagToRemove = new List<(ulong, string)>();

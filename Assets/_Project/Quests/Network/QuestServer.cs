@@ -505,14 +505,6 @@ namespace ProjectC.Quests
 
             if (debugMode) Debug.Log($"[QuestServer] RequestTalkToNpc client={clientId} npc={npcId} treeHint={treeIdHint}");
 
-            // T-Q22 fix: mark NPC as talked-to for TalkToNpc objective evaluation.
-            // MarkNpcTalked must happen HERE (not only in AdvanceDialogue) because
-            // the player may just press E and never select a dialogue option.
-            QuestWorld.Instance?.MarkNpcTalked(clientId, npcId);
-
-            // T-KNOW: push updated reputation + npcAttitude snapshots with new known-фильтрами
-            BroadcastKnowledgeChange(clientId);
-
             // T-Q11c-fix: если сессия уже открыта (повторный E / stale state) — закрыть и открыть заново.
             // Иначе OpenDialog возвращает null и игрок видит "failed to open session".
             if (QuestWorld.Instance.GetDialogSession(clientId) != null)
@@ -559,6 +551,12 @@ namespace ProjectC.Quests
                 if (debugMode) Debug.LogWarning($"[QuestServer] RequestTalkToNpc: failed to open session for client {clientId}");
                 return;
             }
+
+            // A valid dialog interaction is a transient TalkToNpc event.
+            // Marking happens only after the session opens; failed/invalid dialog requests
+            // must not satisfy quest objectives.
+            QuestWorld.Instance?.MarkNpcTalked(clientId, npcId);
+            BroadcastKnowledgeChange(clientId);
 
             // Build first step
             var step = BuildDialogStep(tree, session.currentNodeId, clientId);
@@ -1286,7 +1284,7 @@ namespace ProjectC.Quests
                             break;
                         }
                         qwAccept.TryOffer(clientId, acceptQuestId);
-                        var acceptResult = qwAccept.TryAccept(clientId, acceptQuestId, "");
+                        var acceptResult = qwAccept.TryAccept(clientId, acceptQuestId, npcId);
                         if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AcceptQuest {acceptQuestId} → code={acceptResult.code} {acceptResult.message}");
                         SendQuestSnapshotToClient(clientId);
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto

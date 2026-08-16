@@ -53,3 +53,11 @@
 - `Assets/_Project/Resources/UI/MainMenuWindow.uxml` — добавлена правая центральная панель changelog со ScrollView и кнопкой обновления.
 - `Assets/_Project/Resources/UI/MainMenuStyles.uss` — добавлены стили панели и типов Markdown-строк.
 - `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` — загрузка raw-файла GitHub через `UnityWebRequest`, построчный парсинг и обработка ошибки сети.
+
+## Итерация от 2026-08-16 (2)
+
+**Задача:** T-UI07 — упростить расположение changelog для обновления
+**Коммит:** `41c7685280d65677e66f875e9c98aaa7596bb896` — T-UI07: перенести changelog в корень docs
+**Изменения:**
+- `docs/changelogs.md` — changelog перенесён из `docs/UI/MainMenu/`, чтобы файл было проще находить и обновлять.
+- `MainMenuWindow.cs` и документация — обновлён путь к raw-файлу GitHub.

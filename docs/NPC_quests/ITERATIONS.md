@@ -1,5 +1,19 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-16 (T-Q22 fix)
+
+**Задача:** Исправить архитектуру `TalkToNpc` и убрать отсутствие objectives сразу после принятия квеста.
+**Коммит:** `905337f93e8472576e09c8158c3791eb4d02e8e4` — T-Q22: Исправлена архитектура TalkToNpc
+**Изменения:**
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — transient talk events вместо использования исторического набора NPC для текущего objective; очистка событий после tick.
+- `Assets/_Project/Quests/Core/QuestInstance.cs` — инициализация и сброс progress при accept/stage transition.
+- `Assets/_Project/Quests/Network/QuestServer.cs` — talk event создаётся после успешного открытия диалога; `AcceptQuest` передаёт `npcId`.
+- `docs/NPC_quests/T-Q22_TalkToNpc_event_fix.md` — анализ, инварианты и ручной сценарий проверки.
+- `docs/dev/TESTS/first-auto-quest/README.md` — обновлены правила выбора `TalkToNpc`/`ReachLocation`.
+- Unity compile check: `No compile errors`.
+
+---
+
 ## Итерация от 2026-08-13 (C7 fix)
 
 **Задача:** Удалить мёртвую триггерную систему (C7)

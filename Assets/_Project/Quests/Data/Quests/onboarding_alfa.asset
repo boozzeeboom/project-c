@@ -70,16 +70,16 @@ MonoBehaviour:
     description: dialogue.quest.onboarding_alfa.stage.return_from_repair
     objectives:
     - objectiveId: return_to_mira_after_repair
-      objectiveType: 2
+      objectiveType: 0
       description: dialogue.quest.onboarding_alfa.objective.return_mira_after_repair
-      targetNpcId: 
-      targetNpc: {fileID: 0}
+      targetNpcId: mira_01
+      targetNpc: {fileID: 11400000, guid: 8093066045efca3469b59d4b77790700, type: 2}
       itemTradeItemId: 
       pickupItem: {fileID: 0}
       requiredQuantity: 1
-      targetSceneId: WorldScene_0_0
-      targetPosition: {x: 40009.7, y: 2501.47, z: 39981.83}
-      targetRadius: 7
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
       targetEntityType: 
       targetEntity: {fileID: 0}
       targetFaction: 0
@@ -118,16 +118,16 @@ MonoBehaviour:
     description: dialogue.quest.onboarding_alfa.stage.return_from_market
     objectives:
     - objectiveId: return_to_mira_after_market
-      objectiveType: 2
+      objectiveType: 0
       description: dialogue.quest.onboarding_alfa.objective.return_mira_after_market
-      targetNpcId: 
-      targetNpc: {fileID: 0}
+      targetNpcId: mira_01
+      targetNpc: {fileID: 11400000, guid: 8093066045efca3469b59d4b77790700, type: 2}
       itemTradeItemId: 
       pickupItem: {fileID: 0}
       requiredQuantity: 1
-      targetSceneId: WorldScene_0_0
-      targetPosition: {x: 40009.7, y: 2501.47, z: 39981.83}
-      targetRadius: 7
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
       targetEntityType: 
       targetEntity: {fileID: 0}
       targetFaction: 0

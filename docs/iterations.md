@@ -13,3 +13,13 @@
 - Исправлена выдача квестовых предметов с сохранением `ItemType`, включая `Key`.
 - Серверный диалог теперь локализует текст реплик, имена NPC и варианты ответа.
 - Проверка графов и компиляции пройдена без ошибок.
+
+## Коррекция от 16 августа 2026
+
+**Задача:** Перевести возвраты к перемещающейся Mira на `TalkToNpc` и обновить внутренний гайдлайн первого onboarding-квеста.
+**Коммит:** `ddfa001c08bf184a4fa0df0e0f9817eb65f01e5b` — T-QST02: Исправлен возврат к Mira через TalkToNpc
+**Изменения:**
+- В `onboarding_alfa` этапы `return_from_repair` и `return_from_market` используют `TalkToNpc` с `mira_01` и `Mira.asset`.
+- Статичные точки `RepairManager` и `MarketZone_Primium` оставлены на `ReachLocation`.
+- Гайдлайн сохранён в `docs/dev/TESTS/first-auto-quest/README.md` и дополнен правилом выбора objective по типу цели.
+- Статическая проверка Unity: `No compile errors`.

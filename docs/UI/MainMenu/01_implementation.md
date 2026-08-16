@@ -41,7 +41,7 @@ Assets/_Project/Scripts/UI/MainMenu/
 Assets/_Project/Editor/Localization/
 └── AddMainMenuLocKeys.cs            # Editor-скрипт: 9 ключей ui.main_menu.* в UI_Table
 
-docs/UI/MainMenu/
+docs/
 └── changelogs.md                    # записи об обновлениях; новые записи добавляются в начало
 ```
 
@@ -94,8 +94,8 @@ docs/UI/MainMenu/
 
 ## Удалённый changelog справа
 
-- Источник: `docs/UI/MainMenu/changelogs.md`.
-- URL для runtime: `https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/UI/MainMenu/changelogs.md`.
+- Источник: `docs/changelogs.md`.
+- URL для runtime: `https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/changelogs.md`.
 - `MainMenuWindow` загружает документ через `UnityWebRequest` при открытии меню.
 - Markdown разбирается построчно: разделители, заголовки, обычный текст, пункты и вехи получают отдельные стили.
 - Кнопка `↻` справа от заголовка повторяет запрос к GitHub.

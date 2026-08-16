@@ -26,8 +26,8 @@ namespace ProjectC.UI.MainMenu
         [SerializeField] private string versionText = "0.1";
 
         [Header("Remote Changelog")]
-        [Tooltip("Raw GitHub URL of docs/UI/MainMenu/changelogs.md. New entries should be added at the top of the file.")]
-        [SerializeField] private string changelogUrl = "https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/UI/MainMenu/changelogs.md";
+        [Tooltip("Raw GitHub URL of docs/changelogs.md. New entries should be added at the top of the file.")]
+        [SerializeField] private string changelogUrl = "https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/changelogs.md";
         [SerializeField] private int changelogTimeoutSeconds = 8;
 
         private UIDocument _doc;

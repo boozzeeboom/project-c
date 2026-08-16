@@ -49,7 +49,7 @@
 **Задача:** T-UI07 — MainMenu: удалённый changelog из GitHub справа по центру
 **Коммит:** `36d4e40d7afbc255586ff4a1d15f6f29d914ed39` — T-UI07: добавить удалённый changelog в главное меню
 **Изменения:**
-- `docs/UI/MainMenu/changelogs.md` — добавлена первая запись с дорожной картой версии 0.1.0.
+- `docs/changelogs.md` — файл с записями об обновлениях перенесён в корень `docs`, добавлена первая запись с дорожной картой версии 0.1.0.
 - `Assets/_Project/Resources/UI/MainMenuWindow.uxml` — добавлена правая центральная панель changelog со ScrollView и кнопкой обновления.
 - `Assets/_Project/Resources/UI/MainMenuStyles.uss` — добавлены стили панели и типов Markdown-строк.
 - `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` — загрузка raw-файла GitHub через `UnityWebRequest`, построчный парсинг и обработка ошибки сети.

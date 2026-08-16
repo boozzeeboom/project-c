@@ -11,6 +11,16 @@
 
 Заменили UGUI `NetworkTestCanvas`/`NetworkTestMenu` на UI Toolkit `MainMenuWindow` в BootstrapScene.
 
+## Первый запуск — disclaimer
+
+При первом запуске игры поверх MainMenu показывается модальное окно с дисклеймером о solo-разработке и возможной неиграбельности end-to-end до версии 0.5.0.
+
+- Окно создаётся динамически в `MainMenuWindow`.
+- До нажатия `OK` оно блокирует взаимодействие с главным меню.
+- Подтверждение сохраняется в `PlayerPrefs` под ключом `ProjectC.MainMenu.FirstLaunchDisclaimerAccepted`.
+- Заголовок, текст и кнопка локализуются через `ProjectC.Localization.Loc`.
+- Ключи: `ui.main_menu.disclaimer.title`, `ui.main_menu.disclaimer.body`, `ui.main_menu.disclaimer.ok`.
+
 ## Структура меню
 
 ```

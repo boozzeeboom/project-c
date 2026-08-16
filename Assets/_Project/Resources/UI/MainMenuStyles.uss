@@ -370,3 +370,51 @@
 .main-changelog-error {
     color: rgb(245, 180, 155) !important;
 }
+
+/* ===== First-launch disclaimer ===== */
+.main-first-launch-disclaimer-overlay {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: rgba(0, 0, 0, 0.78) !important;
+}
+
+.main-first-launch-disclaimer-panel {
+    width: 520px !important;
+    max-width: 82% !important;
+    padding: 28px 30px 24px 30px !important;
+    align-items: center !important;
+    background-color: rgba(18, 24, 38, 0.98) !important;
+    border-width: 2px !important;
+    border-color: rgb(110, 135, 180) !important;
+    border-radius: 8px !important;
+}
+
+.main-first-launch-disclaimer-title {
+    width: 100% !important;
+    color: rgb(230, 235, 245) !important;
+    font-size: 22px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+    margin-bottom: 18px !important;
+}
+
+.main-first-launch-disclaimer-body {
+    width: 100% !important;
+    color: rgb(205, 214, 230) !important;
+    font-size: 15px !important;
+    line-height: 22px !important;
+    white-space: normal !important;
+    -unity-text-align: middle-center !important;
+    margin-bottom: 8px !important;
+}
+
+.main-first-launch-disclaimer-ok {
+    width: 160px !important;
+    margin-top: 16px !important;
+    margin-bottom: 0 !important;
+}

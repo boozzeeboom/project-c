@@ -1687,6 +1687,18 @@ MonoBehaviour:
     m_Key: ui.main_menu.ip_label
     m_Metadata:
       m_Items: []
+  - m_Id: 3949094509649920
+    m_Key: ui.main_menu.disclaimer.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3949094564175872
+    m_Key: ui.main_menu.disclaimer.body
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3949094568370176
+    m_Key: ui.main_menu.disclaimer.ok
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

@@ -32,6 +32,9 @@ namespace ProjectC.Localization.Editor
             added += AddIfMissing(shared, ru, en, "ui.main_menu.button.ip_connect", "ПОДКЛЮЧИТЬСЯ", "CONNECT");
             added += AddIfMissing(shared, ru, en, "ui.main_menu.button.back", "← НАЗАД", "← BACK");
             added += AddIfMissing(shared, ru, en, "ui.main_menu.ip_label", "Введите IP-адрес сервера:", "Enter server IP:");
+            added += AddIfMissing(shared, ru, en, "ui.main_menu.disclaimer.title", "ДИСКЛЕЙМЕР", "DISCLAIMER");
+            added += AddIfMissing(shared, ru, en, "ui.main_menu.disclaimer.body", "Я делаю эту игру в одиночку и понимаю, что до версии 0.5.0 она может быть неиграбельной end-to-end.\n\nСпасибо за понимание и терпение.", "I am making this game solo, and I understand that it may not be playable end-to-end until version 0.5.0.\n\nThank you for your understanding and patience.");
+            added += AddIfMissing(shared, ru, en, "ui.main_menu.disclaimer.ok", "OK", "OK");
 
             EditorUtility.SetDirty(shared);
             EditorUtility.SetDirty(ru);
@@ -45,6 +48,23 @@ namespace ProjectC.Localization.Editor
         {
             if (shared.GetEntry(key) != null)
             {
+                bool updated = false;
+                var ruEntry = ru.GetEntry(key);
+                if (ruEntry != null && ruEntry.Value != ruVal)
+                {
+                    ruEntry.Value = ruVal;
+                    updated = true;
+                }
+
+                var enEntry = en.GetEntry(key);
+                if (enEntry != null && enEntry.Value != enVal)
+                {
+                    enEntry.Value = enVal;
+                    updated = true;
+                }
+
+                if (updated)
+                    Debug.Log($"[AddMainMenuLocKeys] UPDATE: {key}");
                 return 0;
             }
             shared.AddKey(key);

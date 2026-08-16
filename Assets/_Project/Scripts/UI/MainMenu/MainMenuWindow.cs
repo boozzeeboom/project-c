@@ -32,6 +32,7 @@ namespace ProjectC.UI.MainMenu
 
         private const string CurrentChangelogUrl = "https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/changelogs.md";
         private const string LegacyChangelogSuffix = "/docs/UI/MainMenu/changelogs.md";
+        private const string FirstLaunchDisclaimerAcceptedKey = "ProjectC.MainMenu.FirstLaunchDisclaimerAccepted";
 
         private UIDocument _doc;
         private VisualElement _root;
@@ -51,6 +52,8 @@ namespace ProjectC.UI.MainMenu
         private Button _changelogRefreshButton;
         private Coroutine _changelogCoroutine;
 
+        private VisualElement _firstLaunchDisclaimerOverlay;
+
         private Label _debugStatusLabel;
         private Button _debugDeleteAllBtn;
         private Button _debugDeletePositionBtn;
@@ -68,7 +71,7 @@ namespace ProjectC.UI.MainMenu
 
         private void Awake() { _doc = GetComponent<UIDocument>(); }
         private void OnEnable() { EnsureBuilt(); }
-        private void Start() { EnsureBuilt(); Show(); RefreshChangelog(); }
+        private void Start() { EnsureBuilt(); Show(); ShowFirstLaunchDisclaimerIfNeeded(); RefreshChangelog(); }
 
         public void EnsureBuilt()
         {
@@ -216,6 +219,81 @@ namespace ProjectC.UI.MainMenu
                 btn.AddToClassList("main-link-btn");
                 container.Add(btn);
             }
+        }
+
+        private void ShowFirstLaunchDisclaimerIfNeeded()
+        {
+            if (PlayerPrefs.GetInt(FirstLaunchDisclaimerAcceptedKey, 0) == 1)
+                return;
+
+            if (_firstLaunchDisclaimerOverlay == null)
+                BuildFirstLaunchDisclaimer();
+
+            if (_firstLaunchDisclaimerOverlay == null)
+                return;
+
+            _firstLaunchDisclaimerOverlay.style.display = DisplayStyle.Flex;
+            _firstLaunchDisclaimerOverlay.pickingMode = PickingMode.Position;
+        }
+
+        private void BuildFirstLaunchDisclaimer()
+        {
+            if (_root == null)
+                return;
+
+            _firstLaunchDisclaimerOverlay = new VisualElement
+            {
+                name = "main-first-launch-disclaimer-overlay"
+            };
+            _firstLaunchDisclaimerOverlay.AddToClassList("main-first-launch-disclaimer-overlay");
+
+            var panel = new VisualElement
+            {
+                name = "main-first-launch-disclaimer-panel"
+            };
+            panel.AddToClassList("main-first-launch-disclaimer-panel");
+
+            var title = new Label
+            {
+                name = "main-first-launch-disclaimer-title"
+            };
+            title.AddToClassList("main-first-launch-disclaimer-title");
+            Loc.Bind(title, "ui.main_menu.disclaimer.title", "ДИСКЛЕЙМЕР");
+            panel.Add(title);
+
+            var body = new Label
+            {
+                name = "main-first-launch-disclaimer-body"
+            };
+            body.AddToClassList("main-first-launch-disclaimer-body");
+            Loc.Bind(body, "ui.main_menu.disclaimer.body", "Я делаю эту игру в одиночку и понимаю, что до версии 0.5.0 она может быть неиграбельной end-to-end.\n\nСпасибо за понимание и терпение.");
+            panel.Add(body);
+
+            var okButton = new Button(OnFirstLaunchDisclaimerAccepted)
+            {
+                name = "main-first-launch-disclaimer-ok"
+            };
+            okButton.AddToClassList("main-menu-btn");
+            okButton.AddToClassList("main-first-launch-disclaimer-ok");
+            Loc.Bind(okButton, "ui.main_menu.disclaimer.ok", "OK");
+            panel.Add(okButton);
+
+            _firstLaunchDisclaimerOverlay.Add(panel);
+            _root.Add(_firstLaunchDisclaimerOverlay);
+            _firstLaunchDisclaimerOverlay.style.display = DisplayStyle.None;
+            _firstLaunchDisclaimerOverlay.pickingMode = PickingMode.Ignore;
+        }
+
+        private void OnFirstLaunchDisclaimerAccepted()
+        {
+            PlayerPrefs.SetInt(FirstLaunchDisclaimerAcceptedKey, 1);
+            PlayerPrefs.Save();
+
+            if (_firstLaunchDisclaimerOverlay == null)
+                return;
+
+            _firstLaunchDisclaimerOverlay.style.display = DisplayStyle.None;
+            _firstLaunchDisclaimerOverlay.pickingMode = PickingMode.Ignore;
         }
 
         private void RefreshChangelog()

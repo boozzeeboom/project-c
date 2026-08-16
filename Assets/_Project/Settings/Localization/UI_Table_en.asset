@@ -1669,6 +1669,23 @@ MonoBehaviour:
     m_Localized: 'Enter server IP:'
     m_Metadata:
       m_Items: []
+  - m_Id: 3949094509649920
+    m_Localized: DISCLAIMER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3949094564175872
+    m_Localized: 'I am making this game solo, and I understand that it may not be
+      playable end-to-end until version 0.5.0.
+
+
+      Thank you for your understanding
+      and patience.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3949094568370176
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

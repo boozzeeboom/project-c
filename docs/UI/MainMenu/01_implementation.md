@@ -40,6 +40,9 @@ Assets/_Project/Scripts/UI/MainMenu/
 
 Assets/_Project/Editor/Localization/
 └── AddMainMenuLocKeys.cs            # Editor-скрипт: 9 ключей ui.main_menu.* в UI_Table
+
+docs/UI/MainMenu/
+└── changelogs.md                    # записи об обновлениях; новые записи добавляются в начало
 ```
 
 ## Локализация
@@ -88,6 +91,15 @@ Assets/_Project/Editor/Localization/
   - GITHUB → https://github.com/boozzeeboom/project-c
   - TELEGRAM → https://t.me/thegravity_ru
   - VK → https://vk.ru/thegravity_ru
+
+## Удалённый changelog справа
+
+- Источник: `docs/UI/MainMenu/changelogs.md`.
+- URL для runtime: `https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/UI/MainMenu/changelogs.md`.
+- `MainMenuWindow` загружает документ через `UnityWebRequest` при открытии меню.
+- Markdown разбирается построчно: разделители, заголовки, обычный текст, пункты и вехи получают отдельные стили.
+- Кнопка `↻` справа от заголовка повторяет запрос к GitHub.
+- Новые записи нужно добавлять выше текущей записи, чтобы самая свежая информация отображалась первой.
 
 ## Изменения в BootstrapScene
 

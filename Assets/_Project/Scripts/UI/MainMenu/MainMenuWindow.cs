@@ -1,8 +1,10 @@
 // Project C: Main Menu — replaces NetworkTestCanvas with full-featured main menu.
 // UI Toolkit based, same pattern as EscMenuWindow: UIDocument + stack navigation.
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UIElements;
 using UnityEngine.Localization.Settings;
 using ProjectC.Core;
@@ -23,6 +25,11 @@ namespace ProjectC.UI.MainMenu
         [Tooltip("Номер версии, подставляется в локализованную строку ui.main_menu.subtitle (например 0.1.0).")]
         [SerializeField] private string versionText = "0.1";
 
+        [Header("Remote Changelog")]
+        [Tooltip("Raw GitHub URL of docs/UI/MainMenu/changelogs.md. New entries should be added at the top of the file.")]
+        [SerializeField] private string changelogUrl = "https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/UI/MainMenu/changelogs.md";
+        [SerializeField] private int changelogTimeoutSeconds = 8;
+
         private UIDocument _doc;
         private VisualElement _root;
         private VisualElement _contentWindow;
@@ -35,6 +42,11 @@ namespace ProjectC.UI.MainMenu
         private Button _ipConnectBtn, _ipBackBtn;
         private Label _titleLabel, _subtitleLabel;
         private CustomDropdown _langDropdown;
+
+        private ScrollView _changelogScroll;
+        private Label _changelogStatusLabel;
+        private Button _changelogRefreshButton;
+        private Coroutine _changelogCoroutine;
 
         private Label _debugStatusLabel;
         private Button _debugDeleteAllBtn;
@@ -53,7 +65,7 @@ namespace ProjectC.UI.MainMenu
 
         private void Awake() { _doc = GetComponent<UIDocument>(); }
         private void OnEnable() { EnsureBuilt(); }
-        private void Start() { EnsureBuilt(); Show(); }
+        private void Start() { EnsureBuilt(); Show(); RefreshChangelog(); }
 
         public void EnsureBuilt()
         {
@@ -97,6 +109,9 @@ namespace ProjectC.UI.MainMenu
             _debugDeleteKeysBtn = _root.Q<Button>("main-debug-delete-keys-btn");
             _debugDeleteTimeBtn = _root.Q<Button>("main-debug-delete-time-btn");
             _debugDeleteTradeBtn = _root.Q<Button>("main-debug-delete-trade-btn");
+            _changelogScroll = _root.Q<ScrollView>("main-changelog-scroll");
+            _changelogStatusLabel = _root.Q<Label>("main-changelog-status");
+            _changelogRefreshButton = _root.Q<Button>("main-changelog-refresh-btn");
 
             if (_hostBtn != null) _hostBtn.clicked += OnHostClicked;
             if (_connectBtn != null) _connectBtn.clicked += OnConnectClicked;
@@ -116,6 +131,7 @@ namespace ProjectC.UI.MainMenu
             if (_debugDeleteKeysBtn != null) _debugDeleteKeysBtn.clicked += OnDebugDeleteKeysClicked;
             if (_debugDeleteTimeBtn != null) _debugDeleteTimeBtn.clicked += OnDebugDeleteTimeClicked;
             if (_debugDeleteTradeBtn != null) _debugDeleteTradeBtn.clicked += OnDebugDeleteTradeClicked;
+            if (_changelogRefreshButton != null) _changelogRefreshButton.clicked += RefreshChangelog;
 
             LocalizeAll();
             BuildLanguageSelector();
@@ -199,6 +215,121 @@ namespace ProjectC.UI.MainMenu
             }
         }
 
+        private void RefreshChangelog()
+        {
+            if (_changelogScroll == null || string.IsNullOrWhiteSpace(changelogUrl)) return;
+            if (_changelogCoroutine != null) StopCoroutine(_changelogCoroutine);
+            _changelogCoroutine = StartCoroutine(LoadChangelogCoroutine());
+        }
+
+        private IEnumerator LoadChangelogCoroutine()
+        {
+            SetChangelogStatus("Загрузка…");
+            using (var request = UnityWebRequest.Get(changelogUrl))
+            {
+                request.timeout = Mathf.Max(1, changelogTimeoutSeconds);
+                yield return request.SendWebRequest();
+
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    var reason = string.IsNullOrEmpty(request.error)
+                        ? $"HTTP {request.responseCode}"
+                        : request.error;
+                    SetChangelogStatus("Не удалось загрузить changelog");
+                    RenderChangelogError($"Проверьте соединение с GitHub.\n{reason}");
+                    Debug.LogWarning($"[MainMenuWindow] Changelog request failed: {reason}");
+                }
+                else
+                {
+                    RenderChangelog(request.downloadHandler.text);
+                    SetChangelogStatus("Обновлено из GitHub");
+                }
+            }
+
+            _changelogCoroutine = null;
+        }
+
+        private void RenderChangelog(string markdown)
+        {
+            var content = _changelogScroll?.contentContainer;
+            if (content == null) return;
+
+            content.Clear();
+            var lines = (markdown ?? string.Empty)
+                .Replace("\r\n", "\n")
+                .Replace('\r', '\n')
+                .Split('\n');
+
+            foreach (var rawLine in lines)
+            {
+                var line = rawLine.Trim();
+                if (string.IsNullOrEmpty(line))
+                {
+                    var spacer = new VisualElement();
+                    spacer.AddToClassList("main-changelog-spacer");
+                    content.Add(spacer);
+                    continue;
+                }
+
+                if (line.StartsWith("---", StringComparison.Ordinal))
+                {
+                    var divider = new VisualElement();
+                    divider.AddToClassList("main-changelog-divider");
+                    content.Add(divider);
+                    continue;
+                }
+
+                if (line.StartsWith("#", StringComparison.Ordinal))
+                {
+                    AddChangelogLabel(content, NormalizeChangelogText(line.TrimStart('#').Trim()), "main-changelog-heading");
+                    continue;
+                }
+
+                var className = "main-changelog-text";
+                if (line.StartsWith("•", StringComparison.Ordinal) || line.StartsWith("- ", StringComparison.Ordinal))
+                    className = "main-changelog-bullet";
+                else if (line.StartsWith("✅", StringComparison.Ordinal)
+                         || line.StartsWith("➡", StringComparison.Ordinal)
+                         || line.StartsWith("🚢", StringComparison.Ordinal)
+                         || line.StartsWith("⚔", StringComparison.Ordinal)
+                         || line.StartsWith("🎧", StringComparison.Ordinal)
+                         || line.StartsWith("🖥", StringComparison.Ordinal)
+                         || line.StartsWith("🤝", StringComparison.Ordinal)
+                         || line.StartsWith("🌐", StringComparison.Ordinal)
+                         || line.StartsWith("🏆", StringComparison.Ordinal))
+                    className = "main-changelog-milestone";
+
+                AddChangelogLabel(content, NormalizeChangelogText(line), className);
+            }
+        }
+
+        private void RenderChangelogError(string message)
+        {
+            var content = _changelogScroll?.contentContainer;
+            if (content == null) return;
+            content.Clear();
+            AddChangelogLabel(content, message, "main-changelog-error");
+        }
+
+        private void AddChangelogLabel(VisualElement parent, string text, string className)
+        {
+            var label = new Label(text);
+            label.AddToClassList(className);
+            parent.Add(label);
+        }
+
+        private static string NormalizeChangelogText(string text)
+        {
+            return text.Replace("**", string.Empty)
+                       .Replace("__", string.Empty)
+                       .Replace("`", string.Empty);
+        }
+
+        private void SetChangelogStatus(string message)
+        {
+            if (_changelogStatusLabel != null) _changelogStatusLabel.text = message;
+        }
+
         private int LocaleIndexForCode(string code)
         {
             if (string.IsNullOrEmpty(code)) return 0;
@@ -221,6 +352,8 @@ namespace ProjectC.UI.MainMenu
         {
             Loc.OnLocaleChanged -= OnLocaleChangedSync;
             if (_langDropdown != null) _langDropdown.Cleanup();
+            if (_changelogRefreshButton != null) _changelogRefreshButton.clicked -= RefreshChangelog;
+            if (_changelogCoroutine != null) StopCoroutine(_changelogCoroutine);
         }
 
         public void Show()

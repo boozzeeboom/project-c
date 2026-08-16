@@ -26,6 +26,16 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- Remote changelog (right-center) -->
+        <ui:VisualElement name="main-changelog-panel" class="main-changelog-panel">
+            <ui:VisualElement name="main-changelog-header" class="main-changelog-header">
+                <ui:Label name="main-changelog-title" text="ИЗМЕНЕНИЯ" class="main-changelog-title" />
+                <ui:Button name="main-changelog-refresh-btn" text="↻" class="main-changelog-refresh-btn" />
+            </ui:VisualElement>
+            <ui:Label name="main-changelog-status" text="Загрузка…" class="main-changelog-status" />
+            <ui:ScrollView name="main-changelog-scroll" class="main-changelog-scroll"></ui:ScrollView>
+        </ui:VisualElement>
+
         <!-- Persistence debug tools (top-left corner) -->
         <ui:VisualElement name="main-debug-panel" class="main-debug-panel">
             <ui:Label name="main-debug-title" text="[Debug]" class="main-debug-title" />

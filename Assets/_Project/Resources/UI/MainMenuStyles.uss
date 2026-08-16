@@ -259,3 +259,114 @@
     margin-top: 6px !important;
     white-space: normal !important;
 }
+
+/* ===== Remote changelog (right-center) ===== */
+.main-changelog-panel {
+    position: absolute !important;
+    top: 15% !important;
+    right: 24px !important;
+    bottom: 15% !important;
+    width: 410px !important;
+    padding: 14px !important;
+    background-color: rgba(18, 24, 38, 0.96) !important;
+    border-width: 1px !important;
+    border-color: rgb(80, 100, 140) !important;
+    border-radius: 6px !important;
+    flex-direction: column !important;
+}
+
+.main-changelog-header {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 4px !important;
+}
+
+.main-changelog-title {
+    color: rgb(210, 220, 235) !important;
+    font-size: 18px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-left !important;
+}
+
+.main-changelog-refresh-btn {
+    width: 32px !important;
+    height: 28px !important;
+    min-width: 32px !important;
+    min-height: 28px !important;
+    padding: 2px !important;
+    margin: 0 !important;
+    color: rgb(170, 195, 225) !important;
+    background-color: rgba(40, 50, 70, 0.9) !important;
+    border-width: 1px !important;
+    border-color: rgb(80, 100, 140) !important;
+    border-radius: 4px !important;
+    font-size: 16px !important;
+    -unity-text-align: middle-center !important;
+}
+
+.main-changelog-refresh-btn:hover {
+    color: rgb(230, 240, 255) !important;
+    background-color: rgba(70, 110, 160, 0.95) !important;
+    border-color: rgb(140, 180, 240) !important;
+}
+
+.main-changelog-status {
+    color: rgb(125, 150, 180) !important;
+    font-size: 10px !important;
+    margin-bottom: 8px !important;
+    white-space: normal !important;
+}
+
+.main-changelog-scroll {
+    flex-grow: 1 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+}
+
+.main-changelog-text,
+.main-changelog-bullet,
+.main-changelog-milestone,
+.main-changelog-error {
+    color: rgb(205, 214, 230) !important;
+    font-size: 12px !important;
+    line-height: 18px !important;
+    white-space: normal !important;
+    margin-bottom: 7px !important;
+}
+
+.main-changelog-bullet {
+    color: rgb(190, 205, 225) !important;
+    margin-left: 4px !important;
+}
+
+.main-changelog-milestone {
+    color: rgb(235, 205, 150) !important;
+    -unity-font-style: bold !important;
+}
+
+.main-changelog-heading {
+    color: rgb(225, 235, 250) !important;
+    font-size: 15px !important;
+    -unity-font-style: bold !important;
+    white-space: normal !important;
+    margin-top: 4px !important;
+    margin-bottom: 8px !important;
+}
+
+.main-changelog-divider {
+    height: 1px !important;
+    min-height: 1px !important;
+    background-color: rgba(100, 125, 165, 0.65) !important;
+    margin-top: 5px !important;
+    margin-bottom: 10px !important;
+}
+
+.main-changelog-spacer {
+    height: 4px !important;
+    min-height: 4px !important;
+}
+
+.main-changelog-error {
+    color: rgb(245, 180, 155) !important;
+}

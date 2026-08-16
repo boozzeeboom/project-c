@@ -80,6 +80,7 @@ MonoBehaviour:
   LocalDensityInfluence: 2
   DisplacementStrength: 1000
   OverrideMaterial: {fileID: 0}
+  _cloudsShader: {fileID: 4800000, guid: 5f303c46af965c840a0dbd88f74bb4b0, type: 3}
 --- !u!114 &-597003445878171204
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -110,6 +111,9 @@ MonoBehaviour:
   PencilGrain: 0.3
   LineSoftness: 0.034
   OverrideMaterial: {fileID: 0}
+  _edgeDetectionShader: {fileID: 4800000, guid: 684278897d3f4e848be809ed3679c5d0, type: 3}
+  _edgeDetectionMaskShader: {fileID: 4800000, guid: 68cd8d2b66b56a14297b5a2616c5b9f5, type: 3}
+  EnablePerObjectTargets: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -128,6 +128,8 @@ namespace ProjectC.Rendering
 
         [Header("Material")]
         public Material OverrideMaterial;
+        [Tooltip("Ссылка на hidden shader (обязательна для inclusion в билд). Fallback: Shader.Find.")]
+        [SerializeField] private Shader _cloudsShader;
 
         private Material _material;
         private RTHandle _cloudHistoryA, _cloudHistoryB;
@@ -227,7 +229,7 @@ namespace ProjectC.Rendering
         {
             if (_material != null && _material.shader != null) return _material;
             if (OverrideMaterial != null) { _material = OverrideMaterial; return _material; }
-            Shader shader = Shader.Find("Hidden/ProjectC/VolumetricClouds");
+            Shader shader = _cloudsShader != null ? _cloudsShader : Shader.Find("Hidden/ProjectC/VolumetricClouds");
             if (shader == null) { Debug.LogError("[VolumetricClouds] Shader not found."); return null; }
             _material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
             return _material;

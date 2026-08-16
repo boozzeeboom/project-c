@@ -195,3 +195,67 @@
     background-color: rgba(50, 65, 90, 0.9) !important;
     border-color: rgb(120, 160, 220) !important;
 }
+
+/* ===== Persistence debug panel (top-left corner) ===== */
+.main-debug-panel {
+    position: absolute !important;
+    left: 16px !important;
+    top: 14px !important;
+    width: 290px !important;
+    padding: 10px !important;
+    background-color: rgba(18, 24, 38, 0.94) !important;
+    border-width: 1px !important;
+    border-color: rgb(150, 78, 62) !important;
+    border-radius: 4px !important;
+}
+
+.main-debug-title {
+    color: rgb(245, 190, 145) !important;
+    font-size: 15px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-left !important;
+    margin-bottom: 8px !important;
+}
+
+.main-debug-scroll {
+    width: 100% !important;
+    max-height: 520px !important;
+}
+
+.main-debug-btn {
+    width: 100% !important;
+    color: rgb(215, 220, 230) !important;
+    background-color: rgba(38, 48, 68, 0.95) !important;
+    border-width: 1px !important;
+    border-color: rgba(100, 120, 155, 0.85) !important;
+    border-radius: 3px !important;
+    padding: 7px 8px !important;
+    margin-bottom: 5px !important;
+    font-size: 11px !important;
+    -unity-text-align: middle-left !important;
+}
+
+.main-debug-btn:hover {
+    color: rgb(245, 250, 255) !important;
+    background-color: rgba(62, 82, 115, 0.98) !important;
+    border-color: rgb(150, 180, 225) !important;
+}
+
+.main-debug-btn-danger {
+    color: rgb(255, 205, 185) !important;
+    background-color: rgba(100, 45, 40, 0.95) !important;
+    border-color: rgb(190, 105, 80) !important;
+}
+
+.main-debug-btn-danger:hover {
+    color: rgb(255, 235, 225) !important;
+    background-color: rgba(165, 65, 45, 0.98) !important;
+    border-color: rgb(255, 150, 115) !important;
+}
+
+.main-debug-status {
+    color: rgb(170, 190, 215) !important;
+    font-size: 10px !important;
+    margin-top: 6px !important;
+    white-space: normal !important;
+}

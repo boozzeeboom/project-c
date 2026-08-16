@@ -36,6 +36,18 @@ namespace ProjectC.UI.MainMenu
         private Label _titleLabel, _subtitleLabel;
         private CustomDropdown _langDropdown;
 
+        private Label _debugStatusLabel;
+        private Button _debugDeleteAllBtn;
+        private Button _debugDeletePositionBtn;
+        private Button _debugDeleteInventoryBtn;
+        private Button _debugDeleteProgressionBtn;
+        private Button _debugDeleteCustomisationBtn;
+        private Button _debugDeleteQuestsBtn;
+        private Button _debugDeleteSkillsBtn;
+        private Button _debugDeleteKeysBtn;
+        private Button _debugDeleteTimeBtn;
+        private Button _debugDeleteTradeBtn;
+
         private readonly Stack<VisualElement> _menuStack = new Stack<VisualElement>();
         private VisualElement _currentPanel;
 
@@ -74,6 +86,18 @@ namespace ProjectC.UI.MainMenu
             _ipConnectBtn = _root.Q<Button>("main-ip-connect-btn");
             _ipBackBtn = _root.Q<Button>("main-ip-back-btn");
 
+            _debugStatusLabel = _root.Q<Label>("main-debug-status");
+            _debugDeleteAllBtn = _root.Q<Button>("main-debug-delete-all-btn");
+            _debugDeletePositionBtn = _root.Q<Button>("main-debug-delete-position-btn");
+            _debugDeleteInventoryBtn = _root.Q<Button>("main-debug-delete-inventory-btn");
+            _debugDeleteProgressionBtn = _root.Q<Button>("main-debug-delete-progression-btn");
+            _debugDeleteCustomisationBtn = _root.Q<Button>("main-debug-delete-customisation-btn");
+            _debugDeleteQuestsBtn = _root.Q<Button>("main-debug-delete-quests-btn");
+            _debugDeleteSkillsBtn = _root.Q<Button>("main-debug-delete-skills-btn");
+            _debugDeleteKeysBtn = _root.Q<Button>("main-debug-delete-keys-btn");
+            _debugDeleteTimeBtn = _root.Q<Button>("main-debug-delete-time-btn");
+            _debugDeleteTradeBtn = _root.Q<Button>("main-debug-delete-trade-btn");
+
             if (_hostBtn != null) _hostBtn.clicked += OnHostClicked;
             if (_connectBtn != null) _connectBtn.clicked += OnConnectClicked;
             if (_settingsBtn != null) _settingsBtn.clicked += OnSettingsClicked;
@@ -81,6 +105,17 @@ namespace ProjectC.UI.MainMenu
             if (_ipConnectBtn != null) _ipConnectBtn.clicked += OnIpConnectClicked;
             if (_ipBackBtn != null) _ipBackBtn.clicked += NavigateToRoot;
             if (_ipField != null) _ipField.value = "127.0.0.1";
+
+            if (_debugDeleteAllBtn != null) _debugDeleteAllBtn.clicked += OnDebugDeleteAllClicked;
+            if (_debugDeletePositionBtn != null) _debugDeletePositionBtn.clicked += OnDebugDeletePositionClicked;
+            if (_debugDeleteInventoryBtn != null) _debugDeleteInventoryBtn.clicked += OnDebugDeleteInventoryClicked;
+            if (_debugDeleteProgressionBtn != null) _debugDeleteProgressionBtn.clicked += OnDebugDeleteProgressionClicked;
+            if (_debugDeleteCustomisationBtn != null) _debugDeleteCustomisationBtn.clicked += OnDebugDeleteCustomisationClicked;
+            if (_debugDeleteQuestsBtn != null) _debugDeleteQuestsBtn.clicked += OnDebugDeleteQuestsClicked;
+            if (_debugDeleteSkillsBtn != null) _debugDeleteSkillsBtn.clicked += OnDebugDeleteSkillsClicked;
+            if (_debugDeleteKeysBtn != null) _debugDeleteKeysBtn.clicked += OnDebugDeleteKeysClicked;
+            if (_debugDeleteTimeBtn != null) _debugDeleteTimeBtn.clicked += OnDebugDeleteTimeClicked;
+            if (_debugDeleteTradeBtn != null) _debugDeleteTradeBtn.clicked += OnDebugDeleteTradeClicked;
 
             LocalizeAll();
             BuildLanguageSelector();
@@ -215,6 +250,23 @@ namespace ProjectC.UI.MainMenu
             if (_titleLabel != null) _titleLabel.style.display = d;
             if (_subtitleLabel != null) _subtitleLabel.style.display = d;
         }
+
+        private void SetDebugStatus(string message)
+        {
+            if (_debugStatusLabel != null) _debugStatusLabel.text = message;
+            Debug.Log($"[MainMenuWindow] {message}");
+        }
+
+        private void OnDebugDeleteAllClicked() => SetDebugStatus(PersistenceDebugTools.DeleteAllSaves());
+        private void OnDebugDeletePositionClicked() => SetDebugStatus(PersistenceDebugTools.DeleteCharacterPositionSaves());
+        private void OnDebugDeleteInventoryClicked() => SetDebugStatus(PersistenceDebugTools.DeleteCharacterInventory());
+        private void OnDebugDeleteProgressionClicked() => SetDebugStatus(PersistenceDebugTools.DeleteCharacterProgression());
+        private void OnDebugDeleteCustomisationClicked() => SetDebugStatus(PersistenceDebugTools.DeleteCharacterCustomisation());
+        private void OnDebugDeleteQuestsClicked() => SetDebugStatus(PersistenceDebugTools.DeleteQuestSaves());
+        private void OnDebugDeleteSkillsClicked() => SetDebugStatus(PersistenceDebugTools.DeleteSkillBindingSaves());
+        private void OnDebugDeleteKeysClicked() => SetDebugStatus(PersistenceDebugTools.DeleteKeyInstanceSaves());
+        private void OnDebugDeleteTimeClicked() => SetDebugStatus(PersistenceDebugTools.DeleteWorldTimeSaves());
+        private void OnDebugDeleteTradeClicked() => SetDebugStatus(PersistenceDebugTools.DeleteTradeSaves());
 
         private void OnHostClicked() { var n = FindAnyObjectByType<NetworkManagerController>(); if (n != null) { n.StartHost(); Hide(); } else Debug.LogError("[MainMenuWindow] NMC not found"); }
         private void OnConnectClicked() { if (_ipPanel != null) { if (_ipField != null) _ipField.value = "127.0.0.1"; NavigateTo(_ipPanel); } }

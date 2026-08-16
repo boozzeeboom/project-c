@@ -26,6 +26,24 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- Persistence debug tools (top-left corner) -->
+        <ui:VisualElement name="main-debug-panel" class="main-debug-panel">
+            <ui:Label name="main-debug-title" text="[Debug]" class="main-debug-title" />
+            <ui:ScrollView name="main-debug-scroll" class="main-debug-scroll">
+                <ui:Button name="main-debug-delete-all-btn" text="[Delete All Saves]" class="main-debug-btn main-debug-btn-danger" />
+                <ui:Button name="main-debug-delete-position-btn" text="[Delete Character Position Saves]" class="main-debug-btn" />
+                <ui:Button name="main-debug-delete-inventory-btn" text="[Delete Character Inventory]" class="main-debug-btn" />
+                <ui:Button name="main-debug-delete-progression-btn" text="[Delete Character Progression]" class="main-debug-btn" />
+                <ui:Button name="main-debug-delete-customisation-btn" text="[Delete Character Customisation]" class="main-debug-btn" />
+                <ui:Button name="main-debug-delete-quests-btn" text="[Delete Quests]" class="main-debug-btn" />
+                <ui:Button name="main-debug-delete-skills-btn" text="[Delete Skill Slot Bindings]" class="main-debug-btn" />
+                <ui:Button name="main-debug-delete-keys-btn" text="[Delete Key Instance Saves]" class="main-debug-btn" />
+                <ui:Button name="main-debug-delete-time-btn" text="[Delete World Time]" class="main-debug-btn" />
+                <ui:Button name="main-debug-delete-trade-btn" text="[Delete Trade / Cargo Saves]" class="main-debug-btn" />
+            </ui:ScrollView>
+            <ui:Label name="main-debug-status" text="" class="main-debug-status" />
+        </ui:VisualElement>
+
         <!-- Language selector (top-right corner) -->
         <ui:VisualElement name="main-lang-selector" class="main-lang-selector" />
 

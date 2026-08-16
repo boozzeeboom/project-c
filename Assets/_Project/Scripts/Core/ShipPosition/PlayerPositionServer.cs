@@ -100,6 +100,10 @@ namespace ProjectC.Core.ShipPosition
         {
             _dataLoaded = false;
             _savedPlayers = new List<PlayerPositionSaveData>();
+            lock (_pendingLock)
+            {
+                _pendingPlayers = new List<PlayerPositionSaveData>();
+            }
         }
 
 
@@ -120,6 +124,15 @@ namespace ProjectC.Core.ShipPosition
         /// NetworkPlayer.RestorePlayerPositionCoroutine ждёт этого флага.
         /// </summary>
         public bool DataLoaded => _dataLoaded;
+
+        /// <summary>
+        /// Возвращает true, если для clientId загружена сохранённая позиция.
+        /// Используется ClientSceneLoader, чтобы не перезаписать restore дефолтным spawn.
+        /// </summary>
+        public bool HasSavedPlayer(ulong clientId)
+        {
+            return _dataLoaded && _savedPlayers.Exists(p => p.clientId == clientId);
+        }
 
         /// <summary>
         /// Restore позиции игрока при connect.

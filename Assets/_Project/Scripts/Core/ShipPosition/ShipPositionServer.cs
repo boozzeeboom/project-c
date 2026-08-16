@@ -121,13 +121,28 @@ namespace ProjectC.Core.ShipPosition
 
         // === Restore ===
 
-        private void OnServerStarted()
+        /// <summary>
+        /// Сбрасывает состояние persistence перед каждым новым host/server-сеансом.
+        /// Вызывается до StartHost/StartServer, чтобы новый NetworkPlayer не увидел
+        /// DataLoaded/RestoreCompleted от предыдущего сеанса.
+        /// </summary>
+        public void PrepareForServerStart()
         {
             _restoreCompleted = false;
             _nextSaveTime = float.PositiveInfinity;
             PlayerPositionServer.Instance?.BeginRestore();
+        }
+
+        private void OnServerStarted()
+        {
+            PrepareForServerStart();
             StartCoroutine(RestoreCoroutine());
         }
+
+        /// <summary>
+        /// True после завершения общего restore ships + players.
+        /// </summary>
+        public bool RestoreCompleted => _restoreCompleted;
 
         private IEnumerator RestoreCoroutine()
         {

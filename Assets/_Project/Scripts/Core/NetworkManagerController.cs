@@ -974,6 +974,10 @@ namespace ProjectC.Core
                 networkManager.Shutdown();
             }
 
+            // Reset persistence BEFORE NGO spawns the new NetworkPlayer. Otherwise
+            // the player can consume DataLoaded/RestoreCompleted from the previous host session.
+            ProjectC.Core.ShipPosition.ShipPositionServer.Instance?.PrepareForServerStart();
+
             // Start host - NGO handles NetworkConfig internally
             Debug.Log("[NMC] Calling StartHost()...");
             networkManager.StartHost();
@@ -1018,6 +1022,9 @@ namespace ProjectC.Core
                 Debug.LogWarning("[NMC] Already listening! Shutting down first...");
                 networkManager.Shutdown();
             }
+
+            // Reset persistence BEFORE NGO starts the new server session.
+            ProjectC.Core.ShipPosition.ShipPositionServer.Instance?.PrepareForServerStart();
 
             // Start server - NGO handles NetworkConfig internally
             Debug.Log("[NMC] Calling StartServer()...");

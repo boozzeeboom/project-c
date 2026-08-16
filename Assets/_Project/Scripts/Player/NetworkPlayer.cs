@@ -414,19 +414,23 @@ namespace ProjectC.Player
         /// </summary>
         private System.Collections.IEnumerator RestorePlayerPositionCoroutine()
         {
-            // Ждём пока ShipPositionServer.RestoreCoroutine загрузит данные
+            // Ждём завершения полного server restore: сначала должны быть сброшены
+            // stale-флаги предыдущего host-сеанса, затем загружены players и ships.
             var ppServer = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance;
+            var shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
             float waited = 0f;
-            while (ppServer == null || !ppServer.DataLoaded)
+            while (ppServer == null || !ppServer.DataLoaded ||
+                   shipPositionServer == null || !shipPositionServer.RestoreCompleted)
             {
                 if (waited > 30f)
                 {
-                    Debug.LogWarning("[NetworkPlayer] Timed out waiting for PlayerPositionServer data — skip restore");
+                    Debug.LogWarning("[NetworkPlayer] Timed out waiting for complete position restore — skip restore");
                     yield break;
                 }
                 yield return new WaitForSeconds(0.5f);
                 waited += 0.5f;
                 ppServer = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance;
+                shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
             }
 
             bool restored = ppServer.RestorePlayer(this);

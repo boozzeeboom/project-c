@@ -370,7 +370,28 @@ ManageLoadedScenesCount();
 
                 if (logPlayerFinding) Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: Load complete, _currentScene={_currentScene}");
 
-                if (playerTransform != null)
+                // Дождаться общего server restore после загрузки WorldScene_0_0.
+                // Иначе default spawn ниже перезаписывает сохранённую позицию игрока.
+                var shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
+                float restoreWaited = 0f;
+                while (shipPositionServer != null && !shipPositionServer.RestoreCompleted && restoreWaited < 30f)
+                {
+                    restoreWaited += Time.unscaledDeltaTime;
+                    yield return null;
+                    shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
+                }
+
+                var playerPositionServer = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance;
+                bool hasSavedPlayer = playerPositionServer != null &&
+                                      NetworkManager.Singleton != null &&
+                                      playerPositionServer.HasSavedPlayer(NetworkManager.Singleton.LocalClientId);
+
+                if (hasSavedPlayer)
+                {
+                    if (logPlayerFinding)
+                        Debug.Log("[CSL] Saved player position found — skipping default spawn; NetworkPlayer restore owns final teleport");
+                }
+                else if (playerTransform != null)
                 {
                     Vector3 worldSpawnPos = initialScene.WorldCenter + new Vector3(0, 3000, 0);
                     _teleportTarget = worldSpawnPos;

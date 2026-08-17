@@ -2,6 +2,20 @@
 
 ---
 
+## Итерация от 2026-08-17
+
+**Задача:** Вынести таймеры завершения контрактов из хардкода в настройки `[ContractServer]`.
+
+**Коммит:** `811066c66d953d91889ba8a170e3a5ffef1b1e99` — T-TRADE02: Настройки таймеров контрактов
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Network/ContractServer.cs` — добавлены поля таймеров Standard/Urgent/Receipt в инспекторе
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — передача настроек таймеров в генерацию контрактов
+- `Assets/_Project/Trade/Scripts/ContractData.cs` — применение переданных лимитов с сохранением старых значений по умолчанию
+- Проверка Unity: компиляция без ошибок
+
+---
+
 ## Итерация от 2026-07-07
 
 **Задача:** Персистенция runtime-состояния рынков (план `market_persistence_v1.md`)

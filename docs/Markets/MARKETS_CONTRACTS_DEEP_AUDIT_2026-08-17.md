@@ -569,6 +569,12 @@ Project-wide search по `Assets` не нашёл ссылок на `ReceiveMark
 - Нет двойной подписки на `ContractClientState`.
 - Старый `ApplyContractFilters()` удалён, а не оставлен как неиспользуемая копия.
 
+### Реализовано на этапе 12
+
+- `CharacterWindow.cs` больше не содержит contract snapshot/result handlers, legacy filter code, contract row factories или contract action handlers.
+- `ContractsTab` остаётся единственным владельцем contract UI внутри `CharacterWindow`.
+- `CharacterWindow` сохраняет только host/navigation orchestration и чтение contract projection для общих character stats.
+
 ---
 
 ## MKT-UI-002 — legacy filter code в CharacterWindow повреждён и должен быть удалён
@@ -579,6 +585,11 @@ Project-wide search по `Assets` не нашёл ссылок на `ReceiveMark
 В старом методе присутствуют повторяющиеся условия вида `src = src.Where(c => c.state == (byte)ContractState.Pending);` и сложная ветвящаяся логика, которая не соответствует новой ownership model.
 
 Рекомендуемое действие — удалить метод вместе с legacy contract rendering paths. Ремонтировать старый метод имеет смысл только если после dependency audit выяснится, что `CharacterWindow` всё ещё обязан обслуживать отдельный contract list.
+
+### Реализовано на этапе 12
+
+- `CharacterWindow.ApplyContractFilters()` удалён.
+- Повреждённые дублирующие условия по `ContractState.Pending` удалены вместе с legacy contract rendering path.
 
 ---
 
@@ -1209,8 +1220,37 @@ The following documentation is currently inconsistent with code and must be upda
 
 ### Что ещё не закрыто
 
-- legacy contract UI в `CharacterWindow` (`MKT-UI-001/002`);
 - разделение монолитного `MarketWindow` (`MKT-UI-003`);
+- canonical `LocationId` и data-driven locations/types (`MKT-DOM-001`);
+- явный lifecycle `MarketZoneRegistry` (`MKT-DOM-002`);
+- полная Receipt semantics и localization для `UnsupportedContractType`.
+
+---
+
+## 27. Реализованный этап 12 — устранение дублирующего contract UI в `CharacterWindow` (`MKT-UI-001/002`)
+
+**Дата:** 17 августа 2026 г.
+**Scope:** оставить `ContractsTab` единственным владельцем contract UI в `CharacterWindow`.
+
+### Изменения
+
+- Из `CharacterWindow.cs` удалены legacy `ContractDto` cache/list state, contract action handlers, snapshot/result handlers и duplicate row factories.
+- Удалён повреждённый `ApplyContractFilters()` с дублирующими условиями `ContractState.Pending`.
+- Удалена дублирующая подписка `CharacterWindow` на `ContractClientState`; подписка и кнопки остаются в `ContractsTab`.
+- `CharacterWindow` больше выполняет только host/navigation orchestration и читает `ContractClientState` для общих статистик персонажа.
+- Project-wide поиск по `CharacterWindow.cs` не находит старые contract handlers, `ApplyContractFilters`, duplicate contract cache или legacy action methods.
+
+### Проверка
+
+- `validate_script(CharacterWindow.cs)`: ошибок нет; присутствуют только два прежних performance warnings вне scope.
+- `refresh_unity(mode=if_dirty, scope=scripts, compile=request)` выполнен.
+- `check_compile_errors`: **No compile errors**.
+- Play Mode/UI smoke test не выполнялись; stale refresh после accept/fail нужно проверить после завершения `MKT-UI-003`.
+
+### Что ещё не закрыто
+
+- разделение монолитного `MarketWindow` (`MKT-UI-003`);
+- повторная UI-проверка accept/fail/complete без переключения вкладок;
 - canonical `LocationId` и data-driven locations/types (`MKT-DOM-001`);
 - явный lifecycle `MarketZoneRegistry` (`MKT-DOM-002`);
 - полная Receipt semantics и localization для `UnsupportedContractType`.

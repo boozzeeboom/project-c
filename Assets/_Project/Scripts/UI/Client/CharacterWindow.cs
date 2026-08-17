@@ -45,10 +45,7 @@ using ProjectC.Quests.UI;
 using ProjectC.Reputation;
 using ProjectC.Skills;
 using ProjectC.Crafting;
-using ProjectC.Trade;
 using ProjectC.Trade.Client;
-using ProjectC.Trade.Dto;
-using ProjectC.Trade.Network;
 using ProjectC.Localization;
 
 namespace ProjectC.UI.Client
@@ -110,7 +107,6 @@ namespace ProjectC.UI.Client
         private ListView _knowledgeNpcList;
         private ListView _knowledgeSkillsList;
         private ListView _knowledgeRecipesList;
-        private ListView _contractsList;
         private ListView _inventoryList;  // Сессия 2 ROLLBACK: обратно на ListView
         private ListView _questsActiveList;
         private ListView _questsCompletedList;
@@ -131,9 +127,6 @@ namespace ProjectC.UI.Client
         private Label _statHpValue;
 
         // --- Action buttons ---
-        private Button _acceptBtn;
-        private Button _completeBtn;
-        private Button _failBtn;
         // T-P19: Quests buttons
         private Button _acceptQuestBtn;
         private Button _rejectQuestBtn;
@@ -173,13 +166,8 @@ namespace ProjectC.UI.Client
                 // T-KEY-08: MyShipsTab — вынесенная вкладка "Мои корабли"
                 private MyShipsTab _myShipsTab;
 
-        private int _selectedContractItem = -1;
-
-
         // T-P19: ContractsTab — вынесенная вкладка контрактов
         private ContractsTab _contractsTab;
-
-        private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
         private List<ReputationListItem> _reputationCache = new List<ReputationListItem>();
         private List<NpcAttitudeListItem> _npcAttitudeCache = new List<NpcAttitudeListItem>(); // T-Q13
         private List<SkillKnowledgeItem> _skillsKnowledgeCache = new List<SkillKnowledgeItem>();
@@ -224,7 +212,6 @@ namespace ProjectC.UI.Client
         // ============================================================
         // Cached state-проекции (НЕ создаём свои singleton'ы)
         // ============================================================
-        private ContractClientState _contractState;
         private NetworkPlayer       _localPlayer;
 
         // ============================================================
@@ -306,16 +293,6 @@ namespace ProjectC.UI.Client
 
         private void InitFilterOptionCaches()
         {
-            _contractFilterSourceOptions = new List<string> {
-                Loc.Get("ui.character.filter.all"),
-                Loc.Get("ui.character.filter.contracts"),
-                Loc.Get("ui.character.filter.quests")
-            };
-            _contractFilterStateOptions = new List<string> {
-                Loc.Get("ui.character.filter.all"),
-                Loc.Get("ui.character.filter.active"),
-                Loc.Get("ui.character.filter.available")
-            };
             _inventoryFilterStateOptions = new List<string> { Loc.Get("ui.character.filter.all_types") };
         }
 
@@ -344,11 +321,6 @@ namespace ProjectC.UI.Client
 
         private void OnDisable()
         {
-        if (_contractState != null)
-        {
-        _contractState.OnSnapshotUpdated -= HandleContractSnapshot;
-        _contractState.OnContractResult -= HandleContractResult;
-        }
         // BUGFIX2026-06-05: используем флаг-версию (UnsubscribeInventory).
         // Старая версия делала bare -=, и если подписки не было — flag оставался неверным.
         // T-P19: Inventory переехал в InventoryTab.
@@ -688,24 +660,15 @@ namespace ProjectC.UI.Client
             _knowledgeNpcList = _root.Q<ListView>("knowledge-npc-list");
             _knowledgeSkillsList = _root.Q<ListView>("knowledge-skills-list");
             _knowledgeRecipesList = _root.Q<ListView>("knowledge-recipes-list");
-            _contractsList = _root.Q<ListView>("contracts-list");
             _inventoryList = _root.Q<ListView>("inventory-list");
             _questsActiveList = _root.Q<ListView>("quests-active-list");
             _questsCompletedList = _root.Q<ListView>("quests-completed-list");
             _questsFailedList = _root.Q<ListView>("quests-failed-list");
             _questsDiscoveredList = _root.Q<ListView>("quests-discovered-list");
 
-            _acceptBtn = _root.Q<Button>("accept-btn");
-            _completeBtn = _root.Q<Button>("complete-btn");
-            _failBtn = _root.Q<Button>("fail-btn");
             _acceptQuestBtn = _root.Q<Button>("accept-quest-btn");
             _rejectQuestBtn = _root.Q<Button>("reject-quest-btn");
             _closeBtn = _root.Q<Button>("close-btn");
-
-            // Localize action buttons (UXML defaults are Russian)
-            if (_acceptBtn != null) _acceptBtn.text = Loc.Get("ui.character.btn.accept_contract");
-            if (_completeBtn != null) _completeBtn.text = Loc.Get("ui.character.btn.complete_contract");
-            if (_failBtn != null) _failBtn.text = Loc.Get("ui.character.btn.fail_contract");
 
             _filterSource          = _root.Q<DropdownField>("filter-source");
             _filterState           = _root.Q<DropdownField>("filter-state");
@@ -941,11 +904,7 @@ namespace ProjectC.UI.Client
             bool showFilters = isContracts || isInventory;
             _filtersRow.style.display = showFilters ? DisplayStyle.Flex : DisplayStyle.None;
         }
-        if (isContracts)
-        {
-        // T-P19: ConfigureContractFilters, ApplyContractFilters — в ContractsTab.OnTabShown
-        }
-        // T-P19: Inventory filters — в InventoryTab.OnTabShown
+        // T-P19: Contract and inventory filters are owned by their tab controllers.
 
         // ---- Action buttons ----
         // T-P19: accept/complete/fail кнопки — переехали в ContractsTab.BuildUI
@@ -975,29 +934,10 @@ namespace ProjectC.UI.Client
         // ============================================================
 
         // Initialized lazily in Awake() — Loc.Get() нельзя вызывать в field initializer (конструкторе)
-        private List<string> _contractFilterSourceOptions;
-        private List<string> _contractFilterStateOptions;
         private List<string> _inventoryFilterSourceOptionsCache;  // динамически по ItemType
         private List<string> _inventoryFilterStateOptions;
 
-        private void ConfigureContractFilters()
-        {
-            if (_filterSource != null)
-            {
-                _filterSource.choices = _contractFilterSourceOptions;
-                if (!_contractFilterSourceOptions.Contains(_filterSource.value))
-                    _filterSource.value = Loc.Get("ui.character.filter.all");
-            }
-            if (_filterState != null)
-            {
-                _filterState.choices = _contractFilterStateOptions;
-                _filterState.style.display = DisplayStyle.Flex;
-                if (!_contractFilterStateOptions.Contains(_filterState.value))
-                    _filterState.value = Loc.Get("ui.character.filter.all");
-            }
-            // Подписки на change — только один раз (через RegisterValueChangedCallback в EnsureBuilt).
-            // Здесь просто гарантируем актуальные options.
-        }
+
 
         private void ConfigureInventoryFilters()
         {
@@ -1440,50 +1380,9 @@ namespace ProjectC.UI.Client
         // Row factories: contracts (реюз MarketWindow)
         // ============================================================
 
-        private VisualElement MakeContractRow()
-        {
-            var row = new VisualElement();
-            row.AddToClassList("contract-row");
-            var typeLbl   = new Label { name = "row-type"   }; typeLbl.AddToClassList("contract-type");   row.Add(typeLbl);
-            var itemLbl   = new Label { name = "row-item"   }; itemLbl.AddToClassList("contract-item");   row.Add(itemLbl);
-            var rewardLbl = new Label { name = "row-reward" }; rewardLbl.AddToClassList("contract-reward"); row.Add(rewardLbl);
-            var timerLbl  = new Label { name = "row-timer"  }; timerLbl.AddToClassList("contract-timer");  row.Add(timerLbl);
-            return row;
-        }
 
-        private void BindContractRow(VisualElement row, int index)
-        {
-            if (_contractsList == null) return;
-            var src = _contractsList.itemsSource as ContractDto[];
-            if (src == null || index < 0 || index >= src.Length) return;
-            var c = src[index];
 
-            var typeLbl   = row.Q<Label>("row-type");
-            var itemLbl   = row.Q<Label>("row-item");
-            var rewardLbl = row.Q<Label>("row-reward");
-            var timerLbl  = row.Q<Label>("row-timer");
 
-            var typeName = GetContractTypeDisplayName((ContractType)c.type);
-            typeLbl.text = typeName;
-            typeLbl.RemoveFromClassList("type-standard");
-            typeLbl.RemoveFromClassList("type-urgent");
-            typeLbl.RemoveFromClassList("type-receipt");
-            typeLbl.AddToClassList(GetContractTypeClass((ContractType)c.type));
-
-            // item text: добавляем [ВЗЯТ] для Active (по аналогии с MarketWindow)
-            string statePrefix = c.state == (byte)ContractState.Active ? "[ВЗЯТ] " : "";
-            itemLbl.text = $"{statePrefix}{c.displayName} ×{c.quantity}";
-
-            rewardLbl.text = $"{c.reward:F0} CR";
-            timerLbl.text  = GetContractTimeRemainingString(c);
-            timerLbl.RemoveFromClassList("timer-ok");
-            timerLbl.RemoveFromClassList("timer-warn");
-            timerLbl.RemoveFromClassList("timer-danger");
-            timerLbl.AddToClassList(GetContractTimerClass(c));
-
-            row.RemoveFromClassList("contract-row-active");
-            if (c.state == (byte)ContractState.Active) row.AddToClassList("contract-row-active");
-        }
 
         // ============================================================
         // Row factories: inventory (legacy MakeInventoryRow/BindInventoryRow
@@ -1869,122 +1768,15 @@ namespace ProjectC.UI.Client
         // Snapshot handlers (реюз MarketWindow логики)
         // ============================================================
 
-        private void HandleContractSnapshot(ContractSnapshotDto snapshot)
-        {
-            // Re-use MarketWindow.HandleContractSnapshot: фильтр по fromLocationId для available,
-            // active — все. CharacterWindow показывает контракты ВСЕХ локаций (это "обзор"),
-            // а MarketWindow — только текущей зоны. Поэтому фильтр НЕ применяем.
-            // (см. CONTRACTS_AS_MARKET_TAB_REFACTOR.md)
-            ContractDto[] available = snapshot.available ?? Array.Empty<ContractDto>();
-            var activeAll = snapshot.active ?? Array.Empty<ContractDto>();
-            var activeList = new List<ContractDto>(activeAll.Length);
-            for (int i = 0; i < activeAll.Length; i++)
-            {
-                if (activeAll[i].state == (byte)ContractState.Active)
-                    activeList.Add(activeAll[i]);
-            }
-            ContractDto[] active = activeList.ToArray();
 
-            // combined: сначала active (свои), потом available (новые)
-            var combined = new List<ContractDto>(active.Length + available.Length);
-            combined.AddRange(active);
-            combined.AddRange(available);
-            _contractsCache = combined.ToArray();
 
-            // Re-render (с учётом фильтров, которые в ApplyContractFilters)
-            ApplyContractFilters();
 
-            if (_messageLabel != null && IsVisible() && _activeTab == "contracts")
-            {
-                _messageLabel.text = active.Length == 0 && available.Length == 0
-                    ? Loc.Get("ui.character.no_contracts")
-                    : Loc.Format("ui.character.active_available", active.Length, available.Length);
-                _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
-            }
-        }
-
-        private void HandleContractResult(ContractResultDto result)
-        {
-            if (_messageLabel == null) return;
-            // ContractResultDto — struct (см. pitfall #14 в unity-mcp-orchestrator skill):
-            // `result == null` НЕ компилируется. Проверяем code.
-            if (!IsVisible()) return;
-
-            if (result.IsSuccess)
-            {
-                _messageLabel.text = result.message ?? "OK";
-                _messageLabel.style.color = new StyleColor(new Color(0.4f, 0.95f, 0.4f));
-            }
-            else
-            {
-                _messageLabel.text = result.message
-                    ?? ContractClientState.LocalizeResultCode((ContractResultCode)result.code);
-                _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
-            }
-
-            // Обновить credits в header (если операция изменила баланс)
-            if (_creditsLabel != null && result.newCredits > 0f)
-            {
-                _creditsLabel.text = Loc.Format("ui.character.credits_label", result.newCredits);
-            }
-        }
 
         // ============================================================
         // Filters: contracts
         // ============================================================
 
-        private void ApplyContractFilters()
-        {
-            if (_contractsList == null) return;
-            IEnumerable<ContractDto> src = _contractsCache ?? Array.Empty<ContractDto>();
 
-            // Source filter: "Все" / "Контракты" / "Квесты"
-            string source = _filterSource != null ? _filterSource.value : Loc.Get("ui.character.filter.all");
-            if (source == Loc.Get("ui.character.filter.quests"))
-            {
-                // Квесты не реализованы — пустой список + подсказка
-                _contractsList.itemsSource = Array.Empty<ContractDto>();
-                _selectedContractItem = -1;
-                _contractsList.selectedIndex = -1;
-                _contractsList.Rebuild();
-                if (_messageLabel != null && _activeTab == "contracts")
-                {
-                    _messageLabel.text = Loc.Get("ui.character.quests_not_implemented", "Quests not yet implemented (see GDD-21)");
-                    _messageLabel.style.color = new StyleColor(new Color(0.7f, 0.7f, 0.9f));
-                }
-                return;
-            }
-            // "Все" и "Контракты" — одинаково, всё что есть.
-
-            // State filter
-            var activeLabel = Loc.Get("ui.character.filter.active");
-            var availableLabel = Loc.Get("ui.character.filter.available");
-            string state = _filterState != null ? _filterState.value : Loc.Get("ui.character.filter.all");
-            if (state == activeLabel)
-                src = src.Where(c => c.state == (byte)ContractState.Active);
-
-
-            // Search filter
-                src = src.Where(c => c.state == (byte)ContractState.Pending);
-
-            // Search filter
-                src = src.Where(c => c.state == (byte)ContractState.Pending);
-
-            // Search filter
-            string search = _filterSearch != null ? (_filterSearch.value ?? "").ToLowerInvariant() : "";
-            if (!string.IsNullOrEmpty(search))
-            {
-                src = src.Where(c =>
-                    (c.displayName ?? "").ToLowerInvariant().Contains(search) ||
-                    (c.contractId  ?? "").ToLowerInvariant().Contains(search));
-            }
-
-            var result = src.ToArray();
-            _contractsList.itemsSource = result;
-            _selectedContractItem = -1;
-            _contractsList.selectedIndex = -1;
-            _contractsList.Rebuild();
-        }
 
         // ============================================================
         // Filters: inventory
@@ -3519,96 +3311,13 @@ namespace ProjectC.UI.Client
             // Actions: contracts (реюз MarketWindow логики)
             // ============================================================
 
-        private void OnAcceptContractClicked()
-        {
-            if (_contractsList == null) return;
-            var src = _contractsList.itemsSource as ContractDto[];
-            if (src == null || _selectedContractItem < 0 || _selectedContractItem >= src.Length)
-            {
-                SetMessage(Loc.Get("ui.character.select_contract"));
-                return;
-            }
-            var c = src[_selectedContractItem];
-            if (c.state != (byte)ContractState.Pending)
-            {
-                SetMessage(Loc.Get("ui.character.contract_unavailable"));
-                return;
-            }
-            if (_contractState == null)
-            {
-                SetMessage(Loc.Get("ui.system.contractstate_unavailable"), true);
-                return;
-            }
 
-            // Optimistic update (как в MarketWindow): мгновенно state=Active в кэше + pulse.
-            var cLocal = c;
-            cLocal.state = (byte)ContractState.Active;
-            _contractsCache[_selectedContractItem] = cLocal;
-            ApplyContractFilters();
-            StartCoroutine(JustTakenPulse(_selectedContractItem));
 
-            _contractState.RequestAccept(c.contractId);
-            SetMessage(Loc.Get("ui.character.request_sent"));
-        }
 
-        private void OnCompleteContractClicked()
-        {
-            if (_contractsList == null) return;
-            var src = _contractsList.itemsSource as ContractDto[];
-            if (src == null || _selectedContractItem < 0 || _selectedContractItem >= src.Length)
-            {
-                SetMessage(Loc.Get("ui.character.select_contract"));
-                return;
-            }
-            var c = src[_selectedContractItem];
-            if (c.state != (byte)ContractState.Active)
-            {
-                SetMessage(Loc.Get("ui.character.contract_not_active"));
-                return;
-            }
-            if (_contractState == null)
-            {
-                SetMessage(Loc.Get("ui.system.contractstate_unavailable"), true);
-                return;
-            }
-            _contractState.RequestComplete(c.contractId);
-            SetMessage(Loc.Get("ui.character.request_sent"));
-        }
 
-        private void OnFailContractClicked()
-        {
-            if (_contractsList == null) return;
-            var src = _contractsList.itemsSource as ContractDto[];
-            if (src == null || _selectedContractItem < 0 || _selectedContractItem >= src.Length)
-            {
-                SetMessage(Loc.Get("ui.character.select_contract"));
-                return;
-            }
-            var c = src[_selectedContractItem];
-            if (c.state != (byte)ContractState.Active)
-            {
-                SetMessage(Loc.Get("ui.character.contract_not_active"));
-                return;
-            }
-            if (_contractState == null)
-            {
-                SetMessage(Loc.Get("ui.system.contractstate_unavailable"), true);
-                return;
-            }
-            _contractState.RequestFail(c.contractId);
-            SetMessage(Loc.Get("ui.character.request_sent"));
-        }
 
-        private System.Collections.IEnumerator JustTakenPulse(int rowIndex)
-        {
-            if (_contractsList == null) yield break;
-            yield return null;  // ждём 1 кадр — Rebuild() асинхронен
-            var row = _contractsList.ElementAt(rowIndex) as VisualElement;
-            if (row == null) yield break;
-            row.AddToClassList("contract-row-just-taken");
-            yield return new WaitForSeconds(1.6f);
-            if (row != null) row.RemoveFromClassList("contract-row-just-taken");
-        }
+
+
 
         private void OnCloseClicked() => SetVisible(false);
 
@@ -3711,7 +3420,7 @@ namespace ProjectC.UI.Client
             RefreshTimeInfo();
 
             // FIX: race с RPC — если данные ещё не пришли, показываем placeholder.
-            if (_contractState == null || !_contractState.CurrentSnapshot.HasValue)
+            if (ContractClientState.Instance == null || !ContractClientState.Instance.CurrentSnapshot.HasValue)
             {
                 if (_messageLabel != null && _activeTab == "contracts")
                 {
@@ -3860,43 +3569,12 @@ namespace ProjectC.UI.Client
         // Contract helpers (статические — копия из MarketWindow.cs)
         // ============================================================
 
-        private static string GetContractTypeDisplayName(ContractType type)
-        {
-            switch (type)
-            {
-                case ContractType.Standard: return $"[{Loc.Get("ui.contract.type.standard")}]";
-                case ContractType.Urgent:   return $"[{Loc.Get("ui.contract.type.urgent")}]";
-                case ContractType.Receipt:  return $"[{Loc.Get("ui.contract.type.receipt")}]";
-                default: return type.ToString();
-            }
-        }
 
-        private static string GetContractTypeClass(ContractType type)
-        {
-            switch (type)
-            {
-                case ContractType.Standard: return "type-standard";
-                case ContractType.Urgent:   return "type-urgent";
-                case ContractType.Receipt:  return "type-receipt";
-                default: return "type-standard";
-            }
-        }
 
-        private static string GetContractTimeRemainingString(ContractDto c)
-        {
-            if (c.timeLimit <= 0f) return "∞";
-            int minutes = Mathf.FloorToInt(c.timeRemaining / 60f);
-            int seconds = Mathf.FloorToInt(c.timeRemaining % 60f);
-            return $"{minutes}:{seconds:D2}";
-        }
 
-        private static string GetContractTimerClass(ContractDto c)
-        {
-            if (c.timeLimit <= 0f) return "timer-ok";
-            float pct = c.timeRemaining / c.timeLimit;
-            if (pct < 0.1f) return "timer-danger";
-            if (pct < 0.3f) return "timer-warn";
-            return "timer-ok";
-        }
+
+
+
+
     }
 }

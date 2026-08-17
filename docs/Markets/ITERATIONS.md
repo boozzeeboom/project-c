@@ -110,6 +110,23 @@
 
 ## Итерация от 2026-08-17
 
+**Задача:** Этап 7 реализации аудита — explicit persistence load status для valid-empty snapshots (`MKT-PER-001`).
+
+**Коммит:** `d68a09a79623445da3cfc18768b743d6dbfef13b` — T-MKT08: Развести статусы пустых и отсутствующих snapshot
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Repository/IPlayerDataRepository.cs` — введён `RepositoryLoadStatus`: `NoSaveFound`, `Loaded`, `ValidEmptySave`, `CorruptSave`, `UnsupportedSchema`
+- `Assets/_Project/Trade/Scripts/Repository/ServerFileRepository.cs` и `PlayerPrefsRepository.cs` — explicit status, valid-empty handling и schema normalization
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — regeneration только при `NoSaveFound`; rejected snapshots не перезаписываются
+- `Assets/_Project/Trade/Scripts/Core/TradeWorld.cs` — overlay без `HasData`-false positive для valid-empty
+- `docs/Markets/*PERSISTENCE*.md`, `MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — синхронизирована документация этапа 7
+- Unity compile check: ошибок компиляции нет
+- Play Mode, persistence round-trip, corrupt-primary recovery, future-schema runtime test и screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
 **Задача:** Этап 6 реализации аудита — schema migration, future-version guard и backup recovery для dedicated JSON repository (`MKT-PER-003`).
 
 **Коммит:** `4713847c5eeaec4e1cf45751679403ccc09d266d` — T-MKT07: Добавить миграцию и recovery persistence

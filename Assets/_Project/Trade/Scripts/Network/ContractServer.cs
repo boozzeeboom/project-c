@@ -414,7 +414,8 @@ namespace ProjectC.Trade.Network
                 code = (byte)code,
                 contractId = contractId,
                 success = false,
-                message = code.ToString(), // server sends code only — client localizes (LOC-03)
+                // The client localizes resultCode. Do not leak enum names such as NotInZone.
+                message = null,
                 reward = reward,
                 newCredits = newCredits,
                 newDebt = newDebt

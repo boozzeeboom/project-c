@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этап 1 (P0 state integrity + debts-only persistence guard) реализован 17 августа 2026 г.
+**Статус:** статический аудит исходников и документации; этапы 1–2 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
 **Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -881,5 +881,32 @@ The following documentation is currently inconsistent with code and must be upda
 - cargo validation и списание при delivery completion (`MKT-CON-003`);
 - полноценная Receipt semantics (`MKT-CON-004`);
 - schema version и atomic persistence (`MKT-PER-003`);
-- локализация network result codes и rate-limit feedback;
+- удаление legacy UI и дальнейшее разделение `MarketWindow`.
+
+---
+
+## 17. Реализованный этап 2 — network result contract
+
+**Дата:** 17 августа 2026 г.
+**Scope:** `MKT-NET-001` и `MKT-NET-002`.
+
+### Изменения
+
+- `MarketServer.CheckRateLimit()` теперь принимает контекст операции и отправляет `TradeResultDto` с `RateLimited` вместо молчаливого `return false`.
+- Rate-limit result использует тот же owner TargetRpc path, что и остальные market operation results.
+- `ContractServer.ContractResultDto_Fail()` больше не отправляет `code.ToString()` в `message`.
+- Ошибки, созданные через `ContractResultDto_Fail()`, теперь локализуются клиентом по `ContractResultCode` и не показывают raw enum names.
+- Server-provided messages из `ContractWorld` сохранены для операций, где требуется конкретный текст (например, лимит активных контрактов или wrong destination).
+
+### Проверка
+
+- `check_compile_errors`: **No compile errors**.
+- Play Mode, network smoke test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- cargo validation и списание при delivery completion (`MKT-CON-003`);
+- полноценная Receipt semantics (`MKT-CON-004`);
+- schema version и atomic persistence (`MKT-PER-003`);
+- удаление dead RPC после подтверждения ссылок;
 - удаление legacy UI и дальнейшее разделение `MarketWindow`.

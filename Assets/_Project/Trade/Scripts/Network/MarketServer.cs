@@ -128,7 +128,7 @@ namespace ProjectC.Trade.Network
         public void RequestBuyRpc(string locationId, string itemId, int quantity, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            if (!CheckRateLimit(clientId)) return;
+            if (!CheckRateLimit(clientId, TradeOp.Buy, locationId, itemId, quantity, 0)) return;
             if (!ValidateInZone(clientId, locationId, out var zone))
             {
                 SendTradeResultToOwner(clientId, TradeResultDto_Fail(TradeResultCode.NotInZone, TradeOp.Buy, locationId, itemId, quantity, 0, clientId, 0));
@@ -144,7 +144,7 @@ namespace ProjectC.Trade.Network
         public void RequestSellRpc(string locationId, string itemId, int quantity, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            if (!CheckRateLimit(clientId)) return;
+            if (!CheckRateLimit(clientId, TradeOp.Sell, locationId, itemId, quantity, 0)) return;
             if (!ValidateInZone(clientId, locationId, out var zone))
             {
                 SendTradeResultToOwner(clientId, TradeResultDto_Fail(TradeResultCode.NotInZone, TradeOp.Sell, locationId, itemId, quantity, 0, clientId, 0));
@@ -160,7 +160,7 @@ namespace ProjectC.Trade.Network
         public void RequestLoadToShipRpc(string locationId, string itemId, int quantity, ulong shipNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            if (!CheckRateLimit(clientId)) return;
+            if (!CheckRateLimit(clientId, TradeOp.LoadToShip, locationId, itemId, quantity, shipNetworkObjectId)) return;
             if (!ValidateInZone(clientId, locationId, out var zone))
             {
                 SendTradeResultToOwner(clientId, TradeResultDto_Fail(TradeResultCode.NotInZone, TradeOp.LoadToShip, locationId, itemId, quantity, shipNetworkObjectId, clientId, 0));
@@ -188,7 +188,7 @@ namespace ProjectC.Trade.Network
         public void RequestUnloadFromShipRpc(string locationId, string itemId, int quantity, ulong shipNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            if (!CheckRateLimit(clientId)) return;
+            if (!CheckRateLimit(clientId, TradeOp.UnloadFromShip, locationId, itemId, quantity, shipNetworkObjectId)) return;
             if (!ValidateInZone(clientId, locationId, out var zone))
             {
                 SendTradeResultToOwner(clientId, TradeResultDto_Fail(TradeResultCode.NotInZone, TradeOp.UnloadFromShip, locationId, itemId, quantity, shipNetworkObjectId, clientId, 0));
@@ -492,7 +492,7 @@ namespace ProjectC.Trade.Network
             return zone.IsPlayerInZone(clientId);
         }
 
-        private bool CheckRateLimit(ulong clientId)
+        private bool CheckRateLimit(ulong clientId, TradeOp op, string locationId, string itemId, int quantity, ulong shipNetworkObjectId)
         {
             if (maxOpsPerMinute <= 0) return true;
             float now = Time.realtimeSinceStartup;
@@ -501,9 +501,19 @@ namespace ProjectC.Trade.Network
                 list = new List<float>();
                 _opTimestamps[clientId] = list;
             }
-            // Очистить старые
+
+            // Очистить старые timestamps.
             list.RemoveAll(t => (now - t) > 60f);
-            if (list.Count >= maxOpsPerMinute) return false;
+            if (list.Count >= maxOpsPerMinute)
+            {
+                // Не отбрасываем RPC молча: клиент получает тот же result-path,
+                // что и обычная ошибка торговой операции.
+                SendTradeResultToOwner(clientId,
+                    TradeResultDto_Fail(TradeResultCode.RateLimited, op, locationId, itemId,
+                        quantity, shipNetworkObjectId, clientId, 0));
+                return false;
+            }
+
             list.Add(now);
             return true;
         }

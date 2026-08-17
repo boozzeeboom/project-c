@@ -18,7 +18,7 @@
 
 **Задача:** Этап 1 реализации аудита — исправление целостности active contract index, безопасная регенерация доски и защита debts-only persistence.
 
-**Коммит:** будет указан после фиксации изменений в git.
+**Коммит:** `339ee385cb60d740e56e8a91996e3170c411612f` — T-MKT02: Исправить целостность контрактов
 
 **Изменения:**
 - `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — active contracts больше не удаляются регенерацией; stale/expired IDs очищаются; active count считает только Active records
@@ -26,6 +26,21 @@
 - `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован результат этапа 1 и проверка компиляции
 - Unity compile check: ошибок компиляции нет
 - Play Mode/domain tests/screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 2 реализации аудита — единый network result contract для market rate limit и contract failures.
+
+**Коммит:** будет указан после фиксации изменений в git.
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Network/MarketServer.cs` — rate-limited market RPC теперь возвращает `TradeResultDto`
+- `Assets/_Project/Trade/Scripts/Network/ContractServer.cs` — технические enum names не передаются в UI message
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован результат этапа 2
+- Unity compile check: ошибок компиляции нет
+- Play Mode/network smoke test/screenshots не выполнялись
 
 ---
 

@@ -33,7 +33,7 @@
 
 **Задача:** Этап 2 реализации аудита — единый network result contract для market rate limit и contract failures.
 
-**Коммит:** будет указан после фиксации изменений в git.
+**Коммит:** `b8fe8659285b234d5ece7b920c6f4decd64d5ee1` — T-MKT03: Унифицировать network feedback рынков
 
 **Изменения:**
 - `Assets/_Project/Trade/Scripts/Network/MarketServer.cs` — rate-limited market RPC теперь возвращает `TradeResultDto`
@@ -41,6 +41,22 @@
 - `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован результат этапа 2
 - Unity compile check: ошибок компиляции нет
 - Play Mode/network smoke test/screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 3 реализации аудита — schema markers для market/contract snapshots и atomic file writes для dedicated repository.
+
+**Коммит:** будет указан после фиксации изменений в git.
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Dto/ContractSaveData.cs` — добавлена schema version 1
+- `Assets/_Project/Trade/Scripts/Dto/MarketSaveData.cs` — добавлена schema version 1 и null-safe HasData
+- `Assets/_Project/Trade/Scripts/Repository/ServerFileRepository.cs` — atomic temp-file replace с `.bak` backup для markets/contracts
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксированы ограничения и compile correction
+- Unity compile check: ошибок компиляции нет после исправления `System.PlatformNotSupportedException`
+- Persistence round-trip/Play Mode/screenshots не выполнялись
 
 ---
 

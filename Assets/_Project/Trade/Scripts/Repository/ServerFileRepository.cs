@@ -154,7 +154,7 @@ namespace ProjectC.Trade.Repository
             try
             {
                 string json = JsonUtility.ToJson(data);
-                File.WriteAllText(path, json);
+                WriteJsonAtomically(path, json);
             }
             catch (System.Exception e)
             {
@@ -189,11 +189,40 @@ namespace ProjectC.Trade.Repository
             try
             {
                 string json = JsonUtility.ToJson(data);
-                File.WriteAllText(path, json);
+                WriteJsonAtomically(path, json);
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"[ServerFileRepository] SaveContracts failed: {e.Message}");
+            }
+        }
+
+        private static void WriteJsonAtomically(string path, string json)
+        {
+            string tempPath = path + ".tmp";
+            string backupPath = path + ".bak";
+            File.WriteAllText(tempPath, json);
+
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Replace(tempPath, path, backupPath, ignoreMetadataErrors: true);
+                }
+                else
+                {
+                    File.Move(tempPath, path);
+                }
+            }
+            catch (System.PlatformNotSupportedException)
+            {
+                // Fallback for filesystems without File.Replace support.
+                File.Copy(tempPath, path, overwrite: true);
+                File.Delete(tempPath);
+            }
+            finally
+            {
+                if (File.Exists(tempPath)) File.Delete(tempPath);
             }
         }
 

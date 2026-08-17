@@ -19,13 +19,19 @@ namespace ProjectC.Trade.Dto
     [Serializable]
     public class MarketSaveData
     {
+        /// <summary>Current market save schema. Legacy snapshots without this field are schema 0.</summary>
+        public const int CurrentSchemaVersion = 1;
+        public int schemaVersion = CurrentSchemaVersion;
+
         /// <summary>Per-location market item states.</summary>
         public List<MarketLocationSaveEntry> markets = new List<MarketLocationSaveEntry>();
 
         /// <summary>Active/cooldown market events.</summary>
         public List<MarketEventSaveEntry> events = new List<MarketEventSaveEntry>();
 
-        public bool HasData => markets.Count > 0 || events.Count > 0;
+        public bool HasData =>
+            (markets != null && markets.Count > 0)
+            || (events != null && events.Count > 0);
     }
 
     /// <summary>

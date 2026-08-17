@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этапы 1–2 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
+**Статус:** статический аудит исходников и документации; этапы 1–3 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
 **Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -885,6 +885,33 @@ The following documentation is currently inconsistent with code and must be upda
 
 ---
 
+## 18. Реализованный этап 3 — persistence foundation
+
+**Дата:** 17 августа 2026 г.
+**Scope:** базовая часть `MKT-PER-003`.
+
+### Изменения
+
+- `ContractSaveData` получил `schemaVersion` с текущей версией `1`.
+- `MarketSaveData` получил `schemaVersion` с текущей версией `1`.
+- `MarketSaveData.HasData` стал null-safe для неполных snapshots.
+- `ServerFileRepository.SaveMarkets()` и `SaveContracts()` теперь пишут через временный файл и замену target-файла с `.bak` backup при поддерживаемой файловой системе.
+- При fallback на файловой системе без `File.Replace` используется overwrite-copy, а временный файл очищается.
+
+### Ограничения этапа
+
+- Миграции schema `0 → 1` пока не требуют преобразования полей, поэтому старые JSON принимаются как legacy snapshots.
+- Явное отклонение будущей неподдерживаемой schema version и recovery из `.bak` остаются отдельным тикетом.
+- PlayerPrefs не получил файловую atomic-replace семантику: `PlayerPrefs.Save()` остаётся ограничением host-репозитория.
+
+### Проверка
+
+- Первый compile check выявил отсутствие квалификации `PlatformNotSupportedException`; исправлено через `System.PlatformNotSupportedException`.
+- Повторный `check_compile_errors`: **No compile errors**.
+- Persistence round-trip, corruption recovery и Play Mode не выполнялись.
+
+---
+
 ## 17. Реализованный этап 2 — network result contract
 
 **Дата:** 17 августа 2026 г.
@@ -907,6 +934,6 @@ The following documentation is currently inconsistent with code and must be upda
 
 - cargo validation и списание при delivery completion (`MKT-CON-003`);
 - полноценная Receipt semantics (`MKT-CON-004`);
-- schema version и atomic persistence (`MKT-PER-003`);
+- полноценные schema migrations для будущих версий (`MKT-PER-003`);
 - удаление dead RPC после подтверждения ссылок;
 - удаление legacy UI и дальнейшее разделение `MarketWindow`.

@@ -10,6 +10,10 @@ namespace ProjectC.Trade.Dto
     [Serializable]
     public class ContractSaveData
     {
+        /// <summary>Current contract save schema. Legacy snapshots without this field are schema 0.</summary>
+        public const int CurrentSchemaVersion = 1;
+        public int schemaVersion = CurrentSchemaVersion;
+
         /// <summary>All contracts (Pending, Active, Completed, Failed).</summary>
         public List<ContractData> contracts = new List<ContractData>();
 

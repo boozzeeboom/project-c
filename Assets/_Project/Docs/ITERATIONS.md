@@ -14,7 +14,7 @@
 ## Итерация от 2026-08-17 (T-JITTER16)
 
 **Задача:** Измерить baked-вершины персонажа в рантайме на origin и в WorldScene_0_0  
-**Коммит:** `pending` — T-JITTER16: откат T-JITTER15 и добавление runtime vertex probe  
+**Коммит:** `2f5191ae8917065dd421b7ceb8ca893f8c035644` — T-JITTER16: откат T-JITTER15 и добавление runtime vertex probe  
 **Статус:** Диагностический зонд создан и добавлен в `NetworkPlayer.prefab`; требуется runtime playtest пользователя
 **Изменения:**
 - `Assets/_Project/Scripts/Debug/SkinnedVertexRuntimeProbe.cs` — измеряет local, relative-world и world deltas sampled vertices через `SkinnedMeshRenderer.BakeMesh()`

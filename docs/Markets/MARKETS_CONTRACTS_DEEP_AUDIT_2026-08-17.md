@@ -1227,6 +1227,7 @@ The following documentation is currently inconsistent with code and must be upda
 
 ---
 
+
 ## 27. Реализованный этап 12 — устранение дублирующего contract UI в `CharacterWindow` (`MKT-UI-001/002`)
 
 **Дата:** 17 августа 2026 г.
@@ -1254,3 +1255,32 @@ The following documentation is currently inconsistent with code and must be upda
 - canonical `LocationId` и data-driven locations/types (`MKT-DOM-001`);
 - явный lifecycle `MarketZoneRegistry` (`MKT-DOM-002`);
 - полная Receipt semantics и localization для `UnsupportedContractType`.
+
+---
+
+## 28. Реализованный этап 13 — разделение `MarketWindow` (`MKT-UI-003`)
+
+**Дата:** 17 августа 2026 г.
+**Scope:** разбиение монолитного market UI host и исправление refresh после contract result.
+
+### Изменения
+
+- `MarketWindow.cs` оставлен совместимым facade с прежним `MarketWindow.Instance` и публичными `Show/Hide/Toggle/IsVisible` API.
+- `MarketWindowHost.cs` владеет UIDocument, общим feedback, modal visibility и navigation между вкладками.
+- `MarketTabController.cs` владеет вкладками Рынок и Склад/Трюм, trade actions, quantity controls и per-ship cargo projection.
+- `ContractsMarketTabController.cs` владеет contract list/actions и обновляет список после каждого `ContractResultDto`, включая failure result.
+- `ExchangeTabController.cs` владеет inventory/warehouse exchange UI, Pack/Unpack actions и subscriptions.
+- Исправлена индексация выбранного market item при включённом фильтре «мои товары»: действие использует текущий `itemsSource`, а не исходный snapshot array.
+- После accept/complete/fail contract controller явно вызывает `RequestList()`, поэтому UI больше не требует переключения вкладок для получения свежей projection.
+
+### Проверка
+
+- `check_compile_errors`: **No compile errors**.
+- Play Mode, UI smoke test и screenshots не выполнялись; требуется отдельная ручная проверка accept/fail/complete без переключения вкладок.
+
+### Что ещё не закрыто
+
+- полная Receipt semantics и localization для `UnsupportedContractType`;
+- Play Mode/network/persistence verification pass для этапов 4–13;
+- canonical `LocationId`, data-driven locations/types (`MKT-DOM-001`);
+- явный lifecycle `MarketZoneRegistry` (`MKT-DOM-002`).

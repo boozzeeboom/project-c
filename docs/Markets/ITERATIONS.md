@@ -230,3 +230,21 @@
 - `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — закрыты `MKT-UI-001/002`, зафиксирован этап 12
 - `validate_script(CharacterWindow.cs)`: ошибок нет; Unity compile check: без ошибок
 - Play Mode/UI smoke test не выполнялись; stale refresh после accept/fail остаётся на повторную проверку после `MKT-UI-003`
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 13 реализации аудита — разделение монолитного `MarketWindow` и устранение stale refresh после contract result (`MKT-UI-003`).
+
+**Коммит:** `4017962c8f8177c0c8737fafe3f7ae1524b30324` — MKT-UI-003: Разделить MarketWindow и исправить refresh контрактов
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Client/MarketWindow.cs` — совместимый facade с прежним `Instance` и window API
+- `Assets/_Project/Trade/Scripts/Client/MarketWindowHost.cs` — lifecycle UIDocument, modal visibility, shared feedback и tab navigation
+- `Assets/_Project/Trade/Scripts/Client/MarketTabController.cs` — market/warehouse/cargo UI и trade actions
+- `Assets/_Project/Trade/Scripts/Client/ContractsMarketTabController.cs` — contract UI и явный `RequestList()` после accept/complete/fail result
+- `Assets/_Project/Trade/Scripts/Client/ExchangeTabController.cs` — exchange UI и Pack/Unpack actions
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован этап 13 и текущий verification gap
+- Unity compile check: **No compile errors**
+- Play Mode/UI smoke test/screenshots не выполнялись; требуется ручная проверка без перелистывания вкладок

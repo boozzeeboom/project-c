@@ -46,7 +46,7 @@ namespace ProjectC.Trade.Repository
 
         // --- Contracts (T-Q?? persistence) ---
         RepositoryLoadStatus TryLoadContracts(out ContractSaveData data);
-        void SaveContracts(ContractSaveData data);
+        bool SaveContracts(ContractSaveData data);
 
         // --- Markets (runtime state persistence) ---
         RepositoryLoadStatus TryLoadMarkets(out MarketSaveData data);

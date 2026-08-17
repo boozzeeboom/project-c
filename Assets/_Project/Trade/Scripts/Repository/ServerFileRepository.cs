@@ -164,18 +164,20 @@ namespace ProjectC.Trade.Repository
             return TryMigrateContracts(data, path);
         }
 
-        public void SaveContracts(ContractSaveData data)
+        public bool SaveContracts(ContractSaveData data)
         {
-            if (data == null) return;
+            if (data == null) return false;
             string path = Path.Combine(_rootDir, "contracts.json");
             try
             {
                 string json = JsonUtility.ToJson(data);
                 WriteJsonAtomically(path, json);
+                return true;
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"[ServerFileRepository] SaveContracts failed: {e.Message}");
+                return false;
             }
         }
 

@@ -159,12 +159,21 @@ namespace ProjectC.Trade.Repository
             }
         }
 
-        public void SaveContracts(ContractSaveData data)
+        public bool SaveContracts(ContractSaveData data)
         {
-            if (data == null) return;
-            string json = JsonUtility.ToJson(data);
-            PlayerPrefs.SetString("PD2_Contracts", json);
-            PlayerPrefs.Save();
+            if (data == null) return false;
+            try
+            {
+                string json = JsonUtility.ToJson(data);
+                PlayerPrefs.SetString("PD2_Contracts", json);
+                PlayerPrefs.Save();
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[PlayerPrefsRepository] SaveContracts failed: {e.Message}");
+                return false;
+            }
         }
 
         private RepositoryLoadStatus NormalizeMarkets(MarketSaveData data)

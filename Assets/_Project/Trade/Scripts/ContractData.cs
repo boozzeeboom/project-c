@@ -87,6 +87,12 @@ namespace ProjectC.Trade
         [Tooltip("ID игрока, принявшего контракт (0 = свободен)")]
         public ulong assignedPlayerId;
 
+        /// <summary>
+        /// UTC ticks момента перехода в Completed/Failed.
+        /// Ноль означает legacy snapshot без terminal timestamp.
+        /// </summary>
+        public long terminalAtUtcTicks;
+
         // === Расписка (для типа Receipt) ===
         [Tooltip("Это контракт «под расписку»?")]
         public bool isReceiptContract;
@@ -193,6 +199,7 @@ namespace ProjectC.Trade
             {
                 timeRemaining = 0f;
                 state = ContractState.Failed;
+                MarkTerminal();
             }
         }
 
@@ -202,6 +209,7 @@ namespace ProjectC.Trade
         public void Complete()
         {
             state = ContractState.Completed;
+            MarkTerminal();
         }
 
         /// <summary>
@@ -210,6 +218,12 @@ namespace ProjectC.Trade
         public void Fail()
         {
             state = ContractState.Failed;
+            MarkTerminal();
+        }
+
+        private void MarkTerminal()
+        {
+            terminalAtUtcTicks = DateTime.UtcNow.Ticks;
         }
 
         /// <summary>

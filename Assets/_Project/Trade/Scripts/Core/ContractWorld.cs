@@ -62,6 +62,12 @@ namespace ProjectC.Trade.Core
         public float UrgentContractTimeLimitSeconds { get; private set; } = 150f;
         public float ReceiptContractTimeLimitSeconds { get; private set; } = 600f;
 
+        /// <summary>
+        /// Максимальное количество Completed/Failed records на одного игрока.
+        /// Active/Pending records никогда не удаляются этой политикой.
+        /// </summary>
+        public int MaxTerminalRecordsPerPlayer = 50;
+
         // === Distance table (GDD_25 §3.2) ===
         // Индексы: 0=primium, 1=secundus, 2=tertius, 3=quartus
         private readonly float[,] _distanceTable = new float[4, 4];
@@ -185,7 +191,73 @@ namespace ProjectC.Trade.Core
                 });
             }
 
-            Repository.SaveContracts(data);
+            if (Repository.SaveContracts(data))
+                PruneTerminalRecordsAfterSuccessfulPersistence();
+        }
+
+        /// <summary>
+        /// Удалить старые terminal records только после успешной записи snapshot.
+        /// Active/Pending records, debts и indexes текущих активных контрактов
+        /// не затрагиваются.
+        /// </summary>
+        private void PruneTerminalRecordsAfterSuccessfulPersistence()
+        {
+            int maxRecords = Mathf.Max(0, MaxTerminalRecordsPerPlayer);
+            var terminalByPlayer = new Dictionary<ulong, List<KeyValuePair<string, ContractData>>>();
+
+            foreach (var kvp in _availableContracts)
+            {
+                var contract = kvp.Value;
+                if (contract == null
+                    || (contract.state != ContractState.Completed && contract.state != ContractState.Failed))
+                    continue;
+
+                if (!terminalByPlayer.TryGetValue(contract.assignedPlayerId, out var records))
+                {
+                    records = new List<KeyValuePair<string, ContractData>>();
+                    terminalByPlayer[contract.assignedPlayerId] = records;
+                }
+                records.Add(kvp);
+            }
+
+            int removed = 0;
+            foreach (var playerRecords in terminalByPlayer)
+            {
+                var records = playerRecords.Value;
+                if (records.Count <= maxRecords) continue;
+
+                records.Sort(CompareTerminalRecords);
+                int removeCount = records.Count - maxRecords;
+                for (int i = 0; i < removeCount; i++)
+                {
+                    string contractId = records[i].Key;
+                    if (!_availableContracts.TryGetValue(contractId, out var contract)) continue;
+
+                    _availableContracts.Remove(contractId);
+                    RemovePlayerContractReference(contract.assignedPlayerId, contractId);
+                    RemoveContractFromLocationBoard(contract.fromLocationId, contractId);
+                    removed++;
+                }
+            }
+
+            if (removed > 0)
+            {
+                Debug.Log($"[ContractWorld] terminal retention removed {removed} records; limit={maxRecords} per player");
+            }
+        }
+
+        private static int CompareTerminalRecords(
+            KeyValuePair<string, ContractData> left,
+            KeyValuePair<string, ContractData> right)
+        {
+            long leftTicks = left.Value != null ? left.Value.terminalAtUtcTicks : 0L;
+            long rightTicks = right.Value != null ? right.Value.terminalAtUtcTicks : 0L;
+
+            if (leftTicks == rightTicks)
+                return string.CompareOrdinal(left.Key, right.Key);
+            if (leftTicks == 0L) return -1;
+            if (rightTicks == 0L) return 1;
+            return leftTicks < rightTicks ? -1 : 1;
         }
 
         /// <summary>

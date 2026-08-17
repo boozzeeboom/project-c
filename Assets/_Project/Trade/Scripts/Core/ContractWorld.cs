@@ -55,6 +55,9 @@ namespace ProjectC.Trade.Core
         public int MaxActiveContractsPerPlayer = 3;
         public bool AutoRegenerateContracts = true;
         public bool AutoInitContracts = true;
+        public float StandardContractTimeLimitSeconds { get; private set; } = 300f;
+        public float UrgentContractTimeLimitSeconds { get; private set; } = 150f;
+        public float ReceiptContractTimeLimitSeconds { get; private set; } = 600f;
 
         // === Distance table (GDD_25 §3.2) ===
         // Индексы: 0=primium, 1=secundus, 2=tertius, 3=quartus
@@ -67,9 +70,17 @@ namespace ProjectC.Trade.Core
         public static ContractWorld CreateAndInitialize(
             IPlayerDataRepository repository,
             ContractWorldItemResolver resolver,
-            bool autoInitContracts = true)
+            bool autoInitContracts = true,
+            float standardContractTimeLimitSeconds = 300f,
+            float urgentContractTimeLimitSeconds = 150f,
+            float receiptContractTimeLimitSeconds = 600f)
         {
-            var w = new ContractWorld();
+            var w = new ContractWorld
+            {
+                StandardContractTimeLimitSeconds = Mathf.Max(0f, standardContractTimeLimitSeconds),
+                UrgentContractTimeLimitSeconds = Mathf.Max(0f, urgentContractTimeLimitSeconds),
+                ReceiptContractTimeLimitSeconds = Mathf.Max(0f, receiptContractTimeLimitSeconds)
+            };
             w.Initialize(repository, resolver, autoInitContracts);
             Instance = w;
             return w;
@@ -347,21 +358,27 @@ namespace ProjectC.Trade.Core
             // 1. Standard
             var standard = ContractData.Create(
                 ContractType.Standard, itemId, quantity,
-                fromLocationId, toLocationId, basePrice, distance);
+                fromLocationId, toLocationId, basePrice, distance,
+                0f, StandardContractTimeLimitSeconds, UrgentContractTimeLimitSeconds,
+                ReceiptContractTimeLimitSeconds);
             _availableContracts[standard.contractId] = standard;
             _locationContracts[fromLocationId].Add(standard.contractId);
 
             // 2. Urgent
             var urgent = ContractData.Create(
                 ContractType.Urgent, itemId, quantity,
-                fromLocationId, toLocationId, basePrice, distance);
+                fromLocationId, toLocationId, basePrice, distance,
+                0f, StandardContractTimeLimitSeconds, UrgentContractTimeLimitSeconds,
+                ReceiptContractTimeLimitSeconds);
             _availableContracts[urgent.contractId] = urgent;
             _locationContracts[fromLocationId].Add(urgent.contractId);
 
             // 3. Receipt (под расписку) — меньший объём
             var receipt = ContractData.Create(
                 ContractType.Receipt, itemId, Mathf.Min(quantity, 3),
-                fromLocationId, toLocationId, basePrice, distance);
+                fromLocationId, toLocationId, basePrice, distance,
+                0f, StandardContractTimeLimitSeconds, UrgentContractTimeLimitSeconds,
+                ReceiptContractTimeLimitSeconds);
             _availableContracts[receipt.contractId] = receipt;
             _locationContracts[fromLocationId].Add(receipt.contractId);
         }

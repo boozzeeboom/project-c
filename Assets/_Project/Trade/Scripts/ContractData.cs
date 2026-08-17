@@ -105,7 +105,10 @@ namespace ProjectC.Trade
             string toLocationId,
             float itemBasePrice,
             float distanceKm,
-            float npReputation = 0f)
+            float npReputation = 0f,
+            float standardTimeLimitSeconds = 300f,
+            float urgentTimeLimitSeconds = 150f,
+            float receiptTimeLimitSeconds = 600f)
         {
             var contract = new ContractData
             {
@@ -148,17 +151,18 @@ namespace ProjectC.Trade
                 contract.reward = contract.cargoValue * 0.3f * distanceMultiplier;
             }
 
-            // Таймер (реальное время, секунды) — утверждено решение 3A
+            // Таймер (реальное время, секунды). Значения по умолчанию сохраняют старое поведение;
+            // ContractWorld передаёт сюда настройки с [ContractServer].
             switch (type)
             {
                 case ContractType.Urgent:
-                    contract.timeLimit = 150f;   // 2.5 мин
+                    contract.timeLimit = Mathf.Max(0f, urgentTimeLimitSeconds);
                     break;
                 case ContractType.Standard:
-                    contract.timeLimit = 300f;   // 5 мин
+                    contract.timeLimit = Mathf.Max(0f, standardTimeLimitSeconds);
                     break;
                 case ContractType.Receipt:
-                    contract.timeLimit = 600f;   // 10 мин (туториал, больше времени)
+                    contract.timeLimit = Mathf.Max(0f, receiptTimeLimitSeconds);
                     break;
             }
             contract.timeRemaining = contract.timeLimit;

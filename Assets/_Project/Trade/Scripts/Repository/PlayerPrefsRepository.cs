@@ -12,6 +12,8 @@ namespace ProjectC.Trade.Repository
     ///   • PlayerPrefs локальны для каждого процесса → в dedicated server
     ///     данные не переживают рестарт (это лечит <see cref="ServerFileRepository"/>).
     ///   • Работает нормально в host-режиме (single-process).
+    ///   • Для markets/contracts используется best-effort temp + backup key protocol;
+    ///     PlayerPrefs всё равно не даёт filesystem-level atomic rename.
     ///   • Не thread-safe — вызывать ТОЛЬКО с main thread.
     ///
     /// Исправляет баги старой версии:
@@ -21,6 +23,13 @@ namespace ProjectC.Trade.Repository
     public class PlayerPrefsRepository : IPlayerDataRepository
     {
         public const float STARTING_CREDITS = 1000f;
+
+        private const string MarketsKey = "PD2_Markets";
+        private const string MarketsBackupKey = "PD2_Markets_bak";
+        private const string MarketsTempKey = "PD2_Markets_tmp";
+        private const string ContractsKey = "PD2_Contracts";
+        private const string ContractsBackupKey = "PD2_Contracts_bak";
+        private const string ContractsTempKey = "PD2_Contracts_tmp";
 
         public float GetCredits(ulong clientId)
         {
@@ -117,66 +126,115 @@ namespace ProjectC.Trade.Repository
 
         public RepositoryLoadStatus TryLoadMarkets(out MarketSaveData data)
         {
+            var primaryStatus = TryLoadMarketsFromKey(MarketsKey, out data, persistMigration: true);
+            if (primaryStatus != RepositoryLoadStatus.NoSaveFound
+                && primaryStatus != RepositoryLoadStatus.CorruptSave)
+            {
+                return primaryStatus;
+            }
+
+            var tempStatus = TryLoadMarketsFromKey(MarketsTempKey, out data, persistMigration: false);
+            if (tempStatus == RepositoryLoadStatus.Loaded || tempStatus == RepositoryLoadStatus.ValidEmptySave)
+                return RestoreMarketsSnapshot(data);
+            if (tempStatus == RepositoryLoadStatus.UnsupportedSchema)
+                return tempStatus;
+
+            var backupStatus = TryLoadMarketsFromKey(MarketsBackupKey, out data, persistMigration: false);
+            if (backupStatus == RepositoryLoadStatus.Loaded || backupStatus == RepositoryLoadStatus.ValidEmptySave)
+                return RestoreMarketsSnapshot(data);
+            if (backupStatus == RepositoryLoadStatus.UnsupportedSchema)
+                return backupStatus;
+
+            bool anySnapshotKey = PlayerPrefs.HasKey(MarketsKey)
+                || PlayerPrefs.HasKey(MarketsBackupKey)
+                || PlayerPrefs.HasKey(MarketsTempKey);
             data = null;
-            string json = PlayerPrefs.GetString("PD2_Markets", "");
-            if (string.IsNullOrEmpty(json)) return RepositoryLoadStatus.NoSaveFound;
-            try
-            {
-                data = JsonUtility.FromJson<MarketSaveData>(json);
-                return NormalizeMarkets(data);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[PlayerPrefsRepository] LoadMarkets failed: {e.Message}");
-                return RepositoryLoadStatus.CorruptSave;
-            }
+            return anySnapshotKey ? RepositoryLoadStatus.CorruptSave : RepositoryLoadStatus.NoSaveFound;
         }
 
         public void SaveMarkets(MarketSaveData data)
         {
             if (data == null) return;
-            string json = JsonUtility.ToJson(data);
-            PlayerPrefs.SetString("PD2_Markets", json);
-            PlayerPrefs.Save();
+            WriteSnapshotAtomically(MarketsKey, JsonUtility.ToJson(data));
         }
 
         // --- Contracts ---
 
         public RepositoryLoadStatus TryLoadContracts(out ContractSaveData data)
         {
+            var primaryStatus = TryLoadContractsFromKey(ContractsKey, out data, persistMigration: true);
+            if (primaryStatus != RepositoryLoadStatus.NoSaveFound
+                && primaryStatus != RepositoryLoadStatus.CorruptSave)
+            {
+                return primaryStatus;
+            }
+
+            var tempStatus = TryLoadContractsFromKey(ContractsTempKey, out data, persistMigration: false);
+            if (tempStatus == RepositoryLoadStatus.Loaded || tempStatus == RepositoryLoadStatus.ValidEmptySave)
+                return RestoreContractsSnapshot(data);
+            if (tempStatus == RepositoryLoadStatus.UnsupportedSchema)
+                return tempStatus;
+
+            var backupStatus = TryLoadContractsFromKey(ContractsBackupKey, out data, persistMigration: false);
+            if (backupStatus == RepositoryLoadStatus.Loaded || backupStatus == RepositoryLoadStatus.ValidEmptySave)
+                return RestoreContractsSnapshot(data);
+            if (backupStatus == RepositoryLoadStatus.UnsupportedSchema)
+                return backupStatus;
+
+            bool anySnapshotKey = PlayerPrefs.HasKey(ContractsKey)
+                || PlayerPrefs.HasKey(ContractsBackupKey)
+                || PlayerPrefs.HasKey(ContractsTempKey);
             data = null;
-            string json = PlayerPrefs.GetString("PD2_Contracts", "");
-            if (string.IsNullOrEmpty(json)) return RepositoryLoadStatus.NoSaveFound;
-            try
-            {
-                data = JsonUtility.FromJson<ContractSaveData>(json);
-                return NormalizeContracts(data);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[PlayerPrefsRepository] LoadContracts failed: {e.Message}");
-                return RepositoryLoadStatus.CorruptSave;
-            }
+            return anySnapshotKey ? RepositoryLoadStatus.CorruptSave : RepositoryLoadStatus.NoSaveFound;
         }
 
         public bool SaveContracts(ContractSaveData data)
         {
             if (data == null) return false;
+            return WriteSnapshotAtomically(ContractsKey, JsonUtility.ToJson(data));
+        }
+
+        private RepositoryLoadStatus TryLoadMarketsFromKey(string key, out MarketSaveData data, bool persistMigration)
+        {
+            data = null;
+            if (!PlayerPrefs.HasKey(key)) return RepositoryLoadStatus.NoSaveFound;
+
+            string json = PlayerPrefs.GetString(key, "");
+            if (string.IsNullOrEmpty(json)) return RepositoryLoadStatus.CorruptSave;
             try
             {
-                string json = JsonUtility.ToJson(data);
-                PlayerPrefs.SetString("PD2_Contracts", json);
-                PlayerPrefs.Save();
-                return true;
+                data = JsonUtility.FromJson<MarketSaveData>(json);
+                return NormalizeMarkets(data, persistMigration);
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"[PlayerPrefsRepository] SaveContracts failed: {e.Message}");
-                return false;
+                Debug.LogWarning($"[PlayerPrefsRepository] LoadMarkets key '{key}' failed: {e.Message}");
+                data = null;
+                return RepositoryLoadStatus.CorruptSave;
             }
         }
 
-        private RepositoryLoadStatus NormalizeMarkets(MarketSaveData data)
+        private RepositoryLoadStatus TryLoadContractsFromKey(string key, out ContractSaveData data, bool persistMigration)
+        {
+            data = null;
+            if (!PlayerPrefs.HasKey(key)) return RepositoryLoadStatus.NoSaveFound;
+
+            string json = PlayerPrefs.GetString(key, "");
+            if (string.IsNullOrEmpty(json)) return RepositoryLoadStatus.CorruptSave;
+            try
+            {
+                data = JsonUtility.FromJson<ContractSaveData>(json);
+                return NormalizeContracts(data, persistMigration);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[PlayerPrefsRepository] LoadContracts key '{key}' failed: {e.Message}");
+                data = null;
+                return RepositoryLoadStatus.CorruptSave;
+            }
+        }
+
+        private RepositoryLoadStatus NormalizeMarkets(MarketSaveData data, bool persistMigration)
         {
             if (data == null) return RepositoryLoadStatus.CorruptSave;
             if (data.schemaVersion > MarketSaveData.CurrentSchemaVersion)
@@ -186,12 +244,12 @@ namespace ProjectC.Trade.Repository
             data.schemaVersion = MarketSaveData.CurrentSchemaVersion;
             if (data.markets == null) data.markets = new List<MarketLocationSaveEntry>();
             if (data.events == null) data.events = new List<MarketEventSaveEntry>();
-            if (migrated) SaveMarkets(data);
+            if (migrated && persistMigration) SaveMarkets(data);
 
             return data.HasData ? RepositoryLoadStatus.Loaded : RepositoryLoadStatus.ValidEmptySave;
         }
 
-        private RepositoryLoadStatus NormalizeContracts(ContractSaveData data)
+        private RepositoryLoadStatus NormalizeContracts(ContractSaveData data, bool persistMigration)
         {
             if (data == null) return RepositoryLoadStatus.CorruptSave;
             if (data.schemaVersion > ContractSaveData.CurrentSchemaVersion)
@@ -203,9 +261,49 @@ namespace ProjectC.Trade.Repository
             if (data.debts == null) data.debts = new List<ContractDebtEntry>();
             if (data.playerContracts == null) data.playerContracts = new List<PlayerContractEntry>();
             if (data.locationContracts == null) data.locationContracts = new List<LocationContractEntry>();
-            if (migrated) SaveContracts(data);
+            if (migrated && persistMigration) SaveContracts(data);
 
             return data.HasData ? RepositoryLoadStatus.Loaded : RepositoryLoadStatus.ValidEmptySave;
+        }
+
+        private static RepositoryLoadStatus RestoreMarketsSnapshot(MarketSaveData data)
+        {
+            WriteSnapshotAtomically(MarketsKey, JsonUtility.ToJson(data));
+            return data.HasData ? RepositoryLoadStatus.Loaded : RepositoryLoadStatus.ValidEmptySave;
+        }
+
+        private static RepositoryLoadStatus RestoreContractsSnapshot(ContractSaveData data)
+        {
+            WriteSnapshotAtomically(ContractsKey, JsonUtility.ToJson(data));
+            return data.HasData ? RepositoryLoadStatus.Loaded : RepositoryLoadStatus.ValidEmptySave;
+        }
+
+        private static bool WriteSnapshotAtomically(string key, string json)
+        {
+            string backupKey = key == MarketsKey ? MarketsBackupKey : ContractsBackupKey;
+            string tempKey = key == MarketsKey ? MarketsTempKey : ContractsTempKey;
+
+            try
+            {
+                // First durable point: a valid temp snapshot exists before the primary changes.
+                PlayerPrefs.SetString(tempKey, json);
+                PlayerPrefs.Save();
+
+                if (PlayerPrefs.HasKey(key))
+                    PlayerPrefs.SetString(backupKey, PlayerPrefs.GetString(key, ""));
+
+                PlayerPrefs.SetString(key, json);
+                PlayerPrefs.DeleteKey(tempKey);
+                PlayerPrefs.Save();
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                // Не удаляем temp key после ошибки: следующий load может использовать
+                // его как последний валидный snapshot.
+                Debug.LogError($"[PlayerPrefsRepository] atomic snapshot write failed for '{key}': {e.Message}");
+                return false;
+            }
         }
 
         // --- Ключи (нижний регистр для id локации, чтобы 'PRIMIUM' и 'primium' не расходились) ---

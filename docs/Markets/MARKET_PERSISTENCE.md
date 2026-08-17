@@ -21,7 +21,7 @@
 | `Assets/_Project/Trade/Scripts/Dto/MarketSaveData.cs` | `[Serializable]` DTO: `MarketSaveData`, `MarketLocationSaveEntry`, `MarketItemSaveEntry`, `MarketEventSaveEntry` |
 | `Assets/_Project/Trade/Scripts/Repository/IPlayerDataRepository.cs` | Интерфейс: `+ SaveMarkets` / `+ TryLoadMarkets` с `RepositoryLoadStatus` |
 | `Assets/_Project/Trade/Scripts/Repository/ServerFileRepository.cs` | JSON: `ServerData/markets.json` |
-| `Assets/_Project/Trade/Scripts/Repository/PlayerPrefsRepository.cs` | PlayerPrefs key: `PD2_Markets` |
+| `Assets/_Project/Trade/Scripts/Repository/PlayerPrefsRepository.cs` | PlayerPrefs keys: `PD2_Markets`, `PD2_Markets_bak`, `PD2_Markets_tmp` (best-effort recovery) |
 | `Assets/_Project/Trade/Scripts/Core/TradeWorld.cs` | `SaveAll()` / `LoadAll()`; save после buy/sell/npc/events/Shutdown |
 
 ## DTO Shape

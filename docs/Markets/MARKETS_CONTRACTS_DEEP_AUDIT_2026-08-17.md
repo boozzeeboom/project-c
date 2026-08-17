@@ -448,7 +448,7 @@ JSON не содержит явного schema version и migration pipeline. Pe
 
 ### Ограничения этапа 6
 
-- `PlayerPrefsRepository` по-прежнему не имеет backup/atomic-replace семантики host-платформы.
+- `PlayerPrefsRepository` не имеет filesystem-level atomic rename; для markets/contracts реализован best-effort temp/backup key protocol.
 - `IPlayerDataRepository` различает `NoSaveFound`, `Loaded`, `ValidEmptySave`, `CorruptSave` и `UnsupportedSchema`; это закрыто на этапе 7.
 - Concurrency lock и единый transaction snapshot для credits/cargo/contracts/markets не реализованы.
 
@@ -1119,6 +1119,30 @@ The following documentation is currently inconsistent with code and must be upda
 
 ### Что ещё не закрыто
 
-- PlayerPrefs backup/atomicity limitation;
+- concurrency locking и общий transaction boundary;
+- dead RPC и legacy UI cleanup.
+
+---
+
+## 24. Реализованный этап 9 — best-effort PlayerPrefs recovery (`MKT-PER-003`)
+
+**Дата:** 17 августа 2026 г.
+**Scope:** backup/temp recovery для host persistence markets/contracts.
+
+### Изменения
+
+- `PlayerPrefsRepository` использует primary, `_bak` и `_tmp` keys для market/contract snapshots.
+- Snapshot сначала пишется во временный key и сохраняется, затем primary заменяется с сохранением предыдущего значения в backup key.
+- При повреждённом primary repository пытается восстановить snapshot из temp, затем из backup.
+- Valid-empty, corrupt и unsupported-schema statuses сохраняются в текущем `RepositoryLoadStatus` API.
+- Filesystem-level atomic rename для PlayerPrefs недоступен; это best-effort recovery, а не полноценная транзакция.
+
+### Проверка
+
+- Unity compile check: **No compile errors**.
+- PlayerPrefs corruption/restart recovery, Play Mode и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
 - concurrency locking и общий transaction boundary;
 - dead RPC и legacy UI cleanup.

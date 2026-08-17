@@ -26,7 +26,7 @@
 | `Assets/_Project/Trade/Scripts/Dto/ContractSaveData.cs` | **NEW** — DTO с `List<ContractData>`, `List<ContractDebtEntry>`, `List<PlayerContractEntry>`, `List<LocationContractEntry>` |
 | `Assets/_Project/Trade/Scripts/Repository/IPlayerDataRepository.cs` | + `SaveContracts` / `TryLoadContracts` |
 | `Assets/_Project/Trade/Scripts/Repository/ServerFileRepository.cs` | + реализация (JSON `ServerData/contracts.json`) |
-| `Assets/_Project/Trade/Scripts/Repository/PlayerPrefsRepository.cs` | + реализация (`PlayerPrefs "PD2_Contracts"`) |
+| `Assets/_Project/Trade/Scripts/Repository/PlayerPrefsRepository.cs` | + реализация (`PD2_Contracts` + best-effort `_bak`/`_tmp` recovery keys) |
 | `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` | + `SaveAll()` / `LoadAll()`, изменён `Initialize`, добавлены вызовы `SaveAll()` после мутаций |
 
 ## Data format
@@ -47,3 +47,4 @@
 - Пустой, но валидный JSON возвращает `ValidEmptySave`, а отсутствие ключа/файла — `NoSaveFound`
 - Повреждённый JSON возвращает `CorruptSave`; future schema возвращает `UnsupportedSchema` и не перезаписывается
 - После превышения retention limit старые `Completed/Failed` records удаляются из runtime registry после успешной записи
+- Для host persistence используются `PD2_Contracts`, `PD2_Contracts_bak` и `PD2_Contracts_tmp`; при повреждении primary repository пытается восстановить snapshot

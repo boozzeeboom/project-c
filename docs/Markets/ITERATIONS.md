@@ -191,7 +191,7 @@
 ## Итерация от 2026-08-17
 
 **Задача:** Этап 10 реализации аудита — concurrency lock и transaction policy для credits/cargo/markets/contracts (`MKT-PER-003`).
-**Коммит:** `c427da56813b7abcb2fa783da5d188f42f6b5af5` — T-MKT11: Сериализовать мутации экономики
+**Коммит:** `1bb3e0475e76d9ed41be835df36ef7638037ca8e` — T-MKT11: Сериализовать мутации экономики
 
 **Изменения:**
 - `Assets/_Project/Trade/Scripts/Repository/RepositoryTransactionScope.cs` — process-wide re-entrant critical section и transaction execution helper

@@ -14,17 +14,16 @@
 ## Итерация от 2026-08-17 (T-JITTER16)
 
 **Задача:** Измерить baked-вершины персонажа в рантайме на origin и в WorldScene_0_0  
-**Коммит:** `2f5191ae8917065dd421b7ceb8ca893f8c035644` — T-JITTER16: откат T-JITTER15 и добавление runtime vertex probe  
-**Статус:** Диагностический зонд создан и добавлен в `NetworkPlayer.prefab`; требуется runtime playtest пользователя
+**Коммит:** `2f5191ae8917065dd421b7ceb8ca893f8c035644` — T-JITTER16: runtime vertex probe и последующая очистка  
+**Результат:** Подтверждено: на `distOrigin≈56493м` local baked-vertex deltas вырастают примерно в 3–5 раз относительно origin. `local` и `relative-world` совпадают, значит источник до камеры и `NetworkTransform` — в humanoid deformation/skinning-пути при больших абсолютных координатах.
 **Изменения:**
-- `Assets/_Project/Scripts/Debug/SkinnedVertexRuntimeProbe.cs` — измеряет local, relative-world и world deltas sampled vertices через `SkinnedMeshRenderer.BakeMesh()`
-- `Assets/_Project/Prefabs/NetworkPlayer.prefab` — добавлен `ProjectC.DebugTools.SkinnedVertexRuntimeProbe` на root `NetworkPlayer`
-- Compile check: ошибок нет
+- Создан и после теста удалён временный `SkinnedVertexRuntimeProbe`.
+- Удалены временные `BoneJitterRuntimeProbe`, `JitterClipProbe`, `InvestigateAnimator`.
+- Компонент `ProjectC.DebugTools.SkinnedVertexRuntimeProbe` удалён из `NetworkPlayer.prefab`.
+- T-JITTER15 (`skinnedMotionVectors=false` после body-swap) откатан: симптом не изменился.
+- Compile check после очистки: ошибок нет.
 
-**Протокол:**
-- Прогон A: персонаж около `(0, 3, 0)`
-- Прогон B: персонаж после загрузки `WorldScene_0_0` около `(40000, 3000, 40000)`
-- Сравнить строки `[SkinnedVertexProbe]` по `local max/rms`, `relative max/rms`, `world max/rms`
+**Следующее архитектурное решение:** перейти к local-coordinate слою для MMO: `SceneID/ChunkID + localPosition`, чтобы humanoid и физика работали рядом с Unity origin; глобальные координаты не хранить в одном float `Transform.position`.
 
 ---
 

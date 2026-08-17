@@ -1,7 +1,7 @@
 # Investigation: Микротряска персонажа при стоянии (Character Micro-Jitter)
 
 **Дата:** 2026-07-26  
-**Статус:** ⛔ НЕ РЕШЕНО (2026-07-26) — первопричина не найдена. Локализовано: humanoid-скиннинг при игре анимации; R1 (GPU Deformation/skinning) и R5 (float-точность) исключены. См. §9.  
+**Статус:** 🟡 ПЕРВОПРИЧИНА ЛОКАЛИЗОВАНА, ФИКС НЕ ВНЕДРЁН (2026-08-17) — runtime `SkinnedMeshRenderer.BakeMesh()` подтвердил рост локальных baked-vertex deltas на координатах WorldScene (~56,5 км). См. §9.5.  
 **Тикет:** (связанные T-JITTER01, T-JITTER01-v2, T-JITTER02, T-JITTER02v2, T-JITTER03, T-CAM05v2)
 
 ---
@@ -433,28 +433,42 @@ Idle-анимация `HumanM@Idle01` (Kevin Iglesias) — даже без root 
 | R5: float-точность на 56км | Тест 3 + косвенные наблюдения | ❌ | Другие объекты рядом, Т-поза при движении, анимированные предметы на тех же координатах НЕ трясутся → артефакт НЕ глобальный |
 | R1: GPU Deformation/skinning | Тест 1 (`meshDeformation=CPU`, `gpuSkinning=false`) | ❌ тряска осталась | GPU-скиннинг/деформация НЕ причина (настройки возвращены к исходным) |
 
-### 9.3 Что осталось неразрешённым
+### 9.3 Предыдущий итог был пересмотрен
 
-Точка локализации сузилась до **рендер-слоя humanoid-скиннинга при игре анимации**:
+Вывод R5 из предыдущего bone-level зонда был недостаточен: измерялись мировые координаты костей, и float32-квантование маскировало реальный vertex-level эффект. Поэтому утверждение «float-точность исключена» больше не актуально.
 
-- Animator выключен (Т-поза) → тряски НЕТ (подтверждено пользователем).
-- Другие объекты / брошенные предметы / корабль в тех же координатах → тряски НЕТ.
-- Edit-mode humanoid muscle-оценка клипа → ГЛАДКАЯ (0.48мм, §8.2).
-- GPU Deformation Off + GPU Skinning Off → тряска ОСТАЛАСЬ.
+### 9.4 Финальный runtime-тест baked-вершин (T-JITTER16)
 
-Т.е. шум возникает **между гладкими костями и отрендеренными вершинами**, но не в GPU
-Deformation/skinning (выключены — не помогло). Неисследованными остались:
+В `WorldScene_0_0` пользовательский прогон дал следующие устойчивые значения для одного и того же меша `HumanM_BodyMesh` (8492 вершины) и одного и того же Animator state:
 
-- CPU-скиннинг `SkinnedMeshRenderer` сам по себе (vertex pipeline при 60–140 fps и переменном dt);
-- Animator update timing (флуктуации deltaTime 60–140 fps в muscle-оценке);
-- специфика Idle-клипа (дыхание) на sub-pixel масштабе.
+| Условие | local max | local RMS | relative max/RMS |
+|---|---:|---:|---:|
+| Origin, `distOrigin≈1м` | 1.95–2.65 мм | 0.32–0.52 мм | совпадает с local |
+| WorldScene, `distOrigin≈56493м` | 4.44–5.13 мм | 1.18–1.80 мм | совпадает с local |
 
-**Итог: первопричина НЕ установлена. Дальнейшая работа остановлена по решению пользователя («больше не кодим»).**
+`relative max/rms` совпадает с `local max/rms`, поэтому увеличение возникает уже в baked-вершинах, а не при применении `localToWorldMatrix`, камере или NetworkTransform. Единичный `world max=56492912 мм` в первом кадре после телепорта — ожидаемый скачок полного world-space перемещения и не относится к Idle-джиттеру.
 
-### 9.4 Следы в коде (для будущей сессии)
+**Заключение:** абсолютные координаты около 56,5 км усиливают ошибку в runtime humanoid deformation/skinning-пути Unity. Точная внутренняя стадия Unity не раскрыта, но практический источник локализован: humanoid `Animator` + `SkinnedMeshRenderer` при большом абсолютном `Transform.position`.
 
-- `Assets/_Project/Scripts/Debug/BoneJitterRuntimeProbe.cs` — runtime-зонд (оставлен, рабочий, Input System).
-- `Assets/_Project/Scripts/Editor/JitterClipProbe.cs` — edit-mode зонд (оставлен).
-- FloatingOrigin порог ВОЗВРАЩЁН к 100км (revert `109e78dc`) — R5 исключён.
-- GPU Deformation/Skinning ВОЗВРАЩЕНЫ к GPUBatched/True — R1 исключён, проект в исходном состоянии.
+### 9.5 Архитектурное решение для MMO
+
+Оставлять humanoid-персонажей и физику на абсолютных float-координатах порядка `(40000, 3000, 40000)` нельзя. Требуется local-coordinate слой:
+
+```text
+GlobalWorldPosition = SceneID / ChunkID + local position
+Unity Transform.position = локальная позиция рядом с origin
+```
+
+Сетевой слой должен передавать ячейку/сцену и локальную позицию, а не один глобальный float `Vector3`. Dynamic recenter должен происходить на границах локальной области без интерпретации сдвига как реального движения игрока.
+
+### 9.6 Очистка диагностических инструментов
+
+Временные инструменты расследования удалены после получения вывода:
+
+- `Assets/_Editor/InvestigateAnimator.cs`
+- `Assets/_Project/Scripts/Debug/BoneJitterRuntimeProbe.cs`
+- `Assets/_Project/Scripts/Debug/SkinnedVertexRuntimeProbe.cs`
+- `Assets/_Project/Scripts/Editor/JitterClipProbe.cs`
+
+Отключение `skinnedMotionVectors` после body-swap также откатано: оно не изменило симптом.
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using ProjectC.Trade.Core;
@@ -32,6 +33,8 @@ namespace ProjectC.Trade.Repository
             catch (System.Exception e) { Debug.LogError($"[ServerFileRepository] mkdir failed: {e.Message}"); }
         }
 
+        public IDisposable AcquireTransactionLock() => RepositoryTransactionScope.Acquire();
+
         public float GetCredits(ulong clientId)
         {
             string key = clientId.ToString();
@@ -48,16 +51,21 @@ namespace ProjectC.Trade.Repository
             catch { _creditsCache[key] = STARTING_CREDITS; return STARTING_CREDITS; }
         }
 
-        public void SetCredits(ulong clientId, float credits)
+        public bool SetCredits(ulong clientId, float credits)
         {
             float clamped = Mathf.Max(0f, credits);
-            _creditsCache[clientId.ToString()] = clamped;
             try
             {
                 string path = Path.Combine(_rootDir, $"credits_{clientId}.txt");
                 File.WriteAllText(path, clamped.ToString());
+                _creditsCache[clientId.ToString()] = clamped;
+                return true;
             }
-            catch (System.Exception e) { Debug.LogError($"[ServerFileRepository] write credits failed: {e.Message}"); }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ServerFileRepository] write credits failed: {e.Message}");
+                return false;
+            }
         }
 
         public bool TryModifyCredits(ulong clientId, float delta, out float newCredits, out string failReason)
@@ -67,8 +75,10 @@ namespace ProjectC.Trade.Repository
             float target = current + delta;
             if (target < 0f) { newCredits = current; failReason = "insufficient_credits"; return false; }
             newCredits = target;
-            SetCredits(clientId, newCredits);
-            return true;
+            if (SetCredits(clientId, newCredits)) return true;
+            newCredits = current;
+            failReason = "persistence_error";
+            return false;
         }
 
         public bool TryGetWarehouse(ulong clientId, string locationId, out List<WarehouseEntry> items)
@@ -87,17 +97,26 @@ namespace ProjectC.Trade.Repository
             return true;
         }
 
-        public void SetWarehouse(ulong clientId, string locationId, List<WarehouseEntry> items)
+        public bool SetWarehouse(ulong clientId, string locationId, List<WarehouseEntry> items)
         {
-            if (string.IsNullOrEmpty(locationId)) return;
+            if (string.IsNullOrEmpty(locationId)) return false;
             string path = Path.Combine(_rootDir, $"warehouse_{clientId}_{(locationId ?? "").ToLowerInvariant()}.json");
             try
             {
-                if (items == null || items.Count == 0) { if (File.Exists(path)) File.Delete(path); return; }
+                if (items == null || items.Count == 0)
+                {
+                    if (File.Exists(path)) File.Delete(path);
+                    return true;
+                }
                 var data = new SaveData { items = items };
                 File.WriteAllText(path, JsonUtility.ToJson(data));
+                return true;
             }
-            catch (System.Exception e) { Debug.LogError($"[ServerFileRepository] write warehouse failed: {e.Message}"); }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ServerFileRepository] write warehouse failed: {e.Message}");
+                return false;
+            }
         }
 
         public bool TryGetCargo(ulong shipNetworkObjectId, out List<WarehouseEntry> items)
@@ -115,16 +134,25 @@ namespace ProjectC.Trade.Repository
             return true;
         }
 
-        public void SetCargo(ulong shipNetworkObjectId, List<WarehouseEntry> items)
+        public bool SetCargo(ulong shipNetworkObjectId, List<WarehouseEntry> items)
         {
             string path = Path.Combine(_rootDir, $"cargo_{shipNetworkObjectId}.json");
             try
             {
-                if (items == null || items.Count == 0) { if (File.Exists(path)) File.Delete(path); return; }
+                if (items == null || items.Count == 0)
+                {
+                    if (File.Exists(path)) File.Delete(path);
+                    return true;
+                }
                 var data = new SaveData { items = items };
                 File.WriteAllText(path, JsonUtility.ToJson(data));
+                return true;
             }
-            catch (System.Exception e) { Debug.LogError($"[ServerFileRepository] write cargo failed: {e.Message}"); }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ServerFileRepository] write cargo failed: {e.Message}");
+                return false;
+            }
         }
 
         // --- Markets ---
@@ -138,18 +166,20 @@ namespace ProjectC.Trade.Repository
             return TryMigrateMarkets(data, path);
         }
 
-        public void SaveMarkets(MarketSaveData data)
+        public bool SaveMarkets(MarketSaveData data)
         {
-            if (data == null) return;
+            if (data == null) return false;
             string path = Path.Combine(_rootDir, "markets.json");
             try
             {
                 string json = JsonUtility.ToJson(data);
                 WriteJsonAtomically(path, json);
+                return true;
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"[ServerFileRepository] SaveMarkets failed: {e.Message}");
+                return false;
             }
         }
 

@@ -126,6 +126,20 @@ namespace ProjectC.Trade.Core
             ShipClass shipClass,
             bool useUnlimitedCredits)
         {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryNpcBuyCore(npcClientId, locationId, itemId, quantity, npcShipNetworkObjectId, shipClass, useUnlimitedCredits));
+        }
+
+        private TradeResult TryNpcBuyCore(
+            ulong npcClientId,
+            string locationId,
+            string itemId,
+            int quantity,
+            ulong npcShipNetworkObjectId,
+            ShipClass shipClass,
+            bool useUnlimitedCredits)
+        {
             // 1. Валидация (аналогично TryBuy)
             if (string.IsNullOrEmpty(itemId) || quantity <= 0)
                 return TradeResult.Fail(TradeResultCode.InvalidArgs, "invalid_args", 0f, null, null);
@@ -209,6 +223,20 @@ namespace ProjectC.Trade.Core
         /// Returns: TradeResult.
         /// </summary>
         public TradeResult TryNpcSell(
+            ulong npcClientId,
+            string locationId,
+            string itemId,
+            int quantity,
+            ulong npcShipNetworkObjectId,
+            ShipClass shipClass,
+            bool useUnlimitedCredits)
+        {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryNpcSellCore(npcClientId, locationId, itemId, quantity, npcShipNetworkObjectId, shipClass, useUnlimitedCredits));
+        }
+
+        private TradeResult TryNpcSellCore(
             ulong npcClientId,
             string locationId,
             string itemId,
@@ -362,9 +390,14 @@ namespace ProjectC.Trade.Core
         /// Save all runtime market state (stock, demand/supply, events) to repository.
         /// Called after every mutation (buy/sell/npc/event) and on shutdown.
         /// </summary>
-        public void SaveAll()
+        public bool SaveAll()
         {
-            if (Repository == null || _persistenceWriteBlocked || _markets.Count == 0) return;
+            return RepositoryTransactionScope.Execute(Repository, SaveAllCore);
+        }
+
+        private bool SaveAllCore()
+        {
+            if (Repository == null || _persistenceWriteBlocked || _markets.Count == 0) return false;
 
             var dto = new Dto.MarketSaveData();
 
@@ -404,7 +437,7 @@ namespace ProjectC.Trade.Core
                 });
             }
 
-            Repository.SaveMarkets(dto);
+            return Repository.SaveMarkets(dto);
         }
 
         /// <summary>
@@ -565,6 +598,13 @@ namespace ProjectC.Trade.Core
         /// </summary>
         public TradeResult TryBuy(ulong clientId, string locationId, string itemId, int quantity)
         {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryBuyCore(clientId, locationId, itemId, quantity));
+        }
+
+        private TradeResult TryBuyCore(ulong clientId, string locationId, string itemId, int quantity)
+        {
             // 1. Базовая валидация
             if (string.IsNullOrEmpty(itemId) || quantity <= 0)
                 return TradeResult.Fail(TradeResultCode.InvalidArgs, "invalid_args", Repository.GetCredits(clientId), null, null);
@@ -629,6 +669,13 @@ namespace ProjectC.Trade.Core
         /// Продать товар со склада на рынок. Получить кредиты.
         /// </summary>
         public TradeResult TrySell(ulong clientId, string locationId, string itemId, int quantity)
+        {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TrySellCore(clientId, locationId, itemId, quantity));
+        }
+
+        private TradeResult TrySellCore(ulong clientId, string locationId, string itemId, int quantity)
         {
             if (string.IsNullOrEmpty(itemId) || quantity <= 0)
                 return TradeResult.Fail(TradeResultCode.InvalidArgs, "invalid_args", Repository.GetCredits(clientId), null, null);
@@ -697,6 +744,13 @@ namespace ProjectC.Trade.Core
         /// Переместить товар со склада в трюм корабля.
         /// </summary>
         public TradeResult TryLoadToShip(ulong clientId, string locationId, string itemId, int quantity, ulong shipNetworkObjectId, ShipClass shipClass)
+        {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryLoadToShipCore(clientId, locationId, itemId, quantity, shipNetworkObjectId, shipClass));
+        }
+
+        private TradeResult TryLoadToShipCore(ulong clientId, string locationId, string itemId, int quantity, ulong shipNetworkObjectId, ShipClass shipClass)
         {
             if (string.IsNullOrEmpty(itemId) || quantity <= 0 || shipNetworkObjectId == 0)
                 return TradeResult.Fail(TradeResultCode.InvalidArgs, "invalid_args", Repository.GetCredits(clientId), null, null);
@@ -819,6 +873,13 @@ namespace ProjectC.Trade.Core
         /// </summary>
         public TradeResult TryUnloadFromShip(ulong clientId, string locationId, string itemId, int quantity, ulong shipNetworkObjectId, ShipClass shipClass)
         {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryUnloadFromShipCore(clientId, locationId, itemId, quantity, shipNetworkObjectId, shipClass));
+        }
+
+        private TradeResult TryUnloadFromShipCore(ulong clientId, string locationId, string itemId, int quantity, ulong shipNetworkObjectId, ShipClass shipClass)
+        {
             if (string.IsNullOrEmpty(itemId) || quantity <= 0 || shipNetworkObjectId == 0)
                 return TradeResult.Fail(TradeResultCode.InvalidArgs, "invalid_args", Repository.GetCredits(clientId), null, null);
             if (string.IsNullOrEmpty(locationId))
@@ -851,6 +912,30 @@ namespace ProjectC.Trade.Core
         /// ни один контейнер не изменяется.
         /// </summary>
         public bool TryConsumeDeliveryCargo(
+            ulong clientId,
+            string locationId,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass,
+            string itemId,
+            int quantity,
+            out string failReason)
+        {
+            string localFailReason = null;
+            bool result = RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryConsumeDeliveryCargoCore(
+                    clientId,
+                    locationId,
+                    shipNetworkObjectId,
+                    shipClass,
+                    itemId,
+                    quantity,
+                    out localFailReason));
+            failReason = localFailReason;
+            return result;
+        }
+
+        private bool TryConsumeDeliveryCargoCore(
             ulong clientId,
             string locationId,
             ulong shipNetworkObjectId,
@@ -904,10 +989,10 @@ namespace ProjectC.Trade.Core
 
             try
             {
-                if (fromCargo > 0)
-                    Repository.SetCargo(shipNetworkObjectId, cargo.SaveToList());
-                if (fromWarehouse > 0)
-                    Repository.SetWarehouse(clientId, locationId, warehouse.SaveToList());
+                if (fromCargo > 0 && !Repository.SetCargo(shipNetworkObjectId, cargo.SaveToList()))
+                    throw new System.InvalidOperationException("cargo persistence failed");
+                if (fromWarehouse > 0 && !Repository.SetWarehouse(clientId, locationId, warehouse.SaveToList()))
+                    throw new System.InvalidOperationException("warehouse persistence failed");
             }
             catch (System.Exception ex)
             {
@@ -915,17 +1000,21 @@ namespace ProjectC.Trade.Core
                 // cargo/warehouse при ошибке persistence.
                 if (cargo != null) cargo.LoadFrom(cargoBefore);
                 warehouse.LoadFrom(warehouseBefore);
+                bool rollbackOk = true;
                 try
                 {
-                    if (fromCargo > 0)
-                        Repository.SetCargo(shipNetworkObjectId, cargoBefore);
-                    if (fromWarehouse > 0)
-                        Repository.SetWarehouse(clientId, locationId, warehouseBefore);
+                    if (fromCargo > 0 && !Repository.SetCargo(shipNetworkObjectId, cargoBefore))
+                        rollbackOk = false;
+                    if (fromWarehouse > 0 && !Repository.SetWarehouse(clientId, locationId, warehouseBefore))
+                        rollbackOk = false;
                 }
                 catch (System.Exception rollbackEx)
                 {
+                    rollbackOk = false;
                     Debug.LogError($"[TradeWorld] DELIVERY_CARGO rollback failed: {rollbackEx.Message}");
                 }
+                if (!rollbackOk)
+                    Debug.LogError("[TradeWorld] DELIVERY_CARGO rollback reported persistence failure");
 
                 Debug.LogError($"[TradeWorld] DELIVERY_CARGO persistence failed: {ex.Message}");
                 failReason = "persistence_error";
@@ -1104,6 +1193,13 @@ namespace ProjectC.Trade.Core
         /// Главный тик рынка. Time-based (dt — секунды), не tick-based.
         /// </summary>
         public void MarketTick(float dtSeconds, float nowUnscaled = -1f)
+        {
+            RepositoryTransactionScope.Execute(
+                Repository,
+                () => MarketTickCore(dtSeconds, nowUnscaled));
+        }
+
+        private void MarketTickCore(float dtSeconds, float nowUnscaled = -1f)
         {
             if (nowUnscaled < 0f) nowUnscaled = Time.realtimeSinceStartup;
 

@@ -61,6 +61,13 @@ MarketSaveData
 | Событие деактивировалось (истекло время) | `MarketTick` → dirty flag → `SaveAll()` |
 | Сервер остановлен | `Shutdown` → `SaveAll()` |
 
+## Transaction policy
+
+- `TradeWorld` serializes buy/sell/NPC/load/unload/market-tick mutations through the process-wide `RepositoryTransactionScope`.
+- `SaveAll()` returns `bool`; market persistence failures are observable by the caller.
+- `ServerFileRepository` is atomic per `markets.json` file; `PlayerPrefsRepository` uses best-effort `_tmp`/`_bak` recovery keys.
+- Credits, cargo and market files/keys are not one crash-safe filesystem snapshot; cross-resource rollback remains the domain responsibility.
+
 ## Verification
 
 - Купить товар (сток падает) → рестарт сервера → сток остаётся сниженным

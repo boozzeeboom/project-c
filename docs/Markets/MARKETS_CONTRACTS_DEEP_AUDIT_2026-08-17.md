@@ -1142,7 +1142,38 @@ The following documentation is currently inconsistent with code and must be upda
 - Unity compile check: **No compile errors**.
 - PlayerPrefs corruption/restart recovery, Play Mode и screenshots не выполнялись.
 
-### Что ещё не закрыто
+### Дальнейшие ограничения после этапа 9
 
 - concurrency locking и общий transaction boundary;
+- dead RPC и legacy UI cleanup.
+
+---
+
+## 25. Реализованный этап 10 — concurrency lock и transaction policy (`MKT-PER-003`)
+
+**Дата:** 17 августа 2026 г.
+**Scope:** сериализация server-side economy mutations и явная policy для cross-key persistence.
+
+### Изменения
+
+- Добавлен `RepositoryTransactionScope` с process-wide re-entrant critical section.
+- `IPlayerDataRepository` получил `AcquireTransactionLock()`; compound operations `TradeWorld` и `ContractWorld` выполняются внутри общей блокировки.
+- `SetCredits`, `SetWarehouse`, `SetCargo` и `SaveMarkets` теперь возвращают `bool`, поэтому ошибка записи не маскируется как успешная мутация.
+- `TradeWorld.SaveAll()` и `ContractWorld.SaveAll()` возвращают результат записи; retention contracts выполняется только после успешного save.
+- Delivery completion сохраняет snapshots cargo/warehouse/credits и выполняет compensating rollback при ошибке reward или contracts persistence.
+
+### Transaction policy
+
+- Lock закрывает read/validate/mutate/persist command boundary внутри одного server process.
+- `ServerFileRepository` сохраняет atomicity на уровне каждого файла, `PlayerPrefsRepository` — best-effort temp/backup protocol.
+- Общего crash-safe файла для credits/cargo/markets/contracts пока нет; при ошибке применяется compensating rollback и запись блокируется там, где нельзя безопасно продолжать.
+- `PlayerPrefsRepository` по-прежнему должен вызываться с Unity main thread; lock защищает только concurrent access внутри процесса.
+
+### Проверка
+
+- Unity compile check: **No compile errors**.
+- Play Mode, persistence round-trip, concurrent stress test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
 - dead RPC и legacy UI cleanup.

@@ -185,3 +185,19 @@
 - `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирована частичная реализация `MKT-PER-003`
 - Unity compile check: ошибок компиляции нет
 - PlayerPrefs corruption/restart recovery, Play Mode и screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 10 реализации аудита — concurrency lock и transaction policy для credits/cargo/markets/contracts (`MKT-PER-003`).
+**Коммит:** `c427da56813b7abcb2fa783da5d188f42f6b5af5` — T-MKT11: Сериализовать мутации экономики
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Repository/RepositoryTransactionScope.cs` — process-wide re-entrant critical section и transaction execution helper
+- `Assets/_Project/Trade/Scripts/Repository/IPlayerDataRepository.cs` — lock API и bool persistence results для credits/warehouse/cargo/markets
+- `Assets/_Project/Trade/Scripts/Repository/ServerFileRepository.cs` и `PlayerPrefsRepository.cs` — bool write results
+- `Assets/_Project/Trade/Scripts/Core/TradeWorld.cs` — transaction scope для trade/cargo/market mutations и rollback-aware delivery persistence
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — transaction scope и rollback delivery completion при persistence failure
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирована transaction policy
+- Unity compile check: без ошибок; Play Mode, stress tests и screenshots не выполнялись

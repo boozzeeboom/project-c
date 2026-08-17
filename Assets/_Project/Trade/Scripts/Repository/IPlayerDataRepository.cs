@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
@@ -31,18 +32,25 @@ namespace ProjectC.Trade.Repository
     /// </summary>
     public interface IPlayerDataRepository
     {
+        /// <summary>
+        /// Acquires the process-wide player-economy transaction lock.
+        /// The scope serializes compound domain mutations; it does not make
+        /// multiple files/keys crash-atomically committed.
+        /// </summary>
+        IDisposable AcquireTransactionLock();
+
         // --- Credits ---
         float GetCredits(ulong clientId);
-        void SetCredits(ulong clientId, float credits);
+        bool SetCredits(ulong clientId, float credits);
         bool TryModifyCredits(ulong clientId, float delta, out float newCredits, out string failReason);
 
         // --- Warehouse (привязан к локации) ---
         bool TryGetWarehouse(ulong clientId, string locationId, out List<WarehouseEntry> items);
-        void SetWarehouse(ulong clientId, string locationId, List<WarehouseEntry> items);
+        bool SetWarehouse(ulong clientId, string locationId, List<WarehouseEntry> items);
 
         // --- Cargo (привязан к NetworkObjectId корабля) ---
         bool TryGetCargo(ulong shipNetworkObjectId, out List<WarehouseEntry> items);
-        void SetCargo(ulong shipNetworkObjectId, List<WarehouseEntry> items);
+        bool SetCargo(ulong shipNetworkObjectId, List<WarehouseEntry> items);
 
         // --- Contracts (T-Q?? persistence) ---
         RepositoryLoadStatus TryLoadContracts(out ContractSaveData data);
@@ -50,6 +58,6 @@ namespace ProjectC.Trade.Repository
 
         // --- Markets (runtime state persistence) ---
         RepositoryLoadStatus TryLoadMarkets(out MarketSaveData data);
-        void SaveMarkets(MarketSaveData data);
+        bool SaveMarkets(MarketSaveData data);
     }
 }

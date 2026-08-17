@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
@@ -24,6 +25,8 @@ namespace ProjectC.Trade.Repository
     {
         public const float STARTING_CREDITS = 1000f;
 
+        public IDisposable AcquireTransactionLock() => RepositoryTransactionScope.Acquire();
+
         private const string MarketsKey = "PD2_Markets";
         private const string MarketsBackupKey = "PD2_Markets_bak";
         private const string MarketsTempKey = "PD2_Markets_tmp";
@@ -36,11 +39,20 @@ namespace ProjectC.Trade.Repository
             return PlayerPrefs.GetFloat(CreditsKey(clientId), STARTING_CREDITS);
         }
 
-        public void SetCredits(ulong clientId, float credits)
+        public bool SetCredits(ulong clientId, float credits)
         {
-            float clamped = Mathf.Max(0f, credits);
-            PlayerPrefs.SetFloat(CreditsKey(clientId), clamped);
-            PlayerPrefs.Save();
+            try
+            {
+                float clamped = Mathf.Max(0f, credits);
+                PlayerPrefs.SetFloat(CreditsKey(clientId), clamped);
+                PlayerPrefs.Save();
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[PlayerPrefsRepository] write credits failed: {e.Message}");
+                return false;
+            }
         }
 
         public bool TryModifyCredits(ulong clientId, float delta, out float newCredits, out string failReason)
@@ -50,8 +62,10 @@ namespace ProjectC.Trade.Repository
             float target = current + delta;
             if (target < 0f) { newCredits = current; failReason = "insufficient_credits"; return false; }
             newCredits = target;
-            SetCredits(clientId, newCredits);
-            return true;
+            if (SetCredits(clientId, newCredits)) return true;
+            newCredits = current;
+            failReason = "persistence_error";
+            return false;
         }
 
         public bool TryGetWarehouse(ulong clientId, string locationId, out List<WarehouseEntry> items)
@@ -74,19 +88,28 @@ namespace ProjectC.Trade.Repository
             }
         }
 
-        public void SetWarehouse(ulong clientId, string locationId, List<WarehouseEntry> items)
+        public bool SetWarehouse(ulong clientId, string locationId, List<WarehouseEntry> items)
         {
-            if (string.IsNullOrEmpty(locationId)) return;
-            if (items == null || items.Count == 0)
+            if (string.IsNullOrEmpty(locationId)) return false;
+            try
             {
-                PlayerPrefs.DeleteKey(WarehouseKey(clientId, locationId));
+                if (items == null || items.Count == 0)
+                {
+                    PlayerPrefs.DeleteKey(WarehouseKey(clientId, locationId));
+                }
+                else
+                {
+                    var data = new WarehouseSaveData { items = items };
+                    PlayerPrefs.SetString(WarehouseKey(clientId, locationId), JsonUtility.ToJson(data));
+                }
+                PlayerPrefs.Save();
+                return true;
             }
-            else
+            catch (System.Exception e)
             {
-                var data = new WarehouseSaveData { items = items };
-                PlayerPrefs.SetString(WarehouseKey(clientId, locationId), JsonUtility.ToJson(data));
+                Debug.LogError($"[PlayerPrefsRepository] write warehouse failed: {e.Message}");
+                return false;
             }
-            PlayerPrefs.Save();
         }
 
         public bool TryGetCargo(ulong shipNetworkObjectId, out List<WarehouseEntry> items)
@@ -108,18 +131,27 @@ namespace ProjectC.Trade.Repository
             }
         }
 
-        public void SetCargo(ulong shipNetworkObjectId, List<WarehouseEntry> items)
+        public bool SetCargo(ulong shipNetworkObjectId, List<WarehouseEntry> items)
         {
-            if (items == null || items.Count == 0)
+            try
             {
-                PlayerPrefs.DeleteKey(CargoKey(shipNetworkObjectId));
+                if (items == null || items.Count == 0)
+                {
+                    PlayerPrefs.DeleteKey(CargoKey(shipNetworkObjectId));
+                }
+                else
+                {
+                    var data = new WarehouseSaveData { items = items };
+                    PlayerPrefs.SetString(CargoKey(shipNetworkObjectId), JsonUtility.ToJson(data));
+                }
+                PlayerPrefs.Save();
+                return true;
             }
-            else
+            catch (System.Exception e)
             {
-                var data = new WarehouseSaveData { items = items };
-                PlayerPrefs.SetString(CargoKey(shipNetworkObjectId), JsonUtility.ToJson(data));
+                Debug.LogError($"[PlayerPrefsRepository] write cargo failed: {e.Message}");
+                return false;
             }
-            PlayerPrefs.Save();
         }
 
         // --- Markets ---
@@ -152,10 +184,10 @@ namespace ProjectC.Trade.Repository
             return anySnapshotKey ? RepositoryLoadStatus.CorruptSave : RepositoryLoadStatus.NoSaveFound;
         }
 
-        public void SaveMarkets(MarketSaveData data)
+        public bool SaveMarkets(MarketSaveData data)
         {
-            if (data == null) return;
-            WriteSnapshotAtomically(MarketsKey, JsonUtility.ToJson(data));
+            if (data == null) return false;
+            return WriteSnapshotAtomically(MarketsKey, JsonUtility.ToJson(data));
         }
 
         // --- Contracts ---

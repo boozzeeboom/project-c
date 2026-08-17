@@ -151,9 +151,14 @@ namespace ProjectC.Trade.Core
         /// Save all contract state to IPlayerDataRepository.
         /// Called after every mutation (accept/complete/fail/tick) and on Shutdown.
         /// </summary>
-        public void SaveAll()
+        public bool SaveAll()
         {
-            if (Repository == null || _persistenceWriteBlocked) return;
+            return RepositoryTransactionScope.Execute(Repository, SaveAllCore);
+        }
+
+        private bool SaveAllCore()
+        {
+            if (Repository == null || _persistenceWriteBlocked) return false;
 
             var data = new ContractSaveData();
 
@@ -191,8 +196,9 @@ namespace ProjectC.Trade.Core
                 });
             }
 
-            if (Repository.SaveContracts(data))
-                PruneTerminalRecordsAfterSuccessfulPersistence();
+            if (!Repository.SaveContracts(data)) return false;
+            PruneTerminalRecordsAfterSuccessfulPersistence();
+            return true;
         }
 
         /// <summary>
@@ -610,6 +616,13 @@ namespace ProjectC.Trade.Core
         /// </summary>
         public ContractOpResult TryAccept(ulong clientId, string contractId)
         {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryAcceptCore(clientId, contractId));
+        }
+
+        private ContractOpResult TryAcceptCore(ulong clientId, string contractId)
+        {
             // 1. Валидация контракта
             var contract = GetContract(contractId);
             if (contract == null)
@@ -672,6 +685,23 @@ namespace ProjectC.Trade.Core
             ulong shipNetworkObjectId,
             ShipClass shipClass)
         {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryCompleteCore(
+                    clientId,
+                    contractId,
+                    completionLocationId,
+                    shipNetworkObjectId,
+                    shipClass));
+        }
+
+        private ContractOpResult TryCompleteCore(
+            ulong clientId,
+            string contractId,
+            string completionLocationId,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass)
+        {
             var contract = GetContract(contractId);
             if (contract == null)
                 return ContractOpResult.Fail(ContractResultCode.ContractNotFound, "Контракт не найден!");
@@ -711,7 +741,14 @@ namespace ProjectC.Trade.Core
             if (TradeWorld.Instance == null)
                 return ContractOpResult.Fail(ContractResultCode.InternalError, null);
 
-            if (!TradeWorld.Instance.TryConsumeDeliveryCargo(
+            var tradeWorld = TradeWorld.Instance;
+            var cargoBefore = shipNetworkObjectId != 0
+                ? tradeWorld.GetCargoSnapshot(shipNetworkObjectId, shipClass)
+                : null;
+            var warehouseBefore = tradeWorld.GetWarehouseSnapshot(clientId, contract.toLocationId);
+            float creditsBefore = Repository != null ? Repository.GetCredits(clientId) : 0f;
+
+            if (!tradeWorld.TryConsumeDeliveryCargo(
                     clientId,
                     contract.toLocationId,
                     shipNetworkObjectId,
@@ -736,20 +773,85 @@ namespace ProjectC.Trade.Core
             if (_playerContracts.ContainsKey(clientId))
                 _playerContracts[clientId].Remove(contractId);
 
-            // Начисляем награду
-            if (Repository != null)
+            // Начисляем награду. При ошибке записи возвращаем cargo/warehouse
+            // к снимку до completion и не переводим контракт в успешный результат.
+            if (Repository == null || !Repository.SetCredits(clientId, creditsBefore + contract.reward))
             {
-                float current = Repository.GetCredits(clientId);
-                Repository.SetCredits(clientId, current + contract.reward);
+                RestoreDeliveryState(
+                    clientId,
+                    contract.toLocationId,
+                    shipNetworkObjectId,
+                    shipClass,
+                    cargoBefore,
+                    warehouseBefore,
+                    creditsBefore);
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
             }
 
-            SaveAll();
+            if (!SaveAll())
+            {
+                contract.state = ContractState.Active;
+                contract.terminalAtUtcTicks = 0L;
+                if (!_playerContracts.TryGetValue(clientId, out var restoredIds))
+                {
+                    restoredIds = new List<string>();
+                    _playerContracts[clientId] = restoredIds;
+                }
+                if (!restoredIds.Contains(contractId)) restoredIds.Add(contractId);
+                RestoreDeliveryState(
+                    clientId,
+                    contract.toLocationId,
+                    shipNetworkObjectId,
+                    shipClass,
+                    cargoBefore,
+                    warehouseBefore,
+                    creditsBefore);
+                _persistenceWriteBlocked = true;
+                Debug.LogError("[ContractWorld] completion persistence failed; state rolled back and further writes blocked");
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+            }
 
             return ContractOpResult.Ok($"Контракт завершён! Награда: {contract.reward:F0} CR", contract, contract.reward);
         }
 
+        private void RestoreDeliveryState(
+            ulong clientId,
+            string locationId,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass,
+            List<WarehouseEntry> cargoBefore,
+            List<WarehouseEntry> warehouseBefore,
+            float creditsBefore)
+        {
+            if (Repository == null) return;
+
+            if (!Repository.SetCredits(clientId, creditsBefore))
+                Debug.LogError("[ContractWorld] completion rollback failed for credits");
+
+            if (cargoBefore != null)
+            {
+                var cargo = TradeWorld.Instance.GetOrLoadCargo(shipNetworkObjectId, shipClass);
+                cargo.LoadFrom(cargoBefore);
+                if (!Repository.SetCargo(shipNetworkObjectId, cargoBefore))
+                    Debug.LogError("[ContractWorld] completion rollback failed for cargo");
+                TradeWorld.Instance.NotifyCargoChanged(shipNetworkObjectId);
+            }
+
+            var warehouse = TradeWorld.Instance.GetOrLoadWarehouse(clientId, locationId);
+            warehouse.LoadFrom(warehouseBefore);
+            if (!Repository.SetWarehouse(clientId, locationId, warehouseBefore))
+                Debug.LogError("[ContractWorld] completion rollback failed for warehouse");
+        }
+
         /// <summary>Провалить контракт (отмена игрока или авто-fail по таймеру).</summary>
         public ContractOpResult TryFail(ulong clientId, string contractId, bool isManual)
+        {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryFailCore(clientId, contractId, isManual));
+        }
+
+        private ContractOpResult TryFailCore(ulong clientId, string contractId, bool isManual)
         {
             var contract = GetContract(contractId);
             if (contract == null)
@@ -818,6 +920,13 @@ namespace ProjectC.Trade.Core
         /// по таймеру — ContractServer шлёт клиентам ContractResultDto для каждого.
         /// </summary>
         public List<(ulong playerId, string contractId, ContractData contract)> Tick(float deltaTime, float now)
+        {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TickCore(deltaTime, now));
+        }
+
+        private List<(ulong playerId, string contractId, ContractData contract)> TickCore(float deltaTime, float now)
         {
             var expired = new List<(ulong, string, ContractData)>();
 

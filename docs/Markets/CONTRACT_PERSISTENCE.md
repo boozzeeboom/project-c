@@ -18,6 +18,9 @@
 - После успешного сохранения terminal history ограничивается `MaxTerminalRecordsPerPlayer` (по умолчанию `50`); Active/Pending records и debts не удаляются
 - После каждой мутации (`TryAccept`/`TryComplete`/`TryFail`/`Tick` при изменениях) — `SaveAll()`
 - При `Shutdown` — `SaveAll()`
+- Compound operations `TryAccept` / `TryComplete` / `TryFail` / `Tick` выполняются под process-wide transaction lock.
+- `SetCredits`, `SetWarehouse`, `SetCargo` и `SaveMarkets`/`SaveContracts` возвращают `bool`; completion прекращается fail-closed при ошибке reward или contracts persistence.
+- Общего crash-safe snapshot для credits/cargo/contracts/markets нет: lock сериализует command boundary, а delivery completion использует compensating rollback.
 
 ## Files changed
 

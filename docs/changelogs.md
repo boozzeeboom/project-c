@@ -1,42 +1,28 @@
-✅ 0.1.15 — Квесты, персонаж и главное меню (сделано)
+✅ 0.1.15 — Quests, Character & Main Menu (Complete)
+In short: quests work end-to-end, switching your character's gender is seamless, the main menu is more user-friendly, and the world remembers exactly where you left off.
+• Quests: First onboarding quest (Onboarding Alfa) — full loop: pickup, NPC dialogue, objectives, rewards
+• Quests: No duplicate rewards, turn-in only available upon completing all objectives, NPC proximity check
+• Character: Male/female body model toggle — model, skeleton, and animations swap entirely; skills remain fully functional after switching
+• Main Menu: Language selection, external link buttons, changelog, version display, settings panel, solo-dev notice
+• Saving: Ship position preserved when returning to menu, ship keys, equipment persistence
+• Camera: Stable spring-arm camera
+• Visuals: Personalized edge detection
+A post-apocalyptic sky MMO sandbox inspired by the book Integral Pyavitsa. Survivors live on floating islands high above the Cloud Sea. You are a trader and a pilot: take on cargo, haul it through storms and wind corridors, fight off pirates, invest in your ship — and set off again.
+Trade → Fly → Fight → Upgrade → Battle
+The game is currently at version 0.1.0 — the foundation is in place. From here we move through milestones, each one a complete, playable stage.
 
-Коротко: квесты работают насквозь, персонаж меняет пол без поломок, главное меню удобнее, а мир помнит, где ты остановился.
+-------------------------------------------------
 
-• Квесты: первый онбординг-квест (Onboarding alfa) — полный цикл: получение, разговор с NPC, цели, награды
-• Квесты: награды без дублей, сдача только при выполнении целей, проверка дистанции до NPC
-• Персонаж: смена мужской/женской модели тела — модель, скелет и анимации меняются целиком, навыки работают после смены
-• Главное меню: выбор языка, кнопки-ссылки, changelog, версия, панель настроек, уведомление о solo-dev
-• Сохранение: позиция корабля при выходе в меню, ключи кораблей, экипировка
-• Камера: стабильная spring-arm камера
-• Визуал: персонализация edge detection
+✅ 0.1.0 — Foundation (Complete)
+~4 months of development, 1,621 commits. Nearly the entire core has been built:
+• Economy, combat, ships, quests — 90%+ of the codebase • Architecture designed for multiplayer from day one: "the server decides, the client displays" • A 480×320 km world, 24 zones, day/night cycle, thunderstorms • Cloud Ocean 3.0 — volumetric clouds, ship trails, storm cells, lightning • Content creation toolkit: quests, dialogues, and NPCs can be built with zero coding • Localization into 9 languages
+➡ 0.2.0 — World Content. Hand-crafted quests, NPCs, routes, ship types. No new mechanics — pure content and polish.
+🚢 0.3.0 — Visuals. Full ship and environment models replacing primitives.
+⚔ 0.4.0 — Skills Come Alive. Animations and VFX for all combat abilities.
+🎧 0.5.0 — First Start-to-Finish Playable Build. Audio and polish. A complete playthrough from beginning to end with comfortable visuals.
+🖥 0.6.0 — Interface. UI/UX: HUD, menus, new-player onboarding.
+🤝 0.7.0 — Co-op. Steam: friends, invites, up to 4 players.
+🌐 0.8.0 — MMO. Server build. Dedicated servers: seamless world, accounts, anti-cheat.
+🏆 1.0 — Release. Final visuals and audio. A fully polished co-op MMO.
 
---------
-MMO-песочница в постапокалиптическом небе по книге "Интеграл Пьявица". Выжившие живут на парящих островах над облачным морем. Ты — торговец и пилот: берёшь груз, везёшь его сквозь шторма и ветровые коридоры, отбиваешься от пиратов, вкладываешь в корабль — и снова в путь.
-
-Торгуй → Летай → Воюй → Улучшайся → Сражайся
-
-Сейчас игра на версии 0.1.0 — фундамент готов. Дальше двигаемся вехами, и каждая веха — это законченный играбельный этап.
-
-✅ 0.1.0 — Фундамент (сделано)
-
-~4 месяца разработки, 1 621 коммит. За это время построено почти всё ядро:
-
-• Экономика, бой, корабли, квесты — 90%+ кодовой базы • Архитектура сразу под мультиплеер: «сервер решает, клиент показывает» • Мир 480×320 км, 24 зоны, день/ночь, грозы • Cloud Ocean 3.0 — объёмные облака, следы кораблей, штормовые ячейки, молнии • Конструктор контента: квесты, диалоги и NPC делаются без программирования • Локализация на 9 языков
-
-➡ 0.2.0 — Наполнение мира. Авторские квесты, NPC, маршруты, типы кораблей. Без новых механик — только контент и отладка.
-
-🚢 0.3.0 — Визуал. Модели кораблей и окружения вместо примитивов.
-
-⚔ 0.4.0 — Ожившие навыки. Анимации и VFX всех боевых умений.
-
-🎧 0.5.0 — Первая играбельная версия start-end. Аудио и полировка. Прохождение от старта до конца с комфортным визуалом.
-
-🖥 0.6.0 — Интерфейс. UI/UX: HUD, меню, онбординг нового игрока.
-
-🤝 0.7.0 — Кооператив. Steam: друзья, приглашения, игра до 4 человек.
-
-🌐 0.8.0 — MMO. Серверная версия. Dedicated сервера: бесшовный мир, аккаунты, античит.
-
-🏆 1.0 — Релиз. Финальный визуал и аудио. Полностью отлаженный кооп-MMO.
-
-------------------
+--------------------------------------------------

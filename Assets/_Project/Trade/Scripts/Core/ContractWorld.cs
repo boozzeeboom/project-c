@@ -319,8 +319,9 @@ namespace ProjectC.Trade.Core
         }
 
         /// <summary>
-        /// Сгенерировать 3 типа контрактов (Standard/Urgent/Receipt) для локации.
-        /// Идентично legacy ContractSystem.GenerateContractsForLocation:252-298.
+        /// Сгенерировать доступные delivery-контракты для локации.
+        /// Receipt временно не публикуется: его физическая выдача и ownership flow
+        /// не реализованы и не должны быть доступны игроку.
         /// </summary>
         public void GenerateContractsForLocation(string fromLocationId)
         {
@@ -389,14 +390,7 @@ namespace ProjectC.Trade.Core
             _availableContracts[urgent.contractId] = urgent;
             _locationContracts[fromLocationId].Add(urgent.contractId);
 
-            // 3. Receipt (под расписку) — меньший объём
-            var receipt = ContractData.Create(
-                ContractType.Receipt, itemId, Mathf.Min(quantity, 3),
-                fromLocationId, toLocationId, basePrice, distance,
-                0f, StandardContractTimeLimitSeconds, UrgentContractTimeLimitSeconds,
-                ReceiptContractTimeLimitSeconds);
-            _availableContracts[receipt.contractId] = receipt;
-            _locationContracts[fromLocationId].Add(receipt.contractId);
+            // Receipt намеренно не создаём до реализации полного acceptance/settlement flow.
         }
 
         // ========================================================
@@ -491,8 +485,12 @@ namespace ProjectC.Trade.Core
             var result = new List<ContractData>();
             foreach (var cid in ids)
             {
-                if (_availableContracts.TryGetValue(cid, out var c) && c.state == ContractState.Pending)
+                if (_availableContracts.TryGetValue(cid, out var c)
+                    && c.state == ContractState.Pending
+                    && !c.isReceiptContract)
+                {
                     result.Add(c);
+                }
             }
             return result.ToArray();
         }
@@ -527,6 +525,13 @@ namespace ProjectC.Trade.Core
             if (contract.state != ContractState.Pending)
                 return ContractOpResult.Fail(ContractResultCode.ContractNotPending, "Контракт уже принят или истёк!");
 
+            if (contract.isReceiptContract)
+            {
+                return ContractOpResult.Fail(
+                    ContractResultCode.UnsupportedContractType,
+                    "Контракты «под расписку» временно недоступны.");
+            }
+
             // 2. Проверка долгового лимита
             var debt = GetOrCreateDebt(clientId);
             if (!debt.CanAcceptContracts())
@@ -544,15 +549,9 @@ namespace ProjectC.Trade.Core
                 return ContractOpResult.Fail(ContractResultCode.MaxActiveReached,
                     $"Максимум {MaxActiveContractsPerPlayer} активных контрактов!");
 
-            // 4. Для Receipt — добавить товар на склад игрока (вызывает ContractServer)
-            // В v2 это делается через callback в ContractServer (он имеет доступ к Repository
-            // и MarketWorld.GetOrLoadWarehouse). Здесь только помечаем, что требуется действие.
-            // Конкретная реализация добавления груза — в ContractServer.TryAcceptServerSide
-            // (после возврата Ok он дёргает MarketWorld.AddToWarehouse).
-            // Для упрощения v2-реализации — НЕ кладём груз автоматически на этом шаге.
-            // TODO (future): интеграция с TradeWorld.AddToWarehouse для Receipt контракта.
-            // Сейчас v2-Rceipt контракт работает в «туториал»-режиме: cargoValue × 1.5 при
-            // провале начисляется как долг (как в legacy).
+            // 4. Receipt-контракты отфильтрованы выше и не проходят acceptance flow.
+            // Это преднамеренный fail-closed режим до определения физической выдачи
+            // товара, ownership и settlement policy.
 
             // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ ===
             contract.Activate(clientId);
@@ -606,29 +605,33 @@ namespace ProjectC.Trade.Core
                 return ContractOpResult.Fail(ContractResultCode.WrongDestination,
                     $"Вы не в целевой локации! Нужно: {contract.toLocationId}");
 
-            // 5. Delivery-контракт требует доказанного server-side списания.
-            // Receipt остаётся отдельным flow: его физическая выдача/возврат
-            // будет реализована в MKT-CON-004.
-            if (!contract.isReceiptContract)
+            // 5. Receipt не может попасть сюда для новых контрактов, но старые
+            // persisted records должны завершаться безопасно, без выдачи reward.
+            if (contract.isReceiptContract)
             {
-                if (TradeWorld.Instance == null)
-                    return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+                return ContractOpResult.Fail(
+                    ContractResultCode.UnsupportedContractType,
+                    "Контракты «под расписку» временно недоступны; завершите его отменой.");
+            }
 
-                if (!TradeWorld.Instance.TryConsumeDeliveryCargo(
-                        clientId,
-                        contract.toLocationId,
-                        shipNetworkObjectId,
-                        shipClass,
-                        contract.itemId,
-                        contract.quantity,
-                        out var cargoFail))
-                {
-                    return ContractOpResult.Fail(
-                        cargoFail == "cargo_missing"
-                            ? ContractResultCode.CargoMissing
-                            : ContractResultCode.InternalError,
-                        null);
-                }
+            // 6. Delivery-контракт требует доказанного server-side списания.
+            if (TradeWorld.Instance == null)
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+
+            if (!TradeWorld.Instance.TryConsumeDeliveryCargo(
+                    clientId,
+                    contract.toLocationId,
+                    shipNetworkObjectId,
+                    shipClass,
+                    contract.itemId,
+                    contract.quantity,
+                    out var cargoFail))
+            {
+                return ContractOpResult.Fail(
+                    cargoFail == "cargo_missing"
+                        ? ContractResultCode.CargoMissing
+                        : ContractResultCode.InternalError,
+                    null);
             }
 
             // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ ===

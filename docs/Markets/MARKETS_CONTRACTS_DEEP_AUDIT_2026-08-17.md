@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этапы 1–4 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
+**Статус:** статический аудит исходников и документации; этапы 1–5 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
 **Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -317,6 +317,19 @@ accept → receive cargo → transport → return/submit → consume cargo → s
 - Receipt либо полностью реализован и покрыт тестами, либо недоступен игроку.
 - Нет contract type, который можно принять, но нельзя корректно settle.
 - Failure policy и cargo ownership описаны в `CONTRACT_PERSISTENCE.md` или отдельном design-документе.
+
+### Реализовано на этапе 5
+
+- Receipt больше не генерируется на доске новых контрактов.
+- Старые pending Receipt-офферы не попадают в доступный snapshot и удаляются при следующей регенерации доски.
+- `TryAccept()` возвращает `UnsupportedContractType` вместо активации неполного экономического flow.
+- Старый активный Receipt нельзя завершить и получить reward; его можно безопасно провалить/отменить по существующей debt policy.
+
+### Ограничения этапа 5
+
+- Полная Receipt semantics (выдача товара при accept, ownership и возврат/settlement) всё ещё не реализована.
+- Существующие active Receipt records не мигрируются автоматически при загрузке; игрок должен завершить их через fail/expiry path.
+- Localization key для нового кода может потребовать отдельного добавления; текущие блокировки передают конкретное сообщение через result DTO.
 
 ---
 
@@ -975,7 +988,34 @@ The following documentation is currently inconsistent with code and must be upda
 
 ### Что ещё не закрыто
 
-- Receipt semantics (`MKT-CON-004`);
+- полная Receipt semantics (`MKT-CON-004`);
+- retention terminal records (`MKT-PER-002`);
+- future schema migrations/recovery (`MKT-PER-003`);
+- dead RPC и legacy UI cleanup.
+
+---
+
+## 20. Реализованный этап 5 — fail-closed Receipt contracts
+
+**Дата:** 17 августа 2026 г.
+**Scope:** безопасная часть `MKT-CON-004` / `REF-1004`.
+
+### Изменения
+
+- `ContractWorld.GenerateContractsForLocation()` больше не публикует Receipt-офферы.
+- `GetAvailableForLocation()` фильтрует старые pending Receipt-записи.
+- `TryAccept()` отклоняет Receipt с `ContractResultCode.UnsupportedContractType`.
+- `TryComplete()` не позволяет старому активному Receipt выдать reward.
+- `ContractResultCode` получил отдельный код `UnsupportedContractType = 14`.
+
+### Проверка
+
+- Unity compile check: **No compile errors**.
+- Play Mode, domain tests, persistence round-trip, network smoke test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- Полная Receipt semantics: accept → receive cargo → transport → settle;
 - retention terminal records (`MKT-PER-002`);
 - future schema migrations/recovery (`MKT-PER-003`);
 - dead RPC и legacy UI cleanup.

@@ -55,6 +55,9 @@ namespace ProjectC.Trade.Dto
         /// <summary>Rate limit превышен (защита от спама RPC).</summary>
         RateLimited = 13,
 
+        /// <summary>Тип контракта временно недоступен, пока его экономический flow не реализован.</summary>
+        UnsupportedContractType = 14,
+
         /// <summary>Внутренняя ошибка сервера (catch-all).</summary>
         InternalError = 99,
     }

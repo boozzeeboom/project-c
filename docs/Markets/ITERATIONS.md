@@ -95,7 +95,7 @@
 
 **Задача:** Этап 4 реализации аудита — server-side validation и consumption cargo при delivery completion (`MKT-CON-003`).
 
-**Коммит:** будет указан после фиксации изменений в git.
+**Коммит:** `487c2c99eae88441b06c0fb385d3657d94496882` — T-MKT05: Защитить завершение delivery-контрактов списанием груза
 
 **Изменения:**
 - `Assets/_Project/Trade/Scripts/Core/TradeWorld.cs` — добавлен `TryConsumeDeliveryCargo(...)` с проверкой суммарного количества, списанием из cargo/warehouse и compensating rollback при persistence error
@@ -103,5 +103,20 @@
 - `Assets/_Project/Trade/Scripts/Network/ContractServer.cs` — `RequestCompleteRpc` принимает ship ID и проверяет zone/ownership
 - `Assets/_Project/Trade/Scripts/Client/ContractClientState.cs` — передаёт текущий ship ID, `0` оставляет warehouse-only completion
 - `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован результат этапа 4 и оставшиеся ограничения
+- Unity compile check: ошибок компиляции нет
+- Play Mode/domain tests/persistence round-trip/network smoke test/screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 5 реализации аудита — fail-closed политика для неполного Receipt flow (`MKT-CON-004`).
+
+**Коммит:** `0150a771bdc7137b220ca0618754f391d40183c5` — T-MKT06: Заблокировать неполный Receipt flow
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — Receipt больше не генерируется и не принимается; старые active Receipt не могут получить reward через completion
+- `Assets/_Project/Trade/Scripts/Dto/ContractResultCode.cs` — добавлен `UnsupportedContractType = 14`
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован безопасный fail-closed режим и оставшиеся ограничения
 - Unity compile check: ошибок компиляции нет
 - Play Mode/domain tests/persistence round-trip/network smoke test/screenshots не выполнялись

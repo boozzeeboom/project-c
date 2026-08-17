@@ -568,8 +568,17 @@ namespace ProjectC.Trade.Core
 
         /// <summary>
         /// Завершить контракт. Идентично legacy ContractSystem.CompleteContractServerRpc:437-556.
+        /// Для delivery-контрактов перед выдачей reward сервер атомарно списывает
+        /// нужный item из трюма указанного корабля и/или склада в destination.
+        /// Receipt-контракты намеренно не используют этот путь до отдельного решения
+        /// по MKT-CON-004 (физическая выдача товара при accept).
         /// </summary>
-        public ContractOpResult TryComplete(ulong clientId, string contractId, string completionLocationId)
+        public ContractOpResult TryComplete(
+            ulong clientId,
+            string contractId,
+            string completionLocationId,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass)
         {
             var contract = GetContract(contractId);
             if (contract == null)
@@ -597,15 +606,34 @@ namespace ProjectC.Trade.Core
                 return ContractOpResult.Fail(ContractResultCode.WrongDestination,
                     $"Вы не в целевой локации! Нужно: {contract.toLocationId}");
 
-            // 5. Для non-Receipt контракта — проверка груза (вызывающий код делает это
-            // через TradeWorld.GetOrLoadCargo и Repository.GetWarehouse; ContractServer
-            // сам валидирует и удаляет cargo). Здесь только помечаем, что нужен cargo-check.
-            // Возвращаем RequireCargoCheck — ContractServer выполнит его.
-            // Для упрощения v2 — НЕ делаем cargo-check автоматически (legacy ContractSystem
-            // делал это вручную через PlayerTradeStorage + CargoSystem).
-            // TODO (future): интеграция с TradeWorld для cargo validation.
+            // 5. Delivery-контракт требует доказанного server-side списания.
+            // Receipt остаётся отдельным flow: его физическая выдача/возврат
+            // будет реализована в MKT-CON-004.
+            if (!contract.isReceiptContract)
+            {
+                if (TradeWorld.Instance == null)
+                    return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+
+                if (!TradeWorld.Instance.TryConsumeDeliveryCargo(
+                        clientId,
+                        contract.toLocationId,
+                        shipNetworkObjectId,
+                        shipClass,
+                        contract.itemId,
+                        contract.quantity,
+                        out var cargoFail))
+                {
+                    return ContractOpResult.Fail(
+                        cargoFail == "cargo_missing"
+                            ? ContractResultCode.CargoMissing
+                            : ContractResultCode.InternalError,
+                        null);
+                }
+            }
 
             // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ ===
+            // Cargo уже сохранён до этой точки. Только после этого меняем state
+            // и начисляем reward — delivery без груза не может выдать награду.
             contract.Complete();
             _availableContracts[contractId] = contract;
 

@@ -48,7 +48,7 @@
 
 **Задача:** Этап 3 реализации аудита — schema markers для market/contract snapshots и atomic file writes для dedicated repository.
 
-**Коммит:** будет указан после фиксации изменений в git.
+**Коммит:** `c6c0598b0aaea34029061705d10135b19c49b8e8` — T-MKT05: Защитить завершение delivery-контрактов списанием груза
 
 **Изменения:**
 - `Assets/_Project/Trade/Scripts/Dto/ContractSaveData.cs` — добавлена schema version 1
@@ -88,3 +88,20 @@
 - `Assets/_Project/Trade/Scripts/Core/TradeWorld.cs` — SaveAll / LoadAll + dirty flag
 - `Assets/_Project/Trade/Scripts/Core/MarketState.cs` — обновлён комментарий
 - `docs/Markets/MARKET_PERSISTENCE.md` — документация
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 4 реализации аудита — server-side validation и consumption cargo при delivery completion (`MKT-CON-003`).
+
+**Коммит:** будет указан после фиксации изменений в git.
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Core/TradeWorld.cs` — добавлен `TryConsumeDeliveryCargo(...)` с проверкой суммарного количества, списанием из cargo/warehouse и compensating rollback при persistence error
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — delivery completion требует успешного cargo consumption до `Completed` и reward; Receipt flow не изменён
+- `Assets/_Project/Trade/Scripts/Network/ContractServer.cs` — `RequestCompleteRpc` принимает ship ID и проверяет zone/ownership
+- `Assets/_Project/Trade/Scripts/Client/ContractClientState.cs` — передаёт текущий ship ID, `0` оставляет warehouse-only completion
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован результат этапа 4 и оставшиеся ограничения
+- Unity compile check: ошибок компиляции нет
+- Play Mode/domain tests/persistence round-trip/network smoke test/screenshots не выполнялись

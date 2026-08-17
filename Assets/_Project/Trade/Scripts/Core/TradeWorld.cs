@@ -822,6 +822,101 @@ namespace ProjectC.Trade.Core
             return TradeResult.Ok(Repository.GetCredits(clientId), 0, warehouse, cargo);
         }
 
+        /// <summary>
+        /// Атомарно списать груз, необходимый для завершения delivery-контракта.
+        /// Источник выбирается сервером: сначала трюм указанного корабля, затем
+        /// склад игрока в целевой локации. Если суммарного количества недостаточно,
+        /// ни один контейнер не изменяется.
+        /// </summary>
+        public bool TryConsumeDeliveryCargo(
+            ulong clientId,
+            string locationId,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass,
+            string itemId,
+            int quantity,
+            out string failReason)
+        {
+            failReason = null;
+            if (string.IsNullOrEmpty(locationId) || string.IsNullOrEmpty(itemId) || quantity <= 0)
+            {
+                failReason = "invalid_args";
+                return false;
+            }
+
+            var warehouse = GetOrLoadWarehouse(clientId, locationId);
+            var cargo = shipNetworkObjectId != 0
+                ? GetOrLoadCargo(shipNetworkObjectId, shipClass)
+                : null;
+            if (warehouse == null)
+            {
+                failReason = "cargo_missing";
+                return false;
+            }
+
+            int cargoQuantity = cargo != null ? cargo.GetQuantity(itemId) : 0;
+            int warehouseQuantity = warehouse.GetQuantity(itemId);
+            if (cargoQuantity + warehouseQuantity < quantity)
+            {
+                failReason = "cargo_missing";
+                return false;
+            }
+
+            int fromCargo = Mathf.Min(cargoQuantity, quantity);
+            int fromWarehouse = quantity - fromCargo;
+            var cargoBefore = cargo != null ? cargo.SaveToList() : null;
+            var warehouseBefore = warehouse.SaveToList();
+
+            if (fromCargo > 0 && (cargo == null || !cargo.TryRemove(itemId, fromCargo, out _)))
+            {
+                failReason = "cargo_missing";
+                return false;
+            }
+
+            if (fromWarehouse > 0 && !warehouse.TryRemove(itemId, fromWarehouse, out _))
+            {
+                if (cargo != null) cargo.LoadFrom(cargoBefore);
+                failReason = "cargo_missing";
+                return false;
+            }
+
+            try
+            {
+                if (fromCargo > 0)
+                    Repository.SetCargo(shipNetworkObjectId, cargo.SaveToList());
+                if (fromWarehouse > 0)
+                    Repository.SetWarehouse(clientId, locationId, warehouse.SaveToList());
+            }
+            catch (System.Exception ex)
+            {
+                // Компенсирующее восстановление — не оставляем частично списанный
+                // cargo/warehouse при ошибке persistence.
+                if (cargo != null) cargo.LoadFrom(cargoBefore);
+                warehouse.LoadFrom(warehouseBefore);
+                try
+                {
+                    if (fromCargo > 0)
+                        Repository.SetCargo(shipNetworkObjectId, cargoBefore);
+                    if (fromWarehouse > 0)
+                        Repository.SetWarehouse(clientId, locationId, warehouseBefore);
+                }
+                catch (System.Exception rollbackEx)
+                {
+                    Debug.LogError($"[TradeWorld] DELIVERY_CARGO rollback failed: {rollbackEx.Message}");
+                }
+
+                Debug.LogError($"[TradeWorld] DELIVERY_CARGO persistence failed: {ex.Message}");
+                failReason = "persistence_error";
+                return false;
+            }
+
+            if (fromCargo > 0)
+                OnCargoChanged?.Invoke(shipNetworkObjectId);
+
+            Debug.Log($"[TradeWorld] DELIVERY_CARGO client={clientId} loc={locationId} ship={shipNetworkObjectId} item={itemId} qty={quantity} fromCargo={fromCargo} fromWarehouse={fromWarehouse}");
+            return true;
+        }
+
         // ========================================================
         // T-CARGO-04: Повреждение груза при столкновении
         // ========================================================

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using ProjectC.Core;
 using ProjectC.Player;
+using ProjectC.Ship.Key;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
 using ProjectC.Trade.Repository;
@@ -201,7 +202,7 @@ namespace ProjectC.Trade.Network
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        public void RequestCompleteRpc(string contractId, RpcParams rpcParams = default)
+        public void RequestCompleteRpc(string contractId, ulong shipNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
@@ -213,14 +214,39 @@ namespace ProjectC.Trade.Network
                 SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.ContractNotFound, contractId, 0, 0, clientId));
                 return;
             }
-            // Валидация позиции: игрок должен быть в toLocationId
-            if (!ValidateInZone(clientId, contract.toLocationId, out _))
+            // Валидация позиции: игрок должен быть в toLocationId.
+            if (!ValidateInZone(clientId, contract.toLocationId, out var zone))
             {
                 SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.WrongDestination, contractId, 0, 0, clientId));
                 return;
             }
 
-            var r = ContractWorld.Instance.TryComplete(clientId, contractId, contract.toLocationId);
+            // Для delivery-контрактов shipNetworkObjectId — только hint источника
+            // груза. Сервер сам проверяет, что корабль находится в destination zone
+            // и принадлежит отправителю. 0 разрешён: тогда TradeWorld проверит
+            // только destination warehouse (товар мог быть заранее разгружен).
+            if (!contract.isReceiptContract && shipNetworkObjectId != 0)
+            {
+                if (!zone.IsShipInZone(shipNetworkObjectId))
+                {
+                    SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.CargoMissing, contractId, 0, 0, clientId));
+                    return;
+                }
+
+                if (!KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetworkObjectId))
+                {
+                    SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.CargoMissing, contractId, 0, 0, clientId));
+                    return;
+                }
+            }
+
+            var shipClass = ResolveShipClass(shipNetworkObjectId);
+            var r = ContractWorld.Instance.TryComplete(
+                clientId,
+                contractId,
+                contract.toLocationId,
+                shipNetworkObjectId,
+                shipClass);
             var dto = BuildResultDto(clientId, r, contractId);
             SendResultToOwner(clientId, dto);
 
@@ -235,9 +261,9 @@ namespace ProjectC.Trade.Network
                     WasReceipt = false // T-Q15: instrumentation для Receipt vs Time-out — out of scope.
                 });
 
-                var zone = MarketZoneRegistry.Get(contract.toLocationId);
+                var snapshotZone = MarketZoneRegistry.Get(contract.toLocationId);
                 var snap = ContractWorld.Instance.BuildSnapshot(clientId, contract.toLocationId,
-                    zone != null ? zone.DisplayName : contract.toLocationId, 1f, 0f);
+                    snapshotZone != null ? snapshotZone.DisplayName : contract.toLocationId, 1f, 0f);
                 SendSnapshotToClient(clientId, snap);
             }
         }
@@ -453,6 +479,21 @@ namespace ProjectC.Trade.Network
             }
             list.Add(now);
             return true;
+        }
+
+        private static ShipClass ResolveShipClass(ulong shipNetworkObjectId)
+        {
+            if (shipNetworkObjectId == 0)
+                return ShipClass.Light;
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null)
+                return ShipClass.Light;
+            if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(shipNetworkObjectId, out var no))
+                return ShipClass.Light;
+
+            var ship = no.GetComponent<ShipController>();
+            if (ship == null)
+                return ShipClass.Light;
+            return ProjectC.Ship.ShipClassMappingConfig.Default.Resolve(ship.ShipFlightClass) ?? ShipClass.Light;
         }
 
         private static NetworkPlayer FindNetworkPlayer(ulong clientId)

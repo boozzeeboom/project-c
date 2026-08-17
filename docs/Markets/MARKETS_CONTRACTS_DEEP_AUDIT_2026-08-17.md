@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этапы 1–3 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
+**Статус:** статический аудит исходников и документации; этапы 1–4 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
 **Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -268,6 +268,21 @@ FinalizeContract(contractId, terminalState, failureReason)
 - Повторный completion не списывает груз и не выдаёт reward повторно.
 - Ошибка списания не меняет status и не выдаёт reward.
 - Standard/Urgent/прочие delivery-типы покрыты тестами.
+
+### Реализовано на этапе 4
+
+- Добавлен `TradeWorld.TryConsumeDeliveryCargo(...)` как единая server-side команда списания.
+- Перед списанием проверяется суммарное количество `itemId` в трюме указанного корабля и destination warehouse.
+- Источник выбирается детерминированно: сначала cargo, затем warehouse; при недостатке количества ничего не изменяется.
+- Списанные cargo/warehouse сохраняются до перевода контракта в `Completed` и начисления reward.
+- Ошибка persistence выполняет компенсирующее восстановление in-memory и repository snapshots.
+- `RequestCompleteRpc` принимает `shipNetworkObjectId`; сервер проверяет присутствие корабля в destination zone и ownership.
+- Клиент передаёт текущий корабль владельца; `0` означает completion только из destination warehouse.
+
+### Ограничения этапа 4
+
+- Receipt flow не изменён и остаётся scope `MKT-CON-004`.
+- Domain tests, persistence round-trip, Play Mode/network smoke test и screenshots не запускались.
 
 ---
 
@@ -932,8 +947,35 @@ The following documentation is currently inconsistent with code and must be upda
 
 ### Что ещё не закрыто
 
-- cargo validation и списание при delivery completion (`MKT-CON-003`);
 - полноценная Receipt semantics (`MKT-CON-004`);
 - полноценные schema migrations для будущих версий (`MKT-PER-003`);
 - удаление dead RPC после подтверждения ссылок;
 - удаление legacy UI и дальнейшее разделение `MarketWindow`.
+
+---
+
+## 19. Реализованный этап 4 — delivery cargo validation/consumption
+
+**Дата:** 17 августа 2026 г.
+**Scope:** `MKT-CON-003` / `REF-1003`.
+
+### Изменения
+
+- `TradeWorld.TryConsumeDeliveryCargo(...)` проверяет и списывает точное количество delivery item из cargo и/или destination warehouse.
+- Нехватка товара возвращает `ContractResultCode.CargoMissing` без изменения cargo, warehouse, contract state и credits.
+- Cargo/warehouse persistence выполняется до `ContractData.Complete()` и начисления reward.
+- Ошибка записи выполняет compensating rollback и возвращает `InternalError`.
+- `ContractServer.RequestCompleteRpc(...)` принимает ship ID и проверяет zone/ownership на сервере.
+- `ContractClientState` передаёт текущий ship ID; при `0` completion может использовать только destination warehouse.
+
+### Проверка
+
+- `check_compile_errors`: **No compile errors**.
+- Play Mode, domain tests, persistence round-trip, network smoke test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- Receipt semantics (`MKT-CON-004`);
+- retention terminal records (`MKT-PER-002`);
+- future schema migrations/recovery (`MKT-PER-003`);
+- dead RPC и legacy UI cleanup.

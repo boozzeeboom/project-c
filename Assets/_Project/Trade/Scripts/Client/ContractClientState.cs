@@ -1,5 +1,7 @@
 using System;
+using ProjectC.Player;
 using ProjectC.Trade.Dto;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace ProjectC.Trade.Client
@@ -94,7 +96,20 @@ namespace ProjectC.Trade.Client
         public void RequestComplete(string contractId)
         {
             if (ProjectC.Trade.Network.ContractServer.Instance == null) return;
-            ProjectC.Trade.Network.ContractServer.Instance.RequestCompleteRpc(contractId);
+
+            // Передаём только текущий корабль владельца. Сервер не доверяет этому
+            // значению: проверяет zone + ownership и при необходимости использует
+            // склад destination как второй источник груза.
+            ulong shipNetworkObjectId = 0;
+            var networkManager = NetworkManager.Singleton;
+            var playerObject = networkManager != null && networkManager.LocalClient != null
+                ? networkManager.LocalClient.PlayerObject
+                : null;
+            var player = playerObject != null ? playerObject.GetComponent<NetworkPlayer>() : null;
+            if (player != null && player.IsInShip && player.CurrentShip != null && player.CurrentShip.IsSpawned)
+                shipNetworkObjectId = player.CurrentShip.NetworkObjectId;
+
+            ProjectC.Trade.Network.ContractServer.Instance.RequestCompleteRpc(contractId, shipNetworkObjectId);
         }
 
         public void RequestFail(string contractId)

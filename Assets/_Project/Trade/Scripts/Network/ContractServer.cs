@@ -305,17 +305,6 @@ namespace ProjectC.Trade.Network
         // SERVER → CLIENT RPCs
         // ========================================================
 
-        [Rpc(SendTo.Owner)]
-        private void ReceiveContractSnapshotClientRpc(ContractSnapshotDto snapshot, RpcParams rpcParams = default)
-        {
-            ProjectC.Trade.Client.ContractClientState.Instance?.OnSnapshotReceived(snapshot);
-        }
-
-        [Rpc(SendTo.Owner)]
-        private void ReceiveContractResultClientRpc(ContractResultDto result, RpcParams rpcParams = default)
-        {
-            ProjectC.Trade.Client.ContractClientState.Instance?.OnTradeResultReceived(result);
-        }
 
         // ========================================================
         // TICK

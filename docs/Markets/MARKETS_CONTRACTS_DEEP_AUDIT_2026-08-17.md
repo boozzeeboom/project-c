@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этапы 1–6 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
+**Статус:** статический аудит исходников и документации; этапы 1–11 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
 **Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -507,7 +507,7 @@ JSON не содержит явного schema version и migration pipeline. Pe
 **Severity:** P2 / maintenance risk  
 **Файлы:** `MarketServer.cs`, `ContractServer.cs`, `NetworkPlayer.cs`.
 
-Похоже, `ReceiveMarketSnapshotClientRpc`, `ReceiveTradeResultClientRpc`, `ReceiveContractSnapshotClientRpc` и `ReceiveContractResultClientRpc` не используются как фактический delivery path. Реальная доставка выполняется через `NetworkPlayer.*TargetRpc` из-за NGO 2.x owner-routing ограничения.
+Project-wide search по `Assets` не нашёл ссылок на `ReceiveMarketSnapshotClientRpc`, `ReceiveTradeResultClientRpc`, `ReceiveContractSnapshotClientRpc` или `ReceiveContractResultClientRpc`. Фактическая доставка выполняется через `NetworkPlayer.*TargetRpc` из-за NGO 2.x owner-routing ограничения.
 
 ### План
 
@@ -522,6 +522,15 @@ JSON не содержит явного schema version и migration pipeline. Pe
 - В коде остаётся один понятный server→owner delivery path.
 - Snapshot/result не дублируются.
 - Disconnect/despawn не вызывает попытку доставки в уничтоженный `NetworkPlayer`.
+
+### Реализовано на этапе 11
+
+- Из `MarketServer.cs` удалены `ReceiveMarketSnapshotClientRpc` и `ReceiveTradeResultClientRpc`.
+- Из `ContractServer.cs` удалены `ReceiveContractSnapshotClientRpc` и `ReceiveContractResultClientRpc`.
+- Project-wide `grep` по `Assets` подтвердил отсутствие ссылок на удалённые методы.
+- Единственным server→owner delivery path остаются `NetworkPlayer.ReceiveMarketSnapshotTargetRpc`, `ReceiveTradeResultTargetRpc`, `ReceiveContractSnapshotTargetRpc` и `ReceiveContractResultTargetRpc`.
+- `check_compile_errors`: **No compile errors** после удаления методов.
+- Integration/network smoke test и screenshots не выполнялись.
 
 ---
 
@@ -1176,4 +1185,32 @@ The following documentation is currently inconsistent with code and must be upda
 
 ### Что ещё не закрыто
 
-- dead RPC и legacy UI cleanup.
+- legacy UI cleanup.
+
+---
+
+## 26. Реализованный этап 11 — удаление dead server→client RPCs (`MKT-NET-003`)
+
+**Дата:** 17 августа 2026 г.
+**Scope:** удаление дублирующих private `[Rpc(SendTo.Owner)]` методов из server singleton компонентов.
+
+### Изменения
+
+- `MarketServer.cs`: удалены `ReceiveMarketSnapshotClientRpc` и `ReceiveTradeResultClientRpc`.
+- `ContractServer.cs`: удалены `ReceiveContractSnapshotClientRpc` и `ReceiveContractResultClientRpc`.
+- Delivery path не изменён: server-код находит `NetworkPlayer` владельца и вызывает его `*TargetRpc`.
+- Поиск по `Assets` не нашёл оставшихся ссылок на удалённые RPC.
+
+### Проверка
+
+- `refresh_unity(mode=if_dirty, scope=scripts, compile=request)` выполнен.
+- `check_compile_errors`: **No compile errors**.
+- Play Mode, integration/network smoke test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- legacy contract UI в `CharacterWindow` (`MKT-UI-001/002`);
+- разделение монолитного `MarketWindow` (`MKT-UI-003`);
+- canonical `LocationId` и data-driven locations/types (`MKT-DOM-001`);
+- явный lifecycle `MarketZoneRegistry` (`MKT-DOM-002`);
+- полная Receipt semantics и localization для `UnsupportedContractType`.

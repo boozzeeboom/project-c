@@ -15,7 +15,7 @@
 │  ┌────────┴───────────────────────────────────────────────────────────┐    │
 │  │ MarketClientState (singleton MonoBehaviour, DontDestroyOnLoad)    │    │
 │  │   • держит последний MarketSnapshotDto + последний TradeResultDto  │    │
-│  │   • forwardит NetworkPlayer.ReceiveMarketSnapshotTargetRpc/Rpc     │    │
+│  │   • получает данные через NetworkPlayer.*TargetRpc                │    │
 │  │   • Convenience API: RequestBuy/Sell/Load/Unload/Subscribe         │    │
 │  └────────┬───────────────────────────────────────────────────────────┘    │
 │           │ RPC: FindNetworkPlayer(clientId).ReceiveXxxTargetRpc(...)      │
@@ -313,4 +313,4 @@ MarketTimeService.onMarketTick event
 3. **Single source of truth** — все мутации в одном `TradeWorld`, не размазаны по нескольким NetworkBehaviour.
 4. **Singleton lifecycle** — `TradeWorld` создаётся в `MarketServer.OnNetworkSpawn()` и умирает в `OnNetworkDespawn()`. Не DontDestroyOnLoad (POCO), не scene-placed. Живёт ровно столько, сколько сервер.
 
-Компромисс: `MarketServer` обязан слать все RPC на `target = FindNetworkPlayer(clientId).ReceiveXxxTargetRpc(...)` (а не `SendTo.Owner`), потому что в NGO 2.x `SendTo.Owner` не работает с NetworkObject, отличным от PlayerObject. Это и есть главный work-around в новой архитектуре.
+Компромисс: `MarketServer` и `ContractServer` обязаны слать owner-only данные на `target = FindNetworkPlayer(clientId).ReceiveXxxTargetRpc(...)` (а не на собственные `SendTo.Owner` RPC), потому что в NGO 2.x `SendTo.Owner` не работает с NetworkObject, отличным от PlayerObject. После этапа 11 в server singleton-компонентах не осталось дублирующих private `*ClientRpc` методов.

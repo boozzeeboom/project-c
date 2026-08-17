@@ -13,8 +13,8 @@
 
 **Использования (НОВЫЕ):**
 - `NetworkPlayer.cs:307` — `ProjectC.Trade.Client.MarketInteractor.TryOpenMarket()` в E-handler (Update пешего режима)
-- `NetworkPlayer.cs:835-840` — `ReceiveMarketSnapshotTargetRpc` (target для `MarketServer.ReceiveMarketSnapshotClientRpc`)
-- `NetworkPlayer.cs:842-846` — `ReceiveTradeResultTargetRpc` (target для `MarketServer.ReceiveTradeResultClientRpc`)
+- `NetworkPlayer.cs:835-840` — `ReceiveMarketSnapshotTargetRpc` (единственный target delivery для `MarketServer.SendSnapshotToClient`)
+- `NetworkPlayer.cs:842-846` — `ReceiveTradeResultTargetRpc` (единственный target delivery для `MarketServer.SendTradeResultToOwner`)
 - `NetworkPlayer.cs:851-857` — `RequestSetMarketTimeMultiplier` (debug: клиент → MarketServer.RequestSetTimeMultiplierRpc)
 
 **Использования (МЁРТВЫЕ, к удалению):**

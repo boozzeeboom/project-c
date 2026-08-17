@@ -274,18 +274,6 @@ namespace ProjectC.Trade.Network
         // SERVER → CLIENT RPCs
         // ========================================================
 
-        [Rpc(SendTo.Owner)]
-        private void ReceiveMarketSnapshotClientRpc(MarketSnapshotDto snapshot, RpcParams rpcParams = default)
-        {
-            // Доставляем в MarketClientState (на каждом клиенте — свой инстанс)
-            ProjectC.Trade.Client.MarketClientState.Instance?.OnSnapshotReceived(snapshot);
-        }
-
-        [Rpc(SendTo.Owner)]
-        private void ReceiveTradeResultClientRpc(TradeResultDto result, RpcParams rpcParams = default)
-        {
-            ProjectC.Trade.Client.MarketClientState.Instance?.OnTradeResultReceived(result);
-        }
 
         // ========================================================
         // BROADCAST HELPERS

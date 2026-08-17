@@ -201,3 +201,18 @@
 - `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — transaction scope и rollback delivery completion при persistence failure
 - `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирована transaction policy
 - Unity compile check: без ошибок; Play Mode, stress tests и screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 11 реализации аудита — удаление dead server→client RPCs и фиксация единственного owner delivery path (`MKT-NET-003`).
+**Коммит:** `c4dd4fd86a796794d3ebab10a93bda7b93c93433` — T-MKT12: Удалить dead RPC рынков и контрактов
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Network/MarketServer.cs` — удалены `ReceiveMarketSnapshotClientRpc` и `ReceiveTradeResultClientRpc`
+- `Assets/_Project/Trade/Scripts/Network/ContractServer.cs` — удалены `ReceiveContractSnapshotClientRpc` и `ReceiveContractResultClientRpc`
+- `docs/Markets/ARCHITECTURE.md`, `INTEGRATION.md`, `FIXES_HISTORY.md` — зафиксирован единый delivery path через `NetworkPlayer.*TargetRpc`
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — закрыт `MKT-NET-003`, добавлен результат этапа 11
+- Project-wide `grep` по `Assets`: ссылок на удалённые RPC нет
+- Unity compile check: без ошибок; Play Mode, integration/network smoke test и screenshots не выполнялись

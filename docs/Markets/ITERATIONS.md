@@ -216,3 +216,17 @@
 - `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — закрыт `MKT-NET-003`, добавлен результат этапа 11
 - Project-wide `grep` по `Assets`: ссылок на удалённые RPC нет
 - Unity compile check: без ошибок; Play Mode, integration/network smoke test и screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 12 реализации аудита — устранение дублирующего contract UI в `CharacterWindow` (`MKT-UI-001/002`).
+**Коммит:** `f65a28d8ea54ba8345aa17ee5e562656495e319a` — T-MKT13: Удалить дублирующий contract UI
+
+**Изменения:**
+- `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` — удалены legacy contract handlers, duplicate row factories, cache/list state и повреждённый `ApplyContractFilters()`
+- `Assets/_Project/Scripts/UI/Client/CharacterWindow/ContractsTab.cs` — оставлен единственным владельцем contract UI и подписок
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — закрыты `MKT-UI-001/002`, зафиксирован этап 12
+- `validate_script(CharacterWindow.cs)`: ошибок нет; Unity compile check: без ошибок
+- Play Mode/UI smoke test не выполнялись; stale refresh после accept/fail остаётся на повторную проверку после `MKT-UI-003`

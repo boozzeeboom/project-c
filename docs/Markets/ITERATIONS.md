@@ -170,3 +170,18 @@
 - `docs/Markets/CONTRACT_PERSISTENCE.md`, `MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксировано состояние этапа 8
 - Unity compile check: ошибок компиляции нет
 - Play Mode/domain tests/persistence round-trip/retention stress test/screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 9 реализации аудита — best-effort PlayerPrefs recovery для market/contract snapshots (`MKT-PER-003`).
+
+**Коммит:** `98d79bee5a7c9fbaf9784b8ac0b1348769850828` — T-MKT10: Добавить recovery protocol для PlayerPrefs
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Repository/PlayerPrefsRepository.cs` — primary, `_bak` и `_tmp` keys; recovery из temp/backup при повреждении primary
+- `docs/Markets/CONTRACT_PERSISTENCE.md` и `MARKET_PERSISTENCE.md` — описан host recovery protocol
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирована частичная реализация `MKT-PER-003`
+- Unity compile check: ошибок компиляции нет
+- PlayerPrefs corruption/restart recovery, Play Mode и screenshots не выполнялись

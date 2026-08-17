@@ -22,7 +22,15 @@ namespace ProjectC.Trade.Dto
         /// <summary>Location → available contract IDs mapping.</summary>
         public List<LocationContractEntry> locationContracts = new List<LocationContractEntry>();
 
-        public bool HasData => contracts.Count > 0;
+        /// <summary>
+        /// True when the snapshot contains any persisted contract subsystem state.
+        /// Debt-only snapshots are valid and must not be treated as a missing save.
+        /// </summary>
+        public bool HasData =>
+            (contracts != null && contracts.Count > 0)
+            || (debts != null && debts.Count > 0)
+            || (playerContracts != null && playerContracts.Count > 0)
+            || (locationContracts != null && locationContracts.Count > 0);
     }
 
     /// <summary>

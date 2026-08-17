@@ -2,8 +2,8 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; изменения runtime-кода не выполнялись.  
-**Проверки:** build/compile, Play Mode и screenshot-регрессия в рамках аудита не запускались.
+**Статус:** статический аудит исходников и документации; этап 1 (P0 state integrity + debts-only persistence guard) реализован 17 августа 2026 г.
+**Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
 
@@ -851,4 +851,35 @@ The following documentation is currently inconsistent with code and must be upda
 
 Система находится в состоянии рабочей v2-архитектуры с несколькими опасными переходными слоями. Главный риск — не UI и не отсутствие отдельных сервисов, а **рассинхронизация индексов контрактов и отсутствие атомарной state transition модели**. Исправление следует начинать с `ContractWorld` и persistence, затем стабилизировать network result contract, и только после этого удалять legacy UI и дробить `MarketWindow`.
 
-На момент аудита **никакие исходники, сцены и ScriptableObjects не изменялись**. Документ фиксирует найденные проблемы и последовательность безопасного рефакторинга; реализация тикетов требует отдельного согласования и последующей compile/Play Mode проверки.
+На момент первоначального аудита исходники, сцены и ScriptableObjects не изменялись. Ниже зафиксирован первый реализованный этап; остальные тикеты требуют отдельного выполнения и compile/Play Mode проверки.
+
+---
+
+## 16. Реализованный этап 1 — P0 state integrity
+
+**Дата:** 17 августа 2026 г.
+**Scope:** `REF-1001`, `REF-1002` и защитная часть `MKT-PER-001`.
+
+### Изменения
+
+- `ContractWorld.GenerateContractsForLocation()` теперь удаляет при регенерации только `Pending` офферы.
+- `Active`, `Completed` и `Failed` records не удаляются из `_availableContracts` во время обновления доски.
+- Успешный `TryAccept()` сразу удаляет contract ID из `_locationContracts[fromLocationId]`.
+- Expired contracts удаляются из `_playerContracts` в ветке `TryComplete()` и в server tick.
+- `GetPlayerActiveCount()` учитывает только реально разрешимые `Active` records назначенного игрока.
+- При загрузке старого snapshot удаляются stale active-index ссылки.
+- `ContractSaveData.HasData` теперь признаёт debts-only, player mapping и location mapping валидными данными.
+- Load path защищён от null-списков в старых/неполных JSON snapshots.
+
+### Проверка
+
+- `check_compile_errors`: **No compile errors**.
+- Play Mode, domain tests и screenshots не выполнялись; отдельная ручная проверка остаётся обязательной перед закрытием P0.
+
+### Что ещё не закрыто
+
+- cargo validation и списание при delivery completion (`MKT-CON-003`);
+- полноценная Receipt semantics (`MKT-CON-004`);
+- schema version и atomic persistence (`MKT-PER-003`);
+- локализация network result codes и rate-limit feedback;
+- удаление legacy UI и дальнейшее разделение `MarketWindow`.

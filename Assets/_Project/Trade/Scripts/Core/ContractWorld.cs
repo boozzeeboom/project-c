@@ -195,29 +195,33 @@ namespace ProjectC.Trade.Core
 
             // Contracts
             _availableContracts.Clear();
-            foreach (var c in data.contracts)
+            foreach (var c in data.contracts ?? new List<ContractData>())
             {
-                if (!string.IsNullOrEmpty(c.contractId))
+                if (c != null && !string.IsNullOrEmpty(c.contractId))
                     _availableContracts[c.contractId] = c;
             }
 
             // Debts — reconstruct ContractDebt objects
             _playerDebts.Clear();
-            foreach (var d in data.debts)
+            foreach (var d in data.debts ?? new List<ContractDebtEntry>())
             {
-                _playerDebts[d.playerId] = new ContractDebt(d.playerId, d.currentDebt, d.lastDecayTime);
+                if (d != null)
+                    _playerDebts[d.playerId] = new ContractDebt(d.playerId, d.currentDebt, d.lastDecayTime);
             }
 
             // Player → contract IDs
             _playerContracts.Clear();
-            foreach (var e in data.playerContracts)
+            foreach (var e in data.playerContracts ?? new List<PlayerContractEntry>())
             {
                 _playerContracts[e.playerId] = new List<string>(e.contractIds ?? new List<string>());
             }
 
+            // Удаляем устаревшие active-index ссылки из старых snapshots.
+            PruneAllPlayerContractIndexes();
+
             // Location → contract IDs
             _locationContracts.Clear();
-            foreach (var e in data.locationContracts)
+            foreach (var e in data.locationContracts ?? new List<LocationContractEntry>())
             {
                 if (!string.IsNullOrEmpty(e.locationId))
                     _locationContracts[e.locationId] = new List<string>(e.contractIds ?? new List<string>());
@@ -325,13 +329,25 @@ namespace ProjectC.Trade.Core
             if (!_locationContracts.ContainsKey(fromLocationId))
                 _locationContracts[fromLocationId] = new List<string>();
 
-            // Удаляем старые непринятые контракты локации
-            foreach (var cid in _locationContracts[fromLocationId])
-            {
-                if (_availableContracts.ContainsKey(cid))
-                    _availableContracts.Remove(cid);
-            }
+            // Сбрасываем только текущую доску офферов.
+            // Active/Completed/Failed records нельзя удалять во время регенерации:
+            // _availableContracts также является registry для уже принятых контрактов.
+            var previousOfferIds = new List<string>(_locationContracts[fromLocationId]);
             _locationContracts[fromLocationId].Clear();
+            foreach (var cid in previousOfferIds)
+            {
+                if (!_availableContracts.TryGetValue(cid, out var previousContract))
+                    continue;
+
+                if (previousContract.state == ContractState.Pending)
+                {
+                    _availableContracts.Remove(cid);
+                }
+                else
+                {
+                    Debug.LogWarning($"[ContractWorld] Сохраняю {previousContract.state} contract {cid} при регенерации доски {fromLocationId}");
+                }
+            }
 
             // Доступные товары
             var allItemIds = Resolver != null ? Resolver.AllItemIds : new List<string>();
@@ -409,7 +425,64 @@ namespace ProjectC.Trade.Core
 
         public int GetPlayerActiveCount(ulong clientId)
         {
-            return _playerContracts.TryGetValue(clientId, out var l) ? l.Count : 0;
+            if (!_playerContracts.TryGetValue(clientId, out var ids)) return 0;
+
+            int activeCount = 0;
+            foreach (var contractId in ids)
+            {
+                if (_availableContracts.TryGetValue(contractId, out var contract)
+                    && contract != null
+                    && contract.state == ContractState.Active
+                    && contract.assignedPlayerId == clientId)
+                {
+                    activeCount++;
+                }
+            }
+            return activeCount;
+        }
+
+        private void PruneAllPlayerContractIndexes()
+        {
+            foreach (var playerId in new List<ulong>(_playerContracts.Keys))
+            {
+                PrunePlayerContractIndex(playerId);
+            }
+        }
+
+        private void PrunePlayerContractIndex(ulong clientId)
+        {
+            if (!_playerContracts.TryGetValue(clientId, out var ids)) return;
+
+            for (int i = ids.Count - 1; i >= 0; i--)
+            {
+                string contractId = ids[i];
+                if (_availableContracts.TryGetValue(contractId, out var contract)
+                    && contract != null
+                    && contract.state == ContractState.Active
+                    && contract.assignedPlayerId == clientId)
+                {
+                    continue;
+                }
+
+                Debug.LogWarning($"[ContractWorld] Удаляю устаревшую active-index ссылку {contractId} для player {clientId}");
+                ids.RemoveAt(i);
+            }
+        }
+
+        private void RemovePlayerContractReference(ulong clientId, string contractId)
+        {
+            if (_playerContracts.TryGetValue(clientId, out var ids))
+            {
+                ids.Remove(contractId);
+            }
+        }
+
+        private void RemoveContractFromLocationBoard(string locationId, string contractId)
+        {
+            if (_locationContracts.TryGetValue(locationId, out var ids))
+            {
+                ids.Remove(contractId);
+            }
         }
 
         public ContractData[] GetAvailableForLocation(string locationId)
@@ -460,11 +533,14 @@ namespace ProjectC.Trade.Core
                 return ContractOpResult.Fail(ContractResultCode.TooMuchDebt,
                     $"Долг {debt.CurrentDebt:F0} CR! Ограничение контрактов.");
 
-            // 3. Проверка лимита активных контрактов
+            // 3. Проверка лимита активных контрактов.
+            // Чистим старые snapshots и считаем только реально Active records.
             if (!_playerContracts.ContainsKey(clientId))
                 _playerContracts[clientId] = new List<string>();
+            else
+                PrunePlayerContractIndex(clientId);
 
-            if (_playerContracts[clientId].Count >= MaxActiveContractsPerPlayer)
+            if (GetPlayerActiveCount(clientId) >= MaxActiveContractsPerPlayer)
                 return ContractOpResult.Fail(ContractResultCode.MaxActiveReached,
                     $"Максимум {MaxActiveContractsPerPlayer} активных контрактов!");
 
@@ -481,7 +557,9 @@ namespace ProjectC.Trade.Core
             // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ ===
             contract.Activate(clientId);
             _availableContracts[contractId] = contract;
-            _playerContracts[clientId].Add(contractId);
+            if (!_playerContracts[clientId].Contains(contractId))
+                _playerContracts[clientId].Add(contractId);
+            RemoveContractFromLocationBoard(contract.fromLocationId, contractId);
 
             SaveAll();
 
@@ -508,7 +586,9 @@ namespace ProjectC.Trade.Core
             {
                 contract.Fail();
                 _availableContracts[contractId] = contract;
+                RemovePlayerContractReference(clientId, contractId);
                 HandleFailedContract(contract, clientId);
+                SaveAll();
                 return ContractOpResult.Fail(ContractResultCode.TimerExpired, "Время контракта истекло!");
             }
 
@@ -560,9 +640,7 @@ namespace ProjectC.Trade.Core
             contract.Fail();
             _availableContracts[contractId] = contract;
 
-            if (_playerContracts.ContainsKey(clientId))
-                _playerContracts[clientId].Remove(contractId);
-
+            RemovePlayerContractReference(clientId, contractId);
             HandleFailedContract(contract, clientId);
 
             SaveAll();
@@ -635,6 +713,7 @@ namespace ProjectC.Trade.Core
 
                     if (contract.state == ContractState.Failed)
                     {
+                        RemovePlayerContractReference(playerId, contractId);
                         HandleFailedContract(contract, playerId);
                         expired.Add((playerId, contractId, contract));
                     }

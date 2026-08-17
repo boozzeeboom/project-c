@@ -16,6 +16,21 @@
 
 ## Итерация от 2026-08-17
 
+**Задача:** Этап 1 реализации аудита — исправление целостности active contract index, безопасная регенерация доски и защита debts-only persistence.
+
+**Коммит:** будет указан после фиксации изменений в git.
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — active contracts больше не удаляются регенерацией; stale/expired IDs очищаются; active count считает только Active records
+- `Assets/_Project/Trade/Scripts/Dto/ContractSaveData.cs` — debts-only snapshots считаются валидными
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован результат этапа 1 и проверка компиляции
+- Unity compile check: ошибок компиляции нет
+- Play Mode/domain tests/screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
 **Задача:** Вынести таймеры завершения контрактов из хардкода в настройки `[ContractServer]`.
 
 **Коммит:** `811066c66d953d91889ba8a170e3a5ffef1b1e99` — T-TRADE02: Настройки таймеров контрактов

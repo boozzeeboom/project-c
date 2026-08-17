@@ -129,17 +129,13 @@ namespace ProjectC.Trade.Repository
 
         // --- Markets ---
 
-        public bool TryLoadMarkets(out MarketSaveData data)
+        public RepositoryLoadStatus TryLoadMarkets(out MarketSaveData data)
         {
             data = null;
             string path = Path.Combine(_rootDir, "markets.json");
-            if (!TryLoadJsonWithBackup(path, "markets", out data)) return false;
-            if (!TryMigrateMarkets(data, path))
-            {
-                data = null;
-                return false;
-            }
-            return data.HasData;
+            var loadStatus = TryLoadJsonWithBackup(path, "markets", out data);
+            if (loadStatus != RepositoryLoadStatus.Loaded) return loadStatus;
+            return TryMigrateMarkets(data, path);
         }
 
         public void SaveMarkets(MarketSaveData data)
@@ -159,17 +155,13 @@ namespace ProjectC.Trade.Repository
 
         // --- Contracts ---
 
-        public bool TryLoadContracts(out ContractSaveData data)
+        public RepositoryLoadStatus TryLoadContracts(out ContractSaveData data)
         {
             data = null;
             string path = Path.Combine(_rootDir, "contracts.json");
-            if (!TryLoadJsonWithBackup(path, "contracts", out data)) return false;
-            if (!TryMigrateContracts(data, path))
-            {
-                data = null;
-                return false;
-            }
-            return data.HasData;
+            var loadStatus = TryLoadJsonWithBackup(path, "contracts", out data);
+            if (loadStatus != RepositoryLoadStatus.Loaded) return loadStatus;
+            return TryMigrateContracts(data, path);
         }
 
         public void SaveContracts(ContractSaveData data)
@@ -187,20 +179,22 @@ namespace ProjectC.Trade.Repository
             }
         }
 
-        private static bool TryLoadJsonWithBackup<T>(string path, string label, out T data)
+        private static RepositoryLoadStatus TryLoadJsonWithBackup<T>(string path, string label, out T data)
             where T : class
         {
             data = null;
             bool primaryExists = File.Exists(path);
             if (primaryExists && TryReadJson(path, label, out data))
-                return true;
+                return RepositoryLoadStatus.Loaded;
 
             string backupPath = path + ".bak";
             if (!File.Exists(backupPath) || !TryReadJson(backupPath, label + ".bak", out data))
             {
-                if (primaryExists)
+                if (primaryExists || File.Exists(backupPath))
                     Debug.LogWarning($"[ServerFileRepository] {label}: primary and backup snapshots are unavailable");
-                return false;
+                return primaryExists || File.Exists(backupPath)
+                    ? RepositoryLoadStatus.CorruptSave
+                    : RepositoryLoadStatus.NoSaveFound;
             }
 
             try
@@ -215,7 +209,7 @@ namespace ProjectC.Trade.Repository
                 Debug.LogError($"[ServerFileRepository] {label}: backup recovery write failed: {e.Message}");
             }
 
-            return true;
+            return RepositoryLoadStatus.Loaded;
         }
 
         private static bool TryReadJson<T>(string path, string label, out T data)
@@ -240,13 +234,13 @@ namespace ProjectC.Trade.Repository
             }
         }
 
-        private static bool TryMigrateMarkets(MarketSaveData data, string path)
+        private static RepositoryLoadStatus TryMigrateMarkets(MarketSaveData data, string path)
         {
-            if (data == null) return false;
+            if (data == null) return RepositoryLoadStatus.CorruptSave;
             if (data.schemaVersion > MarketSaveData.CurrentSchemaVersion)
             {
                 Debug.LogError($"[ServerFileRepository] markets schema {data.schemaVersion} is newer than supported {MarketSaveData.CurrentSchemaVersion}; refusing {path}");
-                return false;
+                return RepositoryLoadStatus.UnsupportedSchema;
             }
 
             bool migrated = data.schemaVersion != MarketSaveData.CurrentSchemaVersion;
@@ -259,16 +253,16 @@ namespace ProjectC.Trade.Repository
                 Debug.Log($"[ServerFileRepository] migrated markets snapshot to schema {MarketSaveData.CurrentSchemaVersion}");
                 PersistMigratedSnapshot(path, JsonUtility.ToJson(data), "markets");
             }
-            return true;
+            return data.HasData ? RepositoryLoadStatus.Loaded : RepositoryLoadStatus.ValidEmptySave;
         }
 
-        private static bool TryMigrateContracts(ContractSaveData data, string path)
+        private static RepositoryLoadStatus TryMigrateContracts(ContractSaveData data, string path)
         {
-            if (data == null) return false;
+            if (data == null) return RepositoryLoadStatus.CorruptSave;
             if (data.schemaVersion > ContractSaveData.CurrentSchemaVersion)
             {
                 Debug.LogError($"[ServerFileRepository] contracts schema {data.schemaVersion} is newer than supported {ContractSaveData.CurrentSchemaVersion}; refusing {path}");
-                return false;
+                return RepositoryLoadStatus.UnsupportedSchema;
             }
 
             bool migrated = data.schemaVersion != ContractSaveData.CurrentSchemaVersion;
@@ -283,7 +277,7 @@ namespace ProjectC.Trade.Repository
                 Debug.Log($"[ServerFileRepository] migrated contracts snapshot to schema {ContractSaveData.CurrentSchemaVersion}");
                 PersistMigratedSnapshot(path, JsonUtility.ToJson(data), "contracts");
             }
-            return true;
+            return data.HasData ? RepositoryLoadStatus.Loaded : RepositoryLoadStatus.ValidEmptySave;
         }
 
         private static void PersistMigratedSnapshot(string path, string json, string label)

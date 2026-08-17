@@ -1009,6 +1009,34 @@ The following documentation is currently inconsistent with code and must be upda
 
 ---
 
+## 22. Реализованный этап 7 — explicit persistence load status (`MKT-PER-001`)
+
+**Дата:** 17 августа 2026 г.
+**Scope:** различение отсутствующего, пустого, повреждённого и неподдерживаемого snapshot.
+
+### Изменения
+
+- `RepositoryLoadStatus` добавлен в `IPlayerDataRepository` и используется для загрузки markets/contracts.
+- Оба repository различают `NoSaveFound`, `Loaded`, `ValidEmptySave`, `CorruptSave` и `UnsupportedSchema`.
+- Legacy schema `0` по-прежнему мигрируется к schema `1`; valid-empty snapshot больше не возвращает `false`.
+- `ContractWorld.Initialize()` регенерирует доску только при `NoSaveFound`.
+- `TradeWorld.LoadAll()` применяет overlay и для valid-empty path без проверки `HasData`.
+- После corruption/future-schema rejection world блокирует `SaveAll()`, чтобы не перезаписать исходный snapshot пустым runtime-состоянием.
+
+### Проверка
+
+- Unity compile check: **No compile errors**.
+- Play Mode, persistence round-trip, corrupt-primary recovery, future-schema runtime test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- retention terminal records (`MKT-PER-002`);
+- PlayerPrefs backup/atomicity limitation;
+- concurrency locking и общий transaction boundary;
+- dead RPC и legacy UI cleanup.
+
+---
+
 ## 21. Реализованный этап 6 — schema migration и backup recovery
 
 **Дата:** 17 августа 2026 г.
@@ -1029,7 +1057,6 @@ The following documentation is currently inconsistent with code and must be upda
 
 ### Что ещё не закрыто
 
-- Валидный empty-save result semantics (`MKT-PER-001`);
 - retention terminal records (`MKT-PER-002`);
 - PlayerPrefs backup/atomicity limitation;
 - concurrency locking и общий transaction boundary;
@@ -1059,5 +1086,33 @@ The following documentation is currently inconsistent with code and must be upda
 
 - Полная Receipt semantics: accept → receive cargo → transport → settle;
 - retention terminal records (`MKT-PER-002`);
-- future schema migrations/recovery (`MKT-PER-003`);
+- PlayerPrefs backup/atomicity limitation;
+- dead RPC и legacy UI cleanup.
+
+---
+
+## 22. Реализованный этап 7 — explicit persistence load status (`MKT-PER-001`)
+
+**Дата:** 17 августа 2026 г.
+**Scope:** различение отсутствующего, пустого, повреждённого и неподдерживаемого snapshot.
+
+### Изменения
+
+- `RepositoryLoadStatus` добавлен в `IPlayerDataRepository` и используется для загрузки markets/contracts.
+- Оба repository различают `NoSaveFound`, `Loaded`, `ValidEmptySave`, `CorruptSave` и `UnsupportedSchema`.
+- Legacy schema `0` по-прежнему мигрируется к schema `1`; valid-empty snapshot больше не возвращает `false`.
+- `ContractWorld.Initialize()` регенерирует доску только при `NoSaveFound`.
+- `TradeWorld.LoadAll()` применяет overlay и для valid-empty path без проверки `HasData`.
+- После corruption/future-schema rejection world блокирует `SaveAll()`, чтобы не перезаписать исходный snapshot пустым runtime-состоянием.
+
+### Проверка
+
+- Unity compile check: **No compile errors**.
+- Play Mode, persistence round-trip, corrupt-primary recovery, future-schema runtime test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- retention terminal records (`MKT-PER-002`);
+- PlayerPrefs backup/atomicity limitation;
+- concurrency locking и общий transaction boundary;
 - dead RPC и legacy UI cleanup.

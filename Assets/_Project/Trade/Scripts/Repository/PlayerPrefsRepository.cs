@@ -115,20 +115,20 @@ namespace ProjectC.Trade.Repository
 
         // --- Markets ---
 
-        public bool TryLoadMarkets(out MarketSaveData data)
+        public RepositoryLoadStatus TryLoadMarkets(out MarketSaveData data)
         {
             data = null;
             string json = PlayerPrefs.GetString("PD2_Markets", "");
-            if (string.IsNullOrEmpty(json)) return false;
+            if (string.IsNullOrEmpty(json)) return RepositoryLoadStatus.NoSaveFound;
             try
             {
                 data = JsonUtility.FromJson<MarketSaveData>(json);
-                return data != null && data.HasData;
+                return NormalizeMarkets(data);
             }
             catch (System.Exception e)
             {
                 Debug.LogWarning($"[PlayerPrefsRepository] LoadMarkets failed: {e.Message}");
-                return false;
+                return RepositoryLoadStatus.CorruptSave;
             }
         }
 
@@ -142,20 +142,20 @@ namespace ProjectC.Trade.Repository
 
         // --- Contracts ---
 
-        public bool TryLoadContracts(out ContractSaveData data)
+        public RepositoryLoadStatus TryLoadContracts(out ContractSaveData data)
         {
             data = null;
             string json = PlayerPrefs.GetString("PD2_Contracts", "");
-            if (string.IsNullOrEmpty(json)) return false;
+            if (string.IsNullOrEmpty(json)) return RepositoryLoadStatus.NoSaveFound;
             try
             {
                 data = JsonUtility.FromJson<ContractSaveData>(json);
-                return data != null && data.HasData;
+                return NormalizeContracts(data);
             }
             catch (System.Exception e)
             {
                 Debug.LogWarning($"[PlayerPrefsRepository] LoadContracts failed: {e.Message}");
-                return false;
+                return RepositoryLoadStatus.CorruptSave;
             }
         }
 
@@ -165,6 +165,38 @@ namespace ProjectC.Trade.Repository
             string json = JsonUtility.ToJson(data);
             PlayerPrefs.SetString("PD2_Contracts", json);
             PlayerPrefs.Save();
+        }
+
+        private RepositoryLoadStatus NormalizeMarkets(MarketSaveData data)
+        {
+            if (data == null) return RepositoryLoadStatus.CorruptSave;
+            if (data.schemaVersion > MarketSaveData.CurrentSchemaVersion)
+                return RepositoryLoadStatus.UnsupportedSchema;
+
+            bool migrated = data.schemaVersion != MarketSaveData.CurrentSchemaVersion;
+            data.schemaVersion = MarketSaveData.CurrentSchemaVersion;
+            if (data.markets == null) data.markets = new List<MarketLocationSaveEntry>();
+            if (data.events == null) data.events = new List<MarketEventSaveEntry>();
+            if (migrated) SaveMarkets(data);
+
+            return data.HasData ? RepositoryLoadStatus.Loaded : RepositoryLoadStatus.ValidEmptySave;
+        }
+
+        private RepositoryLoadStatus NormalizeContracts(ContractSaveData data)
+        {
+            if (data == null) return RepositoryLoadStatus.CorruptSave;
+            if (data.schemaVersion > ContractSaveData.CurrentSchemaVersion)
+                return RepositoryLoadStatus.UnsupportedSchema;
+
+            bool migrated = data.schemaVersion != ContractSaveData.CurrentSchemaVersion;
+            data.schemaVersion = ContractSaveData.CurrentSchemaVersion;
+            if (data.contracts == null) data.contracts = new List<ContractData>();
+            if (data.debts == null) data.debts = new List<ContractDebtEntry>();
+            if (data.playerContracts == null) data.playerContracts = new List<PlayerContractEntry>();
+            if (data.locationContracts == null) data.locationContracts = new List<LocationContractEntry>();
+            if (migrated) SaveContracts(data);
+
+            return data.HasData ? RepositoryLoadStatus.Loaded : RepositoryLoadStatus.ValidEmptySave;
         }
 
         // --- Ключи (нижний регистр для id локации, чтобы 'PRIMIUM' и 'primium' не расходились) ---

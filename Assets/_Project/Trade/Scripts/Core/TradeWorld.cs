@@ -40,6 +40,9 @@ namespace ProjectC.Trade.Core
 
         public bool IsInitialized { get; private set; }
 
+        // Не перезаписываем сохранение после corruption/future-schema rejection.
+        private bool _persistenceWriteBlocked;
+
         // ========================================================
         // T-CARGO-03: События для подписчиков (ShipController, UI)
         // ========================================================
@@ -346,6 +349,7 @@ namespace ProjectC.Trade.Core
             _markets.Clear();
             _npcTraders.Clear();
             _activeEvents.Clear();
+            _persistenceWriteBlocked = false;
             if (Instance == this) Instance = null;
             IsInitialized = false;
         }
@@ -360,7 +364,7 @@ namespace ProjectC.Trade.Core
         /// </summary>
         public void SaveAll()
         {
-            if (Repository == null || _markets.Count == 0) return;
+            if (Repository == null || _persistenceWriteBlocked || _markets.Count == 0) return;
 
             var dto = new Dto.MarketSaveData();
 
@@ -414,7 +418,25 @@ namespace ProjectC.Trade.Core
         private void LoadAll()
         {
             if (Repository == null) return;
-            if (!Repository.TryLoadMarkets(out var dto) || dto == null || !dto.HasData) return;
+
+            RepositoryLoadStatus loadStatus = Repository.TryLoadMarkets(out var dto);
+            if (loadStatus == RepositoryLoadStatus.NoSaveFound)
+                return;
+
+            if (loadStatus == RepositoryLoadStatus.CorruptSave
+                || loadStatus == RepositoryLoadStatus.UnsupportedSchema)
+            {
+                _persistenceWriteBlocked = true;
+                Debug.LogError($"[TradeWorld] markets snapshot rejected: {loadStatus}");
+                return;
+            }
+
+            if (dto == null)
+            {
+                _persistenceWriteBlocked = true;
+                Debug.LogError("[TradeWorld] repository returned a successful market load status with null data");
+                return;
+            }
 
             int loadedItems = 0;
 
@@ -472,7 +494,7 @@ namespace ProjectC.Trade.Core
                 }
             }
 
-            Debug.Log($"[TradeWorld] Loaded markets from repository: items={loadedItems}, events={dto.events?.Count ?? 0}");
+            Debug.Log($"[TradeWorld] Loaded markets from repository: status={loadStatus}, items={loadedItems}, events={dto.events?.Count ?? 0}");
         }
 
         private void InitDefaultNPCTraders()

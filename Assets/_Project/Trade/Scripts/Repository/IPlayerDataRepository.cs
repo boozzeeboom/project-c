@@ -1,8 +1,23 @@
 using System.Collections.Generic;
 using ProjectC.Trade.Core;
+using ProjectC.Trade.Dto;
 
 namespace ProjectC.Trade.Repository
 {
+    /// <summary>
+    /// Результат попытки загрузки snapshot persistence.
+    /// Loaded и ValidEmptySave означают валидный snapshot; остальные значения
+    /// требуют отдельной политики и не должны трактоваться как пустой save.
+    /// </summary>
+    public enum RepositoryLoadStatus
+    {
+        NoSaveFound,
+        Loaded,
+        ValidEmptySave,
+        CorruptSave,
+        UnsupportedSchema
+    }
+
     /// <summary>
     /// Интерфейс хранилища постоянных данных игрока и его кораблей.
     /// Реализации:
@@ -30,11 +45,11 @@ namespace ProjectC.Trade.Repository
         void SetCargo(ulong shipNetworkObjectId, List<WarehouseEntry> items);
 
         // --- Contracts (T-Q?? persistence) ---
-        bool TryLoadContracts(out ProjectC.Trade.Dto.ContractSaveData data);
-        void SaveContracts(ProjectC.Trade.Dto.ContractSaveData data);
+        RepositoryLoadStatus TryLoadContracts(out ContractSaveData data);
+        void SaveContracts(ContractSaveData data);
 
         // --- Markets (runtime state persistence) ---
-        bool TryLoadMarkets(out ProjectC.Trade.Dto.MarketSaveData data);
-        void SaveMarkets(ProjectC.Trade.Dto.MarketSaveData data);
+        RepositoryLoadStatus TryLoadMarkets(out MarketSaveData data);
+        void SaveMarkets(MarketSaveData data);
     }
 }

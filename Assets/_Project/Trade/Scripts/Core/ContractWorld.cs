@@ -50,6 +50,9 @@ namespace ProjectC.Trade.Core
 
         public bool IsInitialized { get; private set; }
 
+        // Не перезаписываем сохранение после corruption/future-schema rejection.
+        private bool _persistenceWriteBlocked;
+
         // === Tunables ===
         [Header("Tunables")]
         public int MaxActiveContractsPerPlayer = 3;
@@ -105,16 +108,18 @@ namespace ProjectC.Trade.Core
             BuildItemPriceIndex();
 
             // Try to restore persisted contracts first.
-            bool loaded = LoadAll();
+            RepositoryLoadStatus loadStatus = LoadAll();
+            _persistenceWriteBlocked = loadStatus == RepositoryLoadStatus.CorruptSave
+                || loadStatus == RepositoryLoadStatus.UnsupportedSchema;
 
-            if (!loaded && autoInitContracts)
+            if (loadStatus == RepositoryLoadStatus.NoSaveFound && autoInitContracts)
             {
                 GenerateContractsForAllLocations();
                 SaveAll();
             }
 
             IsInitialized = true;
-            Debug.Log($"[ContractWorld] инициализирован: items={_itemBasePrice.Count}, contracts={_availableContracts.Count}, loadedFromRepo={loaded}");
+            Debug.Log($"[ContractWorld] инициализирован: items={_itemBasePrice.Count}, contracts={_availableContracts.Count}, loadStatus={loadStatus}");
         }
 
         public void Shutdown()
@@ -126,6 +131,7 @@ namespace ProjectC.Trade.Core
             _playerDebts.Clear();
             _locationContracts.Clear();
             _itemBasePrice.Clear();
+            _persistenceWriteBlocked = false;
             IsInitialized = false;
             if (Instance == this) Instance = null;
             Debug.Log("[ContractWorld] shutdown");
@@ -141,7 +147,7 @@ namespace ProjectC.Trade.Core
         /// </summary>
         public void SaveAll()
         {
-            if (Repository == null) return;
+            if (Repository == null || _persistenceWriteBlocked) return;
 
             var data = new ContractSaveData();
 
@@ -184,14 +190,29 @@ namespace ProjectC.Trade.Core
 
         /// <summary>
         /// Load contract state from IPlayerDataRepository.
-        /// Returns true if data was found and restored.
+        /// Returns an explicit persistence status so valid-empty, missing,
+        /// corrupt and unsupported snapshots cannot collapse into one boolean.
         /// </summary>
-        private bool LoadAll()
+        private RepositoryLoadStatus LoadAll()
         {
-            if (Repository == null) return false;
+            if (Repository == null) return RepositoryLoadStatus.CorruptSave;
 
-            if (!Repository.TryLoadContracts(out var data) || data == null || !data.HasData)
-                return false;
+            RepositoryLoadStatus loadStatus = Repository.TryLoadContracts(out var data);
+            if (loadStatus == RepositoryLoadStatus.NoSaveFound)
+                return loadStatus;
+
+            if (loadStatus == RepositoryLoadStatus.CorruptSave
+                || loadStatus == RepositoryLoadStatus.UnsupportedSchema)
+            {
+                Debug.LogError($"[ContractWorld] contracts snapshot rejected: {loadStatus}");
+                return loadStatus;
+            }
+
+            if (data == null)
+            {
+                Debug.LogError("[ContractWorld] repository returned a successful contract load status with null data");
+                return RepositoryLoadStatus.CorruptSave;
+            }
 
             // Contracts
             _availableContracts.Clear();
@@ -227,8 +248,8 @@ namespace ProjectC.Trade.Core
                     _locationContracts[e.locationId] = new List<string>(e.contractIds ?? new List<string>());
             }
 
-            Debug.Log($"[ContractWorld] Loaded {_availableContracts.Count} contracts, {_playerDebts.Count} debts from repository");
-            return true;
+            Debug.Log($"[ContractWorld] Loaded {_availableContracts.Count} contracts, {_playerDebts.Count} debts from repository; status={loadStatus}");
+            return loadStatus;
         }
 
         // ========================================================

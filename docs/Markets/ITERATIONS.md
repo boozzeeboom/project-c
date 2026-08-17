@@ -106,6 +106,7 @@
 - Unity compile check: ошибок компиляции нет
 - Play Mode/domain tests/persistence round-trip/network smoke test/screenshots не выполнялись
 
+
 ---
 
 ## Итерация от 2026-08-17
@@ -151,3 +152,21 @@
 - `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован безопасный fail-closed режим и оставшиеся ограничения
 - Unity compile check: ошибок компиляции нет
 - Play Mode/domain tests/persistence round-trip/network smoke test/screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
+**Задача:** Этап 8 реализации аудита — retention terminal records (`MKT-PER-002`).
+
+**Коммит:** `dd8f7871c3c2905971b9a4faeed5e64422cb8e61` — T-MKT09: Ограничить terminal history контрактов
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/ContractData.cs` — добавлен UTC terminal timestamp для Completed/Failed records
+- `Assets/_Project/Trade/Scripts/Dto/ContractSaveData.cs` — schema version повышена до `2`
+- `Assets/_Project/Trade/Scripts/Repository/IPlayerDataRepository.cs` — `SaveContracts()` возвращает результат записи
+- `Assets/_Project/Trade/Scripts/Repository/ServerFileRepository.cs` и `PlayerPrefsRepository.cs` — bool save result и безопасная обработка ошибок
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — retention до `50` terminal records на игрока после успешного save
+- `docs/Markets/CONTRACT_PERSISTENCE.md`, `MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксировано состояние этапа 8
+- Unity compile check: ошибок компиляции нет
+- Play Mode/domain tests/persistence round-trip/retention stress test/screenshots не выполнялись

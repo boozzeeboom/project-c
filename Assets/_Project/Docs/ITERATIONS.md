@@ -3,11 +3,28 @@
 ## Итерация от 2026-08-17
 
 **Задача:** Проверить гипотезу `skinnedMotionVectors` после body-swap персонажа (T-JITTER15)  
-**Коммит:** `3b74ab5a8c5fd5312ad4d72b0fb69fe6f9931047` — T-JITTER15: отключить motion vectors у нового humanoid body после кастомизации  
+**Коммит:** `3b74ab5a8c5fd5312ad4d72b0fb69fe6f9931047` — T-JITTER15: диагностический фикс откатан после runtime-проверки  
+**Результат:** Гипотеза не подтверждена — после отключения `skinnedMotionVectors` тряска сохранилась. Кодовый фикс откатан; запись оставлена как отрицательный результат теста.
 **Изменения:**
-- `Assets/_Project/Scripts/Player/CharacterCustomisationApplier.cs` — после `Instantiate` нового тела `SkinnedMeshRenderer.skinnedMotionVectors` устанавливается в `false`; добавлено после проверки Animator/SMR
-- Компиляция Unity проверена: ошибок нет
-- Runtime playtest не выполнялся; требуется пользовательская проверка в WorldScene_0_0
+- `Assets/_Project/Scripts/Player/CharacterCustomisationApplier.cs` — диагностическое изменение удалено
+- Следующий шаг — runtime-зонд вершин через `SkinnedMeshRenderer.BakeMesh()`
+
+---
+
+## Итерация от 2026-08-17 (T-JITTER16)
+
+**Задача:** Измерить baked-вершины персонажа в рантайме на origin и в WorldScene_0_0  
+**Коммит:** `pending` — T-JITTER16: откат T-JITTER15 и добавление runtime vertex probe  
+**Статус:** Диагностический зонд создан и добавлен в `NetworkPlayer.prefab`; требуется runtime playtest пользователя
+**Изменения:**
+- `Assets/_Project/Scripts/Debug/SkinnedVertexRuntimeProbe.cs` — измеряет local, relative-world и world deltas sampled vertices через `SkinnedMeshRenderer.BakeMesh()`
+- `Assets/_Project/Prefabs/NetworkPlayer.prefab` — добавлен `ProjectC.DebugTools.SkinnedVertexRuntimeProbe` на root `NetworkPlayer`
+- Compile check: ошибок нет
+
+**Протокол:**
+- Прогон A: персонаж около `(0, 3, 0)`
+- Прогон B: персонаж после загрузки `WorldScene_0_0` около `(40000, 3000, 40000)`
+- Сравнить строки `[SkinnedVertexProbe]` по `local max/rms`, `relative max/rms`, `world max/rms`
 
 ---
 

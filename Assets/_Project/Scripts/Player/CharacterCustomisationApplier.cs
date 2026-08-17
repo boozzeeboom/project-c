@@ -301,11 +301,6 @@ namespace ProjectC.Player
                 return;
             }
 
-            // Keep the post-swap body consistent with NetworkPlayer.OnNetworkSpawn:
-            // motion vectors are not required for this character visual and can amplify
-            // sub-pixel humanoid skinning motion after a model swap.
-            newSMR.skinnedMotionVectors = false;
-
             // Avatar уже на модели; задаём controller + материал явно.
             if (targetCtrl != null) newAnimator.runtimeAnimatorController = targetCtrl;
             if (targetMaterial != null) newSMR.sharedMaterial = targetMaterial;

@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-08-17
+
+**Задача:** Проверить гипотезу `skinnedMotionVectors` после body-swap персонажа (T-JITTER15)  
+**Коммит:** `d3e5800b4d0659001f9adb4b63c9f9d8a3365af5` — T-JITTER15: отключить motion vectors у нового humanoid body после кастомизации  
+**Изменения:**
+- `Assets/_Project/Scripts/Player/CharacterCustomisationApplier.cs` — после `Instantiate` нового тела `SkinnedMeshRenderer.skinnedMotionVectors` устанавливается в `false`; добавлено после проверки Animator/SMR
+- Компиляция Unity проверена: ошибок нет
+- Runtime playtest не выполнялся; требуется пользовательская проверка в WorldScene_0_0
+
+---
+
 ## Итерация от 2026-07-14
 
 **Задача:** Исправить баг: при перезаходе теряется доступ к кораблю (ключ в инвентаре, но корабль заблокирован)  

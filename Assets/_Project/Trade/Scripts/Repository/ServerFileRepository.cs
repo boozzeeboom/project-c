@@ -7,10 +7,10 @@ using UnityEngine;
 namespace ProjectC.Trade.Repository
 {
     /// <summary>
-    /// P1-заглушка: серверный репозиторий на JSON-файлах.
+    /// Серверный репозиторий на JSON-файлах.
     /// Поведение при вызове: пишет/читает в <see cref="Application.persistentDataPath"/>.
-    /// На этом этапе НЕ доводится до production-готовности (нужны миграции,
-    /// concurrency lock, batched I/O). TODO на P1.
+    /// Market/contract snapshots используют schema migration, future-version guard,
+    /// atomic writes и recovery из `.bak` backup.
     ///
     /// Создан чтобы:
     ///   1. Доказать, что интерфейс IPlayerDataRepository подходит для обоих
@@ -133,18 +133,13 @@ namespace ProjectC.Trade.Repository
         {
             data = null;
             string path = Path.Combine(_rootDir, "markets.json");
-            if (!File.Exists(path)) return false;
-            try
+            if (!TryLoadJsonWithBackup(path, "markets", out data)) return false;
+            if (!TryMigrateMarkets(data, path))
             {
-                string json = File.ReadAllText(path);
-                data = JsonUtility.FromJson<MarketSaveData>(json);
-                return data != null && data.HasData;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[ServerFileRepository] LoadMarkets failed: {e.Message}");
+                data = null;
                 return false;
             }
+            return data.HasData;
         }
 
         public void SaveMarkets(MarketSaveData data)
@@ -168,18 +163,13 @@ namespace ProjectC.Trade.Repository
         {
             data = null;
             string path = Path.Combine(_rootDir, "contracts.json");
-            if (!File.Exists(path)) return false;
-            try
+            if (!TryLoadJsonWithBackup(path, "contracts", out data)) return false;
+            if (!TryMigrateContracts(data, path))
             {
-                string json = File.ReadAllText(path);
-                data = JsonUtility.FromJson<ContractSaveData>(json);
-                return data != null && data.HasData;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[ServerFileRepository] LoadContracts failed: {e.Message}");
+                data = null;
                 return false;
             }
+            return data.HasData;
         }
 
         public void SaveContracts(ContractSaveData data)
@@ -197,14 +187,127 @@ namespace ProjectC.Trade.Repository
             }
         }
 
+        private static bool TryLoadJsonWithBackup<T>(string path, string label, out T data)
+            where T : class
+        {
+            data = null;
+            bool primaryExists = File.Exists(path);
+            if (primaryExists && TryReadJson(path, label, out data))
+                return true;
+
+            string backupPath = path + ".bak";
+            if (!File.Exists(backupPath) || !TryReadJson(backupPath, label + ".bak", out data))
+            {
+                if (primaryExists)
+                    Debug.LogWarning($"[ServerFileRepository] {label}: primary and backup snapshots are unavailable");
+                return false;
+            }
+
+            try
+            {
+                File.Copy(backupPath, path, overwrite: true);
+                Debug.LogWarning($"[ServerFileRepository] {label}: recovered primary snapshot from {backupPath}");
+            }
+            catch (System.Exception e)
+            {
+                // Snapshot уже прочитан и может быть использован в памяти даже если
+                // восстановить основной файл не удалось.
+                Debug.LogError($"[ServerFileRepository] {label}: backup recovery write failed: {e.Message}");
+            }
+
+            return true;
+        }
+
+        private static bool TryReadJson<T>(string path, string label, out T data)
+            where T : class
+        {
+            data = null;
+            try
+            {
+                string json = File.ReadAllText(path);
+                data = JsonUtility.FromJson<T>(json);
+                if (data == null)
+                {
+                    Debug.LogWarning($"[ServerFileRepository] {label}: deserialized snapshot is null");
+                    return false;
+                }
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[ServerFileRepository] {label}: read/deserialize failed: {e.Message}");
+                return false;
+            }
+        }
+
+        private static bool TryMigrateMarkets(MarketSaveData data, string path)
+        {
+            if (data == null) return false;
+            if (data.schemaVersion > MarketSaveData.CurrentSchemaVersion)
+            {
+                Debug.LogError($"[ServerFileRepository] markets schema {data.schemaVersion} is newer than supported {MarketSaveData.CurrentSchemaVersion}; refusing {path}");
+                return false;
+            }
+
+            bool migrated = data.schemaVersion != MarketSaveData.CurrentSchemaVersion;
+            data.schemaVersion = MarketSaveData.CurrentSchemaVersion;
+            if (data.markets == null) data.markets = new List<MarketLocationSaveEntry>();
+            if (data.events == null) data.events = new List<MarketEventSaveEntry>();
+
+            if (migrated)
+            {
+                Debug.Log($"[ServerFileRepository] migrated markets snapshot to schema {MarketSaveData.CurrentSchemaVersion}");
+                PersistMigratedSnapshot(path, JsonUtility.ToJson(data), "markets");
+            }
+            return true;
+        }
+
+        private static bool TryMigrateContracts(ContractSaveData data, string path)
+        {
+            if (data == null) return false;
+            if (data.schemaVersion > ContractSaveData.CurrentSchemaVersion)
+            {
+                Debug.LogError($"[ServerFileRepository] contracts schema {data.schemaVersion} is newer than supported {ContractSaveData.CurrentSchemaVersion}; refusing {path}");
+                return false;
+            }
+
+            bool migrated = data.schemaVersion != ContractSaveData.CurrentSchemaVersion;
+            data.schemaVersion = ContractSaveData.CurrentSchemaVersion;
+            if (data.contracts == null) data.contracts = new List<ContractData>();
+            if (data.debts == null) data.debts = new List<ContractDebtEntry>();
+            if (data.playerContracts == null) data.playerContracts = new List<PlayerContractEntry>();
+            if (data.locationContracts == null) data.locationContracts = new List<LocationContractEntry>();
+
+            if (migrated)
+            {
+                Debug.Log($"[ServerFileRepository] migrated contracts snapshot to schema {ContractSaveData.CurrentSchemaVersion}");
+                PersistMigratedSnapshot(path, JsonUtility.ToJson(data), "contracts");
+            }
+            return true;
+        }
+
+        private static void PersistMigratedSnapshot(string path, string json, string label)
+        {
+            try
+            {
+                WriteJsonAtomically(path, json);
+            }
+            catch (System.Exception e)
+            {
+                // Migration в памяти всё равно остаётся валидной; следующий SaveAll
+                // повторит запись. Не превращаем успешный load в hard failure.
+                Debug.LogWarning($"[ServerFileRepository] {label}: migrated snapshot write failed: {e.Message}");
+            }
+        }
+
         private static void WriteJsonAtomically(string path, string json)
         {
             string tempPath = path + ".tmp";
             string backupPath = path + ".bak";
-            File.WriteAllText(tempPath, json);
 
             try
             {
+                File.WriteAllText(tempPath, json);
                 if (File.Exists(path))
                 {
                     File.Replace(tempPath, path, backupPath, ignoreMetadataErrors: true);
@@ -218,7 +321,6 @@ namespace ProjectC.Trade.Repository
             {
                 // Fallback for filesystems without File.Replace support.
                 File.Copy(tempPath, path, overwrite: true);
-                File.Delete(tempPath);
             }
             finally
             {

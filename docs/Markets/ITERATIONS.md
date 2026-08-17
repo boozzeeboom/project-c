@@ -110,6 +110,20 @@
 
 ## Итерация от 2026-08-17
 
+**Задача:** Этап 6 реализации аудита — schema migration, future-version guard и backup recovery для dedicated JSON repository (`MKT-PER-003`).
+
+**Коммит:** `4713847c5eeaec4e1cf45751679403ccc09d266d` — T-MKT07: Добавить миграцию и recovery persistence
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Repository/ServerFileRepository.cs` — primary/`.bak` recovery, schema 0 → 1 migration, future schema rejection и безопасная очистка `.tmp`
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксированы результаты этапа 6 и оставшиеся ограничения
+- Unity compile check: ошибок компиляции нет
+- Persistence round-trip/corrupt-primary recovery/future-schema rejection/Play Mode/screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-17
+
 **Задача:** Этап 5 реализации аудита — fail-closed политика для неполного Receipt flow (`MKT-CON-004`).
 
 **Коммит:** `0150a771bdc7137b220ca0618754f391d40183c5` — T-MKT06: Заблокировать неполный Receipt flow

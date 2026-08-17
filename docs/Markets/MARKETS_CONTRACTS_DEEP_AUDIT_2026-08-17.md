@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этапы 1–5 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
+**Статус:** статический аудит исходников и документации; этапы 1–6 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
 **Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -429,6 +429,20 @@ JSON не содержит явного schema version и migration pipeline. Pe
 - Старый snapshot либо мигрируется, либо отклоняется без потери предыдущих данных.
 - Сбой записи не оставляет обрезанный JSON как единственную копию.
 - Dedicated server и local repository используют одинаковые DTO/version rules.
+
+### Реализовано на этапе 6
+
+- `ServerFileRepository` принимает legacy snapshots без поля `schemaVersion` как schema `0` и нормализует их к текущей версии `1`.
+- Future schema (`schemaVersion > CurrentSchemaVersion`) отклоняется без тихого downgrade.
+- При повреждённом основном `markets.json`/`contracts.json` репозиторий пытается прочитать соответствующий `.bak` и восстановить primary snapshot.
+- JSON migration write использует тот же atomic temp/replace путь.
+- Временный файл теперь очищается и при ошибке записи самого `.tmp`.
+
+### Ограничения этапа 6
+
+- `PlayerPrefsRepository` по-прежнему не имеет backup/atomic-replace семантики host-платформы.
+- Валидный пустой snapshot всё ещё не различается через `IPlayerDataRepository.TryLoad*` от отсутствующего save; это остаток `MKT-PER-001`.
+- Concurrency lock и единый transaction snapshot для credits/cargo/contracts/markets не реализованы.
 
 ---
 
@@ -991,6 +1005,34 @@ The following documentation is currently inconsistent with code and must be upda
 - полная Receipt semantics (`MKT-CON-004`);
 - retention terminal records (`MKT-PER-002`);
 - future schema migrations/recovery (`MKT-PER-003`);
+- dead RPC и legacy UI cleanup.
+
+---
+
+## 21. Реализованный этап 6 — schema migration и backup recovery
+
+**Дата:** 17 августа 2026 г.
+**Scope:** оставшаяся безопасная часть `MKT-PER-003`.
+
+### Изменения
+
+- `ServerFileRepository.TryLoadMarkets()` и `TryLoadContracts()` используют общий primary/`.bak` recovery path.
+- Legacy schema `0` мигрируется к schema `1` с null-safe списками.
+- Future schema versions отклоняются.
+- Мигрированный snapshot записывается обратно атомарно.
+- `WriteJsonAtomically()` гарантированно удаляет `.tmp` после ошибок.
+
+### Проверка
+
+- Unity compile check: **No compile errors**.
+- Persistence round-trip, corrupt-primary recovery, future-schema rejection, Play Mode и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- Валидный empty-save result semantics (`MKT-PER-001`);
+- retention terminal records (`MKT-PER-002`);
+- PlayerPrefs backup/atomicity limitation;
+- concurrency locking и общий transaction boundary;
 - dead RPC и legacy UI cleanup.
 
 ---

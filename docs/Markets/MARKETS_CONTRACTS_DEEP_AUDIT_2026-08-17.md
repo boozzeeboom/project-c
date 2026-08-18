@@ -2,8 +2,8 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** этапы 1–16B реализованы в коде, конфигурации и `WorldScene_0_0`; Receipt flow этапа 17 реализован в рабочем дереве, но ещё не закоммичен. Закрытые и оставшиеся работы сведены в актуальный раздел 35.
-**Проверки:** после изменений `ContractWorld` compile check чистый; Play Mode, domain tests, network/persistence smoke и screenshot-регрессия не запускались.
+**Статус:** этапы 1–17 реализованы в коде, конфигурации и `WorldScene_0_0`; кодовая часть аудита закрыта и зафиксирована в коммите `37861978`. Play Mode, domain tests, network/persistence smoke и screenshot-регрессия выполняются планомерно и не блокируют закрытие текущего этапа.
+**Проверки:** Unity compile check чистый; runtime-проверки отложены в отдельный плановый verification pass.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
 
@@ -33,12 +33,11 @@ MarketWindow / ContractsTab / CharacterWindow
 
 Симптом из `docs/Markets/KNOWN_ISSUES.md` должен считаться историческим и требует runtime-проверки: активный контракт не должен исчезать из `P → КОНТРАКТЫ` после повторного запроса или регенерации списка.
 
-Приоритет оставшихся работ:
+Текущий статус работ:
 
-1. **P0/P1 — verification pass:** domain, persistence, network и UI smoke-проверки; без них нельзя окончательно закрыть acceptance criteria.
-2. **P1 — Receipt acceptance:** полный server-authoritative flow уже реализован в рабочем дереве; требуется подтвердить его domain/persistence/network поведением и зафиксировать документацию.
-3. **P2 — конфигурация сцены:** для 12 `MarketZone` расстояния уже рассчитаны из `WorldScene_0_0`; остаются только locations без `MarketZone`, которые нельзя включать в contract board автоматически.
-4. **P2/P3 — cleanup:** legacy trade files, documentation catalog и отдельный unrelated missing-script issue.
+1. **Кодовый аудит закрыт:** этапы 1–17 реализованы и зафиксированы; основные P0/P1 дефекты исправлены.
+2. **Плановая runtime-верификация:** Play Mode, persistence, network, UI и screenshots будут выполняться постепенно по мере подготовки тестовых сценариев.
+3. **Отдельные P2/P3-задачи:** locations без `MarketZone`, legacy cleanup и unrelated missing-script issue не входят в закрытый кодовый scope контрактного аудита.
 
 ---
 
@@ -1476,10 +1475,10 @@ The following documentation is currently inconsistent with code and must be upda
 
 ---
 
-## 35. Актуальный остаток работ — что ещё доделываем
+## 35. Итоговый статус аудита — кодовая часть закрыта
 
 **Дата актуального статуса:** 18 августа 2026 г.
-**Правило:** исторические разделы 16–34 сохраняют контекст отдельных этапов; этот раздел является текущим списком незавершённых работ.
+**Правило:** исторические разделы 16–34 сохраняют контекст отдельных этапов; этот раздел фиксирует завершение кодовой части аудита и плановую runtime-верификацию.
 
 ### Этап 15F — catalog-driven timer limits
 
@@ -1507,7 +1506,7 @@ The following documentation is currently inconsistent with code and must be upda
 - `PRIMIUM_FARM_1_1` и `PRIMIUM_TEST_ZONE` оставлены disabled: в сцене нет `MarketZone`; для `PRIMIUM_TEST_ZONE` наличие только dock station недостаточно для contract board.
 - `ContractCatalog.Validate()`: `valid=True`, `errors=0`.
 
-### Этап 17 — Receipt full flow (рабочее дерево, не закоммичено)
+### Этап 17 — Receipt full flow (закоммичено: `37861978`)
 
 - Receipt снова допускается в publishable catalog definitions после подтверждения продуктовой политики.
 - `Accept` только переводит контракт в `Active`; cargo выдаётся отдельной `ReceiveCargo` операцией.
@@ -1522,8 +1521,8 @@ The following documentation is currently inconsistent with code and must be upda
 ### Закрыто и не требует повторной реализации
 
 - `MKT-CON-001` и `MKT-CON-002`: защита active index, stale cleanup и корректная регенерация доски.
-- Безопасная часть `MKT-CON-003`: server-side проверка и списание delivery cargo с rollback policy.
-- Receipt domain/network/persistence implementation из этапа 17 находится в рабочем дереве; acceptance закрытие ожидает verification pass и отдельный commit.
+- `MKT-CON-003`: server-side проверка и списание delivery cargo с rollback policy.
+- `MKT-CON-004`: полный Receipt domain/network/persistence flow, contract-owned cargo и atomic rollback зафиксированы коммитом `37861978`.
 - `MKT-PER-001`, `MKT-PER-002` и безопасные части `MKT-PER-003`: debts-only status, schema markers, migration guard, backup/recovery, retention и transaction lock.
 - `MKT-NET-001/002/003`: локализуемые result codes, явный rate-limit result и удаление dead RPC.
 - `MKT-UI-001/002/003`: единый `ContractsTab`, разделённый `MarketWindow` и refresh после contract result.
@@ -1532,17 +1531,13 @@ The following documentation is currently inconsistent with code and must be upda
 - Runtime storage split: `ContractRuntimeStore` разделяет registry, offers, active indexes и terminal history с обратной совместимостью persistence.
 - Scene-derived distance graph для всех 12 размещённых `MarketZone`; `ContractCatalog` валиден.
 
-### Доделываем в текущем цикле
+### Плановая верификация и отдельные задачи
 
-1. **Verification pass.** Нужны domain tests, persistence round-trip/corruption recovery, owner-only network smoke, UI smoke и ручная Play Mode проверка. Скриншоты и ручной playtest остаются отдельной пользовательской проверкой.
-2. **Commit checkpoint.** После verification pass зафиксировать этап 17 отдельным коммитом только после подтверждения пользователя.
-3. **Оставшиеся locations без MarketZone.** `PRIMIUM_FARM_1_1` и `PRIMIUM_TEST_ZONE` остаются `enabled=false` до отдельного размещения/подтверждения `MarketZone`. Для test zone существующий dock сам по себе не открывает market contract board.
-4. **Legacy/documentation cleanup.** После project-wide reference audit нужно решить судьбу старых trade-файлов и синхронизировать `README.md`, `FILES_INDEX.md`, `KNOWN_ISSUES.md`, migration-документы и ссылки на устаревшие документы.
-5. **Отдельная проблема сцены.** Missing script на `[Ship_Key_Container]/[KeyRod_ShipHeavy]` не относится к market/NPC ID работам и исправляется отдельным тикетом.
+1. **Runtime verification.** Domain tests, persistence round-trip/corruption recovery, owner-only network smoke, UI smoke, Play Mode и screenshots выполняются планомерно; отсутствие этих проверок не блокирует закрытие кодовой части.
+2. **Оставшиеся locations без MarketZone.** `PRIMIUM_FARM_1_1` и `PRIMIUM_TEST_ZONE` остаются `enabled=false` до отдельного placement decision.
+3. **Legacy/documentation cleanup.** Старые trade-файлы и вспомогательные документы могут быть разобраны отдельным cleanup-циклом.
+4. **Отдельная проблема сцены.** Missing script на `[Ship_Key_Container]/[KeyRod_ShipHeavy]` не относится к закрытому market/contracts scope и исправляется отдельным тикетом.
 
-### Текущий порядок продолжения
+### Итог
 
-1. Сначала выполнить оставшийся verification pass доступными автоматическими/domain проверками.
-2. Затем показать пользователю итоговый diff этапа 17 и дождаться подтверждения на commit.
-3. После отдельного placement decision добавить `MarketZone` для оставшихся locations или оставить их disabled.
-4. Затем выполнять legacy/documentation cleanup.
+Кодовая часть аудита Markets & Contracts завершена. Дальнейшая работа — плановая runtime-верификация и отдельные задачи, не блокирующие текущий результат.

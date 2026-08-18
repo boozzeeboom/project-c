@@ -441,7 +441,7 @@
 
 **Задача:** полноценно реализовать server-authoritative Receipt contract flow, contract-owned cargo и atomic rollback (`MKT-CON-004`, `MKT-PER-003`).
 
-**Коммит:** `dc1bbcaa` — MKT-UI-003: завершить Receipt flow и atomic rollback
+**Коммит:** `37861978b73b349d67ed6667a8d8a97113d7fd06` — MKT-UI-003: завершить Receipt flow и atomic rollback
 
 **Изменения:**
 - `ContractWorld.cs` — ReceiveCargo, exact Receipt settlement, возврат cargo при fail/expiry и rollback при persistence failure.
@@ -456,4 +456,4 @@
 **Проверки:**
 - `check_compile_errors`: **No compile errors**
 - Статический аудит contract-owned cargo выполнен
-- Play Mode, domain tests, persistence round-trip, network smoke и screenshots не выполнялись
+- Play Mode, domain tests, persistence round-trip, network smoke и screenshots выполняются планомерно и не блокируют закрытие кодовой части этапа

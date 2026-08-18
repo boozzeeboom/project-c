@@ -20,6 +20,7 @@ namespace ProjectC.Trade.Network
     public static class MarketZoneRegistry
     {
         private static readonly Dictionary<string, MarketZone> _zones = new Dictionary<string, MarketZone>();
+        private static readonly HashSet<UnityEngine.Object> _serverSessionOwners = new HashSet<UnityEngine.Object>();
         private static MarketZone _localPlayerZone;
 
         public static IReadOnlyDictionary<string, MarketZone> All => _zones;
@@ -31,6 +32,28 @@ namespace ProjectC.Trade.Network
         {
             get => _localPlayerZone;
             set => _localPlayerZone = value;
+        }
+
+        /// <summary>
+        /// Зарегистрировать server-компонент текущей сетевой сессии.
+        /// Реестр очищается только после освобождения последнего владельца.
+        /// </summary>
+        public static void AcquireServerSession(UnityEngine.Object owner)
+        {
+            if (owner == null) return;
+            _serverSessionOwners.Add(owner);
+        }
+
+        /// <summary>
+        /// Освободить server-компонент текущей сетевой сессии.
+        /// MarketServer и ContractServer могут уничтожаться в любом порядке.
+        /// </summary>
+        public static void ReleaseServerSession(UnityEngine.Object owner)
+        {
+            if (owner == null) return;
+            if (!_serverSessionOwners.Remove(owner)) return;
+            if (_serverSessionOwners.Count == 0)
+                ClearInternal();
         }
 
         public static void Register(MarketZone zone)
@@ -59,7 +82,7 @@ namespace ProjectC.Trade.Network
             return z;
         }
 
-        public static void Clear()
+        private static void ClearInternal()
         {
             _zones.Clear();
             _localPlayerZone = null;

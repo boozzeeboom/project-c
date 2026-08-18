@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этапы 1–11 реализованы 17 августа 2026 г.; остальные P0/P1/P2 тикеты остаются открытыми.
+**Статус:** статический аудит исходников и документации; этапы 1–14 реализованы 17 августа 2026 г.; verification pass и оставшиеся P0/P1/P2/P3 тикеты остаются открытыми.
 **Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -670,6 +670,13 @@ Project-wide search по `Assets` не нашёл ссылок на `ReceiveMark
 - Reload scene/session очищает registry ровно один раз.
 - Повторная регистрация не оставляет stale entries.
 
+### Реализовано на этапе 14
+
+- `MarketZoneRegistry` хранит владельцев server-сессии отдельно от самих `MarketZone`.
+- `MarketServer` и `ContractServer` регистрируют себя как session owners при `OnNetworkSpawn()` и освобождают владение при `OnNetworkDespawn()`.
+- Реестр очищается только после освобождения последнего server owner; порядок despawn двух компонентов больше не влияет на активные зоны.
+- Публичный безусловный `Clear()` удалён, поэтому отдельный server component не может случайно очистить общий реестр.
+
 ---
 
 ## 9. Предлагаемая целевая модель данных
@@ -1284,3 +1291,32 @@ The following documentation is currently inconsistent with code and must be upda
 - Play Mode/network/persistence verification pass для этапов 4–13;
 - canonical `LocationId`, data-driven locations/types (`MKT-DOM-001`);
 - явный lifecycle `MarketZoneRegistry` (`MKT-DOM-002`).
+
+---
+
+## 29. Реализованный этап 14 — explicit lifecycle `MarketZoneRegistry` (`MKT-DOM-002`)
+
+**Дата:** 18 августа 2026 г.
+**Scope:** `REF-4004` / lifecycle safety для общего реестра зон.
+
+### Изменения
+
+- Добавлен reference-counted session ownership через `AcquireServerSession()` / `ReleaseServerSession()`.
+- `MarketServer` и `ContractServer` больше не вызывают безусловный `MarketZoneRegistry.Clear()` в `OnNetworkDespawn()`.
+- Реестр очищается ровно один раз — после освобождения последнего server owner.
+- Клиентская регистрация зон и `LocalPlayerZone` сохраняются, пока существует хотя бы один server owner; отдельный despawn `MarketServer` или `ContractServer` не ломает второй компонент.
+
+### Проверка
+
+- Исходники изменены только в `MarketZoneRegistry`, `MarketServer`, `ContractServer`.
+- Первый compile check выявил устаревший `GetInstanceID()` в Unity 6; владельцы registry переведены на reference-based `HashSet<UnityEngine.Object>`.
+- После исправления Unity editor отключился во время domain reload, поэтому финальный `check_compile_errors` не удалось получить через bridge; `git diff --check` пройден.
+- Play Mode, scene/session despawn-order smoke test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- Полная Receipt semantics и localization для `UnsupportedContractType`.
+- Canonical/data-driven `LocationId` и contract types (`MKT-DOM-001`).
+- Отдельный runtime storage `ContractsById` / `LocationOffers` / `ActiveByPlayer` / `TerminalHistory`.
+- Полный verification pass этапов 4–14.
+- Legacy cleanup и документационный каталог (`REF-5001/5002`).

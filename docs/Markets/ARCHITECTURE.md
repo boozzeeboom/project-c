@@ -302,7 +302,8 @@ MarketTimeService.onMarketTick event
 - `MarketWindow` (MonoBehaviour) — UI Toolkit контроллер
 
 **Static helpers** (используются на обеих сторонах):
-- `MarketZoneRegistry` (static) — реестр зон + LocalPlayerZone
+- `MarketZoneRegistry` (static) — реестр зон + LocalPlayerZone.
+  Server-side lifetime is explicit: `MarketServer` and `ContractServer` acquire a session owner on spawn and release it on despawn; the registry clears only after the last owner releases it.
 - `MarketInteractor` (static) — E-handler helper
 - `NetworkingUtils` (static) — IsServerSafe/IsClientSafe
 

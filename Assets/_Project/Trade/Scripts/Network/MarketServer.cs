@@ -58,6 +58,7 @@ namespace ProjectC.Trade.Network
 
         // Per-client rate limiting
         private readonly Dictionary<ulong, List<float>> _opTimestamps = new Dictionary<ulong, List<float>>();
+        private bool _registrySessionAcquired;
 
         // FIX (2026-06-04): Какой корабль клиент сейчас выбрал в UI.
         // Нужен, чтобы включить cargo этого корабля в MarketSnapshotDto.cargo
@@ -79,6 +80,9 @@ namespace ProjectC.Trade.Network
                 enabled = false;
                 return;
             }
+
+            MarketZoneRegistry.AcquireServerSession(this);
+            _registrySessionAcquired = true;
 
             // 1. Repository
             _repository = useFileRepository
@@ -115,7 +119,11 @@ namespace ProjectC.Trade.Network
             {
                 if (_timeService != null) _timeService.onMarketTick.RemoveListener(BroadcastSnapshotsToAll);
                 if (TradeWorld.Instance != null) TradeWorld.Instance.Shutdown();
-                MarketZoneRegistry.Clear();
+            }
+            if (_registrySessionAcquired)
+            {
+                MarketZoneRegistry.ReleaseServerSession(this);
+                _registrySessionAcquired = false;
             }
             if (Instance == this) Instance = null;
         }

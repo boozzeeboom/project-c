@@ -63,6 +63,7 @@ namespace ProjectC.Trade.Network
 
         // Per-client rate limiting
         private readonly Dictionary<ulong, List<float>> _opTimestamps = new Dictionary<ulong, List<float>>();
+        private bool _registrySessionAcquired;
 
         public override void OnNetworkSpawn()
         {
@@ -74,6 +75,9 @@ namespace ProjectC.Trade.Network
                 enabled = false;
                 return;
             }
+
+            MarketZoneRegistry.AcquireServerSession(this);
+            _registrySessionAcquired = true;
 
             // 1. Repository — реюз из TradeWorld если есть, иначе PlayerPrefsRepository
             if (TradeWorld.Instance != null && TradeWorld.Instance.Repository != null)
@@ -109,7 +113,11 @@ namespace ProjectC.Trade.Network
             {
                 if (ContractWorld.Instance != null) ContractWorld.Instance.Shutdown();
                 // C2-refactor: ContractZoneRegistry удалён — теперь используется MarketZoneRegistry.
-                MarketZoneRegistry.Clear();
+            }
+            if (_registrySessionAcquired)
+            {
+                MarketZoneRegistry.ReleaseServerSession(this);
+                _registrySessionAcquired = false;
             }
             if (Instance == this) Instance = null;
         }

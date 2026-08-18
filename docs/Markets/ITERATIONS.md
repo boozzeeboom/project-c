@@ -248,3 +248,21 @@
 - `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — зафиксирован этап 13 и текущий verification gap
 - Unity compile check: **No compile errors**
 - Play Mode/UI smoke test/screenshots не выполнялись; требуется ручная проверка без перелистывания вкладок
+
+---
+
+## Итерация от 2026-08-18
+
+**Задача:** Этап 14 реализации аудита — сделать lifecycle общего `MarketZoneRegistry` явным (`MKT-DOM-002` / `REF-4004`).
+
+**Коммит:** `a6ff016f` — MKT-DOM-002: Сделать lifecycle MarketZoneRegistry явным
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Network/MarketZoneRegistry.cs` — session-owner lifecycle; очистка только после освобождения последнего server owner
+- `Assets/_Project/Trade/Scripts/Network/MarketServer.cs` — acquire/release registry session ownership
+- `Assets/_Project/Trade/Scripts/Network/ContractServer.cs` — acquire/release registry session ownership
+- `docs/Markets/ARCHITECTURE.md` — зафиксирован explicit lifecycle общего registry
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — добавлен реализованный этап 14 и обновлён verification gap
+- Первый compile check выявил устаревший `GetInstanceID()` в Unity 6; исправлено на reference-based ownership без obsolete API
+- После исправления Unity editor отключился во время domain reload, поэтому финальный `check_compile_errors` через bridge недоступен; `git diff --check` пройден
+- Play Mode, scene/session despawn-order smoke test и screenshots не выполнялись

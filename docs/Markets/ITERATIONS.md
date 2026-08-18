@@ -377,7 +377,7 @@
 
 **Задача:** перевести лимиты времени контрактов из legacy `ContractServer` overrides в `ContractCatalog` (`MKT-DOM-001`).
 
-**Статус:** изменения применены; commit hash будет зафиксирован после отдельного commit шага.
+**Коммит:** `15be766b` — MKT-DOM-001: Перевести лимиты контрактов в ContractCatalog.
 
 **Изменения:**
 - `ContractServer` больше не хранит три фиксированных timer-поля.

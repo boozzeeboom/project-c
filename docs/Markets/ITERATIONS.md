@@ -292,7 +292,7 @@
 
 **Задача:** мигрировать и проверить `WorldScene_0_0`, согласовать canonical IDs DockStation/NPC routes (`MKT-DOM-001`).
 
-**Статус:** изменения применены в Unity project; commit hash будет зафиксирован после отдельного согласованного commit шага.
+**Коммит:** `9e8bf9b6503bdfcb7056253d87a91c6f9dacefd4` — общий коммит этапов 15D–15E.
 
 **Изменения:**
 - BootstrapScene не изменялась; назначение объектов проверялось в `WorldScene_0_0`.
@@ -317,7 +317,7 @@
 
 **Задача:** этап 15D аудита — вынести presentation mapping contract types в `ContractCatalog` (`MKT-DOM-001`).
 
-**Статус:** изменения применены в Unity project; commit hash будет зафиксирован после отдельного согласованного commit шага.
+**Коммит:** `9e8bf9b6503bdfcb7056253d87a91c6f9dacefd4` — общий коммит этапов 15D–15E.
 
 **Изменения:**
 - `ContractCatalog.ContractTypeDefinition` получил localization key, USS class, server fallback и UI color.

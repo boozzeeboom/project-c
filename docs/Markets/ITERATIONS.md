@@ -399,7 +399,7 @@
 
 **Задача:** разделить runtime storage контрактов на registry, offers, active indexes и terminal history (`MKT-CON-001/002`, архитектурная часть).
 
-**Статус:** изменения применены; commit hash будет зафиксирован после отдельного commit шага.
+**Коммит:** `e59571c6` — MKT-CON-002: Разделить runtime storage контрактов.
 
 **Изменения:**
 - Добавлен `ContractRuntimeStore` с `ContractsById`, `LocationOffers`, `ActiveByPlayer` и `TerminalHistory`.

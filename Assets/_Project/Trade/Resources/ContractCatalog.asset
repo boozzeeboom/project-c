@@ -22,44 +22,224 @@ MonoBehaviour:
   - locationId: QUARTUS
     enabled: 1
   - locationId: PRIMIUM_FARM_0_0
-    enabled: 0
+    enabled: 1
   - locationId: PRIMIUM_FARM_0_1
-    enabled: 0
+    enabled: 1
   - locationId: PRIMIUM_FARM_0_2
-    enabled: 0
+    enabled: 1
   - locationId: PRIMIUM_FARM_0_3
-    enabled: 0
+    enabled: 1
   - locationId: PRIMIUM_FARM_0_4
-    enabled: 0
+    enabled: 1
   - locationId: PRIMIUM_FARM_1_1
     enabled: 0
   - locationId: PRIMIUM_TEST_ZONE
     enabled: 0
   - locationId: ROAD TO QUARTUS
-    enabled: 0
+    enabled: 1
   - locationId: ROAD TO SECUND
-    enabled: 0
+    enabled: 1
   - locationId: ROAD TO TERTIUS
-    enabled: 0
+    enabled: 1
   distances:
   - fromLocationId: PRIMIUM
     toLocationId: SECUNDUS
-    distanceKm: 120
+    distanceKm: 31.706
   - fromLocationId: PRIMIUM
     toLocationId: TERTIUS
-    distanceKm: 200
+    distanceKm: 51.99
   - fromLocationId: PRIMIUM
     toLocationId: QUARTUS
-    distanceKm: 180
+    distanceKm: 46.965
+  - fromLocationId: PRIMIUM
+    toLocationId: PRIMIUM_FARM_0_0
+    distanceKm: 5.326
+  - fromLocationId: PRIMIUM
+    toLocationId: PRIMIUM_FARM_0_1
+    distanceKm: 5.78
+  - fromLocationId: PRIMIUM
+    toLocationId: PRIMIUM_FARM_0_2
+    distanceKm: 7.079
+  - fromLocationId: PRIMIUM
+    toLocationId: PRIMIUM_FARM_0_3
+    distanceKm: 8.154
+  - fromLocationId: PRIMIUM
+    toLocationId: PRIMIUM_FARM_0_4
+    distanceKm: 9.218
+  - fromLocationId: PRIMIUM
+    toLocationId: ROAD TO QUARTUS
+    distanceKm: 47.364
+  - fromLocationId: PRIMIUM
+    toLocationId: ROAD TO SECUND
+    distanceKm: 31.321
+  - fromLocationId: PRIMIUM
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 51.64
   - fromLocationId: SECUNDUS
     toLocationId: TERTIUS
-    distanceKm: 150
+    distanceKm: 60.067
   - fromLocationId: SECUNDUS
     toLocationId: QUARTUS
-    distanceKm: 160
+    distanceKm: 60.597
+  - fromLocationId: SECUNDUS
+    toLocationId: PRIMIUM_FARM_0_0
+    distanceKm: 36.13
+  - fromLocationId: SECUNDUS
+    toLocationId: PRIMIUM_FARM_0_1
+    distanceKm: 37.299
+  - fromLocationId: SECUNDUS
+    toLocationId: PRIMIUM_FARM_0_2
+    distanceKm: 38.713
+  - fromLocationId: SECUNDUS
+    toLocationId: PRIMIUM_FARM_0_3
+    distanceKm: 39.835
+  - fromLocationId: SECUNDUS
+    toLocationId: PRIMIUM_FARM_0_4
+    distanceKm: 40.909
+  - fromLocationId: SECUNDUS
+    toLocationId: ROAD TO QUARTUS
+    distanceKm: 61.108
+  - fromLocationId: SECUNDUS
+    toLocationId: ROAD TO SECUND
+    distanceKm: 0.518
+  - fromLocationId: SECUNDUS
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 59.967
   - fromLocationId: TERTIUS
     toLocationId: QUARTUS
-    distanceKm: 100
+    distanceKm: 98.762
+  - fromLocationId: TERTIUS
+    toLocationId: PRIMIUM_FARM_0_0
+    distanceKm: 55.441
+  - fromLocationId: TERTIUS
+    toLocationId: PRIMIUM_FARM_0_1
+    distanceKm: 54.022
+  - fromLocationId: TERTIUS
+    toLocationId: PRIMIUM_FARM_0_2
+    distanceKm: 53.771
+  - fromLocationId: TERTIUS
+    toLocationId: PRIMIUM_FARM_0_3
+    distanceKm: 53.567
+  - fromLocationId: TERTIUS
+    toLocationId: PRIMIUM_FARM_0_4
+    distanceKm: 53.674
+  - fromLocationId: TERTIUS
+    toLocationId: ROAD TO QUARTUS
+    distanceKm: 99.139
+  - fromLocationId: TERTIUS
+    toLocationId: ROAD TO SECUND
+    distanceKm: 60.172
+  - fromLocationId: TERTIUS
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 0.513
+  - fromLocationId: QUARTUS
+    toLocationId: PRIMIUM_FARM_0_0
+    distanceKm: 43.338
+  - fromLocationId: QUARTUS
+    toLocationId: PRIMIUM_FARM_0_1
+    distanceKm: 44.849
+  - fromLocationId: QUARTUS
+    toLocationId: PRIMIUM_FARM_0_2
+    distanceKm: 45.282
+  - fromLocationId: QUARTUS
+    toLocationId: PRIMIUM_FARM_0_3
+    distanceKm: 45.692
+  - fromLocationId: QUARTUS
+    toLocationId: PRIMIUM_FARM_0_4
+    distanceKm: 45.825
+  - fromLocationId: QUARTUS
+    toLocationId: ROAD TO QUARTUS
+    distanceKm: 0.516
+  - fromLocationId: QUARTUS
+    toLocationId: ROAD TO SECUND
+    distanceKm: 60.085
+  - fromLocationId: QUARTUS
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 98.39
+  - fromLocationId: PRIMIUM_FARM_0_0
+    toLocationId: PRIMIUM_FARM_0_1
+    distanceKm: 2.031
+  - fromLocationId: PRIMIUM_FARM_0_0
+    toLocationId: PRIMIUM_FARM_0_2
+    distanceKm: 3.393
+  - fromLocationId: PRIMIUM_FARM_0_0
+    toLocationId: PRIMIUM_FARM_0_3
+    distanceKm: 4.553
+  - fromLocationId: PRIMIUM_FARM_0_0
+    toLocationId: PRIMIUM_FARM_0_4
+    distanceKm: 5.536
+  - fromLocationId: PRIMIUM_FARM_0_0
+    toLocationId: ROAD TO QUARTUS
+    distanceKm: 43.707
+  - fromLocationId: PRIMIUM_FARM_0_0
+    toLocationId: ROAD TO SECUND
+    distanceKm: 35.715
+  - fromLocationId: PRIMIUM_FARM_0_0
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 55.064
+  - fromLocationId: PRIMIUM_FARM_0_1
+    toLocationId: PRIMIUM_FARM_0_2
+    distanceKm: 1.505
+  - fromLocationId: PRIMIUM_FARM_0_1
+    toLocationId: PRIMIUM_FARM_0_3
+    distanceKm: 2.706
+  - fromLocationId: PRIMIUM_FARM_0_1
+    toLocationId: PRIMIUM_FARM_0_4
+    distanceKm: 3.766
+  - fromLocationId: PRIMIUM_FARM_0_1
+    toLocationId: ROAD TO QUARTUS
+    distanceKm: 45.208
+  - fromLocationId: PRIMIUM_FARM_0_1
+    toLocationId: ROAD TO SECUND
+    distanceKm: 36.898
+  - fromLocationId: PRIMIUM_FARM_0_1
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 53.636
+  - fromLocationId: PRIMIUM_FARM_0_2
+    toLocationId: PRIMIUM_FARM_0_3
+    distanceKm: 1.201
+  - fromLocationId: PRIMIUM_FARM_0_2
+    toLocationId: PRIMIUM_FARM_0_4
+    distanceKm: 2.264
+  - fromLocationId: PRIMIUM_FARM_0_2
+    toLocationId: ROAD TO QUARTUS
+    distanceKm: 45.629
+  - fromLocationId: PRIMIUM_FARM_0_2
+    toLocationId: ROAD TO SECUND
+    distanceKm: 38.317
+  - fromLocationId: PRIMIUM_FARM_0_2
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 53.375
+  - fromLocationId: PRIMIUM_FARM_0_3
+    toLocationId: PRIMIUM_FARM_0_4
+    distanceKm: 1.08
+  - fromLocationId: PRIMIUM_FARM_0_3
+    toLocationId: ROAD TO QUARTUS
+    distanceKm: 46.029
+  - fromLocationId: PRIMIUM_FARM_0_3
+    toLocationId: ROAD TO SECUND
+    distanceKm: 39.443
+  - fromLocationId: PRIMIUM_FARM_0_3
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 53.164
+  - fromLocationId: PRIMIUM_FARM_0_4
+    toLocationId: ROAD TO QUARTUS
+    distanceKm: 46.153
+  - fromLocationId: PRIMIUM_FARM_0_4
+    toLocationId: ROAD TO SECUND
+    distanceKm: 40.518
+  - fromLocationId: PRIMIUM_FARM_0_4
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 53.265
+  - fromLocationId: ROAD TO QUARTUS
+    toLocationId: ROAD TO SECUND
+    distanceKm: 60.596
+  - fromLocationId: ROAD TO QUARTUS
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 98.765
+  - fromLocationId: ROAD TO SECUND
+    toLocationId: ROAD TO TERTIUS
+    distanceKm: 60.068
   contractTypes:
   - type: 0
     publishable: 1

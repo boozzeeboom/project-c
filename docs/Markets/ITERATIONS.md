@@ -395,6 +395,27 @@
 
 ---
 
+## Рабочая итерация от 2026-08-18 — этап 16B
+
+**Задача:** построить pairwise distance graph по фактическим позициям `MarketZone` из `WorldScene_0_0` (`MKT-DOM-001`).
+
+**Статус:** изменения применены; commit hash будет зафиксирован после отдельного commit шага.
+
+**Изменения:**
+- Для 12 `MarketZone` собраны world positions из активной `WorldScene_0_0`.
+- Расстояния рассчитаны по XZ и переведены из Unity units в километры по правилу `1 unit = 1 meter`.
+- В `ContractCatalog.asset` включены 12 размещённых locations и записано 66 pairwise distance entries.
+- `PRIMIUM_FARM_1_1` и `PRIMIUM_TEST_ZONE` оставлены disabled, так как для них нет `MarketZone`; один dock без market zone не считается доступной contract location.
+
+**Проверки:**
+- `marketZones=12`
+- `enabledLocations=12`
+- `distanceEntries=66`
+- `ContractCatalog.Validate()`: `valid=True`, `errors=0`
+- Полный Play Mode/NPC/persistence/UI verification pass отложен до общего этапа проверки
+
+---
+
 ## Рабочая итерация от 2026-08-18 — этап 16A
 
 **Задача:** разделить runtime storage контрактов на registry, offers, active indexes и terminal history (`MKT-CON-001/002`, архитектурная часть).

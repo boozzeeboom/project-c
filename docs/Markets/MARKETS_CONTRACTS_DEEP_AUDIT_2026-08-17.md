@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** этапы 1–16A реализованы в коде, конфигурации и `WorldScene_0_0`; закрытые и оставшиеся работы сведены в актуальный раздел 35.
+**Статус:** этапы 1–16B реализованы в коде, конфигурации и `WorldScene_0_0`; закрытые и оставшиеся работы сведены в актуальный раздел 35.
 **Проверки:** Unity compile check и статические аудиты пройдены; Play Mode, domain tests, network/persistence smoke и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -37,7 +37,7 @@ MarketWindow / ContractsTab / CharacterWindow
 
 1. **P0/P1 — verification pass:** domain, persistence, network и UI smoke-проверки; без них нельзя окончательно закрыть acceptance criteria.
 2. **P1 — Receipt:** сохранить fail-closed режим как текущую безопасную политику; полная Receipt semantics требует отдельного решения по cargo ownership, возврату и settlement.
-3. **P2 — конфигурация:** настроить полный pairwise distance graph перед включением disabled farm/road/test locations.
+3. **P2 — конфигурация сцены:** для 12 `MarketZone` расстояния уже рассчитаны из `WorldScene_0_0`; остаются только locations без `MarketZone`, которые нельзя включать в contract board автоматически.
 4. **P2/P3 — cleanup:** legacy trade files, documentation catalog и отдельный unrelated missing-script issue.
 
 ---
@@ -1498,6 +1498,15 @@ The following documentation is currently inconsistent with code and must be upda
 - `ContractSaveData` schema 2 и существующие repository snapshots сохранены без изменения формата.
 - `check_compile_errors`: **No compile errors**; project-wide grep старых `_availableContracts/_playerContracts/_locationContracts` имён не дал совпадений.
 
+### Этап 16B — scene-derived pairwise distance graph
+
+- Позиции взяты из активной `WorldScene_0_0` у 12 `MarketZone`.
+- Расстояние считается по горизонтали XZ: `Vector2(delta.x, delta.z).magnitude / 1000`, так как `WorldLandscape_Design.md` фиксирует 1 Unity unit = 1 meter.
+- В `ContractCatalog.asset` включены 12 locations с MarketZone: 4 core, 5 farm, 3 road.
+- Сгенерирован полный граф `12 × 11 / 2 = 66` pairwise distance entries.
+- `PRIMIUM_FARM_1_1` и `PRIMIUM_TEST_ZONE` оставлены disabled: в сцене нет `MarketZone`; для `PRIMIUM_TEST_ZONE` наличие только dock station недостаточно для contract board.
+- `ContractCatalog.Validate()`: `valid=True`, `errors=0`.
+
 ### Закрыто и не требует повторной реализации
 
 - `MKT-CON-001` и `MKT-CON-002`: защита active index, stale cleanup и корректная регенерация доски.
@@ -1509,12 +1518,13 @@ The following documentation is currently inconsistent with code and must be upda
 - `MKT-DOM-001`: canonical IDs, `ContractCatalog`, editor synchronization, catalog-driven presentation, catalog-driven timer limits и миграция `WorldScene_0_0`.
 - `MKT-DOM-002`: explicit lifecycle `MarketZoneRegistry`.
 - Runtime storage split: `ContractRuntimeStore` разделяет registry, offers, active indexes и terminal history с обратной совместимостью persistence.
+- Scene-derived distance graph для всех 12 размещённых `MarketZone`; `ContractCatalog` валиден.
 
 ### Доделываем в текущем цикле
 
 1. **Verification pass.** Нужны domain tests, persistence round-trip/corruption recovery, owner-only network smoke, UI smoke и ручная Play Mode проверка. Скриншоты и ручной playtest остаются отдельной пользовательской проверкой.
 2. **Receipt decision/implementation.** Сейчас Receipt корректно fail-closed. Для полного flow нужно отдельно зафиксировать выдачу товара, ownership во время перевозки, policy при expiry и settlement. До этого Receipt нельзя включать в `publishable` definitions.
-3. **Disabled catalog locations.** `PRIMIUM_FARM_*`, `PRIMIUM_TEST_ZONE` и road locations остаются `enabled=false`. Включать их можно только после полного pairwise distance graph и успешного `ContractCatalog.Validate()`.
+3. **Оставшиеся locations без MarketZone.** `PRIMIUM_FARM_1_1` и `PRIMIUM_TEST_ZONE` остаются `enabled=false` до отдельного размещения/подтверждения `MarketZone`. Для test zone существующий dock сам по себе не открывает market contract board.
 4. **Legacy/documentation cleanup.** После project-wide reference audit нужно решить судьбу старых trade-файлов и синхронизировать `README.md`, `FILES_INDEX.md`, `KNOWN_ISSUES.md`, migration-документы и ссылки на устаревшие документы.
 5. **Отдельная проблема сцены.** Missing script на `[Ship_Key_Container]/[KeyRod_ShipHeavy]` не относится к market/NPC ID работам и исправляется отдельным тикетом.
 
@@ -1522,5 +1532,5 @@ The following documentation is currently inconsistent with code and must be upda
 
 1. Сначала выполнить оставшийся verification pass доступными автоматическими/domain проверками.
 2. Затем принять отдельное продуктовое решение по полной Receipt semantics.
-3. После этого включать дополнительные catalog locations только при полном distance graph.
+3. После отдельного placement decision добавить `MarketZone` для оставшихся locations или оставить их disabled.
 4. Затем выполнять legacy/documentation cleanup.

@@ -285,3 +285,22 @@
 - документация аудита и `MARKET_ID_REFACTOR_DESIGN.md` синхронизированы
 - `check_compile_errors`: **No compile errors**
 - Play Mode, NPC trade smoke test и screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-18
+
+**Задача:** Этап 15B реализации аудита — вынести locations, distances и contract type definitions в validated `ContractCatalog` (`MKT-DOM-001` / `REF-4003`).
+
+**Коммит:** будет добавлен после compile и diff-проверки.
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Config/ContractCatalog.cs` — новый validated ScriptableObject-каталог
+- `Assets/_Project/Trade/Resources/ContractCatalog.asset` — текущие локации, GDD_25 distance graph и publishable `Standard/Urgent` definitions
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` — генерация по catalog definitions, без hardcoded location list/distance matrix/fixed branches
+- `Assets/_Project/Trade/Scripts/ContractData.cs` — `CreateConfigured()` для reward/time parameters из каталога; legacy `Create()` сохранён
+- `Assets/_Project/Trade/Scripts/Network/ContractServer.cs` — загрузка каталога из инспектора или Resources
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` и `MARKET_ID_REFACTOR_DESIGN.md` — синхронизирован статус `MKT-DOM-001`
+- `check_compile_errors`: **No compile errors**
+- Scene YAML и serialized scene references не изменялись
+- Play Mode, NPC trade smoke test и screenshots не выполнялись

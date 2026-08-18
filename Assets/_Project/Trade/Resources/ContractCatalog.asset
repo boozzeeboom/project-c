@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34d17f23487a39b4a9e17648a64dde4c, type: 3}
+  m_Name: ContractCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.Config.ContractCatalog
+  locations:
+  - locationId: PRIMIUM
+    enabled: 1
+  - locationId: SECUNDUS
+    enabled: 1
+  - locationId: TERTIUS
+    enabled: 1
+  - locationId: QUARTUS
+    enabled: 1
+  distances:
+  - fromLocationId: PRIMIUM
+    toLocationId: SECUNDUS
+    distanceKm: 120
+  - fromLocationId: PRIMIUM
+    toLocationId: TERTIUS
+    distanceKm: 200
+  - fromLocationId: PRIMIUM
+    toLocationId: QUARTUS
+    distanceKm: 180
+  - fromLocationId: SECUNDUS
+    toLocationId: TERTIUS
+    distanceKm: 150
+  - fromLocationId: SECUNDUS
+    toLocationId: QUARTUS
+    distanceKm: 160
+  - fromLocationId: TERTIUS
+    toLocationId: QUARTUS
+    distanceKm: 100
+  contractTypes:
+  - type: 0
+    publishable: 1
+    rewardMultiplier: 1
+    useServerTimeLimit: 1
+    timeLimitSeconds: 300
+    isReceiptContract: 0
+  - type: 1
+    publishable: 1
+    rewardMultiplier: 1.5
+    useServerTimeLimit: 1
+    timeLimitSeconds: 150
+    isReceiptContract: 0
+  - type: 2
+    publishable: 0
+    rewardMultiplier: 1
+    useServerTimeLimit: 1
+    timeLimitSeconds: 600
+    isReceiptContract: 1

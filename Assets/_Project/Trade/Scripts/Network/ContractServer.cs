@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using ProjectC.Core;
 using ProjectC.Player;
 using ProjectC.Ship.Key;
+using ProjectC.Trade.Config;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
 using ProjectC.Trade.Repository;
@@ -33,6 +34,9 @@ namespace ProjectC.Trade.Network
         [Tooltip("База данных TradeItemDefinition'ов (опционально — для автоподключения items к ContractWorld)")]
         [SerializeField] private TradeDatabase tradeDatabase;
 
+        [Tooltip("Каталог locations, distances и contract types. Если не задан, загружается Resources/ContractCatalog.asset.")]
+        [SerializeField] private ContractCatalog contractCatalog;
+
         [Header("Behavior")]
         [Tooltip("Макс активных контрактов на игрока")]
         [SerializeField] private int maxActiveContractsPerPlayer = 3;
@@ -40,7 +44,7 @@ namespace ProjectC.Trade.Network
         [Tooltip("Автогенерация новых контрактов когда доска пуста")]
         [SerializeField] private bool autoRegenerateContracts = true;
 
-        [Tooltip("Инициализировать контракты при старте (для всех 4 локаций)")]
+        [Tooltip("Инициализировать контракты при старте для всех enabled locations из ContractCatalog")]
         [SerializeField] private bool autoInitContracts = true;
 
         [Header("Contract Timers")]
@@ -76,6 +80,15 @@ namespace ProjectC.Trade.Network
                 return;
             }
 
+            var resolvedCatalog = ResolveContractCatalog();
+            if (resolvedCatalog != null && !resolvedCatalog.Validate(out var catalogErrors))
+            {
+                Debug.LogError($"[ContractServer] ContractCatalog invalid: {string.Join("; ", catalogErrors)}");
+                enabled = false;
+                if (Instance == this) Instance = null;
+                return;
+            }
+
             MarketZoneRegistry.AcquireServerSession(this);
             _registrySessionAcquired = true;
 
@@ -99,7 +112,8 @@ namespace ProjectC.Trade.Network
                 autoInitContracts,
                 standardContractTimeSeconds,
                 urgentContractTimeSeconds,
-                receiptContractTimeSeconds);
+                receiptContractTimeSeconds,
+                resolvedCatalog);
             ContractWorld.Instance.MaxActiveContractsPerPlayer = maxActiveContractsPerPlayer;
             ContractWorld.Instance.AutoRegenerateContracts = autoRegenerateContracts;
 
@@ -120,6 +134,17 @@ namespace ProjectC.Trade.Network
                 _registrySessionAcquired = false;
             }
             if (Instance == this) Instance = null;
+        }
+
+        private ContractCatalog ResolveContractCatalog()
+        {
+            if (contractCatalog != null) return contractCatalog;
+
+            var loaded = Resources.Load<ContractCatalog>("ContractCatalog");
+            if (loaded != null) return loaded;
+
+            Debug.LogWarning("[ContractServer] ContractCatalog не найден в инспекторе или Resources. Используется runtime fallback.");
+            return null;
         }
 
         private ContractWorldItemResolver BuildResolver()

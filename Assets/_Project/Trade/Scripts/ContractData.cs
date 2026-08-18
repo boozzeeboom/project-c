@@ -117,6 +117,45 @@ namespace ProjectC.Trade
             float urgentTimeLimitSeconds = 150f,
             float receiptTimeLimitSeconds = 600f)
         {
+            float rewardMultiplier = type == ContractType.Urgent ? 1.5f : 1f;
+            float timeLimitSeconds = standardTimeLimitSeconds;
+            switch (type)
+            {
+                case ContractType.Urgent:
+                    timeLimitSeconds = urgentTimeLimitSeconds;
+                    break;
+                case ContractType.Receipt:
+                    timeLimitSeconds = receiptTimeLimitSeconds;
+                    break;
+            }
+
+            return CreateConfigured(
+                type,
+                itemId,
+                quantity,
+                fromLocationId,
+                toLocationId,
+                itemBasePrice,
+                distanceKm,
+                npReputation,
+                rewardMultiplier,
+                timeLimitSeconds,
+                type == ContractType.Receipt);
+        }
+
+        public static ContractData CreateConfigured(
+            ContractType type,
+            string itemId,
+            int quantity,
+            string fromLocationId,
+            string toLocationId,
+            float itemBasePrice,
+            float distanceKm,
+            float npReputation,
+            float rewardMultiplier,
+            float timeLimitSeconds,
+            bool isReceiptContract)
+        {
             fromLocationId = MarketConfigCollector.NormalizeLocationId(fromLocationId);
             toLocationId = MarketConfigCollector.NormalizeLocationId(toLocationId);
 
@@ -130,55 +169,26 @@ namespace ProjectC.Trade
                 fromLocationId = fromLocationId,
                 toLocationId = toLocationId,
                 assignedPlayerId = 0,
-                isReceiptContract = (type == ContractType.Receipt)
+                isReceiptContract = isReceiptContract
             };
 
-            // cargoValue = basePrice × quantity
             contract.cargoValue = itemBasePrice * quantity;
-
-            // Расчёт награды по формуле GDD_25 секция 6.3:
-            // reward = basePrice × quantity × 0.3 × distanceMultiplier × repBonus
             float baseReward = contract.cargoValue * 0.3f;
-
-            // distanceMultiplier = 1.0 + (distanceKm / 100) × 0.5
             float distanceMultiplier = 1.0f + (distanceKm / 100f) * 0.5f;
+            float reputationBonus = isReceiptContract
+                ? 1.0f
+                : 1.0f + (npReputation / 100f) * 0.2f;
 
-            // reputationBonus = 1.0 + (rep_NP / 100) × 0.2
-            float reputationBonus = 1.0f + (npReputation / 100f) * 0.2f;
-
-            contract.reward = baseReward * distanceMultiplier * reputationBonus;
-
-            // Urgent: награда ×1.5
-            if (type == ContractType.Urgent)
-            {
-                contract.reward *= 1.5f;
-            }
-
-            // Receipt: награда = 30% от стоимости (уже посчитано выше)
-            if (type == ContractType.Receipt)
-            {
-                // Для расписки награда чуть меньше — это "обучающий" контракт
-                contract.reward = contract.cargoValue * 0.3f * distanceMultiplier;
-            }
-
-            // Таймер (реальное время, секунды). Значения по умолчанию сохраняют старое поведение;
-            // ContractWorld передаёт сюда настройки с [ContractServer].
-            switch (type)
-            {
-                case ContractType.Urgent:
-                    contract.timeLimit = Mathf.Max(0f, urgentTimeLimitSeconds);
-                    break;
-                case ContractType.Standard:
-                    contract.timeLimit = Mathf.Max(0f, standardTimeLimitSeconds);
-                    break;
-                case ContractType.Receipt:
-                    contract.timeLimit = Mathf.Max(0f, receiptTimeLimitSeconds);
-                    break;
-            }
+            contract.reward = baseReward
+                * distanceMultiplier
+                * reputationBonus
+                * Mathf.Max(0f, rewardMultiplier);
+            contract.timeLimit = Mathf.Max(0f, timeLimitSeconds);
             contract.timeRemaining = contract.timeLimit;
 
             return contract;
         }
+
 
         /// <summary>
         /// Активировать контракт (принят игроком)

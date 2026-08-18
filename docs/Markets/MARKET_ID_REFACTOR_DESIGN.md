@@ -333,9 +333,14 @@ Tools > ProjectC > Trade > Migrate MarketZones to MarketConfig refs
 - Legacy contract route IDs и location-board mappings нормализуются при загрузке.
 - Scene YAML и serialized scene references не изменялись.
 
+### Реализовано в этапе 15B
+
+- `ContractCatalog` (`Assets/_Project/Trade/Scripts/Config/ContractCatalog.cs`) хранит canonical locations, distance graph и contract type definitions.
+- `ContractCatalog.asset` (`Assets/_Project/Trade/Resources/ContractCatalog.asset`) содержит текущие четыре локации, GDD_25 distances и fail-closed Receipt definition.
+- `ContractWorld` получает каталог при инициализации и больше не содержит hardcoded location list, fixed distance matrix или fixed generator branches.
+- `ContractServer` загружает каталог из инспектора или `Resources/ContractCatalog`, без изменения BootstrapScene YAML.
+
 ### Оставшиеся фазы
 
-- Вынести список locations и distance graph из `ContractWorld` в validated data/config layer.
-- Перевести contract generator/types на definitions вместо фиксированных branches.
 - Выполнить миграцию/валидацию WorldScene и NPC route assets.
 - Запустить NPC trade verification для маршрутов с различным регистром location IDs.

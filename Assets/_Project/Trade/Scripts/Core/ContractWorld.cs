@@ -13,7 +13,7 @@ namespace ProjectC.Trade.Core
     ///   • Словарь активных контрактов игроков (playerId → List&lt;contractId&gt;)
     ///   • Словарь долгов игроков (playerId → ContractDebt)
     ///   • Словарь контрактов по локации (locationId → List&lt;contractId&gt;)
-    ///   • Таблица расстояний между 4 городами (primium/secundus/tertius/quartus)
+    ///   • Validated ContractCatalog с locations, distances и contract type definitions
     ///
     /// НЕ MonoBehaviour. НЕ NetworkBehaviour. НЕ сериализуется в сцену.
     /// Создаётся в <c>ContractServer.OnNetworkSpawn</c> на сервере.
@@ -40,6 +40,11 @@ namespace ProjectC.Trade.Core
         private readonly Dictionary<ulong, ContractDebt> _playerDebts = new Dictionary<ulong, ContractDebt>();
         private readonly Dictionary<string, List<string>> _locationContracts = new Dictionary<string, List<string>>();
 
+        // Immutable catalog reference for locations, route distances and contract types.
+        private readonly ContractCatalog _catalog;
+        private readonly bool _ownsCatalog;
+        private readonly Dictionary<ContractType, float> _serverTimeLimits = new Dictionary<ContractType, float>();
+
         // Кэш базовой цены по itemId (для расчёта reward в Create).
         // Заполняется из TradeItemDefinition через Resolver.
         // Используется ContractData.Create.
@@ -48,6 +53,7 @@ namespace ProjectC.Trade.Core
         public IReadOnlyDictionary<string, ContractData> AvailableContracts => _availableContracts;
         public IReadOnlyDictionary<ulong, List<string>> PlayerContracts => _playerContracts;
         public IReadOnlyDictionary<ulong, ContractDebt> PlayerDebts => _playerDebts;
+        public ContractCatalog Catalog => _catalog;
 
         public bool IsInitialized { get; private set; }
 
@@ -69,21 +75,16 @@ namespace ProjectC.Trade.Core
         /// </summary>
         public int MaxTerminalRecordsPerPlayer = 50;
 
-        // === Distance table (GDD_25 §3.2) ===
-        // Индексы сохранены для совместимости с текущей таблицей расстояний.
-        // Значения locationId проходят через единый canonical normalizer.
-        private static readonly string[] DefaultLocationIds =
-        {
-            "PRIMIUM",
-            "SECUNDUS",
-            "TERTIUS",
-            "QUARTUS"
-        };
-        private readonly float[,] _distanceTable = new float[4, 4];
 
         // ========================================================
         // INITIALIZATION
         // ========================================================
+
+        private ContractWorld(ContractCatalog catalog, bool ownsCatalog)
+        {
+            _catalog = catalog;
+            _ownsCatalog = ownsCatalog;
+        }
 
         public static ContractWorld CreateAndInitialize(
             IPlayerDataRepository repository,
@@ -91,14 +92,27 @@ namespace ProjectC.Trade.Core
             bool autoInitContracts = true,
             float standardContractTimeLimitSeconds = 300f,
             float urgentContractTimeLimitSeconds = 150f,
-            float receiptContractTimeLimitSeconds = 600f)
+            float receiptContractTimeLimitSeconds = 600f,
+            ContractCatalog catalog = null)
         {
-            var w = new ContractWorld
+            bool ownsCatalog = catalog == null;
+            var resolvedCatalog = catalog ?? ContractCatalog.CreateDefaultRuntime();
+            if (!resolvedCatalog.Validate(out var errors))
+            {
+                Debug.LogError($"[ContractWorld] ContractCatalog is invalid: {string.Join("; ", errors)}");
+                if (ownsCatalog) Object.Destroy(resolvedCatalog);
+                throw new System.InvalidOperationException("ContractCatalog validation failed");
+            }
+
+            var w = new ContractWorld(resolvedCatalog, ownsCatalog)
             {
                 StandardContractTimeLimitSeconds = Mathf.Max(0f, standardContractTimeLimitSeconds),
                 UrgentContractTimeLimitSeconds = Mathf.Max(0f, urgentContractTimeLimitSeconds),
                 ReceiptContractTimeLimitSeconds = Mathf.Max(0f, receiptContractTimeLimitSeconds)
             };
+            w._serverTimeLimits[ContractType.Standard] = w.StandardContractTimeLimitSeconds;
+            w._serverTimeLimits[ContractType.Urgent] = w.UrgentContractTimeLimitSeconds;
+            w._serverTimeLimits[ContractType.Receipt] = w.ReceiptContractTimeLimitSeconds;
             w.Initialize(repository, resolver, autoInitContracts);
             Instance = w;
             return w;
@@ -118,7 +132,6 @@ namespace ProjectC.Trade.Core
             Repository = repository ?? throw new System.ArgumentNullException(nameof(repository));
             Resolver = resolver ?? throw new System.ArgumentNullException(nameof(resolver));
 
-            InitDistanceTable();
             LoadAvailableItems();
             BuildItemPriceIndex();
 
@@ -148,6 +161,7 @@ namespace ProjectC.Trade.Core
             _itemBasePrice.Clear();
             _persistenceWriteBlocked = false;
             IsInitialized = false;
+            if (_ownsCatalog && _catalog != null) Object.Destroy(_catalog);
             if (Instance == this) Instance = null;
             Debug.Log("[ContractWorld] shutdown");
         }
@@ -359,45 +373,20 @@ namespace ProjectC.Trade.Core
         // DISTANCE TABLE
         // ========================================================
 
-        private void InitDistanceTable()
-        {
-            // Симметричная матрица расстояний (км), GDD_25 §3.2
-            SetDistance(0, 1, 120f);  // Приму ↔ Секунд
-            SetDistance(0, 2, 200f);  // Приму ↔ Тертиус
-            SetDistance(0, 3, 180f);  // Приму ↔ Квартус
-            SetDistance(1, 2, 150f);  // Секунд ↔ Тертиус
-            SetDistance(1, 3, 160f);  // Секунд ↔ Квартус
-            SetDistance(2, 3, 100f);  // Тертиус ↔ Квартус
-        }
-
-        private void SetDistance(int a, int b, float km)
-        {
-            _distanceTable[a, b] = km;
-            _distanceTable[b, a] = km;
-        }
-
         public float GetDistance(string fromLocationId, string toLocationId)
         {
-            int fromIndex = LocationIdToIndex(fromLocationId);
-            int toIndex = LocationIdToIndex(toLocationId);
-            if (fromIndex < 0 || toIndex < 0) return 100f;
-            float dist = _distanceTable[fromIndex, toIndex];
-            return dist > 0f ? dist : 100f;
-        }
-
-        private static int LocationIdToIndex(string locationId)
-        {
-            string key = MarketConfigCollector.NormalizeLocationId(locationId);
-            if (string.IsNullOrEmpty(key)) return -1;
-
-            for (int i = 0; i < DefaultLocationIds.Length; i++)
+            if (_catalog != null
+                && _catalog.TryGetDistance(fromLocationId, toLocationId, out var distanceKm)
+                && distanceKm > 0f)
             {
-                if (DefaultLocationIds[i] == key) return i;
+                return distanceKm;
             }
-            return -1;
+
+            return 100f;
         }
 
-        public static bool IsValidLocation(string locationId) => LocationIdToIndex(locationId) >= 0;
+        public bool IsValidLocation(string locationId)
+            => _catalog != null && _catalog.HasLocation(locationId);
 
         // ========================================================
         // ITEMS (для ContractData.Create)
@@ -437,13 +426,15 @@ namespace ProjectC.Trade.Core
 
         public void GenerateContractsForAllLocations()
         {
-            foreach (var loc in DefaultLocationIds) GenerateContractsForLocation(loc);
+            if (_catalog == null) return;
+            foreach (var locationId in _catalog.GetEnabledLocationIds())
+                GenerateContractsForLocation(locationId);
         }
 
         /// <summary>
         /// Сгенерировать доступные delivery-контракты для локации.
-        /// Receipt временно не публикуется: его физическая выдача и ownership flow
-        /// не реализованы и не должны быть доступны игроку.
+        /// Публикуемые варианты и их параметры берутся из ContractCatalog.
+        /// Receipt остаётся fail-closed через publishable=false в каталоге.
         /// </summary>
         public void GenerateContractsForLocation(string fromLocationId)
         {
@@ -473,7 +464,6 @@ namespace ProjectC.Trade.Core
                 }
             }
 
-            // Доступные товары
             var allItemIds = Resolver != null ? Resolver.AllItemIds : new List<string>();
             if (allItemIds == null || allItemIds.Count == 0)
             {
@@ -481,38 +471,45 @@ namespace ProjectC.Trade.Core
                 return;
             }
 
-            var destinations = new List<string>();
-            foreach (var l in DefaultLocationIds)
+            var destinations = _catalog.GetEnabledLocationIds();
+            destinations.Remove(fromLocationId);
+            if (destinations.Count == 0)
             {
-                if (l != fromLocationId) destinations.Add(l);
+                Debug.LogWarning($"[ContractWorld] GenerateContractsForLocation({fromLocationId}): нет доступных destinations");
+                return;
             }
 
-            // Случайный товар
             string itemId = allItemIds[Random.Range(0, allItemIds.Count)];
-            int quantity = Random.Range(2, 8); // 2-7 единиц
+            int quantity = Random.Range(2, 8);
             string toLocationId = destinations[Random.Range(0, destinations.Count)];
             float distance = GetDistance(fromLocationId, toLocationId);
             float basePrice = GetItemBasePrice(itemId);
 
-            // 1. Standard
-            var standard = ContractData.Create(
-                ContractType.Standard, itemId, quantity,
-                fromLocationId, toLocationId, basePrice, distance,
-                0f, StandardContractTimeLimitSeconds, UrgentContractTimeLimitSeconds,
-                ReceiptContractTimeLimitSeconds);
-            _availableContracts[standard.contractId] = standard;
-            _locationContracts[fromLocationId].Add(standard.contractId);
+            foreach (var definition in _catalog.GetPublishableContractTypes())
+            {
+                if (definition == null || definition.isReceiptContract)
+                    continue;
 
-            // 2. Urgent
-            var urgent = ContractData.Create(
-                ContractType.Urgent, itemId, quantity,
-                fromLocationId, toLocationId, basePrice, distance,
-                0f, StandardContractTimeLimitSeconds, UrgentContractTimeLimitSeconds,
-                ReceiptContractTimeLimitSeconds);
-            _availableContracts[urgent.contractId] = urgent;
-            _locationContracts[fromLocationId].Add(urgent.contractId);
+                float timeLimit = definition.useServerTimeLimit
+                    && _serverTimeLimits.TryGetValue(definition.type, out var serverTimeLimit)
+                    ? serverTimeLimit
+                    : definition.timeLimitSeconds;
 
-            // Receipt намеренно не создаём до реализации полного acceptance/settlement flow.
+                var contract = ContractData.CreateConfigured(
+                    definition.type,
+                    itemId,
+                    quantity,
+                    fromLocationId,
+                    toLocationId,
+                    basePrice,
+                    distance,
+                    0f,
+                    definition.rewardMultiplier,
+                    timeLimit,
+                    definition.isReceiptContract);
+                _availableContracts[contract.contractId] = contract;
+                _locationContracts[fromLocationId].Add(contract.contractId);
+            }
         }
 
         // ========================================================

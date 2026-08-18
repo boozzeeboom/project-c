@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этапы 1–15 реализованы 17–18 августа 2026 г.; verification pass и оставшиеся P0/P1/P2/P3 тикеты остаются открытыми.
+**Статус:** статический аудит исходников и документации; этапы 1–15B реализованы 17–18 августа 2026 г.; verification pass и оставшиеся P0/P1/P2/P3 тикеты остаются открытыми.
 **Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -654,7 +654,7 @@ Project-wide search по `Assets` не нашёл ссылок на `ReceiveMark
 - Legacy contract snapshots с lowercase/padded `fromLocationId`, `toLocationId` и location-board mappings нормализуются при загрузке с дедупликацией mapping IDs.
 - `ContractWorld` больше не использует `ToLower()` в `LocationIdToIndex()`; current distance table получает canonical IDs.
 
-Открытая часть `MKT-DOM-001` не закрыта: список локаций и contract types всё ещё не вынесены в data/config layer.
+Этап 15A закрыл canonical normalization. Оставшаяся часть `MKT-DOM-001` закрыта этапом 15B: locations, distances и publishable contract type definitions вынесены в validated `ContractCatalog`.
 
 ---
 
@@ -802,7 +802,7 @@ Completed / Failed / Cancelled
 Часть `MKT-DOM-001`.
 
 **REF-4003 — Перевести locations/types на data-driven definitions**  
-Оставшаяся часть `MKT-DOM-001`.
+Закрыто этапом 15B (`ContractCatalog`): locations, distance graph и publishable contract types больше не задаются в `ContractWorld`.
 
 **REF-4004 — Сделать MarketZoneRegistry lifecycle explicit**  
 Закрывает `MKT-DOM-002`.
@@ -1357,6 +1357,30 @@ The following documentation is currently inconsistent with code and must be upda
 
 ### Что ещё не закрыто
 
-- Вынесение списка локаций и расстояний из `ContractWorld` в validated data/config asset.
-- Data-driven registry contract types вместо фиксированных `Standard/Urgent/Receipt` branches.
-- Полный verification pass этапов 4–15.
+- Полный verification pass этапов 4–15B.
+- Полная Receipt semantics и localization для `UnsupportedContractType`.
+- Разделение runtime storage контрактов на `ContractsById` / `LocationOffers` / `ActiveByPlayer` / `TerminalHistory`.
+
+---
+
+## 31. Реализованный этап 15B — data-driven contract catalog (`MKT-DOM-001` / `REF-4003`)
+
+**Дата:** 18 августа 2026 г.
+**Scope:** locations, route distances и publishable contract type definitions без изменения scene YAML.
+
+### Изменения
+
+- Добавлен `Assets/_Project/Trade/Scripts/Config/ContractCatalog.cs` — validated ScriptableObject-каталог.
+- Добавлен `Assets/_Project/Trade/Resources/ContractCatalog.asset` с текущими четырьмя локациями, GDD_25 distance graph и `Standard/Urgent` publishable definitions.
+- `ContractWorld` получает каталог при инициализации и генерирует варианты циклом по publishable definitions; hardcoded `DefaultLocationIds`, fixed distance matrix и generator branches удалены.
+- `ContractData.CreateConfigured()` принимает reward/time parameters из catalog definitions; старый `Create()` сохранён как compatibility wrapper.
+- `ContractServer` загружает каталог из инспектора или `Resources/ContractCatalog`; при отсутствии используется проверенный runtime fallback.
+- Receipt остаётся fail-closed: catalog validation запрещает publishable Receipt definitions.
+
+### Проверка
+
+- `refresh_unity(scope=scripts, compile=request)` выполнен.
+- `check_compile_errors`: **No compile errors**.
+- `ContractCatalog.asset` найден в Unity AssetDatabase.
+- Scene YAML и serialized scene references не изменялись.
+- Play Mode, NPC trade smoke test и screenshots не выполнялись.

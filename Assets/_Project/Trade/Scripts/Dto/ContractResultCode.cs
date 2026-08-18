@@ -46,7 +46,7 @@ namespace ProjectC.Trade.Dto
         /// <summary>Нет нужного груза ни на складе, ни в трюме (для non-Receipt контракта).</summary>
         CargoMissing = 10,
 
-        /// <summary>Нет места на складе игрока для бесплатного груза (для Receipt контракта).</summary>
+        /// <summary>Нет места в cargo для выдачи contract-owned Receipt cargo.</summary>
         WarehouseFull = 11,
 
         /// <summary>itemId контракта не найден в TradeItemDatabase.</summary>

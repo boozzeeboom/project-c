@@ -260,7 +260,7 @@ MonoBehaviour:
     displayNameFallback: "[\u0421\u0440\u043E\u0447\u043D\u044B\u0439]"
     uiColor: {r: 1, g: 0.5, b: 0, a: 1}
   - type: 2
-    publishable: 0
+    publishable: 1
     rewardMultiplier: 1
     timeLimitSeconds: 600
     isReceiptContract: 1

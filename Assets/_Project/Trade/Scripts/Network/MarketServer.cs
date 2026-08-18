@@ -423,23 +423,30 @@ namespace ProjectC.Trade.Network
 
         private WarehouseEntryDto[] BuildWarehouseDtos(List<WarehouseEntry> entries)
         {
-            if (entries == null || entries.Count == 0) return null;
-            var list = new WarehouseEntryDto[entries.Count];
-            for (int i = 0; i < entries.Count; i++)
-            {
-                list[i] = new WarehouseEntryDto
-                {
-                    itemId = entries[i].itemId,
-                    displayName = _resolver.GetDisplayName(entries[i].itemId),
-                    quantity = entries[i].quantity
-                };
-            }
-            return list;
+            return BuildEntryDtos(entries, includeContractOwnership: false);
         }
 
         private WarehouseEntryDto[] BuildCargoDtos(List<WarehouseEntry> entries)
         {
-            return BuildWarehouseDtos(entries);  // identical shape
+            return BuildEntryDtos(entries, includeContractOwnership: true);
+        }
+
+        private WarehouseEntryDto[] BuildEntryDtos(List<WarehouseEntry> entries, bool includeContractOwnership)
+        {
+            if (entries == null || entries.Count == 0) return null;
+            var list = new List<WarehouseEntryDto>(entries.Count);
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].quantity <= 0) continue;
+                list.Add(new WarehouseEntryDto
+                {
+                    itemId = entries[i].itemId,
+                    displayName = _resolver.GetDisplayName(entries[i].itemId),
+                    quantity = entries[i].quantity,
+                    isContractOwned = includeContractOwnership && entries[i].IsContractOwned
+                });
+            }
+            return list.Count > 0 ? list.ToArray() : null;
         }
 
         private TradeResultDto BuildTradeResultDto(TradeResult r, TradeOp op, string locationId, string itemId, int quantity, ulong shipNetworkObjectId, ulong clientId)

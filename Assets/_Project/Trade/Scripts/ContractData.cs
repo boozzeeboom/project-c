@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ProjectC.Trade.Config;
+using ProjectC.Trade.Core;
 using UnityEngine;
 
 namespace ProjectC.Trade
@@ -98,6 +99,22 @@ namespace ProjectC.Trade
         [Tooltip("Это контракт «под расписку»?")]
         public bool isReceiptContract;
 
+        // === Receipt cargo ownership ===
+        // Cargo is materialized into a player-owned ship only after the separate
+        // ReceiveCargo operation succeeds. These fields are persisted so a
+        // disconnect/reload cannot silently turn issued cargo into ordinary cargo.
+        [Tooltip("Сколько contract-owned receipt cargo сейчас выдано в физический cargo")]
+        public int receiptCargoIssuedQuantity;
+
+        [Tooltip("NetworkObjectId корабля, в котором находится receipt cargo")]
+        public ulong receiptCargoShipNetworkObjectId;
+
+        [Tooltip("Класс корабля, в котором находится receipt cargo")]
+        public ShipClass receiptCargoShipClass = ShipClass.Light;
+
+        [Tooltip("Неиспользованный receipt cargo возвращён в абстрактный резерв контракта")]
+        public bool receiptCargoReturnedToReserve;
+
         // ==================== МЕТОДЫ ====================
 
         public static ContractData CreateConfigured(
@@ -154,6 +171,10 @@ namespace ProjectC.Trade
         {
             assignedPlayerId = playerId;
             state = ContractState.Active;
+            receiptCargoIssuedQuantity = 0;
+            receiptCargoShipNetworkObjectId = 0;
+            receiptCargoShipClass = ShipClass.Light;
+            receiptCargoReturnedToReserve = false;
             // Таймер уже установлен в Create()
         }
 

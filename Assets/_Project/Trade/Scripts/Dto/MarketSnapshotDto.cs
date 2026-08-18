@@ -121,12 +121,14 @@ namespace ProjectC.Trade.Dto
         public string itemId;
         public string displayName;
         public int quantity;
+        public bool isContractOwned;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref itemId);
             serializer.SerializeValue(ref displayName);
             serializer.SerializeValue(ref quantity);
+            serializer.SerializeValue(ref isContractOwned);
         }
     }
 

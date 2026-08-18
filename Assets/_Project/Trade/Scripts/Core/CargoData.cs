@@ -44,11 +44,37 @@ namespace ProjectC.Trade.Core
             this.shipClass = shipClass;
         }
 
+        /// <summary>
+        /// Quantity of ordinary cargo only. Receipt cargo is intentionally excluded
+        /// so generic trade/exchange/delivery operations cannot consume it.
+        /// </summary>
         public int GetQuantity(string itemId)
         {
+            int total = 0;
             for (int i = 0; i < _items.Count; i++)
-                if (_items[i].itemId == itemId) return _items[i].quantity;
-            return 0;
+            {
+                var entry = _items[i];
+                if (!entry.IsContractOwned && entry.itemId == itemId)
+                    total += entry.quantity;
+            }
+            return total;
+        }
+
+        public int GetContractOwnedQuantity(string itemId, string contractId, ulong ownerPlayerId)
+        {
+            int total = 0;
+            for (int i = 0; i < _items.Count; i++)
+            {
+                var entry = _items[i];
+                if (entry.IsContractOwned
+                    && entry.itemId == itemId
+                    && entry.contractId == contractId
+                    && entry.contractOwnerPlayerId == ownerPlayerId)
+                {
+                    total += entry.quantity;
+                }
+            }
+            return total;
         }
 
         public bool TryAdd(string itemId, int quantity, TradeItemDefinitionResolver resolver, out string failReason)
@@ -73,7 +99,13 @@ namespace ProjectC.Trade.Core
 
             int idx = -1;
             for (int i = 0; i < _items.Count; i++)
-                if (_items[i].itemId == itemId) { idx = i; break; }
+            {
+                if (!_items[i].IsContractOwned && _items[i].itemId == itemId)
+                {
+                    idx = i;
+                    break;
+                }
+            }
             if (idx >= 0)
             {
                 var e = _items[idx];
@@ -87,13 +119,79 @@ namespace ProjectC.Trade.Core
             return true;
         }
 
+        /// <summary>
+        /// Add cargo owned by one exact Receipt contract. It is stored as a
+        /// separate entry even when ordinary cargo has the same itemId.
+        /// </summary>
+        public bool TryAddContractOwned(
+            string itemId,
+            int quantity,
+            string contractId,
+            ulong ownerPlayerId,
+            TradeItemDefinitionResolver resolver,
+            out string failReason)
+        {
+            failReason = null;
+            if (string.IsNullOrEmpty(itemId)
+                || quantity <= 0
+                || string.IsNullOrEmpty(contractId))
+            {
+                failReason = "invalid_args";
+                return false;
+            }
+
+            var limits = _limitsOverride ?? ShipClassLimits.Get(shipClass);
+            int itemSlots = resolver.GetSlots(itemId);
+            float itemWeight = resolver.GetWeight(itemId);
+            float itemVolume = resolver.GetVolume(itemId);
+            float newWeight = ComputeTotalWeight(resolver) + itemWeight * quantity;
+            float newVolume = ComputeTotalVolume(resolver) + itemVolume * quantity;
+            int newSlots = ComputeTotalSlots(resolver) + itemSlots * quantity;
+
+            if (newWeight > limits.maxWeight) { failReason = "cargo_max_weight"; return false; }
+            if (newVolume > limits.maxVolume) { failReason = "cargo_max_volume"; return false; }
+            if (newSlots > limits.maxSlots) { failReason = "cargo_max_slots"; return false; }
+
+            int idx = -1;
+            for (int i = 0; i < _items.Count; i++)
+            {
+                var entry = _items[i];
+                if (entry.IsContractOwned
+                    && entry.itemId == itemId
+                    && entry.contractId == contractId
+                    && entry.contractOwnerPlayerId == ownerPlayerId)
+                {
+                    idx = i;
+                    break;
+                }
+            }
+
+            if (idx >= 0)
+            {
+                var entry = _items[idx];
+                entry.quantity += quantity;
+                _items[idx] = entry;
+            }
+            else
+            {
+                _items.Add(new WarehouseEntry(itemId, quantity, contractId, ownerPlayerId));
+            }
+            return true;
+        }
+
         public bool TryRemove(string itemId, int quantity, out string failReason)
         {
             failReason = null;
             if (string.IsNullOrEmpty(itemId) || quantity <= 0) { failReason = "invalid_args"; return false; }
             int idx = -1;
             for (int i = 0; i < _items.Count; i++)
-                if (_items[i].itemId == itemId) { idx = i; break; }
+            {
+                if (!_items[i].IsContractOwned && _items[i].itemId == itemId)
+                {
+                    idx = i;
+                    break;
+                }
+            }
             if (idx < 0) { failReason = "item_not_in_cargo"; return false; }
             if (_items[idx].quantity < quantity) { failReason = "insufficient_quantity"; return false; }
 
@@ -101,6 +199,46 @@ namespace ProjectC.Trade.Core
             e.quantity -= quantity;
             if (e.quantity <= 0) _items.RemoveAt(idx);
             else _items[idx] = e;
+            return true;
+        }
+
+        public bool TryRemoveContractOwned(
+            string itemId,
+            int quantity,
+            string contractId,
+            ulong ownerPlayerId,
+            out string failReason)
+        {
+            failReason = null;
+            if (string.IsNullOrEmpty(itemId)
+                || quantity <= 0
+                || string.IsNullOrEmpty(contractId))
+            {
+                failReason = "invalid_args";
+                return false;
+            }
+
+            int idx = -1;
+            for (int i = 0; i < _items.Count; i++)
+            {
+                var entry = _items[i];
+                if (entry.IsContractOwned
+                    && entry.itemId == itemId
+                    && entry.contractId == contractId
+                    && entry.contractOwnerPlayerId == ownerPlayerId)
+                {
+                    idx = i;
+                    break;
+                }
+            }
+
+            if (idx < 0) { failReason = "contract_cargo_missing"; return false; }
+            if (_items[idx].quantity < quantity) { failReason = "insufficient_quantity"; return false; }
+
+            var ownedEntry = _items[idx];
+            ownedEntry.quantity -= quantity;
+            if (ownedEntry.quantity <= 0) _items.RemoveAt(idx);
+            else _items[idx] = ownedEntry;
             return true;
         }
 

@@ -434,3 +434,26 @@
 - `refresh_unity(scope=scripts, compile=request)` выполнен
 - `check_compile_errors`: **No compile errors**
 - Полный Play Mode/network/persistence/UI verification pass отложен до общего этапа проверки
+
+---
+
+## Рабочая итерация от 2026-08-18 — этап 17 Receipt full flow
+
+**Задача:** полноценно реализовать server-authoritative Receipt contract flow, contract-owned cargo и atomic rollback (`MKT-CON-004`, `MKT-PER-003`).
+
+**Коммит:** `dc1bbcaa` — MKT-UI-003: завершить Receipt flow и atomic rollback
+
+**Изменения:**
+- `ContractWorld.cs` — ReceiveCargo, exact Receipt settlement, возврат cargo при fail/expiry и rollback при persistence failure.
+- `ContractWorld.cs` — `TickCore()` теперь итерирует стабильные runtime snapshots и откатывает contracts, cargo, credits и debt при ошибке `SaveAll()`.
+- `CargoData.cs` и `Warehouse.cs` — contract-owned entries изолированы от обычных trade/load/unload операций.
+- `ContractServer.cs`, DTO и client state — server-side owner/zone/ship validation и передача Receipt cargo metadata.
+- `ContractsMarketTabController.cs`, `MarketWindow.uxml`, `MarketTabController.cs` — отдельная выдача Receipt cargo и запрет самостоятельной разгрузки.
+- `ContractSaveData.cs` — schema version `3`.
+- `ContractCatalog.cs` и `ContractCatalog.asset` — Receipt снова publishable после подтверждения полной политики.
+- `MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — обновлён актуальный статус этапа 17.
+
+**Проверки:**
+- `check_compile_errors`: **No compile errors**
+- Статический аудит contract-owned cargo выполнен
+- Play Mode, domain tests, persistence round-trip, network smoke и screenshots не выполнялись

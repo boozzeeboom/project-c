@@ -113,6 +113,7 @@
             <ui:Button name="load-btn" text="ПОГРУЗИТЬ" class="action-btn load" />
             <ui:Button name="unload-btn" text="РАЗГРУЗИТЬ" class="action-btn unload" />
             <ui:Button name="accept-btn" text="ВЗЯТЬ" class="action-btn accept" style="display: none;" />
+            <ui:Button name="receive-btn" text="ПОЛУЧИТЬ ГРУЗ" class="action-btn receive" style="display: none;" />
             <ui:Button name="complete-btn" text="СДАТЬ" class="action-btn complete" style="display: none;" />
             <ui:Button name="fail-btn" text="ПРОВАЛИТЬ" class="action-btn fail" style="display: none;" />
             <ui:Button name="close-btn" text="ЗАКРЫТЬ" class="action-btn close" />

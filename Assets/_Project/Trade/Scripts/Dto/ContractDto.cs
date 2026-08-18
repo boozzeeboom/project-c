@@ -62,6 +62,12 @@ namespace ProjectC.Trade.Dto
         /// <summary>Это контракт «под расписку»? Товар бесплатно, не доставил = долг ×1.5.</summary>
         public bool isReceiptContract;
 
+        /// <summary>Receipt cargo уже выдан в contract-owned cargo.</summary>
+        public bool receiptCargoIssued;
+
+        /// <summary>Корабль, в котором сервер выдал Receipt cargo.</summary>
+        public ulong receiptCargoShipNetworkObjectId;
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref contractId);
@@ -79,6 +85,8 @@ namespace ProjectC.Trade.Dto
             serializer.SerializeValue(ref timeLimit);
             serializer.SerializeValue(ref timeRemaining);
             serializer.SerializeValue(ref isReceiptContract);
+            serializer.SerializeValue(ref receiptCargoIssued);
+            serializer.SerializeValue(ref receiptCargoShipNetworkObjectId);
         }
     }
 }

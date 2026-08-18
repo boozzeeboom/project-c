@@ -328,7 +328,8 @@ namespace ProjectC.Trade.Client
         {
             if (index < 0 || index >= _cargoCache.Length) return;
             var entry = _cargoCache[index];
-            row.Q<Label>("row-label").text = $"{entry.displayName}  —  {entry.quantity} ед.  ({GetSelectedShipName()})";
+            string ownershipLabel = entry.isContractOwned ? "[КОНТРАКТ] " : string.Empty;
+            row.Q<Label>("row-label").text = $"{ownershipLabel}{entry.displayName}  —  {entry.quantity} ед.  ({GetSelectedShipName()})";
             row.style.backgroundColor = index == _selectedCargoItem
                 ? new StyleColor(new Color(0.4f, 0.9f, 0.6f, 0.4f))
                 : StyleKeyword.Null;
@@ -451,6 +452,11 @@ namespace ProjectC.Trade.Client
         private void OnUnloadClicked()
         {
             if (!TryGetSelectedItem(_cargoList, _selectedCargoItem, out WarehouseEntryDto entry)) return;
+            if (entry.isContractOwned)
+            {
+                _host.SetMessage("Контрактный груз нельзя разгружать отдельно от сдачи контракта.", true);
+                return;
+            }
             var snapshot = State != null ? State.CurrentSnapshot : null;
             if (!snapshot.HasValue) return;
             ulong shipId = GetSelectedShipId();

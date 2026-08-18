@@ -354,7 +354,6 @@ namespace ProjectC.Trade.Core
                         || !_runtimeStore.ContractsById.TryGetValue(contractId, out var contract)
                         || contract == null
                         || contract.state != ContractState.Pending
-                        || contract.isReceiptContract
                         || contract.fromLocationId != locationId)
                         continue;
 
@@ -434,7 +433,7 @@ namespace ProjectC.Trade.Core
         /// <summary>
         /// Сгенерировать доступные delivery-контракты для локации.
         /// Публикуемые варианты и их параметры берутся из ContractCatalog.
-        /// Receipt остаётся fail-closed через publishable=false в каталоге.
+        /// Receipt публикуется только если он явно включён в каталоге.
         /// </summary>
         public void GenerateContractsForLocation(string fromLocationId)
         {
@@ -487,7 +486,7 @@ namespace ProjectC.Trade.Core
 
             foreach (var definition in _catalog.GetPublishableContractTypes())
             {
-                if (definition == null || definition.isReceiptContract)
+                if (definition == null)
                     continue;
 
                 float timeLimit = Mathf.Max(0f, definition.timeLimitSeconds);
@@ -589,8 +588,7 @@ namespace ProjectC.Trade.Core
             foreach (var cid in ids)
             {
                 if (_runtimeStore.ContractsById.TryGetValue(cid, out var c)
-                    && c.state == ContractState.Pending
-                    && !c.isReceiptContract)
+                    && c.state == ContractState.Pending)
                 {
                     result.Add(c);
                 }
@@ -625,7 +623,7 @@ namespace ProjectC.Trade.Core
                 () => TryAcceptCore(clientId, contractId));
         }
 
-        private ContractOpResult TryAcceptCore(ulong clientId, string contractId)
+private ContractOpResult TryAcceptCore(ulong clientId, string contractId)
         {
             // 1. Валидация контракта
             var contract = GetContract(contractId);
@@ -634,13 +632,6 @@ namespace ProjectC.Trade.Core
 
             if (contract.state != ContractState.Pending)
                 return ContractOpResult.Fail(ContractResultCode.ContractNotPending, "Контракт уже принят или истёк!");
-
-            if (contract.isReceiptContract)
-            {
-                return ContractOpResult.Fail(
-                    ContractResultCode.UnsupportedContractType,
-                    "Контракты «под расписку» временно недоступны.");
-            }
 
             // 2. Проверка долгового лимита
             var debt = GetOrCreateDebt(clientId);
@@ -659,25 +650,136 @@ namespace ProjectC.Trade.Core
                 return ContractOpResult.Fail(ContractResultCode.MaxActiveReached,
                     $"Максимум {MaxActiveContractsPerPlayer} активных контрактов!");
 
-            // 4. Receipt-контракты отфильтрованы выше и не проходят acceptance flow.
-            // Это преднамеренный fail-closed режим до определения физической выдачи
-            // товара, ownership и settlement policy.
-
-            // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ ===
+            // Receipt принимается как Active без автоматической выдачи:
+            // физическая выдача выполняется отдельной атомарной ReceiveCargo-операцией.
             contract.Activate(clientId);
             _runtimeStore.MarkActive(contract, clientId);
 
-            SaveAll();
+            if (!SaveAll())
+            {
+                // Accept не считается успешным, если Active state нельзя надёжно
+                // записать. Возвращаем оффер на исходную доску и не оставляем
+                // частично применённый active index.
+                contract.state = ContractState.Pending;
+                contract.assignedPlayerId = 0;
+                contract.timeRemaining = contract.timeLimit;
+                contract.terminalAtUtcTicks = 0L;
+                _runtimeStore.AddPendingOffer(contract.fromLocationId, contract);
+                _persistenceWriteBlocked = true;
+                Debug.LogError($"[ContractWorld] accept persistence failed for {contract.contractId}; operation rolled back");
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+            }
 
             return ContractOpResult.Ok($"Контракт принят: {contract.GetTypeDisplayName(_catalog)}", contract);
+        }
+
+        /// <summary>
+        /// Выдать Receipt cargo в конкретный корабль. Операция отдельна от Accept:
+        /// сервер проверяет владельца, вместимость и сохраняет contract-owned запись.
+        /// </summary>
+        public ContractOpResult TryReceiveReceiptCargo(
+            ulong clientId,
+            string contractId,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass)
+        {
+            return RepositoryTransactionScope.Execute(
+                Repository,
+                () => TryReceiveReceiptCargoCore(clientId, contractId, shipNetworkObjectId, shipClass));
+        }
+
+        private ContractOpResult TryReceiveReceiptCargoCore(
+            ulong clientId,
+            string contractId,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass)
+        {
+            var contract = GetContract(contractId);
+            if (contract == null)
+                return ContractOpResult.Fail(ContractResultCode.ContractNotFound, "Контракт не найден!");
+            if (contract.state != ContractState.Active)
+                return ContractOpResult.Fail(ContractResultCode.ContractNotActive, "Контракт не активен!");
+            if (contract.assignedPlayerId != clientId)
+                return ContractOpResult.Fail(ContractResultCode.ContractNotAssigned, "Это не ваш контракт!");
+            if (!contract.isReceiptContract)
+                return ContractOpResult.Fail(ContractResultCode.UnsupportedContractType, "Для этого контракта выдача груза не требуется.");
+            if (shipNetworkObjectId == 0 || contract.quantity <= 0 || TradeWorld.Instance == null
+                || TradeWorld.Instance.Resolver == null || Repository == null)
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+
+            // Повторный запрос на тот же корабль идемпотентен. Другой корабль запрещён:
+            // contract-owned cargo не переносится между кораблями.
+            if (contract.receiptCargoIssuedQuantity > 0)
+            {
+                if (contract.receiptCargoIssuedQuantity == contract.quantity
+                    && contract.receiptCargoShipNetworkObjectId == shipNetworkObjectId
+                    && contract.receiptCargoShipClass == shipClass)
+                {
+                    return ContractOpResult.Ok("Груз по расписке уже выдан.", contract);
+                }
+
+                return ContractOpResult.Fail(ContractResultCode.ContractNotActive,
+                    "Груз по расписке уже закреплён за другим кораблём.");
+            }
+
+            var cargo = TradeWorld.Instance.GetOrLoadCargo(shipNetworkObjectId, shipClass);
+            if (cargo == null)
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+
+            var cargoBefore = cargo.SaveToList();
+            if (!cargo.TryAddContractOwned(
+                    contract.itemId,
+                    contract.quantity,
+                    contract.contractId,
+                    clientId,
+                    TradeWorld.Instance.Resolver,
+                    out var cargoFail))
+            {
+                return ContractOpResult.Fail(
+                    cargoFail == "cargo_max_weight"
+                        || cargoFail == "cargo_max_volume"
+                        || cargoFail == "cargo_max_slots"
+                        ? ContractResultCode.WarehouseFull
+                        : ContractResultCode.InternalError,
+                    null);
+            }
+
+            if (!Repository.SetCargo(shipNetworkObjectId, cargo.SaveToList()))
+            {
+                cargo.LoadFrom(cargoBefore);
+                _persistenceWriteBlocked = true;
+                Debug.LogError("[ContractWorld] Receipt cargo persistence failed; issuance rolled back");
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+            }
+
+            contract.receiptCargoIssuedQuantity = contract.quantity;
+            contract.receiptCargoShipNetworkObjectId = shipNetworkObjectId;
+            contract.receiptCargoShipClass = shipClass;
+            contract.receiptCargoReturnedToReserve = false;
+
+            if (!SaveAll())
+            {
+                cargo.LoadFrom(cargoBefore);
+                Repository.SetCargo(shipNetworkObjectId, cargoBefore);
+                contract.receiptCargoIssuedQuantity = 0;
+                contract.receiptCargoShipNetworkObjectId = 0;
+                contract.receiptCargoShipClass = ShipClass.Light;
+                contract.receiptCargoReturnedToReserve = false;
+                _persistenceWriteBlocked = true;
+                Debug.LogError("[ContractWorld] Receipt issuance snapshot failed; cargo and contract rolled back");
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+            }
+
+            TradeWorld.Instance.NotifyCargoChanged(shipNetworkObjectId);
+            return ContractOpResult.Ok("Груз по расписке выдан в трюм.", contract);
         }
 
         /// <summary>
         /// Завершить контракт. Идентично legacy ContractSystem.CompleteContractServerRpc:437-556.
         /// Для delivery-контрактов перед выдачей reward сервер атомарно списывает
         /// нужный item из трюма указанного корабля и/или склада в destination.
-        /// Receipt-контракты намеренно не используют этот путь до отдельного решения
-        /// по MKT-CON-004 (физическая выдача товара при accept).
+        /// Receipt-контракты списывают только contract-owned cargo из корабля,
+        /// записанного сервером при ReceiveCargo.
         /// </summary>
         public ContractOpResult TryComplete(
             ulong clientId,
@@ -707,6 +809,9 @@ namespace ProjectC.Trade.Core
             if (contract == null)
                 return ContractOpResult.Fail(ContractResultCode.ContractNotFound, "Контракт не найден!");
 
+            if (contract.state == ContractState.Completed && contract.assignedPlayerId == clientId)
+                return ContractOpResult.Ok("Контракт уже завершён.", contract);
+
             if (contract.state != ContractState.Active)
                 return ContractOpResult.Fail(ContractResultCode.ContractNotActive, "Контракт не активен!");
 
@@ -716,10 +821,59 @@ namespace ProjectC.Trade.Core
             // 3. Проверка таймера
             if (contract.timeLimit > 0f && contract.timeRemaining <= 0f)
             {
+                int receiptIssuedBefore = contract.receiptCargoIssuedQuantity;
+                ulong receiptShipBefore = contract.receiptCargoShipNetworkObjectId;
+                ShipClass receiptClassBefore = contract.receiptCargoShipClass;
+                bool receiptReturnedBefore = contract.receiptCargoReturnedToReserve;
+                float timeRemainingBefore = contract.timeRemaining;
+                float expiryCreditsBefore = Repository != null ? Repository.GetCredits(clientId) : 0f;
+                var debt = GetOrCreateDebt(clientId);
+                float debtBefore = debt.CurrentDebt;
+                List<WarehouseEntry> receiptCargoBefore = null;
+                if (contract.isReceiptContract && receiptIssuedBefore > 0 && TradeWorld.Instance != null)
+                {
+                    receiptCargoBefore = TradeWorld.Instance.GetCargoSnapshot(
+                        receiptShipBefore,
+                        receiptClassBefore);
+                }
+
+                if (contract.isReceiptContract && !TryReturnReceiptCargoToReserve(contract))
+                    return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+
                 contract.Fail();
                 _runtimeStore.MarkTerminal(contract);
-                HandleFailedContract(contract, clientId);
-                SaveAll();
+                HandleFailedContract(contract, clientId, receiptIssuedBefore);
+                if (!SaveAll())
+                {
+                    contract.state = ContractState.Active;
+                    contract.assignedPlayerId = clientId;
+                    contract.timeRemaining = timeRemainingBefore;
+                    contract.terminalAtUtcTicks = 0L;
+                    contract.receiptCargoIssuedQuantity = receiptIssuedBefore;
+                    contract.receiptCargoShipNetworkObjectId = receiptShipBefore;
+                    contract.receiptCargoShipClass = receiptClassBefore;
+                    contract.receiptCargoReturnedToReserve = receiptReturnedBefore;
+                    _runtimeStore.MarkActiveAgain(contract, clientId);
+                    debt.CurrentDebt = debtBefore;
+                    if (Repository != null && !Repository.SetCredits(clientId, expiryCreditsBefore))
+                        Debug.LogError("[ContractWorld] timer-expiry rollback failed for credits");
+
+                    if (receiptCargoBefore != null && TradeWorld.Instance != null && receiptShipBefore != 0)
+                    {
+                        var cargo = TradeWorld.Instance.GetOrLoadCargo(receiptShipBefore, receiptClassBefore);
+                        if (cargo != null)
+                        {
+                            cargo.LoadFrom(receiptCargoBefore);
+                            if (!Repository.SetCargo(receiptShipBefore, receiptCargoBefore))
+                                Debug.LogError("[ContractWorld] timer-expiry rollback failed for receipt cargo");
+                            TradeWorld.Instance.NotifyCargoChanged(receiptShipBefore);
+                        }
+                    }
+
+                    _persistenceWriteBlocked = true;
+                    Debug.LogError($"[ContractWorld] timer-expiry persistence failed for {contract.contractId}; state rolled back");
+                    return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+                }
                 return ContractOpResult.Fail(ContractResultCode.TimerExpired, "Время контракта истекло!");
             }
 
@@ -728,13 +882,14 @@ namespace ProjectC.Trade.Core
                 return ContractOpResult.Fail(ContractResultCode.WrongDestination,
                     $"Вы не в целевой локации! Нужно: {contract.toLocationId}");
 
-            // 5. Receipt не может попасть сюда для новых контрактов, но старые
-            // persisted records должны завершаться безопасно, без выдачи reward.
+            // Receipt settlement consumes the exact contract-owned cargo entry.
             if (contract.isReceiptContract)
             {
-                return ContractOpResult.Fail(
-                    ContractResultCode.UnsupportedContractType,
-                    "Контракты «под расписку» временно недоступны; завершите его отменой.");
+                return TryCompleteReceiptCore(
+                    clientId,
+                    contract,
+                    shipNetworkObjectId,
+                    shipClass);
             }
 
             // 6. Delivery-контракт требует доказанного server-side списания.
@@ -809,6 +964,152 @@ namespace ProjectC.Trade.Core
             return ContractOpResult.Ok($"Контракт завершён! Награда: {contract.reward:F0} CR", contract, contract.reward);
         }
 
+        private ContractOpResult TryCompleteReceiptCore(
+            ulong clientId,
+            ContractData contract,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass)
+        {
+            if (contract.receiptCargoIssuedQuantity != contract.quantity
+                || contract.receiptCargoShipNetworkObjectId == 0
+                || contract.receiptCargoShipNetworkObjectId != shipNetworkObjectId
+                || contract.receiptCargoShipClass != shipClass)
+            {
+                return ContractOpResult.Fail(ContractResultCode.CargoMissing, null);
+            }
+
+            if (TradeWorld.Instance == null || TradeWorld.Instance.Resolver == null || Repository == null)
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+
+            var cargo = TradeWorld.Instance.GetOrLoadCargo(
+                contract.receiptCargoShipNetworkObjectId,
+                contract.receiptCargoShipClass);
+            if (cargo == null)
+                return ContractOpResult.Fail(ContractResultCode.CargoMissing, null);
+
+            int ownedQuantity = cargo.GetContractOwnedQuantity(
+                contract.itemId,
+                contract.contractId,
+                clientId);
+            if (ownedQuantity != contract.quantity)
+                return ContractOpResult.Fail(ContractResultCode.CargoMissing, null);
+
+            var cargoBefore = cargo.SaveToList();
+            if (!cargo.TryRemoveContractOwned(
+                    contract.itemId,
+                    contract.quantity,
+                    contract.contractId,
+                    clientId,
+                    out _))
+            {
+                return ContractOpResult.Fail(ContractResultCode.CargoMissing, null);
+            }
+
+            if (!Repository.SetCargo(contract.receiptCargoShipNetworkObjectId, cargo.SaveToList()))
+            {
+                cargo.LoadFrom(cargoBefore);
+                _persistenceWriteBlocked = true;
+                Debug.LogError("[ContractWorld] Receipt settlement cargo persistence failed; settlement aborted");
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+            }
+
+            int issuedBefore = contract.receiptCargoIssuedQuantity;
+            ulong shipBefore = contract.receiptCargoShipNetworkObjectId;
+            ShipClass classBefore = contract.receiptCargoShipClass;
+            bool returnedBefore = contract.receiptCargoReturnedToReserve;
+            float creditsBefore = Repository.GetCredits(clientId);
+
+            contract.receiptCargoIssuedQuantity = 0;
+            contract.receiptCargoShipNetworkObjectId = 0;
+            contract.receiptCargoShipClass = ShipClass.Light;
+            contract.receiptCargoReturnedToReserve = false;
+            contract.Complete();
+            _runtimeStore.MarkTerminal(contract);
+
+            if (!Repository.SetCredits(clientId, creditsBefore + contract.reward))
+            {
+                contract.state = ContractState.Active;
+                contract.terminalAtUtcTicks = 0L;
+                contract.receiptCargoIssuedQuantity = issuedBefore;
+                contract.receiptCargoShipNetworkObjectId = shipBefore;
+                contract.receiptCargoShipClass = classBefore;
+                contract.receiptCargoReturnedToReserve = returnedBefore;
+                _runtimeStore.MarkActiveAgain(contract, clientId);
+                cargo.LoadFrom(cargoBefore);
+                Repository.SetCargo(shipBefore, cargoBefore);
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+            }
+
+            if (!SaveAll())
+            {
+                contract.state = ContractState.Active;
+                contract.terminalAtUtcTicks = 0L;
+                contract.receiptCargoIssuedQuantity = issuedBefore;
+                contract.receiptCargoShipNetworkObjectId = shipBefore;
+                contract.receiptCargoShipClass = classBefore;
+                contract.receiptCargoReturnedToReserve = returnedBefore;
+                _runtimeStore.MarkActiveAgain(contract, clientId);
+                Repository.SetCredits(clientId, creditsBefore);
+                cargo.LoadFrom(cargoBefore);
+                Repository.SetCargo(shipBefore, cargoBefore);
+                _persistenceWriteBlocked = true;
+                Debug.LogError("[ContractWorld] Receipt settlement snapshot failed; state rolled back and further writes blocked");
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+            }
+
+            TradeWorld.Instance.NotifyCargoChanged(shipBefore);
+            return ContractOpResult.Ok($"Контракт завершён! Награда: {contract.reward:F0} CR", contract, contract.reward);
+        }
+
+        private bool TryReturnReceiptCargoToReserve(ContractData contract)
+        {
+            if (contract == null || !contract.isReceiptContract) return true;
+            if (contract.receiptCargoIssuedQuantity <= 0)
+            {
+                contract.receiptCargoReturnedToReserve = true;
+                contract.receiptCargoShipNetworkObjectId = 0;
+                contract.receiptCargoShipClass = ShipClass.Light;
+                return true;
+            }
+
+            if (TradeWorld.Instance == null || Repository == null) return false;
+            var cargo = TradeWorld.Instance.GetOrLoadCargo(
+                contract.receiptCargoShipNetworkObjectId,
+                contract.receiptCargoShipClass);
+            if (cargo == null) return false;
+
+            int ownedQuantity = cargo.GetContractOwnedQuantity(
+                contract.itemId,
+                contract.contractId,
+                contract.assignedPlayerId);
+            if (ownedQuantity != contract.receiptCargoIssuedQuantity) return false;
+
+            var cargoBefore = cargo.SaveToList();
+            if (!cargo.TryRemoveContractOwned(
+                    contract.itemId,
+                    contract.receiptCargoIssuedQuantity,
+                    contract.contractId,
+                    contract.assignedPlayerId,
+                    out _))
+            {
+                return false;
+            }
+
+            if (!Repository.SetCargo(contract.receiptCargoShipNetworkObjectId, cargo.SaveToList()))
+            {
+                cargo.LoadFrom(cargoBefore);
+                return false;
+            }
+
+            ulong shipId = contract.receiptCargoShipNetworkObjectId;
+            contract.receiptCargoIssuedQuantity = 0;
+            contract.receiptCargoShipNetworkObjectId = 0;
+            contract.receiptCargoShipClass = ShipClass.Light;
+            contract.receiptCargoReturnedToReserve = true;
+            TradeWorld.Instance.NotifyCargoChanged(shipId);
+            return true;
+        }
+
         private void RestoreDeliveryState(
             ulong clientId,
             string locationId,
@@ -816,11 +1117,11 @@ namespace ProjectC.Trade.Core
             ShipClass shipClass,
             List<WarehouseEntry> cargoBefore,
             List<WarehouseEntry> warehouseBefore,
-            float creditsBefore)
+            float expiryCreditsBefore)
         {
             if (Repository == null) return;
 
-            if (!Repository.SetCredits(clientId, creditsBefore))
+            if (!Repository.SetCredits(clientId, expiryCreditsBefore))
                 Debug.LogError("[ContractWorld] completion rollback failed for credits");
 
             if (cargoBefore != null)
@@ -858,11 +1159,54 @@ namespace ProjectC.Trade.Core
             if (contract.assignedPlayerId != clientId)
                 return ContractOpResult.Fail(ContractResultCode.ContractNotAssigned, "Это не ваш контракт!");
 
+            int receiptIssuedBefore = contract.receiptCargoIssuedQuantity;
+            ulong receiptShipBefore = contract.receiptCargoShipNetworkObjectId;
+            ShipClass receiptClassBefore = contract.receiptCargoShipClass;
+            bool receiptReturnedBefore = contract.receiptCargoReturnedToReserve;
+            List<WarehouseEntry> receiptCargoBefore = null;
+            if (contract.isReceiptContract && receiptIssuedBefore > 0 && TradeWorld.Instance != null)
+            {
+                receiptCargoBefore = TradeWorld.Instance.GetCargoSnapshot(
+                    contract.receiptCargoShipNetworkObjectId,
+                    contract.receiptCargoShipClass);
+            }
+
+            var debt = GetOrCreateDebt(clientId);
+            float debtBefore = debt.CurrentDebt;
+            if (contract.isReceiptContract && !TryReturnReceiptCargoToReserve(contract))
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+
             contract.Fail();
             _runtimeStore.MarkTerminal(contract);
-            HandleFailedContract(contract, clientId);
+            HandleFailedContract(contract, clientId, receiptIssuedBefore);
 
-            SaveAll();
+            if (!SaveAll())
+            {
+                contract.state = ContractState.Active;
+                contract.terminalAtUtcTicks = 0L;
+                contract.receiptCargoIssuedQuantity = receiptIssuedBefore;
+                contract.receiptCargoShipNetworkObjectId = receiptShipBefore;
+                contract.receiptCargoShipClass = receiptClassBefore;
+                contract.receiptCargoReturnedToReserve = receiptReturnedBefore;
+                _runtimeStore.MarkActiveAgain(contract, clientId);
+                debt.CurrentDebt = debtBefore;
+
+                if (receiptCargoBefore != null && TradeWorld.Instance != null && receiptShipBefore != 0)
+                {
+                    var cargo = TradeWorld.Instance.GetOrLoadCargo(receiptShipBefore, receiptClassBefore);
+                    if (cargo != null)
+                    {
+                        cargo.LoadFrom(receiptCargoBefore);
+                        if (!Repository.SetCargo(receiptShipBefore, receiptCargoBefore))
+                            Debug.LogError("[ContractWorld] failure rollback failed for receipt cargo");
+                        TradeWorld.Instance.NotifyCargoChanged(receiptShipBefore);
+                    }
+                }
+
+                _persistenceWriteBlocked = true;
+                Debug.LogError("[ContractWorld] failure persistence failed; contract state rolled back and further writes blocked");
+                return ContractOpResult.Fail(ContractResultCode.InternalError, null);
+            }
 
             string reason = isManual ? "отменён игроком" : "время истекло";
             return ContractOpResult.Fail(ContractResultCode.Ok, $"Контракт провален: {reason}");
@@ -877,12 +1221,18 @@ namespace ProjectC.Trade.Core
         /// Обработать провал контракта (debt, penalty).
         /// Идентично legacy ContractSystem.HandleFailedContract:598-631.
         /// </summary>
-        public void HandleFailedContract(ContractData contract, ulong playerId)
+        public void HandleFailedContract(ContractData contract, ulong playerId, int receiptCargoIssuedQuantity = -1)
         {
             var debt = GetOrCreateDebt(playerId);
 
             if (contract.isReceiptContract)
             {
+                // Долг возникает только если сервер действительно выдал cargo.
+                int issuedQuantity = receiptCargoIssuedQuantity >= 0
+                    ? receiptCargoIssuedQuantity
+                    : contract.receiptCargoIssuedQuantity;
+                if (issuedQuantity <= 0) return;
+
                 // Receipt контракт провален — долг = cargoValue × 1.5
                 float debtAmount = contract.cargoValue * 1.5f;
                 debt.AddDebt(debtAmount);
@@ -922,42 +1272,196 @@ namespace ProjectC.Trade.Core
         private List<(ulong playerId, string contractId, ContractData contract)> TickCore(float deltaTime, float now)
         {
             var expired = new List<(ulong, string, ContractData)>();
+            var activePlayerIds = new List<ulong>(_runtimeStore.ActiveByPlayer.Keys);
+            var contractSnapshots = new List<(
+                ulong playerId,
+                string contractId,
+                ContractData contract,
+                ContractState state,
+                ulong assignedPlayerId,
+                float timeRemaining,
+                long terminalAtUtcTicks,
+                int receiptIssuedQuantity,
+                ulong receiptShipNetworkObjectId,
+                ShipClass receiptShipClass,
+                bool receiptReturnedToReserve,
+                List<WarehouseEntry> cargo)>();
+            var debtSnapshots = new List<(ulong playerId, float currentDebt, float lastDecayTime)>();
+            var debtKeysBefore = new HashSet<ulong>(_playerDebts.Keys);
+            var creditsBefore = new Dictionary<ulong, float>();
 
-            // Таймеры активных контрактов
-            foreach (var kvp in _runtimeStore.ActiveByPlayer)
+            foreach (var playerId in activePlayerIds)
             {
-                ulong playerId = kvp.Key;
-                // ToList чтобы не модифицировать коллекцию во время итерации
-                var idsCopy = new List<string>(kvp.Value);
+                if (Repository != null)
+                    creditsBefore[playerId] = Repository.GetCredits(playerId);
+            }
+
+            foreach (var debtPair in _playerDebts)
+            {
+                debtSnapshots.Add((
+                    debtPair.Key,
+                    debtPair.Value.CurrentDebt,
+                    debtPair.Value.LastDecayTime));
+            }
+
+            System.Action rollback = () =>
+            {
+                foreach (var snapshot in contractSnapshots)
+                {
+                    snapshot.contract.state = snapshot.state;
+                    snapshot.contract.assignedPlayerId = snapshot.assignedPlayerId;
+                    snapshot.contract.timeRemaining = snapshot.timeRemaining;
+                    snapshot.contract.terminalAtUtcTicks = snapshot.terminalAtUtcTicks;
+                    snapshot.contract.receiptCargoIssuedQuantity = snapshot.receiptIssuedQuantity;
+                    snapshot.contract.receiptCargoShipNetworkObjectId = snapshot.receiptShipNetworkObjectId;
+                    snapshot.contract.receiptCargoShipClass = snapshot.receiptShipClass;
+                    snapshot.contract.receiptCargoReturnedToReserve = snapshot.receiptReturnedToReserve;
+                    _runtimeStore.ContractsById[snapshot.contractId] = snapshot.contract;
+                    _runtimeStore.MarkActiveAgain(snapshot.contract, snapshot.playerId);
+
+                    if (snapshot.cargo == null
+                        || TradeWorld.Instance == null
+                        || snapshot.receiptShipNetworkObjectId == 0)
+                    {
+                        continue;
+                    }
+
+                    var cargo = TradeWorld.Instance.GetOrLoadCargo(
+                        snapshot.receiptShipNetworkObjectId,
+                        snapshot.receiptShipClass);
+                    if (cargo == null) continue;
+
+                    cargo.LoadFrom(snapshot.cargo);
+                    if (Repository != null
+                        && !Repository.SetCargo(snapshot.receiptShipNetworkObjectId, snapshot.cargo))
+                    {
+                        Debug.LogError($"[ContractWorld] Tick rollback failed for cargo of {snapshot.contractId}");
+                    }
+                    TradeWorld.Instance.NotifyCargoChanged(snapshot.receiptShipNetworkObjectId);
+                }
+
+                foreach (var debtSnapshot in debtSnapshots)
+                {
+                    if (!_playerDebts.TryGetValue(debtSnapshot.playerId, out var debt))
+                    {
+                        debt = new ContractDebt(
+                            debtSnapshot.playerId,
+                            debtSnapshot.currentDebt,
+                            debtSnapshot.lastDecayTime);
+                        _playerDebts[debtSnapshot.playerId] = debt;
+                    }
+
+                    debt.CurrentDebt = debtSnapshot.currentDebt;
+                    debt.LastDecayTime = debtSnapshot.lastDecayTime;
+                }
+
+                foreach (var playerId in new List<ulong>(_playerDebts.Keys))
+                {
+                    if (!debtKeysBefore.Contains(playerId))
+                        _playerDebts.Remove(playerId);
+                }
+
+                if (Repository != null)
+                {
+                    foreach (var creditsPair in creditsBefore)
+                    {
+                        if (!Repository.SetCredits(creditsPair.Key, creditsPair.Value))
+                        {
+                            Debug.LogError($"[ContractWorld] Tick rollback failed for credits of player {creditsPair.Key}");
+                        }
+                    }
+                }
+
+                expired.Clear();
+            };
+
+            // Snapshot every active contract before ticking. Runtime indexes can be
+            // mutated by MarkTerminal, so iterate stable copies and restore the whole
+            // batch if any persistence step fails.
+            foreach (var playerId in activePlayerIds)
+            {
+                if (!_runtimeStore.ActiveByPlayer.TryGetValue(playerId, out var activeIds))
+                    continue;
+
+                var idsCopy = new List<string>(activeIds);
                 foreach (var contractId in idsCopy)
                 {
-                    if (!_runtimeStore.ContractsById.TryGetValue(contractId, out var contract)) continue;
-                    if (contract.state != ContractState.Active) continue;
+                    if (!_runtimeStore.ContractsById.TryGetValue(contractId, out var contract))
+                        continue;
+                    if (contract == null || contract.state != ContractState.Active)
+                        continue;
+
+                    int receiptIssuedBefore = contract.receiptCargoIssuedQuantity;
+                    ulong receiptShipBefore = contract.receiptCargoShipNetworkObjectId;
+                    ShipClass receiptClassBefore = contract.receiptCargoShipClass;
+                    List<WarehouseEntry> receiptCargoBefore = null;
+                    if (contract.isReceiptContract
+                        && receiptIssuedBefore > 0
+                        && TradeWorld.Instance != null
+                        && receiptShipBefore != 0)
+                    {
+                        receiptCargoBefore = TradeWorld.Instance.GetCargoSnapshot(
+                            receiptShipBefore,
+                            receiptClassBefore);
+                    }
+
+                    contractSnapshots.Add((
+                        playerId,
+                        contractId,
+                        contract,
+                        contract.state,
+                        contract.assignedPlayerId,
+                        contract.timeRemaining,
+                        contract.terminalAtUtcTicks,
+                        receiptIssuedBefore,
+                        receiptShipBefore,
+                        receiptClassBefore,
+                        contract.receiptCargoReturnedToReserve,
+                        receiptCargoBefore));
 
                     contract.TickTimer(deltaTime);
                     _runtimeStore.ContractsById[contractId] = contract;
 
-                    if (contract.state == ContractState.Failed)
+                    if (contract.state != ContractState.Failed)
+                        continue;
+
+                    if (contract.isReceiptContract && !TryReturnReceiptCargoToReserve(contract))
                     {
-                        _runtimeStore.MarkTerminal(contract);
-                        HandleFailedContract(contract, playerId);
-                        expired.Add((playerId, contractId, contract));
+                        rollback();
+                        _persistenceWriteBlocked = true;
+                        Debug.LogError($"[ContractWorld] expired Receipt contract {contractId} could not return cargo; tick rolled back");
+                        return expired;
                     }
+
+                    _runtimeStore.MarkTerminal(contract);
+                    HandleFailedContract(contract, playerId, receiptIssuedBefore);
+                    expired.Add((playerId, contractId, contract));
                 }
             }
 
-            // Decay долгов
-            bool anyDecay = false;
-            foreach (var d in _playerDebts.Values)
+            // Decay долгов. LastDecayTime is part of the persisted state, so a
+            // change there also requires SaveAll even when CurrentDebt stays at zero.
+            bool anyDebtStateChanged = false;
+            foreach (var debtPair in _playerDebts)
             {
-                float before = d.CurrentDebt;
-                d.CheckAndApplyDecay(now);
-                if (d.CurrentDebt != before) anyDecay = true;
+                var debt = debtPair.Value;
+                float beforeDebt = debt.CurrentDebt;
+                float beforeDecayTime = debt.LastDecayTime;
+                debt.CheckAndApplyDecay(now);
+                if (debt.CurrentDebt != beforeDebt || debt.LastDecayTime != beforeDecayTime)
+                    anyDebtStateChanged = true;
             }
 
-            // Save if anything expired or debts changed
-            if (expired.Count > 0 || anyDecay)
-                SaveAll();
+            if (expired.Count > 0 || anyDebtStateChanged)
+            {
+                if (!SaveAll())
+                {
+                    rollback();
+                    _persistenceWriteBlocked = true;
+                    Debug.LogError("[ContractWorld] tick persistence failed; contract/debt/cargo state rolled back and further writes blocked");
+                    return expired;
+                }
+            }
 
             return expired;
         }
@@ -1033,7 +1537,9 @@ namespace ProjectC.Trade.Core
                 cargoValue = c.cargoValue,
                 timeLimit = c.timeLimit,
                 timeRemaining = c.timeRemaining,
-                isReceiptContract = c.isReceiptContract
+                isReceiptContract = c.isReceiptContract,
+                receiptCargoIssued = c.receiptCargoIssuedQuantity > 0,
+                receiptCargoShipNetworkObjectId = c.receiptCargoShipNetworkObjectId
             };
         }
     }

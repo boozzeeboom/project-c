@@ -222,6 +222,60 @@ namespace ProjectC.Trade.Network
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestReceiveCargoRpc(string contractId, ulong shipNetworkObjectId, RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (!CheckRateLimit(clientId)) return;
+            if (ContractWorld.Instance == null) return;
+
+            var contract = ContractWorld.Instance.GetContract(contractId);
+            if (contract == null)
+            {
+                SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.ContractNotFound, contractId, 0, 0, clientId));
+                return;
+            }
+
+            if (!contract.isReceiptContract)
+            {
+                SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.UnsupportedContractType, contractId, 0, 0, clientId));
+                return;
+            }
+
+            if (!ValidateInZone(clientId, contract.fromLocationId, out var zone))
+            {
+                SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.NotInZone, contractId, 0, 0, clientId));
+                return;
+            }
+
+            if (shipNetworkObjectId == 0
+                || !zone.IsShipInZone(shipNetworkObjectId)
+                || !KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetworkObjectId))
+            {
+                SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.CargoMissing, contractId, 0, 0, clientId));
+                return;
+            }
+
+            var shipClass = ResolveShipClass(shipNetworkObjectId);
+            var r = ContractWorld.Instance.TryReceiveReceiptCargo(
+                clientId,
+                contractId,
+                shipNetworkObjectId,
+                shipClass);
+            SendResultToOwner(clientId, BuildResultDto(clientId, r, contractId));
+
+            if (r.IsSuccess)
+            {
+                var snap = ContractWorld.Instance.BuildSnapshot(
+                    clientId,
+                    contract.fromLocationId,
+                    zone.DisplayName,
+                    1f,
+                    0f);
+                SendSnapshotToClient(clientId, snap);
+            }
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestCompleteRpc(string contractId, ulong shipNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
@@ -239,6 +293,19 @@ namespace ProjectC.Trade.Network
             {
                 SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.WrongDestination, contractId, 0, 0, clientId));
                 return;
+            }
+
+            // Для Receipt и delivery контрактов сервер проверяет ship ownership.
+            // Receipt cargo никогда не ищется в warehouse и должен оставаться
+            // в том же корабле, который был записан при ReceiveCargo.
+            if (contract.isReceiptContract && shipNetworkObjectId != 0)
+            {
+                if (!zone.IsShipInZone(shipNetworkObjectId)
+                    || !KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetworkObjectId))
+                {
+                    SendResultToOwner(clientId, ContractResultDto_Fail(ContractResultCode.CargoMissing, contractId, 0, 0, clientId));
+                    return;
+                }
             }
 
             // Для delivery-контрактов shipNetworkObjectId — только hint источника
@@ -278,7 +345,7 @@ namespace ProjectC.Trade.Network
                     PlayerId = clientId,
                     TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                     ContractId = contractId,
-                    WasReceipt = false // T-Q15: instrumentation для Receipt vs Time-out — out of scope.
+                    WasReceipt = contract.isReceiptContract
                 });
 
                 var snapshotZone = MarketZoneRegistry.Get(contract.toLocationId);

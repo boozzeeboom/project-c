@@ -12,10 +12,27 @@ namespace ProjectC.Trade.Core
         public string itemId;
         public int quantity;
 
+        // Empty contractId means ordinary warehouse/cargo cargo.
+        // Contract-owned entries are only valid in CargoData, never in Warehouse.
+        public string contractId;
+        public ulong contractOwnerPlayerId;
+
+        public bool IsContractOwned => !string.IsNullOrEmpty(contractId);
+
         public WarehouseEntry(string itemId, int quantity)
         {
             this.itemId = itemId;
             this.quantity = quantity;
+            contractId = null;
+            contractOwnerPlayerId = 0;
+        }
+
+        public WarehouseEntry(string itemId, int quantity, string contractId, ulong contractOwnerPlayerId)
+        {
+            this.itemId = itemId;
+            this.quantity = quantity;
+            this.contractId = contractId;
+            this.contractOwnerPlayerId = contractOwnerPlayerId;
         }
     }
 
@@ -52,7 +69,7 @@ namespace ProjectC.Trade.Core
         public int GetQuantity(string itemId)
         {
             for (int i = 0; i < _items.Count; i++)
-                if (_items[i].itemId == itemId) return _items[i].quantity;
+                if (!_items[i].IsContractOwned && _items[i].itemId == itemId) return _items[i].quantity;
             return 0;
         }
 
@@ -66,7 +83,7 @@ namespace ProjectC.Trade.Core
 
             int existingIdx = -1;
             for (int i = 0; i < _items.Count; i++)
-                if (_items[i].itemId == itemId) { existingIdx = i; break; }
+                if (!_items[i].IsContractOwned && _items[i].itemId == itemId) { existingIdx = i; break; }
 
             if (existingIdx < 0)
             {
@@ -97,7 +114,7 @@ namespace ProjectC.Trade.Core
             if (string.IsNullOrEmpty(itemId) || quantity <= 0) { failReason = "invalid_args"; return false; }
             int idx = -1;
             for (int i = 0; i < _items.Count; i++)
-                if (_items[i].itemId == itemId) { idx = i; break; }
+                if (!_items[i].IsContractOwned && _items[i].itemId == itemId) { idx = i; break; }
             if (idx < 0) { failReason = "item_not_in_warehouse"; return false; }
             if (_items[idx].quantity < quantity) { failReason = "insufficient_quantity"; return false; }
 
@@ -132,15 +149,20 @@ namespace ProjectC.Trade.Core
             _items.Clear();
             if (items == null) return;
             for (int i = 0; i < items.Count; i++)
-                if (!string.IsNullOrEmpty(items[i].itemId) && items[i].quantity > 0)
-                    _items.Add(items[i]);
+                if (!items[i].IsContractOwned
+                    && !string.IsNullOrEmpty(items[i].itemId)
+                    && items[i].quantity > 0)
+                {
+                    _items.Add(new WarehouseEntry(items[i].itemId, items[i].quantity));
+                }
         }
 
         public List<WarehouseEntry> SaveToList()
         {
             var list = new List<WarehouseEntry>(_items.Count);
             for (int i = 0; i < _items.Count; i++)
-                if (_items[i].quantity > 0) list.Add(_items[i]);
+                if (!_items[i].IsContractOwned && _items[i].quantity > 0)
+                    list.Add(new WarehouseEntry(_items[i].itemId, _items[i].quantity));
             return list;
         }
 

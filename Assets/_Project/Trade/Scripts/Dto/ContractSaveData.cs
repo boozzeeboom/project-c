@@ -11,10 +11,10 @@ namespace ProjectC.Trade.Dto
     public class ContractSaveData
     {
         /// <summary>Current contract save schema. Legacy snapshots without this field are schema 0.</summary>
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
         public int schemaVersion = CurrentSchemaVersion;
 
-        /// <summary>All contracts (Pending, Active, Completed, Failed). Schema 2 persists terminal timestamps for retention.</summary>
+        /// <summary>All contracts (Pending, Active, Completed, Failed). Schema 3 adds persisted Receipt cargo ownership fields.</summary>
         public List<ContractData> contracts = new List<ContractData>();
 
         /// <summary>Player debts (clientId → debt state).</summary>

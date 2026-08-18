@@ -45251,6 +45251,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8712427589522649248, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
+      propertyPath: baseMaxCargoVolume
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8712427589522649248, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
+      propertyPath: baseMaxCargoWeight
+      value: 3000
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -93,6 +93,22 @@ namespace ProjectC.Trade.Client
             ProjectC.Trade.Network.ContractServer.Instance.RequestAcceptRpc(contractId);
         }
 
+        public void RequestReceiveCargo(string contractId)
+        {
+            if (ProjectC.Trade.Network.ContractServer.Instance == null) return;
+
+            ulong shipNetworkObjectId = GetCurrentShipNetworkObjectId();
+            if (shipNetworkObjectId == 0)
+            {
+                Debug.LogWarning("[ContractClientState] RequestReceiveCargo: local player is not piloting a spawned ship");
+                return;
+            }
+
+            ProjectC.Trade.Network.ContractServer.Instance.RequestReceiveCargoRpc(
+                contractId,
+                shipNetworkObjectId);
+        }
+
         public void RequestComplete(string contractId)
         {
             if (ProjectC.Trade.Network.ContractServer.Instance == null) return;
@@ -100,16 +116,21 @@ namespace ProjectC.Trade.Client
             // Передаём только текущий корабль владельца. Сервер не доверяет этому
             // значению: проверяет zone + ownership и при необходимости использует
             // склад destination как второй источник груза.
-            ulong shipNetworkObjectId = 0;
+            ProjectC.Trade.Network.ContractServer.Instance.RequestCompleteRpc(
+                contractId,
+                GetCurrentShipNetworkObjectId());
+        }
+
+        private static ulong GetCurrentShipNetworkObjectId()
+        {
             var networkManager = NetworkManager.Singleton;
             var playerObject = networkManager != null && networkManager.LocalClient != null
                 ? networkManager.LocalClient.PlayerObject
                 : null;
             var player = playerObject != null ? playerObject.GetComponent<NetworkPlayer>() : null;
             if (player != null && player.IsInShip && player.CurrentShip != null && player.CurrentShip.IsSpawned)
-                shipNetworkObjectId = player.CurrentShip.NetworkObjectId;
-
-            ProjectC.Trade.Network.ContractServer.Instance.RequestCompleteRpc(contractId, shipNetworkObjectId);
+                return player.CurrentShip.NetworkObjectId;
+            return 0;
         }
 
         public void RequestFail(string contractId)

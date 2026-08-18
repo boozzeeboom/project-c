@@ -21,8 +21,10 @@ namespace ProjectC.Trade.Client
         private VisualElement _contractsSection;
         private ListView _contractsList;
         private Button _acceptBtn;
+        private Button _receiveBtn;
         private Button _completeBtn;
         private Button _failBtn;
+        private bool _contractsTabVisible;
         private Label _creditsLabel;
         private Label _messageLabel;
         private ContractClientState _state;
@@ -42,6 +44,7 @@ namespace ProjectC.Trade.Client
             _contractsSection = root.Q<VisualElement>("contracts-section");
             _contractsList = root.Q<ListView>("contracts-list");
             _acceptBtn = root.Q<Button>("accept-btn");
+            _receiveBtn = root.Q<Button>("receive-btn");
             _completeBtn = root.Q<Button>("complete-btn");
             _failBtn = root.Q<Button>("fail-btn");
 
@@ -55,6 +58,7 @@ namespace ProjectC.Trade.Client
                 _contractsList.selectionChanged += selectedItems =>
                 {
                     _selectedContractItem = FindSelectedItemIndex(_contractsList, selectedItems);
+                    UpdateActionButtons();
                 };
             }
 
@@ -62,6 +66,11 @@ namespace ProjectC.Trade.Client
             {
                 _acceptBtn.text = Loc.Get("ui.market.btn.accept");
                 _acceptBtn.clicked += OnAcceptClicked;
+            }
+            if (_receiveBtn != null)
+            {
+                _receiveBtn.text = "ПОЛУЧИТЬ ГРУЗ";
+                _receiveBtn.clicked += OnReceiveClicked;
             }
             if (_completeBtn != null)
             {
@@ -107,13 +116,16 @@ namespace ProjectC.Trade.Client
         {
             if (_contractsSection != null)
                 _contractsSection.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            _contractsTabVisible = visible;
             if (_acceptBtn != null) _acceptBtn.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_receiveBtn != null) _receiveBtn.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             if (_completeBtn != null) _completeBtn.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             if (_failBtn != null) _failBtn.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
 
             if (!visible) return;
             if (_contractsList != null) _contractsList.MarkDirtyRepaint();
             RefreshFromCurrentSnapshot();
+            UpdateActionButtons();
             RequestList();
         }
 
@@ -155,6 +167,7 @@ namespace ProjectC.Trade.Client
             _contractsCache = combined.ToArray();
             SetListSource(_contractsList, _contractsCache);
             _selectedContractItem = -1;
+            UpdateActionButtons();
 
             if (_messageLabel != null && _host.IsVisible() && _host.ActiveTab == "contracts")
             {
@@ -213,6 +226,27 @@ namespace ProjectC.Trade.Client
             _host.SetMessage(Loc.Get("ui.character.request_sent"));
         }
 
+        private void OnReceiveClicked()
+        {
+            if (!TryGetSelected(out var contract))
+            {
+                _host.SetMessage(Loc.Get("ui.character.select_contract"));
+                return;
+            }
+            if (contract.state != (byte)ContractState.Active || !contract.isReceiptContract)
+            {
+                _host.SetMessage(Loc.Get("ui.character.contract_not_active"));
+                return;
+            }
+            if (contract.receiptCargoIssued)
+            {
+                _host.SetMessage("Груз по расписке уже выдан.");
+                return;
+            }
+            State?.RequestReceiveCargo(contract.contractId);
+            _host.SetMessage(Loc.Get("ui.character.request_sent"));
+        }
+
         private void OnCompleteClicked()
         {
             if (!TryGetSelected(out var contract))
@@ -243,6 +277,20 @@ namespace ProjectC.Trade.Client
             }
             State?.RequestFail(contract.contractId);
             _host.SetMessage(Loc.Get("ui.character.request_sent"));
+        }
+
+        private void UpdateActionButtons()
+        {
+            if (!_contractsTabVisible) return;
+            bool hasSelection = TryGetSelected(out var contract);
+            bool isPending = hasSelection && contract.state == (byte)ContractState.Pending;
+            bool isActive = hasSelection && contract.state == (byte)ContractState.Active;
+            bool canReceive = isActive && contract.isReceiptContract && !contract.receiptCargoIssued;
+
+            if (_acceptBtn != null) _acceptBtn.SetEnabled(isPending);
+            if (_receiveBtn != null) _receiveBtn.style.display = canReceive ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_completeBtn != null) _completeBtn.SetEnabled(isActive && (!contract.isReceiptContract || contract.receiptCargoIssued));
+            if (_failBtn != null) _failBtn.SetEnabled(isActive);
         }
 
         private bool TryGetSelected(out ContractDto contract)

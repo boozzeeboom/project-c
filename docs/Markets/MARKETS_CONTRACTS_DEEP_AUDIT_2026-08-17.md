@@ -2,8 +2,8 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** этапы 1–16B реализованы в коде, конфигурации и `WorldScene_0_0`; закрытые и оставшиеся работы сведены в актуальный раздел 35.
-**Проверки:** Unity compile check и статические аудиты пройдены; Play Mode, domain tests, network/persistence smoke и screenshot-регрессия не запускались.
+**Статус:** этапы 1–16B реализованы в коде, конфигурации и `WorldScene_0_0`; Receipt flow этапа 17 реализован в рабочем дереве, но ещё не закоммичен. Закрытые и оставшиеся работы сведены в актуальный раздел 35.
+**Проверки:** после изменений `ContractWorld` compile check чистый; Play Mode, domain tests, network/persistence smoke и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
 
@@ -36,7 +36,7 @@ MarketWindow / ContractsTab / CharacterWindow
 Приоритет оставшихся работ:
 
 1. **P0/P1 — verification pass:** domain, persistence, network и UI smoke-проверки; без них нельзя окончательно закрыть acceptance criteria.
-2. **P1 — Receipt:** сохранить fail-closed режим как текущую безопасную политику; полная Receipt semantics требует отдельного решения по cargo ownership, возврату и settlement.
+2. **P1 — Receipt acceptance:** полный server-authoritative flow уже реализован в рабочем дереве; требуется подтвердить его domain/persistence/network поведением и зафиксировать документацию.
 3. **P2 — конфигурация сцены:** для 12 `MarketZone` расстояния уже рассчитаны из `WorldScene_0_0`; остаются только locations без `MarketZone`, которые нельзя включать в contract board автоматически.
 4. **P2/P3 — cleanup:** legacy trade files, documentation catalog и отдельный unrelated missing-script issue.
 
@@ -1507,11 +1507,23 @@ The following documentation is currently inconsistent with code and must be upda
 - `PRIMIUM_FARM_1_1` и `PRIMIUM_TEST_ZONE` оставлены disabled: в сцене нет `MarketZone`; для `PRIMIUM_TEST_ZONE` наличие только dock station недостаточно для contract board.
 - `ContractCatalog.Validate()`: `valid=True`, `errors=0`.
 
+### Этап 17 — Receipt full flow (рабочее дерево, не закоммичено)
+
+- Receipt снова допускается в publishable catalog definitions после подтверждения продуктовой политики.
+- `Accept` только переводит контракт в `Active`; cargo выдаётся отдельной `ReceiveCargo` операцией.
+- Выданный cargo хранится как contract-owned запись с `contractId`, owner player и ship binding; обычные cargo/warehouse операции его не потребляют.
+- `ReceiveCargo` идемпотентен для того же корабля и отклоняет другой корабль; capacity failure не меняет контракт.
+- `Complete` требует точного contract-owned cargo, того же owner/ship/class и exact quantity; cargo потребляется до reward.
+- `Fail`/expiry возвращают выданный cargo в абстрактный reserve; при отсутствии выданного cargo debt не создаётся.
+- Persistence schema поднята до `3`; DTO передаёт receipt cargo metadata; server RPC проверяет owner, zone и ship ownership.
+- `TickCore`, `TryAcceptCore`, `TryCompleteCore` и `TryFailCore` используют rollback при persistence failure; `TickCore` итерирует стабильные копии runtime indexes.
+- Последняя проверка: `check_compile_errors` — **No compile errors**.
+
 ### Закрыто и не требует повторной реализации
 
 - `MKT-CON-001` и `MKT-CON-002`: защита active index, stale cleanup и корректная регенерация доски.
 - Безопасная часть `MKT-CON-003`: server-side проверка и списание delivery cargo с rollback policy.
-- Безопасная часть `MKT-CON-004`: Receipt не публикуется и не принимается, completion fail-closed.
+- Receipt domain/network/persistence implementation из этапа 17 находится в рабочем дереве; acceptance закрытие ожидает verification pass и отдельный commit.
 - `MKT-PER-001`, `MKT-PER-002` и безопасные части `MKT-PER-003`: debts-only status, schema markers, migration guard, backup/recovery, retention и transaction lock.
 - `MKT-NET-001/002/003`: локализуемые result codes, явный rate-limit result и удаление dead RPC.
 - `MKT-UI-001/002/003`: единый `ContractsTab`, разделённый `MarketWindow` и refresh после contract result.
@@ -1523,7 +1535,7 @@ The following documentation is currently inconsistent with code and must be upda
 ### Доделываем в текущем цикле
 
 1. **Verification pass.** Нужны domain tests, persistence round-trip/corruption recovery, owner-only network smoke, UI smoke и ручная Play Mode проверка. Скриншоты и ручной playtest остаются отдельной пользовательской проверкой.
-2. **Receipt decision/implementation.** Сейчас Receipt корректно fail-closed. Для полного flow нужно отдельно зафиксировать выдачу товара, ownership во время перевозки, policy при expiry и settlement. До этого Receipt нельзя включать в `publishable` definitions.
+2. **Commit checkpoint.** После verification pass зафиксировать этап 17 отдельным коммитом только после подтверждения пользователя.
 3. **Оставшиеся locations без MarketZone.** `PRIMIUM_FARM_1_1` и `PRIMIUM_TEST_ZONE` остаются `enabled=false` до отдельного размещения/подтверждения `MarketZone`. Для test zone существующий dock сам по себе не открывает market contract board.
 4. **Legacy/documentation cleanup.** После project-wide reference audit нужно решить судьбу старых trade-файлов и синхронизировать `README.md`, `FILES_INDEX.md`, `KNOWN_ISSUES.md`, migration-документы и ссылки на устаревшие документы.
 5. **Отдельная проблема сцены.** Missing script на `[Ship_Key_Container]/[KeyRod_ShipHeavy]` не относится к market/NPC ID работам и исправляется отдельным тикетом.
@@ -1531,6 +1543,6 @@ The following documentation is currently inconsistent with code and must be upda
 ### Текущий порядок продолжения
 
 1. Сначала выполнить оставшийся verification pass доступными автоматическими/domain проверками.
-2. Затем принять отдельное продуктовое решение по полной Receipt semantics.
+2. Затем показать пользователю итоговый diff этапа 17 и дождаться подтверждения на commit.
 3. После отдельного placement decision добавить `MarketZone` для оставшихся locations или оставить их disabled.
 4. Затем выполнять legacy/documentation cleanup.

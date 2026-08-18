@@ -50,7 +50,7 @@ namespace ProjectC.Trade.Config
             [Min(0f)]
             public float timeLimitSeconds = 300f;
 
-            [Tooltip("Receipt semantics are not enabled unless the full acceptance/settlement flow exists.")]
+            [Tooltip("Contract-owned cargo is issued by the server through the Receipt acceptance flow.")]
             public bool isReceiptContract;
 
             [Tooltip("Localization key for the contract type badge in client UI.")]
@@ -265,8 +265,7 @@ namespace ProjectC.Trade.Config
                     if (!types.Add(definition.type))
                         errors.Add($"duplicate contract type '{definition.type}'");
                     if (definition.publishable) hasPublishableType = true;
-                    if (definition.publishable && definition.isReceiptContract)
-                        errors.Add($"contract type '{definition.type}' cannot be publishable before Receipt flow is implemented");
+
                     if (string.IsNullOrWhiteSpace(definition.localizationKey))
                         errors.Add($"contractTypes[{i}] localizationKey is empty");
                     if (string.IsNullOrWhiteSpace(definition.uiClass))
@@ -342,7 +341,7 @@ namespace ProjectC.Trade.Config
                 new ContractTypeDefinition
                 {
                     type = ContractType.Receipt,
-                    publishable = false,
+                    publishable = true,
                     rewardMultiplier = 1f,
                     timeLimitSeconds = 600f,
                     isReceiptContract = true,

@@ -399,7 +399,7 @@
 
 **Задача:** построить pairwise distance graph по фактическим позициям `MarketZone` из `WorldScene_0_0` (`MKT-DOM-001`).
 
-**Статус:** изменения применены; commit hash будет зафиксирован после отдельного commit шага.
+**Коммит:** `a3dc9e7a` — MKT-DOM-001: Построить distance graph по WorldScene_0_0.
 
 **Изменения:**
 - Для 12 `MarketZone` собраны world positions из активной `WorldScene_0_0`.

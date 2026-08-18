@@ -292,7 +292,7 @@
 
 **Задача:** Этап 15B реализации аудита — вынести locations, distances и contract type definitions в validated `ContractCatalog` (`MKT-DOM-001` / `REF-4003`).
 
-**Коммит:** будет добавлен после compile и diff-проверки.
+**Коммит:** `efc25821` — MKT-DOM-001: Вынести locations и contract types в ContractCatalog
 
 **Изменения:**
 - `Assets/_Project/Trade/Scripts/Config/ContractCatalog.cs` — новый validated ScriptableObject-каталог

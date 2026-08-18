@@ -295,11 +295,15 @@ namespace ProjectC.UI.Client
 
             // Type badge
             var typeLbl = row.Q<Label>("row-type");
-            typeLbl.text = GetContractTypeDisplayName((ContractType)c.type);
-            typeLbl.RemoveFromClassList("type-standard");
-            typeLbl.RemoveFromClassList("type-urgent");
-            typeLbl.RemoveFromClassList("type-receipt");
-            typeLbl.AddToClassList(GetContractTypeClass((ContractType)c.type));
+            var contractType = (ContractType)c.type;
+            typeLbl.text = ContractTypePresentation.GetDisplayName(contractType, c.typeLocalizationKey);
+            string previousTypeClass = typeLbl.userData as string;
+            if (!string.IsNullOrWhiteSpace(previousTypeClass))
+                typeLbl.RemoveFromClassList(previousTypeClass);
+
+            string typeClass = ContractTypePresentation.GetUiClass(contractType, c.typeUiClass);
+            typeLbl.AddToClassList(typeClass);
+            typeLbl.userData = typeClass;
 
             // Item name + quantity
             row.Q<Label>("row-item").text = c.displayName ?? c.itemId ?? "?";
@@ -467,29 +471,6 @@ namespace ProjectC.UI.Client
             return idx;
         }
 
-        private static string GetContractTypeDisplayName(ContractType type)
-        {
-            string key = type switch
-            {
-                ContractType.Standard => "standard",
-                ContractType.Urgent => "urgent",
-                ContractType.Receipt => "receipt",
-                _ => null
-            };
-            if (key == null) return type.ToString();
-            return Loc.Get($"ui.contract.type.{key}", type.ToString());
-        }
-
-        private static string GetContractTypeClass(ContractType type)
-        {
-            switch (type)
-            {
-                case ContractType.Standard: return "type-standard";
-                case ContractType.Urgent: return "type-urgent";
-                case ContractType.Receipt: return "type-receipt";
-                default: return "type-standard";
-            }
-        }
 
         private static float GetTimerSeconds(ContractDto c)
         {

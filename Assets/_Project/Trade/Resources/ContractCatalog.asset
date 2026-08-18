@@ -67,15 +67,27 @@ MonoBehaviour:
     useServerTimeLimit: 1
     timeLimitSeconds: 9000
     isReceiptContract: 0
+    localizationKey: ui.contract.type.standard
+    uiClass: type-standard
+    displayNameFallback: "[\u0421\u0442\u0430\u043D\u0434\u0430\u0440\u0442]"
+    uiColor: {r: 0.3, g: 0.6, b: 1, a: 1}
   - type: 1
     publishable: 1
     rewardMultiplier: 1.5
     useServerTimeLimit: 1
     timeLimitSeconds: 4500
     isReceiptContract: 0
+    localizationKey: ui.contract.type.urgent
+    uiClass: type-urgent
+    displayNameFallback: "[\u0421\u0440\u043E\u0447\u043D\u044B\u0439]"
+    uiColor: {r: 1, g: 0.5, b: 0, a: 1}
   - type: 2
     publishable: 0
     rewardMultiplier: 1
     useServerTimeLimit: 1
     timeLimitSeconds: 12000
     isReceiptContract: 1
+    localizationKey: ui.contract.type.receipt
+    uiClass: type-receipt
+    displayNameFallback: "[\u0420\u0430\u0441\u043F\u0438\u0441\u043A\u0430]"
+    uiColor: {r: 0.3, g: 1, b: 0.3, a: 1}

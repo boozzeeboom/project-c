@@ -288,6 +288,53 @@
 
 ---
 
+## Рабочая итерация от 2026-08-18 — этап 15E
+
+**Задача:** мигрировать и проверить `WorldScene_0_0`, согласовать canonical IDs DockStation/NPC routes (`MKT-DOM-001`).
+
+**Статус:** изменения применены в Unity project; commit hash будет зафиксирован после отдельного согласованного commit шага.
+
+**Изменения:**
+- BootstrapScene не изменялась; назначение объектов проверялось в `WorldScene_0_0`.
+- Для трёх MarketZone назначены `MarketConfig_Secundus`, `MarketConfig_Tertius`, `MarketConfig_Quartus`; Primium уже имел ссылку.
+- `DockStation_Farm_0_0.locationId` и route endpoints Courier/Trader переведены на `PRIMIUM_FARM_0_0`.
+- Для farm 0_0 исправлен `OuterCommZone.stationId`.
+- Удалён неиспользуемый duplicate `DockStationDefinition_TestZone.asset`.
+
+**Проверки:**
+- 14 market configs, 11 dock definitions, 19 route legs
+- missing market/dock endpoints: **0 / 0**
+- duplicate dock IDs: **0**
+- scene dock controller mismatches: **0**
+- `refresh_unity(scope=assets, compile=none)` выполнен
+- `check_compile_errors`: **No compile errors**
+- Scene validation: 1 существующий unrelated missing script `[Ship_Key_Container]/[KeyRod_ShipHeavy]`
+- Play Mode, NPC trade smoke и screenshots не выполнялись
+
+---
+
+## Рабочая итерация от 2026-08-18
+
+**Задача:** этап 15D аудита — вынести presentation mapping contract types в `ContractCatalog` (`MKT-DOM-001`).
+
+**Статус:** изменения применены в Unity project; commit hash будет зафиксирован после отдельного согласованного commit шага.
+
+**Изменения:**
+- `ContractCatalog.ContractTypeDefinition` получил localization key, USS class, server fallback и UI color.
+- `ContractCatalog.asset` заполнен для `Standard`, `Urgent` и fail-closed `Receipt`.
+- `ContractDto` передаёт `typeLocalizationKey` и `typeUiClass`.
+- `ContractWorld.ToDto()` и server accept message используют metadata каталога.
+- Добавлен общий `ContractTypePresentation`; switch по contract type удалён из `ContractsMarketTabController` и `CharacterWindow/ContractsTab`.
+- `ContractData.GetTypeDisplayName()`/`GetTypeColor()` больше не содержат фиксированные type branches.
+
+**Проверки:**
+- `refresh_unity(scope=scripts, compile=request)` выполнен
+- `check_compile_errors`: **No compile errors**
+- `ContractCatalog.Validate()`: **valid=True**
+- Play Mode, UI smoke test и screenshots не выполнялись
+
+---
+
 ## Итерация от 2026-08-18
 
 **Задача:** Этап 15C реализации аудита — синхронизировать `ContractCatalog` с `MarketConfig` через custom editor (`MKT-DOM-001`).

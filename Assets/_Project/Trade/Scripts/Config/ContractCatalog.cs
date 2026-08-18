@@ -55,6 +55,18 @@ namespace ProjectC.Trade.Config
 
             [Tooltip("Receipt semantics are not enabled unless the full acceptance/settlement flow exists.")]
             public bool isReceiptContract;
+
+            [Tooltip("Localization key for the contract type badge in client UI.")]
+            public string localizationKey = "";
+
+            [Tooltip("USS class for the contract type badge in client UI.")]
+            public string uiClass = "";
+
+            [Tooltip("Fallback text used in server-side operation messages.")]
+            public string displayNameFallback = "";
+
+            [ColorUsage(false, true)]
+            public Color uiColor = Color.white;
         }
 
         [Header("Locations")]
@@ -258,6 +270,12 @@ namespace ProjectC.Trade.Config
                     if (definition.publishable) hasPublishableType = true;
                     if (definition.publishable && definition.isReceiptContract)
                         errors.Add($"contract type '{definition.type}' cannot be publishable before Receipt flow is implemented");
+                    if (string.IsNullOrWhiteSpace(definition.localizationKey))
+                        errors.Add($"contractTypes[{i}] localizationKey is empty");
+                    if (string.IsNullOrWhiteSpace(definition.uiClass))
+                        errors.Add($"contractTypes[{i}] uiClass is empty");
+                    if (string.IsNullOrWhiteSpace(definition.displayNameFallback))
+                        errors.Add($"contractTypes[{i}] displayNameFallback is empty");
                     if (definition.rewardMultiplier < 0f)
                         errors.Add($"contractTypes[{i}] rewardMultiplier must be >= 0");
                     if (definition.timeLimitSeconds < 0f)
@@ -307,7 +325,11 @@ namespace ProjectC.Trade.Config
                     rewardMultiplier = 1f,
                     useServerTimeLimit = true,
                     timeLimitSeconds = 300f,
-                    isReceiptContract = false
+                    isReceiptContract = false,
+                    localizationKey = "ui.contract.type.standard",
+                    uiClass = "type-standard",
+                    displayNameFallback = "[Стандарт]",
+                    uiColor = new Color(0.3f, 0.6f, 1f)
                 },
                 new ContractTypeDefinition
                 {
@@ -316,7 +338,11 @@ namespace ProjectC.Trade.Config
                     rewardMultiplier = 1.5f,
                     useServerTimeLimit = true,
                     timeLimitSeconds = 150f,
-                    isReceiptContract = false
+                    isReceiptContract = false,
+                    localizationKey = "ui.contract.type.urgent",
+                    uiClass = "type-urgent",
+                    displayNameFallback = "[Срочный]",
+                    uiColor = new Color(1f, 0.5f, 0f)
                 },
                 new ContractTypeDefinition
                 {
@@ -325,7 +351,11 @@ namespace ProjectC.Trade.Config
                     rewardMultiplier = 1f,
                     useServerTimeLimit = true,
                     timeLimitSeconds = 600f,
-                    isReceiptContract = true
+                    isReceiptContract = true,
+                    localizationKey = "ui.contract.type.receipt",
+                    uiClass = "type-receipt",
+                    displayNameFallback = "[Расписка]",
+                    uiColor = new Color(0.3f, 1f, 0.3f)
                 }
             };
 

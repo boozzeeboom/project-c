@@ -17,7 +17,7 @@ MonoBehaviour:
   scheduleType: 0
   routes:
   - fromLocationId: PRIMIUM
-    toLocationId: DockStation_Farm_0_0
+    toLocationId: PRIMIUM_FARM_0_0
     dwellTimeSec: 90
     dwellRandomAddMinSec: 0
     dwellRandomAddMaxSec: 0

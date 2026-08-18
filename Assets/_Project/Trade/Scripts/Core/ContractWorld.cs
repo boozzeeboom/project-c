@@ -691,7 +691,7 @@ namespace ProjectC.Trade.Core
 
             SaveAll();
 
-            return ContractOpResult.Ok($"Контракт принят: {contract.GetTypeDisplayName()}", contract);
+            return ContractOpResult.Ok($"Контракт принят: {contract.GetTypeDisplayName(_catalog)}", contract);
         }
 
         /// <summary>
@@ -1037,10 +1037,22 @@ namespace ProjectC.Trade.Core
         {
             if (c == null) return default;
             string displayName = Resolver != null ? Resolver.GetDisplayName(c.itemId) : c.itemId;
+            string typeLocalizationKey = null;
+            string typeUiClass = null;
+            if (_catalog != null
+                && _catalog.TryGetContractType(c.type, out var typeDefinition)
+                && typeDefinition != null)
+            {
+                typeLocalizationKey = typeDefinition.localizationKey;
+                typeUiClass = typeDefinition.uiClass;
+            }
+
             return new ContractDto
             {
                 contractId = c.contractId,
                 type = (byte)c.type,
+                typeLocalizationKey = typeLocalizationKey,
+                typeUiClass = typeUiClass,
                 state = (byte)c.state,
                 itemId = c.itemId,
                 displayName = displayName,

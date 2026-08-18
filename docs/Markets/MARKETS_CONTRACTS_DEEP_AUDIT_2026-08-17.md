@@ -1413,3 +1413,69 @@ The following documentation is currently inconsistent with code and must be upda
 - Полный verification pass этапов 4–15C.
 - Полная Receipt semantics и localization для `UnsupportedContractType`.
 - Разделение runtime storage контрактов на `ContractsById` / `LocationOffers` / `ActiveByPlayer` / `TerminalHistory`.
+
+---
+
+## 33. Этап 15D — catalog-driven presentation для contract types (`MKT-DOM-001`)
+
+**Дата:** 18 августа 2026 г.
+**Scope:** убрать type-specific mapping из domain/UI-кода и передавать presentation metadata вместе с `ContractDto`.
+
+### Изменения
+
+- `ContractCatalog.ContractTypeDefinition` получил `localizationKey`, `uiClass`, `displayNameFallback` и `uiColor`.
+- `ContractCatalog.Validate()` теперь отклоняет type definition без presentation metadata.
+- `ContractCatalog.asset` заполнен metadata для `Standard`, `Urgent` и fail-closed `Receipt`; каталог остаётся valid.
+- `ContractDto` передаёт `typeLocalizationKey` и `typeUiClass` вместе с type code.
+- `ContractWorld.ToDto()` получает metadata из `_catalog`, а server-side accept message использует `GetTypeDisplayName(_catalog)`.
+- Добавлен общий `ContractTypePresentation` для `MarketWindow` и `CharacterWindow.ContractsTab`; UI больше не содержит switch по `ContractType`.
+- `ContractData.GetTypeDisplayName()` и `GetTypeColor()` используют catalog definition, а не фиксированные `Standard/Urgent/Receipt` ветки.
+- UI Toolkit rows удаляют ранее применённый USS class через `userData`, поэтому повторное использование `ListView` rows не зависит от фиксированного списка типов.
+
+### Проверка
+
+- `refresh_unity(scope=scripts, compile=request)` выполнен.
+- `check_compile_errors`: **No compile errors**.
+- `ContractCatalog.Validate()`: `valid=True`, `errors=0`.
+- Проверены три definitions: `Standard`, `Urgent`, `Receipt` имеют localization key, USS class и fallback.
+- Play Mode, UI smoke test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- Legacy compatibility wrapper `ContractData.Create()` всё ещё содержит старые аргументы времени и switch; runtime generation использует `CreateConfigured()` из catalog definitions.
+- `_serverTimeLimits` в `ContractWorld` и три serialized timer override поля `ContractServer` остаются legacy compatibility path; их нужно вынести в generic catalog/override collection отдельным этапом без изменения текущих timer values.
+- USS declarations остаются статическими style definitions; data-driven catalog выбирает class, но не генерирует stylesheet.
+- Полный verification pass, NPC trade smoke, persistence/network stress и screenshots остаются открытыми.
+
+---
+
+## 34. Этап 15E — миграция `WorldScene_0_0` и canonical NPC route IDs (`MKT-DOM-001`)
+
+**Дата:** 18 августа 2026 г.
+
+### Изменения
+
+- Bootstrap-сцена не изменялась: она остаётся загрузочной сценой с серверными компонентами.
+- В `WorldScene_0_0` назначены `MarketConfig` для `MarketZone_Secund`, `MarketZone_Tertius` и `MarketZone_Quartus`; `MarketZone_Primium` уже был настроен.
+- Runtime inventory сцены подтвердил 12 `MarketZone`, все с canonical `LocationId` и назначенными `MarketConfig`, включая farm/road zones.
+- `DockStation_Farm_0_0.asset` сохранён с прежним `stationId`, но его `locationId` приведён к canonical `PRIMIUM_FARM_0_0`.
+- В `NpcShipSchedule_Courier` и `NpcShipSchedule_Trader` `DockStation_Farm_0_0` заменён на `PRIMIUM_FARM_0_0` только в route endpoints.
+- Удалён stale duplicate `Assets/_Project/Resources/PeacefulShip/DockStationDefinition_TestZone.asset`; сценой используется `Assets/_Project/Docking/Resources/Data/DockStationDefinition_TEST_NPC.asset`.
+- Для `Средняя 0_0` в `WorldScene_0_0` заполнен `OuterCommZone.stationId = DockStation_Farm_0_0`, чтобы он совпадал с `DockStationController.StationId`.
+
+### Проверка
+
+- Static asset audit: `markets=14`, `docks=11`, `routes=19`.
+- Missing route endpoints: `market=0`, `dock=0`.
+- Duplicate dock canonical IDs: `0`.
+- Scene dock audit: `dockControllers=10`, `mismatches=0`.
+- `refresh_unity(scope=assets, compile=none)` выполнен.
+- `check_compile_errors`: **No compile errors**.
+- `WorldScene_0_0` validation выявила один существующий unrelated issue: missing script на `[Ship_Key_Container]/[KeyRod_ShipHeavy]`; этот объект не изменялся.
+- Play Mode, NPC trade smoke и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- Включение farm/road/test locations в `ContractCatalog` по-прежнему требует полного pairwise distance graph.
+- NPC trade smoke с разным регистром IDs ещё не запускался в Play Mode.
+- Full verification pass persistence/network/UI остаётся открытым.

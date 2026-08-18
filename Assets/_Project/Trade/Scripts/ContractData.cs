@@ -243,29 +243,32 @@ namespace ProjectC.Trade
         /// <summary>
         /// Получить отображаемое имя типа контракта
         /// </summary>
-        public string GetTypeDisplayName()
+        public string GetTypeDisplayName(ContractCatalog catalog = null)
         {
-            switch (type)
+            if (catalog != null
+                && catalog.TryGetContractType(type, out var definition)
+                && definition != null
+                && !string.IsNullOrWhiteSpace(definition.displayNameFallback))
             {
-                case ContractType.Standard: return "[Стандарт]";
-                case ContractType.Urgent: return "[Срочный]";
-                case ContractType.Receipt: return "[Расписка]";
-                default: return type.ToString();
+                return definition.displayNameFallback;
             }
+
+            return type.ToString();
         }
 
         /// <summary>
         /// Получить цвет типа контракта для UI
         /// </summary>
-        public Color GetTypeColor()
+        public Color GetTypeColor(ContractCatalog catalog = null)
         {
-            switch (type)
+            if (catalog != null
+                && catalog.TryGetContractType(type, out var definition)
+                && definition != null)
             {
-                case ContractType.Standard: return new Color(0.3f, 0.6f, 1f); // синий
-                case ContractType.Urgent: return new Color(1f, 0.5f, 0f);     // оранжевый
-                case ContractType.Receipt: return new Color(0.3f, 1f, 0.3f);  // зелёный
-                default: return Color.white;
+                return definition.uiColor;
             }
+
+            return Color.white;
         }
 
         /// <summary>

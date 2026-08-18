@@ -17,14 +17,14 @@ MonoBehaviour:
   scheduleType: 0
   routes:
   - fromLocationId: PRIMIUM
-    toLocationId: DockStation_Farm_0_0
+    toLocationId: PRIMIUM_FARM_0_0
     dwellTimeSec: 60
     dwellRandomAddMinSec: 20
     dwellRandomAddMaxSec: 1000
     flightDurationSec: 0
     preferredShipClass: 3
     demandCategory: 0
-  - fromLocationId: DockStation_Farm_0_0
+  - fromLocationId: PRIMIUM_FARM_0_0
     toLocationId: PRIMIUM_FARM_0_1
     dwellTimeSec: 60
     dwellRandomAddMinSec: 20

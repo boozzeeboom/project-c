@@ -349,8 +349,17 @@ Tools > ProjectC > Trade > Migrate MarketZones to MarketConfig refs
 - Новые записи создаются disabled, чтобы не нарушить обязательный distance graph до настройки distances.
 - Текущий каталог синхронизирован с 14 найденными `MarketConfig` assets; 10 новых locations добавлены disabled.
 
+### Реализовано в этапе 15E
+
+- Bootstrap-сцена не изменялась: она остаётся загрузочной сценой.
+- В `WorldScene_0_0` назначены `MarketConfig` для четырёх основных `MarketZone`; runtime inventory подтвердил 12 canonical `MarketZone` с конфигами, включая farm/road zones.
+- `DockStation_Farm_0_0.locationId` и NPC route endpoints приведены к `PRIMIUM_FARM_0_0`; `stationId` оставлен стабильным `DockStation_Farm_0_0`.
+- Для farm 0_0 заполнен `OuterCommZone.stationId`, чтобы он совпадал с `DockStationController.StationId`.
+- Удалён неиспользуемый duplicate `Resources/PeacefulShip/DockStationDefinition_TestZone.asset`; сохранён scene-referenced `DockStationDefinition_TEST_NPC.asset`.
+- Static audit: 19 route legs, missing market/dock endpoints = 0, duplicate dock IDs = 0.
+
 ### Оставшиеся фазы
 
-- Выполнить миграцию/валидацию WorldScene и NPC route assets.
 - Запустить NPC trade verification для маршрутов с различным регистром location IDs.
 - Для включения автоматически найденных farm/road/test locations настроить их distances и включить соответствующие catalog entries.
+- Проверить и устранить существующий missing script `[Ship_Key_Container]/[KeyRod_ShipHeavy]` отдельной задачей.

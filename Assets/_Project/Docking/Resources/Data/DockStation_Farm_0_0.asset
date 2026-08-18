@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DockStation_Farm_0_0
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Core.DockStationDefinition
   stationId: DockStation_Farm_0_0
-  locationId: DockStation_Farm_0_0
+  locationId: PRIMIUM_FARM_0_0
   displayName: DockStation Farm 0-0
   platformCenter: {x: 40377, y: 2502.98, z: 39434}
   platformAltitude: 2502.98

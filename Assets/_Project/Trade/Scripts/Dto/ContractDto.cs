@@ -20,8 +20,14 @@ namespace ProjectC.Trade.Dto
         /// <summary>Уникальный ID: contract_{fromLocation}_{itemId}_{index}.</summary>
         public string contractId;
 
-        /// <summary>Тип контракта (Standard / Urgent / Receipt). См. <see cref="ProjectC.Trade.ContractType"/>.</summary>
+        /// <summary>Тип контракта (configured in ContractCatalog). См. <see cref="ProjectC.Trade.ContractType"/>.</summary>
         public byte type;
+
+        /// <summary>Catalog-driven localization key for the type badge.</summary>
+        public string typeLocalizationKey;
+
+        /// <summary>Catalog-driven USS class for the type badge.</summary>
+        public string typeUiClass;
 
         /// <summary>Состояние контракта (Pending / Active / Completed / Failed). См. <see cref="ProjectC.Trade.ContractState"/>.</summary>
         public byte state;
@@ -60,6 +66,8 @@ namespace ProjectC.Trade.Dto
         {
             serializer.SerializeValue(ref contractId);
             serializer.SerializeValue(ref type);
+            serializer.SerializeValue(ref typeLocalizationKey);
+            serializer.SerializeValue(ref typeUiClass);
             serializer.SerializeValue(ref state);
             serializer.SerializeValue(ref itemId);
             serializer.SerializeValue(ref displayName);

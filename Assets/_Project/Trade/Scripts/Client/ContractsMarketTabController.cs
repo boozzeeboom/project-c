@@ -283,13 +283,17 @@ namespace ProjectC.Trade.Client
             var typeLabel = row.Q<Label>("type");
             if (typeLabel != null)
             {
+                var contractType = (ContractType)contract.type;
                 typeLabel.text = active
-                    ? $"{GetContractTypeDisplayName((ContractType)contract.type)} [ВЗЯТ]"
-                    : GetContractTypeDisplayName((ContractType)contract.type);
-                typeLabel.RemoveFromClassList("type-standard");
-                typeLabel.RemoveFromClassList("type-urgent");
-                typeLabel.RemoveFromClassList("type-receipt");
-                typeLabel.AddToClassList(GetContractTypeClass((ContractType)contract.type));
+                    ? $"{ContractTypePresentation.GetDisplayName(contractType, contract.typeLocalizationKey)} [ВЗЯТ]"
+                    : ContractTypePresentation.GetDisplayName(contractType, contract.typeLocalizationKey);
+                string previousTypeClass = typeLabel.userData as string;
+                if (!string.IsNullOrWhiteSpace(previousTypeClass))
+                    typeLabel.RemoveFromClassList(previousTypeClass);
+
+                string typeClass = ContractTypePresentation.GetUiClass(contractType, contract.typeUiClass);
+                typeLabel.AddToClassList(typeClass);
+                typeLabel.userData = typeClass;
             }
 
             var itemLabel = row.Q<Label>("item");
@@ -336,29 +340,6 @@ namespace ProjectC.Trade.Client
             return -1;
         }
 
-        private static string GetContractTypeDisplayName(ContractType type)
-        {
-            string key;
-            switch (type)
-            {
-                case ContractType.Standard: key = "standard"; break;
-                case ContractType.Urgent: key = "urgent"; break;
-                case ContractType.Receipt: key = "receipt"; break;
-                default: return type.ToString();
-            }
-            return Loc.Get($"ui.contract.type.{key}", type.ToString());
-        }
-
-        private static string GetContractTypeClass(ContractType type)
-        {
-            switch (type)
-            {
-                case ContractType.Standard: return "type-standard";
-                case ContractType.Urgent: return "type-urgent";
-                case ContractType.Receipt: return "type-receipt";
-                default: return "type-standard";
-            }
-        }
 
         private static string GetContractTimeRemainingString(ContractDto contract)
         {

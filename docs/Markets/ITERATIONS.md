@@ -255,7 +255,7 @@
 
 **Задача:** Этап 14 реализации аудита — сделать lifecycle общего `MarketZoneRegistry` явным (`MKT-DOM-002` / `REF-4004`).
 
-**Коммит:** `a6ff016f` — MKT-DOM-002: Сделать lifecycle MarketZoneRegistry явным
+**Коммит:** `01d26981` — MKT-DOM-002: Сделать lifecycle MarketZoneRegistry явным
 
 **Изменения:**
 - `Assets/_Project/Trade/Scripts/Network/MarketZoneRegistry.cs` — session-owner lifecycle; очистка только после освобождения последнего server owner

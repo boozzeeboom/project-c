@@ -292,7 +292,7 @@
 
 **Задача:** Этап 15C реализации аудита — синхронизировать `ContractCatalog` с `MarketConfig` через custom editor (`MKT-DOM-001`).
 
-**Коммит:** будет зафиксирован после проверки
+**Коммит:** `a0edfd0c` — MKT-DOM-001: Синхронизировать ContractCatalog с MarketConfig
 
 **Изменения:**
 - `Assets/_Project/Trade/Scripts/Editor/ContractCatalogEditor.cs` — custom editor с кнопкой сканирования `MarketConfig` assets

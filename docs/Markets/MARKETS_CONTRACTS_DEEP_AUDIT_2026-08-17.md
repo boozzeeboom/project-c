@@ -1355,13 +1355,9 @@ The following documentation is currently inconsistent with code and must be upda
 - `git diff --check` выполняется перед коммитом.
 - Play Mode, NPC trade smoke test и screenshots не выполнялись.
 
-### Что ещё не закрыто
-
-- Полный verification pass этапов 4–15B.
-- Полная Receipt semantics и localization для `UnsupportedContractType`.
-- Разделение runtime storage контрактов на `ContractsById` / `LocationOffers` / `ActiveByPlayer` / `TerminalHistory`.
-
 ---
+
+
 
 ## 31. Реализованный этап 15B — data-driven contract catalog (`MKT-DOM-001` / `REF-4003`)
 
@@ -1384,3 +1380,36 @@ The following documentation is currently inconsistent with code and must be upda
 - `ContractCatalog.asset` найден в Unity AssetDatabase.
 - Scene YAML и serialized scene references не изменялись.
 - Play Mode, NPC trade smoke test и screenshots не выполнялись.
+
+---
+
+## 32. Реализованный этап 15C — editor-синхронизация `ContractCatalog` с `MarketConfig` (`MKT-DOM-001`)
+
+**Дата:** 18 августа 2026 г.
+**Scope:** устранить ручное копирование location ID при обновлении `ContractCatalog`.
+
+### Изменения
+
+- Добавлен `Assets/_Project/Trade/Scripts/Editor/ContractCatalogEditor.cs`.
+- В инспекторе `ContractCatalog` появилась кнопка `Scan MarketConfigs and add missing locations`.
+- Сканируется только canonical source path `Assets/_Project/Trade/Data/Markets` по типу `MarketConfig`.
+- `locationId` нормализуется через общий `MarketConfigCollector.NormalizeLocationId()`.
+- Новые location definitions добавляются автоматически, без ручного поиска и копирования ID.
+- Существующие записи и их `enabled` flags сохраняются; новые записи добавляются с `enabled=false`.
+- Новые locations намеренно не включаются автоматически: для них сначала требуется настроить полный pairwise distance graph, иначе `ContractCatalog.Validate()` должен отклонить каталог.
+- Кнопка `Validate Catalog` оставлена в том же editor для немедленной проверки после настройки distances.
+- Текущий `ContractCatalog.asset` синхронизирован: найдено 14 `MarketConfig` locations, из них 10 новых добавлены как disabled.
+
+### Проверка
+
+- `refresh_unity(scope=scripts, compile=request)` выполнен.
+- `check_compile_errors`: **No compile errors**.
+- One-off editor sync добавил в asset: `PRIMIUM_FARM_0_0`, `PRIMIUM_FARM_0_1`, `PRIMIUM_FARM_0_2`, `PRIMIUM_FARM_0_3`, `PRIMIUM_FARM_0_4`, `PRIMIUM_FARM_1_1`, `PRIMIUM_TEST_ZONE`, `ROAD TO QUARTUS`, `ROAD TO SECUND`, `ROAD TO TERTIUS`.
+- Scene YAML и serialized scene references не изменялись.
+- Play Mode, NPC trade smoke test и screenshots не выполнялись; runtime-проверка остаётся отдельным пользовательским шагом.
+
+### Что ещё не закрыто
+
+- Полный verification pass этапов 4–15C.
+- Полная Receipt semantics и localization для `UnsupportedContractType`.
+- Разделение runtime storage контрактов на `ContractsById` / `LocationOffers` / `ActiveByPlayer` / `TerminalHistory`.

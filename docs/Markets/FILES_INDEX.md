@@ -35,6 +35,7 @@
 | Файл | Назначение |
 |------|------------|
 | `MarketConfig.cs` | ScriptableObject рынка (locationId, displayName, items: List<MarketItemConfig>) |
+| `ContractCatalog.cs` | Validated ScriptableObject locations, route distances и contract type definitions |
 | `MarketItemConfig.cs` | [Serializable] struct: itemId, basePrice, initialStock, regenPerTick, allowBuy/allowSell, factionRestriction, definition (ссылка на TradeItemDefinition) |
 
 ## `Assets/_Project/Trade/Scripts/Core/` — server-only POCO
@@ -99,6 +100,7 @@
 
 | Файл | Назначение |
 |------|------------|
+| `ContractCatalogEditor.cs` | Custom editor: сканирует MarketConfig assets и добавляет отсутствующие canonical locations в ContractCatalog |
 | `MarketAssetGenerator.cs` | Editor утилита для генерации MarketConfig ассетов |
 | `MarketItemIDInitializer.cs` | Editor утилита для инициализации itemId |
 | `TradeAssetGenerator.cs` | Editor утилита для генерации TradeItemDefinition ассетов |

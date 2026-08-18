@@ -21,6 +21,26 @@ MonoBehaviour:
     enabled: 1
   - locationId: QUARTUS
     enabled: 1
+  - locationId: PRIMIUM_FARM_0_0
+    enabled: 0
+  - locationId: PRIMIUM_FARM_0_1
+    enabled: 0
+  - locationId: PRIMIUM_FARM_0_2
+    enabled: 0
+  - locationId: PRIMIUM_FARM_0_3
+    enabled: 0
+  - locationId: PRIMIUM_FARM_0_4
+    enabled: 0
+  - locationId: PRIMIUM_FARM_1_1
+    enabled: 0
+  - locationId: PRIMIUM_TEST_ZONE
+    enabled: 0
+  - locationId: ROAD TO QUARTUS
+    enabled: 0
+  - locationId: ROAD TO SECUND
+    enabled: 0
+  - locationId: ROAD TO TERTIUS
+    enabled: 0
   distances:
   - fromLocationId: PRIMIUM
     toLocationId: SECUNDUS
@@ -45,17 +65,17 @@ MonoBehaviour:
     publishable: 1
     rewardMultiplier: 1
     useServerTimeLimit: 1
-    timeLimitSeconds: 300
+    timeLimitSeconds: 9000
     isReceiptContract: 0
   - type: 1
     publishable: 1
     rewardMultiplier: 1.5
     useServerTimeLimit: 1
-    timeLimitSeconds: 150
+    timeLimitSeconds: 4500
     isReceiptContract: 0
   - type: 2
     publishable: 0
     rewardMultiplier: 1
     useServerTimeLimit: 1
-    timeLimitSeconds: 600
+    timeLimitSeconds: 12000
     isReceiptContract: 1

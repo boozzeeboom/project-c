@@ -340,7 +340,17 @@ Tools > ProjectC > Trade > Migrate MarketZones to MarketConfig refs
 - `ContractWorld` получает каталог при инициализации и больше не содержит hardcoded location list, fixed distance matrix или fixed generator branches.
 - `ContractServer` загружает каталог из инспектора или `Resources/ContractCatalog`, без изменения BootstrapScene YAML.
 
+### Реализовано в этапе 15C
+
+- Добавлен custom editor `Assets/_Project/Trade/Scripts/Editor/ContractCatalogEditor.cs`.
+- Кнопка `Scan MarketConfigs and add missing locations` ищет все `MarketConfig` в `Assets/_Project/Trade/Data/Markets`.
+- IDs проходят тот же canonical normalizer, что и runtime lookup.
+- Отсутствующие locations добавляются в `ContractCatalog.locations` автоматически.
+- Новые записи создаются disabled, чтобы не нарушить обязательный distance graph до настройки distances.
+- Текущий каталог синхронизирован с 14 найденными `MarketConfig` assets; 10 новых locations добавлены disabled.
+
 ### Оставшиеся фазы
 
 - Выполнить миграцию/валидацию WorldScene и NPC route assets.
 - Запустить NPC trade verification для маршрутов с различным регистром location IDs.
+- Для включения автоматически найденных farm/road/test locations настроить их distances и включить соответствующие catalog entries.

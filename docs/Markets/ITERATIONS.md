@@ -290,6 +290,25 @@
 
 ## Итерация от 2026-08-18
 
+**Задача:** Этап 15C реализации аудита — синхронизировать `ContractCatalog` с `MarketConfig` через custom editor (`MKT-DOM-001`).
+
+**Коммит:** будет зафиксирован после проверки
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Editor/ContractCatalogEditor.cs` — custom editor с кнопкой сканирования `MarketConfig` assets
+- `Assets/_Project/Trade/Resources/ContractCatalog.asset` — автоматически добавлены 10 найденных locations как disabled entries
+- `docs/Markets/MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md` — добавлен этап 15C и зафиксирована политика disabled locations до настройки distances
+- `docs/Markets/MARKET_ID_REFACTOR_DESIGN.md` — описана editor-синхронизация каталога
+- `docs/Markets/FILES_INDEX.md` — добавлены `ContractCatalog` и `ContractCatalogEditor`
+- `refresh_unity(scope=scripts, compile=request)` выполнен
+- `check_compile_errors`: **No compile errors**
+- Custom editor создан Unity Editor'ом как `ProjectC.Trade.Editor.ContractCatalogEditor`; catalog validation: **valid**
+- Scene YAML, Play Mode и screenshots не изменялись/не выполнялись
+
+---
+
+## Итерация от 2026-08-18
+
 **Задача:** Этап 15B реализации аудита — вынести locations, distances и contract type definitions в validated `ContractCatalog` (`MKT-DOM-001` / `REF-4003`).
 
 **Коммит:** `efc25821` — MKT-DOM-001: Вынести locations и contract types в ContractCatalog

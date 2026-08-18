@@ -392,3 +392,24 @@
 - `refresh_unity(scope=scripts, compile=request)` выполнен
 - `check_compile_errors`: **No compile errors**
 - Полный Play Mode/network/persistence/UI verification pass отложен до общего этапа проверки
+
+---
+
+## Рабочая итерация от 2026-08-18 — этап 16A
+
+**Задача:** разделить runtime storage контрактов на registry, offers, active indexes и terminal history (`MKT-CON-001/002`, архитектурная часть).
+
+**Статус:** изменения применены; commit hash будет зафиксирован после отдельного commit шага.
+
+**Изменения:**
+- Добавлен `ContractRuntimeStore` с `ContractsById`, `LocationOffers`, `ActiveByPlayer` и `TerminalHistory`.
+- `LocationOffers` сохраняет только `Pending` non-Receipt offers.
+- `ActiveByPlayer` обновляется при accept/complete/fail/tick и очищается при загрузке stale IDs.
+- `TerminalHistory` используется retention policy после успешного persistence.
+- `ContractSaveData` schema 2 и существующий формат repository snapshots сохранены.
+
+**Проверки:**
+- project-wide grep legacy storage names: совпадений не найдено
+- `refresh_unity(scope=scripts, compile=request)` выполнен
+- `check_compile_errors`: **No compile errors**
+- Полный Play Mode/network/persistence/UI verification pass отложен до общего этапа проверки

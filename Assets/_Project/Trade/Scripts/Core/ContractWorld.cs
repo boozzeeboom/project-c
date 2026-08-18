@@ -9,10 +9,8 @@ namespace ProjectC.Trade.Core
 {
     /// <summary>
     /// Серверный singleton, держащий всё runtime-состояние контрактной подсистемы:
-    ///   • Словарь доступных контрактов (contractId → ContractData)
-    ///   • Словарь активных контрактов игроков (playerId → List&lt;contractId&gt;)
+    ///   • ContractRuntimeStore: ContractsById, LocationOffers, ActiveByPlayer, TerminalHistory
     ///   • Словарь долгов игроков (playerId → ContractDebt)
-    ///   • Словарь контрактов по локации (locationId → List&lt;contractId&gt;)
     ///   • Validated ContractCatalog с locations, distances и contract type definitions
     ///
     /// НЕ MonoBehaviour. НЕ NetworkBehaviour. НЕ сериализуется в сцену.
@@ -35,10 +33,8 @@ namespace ProjectC.Trade.Core
         public ContractWorldItemResolver Resolver { get; private set; }
 
         // === Runtime state ===
-        private readonly Dictionary<string, ContractData> _availableContracts = new Dictionary<string, ContractData>();
-        private readonly Dictionary<ulong, List<string>> _playerContracts = new Dictionary<ulong, List<string>>();
+        private readonly ContractRuntimeStore _runtimeStore = new ContractRuntimeStore();
         private readonly Dictionary<ulong, ContractDebt> _playerDebts = new Dictionary<ulong, ContractDebt>();
-        private readonly Dictionary<string, List<string>> _locationContracts = new Dictionary<string, List<string>>();
 
         // Immutable catalog reference for locations, route distances and contract types.
         private readonly ContractCatalog _catalog;
@@ -46,11 +42,11 @@ namespace ProjectC.Trade.Core
 
         // Кэш базовой цены по itemId (для расчёта reward в CreateConfigured).
         // Заполняется из TradeItemDefinition через Resolver.
-        // Используется ContractData.Create.
+        // Используется ContractData.CreateConfigured.
         private readonly Dictionary<string, float> _itemBasePrice = new Dictionary<string, float>();
 
-        public IReadOnlyDictionary<string, ContractData> AvailableContracts => _availableContracts;
-        public IReadOnlyDictionary<ulong, List<string>> PlayerContracts => _playerContracts;
+        public IReadOnlyDictionary<string, ContractData> AvailableContracts => _runtimeStore.ContractsById;
+        public IReadOnlyDictionary<ulong, List<string>> PlayerContracts => _runtimeStore.ActiveByPlayer;
         public IReadOnlyDictionary<ulong, ContractDebt> PlayerDebts => _playerDebts;
         public ContractCatalog Catalog => _catalog;
 
@@ -132,17 +128,15 @@ namespace ProjectC.Trade.Core
             }
 
             IsInitialized = true;
-            Debug.Log($"[ContractWorld] инициализирован: items={_itemBasePrice.Count}, contracts={_availableContracts.Count}, loadStatus={loadStatus}");
+            Debug.Log($"[ContractWorld] инициализирован: items={_itemBasePrice.Count}, contracts={_runtimeStore.ContractsById.Count}, loadStatus={loadStatus}");
         }
 
         public void Shutdown()
         {
             SaveAll();
 
-            _availableContracts.Clear();
-            _playerContracts.Clear();
+            _runtimeStore.Clear();
             _playerDebts.Clear();
-            _locationContracts.Clear();
             _itemBasePrice.Clear();
             _persistenceWriteBlocked = false;
             IsInitialized = false;
@@ -168,10 +162,11 @@ namespace ProjectC.Trade.Core
         {
             if (Repository == null || _persistenceWriteBlocked) return false;
 
+            _runtimeStore.RebuildTerminalHistory();
             var data = new ContractSaveData();
 
             // Contracts
-            data.contracts.AddRange(_availableContracts.Values);
+            data.contracts.AddRange(_runtimeStore.ContractsById.Values);
 
             // Debts
             foreach (var kvp in _playerDebts)
@@ -185,7 +180,7 @@ namespace ProjectC.Trade.Core
             }
 
             // Player → contract IDs
-            foreach (var kvp in _playerContracts)
+            foreach (var kvp in _runtimeStore.ActiveByPlayer)
             {
                 data.playerContracts.Add(new PlayerContractEntry
                 {
@@ -195,7 +190,7 @@ namespace ProjectC.Trade.Core
             }
 
             // Location → contract IDs
-            foreach (var kvp in _locationContracts)
+            foreach (var kvp in _runtimeStore.LocationOffers)
             {
                 data.locationContracts.Add(new LocationContractEntry
                 {
@@ -219,19 +214,22 @@ namespace ProjectC.Trade.Core
             int maxRecords = Mathf.Max(0, MaxTerminalRecordsPerPlayer);
             var terminalByPlayer = new Dictionary<ulong, List<KeyValuePair<string, ContractData>>>();
 
-            foreach (var kvp in _availableContracts)
+            foreach (var contractId in new List<string>(_runtimeStore.TerminalHistory))
             {
-                var contract = kvp.Value;
-                if (contract == null
+                if (!_runtimeStore.ContractsById.TryGetValue(contractId, out var contract)
+                    || contract == null
                     || (contract.state != ContractState.Completed && contract.state != ContractState.Failed))
+                {
+                    _runtimeStore.TerminalHistory.Remove(contractId);
                     continue;
+                }
 
                 if (!terminalByPlayer.TryGetValue(contract.assignedPlayerId, out var records))
                 {
                     records = new List<KeyValuePair<string, ContractData>>();
                     terminalByPlayer[contract.assignedPlayerId] = records;
                 }
-                records.Add(kvp);
+                records.Add(new KeyValuePair<string, ContractData>(contractId, contract));
             }
 
             int removed = 0;
@@ -245,11 +243,9 @@ namespace ProjectC.Trade.Core
                 for (int i = 0; i < removeCount; i++)
                 {
                     string contractId = records[i].Key;
-                    if (!_availableContracts.TryGetValue(contractId, out var contract)) continue;
+                    if (!_runtimeStore.ContractsById.TryGetValue(contractId, out var contract)) continue;
 
-                    _availableContracts.Remove(contractId);
-                    RemovePlayerContractReference(contract.assignedPlayerId, contractId);
-                    RemoveContractFromLocationBoard(contract.fromLocationId, contractId);
+                    _runtimeStore.RemoveContract(contractId);
                     removed++;
                 }
             }
@@ -301,7 +297,7 @@ namespace ProjectC.Trade.Core
             }
 
             // Contracts
-            _availableContracts.Clear();
+            _runtimeStore.Clear();
             foreach (var c in data.contracts ?? new List<ContractData>())
             {
                 if (c == null || string.IsNullOrEmpty(c.contractId)) continue;
@@ -309,7 +305,7 @@ namespace ProjectC.Trade.Core
                 // Legacy snapshots may contain lowercase or padded location IDs.
                 c.fromLocationId = MarketConfigCollector.NormalizeLocationId(c.fromLocationId);
                 c.toLocationId = MarketConfigCollector.NormalizeLocationId(c.toLocationId);
-                _availableContracts[c.contractId] = c;
+                _runtimeStore.ContractsById[c.contractId] = c;
             }
 
             // Debts — reconstruct ContractDebt objects
@@ -321,36 +317,55 @@ namespace ProjectC.Trade.Core
             }
 
             // Player → contract IDs
-            _playerContracts.Clear();
+            _runtimeStore.ActiveByPlayer.Clear();
             foreach (var e in data.playerContracts ?? new List<PlayerContractEntry>())
             {
-                _playerContracts[e.playerId] = new List<string>(e.contractIds ?? new List<string>());
+                if (e == null) continue;
+
+                var activeIds = new List<string>();
+                foreach (var contractId in e.contractIds ?? new List<string>())
+                {
+                    if (!string.IsNullOrEmpty(contractId) && !activeIds.Contains(contractId))
+                        activeIds.Add(contractId);
+                }
+
+                _runtimeStore.ActiveByPlayer[e.playerId] = activeIds;
             }
 
             // Удаляем устаревшие active-index ссылки из старых snapshots.
             PruneAllPlayerContractIndexes();
 
             // Location → contract IDs
-            _locationContracts.Clear();
+            _runtimeStore.LocationOffers.Clear();
             foreach (var e in data.locationContracts ?? new List<LocationContractEntry>())
             {
                 string locationId = MarketConfigCollector.NormalizeLocationId(e.locationId);
                 if (string.IsNullOrEmpty(locationId)) continue;
 
-                if (!_locationContracts.TryGetValue(locationId, out var contractIds))
+                if (!_runtimeStore.LocationOffers.TryGetValue(locationId, out var contractIds))
                 {
                     contractIds = new List<string>();
-                    _locationContracts[locationId] = contractIds;
+                    _runtimeStore.LocationOffers[locationId] = contractIds;
                 }
 
                 foreach (var contractId in e.contractIds ?? new List<string>())
                 {
-                    if (!string.IsNullOrEmpty(contractId) && !contractIds.Contains(contractId))
+                    if (string.IsNullOrEmpty(contractId)
+                        || !_runtimeStore.ContractsById.TryGetValue(contractId, out var contract)
+                        || contract == null
+                        || contract.state != ContractState.Pending
+                        || contract.isReceiptContract
+                        || contract.fromLocationId != locationId)
+                        continue;
+
+                    if (!contractIds.Contains(contractId))
                         contractIds.Add(contractId);
                 }
             }
 
-            Debug.Log($"[ContractWorld] Loaded {_availableContracts.Count} contracts, {_playerDebts.Count} debts from repository; status={loadStatus}");
+            _runtimeStore.RebuildTerminalHistory();
+
+            Debug.Log($"[ContractWorld] Loaded {_runtimeStore.ContractsById.Count} contracts, {_playerDebts.Count} debts from repository; status={loadStatus}");
             return loadStatus;
         }
 
@@ -374,7 +389,7 @@ namespace ProjectC.Trade.Core
             => _catalog != null && _catalog.HasLocation(locationId);
 
         // ========================================================
-        // ITEMS (для ContractData.Create)
+        // ITEMS (для ContractData.CreateConfigured)
         // ========================================================
 
         private void LoadAvailableItems()
@@ -426,22 +441,22 @@ namespace ProjectC.Trade.Core
             fromLocationId = MarketConfigCollector.NormalizeLocationId(fromLocationId);
             if (!IsValidLocation(fromLocationId)) return;
 
-            if (!_locationContracts.ContainsKey(fromLocationId))
-                _locationContracts[fromLocationId] = new List<string>();
+            if (!_runtimeStore.LocationOffers.ContainsKey(fromLocationId))
+                _runtimeStore.LocationOffers[fromLocationId] = new List<string>();
 
             // Сбрасываем только текущую доску офферов.
             // Active/Completed/Failed records нельзя удалять во время регенерации:
-            // _availableContracts также является registry для уже принятых контрактов.
-            var previousOfferIds = new List<string>(_locationContracts[fromLocationId]);
-            _locationContracts[fromLocationId].Clear();
+            // _runtimeStore.ContractsById также является registry для уже принятых контрактов.
+            var previousOfferIds = new List<string>(_runtimeStore.LocationOffers[fromLocationId]);
+            _runtimeStore.LocationOffers[fromLocationId].Clear();
             foreach (var cid in previousOfferIds)
             {
-                if (!_availableContracts.TryGetValue(cid, out var previousContract))
+                if (!_runtimeStore.ContractsById.TryGetValue(cid, out var previousContract))
                     continue;
 
                 if (previousContract.state == ContractState.Pending)
                 {
-                    _availableContracts.Remove(cid);
+                    _runtimeStore.ContractsById.Remove(cid);
                 }
                 else
                 {
@@ -489,8 +504,7 @@ namespace ProjectC.Trade.Core
                     definition.rewardMultiplier,
                     timeLimit,
                     definition.isReceiptContract);
-                _availableContracts[contract.contractId] = contract;
-                _locationContracts[fromLocationId].Add(contract.contractId);
+                _runtimeStore.AddPendingOffer(fromLocationId, contract);
             }
         }
 
@@ -501,7 +515,7 @@ namespace ProjectC.Trade.Core
         public ContractData GetContract(string contractId)
         {
             if (string.IsNullOrEmpty(contractId)) return null;
-            return _availableContracts.TryGetValue(contractId, out var c) ? c : null;
+            return _runtimeStore.ContractsById.TryGetValue(contractId, out var c) ? c : null;
         }
 
         public ContractDebt GetOrCreateDebt(ulong clientId)
@@ -514,18 +528,18 @@ namespace ProjectC.Trade.Core
 
         public List<string> GetPlayerContractList(ulong clientId)
         {
-            if (_playerContracts.TryGetValue(clientId, out var l)) return l;
+            if (_runtimeStore.ActiveByPlayer.TryGetValue(clientId, out var l)) return l;
             return new List<string>();
         }
 
         public int GetPlayerActiveCount(ulong clientId)
         {
-            if (!_playerContracts.TryGetValue(clientId, out var ids)) return 0;
+            if (!_runtimeStore.ActiveByPlayer.TryGetValue(clientId, out var ids)) return 0;
 
             int activeCount = 0;
             foreach (var contractId in ids)
             {
-                if (_availableContracts.TryGetValue(contractId, out var contract)
+                if (_runtimeStore.ContractsById.TryGetValue(contractId, out var contract)
                     && contract != null
                     && contract.state == ContractState.Active
                     && contract.assignedPlayerId == clientId)
@@ -538,7 +552,7 @@ namespace ProjectC.Trade.Core
 
         private void PruneAllPlayerContractIndexes()
         {
-            foreach (var playerId in new List<ulong>(_playerContracts.Keys))
+            foreach (var playerId in new List<ulong>(_runtimeStore.ActiveByPlayer.Keys))
             {
                 PrunePlayerContractIndex(playerId);
             }
@@ -546,12 +560,12 @@ namespace ProjectC.Trade.Core
 
         private void PrunePlayerContractIndex(ulong clientId)
         {
-            if (!_playerContracts.TryGetValue(clientId, out var ids)) return;
+            if (!_runtimeStore.ActiveByPlayer.TryGetValue(clientId, out var ids)) return;
 
             for (int i = ids.Count - 1; i >= 0; i--)
             {
                 string contractId = ids[i];
-                if (_availableContracts.TryGetValue(contractId, out var contract)
+                if (_runtimeStore.ContractsById.TryGetValue(contractId, out var contract)
                     && contract != null
                     && contract.state == ContractState.Active
                     && contract.assignedPlayerId == clientId)
@@ -564,32 +578,17 @@ namespace ProjectC.Trade.Core
             }
         }
 
-        private void RemovePlayerContractReference(ulong clientId, string contractId)
-        {
-            if (_playerContracts.TryGetValue(clientId, out var ids))
-            {
-                ids.Remove(contractId);
-            }
-        }
-
-        private void RemoveContractFromLocationBoard(string locationId, string contractId)
-        {
-            if (_locationContracts.TryGetValue(locationId, out var ids))
-            {
-                ids.Remove(contractId);
-            }
-        }
 
         public ContractData[] GetAvailableForLocation(string locationId)
         {
             locationId = MarketConfigCollector.NormalizeLocationId(locationId);
             if (string.IsNullOrEmpty(locationId)
-                || !_locationContracts.TryGetValue(locationId, out var ids))
+                || !_runtimeStore.LocationOffers.TryGetValue(locationId, out var ids))
                 return new ContractData[0];
             var result = new List<ContractData>();
             foreach (var cid in ids)
             {
-                if (_availableContracts.TryGetValue(cid, out var c)
+                if (_runtimeStore.ContractsById.TryGetValue(cid, out var c)
                     && c.state == ContractState.Pending
                     && !c.isReceiptContract)
                 {
@@ -605,7 +604,7 @@ namespace ProjectC.Trade.Core
             var result = new List<ContractData>();
             foreach (var cid in ids)
             {
-                if (_availableContracts.TryGetValue(cid, out var c) && c.state == ContractState.Active)
+                if (_runtimeStore.ContractsById.TryGetValue(cid, out var c) && c.state == ContractState.Active)
                     result.Add(c);
             }
             return result.ToArray();
@@ -651,8 +650,8 @@ namespace ProjectC.Trade.Core
 
             // 3. Проверка лимита активных контрактов.
             // Чистим старые snapshots и считаем только реально Active records.
-            if (!_playerContracts.ContainsKey(clientId))
-                _playerContracts[clientId] = new List<string>();
+            if (!_runtimeStore.ActiveByPlayer.ContainsKey(clientId))
+                _runtimeStore.ActiveByPlayer[clientId] = new List<string>();
             else
                 PrunePlayerContractIndex(clientId);
 
@@ -666,10 +665,7 @@ namespace ProjectC.Trade.Core
 
             // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ ===
             contract.Activate(clientId);
-            _availableContracts[contractId] = contract;
-            if (!_playerContracts[clientId].Contains(contractId))
-                _playerContracts[clientId].Add(contractId);
-            RemoveContractFromLocationBoard(contract.fromLocationId, contractId);
+            _runtimeStore.MarkActive(contract, clientId);
 
             SaveAll();
 
@@ -721,8 +717,7 @@ namespace ProjectC.Trade.Core
             if (contract.timeLimit > 0f && contract.timeRemaining <= 0f)
             {
                 contract.Fail();
-                _availableContracts[contractId] = contract;
-                RemovePlayerContractReference(clientId, contractId);
+                _runtimeStore.MarkTerminal(contract);
                 HandleFailedContract(contract, clientId);
                 SaveAll();
                 return ContractOpResult.Fail(ContractResultCode.TimerExpired, "Время контракта истекло!");
@@ -773,15 +768,15 @@ namespace ProjectC.Trade.Core
             // Cargo уже сохранён до этой точки. Только после этого меняем state
             // и начисляем reward — delivery без груза не может выдать награду.
             contract.Complete();
-            _availableContracts[contractId] = contract;
-
-            if (_playerContracts.ContainsKey(clientId))
-                _playerContracts[clientId].Remove(contractId);
+            _runtimeStore.MarkTerminal(contract);
 
             // Начисляем награду. При ошибке записи возвращаем cargo/warehouse
             // к снимку до completion и не переводим контракт в успешный результат.
             if (Repository == null || !Repository.SetCredits(clientId, creditsBefore + contract.reward))
             {
+                contract.state = ContractState.Active;
+                contract.terminalAtUtcTicks = 0L;
+                _runtimeStore.MarkActiveAgain(contract, clientId);
                 RestoreDeliveryState(
                     clientId,
                     contract.toLocationId,
@@ -797,12 +792,7 @@ namespace ProjectC.Trade.Core
             {
                 contract.state = ContractState.Active;
                 contract.terminalAtUtcTicks = 0L;
-                if (!_playerContracts.TryGetValue(clientId, out var restoredIds))
-                {
-                    restoredIds = new List<string>();
-                    _playerContracts[clientId] = restoredIds;
-                }
-                if (!restoredIds.Contains(contractId)) restoredIds.Add(contractId);
+                _runtimeStore.MarkActiveAgain(contract, clientId);
                 RestoreDeliveryState(
                     clientId,
                     contract.toLocationId,
@@ -869,9 +859,7 @@ namespace ProjectC.Trade.Core
                 return ContractOpResult.Fail(ContractResultCode.ContractNotAssigned, "Это не ваш контракт!");
 
             contract.Fail();
-            _availableContracts[contractId] = contract;
-
-            RemovePlayerContractReference(clientId, contractId);
+            _runtimeStore.MarkTerminal(contract);
             HandleFailedContract(contract, clientId);
 
             SaveAll();
@@ -936,22 +924,22 @@ namespace ProjectC.Trade.Core
             var expired = new List<(ulong, string, ContractData)>();
 
             // Таймеры активных контрактов
-            foreach (var kvp in _playerContracts)
+            foreach (var kvp in _runtimeStore.ActiveByPlayer)
             {
                 ulong playerId = kvp.Key;
                 // ToList чтобы не модифицировать коллекцию во время итерации
                 var idsCopy = new List<string>(kvp.Value);
                 foreach (var contractId in idsCopy)
                 {
-                    if (!_availableContracts.TryGetValue(contractId, out var contract)) continue;
+                    if (!_runtimeStore.ContractsById.TryGetValue(contractId, out var contract)) continue;
                     if (contract.state != ContractState.Active) continue;
 
                     contract.TickTimer(deltaTime);
-                    _availableContracts[contractId] = contract;
+                    _runtimeStore.ContractsById[contractId] = contract;
 
                     if (contract.state == ContractState.Failed)
                     {
-                        RemovePlayerContractReference(playerId, contractId);
+                        _runtimeStore.MarkTerminal(contract);
                         HandleFailedContract(contract, playerId);
                         expired.Add((playerId, contractId, contract));
                     }

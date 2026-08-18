@@ -1,3 +1,59 @@
+0.1.20 - # Markets & Contracts — Core Refactoring Stage Completed
+As part of the contract system audit, we fixed several issues that could lead to the loss of active contracts, rewards being issued without cargo delivery, and state desynchronization after a save error.
+
+## What Was Wrong
+Previously, board offers, active contracts, and completed records shared the same logic. Because of this:
+* **Contract list regeneration** could delete an already accepted contract.
+* **A failed contract** could continue to occupy an active slot.
+* **A delivery contract** could be completed without the cargo being correctly written off.
+* **A Receipt contract** lacked a fully functional issue-and-return lifecycle.
+* **A persistence error** could save only a partial economic operation.
+
+## What Changed
+### Separated the Contract Lifecycle
+Available offers, player's active contracts, all contract records, and completed/failed contracts are now stored separately. This allows for safe board updates without affecting already accepted contracts.
+
+### Made Delivery Completion Server-Authoritative
+Before completion, the server now verifies the owner, contract state, location, ship, and exact cargo amount. Cargo is written off before rewards are granted. If an error occurs at any stage, the state rolls back.
+
+### Implemented Full Receipt Flow
+Receipt contracts now follow this sequence:
+```text
+Accept Contract → Claim Cargo → Transport → Submit Contract
+```
+Cargo is issued via a distinct operation and marked as belonging to a specific contract, player, and ship. This cargo cannot be sold separately, unloaded, or used in another contract. 
+
+Upon cancellation or expiration, the cargo returns to the reserve. If the cargo was never issued, no debt is incurred.
+
+### Added Global Rollback for Persistence Errors
+When a save fails, not only the contract data is rolled back, but also related assets:
+* Cargo
+* Credits
+* Debt
+* Active indexes
+* Receipt ownership metadata
+
+This prevents partially applied economic operations.
+
+### Updated Network and UI
+Added a distinct RPC operation for claiming Receipt cargo and verifying ship ownership and zone. The UI now features a cargo claim button, a `[CONTRACT]` indicator, and locks preventing manual unloading of contract cargo.
+
+### Updated Configuration
+* Contract timers moved to `ContractCatalog`.
+* A full distance graph has been calculated for 12 deployed `MarketZones`.
+* Two locations without a fully functional `MarketZone` remain disabled.
+
+## Results
+The contract system is now significantly better protected against:
+* Disappearance of active contracts
+* Duplicate reward payouts
+* Completion without cargo
+* Sale or loss of Receipt cargo
+* Partial state saving
+* Duplicate debt or reward accrual
+
+------------------------------------------------
+
 ✅ 0.1.15 — Quests, Character & Main Menu (Complete)
 In short: quests work end-to-end, switching your character's gender is seamless, the main menu is more user-friendly, and the world remembers exactly where you left off.
 • Quests: First onboarding quest (Onboarding Alfa) — full loop: pickup, NPC dialogue, objectives, rewards

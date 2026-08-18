@@ -244,7 +244,7 @@ MonoBehaviour:
   - type: 0
     publishable: 1
     rewardMultiplier: 1
-    timeLimitSeconds: 300
+    timeLimitSeconds: 6000
     isReceiptContract: 0
     localizationKey: ui.contract.type.standard
     uiClass: type-standard
@@ -253,7 +253,7 @@ MonoBehaviour:
   - type: 1
     publishable: 1
     rewardMultiplier: 1.5
-    timeLimitSeconds: 150
+    timeLimitSeconds: 3000
     isReceiptContract: 0
     localizationKey: ui.contract.type.urgent
     uiClass: type-urgent
@@ -262,7 +262,7 @@ MonoBehaviour:
   - type: 2
     publishable: 1
     rewardMultiplier: 1
-    timeLimitSeconds: 600
+    timeLimitSeconds: 12000
     isReceiptContract: 1
     localizationKey: ui.contract.type.receipt
     uiClass: type-receipt

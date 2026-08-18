@@ -68,7 +68,7 @@ namespace ProjectC.Trade.Network
         // разные наборы кораблей и разные выборы.
         private readonly Dictionary<string, ulong> _clientSelectedShip = new Dictionary<string, ulong>();
         private string SelectedShipKey(ulong clientId, string locationId)
-            => $"{clientId}:{(locationId ?? "").ToLowerInvariant()}";
+            => $"{clientId}:{MarketConfigCollector.NormalizeLocationId(locationId)}";
 
         public override void OnNetworkSpawn()
         {

@@ -22,7 +22,7 @@ namespace ProjectC.Trade.Config
     public class MarketConfig : ScriptableObject
     {
         [Header("Location")]
-        [Tooltip("Уникальный id локации: primium / secundus / tertius / quartus")]
+        [Tooltip("Канонический уникальный id локации. Хранится в верхнем регистре.")]
         public string locationId = "";
 
         [Tooltip("Отображаемое имя (например 'Примум')")]
@@ -86,8 +86,7 @@ namespace ProjectC.Trade.Config
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (!string.IsNullOrEmpty(locationId))
-                locationId = locationId.ToUpperInvariant();
+            locationId = MarketConfigCollector.NormalizeLocationId(locationId);
         }
 #endif
     }

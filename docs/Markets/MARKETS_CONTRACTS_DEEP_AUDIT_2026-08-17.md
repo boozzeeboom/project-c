@@ -2,7 +2,7 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этапы 1–14 реализованы 17 августа 2026 г.; verification pass и оставшиеся P0/P1/P2/P3 тикеты остаются открытыми.
+**Статус:** статический аудит исходников и документации; этапы 1–15 реализованы 17–18 августа 2026 г.; verification pass и оставшиеся P0/P1/P2/P3 тикеты остаются открытыми.
 **Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
@@ -646,6 +646,15 @@ Project-wide search по `Assets` не нашёл ссылок на `ReceiveMark
 - Uppercase/lowercase input даёт один canonical ID.
 - Некорректная конфигурация обнаруживается до запуска live market.
 - Генератор позволяет добавлять новый type через data/config layer.
+
+### Реализовано на этапе 15A
+
+- `MarketConfigCollector.NormalizeLocationId()` стал единым runtime-нормализатором: `null`/whitespace → пустой ID, остальные значения → `Trim().ToUpperInvariant()`.
+- `MarketConfig`, `TradeWorld`, `ContractWorld`, `MarketZoneRegistry`, `DockingZoneRegistry` и cache keys используют один canonical representation.
+- Legacy contract snapshots с lowercase/padded `fromLocationId`, `toLocationId` и location-board mappings нормализуются при загрузке с дедупликацией mapping IDs.
+- `ContractWorld` больше не использует `ToLower()` в `LocationIdToIndex()`; current distance table получает canonical IDs.
+
+Открытая часть `MKT-DOM-001` не закрыта: список локаций и contract types всё ещё не вынесены в data/config layer.
 
 ---
 
@@ -1316,7 +1325,38 @@ The following documentation is currently inconsistent with code and must be upda
 ### Что ещё не закрыто
 
 - Полная Receipt semantics и localization для `UnsupportedContractType`.
-- Canonical/data-driven `LocationId` и contract types (`MKT-DOM-001`).
+- Data-driven locations и contract types (`MKT-DOM-001`).
 - Отдельный runtime storage `ContractsById` / `LocationOffers` / `ActiveByPlayer` / `TerminalHistory`.
 - Полный verification pass этапов 4–14.
 - Legacy cleanup и документационный каталог (`REF-5001/5002`).
+
+---
+
+## 30. Реализованный этап 15A — canonical `LocationId` normalization (`MKT-DOM-001`)
+
+**Дата:** 18 августа 2026 г.
+**Scope:** безопасная часть `REF-4002`: единое представление location IDs без изменения scene YAML.
+
+### Изменения
+
+- `MarketConfigCollector.NormalizeLocationId()` теперь обрабатывает `null`, пробелы и различия регистра одинаково.
+- `MarketConfig.OnValidate()` использует тот же helper, поэтому новые и изменённые `MarketConfig` сохраняются в canonical uppercase form.
+- `TradeWorld` хранит canonical location IDs в `MarketState` и warehouse cache.
+- `ContractData.Create()` и `ContractWorld.LoadAll()` нормализуют маршрутные IDs для новых и legacy records.
+- `ContractWorld` использует canonical location list для текущей distance table и больше не зависит от lowercase switch.
+- `DockingZoneRegistry` переведён с собственного `Norm()` на общий helper.
+- `MarketServer` использует canonical location ID в selected-ship cache key.
+
+### Проверка
+
+- `refresh_unity(scope=scripts, compile=request)` выполнен.
+- `check_compile_errors`: **No compile errors**.
+- Поиск по `Assets/_Project/Trade/Scripts` не находит `locationId.ToLower()` или lowercase switch в `ContractWorld`.
+- `git diff --check` выполняется перед коммитом.
+- Play Mode, NPC trade smoke test и screenshots не выполнялись.
+
+### Что ещё не закрыто
+
+- Вынесение списка локаций и расстояний из `ContractWorld` в validated data/config asset.
+- Data-driven registry contract types вместо фиксированных `Standard/Urgent/Receipt` branches.
+- Полный verification pass этапов 4–15.

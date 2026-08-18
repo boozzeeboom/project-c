@@ -352,7 +352,7 @@ namespace ProjectC.Trade.Core
                         Debug.LogWarning($"[TradeWorld] дубликат locationId: {cfg.locationId}, пропускаю");
                         continue;
                     }
-                    var state = new MarketState(cfg.locationId, cfg);
+                    var state = new MarketState(key, cfg);
                     state.Initialize();
                     _markets[key] = state;
                 }
@@ -1138,8 +1138,9 @@ namespace ProjectC.Trade.Core
 
         public Warehouse GetOrLoadWarehouse(ulong clientId, string locationId)
         {
+            locationId = MarketConfigCollector.NormalizeLocationId(locationId);
             if (string.IsNullOrEmpty(locationId)) return null;
-            string key = $"{clientId}:{locationId.ToLowerInvariant()}";
+            string key = $"{clientId}:{locationId}";
             if (_warehouseCache.TryGetValue(key, out var w)) return w;
 
             var wh = new Warehouse(clientId, locationId);
@@ -1151,7 +1152,9 @@ namespace ProjectC.Trade.Core
 
         public void InvalidateWarehouse(ulong clientId, string locationId)
         {
-            string key = $"{clientId}:{locationId.ToLowerInvariant()}";
+            locationId = MarketConfigCollector.NormalizeLocationId(locationId);
+            if (string.IsNullOrEmpty(locationId)) return;
+            string key = $"{clientId}:{locationId}";
             _warehouseCache.Remove(key);
         }
 

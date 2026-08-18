@@ -13,11 +13,11 @@ namespace ProjectC.Trade.Config
     {
         /// <summary>
         /// Нормализует locationId для использования в качестве ключа Dictionary.
-        /// Все реестры (TradeWorld._markets, MarketZoneRegistry, DockingZoneRegistry)
-        /// должны использовать эту функцию при регистрации и lookup.
+        /// Все реестры и доменные lookup должны использовать эту функцию при
+        /// регистрации, чтении и сохранении locationId.
         /// </summary>
         public static string NormalizeLocationId(string id)
-            => string.IsNullOrEmpty(id) ? id : id.ToUpperInvariant();
+            => string.IsNullOrWhiteSpace(id) ? string.Empty : id.Trim().ToUpperInvariant();
 
         /// <summary>
         /// Собирает уникальные MarketConfig из всех MarketZone во ВСЕХ загруженных сценах.

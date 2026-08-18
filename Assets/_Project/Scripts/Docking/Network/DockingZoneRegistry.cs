@@ -6,6 +6,7 @@
 // T-key handler (T-DOCK-08) использует эти трекеры для проверки «в зоне ли связи».
 
 using System.Collections.Generic;
+using ProjectC.Trade.Config;
 
 namespace ProjectC.Docking.Network
 {
@@ -23,8 +24,6 @@ namespace ProjectC.Docking.Network
 
         public static IReadOnlyDictionary<string, DockStationController> All => _stationsById;
 
-        private static string Norm(string id) =>
-            string.IsNullOrEmpty(id) ? id : id.ToUpperInvariant();
 
         public static void Register(DockStationController station)
         {
@@ -36,7 +35,7 @@ namespace ProjectC.Docking.Network
                 return;
             }
             _stationsById[def.StationId] = station;
-            var locKey = Norm(def.LocationId);
+            var locKey = MarketConfigCollector.NormalizeLocationId(def.LocationId);
             if (!string.IsNullOrEmpty(locKey))
                 _stationsByLocation[locKey] = station;
         }
@@ -48,7 +47,7 @@ namespace ProjectC.Docking.Network
             if (def == null) return;
             if (_stationsById.TryGetValue(def.StationId, out var existing) && existing == station)
                 _stationsById.Remove(def.StationId);
-            var locKey = Norm(def.LocationId);
+            var locKey = MarketConfigCollector.NormalizeLocationId(def.LocationId);
             if (!string.IsNullOrEmpty(locKey)
                 && _stationsByLocation.TryGetValue(locKey, out var existingLoc)
                 && existingLoc == station)
@@ -66,7 +65,7 @@ namespace ProjectC.Docking.Network
 
         public static DockStationController GetByLocation(string locationId)
         {
-            var key = Norm(locationId);
+            var key = MarketConfigCollector.NormalizeLocationId(locationId);
             if (string.IsNullOrEmpty(key)) return null;
             _stationsByLocation.TryGetValue(key, out var s);
             return s;

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using ProjectC.Trade.Config;
 using ProjectC.Trade.Dto;
 using ProjectC.Trade.Repository;
 using UnityEngine;
@@ -69,7 +70,15 @@ namespace ProjectC.Trade.Core
         public int MaxTerminalRecordsPerPlayer = 50;
 
         // === Distance table (GDD_25 §3.2) ===
-        // Индексы: 0=primium, 1=secundus, 2=tertius, 3=quartus
+        // Индексы сохранены для совместимости с текущей таблицей расстояний.
+        // Значения locationId проходят через единый canonical normalizer.
+        private static readonly string[] DefaultLocationIds =
+        {
+            "PRIMIUM",
+            "SECUNDUS",
+            "TERTIUS",
+            "QUARTUS"
+        };
         private readonly float[,] _distanceTable = new float[4, 4];
 
         // ========================================================
@@ -296,8 +305,12 @@ namespace ProjectC.Trade.Core
             _availableContracts.Clear();
             foreach (var c in data.contracts ?? new List<ContractData>())
             {
-                if (c != null && !string.IsNullOrEmpty(c.contractId))
-                    _availableContracts[c.contractId] = c;
+                if (c == null || string.IsNullOrEmpty(c.contractId)) continue;
+
+                // Legacy snapshots may contain lowercase or padded location IDs.
+                c.fromLocationId = MarketConfigCollector.NormalizeLocationId(c.fromLocationId);
+                c.toLocationId = MarketConfigCollector.NormalizeLocationId(c.toLocationId);
+                _availableContracts[c.contractId] = c;
             }
 
             // Debts — reconstruct ContractDebt objects
@@ -322,8 +335,20 @@ namespace ProjectC.Trade.Core
             _locationContracts.Clear();
             foreach (var e in data.locationContracts ?? new List<LocationContractEntry>())
             {
-                if (!string.IsNullOrEmpty(e.locationId))
-                    _locationContracts[e.locationId] = new List<string>(e.contractIds ?? new List<string>());
+                string locationId = MarketConfigCollector.NormalizeLocationId(e.locationId);
+                if (string.IsNullOrEmpty(locationId)) continue;
+
+                if (!_locationContracts.TryGetValue(locationId, out var contractIds))
+                {
+                    contractIds = new List<string>();
+                    _locationContracts[locationId] = contractIds;
+                }
+
+                foreach (var contractId in e.contractIds ?? new List<string>())
+                {
+                    if (!string.IsNullOrEmpty(contractId) && !contractIds.Contains(contractId))
+                        contractIds.Add(contractId);
+                }
             }
 
             Debug.Log($"[ContractWorld] Loaded {_availableContracts.Count} contracts, {_playerDebts.Count} debts from repository; status={loadStatus}");
@@ -362,15 +387,14 @@ namespace ProjectC.Trade.Core
 
         private static int LocationIdToIndex(string locationId)
         {
-            if (string.IsNullOrEmpty(locationId)) return -1;
-            switch (locationId.ToLower())
+            string key = MarketConfigCollector.NormalizeLocationId(locationId);
+            if (string.IsNullOrEmpty(key)) return -1;
+
+            for (int i = 0; i < DefaultLocationIds.Length; i++)
             {
-                case "primium":  return 0;
-                case "secundus": return 1;
-                case "tertius":  return 2;
-                case "quartus":  return 3;
-                default: return -1;
+                if (DefaultLocationIds[i] == key) return i;
             }
+            return -1;
         }
 
         public static bool IsValidLocation(string locationId) => LocationIdToIndex(locationId) >= 0;
@@ -413,8 +437,7 @@ namespace ProjectC.Trade.Core
 
         public void GenerateContractsForAllLocations()
         {
-            string[] locations = { "primium", "secundus", "tertius", "quartus" };
-            foreach (var loc in locations) GenerateContractsForLocation(loc);
+            foreach (var loc in DefaultLocationIds) GenerateContractsForLocation(loc);
         }
 
         /// <summary>
@@ -424,6 +447,7 @@ namespace ProjectC.Trade.Core
         /// </summary>
         public void GenerateContractsForLocation(string fromLocationId)
         {
+            fromLocationId = MarketConfigCollector.NormalizeLocationId(fromLocationId);
             if (!IsValidLocation(fromLocationId)) return;
 
             if (!_locationContracts.ContainsKey(fromLocationId))
@@ -457,9 +481,8 @@ namespace ProjectC.Trade.Core
                 return;
             }
 
-            string[] allLocations = { "primium", "secundus", "tertius", "quartus" };
             var destinations = new List<string>();
-            foreach (var l in allLocations)
+            foreach (var l in DefaultLocationIds)
             {
                 if (l != fromLocationId) destinations.Add(l);
             }
@@ -580,7 +603,10 @@ namespace ProjectC.Trade.Core
 
         public ContractData[] GetAvailableForLocation(string locationId)
         {
-            if (!_locationContracts.TryGetValue(locationId, out var ids)) return new ContractData[0];
+            locationId = MarketConfigCollector.NormalizeLocationId(locationId);
+            if (string.IsNullOrEmpty(locationId)
+                || !_locationContracts.TryGetValue(locationId, out var ids))
+                return new ContractData[0];
             var result = new List<ContractData>();
             foreach (var cid in ids)
             {
@@ -979,6 +1005,7 @@ namespace ProjectC.Trade.Core
         public ContractSnapshotDto BuildSnapshot(ulong clientId, string locationId, string displayName,
             float timeMultiplier, float secondsUntilNextTick)
         {
+            locationId = MarketConfigCollector.NormalizeLocationId(locationId);
             var available = GetAvailableForLocation(locationId);
             var active = GetActiveForPlayer(clientId);
             var debt = GetOrCreateDebt(clientId);

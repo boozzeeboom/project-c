@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ProjectC.Trade.Config;
 using UnityEngine;
 
 namespace ProjectC.Trade
@@ -116,6 +117,9 @@ namespace ProjectC.Trade
             float urgentTimeLimitSeconds = 150f,
             float receiptTimeLimitSeconds = 600f)
         {
+            fromLocationId = MarketConfigCollector.NormalizeLocationId(fromLocationId);
+            toLocationId = MarketConfigCollector.NormalizeLocationId(toLocationId);
+
             var contract = new ContractData
             {
                 contractId = $"contract_{fromLocationId}_{itemId}_{UnityEngine.Random.Range(1000, 9999)}",

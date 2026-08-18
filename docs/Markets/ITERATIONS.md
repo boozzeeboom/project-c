@@ -266,3 +266,22 @@
 - Первый compile check выявил устаревший `GetInstanceID()` в Unity 6; исправлено на reference-based ownership без obsolete API
 - После исправления Unity editor отключился во время domain reload, поэтому финальный `check_compile_errors` через bridge недоступен; `git diff --check` пройден
 - Play Mode, scene/session despawn-order smoke test и screenshots не выполнялись
+
+---
+
+## Итерация от 2026-08-18
+
+**Задача:** Этап 15A реализации аудита — унифицировать canonical `LocationId` normalization (`MKT-DOM-001` / безопасная часть `REF-4002`).
+
+**Коммит:** будет добавлен после compile и diff-проверки.
+
+**Изменения:**
+- `Assets/_Project/Trade/Scripts/Config/MarketConfigCollector.cs` — единый `Trim().ToUpperInvariant()` normalizer
+- `Assets/_Project/Trade/Scripts/Config/MarketConfig.cs` — `OnValidate()` использует canonical helper
+- `Assets/_Project/Trade/Scripts/Core/TradeWorld.cs` — canonical market/warehouse state and cache keys
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` и `ContractData.cs` — canonical route IDs, legacy snapshot normalization и location mapping deduplication
+- `Assets/_Project/Trade/Scripts/Network/MarketServer.cs` — canonical selected-ship cache key
+- `Assets/_Project/Scripts/Docking/Network/DockingZoneRegistry.cs` — общий normalizer вместо локального `Norm()`
+- документация аудита и `MARKET_ID_REFACTOR_DESIGN.md` синхронизированы
+- `check_compile_errors`: **No compile errors**
+- Play Mode, NPC trade smoke test и screenshots не выполнялись

@@ -48,7 +48,7 @@ MarketServer.OnNetworkSpawn()
 | `MarketZoneRegistry._zones` | `zone.locationId` | `MarketZone` |
 | `DockingZoneRegistry._stationsByLocation` | `def.LocationId` | `DockStationController` |
 
-**Все три реестра используют `Dictionary<string, T>` без нормализации регистра.**
+`TradeWorld`, `MarketZoneRegistry` и `DockingZoneRegistry` используют canonical normalization через `MarketConfigCollector.NormalizeLocationId()`. Storage keys репозиториев могут использовать lowercase-представление только для backward-compatible имени файла/ключа, но domain lookup получает canonical ID.
 
 ---
 
@@ -320,3 +320,22 @@ Tools > ProjectC > Trade > Migrate MarketZones to MarketConfig refs
 
 **После:** Разместил `MarketZone` в сцене + назначил `MarketConfig` SO → готово.  
 `locationId` нормализуется везде. Добавление рынка = работа в одной сцене, без BootstrapScene.
+
+---
+
+## 8. Статус реализации на 2026-08-18
+
+### Реализовано в этапе 15A
+
+- `MarketConfigCollector.NormalizeLocationId()` является единым canonical helper для runtime lookup.
+- Нормализация выполняет `Trim().ToUpperInvariant()` и безопасно обрабатывает пустые значения.
+- `MarketConfig`, `TradeWorld`, `ContractWorld`, `MarketZoneRegistry` и `DockingZoneRegistry` больше не имеют раздельных domain-normalizers.
+- Legacy contract route IDs и location-board mappings нормализуются при загрузке.
+- Scene YAML и serialized scene references не изменялись.
+
+### Оставшиеся фазы
+
+- Вынести список locations и distance graph из `ContractWorld` в validated data/config layer.
+- Перевести contract generator/types на definitions вместо фиксированных branches.
+- Выполнить миграцию/валидацию WorldScene и NPC route assets.
+- Запустить NPC trade verification для маршрутов с различным регистром location IDs.

@@ -273,7 +273,7 @@
 
 **Задача:** Этап 15A реализации аудита — унифицировать canonical `LocationId` normalization (`MKT-DOM-001` / безопасная часть `REF-4002`).
 
-**Коммит:** будет добавлен после compile и diff-проверки.
+**Коммит:** `78e8bed4` — MKT-DOM-001: Унифицировать canonical LocationId
 
 **Изменения:**
 - `Assets/_Project/Trade/Scripts/Config/MarketConfigCollector.cs` — единый `Trim().ToUpperInvariant()` normalizer

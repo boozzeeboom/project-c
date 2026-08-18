@@ -2,8 +2,8 @@
 
 **Дата аудита:** 17 августа 2026 г.  
 **Область:** `Assets/_Project/Trade/Scripts/`, `Assets/_Project/Scripts/UI/Client/`, `Assets/_Project/Quests/Bridges/`, `docs/Markets/`  
-**Статус:** статический аудит исходников и документации; этапы 1–15B реализованы 17–18 августа 2026 г.; verification pass и оставшиеся P0/P1/P2/P3 тикеты остаются открытыми.
-**Проверки:** Unity compile check пройден; Play Mode, domain tests и screenshot-регрессия не запускались.
+**Статус:** этапы 1–15F реализованы в коде, конфигурации и `WorldScene_0_0`; закрытые и оставшиеся работы сведены в актуальный раздел 35.
+**Проверки:** Unity compile check и статические аудиты пройдены; Play Mode, domain tests, network/persistence smoke и screenshot-регрессия не запускались.
 
 > Этот документ является рабочим планом исправления. Он не заменяет отдельный migration design и не должен приводить к массовой переписи YAML-сцен без отдельного согласования.
 
@@ -27,22 +27,19 @@ MarketClientState / ContractClientState
 MarketWindow / ContractsTab / CharacterWindow
 ```
 
-Основная проблема не в отсутствии слоёв, а в том, что **модель жизненного цикла контракта не разделяет offer, active, completed и failed состояния на уровне хранения**. Из-за этого методы генерации доски, принятия, завершения, истечения таймера и persistence работают с одними и теми же коллекциями, но предполагают разные семантики.
+Основная архитектурная проблема исходного аудита — смешение offer, active, completed и failed состояний в `_availableContracts` — частично mitigated защитами этапов 1 и 8, но отдельное runtime-хранилище состояний ещё не введено.
 
-Самый опасный дефект:
+Критический дефект регенерации доски из исходного аудита (`MKT-CON-001`) исправлен: `GenerateContractsForLocation()` удаляет только `Pending` offers, а active/completed/failed records сохраняются. Принятый ID удаляется с location board, active index очищается при terminal transition, а stale references удаляются при загрузке.
 
-> `ContractWorld.GenerateContractsForLocation()` удаляет все ID из `_locationContracts[locationId]` из `_availableContracts`, включая активные контракты, если их ID всё ещё находится в `_locationContracts`. `TryAccept()` не удаляет принятое ID из `_locationContracts`. При повторной генерации доски активный контракт исчезает из доступных данных, хотя `_playerContracts` продолжает на него ссылаться.
+Симптом из `docs/Markets/KNOWN_ISSUES.md` должен считаться историческим и требует runtime-проверки: активный контракт не должен исчезать из `P → КОНТРАКТЫ` после повторного запроса или регенерации списка.
 
-Это объясняет симптом из `docs/Markets/KNOWN_ISSUES.md`: активные контракты перестают отображаться в `P → КОНТРАКТЫ` после регенерации списка.
+Приоритет оставшихся работ:
 
-Приоритет исправлений:
-
-1. **P0 — целостность контрактов:** запрет удаления active contract, очистка stale IDs, единые инварианты коллекций.
-2. **P0 — экономика:** проверка и списание cargo при delivery completion; явная реализация Receipt semantics.
-3. **P1 — persistence:** сохранение debts-only, schema version, atomic write, retention completed/failed данных.
-4. **P1 — клиентский контракт API:** локализованные ошибки и feedback при rate limit.
-5. **P2 — архитектурная чистка:** удаление дублирующей UI-логики, dead RPC, разделение `MarketWindow`.
-6. **P2/P3 — расширяемость и документация:** устранение hardcoded locations/types, обновление каталогов и migration-документов.
+1. **P0/P1 — verification pass:** domain, persistence, network и UI smoke-проверки; без них нельзя окончательно закрыть acceptance criteria.
+2. **P1 — Receipt:** сохранить fail-closed режим как текущую безопасную политику; полная Receipt semantics требует отдельного решения по cargo ownership, возврату и settlement.
+3. **P2 — конфигурация:** настроить полный pairwise distance graph перед включением disabled farm/road/test locations.
+4. **P2 — runtime storage:** отделить registry контрактов, location offers, active indexes и terminal history.
+5. **P2/P3 — cleanup:** legacy trade files, documentation catalog и отдельный unrelated missing-script issue.
 
 ---
 
@@ -1442,10 +1439,8 @@ The following documentation is currently inconsistent with code and must be upda
 
 ### Что ещё не закрыто
 
-- Legacy compatibility wrapper `ContractData.Create()` всё ещё содержит старые аргументы времени и switch; runtime generation использует `CreateConfigured()` из catalog definitions.
-- `_serverTimeLimits` в `ContractWorld` и три serialized timer override поля `ContractServer` остаются legacy compatibility path; их нужно вынести в generic catalog/override collection отдельным этапом без изменения текущих timer values.
-- USS declarations остаются статическими style definitions; data-driven catalog выбирает class, но не генерирует stylesheet.
 - Полный verification pass, NPC trade smoke, persistence/network stress и screenshots остаются открытыми.
+- USS declarations остаются статическими style definitions; catalog выбирает USS class, но не генерирует stylesheet — это текущая целевая граница, а не блокер runtime.
 
 ---
 
@@ -1479,3 +1474,45 @@ The following documentation is currently inconsistent with code and must be upda
 - Включение farm/road/test locations в `ContractCatalog` по-прежнему требует полного pairwise distance graph.
 - NPC trade smoke с разным регистром IDs ещё не запускался в Play Mode.
 - Full verification pass persistence/network/UI остаётся открытым.
+
+---
+
+## 35. Актуальный остаток работ — что ещё доделываем
+
+**Дата актуального статуса:** 18 августа 2026 г.
+**Правило:** исторические разделы 16–34 сохраняют контекст отдельных этапов; этот раздел является текущим списком незавершённых работ.
+
+### Этап 15F — catalog-driven timer limits
+
+- Legacy timer fields удалены из `ContractServer` и `ContractWorld`.
+- `ContractData.Create()` с фиксированным `Standard/Urgent/Receipt` switch удалён после project-wide dependency audit: активных вызовов не найдено.
+- `ContractCatalog.ContractTypeDefinition.timeLimitSeconds` стал единственным источником лимитов для генерации контрактов.
+- Текущие runtime-значения сохранены: `Standard=300`, `Urgent=150`, `Receipt=600` секунд.
+- `ContractCatalog.Validate()`: `valid=True`, `errors=0`; compile check после изменений пройден.
+
+### Закрыто и не требует повторной реализации
+
+- `MKT-CON-001` и `MKT-CON-002`: защита active index, stale cleanup и корректная регенерация доски.
+- Безопасная часть `MKT-CON-003`: server-side проверка и списание delivery cargo с rollback policy.
+- Безопасная часть `MKT-CON-004`: Receipt не публикуется и не принимается, completion fail-closed.
+- `MKT-PER-001`, `MKT-PER-002` и безопасные части `MKT-PER-003`: debts-only status, schema markers, migration guard, backup/recovery, retention и transaction lock.
+- `MKT-NET-001/002/003`: локализуемые result codes, явный rate-limit result и удаление dead RPC.
+- `MKT-UI-001/002/003`: единый `ContractsTab`, разделённый `MarketWindow` и refresh после contract result.
+- `MKT-DOM-001`: canonical IDs, `ContractCatalog`, editor synchronization, catalog-driven presentation, catalog-driven timer limits и миграция `WorldScene_0_0`.
+- `MKT-DOM-002`: explicit lifecycle `MarketZoneRegistry`.
+
+### Доделываем в текущем цикле
+
+1. **Verification pass.** Нужны domain tests, persistence round-trip/corruption recovery, owner-only network smoke, UI smoke и ручная Play Mode проверка. Скриншоты и ручной playtest остаются отдельной пользовательской проверкой.
+2. **Receipt decision/implementation.** Сейчас Receipt корректно fail-closed. Для полного flow нужно отдельно зафиксировать выдачу товара, ownership во время перевозки, policy при expiry и settlement. До этого Receipt нельзя включать в `publishable` definitions.
+3. **Disabled catalog locations.** `PRIMIUM_FARM_*`, `PRIMIUM_TEST_ZONE` и road locations остаются `enabled=false`. Включать их можно только после полного pairwise distance graph и успешного `ContractCatalog.Validate()`.
+4. **Runtime storage split.** `_availableContracts` по-прежнему совмещает offer-board и registry. Разделение на `ContractsById`, `LocationOffers`, `ActiveByPlayer` и bounded `TerminalHistory` остаётся архитектурным этапом.
+5. **Legacy/documentation cleanup.** После project-wide reference audit нужно решить судьбу старых trade-файлов и синхронизировать `README.md`, `FILES_INDEX.md`, `KNOWN_ISSUES.md`, migration-документы и ссылки на устаревшие документы.
+6. **Отдельная проблема сцены.** Missing script на `[Ship_Key_Container]/[KeyRod_ShipHeavy]` не относится к market/NPC ID работам и исправляется отдельным тикетом.
+
+### Текущий порядок продолжения
+
+1. Сначала выполнить оставшийся verification pass доступными автоматическими/domain проверками.
+2. Затем принять отдельное продуктовое решение по полной Receipt semantics.
+3. После этого включать дополнительные catalog locations только при полном distance graph.
+4. Затем выполнять runtime storage split и legacy/documentation cleanup.

@@ -46,10 +46,7 @@ namespace ProjectC.Trade.Config
             [Min(0f)]
             public float rewardMultiplier = 1f;
 
-            [Tooltip("Use the legacy ContractServer timer for this type instead of the catalog value.")]
-            public bool useServerTimeLimit = true;
-
-            [Tooltip("Fallback time limit for types that do not use the server timer.")]
+            [Tooltip("Time limit for this contract type in seconds. 0 = no limit.")]
             [Min(0f)]
             public float timeLimitSeconds = 300f;
 
@@ -323,7 +320,6 @@ namespace ProjectC.Trade.Config
                     type = ContractType.Standard,
                     publishable = true,
                     rewardMultiplier = 1f,
-                    useServerTimeLimit = true,
                     timeLimitSeconds = 300f,
                     isReceiptContract = false,
                     localizationKey = "ui.contract.type.standard",
@@ -336,7 +332,6 @@ namespace ProjectC.Trade.Config
                     type = ContractType.Urgent,
                     publishable = true,
                     rewardMultiplier = 1.5f,
-                    useServerTimeLimit = true,
                     timeLimitSeconds = 150f,
                     isReceiptContract = false,
                     localizationKey = "ui.contract.type.urgent",
@@ -349,7 +344,6 @@ namespace ProjectC.Trade.Config
                     type = ContractType.Receipt,
                     publishable = false,
                     rewardMultiplier = 1f,
-                    useServerTimeLimit = true,
                     timeLimitSeconds = 600f,
                     isReceiptContract = true,
                     localizationKey = "ui.contract.type.receipt",

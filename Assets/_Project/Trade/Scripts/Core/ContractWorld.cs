@@ -43,9 +43,8 @@ namespace ProjectC.Trade.Core
         // Immutable catalog reference for locations, route distances and contract types.
         private readonly ContractCatalog _catalog;
         private readonly bool _ownsCatalog;
-        private readonly Dictionary<ContractType, float> _serverTimeLimits = new Dictionary<ContractType, float>();
 
-        // Кэш базовой цены по itemId (для расчёта reward в Create).
+        // Кэш базовой цены по itemId (для расчёта reward в CreateConfigured).
         // Заполняется из TradeItemDefinition через Resolver.
         // Используется ContractData.Create.
         private readonly Dictionary<string, float> _itemBasePrice = new Dictionary<string, float>();
@@ -65,9 +64,6 @@ namespace ProjectC.Trade.Core
         public int MaxActiveContractsPerPlayer = 3;
         public bool AutoRegenerateContracts = true;
         public bool AutoInitContracts = true;
-        public float StandardContractTimeLimitSeconds { get; private set; } = 300f;
-        public float UrgentContractTimeLimitSeconds { get; private set; } = 150f;
-        public float ReceiptContractTimeLimitSeconds { get; private set; } = 600f;
 
         /// <summary>
         /// Максимальное количество Completed/Failed records на одного игрока.
@@ -90,9 +86,6 @@ namespace ProjectC.Trade.Core
             IPlayerDataRepository repository,
             ContractWorldItemResolver resolver,
             bool autoInitContracts = true,
-            float standardContractTimeLimitSeconds = 300f,
-            float urgentContractTimeLimitSeconds = 150f,
-            float receiptContractTimeLimitSeconds = 600f,
             ContractCatalog catalog = null)
         {
             bool ownsCatalog = catalog == null;
@@ -104,15 +97,7 @@ namespace ProjectC.Trade.Core
                 throw new System.InvalidOperationException("ContractCatalog validation failed");
             }
 
-            var w = new ContractWorld(resolvedCatalog, ownsCatalog)
-            {
-                StandardContractTimeLimitSeconds = Mathf.Max(0f, standardContractTimeLimitSeconds),
-                UrgentContractTimeLimitSeconds = Mathf.Max(0f, urgentContractTimeLimitSeconds),
-                ReceiptContractTimeLimitSeconds = Mathf.Max(0f, receiptContractTimeLimitSeconds)
-            };
-            w._serverTimeLimits[ContractType.Standard] = w.StandardContractTimeLimitSeconds;
-            w._serverTimeLimits[ContractType.Urgent] = w.UrgentContractTimeLimitSeconds;
-            w._serverTimeLimits[ContractType.Receipt] = w.ReceiptContractTimeLimitSeconds;
+            var w = new ContractWorld(resolvedCatalog, ownsCatalog);
             w.Initialize(repository, resolver, autoInitContracts);
             Instance = w;
             return w;
@@ -490,10 +475,7 @@ namespace ProjectC.Trade.Core
                 if (definition == null || definition.isReceiptContract)
                     continue;
 
-                float timeLimit = definition.useServerTimeLimit
-                    && _serverTimeLimits.TryGetValue(definition.type, out var serverTimeLimit)
-                    ? serverTimeLimit
-                    : definition.timeLimitSeconds;
+                float timeLimit = Mathf.Max(0f, definition.timeLimitSeconds);
 
                 var contract = ContractData.CreateConfigured(
                     definition.type,

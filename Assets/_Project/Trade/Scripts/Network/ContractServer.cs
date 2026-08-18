@@ -47,16 +47,6 @@ namespace ProjectC.Trade.Network
         [Tooltip("Инициализировать контракты при старте для всех enabled locations из ContractCatalog")]
         [SerializeField] private bool autoInitContracts = true;
 
-        [Header("Contract Timers")]
-        [Tooltip("Время на завершение стандартного контракта, в секундах. 0 = без лимита.")]
-        [SerializeField, Min(0f)] private float standardContractTimeSeconds = 300f;
-
-        [Tooltip("Время на завершение срочного контракта, в секундах. 0 = без лимита.")]
-        [SerializeField, Min(0f)] private float urgentContractTimeSeconds = 150f;
-
-        [Tooltip("Время на завершение контракта под расписку, в секундах. 0 = без лимита.")]
-        [SerializeField, Min(0f)] private float receiptContractTimeSeconds = 600f;
-
         [Header("Rate Limiting")]
         [Tooltip("Макс операций в минуту на клиента (0 = без лимита)")]
         [SerializeField] private int maxOpsPerMinute = 30;
@@ -110,9 +100,6 @@ namespace ProjectC.Trade.Network
                 _repository,
                 _resolver,
                 autoInitContracts,
-                standardContractTimeSeconds,
-                urgentContractTimeSeconds,
-                receiptContractTimeSeconds,
                 resolvedCatalog);
             ContractWorld.Instance.MaxActiveContractsPerPlayer = maxActiveContractsPerPlayer;
             ContractWorld.Instance.AutoRegenerateContracts = autoRegenerateContracts;

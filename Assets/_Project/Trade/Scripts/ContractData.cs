@@ -100,49 +100,6 @@ namespace ProjectC.Trade
 
         // ==================== МЕТОДЫ ====================
 
-        /// <summary>
-        /// Создать новый контракт с автоматическим расчётом награды.
-        /// GDD_25 секция 6.3: Награды за контракты.
-        /// </summary>
-        public static ContractData Create(
-            ContractType type,
-            string itemId,
-            int quantity,
-            string fromLocationId,
-            string toLocationId,
-            float itemBasePrice,
-            float distanceKm,
-            float npReputation = 0f,
-            float standardTimeLimitSeconds = 300f,
-            float urgentTimeLimitSeconds = 150f,
-            float receiptTimeLimitSeconds = 600f)
-        {
-            float rewardMultiplier = type == ContractType.Urgent ? 1.5f : 1f;
-            float timeLimitSeconds = standardTimeLimitSeconds;
-            switch (type)
-            {
-                case ContractType.Urgent:
-                    timeLimitSeconds = urgentTimeLimitSeconds;
-                    break;
-                case ContractType.Receipt:
-                    timeLimitSeconds = receiptTimeLimitSeconds;
-                    break;
-            }
-
-            return CreateConfigured(
-                type,
-                itemId,
-                quantity,
-                fromLocationId,
-                toLocationId,
-                itemBasePrice,
-                distanceKm,
-                npReputation,
-                rewardMultiplier,
-                timeLimitSeconds,
-                type == ContractType.Receipt);
-        }
-
         public static ContractData CreateConfigured(
             ContractType type,
             string itemId,

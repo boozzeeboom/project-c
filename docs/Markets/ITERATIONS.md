@@ -370,3 +370,25 @@
 - `check_compile_errors`: **No compile errors**
 - Scene YAML и serialized scene references не изменялись
 - Play Mode, NPC trade smoke test и screenshots не выполнялись
+
+---
+
+## Рабочая итерация от 2026-08-18 — этап 15F
+
+**Задача:** перевести лимиты времени контрактов из legacy `ContractServer` overrides в `ContractCatalog` (`MKT-DOM-001`).
+
+**Статус:** изменения применены; commit hash будет зафиксирован после отдельного commit шага.
+
+**Изменения:**
+- `ContractServer` больше не хранит три фиксированных timer-поля.
+- `ContractWorld` больше не заполняет `_serverTimeLimits` по `Standard/Urgent/Receipt`.
+- `ContractData.Create()` удалён после project-wide dependency audit: активных вызовов не найдено.
+- `ContractCatalog.ContractTypeDefinition.timeLimitSeconds` стал единственным источником лимита.
+- В `ContractCatalog.asset` сохранены текущие значения: `Standard=300`, `Urgent=150`, `Receipt=600` секунд.
+
+**Проверки:**
+- project-wide grep legacy timer path: совпадений не найдено
+- `ContractCatalog.Validate()`: `valid=True`, `errors=0`
+- `refresh_unity(scope=scripts, compile=request)` выполнен
+- `check_compile_errors`: **No compile errors**
+- Полный Play Mode/network/persistence/UI verification pass отложен до общего этапа проверки

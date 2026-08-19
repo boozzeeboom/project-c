@@ -42,7 +42,9 @@ namespace ProjectC.Crafting.UI
         private ulong _currentStationNetId;
         private CraftingStationConfig _currentConfig;
         private string _selectedRecipeKey = null;
-        private bool _built;
+        
+        private bool _isLocaleSubscribed;
+private bool _built;
         private bool _subscribed;
         private bool _knowledgeSubscribed;
 
@@ -62,15 +64,19 @@ namespace ProjectC.Crafting.UI
             if (craftingPanelSettings == null) craftingPanelSettings = Resources.Load<PanelSettings>("UI/CraftingPanelSettings");
         }
 
-        private void OnEnable()
+private void OnEnable()
         {
             EnsureBuilt();
             TrySubscribe();
+            SubscribeLocale();
         }
 
         private void Start() { EnsureBuilt(); }
 
-        private void OnDisable() { /* nothing — subscriptions are event-based */ }
+private void OnDisable()
+        {
+            UnsubscribeLocale();
+        }
 
         private void OnDestroy()
         {
@@ -78,6 +84,56 @@ namespace ProjectC.Crafting.UI
             TryUnsubscribeKnowledge();
             if (Instance == this) Instance = null;
         }
+
+private void SubscribeLocale()
+        {
+            if (_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _isLocaleSubscribed = true;
+            if (_built) LocalizeStaticTexts();
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _isLocaleSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (!_built || _root == null) return;
+            LocalizeStaticTexts();
+
+            if (_currentConfig != null)
+                BuildRecipeList();
+
+            if (!string.IsNullOrEmpty(_selectedRecipeKey))
+            {
+                var recipe = CraftingClientState.Instance != null
+                    ? CraftingClientState.Instance.GetRecipe(_selectedRecipeKey)
+                    : CraftingWorld.GetRecipe(_selectedRecipeKey);
+                if (recipe != null) BuildIngredientsPanel(recipe);
+            }
+
+            _root.MarkDirtyRepaint();
+        }
+
+        private void LocalizeStaticTexts()
+        {
+            if (_startBtn != null) _startBtn.text = Loc.Get("ui.crafting.btn.start");
+            if (_cancelBtn != null) _cancelBtn.text = Loc.Get("ui.crafting.btn.cancel");
+            if (_collectBtn != null) _collectBtn.text = Loc.Get("ui.crafting.btn.collect");
+
+            var sectionTitles = _root.Query<Label>(className: "crafting-section-title").ToList();
+            if (sectionTitles.Count >= 3)
+            {
+                sectionTitles[0].text = Loc.Get("ui.crafting.section.recipes");
+                sectionTitles[1].text = Loc.Get("ui.crafting.section.ingredients");
+                sectionTitles[2].text = Loc.Get("ui.crafting.section.buffer");
+            }
+        }
+
 
         private void TryUnsubscribeKnowledge()
         {

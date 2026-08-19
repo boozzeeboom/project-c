@@ -49,7 +49,9 @@ namespace ProjectC.Customisation.UI
         private Label _skinBValueLabel;
         private VisualElement _skinPreview;
         private Label _messageLabel;
-        private bool _built;
+        
+        private bool _isLocaleSubscribed;
+private bool _built;
 
         // Текущий CustomisationSave в памяти (владеем этим — мутируем по UI actions, потом Save).
         private CustomisationSave _working;
@@ -66,9 +68,44 @@ namespace ProjectC.Customisation.UI
             }
         }
 
-        private void OnEnable() { EnsureBuilt(); }
-        private void OnDisable() { /* no-op */ }
+private void OnEnable()
+        {
+            EnsureBuilt();
+            SubscribeLocale();
+        }
+private void OnDisable()
+        {
+            UnsubscribeLocale();
+        }
         private void OnDestroy() { if (Instance == this) Instance = null; }
+
+private void SubscribeLocale()
+        {
+            if (_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _isLocaleSubscribed = true;
+            if (_built)
+            {
+                OverrideCwLabels();
+                RefreshDisplay();
+            }
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _isLocaleSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (!_built || _rootContainer == null) return;
+            OverrideCwLabels();
+            RefreshDisplay();
+            _rootContainer.MarkDirtyRepaint();
+        }
+
         private void Start() { EnsureBuilt(); }
 
         public void Toggle() { if (IsOpen()) SetOpen(false); else SetOpen(true); }

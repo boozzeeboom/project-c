@@ -28,9 +28,11 @@ namespace ProjectC.UI
         // Disconnect создаётся программно
         private Button _disconnectButton;
 
-        private NetworkManagerController networkManagerController;
+        private NetworkManagerController networkManagerController;        private bool _isLocaleSubscribed;
+        private bool _showingDisconnectedStatus;
 
-        private void Awake()
+
+private void Awake()
         {
             networkManagerController = FindAnyObjectByType<NetworkManagerController>();
             if (networkManagerController == null)
@@ -38,29 +40,50 @@ namespace ProjectC.UI
                 Debug.LogError("[NetworkUI] NetworkManagerController не найден!");
                 return;
             }
-            
+
             if (startHostButton != null) startHostButton.onClick.AddListener(OnStartHostClicked);
             else Debug.LogWarning("[NetworkUI] startHostButton is NULL! Assign in Inspector.");
-            
+
             if (startServerButton != null) startServerButton.onClick.AddListener(OnStartServerClicked);
             if (startClientButton != null) startClientButton.onClick.AddListener(OnStartClientClicked);
             if (reconnectButton != null)
             {
                 reconnectButton.onClick.AddListener(OnReconnectClicked);
-                reconnectButton.gameObject.SetActive(false); // Скрыта по умолчанию
+                reconnectButton.gameObject.SetActive(false);
             }
 
-            // События сети
             networkManagerController.OnConnectionStatusChanged += UpdateStatus;
             networkManagerController.OnPlayerConnected += HandlePlayerConnected;
             networkManagerController.OnPlayerDisconnected += HandlePlayerDisconnected;
             networkManagerController.OnReconnectRequested += ShowReconnectButton;
 
             CreateDisconnectButton();
+            SubscribeLocale();
             UpdateButtons(false);
         }
 
-        private void HandlePlayerConnected(ulong clientId)
+                private void SubscribeLocale()
+        {
+            if (_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _isLocaleSubscribed = true;
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _isLocaleSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (_showingDisconnectedStatus && statusText != null)
+                statusText.text = Loc.Get("ui.network.disconnected", "Disconnected");
+            UpdatePlayerCount();
+        }
+
+private void HandlePlayerConnected(ulong clientId)
         {
             UpdateButtons(true);
             HideReconnectButton();
@@ -206,16 +229,23 @@ namespace ProjectC.UI
             if (reconnectButton != null) reconnectButton.gameObject.SetActive(false);
         }
 
-        private void OnDisconnectClicked()
+private void OnDisconnectClicked()
         {
             networkManagerController.Disconnect();
             ShowConnectionPanel();
-            UpdateStatus(Loc.Get("ui.network.disconnected", "Disconnected"));
+            SetDisconnectedStatus();
             ShowReconnectButton();
         }
 
-        private void UpdateStatus(string status)
+        private void SetDisconnectedStatus()
         {
+            UpdateStatus(Loc.Get("ui.network.disconnected", "Disconnected"));
+            _showingDisconnectedStatus = true;
+        }
+
+private void UpdateStatus(string status)
+        {
+            _showingDisconnectedStatus = false;
             if (statusText != null) statusText.text = status;
         }
 
@@ -229,8 +259,10 @@ namespace ProjectC.UI
             if (connectionPanel != null) connectionPanel.SetActive(true);
         }
 
-        private void OnDestroy()
+private void OnDestroy()
         {
+            UnsubscribeLocale();
+
             if (startHostButton != null) startHostButton.onClick.RemoveListener(OnStartHostClicked);
             if (startServerButton != null) startServerButton.onClick.RemoveListener(OnStartServerClicked);
             if (startClientButton != null) startClientButton.onClick.RemoveListener(OnStartClientClicked);

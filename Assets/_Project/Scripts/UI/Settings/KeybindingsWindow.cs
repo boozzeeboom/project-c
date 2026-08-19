@@ -29,7 +29,9 @@ namespace ProjectC.UI.Settings
         private VisualElement _root;
         private ScrollView _skillListScroll;
         private ScrollView _actionListScroll;
-        private bool _built = false;
+        
+        private bool _isLocaleSubscribed;
+private bool _built = false;
 
         public System.Action OnBackRequested;
         private bool _isEmbedded = false;
@@ -42,7 +44,60 @@ namespace ProjectC.UI.Settings
         }
 
         private void OnDestroy() { if (Instance == this) Instance = null; }
-        private void OnEnable() { EnsureBuilt(); }
+
+private void OnDisable()
+        {
+            UnsubscribeLocale();
+        }
+
+        private void SubscribeLocale()
+        {
+            if (_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _isLocaleSubscribed = true;
+            if (_built) LocalizeStaticTexts();
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _isLocaleSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (!_built || _root == null) return;
+            LocalizeStaticTexts();
+            RebuildLists();
+            _root.MarkDirtyRepaint();
+        }
+
+        private void LocalizeStaticTexts()
+        {
+            var title = _root.Q<Label>(className: "kb-title");
+            if (title != null) title.text = Loc.Get("ui.keybindings.title");
+            var sectionTitles = _root.Query<Label>(className: "kb-section-title").ToList();
+            if (sectionTitles.Count >= 2)
+            {
+                sectionTitles[0].text = Loc.Get("ui.keybindings.section.skills");
+                sectionTitles[1].text = Loc.Get("ui.keybindings.section.actions");
+            }
+            var footer = _root.Q<Label>(className: "kb-footer");
+            if (footer != null) footer.text = Loc.Get("ui.keybindings.footer");
+            var saveBtn = _root.Q<Button>("save-btn");
+            if (saveBtn != null) saveBtn.text = Loc.Get("ui.keybindings.save");
+            var reloadBtn = _root.Q<Button>("reload-btn");
+            if (reloadBtn != null) reloadBtn.text = Loc.Get("ui.keybindings.load");
+            var resetBtn = _root.Q<Button>("reset-defaults-btn");
+            if (resetBtn != null) resetBtn.text = Loc.Get("ui.keybindings.reset");
+        }
+
+private void OnEnable()
+        {
+            EnsureBuilt();
+            SubscribeLocale();
+        }
         private void Start() { EnsureBuilt(); }
 
         public void EnsureBuilt()

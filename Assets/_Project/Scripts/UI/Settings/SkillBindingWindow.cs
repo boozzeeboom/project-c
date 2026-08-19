@@ -28,7 +28,9 @@ namespace ProjectC.UI.Settings
         private ScrollView _skillsScroll;
         private VisualElement _modalOverlay;
         private Label _modalTitle;
-        private bool _built = false;
+        
+        private bool _isLocaleSubscribed;
+private bool _built = false;
 
         private SkillInputSlot? _activeSlot = null;
 
@@ -40,7 +42,54 @@ namespace ProjectC.UI.Settings
         }
 
         private void OnDestroy() { if (Instance == this) Instance = null; }
-        private void OnEnable() { EnsureBuilt(); }
+
+private void OnDisable()
+        {
+            UnsubscribeLocale();
+        }
+
+        private void SubscribeLocale()
+        {
+            if (_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _isLocaleSubscribed = true;
+            if (_built) LocalizeStaticTexts();
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _isLocaleSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (!_built || _root == null) return;
+            LocalizeStaticTexts();
+            if (IsOpen())
+            {
+                RebuildSlots();
+                if (_activeSlot.HasValue) RebuildModal();
+            }
+            _root.MarkDirtyRepaint();
+        }
+
+        private void LocalizeStaticTexts()
+        {
+            var skTitle = _root.Q<Label>(className: "sk-title");
+            if (skTitle != null) skTitle.text = Loc.Get("ui.skillbinding.title");
+            var skSubtitle = _root.Q<Label>(className: "sk-subtitle");
+            if (skSubtitle != null) skSubtitle.text = Loc.Get("ui.skillbinding.subtitle");
+            if (_modalTitle != null && !_activeSlot.HasValue)
+                _modalTitle.text = Loc.Get("ui.skillbinding.modal_title");
+        }
+
+private void OnEnable()
+        {
+            EnsureBuilt();
+            SubscribeLocale();
+        }
         private void Start() { EnsureBuilt(); }
 
         public void EnsureBuilt()

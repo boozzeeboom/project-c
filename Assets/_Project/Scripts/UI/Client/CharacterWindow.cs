@@ -75,7 +75,9 @@ namespace ProjectC.UI.Client
         private UIDocument _doc;
         private VisualElement _root;
         private VisualElement _mainContainer;
-        private bool _built;
+        
+        private bool _isLocaleSubscribed;
+private bool _built;
 
         // --- Header / info ---
         private Label _characterNameLabel;
@@ -296,7 +298,7 @@ namespace ProjectC.UI.Client
             _inventoryFilterStateOptions = new List<string> { Loc.Get("ui.character.filter.all_types") };
         }
 
-        private void OnEnable()
+private void OnEnable()
         {
             if (_doc == null) _doc = GetComponent<UIDocument>();
             if (_doc == null)
@@ -305,6 +307,7 @@ namespace ProjectC.UI.Client
                 return;
             }
             EnsureBuilt();
+            SubscribeLocale();
         }
 
         private void Start()
@@ -319,25 +322,26 @@ namespace ProjectC.UI.Client
             }
         }
 
-        private void OnDisable()
+private void OnDisable()
         {
-        // BUGFIX2026-06-05: используем флаг-версию (UnsubscribeInventory).
-        // Старая версия делала bare -=, и если подписки не было — flag оставался неверным.
-        // T-P19: Inventory переехал в InventoryTab.
-        if (_inventoryTab != null) _inventoryTab.Unsubscribe();
-        // T-P19: Contracts переехал в ContractsTab.
-        if (_contractsTab != null) _contractsTab.Unsubscribe();
-        // T-Q11: Unsubscribe QuestClientState (3 события).
-        UnsubscribeQuestState();
-        // T-Q13: Unsubscribe Reputation + NpcAttitude singletons.
-        UnsubscribeReputation();
-        UnsubscribeNpcAttitude();
-        // T-P14: Unsubscribe SkillsClientState (2 события).
-        UnsubscribeSkills();
-        // T-P16: Unsubscribe StatsClientState (1 событие).
-        UnsubscribeStats();
-        // T-P17: Unsubscribe EquipmentClientState (2 события).
-        UnsubscribeEquipment();
+            UnsubscribeLocale();
+            // BUGFIX2026-06-05: используем флаг-версию (UnsubscribeInventory).
+            // Старая версия делала bare -=, и если подписки не было — flag оставался неверным.
+            // T-P19: Inventory переехал в InventoryTab.
+            if (_inventoryTab != null) _inventoryTab.Unsubscribe();
+            // T-P19: Contracts переехал в ContractsTab.
+            if (_contractsTab != null) _contractsTab.Unsubscribe();
+            // T-Q11: Unsubscribe QuestClientState (3 события).
+            UnsubscribeQuestState();
+            // T-Q13: Unsubscribe Reputation + NpcAttitude singletons.
+            UnsubscribeReputation();
+            UnsubscribeNpcAttitude();
+            // T-P14: Unsubscribe SkillsClientState (2 события).
+            UnsubscribeSkills();
+            // T-P16: Unsubscribe StatsClientState (1 событие).
+            UnsubscribeStats();
+            // T-P17: Unsubscribe EquipmentClientState (2 события).
+            UnsubscribeEquipment();
         }
 
         private bool _isInventorySubscribed = false;
@@ -448,6 +452,66 @@ namespace ProjectC.UI.Client
         {
             if (Instance == this) Instance = null;
         }
+
+private void SubscribeLocale()
+        {
+            if (_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _isLocaleSubscribed = true;
+            if (_built) LocalizeStaticTexts();
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _isLocaleSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (!_built || _root == null) return;
+            LocalizeStaticTexts();
+            if (_contractsTab != null) _contractsTab.RefreshLocalization();
+            if (_inventoryTab != null) _inventoryTab.RefreshLocalization();
+            if (_myShipsTab != null) _myShipsTab.RefreshLocalization();
+
+            if (_knowledgeFactionsList != null) _knowledgeFactionsList.Rebuild();
+            if (_knowledgeNpcList != null) _knowledgeNpcList.Rebuild();
+            if (_knowledgeSkillsList != null) _knowledgeSkillsList.Rebuild();
+            if (_knowledgeRecipesList != null) _knowledgeRecipesList.Rebuild();
+            if (_questsActiveList != null) _questsActiveList.Rebuild();
+            if (_questsCompletedList != null) _questsCompletedList.Rebuild();
+            if (_questsFailedList != null) _questsFailedList.Rebuild();
+            if (_questsDiscoveredList != null) _questsDiscoveredList.Rebuild();
+            RebuildEquipmentListView();
+            RebuildSkillsListView();
+            _doc?.rootVisualElement?.MarkDirtyRepaint();
+        }
+
+        private void LocalizeStaticTexts()
+        {
+            if (_tabCharacter != null) _tabCharacter.text = Loc.Get("ui.character.tab.character");
+            if (_tabShip != null) _tabShip.text = Loc.Get("ui.character.tab.ship");
+            if (_tabKnowledge != null) _tabKnowledge.text = Loc.Get("ui.character.tab.knowledge");
+            if (_tabContracts != null) _tabContracts.text = Loc.Get("ui.character.tab.contracts");
+            if (_tabInventory != null) _tabInventory.text = Loc.Get("ui.character.tab.inventory");
+            if (_tabQuests != null) _tabQuests.text = Loc.Get("ui.character.tab.quests");
+            if (_characterNameLabel != null) _characterNameLabel.text = Loc.Get("ui.character.label.player");
+            if (_locationLabel != null) _locationLabel.text = Loc.Get("ui.character.location");
+            if (_closeBtn != null) _closeBtn.text = Loc.Get("ui.character.btn.close");
+            if (_acceptQuestBtn != null) _acceptQuestBtn.text = Loc.Get("ui.character.btn.accept");
+            if (_rejectQuestBtn != null) _rejectQuestBtn.text = Loc.Get("ui.character.btn.reject");
+            OverrideSectionTitles();
+
+            var skillBtn = _root.Q<Label>("open-skill-tree-btn");
+            if (skillBtn != null) skillBtn.text = Loc.Get("ui.character.btn.learn_skill");
+            var socialBtn = _root.Q<Label>("open-social-skill-tree-btn");
+            if (socialBtn != null) socialBtn.text = Loc.Get("ui.character.btn.learn_skill");
+            var customisationBtn = _root.Q<Label>("open-customisation-btn");
+            if (customisationBtn != null) customisationBtn.text = Loc.Get("ui.character.btn.customisation");
+        }
+
 
         private void Update()
         {

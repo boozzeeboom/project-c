@@ -301,6 +301,22 @@ namespace ProjectC.UI.Client
             ApplyInventoryFilters();
         }
 
+public void RefreshLocalization()
+        {
+            _inventoryFilterSourceOptionsCache = null;
+            _inventoryFilterStateOptions = null;
+            ConfigureInventoryFilters();
+
+            if (_inventoryList != null)
+                _inventoryList.Rebuild();
+
+            if (_inventoryList != null && _inventoryList.selectedIndex >= 0 && _inventoryList.selectedIndex < _inventoryCache.Count)
+                UpdateInventoryDetail(_inventoryCache[_inventoryList.selectedIndex]);
+            else
+                ClearInventoryDetail();
+        }
+
+
         /// <summary>
         /// HandleInventoryResultReceived — показываем feedback.
         /// </summary>

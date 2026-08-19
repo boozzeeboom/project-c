@@ -71,7 +71,7 @@ namespace ProjectC.Docking.UI
                         commPanelUxml = Resources.Load<VisualTreeAsset>("UI/CommPanel");
                 }
 
-        private void OnEnable()
+private void OnEnable()
         {
             if (_doc == null) _doc = GetComponent<UIDocument>();
             if (_doc == null)
@@ -81,6 +81,7 @@ namespace ProjectC.Docking.UI
             }
             EnsureBuilt();
             TrySubscribe();
+            SubscribeLocale();
         }
 
         private void Start()
@@ -94,14 +95,16 @@ namespace ProjectC.Docking.UI
             }
         }
 
-        private void OnDisable()
+private void OnDisable()
         {
             TryUnsubscribe();
+            UnsubscribeLocale();
         }
 
-        private void OnDestroy()
+private void OnDestroy()
         {
             TryUnsubscribe();
+            UnsubscribeLocale();
             if (Instance == this) Instance = null;
         }
 
@@ -164,8 +167,8 @@ namespace ProjectC.Docking.UI
                     }
 
                     // Localize UXML text
-                    if (_primaryButton != null) _primaryButton.text = Loc.Get("ui.docking.btn.request_landing");
-                    if (_secondaryButton != null) _secondaryButton.text = Loc.Get("ui.docking.btn.cancel");
+                    if (_primaryButton != null) _primaryButton.text = Loc.Get("ui.docking.btn.request_landing", "Запросить посадку");
+                    if (_secondaryButton != null) _secondaryButton.text = Loc.Get("ui.docking.btn.cancel", "Отмена");
 
                     _built = true;
                     // Изначально скрыто — Show()/SetOpen(true) переключит на Flex
@@ -178,7 +181,31 @@ namespace ProjectC.Docking.UI
 
         // ====================================================
         // SUBSCRIPTIONS (как DialogWindow)
-        // ====================================================
+        // ====================================================        
+        private bool _localeSubscribed;
+
+        private void SubscribeLocale()
+        {
+            if (_localeSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _localeSubscribed = true;
+            if (_built) HandleLocaleChanged();
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_localeSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _localeSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (!_built) return;
+            UpdateUI();
+            _doc?.rootVisualElement?.MarkDirtyRepaint();
+        }
+
 
         private void TrySubscribe()
         {

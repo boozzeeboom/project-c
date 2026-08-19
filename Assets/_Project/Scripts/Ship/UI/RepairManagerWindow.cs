@@ -12,7 +12,8 @@
 // =====================================================================================
 
 using System.Collections;
-using System.Collections.Generic;
+using System.Collections.Generic;using System.Linq;
+
 using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Localization;
@@ -115,23 +116,93 @@ namespace ProjectC.Ship.UI
             CachePlayerCamera();
         }
 
-        private void OnEnable()
+private void OnEnable()
         {
             if (_doc == null) _doc = GetComponent<UIDocument>();
             EnsureBuilt();
+            SubscribeLocale();
         }
 
-        private void OnDisable()
+private void OnDisable()
         {
+            UnsubscribeLocale();
             if (IsOpen) SetOpen(false);
         }
 
-        private void OnDestroy()
+private void OnDestroy()
         {
+            UnsubscribeLocale();
             if (Instance == this) Instance = null;
         }
 
-        private void Update()
+                private bool _isLocaleSubscribed;
+
+        private void SubscribeLocale()
+        {
+            if (_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _isLocaleSubscribed = true;
+            if (_built) HandleLocaleChanged();
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _isLocaleSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (!_built) return;
+            LocalizeStaticTexts();
+            BuildShipDropdown();
+            BuildPaintPalette();
+            UpdatePaintUI();
+            RefreshCredits();
+
+            if (_selectedKeyId > 0 && _shipByKeyId.TryGetValue(_selectedKeyId, out var sc) && sc != null)
+            {
+                string selectedSlot = _selectedSlotName;
+                RenderShip();
+                if (!string.IsNullOrEmpty(selectedSlot))
+                {
+                    _selectedSlotName = selectedSlot;
+                    BuildSlotDropdown(sc);
+                    UpdateInstalledInfo();
+                    RenderCompatibleModules(selectedSlot);
+                }
+            }
+            else
+            {
+                ClearShipView();
+            }
+        }
+
+        private void LocalizeStaticTexts()
+        {
+            if (_root == null) return;
+
+            var title = _root.Q<Label>("repair-title");
+            if (title != null) title.text = Loc.Get("ui.repair.title", "🛠 Ремонтный Менеджер");
+
+            int sectionIndex = 0;
+            foreach (var label in _root.Query<Label>(className: "repair-section-label").ToList())
+            {
+                switch (sectionIndex++)
+                {
+                    case 0: label.text = Loc.Get("ui.repair.section.ship", "Корабль:"); break;
+                    case 1: label.text = Loc.Get("ui.repair.section.slot", "Слот модуля:"); break;
+                    case 2: label.text = Loc.Get("ui.repair.available_modules", "Доступные модули:"); break;
+                    case 3: label.text = Loc.Get("ui.repair.section.paint", "🎨 Цвет корабля:"); break;
+                }
+            }
+
+            if (_recallBtn != null) _recallBtn.text = Loc.Get("ui.repair.call", "🚁 Вызвать");
+            if (_hullBtn != null && _selectedKeyId <= 0) _hullBtn.text = Loc.Get("ui.repair.btn.repair", "🔧 Починить");
+            if (_paintCostLabel != null && _repaintCost <= 0) _paintCostLabel.text = Loc.Get("ui.repair.cost_empty", "Стоимость: —");
+        }
+private void Update()
         {
             if (!IsOpen || !_built) return;
 
@@ -397,7 +468,7 @@ namespace ProjectC.Ship.UI
                 if (_shipByKeyId.TryGetValue(id, out var sc))
                     choices.Add($"🚀 {ResolveDisplayName(sc)}");
                 else
-                    choices.Add($"🔑 Key #{id}");
+                    choices.Add(Loc.Format("ui.repair.key_fallback", id));
             }
             dd.SetChoices(choices, -1);
             dd.OnSelectionChanged += (idx) =>
@@ -428,7 +499,9 @@ namespace ProjectC.Ship.UI
             {
                 if (slot == null) continue;
                 string name = slot.gameObject.name;
-                string suffix = slot.isOccupied ? $" [✓ {slot.installedModule.displayName}]" : " [пусто]";
+                string suffix = slot.isOccupied
+                    ? Loc.Format("ui.repair.slot_occupied_suffix", slot.installedModule.displayName)
+                    : Loc.Get("ui.repair.slot_empty_suffix", " [пусто]");
                 choices.Add($"🔧 {name}{suffix}");
                 slotNames.Add(name);
             }
@@ -527,7 +600,7 @@ namespace ProjectC.Ship.UI
                 _hullBtn.text = needsRepair
                     ? Loc.Format("ui.repair.hull_repair_btn", _hullRepairCost)
                     : Loc.Get("ui.repair.hull_ok_btn");
-                _hullBtn.tooltip = !isDocked ? "Корабль должен быть в доке" : string.Empty;
+                _hullBtn.tooltip = !isDocked ? Loc.Get("ui.repair.dock_required", "Корабль должен быть в доке") : string.Empty;
             }
         }
 
@@ -618,8 +691,8 @@ namespace ProjectC.Ship.UI
 
         private void ClearShipView()
         {
-            if (_shipClassLabel != null) _shipClassLabel.text = Loc.Get("ui.repair.ship_class_unknown", "Class: —");
-            if (_shipPowerLabel != null) _shipPowerLabel.text = Loc.Get("ui.repair.ship_power_unknown", "Power: —");
+            if (_shipClassLabel != null) _shipClassLabel.text = Loc.Get("ui.repair.ship_class_empty", "Class: —");
+            if (_shipPowerLabel != null) _shipPowerLabel.text = Loc.Get("ui.repair.power_empty", "Power: —");
             if (_hullLabel != null) _hullLabel.text = Loc.Get("ui.ship.hull_empty");
             if (_hullBarFill != null) _hullBarFill.style.width = Length.Percent(0);
             if (_hullBtn != null) _hullBtn.SetEnabled(false);
@@ -789,7 +862,7 @@ namespace ProjectC.Ship.UI
                 infoCol.Add(nameLbl);
 
                 // Price + power
-                string priceStr = $"💰 {mod.costCredits} кр.";
+                string priceStr = Loc.Format("ui.repair.price_credits", mod.costCredits);
                 if (mod.requiredResources != null && mod.requiredResources.Length > 0)
                 {
                     var resParts = new List<string>();
@@ -804,7 +877,7 @@ namespace ProjectC.Ship.UI
                     // Если слот занят — старый модуль освободит энергию
                     if (targetSlot != null && targetSlot.isOccupied)
                         avail += targetSlot.installedModule.powerConsumption;
-                    priceStr += $" ⚡ {mod.powerConsumption} (свободно {avail})";
+                    priceStr += Loc.Format("ui.repair.power_avail", mod.powerConsumption, avail);
                 }
 
                 var priceLbl = new Label(priceStr);
@@ -1015,10 +1088,11 @@ namespace ProjectC.Ship.UI
             foreach (var (name, color) in PaintPresets)
             {
                 var btn = new Button();
-                btn.text = name;
+                string localizedName = LocalizePaintPreset(name);
+                btn.text = localizedName;
                 btn.AddToClassList("paint-color-btn");
                 btn.style.backgroundColor = new StyleColor(color);
-                btn.tooltip = name;
+                btn.tooltip = localizedName;
                 btn.userData = color;
 
                 btn.clicked += () =>
@@ -1042,7 +1116,25 @@ namespace ProjectC.Ship.UI
             }
         }
 
-        private void UpdatePaintUI()
+                private static string LocalizePaintPreset(string fallback)
+        {
+            switch (fallback)
+            {
+                case "⚪ Белый": return Loc.Get("ui.repair.color.white", fallback);
+                case "🔘 Серый": return Loc.Get("ui.repair.color.gray", fallback);
+                case "⚫ Чёрный": return Loc.Get("ui.repair.color.black", fallback);
+                case "🔴 Красный": return Loc.Get("ui.repair.color.red", fallback);
+                case "🔵 Синий": return Loc.Get("ui.repair.color.blue", fallback);
+                case "🟢 Зелёный": return Loc.Get("ui.repair.color.green", fallback);
+                case "🟡 Жёлтый": return Loc.Get("ui.repair.color.yellow", fallback);
+                case "🟠 Оранжевый": return Loc.Get("ui.repair.color.orange", fallback);
+                case "🟣 Фиолетовый": return Loc.Get("ui.repair.color.purple", fallback);
+                case "🔷 Бирюзовый": return Loc.Get("ui.repair.color.turquoise", fallback);
+                default: return fallback;
+            }
+        }
+
+private void UpdatePaintUI()
         {
             if (_paintCostLabel != null)
                 _paintCostLabel.text = _repaintCost > 0 ? Loc.Format("ui.repair.paint_cost", _repaintCost) : Loc.Get("ui.repair.free");

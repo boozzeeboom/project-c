@@ -27,7 +27,11 @@ namespace ProjectC.UI.Settings
         private VisualElement _root;
         private Label _titleLabel;
         private Label _hintLabel;
-        private bool _built = false;
+        
+        private bool _isLocaleSubscribed;
+        private string _currentActionName;
+        private bool _currentIsSkill;
+private bool _built = false;
 
         private void Awake()
         {
@@ -37,7 +41,59 @@ namespace ProjectC.UI.Settings
         }
 
         private void OnDestroy() { if (Instance == this) Instance = null; }
-        private void OnEnable() { EnsureBuilt(); }
+
+private void OnDisable()
+        {
+            UnsubscribeLocale();
+        }
+
+        private void SubscribeLocale()
+        {
+            if (_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _isLocaleSubscribed = true;
+            if (_built) LocalizePromptTexts();
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _isLocaleSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (!_built || _root == null) return;
+            LocalizePromptTexts();
+            _root.MarkDirtyRepaint();
+        }
+
+        private void LocalizePromptTexts()
+        {
+            if (_titleLabel != null)
+            {
+                _titleLabel.text = string.IsNullOrEmpty(_currentActionName)
+                    ? Loc.Get("ui.rebind.title")
+                    : (_currentIsSkill
+                        ? Loc.Get("ui.keybindings.rebind_skill_title", "Remap skill:")
+                        : Loc.Get("ui.keybindings.rebind_key_title", "Remap key:"));
+            }
+            if (_hintLabel != null)
+            {
+                _hintLabel.text = string.IsNullOrEmpty(_currentActionName)
+                    ? Loc.Get("ui.rebind.hint")
+                    : Loc.Format("ui.keybindings.rebind_hint", _currentActionName);
+            }
+            var cancelLabel = _root.Q<Label>("prompt-cancel");
+            if (cancelLabel != null) cancelLabel.text = Loc.Get("ui.rebind.cancel_hint");
+        }
+
+private void OnEnable()
+        {
+            EnsureBuilt();
+            SubscribeLocale();
+        }
         private void Start() { EnsureBuilt(); }
 
         public void EnsureBuilt()
@@ -90,13 +146,12 @@ namespace ProjectC.UI.Settings
             go.AddComponent<RebindPromptWindow>();
         }
 
-        public void ShowInternal(string actionName, bool isSkill)
+public void ShowInternal(string actionName, bool isSkill)
         {
             if (!_built) EnsureBuilt();
-            if (_titleLabel != null)
-                _titleLabel.text = isSkill ? Loc.Get("ui.keybindings.rebind_skill_title", "Remap skill:") : Loc.Get("ui.keybindings.rebind_key_title", "Remap key:");
-            if (_hintLabel != null)
-                _hintLabel.text = Loc.Format("ui.keybindings.rebind_hint", actionName ?? "");
+            _currentActionName = actionName ?? "";
+            _currentIsSkill = isSkill;
+            LocalizePromptTexts();
             SetVisible(true);
         }
 

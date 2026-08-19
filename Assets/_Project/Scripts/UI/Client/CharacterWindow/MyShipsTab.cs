@@ -282,7 +282,16 @@ namespace ProjectC.UI.Client
                 _emptyLabel.text = Loc.Get("ui.ship.no_ships");
 
             Debug.Log($"[MyShipsTab] RefreshShipList: {_choices.Count} кораблей");
-        }private void UpdateVisibility()
+        }
+
+public void RefreshLocalization()
+        {
+            if (_selectedIndex >= 0 && _selectedIndex < _itemIds.Count)
+                RenderSelectedShip();
+            else if (_emptyLabel != null && _choices.Count == 0)
+                _emptyLabel.text = Loc.Get("ui.ship.no_ships");
+        }
+private void UpdateVisibility()
         {
             bool hasShips = _choices.Count > 0;
 

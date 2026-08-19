@@ -178,6 +178,14 @@ namespace ProjectC.UI.Client
             ApplyContractFilters();
         }
 
+public void RefreshLocalization()
+        {
+            _contractFilterStateOptions = null;
+            ConfigureContractFilters();
+            ApplyContractFilters();
+        }
+
+
         public void Unsubscribe()
         {
             if (_contractState != null)

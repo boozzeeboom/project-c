@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
+
+using ProjectC.Localization;
 using UnityEngine.UIElements;
 
 namespace ProjectC.Skills.UI
@@ -47,7 +49,9 @@ namespace ProjectC.Skills.UI
         private VisualElement _btnLearn;
         private VisualElement _btnForget;
         private TextField _searchField;
-        private bool _isSkillsSubscribed;
+        
+        private bool _isLocaleSubscribed;
+private bool _isSkillsSubscribed;
 
         private void Awake()
         {
@@ -61,9 +65,79 @@ namespace ProjectC.Skills.UI
             }
         }
 
-        private void OnEnable() { EnsureBuilt(); TrySubscribeSkills(); }
-        private void OnDisable() { UnsubscribeSkills(); }
+private void OnEnable()
+        {
+            EnsureBuilt();
+            TrySubscribeSkills();
+            SubscribeLocale();
+        }
+private void OnDisable()
+        {
+            UnsubscribeSkills();
+            UnsubscribeLocale();
+        }
         private void OnDestroy() { if (Instance == this) Instance = null; }
+
+private void SubscribeLocale()
+        {
+            if (_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _isLocaleSubscribed = true;
+            if (_built) LocalizeStaticTexts();
+        }
+
+        private void UnsubscribeLocale()
+        {
+            if (!_isLocaleSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _isLocaleSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (!_built || _rootContainer == null) return;
+            LocalizeStaticTexts();
+            if (IsOpen())
+            {
+                ApplyFilterAndSearch();
+                if (!string.IsNullOrEmpty(_selectedSkillId))
+                {
+                    var cfg = _allSkillConfigs.Find(s => s != null && s.skillId == _selectedSkillId);
+                    if (cfg != null) UpdateDetailPanel(cfg);
+                }
+            }
+            _rootContainer.MarkDirtyRepaint();
+        }
+
+private void LocalizeStaticTexts()
+        {
+            if (_rootContainer == null) return;
+
+            var titleLabel = _rootContainer.Q<Label>(className: "stw-title");
+            if (titleLabel != null) titleLabel.text = Loc.Get("ui.skill.social_tree_title", "Социальные навыки");
+
+            var slotsTitle = _rootContainer.Q<Label>("stw-section-slots");
+            if (slotsTitle != null) slotsTitle.text = Loc.Get("ui.skill.slots", "Слоты");
+            var skillsTitle = _rootContainer.Q<Label>("stw-section-skills");
+            if (skillsTitle != null) skillsTitle.text = Loc.Get("ui.skill.list", "Навыки");
+            var prereqTitle = _rootContainer.Q<Label>("stw-detail-prereq-title");
+            if (prereqTitle != null) prereqTitle.text = Loc.Get("ui.skill.required", "Требуется:");
+            var depsTitle = _rootContainer.Q<Label>("stw-detail-deps-title");
+            if (depsTitle != null) depsTitle.text = Loc.Get("ui.skill.unlocks", "Откроет:");
+            var learnButton = _rootContainer.Q<Label>("btn-learn");
+            if (learnButton != null) learnButton.text = Loc.Get("ui.skill.learn", "Изучить");
+            var forgetButton = _rootContainer.Q<Label>("btn-forget");
+            if (forgetButton != null) forgetButton.text = Loc.Get("ui.skill.forget", "Забыть");
+            var closeButton = _rootContainer.Q<Label>("btn-close");
+            if (closeButton != null) closeButton.text = Loc.Get("ui.skill.close", "Закрыть");
+
+            if (string.IsNullOrEmpty(_selectedSkillId) && _detailName != null)
+            {
+                var detailNameLabel = _detailName.Q<Label>();
+                if (detailNameLabel != null) detailNameLabel.text = Loc.Get("ui.skill.select_hint", "Выберите навык слева");
+            }
+        }
+
         private void Start() { EnsureBuilt(); TrySubscribeSkills(); }
 
         private void EnsureBuilt()
@@ -112,7 +186,7 @@ namespace ProjectC.Skills.UI
 
             // Заголовок: «Социальные навыки» вместо «Дерево навыков»
             var titleLabel = _rootContainer.Q<Label>(className: "stw-title");
-            if (titleLabel != null) titleLabel.text = "Социальные навыки";
+            if (titleLabel != null) titleLabel.text = Loc.Get("ui.skill.social_tree_title", "Социальные навыки");
 
             // === Кешируем UI refs (те же имена что в SkillTreeWindow.uxml) ===
             _treeContent = _rootContainer.Q<VisualElement>("tree-content");
@@ -321,14 +395,14 @@ namespace ProjectC.Skills.UI
             badge.AddToClassList("tree-node-badge");
             node.Add(badge);
 
-            var title = new Label { text = s.displayName ?? s.skillId };
+            var title = new Label { text = Loc.Get($"static.skill.{s.skillId}.displayName", s.displayName ?? s.skillId) };
             title.AddToClassList("tree-node-title");
             node.Add(title);
 
             var typeBadge = new Label { text = "P" };
             typeBadge.AddToClassList("tree-node-type-badge");
             typeBadge.AddToClassList("tree-node-type-passive");
-            typeBadge.tooltip = "Пассивный (применяется автоматически)";
+            typeBadge.tooltip = Loc.Get("ui.skill.type_passive");
             node.Add(typeBadge);
 
             var capturedId = s.skillId;
@@ -379,20 +453,26 @@ namespace ProjectC.Skills.UI
             if (cfg != null) UpdateDetailPanel(cfg);
         }
 
-        private void UpdateDetailPanel(SkillNodeConfig s)
+private void UpdateDetailPanel(SkillNodeConfig s)
         {
             if (s == null) return;
             var learned = SkillsClientState.Instance?.CurrentSkills ?? new HashSet<string>();
             bool isLearned = learned.Contains(s.skillId);
             bool canLearn = CanLearn(s, learned);
-            if (_detailName != null) _detailName.Q<Label>()!.text = s.displayName ?? s.skillId;
-            if (_detailDesc != null) _detailDesc.text = s.description ?? "(нет описания)";
+            string displayName = Loc.Get($"static.skill.{s.skillId}.displayName", s.displayName ?? s.skillId);
+            if (_detailName != null) _detailName.Q<Label>()!.text = displayName;
+            if (_detailDesc != null) _detailDesc.text = Loc.Get($"static.skill.{s.skillId}.description", s.description ?? Loc.Get("ui.skill.no_description"));
 
-            string typeLine = "Тип: Пассивный (применяется автоматически)";
-            string effectsLine = $"Эффекты: {FormatEffectsText(s)}";
+            string typeStr = Loc.Get("ui.skill.type_passive", "Passive");
+            string typeLine = Loc.Format("ui.skill.type_line", typeStr);
+            string effectsLine = Loc.Format("ui.skill.effects_line", FormatEffectsText(s));
             if (_detailEffects != null) _detailEffects.text = $"{typeLine}\n{effectsLine}";
 
-            if (_detailCost != null) _detailCost.text = $"Стоимость: {(s.LearnXpCost > 0 ? s.LearnXpCost.ToString("F0") + " XP" : "Free")}";
+            if (_detailCost != null)
+            {
+                _detailCost.text = Loc.Format("ui.skill.cost",
+                    s.LearnXpCost > 0 ? $"{s.LearnXpCost:F0} XP" : Loc.Get("ui.skill.free", "Free"));
+            }
             if (_detailTier != null)
             {
                 var parts = new List<string>();
@@ -400,8 +480,8 @@ namespace ProjectC.Skills.UI
                 if (s.RequiredDexterityTier > 0) parts.Add($"DEX {s.RequiredDexterityTier}+");
                 if (s.RequiredIntelligenceTier > 0) parts.Add($"INT {s.RequiredIntelligenceTier}+");
                 _detailTier.text = parts.Count > 0
-                    ? $"Требования: {string.Join(", ", parts)}"
-                    : "Требования: нет";
+                    ? Loc.Format("ui.skill.requirements", string.Join(", ", parts))
+                    : Loc.Get("ui.skill.requirements_none", "Requirements: none");
             }
             if (_detailPrereqContainer != null) RebuildPrereqList(s, learned);
             if (_detailDepsContainer != null) RebuildDependentsList(s);
@@ -418,9 +498,9 @@ namespace ProjectC.Skills.UI
             return true;
         }
 
-        private string FormatEffectsText(SkillNodeConfig s)
+private string FormatEffectsText(SkillNodeConfig s)
         {
-            if (s.effects == null || s.effects.Length == 0) return "(нет)";
+            if (s.effects == null || s.effects.Length == 0) return Loc.Get("ui.skill.none", "(none)");
             var parts = new List<string>();
             foreach (var e in s.effects)
             {
@@ -432,27 +512,29 @@ namespace ProjectC.Skills.UI
                 else if ((int)e.type >= 3 && !string.IsNullOrEmpty(e.stringParam))
                     parts.Add($"[{e.stringParam}]");
             }
-            return parts.Count > 0 ? string.Join(" ", parts) : "(нет)";
+            return parts.Count > 0 ? string.Join(" ", parts) : Loc.Get("ui.skill.none", "(none)");
         }
 
-        private void RebuildPrereqList(SkillNodeConfig s, HashSet<string> learned)
+private void RebuildPrereqList(SkillNodeConfig s, HashSet<string> learned)
         {
             _detailPrereqContainer.Clear();
             if (s.prerequisites == null || s.prerequisites.Length == 0)
             {
-                _detailPrereqContainer.Add(new Label { text = "(нет)" });
+                _detailPrereqContainer.Add(new Label { text = Loc.Get("ui.skill.none", "(none)") });
                 return;
             }
             foreach (var p in s.prerequisites)
             {
                 if (p == null) continue;
-                var l = new Label { text = $"{(learned.Contains(p.skillId) ? "✓" : "✕")} {p.displayName ?? p.skillId}" };
-                l.AddToClassList(learned.Contains(p.skillId) ? "stw-prereq-have" : "stw-prereq-missing");
+                bool isLearned = learned.Contains(p.skillId);
+                string displayName = Loc.Get($"static.skill.{p.skillId}.displayName", p.displayName ?? p.skillId);
+                var l = new Label { text = $"{(isLearned ? "✓" : "✕")} {displayName}" };
+                l.AddToClassList(isLearned ? "stw-prereq-have" : "stw-prereq-missing");
                 _detailPrereqContainer.Add(l);
             }
         }
 
-        private void RebuildDependentsList(SkillNodeConfig s)
+private void RebuildDependentsList(SkillNodeConfig s)
         {
             _detailDepsContainer.Clear();
             var deps = new List<string>();
@@ -460,11 +542,19 @@ namespace ProjectC.Skills.UI
             {
                 if (other == null || other == s) continue;
                 if (other.prerequisites != null)
+                {
                     foreach (var p in other.prerequisites)
-                        if (p != null && p.skillId == s.skillId) { deps.Add(other.displayName ?? other.skillId); break; }
+                    {
+                        if (p != null && p.skillId == s.skillId)
+                        {
+                            deps.Add(Loc.Get($"static.skill.{other.skillId}.displayName", other.displayName ?? other.skillId));
+                            break;
+                        }
+                    }
+                }
             }
             if (deps.Count == 0)
-                _detailDepsContainer.Add(new Label { text = "(ничего)" });
+                _detailDepsContainer.Add(new Label { text = Loc.Get("ui.skill.nothing", "(nothing)") });
             else
                 foreach (var d in deps)
                     _detailDepsContainer.Add(new Label { text = "→ " + d });

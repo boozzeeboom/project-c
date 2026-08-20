@@ -34695,9 +34695,9 @@ MonoBehaviour:
   - m_EditModeType: 1
     m_Knots:
     - Position:
-        x: 807.83984
-        y: 0
-        z: 3241.3867
+        x: 1267.8398
+        y: 2413
+        z: 1989.3867
       TangentIn:
         x: 0
         y: 0
@@ -34709,9 +34709,9 @@ MonoBehaviour:
       Rotation:
         value:
           x: 0
-          y: 0.42033586
+          y: 0.420336
           z: 0
-          w: 0.90736866
+          w: 0.9073685
     - Position:
         x: 36184.84
         y: 0

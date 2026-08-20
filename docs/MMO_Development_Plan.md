@@ -1,8 +1,8 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 7 августа 2026 г. | **Текущая версия:** `v0.1.0`
+**Последнее обновление:** 20 августа 2026 г. | **Текущая версия:** `v0.1.21`
 
-> **Что нового (28 июля – 4 августа 2026):** **196 коммитов, 2 крупных направления + поддержка.** Версия v0.0.85. Подробная ретроспектива: `docs/dev/RETROSPECTIVE_2026-08-04.md`.
+> **Что нового (5–20 августа 2026):** **v0.1.20 → v0.1.21.** Contract core refactor: разделены board offers, active contracts и terminal history; добавлен полный Receipt flow `Accept → Claim Cargo → Transport → Submit`, серверная валидация доставки и rollback при ошибках persistence. **v0.1.21** — локализационный фикс. Подробности: `docs/changelogs.md` и `docs/dev/RETROSPECTIVE_2026-08-17.md`.
 >
 > **☁️ Cloud Ocean 3.0 (T-CLD01, T-CLOUD02..42):** ~75 коммитов. Объёмная система облаков — 🟢 продакшн-готово. Volumetric raymarch (4 слоя 800–7000м), Ghibli-рампы день/закат, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal. Интерактивность: LocalDensityBuffer (96³), корабельный след (displacement + кильватерный конус), VFX contrail, штормовые ячейки (procedural cellular-форма «цветная капуста», иммунны к displacement, runtime save/load, anti-banding). Источник правды: `docs/world/CLOUD_system/3.0/STATUS.md`.
 >
@@ -517,7 +517,7 @@
 
 **Документация:** `docs/Markets/Resources_exchanger/01_ANALYSIS.md` + `02_IMPLEMENTATION.md` + `03_FIXES_HISTORY.md`.
 
-### 1.13 NPC + Quests v2 (полная подсистема) ✅ ЗАВЕРШЕНО (M1–M19, 2026-06-09..13) + Аудиты + Dialog Fixes + Editor Tooling v2 (июль–август 2026)
+### 1.13 NPC + Quests v2 (полная подсистема) ✅ ЗАВЕРШЕНО (M1–M19, 2026-06-09..13) + Аудиты + Dialog Fixes + Editor Tooling v2 (июль–август 2026; пост-аудитный контент)
 **Цель:** Полноценная система квестов и диалогов с NPC, от создания данных до выполнения в игре и редакторского инструментария.
 
 | Компонент | Описание | Статус |
@@ -539,7 +539,7 @@
 | **DialogTreeEditor v2** (T-DLG01) | Карточки нод, drag-and-drop условий/speaker, редактируемые рёбра, PropertyDrawer fix (enumValueIndex→intValue) | ✅ 2026-07-30 |
 | **QuestDefinitionEditor** (T-QUEDIT) | Кастомный редактор для не-технарей, drag-and-drop NPC/квесты/сцены/диалоги | ✅ 2026-07-30 |
 
-**Stats:** ~8400 строк кода, 106 NPC, 802 квеста, 2 DialogTree, 6 CSV файлов.
+**Stats:** ~8400 строк кода (исторический объём подсистемы). После аудита текущий набор `Assets/_Project/Quests/Data` минимален: 3 NPC-ассета, 2 Quest-ассета и 4 Dialog-ассета. Статистика 106 NPC / 802 квеста / 6 CSV относится к прежнему bulk-импорту и больше не описывает текущее содержимое репозитория.
 
 **Аудиты (июль 2026):** Двойной глубокий аудит → критическое открытие: квестовые ассеты (FactionDefinition, NpcDefinition, QuestDefinition) утеряны — GUIDs в QuestDatabase висят в никуда. См. `docs/NPC_quests/DEEP_AUDIT_2026-07-09.md` + `DEEP_AUDIT_2026-07-13.md`.
 **DialogWindow fix (T-UI04):** Текст NPC всегда виден сверху, кнопки квестов прокручиваются. Fix: 85vh → 520px (vh не поддерживается Unity USS).
@@ -734,11 +734,11 @@
 
 ---
 
-### 1.21 Локализация (Localization) ✅ v0.1.0 (LOC-01..17, T-LOC-ESC, 5–7 августа 2026)
+### 1.21 Локализация (Localization) ✅ v0.1.21 (LOC-01..17, T-LOC-ESC; базовая реализация 5–7 августа 2026)
 
 **Цель:** Полная локализация игры на 9 языков с runtime-переключением и инструментами переводчика.
 
-**Архитектура:** 9 языков (EN/RU/DE/FR/ES/PT/IT/PL/UK), 4 таблицы (UI/System/Dialogue/Static), runtime-переключение через `SettingsManager.Locale`, SO-мигратор для статических данных.
+**Архитектура:** 9 языков из текущего `LocaleSelector`: `RU/ZH/EN/ES/DE/FR/PT/JA/HI` (`ru`, `zh`, `en`, `es`, `de`, `fr`, `pt`, `ja`, `hi`), 4 таблицы (UI/System/Dialogue/Static), runtime-переключение через `SettingsManager.Locale`, SO-мигратор для статических данных.
 
 **Фазы:**
 
@@ -989,11 +989,12 @@
    - ✅ Rate limiting (отключён для отладки)
    - ✅ Clamp факторов (0.0 … 1.5)
 
-### 3.3 Контракты НП (Недели 11-13) ✅ ЗАВЕРШЕНО (Сессия 7 + UI Спринты 1-3)
+### 3.3 Контракты НП (Недели 11-13) ✅ ЗАВЕРШЕНО (Сессия 7 + UI Спринты 1-3 + Contract Core Refactor v0.1.20, 17 августа 2026)
 1. **ContractSystem:** ✅
-   - ✅ НП-доставка: взять товар → доставить → получить
-   - ✅ Система «под расписку» (туториал-крючок, первые 2 часа)
-   - ✅ Долговая система: не доставил = долг × 1.5 + штраф репутации
+   - ✅ Разделены board offers, active contracts и terminal history.
+   - ✅ Receipt flow: принять контракт → забрать груз → перевезти → сдать (`Accept → Claim Cargo → Transport → Submit`).
+   - ✅ Система «под расписку» (туториал-крючок, первые 2 часа).
+   - ✅ Долговая система: не доставил = долг × 1.5 + штраф репутации.
 2. **NPC-агент НП:** ✅ + UI Спринты 1-3
    - ✅ Доска контрактов в городах
    - ✅ Туториал: первый контракт «под расписку»
@@ -1005,8 +1006,15 @@
    - ✅ ⭐ Input priority через UIManager
 3. **✅ Мост в квестовую систему (T-X5 + T-Q15, 2026-06-08):**
    - ✅ `ContractServer` публикует 3 events: `ContractAcceptedEvent` / `ContractCompletedEvent` / `ContractFailedEvent`
-   - ✅ `ContractMetaBridge` (server-side singleton, scene-placed в BootstrapScene, DontDestroyOnLoad) подписан на events → `QuestWorld.MarkContractAccepted/MarkContractCompleted` + `QuestTriggerService.Evaluate()`
-   - ✅ Квесты могут следить за состоянием контрактов через `HasContractAccepted`/`HasContractCompleted` objectives
+   - ✅ `ContractMetaBridge` (server-side singleton, scene-placed в BootstrapScene, DontDestroyOnLoad) подписан на events → `QuestWorld.MarkContractAccepted/MarkContractCompleted`. Вызов устаревшего `QuestTriggerService.Evaluate()` удалён (T-C7).
+   - ✅ Квесты могут следить за состоянием контрактов через `HasContractAccepted`/`HasContractCompleted` objectives.
+**Обновление v0.1.20 (17 августа 2026):**
+- ✅ `ContractWorld` разделяет предложения доски, активные контракты и историю терминала.
+- ✅ Завершение доставки авторитативно выполняется сервером: проверяются Receipt, владелец, корабль и целевая зона.
+- ✅ Контрактный груз нельзя отдельно продать или выгрузить; предусмотрен отдельный RPC получения груза Receipt.
+- ✅ При ошибке persistence выполняется общий rollback для груза, кредитов, долга, активных индексов и метаданных Receipt.
+- ✅ Таймеры контрактов перенесены в `ContractCatalog`; граф расстояний построен для 12 `MarketZone` (две локации остаются отключёнными до полной готовности).
+
 4. **⏳ Серверная база данных:** (Этап 5+)
    - PostgreSQL для хранения аккаунтов, прогресса, инвентаря, долгов
    - Redis для кэширования сессионных данных
@@ -1026,13 +1034,13 @@
 3. **PlayerDataStore — единый источник данных:** ✅ (Сессия 8F)
    - ✅ Кредиты ОБЩИЕ для всех локаций
    - ✅ Склады привязаны к локациям
-   - ✅ Кэш в памяти + PlayerPrefs (P0: заменить на БД)
+   - ✅ Кэш в памяти + PlayerPrefs (P0: заменить на БД для legacy player/market state)
    - ✅ Готов к замене на PostgreSQL (интерфейс абстракции)
-4. **Сохранение состояния рынка:** ⏳ (отложено — добавить при реализации persistence)
-   - Сохранение: demand/supply факторы, active events, tick-таймер
-   - Восстановление при перезагрузке сервера
-   - Формат: JSON или БД
-   - **Референс:** в NPC+Quests v2 сделан `JsonQuestStateRepository` (T-Q18) — atomic JSON в `Application.persistentDataPath`, immediate save на каждый state change, единый JSON на игрока. Можно скопировать паттерн для market state.
+4. **Сохранение состояния рынка:** ⏳ (по-прежнему отложено; не относится к реализованному persistence контрактов/Receipt)
+   - Сохранение: demand/supply факторы, active events, tick-таймер.
+   - Восстановление при перезагрузке сервера.
+   - Формат: JSON или БД.
+   - **Референс:** в NPC+Quests v2 сделан `JsonQuestStateRepository` (T-Q18) — atomic JSON в `Application.persistentDataPath`, immediate save на каждый state change, единый JSON на игрока. Для market state этот паттерн ещё не внедрён.
 
 **Результат:** ✅ Сохранение прогресса между сессиями, **ПОЛНАЯ система торговли с динамической экономикой, контрактами НП и долговой системой**.
 
@@ -1253,7 +1261,7 @@
 - 🟡 P1: Clamp quantity + rate limit (Сессия 10) — **В NPC+Quests v2 — решён:** QuestServer rate limit 30 ops/min/client.
 - ✅ **R3-INV-DROP-001 (Drop visual):** исправлен — `PickupDeckRide` + `RefreshWorldBase()` (2026-07-02). Pickup'ы больше не прыгают при отлипании от палубы.
 - 🟢 **MetaRequirement TODO (R2-META-REQ-001, Этап 2):** частично закрыто P1 рефакторингом (удалены 7 obsolete файлов, 0 reflection). Оставшиеся пункты: `_consumeOnUse` логика, `ProgressInfo` UI, disconnect-reconnect race fix (см. `docs/MetaRequirement/50_KNOWN_ISSUES.md`).
-- 🟡 UI: Контракты не сдаются с грузом на корабле (Спринт 3.3 — MVC рефакторинг)
+- ✅ **Contract cargo delivery (v0.1.20):** груз Receipt нельзя продавать или выгружать отдельно; сдача проходит через server-authoritative submit flow.
 
 ---
 
@@ -1306,21 +1314,21 @@
    - ✅ Диалоги с NPC (ветвящиеся сюжеты): `DialogTree` SO + `DialogueNode`/`Edge`/`Condition`/`Action` + UI Toolkit `DialogWindow` (typewriter, F-skip, mouse-click skip)
    - ✅ **Mira end-to-end quest** (M11) — полный playthrough с pickup, dialog tree, reputation, attitude, credits
    - ✅ Multi-stage квесты (M13) — `onEnter`/`onComplete` actions, stage transitions
-   - ✅ Real-time objective evaluation (tick 5 sec) — `QuestTriggerService` + 8 trigger types
-   - ✅ Persistence (M8) — `JsonQuestStateRepository`, immediate save на каждом state change
+   - ✅ Проверка целей на сервере в `QuestWorld.TryTurnIn` через `AreAllRequiredComplete`; action/event handling (`EmitEvent`, `FailQuest`, `DiscoverQuest`) реализовано. Legacy `QuestTriggerService` удалён после аудита.
+   - ✅ Persistence (M8) — `JsonQuestStateRepository`, immediate save на каждом state change.
    - ✅ Editor tooling: `QuestDatabaseWindow` (M16), `QuestNodeGraph` (M17), **Editable** (M18), **CSV Import/Export** (M19), **Unified Quest Graph v5** (T-QEDIT, 2026-07-31), **DialogTreeEditor v2** (T-DLG01, 2026-07-30), **QuestDefinitionEditor** (T-QUEDIT, 2026-07-30)
    - ✅ Quest toast notifications (M15): "📜 Accepted", "💚 +5", "💰 +200 CR", "✨ Найден квест"
    - ✅ Item ID single source of truth (M14): `ItemRegistry` SO + 32 items
-   - ✅ **Торговые квесты:** ✅ **Quest ↔ Contract мост** — `ContractMetaBridge` (M7): NPC dialog actions `GiveItem`/`TakeItem` + ContractServer events (`ContractAcceptedEvent`/`ContractCompletedEvent`/`ContractFailedEvent`) → quest trigger evaluation
+   - ✅ **Торговые квесты:** ✅ **Quest ↔ Contract мост** — `ContractMetaBridge` (M7): NPC dialog actions `GiveItem`/`TakeItem` + `ContractServer` events (`ContractAcceptedEvent`/`ContractCompletedEvent`/`ContractFailedEvent`) → `QuestWorld.MarkContractAccepted/MarkContractCompleted`
    - ✅ **M19 CSV pipeline — финал** (T-Q19.1–T-Q19.3, 2026-06-13):
      - ✅ T-Q19.1 Авто-заполнение `questTurnIns` у NPC (последний stage + TalkToNpc → NPC)
      - ✅ T-Q19.2 Авто-link `defaultDialogTree` (DialogTree `{npcId}_default` → NPC)
      - ✅ T-Q19.3 `npcs.csv` — 9 колонок (services, attitudeLinks, attitudeMin/Max, greeting, voice, radius, showGreeting)
    - ✅ **DialogCsvImporter** — 15 колонок treeId/fromNodeId/fromText/fromSpeaker/edgeLabel/toNodeId/conditions/actions. Создаёт DialogTree + auto-link к NPC.
    - ✅ **NpcCsvImporter** — 9 колонок, batch-update существующих NPC.
-   - ✅ **Тестовые данные:** 106 NPC, 802 квеста, 2 DialogTree, 6 CSV файлов.
+   - ✅ **Текущие данные после аудита:** `Assets/_Project/Quests/Data` содержит 3 NPC-ассета, 2 Quest-ассета и 4 Dialog-ассета; прежняя статистика 106 NPC / 802 квеста / 6 CSV была результатом bulk-импорта и больше не описывает текущий набор.
    - ✅ Writer-документация: `docs/NPC_quests/M19_CSV_PIPELINE_v2.md` (26 KB, 7 разделов).
-   - ✅ **Контент квестов (расширение):** 🟢 106 NPC, 802 квеста, 6 CSV файлов — bulk импорт завершён. **Авторский контент** — открыто (создание сюжетных квестов через CSV/Editor).
+   - ✅ **Контент квестов (пост-аудит):** минимальный набор onboarding + `collect_copper_ore` и базовые диалоги; расширение авторского контента через CSV/Editor — открыто.
    - ⏳ **Ежедневные испытания** — не начато (post-MVP).
 
 2. **Визуальные улучшения:**

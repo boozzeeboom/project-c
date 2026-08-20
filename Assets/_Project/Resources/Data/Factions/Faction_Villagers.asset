@@ -13,18 +13,12 @@ MonoBehaviour:
   m_Name: Faction_Villagers
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Factions.FactionDefinition
   factionId: 15
-  displayName: "\u0416\u0438\u0442\u0435\u043B\u0438"
+  displayName: "\u0413\u043E\u0440\u043E\u0434\u0441\u043A\u0438\u0435 \u0436\u0438\u0442\u0435\u043B\u0438"
   color: {r: 0.3, g: 0.7, b: 0.3, a: 1}
   iconSprite: {fileID: 0}
-  loreDescription: "\u041C\u0438\u0440\u043D\u044B\u0435 \u0436\u0438\u0442\u0435\u043B\u0438
-    \u0433\u043E\u0440\u043E\u0434\u043E\u0432 \u0438 \u0434\u0435\u0440\u0435\u0432\u0435\u043D\u044C."
+  loreDescription: "\u0413\u043E\u0440\u043E\u0434\u0441\u043A\u0438\u0435 \u0436\u0438\u0442\u0435\u043B\u0438
+    \u041D\u043E\u0432\u043E\u0433\u043E \u041F\u0440\u0430\u0432\u0438\u0442\u0435\u043B\u044C\u0441\u0442\u0432\u0430"
   defaultAttitude: 1
   reputationThresholds: []
   defaultCombatRelation: 1
-  combatRelations:
-  - targetFaction: 12
-    relation: 2
-  - targetFaction: 13
-    relation: 2
-  - targetFaction: 10
-    relation: 2
+  combatRelations: []

@@ -57,7 +57,7 @@
 | Distant clouds (5-15km) | 140 billboards at **FIXED WORLD POSITIONS**, not camera-following |
 | Storms | 5 server-authoritative, world-space, visible if <50km |
 | Wind | Server-broadcast at 0.5 Hz, central WindManager |
-| Rendering | Instanced mesh with improved CloudGhibli shader, NOT full raymarch |
+| Rendering | Instanced mesh with improved cloud shader, NOT full raymarch |
 | Sky Dome | **ONLY as sky renderer** (blue gradient, sun) — NOT a cloud layer |
 
 ### 2.3 Cloud Distribution
@@ -115,7 +115,7 @@ When continuing a session, read documents in this EXACT order:
    └── Original cloud spec: 3 layers, 890+ clouds, day/night
 
 6. docs/gdd/GDD_14_Visual_Art_Pipeline.md (cloud shader section)
-   └── CloudGhibli shader, visual style (Sci-Fi + Ghibli)
+   └── Cloud shader (technical name CloudGhibli), visual style (Sci-Fi + western comic-book language)
 ```
 
 ### Phase D: Code Reference

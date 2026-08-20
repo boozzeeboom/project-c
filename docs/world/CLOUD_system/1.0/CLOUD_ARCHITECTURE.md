@@ -103,7 +103,7 @@ From user conversation:
 ```
 NearCloudRenderer (per layer, altitude-specific)
 ├── Graphics.DrawMeshInstanced (single draw call per layer)
-├── Shared CloudGhibli shader with improvements:
+├── Shared cloud shader with improvements:
 │   ├── 3+ FBM noise octaves (not 2)
 │   ├── Light influence (directional light response)
 │   ├── Day/night tint blending
@@ -141,7 +141,7 @@ User said: "raymarch в другом движке" — this was likely simplifie
 **Solution for near clouds: Simplified volumetric look via shader**
 
 ```
-CloudGhibli.shader improvements (P0):
+Cloud shader improvements (P0):
 ├── 3rd noise octave (FBM with 3 octaves instead of 2)
 ├── _LightInfluence parameter (directional light response)
 ├── _TintColor1/_TintColor2/_TintBlend (day/night tints)
@@ -485,7 +485,7 @@ vs Current: 890+ draw calls
 
 ## 10. Shader Improvements Required
 
-### 8.1 CloudGhibli.shader — Must Add
+### 8.1 Cloud shader (technical file `CloudGhibli.shader`) — Must Add
 
 ```hlsl
 // LIGHTING (currently Unlit — WRONG)
@@ -548,9 +548,9 @@ _LightningFlash    // Float — for storm lightning effect
 - [ ] Test: Storms at same positions for all clients
 
 ### Phase 5: Shader Improvements
-- [ ] CloudGhibli: 3 noise octaves
-- [ ] CloudGhibli: Light influence
-- [ ] CloudGhibli: Day/night tint blending
+- [ ] Cloud shader: 3 noise octaves
+- [ ] Cloud shader: Light influence
+- [ ] Cloud shader: Day/night tint blending
 - [ ] Test: "Tasty" visual quality
 
 ### Phase 6: Polish
@@ -584,7 +584,7 @@ _LightningFlash    // Float — for storm lightning effect
 | Movable + non-movable layers | Impostors (mostly static) + near clouds (wind-driven) |
 | Storm layers | 5 server-controlled storms with VFX |
 | Not too heavy | ~5-7 draw calls, ~3ms GPU |
-| "Tasty" visual | Improved CloudGhibli shader |
+| "Tasty" visual | Improved cloud shader with soft gradients and readable silhouettes |
 
 ---
 

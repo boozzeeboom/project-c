@@ -76,7 +76,7 @@ This is not just game code, it's also the **code of the tools** used to fill the
 
 ### 4.3 Technical visuals — "prepared groundwork"
 
-- **Cloud Ocean 3.0** — volumetric clouds (raymarch): 4 layers 800–7000 m, Ghibli style, day/sunset, interactivity — ships leave trails in the clouds, wake cone, contrails, storm cells with procedural shape and lightning.
+- **Cloud Ocean 3.0** — volumetric clouds (raymarch): 4 layers 800–7000 m, comic-book visual language with soft gradients and readable silhouettes, day/sunset, interactivity — ships leave trails in the clouds, wake cone, contrails, storm cells with procedural shape and lightning.
 - **Camera** — full cycle: obstacle avoidance, adaptive distance, smooth wall fade, zoom, auto-snap on teleport.
 - **Day/night** — 5 phases, moon with phases, 215 stars and 24 constellations.
 - **Post-processing** — bloom, color grading, vignette, edge detection.

@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-Визуальная система облаков должна создавать **"вкусные"**, атмосферные облака в стиле **Sci-Fi + Ghibli**. Текущая реализация слишком примитивная — сферы и цилиндры не создают нужного визуального впечатления.
+Визуальная система облаков должна создавать **выразительные**, атмосферные облака в стиле **Sci-Fi + западные комиксы**: мягкие градиенты, читаемый силуэт, контурная обводка и упрощённые формы. Текущая реализация слишком примитивная — сферы и цилиндры не создают нужного визуального впечатления.
 
 ---
 
@@ -75,7 +75,7 @@
 | **Twilight (7-8pm)** | Plum | `#DDA0DD` | Purple transition |
 | **Night (8pm-5am)** | Slate Blue | `#4F628E` | Moonlit, cool |
 
-### 3.2 Rim Glow Colors (Ghibli Signature)
+### 3.2 Rim Glow Colors (контурная подсветка)
 
 | Time Phase | Rim Color | Hex | Intensity |
 |------------|-----------|-----|----------|
@@ -98,12 +98,12 @@
 
 ## 4. Shader Parameters
 
-### 4.1 Current CloudGhibli.shader Properties
+### 4.1 Current cloud shader properties (техническое имя CloudGhibli.shader)
 
 ```hlsl
 // EXISTING (keep):
 _BaseColor         // Cloud base color
-_RimColor          // Ghibli rim glow color
+_RimColor          // Cloud rim glow color
 _RimPower          // Fresnel power (1.5-4.0)
 _NoiseTex          // FBM noise texture 1
 _NoiseTex2         // FBM noise texture 2
@@ -227,7 +227,7 @@ Clouds feel impressive when they combine:
 
 | Priority | Feature | Impact | Status |
 |----------|---------|--------|--------|
-| **P0** | Add lighting parameters to CloudGhibli.shader | High | 🔴 Not done |
+| **P0** | Add lighting parameters to the cloud shader (технический файл `CloudGhibli.shader`) | High | 🔴 Not done |
 | **P0** | URP Volume Profile with Bloom + Fog | High | 🔴 Not done |
 | **P0** | Day/night tint blending | High | 🔴 Not done |
 | **P1** | Create 3 cloud type configurations | Medium | 🔴 Not done |
@@ -240,7 +240,7 @@ Clouds feel impressive when they combine:
 
 ## 9. Shader Improvements Required
 
-Current `CloudGhibli.shader` is **Unlit** — this is a problem.
+Current cloud shader (`CloudGhibli.shader`) is **Unlit** — this is a problem.
 
 ### 9.1 Problems with Unlit
 - Clouds don't receive shadows from mountains

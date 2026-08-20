@@ -1221,7 +1221,7 @@ const VISUAL_KEYWORDS = [
   'skybox', 'moon', 'constellation',
   'кастомизация', 'customisation', 'customization',
   'equipment visual',
-  'арт', 'art', 'ghibli', 'cloudghibli',
+  'арт', 'art',
   'иконк', 'icon',
   'fbx', 'blender', 'low-poly', 'low poly',
   'пост-процесс', 'post-process',
@@ -1237,7 +1237,7 @@ const VISUAL_SUBSYSTEMS = [
   'Character Animations',
   'Модели кораблей',
   'Окружение',
-  'Облака (Ghibli-стиль)',
+  'Облака (comic-book стиль)',
   'Визуальные улучшения',
   'Визуальные задачи',
   'Visual Tasks',
@@ -1255,7 +1255,7 @@ function classifyTask(taskText, sectionTitle) {
     /* Если это секция про кастомизацию/анимации персонажа — visual */
     if (st.includes('customisation') || st.includes('кастомизац') || st.includes('equipment visual')) return 'visual';
     /* Если секция явно про облака/шейдеры — visual */
-    if ((st.includes('облак') || st.includes('cloud')) && (st.includes('шейдер') || st.includes('shader') || st.includes('ghibli'))) return 'visual';
+    if ((st.includes('облак') || st.includes('cloud')) && (st.includes('шейдер') || st.includes('shader') || st.includes('comic') || st.includes('outline'))) return 'visual';
   }
 
   /* Check task text */
@@ -1567,8 +1567,8 @@ function classifyTask(taskText, sectionTitle) {
       { id: 'GDD-11', name: 'Inventory & Items', desc: '8 типов, круговое колесо', filename: 'GDD_11_Inventory_Items.md' },
       { id: 'GDD-12', name: 'Network & Multiplayer', desc: 'NGO, RPC, реконнект', filename: 'GDD_12_Network_Multiplayer.md' },
       { id: 'GDD-12.1', name: 'Scene Streaming', desc: '24 сцены, 4\u00d76 grid', filename: 'GDD_12_1_Scene_World_Streaming.md' },
-      { id: 'GDD-13', name: 'UI/UX System', desc: 'HUD, Ghibli стиль', filename: 'GDD_13_UI_UX_System.md' },
-      { id: 'GDD-14', name: 'Visual & Art Pipeline', desc: 'URP, CloudGhibli шейдеры', filename: 'GDD_14_Visual_Art_Pipeline.md' },
+      { id: 'GDD-13', name: 'UI/UX System', desc: 'HUD, comic-book стиль', filename: 'GDD_13_UI_UX_System.md' },
+      { id: 'GDD-14', name: 'Visual & Art Pipeline', desc: 'URP, cloud shaders, outline', filename: 'GDD_14_Visual_Art_Pipeline.md' },
       { id: 'GDD-15', name: 'Audio System', desc: 'AudioMixer, SFX, 3D звук', filename: 'GDD_15_Audio_System.md' },
       { id: 'GDD-20', name: 'Progression & RPG', desc: 'XP, уровни 1-50', filename: 'GDD_20_Progression_RPG.md' },
       { id: 'GDD-21', name: 'Quest & Mission', desc: '5 типов квестов', filename: 'GDD_21_Quest_Mission_System.md' },

@@ -17,7 +17,7 @@
 | Приоритеты и z-ordering | Звуковой дизайн UI (поля `ClickSound/OpenSound/CloseSound` объявлены, но не наполнены и не вызываются на UX-событиях) |
 | CharacterWindow (5+ табов), QuestTracker (HUD), DialogWindow (typewriter), InventoryWheel (GL) | **Согласованный стиль переходов между окнами** — каждое окно сейчас существует отдельно |
 | Дневной/ночной цикл (`Assets/_Project/Volumes/DayNight`) | Связь UI с состоянием мира (UI не реагирует на смену дня/ночи, погоду, состояние игрока) |
-| GDD-14: «Sci-Fi + Ghibli», CloudGhibli shader, мягкие градиенты | Текстуры, gradient borders, soft shadows в UI |
+| GDD-14: «Sci-Fi + западные комиксы», контурная обводка и мягкие градиенты | Текстуры, gradient borders, soft shadows и читаемая иерархия в UI |
 | `defaultExecutionOrder=-200`, `[DefaultExecutionOrder]` для windows | Чёткий **слой анимаций и переходов** как отдельный модуль |
 
 **Одна фраза:** мы построили правильную систему окон, но не построили **слоя времени и состояния**, который превращает окно в часть мира.

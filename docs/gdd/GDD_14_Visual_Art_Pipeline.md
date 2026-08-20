@@ -7,11 +7,11 @@
 
 ## 1. Overview
 
-Визуальная система Project C: The Clouds построена на **Unity 6 URP 17.0.3** с кастомными шейдерами и процедурной генерацией. Стиль — **Sci-Fi + Ghibli**: промышленный дизайн + мягкие облака, градиенты, объёмный свет.
+Визуальная система Project C: The Clouds построена на **Unity 6 URP 17.0.3** с кастомными шейдерами и процедурной генерацией. Стиль — **Sci-Fi + западные комиксы**: промышленный дизайн + мягкие облака, градиенты, контурная обводка, упрощённые формы и объёмный свет.
 
 ### Ключевые особенности
 - **URP Pipeline** — Universal Render Pipeline 17.0.3
-- **CloudGhibli.shader** — кастомный URP Unlit (noise + rim glow + vertex displacement) — `Assets/_Project/Art/Shaders/CloudGhibli.shader`
+- **CloudGhibli.shader** — фактическое техническое имя кастомного URP Unlit (noise + rim glow + vertex displacement) — `Assets/_Project/Art/Shaders/CloudGhibli.shader`
 - **ProceduralNoiseGenerator** — FBM noise текстуры 512x512
 - **MaterialURPConverter** — авто-конвертация Standard → URP
 - **3 слоя облаков** — Upper/Middle/Lower, движение, морфинг
@@ -22,7 +22,7 @@
 
 ## 2. Art Style Guide
 
-### Sci-Fi + Ghibli эстетика
+### Comic-Book Sci-Fi эстетика
 
 | Принцип | Описание | Пример |
 |---------|----------|--------|
@@ -32,6 +32,7 @@
 | **Плавные контуры** | Нет острых углов, обтекаемые формы | Корабли |
 | **Градиентная окраска** | Переходы цветов на поверхностях | Корабли, здания |
 | **Объёмный свет** | Световые лучи через облака | Освещение |
+| **Комиксная обводка** | Читаемый силуэт, outline и мягкая граница света | CloudInstanced.shader, EdgeDetection.shader |
 
 ### Цветовая палитра
 
@@ -107,7 +108,7 @@
 | **VeilShader.shader** | `Assets/_Project/Shaders/` | ✅ Завеса-шейдер |
 | **VeilRaymarchMesh.shader** | `Assets/_Project/Shaders/` | ✅ Меш-шейдер Завесы |
 | **TargetOutline.shader** | `Assets/_Project/Shaders/` | ✅ Outline для таргетинга |
-| **VolumetricClouds.shader** | `Assets/_Project/Shaders/` | ✅ Cloud Ocean 3.0 — volumetric raymarch (4 слоя, light march, Ghibli-рампы) |
+| **VolumetricClouds.shader** | `Assets/_Project/Shaders/` | ✅ Cloud Ocean 3.0 — volumetric raymarch (4 слоя, light march, цветовые рампы день/закат) |
 | **EdgeDetection.shader** | `Assets/_Project/Shaders/` | ✅ Edge Detection (T-VFX01) — Borderlands-style пост-процесс: distance falloff, adaptive color, pencil stroke |
 | **DistantCloudDebug.shader** | `Assets/_Project/Shaders/` | ✅ Дебаг облаков |
 
@@ -295,7 +296,7 @@ Assets/_Project/
 │   ├── CloudLayerConfig.asset
 │   ├── IslandMaterial.mat
 │   ├── Textures/         # Noise-текстуры (Cloud_Noise*.png)
-│   └── Shaders/          # CloudGhibli (все варианты Outline)
+│   └── Shaders/          # Облачные шейдеры и варианты Outline
 ├── Materials/            # Материалы по категориям
 │   ├── Clouds/           # Cloud, Veil, Distant материалы
 │   ├── Material/         # character_URP, CloudMaterial_URP
@@ -305,7 +306,7 @@ Assets/_Project/
 │   ├── Stars/            # Материалы звёзд
 │   └── World/            # Rock_*.mat по биомам, Snow, Ground
 ├── Shaders/              # Системные шейдеры URP
-│   ├── CloudGhibli.shader (ссылка?)
+│   ├── CloudGhibli.shader (техническое имя, ссылка?)
 │   ├── DistantCloud*.shader
 │   ├── Veil*.shader
 │   ├── TargetOutline.shader
@@ -331,11 +332,11 @@ Assets/_Project/
 
 | Тип | Формат | Пример |
 |-----|--------|--------|
-| Материалы | M_{Name} | M_CloudGhibli, M_Character |
+| Материалы | M_{Name} | M_Cloud, M_Character |
 | Текстуры | T_{Name}_{Type} | T_Mountain_Albedo, T_Mountain_Normal |
 | Модели | M_{Name} | M_Ship_Light, M_Character_Male |
 | Префабы | PF_{Name} | PF_NetworkPlayer, PF_Chest |
-| Шейдеры | SH_{Name} | SH_CloudGhibli |
+| Шейдеры | SH_{Name} | SH_CloudOutline |
 
 ---
 
@@ -457,7 +458,7 @@ VFX-система использует **Visual Effect Graph 17.4.0** и ста
 | # | Критерий | Как проверить | Статус |
 |---|----------|--------------|--------|
 | 1 | URP Pipeline активен | Project Settings → Graphics | ✅ |
-| 2 | CloudGhibli.shader работает | Rim glow на облаках | ✅ |
+| 2 | Основной cloud shader работает | Rim glow и читаемый силуэт облаков | ✅ |
 | 3 | Procedural Noise генерируется | Текстуры 512x512 | ✅ |
 | 4 | Материалы URP | Нет розовых материалов | ✅ |
 | 5 | Облака двигаются | 3 слоя + Distant, движение | ✅ |

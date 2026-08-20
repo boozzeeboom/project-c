@@ -27,8 +27,8 @@
 
 **Изменения:**
 - `Assets/_Project/Shaders/Clouds/CloudNoise.hlsl` (NEW) — HLSL-порт CloudMath v7.0: Perlin3D, Fbm, Worley3D, InvertedWorley, uint-хэш, периодический шум
-- `Assets/_Project/Shaders/Clouds/CloudCommon.hlsl` (NEW) — хелперы: Remap, HeightProfile, HG, MultiScatter, SilverLining, RaySlabIntersection, CameraRelativePosition, GhibliRamp
-- `Assets/_Project/Shaders/Clouds/VolumetricClouds.shader` (NEW) — Fullscreen raymarch: density + height profile + wind + light marching (6 steps) + HG (g=0.7) + multi-scatter + Ghibli day/sunset ramps (GDD-14)
+- `Assets/_Project/Shaders/Clouds/CloudCommon.hlsl` (NEW) — хелперы: Remap, HeightProfile, HG, MultiScatter, SilverLining, RaySlabIntersection, CameraRelativePosition, ColorRamp (техническая реализация `GhibliRamp`)
+- `Assets/_Project/Shaders/Clouds/VolumetricClouds.shader` (NEW) — Fullscreen raymarch: density + height profile + wind + light marching (6 steps) + HG (g=0.7) + multi-scatter + цветовые рампы дня/заката (GDD-14)
 - `Assets/_Project/Shaders/Clouds/BakeCloudNoise.compute` (NEW) — Compute shader 128³ RGBA8 UNORM, каналы Perlin/WorleyLow/WorleyHigh/InvertedWorley
 - `Assets/_Project/Scripts/Rendering/VolumetricCloudsRenderFeature.cs` (NEW) — URP RenderGraph RendererFeature, AfterOpaques, fullscreen triangle, WindManager null-guard
 - `Assets/_Project/Scripts/World/Clouds/CloudNoiseBaker.cs` (NEW) — Editor MenuItem «Bake 3D Noise Texture», AsyncGPUReadback → Texture3D

@@ -364,7 +364,7 @@ NearCloudRenderer → 80 instances → для RUNTIME
 не для реальной генерации сфер
 ```
 
-**НО:** Это требует модификации CloudGhibli shader для поддержки pattern parameters. Текущий shader не знает о generator7.0.
+**НО:** Это требует модификации cloud shader (техническое имя `CloudGhibli`) для поддержки pattern parameters. Текущий shader не знает о generator7.0.
 
 ### 7.4 Практичный подход
 
@@ -391,7 +391,7 @@ NearCloudRenderer → 80 instances → для RUNTIME
 
 ```
 ФАЗА 0: Подготовка (1-2 дня)
-├── Изучить CloudGhibli shader — что он может делать
+├── Изучить cloud shader (техническое имя `CloudGhibli`) — что он может делать
 ├── Понять как shader создаёт cauliflower форму
 ├── Определить какие параметры можно контролировать
 └── Создать тестовый shader с pattern parameters

@@ -66,7 +66,7 @@ BootstrapScene.unity (Never unloaded)
 | Altitude-based layers | ✅ | Upper/Middle/Lower by altitude |
 | Movable + non-movable layers | ✅ | Impostors mostly static, near clouds wind-driven |
 | Storm layers | ✅ | 5 server-controlled storms with VFX |
-| "Tasty" visual | ✅ | CloudGhibli shader improvements (3 octaves, light, tint) |
+| "Tasty" visual | ✅ | Cloud shader improvements (3 octaves, light, tint) |
 
 ---
 
@@ -99,7 +99,7 @@ BootstrapScene.unity (Never unloaded)
 User mentioned "raymarch from another engine" as reference. Subagent analysis clarified:
 
 1. **Full raymarch (64-128 steps) = 4-20ms GPU** — TOO EXPENSIVE for 60Hz
-2. **Simplified approach is correct**: instanced mesh with improved CloudGhibli shader
+2. **Simplified approach is correct**: instanced mesh with an improved cloud shader
    - 3 FBM octaves instead of 2
    - Light influence (directional response)
    - Day/night tint blending

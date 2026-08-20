@@ -75,7 +75,7 @@ mean abs error < 1e-2 по срезам; точного совпадения н�
      - `_MaxRayDistance` (float, 5000)
      - `_DensityMultiplier` (float)
      - `_WindOffset` (Vector3) — читается из `WindManager.Instance.CurrentWindDirection` (⚠️ null-guard: в сценах без WindManager не падать; можно подписаться на `WindManager.OnWindUpdated`)
-     - Ghibli-рампы: `_DayRampTop/Mid/Bot`, `_SunsetRampTop/Mid/Bot` (Color)
+     - Цветовые рампы дня/заката: `_DayRampTop/Mid/Bot`, `_SunsetRampTop/Mid/Bot` (Color)
 
 2. `Assets/_Project/Shaders/Clouds/VolumetricClouds.shader`
    - `Shader "Hidden/ProjectC/VolumetricClouds"`
@@ -113,7 +113,7 @@ density(p) = shapeFBM(p)          // Perlin+Worley из CloudNoise3D
 
 ---
 
-### 1.5 — Light marching + HG + multi-scatter + Ghibli ramps
+### 1.5 — Light marching + HG + multi-scatter + color ramps
 
 **Доработать:** `VolumetricClouds.shader`
 
@@ -134,7 +134,7 @@ float hg = HG(rayDir, sunDir, 0.7); // g=0.7 forward scattering
 // Multi-scatter approximation
 float ms = pow(lightTransmittance, 0.5); // энергосберегающая аппроксимация
 
-// Ghibli ramp (day/sunset)
+// Day/sunset color ramp
 float rampBlend = saturate(sunDir.y * 2.0); // 0=закат, 1=день
 float3 cloudColor = lerp(sunsetRamp, dayRamp, rampBlend);
 // Где ramp — градиент по высоте: top/mid/bot цвета
@@ -232,7 +232,7 @@ Assets/_Project/
 2. **1.2 BakeCloudNoise.compute + CloudNoiseBaker.cs** — проверяет корректность 1.1
 3. **1.3 VolumetricCloudsRenderFeature.cs + VolumetricClouds.shader (скелет)** — первый видимый результат
 4. **1.4 Height profile + wind** — форма и движение
-5. **1.5 Light marching + Ghibli ramps** — цвет
+5. **1.5 Light marching + color ramps** — цвет
 6. **1.6 Half-res + dither + temporal** — качество
 7. **1.7 Перф-замер** — валидация бюджета
 

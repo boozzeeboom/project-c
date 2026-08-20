@@ -12,7 +12,7 @@
 
 Неделя рекордной интенсивности: **196 коммитов** против 71 на прошлой неделе (+176%). Весь фокус — **два крупных направления** вместо 13 мелких:
 
-1. **Cloud Ocean 3.0** (~75 коммитов, T-CLD01 / T-CLOUD02 / T-CLOUD03–42) — новая volumetric-система облаков доведена до продакшн-статуса 🟢: визуальное ядро (raymarch + Ghibli-рампы), интерактивность (корабельный след, displacement, кильватерный конус), конденсационные следы (VFX), штормовые ячейки с procedural-формой «цветная капуста» вместо гофротрубы. Зафиксирована в `docs/world/CLOUD_system/3.0/STATUS.md` как единственный источник правды.
+1. **Cloud Ocean 3.0** (~75 коммитов, T-CLD01 / T-CLOUD02 / T-CLOUD03–42) — новая volumetric-система облаков доведена до продакшн-статуса 🟢: визуальное ядро (raymarch + цветовые рампы), интерактивность (корабельный след, displacement, кильватерный конус), конденсационные следы (VFX), штормовые ячейки с procedural-формой «цветная капуста» вместо гофротрубы. Зафиксирована в `docs/world/CLOUD_system/3.0/STATUS.md` как единственный источник правды.
 2. **Unified Quest Graph v5** (~41 коммит, T-QEDIT v1–v5.22 + T-U01–U10 + T-DLG01) — единый нодовый редактор NPC + Dialog + Quest в одном окне GraphView для не-технарей. Плюс DialogTreeEditor v2 и кастомный QuestDefinitionEditor.
 3. **Knowledge System v2/v3** (~18 коммитов) — знания/скиллы/рецепты как механика прогрессии: открытие через триггеры, потеря при смерти, гейты крафта, строковый recipeId, кастомные редакторы.
 
@@ -69,7 +69,7 @@
 | `6add42ac` | Реализация 1.1–1.7: `CloudNoise.hlsl` (HLSL-порт `src/CloudMath.cs`), `CloudCommon.hlsl`, `VolumetricClouds.shader`, `BakeCloudNoise.compute` (128³), `VolumetricCloudsRenderFeature.cs` (URP RenderGraph), `CloudNoiseBaker.cs`, `CloudPerfMonitor.cs` |
 | `18ba8c6e` | Fix: Remap→CloudRemap (конфликт имён с URP), Color32 readback, убраны undeclared keywords |
 | `f2c96001` | Fix: синхронный `Graphics.CopyTexture` по Z-слайсам — `AsyncGPUReadback` читал 1 слайс вместо всего объёма |
-| `0e92a87f` | Phase 1 complete: 1.5 colored light-march (HG g=0.7 + multi-scatter + Ghibli), 1.6 half-res + blue-noise + temporal + генератор blue-noise |
+| `0e92a87f` | Phase 1 complete: 1.5 colored light-march (HG g=0.7 + multi-scatter + color ramps), 1.6 half-res + blue-noise + temporal + генератор blue-noise |
 
 ### Фаза 2.1–2.2 — Интерактивность (T-CLOUD02, 02–03.08)
 | Коммит | Суть |

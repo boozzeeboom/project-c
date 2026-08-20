@@ -27,7 +27,7 @@
 | Города НП | 4 | Примум (Эверест), Секунд, Тертиус (Аконкагуа), Квартус (Мак-Кинли) |
 | Фермерские угодья | ~15 основных + ~10 побочных | Террасы на пиках, антигравийные платформы |
 | Заброшенные платформы | ~20 | Остовы кораблей, сундуки, лут, убежища |
-| Облака | 890+ legacy (3 слоя) + Cloud Ocean 3.0 | Volumetric raymarch: 4 слоя 800–7000м, Ghibli-рампы, light march HG g=0.7 + multi-scatter, half-res + blue-noise + temporal, displacement (след корабля) |
+| Облака | 890+ legacy (3 слоя) + Cloud Ocean 3.0 | Volumetric raymarch: 4 слоя 800–7000м, цветовые рампы день/закат, light march HG g=0.7 + multi-scatter, half-res + blue-noise + temporal, displacement (след корабля) |
 | Мелкие острова | ~30 | Декоративные платформы между пиками |
 
 ### Радиус мира
@@ -198,8 +198,8 @@
 
 | Элемент | Статус | Описание |
 |---------|--------|----------|
-| Облака 3 слоя (legacy CloudGhibli) | ✅ Реализовано | Upper/Middle/Lower, движение, морфинг |
-| **Cloud Ocean 3.0 (v0.0.85)** | ✅ Реализовано (2026-08-04) | `VolumetricClouds.shader` + `VolumetricCloudsRenderFeature` (URP RenderGraph): 4 слоя, Ghibli-рампы, light march, half-res + blue-noise + temporal, LocalDensityBuffer (96³), displacement (след корабля), VFX contrail. Статус 🟢: `docs/world/CLOUD_system/3.0/STATUS.md` |
+| Облака 3 слоя (legacy cloud shader; техническое имя CloudGhibli) | ✅ Реализовано | Upper/Middle/Lower, движение, морфинг |
+| **Cloud Ocean 3.0 (v0.0.85)** | ✅ Реализовано (2026-08-04) | `VolumetricClouds.shader` + `VolumetricCloudsRenderFeature` (URP RenderGraph): 4 слоя, цветовые рампы день/закат, light march, half-res + blue-noise + temporal, LocalDensityBuffer (96³), displacement (след корабля), VFX contrail. Статус 🟢: `docs/world/CLOUD_system/3.0/STATUS.md` |
 | Цикл дня/ночи | ✅ Реализовано | Движение солнца, окраска облаков |
 | Procedural Noise | ✅ Реализовано | FBM noise 512x512 для облаков |
 | **Ветер (Wind)** | ✅ Реализовано | `ServerWeatherController` — authoritative broadcast (0.5 Hz), `WindManager` — единый источник (direction/speed), вариация направления (до ±15°) и скорости (±20%), множители влияния на корабли и персонажей |
@@ -309,7 +309,7 @@
 - `HorizonVeilRenderer` + `VeilRaymarchBlit` — raymarch эффект горизонта
 - `AdditionalVeilModule` — сервер-контролируемые дополнительные куски завесы
 
-### CloudGhibli Shader
+### Основной cloud shader (техническое имя CloudGhibli)
 
 | Feature | Status |
 |---------|--------|
@@ -434,7 +434,7 @@
 | 2 | 890+ облаков, 3 слоя | Проверить CloudSystem | ✅ |
 | 3 | Цикл дня/ночи работает | Наблюдать смену освещения | ✅ |
 | 4 | Облака двигаются | Наблюдать движение слоёв | ✅ |
-| 5 | CloudGhibli шейдер работает | Rim glow, noise на облаках | ✅ |
+| 5 | Основной cloud shader работает | Rim glow, noise и читаемый силуэт облаков | ✅ |
 | 6 | Мелкие острова есть | Облететь мир | ✅ |
 | 7 | WorldCamera позволяет облететь | V/N/B/R/H | ✅ |
 | 8 | Текстуры пиков (Poly Haven) | [🔴 Запланировано] | 🔴 |

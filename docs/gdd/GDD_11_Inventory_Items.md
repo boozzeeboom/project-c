@@ -331,7 +331,7 @@ public struct InventorySnapshotDto : INetworkSerializable
 | Лимит веса/объёма | Интеграция с ShipCargoLimitsConfig |
 | Иконки 128x128 | game-icons.net или кастомные (Phase 6) |
 | Торговля между игроками | UI обмена через TradeWorld |
-| «Облачный» дизайн UI | Ghibli-эстетика для окон |
+| «Облачный» дизайн UI | Comic-book UI: мягкие переходы, контурная обводка и ясная иерархия окон |
 
 ---
 

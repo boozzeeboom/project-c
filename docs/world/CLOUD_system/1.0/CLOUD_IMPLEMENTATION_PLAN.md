@@ -897,13 +897,13 @@ TEST 4: Lightning
 ## Phase 5: Shader Improvements
 
 **Duration:** Week 3
-**Goal:** CloudGhibli shader improvements for "tasty" visuals
+**Goal:** Cloud shader improvements for expressive comic-book visuals
 **Test:** Visual quality improvement
 
 ### 5.1 Required Shader Changes
 
 ```hlsl
-// CloudGhibli.shader — ADD:
+// Cloud shader (technical file `CloudGhibli.shader`) — ADD:
 
 // 1. Lighting (currently Unlit — WRONG)
 _LightInfluence ("Lighting Response", Range(0,1)) = 0.3

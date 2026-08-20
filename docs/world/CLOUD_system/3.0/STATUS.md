@@ -9,11 +9,12 @@
 ## Архитектура (кратко)
 
 Один volumetric raymarch-рендерер (`VolumetricClouds.shader` + `RenderFeature`) на весь мир.
-4 слоя облаков с Ghibli-рампами день/закат + штормовые ячейки + интерактивный displacement.
+4 слоя облаков с цветовыми рампами день/закат + штормовые ячейки + интерактивный displacement.
 
 ```
 CloudDensity(worldPos) =
-    Σ(layer × HeightProfile × LayerNoiseShape × CoverageNoise × GhibliRamp)
+    Σ(layer × HeightProfile × LayerNoiseShape × CoverageNoise × ColorRamp)
+    (реализация в коде: GhibliRamp)
   - LocalDensity (корабельный след)
   + StormDensity(originalPos)  ← шторм immune к displacement
 ```
@@ -28,7 +29,7 @@ CloudDensity(worldPos) =
 | 1.2 | Бейк 128³ 3D-текстуры (`CloudNoise3D.asset`) | ✅ |
 | 1.3 | `VolumetricCloudsRenderFeature` + `VolumetricClouds.shader` | ✅ |
 | 1.4 | Height profile, coverage, wind (`_WindOffset` из WindManager) | ✅ |
-| 1.5 | Light marching (6 шагов), HG, multi-scatter, Ghibli-рампы | ✅ |
+| 1.5 | Light marching (6 шагов), HG, multi-scatter, цветовые рампы | ✅ |
 | 1.6 | Half-res, blue-noise дизеринг, temporal reprojection | ✅ |
 | 1.7 | `CloudPerfMonitor` | ✅ |
 
@@ -102,7 +103,7 @@ CloudDensity(worldPos) =
 |---|---|
 | `VolumetricClouds.shader` | Основной реймарч-шейдер (+ StormDensity) |
 | `CloudNoise.hlsl` | Perlin3D, Fbm, Worley3D, InvertedWorley |
-| `CloudCommon.hlsl` | HeightProfile, HG, GhibliRamp, RaySlabIntersection |
+| `CloudCommon.hlsl` | HeightProfile, HG, ColorRamp (реализация `GhibliRamp`), RaySlabIntersection |
 | `BakeCloudNoise.compute` | Бейк 128³ текстуры |
 | `VolumetricCloudsRenderFeature.cs` | URP RenderGraph feature |
 | `LocalDensityBuffer.cs` | Интерактивный 3D-буфер плотности |

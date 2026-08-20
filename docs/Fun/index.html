@@ -8,7 +8,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            /* Ghibli-inspired palette - soft, dreamy, warm */
+            /* Comic-book palette - soft gradients, warm contrast, readable outlines */
             --ui-bg: rgba(35, 28, 48, 0.88);
             --ui-bg-blur: rgba(40, 32, 55, 0.82);
             --ui-accent: #7FDBDA;
@@ -29,12 +29,12 @@
             --sky-bottom: #FFB74D;
             --cloud-color: rgba(255, 248, 231, 0.5);
             --star-alpha: 0;
-            /* Prison - softer Ghibli treatment */
+            /* Prison - soft comic-book treatment */
             --prison-bg: linear-gradient(180deg, rgba(45, 27, 78, 0.96) 0%, rgba(30, 20, 50, 0.98) 100%);
             --prison-accent: #CE93D8;
             --prison-text: #D1C4E9;
             --prison-glow: rgba(206, 147, 216, 0.3);
-            /* Bar - warm Ghibli tones */
+            /* Bar - warm comic-book tones */
             --bar-bg: linear-gradient(180deg, rgba(60, 35, 20, 0.95) 0%, rgba(40, 25, 15, 0.97) 100%);
             --bar-accent: #FFB74D;
             --bar-text: #FFE0B2;
@@ -111,7 +111,7 @@
         .contract-header { font-size: 11px; color: var(--city-glow); margin-bottom: 4px; text-shadow: 0 0 8px rgba(255, 213, 79, 0.3); font-weight: 700; }
         .contract-details { font-size: 10px; color: var(--text-secondary); line-height: 1.5; }
         .contract-reward { color: var(--positive); font-weight: 700; font-size: 11px; text-shadow: 0 0 8px rgba(129, 199, 132, 0.3); }
-        /* Win & Repair Screens - Ghibli Treatment */
+        /* Win & Repair Screens - soft comic-book treatment */
         #win-screen, #repair-screen { 
             display: none; 
             position: fixed; 
@@ -156,7 +156,7 @@
             box-shadow: 0 6px 20px rgba(129, 199, 132, 0.3), inset 0 1px 0 rgba(255, 248, 231, 0.2); 
         }
 
-        /* Prison System Styles - Ghibli Treatment */
+        /* Prison System Styles - soft comic-book treatment */
         #prison-screen {
             display: none;
             position: fixed;
@@ -299,7 +299,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Contraband highlighting - Ghibli softer treatment */
+        /* Contraband highlighting - soft outline treatment */
         .contraband-item {
             color: var(--prison-accent) !important;
             position: relative;
@@ -319,7 +319,7 @@
             opacity: 0.6;
         }
 
-        /* Bar System Styles - Ghibli Treatment */
+        /* Bar System Styles - warm comic-book treatment */
         #bar-screen {
             display: none;
             position: fixed;
@@ -577,7 +577,7 @@
             border: 1px solid rgba(229, 115, 115, 0.3);
         }
 
-        /* Port System Styles - Ghibli Treatment */
+        /* Port System Styles - soft outline treatment */
         .port-item {
             transition: all 0.3s ease;
         }
@@ -640,14 +640,14 @@
             box-shadow: 0 3px 12px rgba(255, 183, 77, 0.2);
         }
 
-        /* Mobile Responsive Styles - Ghibli Palette */
+        /* Mobile Responsive Styles - comic-book palette */
         @media (max-width: 600px) {
             /* Hide map on mobile - not needed for core gameplay */
             #map-area {
                 display: none;
             }
 
-            /* Compact HUD with Ghibli styling */
+            /* Compact HUD with comic-book styling */
             #hud {
                 padding: 8px 10px;
                 flex-wrap: wrap;
@@ -677,7 +677,7 @@
                 min-height: 44px;
             }
 
-            /* Mobile tab navigation - Ghibli style */
+            /* Mobile tab navigation - comic-book style */
             #mobile-tabs {
                 display: flex;
                 background: var(--ui-bg);
@@ -827,7 +827,7 @@
             }
         }
 
-        /* Log Screen Styles - Ghibli Treatment */
+        /* Log Screen Styles - soft comic-book treatment */
         #log-screen {
             display: none;
             position: fixed;

@@ -4,7 +4,7 @@
 
 > **Что нового (5–20 августа 2026):** **v0.1.20 → v0.1.21.** Contract core refactor: разделены board offers, active contracts и terminal history; добавлен полный Receipt flow `Accept → Claim Cargo → Transport → Submit`, серверная валидация доставки и rollback при ошибках persistence. **v0.1.21** — локализационный фикс. Подробности: `docs/changelogs.md` и `docs/dev/RETROSPECTIVE_2026-08-17.md`.
 >
-> **☁️ Cloud Ocean 3.0 (T-CLD01, T-CLOUD02..42):** ~75 коммитов. Объёмная система облаков — 🟢 продакшн-готово. Volumetric raymarch (4 слоя 800–7000м), Ghibli-рампы день/закат, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal. Интерактивность: LocalDensityBuffer (96³), корабельный след (displacement + кильватерный конус), VFX contrail, штормовые ячейки (procedural cellular-форма «цветная капуста», иммунны к displacement, runtime save/load, anti-banding). Источник правды: `docs/world/CLOUD_system/3.0/STATUS.md`.
+> **☁️ Cloud Ocean 3.0 (T-CLD01, T-CLOUD02..42):** ~75 коммитов. Объёмная система облаков — 🟢 продакшн-готово. Volumetric raymarch (4 слоя 800–7000м), цветовые рампы день/закат, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal. Интерактивность: LocalDensityBuffer (96³), корабельный след (displacement + кильватерный конус), VFX contrail, штормовые ячейки (procedural cellular-форма «цветная капуста», иммунны к displacement, runtime save/load, anti-banding). Источник правды: `docs/world/CLOUD_system/3.0/STATUS.md`.
 >
 > **🧩 Unified Quest Graph v5 (T-QEDIT v1–v5.22, T-U01–U10):** ~41 коммит. Единый нодовый редактор NPC+Dialog+Quest в одном окне GraphView (тонкий слой над существующими SO, Undo/Redo, resizable-ноды). DialogTreeEditor v2 (T-DLG01) — редактируемые рёбра, drag-and-drop. QuestDefinitionEditor (T-QUEDIT), drag-and-drop наград/целей (T-QREWARD), NpcDefinition editor (T-NPC24).
 >
@@ -144,8 +144,8 @@
 ### 1.1 Мир и генерация ✅
 - ✅ Процедурная генерация горных пиков (шум Перлина)
 - ✅ Мелкие острова между пиками
-- ✅ Система облаков: 3 слоя, 890+ облаков, движение, анимация формы (legacy CloudGhibli)
-- ✅ ⭐ **Cloud Ocean 3.0 (v0.0.85)** — volumetric raymarch: `VolumetricClouds.shader` + `VolumetricCloudsRenderFeature`, 4 слоя 800–7000м, Ghibli-рампы, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal, displacement (корабельный след), штормовые ячейки, VFX contrail. Статус 🟢: `docs/world/CLOUD_system/3.0/STATUS.md`
+- ✅ Система облаков: 3 слоя, 890+ облаков, движение, анимация формы (legacy cloud shader; техническое имя CloudGhibli)
+- ✅ ⭐ **Cloud Ocean 3.0 (v0.0.85)** — volumetric raymarch: `VolumetricClouds.shader` + `VolumetricCloudsRenderFeature`, 4 слоя 800–7000м, цветовые рампы день/закат, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal, displacement (корабельный след), штормовые ячейки, VFX contrail. Статус 🟢: `docs/world/CLOUD_system/3.0/STATUS.md`
 - ✅ Интеграция с WorldGenerator
 - ✅ **Система штормов (Storm Cloud System):**
   - ✅ StormCloudGenerator — пул штормов (max 5), спавн по паттерну
@@ -864,7 +864,7 @@
 ---
 
 ## Этап 2.5: Визуальный прототип (Недели 11-14) 🔄 В ПРОЦЕССЕ
-**Цель:** Заменить примитивы на модели, создать визуальную идентичность Sci-Fi + Ghibli.
+**Цель:** Заменить примитивы на модели, создать визуальную идентичность Sci-Fi + западные комиксы: мягкие переходы, outline и читаемая симплификация форм.
 
 ### Задачи:
 1. **URP-совместимость:** ✅
@@ -873,7 +873,7 @@
    - ✅ MaterialURPConverter — авто-конвертация при запуске
    - ✅ Созданы URP-материалы (CloudMaterial_URP, character_URP)
 
-2. **Облака (Ghibli-стиль):** ✅
+2. **Облака (comic-book стиль):** ✅
    - ✅ CloudGhibli.shader — кастомный URP Unlit шейдер
    - ✅ ⭐ **Cloud Ocean 3.0 (v0.0.85)** — volumetric raymarch + RenderFeature, 4 слоя, штормовые ячейки, displacement (см. §1.1)
    - ✅ Noise + rim glow + vertex displacement (морфинг форм)
@@ -926,7 +926,7 @@
 
 **Документы:**
 - [`docs/ART_BIBLE.md`](ART_BIBLE.md) — визуальная спецификация
-- `Assets/_Project/Art/Shaders/CloudGhibli.shader` — шейдер облаков
+- `Assets/_Project/Art/Shaders/CloudGhibli.shader` — cloud shader (техническое имя ассета)
 - `Assets/_Project/Scripts/Core/ProceduralNoiseGenerator.cs` — noise текстуры
 - `Assets/_Project/Scripts/Core/MaterialURPConverter.cs` — конвертация материалов
 
@@ -1438,7 +1438,7 @@
   - game-icons.net (UI-иконки, CC BY 3.0)
   - Krita / Materialize (текстуры)
   - FMOD/Wwise (звук)
-- **Кастомные шейдеры:** CloudGhibli (URP Unlit + noise + rim glow), VolumetricClouds (URP volumetric raymarch, Cloud Ocean 3.0)
+- **Кастомные шейдеры:** cloud shader (техническое имя `CloudGhibli`, URP Unlit + noise + rim glow), VolumetricClouds (URP volumetric raymarch, Cloud Ocean 3.0)
 - **Система ветров (Сессия 3 + 2026-07-01):** ShipWindZone (бывш. WindZone, T-FIX01 2026-07-29 — конфликт со встроенным Unity WindZone), WindZoneData — объёмные триггеры с профилями (Constant, Gust, Shear)
   - ✅ Реализовано для кораблей (ShipController v2.2)
   - ✅ Реализовано для персонажа (2026-07-01) — `NetworkPlayer.ProcessMovement`, правила по состоянию
@@ -1483,8 +1483,8 @@
 | [GDD_11: Inventory & Items](gdd/GDD_11_Inventory_Items.md) | 8 типов, круговое колесо, LootTable, сундуки. **✅ sub_inventory-tab (P-таб) + MetaRequirement extensions (HasAllItems/HasAnyItem/CountOf/GetMissingItems) реализованы, см. `docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md` + `docs/MetaRequirement/30_RUNTIME_FLOW.md`.** |
 | [GDD_12: Network & Multiplayer](gdd/GDD_12_Network_Multiplayer.md) | NGO, RPC, реконнект, Dedicated Server |
 | [GDD_12.1: Scene-Based World Streaming](gdd/GDD_12_1_Scene_World_Streaming.md) | 24 сцены, 4×6 grid, boundary-based loading |
-| [GDD_13: UI/UX System](gdd/GDD_13_UI_UX_System.md) | HUD, Ghibli стиль, адаптивность. **✅ CharacterWindow v2 (5+ табов) реализован (2026-06-05), см. `docs/Character-menu/00_OVERVIEW.md`.** |
-| [GDD_14: Visual & Art Pipeline](gdd/GDD_14_Visual_Art_Pipeline.md) | URP, CloudGhibli, шейдеры, постобработка |
+| [GDD_13: UI/UX System](gdd/GDD_13_UI_UX_System.md) | HUD, comic-book стиль, мягкие переходы и адаптивность. **✅ CharacterWindow v2 (5+ табов) реализован (2026-06-05), см. `docs/Character-menu/00_OVERVIEW.md`.** |
+| [GDD_14: Visual & Art Pipeline](gdd/GDD_14_Visual_Art_Pipeline.md) | URP, cloud shaders, outline и постобработка |
 | [GDD_15: Audio System](gdd/GDD_15_Audio_System.md) | AudioMixer, SFX, музыка, 3D звук |
 
 ### Content — Контентные системы
@@ -1619,7 +1619,7 @@
 
 ### 🌍 Окружение (6 задач)
 
-- [x] Облака (3 слоя: Upper/Middle/Lower) — шейдер CloudGhibli, генерация, движение
+- [x] Облака (3 слоя: Upper/Middle/Lower) — cloud shader (техническое имя CloudGhibli), генерация, движение
 - [ ] Skybox (материал + шейдер, закатный градиент)
 - [ ] Террасы и фермы (модели + материалы)
 - [x] Фоновые пики (ProceduralNoiseGenerator, IslandMaterial)
@@ -1761,7 +1761,7 @@
 
 ### 🔮 Кастомные шейдеры (6 задач)
 
-- [x] CloudGhibli.shader — облака (noise + rim glow + vertex displacement)
+- [x] CloudGhibli.shader — облака (техническое имя; noise + rim glow + vertex displacement)
 - [ ] URP Character shader — персонаж (Mixamo + skin)
 - [ ] URP Ship shader — корабль (металл, свечение)
 - [ ] Water/Ocean shader — вода/Завеса

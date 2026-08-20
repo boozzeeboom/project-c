@@ -38,13 +38,13 @@
 
 ## 2. Дизайн-выбор (ОТКРЫТ до Фазы 1)
 
-| Вопрос | Вариант A: Ghibli-стайлизованный | Вариант B: Физически-правдоподобный |
+| Вопрос | Вариант A: Comic-book стилизованный | Вариант B: Физически-правдоподобный |
 |---|---|---|
 | Шейдинг | Цветовые рампы день/закат (GDD-14: `#FFFFFF` → `#FFB6C1`), rim, мягкий свет | Beer-Lambert + HG + multi-scatter, «как snowflow» |
-| Соответствие пилляру «Sci-Fi + Ghibli» | ✅ | ⚠️ конфликт |
+| Соответствие пилляру «Sci-Fi + западные комиксы» | ✅ | ⚠️ конфликт |
 | Технология | Одна и та же | Одна и та же |
 
-**Дефолт: Вариант A (Ghibli)** — соответствует пилляру и GDD-14. Технология не меняется от выбора; отличаются только шейдинг-рампы.
+**Дефолт: Вариант A (Comic-book)** — соответствует новому пилляру и GDD-14. Технология не меняется от выбора; отличаются только шейдинг-рампы и требования к читаемости силуэта.
 
 ## 3. Архитектура
 
@@ -157,7 +157,7 @@ LocalDensityBuffer (compute)
 |---|---|
 | Перф: реймарч на слабых GPU | Half-res + temporal + adaptive steps (early-exit), LOD по расстоянию |
 | Бандинг/мерцание | Blue-noise + temporal reprojection (стандарт индустрии) |
-| Стиль: физический реализм vs Ghibli | Дизайн-выбор до Фазы 1 (см. §2) |
+| Стиль: физический реализм vs comic-book стилизация | Дизайн-выбор зафиксирован в §2: Вариант A |
 | MMO: рассинхрон возмущений | Клиент-локальные по умолчанию, события server-authoritative |
 | Сломанный геймплей Завесы | VeilSystem остаётся геймплей-слоем; рендереры выпиливаются отдельным тикетом после покрытия |
 | Unity: OnRenderImage устарел | Только Renderer Feature / Render Graph (URP 17) |
@@ -179,7 +179,7 @@ LocalDensityBuffer (compute)
 | 1.2 | Бейк 3D-шума | ✅ (с фиксом) | **Баг 0xCD**: 8 МБ данных `CloudNoise3D.asset` = 0xCD, `m_ImageContentsHash`=0, `m_StreamData size:0` → пиксели не записаны, density=0. Фикс `CloudNoiseBaker.cs`: 12-арг `Graphics.CopyTexture` (в Unity 6000.4.1f1 только 4 перегрузки; срез 3D-текстуры — через `srcElement`; 8-арг с `srcSlice` не существует) |
 | 1.3 | Renderer Feature | ✅ | `VolumetricCloudsRenderFeature`, RenderGraph API (`RecordRenderGraph`), шаблон `EdgeDetectionRenderFeature.cs` |
 | 1.4 | Реймарч + height profile + coverage + wind | ✅ | Полоса **800–2000** (решение пользователя: оставить); coverage — процедурный 2D FBM по XZ (`CloudCoverage2D`); ветер — `WindManager` |
-| 1.5 | Light marching + HG + multi-scatter + рампы | ✅ | 6 light steps, `HG(g=0.7)`, `MultiScatterApprox`, Ghibli-рампы день/закат (выбор §2: Вариант A) |
+| 1.5 | Light marching + HG + multi-scatter + рампы | ✅ | 6 light steps, `HG(g=0.7)`, `MultiScatterApprox`, цветовые рампы день/закат (выбор §2: Вариант A) |
 | 1.6 | Half-res + blue-noise + temporal | 🔄 переработано | MRT-композит → single-target + ping-pong история (см. A.4) |
 | 1.7 | Перф-замер | ⏳ | Открыт — после подтверждения видимости |
 
@@ -247,7 +247,7 @@ LocalDensityBuffer (compute)
 
 **Проблема 1: `mat.SetFloat`/`mat.SetColor` не доходят до шейдера для части свойств.**
 - `_CloudBottomY`, `_CloudTopY`, `_HeightEdgeSoftness`, `_CoverageScale/Threshold` — работают через `mat.SetFloat`
-- `_DensityMultiplier`, `_LightAbsorption`, `_CloudOpacity`, `_CloudColorIntensity`, Ghibli-рампы (`_DayRamp*`, `_SunsetRamp*`) — НЕ работают
+- `_DensityMultiplier`, `_LightAbsorption`, `_CloudOpacity`, `_CloudColorIntensity`, цветовые рампы (`_DayRamp*`, `_SunsetRamp*`) — НЕ работают
 - **Фикс:** удалены из Properties-блока шейдера; передаются через `Shader.SetGlobalFloat`/`Shader.SetGlobalColor` в `ApplyProperties`
 
 **Проблема 2: `replace_in_file` оставляет `=======` маркеры конфликтов в .shader и .cs файлах.**

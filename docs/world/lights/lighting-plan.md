@@ -21,7 +21,7 @@
 - Fog + TemperatureFilter
 
 ### Визуальный стиль
-Cel-shaded / Ghibli-стилизация: CloudGhibli-шейдеры, Borderlands-style EdgeDetection, VeilRaymarch glow-layer.
+Cel-shaded / comic-book стилизация: существующие cloud shaders, Borderlands-style EdgeDetection, мягкие градиенты и VeilRaymarch glow-layer.
 
 ### Что отсутствует (критические пробелы)
 - ❌ Нет Light Probes / Light Probe Groups

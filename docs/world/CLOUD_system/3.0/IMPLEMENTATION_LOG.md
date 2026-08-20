@@ -26,11 +26,11 @@
 - `_WindOffset` — из WindManager.Instance, null-guard
 - `CameraRelativePosition` — для float32 на 80k×80k сценах
 
-### 1.5 ✅ Light marching + HG + multi-scatter + Ghibli ramps
+### 1.5 ✅ Light marching + HG + multi-scatter + color ramps
 - Light marching: 6 шагов к солнцу (LIGHT_STEPS=6)
 - HG фаза: g=0.7 forward scattering
 - Multi-scatter: pow(transmittance, 0.5)
-- Ghibli ramps: день + закат, rampBlend от _SunDirection.y × 2.0
+- Color ramps: день + закат, `rampBlend` от `_SunDirection.y × 2.0`
 - Ambient + silver lining
 
 ### 1.6 ✅ Half-res + blue-noise dither + temporal reprojection
@@ -97,7 +97,7 @@
 
 ## Phase 3.0 — Multi-Layer Cloud System ✅
 
-- 4 независимых слоя с per-layer bounds, density, coverageThreshold, GhibliRamp
+- 4 независимых слоя с per-layer bounds, density, coverageThreshold и технической функцией `GhibliRamp`
 - `_LayerNoiseMask = 0` — все слои делят шум (красивый вид)
 - Overlap слоёв + min 100м fade
 - `_DebugDensityScale`, `_DebugLayerMask`

@@ -27,7 +27,7 @@
 | `GDD_02_World_Environment.md` | Cloud specs in §7 (Weather System) |
 | `GDD_12_Network_Multiplayer.md` | Network architecture (NGO) |
 | `GDD_12_1_Scene_World_Streaming.md` | 24-scene architecture |
-| `GDD_14_Visual_Art_Pipeline.md` | CloudGhibli shader, URP setup |
+| `GDD_14_Visual_Art_Pipeline.md` | Cloud shader pipeline, URP setup, outline and gradients |
 
 ---
 
@@ -44,7 +44,7 @@ Assets/_Project/Scripts/World/Clouds/
 └── CumulonimbusCloud.cs   — Storm column (cylinder mesh + particles)
 
 Assets/_Project/Art/Shaders/
-└── CloudGhibli.shader     — Unlit shader (rim glow, FBM noise, vertex displacement)
+└── CloudGhibli.shader     — техническое имя Unlit shader (rim glow, FBM noise, vertex displacement)
 ```
 
 ### Problems
@@ -136,7 +136,7 @@ Assets/_Project/Art/Shaders/
 ## Questions to Ask When Starting
 
 1. Which layer should we start replacing first? (recommend: Upper billboard)
-2. Do we keep CloudGhibli.shader as fallback? (recommend: yes)
+2. Do we keep `CloudGhibli.shader` as a technical fallback? (recommend: yes)
 3. Storm lightning in shader or VFX Graph? (recommend: VFX Graph)
 4. 3D texture noise or analytical? (recommend: analytical)
 

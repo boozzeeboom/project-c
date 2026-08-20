@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-UI/UX система Project C: The Clouds включает HUD-элементы, CharacterWindow (с 7 табами), диалоговые окна, трекер квестов, Esc-меню, окно кастомизации, дерево навыков, торговлю и сетевую панель. Визуальный стиль соответствует **Sci-Fi + Ghibli** эстетике — мягкие цвета, градиенты, объёмный свет.
+UI/UX система Project C: The Clouds включает HUD-элементы, CharacterWindow (с 7 табами), диалоговые окна, трекер квестов, Esc-меню, окно кастомизации, дерево навыков, торговлю и сетевую панель. Визуальный стиль следует языку **Sci-Fi + западных комиксов** — мягкие цвета, градиенты, контурная обводка, ясная иерархия и упрощённые формы.
 
 **Ключевые изменения v3.0:**
 - ✅ Новые UI-окна на UI Toolkit (UXML+USS): CharacterWindow (7 табов), DialogWindow, QuestTracker, QuestToast, CustomisationWindow, SkillTreeWindow, EscMenuWindow
@@ -422,7 +422,9 @@ if (!UIManager.CanReceiveInput("CharacterWindow")) return;
 
 ---
 
-## 15. Visual Style — Ghibli
+## 15. Visual Style — Comic-Book Sci-Fi
+
+Интерфейс использует язык западных комиксов: чёткие панели, мягкие переходы цвета, аккуратные outline и упрощённые формы для быстрого считывания. Упрощение повышает читаемость, но не переводит UI в casual/hyper-casual стиль.
 
 ### Цветовая палитра UI
 

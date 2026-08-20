@@ -33,7 +33,7 @@ URP должен быть в `Packages/manifest.json`:
 
 #### Шаг 4: Проверка
 - В Console не должно быть красных ошибок
-- CloudGhibli.shader должен скомпилироваться
+- Основной cloud shader (техническое имя `CloudGhibli.shader`) должен скомпилироваться
 - В `Edit → Project Settings → Graphics` поле Default Render Pipeline показывает `ProjectC_URP`
 
 ### ❌ Что НЕ работает:
@@ -250,7 +250,7 @@ AssetDatabase.SaveAssets();
 - [ ] Pipeline Asset назначен в Graphics Settings
 - [ ] Материалы сконвертированы (Upgrade Project Materials to URP Materials)
 - [ ] Кастомные шейдеры обновлены (`Standard` → `Universal Render Pipeline/Lit`)
-- [ ] CloudGhibli.shader компилируется (находит URP includes)
+- [ ] Основной cloud shader (техническое имя `CloudGhibli.shader`) компилируется (находит URP includes)
 - [ ] Нет красных ошибок в Console
 - [ ] Quality Level не переопределяет Pipeline Asset
 

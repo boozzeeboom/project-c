@@ -332,7 +332,7 @@ alpha = alphaBase * combinedNoise * edgeFade;   // центр прозрачны
 
 ### 9.1 Связанные документы
 - [`ADR-Cloud-001-Rendering-Architecture.md`](../1.0/ADR-Cloud-001-Rendering-Architecture.md) — принятое решение (3 мая 2026), нижний/средний/верхний слои. **Данный анализ валидирует и конкретизирует ADR.** Никаких противоречий.
-- [`CLOUD_VISUAL_DESIGN.md`](../1.0/CLOUD_VISUAL_DESIGN.md) — визуальный язык (Sci-Fi + Ghibli, мягкие облака, rim glow, morph). Сохраняется.
+- [`CLOUD_VISUAL_DESIGN.md`](../1.0/CLOUD_VISUAL_DESIGN.md) — визуальный язык (Sci-Fi + западные комиксы, мягкие облака, градиенты, outline, morph). Сохраняется.
 - [`CLOUD_TECHNICAL_SUMMARY.md`](../1.0/CLOUD_TECHNICAL_SUMMARY.md) — v0.4 архитектура (3 layers, ~280 пуфов). Не меняется.
 - [`CLOUD_IMPLEMENTATION_PLAN.md`](../1.0/CLOUD_IMPLEMENTATION_PLAN.md) — v0.4 phased plan. Будет обновлён после Phase 1.
 

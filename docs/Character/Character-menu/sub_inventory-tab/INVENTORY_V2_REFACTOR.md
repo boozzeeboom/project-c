@@ -655,7 +655,7 @@ grep -n "InventoryClientState" Assets/_Project/Scripts/UI/Client/CharacterWindow
 
 1. **TAB-колесо: своё UI Toolkit или найти готовое решение?**
    - Своё: полный контроль, +150 строк USS, время = 1-2 часа
-   - Готовое (Unity UI Extensions RadialMenu): быстрее, но стили не под наш CloudGhibli
+   - Готовое (Unity UI Extensions RadialMenu): быстрее, но стили не под наш comic-book UI language
    - **Моя рекомендация:** своё (соответствует паттерну C2).
 
 2. **Input: Tab для колеса — оставить legacy `InputAction` или мигрировать в `PlayerInputReader`?**

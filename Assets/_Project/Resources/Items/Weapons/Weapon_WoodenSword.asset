@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439 \u0442\u0440\u0435\u043D\u0438\u0440\u043E\u0432\u043E\u0447\u043D\u044B\u0439
     \u043C\u0435\u0447. \u041B\u0451\u0433\u043A\u0438\u0439, \u043D\u0430\u0434\u0451\u0436\u043D\u044B\u0439."
   icon: {fileID: 0}
+  equipSlot: 9
   maxStack: 1
   weightKg: 0.1
   visualPrefab: {fileID: 4727426849066075479, guid: b013d88ae9bf0f34f974503932ee05c9, type: 3}
@@ -25,10 +26,14 @@ MonoBehaviour:
   attachRotationOffset: {x: 0, y: 0, z: 0}
   attachScale: {x: 1, y: 1, z: 1}
   weaponClass: 0
+  handling: 0
   damageDice: 8
   baseDamage: 2
   critModifier: 0
   range: 2
   damageType: 0
+  explosionRadius: 0
+  throwRange: 25
+  fuseTimeSec: 0
   requiredProficiency: {fileID: 0}
   minTier: 0

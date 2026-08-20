@@ -17,13 +17,23 @@ MonoBehaviour:
   description: "\u041A\u043E\u0440\u043E\u0442\u043A\u0438\u0439 \u043A\u043B\u0438\u043D\u043E\u043A.
     \u0411\u044B\u0441\u0442\u0440\u044B\u0439, \u043D\u043E \u0441\u043B\u0430\u0431\u044B\u0439."
   icon: {fileID: 0}
+  equipSlot: 9
   maxStack: 1
   weightKg: 0.1
+  visualPrefab: {fileID: 0}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
   weaponClass: 1
+  handling: 0
   damageDice: 4
   baseDamage: 1
   critModifier: 0
   range: 1.5
   damageType: 0
+  explosionRadius: 0
+  throwRange: 25
+  fuseTimeSec: 0
   requiredProficiency: {fileID: 0}
   minTier: 0

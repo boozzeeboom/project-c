@@ -18,7 +18,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   basePrice: 100
   weight: 50
-  volume: 5
+  volume: 0.15
   slots: 4
   isDangerous: 0
   isFragile: 0

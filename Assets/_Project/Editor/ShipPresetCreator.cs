@@ -127,6 +127,8 @@ namespace ProjectC.Editor
             public float massMultiplier;
             public float fuelMax, fuelConsumption;
             public int   hullHP, modulePower;
+            public int   cargoSlots;
+            public float cargoWeight, cargoVolume;
             public Vector3 visualScale;
             public Color  classColor;
         }
@@ -140,6 +142,7 @@ namespace ProjectC.Editor
                 yawSmooth=0.25f, pitchSmooth=0.6f, liftSmooth=0.8f, thrustSmooth=0.2f, yawDecay=0.8f,
                 windExposure=1.2f, massMultiplier=15f,
                 fuelMax=50f, fuelConsumption=0.5f, hullHP=100, modulePower=100,
+                cargoSlots=20, cargoWeight=400f, cargoVolume=1f,
                 visualScale=new Vector3(6f, 1f, 12f), classColor=new Color(0.3f,0.8f,0.3f)
             },
             // Medium
@@ -148,6 +151,7 @@ namespace ProjectC.Editor
                 yawSmooth=0.3f, pitchSmooth=0.7f, liftSmooth=1.0f, thrustSmooth=0.3f, yawDecay=1.0f,
                 windExposure=1.0f, massMultiplier=10f,
                 fuelMax=100f, fuelConsumption=0.8f, hullHP=200, modulePower=200,
+                cargoSlots=2000, cargoWeight=3000f, cargoVolume=4f,
                 visualScale=new Vector3(8f,1.5f,15f), classColor=new Color(0.8f,0.3f,0.3f)
             },
             // Heavy
@@ -156,6 +160,7 @@ namespace ProjectC.Editor
                 yawSmooth=0.5f, pitchSmooth=0.9f, liftSmooth=1.2f, thrustSmooth=0.4f, yawDecay=1.5f,
                 windExposure=0.7f, massMultiplier=25f,
                 fuelMax=200f, fuelConsumption=1.2f, hullHP=400, modulePower=300,
+                cargoSlots=100000, cargoWeight=28657f, cargoVolume=70f,
                 visualScale=new Vector3(11f,1.5f,19f), classColor=new Color(0.3f,0.3f,0.8f)
             },
             // HeavyII
@@ -164,6 +169,7 @@ namespace ProjectC.Editor
                 yawSmooth=0.7f, pitchSmooth=1.1f, liftSmooth=1.5f, thrustSmooth=0.5f, yawDecay=2.0f,
                 windExposure=0.5f, massMultiplier=25f,
                 fuelMax=300f, fuelConsumption=1.5f, hullHP=600, modulePower=400,
+                cargoSlots=10000000, cargoWeight=121393f, cargoVolume=400f,
                 visualScale=new Vector3(13.3f,1f,22f), classColor=new Color(0.8f,0.8f,0.3f)
             },
         };
@@ -244,9 +250,9 @@ namespace ProjectC.Editor
             SetPrivateField(sc, "_globalWindEnabled",   true);
             SetPrivateField(sc, "_globalWindForceScale", 8f);
             SetPrivateField(sc, "_globalWindVerticalFactor", 0f);
-            SetPrivateField(sc, "baseMaxCargoSlots",    4);
-            SetPrivateField(sc, "baseMaxCargoWeight",   100f);
-            SetPrivateField(sc, "baseMaxCargoVolume",   3f);
+            SetPrivateField(sc, "baseMaxCargoSlots",    p.cargoSlots);
+            SetPrivateField(sc, "baseMaxCargoWeight",   p.cargoWeight);
+            SetPrivateField(sc, "baseMaxCargoVolume",   p.cargoVolume);
             SetPrivateField(sc, "baseCargoPenaltyFactor", 0.05f);
 
             // NetworkTransform

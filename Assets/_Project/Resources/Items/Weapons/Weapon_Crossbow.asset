@@ -25,10 +25,14 @@ MonoBehaviour:
   attachRotationOffset: {x: 0, y: 0, z: 0}
   attachScale: {x: 1, y: 1, z: 1}
   weaponClass: 4
+  handling: 1
   damageDice: 10
   baseDamage: 4
   critModifier: 5
   range: 30
   damageType: 1
+  explosionRadius: 0
+  throwRange: 25
+  fuseTimeSec: 0
   requiredProficiency: {fileID: 0}
   minTier: 0

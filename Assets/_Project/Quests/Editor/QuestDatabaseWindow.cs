@@ -178,7 +178,7 @@ namespace ProjectC.Quests.Editor
                     if (f == null) continue;
                     factionItems.Add(new TreeViewItemData<ExplorerItem>(
                         (int)EntityId.ToULong(f.GetEntityId()),
-                        new ExplorerItem { Kind = ExplorerKind.Faction, Asset = f, DisplayName = f.factionId.ToString() }
+                        new ExplorerItem { Kind = ExplorerKind.Faction, Asset = f, DisplayName = f.EffectiveFactionKey }
                     ));
                 }
             }
@@ -359,7 +359,7 @@ namespace ProjectC.Quests.Editor
 
         private void BuildFactionDetail(FactionDefinition f)
         {
-            _detailPanel.Add(MakeHeader($"Faction: {f.factionId}", f));
+            _detailPanel.Add(MakeHeader($"Faction: {f.EffectiveFactionKey} [{f.EffectiveWireId}]", f));
             _detailPanel.Add(MakeField("Display Name", f.displayName));
             _detailPanel.Add(MakeField("Lore", f.loreDescription));
             var openBtn = new Button(() => Selection.activeObject = f) { text = "Open in Inspector" };

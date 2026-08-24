@@ -43,7 +43,7 @@ namespace ProjectC.Quests.Editor
         {
             new ColumnDef { name = "npcId",            aliases = new[]{"npc id","npc_id","id","npc"},     required = true,  description = "NPC ID (must exist in NpcDefinition assets)" },
             new ColumnDef { name = "services",         aliases = new[]{"service","сервисы"},             required = false, description = "Битовая маска: Trade, Repair, Refuel, Restock, Banking, Healing (через ;)" },
-            new ColumnDef { name = "attitudeLinks",    aliases = new[]{"attitude_links","attitudes","отношения"}, required = false, description = "Faction:delta;Faction:delta (например Pirates:-15;Underground:5)" },
+            new ColumnDef { name = "attitudeLinks",    aliases = new[]{"attitude_links","attitudes","отношения"}, required = false, description = "factionKey:delta;factionKey:delta (legacy enum names supported)" },
             new ColumnDef { name = "attitudeMin",      aliases = new[]{"attitude_min","att_min"},         required = false, description = "Минимальное значение NpcAttitude (-100..200)" },
             new ColumnDef { name = "attitudeMax",      aliases = new[]{"attitude_max","att_max"},         required = false, description = "Максимальное значение NpcAttitude (-100..200)" },
             new ColumnDef { name = "greetingText",     aliases = new[]{"greeting_text","greeting","приветствие"}, required = false, description = "Текст при подходе к NPC" },
@@ -142,7 +142,7 @@ namespace ProjectC.Quests.Editor
             if (!string.IsNullOrEmpty(servicesStr))
             {
                 var newServices = ParseServices(servicesStr, out var parseErr);
-                if (parseErr != null) result.warnings.Add($"Line {row.lineNumber}: {parseErr}");
+                if (parseErr != null) result.errors.Add($"Line {row.lineNumber}: {parseErr}");
                 if (newServices != npc.services)
                 {
                     npc.services = newServices;
@@ -270,9 +270,9 @@ namespace ProjectC.Quests.Editor
                     error = $"Invalid attitude link '{token}' (expected FactionId:delta)";
                     continue;
                 }
-                if (!Enum.TryParse<FactionId>(parts[0].Trim(), true, out var faction))
+                if (!FactionCsvResolver.TryResolve(parts[0].Trim(), out var factionDefinition, out var factionError))
                 {
-                    error = $"Unknown faction '{parts[0]}' in attitude link";
+                    error = factionError;
                     continue;
                 }
                 if (!int.TryParse(parts[1].Trim(), out var delta))
@@ -280,7 +280,13 @@ namespace ProjectC.Quests.Editor
                     error = $"Invalid delta '{parts[1]}' in attitude link";
                     continue;
                 }
-                links.Add(new AttitudeLink { targetFaction = faction, deltaOnLike = delta, deltaOnDislike = -delta });
+                links.Add(new AttitudeLink
+                {
+                    targetFactionRef = factionDefinition,
+                    targetFaction = factionDefinition.factionId,
+                    deltaOnLike = delta,
+                    deltaOnDislike = -delta
+                });
             }
             return links.ToArray();
         }
@@ -292,7 +298,7 @@ namespace ProjectC.Quests.Editor
             if (a.Length != b.Length) return false;
             for (int i = 0; i < a.Length; i++)
             {
-                if (a[i].targetFaction != b[i].targetFaction) return false;
+                if (a[i].EffectiveFactionWireId != b[i].EffectiveFactionWireId) return false;
                 if (a[i].deltaOnLike != b[i].deltaOnLike) return false;
             }
             return true;

@@ -216,8 +216,8 @@ namespace ProjectC.Quests.Editor
                                 result.Add(Severity.Warning, $"stage '{st.stageId}' obj '{obj.objectiveId}' (ReachLocation): targetSceneId is empty (will use player position only)");
                             break;
                         case QuestObjectiveType.ReputationAtLeast:
-                            if (obj.targetFaction == Factions.FactionId.None)
-                                result.Add(Severity.Error, $"stage '{st.stageId}' obj '{obj.objectiveId}' (ReputationAtLeast): targetFaction is None");
+                            if (obj.targetFactionRef == null && obj.targetFaction == Factions.FactionId.None)
+                                result.Add(Severity.Error, $"stage '{st.stageId}' obj '{obj.objectiveId}' (ReputationAtLeast): target faction is not assigned");
                             break;
                         case QuestObjectiveType.EventDriven:
                             if (string.IsNullOrEmpty(obj.eventId))
@@ -271,8 +271,8 @@ namespace ProjectC.Quests.Editor
                 {
                     var rep = def.rewards.reputation[i];
                     if (rep == null) continue;
-                    if (rep.faction == FactionId.None)
-                        result.Add(Severity.Error, $"rewards.reputation[{i}]: faction is None");
+                    if (rep.factionRef == null && rep.faction == FactionId.None)
+                        result.Add(Severity.Error, $"rewards.reputation[{i}]: faction is not assigned");
                 }
             }
 

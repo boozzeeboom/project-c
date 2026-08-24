@@ -37,7 +37,7 @@ namespace ProjectC.Quests.Editor
             new ColumnDef { name = "questId",         aliases = new[]{"quest id","quest_id","id","квест","квест id"},          required = true,  type = "string", description = "Уникальный ID квеста (латиница, без пробелов)" },
             new ColumnDef { name = "displayName",     aliases = new[]{"display name","display_name","name","название","имя"},   required = true,  type = "string", description = "Название квеста (игрок видит это)" },
             new ColumnDef { name = "description",     aliases = new[]{"desc","описание"},                                      required = false, type = "string", description = "Описание квеста (текст в журнале)" },
-            new ColumnDef { name = "faction",         aliases = new[]{"фракция","factionid"},                                   required = false, type = "enum",  description = "Фракция (GuildOfThoughts, Neutral...)" },
+            new ColumnDef { name = "faction",         aliases = new[]{"фракция","factionid","factionkey"},                   required = false, type = "string", description = "factionKey (legacy FactionId names supported)" },
             new ColumnDef { name = "oneShot",         aliases = new[]{"one shot","one_shot","одноразовый"},                    required = false, type = "bool",  defaultValue = "n", description = "Одноразовый квест (y/n)" },
             new ColumnDef { name = "prereqQuest",     aliases = new[]{"prerequisite","prereq","требует","нужен"},              required = false, type = "string", description = "Какой квест нужно завершить сначала (questId)" },
             new ColumnDef { name = "stageNum",        aliases = new[]{"stage num","stage_num","stage","этап","номер этапа"},   required = true,  type = "int",   description = "Номер этапа (0, 1, 2...)" },
@@ -53,7 +53,7 @@ namespace ProjectC.Quests.Editor
             new ColumnDef { name = "qty",             aliases = new[]{"quantity","кол-во","количество","count"},               required = true,  type = "int",   defaultValue = "1", description = "Сколько нужно (3 руды, 1 поговорить)" },
             new ColumnDef { name = "onCompleteActions",aliases = new[]{"on complete","on_complete","onComplete","при завершении"},  required = false, type = "string", description = "Действия при завершении этапа" },
             new ColumnDef { name = "rewardCR",        aliases = new[]{"reward cr","reward_cr","reward","credits","награда cr","кредиты"}, required = false, type = "int",   defaultValue = "0", description = "Награда кредитами" },
-            new ColumnDef { name = "rewardRep",       aliases = new[]{"reward rep","reward_rep","reward reputation","награда реп","репутация"}, required = false, type = "string", description = "Награда репутацией (FactionId:value)" },
+            new ColumnDef { name = "rewardRep",       aliases = new[]{"reward rep","reward_rep","reward reputation","награда реп","репутация"}, required = false, type = "string", description = "Награда репутацией (factionKey:value)" },
             new ColumnDef { name = "rewardItem",      aliases = new[]{"reward item","reward_item","награда предмет","rewardItems"},          required = false, type = "string", description = "Награда предметом (itemName:count,;itemName:count)" },
         };
 

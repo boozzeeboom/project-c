@@ -104,7 +104,10 @@ namespace ProjectC.Quests.Editor
             {
                 normal = { textColor = FactionColor }
             };
-            EditorGUILayout.LabelField($"⚑ {npc.faction}", factionStyle);
+            string factionLabel = npc.factionRef != null
+                ? $"{npc.factionRef.EffectiveFactionKey} [{npc.factionRef.EffectiveWireId}]"
+                : $"legacy:{npc.faction}";
+            EditorGUILayout.LabelField($"⚑ {factionLabel}", factionStyle);
 
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
@@ -176,7 +179,8 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.PropertyField(serializedObject.FindProperty("npcId"), new GUIContent("NPC ID"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("displayName"), new GUIContent("Display Name"));
             EditorGUILayout.EndHorizontal();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("faction"), new GUIContent("Faction"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("factionRef"), new GUIContent("Faction (asset)"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("faction"), new GUIContent("Legacy Faction"));
             EditorGUILayout.EndVertical();
         }
 

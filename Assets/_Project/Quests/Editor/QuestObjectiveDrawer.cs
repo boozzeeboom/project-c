@@ -74,7 +74,7 @@ namespace ProjectC.Quests.Editor
 
                 case QuestObjectiveType.ReputationAtLeast:
                     EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
-                        property.FindPropertyRelative("targetFaction"), new GUIContent("Faction"));
+                        property.FindPropertyRelative("targetFactionRef"), new GUIContent("Faction (asset)"));
                     y += lineH + 2;
                     DrawIntField(property, "reputationValue", position, ref y, w, lineH, "Min Value");
                     DrawOptionalRequired(property, position, ref y, w, lineH);

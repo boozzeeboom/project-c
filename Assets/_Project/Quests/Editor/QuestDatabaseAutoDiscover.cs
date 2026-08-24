@@ -23,7 +23,7 @@ namespace ProjectC.Quests.Editor
     public static class QuestDatabaseAutoDiscover
     {
         private const string DATABASE_PATH = "Assets/_Project/Quests/Data/QuestDatabase.asset";
-        private const string FACTION_GUID = "Assets/_Project/Quests/Data/Factions";
+        private const string FACTION_GUID = "Assets/_Project/Resources/Data/Factions";
         private const string NPC_GUID = "Assets/_Project/Quests/Data/Npcs";
         private const string DIALOG_GUID = "Assets/_Project/Quests/Data/Dialogs";
         private const string QUEST_GUID = "Assets/_Project/Quests/Data/Quests";

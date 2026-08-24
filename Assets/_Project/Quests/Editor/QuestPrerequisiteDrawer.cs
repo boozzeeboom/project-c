@@ -35,7 +35,7 @@ namespace ProjectC.Quests.Editor
 
                 case QuestPrerequisiteType.ReputationAtLeast:
                     EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
-                        property.FindPropertyRelative("factionParam"), new GUIContent("Faction"));
+                        property.FindPropertyRelative("factionRef"), new GUIContent("Faction (asset)"));
                     y += lineH + 2;
                     DrawIntParam(property, position, ref y, w, lineH, "Min Value");
                     break;
@@ -56,7 +56,7 @@ namespace ProjectC.Quests.Editor
 
                 case QuestPrerequisiteType.PlayerFaction:
                     EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
-                        property.FindPropertyRelative("factionParam"), new GUIContent("Faction"));
+                        property.FindPropertyRelative("factionRef"), new GUIContent("Faction (asset)"));
                     y += lineH + 2;
                     break;
             }

@@ -69,12 +69,12 @@ namespace ProjectC.Quests.Editor
             // 5. Auto-create missing NPCs (if checkbox)
             if (options.autoCreateMissingNpcs)
             {
-                var npcOverrides = CollectNpcOverrides(rows);
+                var npcOverrides = CollectNpcOverrides(rows, result);
                 foreach (var npcId in npcIds)
                 {
                     bool created;
-                    var (displayName, faction) = npcOverrides.TryGetValue(npcId, out var ov) ? ov : (null, FactionId.Neutral);
-                    EnsureNpc(npcId, out created, displayName, faction);
+                    var (displayName, factionDefinition) = npcOverrides.TryGetValue(npcId, out var ov) ? ov : (null, null);
+                    EnsureNpc(npcId, out created, displayName, factionDefinition);
                     if (created) result.npcsCreated++;
                 }
 
@@ -237,9 +237,9 @@ namespace ProjectC.Quests.Editor
         /// Build a map of npcId → (displayName, faction) from CSV.
         /// First row wins (per npcId). If column missing — empty/Neutral.
         /// </summary>
-        private static Dictionary<string, (string displayName, FactionId faction)> CollectNpcOverrides(List<QuestCsvRow> rows)
+        private static Dictionary<string, (string displayName, FactionDefinition factionDefinition)> CollectNpcOverrides(List<QuestCsvRow> rows, ImportResult result)
         {
-            var map = new Dictionary<string, (string, FactionId)>(StringComparer.OrdinalIgnoreCase);
+            var map = new Dictionary<string, (string, FactionDefinition)>(StringComparer.OrdinalIgnoreCase);
             foreach (var row in rows)
             {
                 var npcId = row.Get("npcId");
@@ -253,14 +253,17 @@ namespace ProjectC.Quests.Editor
                     name = npcId;
                 }
                 var factionStr = row.Get("npcFaction");
-                FactionId faction = FactionId.Neutral;
-                if (!string.IsNullOrEmpty(factionStr))
+                FactionDefinition factionDefinition = null;
+                if (!string.IsNullOrEmpty(factionStr) &&
+                    !factionStr.Equals("npcId", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Enum.TryParse<FactionId>(factionStr, true, out var f)) faction = f;
-                    else if (factionStr.Equals("npcId", StringComparison.OrdinalIgnoreCase))
-                        faction = FactionId.Neutral; // special: "fallback to npcId" marker
+                    if (!FactionCsvResolver.TryResolve(factionStr, out factionDefinition, out var factionError))
+                    {
+                        result.errors.Add($"Line {row.lineNumber}: {factionError}");
+                        continue;
+                    }
                 }
-                map[npcId] = (name, faction);
+                map[npcId] = (name, factionDefinition);
             }
             return map;
         }
@@ -340,7 +343,7 @@ namespace ProjectC.Quests.Editor
         }
 
         /// <summary>Ensure NpcDefinition asset exists. Returns whether it was newly created.</summary>
-        private static void EnsureNpc(string npcId, out bool created, string displayNameOverride = null, FactionId factionOverride = FactionId.Neutral)
+        private static void EnsureNpc(string npcId, out bool created, string displayNameOverride = null, FactionDefinition factionOverride = null)
         {
             created = false;
             string assetPath = $"{NPCS_FOLDER}/{npcId}.asset";
@@ -354,10 +357,11 @@ namespace ProjectC.Quests.Editor
                     existing.displayName = displayNameOverride;
                     updated = true;
                 }
-                if (factionOverride != FactionId.Neutral && existing.faction != factionOverride)
+                if (factionOverride != null && existing.factionRef != factionOverride)
                 {
-                    // Only update if explicit override
-                    existing.faction = factionOverride;
+                    existing.factionRef = factionOverride;
+                    if (factionOverride.factionId != FactionId.None)
+                        existing.faction = factionOverride.factionId;
                     updated = true;
                 }
                 if (updated)
@@ -383,7 +387,12 @@ namespace ProjectC.Quests.Editor
             npc.displayName = !string.IsNullOrEmpty(displayNameOverride)
                 ? displayNameOverride
                 : npcId.Replace('_', ' ').Trim();
-            npc.faction = factionOverride;
+            if (factionOverride != null)
+            {
+                npc.factionRef = factionOverride;
+                if (factionOverride.factionId != FactionId.None)
+                    npc.faction = factionOverride.factionId;
+            }
             npc.questOffers = new string[0];
             AssetDatabase.CreateAsset(npc, assetPath);
             created = true;
@@ -436,10 +445,17 @@ namespace ProjectC.Quests.Editor
             var factionStr = firstRow.Get("faction");
             if (!string.IsNullOrEmpty(factionStr))
             {
-                if (Enum.TryParse<FactionId>(factionStr, true, out var faction))
-                    quest.faction = faction;
+                if (FactionCsvResolver.TryResolve(factionStr, out var factionDefinition, out var factionError))
+                {
+                    quest.factionRef = factionDefinition;
+                    if (factionDefinition.factionId != FactionId.None)
+                        quest.faction = factionDefinition.factionId;
+                }
                 else
-                    result.warnings.Add($"Quest '{questId}': unknown faction '{factionStr}', using Neutral");
+                {
+                    result.errors.Add($"Quest '{questId}': {factionError}");
+                    return;
+                }
             }
 
             quest.oneShot = firstRow.GetBool("oneShot");
@@ -541,7 +557,7 @@ namespace ProjectC.Quests.Editor
             {
                 credits = lastRow.GetInt("rewardCR", 0),
                 items = ParseRewardItems(lastRow.Get("rewardItem")),
-                reputation = ParseRewardReputation(lastRow.Get("rewardRep")),
+                reputation = ParseRewardReputation(lastRow.Get("rewardRep"), result, questId),
             };
 
             // Save
@@ -610,8 +626,16 @@ namespace ProjectC.Quests.Editor
                         break;
                     case DialogueActionType.AddReputation:
                         action.intParam = ParseInt(param2, 0);
-                        if (Enum.TryParse<FactionId>(param1, true, out var repFaction))
-                            action.factionParam = repFaction;
+                        if (FactionCsvResolver.TryResolve(param1, out var repFactionDefinition, out var factionError))
+                        {
+                            action.factionRef = repFactionDefinition;
+                            if (repFactionDefinition.factionId != FactionId.None)
+                                action.factionParam = repFactionDefinition.factionId;
+                        }
+                        else
+                        {
+                            result.errors.Add($"Quest '{questId}', stage {stageNum}: {factionError}");
+                        }
                         break;
                     case DialogueActionType.AddNpcAttitude:
                         action.stringParam = param1; // npcId
@@ -690,7 +714,7 @@ namespace ProjectC.Quests.Editor
             return items.ToArray();
         }
 
-        private static QuestRewardReputation[] ParseRewardReputation(string raw)
+        private static QuestRewardReputation[] ParseRewardReputation(string raw, ImportResult result, string questId)
         {
             if (string.IsNullOrWhiteSpace(raw)) return Array.Empty<QuestRewardReputation>();
             var reps = new List<QuestRewardReputation>();
@@ -698,11 +722,18 @@ namespace ProjectC.Quests.Editor
             {
                 var parts = token.Split(':');
                 if (parts.Length == 0) continue;
-                if (Enum.TryParse<FactionId>(parts[0].Trim(), true, out var faction))
+                if (!FactionCsvResolver.TryResolve(parts[0].Trim(), out var factionDefinition, out var factionError))
                 {
-                    int value = parts.Length > 1 && int.TryParse(parts[1], out var v) ? v : 0;
-                    reps.Add(new QuestRewardReputation { faction = faction, value = value });
+                    result.errors.Add($"Quest '{questId}': {factionError}");
+                    continue;
                 }
+                int value = parts.Length > 1 && int.TryParse(parts[1], out var v) ? v : 0;
+                reps.Add(new QuestRewardReputation
+                {
+                    factionRef = factionDefinition,
+                    faction = factionDefinition.factionId,
+                    value = value
+                });
             }
             return reps.ToArray();
         }

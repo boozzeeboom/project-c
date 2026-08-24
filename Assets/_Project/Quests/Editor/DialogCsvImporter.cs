@@ -172,9 +172,18 @@ namespace ProjectC.Quests.Editor
                             type = ParseConditionType(condType, out var err),
                             stringParam = row.Get("conditionStringParam"),
                             intParam = row.GetInt("conditionIntParam", 0),
-                            factionParam = ParseFaction(row.Get("conditionFactionParam")),
                         };
                         if (err != null) result.warnings.Add($"tree '{treeId}': {err}");
+                        var conditionFactionRaw = row.Get("conditionFactionParam");
+                        if (!string.IsNullOrEmpty(conditionFactionRaw))
+                        {
+                            if (FactionCsvResolver.TryResolve(conditionFactionRaw, out var conditionFaction, out var factionError))
+                            {
+                                edge.condition.factionRef = conditionFaction;
+                                edge.condition.factionParam = conditionFaction.factionId;
+                            }
+                            else result.errors.Add($"tree '{treeId}': {factionError}");
+                        }
                     }
 
                     // Action
@@ -186,9 +195,18 @@ namespace ProjectC.Quests.Editor
                             type = ParseActionType(actType, out var err),
                             stringParam = row.Get("actionStringParam"),
                             intParam = row.GetInt("actionIntParam", 0),
-                            factionParam = ParseFaction(row.Get("actionFactionParam")),
                         };
                         if (err != null) result.warnings.Add($"tree '{treeId}': {err}");
+                        var actionFactionRaw = row.Get("actionFactionParam");
+                        if (!string.IsNullOrEmpty(actionFactionRaw))
+                        {
+                            if (FactionCsvResolver.TryResolve(actionFactionRaw, out var actionFaction, out var factionError))
+                            {
+                                edge.action.factionRef = actionFaction;
+                                edge.action.factionParam = actionFaction.factionId;
+                            }
+                            else result.errors.Add($"tree '{treeId}': {factionError}");
+                        }
                     }
 
                     parentNode.edges[edgeIdx++] = edge;
@@ -274,11 +292,7 @@ namespace ProjectC.Quests.Editor
             return DialogueActionType.EndConversation;
         }
 
-        private static FactionId ParseFaction(string raw)
-        {
-            if (string.IsNullOrEmpty(raw)) return FactionId.None;
-            return Enum.TryParse<FactionId>(raw, true, out var f) ? f : FactionId.None;
-        }
+
 
         // ============================================================
         // Lightweight CSV parser for dialogs.csv (independent of quest schema)

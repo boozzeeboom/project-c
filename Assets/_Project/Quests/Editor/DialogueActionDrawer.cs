@@ -81,7 +81,7 @@ namespace ProjectC.Quests.Editor
 
                 case DialogueActionType.AddReputation:
                     EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
-                        property.FindPropertyRelative("factionParam"), new GUIContent("Faction"));
+                        property.FindPropertyRelative("factionRef"), new GUIContent("Faction (asset)"));
                     y += lineH + 2;
                     DrawInt(property, position, ref y, w, lineH, "Delta");
                     break;

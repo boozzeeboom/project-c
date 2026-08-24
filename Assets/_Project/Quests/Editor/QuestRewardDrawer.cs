@@ -77,7 +77,7 @@ namespace ProjectC.Quests.Editor
                 {
                     float rx = rect.x + 16;
                     EditorGUI.PropertyField(new Rect(rx, ry, rw * 0.40f, rh),
-                        prop.FindPropertyRelative("faction"), GUIContent.none);
+                        prop.FindPropertyRelative("factionRef"), new GUIContent("Faction"));
                     EditorGUI.PropertyField(new Rect(rx + rw * 0.40f + 4, ry, rw * 0.30f, rh),
                         prop.FindPropertyRelative("value"), GUIContent.none);
                     return ry + rh + 2;

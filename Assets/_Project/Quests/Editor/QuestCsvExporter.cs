@@ -81,7 +81,9 @@ namespace ProjectC.Quests.Editor
             var questId = EscapeCsv(quest.questId);
             var displayName = EscapeCsv(quest.displayName);
             var description = EscapeCsv(quest.description ?? "");
-            var faction = quest.faction.ToString();
+            var faction = quest.factionRef != null
+                ? quest.factionRef.EffectiveFactionKey
+                : quest.faction.ToString();
             var oneShot = quest.oneShot ? "y" : "n";
             var prereq = quest.prerequisites != null
                 ? EscapeCsv(string.Join(";", quest.prerequisites
@@ -106,7 +108,8 @@ namespace ProjectC.Quests.Editor
             // Rewards (from quest level)
             var rewardCR = (quest.rewards?.credits ?? 0).ToString();
             var rewardRep = quest.rewards?.reputation != null
-                ? EscapeCsv(string.Join(";", quest.rewards.reputation.Select(r => $"{r.faction}:{r.value}")))
+                ? EscapeCsv(string.Join(";", quest.rewards.reputation.Select(r =>
+                    $"{(r.factionRef != null ? r.factionRef.EffectiveFactionKey : r.faction.ToString())}:{r.value}")))
                 : "";
             var rewardItem = quest.rewards?.items != null
                 ? EscapeCsv(string.Join(";", quest.rewards.items.Select(i =>
@@ -161,7 +164,7 @@ namespace ProjectC.Quests.Editor
                 case DialogueActionType.GiveCredits:
                     return $"{typeName}::{a.intParam}";
                 case DialogueActionType.AddReputation:
-                    return $"{typeName}:{a.factionParam}:{a.intParam}";
+                    return $"{typeName}:{(a.factionRef != null ? a.factionRef.EffectiveFactionKey : a.factionParam.ToString())}:{a.intParam}";
                 case DialogueActionType.AddNpcAttitude:
                     return $"{typeName}:{a.stringParam}:{a.intParam}";
                 case DialogueActionType.GiveItem:

@@ -58,7 +58,7 @@ namespace ProjectC.Quests.Editor
                 case DialogueConditionType.ReputationAtLeast:
                 case DialogueConditionType.ReputationAtMost:
                     EditorGUI.PropertyField(new Rect(position.x, y, w, lineH),
-                        property.FindPropertyRelative("factionParam"), new GUIContent("Faction"));
+                        property.FindPropertyRelative("factionRef"), new GUIContent("Faction (asset)"));
                     y += lineH + 2;
                     DrawIntParam(property, position, ref y, w, lineH, "Value");
                     break;

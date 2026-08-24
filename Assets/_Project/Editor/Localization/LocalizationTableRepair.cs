@@ -318,7 +318,8 @@ namespace ProjectC.Localization.Editor
                 var so = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
                 if (so == null) continue;
 
-                var factionId = GetField(so, "factionId");
+                var factionId = GetField(so, "factionKey");
+                if (string.IsNullOrEmpty(factionId)) factionId = GetField(so, "factionId");
                 var displayName = GetField(so, "displayName");
                 var loreDescription = GetField(so, "loreDescription");
 
@@ -328,7 +329,7 @@ namespace ProjectC.Localization.Editor
                     added += AddEntry(collection, table, $"static.faction.{factionId}.loreDescription", loreDescription);
 
                 var sso = new SerializedObject(so);
-                var tiers = sso.FindProperty("reputationTiers");
+                var tiers = sso.FindProperty("reputationThresholds");
                 if (tiers != null && tiers.isArray)
                 {
                     for (int t = 0; t < tiers.arraySize; t++)

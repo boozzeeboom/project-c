@@ -274,7 +274,7 @@ namespace ProjectC.Quests.Editor
                     var name = it.cargoItem != null ? it.cargoItem.displayName : it.tradeItemId;
                     rLines.Add($"🚢 Cargo: {name} ×{it.count}");
                 }
-                if (r.reputation != null) foreach (var rep in r.reputation) rLines.Add($"📈 {rep.faction} +{rep.value}");
+                if (r.reputation != null) foreach (var rep in r.reputation) rLines.Add($"📈 {(rep.factionRef != null ? rep.factionRef.EffectiveFactionKey : rep.faction.ToString())} +{rep.value}");
                 float x = X_STAGE_START + stageCount * STAGE_GAP;
                 var rn = MakeNode("🎁 REWARDS", string.Join("\n", rLines), rewardTitleColor, x, 0, REWARD_W, REWARD_H);
                 if (stageNodes.Count > 0)

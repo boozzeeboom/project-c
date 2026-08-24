@@ -385,9 +385,10 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.Space(2);
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("faction"), new GUIContent("Faction"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("factionRef"), new GUIContent("Faction (asset)"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("minReputation"), new GUIContent("Min Rep"));
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("faction"), new GUIContent("Legacy Faction"));
             EditorGUILayout.Space(8);
 
             // ── Prerequisites ──

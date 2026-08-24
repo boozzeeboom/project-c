@@ -23,7 +23,7 @@ namespace ProjectC.Quests
     [CreateAssetMenu(fileName = "QuestDatabase", menuName = "ProjectC/Quests/Quest Database", order = 50)]
     public class QuestDatabase : ScriptableObject
     {
-        [Header("Factions (from Assets/_Project/Quests/Data/Factions/)")]
+        [Header("Factions (from Assets/_Project/Resources/Data/Factions/)")]
         [Tooltip("Все FactionDefinition assets в проекте. Заполняется auto-discover или вручную.")]
         public FactionDefinition[] factions = Array.Empty<FactionDefinition>();
 
@@ -66,7 +66,31 @@ namespace ProjectC.Quests
             if (factions == null) return null;
             for (int i = 0; i < factions.Length; i++)
             {
-                if (factions[i] != null && factions[i].factionId == id) return factions[i];
+                if (factions[i] != null &&
+                    (factions[i].factionId == id || factions[i].EffectiveWireId == (int)id))
+                    return factions[i];
+            }
+            return null;
+        }
+
+        public FactionDefinition GetFactionByKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key) || factions == null) return null;
+            for (int i = 0; i < factions.Length; i++)
+            {
+                if (factions[i] != null && string.Equals(factions[i].EffectiveFactionKey, key.Trim(), StringComparison.Ordinal))
+                    return factions[i];
+            }
+            return null;
+        }
+
+        public FactionDefinition GetFactionByWireId(int wireId)
+        {
+            if (wireId <= 0 || factions == null) return null;
+            for (int i = 0; i < factions.Length; i++)
+            {
+                if (factions[i] != null && factions[i].EffectiveWireId == wireId)
+                    return factions[i];
             }
             return null;
         }

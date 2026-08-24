@@ -805,4 +805,28 @@ FactionCatalog/FactionRegistry
 - Формат `QuestSaveData` на первом этапе не менялся.
 - Playtest и screenshots не выполнялись: по правилам проекта их делает пользователь.
 
-Статус: **закрыт по реализации**; runtime persistence playtest пользователя остаётся отдельной проверкой. Коммит создаётся после записи этого отчёта.
+Статус: **закрыт по реализации**; runtime persistence playtest пользователя остаётся отдельной проверкой. Коммит: `a891d3d8`.
+
+### Этап 7 — выполнен 24 августа 2026 г.
+
+Изменено:
+
+- Добавлен общий `FactionCsvResolver`: новый CSV использует `factionKey`, legacy enum names поддерживаются как aliases.
+- `QuestCsvImporter` записывает `FactionDefinition` references для quest faction, NPC faction, actions и reputation rewards.
+- `NpcCsvImporter` записывает `AttitudeLink.targetFactionRef` и выдаёт error для неизвестного faction key.
+- `DialogCsvImporter` записывает faction references в conditions/actions и выдаёт error для неизвестного ключа.
+- `QuestCsvExporter` экспортирует стабильные `factionKey` вместо enum names, если reference задан.
+- Validator и Quest/Dialogue/NPC editor drawers показывают `FactionDefinition` object fields.
+- `QuestDatabaseAutoDiscover` и `QuestDatabase` используют единый путь `Assets/_Project/Resources/Data/Factions`.
+- После rescan `QuestDatabase` подтверждён как синхронизированный: `factions=10; npcs=3; quests=2; dialogs=4`.
+- Localization migrator/repair используют `factionKey` с legacy fallback и исправленным `reputationThresholds` property.
+- Graph/database/NPC/quest editor отображают stable key/wire identity.
+
+Проверка:
+
+- Unity compile check: `No compile errors`.
+- Resolver test: `key=True:1; legacy=True:11; unknown=False:Unknown faction 'DoesNotExist'...`.
+- Неизвестный ключ не заменяется молча на `None`/`Neutral`.
+- Playtest, screenshots и фактический пользовательский CSV round-trip не выполнялись: это остаётся проверкой пользователя.
+
+Статус: **закрыт по реализации**; editor/CSV user verification остаётся отдельной проверкой. Коммит создаётся после записи этого отчёта.

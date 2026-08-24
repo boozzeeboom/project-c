@@ -380,7 +380,7 @@ namespace ProjectC.Quests.Editor
                     var name = it.cargoItem != null ? it.cargoItem.displayName : it.tradeItemId;
                     rLines += $"🚢 Cargo: {name} ×{it.count}  ";
                 }
-                if (r.reputation != null) foreach (var rep in r.reputation) rLines += $"📈 {rep.faction} +{rep.value}  ";
+                if (r.reputation != null) foreach (var rep in r.reputation) rLines += $"📈 {(rep.factionRef != null ? rep.factionRef.EffectiveFactionKey : rep.faction.ToString())} +{rep.value}  ";
 
                 var rFields = new List<(string label, string value, System.Action<string> onSave)>
                 {
@@ -391,8 +391,8 @@ namespace ProjectC.Quests.Editor
                     for (int ri = 0; ri < r.reputation.Length; ri++)
                     {
                         int rIdx = ri;
-                        rFields.Add(($"Rep {ri} Faction", r.reputation[ri].faction.ToString(),
-                            v => { if (System.Enum.TryParse<FactionId>(v, out var f)) r.reputation[rIdx].faction = f; }));
+                        rFields.Add(($"Rep {ri} Faction", r.reputation[ri].factionRef != null ? r.reputation[ri].factionRef.EffectiveFactionKey : r.reputation[ri].faction.ToString(),
+                            v => { if (FactionCsvResolver.TryResolve(v, out var factionDef, out _)) { r.reputation[rIdx].factionRef = factionDef; r.reputation[rIdx].faction = factionDef.factionId; } }));
                         rFields.Add(($"Rep {ri} Value", r.reputation[ri].value.ToString(),
                             v => { if (int.TryParse(v, out var n)) r.reputation[rIdx].value = n; }));
                     }

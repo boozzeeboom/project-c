@@ -721,4 +721,25 @@ FactionCatalog/FactionRegistry
 - Повторный запуск инструмента дал `scanned=10, migrated=0, unchanged=10, warnings=0`, что подтверждает идемпотентность.
 - Unity compile check: `No compile errors`.
 
-Статус: **закрыт**. Коммит создаётся после записи этого отчёта.
+Статус: **закрыт**. Коммит: `b752c933`.
+
+### Этап 3 — выполнен 24 августа 2026 г.
+
+Изменено:
+
+- `FactionCombatRelation` получил ссылку `targetFactionDefinition`; старый `targetFaction` сохранён как legacy fallback.
+- Combat lookup в `FactionDefinition` переведён на стабильный `wireId`, при этом enum-overload оставлен для старых callers.
+- AI-проверки в `NpcGroupController`, `NpcBrain` и `NpcSocialBrain` используют `FactionDefinition` references.
+- `NpcWorldInspectorWindow` теперь сканирует `Assets/_Project/Resources/Data/Factions`.
+- Создание фракции в инспекторе больше не перебирает `FactionId` и создаёт ассет с `factionId=None`, новым `factionKey` и первым свободным `wireId` из диапазона `16..255`.
+- Редактор боевых отношений использует `FactionDefinition` object field и сохраняет legacy enum только когда он доступен.
+
+Проверка:
+
+- Unity compile check: `No compile errors`.
+- Editor structural test: `catalog=10; testIdentity=Stage3_TestFaction:16; hostile=True; selfAllied=True`.
+- В `NpcWorldInspectorWindow` больше нет `Enum.GetValues(typeof(FactionId))` и старого каталожного пути.
+- В AI больше нет проверок боевых отношений через `o.faction.factionId`.
+- Playtest и screenshots не выполнялись: по правилам проекта их делает пользователь.
+
+Статус: **закрыт по реализации**; runtime playtest пользователя остаётся отдельной проверкой. Коммит создаётся после записи этого отчёта.

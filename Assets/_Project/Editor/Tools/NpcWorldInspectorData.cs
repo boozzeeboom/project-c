@@ -192,7 +192,9 @@ namespace ProjectC.Editor.Tools
     {
         public string assetPath;
         public string assetName;           // e.g. "GuildOfSecrets"
-        public FactionId factionId;
+        public FactionId factionId;        // legacy enum value
+        public string factionKey;
+        public int wireId;
         public string displayName;
         public Color color;
         public string loreDescription;
@@ -207,7 +209,8 @@ namespace ProjectC.Editor.Tools
     [Serializable]
     public class FactionCombatRelationEntry
     {
-        public FactionId targetFaction;
+        public FactionDefinition targetFactionDefinition;
+        public FactionId targetFaction;    // legacy fallback
         public FactionRelation relation;
     }
 

@@ -44,8 +44,6 @@ namespace ProjectC.Editor.Tools
         private Vector2 _scrollFactionList;
         private Vector2 _scrollFactionDetail;
         private bool _factionDirty;
-        private readonly Dictionary<string, FactionId> _factionNameToId = new Dictionary<string, FactionId>();
-        private readonly Dictionary<FactionId, string> _factionIdToAssetPath = new Dictionary<FactionId, string>();
 
         // ── UI state ──
         private Vector2 _scrollNpcs;
@@ -1148,7 +1146,7 @@ namespace ProjectC.Editor.Tools
             {
                 EditorGUILayout.HelpBox(
                     "No faction data. Click 'Scan Factions' to load all FactionDefinition assets.\n\n" +
-                    "This scans Assets/_Project/Quests/Data/Factions/ for all FactionDefinition ScriptableObjects.",
+                    "This scans Assets/_Project/Resources/Data/Factions/ for all FactionDefinition ScriptableObjects.",
                     MessageType.Info);
                 return;
             }
@@ -1224,7 +1222,7 @@ namespace ProjectC.Editor.Tools
             EditorGUILayout.BeginHorizontal();
             var oldColor = GUI.color;
             GUI.color = f.color;
-            EditorGUILayout.LabelField($"■ {f.displayName} [{f.factionId}]", EditorStyles.whiteLargeLabel);
+            EditorGUILayout.LabelField($"■ {f.displayName} [{f.factionKey}:{f.wireId}]", EditorStyles.whiteLargeLabel);
             GUI.color = oldColor;
 
             GUILayout.FlexibleSpace();
@@ -1247,7 +1245,17 @@ namespace ProjectC.Editor.Tools
             }
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField("Faction ID:", GUILayout.Width(120));
+                EditorGUILayout.LabelField("Faction Key:", GUILayout.Width(120));
+                EditorGUILayout.SelectableLabel(f.factionKey ?? "", GUILayout.Height(18));
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Wire ID:", GUILayout.Width(120));
+                EditorGUILayout.LabelField(f.wireId.ToString());
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Legacy Faction ID:", GUILayout.Width(120));
                 EditorGUILayout.LabelField(f.factionId.ToString());
             }
             using (new EditorGUILayout.HorizontalScope())
@@ -1345,8 +1353,20 @@ namespace ProjectC.Editor.Tools
                     EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
 
                     EditorGUILayout.LabelField("vs", GUILayout.Width(20));
-                    var newTarget = (FactionId)EditorGUILayout.EnumPopup(rel.targetFaction, GUILayout.Width(160));
-                    if (newTarget != rel.targetFaction) { rel.targetFaction = newTarget; _factionDirty = true; }
+                    var newTarget = EditorGUILayout.ObjectField(
+                        rel.targetFactionDefinition,
+                        typeof(FactionDefinition),
+                        false,
+                        GUILayout.Width(160)) as FactionDefinition;
+                    if (newTarget != rel.targetFactionDefinition)
+                    {
+                        rel.targetFactionDefinition = newTarget;
+                        if (newTarget != null && newTarget.factionId != FactionId.None)
+                            rel.targetFaction = newTarget.factionId;
+                        _factionDirty = true;
+                    }
+                    if (newTarget == null && rel.targetFaction != FactionId.None)
+                        EditorGUILayout.LabelField($"legacy: {rel.targetFaction}", GUILayout.Width(110));
 
                     var newRel = (FactionRelation)EditorGUILayout.EnumPopup(rel.relation, GUILayout.Width(90));
                     if (newRel != rel.relation) { rel.relation = newRel; _factionDirty = true; }
@@ -1380,6 +1400,7 @@ namespace ProjectC.Editor.Tools
                 {
                     f.combatRelations.Add(new FactionCombatRelationEntry
                     {
+                        targetFactionDefinition = null,
                         targetFaction = FactionId.None,
                         relation = FactionRelation.Neutral
                     });
@@ -1454,14 +1475,27 @@ namespace ProjectC.Editor.Tools
 
         // ═══ Faction operations ═══
 
+        private static FactionDefinition FindFactionDefinition(FactionId legacyId)
+        {
+            if (legacyId == FactionId.None) return null;
+            var guids = AssetDatabase.FindAssets("t:FactionDefinition",
+                new[] { "Assets/_Project/Resources/Data/Factions" });
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var definition = AssetDatabase.LoadAssetAtPath<FactionDefinition>(path);
+                if (definition != null && definition.factionId == legacyId)
+                    return definition;
+            }
+            return null;
+        }
+
         private void ScanFactions()
         {
             _factionResult = new FactionScanResult();
-            _factionNameToId.Clear();
-            _factionIdToAssetPath.Clear();
 
             var guids = AssetDatabase.FindAssets("t:FactionDefinition",
-                new[] { "Assets/_Project/Quests/Data/Factions" });
+                new[] { "Assets/_Project/Resources/Data/Factions" });
 
             foreach (var guid in guids)
             {
@@ -1486,6 +1520,8 @@ namespace ProjectC.Editor.Tools
                     assetPath = path,
                     assetName = def.name,
                     factionId = def.factionId,
+                    factionKey = def.EffectiveFactionKey,
+                    wireId = def.EffectiveWireId,
                     displayName = def.displayName,
                     color = def.color,
                     loreDescription = def.loreDescription,
@@ -1496,20 +1532,23 @@ namespace ProjectC.Editor.Tools
                     npcCount = npcCount,
                 };
 
-                foreach (var cr in def.combatRelations)
-                    entry.combatRelations.Add(new FactionCombatRelationEntry
-                    {
-                        targetFaction = cr.targetFaction,
-                        relation = cr.relation
-                    });
+                if (def.combatRelations != null)
+                {
+                    foreach (var cr in def.combatRelations)
+                        entry.combatRelations.Add(new FactionCombatRelationEntry
+                        {
+                            targetFactionDefinition = cr.targetFactionDefinition != null
+                                ? cr.targetFactionDefinition
+                                : FindFactionDefinition(cr.targetFaction),
+                            targetFaction = cr.targetFaction,
+                            relation = cr.relation
+                        });
+                }
 
                 _factionResult.factions.Add(entry);
-                _factionNameToId[def.name] = def.factionId;
-                _factionNameToId[def.displayName] = def.factionId;
-                _factionIdToAssetPath[def.factionId] = path;
             }
 
-            _factionResult.factions.Sort((a, b) => a.factionId.CompareTo(b.factionId));
+            _factionResult.factions.Sort((a, b) => a.wireId.CompareTo(b.wireId));
             _factionResult.scanTime = DateTime.Now;
             _selectedFactionIndex = _factionResult.factions.Count > 0 ? 0 : -1;
             _factionDirty = false;
@@ -1593,8 +1632,19 @@ namespace ProjectC.Editor.Tools
                     for (int i = 0; i < entry.combatRelations.Count; i++)
                     {
                         var elem = crProp.GetArrayElementAtIndex(i);
-                        elem.FindPropertyRelative("targetFaction").enumValueIndex =
-                            (int)entry.combatRelations[i].targetFaction;
+                        var relationEntry = entry.combatRelations[i];
+                        var targetDefinitionProp = elem.FindPropertyRelative("targetFactionDefinition");
+                        if (targetDefinitionProp != null)
+                            targetDefinitionProp.objectReferenceValue = relationEntry.targetFactionDefinition;
+
+                        var legacyTarget = relationEntry.targetFaction;
+                        if (relationEntry.targetFactionDefinition != null &&
+                            relationEntry.targetFactionDefinition.factionId != FactionId.None)
+                            legacyTarget = relationEntry.targetFactionDefinition.factionId;
+
+                        var legacyTargetProp = elem.FindPropertyRelative("targetFaction");
+                        if (legacyTargetProp != null)
+                            legacyTargetProp.enumValueIndex = (int)legacyTarget;
                         elem.FindPropertyRelative("relation").enumValueIndex =
                             (int)entry.combatRelations[i].relation;
                     }
@@ -1617,39 +1667,39 @@ namespace ProjectC.Editor.Tools
 
         private void CreateNewFaction()
         {
-            // Find next available FactionId
-            var usedIds = new HashSet<FactionId>();
+            var usedWireIds = new HashSet<int>();
             if (_factionResult != null)
-                foreach (var f in _factionResult.factions)
-                    usedIds.Add(f.factionId);
-
-            // Enum values start at 0, find first unused above None
-            FactionId newId = FactionId.None;
-            foreach (FactionId val in Enum.GetValues(typeof(FactionId)))
             {
-                if (val == FactionId.None) continue;
-                if (!usedIds.Contains(val))
+                foreach (var f in _factionResult.factions)
                 {
-                    newId = val;
-                    break;
+                    if (f.wireId > 0) usedWireIds.Add(f.wireId);
                 }
             }
 
-            if (newId == FactionId.None)
+            int nextWireId = 16;
+            string folder = "Assets/_Project/Resources/Data/Factions";
+            string fullPath = null;
+            while (nextWireId <= byte.MaxValue)
             {
-                EditorUtility.DisplayDialog("Cannot Create",
-                    "All FactionId enum values are already used. Add a new value to FactionId.cs first.",
-                    "OK");
+                var assetNameCandidate = $"Faction_{nextWireId}";
+                fullPath = System.IO.Path.Combine(folder, assetNameCandidate + ".asset").Replace("\\", "/");
+                if (!usedWireIds.Contains(nextWireId) && !System.IO.File.Exists(fullPath))
+                    break;
+                nextWireId++;
+            }
+
+            if (nextWireId > byte.MaxValue)
+            {
+                EditorUtility.DisplayDialog("Cannot Create", "No free wireId remains in the byte range 16..255.", "OK");
                 return;
             }
 
-            var folder = "Assets/_Project/Quests/Data/Factions";
-            var assetName = $"Faction_{newId}";
-
-            // Create the SO
+            var assetName = $"Faction_{nextWireId}";
             var def = ScriptableObject.CreateInstance<FactionDefinition>();
-            def.factionId = newId;
-            def.displayName = $"New Faction ({newId})";
+            def.factionId = FactionId.None;
+            def.factionKey = assetName;
+            def.wireId = nextWireId;
+            def.displayName = $"New Faction ({assetName})";
             def.color = Color.gray;
             def.defaultAttitude = FactionAttitude.Neutral;
             def.defaultCombatRelation = FactionRelation.Neutral;
@@ -1662,18 +1712,14 @@ namespace ProjectC.Editor.Tools
                 new ReputationTier { tier = "Уважаемый", value = 75, color = new Color(0.3f, 0.9f, 0.7f), ussClass = "rep-positive" },
             };
 
-            var fullPath = System.IO.Path.Combine(folder, assetName + ".asset").Replace("\\", "/");
             AssetDatabase.CreateAsset(def, fullPath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log($"[NpcWorldInspector] Created new faction: {fullPath}");
+            Debug.Log($"[NpcWorldInspector] Created new faction: {fullPath} wireId={nextWireId}");
 
-            // Re-scan
             ScanFactions();
-
-            // Select the new one
-            _selectedFactionIndex = _factionResult.factions.FindIndex(f => f.factionId == newId);
+            _selectedFactionIndex = _factionResult.factions.FindIndex(f => f.wireId == nextWireId);
             _factionDirty = false;
         }
 

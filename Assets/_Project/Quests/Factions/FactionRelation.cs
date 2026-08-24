@@ -29,10 +29,17 @@ namespace ProjectC.Factions
     [Serializable]
     public struct FactionCombatRelation
     {
-        [Tooltip("Целевая фракция.")]
+        [Tooltip("Целевая фракция. Для новых фракций используется ссылка на FactionDefinition.")]
+        public FactionDefinition targetFactionDefinition;
+
+        [Tooltip("Legacy target faction. Используется как fallback для старых ассетов.")]
         public FactionId targetFaction;
 
         [Tooltip("Тип боевого отношения.")]
         public FactionRelation relation;
+
+        public int EffectiveTargetWireId => targetFactionDefinition != null
+            ? targetFactionDefinition.EffectiveWireId
+            : (int)targetFaction;
     }
 }

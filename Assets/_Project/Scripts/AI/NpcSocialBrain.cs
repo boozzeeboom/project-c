@@ -267,7 +267,7 @@ namespace ProjectC.AI
 
             {
                 if (o == this || o == null || o.IsDead || o._brain == null || o.faction == null) continue;
-                if (!faction.IsHostileTowards(o.faction.factionId)) continue;
+                if (!faction.IsHostileTowards(o.faction)) continue;
                 float d = Vector3.Distance(transform.position, o.transform.position);
                 if (d <= _brain.aggroRange)
                 {
@@ -383,7 +383,7 @@ namespace ProjectC.AI
             foreach (var o in AllBrains)
             {
                 if (o == this || o._brain == null || o._brain.CurrentState == NpcBrain.BrainState.Dead) continue;
-                if (faction != null && o.faction != null && !faction.IsAlliedWith(o.faction.factionId)) continue;
+                if (faction != null && o.faction != null && !faction.IsAlliedWith(o.faction)) continue;
                 float d = (o.transform.position - transform.position).sqrMagnitude;
                 if (d < bestD && d > 0.01f) { bestD = d; best = o.transform.position; }
             }
@@ -511,7 +511,7 @@ namespace ProjectC.AI
             foreach (var o in AllBrains)
             {
                 if (o == this || o == null || o.IsDead || o._brain == null) continue;
-                if (faction != null && o.faction != null && !faction.IsAlliedWith(o.faction.factionId)) continue;
+                if (faction != null && o.faction != null && !faction.IsAlliedWith(o.faction)) continue;
                 if (o._brain.CurrentState != NpcBrain.BrainState.Idle) continue;
                 float d = (o.transform.position - transform.position).sqrMagnitude;
                 if (d < bestD && d > 0.01f) { bestD = d; best = o; }
@@ -923,7 +923,7 @@ namespace ProjectC.AI
                 foreach (var o in AllBrains)
                 {
                     if (o == this || o == null || o._brain == null) continue;
-                    if (o.faction == null || !faction.IsAlliedWith(o.faction.factionId)) continue;
+                    if (o.faction == null || !faction.IsAlliedWith(o.faction)) continue;
 
                     bool inCombat = o._brain.CurrentState == NpcBrain.BrainState.Chase || o._brain.CurrentState == NpcBrain.BrainState.Attack;
                     if (!inCombat || Vector3.Distance(transform.position, o.transform.position) > 15f) continue;

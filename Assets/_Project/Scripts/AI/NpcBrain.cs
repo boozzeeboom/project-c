@@ -1203,7 +1203,7 @@ namespace ProjectC.AI
 
                 {
                     if (npc == null || npc == _socialBrain || npc.IsDead || npc._brain == null || npc.faction == null) continue;
-                    if (!_socialBrain.faction.IsHostileTowards(npc.faction.factionId)) continue;
+                    if (!_socialBrain.faction.IsHostileTowards(npc.faction)) continue;
                     var nt = npc.GetComponent<NpcTarget>();
                     if (nt == null || !nt.IsAlive()) continue;
                     float d = (npc.transform.position - myPos).sqrMagnitude;

@@ -135,39 +135,57 @@ namespace ProjectC.Factions
         /// </summary>
         public string CombatKey => EffectiveFactionKey;
 
-        // Runtime cache: FactionId -> FactionRelation
-        private System.Collections.Generic.Dictionary<FactionId, FactionRelation> _combatRelationCache;
+        // Runtime cache: stable wire ID -> FactionRelation
+        private System.Collections.Generic.Dictionary<int, FactionRelation> _combatRelationCache;
 
-        /// <summary>
-        /// Получить боевое отношение к другой фракции.
-        /// </summary>
+        /// <summary>Legacy overload for code that still has a FactionId.</summary>
         public FactionRelation GetCombatRelation(FactionId other)
         {
-            if (other == factionId) return FactionRelation.Allied;
+            if (factionId != FactionId.None && other == factionId) return FactionRelation.Allied;
             BuildCombatCache();
-            if (_combatRelationCache.TryGetValue(other, out var rel))
+            if (_combatRelationCache.TryGetValue((int)other, out var rel))
                 return rel;
             return defaultCombatRelation;
         }
 
-        /// <summary>
-        /// Проверить, является ли другая фракция враждебной.
-        /// </summary>
+        /// <summary>Data-driven combat lookup by FactionDefinition identity.</summary>
+        public FactionRelation GetCombatRelation(FactionDefinition other)
+        {
+            if (other == null) return defaultCombatRelation;
+            if (EffectiveWireId > 0 && EffectiveWireId == other.EffectiveWireId)
+                return FactionRelation.Allied;
+            BuildCombatCache();
+            if (_combatRelationCache.TryGetValue(other.EffectiveWireId, out var rel))
+                return rel;
+            return defaultCombatRelation;
+        }
+
+        /// <summary>Legacy hostile check for enum-based callers.</summary>
         public bool IsHostileTowards(FactionId other)
             => GetCombatRelation(other) == FactionRelation.Hostile;
 
-        /// <summary>
-        /// Проверить, является ли другая фракция союзной.
-        /// </summary>
+        /// <summary>Data-driven hostile check for asset-reference callers.</summary>
+        public bool IsHostileTowards(FactionDefinition other)
+            => GetCombatRelation(other) == FactionRelation.Hostile;
+
+        /// <summary>Legacy allied check for enum-based callers.</summary>
         public bool IsAlliedWith(FactionId other)
+            => GetCombatRelation(other) == FactionRelation.Allied;
+
+        /// <summary>Data-driven allied check for asset-reference callers.</summary>
+        public bool IsAlliedWith(FactionDefinition other)
             => GetCombatRelation(other) == FactionRelation.Allied;
 
         private void BuildCombatCache()
         {
             if (_combatRelationCache != null) return;
-            _combatRelationCache = new System.Collections.Generic.Dictionary<FactionId, FactionRelation>();
+            _combatRelationCache = new System.Collections.Generic.Dictionary<int, FactionRelation>();
             foreach (var entry in combatRelations)
-                _combatRelationCache[entry.targetFaction] = entry.relation;
+            {
+                int targetWireId = entry.EffectiveTargetWireId;
+                if (targetWireId > 0)
+                    _combatRelationCache[targetWireId] = entry.relation;
+            }
         }
 
         private void OnEnable()

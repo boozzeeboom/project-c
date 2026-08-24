@@ -95,7 +95,7 @@ namespace ProjectC.AI
             // T-NPC-S19: проверяем совместимость фракций. В группе — только Allied.
             if (members.Count > 0 && members[0] != null && members[0].faction != null && brain.faction != null)
             {
-                if (!members[0].faction.IsAlliedWith(brain.faction.factionId))
+                if (!members[0].faction.IsAlliedWith(brain.faction))
                 {
                     if (_debugLog)
                         Debug.Log($"[NpcGroupController] {brain.name} rejected: faction mismatch ({brain.faction?.CombatKey} vs {members[0].faction?.CombatKey})");
@@ -262,9 +262,9 @@ namespace ProjectC.AI
                         break;
                     case NpcVocalCue.VictoryRoar:
                         // Союзники воодушевляются, враги деморализуются.
-                        if (member.faction != null && source.faction != null && member.faction.IsAlliedWith(source.faction.factionId))
+                        if (member.faction != null && source.faction != null && member.faction.IsAlliedWith(source.faction))
                             member.HearVictoryRoar();
-                        else if (member.faction != null && source.faction != null && member.faction.IsHostileTowards(source.faction.factionId))
+                        else if (member.faction != null && source.faction != null && member.faction.IsHostileTowards(source.faction))
                             member.HearEnemyVictoryRoar();
                         break;
                     case NpcVocalCue.Taunt:

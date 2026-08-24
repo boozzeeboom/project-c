@@ -13,6 +13,13 @@ namespace ProjectC.Quests.Editor
     public class FactionDefinitionEditor : UnityEditor.Editor
     {
         private const string FactionsFolder = "Assets/_Project/Resources/Data/Factions";
+        private const int FirstNewWireId = 16;
+        private const int MaxWireId = byte.MaxValue;
+
+        private void OnEnable()
+        {
+            AutoAssignWireIdForNewAsset();
+        }
 
         public override void OnInspectorGUI()
         {
@@ -33,6 +40,42 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.Space(4);
             DrawPropertiesExcluding(serializedObject, "m_Script", "factionId", "factionKey", "wireId");
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void AutoAssignWireIdForNewAsset()
+        {
+            var definition = target as FactionDefinition;
+            if (definition == null || !AssetDatabase.Contains(definition)) return;
+
+            // Only untouched new assets are auto-assigned. Existing and partially authored
+            // assets are never overwritten, preserving immutable IDs.
+            if (definition.factionId != FactionId.None ||
+                definition.wireId != 0 ||
+                !string.IsNullOrWhiteSpace(definition.factionKey))
+                return;
+
+            var usedWireIds = new System.Collections.Generic.HashSet<int>();
+            var guids = AssetDatabase.FindAssets("t:FactionDefinition", new[] { FactionsFolder });
+            for (int i = 0; i < guids.Length; i++)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var other = AssetDatabase.LoadAssetAtPath<FactionDefinition>(path);
+                if (other != null && other != definition && other.EffectiveWireId > 0)
+                    usedWireIds.Add(other.EffectiveWireId);
+            }
+
+            for (int candidate = FirstNewWireId; candidate <= MaxWireId; candidate++)
+            {
+                if (usedWireIds.Contains(candidate)) continue;
+
+                Undo.RecordObject(definition, "Assign faction Wire ID");
+                definition.wireId = candidate;
+                EditorUtility.SetDirty(definition);
+                AssetDatabase.SaveAssetIfDirty(definition);
+                return;
+            }
+
+            Debug.LogError($"[FactionDefinitionEditor] No free Wire ID in range {FirstNewWireId}..{MaxWireId}.", definition);
         }
 
         private void DrawIdentityValidation()

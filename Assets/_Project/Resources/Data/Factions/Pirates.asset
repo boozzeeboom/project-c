@@ -46,12 +46,4 @@ MonoBehaviour:
     color: {r: 0.3, g: 0.9, b: 0.7, a: 1}
     ussClass: rep-positive
   defaultCombatRelation: 2
-  combatRelations:
-  - targetFaction: 12
-    relation: 0
-  - targetFaction: 13
-    relation: 0
-  - targetFaction: 14
-    relation: 2
-  - targetFaction: 15
-    relation: 2
+  combatRelations: []

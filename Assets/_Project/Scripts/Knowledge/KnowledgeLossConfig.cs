@@ -47,7 +47,10 @@ namespace ProjectC.Knowledge
         public float skillKnowledgeLossChance = 0.0f;
 
         [Header("Protected — Never Forget")]
-        [Tooltip("Фракции, которые НИКОГДА не забываются (сюжетные).")]
+        [Tooltip("FactionDefinition references, которые НИКОГДА не забываются. Приоритетнее legacy neverForgetFactions.")]
+        public FactionDefinition[] neverForgetFactionRefs = Array.Empty<FactionDefinition>();
+
+        [Tooltip("Legacy enum factions, которые НИКОГДА не забываются. Используются как fallback.")]
         public FactionId[] neverForgetFactions = new[]
         {
             FactionId.Neutral,

@@ -51,7 +51,12 @@ namespace ProjectC.Quests
         [Tooltip("Numeric param: reputation / NpcAttitude threshold / item count.")]
         public int intParam = 0;
 
-        [Tooltip("Faction param (для ReputationAtLeast).")]
+        [Tooltip("FactionDefinition reference (для ReputationAtLeast). Приоритетнее legacy factionParam.")]
+        public FactionDefinition factionRef;
+
+        [Tooltip("Legacy faction param (для ReputationAtLeast).")]
         public FactionId factionParam = FactionId.None;
+
+        public int EffectiveFactionWireId => factionRef != null ? factionRef.EffectiveWireId : (int)factionParam;
     }
 }

@@ -99,8 +99,13 @@ namespace ProjectC.Dialogue
         [Tooltip("Numeric param: quantity / credits / reputation delta / attitude delta.")]
         public int intParam = 0;
 
-        [Tooltip("Faction param (для AddReputation).")]
+        [Tooltip("FactionDefinition reference (для AddReputation). Приоритетнее legacy factionParam.")]
+        public FactionDefinition factionRef;
+
+        [Tooltip("Legacy faction param (для AddReputation).")]
         public FactionId factionParam = FactionId.None;
+
+        public int EffectiveFactionWireId => factionRef != null ? factionRef.EffectiveWireId : (int)factionParam;
 
         // T-Q27: explicit itemId for GiveItem/TakeItem (replaces fragile stringParam=name lookup).
         [Tooltip("T-Q27: explicit item id (для GiveItem/TakeItem). Если 0 — fallback на itemRef/stringParam name.")]

@@ -67,8 +67,13 @@ namespace ProjectC.Quests
         [Tooltip("NPC/Entity definition (для KillEntity). Перетащи NpcDefinition. Приоритетнее targetEntityType.")]
         public NpcDefinition targetEntity;
 
-        [Tooltip("Faction (dlya ReputationAtLeast).")]
+        [Tooltip("FactionDefinition reference (для ReputationAtLeast). Приоритетнее legacy targetFaction.")]
+        public FactionDefinition targetFactionRef;
+
+        [Tooltip("Legacy faction (для ReputationAtLeast).")]
         public FactionId targetFaction = FactionId.None;
+
+        public int EffectiveFactionWireId => targetFactionRef != null ? targetFactionRef.EffectiveWireId : (int)targetFaction;
 
         [Tooltip("Reputation threshold.")]
         public int reputationValue = 0;

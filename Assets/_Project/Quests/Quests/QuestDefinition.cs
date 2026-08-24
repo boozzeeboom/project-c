@@ -31,9 +31,13 @@ namespace ProjectC.Quests
         public string description = "";
 
         [Header("Faction gating")]
-        [Tooltip("Фракция, с которой ассоциирован квест (для rep gates и UI группировки). " +
-                 "None = нейтральный, доступен всем.")]
+        [Tooltip("Фракция квеста как FactionDefinition reference. Приоритетнее legacy faction.")]
+        public FactionDefinition factionRef;
+
+        [Tooltip("Legacy enum faction. None = нейтральный, доступен всем.")]
         public FactionId faction = FactionId.None;
+
+        public int EffectiveFactionWireId => factionRef != null ? factionRef.EffectiveWireId : (int)faction;
 
         [Tooltip("Минимальная репутация с faction для доступа к квесту. " +
                  "Используется как pre-prerequisite (в дополнение к prerequisites[]).")]

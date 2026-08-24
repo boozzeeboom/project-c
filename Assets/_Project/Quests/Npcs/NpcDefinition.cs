@@ -21,8 +21,13 @@ namespace ProjectC.Quests
     [Serializable]
     public class AttitudeLink
     {
-        [Tooltip("Фракция, репутация с которой сдвигается при изменении отношений с этим NPC")]
+        [Tooltip("Фракция, репутация с которой сдвигается при изменении отношений с этим NPC. Приоритетнее legacy targetFaction.")]
+        public Factions.FactionDefinition targetFactionRef;
+
+        [Tooltip("Legacy target faction. Используется как fallback для старых ассетов.")]
         public Factions.FactionId targetFaction = Factions.FactionId.None;
+
+        public int EffectiveFactionWireId => targetFactionRef != null ? targetFactionRef.EffectiveWireId : (int)targetFaction;
 
         [Tooltip("Дельта для targetFaction, когда отношение с этим NPC улучшается (может быть отрицательной — \"прокачка с вражеским NPC бьёт по союзной фракции\")")]
         public int deltaOnLike = 0;
@@ -66,8 +71,13 @@ namespace ProjectC.Quests
         [Tooltip("Отображаемое имя (loc key в будущем)")]
         public string displayName = "Unknown NPC";
 
-        [Tooltip("Фракция NPC (определяет стартовое отношение, репутационные пороги)")]
+        [Tooltip("Фракция NPC как FactionDefinition reference. Приоритетнее legacy faction.")]
+        public Factions.FactionDefinition factionRef;
+
+        [Tooltip("Legacy enum faction. Используется как fallback для старых ассетов.")]
         public Factions.FactionId faction = Factions.FactionId.Neutral;
+
+        public int EffectiveFactionWireId => factionRef != null ? factionRef.EffectiveWireId : (int)faction;
 
         [Header("Visuals")]
         [Tooltip("Портрет для DialogWindow (256x256+ желательно)")]

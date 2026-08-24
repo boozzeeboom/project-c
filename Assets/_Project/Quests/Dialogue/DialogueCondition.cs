@@ -112,8 +112,13 @@ namespace ProjectC.Dialogue
         [Tooltip("Numeric param: quantity (HasItem) / reputation value / NpcAttitude value.")]
         public int intParam = 0;
 
-        [Tooltip("Faction param (для ReputationAtLeast/AtMost).")]
+        [Tooltip("FactionDefinition reference (для ReputationAtLeast/AtMost). Приоритетнее legacy factionParam.")]
+        public FactionDefinition factionRef;
+
+        [Tooltip("Legacy faction param (для ReputationAtLeast/AtMost).")]
         public FactionId factionParam = FactionId.None;
+
+        public int EffectiveFactionWireId => factionRef != null ? factionRef.EffectiveWireId : (int)factionParam;
 
         [Tooltip("Quest state param (для QuestStateEquals).")]
         public QuestStateMirror questStateParam = QuestStateMirror.Active;

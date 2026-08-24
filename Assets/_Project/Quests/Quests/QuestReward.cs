@@ -32,7 +32,13 @@ namespace ProjectC.Quests
     [Serializable]
     public class QuestRewardReputation
     {
+        [Tooltip("FactionDefinition reference. Приоритетнее legacy faction.")]
+        public FactionDefinition factionRef;
+
+        [Tooltip("Legacy enum faction. Используется как fallback для старых rewards.")]
         public FactionId faction = FactionId.None;
+
+        public int EffectiveFactionWireId => factionRef != null ? factionRef.EffectiveWireId : (int)faction;
 
         [Tooltip("Дельта репутации (может быть отрицательной).")]
         public int value = 0;

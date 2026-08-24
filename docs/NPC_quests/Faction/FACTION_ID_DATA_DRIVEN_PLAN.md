@@ -742,4 +742,24 @@ FactionCatalog/FactionRegistry
 - В AI больше нет проверок боевых отношений через `o.faction.factionId`.
 - Playtest и screenshots не выполнялись: по правилам проекта их делает пользователь.
 
-Статус: **закрыт по реализации**; runtime playtest пользователя остаётся отдельной проверкой. Коммит создаётся после записи этого отчёта.
+Статус: **закрыт по реализации**; runtime playtest пользователя остаётся отдельной проверкой. Коммит: `aa609b0c`.
+
+### Этап 4 — выполнен 24 августа 2026 г.
+
+Изменено:
+
+- В `NpcDefinition` и `AttitudeLink` добавлены `FactionDefinition` references с legacy fallback.
+- В `QuestDefinition`, `QuestObjective`, `QuestRewardReputation` и `QuestPrerequisite` добавлены asset references с сохранением enum-полей.
+- В `DialogueAction` и `DialogueCondition` добавлены `FactionDefinition` references с сохранением `factionParam`.
+- В `KnowledgeLossConfig` добавлен массив `neverForgetFactionRefs` с сохранением `neverForgetFactions`.
+- `FactionIdentityMigration` расширен one-shot миграцией вложенных NPC, Quest, DialogTree и Knowledge authoring-полей через `SerializedObject`.
+
+Проверка:
+
+- Unity compile check: `No compile errors`.
+- Первый запуск миграции: `scanned=10, migrated=5, warnings=0`.
+- Повторный запуск: `scanned=10, migrated=0, warnings=0`, что подтверждает идемпотентность.
+- После миграции подтверждено: `npcs=3; npcRefs=3; quests=2; questRefs=1; dialogs=4; dialogRefs=0; knowledgeConfigs=1`.
+- YAML вручную не редактировался.
+
+Статус: **закрыт по реализации**; runtime-потребители будут переключены на references на этапе 5. Коммит создаётся после записи этого отчёта.

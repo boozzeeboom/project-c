@@ -703,4 +703,22 @@ FactionCatalog/FactionRegistry
 - Unity compile check: `No compile errors`.
 - Старые ассеты до миграции продолжали читаться через fallback на `FactionId`.
 
+Статус: **закрыт**. Коммит: `5d998d5a`.
+
+### Этап 2 — выполнен 24 августа 2026 г.
+
+Изменено:
+
+- Добавлен `Assets/_Project/Quests/Editor/FactionIdentityMigration.cs`.
+- Инструмент использует `SerializedObject`, `EditorUtility.SetDirty` и `AssetDatabase.SaveAssets`.
+- Заполнены `factionKey` и `wireId` для всех 10 существующих ассетов из `Resources/Data/Factions`.
+- Legacy-поле `factionId`, numeric values и `.meta` не изменялись.
+
+Проверка:
+
+- В каталоге подтверждено 10 ассетов.
+- Для всех 10 ассетов `factionKey` совпадает с прежним enum-именем, а `wireId` совпадает со старым numeric ID.
+- Повторный запуск инструмента дал `scanned=10, migrated=0, unchanged=10, warnings=0`, что подтверждает идемпотентность.
+- Unity compile check: `No compile errors`.
+
 Статус: **закрыт**. Коммит создаётся после записи этого отчёта.

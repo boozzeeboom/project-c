@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: GuildOfSuccess
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Factions.FactionDefinition
   factionId: 5
+  factionKey: GuildOfSuccess
+  wireId: 5
   displayName: "\u0413\u0438\u043B\u044C\u0434\u0438\u044F \u0423\u0441\u043F\u0435\u0445\u0430"
   color: {r: 1, g: 0.9225849, b: 0, a: 1}
   iconSprite: {fileID: 0}

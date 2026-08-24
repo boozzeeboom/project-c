@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Faction_Villagers
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Factions.FactionDefinition
   factionId: 15
+  factionKey: Villagers
+  wireId: 15
   displayName: "\u0413\u043E\u0440\u043E\u0434\u0441\u043A\u0438\u0435 \u0436\u0438\u0442\u0435\u043B\u0438"
   color: {r: 0.3, g: 0.7, b: 0.3, a: 1}
   iconSprite: {fileID: 0}

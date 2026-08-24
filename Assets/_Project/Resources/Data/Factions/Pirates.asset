@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Pirates
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Factions.FactionDefinition
   factionId: 10
+  factionKey: Pirates
+  wireId: 10
   displayName: "\u0420\u0436\u0430\u0432\u044B\u0435 \u043F\u0438\u0440\u0430\u0442\u044B"
   color: {r: 0.85, g: 0.5, b: 0.1, a: 1}
   iconSprite: {fileID: 0}

@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: GuildOfThoughts
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Factions.FactionDefinition
   factionId: 1
+  factionKey: GuildOfThoughts
+  wireId: 1
   displayName: "\u0413\u0438\u043B\u044C\u0434\u0438\u044F \u041C\u044B\u0441\u043B\u0438"
   color: {r: 1, g: 0.55555105, b: 0.1273585, a: 1}
   iconSprite: {fileID: 0}

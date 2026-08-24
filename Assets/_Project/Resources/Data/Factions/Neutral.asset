@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Neutral
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Factions.FactionDefinition
   factionId: 11
+  factionKey: Neutral
+  wireId: 11
   displayName: "\u0424\u0435\u0440\u043C\u0435\u0440\u0441\u043A\u0438\u0435 \u0436\u0438\u0442\u0435\u043B\u0438"
   color: {r: 0.7, g: 0.7, b: 0.7, a: 1}
   iconSprite: {fileID: 0}

@@ -829,4 +829,25 @@ FactionCatalog/FactionRegistry
 - Неизвестный ключ не заменяется молча на `None`/`Neutral`.
 - Playtest, screenshots и фактический пользовательский CSV round-trip не выполнялись: это остаётся проверкой пользователя.
 
-Статус: **закрыт по реализации**; editor/CSV user verification остаётся отдельной проверкой. Коммит создаётся после записи этого отчёта.
+Статус: **закрыт по реализации**; editor/CSV user verification остаётся отдельной проверкой. Коммит: `9ee66a86`.
+
+### Этап 8 — выполнен 24 августа 2026 г.
+
+Изменено:
+
+- Добавлен `FactionDefinitionEditor`: `factionKey` и `wireId` редактируются как обычные поля, legacy `factionId` отображается read-only.
+- В редакторе добавлены ошибки для пустого key, недопустимого диапазона wire ID, reserved IDs `1..15` для новых ассетов, mismatch legacy ID и дубликатов key/wire.
+- `FactionDefinition.OnValidate` дублирует критические identity-проверки на уровне ассета.
+- `FactionId.cs` не удалён и явно документирован как legacy compatibility enum; новые enum values добавлять нельзя.
+- Старый `docs/dev/FACTION_ID_DEHARDCODE_PLAN.md` помечен устаревшим и ссылается на этот исполняемый план.
+
+Проверка:
+
+- Unity compile check: `No compile errors`.
+- Catalog validation: `catalog=10; allValid=True; newAssetIdentity=True; wire16Registered=False`.
+- В проекте нет `Enum.GetValues(typeof(FactionId))` для генерации пула и нет старого каталожного пути `Assets/_Project/Quests/Data/Factions`.
+- Новая in-memory identity с `factionId=None`, `factionKey=Stage8_NewFaction`, `wireId=16` проходит validation.
+- `FactionId.cs` и legacy semantics значений `0..15` сохранены.
+- Playtest и screenshots не выполнялись: по правилам проекта их делает пользователь.
+
+Статус: **закрыт по реализации**; финальная editor/runtime/persistence/CSV проверка пользователем остаётся отдельной проверкой. Коммит создаётся после записи этого отчёта.

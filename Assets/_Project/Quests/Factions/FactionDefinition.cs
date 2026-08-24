@@ -193,6 +193,18 @@ namespace ProjectC.Factions
             _combatRelationCache = null; // T-FACTION-UNIFY: очистка при domain reload
         }
 
+        private void OnValidate()
+        {
+            if (wireId < 0 || wireId > byte.MaxValue)
+                Debug.LogError($"[FactionDefinition] '{name}' has invalid wireId {wireId}. Expected 0..255.", this);
+
+            if (factionId != FactionId.None && wireId > 0 && wireId != (int)factionId)
+                Debug.LogError($"[FactionDefinition] '{name}' has wireId {wireId} inconsistent with legacy factionId {factionId}.", this);
+
+            if (factionId == FactionId.None && wireId > 0 && wireId < 16)
+                Debug.LogError($"[FactionDefinition] '{name}' uses reserved legacy wireId {wireId} without a legacy factionId.", this);
+        }
+
         /// <summary>
         /// Найти tier по значению репутации. O(N) — обычно 5-7 tier'ов, не страшно.
         /// </summary>

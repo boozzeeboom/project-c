@@ -61,8 +61,14 @@ namespace ProjectC.Factions
     public class FactionDefinition : ScriptableObject
     {
         [Header("Identity")]
-        [Tooltip("Enum key, должен совпадать с одним из значений ProjectC.Factions.FactionId")]
+        [Tooltip("Legacy enum key. Сохраняется для обратной совместимости со старыми ассетами и сохранениями.")]
         public FactionId factionId = FactionId.None;
+
+        [Tooltip("Стабильный текстовый ключ фракции для CSV, локализации и логов. Для legacy-ассетов временно вычисляется из factionId.")]
+        public string factionKey = "";
+
+        [Tooltip("Стабильный числовой ID для сети и сохранений. 0 означает временный fallback на числовое значение factionId.")]
+        public int wireId;
 
         [Tooltip("Отображаемое имя (loc key в будущем, пока — литерал)")]
         public string displayName = "";
@@ -99,11 +105,35 @@ namespace ProjectC.Factions
         public FactionCombatRelation[] combatRelations = Array.Empty<FactionCombatRelation>();
 
         /// <summary>
+        /// Стабильный текстовый ключ фракции. Для ещё не мигрированных legacy-ассетов
+        /// используется имя старого enum-значения.
+        /// </summary>
+        public string EffectiveFactionKey
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(factionKey)) return factionKey.Trim();
+                return factionId == FactionId.None ? string.Empty : factionId.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Стабильный ID для сети и сохранений. До миграции старых ассетов
+        /// используется числовое значение legacy enum.
+        /// </summary>
+        public int EffectiveWireId => wireId > 0 ? wireId : (int)factionId;
+
+        /// <summary>Проверяет, можно ли использовать identity ассета на registry boundary.</summary>
+        public bool HasValidIdentity =>
+            !string.IsNullOrWhiteSpace(EffectiveFactionKey) &&
+            EffectiveWireId > 0 &&
+            EffectiveWireId <= byte.MaxValue;
+
+        /// <summary>
         /// T-FACTION-UNIFY: ключ для VengeanceMemory (PascalCase, напр. "Bandits").
-        /// Используется вместо NpcFaction.factionId (который был lowercase "bandits").
         /// VengeanceMemory runtime-only — пересоздаётся при старте сервера, persisted-ключей нет.
         /// </summary>
-        public string CombatKey => factionId.ToString();
+        public string CombatKey => EffectiveFactionKey;
 
         // Runtime cache: FactionId -> FactionRelation
         private System.Collections.Generic.Dictionary<FactionId, FactionRelation> _combatRelationCache;

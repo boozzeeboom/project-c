@@ -108,7 +108,8 @@ namespace ProjectC.PeacefulShip.EditorTools
                 bool isExpanded = _expandedScheduleIndex == si;
                 int routeCount = sch.routes?.Length ?? 0;
                 int cargoCount = sch.cargoTrade?.buyItems?.Length ?? 0;
-                bool hasCargo = cargoCount > 0;
+                bool randomTrade = sch.cargoTrade != null && sch.cargoTrade.randomTradeItems;
+                bool hasCargo = randomTrade || cargoCount > 0;
 
                 // ── Summary row ──
                 var rowRect = EditorGUILayout.BeginHorizontal(GUILayout.Height(22));
@@ -138,9 +139,9 @@ namespace ProjectC.PeacefulShip.EditorTools
                 GUILayout.Label(routeCount.ToString(), GUILayout.Width(60));
                 GUI.color = Color.white;
 
-                var cargoColor = hasCargo ? Color.green : Color.gray;
+                var cargoColor = hasCargo ? (randomTrade ? Color.yellow : Color.green) : Color.gray;
                 GUI.color = cargoColor;
-                GUILayout.Label(hasCargo ? $"{cargoCount} items" : "—", GUILayout.Width(60));
+                GUILayout.Label(randomTrade ? "RANDOM" : (hasCargo ? $"{cargoCount} items" : "—"), GUILayout.Width(60));
                 GUI.color = Color.white;
 
                 GUILayout.Label($"{sch.meanArrivalIntervalSec:F0}±{sch.arrivalIntervalStdDev:F0}", GUILayout.Width(90));
@@ -799,13 +800,25 @@ namespace ProjectC.PeacefulShip.EditorTools
                 // Behavior flags (editable toggles)
                 var propSellAll = propCargo.FindPropertyRelative("sellAllOnArrival");
                 var propBuyAfter = propCargo.FindPropertyRelative("buyConfiguredItemsAfterSell");
+                var propRandom = propCargo.FindPropertyRelative("randomTradeItems");
                 var propUnlimited = propCargo.FindPropertyRelative("useUnlimitedCredits");
+
+                if (propRandom != null)
+                    EditorGUILayout.PropertyField(propRandom, new GUIContent("Random trade (buy to full)"));
 
                 EditorGUILayout.BeginHorizontal();
                 if (propSellAll != null) EditorGUILayout.PropertyField(propSellAll, new GUIContent("Sell on arrival"), GUILayout.Width(160));
-                if (propBuyAfter != null) EditorGUILayout.PropertyField(propBuyAfter, new GUIContent("Buy after sell"), GUILayout.Width(160));
+                if (propBuyAfter != null) EditorGUILayout.PropertyField(propBuyAfter, new GUIContent("Buy configured list"), GUILayout.Width(170));
                 if (propUnlimited != null) EditorGUILayout.PropertyField(propUnlimited, new GUIContent("Unlimited credits"), GUILayout.Width(160));
                 EditorGUILayout.EndHorizontal();
+
+                bool randomTradeEnabled = propRandom != null && propRandom.boolValue;
+                if (randomTradeEnabled)
+                {
+                    EditorGUILayout.HelpBox(
+                        "Random trade is enabled: the ship sells all cargo on arrival and buys random stocked goods until the cargo limits. Buy Items is ignored.",
+                        MessageType.Info);
+                }
 
                 // Limits
                 var propSlots = propCargo.FindPropertyRelative("maxLoadSlots");
@@ -819,7 +832,11 @@ namespace ProjectC.PeacefulShip.EditorTools
                 EditorGUILayout.Space(4);
 
                 // Buy items
-                if (propBuyItems != null && propBuyItems.isArray)
+                if (randomTradeEnabled)
+                {
+                    EditorGUILayout.HelpBox("Disable Random trade to use the Buy Items list.", MessageType.None);
+                }
+                else if (propBuyItems != null && propBuyItems.isArray)
                 {
                     EditorGUILayout.LabelField($"Buy Items ({propBuyItems.arraySize}):", EditorStyles.miniBoldLabel);
 

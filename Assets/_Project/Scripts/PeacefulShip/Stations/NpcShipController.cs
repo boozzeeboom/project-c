@@ -835,7 +835,8 @@ namespace ProjectC.PeacefulShip.Stations
             int buyItemCount = trade.buyItems != null ? trade.buyItems.Length : 0;
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 DwellTrade START: loc='{locationId}' " +
                       $"shipClass={shipClass} buyItems={buyItemCount} sellAll={trade.sellAllOnArrival} " +
-                      $"buyConfigured={trade.buyConfiguredItemsAfterSell} unlimited={trade.useUnlimitedCredits} " +
+                      $"buyConfigured={trade.buyConfiguredItemsAfterSell} randomTrade={trade.randomTradeItems} " +
+                      $"unlimited={trade.useUnlimitedCredits} " +
                       $"scheduleId='{schedule.scheduleId}' cargo='{trade.GetType().Name}'");
 
             NpcCargoService.Instance.RunDwellTrade(

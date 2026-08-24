@@ -1,5 +1,6 @@
 // T-CARGO-NPC-01: NpcCargoService — server-only helper для NpcShipController.
 // Реализует 2 фазы dwell (D31): Unload (cargo → market.stock) + Load (market.stock → cargo).
+// В randomTradeItems-режиме список buyItems не используется: рынок выбирает товары случайно до лимитов cargo.
 // Вызывается синхронно из NavTick.Docked (между Docked и Undocking).
 //
 // Pattern: MarketTrader (Trade/Core/MarketTrader.cs) — server-only trade automation.
@@ -75,7 +76,7 @@ namespace ProjectC.PeacefulShip.Network
         /// <summary>
         /// Выполнить полный dwell-trade для NPC-корабля на станции locationId.
         /// 1) Unload: cargo → market.stock (если schedule.cargoTrade.sellAllOnArrival).
-        /// 2) Load: market.stock → cargo по schedule.cargoTrade.buyItems (если buyConfiguredItemsAfterSell).
+        /// 2) Load: market.stock → cargo по buyItems или случайному ассортименту рынка.
         /// Returns: DwellTradeReport (для логов NpcShipController).
         /// </summary>
         public DwellTradeReport RunDwellTrade(
@@ -107,7 +108,7 @@ namespace ProjectC.PeacefulShip.Network
             }
 
             // ----- Phase 1: Unload (cargo → market.stock) -----
-            if (trade.sellAllOnArrival)
+            if (trade.sellAllOnArrival || trade.randomTradeItems)
             {
                 var cargo = tw.GetOrLoadCargo(shipNetworkObjectId, shipClass);
                 if (cargo == null)
@@ -128,7 +129,7 @@ namespace ProjectC.PeacefulShip.Network
 
                         // Уважаем maxKeepQuantity: не продаём больше (entry.quantity - maxKeep).
                         int sellQty = entry.quantity;
-                        if (trade.buyItems != null)
+                        if (!trade.randomTradeItems && trade.buyItems != null)
                         {
                             for (int b = 0; b < trade.buyItems.Length; b++)
                             {
@@ -158,7 +159,11 @@ namespace ProjectC.PeacefulShip.Network
             }
 
             // ----- Phase 2: Load (market.stock → cargo) -----
-            if (trade.buyConfiguredItemsAfterSell && trade.buyItems != null && trade.buyItems.Length > 0)
+            if (trade.randomTradeItems)
+            {
+                LoadRandomItems(npcInstanceId, shipNetworkObjectId, shipClass, locationId, trade, tw, ref report);
+            }
+            else if (trade.buyConfiguredItemsAfterSell && trade.buyItems != null && trade.buyItems.Length > 0)
             {
                 // Стоп-краны по слотам/весу из конфига
                 int slotsLeft = trade.maxLoadSlots;
@@ -251,6 +256,180 @@ namespace ProjectC.PeacefulShip.Network
             }
 
             return report;
+        }
+
+        /// <summary>
+        /// В randomTradeItems-режиме случайно выбирает позиции из текущего рынка
+        /// и покупает их максимально возможными партиями до заполнения лимитов cargo.
+        /// Buy Items в этом режиме не используется.
+        /// </summary>
+        private void LoadRandomItems(
+            ulong npcInstanceId,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass,
+            string locationId,
+            NpcCargoTradeListConfig trade,
+            TradeWorld tw,
+            ref DwellTradeReport report)
+        {
+            var market = tw.GetMarket(locationId);
+            if (market == null)
+            {
+                report.skipReasons.Add($"random load: market '{locationId}' not found");
+                return;
+            }
+
+            var cargo = tw.GetOrLoadCargo(shipNetworkObjectId, shipClass);
+            if (cargo == null || tw.Resolver == null)
+            {
+                report.skipReasons.Add("random load: cargo or resolver is null");
+                return;
+            }
+
+            int slotsLeft = Mathf.Max(0, trade.maxLoadSlots - cargo.ComputeTotalSlots(tw.Resolver));
+            float weightLeftKg = Mathf.Max(0f, trade.maxLoadWeightKg - cargo.ComputeTotalWeight(tw.Resolver));
+            if (slotsLeft <= 0 || weightLeftKg <= 0f)
+            {
+                report.skipReasons.Add($"random load: no capacity (slots={slotsLeft}, weight={weightLeftKg:F1}kg)");
+                return;
+            }
+
+            var candidates = new List<MarketItemState>();
+            foreach (var kv in market.Items)
+            {
+                var item = kv.Value;
+                if (item == null || item.config == null || item.availableStock <= 0)
+                    continue;
+                if (!item.config.allowBuy || string.IsNullOrEmpty(item.ItemId))
+                    continue;
+                if (!tw.Resolver.TryGet(item.ItemId, out var definition) || definition == null)
+                    continue;
+
+                item.RecalculatePrice(market.PriceFloorRatio, market.PriceCeilingRatio);
+                if (item.currentPrice <= 0f)
+                    continue;
+
+                candidates.Add(item);
+            }
+
+            if (candidates.Count == 0)
+            {
+                report.skipReasons.Add($"random load: no buyable stocked items at '{locationId}'");
+                return;
+            }
+
+            while (candidates.Count > 0 && slotsLeft > 0 && weightLeftKg > 0f)
+            {
+                int candidateIndex = Random.Range(0, candidates.Count);
+                var candidate = candidates[candidateIndex];
+                string itemId = candidate.ItemId;
+                int requestedQuantity = CalculateMaxBuyQuantity(
+                    itemId,
+                    candidate.availableStock,
+                    slotsLeft,
+                    weightLeftKg,
+                    tw.Resolver);
+
+                if (requestedQuantity <= 0)
+                {
+                    candidates.RemoveAt(candidateIndex);
+                    continue;
+                }
+
+                int boughtQuantity;
+                TradeResult failedResult;
+                if (!TryNpcBuyBestEffort(
+                        tw,
+                        npcInstanceId,
+                        locationId,
+                        itemId,
+                        requestedQuantity,
+                        shipNetworkObjectId,
+                        shipClass,
+                        trade.useUnlimitedCredits,
+                        out boughtQuantity,
+                        out failedResult))
+                {
+                    report.skipReasons.Add($"random load {itemId} qty={requestedQuantity} → {failedResult.code} ({failedResult.message})");
+                    candidates.RemoveAt(candidateIndex);
+                    continue;
+                }
+
+                report.bought.Add((itemId, boughtQuantity, requestedQuantity));
+                slotsLeft = Mathf.Max(0, trade.maxLoadSlots - cargo.ComputeTotalSlots(tw.Resolver));
+                weightLeftKg = Mathf.Max(0f, trade.maxLoadWeightKg - cargo.ComputeTotalWeight(tw.Resolver));
+
+                int itemSlots = tw.Resolver.GetSlots(itemId);
+                float itemWeight = tw.Resolver.GetWeight(itemId);
+                if (boughtQuantity >= requestedQuantity || (itemSlots <= 0 && itemWeight <= 0f))
+                    candidates.RemoveAt(candidateIndex);
+            }
+        }
+
+        private static int CalculateMaxBuyQuantity(
+            string itemId,
+            int availableStock,
+            int slotsLeft,
+            float weightLeftKg,
+            TradeItemDefinitionResolver resolver)
+        {
+            if (resolver == null || string.IsNullOrEmpty(itemId) || availableStock <= 0)
+                return 0;
+            if (slotsLeft <= 0 || weightLeftKg <= 0f)
+                return 0;
+
+            int maxQuantity = availableStock;
+            int itemSlots = resolver.GetSlots(itemId);
+            float itemWeight = resolver.GetWeight(itemId);
+
+            if (itemSlots > 0)
+                maxQuantity = Mathf.Min(maxQuantity, slotsLeft / itemSlots);
+            if (itemWeight > 0f)
+                maxQuantity = Mathf.Min(maxQuantity, Mathf.FloorToInt(weightLeftKg / itemWeight));
+
+            return Mathf.Max(0, maxQuantity);
+        }
+
+        private static bool TryNpcBuyBestEffort(
+            TradeWorld tw,
+            ulong npcInstanceId,
+            string locationId,
+            string itemId,
+            int requestedQuantity,
+            ulong shipNetworkObjectId,
+            ShipClass shipClass,
+            bool useUnlimitedCredits,
+            out int boughtQuantity,
+            out TradeResult lastResult)
+        {
+            boughtQuantity = 0;
+            lastResult = default;
+
+            int attemptQuantity = requestedQuantity;
+            while (attemptQuantity > 0)
+            {
+                lastResult = tw.TryNpcBuy(
+                    npcInstanceId,
+                    locationId,
+                    itemId,
+                    attemptQuantity,
+                    shipNetworkObjectId,
+                    shipClass,
+                    useUnlimitedCredits);
+
+                if (lastResult.IsSuccess)
+                {
+                    boughtQuantity = attemptQuantity;
+                    return true;
+                }
+
+                if (attemptQuantity == 1)
+                    break;
+
+                attemptQuantity = Mathf.Max(1, attemptQuantity / 2);
+            }
+
+            return false;
         }
 
         /// <summary>

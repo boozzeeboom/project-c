@@ -69,10 +69,14 @@ namespace ProjectC.PeacefulShip.Core
         public bool sellAllOnArrival = true;
 
         [Tooltip("True = после unload (если был) — скупить buyItems с рынка до заполнения maxLoad*. " +
-                 "Это 'load' фаза. D31.")]
+                 "Это обычный режим покупки по настроенному списку. D31.")]
         public bool buyConfiguredItemsAfterSell = true;
 
-        [Tooltip("Список товаров для покупки. Выполняются в порядке массива. " +
+        [Tooltip("True = универсальный торговец: продать весь cargo на станции и купить случайные товары " +
+                 "из ассортимента текущего рынка до заполнения maxLoadSlots/maxLoadWeightKg. Buy Items игнорируется.")]
+        public bool randomTradeItems = false;
+
+        [Tooltip("Список товаров для покупки в обычном режиме. Выполняются в порядке массива. " +
                  "Если рынок не дал нужное qty (stock кончился) — идём к следующему item.")]
         public NpcCargoTradeConfig[] buyItems;
     }

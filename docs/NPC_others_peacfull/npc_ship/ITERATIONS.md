@@ -75,3 +75,17 @@
 - `Assets/_Project/Editor/Tools/NpcShipScheduleOverviewWindow.cs` — таблица `Cargo Trade` также принимает `TradeItemDefinition`-ассеты.
 
 **Проверка:** `check_compile_errors` — compile errors отсутствуют.
+
+---
+
+## Итерация от 2026-08-24 (T-CARGO-NPC-01) — Random NPC cargo trade mode
+
+**Задача:** добавить в `NpcShipSchedule` режим, в котором NPC одной галочкой продаёт весь cargo на станции и покупает случайные доступные товары до лимитов загрузки.
+
+**Изменения:**
+- `NpcCargoTradeConfig.cs` — добавлен флаг `randomTradeItems`; при `false` сохраняется режим покупки через `buyItems`.
+- `NpcCargoService.cs` — random mode выбирает товары из текущего `MarketState`, фильтрует buyable/stocked позиции и покупает их максимально возможными партиями до `maxLoadSlots`/`maxLoadWeightKg`.
+- `NpcShipScheduleOverviewWindow.cs` — добавлен переключатель `Random trade (buy to full)`; список `Buy Items` явно помечается как игнорируемый в random mode.
+- `NpcShipController.cs` — режим добавлен в диагностический лог DwellTrade.
+
+**Проверка:** `check_compile_errors` — compile errors отсутствуют.

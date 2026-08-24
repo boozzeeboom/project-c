@@ -161,7 +161,7 @@ namespace ProjectC.Quests
 
         public int GetReputation(ulong clientId, int wireId)
         {
-            if (wireId <= 0) return 0;
+            if (wireId <= 0 || wireId > byte.MaxValue) return 0;
             return _reputation.TryGetValue((clientId, wireId), out var v) ? v : 0;
         }
 
@@ -295,7 +295,7 @@ namespace ProjectC.Quests
 
         public int ModifyReputation(ulong clientId, int wireId, int delta, int min = -100, int max = 100, bool silent = false)
         {
-            if (wireId <= 0) return 0;
+            if (wireId <= 0 || wireId > byte.MaxValue) return 0;
             int oldVal = GetReputation(clientId, wireId);
             int newVal = oldVal + delta;
             if (newVal < min) newVal = min;
@@ -998,6 +998,7 @@ namespace ProjectC.Quests
         public bool IsFactionKnown(ulong clientId, int wireId)
         {
             if (wireId <= 0) return true; // None is always "known" (not filtered)
+            if (wireId > byte.MaxValue) return false;
             return _knownFactions.TryGetValue(clientId, out var set) && set.Contains(wireId);
         }
 
@@ -1015,7 +1016,7 @@ namespace ProjectC.Quests
 
         public void UnlockFactionKnowledge(ulong clientId, int wireId)
         {
-            if (wireId <= 0) return;
+            if (wireId <= 0 || wireId > byte.MaxValue) return;
             if (!_knownFactions.TryGetValue(clientId, out var set))
             {
                 set = new HashSet<int>();

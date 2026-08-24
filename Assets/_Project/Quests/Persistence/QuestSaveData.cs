@@ -30,7 +30,7 @@ namespace ProjectC.Quests.Persistence
     [Serializable]
     public class FactionRepSaveEntry
     {
-        public int factionId = 0; // FactionId enum
+        public int factionId = 0; // Stable faction wireId; legacy saves 1..15 remain unchanged.
         public int value = 0;
     }
 
@@ -63,7 +63,7 @@ namespace ProjectC.Quests.Persistence
         public List<StringSetSaveEntry> stringSets = new List<StringSetSaveEntry>();
 
         // === T-KNOW: Knowledge system ===
-        public List<int> knownFactions = new List<int>();   // FactionId как int для JsonUtility
+        public List<int> knownFactions = new List<int>();   // Stable faction wireIds for JsonUtility
         public List<string> knownNpcs = new List<string>();
 
         // === T-KNOWLEDGE-V3: Recipe knowledge (string keys) ===

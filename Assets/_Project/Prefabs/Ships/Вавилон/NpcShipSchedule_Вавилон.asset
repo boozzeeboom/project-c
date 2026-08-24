@@ -41,4 +41,5 @@ MonoBehaviour:
     useUnlimitedCredits: 1
     sellAllOnArrival: 1
     buyConfiguredItemsAfterSell: 1
+    randomTradeItems: 1
     buyItems: []

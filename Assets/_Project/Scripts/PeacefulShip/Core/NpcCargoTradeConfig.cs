@@ -47,6 +47,7 @@ namespace ProjectC.PeacefulShip.Core
 
     /// <summary>
     /// Агрегатор: настройки поведения + список items.
+    /// Лимиты cargo берутся с конкретного корабля, которому назначено расписание.
     /// По умолчанию useUnlimitedCredits=true, sellAllOnArrival=true, buyConfiguredItemsAfterSell=true.
     /// </summary>
     [Serializable]
@@ -57,23 +58,17 @@ namespace ProjectC.PeacefulShip.Core
                  "False = проверяется Repository.GetCredits(npcInstanceId) — и если не хватает, покупка отклоняется.")]
         public bool useUnlimitedCredits = true;
 
-        [Tooltip("Стоп-кран по слотам: даже если рынок позволит купить больше, NPC не превысит этот лимит. " +
-                 "Используется чтобы NPC не скупал весь рынок, оставляя что-то игрокам.")]
-        [Min(0)] public int maxLoadSlots = 8;
-
-        [Tooltip("Стоп-кран по весу (кг). То же что maxLoadSlots, но по массе.")]
-        [Min(0f)] public float maxLoadWeightKg = 200f;
 
         [Tooltip("True = при прилёте на станцию сначала продать ВСЁ cargo NPC-корабля на рынок этой станции. " +
                  "Это 'unload' фаза. D31: естественная последовательность курьера.")]
         public bool sellAllOnArrival = true;
 
-        [Tooltip("True = после unload (если был) — скупить buyItems с рынка до заполнения maxLoad*. " +
+        [Tooltip("True = после unload (если был) — скупить buyItems с рынка до заполнения трюма по лимитам назначенного корабля. " +
                  "Это обычный режим покупки по настроенному списку. D31.")]
         public bool buyConfiguredItemsAfterSell = true;
 
         [Tooltip("True = универсальный торговец: продать весь cargo на станции и купить случайные товары " +
-                 "из ассортимента текущего рынка до заполнения maxLoadSlots/maxLoadWeightKg. Buy Items игнорируется.")]
+                 "из ассортимента текущего рынка до полной загрузки по лимитам назначенного корабля. Buy Items игнорируется.")]
         public bool randomTradeItems = false;
 
         [Tooltip("Список товаров для покупки в обычном режиме. Выполняются в порядке массива. " +

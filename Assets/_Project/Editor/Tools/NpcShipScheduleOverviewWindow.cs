@@ -820,14 +820,9 @@ namespace ProjectC.PeacefulShip.EditorTools
                         MessageType.Info);
                 }
 
-                // Limits
-                var propSlots = propCargo.FindPropertyRelative("maxLoadSlots");
-                var propWeight = propCargo.FindPropertyRelative("maxLoadWeightKg");
-
-                EditorGUILayout.BeginHorizontal();
-                if (propSlots != null) EditorGUILayout.PropertyField(propSlots, new GUIContent("Max Slots"), GUILayout.Width(120));
-                if (propWeight != null) EditorGUILayout.PropertyField(propWeight, new GUIContent("Max Weight (kg)"), GUILayout.Width(160));
-                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.HelpBox(
+                    "Cargo capacity is read from the ship assigned to this schedule at runtime (including ship-specific module bonuses). The same schedule can therefore run on ships with different limits.",
+                    MessageType.None);
 
                 EditorGUILayout.Space(4);
 

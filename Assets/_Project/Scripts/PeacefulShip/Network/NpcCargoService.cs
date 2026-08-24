@@ -159,22 +159,25 @@ namespace ProjectC.PeacefulShip.Network
             }
 
             // ----- Phase 2: Load (market.stock → cargo) -----
+            var loadLimits = ResolveCargoLoadLimits(shipNetworkObjectId, shipClass);
             if (trade.randomTradeItems)
             {
-                LoadRandomItems(npcInstanceId, shipNetworkObjectId, shipClass, locationId, trade, tw, ref report);
+                LoadRandomItems(npcInstanceId, shipNetworkObjectId, shipClass, locationId, trade, tw, loadLimits, ref report);
             }
             else if (trade.buyConfiguredItemsAfterSell && trade.buyItems != null && trade.buyItems.Length > 0)
             {
-                // Стоп-краны по слотам/весу из конфига
-                int slotsLeft = trade.maxLoadSlots;
-                float weightLeftKg = trade.maxLoadWeightKg;
+                // Лимиты берутся с конкретного корабля, а не из schedule.
+                int slotsLeft = loadLimits.maxSlots;
+                float weightLeftKg = loadLimits.maxWeightKg;
+                float volumeLeft = loadLimits.maxVolume;
 
                 // Получаем cargo ОДИН раз (после unload cargo изменилась)
                 var cargo = tw.GetOrLoadCargo(shipNetworkObjectId, shipClass);
                 if (cargo != null && tw.Resolver != null)
                 {
-                    slotsLeft = Mathf.Max(0, slotsLeft - cargo.ComputeTotalSlots(tw.Resolver));
-                    weightLeftKg = Mathf.Max(0f, weightLeftKg - cargo.ComputeTotalWeight(tw.Resolver));
+                    slotsLeft = Mathf.Max(0, loadLimits.maxSlots - cargo.ComputeTotalSlots(tw.Resolver));
+                    weightLeftKg = Mathf.Max(0f, loadLimits.maxWeightKg - cargo.ComputeTotalWeight(tw.Resolver));
+                    volumeLeft = Mathf.Max(0f, loadLimits.maxVolume - cargo.ComputeTotalVolume(tw.Resolver));
                 }
 
                 for (int i = 0; i < trade.buyItems.Length; i++)
@@ -198,6 +201,12 @@ namespace ProjectC.PeacefulShip.Network
                             int maxByWeight = Mathf.FloorToInt(weightLeftKg / itemWeight);
                             bi.desiredQuantity = Mathf.Min(bi.desiredQuantity, maxByWeight);
                         }
+                        float itemVolume = tw.Resolver.GetVolume(itemId);
+                        if (itemVolume > 0f)
+                        {
+                            int maxByVolume = Mathf.FloorToInt(volumeLeft / itemVolume);
+                            bi.desiredQuantity = Mathf.Min(bi.desiredQuantity, maxByVolume);
+                        }
                     }
                     if (bi.desiredQuantity <= 0)
                     {
@@ -213,8 +222,9 @@ namespace ProjectC.PeacefulShip.Network
                         // Обновим слоты/вес
                         if (tw.Resolver != null && cargo != null)
                         {
-                            slotsLeft = Mathf.Max(0, trade.maxLoadSlots - cargo.ComputeTotalSlots(tw.Resolver));
-                            weightLeftKg = Mathf.Max(0f, trade.maxLoadWeightKg - cargo.ComputeTotalWeight(tw.Resolver));
+                            slotsLeft = Mathf.Max(0, loadLimits.maxSlots - cargo.ComputeTotalSlots(tw.Resolver));
+                            weightLeftKg = Mathf.Max(0f, loadLimits.maxWeightKg - cargo.ComputeTotalWeight(tw.Resolver));
+                            volumeLeft = Mathf.Max(0f, loadLimits.maxVolume - cargo.ComputeTotalVolume(tw.Resolver));
                         }
                     }
                     else
@@ -258,6 +268,41 @@ namespace ProjectC.PeacefulShip.Network
             return report;
         }
 
+        private struct CargoLoadLimits
+        {
+            public int maxSlots;
+            public float maxWeightKg;
+            public float maxVolume;
+        }
+
+        /// <summary>
+        /// Получить эффективные лимиты именно назначенного корабля.
+        /// Включает базовые лимиты корпуса и бонусы cargo-модулей.
+        /// Если корабль ещё не зарегистрирован, используется безопасный fallback по ShipClass.
+        /// </summary>
+        private static CargoLoadLimits ResolveCargoLoadLimits(ulong shipNetworkObjectId, ShipClass shipClass)
+        {
+            var effective = ProjectC.Ship.ShipCargoRegistry.GetEffectiveLimits(shipNetworkObjectId);
+            if (effective.HasValue)
+            {
+                var limits = effective.Value;
+                return new CargoLoadLimits
+                {
+                    maxSlots = Mathf.Max(0, limits.maxSlots),
+                    maxWeightKg = Mathf.Max(0f, limits.maxWeight),
+                    maxVolume = Mathf.Max(0f, limits.maxVolume),
+                };
+            }
+
+            var fallback = ShipClassLimits.Get(shipClass);
+            return new CargoLoadLimits
+            {
+                maxSlots = Mathf.Max(0, fallback.maxSlots),
+                maxWeightKg = Mathf.Max(0f, fallback.maxWeight),
+                maxVolume = Mathf.Max(0f, fallback.maxVolume),
+            };
+        }
+
         /// <summary>
         /// В randomTradeItems-режиме случайно выбирает позиции из текущего рынка
         /// и покупает их максимально возможными партиями до заполнения лимитов cargo.
@@ -270,6 +315,7 @@ namespace ProjectC.PeacefulShip.Network
             string locationId,
             NpcCargoTradeListConfig trade,
             TradeWorld tw,
+            CargoLoadLimits loadLimits,
             ref DwellTradeReport report)
         {
             var market = tw.GetMarket(locationId);
@@ -286,9 +332,10 @@ namespace ProjectC.PeacefulShip.Network
                 return;
             }
 
-            int slotsLeft = Mathf.Max(0, trade.maxLoadSlots - cargo.ComputeTotalSlots(tw.Resolver));
-            float weightLeftKg = Mathf.Max(0f, trade.maxLoadWeightKg - cargo.ComputeTotalWeight(tw.Resolver));
-            if (slotsLeft <= 0 || weightLeftKg <= 0f)
+            int slotsLeft = Mathf.Max(0, loadLimits.maxSlots - cargo.ComputeTotalSlots(tw.Resolver));
+            float weightLeftKg = Mathf.Max(0f, loadLimits.maxWeightKg - cargo.ComputeTotalWeight(tw.Resolver));
+            float volumeLeft = Mathf.Max(0f, loadLimits.maxVolume - cargo.ComputeTotalVolume(tw.Resolver));
+            if (slotsLeft <= 0 || weightLeftKg <= 0f || volumeLeft <= 0f)
             {
                 report.skipReasons.Add($"random load: no capacity (slots={slotsLeft}, weight={weightLeftKg:F1}kg)");
                 return;
@@ -318,7 +365,7 @@ namespace ProjectC.PeacefulShip.Network
                 return;
             }
 
-            while (candidates.Count > 0 && slotsLeft > 0 && weightLeftKg > 0f)
+            while (candidates.Count > 0 && slotsLeft > 0 && weightLeftKg > 0f && volumeLeft > 0f)
             {
                 int candidateIndex = Random.Range(0, candidates.Count);
                 var candidate = candidates[candidateIndex];
@@ -328,6 +375,7 @@ namespace ProjectC.PeacefulShip.Network
                     candidate.availableStock,
                     slotsLeft,
                     weightLeftKg,
+                    volumeLeft,
                     tw.Resolver);
 
                 if (requestedQuantity <= 0)
@@ -356,12 +404,14 @@ namespace ProjectC.PeacefulShip.Network
                 }
 
                 report.bought.Add((itemId, boughtQuantity, requestedQuantity));
-                slotsLeft = Mathf.Max(0, trade.maxLoadSlots - cargo.ComputeTotalSlots(tw.Resolver));
-                weightLeftKg = Mathf.Max(0f, trade.maxLoadWeightKg - cargo.ComputeTotalWeight(tw.Resolver));
+                slotsLeft = Mathf.Max(0, loadLimits.maxSlots - cargo.ComputeTotalSlots(tw.Resolver));
+                weightLeftKg = Mathf.Max(0f, loadLimits.maxWeightKg - cargo.ComputeTotalWeight(tw.Resolver));
+                volumeLeft = Mathf.Max(0f, loadLimits.maxVolume - cargo.ComputeTotalVolume(tw.Resolver));
 
                 int itemSlots = tw.Resolver.GetSlots(itemId);
                 float itemWeight = tw.Resolver.GetWeight(itemId);
-                if (boughtQuantity >= requestedQuantity || (itemSlots <= 0 && itemWeight <= 0f))
+                float itemVolume = tw.Resolver.GetVolume(itemId);
+                if (boughtQuantity >= requestedQuantity || (itemSlots <= 0 && itemWeight <= 0f && itemVolume <= 0f))
                     candidates.RemoveAt(candidateIndex);
             }
         }
@@ -371,11 +421,12 @@ namespace ProjectC.PeacefulShip.Network
             int availableStock,
             int slotsLeft,
             float weightLeftKg,
+            float volumeLeft,
             TradeItemDefinitionResolver resolver)
         {
             if (resolver == null || string.IsNullOrEmpty(itemId) || availableStock <= 0)
                 return 0;
-            if (slotsLeft <= 0 || weightLeftKg <= 0f)
+            if (slotsLeft <= 0 || weightLeftKg <= 0f || volumeLeft <= 0f)
                 return 0;
 
             int maxQuantity = availableStock;
@@ -386,6 +437,9 @@ namespace ProjectC.PeacefulShip.Network
                 maxQuantity = Mathf.Min(maxQuantity, slotsLeft / itemSlots);
             if (itemWeight > 0f)
                 maxQuantity = Mathf.Min(maxQuantity, Mathf.FloorToInt(weightLeftKg / itemWeight));
+            float itemVolume = resolver.GetVolume(itemId);
+            if (itemVolume > 0f)
+                maxQuantity = Mathf.Min(maxQuantity, Mathf.FloorToInt(volumeLeft / itemVolume));
 
             return Mathf.Max(0, maxQuantity);
         }

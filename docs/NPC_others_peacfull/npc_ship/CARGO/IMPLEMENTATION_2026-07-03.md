@@ -15,7 +15,7 @@
 Создаётся в `NpcShipServer.OnNetworkSpawn`, выполняет dwell-trade для NPC:
 
 - **Phase 1 (Unload):** cargo → market.stock через `TradeWorld.TryNpcSell()`. Уважает `maxKeepQuantity`.
-- **Phase 2 (Load):** market.stock → cargo через `TradeWorld.TryNpcBuy()`. Pre-check по `maxLoadSlots` / `maxLoadWeightKg` из конфига.
+- **Phase 2 (Load):** market.stock → cargo через `TradeWorld.TryNpcBuy()`. Pre-check по effective-лимитам назначенного корабля из `ShipCargoRegistry.GetEffectiveLimits(shipNetworkObjectId)`; fallback по `ShipClassLimits` используется только если корабль ещё не зарегистрирован.
 - **BuildManifest():** читает cargo из `TradeWorld._cargoCache` и строит `NpcShipCargoManifest`.
 
 ### 1.2 TradeWorld.TryNpcBuy / TryNpcSell
@@ -51,8 +51,7 @@ public struct NpcCargoTradeConfig {
 
 public class NpcCargoTradeListConfig {
     public bool useUnlimitedCredits = true;
-    public int maxLoadSlots = 8;
-    public float maxLoadWeightKg = 200f;
+    // Cargo limits are resolved from the assigned ship at runtime.
     public bool sellAllOnArrival = true;
     public bool buyConfiguredItemsAfterSell = true;
     public NpcCargoTradeConfig[] buyItems;

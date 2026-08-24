@@ -55,13 +55,7 @@ MonoBehaviour:
   maxDwellTimeSec: 5000
   cargoTrade:
     useUnlimitedCredits: 1
-    maxLoadSlots: 8
-    maxLoadWeightKg: 121393
     sellAllOnArrival: 1
     buyConfiguredItemsAfterSell: 1
-    buyItems:
-    - tradeItem: {fileID: 0}
-      itemId: 
-      desiredQuantity: 0
-      sellOnArrival: 0
-      maxKeepQuantity: 0
+    randomTradeItems: 1
+    buyItems: []

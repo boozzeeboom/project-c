@@ -84,8 +84,12 @@ docs/archive/
 .vscode/
 #hermes
 *.hermes/
-#Aura
+# Aura local metadata is ignored; shared skills are versioned.
 *.Aura
+.Aura/
+.Aura/*
+.Aura/Skills/
+.Aura/Skills/**
 [Pp]ackages/Aura
 
 

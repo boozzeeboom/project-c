@@ -78,13 +78,31 @@
 
 ---
 
+## Итерация от 2026-08-24 (T-CARGO-NPC-01) — Cargo limits from assigned ship
+
+**Задача:** убрать max load slots/weight из `NpcCargoTradeListConfig` и брать capacity конкретного корабля, на который назначен schedule.
+
+**Изменения:**
+- `NpcCargoTradeConfig.cs` — удалены редактируемые `maxLoadSlots` и `maxLoadWeightKg`; в tooltip зафиксирован источник лимитов — назначенный корабль.
+- `NpcCargoService.cs` — обычный и random trade используют `ShipCargoRegistry.GetEffectiveLimits(shipNetworkObjectId)` с учётом базовых лимитов и cargo-модулей; fallback по `ShipClassLimits` остаётся только для старта до регистрации корабля. Учитывается также фактический объём трюма.
+- `NpcShipSchedule.cs` — убраны preset-присваивания и валидация лимитов маршрута.
+- `NpcShipScheduleOverviewWindow.cs` — убраны поля Max Slots/Max Weight, добавлена подсказка о per-ship capacity.
+- `NpcShipSchedule_*.asset` — удалены устаревшие сериализованные значения лимитов из schedule-ассетов.
+- `T_CARGO_NPC_01_DESIGN_2026-07-03.md` и `IMPLEMENTATION_2026-07-03.md` — обновлено архитектурное описание источника capacity.
+
+**Проверка:** `check_compile_errors` — No compile errors.
+
+---
+
 ## Итерация от 2026-08-24 (T-CARGO-NPC-01) — Random NPC cargo trade mode
 
 **Задача:** добавить в `NpcShipSchedule` режим, в котором NPC одной галочкой продаёт весь cargo на станции и покупает случайные доступные товары до лимитов загрузки.
 
+**Коммит:** `c4948836` (`T-CARGO-NPC-01: add random NPC cargo trade mode`)
+
 **Изменения:**
 - `NpcCargoTradeConfig.cs` — добавлен флаг `randomTradeItems`; при `false` сохраняется режим покупки через `buyItems`.
-- `NpcCargoService.cs` — random mode выбирает товары из текущего `MarketState`, фильтрует buyable/stocked позиции и покупает их максимально возможными партиями до `maxLoadSlots`/`maxLoadWeightKg`.
+- `NpcCargoService.cs` — random mode выбирает товары из текущего `MarketState`, фильтрует buyable/stocked позиции и покупает их максимально возможными партиями до лимитов назначенного корабля.
 - `NpcShipScheduleOverviewWindow.cs` — добавлен переключатель `Random trade (buy to full)`; список `Buy Items` явно помечается как игнорируемый в random mode.
 - `NpcShipController.cs` — режим добавлен в диагностический лог DwellTrade.
 

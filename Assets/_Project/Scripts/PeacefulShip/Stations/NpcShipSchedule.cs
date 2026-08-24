@@ -115,8 +115,6 @@ namespace ProjectC.PeacefulShip.Stations
                     new NpcCargoTradeConfig { itemId = "resource_mezium_box",   desiredQuantity = 3, sellOnArrival = true, maxKeepQuantity = 0 },
                     new NpcCargoTradeConfig { itemId = "resource_antigrav_box", desiredQuantity = 2, sellOnArrival = true, maxKeepQuantity = 0 },
                 };
-                cargoTrade.maxLoadSlots = 8;
-                cargoTrade.maxLoadWeightKg = 200f;
             }
             else if (scheduleId == "SCH-NPC-002") // Trader
             {
@@ -125,8 +123,6 @@ namespace ProjectC.PeacefulShip.Stations
                     new NpcCargoTradeConfig { itemId = "resource_copper_wire_box", desiredQuantity = 5, sellOnArrival = true, maxKeepQuantity = 0 },
                     new NpcCargoTradeConfig { itemId = "resource_brass_sheet_box", desiredQuantity = 4, sellOnArrival = true, maxKeepQuantity = 0 },
                 };
-                cargoTrade.maxLoadSlots = 10;
-                cargoTrade.maxLoadWeightKg = 400f;
             }
 
             if (preset != null)
@@ -136,7 +132,7 @@ namespace ProjectC.PeacefulShip.Stations
                 cargoTrade.sellAllOnArrival = true;
                 cargoTrade.buyConfiguredItemsAfterSell = true;
                 Debug.Log($"[NpcShipSchedule:{name}] T-CARGO-NPC-01 auto-filled buyItems from scheduleId='{scheduleId}' preset " +
-                          $"(items={preset.Length}, maxLoad={cargoTrade.maxLoadSlots}slots/{cargoTrade.maxLoadWeightKg:F0}kg)");
+                          $"(items={preset.Length}; cargo limits are read from the assigned ship)");
             }
         }
 
@@ -190,11 +186,6 @@ namespace ProjectC.PeacefulShip.Stations
                     Debug.LogError($"[NpcShipSchedule:{name}] cargoTrade.buyItems[{i}].desiredQuantity < 0", this);
                 }
             }
-
-            if (cargoTrade.maxLoadSlots < 0)
-                Debug.LogError($"[NpcShipSchedule:{name}] cargoTrade.maxLoadSlots < 0", this);
-            if (cargoTrade.maxLoadWeightKg < 0f)
-                Debug.LogError($"[NpcShipSchedule:{name}] cargoTrade.maxLoadWeightKg < 0", this);
         }
 #endif
     }

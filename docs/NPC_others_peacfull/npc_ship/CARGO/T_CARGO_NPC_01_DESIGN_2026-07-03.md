@@ -89,8 +89,7 @@ public class NpcCargoTradeListConfig
 {
     [Header("Behavior")]
     public bool useUnlimitedCredits = true;     // D27
-    public int maxLoadSlots = 8;                // стоп-кран по слотам (даже если рынок позволит)
-    public int maxLoadWeightKg = 200;           // стоп-кран по весу
+    // Cargo limits are read from the ship assigned to the schedule at runtime.
     public bool sellAllOnArrival = true;        // D31: unload фаза
     public bool buyConfiguredItemsAfterSell = true; // D31: load фаза
 
@@ -123,7 +122,7 @@ public class NpcCargoService : MonoBehaviour
 
     /// <summary>
     /// Скупает товары из schedule.cargoTrade.buyItems в порядке массива,
-    /// останавливаясь при maxLoadSlots / maxLoadWeightKg / market.stock.
+    /// останавливаясь при лимитах назначенного корабля / market.stock.
     /// </summary>
     public LoadReport LoadFromSchedule(ulong npcInstanceId, ulong shipNetworkObjectId, ShipClass shipClass, string locationId, NpcCargoTradeListConfig trade);
 
@@ -167,15 +166,21 @@ Backward compatible. По умолчанию в новом schedule включе
 
 ### 4.4 Cargo лимиты NPC
 
-`ShipCargoRegistry.TryForceRegisterFromNetworkManager(shipNetworkObjectId)` уже умеет force-register'ить
-любой `NetworkObject` с `ShipController` — для NPC-кораблей это работает так же. Лимиты:
-- `capacitySlots` = `ShipClassLimits.Get(npcShipClass).maxSlots` (Light=4, Medium=10, HeavyI=20, HeavyII=30)
-- `capacityWeight` = то же `maxWeight`
-- NPC-корабль не имеет модулей → per-instance override = статический fallback
+`ShipCargoRegistry.GetEffectiveLimits(shipNetworkObjectId)` возвращает лимиты именно
+назначенного NPC-корабля: базовые параметры его `ShipController` плюс бонусы cargo-модулей.
+Лимиты загрузки:
+- `capacitySlots` = `effectiveLimits.maxSlots`
+- `capacityWeight` = `effectiveLimits.maxWeight`
+- `capacityVolume` = `effectiveLimits.maxVolume`
+
+Если корабль ещё не зарегистрирован, `NpcCargoService` использует fallback через
+`ShipClassLimits.Get(npcShipClass)`. Это только защита от race на старте; штатный runtime-путь
+читает per-instance лимиты из `ShipCargoRegistry`, поэтому один schedule корректно работает
+на лёгком и тяжёлом судне.
 
 Доп. защита в `NpcCargoService.LoadFromSchedule`:
-- `maxLoadSlots` / `maxLoadWeightKg` из `cargoTrade` — жёсткий стоп-кран даже если рынок даёт больше.
-- Если cargo уже частично заполнен (например, при предыдущем unload) — лимиты уважаются.
+- Перед каждой покупкой учитывается уже занятый cargo назначенного корабля.
+- `TradeWorld.TryNpcBuy` повторно проверяет те же effective limits перед мутацией cargo.
 
 ---
 
@@ -186,8 +191,6 @@ Backward compatible. По умолчанию в новом schedule включе
 ```yaml
 cargoTrade:
   useUnlimitedCredits: 1
-  maxLoadSlots: 8
-  maxLoadWeightKg: 200
   sellAllOnArrival: 1
   buyConfiguredItemsAfterSell: 1
   buyItems:
@@ -206,8 +209,6 @@ cargoTrade:
 ```yaml
 cargoTrade:
   useUnlimitedCredits: 1
-  maxLoadSlots: 10
-  maxLoadWeightKg: 400
   sellAllOnArrival: 1
   buyConfiguredItemsAfterSell: 1
   buyItems:
@@ -274,7 +275,7 @@ cargoTrade:
 | Риск | Митигация |
 |------|-----------|
 | NPC cargo-операции падают с insufficient_stock на перегруженном рынке | `LoadFromSchedule` ловит `TradeResult`, логирует, идёт к следующему item — не зацикливается |
-| Множество NPC на одной станции скупают весь stock за 1 dwell | `sellAllOnArrival=true` + `buyConfiguredItemsAfterSell=true` с `maxLoadSlots` cap. Stock регенерируется в `MarketTick` (0.02 за тик). В persistence не блокируем |
+| Множество NPC на одной станции скупают весь stock за 1 dwell | `sellAllOnArrival=true` + `buyConfiguredItemsAfterSell=true` с effective capacity назначенного корабля. Stock регенерируется в `MarketTick` (0.02 за тик). В persistence не блокируем |
 | Расхождение `clientId=npcInstanceId` vs `clientId=0` в разных code-path'ах | Все NPC-операции идут **только** через `NpcCargoService` → `TradeWorld`. Никаких прямых `TryBuy(npcId, …)` извне |
 | `ShipController.shipClass` для NPC может быть `Light` (default), даже если префаб HeavyI | `ShipCargoRegistry.GetEffectiveLimits(npcShipId)` читает `ship.ShipClass` (не fallback на Light). NPC-ship назначит правильный класс |
 | Persistence: NPC-warehouse и NPC-credits в `PlayerPrefsRepository` мусорят | Это OK — D26 фиксирует «у каждого курьера собственный виртуальный склад». При удалении NPC-префаба можно почистить ключи (отдельный тикет) |

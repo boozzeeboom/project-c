@@ -61,9 +61,9 @@ namespace ProjectC.Knowledge
                         unlocked = true;
 
                         // V3: консистентно с MarkNpcTalked — авто-открытие фракции NPC (Проблема 11)
-                        if (npc.faction != FactionId.None)
+                        if (npc.EffectiveFactionWireId > 0)
                         {
-                            qw.UnlockFactionKnowledge(clientId, npc.faction);
+                            qw.UnlockFactionKnowledge(clientId, npc.EffectiveFactionWireId);
                         }
                     }
                     return unlocked;
@@ -72,9 +72,9 @@ namespace ProjectC.Knowledge
                 case FactionDefinition factionDef:
                 {
                     var qw = QuestWorld.Instance;
-                    if (qw != null && factionDef.factionId != FactionId.None)
+                    if (qw != null && factionDef.EffectiveWireId > 0)
                     {
-                        qw.UnlockFactionKnowledge(clientId, factionDef.factionId);
+                        qw.UnlockFactionKnowledge(clientId, factionDef.EffectiveWireId);
                         return true;
                     }
                     return false;

@@ -762,4 +762,28 @@ FactionCatalog/FactionRegistry
 - После миграции подтверждено: `npcs=3; npcRefs=3; quests=2; questRefs=1; dialogs=4; dialogRefs=0; knowledgeConfigs=1`.
 - YAML вручную не редактировался.
 
-Статус: **закрыт по реализации**; runtime-потребители будут переключены на references на этапе 5. Коммит создаётся после записи этого отчёта.
+Статус: **закрыт по реализации**; runtime-потребители будут переключены на references на этапе 5. Коммит: `8988a3a0`.
+
+### Этап 5 — выполнен 24 августа 2026 г.
+
+Изменено:
+
+- `QuestWorld` переведён на внутренние ключи `int wireId` для reputation и faction knowledge.
+- Добавлены registry-boundary overloads для `FactionDefinition`, `FactionId` и числового `wireId`.
+- `QuestServer.BuildReputationSnapshot` теперь перебирает зарегистрированные `FactionDefinition`, а не `Enum.GetValues`.
+- Сетевой DTO `byte` не изменён; отправляется `FactionDefinition.EffectiveWireId`.
+- `ReputationClientState` больше не добавляет hardcoded `Neutral=11`.
+- `CharacterWindow` и `KnowledgeToast` ищут faction по `wireId` через `FactionCatalog`.
+- Neutral в сохранениях и UI разрешается через registry по legacy-маппингу.
+- `WorldEvent` получил `FactionWireId`, legacy `Faction` сохранён для совместимости.
+- Runtime evaluation для quest prerequisites, dialogue conditions/actions, reputation rewards и knowledge unlocks использует asset reference прежде legacy enum.
+
+Проверка:
+
+- Unity compile check: `No compile errors`.
+- Editor structural test: `catalog=10; rep16=7; known16=True; neutralWire=0`.
+- Для тестового `wireId=16` значение репутации и knowledge key сохраняются в runtime без enum cast.
+- В целевых server/client presentation местах не осталось преобразований сетевого byte обратно в `FactionId`.
+- Playtest и screenshots не выполнялись: по правилам проекта их делает пользователь.
+
+Статус: **закрыт по реализации**; runtime playtest пользователя остаётся отдельной проверкой. Коммит создаётся после записи этого отчёта.

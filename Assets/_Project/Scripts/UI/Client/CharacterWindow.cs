@@ -1152,10 +1152,10 @@ private void SubscribeLocale()
                         // T-KNOW: only known factions
                         if (!knownIds.Contains(factionByte)) continue;
 
-                        var factionDef = ProjectC.Knowledge.FactionCatalog.Instance?.Get((FactionId)factionByte);
+                        var factionDef = ProjectC.Knowledge.FactionCatalog.Instance?.GetByWireId(factionByte);
                         _reputationCache.Add(new ReputationListItem
                         {
-                            factionId = factionDef != null ? factionDef.factionId.ToString() : factionByte.ToString(),
+                            factionId = factionDef != null ? factionDef.EffectiveFactionKey : factionByte.ToString(),
                             displayName = factionDef != null ? factionDef.displayName : factionByte.ToString(),
                             value = e.value,
                             color = factionDef != null ? factionDef.color : new Color(0.5f, 0.5f, 0.5f)
@@ -1165,13 +1165,14 @@ private void SubscribeLocale()
 
                 if (_reputationCache.Count == 0)
                 {
-                    // Если после фильтрации пусто — показываем хотя бы Neutral
+                    // Если после фильтрации пусто — показываем Neutral через registry mapping.
                     var neutralDef = ProjectC.Knowledge.FactionCatalog.Instance?.Get(FactionId.Neutral);
+                    int neutralWireId = neutralDef != null ? neutralDef.EffectiveWireId : 0;
                     _reputationCache.Add(new ReputationListItem
                     {
-                        factionId = "Neutral",
+                        factionId = neutralDef != null ? neutralDef.EffectiveFactionKey : "Neutral",
                         displayName = neutralDef != null ? neutralDef.displayName : "Neutral",
-                        value = GetRepValueForFaction(repState.CurrentReputation.Value.entries, (byte)FactionId.Neutral),
+                        value = GetRepValueForFaction(repState.CurrentReputation.Value.entries, (byte)neutralWireId),
                         color = neutralDef != null ? neutralDef.color : new Color(0.5f, 0.5f, 0.5f)
                     });
                 }

@@ -23,6 +23,7 @@ using ProjectC.Dialogue;
 using ProjectC.Items;
 using ProjectC.Stats;
 using NetworkPlayer = ProjectC.Player.NetworkPlayer;
+using ProjectC.Knowledge;
 
 namespace ProjectC.Quests
 {
@@ -880,15 +881,24 @@ namespace ProjectC.Quests
 
             var arr = new System.Collections.Generic.List<ReputationEntryDto>();
             var knownList = new System.Collections.Generic.List<byte>();
-            // Iterate all FactionId values (0..11 per T-Q01)
-            foreach (ProjectC.Factions.FactionId fid in System.Enum.GetValues(typeof(ProjectC.Factions.FactionId)))
+            var catalog = FactionCatalog.Instance;
+            if (catalog == null)
             {
-                if (fid == ProjectC.Factions.FactionId.None) continue;
-                int v = w.GetReputation(clientId, fid);
-                arr.Add(new ReputationEntryDto { faction = (byte)fid, value = v });
-                // T-KNOW: build known faction ids array
-                if (w.IsFactionKnown(clientId, fid))
-                    knownList.Add((byte)fid);
+                new FactionCatalog();
+                catalog = FactionCatalog.Instance;
+            }
+
+            // Iterate registered faction assets, never the legacy enum.
+            foreach (var definition in catalog.Definitions)
+            {
+                if (definition == null) continue;
+                int wireId = definition.EffectiveWireId;
+                if (wireId <= 0 || wireId > byte.MaxValue) continue;
+
+                int v = w.GetReputation(clientId, wireId);
+                arr.Add(new ReputationEntryDto { faction = (byte)wireId, value = v });
+                if (w.IsFactionKnown(clientId, wireId))
+                    knownList.Add((byte)wireId);
             }
             return new ReputationSnapshotDto
             {
@@ -1191,7 +1201,7 @@ namespace ProjectC.Quests
                     return false; // quest not in player log → not in this state → edge hidden via hideIfUnavailable
                 }
                 case DialogueConditionType.ReputationAtLeast:
-                    return w.GetReputation(clientId, c.factionParam) >= c.intParam;
+                    return w.GetReputation(clientId, c.EffectiveFactionWireId) >= c.intParam;
                 case DialogueConditionType.FlagIsSet:
                     return w.GetFlag(clientId, c.stringParam);
                 case DialogueConditionType.TimeOfDayIn:
@@ -1221,7 +1231,7 @@ namespace ProjectC.Quests
                 case DialogueConditionType.QuestDiscovered:
                     return w.GetPlayerQuestState(clientId, c.GetResolvedQuestId()) == QuestState.Discovered;
                 case DialogueConditionType.ReputationAtMost:
-                    return w.GetReputation(clientId, c.factionParam) <= c.intParam;
+                    return w.GetReputation(clientId, c.EffectiveFactionWireId) <= c.intParam;
                 case DialogueConditionType.NpcAttitudeAtLeast:
                     return w.GetNpcAttitude(clientId, c.GetResolvedNpcId()) >= c.intParam;
                 // C6: ещё не реализованы — честно false вместо молчаливого true.
@@ -1574,8 +1584,11 @@ namespace ProjectC.Quests
                         // T-Q16: server-side modify reputation via QuestWorld (T-Q13).
                         if (QuestWorld.Instance == null) break;
                         int delta = action.intParam;
-                        var faction = action.factionParam;
-                        if (faction == ProjectC.Factions.FactionId.None)
+                        int factionWireId = action.EffectiveFactionWireId;
+                        string factionLabel = action.factionRef != null
+                            ? action.factionRef.EffectiveFactionKey
+                            : action.factionParam.ToString();
+                        if (factionWireId <= 0)
                         {
                             Debug.LogWarning($"[QuestServer] FireDialogAction: AddReputation skipped — faction=None");
                             SendDialogActionResultToClient(clientId, new DialogActionResultDto
@@ -1586,15 +1599,15 @@ namespace ProjectC.Quests
                             });
                             break;
                         }
-                        int newValue = QuestWorld.Instance.ModifyReputation(clientId, faction, delta);
-                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AddReputation faction={faction} delta={delta} newValue={newValue}");
+                        int newValue = QuestWorld.Instance.ModifyReputation(clientId, factionWireId, delta);
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AddReputation faction={factionLabel} wireId={factionWireId} delta={delta} newValue={newValue}");
                         // M11 fix: push reputation snapshot to client so CharacterWindow updates.
                         BroadcastReputationChange(clientId);
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
                             actionType = (byte)action.type,
                             success = true,
-                            resultData = $"{faction}:{newValue}",
+                            resultData = $"{factionLabel}:{newValue}",
                             intParam = delta  // T-Q25
                         });
                     }

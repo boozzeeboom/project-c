@@ -69,9 +69,7 @@ namespace ProjectC.Reputation
                 for (int i = 0; i < snapshot.knownFactionIds.Length; i++)
                     KnownFactionIds.Add(snapshot.knownFactionIds[i]);
             }
-            // Always ensure Neutral (11) is known — server-side гарантирует, но на клиенте тоже страховка
-            KnownFactionIds.Add((byte)ProjectC.Factions.FactionId.Neutral);
-
+            // The server is authoritative; do not inject a hardcoded faction ID on the client.
             OnReputationUpdated?.Invoke(snapshot);
             if (Debug.isDebugBuild)
                 Debug.Log($"[ReputationClientState] OnReputationSnapshotReceived: {snapshot.entries?.Length ?? 0} factions, {KnownFactionIds.Count} known");

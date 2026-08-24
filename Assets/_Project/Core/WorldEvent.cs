@@ -65,8 +65,10 @@ namespace ProjectC.Core
     /// </summary>
     public sealed class ReputationChangedEvent : WorldEvent
     {
-        /// <summary>Фракция, репутация с которой изменилась.</summary>
+        /// <summary>Legacy enum value, если wireId относится к диапазону старых фракций.</summary>
         public Factions.FactionId Faction;
+        /// <summary>Stable network/save identity of the faction.</summary>
+        public int FactionWireId;
         /// <summary>Новое значение reputation (после delta).</summary>
         public int NewValue;
         /// <summary>Дельта (может быть отрицательной).</summary>

@@ -14,6 +14,7 @@ using ProjectC.Core;
 using ProjectC.Factions;
 using ProjectC.Quests.Dto;
 using ProjectC.Localization;
+using ProjectC.Knowledge;
 
 namespace ProjectC.Quests
 {
@@ -51,8 +52,8 @@ namespace ProjectC.Quests
         /// <summary>Per-player quest instances (key: clientId).</summary>
         private readonly Dictionary<ulong, List<QuestInstance>> _questsByPlayer = new Dictionary<ulong, List<QuestInstance>>();
 
-        /// <summary>Per-player faction reputation (key: (clientId, FactionId)).</summary>
-        private readonly Dictionary<(ulong, FactionId), int> _reputation = new Dictionary<(ulong, FactionId), int>();
+        /// <summary>Per-player faction reputation (key: (clientId, wireId)).</summary>
+        private readonly Dictionary<(ulong, int), int> _reputation = new Dictionary<(ulong, int), int>();
 
         /// <summary>Per-player NPC attitude (key: (clientId, npcId)).</summary>
         private readonly Dictionary<(ulong, string), int> _npcAttitude = new Dictionary<(ulong, string), int>();
@@ -127,6 +128,19 @@ namespace ProjectC.Quests
 
         public int QuestCount => _questById.Count;
 
+        private static FactionCatalog GetFactionCatalog()
+        {
+            if (FactionCatalog.Instance == null)
+                new FactionCatalog();
+            return FactionCatalog.Instance;
+        }
+
+        private static int GetNeutralWireId()
+        {
+            var neutral = GetFactionCatalog().Get(FactionId.Neutral);
+            return neutral != null ? neutral.EffectiveWireId : 0;
+        }
+
         // ============ Per-player state accessors (T-Q06+ fills real logic) ============
 
         public List<QuestInstance> GetPlayerQuests(ulong clientId)
@@ -140,8 +154,15 @@ namespace ProjectC.Quests
         }
 
         public int GetReputation(ulong clientId, FactionId faction)
+            => GetReputation(clientId, (int)faction);
+
+        public int GetReputation(ulong clientId, FactionDefinition faction)
+            => GetReputation(clientId, faction != null ? faction.EffectiveWireId : 0);
+
+        public int GetReputation(ulong clientId, int wireId)
         {
-            return _reputation.TryGetValue((clientId, faction), out var v) ? v : 0;
+            if (wireId <= 0) return 0;
+            return _reputation.TryGetValue((clientId, wireId), out var v) ? v : 0;
         }
 
         public int GetNpcAttitude(ulong clientId, string npcId)
@@ -191,7 +212,7 @@ namespace ProjectC.Quests
                     return s.HasValue && s.Value == QuestState.Active;
                 }
                 case QuestPrerequisiteType.ReputationAtLeast:
-                    return GetReputation(clientId, prereq.factionParam) >= prereq.intParam;
+                    return GetReputation(clientId, prereq.EffectiveFactionWireId) >= prereq.intParam;
                 case QuestPrerequisiteType.NpcAttitudeAtLeast:
                 {
                     string npcId = prereq.requiredNpc != null ? prereq.requiredNpc.npcId : prereq.stringParam;
@@ -223,11 +244,14 @@ namespace ProjectC.Quests
             if (def == null) return (true, null);
 
             // S5: minReputation — pre-prerequisite по faction (в дополнение к prerequisites[]).
-            if (def.faction != FactionId.None && def.minReputation > 0)
+            if (def.EffectiveFactionWireId > 0 && def.minReputation > 0)
             {
-                int rep = GetReputation(clientId, def.faction);
+                int rep = GetReputation(clientId, def.EffectiveFactionWireId);
+                string factionLabel = def.factionRef != null
+                    ? def.factionRef.EffectiveFactionKey
+                    : def.faction.ToString();
                 if (rep < def.minReputation)
-                    return (false, Loc.Format("ui.quest.prereq.reputation", def.faction.ToString(), def.minReputation));
+                    return (false, Loc.Format("ui.quest.prereq.reputation", factionLabel, def.minReputation));
             }
 
             if (def.prerequisites == null || def.prerequisites.Length == 0) return (true, null);
@@ -241,7 +265,8 @@ namespace ProjectC.Quests
                     {
                         QuestPrerequisiteType.QuestCompleted => Loc.Format("ui.quest.prereq.complete_first", p.stringParam ?? ""),
                         QuestPrerequisiteType.QuestActive => Loc.Format("ui.quest.prereq.activate_first", p.stringParam ?? ""),
-                        QuestPrerequisiteType.ReputationAtLeast => Loc.Format("ui.quest.prereq.reputation", p.factionParam.ToString(), p.intParam),
+                        QuestPrerequisiteType.ReputationAtLeast => Loc.Format("ui.quest.prereq.reputation",
+                            p.factionRef != null ? p.factionRef.EffectiveFactionKey : p.factionParam.ToString(), p.intParam),
                         QuestPrerequisiteType.NpcAttitudeAtLeast => Loc.Format("ui.quest.prereq.npc_attitude", p.requiredNpc != null ? p.requiredNpc.displayName : (p.stringParam ?? "?"), p.intParam),
                         QuestPrerequisiteType.HaveItem => Loc.Format("ui.quest.prereq.have_item", p.stringParam ?? "", p.intParam),
                         QuestPrerequisiteType.FlagIsSet => Loc.Format("ui.quest.prereq.flag", p.stringParam ?? ""),
@@ -263,24 +288,37 @@ namespace ProjectC.Quests
         /// <param name="silent">true = НЕ publish event (для cross-fallback внутри ModifyNpcAttitude).</param>
         /// <returns>New value after clamp.</returns>
         public int ModifyReputation(ulong clientId, FactionId faction, int delta, int min = -100, int max = 100, bool silent = false)
+            => ModifyReputation(clientId, (int)faction, delta, min, max, silent);
+
+        public int ModifyReputation(ulong clientId, FactionDefinition faction, int delta, int min = -100, int max = 100, bool silent = false)
+            => ModifyReputation(clientId, faction != null ? faction.EffectiveWireId : 0, delta, min, max, silent);
+
+        public int ModifyReputation(ulong clientId, int wireId, int delta, int min = -100, int max = 100, bool silent = false)
         {
-            int oldVal = GetReputation(clientId, faction);
+            if (wireId <= 0) return 0;
+            int oldVal = GetReputation(clientId, wireId);
             int newVal = oldVal + delta;
             if (newVal < min) newVal = min;
             if (newVal > max) newVal = max;
             if (newVal == oldVal) return newVal;
-            _reputation[(clientId, faction)] = newVal;
+            _reputation[(clientId, wireId)] = newVal;
             if (!silent)
             {
                 WorldEventBus.Publish(new ReputationChangedEvent
                 {
                     PlayerId = clientId,
-                    Faction = faction,
+                    Faction = (FactionId)wireId,
+                    FactionWireId = wireId,
                     NewValue = newVal,
                     Delta = newVal - oldVal
                 });
             }
-            if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ModifyReputation player={clientId} faction={faction} delta={delta} {oldVal}→{newVal}");
+            if (Debug.isDebugBuild)
+            {
+                var definition = GetFactionCatalog().GetByWireId(wireId);
+                string label = definition != null ? definition.EffectiveFactionKey : wireId.ToString();
+                Debug.Log($"[QuestWorld] ModifyReputation player={clientId} faction={label} wireId={wireId} delta={delta} {oldVal}→{newVal}");
+            }
             SavePlayer(clientId); // T-Q18
             return newVal;
         }
@@ -319,7 +357,7 @@ namespace ProjectC.Quests
                     if (link == null) continue;
                     int crossDelta = delta > 0 ? link.deltaOnLike : link.deltaOnDislike;
                     if (crossDelta == 0) continue;
-                    ModifyReputation(clientId, link.targetFaction, crossDelta, silent: true);
+                    ModifyReputation(clientId, link.EffectiveFactionWireId, crossDelta, silent: true);
                 }
             }
 
@@ -657,9 +695,13 @@ namespace ProjectC.Quests
                 for (int i = 0; i < reward.reputation.Length; i++)
                 {
                     var rr = reward.reputation[i];
-                    if (rr == null || rr.faction == FactionId.None) continue;
-                    int newVal = ModifyReputation(clientId, rr.faction, rr.value, silent: true);
-                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: reputation faction={rr.faction} delta={rr.value} → {newVal}");
+                    if (rr == null || rr.EffectiveFactionWireId <= 0) continue;
+                    int newVal = ModifyReputation(clientId, rr.EffectiveFactionWireId, rr.value, silent: true);
+                    if (Debug.isDebugBuild)
+                    {
+                        string label = rr.factionRef != null ? rr.factionRef.EffectiveFactionKey : rr.faction.ToString();
+                        Debug.Log($"[QuestWorld] ApplyQuestRewards: reputation faction={label} wireId={rr.EffectiveFactionWireId} delta={rr.value} → {newVal}");
+                    }
                 }
             }
 
@@ -840,8 +882,8 @@ namespace ProjectC.Quests
 
         // ============ T-KNOW: Knowledge System ============
 
-        /// <summary>T-KNOW: какие фракции игрок «знает» (имеет право видеть в UI).</summary>
-        private readonly Dictionary<ulong, HashSet<FactionId>> _knownFactions = new();
+        /// <summary>T-KNOW: какие фракции игрок «знает» (key: stable wireId).</summary>
+        private readonly Dictionary<ulong, HashSet<int>> _knownFactions = new();
 
         /// <summary>T-KNOW: какие NPC игрок «знает». Отдельно от _npcTalkedTo — в будущем
         /// знание может открываться через книги/квесты, а не только через диалог.</summary>
@@ -936,9 +978,9 @@ namespace ProjectC.Quests
             if (Database != null && !string.IsNullOrEmpty(npcId))
             {
                 var npcDef = Database.GetNpc(npcId);
-                if (npcDef != null && npcDef.faction != FactionId.None)
+                if (npcDef != null && npcDef.EffectiveFactionWireId > 0)
                 {
-                    UnlockFactionKnowledge(clientId, npcDef.faction);
+                    UnlockFactionKnowledge(clientId, npcDef.EffectiveFactionWireId);
                 }
             }
 
@@ -948,9 +990,15 @@ namespace ProjectC.Quests
         // ============ T-KNOW: Knowledge ============
 
         public bool IsFactionKnown(ulong clientId, FactionId faction)
+            => IsFactionKnown(clientId, (int)faction);
+
+        public bool IsFactionKnown(ulong clientId, FactionDefinition faction)
+            => IsFactionKnown(clientId, faction != null ? faction.EffectiveWireId : 0);
+
+        public bool IsFactionKnown(ulong clientId, int wireId)
         {
-            if (faction == FactionId.None) return true; // None is always "known" (not filtered)
-            return _knownFactions.TryGetValue(clientId, out var set) && set.Contains(faction);
+            if (wireId <= 0) return true; // None is always "known" (not filtered)
+            return _knownFactions.TryGetValue(clientId, out var set) && set.Contains(wireId);
         }
 
         public bool IsNpcKnown(ulong clientId, string npcId)
@@ -960,17 +1008,27 @@ namespace ProjectC.Quests
         }
 
         public void UnlockFactionKnowledge(ulong clientId, FactionId faction)
+            => UnlockFactionKnowledge(clientId, (int)faction);
+
+        public void UnlockFactionKnowledge(ulong clientId, FactionDefinition faction)
+            => UnlockFactionKnowledge(clientId, faction != null ? faction.EffectiveWireId : 0);
+
+        public void UnlockFactionKnowledge(ulong clientId, int wireId)
         {
-            if (faction == FactionId.None) return;
+            if (wireId <= 0) return;
             if (!_knownFactions.TryGetValue(clientId, out var set))
             {
-                set = new HashSet<FactionId>();
+                set = new HashSet<int>();
                 _knownFactions[clientId] = set;
             }
-            if (set.Add(faction))
+            if (set.Add(wireId))
             {
                 if (Debug.isDebugBuild)
-                    Debug.Log($"[QuestWorld] Knowledge unlocked: player={clientId} faction={faction}");
+                {
+                    var definition = GetFactionCatalog().GetByWireId(wireId);
+                    string label = definition != null ? definition.EffectiveFactionKey : wireId.ToString();
+                    Debug.Log($"[QuestWorld] Knowledge unlocked: player={clientId} faction={label} wireId={wireId}");
+                }
                 // NOT calling SavePlayer here — caller (MarkNpcTalked) already does
             }
         }
@@ -1245,7 +1303,7 @@ namespace ProjectC.Quests
 
                 case QuestObjectiveType.ReputationAtLeast:
                 {
-                    int val = GetReputation(clientId, obj.targetFaction);
+                    int val = GetReputation(clientId, obj.EffectiveFactionWireId);
                     progress.currentCount = val;
                     return val >= obj.reputationValue;
                 }
@@ -1470,9 +1528,10 @@ namespace ProjectC.Quests
                 data.knownNpcs.AddRange(knownNpcsSet);
             }
 
-            // T-KNOW: Neutral (11) auto-known для новых персонажей — гарантируем что всегда в сейве
-            if (!data.knownFactions.Contains((int)FactionId.Neutral))
-                data.knownFactions.Add((int)FactionId.Neutral);
+            // T-KNOW: Neutral is resolved through the faction registry, not a numeric literal.
+            int neutralWireId = GetNeutralWireId();
+            if (neutralWireId > 0 && !data.knownFactions.Contains(neutralWireId))
+                data.knownFactions.Add(neutralWireId);
 
             // T-KNOWLEDGE-V2: known recipes (from CraftingWorld)
             var knownRecipeIds = Crafting.CraftingWorld.GetKnownRecipeIds(clientId);
@@ -1513,7 +1572,7 @@ namespace ProjectC.Quests
             _questsByPlayer.Remove(clientId);
             // Don't wipe reputation/attitude — caller decides if they want fresh start.
             // For simplicity, also wipe:
-            var repToRemove = new List<(ulong, FactionId)>();
+            var repToRemove = new List<(ulong, int)>();
             foreach (var kv in _reputation) if (kv.Key.Item1 == clientId) repToRemove.Add(kv.Key);
             foreach (var k in repToRemove) _reputation.Remove(k);
             var attToRemove = new List<(ulong, string)>();
@@ -1570,7 +1629,14 @@ namespace ProjectC.Quests
                 for (int i = 0; i < data.reputation.Count; i++)
                 {
                     var e = data.reputation[i];
-                    _reputation[(clientId, (FactionId)e.factionId)] = e.value;
+                    if (e.factionId <= 0 || e.factionId > byte.MaxValue)
+                    {
+                        Debug.LogWarning($"[QuestWorld] LoadPlayer: ignoring invalid faction wireId={e.factionId} for client={clientId}");
+                        continue;
+                    }
+                    if (GetFactionCatalog().GetByWireId(e.factionId) == null)
+                        Debug.LogWarning($"[QuestWorld] LoadPlayer: faction wireId={e.factionId} is not registered; preserving it in runtime state.");
+                    _reputation[(clientId, e.factionId)] = e.value;
                 }
             }
 
@@ -1608,15 +1674,26 @@ namespace ProjectC.Quests
             // T-KNOW: restore known factions
             if (data.knownFactions != null && data.knownFactions.Count > 0)
             {
-                var knownF = new HashSet<FactionId>();
+                var knownF = new HashSet<int>();
                 foreach (int id in data.knownFactions)
-                    knownF.Add((FactionId)id);
+                {
+                    if (id <= 0 || id > byte.MaxValue)
+                    {
+                        Debug.LogWarning($"[QuestWorld] LoadPlayer: ignoring invalid known faction wireId={id} for client={clientId}");
+                        continue;
+                    }
+                    if (GetFactionCatalog().GetByWireId(id) == null)
+                        Debug.LogWarning($"[QuestWorld] LoadPlayer: known faction wireId={id} is not registered; preserving it in runtime state.");
+                    knownF.Add(id);
+                }
                 _knownFactions[clientId] = knownF;
             }
             else
             {
-                // New player / old save: auto-know Neutral
-                _knownFactions[clientId] = new HashSet<FactionId> { FactionId.Neutral };
+                int neutralWireId = GetNeutralWireId();
+                var knownF = new HashSet<int>();
+                if (neutralWireId > 0) knownF.Add(neutralWireId);
+                _knownFactions[clientId] = knownF;
             }
 
             // T-KNOW: restore known NPCs

@@ -294,10 +294,9 @@ namespace ProjectC.Knowledge
 
         private string GetFactionDisplayName(byte factionIdByte)
         {
-            var factionId = (FactionId)factionIdByte;
             var catalog = FactionCatalog.Instance;
-            if (catalog != null) return catalog.GetDisplayName(factionId);
-            return factionId.ToString();
+            if (catalog != null) return catalog.GetDisplayName((int)factionIdByte);
+            return factionIdByte.ToString();
         }
 
         private string GetNpcDisplayName(string npcId) => npcId;

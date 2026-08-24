@@ -1606,6 +1606,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: '[Onboarding alfa]'
       objectReference: {fileID: 0}
+    - target: {fileID: 3133185210611576092, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+      propertyPath: faction
+      value: 
+      objectReference: {fileID: 11400000, guid: e6290d9962fa94d4f977ebd87fe52812, type: 2}
     - target: {fileID: 4149803177450251974, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 898820923
@@ -44856,7 +44860,7 @@ PrefabInstance:
     - target: {fileID: 3133185210611576092, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       propertyPath: faction
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 11400000, guid: e6290d9962fa94d4f977ebd87fe52812, type: 2}
     - target: {fileID: 3133185210611576092, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       propertyPath: idleActivity
       value: 4

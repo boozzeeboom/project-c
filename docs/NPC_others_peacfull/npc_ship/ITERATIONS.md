@@ -58,3 +58,20 @@
 - `Npc_Goblin 2.prefab` — префаб NPC для тестов
 - `10_COLLIDER_BUG_detectCollisions_false.md` — документ с разбором бага
 - `CHANGELOG.md` — запись в логе
+
+---
+
+## Итерация от 2026-08-24 — TradeItem asset reference в NPC Ship Buy Items
+
+**Задача:** убрать необходимость вводить строковый Item ID вручную в `Cargo Trade > Buy Items` у `NpcShipSchedule` и разрешить назначение товара перетаскиванием `TradeItemDefinition`-ассета.
+
+**Коммит:** не создан автоматически — в текущей Unity-сессии доступного Git-инструмента нет.
+
+**Изменения:**
+- `Assets/_Project/Scripts/PeacefulShip/Core/NpcCargoTradeConfig.cs` — добавлено поле `tradeItem` типа `TradeItemDefinition`; старый `itemId` сохранён как legacy fallback.
+- `Assets/_Project/Scripts/PeacefulShip/Editor/NpcCargoTradeConfigDrawer.cs` — в инспекторе `Buy Items` теперь доступно поле `Trade Item` для drag-and-drop, а resolved `Item ID` заполняется автоматически.
+- `Assets/_Project/Scripts/PeacefulShip/Network/NpcCargoService.cs` — runtime использует `tradeItem.itemId`, сохраняя совместимость со старыми строковыми конфигурациями.
+- `Assets/_Project/Scripts/PeacefulShip/Stations/NpcShipSchedule.cs` — валидация учитывает asset reference.
+- `Assets/_Project/Editor/Tools/NpcShipScheduleOverviewWindow.cs` — таблица `Cargo Trade` также принимает `TradeItemDefinition`-ассеты.
+
+**Проверка:** `check_compile_errors` — compile errors отсутствуют.

@@ -180,9 +180,10 @@ namespace ProjectC.PeacefulShip.Stations
             for (int i = 0; i < cargoTrade.buyItems.Length; i++)
             {
                 var item = cargoTrade.buyItems[i];
-                if (string.IsNullOrEmpty(item.itemId))
+                string resolvedItemId = item.GetResolvedItemId();
+                if (string.IsNullOrEmpty(resolvedItemId))
                 {
-                    Debug.LogError($"[NpcShipSchedule:{name}] cargoTrade.buyItems[{i}].itemId is empty", this);
+                    Debug.LogError($"[NpcShipSchedule:{name}] cargoTrade.buyItems[{i}] has neither TradeItem asset nor legacy itemId", this);
                 }
                 else if (item.desiredQuantity < 0)
                 {

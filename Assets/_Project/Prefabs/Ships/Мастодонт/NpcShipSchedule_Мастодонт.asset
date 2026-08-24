@@ -56,7 +56,12 @@ MonoBehaviour:
   cargoTrade:
     useUnlimitedCredits: 1
     maxLoadSlots: 8
-    maxLoadWeightKg: 200
+    maxLoadWeightKg: 121393
     sellAllOnArrival: 1
     buyConfiguredItemsAfterSell: 1
-    buyItems: []
+    buyItems:
+    - tradeItem: {fileID: 0}
+      itemId: 
+      desiredQuantity: 0
+      sellOnArrival: 0
+      maxKeepQuantity: 0

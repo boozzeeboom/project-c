@@ -7,18 +7,31 @@
 
 using System;
 using UnityEngine;
+using ProjectC.Trade;
 
 namespace ProjectC.PeacefulShip.Core
 {
     /// <summary>
     /// Один item в cargo-стратегии NPC-курьера.
-    /// D30: itemId хранится как string + валидируется через DatabaseResolver.TryGet.
+    /// Новый способ настройки — ссылка tradeItem на TradeItemDefinition; строковый itemId оставлен
+    /// как legacy fallback для уже существующих конфигураций.
     /// </summary>
     [Serializable]
     public struct NpcCargoTradeConfig
     {
-        [Tooltip("ItemId товара (должен существовать в TradeDatabase). Пример: 'resource_mezium_box'.")]
+        [Tooltip("TradeItemDefinition-ассет товара. Его itemId используется в runtime. Перетащи .asset из Assets/_Project/Trade/Data/Items/.")]
+        public TradeItemDefinition tradeItem;
+
+        [Tooltip("Legacy itemId товара. Используется как fallback, если Trade Item не назначен.")]
         public string itemId;
+
+        public string GetResolvedItemId()
+        {
+            if (tradeItem != null && !string.IsNullOrEmpty(tradeItem.itemId))
+                return tradeItem.itemId;
+
+            return itemId;
+        }
 
         [Tooltip("Сколько единиц купить за 1 dwell. TradeWorld может дать меньше если сток рынка кончился.")]
         [Min(0)] public int desiredQuantity;

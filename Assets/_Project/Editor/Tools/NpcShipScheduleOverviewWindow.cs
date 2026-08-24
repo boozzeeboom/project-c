@@ -10,6 +10,7 @@ using UnityEngine.SceneManagement;
 using ProjectC.PeacefulShip.Core;
 using ProjectC.PeacefulShip.Stations;
 using ProjectC.Docking.Network; // DockStationController for location dropdowns
+using ProjectC.Trade;
 
 namespace ProjectC.PeacefulShip.EditorTools
 {
@@ -825,7 +826,7 @@ namespace ProjectC.PeacefulShip.EditorTools
                     // Table header
                     using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
                     {
-                        GUILayout.Label("Item ID", EditorStyles.toolbarButton, GUILayout.Width(200));
+                        GUILayout.Label("Trade Item", EditorStyles.toolbarButton, GUILayout.Width(200));
                         GUILayout.Label("Qty", EditorStyles.toolbarButton, GUILayout.Width(50));
                         GUILayout.Label("Sell?", EditorStyles.toolbarButton, GUILayout.Width(50));
                         GUILayout.Label("Keep", EditorStyles.toolbarButton, GUILayout.Width(50));
@@ -836,6 +837,7 @@ namespace ProjectC.PeacefulShip.EditorTools
                     for (int i = 0; i < propBuyItems.arraySize; i++)
                     {
                         var itemElem = propBuyItems.GetArrayElementAtIndex(i);
+                        var propTradeItem = itemElem.FindPropertyRelative("tradeItem");
                         var propItemId = itemElem.FindPropertyRelative("itemId");
                         var propQty = itemElem.FindPropertyRelative("desiredQuantity");
                         var propSell = itemElem.FindPropertyRelative("sellOnArrival");
@@ -843,7 +845,16 @@ namespace ProjectC.PeacefulShip.EditorTools
 
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.PropertyField(propItemId, GUIContent.none, GUILayout.Width(200));
+                            if (propTradeItem != null)
+                            {
+                                EditorGUILayout.PropertyField(propTradeItem, GUIContent.none, GUILayout.Width(200));
+                                if (propTradeItem.objectReferenceValue is TradeItemDefinition definition && definition != null && propItemId != null)
+                                    propItemId.stringValue = definition.itemId ?? string.Empty;
+                            }
+                            else if (propItemId != null)
+                            {
+                                EditorGUILayout.PropertyField(propItemId, GUIContent.none, GUILayout.Width(200));
+                            }
                             if (propQty != null) EditorGUILayout.PropertyField(propQty, GUIContent.none, GUILayout.Width(50));
                             if (propSell != null) EditorGUILayout.PropertyField(propSell, GUIContent.none, GUILayout.Width(50));
                             if (propKeep != null) EditorGUILayout.PropertyField(propKeep, GUIContent.none, GUILayout.Width(50));
@@ -864,10 +875,12 @@ namespace ProjectC.PeacefulShip.EditorTools
                         {
                             propBuyItems.InsertArrayElementAtIndex(propBuyItems.arraySize);
                             var newItem = propBuyItems.GetArrayElementAtIndex(propBuyItems.arraySize - 1);
+                            var niTradeItem = newItem.FindPropertyRelative("tradeItem");
                             var niId = newItem.FindPropertyRelative("itemId");
                             var niQty = newItem.FindPropertyRelative("desiredQuantity");
                             var niSell = newItem.FindPropertyRelative("sellOnArrival");
                             var niKeep = newItem.FindPropertyRelative("maxKeepQuantity");
+                            if (niTradeItem != null) niTradeItem.objectReferenceValue = null;
                             if (niId != null) niId.stringValue = "";
                             if (niQty != null) niQty.intValue = 1;
                             if (niSell != null) niSell.boolValue = true;

@@ -133,7 +133,8 @@ namespace ProjectC.PeacefulShip.Network
                             for (int b = 0; b < trade.buyItems.Length; b++)
                             {
                                 var bi = trade.buyItems[b];
-                                if (bi.itemId == entry.itemId && bi.sellOnArrival)
+                                string configuredItemId = bi.GetResolvedItemId();
+                                if (configuredItemId == entry.itemId && bi.sellOnArrival)
                                 {
                                     sellQty = Mathf.Max(0, entry.quantity - Mathf.Max(0, bi.maxKeepQuantity));
                                     break;
@@ -174,13 +175,14 @@ namespace ProjectC.PeacefulShip.Network
                 for (int i = 0; i < trade.buyItems.Length; i++)
                 {
                     var bi = trade.buyItems[i];
-                    if (string.IsNullOrEmpty(bi.itemId) || bi.desiredQuantity <= 0) continue;
+                    string itemId = bi.GetResolvedItemId();
+                    if (string.IsNullOrEmpty(itemId) || bi.desiredQuantity <= 0) continue;
 
                     // Предвычислим сколько реально влезет по слотам/весу одной единицы
                     if (tw.Resolver != null)
                     {
-                        int itemSlots = tw.Resolver.GetSlots(bi.itemId);
-                        float itemWeight = tw.Resolver.GetWeight(bi.itemId);
+                        int itemSlots = tw.Resolver.GetSlots(itemId);
+                        float itemWeight = tw.Resolver.GetWeight(itemId);
                         if (itemSlots > 0)
                         {
                             int maxBySlots = slotsLeft / itemSlots;
@@ -194,15 +196,15 @@ namespace ProjectC.PeacefulShip.Network
                     }
                     if (bi.desiredQuantity <= 0)
                     {
-                        report.skipReasons.Add($"load {bi.itemId} → no capacity (slots={slotsLeft}, weight={weightLeftKg:F1}kg)");
+                        report.skipReasons.Add($"load {itemId} → no capacity (slots={slotsLeft}, weight={weightLeftKg:F1}kg)");
                         continue;
                     }
 
-                    var r = tw.TryNpcBuy(npcInstanceId, locationId, bi.itemId, bi.desiredQuantity,
+                    var r = tw.TryNpcBuy(npcInstanceId, locationId, itemId, bi.desiredQuantity,
                                          shipNetworkObjectId, shipClass, trade.useUnlimitedCredits);
                     if (r.IsSuccess)
                     {
-                        report.bought.Add((bi.itemId, bi.desiredQuantity, bi.desiredQuantity));
+                        report.bought.Add((itemId, bi.desiredQuantity, bi.desiredQuantity));
                         // Обновим слоты/вес
                         if (tw.Resolver != null && cargo != null)
                         {
@@ -214,7 +216,7 @@ namespace ProjectC.PeacefulShip.Network
                     {
                         // Можем частично купить если рынок дал меньше (TryNpcBuy не делает partial).
                         // D33: TryNpcBuy атомарен — нельзя частично. Логируем причину, идём дальше.
-                        report.skipReasons.Add($"load {bi.itemId} qty={bi.desiredQuantity} → {r.code} ({r.message})");
+                        report.skipReasons.Add($"load {itemId} qty={bi.desiredQuantity} → {r.code} ({r.message})");
                     }
                 }
             }

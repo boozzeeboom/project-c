@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.NpcDefinition
   npcId: mira_01
   displayName: dialogue.npc.mira_01.displayName
+  factionRef: {fileID: 11400000, guid: fd6d432aeaa21144caa6784e3657224f, type: 2}
   faction: 1
   portrait: {fileID: 0}
   prefab: {fileID: 0}

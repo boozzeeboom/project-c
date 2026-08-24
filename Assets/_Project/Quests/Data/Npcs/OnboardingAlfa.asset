@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.NpcDefinition
   npcId: onboarding_alfa
   displayName: dialogue.npc.onboarding_alfa.displayName
+  factionRef: {fileID: 11400000, guid: b2861b85384e5bb4fadf0337a451f98f, type: 2}
   faction: 11
   portrait: {fileID: 0}
   prefab: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}

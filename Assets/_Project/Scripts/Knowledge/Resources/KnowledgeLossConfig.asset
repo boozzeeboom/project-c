@@ -19,6 +19,8 @@ MonoBehaviour:
   npcLossChance: 0.3
   recipeLossChance: 0.25
   skillKnowledgeLossChance: 0
+  neverForgetFactionRefs:
+  - {fileID: 11400000, guid: b2861b85384e5bb4fadf0337a451f98f, type: 2}
   neverForgetFactions: 0b000000
   neverForgetNpcs: []
   randomSeed: 0

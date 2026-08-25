@@ -1,5 +1,24 @@
 # Iterations
 
+## Завершение от 25 августа 2026
+
+**Тикет:** T-UI10
+**Задача:** Добавить контекстные подсказки взаимодействия для NPC и F-flow объектов без изменения существующей input/network логики и без повторной перестройки локализации.
+**Результат:** Реализованы `Talk`/`Use` hints в runtime HUD; resolver работает owner-only и сохраняет приоритеты текущего `NetworkPlayer.Update`. Добавлены только `ui.interaction_hint.talk` и `ui.interaction_hint.use` через официальный Localization API.
+**Изменённые файлы:**
+- `Assets/_Project/Scripts/UI/ControlHintsUI.cs`
+- `Assets/_Project/Scripts/Player/NetworkPlayer.cs`
+- `Assets/_Project/Settings/Localization/UI_Table Shared Data.asset`
+- `Assets/_Project/Settings/Localization/UI_Table_ru.asset`
+- `Assets/_Project/Settings/Localization/UI_Table_en.asset`
+
+**Проверки:**
+- Unity compile check: `No compile errors`.
+- `UI_Table Shared Data`: 421 → 423; существующие UI ID сохранены.
+- `Static_Table`, `System_Table`, `Dialogue_Table`: без изменений и без rebuild.
+- RU/EN lookup для обеих новых строк возвращает ожидаемые значения.
+- Play Mode и screenshots подтверждены пользователем.
+
 ## Итерация от 15 августа 2026
 
 **Задача:** Настройка первого квеста-гайда Onboarding alfa для проверки NPC, диалогов, квестовых стадий, локализации и выдачи ключа корабля.

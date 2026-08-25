@@ -138,6 +138,10 @@ namespace ProjectC.Player
         private ulong _pendingCanUseInteractableId = ulong.MaxValue;
         private const float CAN_USE_REQUEST_TIMEOUT = 1.5f;
 
+        // T-UI10: contextual interaction hint publication state.
+        private InteractionHintKind _lastPublishedInteractionHint = InteractionHintKind.None;
+        private ControlHintsUI _lastInteractionHintUI;
+
         // T-G07: Player gather animation
         // T-G09: hardcoded scale-pulse (T-G07) заменён на Animator.SetTrigger по типу узла.
         //        _gatherScaleAmplitude/_gatherPulsePeriod оставлены как FALLBACK на случай,
@@ -610,6 +614,10 @@ namespace ProjectC.Player
                 return;
             }
 
+            // T-UI10: clear the owner-only hint when this player despawns.
+            if (IsOwner)
+                PublishInteractionHint(InteractionHintKind.None);
+
             // NOTE (cleanup Phase 9, 2026-06-05): legacy _inventory.SaveToPrefs() убран —
             // v2 серверный инвентарь авторитативен, persistence = ответственность сервера.
 
@@ -674,7 +682,14 @@ namespace ProjectC.Player
 
             // T-HP01-fix: после смерти блокируем ВЕСЬ ввод (движение, скиллы, F/E, всё).
             // Было: SetInputEnabled(false) отключал только CharacterController — скиллы работали.
-            if (!_inputEnabled) return;
+            if (!_inputEnabled)
+            {
+                PublishInteractionHint(InteractionHintKind.None);
+                return;
+            }
+
+            // T-UI10: observation-only hint resolver. It does not participate in input handling.
+            UpdateInteractionHint();
 
             // Update PlayerChunkTracker for server-side chunk streaming
             if (_playerChunkTracker != null)
@@ -1317,6 +1332,123 @@ namespace ProjectC.Player
             // REFACTORED: Use InteractableManager instead of FindObjectsByType
             // Zero allocations in hot path
             return InteractableManager.FindNearestShip(transform.position, boardDistance);
+        }
+
+        // ==================== T-UI10: CONTEXTUAL INTERACTION HINT ====================
+
+        /// <summary>
+        /// Вычисляет подсказку по тому же порядку F/E-flow, который уже используется в Update().
+        /// Метод только наблюдает состояние сцены и не выбирает target для фактического действия.
+        /// </summary>
+        private void UpdateInteractionHint()
+        {
+            PublishInteractionHint(ResolveInteractionHint());
+        }
+
+        private void PublishInteractionHint(InteractionHintKind kind)
+        {
+            var ui = ControlHintsUI.Instance;
+            if (ui == null)
+            {
+                _lastPublishedInteractionHint = kind;
+                _lastInteractionHintUI = null;
+                return;
+            }
+
+            if (_lastInteractionHintUI == ui && _lastPublishedInteractionHint == kind)
+                return;
+
+            ui.SetInteractionHint(kind);
+            _lastPublishedInteractionHint = kind;
+            _lastInteractionHintUI = ui;
+        }
+
+        private InteractionHintKind ResolveInteractionHint()
+        {
+            if (_inShip) return InteractionHintKind.None;
+
+            Vector3 position = GetEffectivePosition();
+
+            // F flow: PickupItem / NpcLootPickup.
+            var pickup = InteractableManager.FindNearestPickup(position, pickupRange);
+            if (pickup != null && pickup.isActiveAndEnabled)
+                return InteractionHintKind.Use;
+
+            var npcLoot = InteractableManager.FindNearestNpcLoot(position, pickupRange);
+            if (npcLoot != null && npcLoot.isActiveAndEnabled && npcLoot.IsSpawned)
+                return InteractionHintKind.Use;
+
+            // F flow: gathering → crafting → cargo console.
+            var resourceNode = InteractableManager.FindNearestResourceNode(position, pickupRange);
+            if (resourceNode != null && resourceNode.isActiveAndEnabled && resourceNode.IsSpawned)
+                return InteractionHintKind.Use;
+
+            var craftingStation = InteractableManager.FindNearestCraftingStation(position, pickupRange);
+            if (craftingStation != null && craftingStation.isActiveAndEnabled && craftingStation.IsSpawned)
+                return InteractionHintKind.Use;
+
+            var cargoConsole = InteractableManager.FindNearestShipCargoConsole(position, pickupRange);
+            if (cargoConsole != null && cargoConsole.isActiveAndEnabled && cargoConsole.Ship != null
+                && cargoConsole.Ship.isActiveAndEnabled)
+                return InteractionHintKind.Use;
+
+            // F flow: door → ship boarding. Door flow has no InteractableManager registration,
+            // so it intentionally mirrors TryInteractNearestDoor() here.
+            if (HasNearbyDoorForInteraction(position))
+                return InteractionHintKind.Use;
+
+            var nearestShip = FindNearestShip();
+            if (nearestShip != null && nearestShip.isActiveAndEnabled)
+                return InteractionHintKind.Use;
+
+            // E flow: NPC is considered only after every valid F candidate.
+            return HasNearbyNpcForInteraction(position)
+                ? InteractionHintKind.Talk
+                : InteractionHintKind.None;
+        }
+
+        private bool HasNearbyDoorForInteraction(Vector3 position)
+        {
+            var allDoors = FindObjectsByType<ProjectC.Ship.DoorController>(FindObjectsInactive.Exclude);
+            float range = Mathf.Max(pickupRange, boardDistance);
+
+            foreach (var door in allDoors)
+            {
+                if (door == null || !door.isActiveAndEnabled) continue;
+
+                var collider = door.GetComponent<Collider>();
+                float distance = collider != null
+                    ? Vector3.Distance(position, collider.bounds.ClosestPoint(position))
+                    : Vector3.Distance(position, door.transform.position);
+
+                if (distance < range)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool HasNearbyNpcForInteraction(Vector3 position)
+        {
+            var allNpcs = FindObjectsByType<ProjectC.Quests.NpcController>(FindObjectsInactive.Exclude);
+            ProjectC.Quests.NpcController nearest = null;
+            float minDistance = float.MaxValue;
+            foreach (var npc in allNpcs)
+            {
+                if (npc == null || !npc.isActiveAndEnabled || npc.Definition == null) continue;
+
+                // Keep the exact trigger-or-distance rule used by TryInteractNearestNpc().
+                if (!npc.PlayerInRange && !npc.IsWithinDistance(position)) continue;
+
+                float distance = Vector3.Distance(position, npc.transform.position);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearest = npc;
+                }
+            }
+
+            return nearest != null && !string.IsNullOrEmpty(nearest.NpcId);
         }
 
         private void ApplyWalkingState()

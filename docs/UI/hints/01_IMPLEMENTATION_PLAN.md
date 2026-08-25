@@ -3,6 +3,7 @@
 **Дата:** 25 августа 2026 года  
 **База:** рабочая ветка после отката, описанного в `docs/world/Localization/06_POSTMORTEM_T-UI09_Localization_Blast_Radius.md`  
 **Цель:** вернуть минорную UI-фичу без повторного повреждения локализационных ассетов.
+**Статус:** выполнено; Play Mode и screenshots подтверждены пользователем.
 
 ## Правила выполнения
 
@@ -112,6 +113,15 @@
 - [ ] 6.2 После подтверждения Phase 5 обновить `docs/iterations.md` отдельной записью T-UI10 с фактическими изменёнными файлами и результатом проверки.
 - [ ] 6.3 Зафиксировать документацию и реализацию отдельным git-коммитом с номером T-UI10. Коммит не делать до пользовательского подтверждения screenshots.
 - [ ] 6.4 В финальном отчёте указать количество добавленных UI-ключей и подтвердить, что другие таблицы не перестраивались.
+
+## Фактическое завершение T-UI10
+
+- Phase 1: два ключа добавлены аддитивно через `SharedTableData.AddKey` и `StringTable.AddEntry`; RU/EN lookup проверен.
+- Phase 2: owner-only resolver добавлен в `NetworkPlayer` без изменения существующего input-flow.
+- Phase 3: interaction hint создаётся в общем runtime `HUD_Canvas`; F1-блок остаётся независимым.
+- Phase 4: компиляция без ошибок; `UI_Table Shared Data` содержит 423 записи, остальные коллекции не затронуты.
+- Phase 5: Play Mode и screenshots подтверждены пользователем.
+- Изменённые runtime/localization файлы: `ControlHintsUI.cs`, `NetworkPlayer.cs`, `UI_Table Shared Data.asset`, `UI_Table_ru.asset`, `UI_Table_en.asset`.
 
 ## Rollback criteria
 

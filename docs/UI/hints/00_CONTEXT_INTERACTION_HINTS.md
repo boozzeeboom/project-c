@@ -1,7 +1,7 @@
 # T-UI10 — Контекстные подсказки взаимодействия
 
 **Дата документа:** 25 августа 2026 года  
-**Статус:** план после отката T-UI09; runtime-изменения ещё не внесены.  
+**Статус:** реализовано и подтверждено пользователем в Play Mode; локализация добавлена аддитивно.
 **Связанный постмортем:** `docs/world/Localization/06_POSTMORTEM_T-UI09_Localization_Blast_Radius.md`
 
 ## 1. Цель
@@ -119,3 +119,13 @@
 Эта фича не требует глобальной миграции локализации. `Loc.Get` уже предоставляет fallback, а `ControlHintsUI`/`NetworkPlayer` могут быть изменены независимо от Static/System/Dialogue-таблиц.
 
 Любое расхождение при добавлении двух ключей — причина остановить операцию и откатить только файлы T-UI10. Нельзя исправлять локализацию запуском полного rebuild из частичного `UIKeyMap`.
+
+## 8. Фактический результат T-UI10
+
+- Реализованы контекстные состояния `None`, `Talk`, `Use` в `ControlHintsUI` и owner-only resolver в `NetworkPlayer`.
+- F/E input-flow, RPC, приоритеты взаимодействия и серверная валидация не изменялись.
+- Добавлены только два ключа UI-локализации: `ui.interaction_hint.talk` и `ui.interaction_hint.use`.
+- `UI_Table Shared Data`: 421 → 423; существующие UI ID сохранены.
+- `Static_Table`, `System_Table` и `Dialogue_Table` не перестраивались; их baseline digests сохранены.
+- Unity compile check: `No compile errors`.
+- Play Mode и screenshots подтверждены пользователем как успешно пройденные.

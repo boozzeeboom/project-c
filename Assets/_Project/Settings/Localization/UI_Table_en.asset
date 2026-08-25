@@ -1686,6 +1686,14 @@ MonoBehaviour:
     m_Localized: OK
     m_Metadata:
       m_Items: []
+  - m_Id: 7197684224925696
+    m_Localized: Press E to talk
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7197684287840256
+    m_Localized: Press F to use
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

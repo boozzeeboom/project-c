@@ -2,17 +2,31 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
+using ProjectC.Localization;
+using ProjectC.Player;
 
 namespace ProjectC.UI
 {
+    public enum InteractionHintKind
+    {
+        None,
+        Talk,
+        Use,
+    }
+
     /// <summary>
     /// Подсказки по управлению на экране
     /// </summary>
     public class ControlHintsUI : MonoBehaviour
     {
+        public static ControlHintsUI Instance { get; private set; }
+
         [Header("Ссылки на UI элементы")]
         [Tooltip("Текст подсказок")]
         public TextMeshProUGUI hintsText;
+
+        [Tooltip("Контекстная подсказка взаимодействия")]
+        public TextMeshProUGUI interactionHintText;
 
         [Header("Настройки")]
         [Tooltip("Показывать ли подсказки")]
@@ -25,23 +39,58 @@ namespace ProjectC.UI
 
         // Input System
         private InputAction _toggleHintsAction;
+        private InteractionHintKind _interactionHintKind = InteractionHintKind.None;
+        private bool _localeSubscribed;
+
+        private void Awake()
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else if (Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+        }
 
         private void Start()
         {
             if (hintsText == null)
             {
-                // Пытаемся найти Text автоматически
-                hintsText = FindAnyObjectByType<TextMeshProUGUI>();
+                hintsText = GetComponent<TextMeshProUGUI>();
             }
 
-            if (hintsText != null && showHints)
+            if (hintsText == interactionHintText)
+            {
+                hintsText = null;
+            }
+
+            if (hintsText == null)
+            {
+                // Пытаемся найти Text автоматически
+                hintsText = FindAnyObjectByType<TextMeshProUGUI>();
+                if (hintsText == interactionHintText)
+                {
+                    hintsText = null;
+                }
+            }
+
+            EnsureInteractionHintText();
+
+            if (hintsText != null)
             {
                 UpdateHints();
+                hintsText.enabled = showHints;
             }
-            else if (hintsText == null)
+            else
             {
                 Debug.LogWarning("[ControlHintsUI] Hints Text не назначен! Подсказки не будут показаны.");
             }
+
+            SubscribeToLocaleChanges();
+            RefreshInteractionHint();
 
             // Создаём Input Action программно
             _toggleHintsAction = new InputAction("ToggleHints", binding: "<Keyboard>/f1", expectedControlType: "Button");
@@ -53,12 +102,132 @@ namespace ProjectC.UI
         {
             if (_toggleHintsAction != null)
                 _toggleHintsAction.Enable();
+
+            SubscribeToLocaleChanges();
         }
 
         private void OnDisable()
         {
             if (_toggleHintsAction != null)
                 _toggleHintsAction.Disable();
+
+            UnsubscribeFromLocaleChanges();
+        }
+
+        private void OnDestroy()
+        {
+            UnsubscribeFromLocaleChanges();
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
+        private void SubscribeToLocaleChanges()
+        {
+            if (_localeSubscribed) return;
+            Loc.OnLocaleChanged += HandleLocaleChanged;
+            _localeSubscribed = true;
+        }
+
+        private void UnsubscribeFromLocaleChanges()
+        {
+            if (!_localeSubscribed) return;
+            Loc.OnLocaleChanged -= HandleLocaleChanged;
+            _localeSubscribed = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            RefreshInteractionHint();
+        }
+
+        private void EnsureInteractionHintText()
+        {
+            if (interactionHintText == null)
+            {
+                var child = transform.Find("InteractionHintText");
+                if (child != null)
+                {
+                    interactionHintText = child.GetComponent<TextMeshProUGUI>();
+                }
+            }
+
+            var canvas = GetComponentInParent<Canvas>();
+            if (interactionHintText == null && canvas != null)
+            {
+                var hintObject = new GameObject(
+                    "InteractionHintText",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(TextMeshProUGUI));
+                hintObject.transform.SetParent(canvas.transform, false);
+                interactionHintText = hintObject.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (interactionHintText == null) return;
+
+            if (canvas != null && interactionHintText.transform.parent != canvas.transform)
+            {
+                interactionHintText.transform.SetParent(canvas.transform, false);
+            }
+
+            var rect = interactionHintText.rectTransform;
+            rect.anchorMin = new Vector2(1f, 0f);
+            rect.anchorMax = new Vector2(1f, 0f);
+            rect.pivot = new Vector2(1f, 0f);
+            rect.anchoredPosition = new Vector2(-20f, 20f);
+            rect.sizeDelta = new Vector2(500f, 50f);
+
+            interactionHintText.alignment = TextAlignmentOptions.BottomRight;
+            interactionHintText.fontSize = 24f;
+            interactionHintText.color = Color.white;
+            interactionHintText.raycastTarget = false;
+            interactionHintText.textWrappingMode = TextWrappingModes.NoWrap;
+        }
+
+        public void SetInteractionHint(InteractionHintKind kind)
+        {
+            if (_interactionHintKind == kind) return;
+            _interactionHintKind = kind;
+            RefreshInteractionHint();
+        }
+
+        public InteractionHintKind GetInteractionHintKind() => _interactionHintKind;
+
+        private void RefreshInteractionHint()
+        {
+            if (interactionHintText == null) return;
+
+            bool visible = _interactionHintKind != InteractionHintKind.None;
+            if (interactionHintText.gameObject.activeSelf != visible)
+            {
+                interactionHintText.gameObject.SetActive(visible);
+            }
+
+            if (!visible) return;
+
+            string key;
+            string fallback;
+            switch (_interactionHintKind)
+            {
+                case InteractionHintKind.Talk:
+                    key = "ui.interaction_hint.talk";
+                    fallback = "Нажмите E, чтобы поговорить";
+                    break;
+                case InteractionHintKind.Use:
+                    key = "ui.interaction_hint.use";
+                    fallback = "Нажмите F, чтобы использовать";
+                    break;
+                default:
+                    return;
+            }
+
+            string localized = Loc.Get(key, fallback);
+            if (interactionHintText.text != localized)
+            {
+                interactionHintText.text = localized;
+            }
         }
 
         /// <summary>
@@ -109,7 +278,7 @@ namespace ProjectC.UI
             showHints = !showHints;
             if (hintsText != null)
             {
-                hintsText.gameObject.SetActive(showHints);
+                hintsText.enabled = showHints;
             }
         }
 
@@ -118,7 +287,7 @@ namespace ProjectC.UI
             showHints = show;
             if (hintsText != null)
             {
-                hintsText.gameObject.SetActive(show);
+                hintsText.enabled = show;
             }
         }
     }

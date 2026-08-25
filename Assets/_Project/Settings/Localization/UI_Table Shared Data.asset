@@ -1699,6 +1699,14 @@ MonoBehaviour:
     m_Key: ui.main_menu.disclaimer.ok
     m_Metadata:
       m_Items: []
+  - m_Id: 7197684224925696
+    m_Key: ui.interaction_hint.talk
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7197684287840256
+    m_Key: ui.interaction_hint.use
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

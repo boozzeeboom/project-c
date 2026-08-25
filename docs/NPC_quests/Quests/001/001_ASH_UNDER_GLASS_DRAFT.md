@@ -3,8 +3,8 @@
 > **Статус:** draft / content design only
 > **Версия:** 0.1
 > **Дата:** 2026-08-20
-> **Реализация:** поэтапно; Stage 1 (ItemData + ItemRegistry) завершён 2026-08-25.
-> **Следующий этап:** создать NpcDefinition assets; сцену и координаты на этом этапе не менять.
+> **Реализация:** поэтапно; Stage 2 (NpcDefinition assets) завершён 2026-08-25.
+> **Следующий этап:** создать DialogTree assets; сцену и координаты на этом этапе не менять.
 > **Мировые координаты:** намеренно не заданы
 > **Канонический гайд:** `docs/NPC_quests/Quests/00_UNIVERSAL_QUEST_GUIDE.md`
 
@@ -748,7 +748,7 @@ dialog.dlg_sela_q001.*
 - [ ] Подтвердить, что `WorldScene_0_0` остаётся сценой маршрута.
 - [ ] Расставить все зоны и заполнить реальные `targetPosition`/`targetRadius` для `ReachLocation`.
 - [x] Создать все ItemData; object references будут связаны в QuestDefinition/DialogTree на последующих этапах.
-- [ ] Создать шесть NpcDefinition и шесть DialogTree.
+- [x] Создать шесть NpcDefinition; DialogTree будут созданы на следующем этапе.
 - [ ] Проверить, что новые NPC используют канонический prefab без его изменения.
 - [ ] Проверить уникальность всех quest/npc/tree/stage/objective/item/event IDs.
 - [ ] Проверить, что ветки A/B испускают реальный `EmitEvent(evt_q001_branch_resolved)`.

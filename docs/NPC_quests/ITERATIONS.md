@@ -1,5 +1,19 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-25 (T-QST03 — Q001 NPC definitions)
+
+**Задача:** Второй исполняемый этап Q001 — создать шесть NpcDefinition assets с привязкой к существующим FactionDefinition и каноническому NPC prefab, без создания DialogTree/QuestDefinition и без изменений WorldScene_0_0.
+**Коммит:** будет указан после создания коммита.
+**Изменения:**
+- `Assets/_Project/Quests/Data/Npcs/Q001/` — созданы NpcDefinition для Lyra, Bram, Veska, Noll, Kael и Sela.
+- Все шесть definitions используют канонический prefab `[Mira] - DON`T DELETE DEFOULT.prefab`; QuestDatabase и сцена не изменялись.
+- `docs/NPC_quests/Quests/001/001_ASH_UNDER_GLASS_DRAFT.md` — отмечено завершение NpcDefinition-части чеклиста.
+- `docs/NPC_quests/ITERATIONS.md` — добавлена запись этапа.
+**Результат:** шесть NPC definitions готовы для привязки DialogTree и quest refs на последующих этапах; scene placement отложен.
+
+---
+
+
 ## Итерация от 2026-08-25 (T-QST03 — Q001 data foundation)
 
 **Задача:** Первый исполняемый этап Q001 — создать 12 ItemData и аддитивно зарегистрировать их в ItemRegistry, без создания NPC/квестов/диалогов и без изменений WorldScene_0_0.

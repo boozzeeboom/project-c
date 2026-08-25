@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: dlg_sela_q001
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
   treeId: dlg_sela_q001
-  displayName: dialog.dlg_sela_q001.displayName
+  displayName: dialogue.dlg_sela_q001.displayName
   rootNodeId: greeting
   nodes:
   - nodeId: greeting
@@ -21,10 +21,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_sela_01
       speakerNpc: {fileID: 11400000, guid: a5819cc13d09a164792176e79c8d0055, type: 2}
-    text: dialog.dlg_sela_q001.node.greeting
+    text: dialogue.dlg_sela_q001.node.greeting
     portraitEmotion: neutral
     edges:
-    - label: dialog.dlg_sela_q001.option.testimony
+    - label: dialogue.dlg_sela_q001.option.testimony
       targetNodeId: testimony
       condition:
         type: 10
@@ -72,7 +72,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_sela_q001.option.quarantine_confirmation
+    - label: dialogue.dlg_sela_q001.option.quarantine_confirmation
       targetNodeId: quarantine_confirmation
       condition:
         type: 10
@@ -120,7 +120,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_sela_q001.option.branch_confirmation
+    - label: dialogue.dlg_sela_q001.option.branch_confirmation
       targetNodeId: quarantine_confirmation
       condition:
         type: 10
@@ -168,7 +168,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_sela_q001.option.incomplete
+    - label: dialogue.dlg_sela_q001.option.incomplete
       targetNodeId: incomplete
       condition:
         type: 10
@@ -230,7 +230,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_sela_01
       speakerNpc: {fileID: 11400000, guid: a5819cc13d09a164792176e79c8d0055, type: 2}
-    text: dialog.dlg_sela_q001.node.incomplete
+    text: dialogue.dlg_sela_q001.node.incomplete
     portraitEmotion: sad
     edges:
     - label: dialog.option.common.understood
@@ -267,10 +267,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_sela_01
       speakerNpc: {fileID: 11400000, guid: a5819cc13d09a164792176e79c8d0055, type: 2}
-    text: dialog.dlg_sela_q001.node.testimony
+    text: dialogue.dlg_sela_q001.node.testimony
     portraitEmotion: thoughtful
     edges:
-    - label: dialog.dlg_sela_q001.option.show_fragments
+    - label: dialogue.dlg_sela_q001.option.show_fragments
       targetNodeId: grant_fragment
       condition:
         type: 10
@@ -352,7 +352,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_sela_01
       speakerNpc: {fileID: 11400000, guid: a5819cc13d09a164792176e79c8d0055, type: 2}
-    text: dialog.dlg_sela_q001.node.grant_fragment
+    text: dialogue.dlg_sela_q001.node.grant_fragment
     portraitEmotion: encouraging
     edges:
     - label: dialog.option.common.thanks
@@ -401,7 +401,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_sela_01
       speakerNpc: {fileID: 11400000, guid: a5819cc13d09a164792176e79c8d0055, type: 2}
-    text: dialog.dlg_sela_q001.node.quarantine_confirmation
+    text: dialogue.dlg_sela_q001.node.quarantine_confirmation
     portraitEmotion: thoughtful
     edges:
     - label: dialog.option.common.understood

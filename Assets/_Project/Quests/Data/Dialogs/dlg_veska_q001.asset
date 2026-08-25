@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: dlg_veska_q001
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
   treeId: dlg_veska_q001
-  displayName: dialog.dlg_veska_q001.displayName
+  displayName: dialogue.dlg_veska_q001.displayName
   rootNodeId: greeting
   nodes:
   - nodeId: greeting
@@ -21,10 +21,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_veska_01
       speakerNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
-    text: dialog.dlg_veska_q001.node.greeting
+    text: dialogue.dlg_veska_q001.node.greeting
     portraitEmotion: neutral
     edges:
-    - label: dialog.dlg_veska_q001.option.technical_version
+    - label: dialogue.dlg_veska_q001.option.technical_version
       targetNodeId: technical
       condition:
         type: 10
@@ -72,7 +72,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_veska_q001.option.offer_science_reputation
+    - label: dialogue.dlg_veska_q001.option.offer_science_reputation
       targetNodeId: offer_science
       condition:
         type: 10
@@ -130,7 +130,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_veska_q001.option.offer_science_attitude
+    - label: dialogue.dlg_veska_q001.option.offer_science_attitude
       targetNodeId: offer_science
       condition:
         type: 10
@@ -188,7 +188,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_veska_q001.option.calibration
+    - label: dialogue.dlg_veska_q001.option.calibration
       targetNodeId: calibration
       condition:
         type: 10
@@ -236,7 +236,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_veska_q001.option.decode_lighthouse
+    - label: dialogue.dlg_veska_q001.option.decode_lighthouse
       targetNodeId: lighthouse
       condition:
         type: 10
@@ -284,7 +284,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_veska_q001.option.report
+    - label: dialogue.dlg_veska_q001.option.report
       targetNodeId: report
       condition:
         type: 10
@@ -332,7 +332,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_veska_q001.option.false_seal_warning
+    - label: dialogue.dlg_veska_q001.option.false_seal_warning
       targetNodeId: false_seal_warning
       condition:
         type: 10
@@ -390,7 +390,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_veska_q001.option.ambient
+    - label: dialogue.dlg_veska_q001.option.ambient
       targetNodeId: ambient
       condition:
         type: 10
@@ -452,7 +452,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_veska_01
       speakerNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
-    text: dialog.dlg_veska_q001.node.ambient
+    text: dialogue.dlg_veska_q001.node.ambient
     portraitEmotion: thoughtful
     edges:
     - label: dialog.option.common.understood
@@ -489,7 +489,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_veska_01
       speakerNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
-    text: dialog.dlg_veska_q001.node.technical
+    text: dialogue.dlg_veska_q001.node.technical
     portraitEmotion: thoughtful
     edges:
     - label: dialog.option.common.understood
@@ -526,10 +526,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_veska_01
       speakerNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
-    text: dialog.dlg_veska_q001.node.offer_science
+    text: dialogue.dlg_veska_q001.node.offer_science
     portraitEmotion: encouraging
     edges:
-    - label: dialog.dlg_veska_q001.option.accept_science
+    - label: dialogue.dlg_veska_q001.option.accept_science
       targetNodeId: calibration
       condition:
         type: 10
@@ -601,7 +601,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_veska_01
       speakerNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
-    text: dialog.dlg_veska_q001.node.calibration
+    text: dialogue.dlg_veska_q001.node.calibration
     portraitEmotion: neutral
     edges:
     - label: dialog.option.common.understood
@@ -638,7 +638,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_veska_01
       speakerNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
-    text: dialog.dlg_veska_q001.node.lighthouse
+    text: dialogue.dlg_veska_q001.node.lighthouse
     portraitEmotion: thoughtful
     edges:
     - label: dialog.option.common.understood
@@ -675,10 +675,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_veska_01
       speakerNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
-    text: dialog.dlg_veska_q001.node.report
+    text: dialogue.dlg_veska_q001.node.report
     portraitEmotion: happy
     edges:
-    - label: dialog.dlg_veska_q001.option.submit_report
+    - label: dialogue.dlg_veska_q001.option.submit_report
       targetNodeId: 
       condition:
         type: 10
@@ -724,10 +724,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_veska_01
       speakerNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
-    text: dialog.dlg_veska_q001.node.false_seal_warning
+    text: dialogue.dlg_veska_q001.node.false_seal_warning
     portraitEmotion: warning
     edges:
-    - label: dialog.dlg_veska_q001.option.present_false_seal
+    - label: dialogue.dlg_veska_q001.option.present_false_seal
       targetNodeId: false_seal_fail
       condition:
         type: 10
@@ -765,7 +765,7 @@ MonoBehaviour:
         itemRef: {fileID: 11400000, guid: 471c157230eb1f34692bfa3119aab4a9, type: 2}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_veska_q001.option.keep_evidence
+    - label: dialogue.dlg_veska_q001.option.keep_evidence
       targetNodeId: 
       condition:
         type: 10
@@ -799,7 +799,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_veska_01
       speakerNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
-    text: dialog.dlg_veska_q001.node.false_seal_fail
+    text: dialogue.dlg_veska_q001.node.false_seal_fail
     portraitEmotion: angry
     edges:
     - label: dialog.option.common.goodbye

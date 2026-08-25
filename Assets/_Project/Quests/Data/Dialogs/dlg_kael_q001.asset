@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: dlg_kael_q001
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
   treeId: dlg_kael_q001
-  displayName: dialog.dlg_kael_q001.displayName
+  displayName: dialogue.dlg_kael_q001.displayName
   rootNodeId: greeting
   nodes:
   - nodeId: greeting
@@ -21,10 +21,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_kael_01
       speakerNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
-    text: dialog.dlg_kael_q001.node.greeting
+    text: dialogue.dlg_kael_q001.node.greeting
     portraitEmotion: neutral
     edges:
-    - label: dialog.dlg_kael_q001.option.offer_silence
+    - label: dialogue.dlg_kael_q001.option.offer_silence
       targetNodeId: offer_silence
       condition:
         type: 10
@@ -82,7 +82,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_kael_q001.option.take_blackbox
+    - label: dialogue.dlg_kael_q001.option.take_blackbox
       targetNodeId: take_blackbox
       condition:
         type: 10
@@ -130,7 +130,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_kael_q001.option.exchange
+    - label: dialogue.dlg_kael_q001.option.exchange
       targetNodeId: exchange
       condition:
         type: 10
@@ -178,7 +178,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_kael_q001.option.ambient
+    - label: dialogue.dlg_kael_q001.option.ambient
       targetNodeId: neutral
       condition:
         type: 10
@@ -240,7 +240,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_kael_01
       speakerNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
-    text: dialog.dlg_kael_q001.node.neutral
+    text: dialogue.dlg_kael_q001.node.neutral
     portraitEmotion: neutral
     edges:
     - label: dialog.option.common.understood
@@ -277,10 +277,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_kael_01
       speakerNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
-    text: dialog.dlg_kael_q001.node.offer_silence
+    text: dialogue.dlg_kael_q001.node.offer_silence
     portraitEmotion: thoughtful
     edges:
-    - label: dialog.dlg_kael_q001.option.accept_silence
+    - label: dialogue.dlg_kael_q001.option.accept_silence
       targetNodeId: silent_intro
       condition:
         type: 10
@@ -352,7 +352,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_kael_01
       speakerNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
-    text: dialog.dlg_kael_q001.node.silent_intro
+    text: dialogue.dlg_kael_q001.node.silent_intro
     portraitEmotion: encouraging
     edges:
     - label: dialog.option.common.understood
@@ -389,7 +389,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_kael_01
       speakerNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
-    text: dialog.dlg_kael_q001.node.take_blackbox
+    text: dialogue.dlg_kael_q001.node.take_blackbox
     portraitEmotion: neutral
     edges:
     - label: dialog.option.common.understood
@@ -426,10 +426,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_kael_01
       speakerNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
-    text: dialog.dlg_kael_q001.node.exchange
+    text: dialogue.dlg_kael_q001.node.exchange
     portraitEmotion: thoughtful
     edges:
-    - label: dialog.dlg_kael_q001.option.sell_blackbox
+    - label: dialogue.dlg_kael_q001.option.sell_blackbox
       targetNodeId: betrayal_warning
       condition:
         type: 10
@@ -501,10 +501,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_kael_01
       speakerNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
-    text: dialog.dlg_kael_q001.node.betrayal_warning
+    text: dialogue.dlg_kael_q001.node.betrayal_warning
     portraitEmotion: warning
     edges:
-    - label: dialog.dlg_kael_q001.option.confirm_sale
+    - label: dialogue.dlg_kael_q001.option.confirm_sale
       targetNodeId: betrayal_fail
       condition:
         type: 10
@@ -542,7 +542,7 @@ MonoBehaviour:
         itemRef: {fileID: 11400000, guid: 1a6eb74d7532bc444b46bea4bbe6c8df, type: 2}
         itemType: 7
       hideIfUnavailable: 1
-    - label: dialog.dlg_kael_q001.option.cancel_sale
+    - label: dialogue.dlg_kael_q001.option.cancel_sale
       targetNodeId: 
       condition:
         type: 10
@@ -576,7 +576,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_kael_01
       speakerNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
-    text: dialog.dlg_kael_q001.node.betrayal_fail
+    text: dialogue.dlg_kael_q001.node.betrayal_fail
     portraitEmotion: angry
     edges:
     - label: dialog.option.common.goodbye

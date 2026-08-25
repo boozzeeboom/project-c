@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: dlg_noll_q001
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
   treeId: dlg_noll_q001
-  displayName: dialog.dlg_noll_q001.displayName
+  displayName: dialogue.dlg_noll_q001.displayName
   rootNodeId: greeting
   nodes:
   - nodeId: greeting
@@ -21,10 +21,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_noll_01
       speakerNpc: {fileID: 11400000, guid: ac41c6d98ebfb9e4dbf4f1c3ce68221f, type: 2}
-    text: dialog.dlg_noll_q001.node.greeting
+    text: dialogue.dlg_noll_q001.node.greeting
     portraitEmotion: neutral
     edges:
-    - label: dialog.dlg_noll_q001.option.check_story
+    - label: dialogue.dlg_noll_q001.option.check_story
       targetNodeId: check_story
       condition:
         type: 10
@@ -72,7 +72,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_noll_q001.option.manifest_failure
+    - label: dialogue.dlg_noll_q001.option.manifest_failure
       targetNodeId: manifest_warning
       condition:
         type: 10
@@ -130,7 +130,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_noll_q001.option.ambient
+    - label: dialogue.dlg_noll_q001.option.ambient
       targetNodeId: ambient
       condition:
         type: 10
@@ -192,7 +192,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_noll_01
       speakerNpc: {fileID: 11400000, guid: ac41c6d98ebfb9e4dbf4f1c3ce68221f, type: 2}
-    text: dialog.dlg_noll_q001.node.ambient
+    text: dialogue.dlg_noll_q001.node.ambient
     portraitEmotion: neutral
     edges:
     - label: dialog.option.common.understood
@@ -229,10 +229,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_noll_01
       speakerNpc: {fileID: 11400000, guid: ac41c6d98ebfb9e4dbf4f1c3ce68221f, type: 2}
-    text: dialog.dlg_noll_q001.node.check_story
+    text: dialogue.dlg_noll_q001.node.check_story
     portraitEmotion: thoughtful
     edges:
-    - label: dialog.dlg_noll_q001.option.take_false_manifest
+    - label: dialogue.dlg_noll_q001.option.take_false_manifest
       targetNodeId: manifest_taken
       condition:
         type: 10
@@ -260,7 +260,7 @@ MonoBehaviour:
         itemRef: {fileID: 11400000, guid: 9c1e32bf3a4714344975388e57d85653, type: 2}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_noll_q001.option.refuse_version
+    - label: dialogue.dlg_noll_q001.option.refuse_version
       targetNodeId: 
       condition:
         type: 10
@@ -322,10 +322,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_noll_01
       speakerNpc: {fileID: 11400000, guid: ac41c6d98ebfb9e4dbf4f1c3ce68221f, type: 2}
-    text: dialog.dlg_noll_q001.node.manifest_taken
+    text: dialogue.dlg_noll_q001.node.manifest_taken
     portraitEmotion: encouraging
     edges:
-    - label: dialog.dlg_noll_q001.option.present_false_manifest
+    - label: dialogue.dlg_noll_q001.option.present_false_manifest
       targetNodeId: manifest_warning
       condition:
         type: 10
@@ -417,10 +417,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_noll_01
       speakerNpc: {fileID: 11400000, guid: ac41c6d98ebfb9e4dbf4f1c3ce68221f, type: 2}
-    text: dialog.dlg_noll_q001.node.manifest_warning
+    text: dialogue.dlg_noll_q001.node.manifest_warning
     portraitEmotion: warning
     edges:
-    - label: dialog.dlg_noll_q001.option.confirm_false_manifest
+    - label: dialogue.dlg_noll_q001.option.confirm_false_manifest
       targetNodeId: manifest_fail
       condition:
         type: 10
@@ -458,7 +458,7 @@ MonoBehaviour:
         itemRef: {fileID: 11400000, guid: 9c1e32bf3a4714344975388e57d85653, type: 2}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_noll_q001.option.refuse_false_manifest
+    - label: dialogue.dlg_noll_q001.option.refuse_false_manifest
       targetNodeId: 
       condition:
         type: 10
@@ -492,7 +492,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_noll_01
       speakerNpc: {fileID: 11400000, guid: ac41c6d98ebfb9e4dbf4f1c3ce68221f, type: 2}
-    text: dialog.dlg_noll_q001.node.manifest_fail
+    text: dialogue.dlg_noll_q001.node.manifest_fail
     portraitEmotion: angry
     edges:
     - label: dialog.option.common.goodbye

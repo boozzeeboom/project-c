@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: dlg_lyra_q001
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
   treeId: dlg_lyra_q001
-  displayName: dialog.dlg_lyra_q001.displayName
+  displayName: dialogue.dlg_lyra_q001.displayName
   rootNodeId: greeting
   nodes:
   - nodeId: greeting
@@ -21,10 +21,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_lyra_01
       speakerNpc: {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
-    text: dialog.dlg_lyra_q001.node.greeting
+    text: dialogue.dlg_lyra_q001.node.greeting
     portraitEmotion: neutral
     edges:
-    - label: dialog.dlg_lyra_q001.option.offer_main
+    - label: dialogue.dlg_lyra_q001.option.offer_main
       targetNodeId: offer_main
       condition:
         type: 10
@@ -52,7 +52,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_lyra_q001.option.briefing
+    - label: dialogue.dlg_lyra_q001.option.briefing
       targetNodeId: briefing
       condition:
         type: 10
@@ -100,7 +100,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_lyra_q001.option.choose_route
+    - label: dialogue.dlg_lyra_q001.option.choose_route
       targetNodeId: choice_context
       condition:
         type: 10
@@ -148,7 +148,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_lyra_q001.option.final_truth
+    - label: dialogue.dlg_lyra_q001.option.final_truth
       targetNodeId: final_truth
       condition:
         type: 10
@@ -196,7 +196,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_lyra_q001.option.final_compromised
+    - label: dialogue.dlg_lyra_q001.option.final_compromised
       targetNodeId: final_compromised
       condition:
         type: 10
@@ -244,7 +244,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_lyra_q001.option.failed_fallback
+    - label: dialogue.dlg_lyra_q001.option.failed_fallback
       targetNodeId: failed_fallback
       condition:
         type: 10
@@ -316,10 +316,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_lyra_01
       speakerNpc: {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
-    text: dialog.dlg_lyra_q001.node.offer_main
+    text: dialogue.dlg_lyra_q001.node.offer_main
     portraitEmotion: thoughtful
     edges:
-    - label: dialog.dlg_lyra_q001.option.accept_main
+    - label: dialogue.dlg_lyra_q001.option.accept_main
       targetNodeId: briefing
       condition:
         type: 10
@@ -391,7 +391,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_lyra_01
       speakerNpc: {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
-    text: dialog.dlg_lyra_q001.node.briefing
+    text: dialogue.dlg_lyra_q001.node.briefing
     portraitEmotion: thoughtful
     edges:
     - label: dialog.option.common.understood
@@ -428,7 +428,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_lyra_01
       speakerNpc: {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
-    text: dialog.dlg_lyra_q001.node.choice_context
+    text: dialogue.dlg_lyra_q001.node.choice_context
     portraitEmotion: neutral
     edges:
     - label: dialog.option.common.understood
@@ -465,10 +465,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_lyra_01
       speakerNpc: {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
-    text: dialog.dlg_lyra_q001.node.final_truth
+    text: dialogue.dlg_lyra_q001.node.final_truth
     portraitEmotion: happy
     edges:
-    - label: dialog.dlg_lyra_q001.option.submit_final_report
+    - label: dialogue.dlg_lyra_q001.option.submit_final_report
       targetNodeId: 
       condition:
         type: 10
@@ -526,10 +526,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_lyra_01
       speakerNpc: {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
-    text: dialog.dlg_lyra_q001.node.final_compromised
+    text: dialogue.dlg_lyra_q001.node.final_compromised
     portraitEmotion: thoughtful
     edges:
-    - label: dialog.dlg_lyra_q001.option.submit_final_report
+    - label: dialogue.dlg_lyra_q001.option.submit_final_report
       targetNodeId: 
       condition:
         type: 10
@@ -587,7 +587,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_lyra_01
       speakerNpc: {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
-    text: dialog.dlg_lyra_q001.node.failed_fallback
+    text: dialogue.dlg_lyra_q001.node.failed_fallback
     portraitEmotion: sad
     edges:
     - label: dialog.option.common.goodbye

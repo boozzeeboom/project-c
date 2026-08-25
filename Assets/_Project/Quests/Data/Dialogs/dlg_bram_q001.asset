@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: dlg_bram_q001
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
   treeId: dlg_bram_q001
-  displayName: dialog.dlg_bram_q001.displayName
+  displayName: dialogue.dlg_bram_q001.displayName
   rootNodeId: greeting
   nodes:
   - nodeId: greeting
@@ -21,10 +21,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_bram_01
       speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
-    text: dialog.dlg_bram_q001.node.greeting
+    text: dialogue.dlg_bram_q001.node.greeting
     portraitEmotion: neutral
     edges:
-    - label: dialog.dlg_bram_q001.option.ask_evidence
+    - label: dialogue.dlg_bram_q001.option.ask_evidence
       targetNodeId: evidence
       condition:
         type: 10
@@ -72,7 +72,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_bram_q001.option.offer_salvage
+    - label: dialogue.dlg_bram_q001.option.offer_salvage
       targetNodeId: salvage_offer
       condition:
         type: 10
@@ -120,7 +120,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_bram_q001.option.salvage_instructions
+    - label: dialogue.dlg_bram_q001.option.salvage_instructions
       targetNodeId: salvage_intro
       condition:
         type: 10
@@ -168,7 +168,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_bram_q001.option.recover_blackbox
+    - label: dialogue.dlg_bram_q001.option.recover_blackbox
       targetNodeId: recover_blackbox
       condition:
         type: 10
@@ -216,7 +216,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.dlg_bram_q001.option.return_blackbox
+    - label: dialogue.dlg_bram_q001.option.return_blackbox
       targetNodeId: return_blackbox
       condition:
         type: 10
@@ -308,7 +308,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_bram_01
       speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
-    text: dialog.dlg_bram_q001.node.evidence
+    text: dialogue.dlg_bram_q001.node.evidence
     portraitEmotion: thoughtful
     edges:
     - label: dialog.option.common.understood
@@ -345,10 +345,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_bram_01
       speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
-    text: dialog.dlg_bram_q001.node.salvage_offer
+    text: dialogue.dlg_bram_q001.node.salvage_offer
     portraitEmotion: neutral
     edges:
-    - label: dialog.dlg_bram_q001.option.accept_salvage
+    - label: dialogue.dlg_bram_q001.option.accept_salvage
       targetNodeId: salvage_intro
       condition:
         type: 10
@@ -420,7 +420,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_bram_01
       speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
-    text: dialog.dlg_bram_q001.node.salvage_intro
+    text: dialogue.dlg_bram_q001.node.salvage_intro
     portraitEmotion: thoughtful
     edges:
     - label: dialog.option.common.understood
@@ -457,7 +457,7 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_bram_01
       speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
-    text: dialog.dlg_bram_q001.node.recover_blackbox
+    text: dialogue.dlg_bram_q001.node.recover_blackbox
     portraitEmotion: warning
     edges:
     - label: dialog.option.common.understood
@@ -494,10 +494,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_bram_01
       speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
-    text: dialog.dlg_bram_q001.node.return_blackbox
+    text: dialogue.dlg_bram_q001.node.return_blackbox
     portraitEmotion: neutral
     edges:
-    - label: dialog.dlg_bram_q001.option.deliver_blackbox
+    - label: dialogue.dlg_bram_q001.option.deliver_blackbox
       targetNodeId: turnin_confirm
       condition:
         type: 10
@@ -569,10 +569,10 @@ MonoBehaviour:
       speakerKind: 0
       refId: npc_bram_01
       speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
-    text: dialog.dlg_bram_q001.node.turnin_confirm
+    text: dialogue.dlg_bram_q001.node.turnin_confirm
     portraitEmotion: encouraging
     edges:
-    - label: dialog.dlg_bram_q001.option.confirm_delivery
+    - label: dialogue.dlg_bram_q001.option.confirm_delivery
       targetNodeId: 
       condition:
         type: 10

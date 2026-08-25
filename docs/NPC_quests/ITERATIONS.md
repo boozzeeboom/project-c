@@ -3,7 +3,7 @@
 ## Итерация от 2026-08-25 (T-QST05 — Q001 bindings and registry)
 
 **Задача:** Пятый исполняемый этап Q001 — связать QuestDefinition с DialogTree/NpcDefinition и выполнить additive-регистрацию Q001-ассетов в QuestDatabase без изменений сцены.
-**Коммит:** будет создан после проверки этапа.
+**Коммит:** `3969133f` — T-QST05: bind Q001 quest assets
 **Изменения:**
 - В шести Q001 `NpcDefinition` назначены соответствующие `defaultDialogTree`, `questOfferRefs` и `questTurnInRefs`; legacy string-массивы сохранены.
 - В шести Q001 `DialogTree` заполнены object references для Q001 `QuestDefinition` в quest conditions/actions и для Q001 `NpcDefinition` в NPC-related references; строковые fallback-поля сохранены.

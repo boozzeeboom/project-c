@@ -3,7 +3,7 @@
 ## Итерация от 2026-08-25 (T-QST04 — Q001 QuestDefinitions)
 
 **Задача:** Четвёртый исполняемый этап Q001 — создать четыре QuestDefinition assets по draft без регистрации в QuestDatabase, без изменений DialogTree/NpcDefinition и без изменений WorldScene_0_0.
-**Коммит:** (pending — после создания)
+**Коммит:** `611beb70` — T-QST04: Q001 QuestDefinitions
 **Изменения:**
 - `Assets/_Project/Quests/Data/Quests/q_001_ash_under_glass.asset` — главный квест: 7 linear stages, 13 required objectives, `GuildOfThoughts`, main reward `800 credits + item_q001_archive_shard ×1`.
 - `Assets/_Project/Quests/Data/Quests/q_001a_signal_reconstruction.asset` — научная ветка: 3 stages, 6 required objectives, `EmitEvent(evt_q001_branch_resolved)` и `AddNpcAttitude(npc_veska_01, +10)` в финальном stage.

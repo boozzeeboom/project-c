@@ -1,5 +1,11 @@
 # Итерации разработки — NPC Quests
 
+## Iteration 2026-08-25 (T-UI11 - Q001 dialogue localization repair)
+
+Task: complete stages 3-4 of the Q001 dialogue localization repair plan.
+Result: 97 Q001-specific keys plus 2 common keys added; 102 keys, 42 nodes, zero missing translations, zero dangling edges, zero unreachable nodes; compile check passed.
+Next: manual Play Mode RU -> EN -> RU run.
+
 ## Итерация от 2026-08-25 (T-QST05 — Q001 bindings and registry)
 
 **Задача:** Пятый исполняемый этап Q001 — связать QuestDefinition с DialogTree/NpcDefinition и выполнить additive-регистрацию Q001-ассетов в QuestDatabase без изменений сцены.

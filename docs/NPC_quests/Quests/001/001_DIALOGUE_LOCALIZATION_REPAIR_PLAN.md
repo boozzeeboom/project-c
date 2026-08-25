@@ -159,11 +159,11 @@ Play Mode и screenshots выполняются вручную пользова�
 - [x] Этап 0 — baseline. Отчёт: `001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_00_BASELINE.md`.
 - [x] Этап 1 — статический аудит. Отчёт: `001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_01_AUDIT.md`.
 - [x] Этап 2 — нормализация Q001 ключей. Отчёт: `001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_02_KEY_NORMALIZATION.md`.
-- [ ] Этап 3 — аддитивное добавление RU/EN.
-- [ ] Этап 4 — пост-изменительный контроль.
+- [x] Этап 3 — аддитивное добавление RU/EN. Отчёт: `001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_03_ADDITIVE_TRANSLATIONS.md`.
+- [x] Этап 4 — пост-изменительный контроль. Отчёт: `001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_03_ADDITIVE_TRANSLATIONS.md`.
 - [ ] Этап 5 — ручной Play Mode-прогон.
 - [ ] Этап 6 — документация и фиксация результата.
 
 ## Следующее действие
 
-Этапы 0–2 завершены. Следующее действие — Этап 3: аддитивно добавить RU/EN значения только для 97 нормализованных Q001-specific ключей. Общие ключи не перезаписывать и не пересобирать.
+Этапы 0–4 завершены. Следующее действие — Этап 5: ручной Play Mode-прогон RU → EN → RU для шести Q001 NPC, включая обычный диалог Mira и проверку отсутствия literal localization keys.

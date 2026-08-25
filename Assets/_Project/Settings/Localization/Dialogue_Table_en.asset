@@ -178,6 +178,406 @@ MonoBehaviour:
     m_Localized: Return to Mira after MarketZone_Primium
     m_Metadata:
       m_Items: []
+  - m_Id: 7279836920717312
+    m_Localized: "Bram \u2014 Q001 dialogue"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836958466048
+    m_Localized: 'Bram: One container was opened from the inside.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660352
+    m_Localized: 'Bram: The signal from the glass archive is active again.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660353
+    m_Localized: 'Bram: Bring the expedition black box back intact.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660354
+    m_Localized: 'Bram: You have the black box; now bring it to Bram.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660355
+    m_Localized: 'Bram: Open the black box away from the quarantine site.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660356
+    m_Localized: 'Bram: The black box can still be recovered.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660357
+    m_Localized: 'Bram: Confirm that you are delivering the black box.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660358
+    m_Localized: Accept the salvage route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854656
+    m_Localized: Ask about the evidence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854657
+    m_Localized: Confirm delivery
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854658
+    m_Localized: Deliver the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854659
+    m_Localized: Ask about salvage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854660
+    m_Localized: Recover the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854661
+    m_Localized: Return the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854662
+    m_Localized: Request salvage instructions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854663
+    m_Localized: "Kael \u2014 Q001 dialogue"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854664
+    m_Localized: 'Kael: The exchange has destroyed the case.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048960
+    m_Localized: 'Kael: Selling the black box will betray the investigation.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048961
+    m_Localized: 'Kael: We can exchange the black box for a quiet payment.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048962
+    m_Localized: 'Kael: The signal from the glass archive is active again.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048963
+    m_Localized: 'Kael: The less said about the archive, the safer everyone is.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048964
+    m_Localized: 'Kael: There is money in keeping the archive silent.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048965
+    m_Localized: 'Kael: Archive record: silent_intro.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048966
+    m_Localized: 'Kael: Take the black box and bring it to me.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048967
+    m_Localized: Accept the silent route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048968
+    m_Localized: Ask about the archive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048969
+    m_Localized: Cancel the sale
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048970
+    m_Localized: Confirm the sale
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048971
+    m_Localized: Discuss the exchange
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048972
+    m_Localized: Hear the silent offer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048973
+    m_Localized: Sell the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048974
+    m_Localized: Take the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048975
+    m_Localized: "Lyra \u2014 Q001 dialogue"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048976
+    m_Localized: 'Lyra: Collect independent evidence before choosing a route.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048977
+    m_Localized: 'Lyra: Three routes remain open, and the choice is yours.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048978
+    m_Localized: 'Lyra: The investigation has failed.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048979
+    m_Localized: 'Lyra: The evidence is useful, but the broker compromised part of
+      the data.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048980
+    m_Localized: 'Lyra: The archive sealed contaminated cargo and repeated its emergency
+      signal.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048981
+    m_Localized: 'Lyra: The signal from the glass archive is active again.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048982
+    m_Localized: 'Lyra: I need you to investigate the archive.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048983
+    m_Localized: Accept the investigation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048984
+    m_Localized: Ask for the briefing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048985
+    m_Localized: Choose an investigation route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048986
+    m_Localized: End the conversation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048987
+    m_Localized: Report the compromised evidence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048988
+    m_Localized: Report the truth
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048989
+    m_Localized: Hear the full proposal
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048990
+    m_Localized: Submit the final report
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048991
+    m_Localized: "Noll \u2014 Q001 dialogue"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048992
+    m_Localized: 'Noll: The archive still remembers what happened.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048993
+    m_Localized: 'Noll: The broker story does not match the evidence.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048994
+    m_Localized: 'Noll: The signal from the glass archive is active again.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048995
+    m_Localized: 'Noll: The false manifest has ruined the investigation.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048996
+    m_Localized: 'Noll: You accepted the false manifest.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048997
+    m_Localized: 'Noll: This manifest is forged; confirm the risk before presenting
+      it.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048998
+    m_Localized: Ask about the archive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048999
+    m_Localized: Check the broker's story
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049000
+    m_Localized: Confirm the false manifest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049001
+    m_Localized: Ask about the failed manifest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049002
+    m_Localized: Present the false manifest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049003
+    m_Localized: Refuse the false manifest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049004
+    m_Localized: Reject the convenient version
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049005
+    m_Localized: Take the false manifest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049006
+    m_Localized: "Sela \u2014 Q001 dialogue"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049007
+    m_Localized: 'Sela: Take this fragment; it completes part of the record.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049008
+    m_Localized: 'Sela: The signal from the glass archive is active again.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049009
+    m_Localized: 'Sela: My testimony is incomplete, but the fragments may help.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049010
+    m_Localized: 'Sela: The signal belongs to a quarantine vault, not a military
+      beacon.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243264
+    m_Localized: 'Sela: I operated the quarantine archive before it was abandoned.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243265
+    m_Localized: Ask about the branch
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243266
+    m_Localized: Ask about the incomplete record
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243267
+    m_Localized: Confirm the quarantine version
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243268
+    m_Localized: Show the fragments
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243269
+    m_Localized: Ask for testimony
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243270
+    m_Localized: "Veska \u2014 Q001 dialogue"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243271
+    m_Localized: 'Veska: The archive still remembers what happened.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243272
+    m_Localized: 'Veska: The resonance lens is calibrated.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243273
+    m_Localized: 'Veska: The false seal has exposed the deception.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243274
+    m_Localized: 'Veska: That seal is false; presenting it will compromise the investigation.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243275
+    m_Localized: 'Veska: The signal from the glass archive is active again.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243276
+    m_Localized: 'Veska: The silent lighthouse confirms the archive frequency.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243277
+    m_Localized: 'Veska: I can reconstruct the signal with the right equipment.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243278
+    m_Localized: 'Veska: The signal matches the quarantine storage protocol.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243279
+    m_Localized: 'Veska: The signal uses an emergency quarantine frequency.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243280
+    m_Localized: Accept the scientific route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243281
+    m_Localized: Ask about the archive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243282
+    m_Localized: Discuss calibration
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243283
+    m_Localized: Decode the lighthouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243284
+    m_Localized: Present the false seal
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243285
+    m_Localized: Keep the evidence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243286
+    m_Localized: Ask Veska for help
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243287
+    m_Localized: Offer scientific cooperation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243288
+    m_Localized: Present the seal
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243289
+    m_Localized: Request the report
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243290
+    m_Localized: Submit the report
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243291
+    m_Localized: Ask for the technical version
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7280795923161088
+    m_Localized: Not now
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7280796028018688
+    m_Localized: Cancel
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

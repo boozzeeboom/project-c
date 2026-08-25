@@ -206,7 +206,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.option.common.goodbye
+    - label: dialogue.option.common.goodbye
       targetNodeId: 
       condition:
         type: 10
@@ -243,7 +243,7 @@ MonoBehaviour:
     text: dialogue.dlg_kael_q001.node.neutral
     portraitEmotion: neutral
     edges:
-    - label: dialog.option.common.understood
+    - label: dialogue.option.common.understood
       targetNodeId: 
       condition:
         type: 10
@@ -318,7 +318,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.option.common.not_now
+    - label: dialogue.option.common.not_now
       targetNodeId: 
       condition:
         type: 10
@@ -355,7 +355,7 @@ MonoBehaviour:
     text: dialogue.dlg_kael_q001.node.silent_intro
     portraitEmotion: encouraging
     edges:
-    - label: dialog.option.common.understood
+    - label: dialogue.option.common.understood
       targetNodeId: 
       condition:
         type: 10
@@ -392,7 +392,7 @@ MonoBehaviour:
     text: dialogue.dlg_kael_q001.node.take_blackbox
     portraitEmotion: neutral
     edges:
-    - label: dialog.option.common.understood
+    - label: dialogue.option.common.understood
       targetNodeId: 
       condition:
         type: 10
@@ -467,7 +467,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.option.common.not_now
+    - label: dialogue.option.common.not_now
       targetNodeId: 
       condition:
         type: 10
@@ -579,7 +579,7 @@ MonoBehaviour:
     text: dialogue.dlg_kael_q001.node.betrayal_fail
     portraitEmotion: angry
     edges:
-    - label: dialog.option.common.goodbye
+    - label: dialogue.option.common.goodbye
       targetNodeId: 
       condition:
         type: 10

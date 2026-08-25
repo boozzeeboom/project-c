@@ -179,6 +179,402 @@ MonoBehaviour:
     m_Key: dialogue.quest.onboarding_alfa.objective.return_mira_after_market
     m_Metadata:
       m_Items: []
+  - m_Id: 7279836920717312
+    m_Key: dialogue.dlg_bram_q001.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836958466048
+    m_Key: dialogue.dlg_bram_q001.node.evidence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660352
+    m_Key: dialogue.dlg_bram_q001.node.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660353
+    m_Key: dialogue.dlg_bram_q001.node.recover_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660354
+    m_Key: dialogue.dlg_bram_q001.node.return_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660355
+    m_Key: dialogue.dlg_bram_q001.node.salvage_intro
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660356
+    m_Key: dialogue.dlg_bram_q001.node.salvage_offer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660357
+    m_Key: dialogue.dlg_bram_q001.node.turnin_confirm
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836962660358
+    m_Key: dialogue.dlg_bram_q001.option.accept_salvage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854656
+    m_Key: dialogue.dlg_bram_q001.option.ask_evidence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854657
+    m_Key: dialogue.dlg_bram_q001.option.confirm_delivery
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854658
+    m_Key: dialogue.dlg_bram_q001.option.deliver_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854659
+    m_Key: dialogue.dlg_bram_q001.option.offer_salvage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854660
+    m_Key: dialogue.dlg_bram_q001.option.recover_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854661
+    m_Key: dialogue.dlg_bram_q001.option.return_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854662
+    m_Key: dialogue.dlg_bram_q001.option.salvage_instructions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854663
+    m_Key: dialogue.dlg_kael_q001.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836966854664
+    m_Key: dialogue.dlg_kael_q001.node.betrayal_fail
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048960
+    m_Key: dialogue.dlg_kael_q001.node.betrayal_warning
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048961
+    m_Key: dialogue.dlg_kael_q001.node.exchange
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048962
+    m_Key: dialogue.dlg_kael_q001.node.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048963
+    m_Key: dialogue.dlg_kael_q001.node.neutral
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048964
+    m_Key: dialogue.dlg_kael_q001.node.offer_silence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048965
+    m_Key: dialogue.dlg_kael_q001.node.silent_intro
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048966
+    m_Key: dialogue.dlg_kael_q001.node.take_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048967
+    m_Key: dialogue.dlg_kael_q001.option.accept_silence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048968
+    m_Key: dialogue.dlg_kael_q001.option.ambient
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048969
+    m_Key: dialogue.dlg_kael_q001.option.cancel_sale
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048970
+    m_Key: dialogue.dlg_kael_q001.option.confirm_sale
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048971
+    m_Key: dialogue.dlg_kael_q001.option.exchange
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048972
+    m_Key: dialogue.dlg_kael_q001.option.offer_silence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048973
+    m_Key: dialogue.dlg_kael_q001.option.sell_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048974
+    m_Key: dialogue.dlg_kael_q001.option.take_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048975
+    m_Key: dialogue.dlg_lyra_q001.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048976
+    m_Key: dialogue.dlg_lyra_q001.node.briefing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048977
+    m_Key: dialogue.dlg_lyra_q001.node.choice_context
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048978
+    m_Key: dialogue.dlg_lyra_q001.node.failed_fallback
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048979
+    m_Key: dialogue.dlg_lyra_q001.node.final_compromised
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048980
+    m_Key: dialogue.dlg_lyra_q001.node.final_truth
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048981
+    m_Key: dialogue.dlg_lyra_q001.node.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048982
+    m_Key: dialogue.dlg_lyra_q001.node.offer_main
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048983
+    m_Key: dialogue.dlg_lyra_q001.option.accept_main
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048984
+    m_Key: dialogue.dlg_lyra_q001.option.briefing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048985
+    m_Key: dialogue.dlg_lyra_q001.option.choose_route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048986
+    m_Key: dialogue.dlg_lyra_q001.option.failed_fallback
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048987
+    m_Key: dialogue.dlg_lyra_q001.option.final_compromised
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048988
+    m_Key: dialogue.dlg_lyra_q001.option.final_truth
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048989
+    m_Key: dialogue.dlg_lyra_q001.option.offer_main
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048990
+    m_Key: dialogue.dlg_lyra_q001.option.submit_final_report
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048991
+    m_Key: dialogue.dlg_noll_q001.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048992
+    m_Key: dialogue.dlg_noll_q001.node.ambient
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048993
+    m_Key: dialogue.dlg_noll_q001.node.check_story
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048994
+    m_Key: dialogue.dlg_noll_q001.node.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048995
+    m_Key: dialogue.dlg_noll_q001.node.manifest_fail
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048996
+    m_Key: dialogue.dlg_noll_q001.node.manifest_taken
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048997
+    m_Key: dialogue.dlg_noll_q001.node.manifest_warning
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048998
+    m_Key: dialogue.dlg_noll_q001.option.ambient
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971048999
+    m_Key: dialogue.dlg_noll_q001.option.check_story
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049000
+    m_Key: dialogue.dlg_noll_q001.option.confirm_false_manifest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049001
+    m_Key: dialogue.dlg_noll_q001.option.manifest_failure
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049002
+    m_Key: dialogue.dlg_noll_q001.option.present_false_manifest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049003
+    m_Key: dialogue.dlg_noll_q001.option.refuse_false_manifest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049004
+    m_Key: dialogue.dlg_noll_q001.option.refuse_version
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049005
+    m_Key: dialogue.dlg_noll_q001.option.take_false_manifest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049006
+    m_Key: dialogue.dlg_sela_q001.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049007
+    m_Key: dialogue.dlg_sela_q001.node.grant_fragment
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049008
+    m_Key: dialogue.dlg_sela_q001.node.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049009
+    m_Key: dialogue.dlg_sela_q001.node.incomplete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836971049010
+    m_Key: dialogue.dlg_sela_q001.node.quarantine_confirmation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243264
+    m_Key: dialogue.dlg_sela_q001.node.testimony
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243265
+    m_Key: dialogue.dlg_sela_q001.option.branch_confirmation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243266
+    m_Key: dialogue.dlg_sela_q001.option.incomplete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243267
+    m_Key: dialogue.dlg_sela_q001.option.quarantine_confirmation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243268
+    m_Key: dialogue.dlg_sela_q001.option.show_fragments
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243269
+    m_Key: dialogue.dlg_sela_q001.option.testimony
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243270
+    m_Key: dialogue.dlg_veska_q001.displayName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243271
+    m_Key: dialogue.dlg_veska_q001.node.ambient
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243272
+    m_Key: dialogue.dlg_veska_q001.node.calibration
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243273
+    m_Key: dialogue.dlg_veska_q001.node.false_seal_fail
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243274
+    m_Key: dialogue.dlg_veska_q001.node.false_seal_warning
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243275
+    m_Key: dialogue.dlg_veska_q001.node.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243276
+    m_Key: dialogue.dlg_veska_q001.node.lighthouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243277
+    m_Key: dialogue.dlg_veska_q001.node.offer_science
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243278
+    m_Key: dialogue.dlg_veska_q001.node.report
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243279
+    m_Key: dialogue.dlg_veska_q001.node.technical
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243280
+    m_Key: dialogue.dlg_veska_q001.option.accept_science
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243281
+    m_Key: dialogue.dlg_veska_q001.option.ambient
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243282
+    m_Key: dialogue.dlg_veska_q001.option.calibration
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243283
+    m_Key: dialogue.dlg_veska_q001.option.decode_lighthouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243284
+    m_Key: dialogue.dlg_veska_q001.option.false_seal_warning
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243285
+    m_Key: dialogue.dlg_veska_q001.option.keep_evidence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243286
+    m_Key: dialogue.dlg_veska_q001.option.offer_science_attitude
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243287
+    m_Key: dialogue.dlg_veska_q001.option.offer_science_reputation
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243288
+    m_Key: dialogue.dlg_veska_q001.option.present_false_seal
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243289
+    m_Key: dialogue.dlg_veska_q001.option.report
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243290
+    m_Key: dialogue.dlg_veska_q001.option.submit_report
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7279836975243291
+    m_Key: dialogue.dlg_veska_q001.option.technical_version
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7280795923161088
+    m_Key: dialogue.option.common.not_now
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7280796028018688
+    m_Key: dialogue.option.common.cancel
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

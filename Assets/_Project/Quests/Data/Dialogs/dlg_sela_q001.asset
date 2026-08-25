@@ -196,7 +196,7 @@ MonoBehaviour:
         itemRef: {fileID: 0}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.option.common.goodbye
+    - label: dialogue.option.common.goodbye
       targetNodeId: 
       condition:
         type: 10
@@ -233,7 +233,7 @@ MonoBehaviour:
     text: dialogue.dlg_sela_q001.node.incomplete
     portraitEmotion: sad
     edges:
-    - label: dialog.option.common.understood
+    - label: dialogue.option.common.understood
       targetNodeId: 
       condition:
         type: 10
@@ -318,7 +318,7 @@ MonoBehaviour:
         itemRef: {fileID: 11400000, guid: 22d7fb5782edbb641a0b78211c6d4a25, type: 2}
         itemType: 0
       hideIfUnavailable: 1
-    - label: dialog.option.common.not_now
+    - label: dialogue.option.common.not_now
       targetNodeId: 
       condition:
         type: 10
@@ -355,7 +355,7 @@ MonoBehaviour:
     text: dialogue.dlg_sela_q001.node.grant_fragment
     portraitEmotion: encouraging
     edges:
-    - label: dialog.option.common.thanks
+    - label: dialogue.option.common.thanks
       targetNodeId: 
       condition:
         type: 10
@@ -404,7 +404,7 @@ MonoBehaviour:
     text: dialogue.dlg_sela_q001.node.quarantine_confirmation
     portraitEmotion: thoughtful
     edges:
-    - label: dialog.option.common.understood
+    - label: dialogue.option.common.understood
       targetNodeId: 
       condition:
         type: 10

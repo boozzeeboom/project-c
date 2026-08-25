@@ -1,5 +1,18 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-25 (T-QST03 — Q001 data foundation)
+
+**Задача:** Первый исполняемый этап Q001 — создать 12 ItemData и аддитивно зарегистрировать их в ItemRegistry, без создания NPC/квестов/диалогов и без изменений WorldScene_0_0.
+**Коммит:** будет указан после создания коммита.
+**Изменения:**
+- `Assets/_Project/Resources/Items/Q001/` — созданы 12 ItemData assets со стабильными Q001 ID.
+- `Assets/_Project/Resources/Items/Data/ItemRegistry.asset` — добавлены записи ID 2017–2028; существующие записи сохранены.
+- `docs/NPC_quests/Quests/001/001_ASH_UNDER_GLASS_DRAFT.md` — отмечено завершение ItemData-части статического чеклиста.
+- `docs/NPC_quests/ITERATIONS.md` — добавлена запись этапа.
+**Результат:** ItemData готовы для object references на следующих этапах; scene placement, NPC, DialogTree и QuestDefinition ещё не менялись.
+
+---
+
 ## Итерация от 2026-08-16 (T-Q22 fix)
 
 **Задача:** Исправить архитектуру `TalkToNpc` и убрать отсутствие objectives сразу после принятия квеста.

@@ -3,7 +3,7 @@
 ## Итерация от 2026-08-25 (T-QST03 — Q001 data foundation)
 
 **Задача:** Первый исполняемый этап Q001 — создать 12 ItemData и аддитивно зарегистрировать их в ItemRegistry, без создания NPC/квестов/диалогов и без изменений WorldScene_0_0.
-**Коммит:** будет указан после создания коммита.
+**Коммит:** `945df1e7` — T-QST03: Q001 item data foundation
 **Изменения:**
 - `Assets/_Project/Resources/Items/Q001/` — созданы 12 ItemData assets со стабильными Q001 ID.
 - `Assets/_Project/Resources/Items/Data/ItemRegistry.asset` — добавлены записи ID 2017–2028; существующие записи сохранены.

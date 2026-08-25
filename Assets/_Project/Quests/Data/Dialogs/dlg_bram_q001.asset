@@ -1,0 +1,632 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bec96c5c83d6d5f4f8baed538e2e4fde, type: 3}
+  m_Name: dlg_bram_q001
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
+  treeId: dlg_bram_q001
+  displayName: dialog.dlg_bram_q001.displayName
+  rootNodeId: greeting
+  nodes:
+  - nodeId: greeting
+    speaker:
+      speakerKind: 0
+      refId: npc_bram_01
+      speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+    text: dialog.dlg_bram_q001.node.greeting
+    portraitEmotion: neutral
+    edges:
+    - label: dialog.dlg_bram_q001.option.ask_evidence
+      targetNodeId: evidence
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions:
+      - type: 20
+        stringParam: q_001_ash_under_glass
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      - type: 21
+        stringParam: q_001_ash_under_glass
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: st_q001_collect_first_evidence
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialog.dlg_bram_q001.option.offer_salvage
+      targetNodeId: salvage_offer
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions:
+      - type: 20
+        stringParam: q_001_ash_under_glass
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      - type: 21
+        stringParam: q_001_ash_under_glass
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: st_q001_wait_branch_resolution
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 10
+        stringParam: q_001b_blackbox_salvage
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialog.dlg_bram_q001.option.salvage_instructions
+      targetNodeId: salvage_intro
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions:
+      - type: 20
+        stringParam: q_001b_blackbox_salvage
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      - type: 21
+        stringParam: q_001b_blackbox_salvage
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: st_q001b_bram_method
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialog.dlg_bram_q001.option.recover_blackbox
+      targetNodeId: recover_blackbox
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions:
+      - type: 20
+        stringParam: q_001b_blackbox_salvage
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      - type: 21
+        stringParam: q_001b_blackbox_salvage
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: st_q001b_recover_blackbox
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialog.dlg_bram_q001.option.return_blackbox
+      targetNodeId: return_blackbox
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions:
+      - type: 20
+        stringParam: q_001b_blackbox_salvage
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      - type: 21
+        stringParam: q_001b_blackbox_salvage
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: st_q001b_return_blackbox
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      - type: 10
+        stringParam: item_q001_blackbox_core
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 11400000, guid: 1a6eb74d7532bc444b46bea4bbe6c8df, type: 2}
+        stageIdParam: 
+        intParam: 1
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialog.option.common.goodbye
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  - nodeId: evidence
+    speaker:
+      speakerKind: 0
+      refId: npc_bram_01
+      speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+    text: dialog.dlg_bram_q001.node.evidence
+    portraitEmotion: thoughtful
+    edges:
+    - label: dialog.option.common.understood
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  - nodeId: salvage_offer
+    speaker:
+      speakerKind: 0
+      refId: npc_bram_01
+      speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+    text: dialog.dlg_bram_q001.node.salvage_offer
+    portraitEmotion: neutral
+    edges:
+    - label: dialog.dlg_bram_q001.option.accept_salvage
+      targetNodeId: salvage_intro
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions:
+      - type: 23
+        stringParam: q_001b_blackbox_salvage
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 14
+        stringParam: q_001b_blackbox_salvage
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialog.option.common.not_now
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  - nodeId: salvage_intro
+    speaker:
+      speakerKind: 0
+      refId: npc_bram_01
+      speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+    text: dialog.dlg_bram_q001.node.salvage_intro
+    portraitEmotion: thoughtful
+    edges:
+    - label: dialog.option.common.understood
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  - nodeId: recover_blackbox
+    speaker:
+      speakerKind: 0
+      refId: npc_bram_01
+      speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+    text: dialog.dlg_bram_q001.node.recover_blackbox
+    portraitEmotion: warning
+    edges:
+    - label: dialog.option.common.understood
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  - nodeId: return_blackbox
+    speaker:
+      speakerKind: 0
+      refId: npc_bram_01
+      speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+    text: dialog.dlg_bram_q001.node.return_blackbox
+    portraitEmotion: neutral
+    edges:
+    - label: dialog.dlg_bram_q001.option.deliver_blackbox
+      targetNodeId: turnin_confirm
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions:
+      - type: 10
+        stringParam: item_q001_blackbox_core
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 11400000, guid: 1a6eb74d7532bc444b46bea4bbe6c8df, type: 2}
+        stageIdParam: 
+        intParam: 1
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 20
+        stringParam: item_q001_broker_packet
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 1
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 11400000, guid: 47d1a8a87ee5a064183ed11e20dbdf1a, type: 2}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialog.option.common.not_now
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  - nodeId: turnin_confirm
+    speaker:
+      speakerKind: 0
+      refId: npc_bram_01
+      speakerNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+    text: dialog.dlg_bram_q001.node.turnin_confirm
+    portraitEmotion: encouraging
+    edges:
+    - label: dialog.dlg_bram_q001.option.confirm_delivery
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 11
+        stringParam: q_001b_blackbox_salvage
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: obj_q001b_deliver_blackbox
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    - label: dialog.option.common.cancel
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        requiredQuest: {fileID: 0}
+        requiredNpc: {fileID: 0}
+        requiredItem: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        questRef: {fileID: 0}
+        npcRef: {fileID: 0}
+        dialogTreeRef: {fileID: 0}
+        stageIdParam: 
+        intParam: 0
+        factionRef: {fileID: 0}
+        factionParam: 0
+        itemId: 0
+        itemRef: {fileID: 0}
+        itemType: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  localizationTable: {fileID: 0}

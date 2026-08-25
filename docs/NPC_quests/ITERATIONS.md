@@ -1,5 +1,22 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-25 (T-QST03 — Q001 DialogTrees)
+
+**Задача:** Третий исполняемый этап Q001 — создать шесть DialogTree assets по draft без создания QuestDefinition, без регистрации в QuestDatabase и без изменений WorldScene_0_0.
+**Коммит:** будет добавлен после создания коммита этапа.
+**Изменения:**
+- `Assets/_Project/Quests/Data/Dialogs/dlg_lyra_q001.asset` — 7 nodes: предложение main quest, briefing, выбор маршрута и два финальных отчёта.
+- `Assets/_Project/Quests/Data/Dialogs/dlg_bram_q001.asset` — 7 nodes: сборочная версия, salvage offer и blackbox turn-in.
+- `Assets/_Project/Quests/Data/Dialogs/dlg_veska_q001.asset` — 9 nodes: scientific offer, calibration, lighthouse, report и false-seal failure.
+- `Assets/_Project/Quests/Data/Dialogs/dlg_noll_q001.asset` — 6 nodes: broker story, false manifest и failure route.
+- `Assets/_Project/Quests/Data/Dialogs/dlg_kael_q001.asset` — 8 nodes: hidden offer, blackbox exchange и betrayal failure.
+- `Assets/_Project/Quests/Data/Dialogs/dlg_sela_q001.asset` — 5 nodes: incomplete testimony, fragment/key handoff и quarantine confirmation.
+- Стабильные NPC/item/faction object references назначены; QuestDefinition references оставлены пустыми, а quest IDs сохранены в string fallback до следующего этапа.
+- `QuestDatabase.asset`, шесть `NpcDefinition` и `WorldScene_0_0` не изменялись.
+- Static validation: все 42 nodes достижимы, dangling edge targets отсутствуют.
+- Unity compile check: `No compile errors`.
+**Результат:** шесть DialogTree готовы к последующей привязке QuestDefinition и NPC/database на следующем этапе; scene placement не выполнялся.
+
 ## Итерация от 2026-08-25 (T-QST03 — Q001 NPC definitions)
 
 **Задача:** Второй исполняемый этап Q001 — создать шесть NpcDefinition assets с привязкой к существующим FactionDefinition и каноническому NPC prefab, без создания DialogTree/QuestDefinition и без изменений WorldScene_0_0.

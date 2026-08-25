@@ -3,8 +3,8 @@
 > **Статус:** draft / content design only
 > **Версия:** 0.1
 > **Дата:** 2026-08-20
-> **Реализация:** поэтапно; Stage 2 (NpcDefinition assets) завершён 2026-08-25.
-> **Следующий этап:** создать DialogTree assets; сцену и координаты на этом этапе не менять.
+> **Реализация:** поэтапно; Stage 3 (DialogTree assets) завершён 2026-08-25.
+> **Следующий этап:** создать QuestDefinition assets; QuestDatabase и сцену на этом этапе не менять.
 > **Мировые координаты:** намеренно не заданы
 > **Канонический гайд:** `docs/NPC_quests/Quests/00_UNIVERSAL_QUEST_GUIDE.md`
 
@@ -749,6 +749,7 @@ dialog.dlg_sela_q001.*
 - [ ] Расставить все зоны и заполнить реальные `targetPosition`/`targetRadius` для `ReachLocation`.
 - [x] Создать все ItemData; object references будут связаны в QuestDefinition/DialogTree на последующих этапах.
 - [x] Создать шесть NpcDefinition; DialogTree будут созданы на следующем этапе.
+- [x] Создать шесть DialogTree для `dlg_lyra_q001`, `dlg_bram_q001`, `dlg_veska_q001`, `dlg_noll_q001`, `dlg_kael_q001`, `dlg_sela_q001`; QuestDefinition, QuestDatabase и сцена не изменялись.
 - [ ] Проверить, что новые NPC используют канонический prefab без его изменения.
 - [ ] Проверить уникальность всех quest/npc/tree/stage/objective/item/event IDs.
 - [ ] Проверить, что ветки A/B испускают реальный `EmitEvent(evt_q001_branch_resolved)`.
@@ -757,7 +758,7 @@ dialog.dlg_sela_q001.*
 - [ ] Проверить, что `CompleteObjective` вызывается только у правильного turn-in NPC.
 - [ ] Проверить, что main reward находится только в `q_001_ash_under_glass.rewards`.
 - [ ] Проверить `GetUnreachableStages() == 0` для всех четырёх QuestDefinition.
-- [ ] Проверить достижимость всех DialogTree nodes и отсутствие dangling edges.
+- [x] Проверить достижимость всех DialogTree nodes и отсутствие dangling edges.
 - [ ] Проверить RU/EN localization keys.
 - [ ] Выполнить compile-check.
 - [ ] После реализации отдельно пройти Play Mode: правильные ветки, каждую ошибочную ветку, повторное открытие диалогов и отсутствие повторной награды.

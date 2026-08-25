@@ -375,7 +375,7 @@ OR не кодировать в одном массиве conditions: испол
 | Objective ID | Тип | Параметры | Required |
 |---|---|---|---|
 | `obj_q001a_talk_veska` | `TalkToNpc` | `npc_veska_01` | да |
-| `obj_q001a_have_lens` | `HaveItem` | `item_q001_resonance_lens`, qty 1 | да |
+| `obj_q001a_lighthouse_have_lens` | `HaveItem` | `item_q001_resonance_lens`, qty 1 | да |
 
 После принятия ветки Веска выдаёт линзу через `GiveItem`.
 

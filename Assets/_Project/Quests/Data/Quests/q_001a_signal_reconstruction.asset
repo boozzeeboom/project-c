@@ -41,9 +41,9 @@ MonoBehaviour:
       eventId: 
       optional: 0
       required: 1
-    - objectiveId: obj_q001a_have_lens
+    - objectiveId: obj_q001a_lighthouse_have_lens
       objectiveType: 4
-      description: quest.q001a.objective.have_lens
+      description: quest.q001a.objective.lighthouse_have_lens
       targetNpcId: 
       targetNpc: {fileID: 0}
       itemTradeItemId: item_q001_resonance_lens

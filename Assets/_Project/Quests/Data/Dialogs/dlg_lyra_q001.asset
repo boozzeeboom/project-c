@@ -41,7 +41,7 @@ MonoBehaviour:
       action:
         type: 10
         stringParam: q_001_ash_under_glass
-        questRef: {fileID: 0}
+        questRef: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         npcRef: {fileID: 0}
         dialogTreeRef: {fileID: 0}
         stageIdParam: 
@@ -68,7 +68,7 @@ MonoBehaviour:
       conditions:
       - type: 20
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -78,7 +78,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 21
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001_follow_the_note
@@ -116,7 +116,7 @@ MonoBehaviour:
       conditions:
       - type: 20
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -126,7 +126,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 21
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001_choose_investigation_route
@@ -164,7 +164,7 @@ MonoBehaviour:
       conditions:
       - type: 21
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001_final_report
@@ -174,7 +174,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 22
         stringParam: q_001a_signal_reconstruction
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: e2b9c51ecf90a0f47b5f7ec349b0a69a, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -212,7 +212,7 @@ MonoBehaviour:
       conditions:
       - type: 21
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001_final_report
@@ -222,7 +222,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 22
         stringParam: q_001b_blackbox_salvage
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 903d24bd67b99354ba808b414b5afdba, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -260,7 +260,7 @@ MonoBehaviour:
       conditions:
       - type: 20
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -335,7 +335,7 @@ MonoBehaviour:
       conditions:
       - type: 23
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -346,7 +346,7 @@ MonoBehaviour:
       action:
         type: 14
         stringParam: q_001_ash_under_glass
-        questRef: {fileID: 0}
+        questRef: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         npcRef: {fileID: 0}
         dialogTreeRef: {fileID: 0}
         stageIdParam: 
@@ -485,7 +485,7 @@ MonoBehaviour:
       action:
         type: 11
         stringParam: q_001_ash_under_glass
-        questRef: {fileID: 0}
+        questRef: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         npcRef: {fileID: 0}
         dialogTreeRef: {fileID: 0}
         stageIdParam: obj_q001_final_talk_lyra
@@ -546,7 +546,7 @@ MonoBehaviour:
       action:
         type: 11
         stringParam: q_001_ash_under_glass
-        questRef: {fileID: 0}
+        questRef: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         npcRef: {fileID: 0}
         dialogTreeRef: {fileID: 0}
         stageIdParam: obj_q001_final_talk_lyra

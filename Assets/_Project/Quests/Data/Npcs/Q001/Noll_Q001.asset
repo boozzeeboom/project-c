@@ -19,7 +19,7 @@ MonoBehaviour:
   portrait: {fileID: 0}
   prefab: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   animatorTriggerPrefix: Noll
-  defaultDialogTree: {fileID: 0}
+  defaultDialogTree: {fileID: 11400000, guid: 73ca3f4090dc15e43b0c86a2ffd332d1, type: 2}
   questOffers: []
   questOfferRefs: []
   questTurnIns: []

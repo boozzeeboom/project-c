@@ -3,8 +3,8 @@
 > **Статус:** draft / implementation in progress
 > **Версия:** 0.1
 > **Дата:** 2026-08-20
-> **Реализация:** поэтапно; Stage 4 (QuestDefinition assets) завершён 2026-08-25.
-> **Следующий этап:** привязать QuestDefinition к DialogTree/NpcDefinition и аддитивно обновить QuestDatabase; сцену пока не менять.
+> **Реализация:** поэтапно; Stage 5 (QuestDefinition ↔ DialogTree/NpcDefinition + additive-регистрация в QuestDatabase) завершён 2026-08-25.
+> **Следующий этап:** закрыть оставшиеся статические проверки Q001; сцену пока не менять.
 > **Мировые координаты:** намеренно не заданы
 > **Канонический гайд:** `docs/NPC_quests/Quests/00_UNIVERSAL_QUEST_GUIDE.md`
 
@@ -751,6 +751,8 @@ dialog.dlg_sela_q001.*
 - [x] Создать шесть NpcDefinition; DialogTree будут созданы на следующем этапе.
 - [x] Создать шесть DialogTree для `dlg_lyra_q001`, `dlg_bram_q001`, `dlg_veska_q001`, `dlg_noll_q001`, `dlg_kael_q001`, `dlg_sela_q001`; QuestDefinition, QuestDatabase и сцена не изменялись.
 - [x] Создать четыре QuestDefinition для `q_001_ash_under_glass`, `q_001a_signal_reconstruction`, `q_001b_blackbox_salvage`, `q_001c_silent_exchange`; object references назначены, координаты/радиусы ReachLocation оставлены TBD (`Vector3.zero`/`0`), QuestDatabase и сцена не изменялись.
+- [x] Привязать шесть Q001 DialogTree к соответствующим `NpcDefinition.defaultDialogTree`; заполнить QuestDefinition/NpcDefinition object references в диалоговых conditions/actions, сохранив строковые fallback-поля.
+- [x] Аддитивно зарегистрировать шесть Q001 NpcDefinition, шесть Q001 DialogTree и четыре Q001 QuestDefinition в `QuestDatabase.asset`; существующие элементы массивов сохранены.
 - [ ] Проверить, что новые NPC используют канонический prefab без его изменения.
 - [ ] Проверить уникальность всех quest/npc/tree/stage/objective/item/event IDs.
 - [ ] Проверить, что ветки A/B испускают реальный `EmitEvent(evt_q001_branch_resolved)`.

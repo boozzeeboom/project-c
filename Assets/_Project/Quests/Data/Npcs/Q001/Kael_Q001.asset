@@ -19,11 +19,13 @@ MonoBehaviour:
   portrait: {fileID: 0}
   prefab: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   animatorTriggerPrefix: Kael
-  defaultDialogTree: {fileID: 0}
+  defaultDialogTree: {fileID: 11400000, guid: dcd905998e279634586796d9441e62df, type: 2}
   questOffers: []
-  questOfferRefs: []
+  questOfferRefs:
+  - {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
   questTurnIns: []
-  questTurnInRefs: []
+  questTurnInRefs:
+  - {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
   services: 0
   interactionRadius: 3
   showGreeting: 1

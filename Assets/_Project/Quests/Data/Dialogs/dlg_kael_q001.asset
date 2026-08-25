@@ -40,7 +40,7 @@ MonoBehaviour:
       conditions:
       - type: 20
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -50,7 +50,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 21
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001_wait_branch_resolution
@@ -71,7 +71,7 @@ MonoBehaviour:
       action:
         type: 10
         stringParam: q_001c_silent_exchange
-        questRef: {fileID: 0}
+        questRef: {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
         npcRef: {fileID: 0}
         dialogTreeRef: {fileID: 0}
         stageIdParam: 
@@ -98,7 +98,7 @@ MonoBehaviour:
       conditions:
       - type: 20
         stringParam: q_001c_silent_exchange
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -108,7 +108,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 21
         stringParam: q_001c_silent_exchange
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001c_take_blackbox
@@ -146,7 +146,7 @@ MonoBehaviour:
       conditions:
       - type: 20
         stringParam: q_001c_silent_exchange
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -156,7 +156,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 21
         stringParam: q_001c_silent_exchange
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001c_exchange
@@ -296,7 +296,7 @@ MonoBehaviour:
       conditions:
       - type: 23
         stringParam: q_001c_silent_exchange
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -307,7 +307,7 @@ MonoBehaviour:
       action:
         type: 14
         stringParam: q_001c_silent_exchange
-        questRef: {fileID: 0}
+        questRef: {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
         npcRef: {fileID: 0}
         dialogTreeRef: {fileID: 0}
         stageIdParam: 
@@ -634,7 +634,7 @@ MonoBehaviour:
       itemType: 0
     - type: 12
       stringParam: q_001c_silent_exchange
-      questRef: {fileID: 0}
+      questRef: {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}
       npcRef: {fileID: 0}
       dialogTreeRef: {fileID: 0}
       stageIdParam: fail_q001c_silent_exchange
@@ -646,7 +646,7 @@ MonoBehaviour:
       itemType: 0
     - type: 12
       stringParam: q_001_ash_under_glass
-      questRef: {fileID: 0}
+      questRef: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
       npcRef: {fileID: 0}
       dialogTreeRef: {fileID: 0}
       stageIdParam: fail_q001c_silent_exchange

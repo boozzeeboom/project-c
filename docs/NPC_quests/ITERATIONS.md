@@ -1,5 +1,17 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-25 (T-QST05 — Q001 bindings and registry)
+
+**Задача:** Пятый исполняемый этап Q001 — связать QuestDefinition с DialogTree/NpcDefinition и выполнить additive-регистрацию Q001-ассетов в QuestDatabase без изменений сцены.
+**Коммит:** будет создан после проверки этапа.
+**Изменения:**
+- В шести Q001 `NpcDefinition` назначены соответствующие `defaultDialogTree`, `questOfferRefs` и `questTurnInRefs`; legacy string-массивы сохранены.
+- В шести Q001 `DialogTree` заполнены object references для Q001 `QuestDefinition` в quest conditions/actions и для Q001 `NpcDefinition` в NPC-related references; строковые fallback-поля сохранены.
+- В `QuestDatabase.asset` additive-проверкой обеспечено наличие шести Q001 NPC, шести Q001 DialogTree и четырёх Q001 QuestDefinition; существующие записи не заменялись.
+- `WorldScene_0_0`, расстановка NPC/зон/предметов и координаты `ReachLocation` не изменялись.
+- Проверка этапа: `74` релевантные QuestDefinition refs, missing quest/NPC/speaker refs = `0`, database missing entries = `0`; `check_compile_errors`: `No compile errors`.
+**Результат:** Q001 data assets связаны между собой и зарегистрированы в центральной базе; этап готов к коммиту.
+
 ## Итерация от 2026-08-25 (T-QST04 — Q001 QuestDefinitions)
 
 **Задача:** Четвёртый исполняемый этап Q001 — создать четыре QuestDefinition assets по draft без регистрации в QuestDatabase, без изменений DialogTree/NpcDefinition и без изменений WorldScene_0_0.

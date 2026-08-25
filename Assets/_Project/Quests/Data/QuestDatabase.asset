@@ -26,12 +26,28 @@ MonoBehaviour:
   npcs:
   - {fileID: 11400000, guid: 8093066045efca3469b59d4b77790700, type: 2}
   - {fileID: 11400000, guid: d8d0b835213660d4daa40e13e8f10f9f, type: 2}
+  - {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+  - {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
+  - {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
+  - {fileID: 11400000, guid: ac41c6d98ebfb9e4dbf4f1c3ce68221f, type: 2}
+  - {fileID: 11400000, guid: a5819cc13d09a164792176e79c8d0055, type: 2}
+  - {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
   - {fileID: 11400000, guid: 59409174383a88b47b03a3348fc9b073, type: 2}
   dialogTrees:
   - {fileID: 11400000, guid: 1d61d3ad3078db542bf34042811f83b5, type: 2}
+  - {fileID: 11400000, guid: 802c895812ba68d40b54b09a416ce745, type: 2}
+  - {fileID: 11400000, guid: dcd905998e279634586796d9441e62df, type: 2}
+  - {fileID: 11400000, guid: da4fdde037799f441808d6e35b32738a, type: 2}
+  - {fileID: 11400000, guid: 73ca3f4090dc15e43b0c86a2ffd332d1, type: 2}
+  - {fileID: 11400000, guid: 5fed2125b68d0214fb9b4f75c8146264, type: 2}
+  - {fileID: 11400000, guid: 8ecd20b0815ba4d4293de318cd7f06b4, type: 2}
   - {fileID: 11400000, guid: ae91887e1dd1d68428237374889ab7b4, type: 2}
   - {fileID: 11400000, guid: 828fa688c0784fb458e4092c070af689, type: 2}
   - {fileID: 11400000, guid: 25e09bb5069388141a2ca5db9d2b6f98, type: 2}
   quests:
   - {fileID: 11400000, guid: f32e985aca4b07a41a0c87fa6658dac4, type: 2}
   - {fileID: 11400000, guid: ccd8acda6ffd33c41b7f7d60bf175b3d, type: 2}
+  - {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
+  - {fileID: 11400000, guid: e2b9c51ecf90a0f47b5f7ec349b0a69a, type: 2}
+  - {fileID: 11400000, guid: 903d24bd67b99354ba808b414b5afdba, type: 2}
+  - {fileID: 11400000, guid: 5393f3652fc69244caf105e2083d0c72, type: 2}

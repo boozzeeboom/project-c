@@ -19,11 +19,13 @@ MonoBehaviour:
   portrait: {fileID: 0}
   prefab: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   animatorTriggerPrefix: Bram
-  defaultDialogTree: {fileID: 0}
+  defaultDialogTree: {fileID: 11400000, guid: 802c895812ba68d40b54b09a416ce745, type: 2}
   questOffers: []
-  questOfferRefs: []
+  questOfferRefs:
+  - {fileID: 11400000, guid: 903d24bd67b99354ba808b414b5afdba, type: 2}
   questTurnIns: []
-  questTurnInRefs: []
+  questTurnInRefs:
+  - {fileID: 11400000, guid: 903d24bd67b99354ba808b414b5afdba, type: 2}
   services: 0
   interactionRadius: 3
   showGreeting: 1

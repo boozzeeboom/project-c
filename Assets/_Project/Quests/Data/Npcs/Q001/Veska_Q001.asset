@@ -19,11 +19,13 @@ MonoBehaviour:
   portrait: {fileID: 0}
   prefab: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   animatorTriggerPrefix: Veska
-  defaultDialogTree: {fileID: 0}
+  defaultDialogTree: {fileID: 11400000, guid: 8ecd20b0815ba4d4293de318cd7f06b4, type: 2}
   questOffers: []
-  questOfferRefs: []
+  questOfferRefs:
+  - {fileID: 11400000, guid: e2b9c51ecf90a0f47b5f7ec349b0a69a, type: 2}
   questTurnIns: []
-  questTurnInRefs: []
+  questTurnInRefs:
+  - {fileID: 11400000, guid: e2b9c51ecf90a0f47b5f7ec349b0a69a, type: 2}
   services: 0
   interactionRadius: 3
   showGreeting: 1

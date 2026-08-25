@@ -40,7 +40,7 @@ MonoBehaviour:
       conditions:
       - type: 20
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -50,7 +50,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 21
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001_sela_testimony
@@ -88,7 +88,7 @@ MonoBehaviour:
       conditions:
       - type: 20
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -98,7 +98,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 21
         stringParam: q_001_ash_under_glass
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001_resonance_check
@@ -136,7 +136,7 @@ MonoBehaviour:
       conditions:
       - type: 20
         stringParam: q_001a_signal_reconstruction
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: e2b9c51ecf90a0f47b5f7ec349b0a69a, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: 
@@ -146,7 +146,7 @@ MonoBehaviour:
         questStateParam: 2
       - type: 21
         stringParam: q_001a_signal_reconstruction
-        requiredQuest: {fileID: 0}
+        requiredQuest: {fileID: 11400000, guid: e2b9c51ecf90a0f47b5f7ec349b0a69a, type: 2}
         requiredNpc: {fileID: 0}
         requiredItem: {fileID: 0}
         stageIdParam: st_q001a_decode_lighthouse

@@ -19,11 +19,13 @@ MonoBehaviour:
   portrait: {fileID: 0}
   prefab: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   animatorTriggerPrefix: Lyra
-  defaultDialogTree: {fileID: 0}
+  defaultDialogTree: {fileID: 11400000, guid: da4fdde037799f441808d6e35b32738a, type: 2}
   questOffers: []
-  questOfferRefs: []
+  questOfferRefs:
+  - {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
   questTurnIns: []
-  questTurnInRefs: []
+  questTurnInRefs:
+  - {fileID: 11400000, guid: 32c29f4a4a5657449872e8076f17a9f1, type: 2}
   services: 0
   interactionRadius: 3
   showGreeting: 1

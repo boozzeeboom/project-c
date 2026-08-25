@@ -4,7 +4,7 @@
 > **Версия:** 0.1
 > **Дата:** 2026-08-20
 > **Реализация:** поэтапно; Stage 5 (QuestDefinition ↔ DialogTree/NpcDefinition + additive-регистрация в QuestDatabase) завершён 2026-08-25.
-> **Следующий этап:** закрыть оставшиеся статические проверки Q001; сцену пока не менять.
+> **Следующий этап:** подготовить RU/EN localization keys и затем выполнить отдельный Play Mode-прогон Q001 по успешным и провальным сценариям.
 > **Мировые координаты:** намеренно не заданы
 > **Канонический гайд:** `docs/NPC_quests/Quests/00_UNIVERSAL_QUEST_GUIDE.md`
 
@@ -745,17 +745,17 @@ dialog.dlg_sela_q001.*
 ## 15. Static checkpoint перед будущей реализацией
 
 - [ ] Утвердить название, тон и финальную правду сюжета.
-- [ ] Подтвердить, что `WorldScene_0_0` остаётся сценой маршрута.
-- [ ] Расставить все зоны и заполнить реальные `targetPosition`/`targetRadius` для `ReachLocation`.
+- [x] Подтвердить, что `WorldScene_0_0` остаётся сценой маршрута.
+- [x] В сцене `WorldScene_0_0` рядом с NPC Mira линейно расставить по порядку все объекты, необходимые для тестового runtime-прогона Q001: зоны, NPC, pickup objects и scene anchors; реальные `targetPosition`/`targetRadius` для `ReachLocation` заполнены для шести objectives.
 - [x] Создать все ItemData; object references будут связаны в QuestDefinition/DialogTree на последующих этапах.
 - [x] Создать шесть NpcDefinition; DialogTree будут созданы на следующем этапе.
 - [x] Создать шесть DialogTree для `dlg_lyra_q001`, `dlg_bram_q001`, `dlg_veska_q001`, `dlg_noll_q001`, `dlg_kael_q001`, `dlg_sela_q001`; QuestDefinition, QuestDatabase и сцена не изменялись.
 - [x] Создать четыре QuestDefinition для `q_001_ash_under_glass`, `q_001a_signal_reconstruction`, `q_001b_blackbox_salvage`, `q_001c_silent_exchange`; object references назначены, координаты/радиусы ReachLocation оставлены TBD (`Vector3.zero`/`0`), QuestDatabase и сцена не изменялись.
 - [x] Привязать шесть Q001 DialogTree к соответствующим `NpcDefinition.defaultDialogTree`; заполнить QuestDefinition/NpcDefinition object references в диалоговых conditions/actions, сохранив строковые fallback-поля.
 - [x] Аддитивно зарегистрировать шесть Q001 NpcDefinition, шесть Q001 DialogTree и четыре Q001 QuestDefinition в `QuestDatabase.asset`; существующие элементы массивов сохранены.
-- [ ] Проверить, что новые NPC используют канонический prefab без его изменения.
-- [ ] Проверить уникальность всех quest/npc/tree/stage/objective/item/event IDs.
-- [ ] Проверить, что ветки A/B испускают реальный `EmitEvent(evt_q001_branch_resolved)`.
+- [x] Проверить, что новые NPC используют канонический prefab без его изменения.
+- [x] Проверить уникальность всех quest/npc/tree/stage/objective/item/event IDs.
+- [x] Проверить, что ветки A/B испускают реальный `EmitEvent(evt_q001_branch_resolved)`.
 - [ ] Проверить, что branch failure actions могут перевести оба quest instance в `Failed`.
 - [ ] Проверить, что `DeliverItem` действительно потребляет blackbox только на правильном turn-in.
 - [ ] Проверить, что `CompleteObjective` вызывается только у правильного turn-in NPC.

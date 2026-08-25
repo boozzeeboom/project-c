@@ -1694,6 +1694,10 @@ MonoBehaviour:
     m_Localized: Press F to use
     m_Metadata:
       m_Items: []
+  - m_Id: 7202130694676480
+    m_Localized: Press E to use
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -1401,10 +1401,20 @@ namespace ProjectC.Player
             if (nearestShip != null && nearestShip.isActiveAndEnabled)
                 return InteractionHintKind.Use;
 
-            // E flow: NPC is considered only after every valid F candidate.
-            return HasNearbyNpcForInteraction(position)
-                ? InteractionHintKind.Talk
-                : InteractionHintKind.None;
+            // E flow: RepairManager is checked before NPC, matching Update() priority.
+            var repairManager = InteractableManager.FindNearestRepairManager(position, pickupRange);
+            if (repairManager != null && repairManager.gameObject.activeSelf)
+                return InteractionHintKind.UseE;
+
+            // E flow: NPC is checked before MarketZone, matching Update() priority.
+            if (HasNearbyNpcForInteraction(position))
+                return InteractionHintKind.Talk;
+
+            // E flow: MarketZone uses the same trade-radius rule as MarketInteractor.
+            if (HasNearbyMarketForInteraction(position))
+                return InteractionHintKind.UseE;
+
+            return InteractionHintKind.None;
         }
 
         private bool HasNearbyDoorForInteraction(Vector3 position)
@@ -1449,6 +1459,22 @@ namespace ProjectC.Player
             }
 
             return nearest != null && !string.IsNullOrEmpty(nearest.NpcId);
+        }
+
+        private bool HasNearbyMarketForInteraction(Vector3 position)
+        {
+            foreach (var pair in MarketZoneRegistry.All)
+            {
+                var zone = pair.Value;
+                if (zone == null || !zone.isActiveAndEnabled || string.IsNullOrEmpty(zone.LocationId))
+                    continue;
+
+                float radius = zone.TradeRadius;
+                if (radius > 0f && (zone.transform.position - position).sqrMagnitude <= radius * radius)
+                    return true;
+            }
+
+            return false;
         }
 
         private void ApplyWalkingState()

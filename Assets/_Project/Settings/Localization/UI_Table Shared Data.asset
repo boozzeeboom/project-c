@@ -1707,6 +1707,10 @@ MonoBehaviour:
     m_Key: ui.interaction_hint.use
     m_Metadata:
       m_Items: []
+  - m_Id: 7202130694676480
+    m_Key: ui.interaction_hint.use_e
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

@@ -11,6 +11,7 @@ namespace ProjectC.UI
     {
         None,
         Talk,
+        UseE,
         Use,
     }
 
@@ -214,6 +215,10 @@ namespace ProjectC.UI
                 case InteractionHintKind.Talk:
                     key = "ui.interaction_hint.talk";
                     fallback = "Нажмите E, чтобы поговорить";
+                    break;
+                case InteractionHintKind.UseE:
+                    key = "ui.interaction_hint.use_e";
+                    fallback = "Нажмите E, чтобы использовать";
                     break;
                 case InteractionHintKind.Use:
                     key = "ui.interaction_hint.use";

@@ -3,7 +3,7 @@
 ## Итерация от 2026-08-25 (T-QST03 — Q001 DialogTrees)
 
 **Задача:** Третий исполняемый этап Q001 — создать шесть DialogTree assets по draft без создания QuestDefinition, без регистрации в QuestDatabase и без изменений WorldScene_0_0.
-**Коммит:** будет добавлен после создания коммита этапа.
+**Коммит:** `a5204295` — T-QST03: Q001 DialogTrees
 **Изменения:**
 - `Assets/_Project/Quests/Data/Dialogs/dlg_lyra_q001.asset` — 7 nodes: предложение main quest, briefing, выбор маршрута и два финальных отчёта.
 - `Assets/_Project/Quests/Data/Dialogs/dlg_bram_q001.asset` — 7 nodes: сборочная версия, salvage offer и blackbox turn-in.

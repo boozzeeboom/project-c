@@ -3,7 +3,7 @@
 ## Итерация от 2026-08-25 (T-QST03 — Q001 NPC definitions)
 
 **Задача:** Второй исполняемый этап Q001 — создать шесть NpcDefinition assets с привязкой к существующим FactionDefinition и каноническому NPC prefab, без создания DialogTree/QuestDefinition и без изменений WorldScene_0_0.
-**Коммит:** будет указан после создания коммита.
+**Коммит:** `adc6f946` — T-QST03: Q001 NPC definitions
 **Изменения:**
 - `Assets/_Project/Quests/Data/Npcs/Q001/` — созданы NpcDefinition для Lyra, Bram, Veska, Noll, Kael и Sela.
 - Все шесть definitions используют канонический prefab `[Mira] - DON`T DELETE DEFOULT.prefab`; QuestDatabase и сцена не изменялись.

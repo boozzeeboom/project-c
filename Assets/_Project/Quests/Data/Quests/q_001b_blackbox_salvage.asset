@@ -1,0 +1,183 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 009489055a12f1d4fb6aee9664b1af28, type: 3}
+  m_Name: q_001b_blackbox_salvage
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestDefinition
+  questId: q_001b_blackbox_salvage
+  displayName: quest.q001b.name
+  description: quest.q001b.description
+  factionRef: {fileID: 0}
+  faction: 0
+  minReputation: 0
+  stages:
+  - stageId: st_q001b_bram_method
+    description: quest.q001b.stage.bram_method
+    objectives:
+    - objectiveId: obj_q001b_talk_bram
+      objectiveType: 0
+      description: quest.q001b.objective.talk_bram
+      targetNpcId: npc_bram_01
+      targetNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001b_recover_blackbox
+  - stageId: st_q001b_recover_blackbox
+    description: quest.q001b.stage.recover_blackbox
+    objectives:
+    - objectiveId: obj_q001b_reach_quarantine_cove
+      objectiveType: 2
+      description: quest.q001b.objective.reach_quarantine_cove
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: WorldScene_0_0
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 0
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001b_have_blackbox
+      objectiveType: 4
+      description: quest.q001b.objective.have_blackbox
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: item_q001_blackbox_core
+      pickupItem: {fileID: 11400000, guid: 1a6eb74d7532bc444b46bea4bbe6c8df, type: 2}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001b_check_broker_story
+  - stageId: st_q001b_check_broker_story
+    description: quest.q001b.stage.check_broker_story
+    objectives:
+    - objectiveId: obj_q001b_talk_noll
+      objectiveType: 0
+      description: quest.q001b.objective.talk_noll
+      targetNpcId: npc_noll_01
+      targetNpc: {fileID: 11400000, guid: ac41c6d98ebfb9e4dbf4f1c3ce68221f, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001b_return_blackbox
+  - stageId: st_q001b_return_blackbox
+    description: quest.q001b.stage.return_blackbox
+    objectives:
+    - objectiveId: obj_q001b_talk_bram_final
+      objectiveType: 0
+      description: quest.q001b.objective.talk_bram_final
+      targetNpcId: npc_bram_01
+      targetNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001b_deliver_blackbox
+      objectiveType: 1
+      description: quest.q001b.objective.deliver_blackbox
+      targetNpcId: npc_bram_01
+      targetNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+      itemTradeItemId: item_q001_blackbox_core
+      pickupItem: {fileID: 11400000, guid: 1a6eb74d7532bc444b46bea4bbe6c8df, type: 2}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions:
+    - type: 51
+      stringParam: evt_q001_branch_resolved
+      questRef: {fileID: 0}
+      npcRef: {fileID: 0}
+      dialogTreeRef: {fileID: 0}
+      stageIdParam: 
+      intParam: 0
+      factionRef: {fileID: 0}
+      factionParam: 0
+      itemId: 0
+      itemRef: {fileID: 0}
+      itemType: 0
+    nextStageId: 
+  rewards:
+    credits: 350
+    items: []
+    cargoItems: []
+    reputation:
+    - factionRef: {fileID: 11400000, guid: 52d26a5460fa81c4b8b59ee4d00d10d5, type: 2}
+      faction: 0
+      value: 15
+    unlocks: []
+  prerequisites: []
+  oneShot: 1
+  discoverable: 0

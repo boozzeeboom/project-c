@@ -1,0 +1,335 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 009489055a12f1d4fb6aee9664b1af28, type: 3}
+  m_Name: q_001_ash_under_glass
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestDefinition
+  questId: q_001_ash_under_glass
+  displayName: quest.q001.name
+  description: quest.q001.description
+  factionRef: {fileID: 11400000, guid: fd6d432aeaa21144caa6784e3657224f, type: 2}
+  faction: 1
+  minReputation: 0
+  stages:
+  - stageId: st_q001_follow_the_note
+    description: quest.q001.stage.follow_note
+    objectives:
+    - objectiveId: obj_q001_reach_old_dock
+      objectiveType: 2
+      description: quest.q001.objective.reach_old_dock
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: WorldScene_0_0
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 0
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions:
+    - type: 20
+      stringParam: item_q001_sealed_note
+      questRef: {fileID: 0}
+      npcRef: {fileID: 0}
+      dialogTreeRef: {fileID: 0}
+      stageIdParam: 
+      intParam: 1
+      factionRef: {fileID: 0}
+      factionParam: 0
+      itemId: 0
+      itemRef: {fileID: 11400000, guid: ee09a34d7794213499063a30d590cffc, type: 2}
+      itemType: 0
+    onCompleteActions: []
+    nextStageId: st_q001_collect_first_evidence
+  - stageId: st_q001_collect_first_evidence
+    description: quest.q001.stage.collect_first_evidence
+    objectives:
+    - objectiveId: obj_q001_talk_bram
+      objectiveType: 0
+      description: quest.q001.objective.talk_bram
+      targetNpcId: npc_bram_01
+      targetNpc: {fileID: 11400000, guid: 330eb3202adcb4f44a661611316e9be6, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001_fragment_dock
+      objectiveType: 4
+      description: quest.q001.objective.fragment_dock
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: item_q001_fragment_dock
+      pickupItem: {fileID: 11400000, guid: 2e5c9bb98eeed9b44bf2752667c3b893, type: 2}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001_fragment_archive
+      objectiveType: 4
+      description: quest.q001.objective.fragment_archive
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: item_q001_fragment_archive
+      pickupItem: {fileID: 11400000, guid: d433cec1ee88a0b4bb3e219f4061fe87, type: 2}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001_sela_testimony
+  - stageId: st_q001_sela_testimony
+    description: quest.q001.stage.sela_testimony
+    objectives:
+    - objectiveId: obj_q001_reach_salt_archive
+      objectiveType: 2
+      description: quest.q001.objective.reach_salt_archive
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: WorldScene_0_0
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 0
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001_talk_sela
+      objectiveType: 0
+      description: quest.q001.objective.talk_sela
+      targetNpcId: npc_sela_01
+      targetNpc: {fileID: 11400000, guid: a5819cc13d09a164792176e79c8d0055, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001_fragment_sela
+      objectiveType: 4
+      description: quest.q001.objective.fragment_sela
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: item_q001_fragment_sela
+      pickupItem: {fileID: 11400000, guid: 22d7fb5782edbb641a0b78211c6d4a25, type: 2}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001_resonance_check
+  - stageId: st_q001_resonance_check
+    description: quest.q001.stage.resonance_check
+    objectives:
+    - objectiveId: obj_q001_have_vault_key
+      objectiveType: 4
+      description: quest.q001.objective.have_vault_key
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: item_q001_vault_key
+      pickupItem: {fileID: 11400000, guid: 5f25f42968cf3c845a6ba99da143a632, type: 2}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001_reach_glass_well
+      objectiveType: 2
+      description: quest.q001.objective.reach_glass_well
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: WorldScene_0_0
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 0
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001_talk_veska
+      objectiveType: 0
+      description: quest.q001.objective.talk_veska
+      targetNpcId: npc_veska_01
+      targetNpc: {fileID: 11400000, guid: fa707947a45da9247886ed85e3db631c, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001_choose_investigation_route
+  - stageId: st_q001_choose_investigation_route
+    description: quest.q001.stage.choose_route
+    objectives:
+    - objectiveId: obj_q001_talk_lyra_choice
+      objectiveType: 0
+      description: quest.q001.objective.talk_lyra_choice
+      targetNpcId: npc_lyra_01
+      targetNpc: {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001_wait_branch_resolution
+  - stageId: st_q001_wait_branch_resolution
+    description: quest.q001.stage.wait_branch
+    objectives:
+    - objectiveId: obj_q001_branch_resolved
+      objectiveType: 7
+      description: quest.q001.objective.branch_resolved
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: evt_q001_branch_resolved
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001_final_report
+  - stageId: st_q001_final_report
+    description: quest.q001.stage.final_report
+    objectives:
+    - objectiveId: obj_q001_final_talk_lyra
+      objectiveType: 0
+      description: quest.q001.objective.final_talk_lyra
+      targetNpcId: npc_lyra_01
+      targetNpc: {fileID: 11400000, guid: 90fd28c7361743441984347b47a87193, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: 
+  rewards:
+    credits: 800
+    items:
+    - tradeItemId: item_q001_archive_shard
+      pickupItem: {fileID: 11400000, guid: a032415708b1a484bb5e67f7eeb7b691, type: 2}
+      cargoItem: {fileID: 0}
+      count: 1
+    cargoItems: []
+    reputation: []
+    unlocks: []
+  prerequisites: []
+  oneShot: 1
+  discoverable: 1

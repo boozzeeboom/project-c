@@ -1,10 +1,10 @@
 # Q001 — «Пепел под стеклом»
 
-> **Статус:** draft / content design only
+> **Статус:** draft / implementation in progress
 > **Версия:** 0.1
 > **Дата:** 2026-08-20
-> **Реализация:** поэтапно; Stage 3 (DialogTree assets) завершён 2026-08-25.
-> **Следующий этап:** создать QuestDefinition assets; QuestDatabase и сцену на этом этапе не менять.
+> **Реализация:** поэтапно; Stage 4 (QuestDefinition assets) завершён 2026-08-25.
+> **Следующий этап:** привязать QuestDefinition к DialogTree/NpcDefinition и аддитивно обновить QuestDatabase; сцену пока не менять.
 > **Мировые координаты:** намеренно не заданы
 > **Канонический гайд:** `docs/NPC_quests/Quests/00_UNIVERSAL_QUEST_GUIDE.md`
 
@@ -750,17 +750,18 @@ dialog.dlg_sela_q001.*
 - [x] Создать все ItemData; object references будут связаны в QuestDefinition/DialogTree на последующих этапах.
 - [x] Создать шесть NpcDefinition; DialogTree будут созданы на следующем этапе.
 - [x] Создать шесть DialogTree для `dlg_lyra_q001`, `dlg_bram_q001`, `dlg_veska_q001`, `dlg_noll_q001`, `dlg_kael_q001`, `dlg_sela_q001`; QuestDefinition, QuestDatabase и сцена не изменялись.
+- [x] Создать четыре QuestDefinition для `q_001_ash_under_glass`, `q_001a_signal_reconstruction`, `q_001b_blackbox_salvage`, `q_001c_silent_exchange`; object references назначены, координаты/радиусы ReachLocation оставлены TBD (`Vector3.zero`/`0`), QuestDatabase и сцена не изменялись.
 - [ ] Проверить, что новые NPC используют канонический prefab без его изменения.
 - [ ] Проверить уникальность всех quest/npc/tree/stage/objective/item/event IDs.
 - [ ] Проверить, что ветки A/B испускают реальный `EmitEvent(evt_q001_branch_resolved)`.
 - [ ] Проверить, что branch failure actions могут перевести оба quest instance в `Failed`.
 - [ ] Проверить, что `DeliverItem` действительно потребляет blackbox только на правильном turn-in.
 - [ ] Проверить, что `CompleteObjective` вызывается только у правильного turn-in NPC.
-- [ ] Проверить, что main reward находится только в `q_001_ash_under_glass.rewards`.
-- [ ] Проверить `GetUnreachableStages() == 0` для всех четырёх QuestDefinition.
+- [x] Проверить, что main reward находится только в `q_001_ash_under_glass.rewards`.
+- [x] Проверить `GetUnreachableStages() == 0` для всех четырёх QuestDefinition.
 - [x] Проверить достижимость всех DialogTree nodes и отсутствие dangling edges.
 - [ ] Проверить RU/EN localization keys.
-- [ ] Выполнить compile-check.
+- [x] Выполнить compile-check: `No compile errors` после создания QuestDefinition.
 - [ ] После реализации отдельно пройти Play Mode: правильные ветки, каждую ошибочную ветку, повторное открытие диалогов и отсутствие повторной награды.
 
 ---

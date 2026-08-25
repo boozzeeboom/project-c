@@ -1,0 +1,143 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 009489055a12f1d4fb6aee9664b1af28, type: 3}
+  m_Name: q_001c_silent_exchange
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestDefinition
+  questId: q_001c_silent_exchange
+  displayName: quest.q001c.name
+  description: quest.q001c.description
+  factionRef: {fileID: 0}
+  faction: 0
+  minReputation: 0
+  stages:
+  - stageId: st_q001c_offer_silence
+    description: quest.q001c.stage.offer_silence
+    objectives:
+    - objectiveId: obj_q001c_talk_kael
+      objectiveType: 0
+      description: quest.q001c.objective.talk_kael
+      targetNpcId: npc_kael_01
+      targetNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001c_take_blackbox
+  - stageId: st_q001c_take_blackbox
+    description: quest.q001c.stage.take_blackbox
+    objectives:
+    - objectiveId: obj_q001c_reach_cache
+      objectiveType: 2
+      description: quest.q001c.objective.reach_cache
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: WorldScene_0_0
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 0
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001c_have_blackbox
+      objectiveType: 4
+      description: quest.q001c.objective.have_blackbox
+      targetNpcId: 
+      targetNpc: {fileID: 0}
+      itemTradeItemId: item_q001_blackbox_core
+      pickupItem: {fileID: 11400000, guid: 1a6eb74d7532bc444b46bea4bbe6c8df, type: 2}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: st_q001c_exchange
+  - stageId: st_q001c_exchange
+    description: quest.q001c.stage.exchange
+    objectives:
+    - objectiveId: obj_q001c_talk_kael_final
+      objectiveType: 0
+      description: quest.q001c.objective.talk_kael_final
+      targetNpcId: npc_kael_01
+      targetNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
+      itemTradeItemId: 
+      pickupItem: {fileID: 0}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    - objectiveId: obj_q001c_deliver_blackbox
+      objectiveType: 1
+      description: quest.q001c.objective.deliver_blackbox
+      targetNpcId: npc_kael_01
+      targetNpc: {fileID: 11400000, guid: 6670f5e2933cf4a49a7b943f66329fb3, type: 2}
+      itemTradeItemId: item_q001_blackbox_core
+      pickupItem: {fileID: 11400000, guid: 1a6eb74d7532bc444b46bea4bbe6c8df, type: 2}
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetEntity: {fileID: 0}
+      targetFactionRef: {fileID: 0}
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: 
+  rewards:
+    credits: 0
+    items: []
+    cargoItems: []
+    reputation: []
+    unlocks: []
+  prerequisites: []
+  oneShot: 1
+  discoverable: 0

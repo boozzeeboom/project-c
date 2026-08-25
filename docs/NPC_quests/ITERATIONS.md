@@ -1,5 +1,21 @@
 # Итерации разработки — NPC Quests
 
+## Итерация от 2026-08-25 (T-QST04 — Q001 QuestDefinitions)
+
+**Задача:** Четвёртый исполняемый этап Q001 — создать четыре QuestDefinition assets по draft без регистрации в QuestDatabase, без изменений DialogTree/NpcDefinition и без изменений WorldScene_0_0.
+**Коммит:** (pending — после создания)
+**Изменения:**
+- `Assets/_Project/Quests/Data/Quests/q_001_ash_under_glass.asset` — главный квест: 7 linear stages, 13 required objectives, `GuildOfThoughts`, main reward `800 credits + item_q001_archive_shard ×1`.
+- `Assets/_Project/Quests/Data/Quests/q_001a_signal_reconstruction.asset` — научная ветка: 3 stages, 6 required objectives, `EmitEvent(evt_q001_branch_resolved)` и `AddNpcAttitude(npc_veska_01, +10)` в финальном stage.
+- `Assets/_Project/Quests/Data/Quests/q_001b_blackbox_salvage.asset` — salvage-ветка: 4 stages, 6 required objectives, `DeliverItem` чёрного ящика Браму и `EmitEvent(evt_q001_branch_resolved)` в финальном stage.
+- `Assets/_Project/Quests/Data/Quests/q_001c_silent_exchange.asset` — тайная ветка: 3 stages, 5 required objectives, без rewards/event.
+- Для новых ReachLocation координаты и радиусы намеренно оставлены TBD (`WorldScene_0_0`, `Vector3.zero`, `targetRadius=0`) до ручной расстановки зон рядом с Mira.
+- Назначены object references на существующие `NpcDefinition`, `ItemData` и `FactionDefinition`; строковые fallback-поля сохранены согласованно.
+- `QuestDatabase.asset`, шесть Q001 `NpcDefinition`, шесть Q001 `DialogTree` и `WorldScene_0_0` не изменялись.
+- Static validation: 4 assets, 17 stages, 30 objectives, `GetUnreachableStages()==0`, validator errors=0, Q001 в QuestDatabase=0.
+- Unity compile check: `No compile errors`.
+**Результат:** четыре QuestDefinition готовы для следующего этапа — привязки к DialogTree/NpcDefinition и additive-регистрации в QuestDatabase; scene placement и Play Mode отложены.
+
 ## Итерация от 2026-08-25 (T-QST03 — Q001 DialogTrees)
 
 **Задача:** Третий исполняемый этап Q001 — создать шесть DialogTree assets по draft без создания QuestDefinition, без регистрации в QuestDatabase и без изменений WorldScene_0_0.

@@ -201,10 +201,8 @@
   </ui:VisualElement>
  </ui:VisualElement>
  <ui:VisualElement name="quests-section" class="list-section quests-section" style="display: none;">
-  <ui:Label text="Квесты" class="section-title" />
   <ui:VisualElement class="quests-layout">
    <ui:VisualElement class="quests-sidebar">
-    <ui:Label text="Показывать" class="quests-filter-title" />
     <ui:VisualElement class="quests-filters">
      <ui:Button name="quests-filter-active" text="Активные" class="quest-filter-button quest-filter-active" />
      <ui:Button name="quests-filter-completed" text="Выполненные" class="quest-filter-button" />

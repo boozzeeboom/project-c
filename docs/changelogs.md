@@ -1,3 +1,36 @@
+v0.1.31
+
+Markets & Contracts
+
+Full contract lifecycle: board offers, active contracts, and completed records are now handled separately, so board updates no longer affect contracts you've already accepted.
+New Receipt flow: Accept → Claim Cargo → Transport → Submit.
+Contract cargo is now locked to its contract — it can't be sold, unloaded, or used in another contract.
+Delivery completion is verified server-side (owner, state, location, ship, and exact cargo amount) before rewards are granted.
+If a save fails, the whole economic operation rolls back — no partial states, no duplicate rewards or debt.
+Distance data added for 12 market zones.
+Factions
+
+Faction identities moved to a stable data layer with data-driven combat relations.
+Quests
+
+First onboarding quest (Onboarding Alfa) now works end-to-end: pickup, NPC dialogue, objectives, and rewards.
+Quests tab redesigned in the character window.
+The stakeout/spy HUD now shows all objectives of the quest you're tracking.
+Quest dialogue and objectives localized (RU/EN).
+UI & Interaction
+
+Contextual interaction hints (Talk/Use) for NPCs and world objects.
+Gameplay input is now blocked while menus are open (dialogue, market, inventory, crafting, skill trees, customization, comm panel) — no more accidental attacks.
+Trade / NPC Ships
+
+Random NPC cargo trade mode.
+Cargo limits now scale from the assigned ship.
+World
+
+Ship and cargo setup pass; minor world adjustments.
+
+----------------------------
+
 0.1.20 - # Markets & Contracts — Core Refactoring Stage Completed
 As part of the contract system audit, we fixed several issues that could lead to the loss of active contracts, rewards being issued without cargo delivery, and state desynchronization after a save error.
 

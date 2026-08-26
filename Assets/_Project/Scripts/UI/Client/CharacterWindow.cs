@@ -2861,7 +2861,16 @@ private void SubscribeLocale()
                     int selected = -1;
                     if (_hasSelectedQuest && !string.IsNullOrEmpty(_selectedQuest.questId))
                         selected = _questsVisibleCache.FindIndex(q => q.questId == _selectedQuest.questId);
-                    if (selected < 0) _hasSelectedQuest = false;
+                    if (selected < 0)
+                    {
+                        _hasSelectedQuest = false;
+                    }
+                    else
+                    {
+                        // Snapshot обновил прогресс: заменяем выбранный объект свежей проекцией,
+                        // иначе detail pane продолжает показывать старое значение completed.
+                        _selectedQuest = _questsVisibleCache[selected];
+                    }
                     _questsList.itemsSource = _questsVisibleCache;
                     _questsList.selectedIndex = selected;
                     _questsList.RefreshItems();

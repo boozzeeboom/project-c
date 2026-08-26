@@ -30,12 +30,18 @@
  padding-left:2px !important;
  white-space: normal !important;
 }
-.quest-tracker-objective {
+.quest-tracker-objectives-container {
+ flex-direction: column !important;
+ margin-bottom:4px !important;
+}
+.quest-tracker-objective-line {
  font-size:10px !important;
  color: rgb(180,200,180) !important;
- margin-bottom:4px !important;
- padding-left:2px !important;
+ padding:1px 0 !important;
  white-space: normal !important;
+}
+.quest-tracker-objective-line-done {
+ color: rgb(100,180,100) !important;
 }
 .quest-tracker-hide {
  font-size:10px !important;

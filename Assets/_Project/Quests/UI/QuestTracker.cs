@@ -31,7 +31,7 @@ namespace ProjectC.Quests.UI
  private VisualElement _root;
  private VisualElement _panel;
  private Label _nameLabel;
- private Label _objectiveLabel;
+ private VisualElement _objectivesContainer;
  private Button _hideBtn;
 
  private bool _built;
@@ -151,11 +151,10 @@ namespace ProjectC.Quests.UI
 
  _panel = _root.Q<VisualElement>("panel");
  _nameLabel = _root.Q<Label>("quest-name");
- _objectiveLabel = _root.Q<Label>("quest-objective");
+ _objectivesContainer = _root.Q<VisualElement>("quest-objectives-container");
  _hideBtn = _root.Q<Button>("hide-btn");
 
  if (_hideBtn != null) { _hideBtn.clicked += OnHideClicked; _hideBtn.text = Loc.Get("ui.quest.btn.hide"); }
- if (_objectiveLabel != null) _objectiveLabel.text = Loc.Get("ui.quest.objective_prefix");
 
  // Initially hidden (no tracked quest).
  if (_root != null) _root.style.display = DisplayStyle.None;
@@ -286,34 +285,27 @@ namespace ProjectC.Quests.UI
      ? Loc.Get(tracked.displayName, tracked.displayName)
      : tracked.questId;
 
- // Текущая цель = первая не-completed objective (MVP).
- if (_objectiveLabel != null)
+ // T-Q22: ВСЕ objectives — каждый на своей строке ☐/☑ (pattern: CharacterWindow quest-row, T-Q21).
+ if (_objectivesContainer != null)
  {
- string objText = BuildObjectiveText(tracked);
- _objectiveLabel.text = objText;
+ _objectivesContainer.Clear();
+ var objs = tracked.objectives;
+ if (objs != null)
+ {
+ foreach (var o in objs)
+ {
+ var lbl = new Label();
+ lbl.AddToClassList("quest-tracker-objective-line");
+ string bullet = o.completed ? "☑" : "☐";
+ string counter = o.requiredQuantity > 1 ? $" ({o.currentValue}/{o.requiredQuantity})" : "";
+ string objText = Loc.Get(o.description, o.description);
+ lbl.text = $"{bullet} {objText}{counter}";
+ if (o.completed) lbl.AddToClassList("quest-tracker-objective-line-done");
+ _objectivesContainer.Add(lbl);
+ }
+ }
  }
  }
 
- private static string BuildObjectiveText(QuestProgressDto q)
- {
- var objs = q.objectives;
- if (objs == null || objs.Length ==0) return Loc.Get("ui.quest.objective_none", "Objective: (none)");
- int completed =0;
- foreach (var o in objs) if (o.completed) completed++;
- // T-Q21 fix: первая не-completed objective — показываем current/required для HUD counter.
- foreach (var o in objs)
- {
- if (!o.completed && !string.IsNullOrEmpty(o.description))
- {
- int req = o.requiredQuantity >0 ? o.requiredQuantity :1;
- string objectiveText = Loc.Get(o.description, o.description);
- // Показываем counter только если requiredQuantity > 1 (для 1-цели counter избыточен).
- if (req >1) return Loc.Format("ui.quest.objective_counter", objectiveText, o.currentValue, req);
- return Loc.Format("ui.quest.objective_simple", objectiveText);
- }
- }
- // Все completed — выводим общий счётчик.
- return Loc.Format("ui.quest.objective_completed", completed, objs.Length);
- }
  }
 }

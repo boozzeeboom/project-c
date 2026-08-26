@@ -1411,26 +1411,20 @@
 
 /* === Quest journal redesign: compact list + dedicated detail pane === */
 .quests-section {
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 1 0 !important;
     min-height: 0 !important;
-    overflow: hidden !important;
 }
 .quests-layout {
-    display: flex !important;
     flex-direction: row !important;
-    flex: 1 1 0 !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
     min-height: 0 !important;
-    min-width: 0 !important;
-    height: auto !important;
 }
 .quests-sidebar {
     width: 30% !important;
     min-width: 160px !important;
     min-height: 0 !important;
-    flex: 0 0 30% !important;
-=======
+    flex-grow: 0 !important;
+    flex-shrink: 1 !important;
     flex-direction: column !important;
     margin-right: 6px !important;
     padding: 2px !important;

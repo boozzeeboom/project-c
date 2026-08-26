@@ -200,18 +200,32 @@
    </ui:VisualElement>
   </ui:VisualElement>
  </ui:VisualElement>
- <ui:VisualElement name="quests-section" class="list-section" style="display: none;">
+ <ui:VisualElement name="quests-section" class="list-section quests-section" style="display: none;">
   <ui:Label text="Квесты" class="section-title" />
-  <ui:ScrollView class="quests-scroll">
-   <ui:Label text="— Активные" class="quests-section-title" />
-   <ui:ListView name="quests-active-list" class="item-list quest-list quest-list-full" />
-   <ui:Label text="— Завершённые" class="quests-section-title" />
-   <ui:ListView name="quests-completed-list" class="item-list quest-list quest-list-full" />
-   <ui:Label text="— Провалено" class="quests-section-title" />
-   <ui:ListView name="quests-failed-list" class="item-list quest-list quest-list-full" />
-   <ui:Label text="— Найдено" class="quests-section-title" />
-   <ui:ListView name="quests-discovered-list" class="item-list quest-list quest-list-full" />
-  </ui:ScrollView>
+  <ui:VisualElement class="quests-layout">
+   <ui:VisualElement class="quests-sidebar">
+    <ui:Label text="Показывать" class="quests-filter-title" />
+    <ui:VisualElement class="quests-filters">
+     <ui:Toggle name="quests-filter-active" label="Активные" value="true" class="quest-filter-toggle" />
+     <ui:Toggle name="quests-filter-completed" label="Выполненные" value="false" class="quest-filter-toggle" />
+     <ui:Toggle name="quests-filter-discovered" label="Найденные" value="true" class="quest-filter-toggle" />
+    </ui:VisualElement>
+    <ui:ListView name="quests-list" class="item-list quests-list" />
+   </ui:VisualElement>
+   <ui:VisualElement class="quest-details">
+    <ui:Label name="quest-detail-title" text="Выберите квест" class="quest-detail-title" />
+    <ui:Label name="quest-detail-state" text="—" class="quest-detail-state" />
+    <ui:Label name="quest-detail-progress" text="—" class="quest-detail-progress" />
+    <ui:ScrollView name="quest-objectives-scroll" class="quest-objectives-scroll">
+     <ui:VisualElement name="quest-objectives-container" class="quest-objectives-container" />
+    </ui:ScrollView>
+    <ui:VisualElement class="quest-detail-actions">
+     <ui:Button name="quest-track-btn" text="Следить" class="action-btn quest-detail-btn track" />
+     <ui:Button name="quest-reject-btn" text="Отказаться" class="action-btn quest-detail-btn reject" />
+     <ui:Button name="quest-accept-btn" text="Принять" class="action-btn quest-detail-btn accept" />
+    </ui:VisualElement>
+   </ui:VisualElement>
+  </ui:VisualElement>
  </ui:VisualElement>
 			
  <ui:VisualElement class="actions">

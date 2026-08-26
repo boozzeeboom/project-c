@@ -114,6 +114,21 @@ private bool _built;
         private ListView _questsCompletedList;
         private ListView _questsFailedList;
         private ListView _questsDiscoveredList;
+        // Quest journal redesign: one filtered master list and one selected quest detail pane.
+        private ListView _questsList;
+        private Toggle _questsFilterActive;
+        private Toggle _questsFilterCompleted;
+        private Toggle _questsFilterDiscovered;
+        private Button _questTrackBtn;
+        private Button _questRejectBtn;
+        private Button _questAcceptBtn;
+        private Label _questDetailTitle;
+        private Label _questDetailState;
+        private Label _questDetailProgress;
+        private VisualElement _questObjectivesContainer;
+        private QuestListItem _selectedQuest;
+        private bool _hasSelectedQuest;
+        private readonly List<QuestListItem> _questsVisibleCache = new List<QuestListItem>();
 
         private VisualElement _statStrBarFill;
         private Label _statStrValue;
@@ -484,6 +499,8 @@ private void SubscribeLocale()
             if (_questsCompletedList != null) _questsCompletedList.Rebuild();
             if (_questsFailedList != null) _questsFailedList.Rebuild();
             if (_questsDiscoveredList != null) _questsDiscoveredList.Rebuild();
+            if (_questsList != null) _questsList.Rebuild();
+            RefreshQuestDetail();
             RebuildEquipmentListView();
             RebuildSkillsListView();
             _doc?.rootVisualElement?.MarkDirtyRepaint();
@@ -502,6 +519,10 @@ private void SubscribeLocale()
             if (_closeBtn != null) _closeBtn.text = Loc.Get("ui.character.btn.close");
             if (_acceptQuestBtn != null) _acceptQuestBtn.text = Loc.Get("ui.character.btn.accept");
             if (_rejectQuestBtn != null) _rejectQuestBtn.text = Loc.Get("ui.character.btn.reject");
+            if (_questTrackBtn != null && _hasSelectedQuest)
+                _questTrackBtn.text = Loc.Get("ui.quest.track");
+            if (_questRejectBtn != null) _questRejectBtn.text = Loc.Get("ui.character.btn.reject");
+            if (_questAcceptBtn != null) _questAcceptBtn.text = Loc.Get("ui.character.btn.accept");
             OverrideSectionTitles();
 
             var skillBtn = _root.Q<Label>("open-skill-tree-btn");
@@ -730,6 +751,19 @@ private void SubscribeLocale()
             _questsFailedList = _root.Q<ListView>("quests-failed-list");
             _questsDiscoveredList = _root.Q<ListView>("quests-discovered-list");
 
+            // Quest journal redesign: compact master list on the left, detail pane on the right.
+            _questsList = _root.Q<ListView>("quests-list");
+            _questsFilterActive = _root.Q<Toggle>("quests-filter-active");
+            _questsFilterCompleted = _root.Q<Toggle>("quests-filter-completed");
+            _questsFilterDiscovered = _root.Q<Toggle>("quests-filter-discovered");
+            _questTrackBtn = _root.Q<Button>("quest-track-btn");
+            _questRejectBtn = _root.Q<Button>("quest-reject-btn");
+            _questAcceptBtn = _root.Q<Button>("quest-accept-btn");
+            _questDetailTitle = _root.Q<Label>("quest-detail-title");
+            _questDetailState = _root.Q<Label>("quest-detail-state");
+            _questDetailProgress = _root.Q<Label>("quest-detail-progress");
+            _questObjectivesContainer = _root.Q<VisualElement>("quest-objectives-container");
+
             _acceptQuestBtn = _root.Q<Button>("accept-quest-btn");
             _rejectQuestBtn = _root.Q<Button>("reject-quest-btn");
             _closeBtn = _root.Q<Button>("close-btn");
@@ -805,7 +839,11 @@ private void SubscribeLocale()
                 _knowledgeRecipesList.fixedItemHeight = 28;
             }
 
-            // ---- ListView: Quests (T-Q11:4 под-секции, общий row factory) ----
+            // ---- Quest journal: filtered master list + selected detail pane ----
+            SetupQuestJournal();
+
+            // ---- ListView: legacy quest lists (kept for backward compatibility) ----
+            // These references are null with the redesigned UXML and are intentionally no-op.
             // T-Q11: каждый список (active/completed/failed/discovered) имеет один factory.
             // per-row state badge CSS class берётся из QuestListItem.stateBadge.
             SetupQuestListView(_questsActiveList, ref _questsActiveCache);
@@ -972,8 +1010,9 @@ private void SubscribeLocale()
 
         // ---- Action buttons ----
         // T-P19: accept/complete/fail кнопки — переехали в ContractsTab.BuildUI
-        if (_acceptQuestBtn != null) _acceptQuestBtn.style.display = isQuests ? DisplayStyle.Flex : DisplayStyle.None;
-        if (_rejectQuestBtn != null) _rejectQuestBtn.style.display = isQuests ? DisplayStyle.Flex : DisplayStyle.None;
+        // Quest actions now live in the right-hand detail pane.
+        if (_acceptQuestBtn != null) _acceptQuestBtn.style.display = DisplayStyle.None;
+        if (_rejectQuestBtn != null) _rejectQuestBtn.style.display = DisplayStyle.None;
         if (_closeBtn != null) _closeBtn.style.display = DisplayStyle.Flex; // всегда
 
         // ---- Refresh data for the active tab ----
@@ -2683,6 +2722,208 @@ private void SubscribeLocale()
                 }
             }
 
+            // ---- Quest journal redesign ----
+            private void SetupQuestJournal()
+            {
+                if (_questsList == null) return;
+
+                _questsList.makeItem = MakeQuestJournalRow;
+                _questsList.bindItem = BindQuestJournalRow;
+                _questsList.fixedItemHeight = 44;
+                _questsList.selectionType = SelectionType.Single;
+                _questsList.selectedIndex = -1;
+                _questsList.selectionChanged += OnQuestJournalSelectionChanged;
+
+                if (_questsFilterActive != null) _questsFilterActive.RegisterValueChangedCallback(_ => ApplyQuestJournalFilters());
+                if (_questsFilterCompleted != null) _questsFilterCompleted.RegisterValueChangedCallback(_ => ApplyQuestJournalFilters());
+                if (_questsFilterDiscovered != null) _questsFilterDiscovered.RegisterValueChangedCallback(_ => ApplyQuestJournalFilters());
+                if (_questTrackBtn != null) _questTrackBtn.clicked += OnQuestTrackClicked;
+                if (_questAcceptBtn != null) _questAcceptBtn.clicked += OnQuestAcceptClicked;
+                if (_questRejectBtn != null) _questRejectBtn.clicked += OnQuestRejectClicked;
+
+                ClearQuestDetail();
+            }
+
+            private VisualElement MakeQuestJournalRow()
+            {
+                var row = new VisualElement();
+                row.AddToClassList("quest-list-row");
+                var state = new Label { name = "journal-state" };
+                state.AddToClassList("quest-list-row-state");
+                row.Add(state);
+                var content = new VisualElement { name = "journal-content" };
+                content.AddToClassList("quest-list-row-content");
+                var title = new Label { name = "journal-title" };
+                title.AddToClassList("quest-list-row-title");
+                content.Add(title);
+                var progress = new Label { name = "journal-progress" };
+                progress.AddToClassList("quest-list-row-progress");
+                content.Add(progress);
+                row.Add(content);
+                return row;
+            }
+
+            private void BindQuestJournalRow(VisualElement row, int index)
+            {
+                if (index < 0 || index >= _questsVisibleCache.Count) return;
+                var q = _questsVisibleCache[index];
+                var state = row.Q<Label>("journal-state");
+                var title = row.Q<Label>("journal-title");
+                var progress = row.Q<Label>("journal-progress");
+                if (state != null)
+                {
+                    state.text = q.state == (byte)QuestState.Active ? "●" :
+                        (q.state == (byte)QuestState.Discovered || q.state == (byte)QuestState.Offered ? "◆" : "✓");
+                    state.RemoveFromClassList("quest-row-state-active");
+                    state.RemoveFromClassList("quest-row-state-completed");
+                    state.RemoveFromClassList("quest-row-state-discovered");
+                    state.RemoveFromClassList("quest-row-state-failed");
+                    if (!string.IsNullOrEmpty(q.stateBadge)) state.AddToClassList(q.stateBadge);
+                }
+                if (title != null) title.text = q.displayName ?? q.questId ?? "(unknown)";
+                if (progress != null)
+                {
+                    progress.text = q.objectiveTotalCount > 0
+                        ? $"{q.stateLabel}  ·  {q.objectiveCompletedCount}/{q.objectiveTotalCount}"
+                        : q.stateLabel ?? "";
+                }
+                row.RemoveFromClassList("selected");
+                if (_hasSelectedQuest && _selectedQuest.questId == q.questId) row.AddToClassList("selected");
+            }
+
+            private void OnQuestJournalSelectionChanged(IEnumerable<object> selectedItems)
+            {
+                _hasSelectedQuest = false;
+                if (_questsList == null || _questsList.selectedIndex < 0 || _questsList.selectedIndex >= _questsVisibleCache.Count)
+                {
+                    ClearQuestDetail();
+                    return;
+                }
+                _selectedQuest = _questsVisibleCache[_questsList.selectedIndex];
+                _hasSelectedQuest = true;
+                RefreshQuestDetail();
+                _questsList.RefreshItems();
+            }
+
+            private void ApplyQuestJournalFilters()
+            {
+                _questsVisibleCache.Clear();
+                if (_questsFilterActive == null || _questsFilterCompleted == null || _questsFilterDiscovered == null)
+                    return;
+
+                if (_questsFilterActive.value) _questsVisibleCache.AddRange(_questsActiveCache);
+                if (_questsFilterCompleted.value)
+                {
+                    _questsVisibleCache.AddRange(_questsCompletedCache);
+                    _questsVisibleCache.AddRange(_questsFailedCache);
+                }
+                if (_questsFilterDiscovered.value) _questsVisibleCache.AddRange(_questsDiscoveredCache);
+
+                if (_questsList != null)
+                {
+                    int selected = -1;
+                    if (_hasSelectedQuest && !string.IsNullOrEmpty(_selectedQuest.questId))
+                        selected = _questsVisibleCache.FindIndex(q => q.questId == _selectedQuest.questId);
+                    if (selected < 0) _hasSelectedQuest = false;
+                    _questsList.itemsSource = _questsVisibleCache;
+                    _questsList.selectedIndex = selected;
+                    _questsList.RefreshItems();
+                }
+                if (_hasSelectedQuest) RefreshQuestDetail();
+                else ClearQuestDetail();
+            }
+
+            private void RefreshQuestDetail()
+            {
+                if (!_hasSelectedQuest)
+                {
+                    ClearQuestDetail();
+                    return;
+                }
+                if (_questDetailTitle != null) _questDetailTitle.text = _selectedQuest.displayName ?? _selectedQuest.questId;
+                if (_questDetailState != null) _questDetailState.text = _selectedQuest.stateLabel ?? "";
+                if (_questDetailProgress != null)
+                {
+                    _questDetailProgress.text = _selectedQuest.objectiveTotalCount > 0
+                        ? Loc.Format("ui.character.quests_progress", _selectedQuest.objectiveCompletedCount, _selectedQuest.objectiveTotalCount)
+                        : "";
+                }
+                if (_questObjectivesContainer != null)
+                {
+                    _questObjectivesContainer.Clear();
+                    if (_selectedQuest.objectives != null)
+                    {
+                        foreach (var objective in _selectedQuest.objectives)
+                        {
+                            var label = new Label();
+                            label.AddToClassList("quest-detail-objective");
+                            if (objective.completed) label.AddToClassList("quest-detail-objective-done");
+                            string counter = objective.requiredQuantity > 1
+                                ? $" ({objective.currentValue}/{objective.requiredQuantity})"
+                                : "";
+                            label.text = $"{(objective.completed ? "☑" : "☐")} {objective.description}{counter}";
+                            _questObjectivesContainer.Add(label);
+                        }
+                    }
+                }
+
+                var tracker = QuestTracker.Instance;
+                bool tracked = tracker != null && tracker.TrackedQuestId == _selectedQuest.questId;
+                if (_questTrackBtn != null)
+                {
+                    _questTrackBtn.text = tracked ? Loc.Get("ui.quest.untrack") : Loc.Get("ui.quest.track");
+                    _questTrackBtn.style.display = _selectedQuest.state == (byte)QuestState.Active ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+                if (_questRejectBtn != null)
+                    _questRejectBtn.style.display = _selectedQuest.state == (byte)QuestState.Active ? DisplayStyle.Flex : DisplayStyle.None;
+                if (_questAcceptBtn != null)
+                    _questAcceptBtn.style.display = (_selectedQuest.state == (byte)QuestState.Discovered || _selectedQuest.state == (byte)QuestState.Offered)
+                        ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            private void ClearQuestDetail()
+            {
+                if (_questDetailTitle != null) _questDetailTitle.text = Loc.Get("ui.character.select_quest", "Выберите квест");
+                if (_questDetailState != null) _questDetailState.text = "—";
+                if (_questDetailProgress != null) _questDetailProgress.text = "—";
+                if (_questObjectivesContainer != null) _questObjectivesContainer.Clear();
+                if (_questTrackBtn != null) _questTrackBtn.style.display = DisplayStyle.None;
+                if (_questRejectBtn != null) _questRejectBtn.style.display = DisplayStyle.None;
+                if (_questAcceptBtn != null) _questAcceptBtn.style.display = DisplayStyle.None;
+            }
+
+            private void OnQuestTrackClicked()
+            {
+                if (!_hasSelectedQuest) return;
+                var tracker = QuestTracker.GetOrFindInstance();
+                if (tracker == null)
+                {
+                    SetMessage(Loc.Get("ui.system.questtracker_unavailable"), true);
+                    return;
+                }
+                tracker.Toggle(_selectedQuest.questId);
+                RefreshQuestDetail();
+                if (_questsList != null) _questsList.RefreshItems();
+            }
+
+            private void OnQuestAcceptClicked()
+            {
+                if (!_hasSelectedQuest) return;
+                var state = QuestClientState.Instance;
+                if (state == null)
+                {
+                    SetMessage(Loc.Get("ui.system.queststate_unavailable"), true);
+                    return;
+                }
+                state.RequestAcceptQuest(_selectedQuest.questId, "");
+                SetMessage(Loc.Format("ui.character.accept_request", _selectedQuest.displayName ?? ""));
+            }
+
+            private void OnQuestRejectClicked()
+            {
+                if (_hasSelectedQuest) SetMessage(Loc.Get("ui.quest.reject_unavailable"));
+            }
+
             // ---- ListView setup helper ----
             private void SetupQuestListView(ListView list, ref List<QuestListItem> cacheRef)
             {
@@ -3128,6 +3369,7 @@ private void SubscribeLocale()
             if (qs == null || !qs.CurrentSnapshot.HasValue)
             {
             ApplyQuestListRefresh();
+            ApplyQuestJournalFilters();
             return;
             }
 
@@ -3136,6 +3378,7 @@ private void SubscribeLocale()
             if (quests == null)
             {
             ApplyQuestListRefresh();
+            ApplyQuestJournalFilters();
             return;
             }
 
@@ -3163,6 +3406,7 @@ private void SubscribeLocale()
             }
 
             ApplyQuestListRefresh();
+            ApplyQuestJournalFilters();
             UpdateQuestMessage();
             }
 

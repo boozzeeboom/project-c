@@ -31,7 +31,7 @@ MonoBehaviour:
       pickupItem: {fileID: 0}
       requiredQuantity: 1
       targetSceneId: WorldScene_0_0
-      targetPosition: {x: 40021.7, y: 2501.47, z: 39981.832}
+      targetPosition: {x: 39914, y: 2501.47, z: 39941}
       targetRadius: 3
       targetEntityType: 
       targetEntity: {fileID: 0}
@@ -131,7 +131,7 @@ MonoBehaviour:
       pickupItem: {fileID: 0}
       requiredQuantity: 1
       targetSceneId: WorldScene_0_0
-      targetPosition: {x: 40053.7, y: 2501.47, z: 39981.832}
+      targetPosition: {x: 39946, y: 2501.47, z: 39941}
       targetRadius: 3
       targetEntityType: 
       targetEntity: {fileID: 0}
@@ -213,7 +213,7 @@ MonoBehaviour:
       pickupItem: {fileID: 0}
       requiredQuantity: 1
       targetSceneId: WorldScene_0_0
-      targetPosition: {x: 40085.7, y: 2501.47, z: 39981.832}
+      targetPosition: {x: 39978, y: 2501.47, z: 39941}
       targetRadius: 3
       targetEntityType: 
       targetEntity: {fileID: 0}

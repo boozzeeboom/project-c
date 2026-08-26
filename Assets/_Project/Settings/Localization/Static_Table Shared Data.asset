@@ -491,6 +491,30 @@ MonoBehaviour:
     m_Key: static.quest.collect_copper_ore.description
     m_Metadata:
       m_Items: []
+  - m_Id: 7398523141005312
+    m_Key: quest.q001.objective.reach_old_dock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754048
+    m_Key: quest.q001.objective.reach_salt_archive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754049
+    m_Key: quest.q001.objective.reach_glass_well
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754050
+    m_Key: quest.q001a.objective.reach_lighthouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754051
+    m_Key: quest.q001b.objective.reach_quarantine_cove
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754052
+    m_Key: quest.q001c.objective.reach_cache
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

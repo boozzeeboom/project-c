@@ -56,7 +56,7 @@ MonoBehaviour:
       pickupItem: {fileID: 0}
       requiredQuantity: 1
       targetSceneId: WorldScene_0_0
-      targetPosition: {x: 40133.7, y: 2501.47, z: 39981.832}
+      targetPosition: {x: 40074, y: 2501.47, z: 39941}
       targetRadius: 3
       targetEntityType: 
       targetEntity: {fileID: 0}

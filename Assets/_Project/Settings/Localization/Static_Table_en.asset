@@ -17,7 +17,31 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: 9d41b6a1a903b874193ef27b96e085b6, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 7398523141005312
+    m_Localized: Reach the old dock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754048
+    m_Localized: Reach the salt archive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754049
+    m_Localized: Reach the glass well
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754050
+    m_Localized: Reach the null lighthouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754051
+    m_Localized: Reach the quarantine cove
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7398523178754052
+    m_Localized: Reach the broker cache
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

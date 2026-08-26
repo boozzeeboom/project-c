@@ -145,6 +145,10 @@ namespace ProjectC.Skills
             // 1) Owner-only guard.
             if (_ownerPlayer == null || !_ownerPlayer.IsSpawned) return;
 
+            // UI modal gate: не пропускаем ЛКМ/ПКМ и fallback-атаки поверх
+            // диалогов, рынка, ремонта, персонажа, меню и прочих окон.
+            if (ProjectC.UI.UIManager.IsGameplayInputBlocked()) return;
+
             // T-HP01-fix: defence-in-depth — не обрабатываем ввод если игрок мёртв.
             // Основной блок — SetInputEnabled(false) отключает весь компонент,
             // но эта проверка страхует от edge-cases (например, ручное включение).
@@ -260,8 +264,10 @@ namespace ProjectC.Skills
         {
             if (slot == SkillInputSlot.None) return false;
 
-            // 0) Dialog open — block all combat attacks.
-            if (ProjectC.Quests.UI.DialogWindow.Instance != null && ProjectC.Quests.UI.DialogWindow.Instance.IsOpen)
+            // 0) Any modal UI open — block all combat attacks.
+            // Проверка дублируется здесь, чтобы защитить вызовы TryActivate()
+            // не только из polling Update(), но и из внешних обработчиков.
+            if (ProjectC.UI.UIManager.IsGameplayInputBlocked())
                 return false;
 
             // 1) Slot привязан к skill? Для Primary/Secondary разрешаем unarmed attack без бинда.

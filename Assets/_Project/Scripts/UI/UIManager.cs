@@ -234,6 +234,14 @@ namespace ProjectC.UI
             }
             catch { }
 
+            // CommPanelWindow (диспетчерская связь)
+            try
+            {
+                var comm = ProjectC.Docking.UI.CommPanelWindow.Instance;
+                if (comm != null && comm.IsOpen) return true;
+            }
+            catch { }
+
             // RepairManagerWindow (ремонтный менеджер в доке)
             try
             {
@@ -243,6 +251,26 @@ namespace ProjectC.UI
             catch { }
 
             return false;
+        }
+
+        /// <summary>
+        /// Возвращает true, когда любое модальное/игровое UI-окно открыто.
+        /// Используется gameplay input-сервисами, чтобы ввод атаки и другие
+        /// игровые действия не проходили сквозь UI.
+        /// </summary>
+        public static bool IsGameplayInputBlocked()
+        {
+            if (Instance != null && Instance._openPanels.Count > 0)
+                return true;
+
+            try
+            {
+                var esc = EscMenu.EscMenuWindow.Instance;
+                if (esc != null && esc.IsOpen()) return true;
+            }
+            catch { }
+
+            return IsCharacterWindowVisible() || IsAnyExternalWindowOpen();
         }
 
         /// <summary>

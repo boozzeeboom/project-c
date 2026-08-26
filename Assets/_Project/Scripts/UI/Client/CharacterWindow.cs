@@ -116,9 +116,12 @@ private bool _built;
         private ListView _questsDiscoveredList;
         // Quest journal redesign: one filtered master list and one selected quest detail pane.
         private ListView _questsList;
-        private Toggle _questsFilterActive;
-        private Toggle _questsFilterCompleted;
-        private Toggle _questsFilterDiscovered;
+        private Button _questsFilterActive;
+        private Button _questsFilterCompleted;
+        private Button _questsFilterDiscovered;
+        private bool _showActiveQuests = true;
+        private bool _showCompletedQuests = false;
+        private bool _showDiscoveredQuests = true;
         private Button _questTrackBtn;
         private Button _questRejectBtn;
         private Button _questAcceptBtn;
@@ -753,9 +756,9 @@ private void SubscribeLocale()
 
             // Quest journal redesign: compact master list on the left, detail pane on the right.
             _questsList = _root.Q<ListView>("quests-list");
-            _questsFilterActive = _root.Q<Toggle>("quests-filter-active");
-            _questsFilterCompleted = _root.Q<Toggle>("quests-filter-completed");
-            _questsFilterDiscovered = _root.Q<Toggle>("quests-filter-discovered");
+            _questsFilterActive = _root.Q<Button>("quests-filter-active");
+            _questsFilterCompleted = _root.Q<Button>("quests-filter-completed");
+            _questsFilterDiscovered = _root.Q<Button>("quests-filter-discovered");
             _questTrackBtn = _root.Q<Button>("quest-track-btn");
             _questRejectBtn = _root.Q<Button>("quest-reject-btn");
             _questAcceptBtn = _root.Q<Button>("quest-accept-btn");
@@ -2734,14 +2737,48 @@ private void SubscribeLocale()
                 _questsList.selectedIndex = -1;
                 _questsList.selectionChanged += OnQuestJournalSelectionChanged;
 
-                if (_questsFilterActive != null) _questsFilterActive.RegisterValueChangedCallback(_ => ApplyQuestJournalFilters());
-                if (_questsFilterCompleted != null) _questsFilterCompleted.RegisterValueChangedCallback(_ => ApplyQuestJournalFilters());
-                if (_questsFilterDiscovered != null) _questsFilterDiscovered.RegisterValueChangedCallback(_ => ApplyQuestJournalFilters());
+                if (_questsFilterActive != null)
+                {
+                    _questsFilterActive.clicked += () =>
+                    {
+                        _showActiveQuests = !_showActiveQuests;
+                        SetQuestFilterButtonState(_questsFilterActive, _showActiveQuests);
+                        ApplyQuestJournalFilters();
+                    };
+                    SetQuestFilterButtonState(_questsFilterActive, _showActiveQuests);
+                }
+                if (_questsFilterCompleted != null)
+                {
+                    _questsFilterCompleted.clicked += () =>
+                    {
+                        _showCompletedQuests = !_showCompletedQuests;
+                        SetQuestFilterButtonState(_questsFilterCompleted, _showCompletedQuests);
+                        ApplyQuestJournalFilters();
+                    };
+                    SetQuestFilterButtonState(_questsFilterCompleted, _showCompletedQuests);
+                }
+                if (_questsFilterDiscovered != null)
+                {
+                    _questsFilterDiscovered.clicked += () =>
+                    {
+                        _showDiscoveredQuests = !_showDiscoveredQuests;
+                        SetQuestFilterButtonState(_questsFilterDiscovered, _showDiscoveredQuests);
+                        ApplyQuestJournalFilters();
+                    };
+                    SetQuestFilterButtonState(_questsFilterDiscovered, _showDiscoveredQuests);
+                }
                 if (_questTrackBtn != null) _questTrackBtn.clicked += OnQuestTrackClicked;
                 if (_questAcceptBtn != null) _questAcceptBtn.clicked += OnQuestAcceptClicked;
                 if (_questRejectBtn != null) _questRejectBtn.clicked += OnQuestRejectClicked;
 
                 ClearQuestDetail();
+            }
+
+            private static void SetQuestFilterButtonState(Button button, bool active)
+            {
+                if (button == null) return;
+                if (active) button.AddToClassList("quest-filter-active");
+                else button.RemoveFromClassList("quest-filter-active");
             }
 
             private VisualElement MakeQuestJournalRow()
@@ -2811,13 +2848,13 @@ private void SubscribeLocale()
                 if (_questsFilterActive == null || _questsFilterCompleted == null || _questsFilterDiscovered == null)
                     return;
 
-                if (_questsFilterActive.value) _questsVisibleCache.AddRange(_questsActiveCache);
-                if (_questsFilterCompleted.value)
+                if (_showActiveQuests) _questsVisibleCache.AddRange(_questsActiveCache);
+                if (_showCompletedQuests)
                 {
                     _questsVisibleCache.AddRange(_questsCompletedCache);
                     _questsVisibleCache.AddRange(_questsFailedCache);
                 }
-                if (_questsFilterDiscovered.value) _questsVisibleCache.AddRange(_questsDiscoveredCache);
+                if (_showDiscoveredQuests) _questsVisibleCache.AddRange(_questsDiscoveredCache);
 
                 if (_questsList != null)
                 {

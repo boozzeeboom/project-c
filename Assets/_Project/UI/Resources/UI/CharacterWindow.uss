@@ -1442,55 +1442,38 @@
     flex-shrink: 0 !important;
     margin-bottom: 3px !important;
 }
-.quest-filter-toggle {
-    flex-direction: row !important;
+.quest-filter-button {
     align-self: flex-start !important;
     flex-grow: 0 !important;
-    flex-shrink: 0 !important;
+    flex-shrink: 1 !important;
     flex-basis: auto !important;
     width: auto !important;
     min-width: 0 !important;
-    min-height: 20px !important;
+    max-width: 100% !important;
     height: 20px !important;
+    min-height: 20px !important;
     margin: 0 4px 2px 0 !important;
-    padding: 2px 5px !important;
+    padding: 1px 7px !important;
     font-size: 10px !important;
-    color: rgb(220, 220, 230) !important;
-    background-color: rgba(45, 60, 85, 0.55) !important;
+    color: rgb(185, 200, 220) !important;
+    background-color: rgba(45, 58, 80, 0.65) !important;
     border-width: 1px !important;
-    border-color: rgba(100, 125, 165, 0.55) !important;
+    border-color: rgba(90, 112, 145, 0.5) !important;
     border-radius: 3px !important;
+    -unity-text-align: middle-center !important;
+    white-space: nowrap !important;
 }
-.quest-filter-toggle:hover {
-    background-color: rgba(70, 95, 135, 0.75) !important;
-    border-color: rgba(140, 170, 215, 0.8) !important;
+.quest-filter-button:hover {
+    color: rgb(230, 238, 250) !important;
+    background-color: rgba(65, 88, 122, 0.85) !important;
+    border-color: rgba(125, 155, 200, 0.8) !important;
 }
-.quest-filter-toggle .unity-toggle__input {
-    width: 14px !important;
-    min-width: 14px !important;
-    max-width: 14px !important;
-    height: 14px !important;
-    min-height: 14px !important;
-    max-height: 14px !important;
-    margin: 0 4px 0 0 !important;
-    padding: 0 !important;
-    flex-grow: 0 !important;
-    flex-shrink: 0 !important;
+.quest-filter-button.quest-filter-active {
+    color: rgb(225, 238, 255) !important;
+    background-color: rgba(65, 100, 150, 0.8) !important;
+    border-color: rgba(120, 165, 220, 0.85) !important;
 }
-.quest-filter-toggle .unity-toggle__label {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    flex-grow: 0 !important;
-    flex-shrink: 0 !important;
-    -unity-text-align: middle-left !important;
-}
-.quest-filter-toggle:checked {
-    background-color: rgba(70, 110, 170, 0.75) !important;
-    border-color: rgba(150, 190, 240, 0.9) !important;
-}
+>>>>>>> REPLACE
 .quests-list {
     flex-grow: 1 !important;
     flex-shrink: 1 !important;

@@ -1420,12 +1420,12 @@
     min-height: 0 !important;
 }
 .quests-sidebar {
-    width: 34% !important;
-    min-width: 190px !important;
+    width: 30% !important;
+    min-width: 160px !important;
     min-height: 0 !important;
     flex-direction: column !important;
     margin-right: 6px !important;
-    padding: 4px !important;
+    padding: 3px !important;
     background-color: rgba(30, 40, 60, 0.35) !important;
     border-radius: 3px !important;
 }
@@ -1436,20 +1436,41 @@
     flex-shrink: 0 !important;
 }
 .quests-filters {
-    flex-direction: column !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
     flex-shrink: 0 !important;
-    margin-bottom: 4px !important;
+    margin-bottom: 3px !important;
 }
 .quest-filter-toggle {
-    min-height: 22px !important;
-    margin: 0 !important;
+    flex-direction: row !important;
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 20px !important;
+    height: 20px !important;
+    margin: 0 5px 1px 0 !important;
     padding: 0 !important;
     font-size: 10px !important;
     color: rgb(220, 220, 230) !important;
+    flex-shrink: 0 !important;
 }
 .quest-filter-toggle > .unity-toggle__input {
-    margin-right: 4px !important;
+    width: 16px !important;
+    min-width: 16px !important;
+    height: 16px !important;
+    min-height: 16px !important;
+    margin: 0 3px 0 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
 }
+.quest-filter-toggle > .unity-toggle__label {
+    width: auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -unity-text-align: middle-left !important;
+}
+>>>>>>> REPLACE
 .quests-list {
     flex-grow: 1 !important;
     flex-shrink: 1 !important;

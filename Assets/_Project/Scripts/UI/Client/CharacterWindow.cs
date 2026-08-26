@@ -2817,7 +2817,7 @@ private void SubscribeLocale()
                     state.RemoveFromClassList("quest-row-state-failed");
                     if (!string.IsNullOrEmpty(q.stateBadge)) state.AddToClassList(q.stateBadge);
                 }
-                if (title != null) title.text = q.displayName ?? q.questId ?? "(unknown)";
+                if (title != null) title.text = !string.IsNullOrEmpty(q.displayName) ? Loc.Get(q.displayName, q.displayName) : q.questId ?? "(unknown)";
                 if (progress != null)
                 {
                     progress.text = q.objectiveTotalCount > 0
@@ -2886,7 +2886,7 @@ private void SubscribeLocale()
                     ClearQuestDetail();
                     return;
                 }
-                if (_questDetailTitle != null) _questDetailTitle.text = _selectedQuest.displayName ?? _selectedQuest.questId;
+                if (_questDetailTitle != null) _questDetailTitle.text = !string.IsNullOrEmpty(_selectedQuest.displayName) ? Loc.Get(_selectedQuest.displayName, _selectedQuest.displayName) : _selectedQuest.questId;
                 if (_questDetailState != null) _questDetailState.text = _selectedQuest.stateLabel ?? "";
                 if (_questDetailProgress != null)
                 {
@@ -2907,7 +2907,8 @@ private void SubscribeLocale()
                             string counter = objective.requiredQuantity > 1
                                 ? $" ({objective.currentValue}/{objective.requiredQuantity})"
                                 : "";
-                            label.text = $"{(objective.completed ? "☑" : "☐")} {objective.description}{counter}";
+                            string objectiveText = Loc.Get(objective.description, objective.description);
+                            label.text = $"{(objective.completed ? "☑" : "☐")} {objectiveText}{counter}";
                             _questObjectivesContainer.Add(label);
                         }
                     }

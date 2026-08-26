@@ -1698,6 +1698,230 @@ MonoBehaviour:
     m_Localized: Press E to use
     m_Metadata:
       m_Items: []
+  - m_Id: 7460170132004864
+    m_Localized: Ash Under Glass
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502336
+    m_Localized: Investigate the signal from the glass archive and discover what
+      it concealed.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502337
+    m_Localized: Find the place indicated in Lyra's note.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502338
+    m_Localized: Gather the first independent traces of the expedition and talk to
+      Bram.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502339
+    m_Localized: Find Sela in the salt archive and restore the missing piece of the
+      protocol.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502340
+    m_Localized: Check whether the signal is linked to the glass well, not the military
+      beacon.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502341
+    m_Localized: Decide who to entrust the continuation of the investigation to.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502342
+    m_Localized: Complete the chosen investigation route.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696640
+    m_Localized: Return to Lyra and finalize the investigation.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696641
+    m_Localized: Reach the old dock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696642
+    m_Localized: Talk to Bram
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696643
+    m_Localized: Find the dock fragment
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696644
+    m_Localized: Find the archive fragment
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696645
+    m_Localized: Reach the salt archive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696646
+    m_Localized: Talk to Sela
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696647
+    m_Localized: Obtain Sela's fragment
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696648
+    m_Localized: Have the vault key
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696649
+    m_Localized: Reach the glass well
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696650
+    m_Localized: Talk to Veska
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696651
+    m_Localized: Talk to Lyra about the route choice
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696652
+    m_Localized: Resolve the investigation branch
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696653
+    m_Localized: Talk to Lyra (final)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696654
+    m_Localized: Signal Reconstruction
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696655
+    m_Localized: Prove that the signal is an emergency protocol, not a military call.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696656
+    m_Localized: Calibrate the resonance lens
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696657
+    m_Localized: Decode the signal at the silent lighthouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696658
+    m_Localized: Submit the report to Veska
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696659
+    m_Localized: Talk to Veska
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696660
+    m_Localized: Have the resonance lens
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696661
+    m_Localized: Reach the lighthouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696662
+    m_Localized: Have the lens
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696663
+    m_Localized: Talk to Sela
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696664
+    m_Localized: Talk to Veska (final)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696665
+    m_Localized: Black Box Salvage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696666
+    m_Localized: Extract the black box and obtain proof through Bram.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696667
+    m_Localized: Bram's Method
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696668
+    m_Localized: Recover the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696669
+    m_Localized: Check the broker's story
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696670
+    m_Localized: Return the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696671
+    m_Localized: Talk to Bram
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696672
+    m_Localized: Reach the quarantine cove
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696673
+    m_Localized: Have the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696674
+    m_Localized: Talk to Noll
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696675
+    m_Localized: Talk to Bram (final)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696676
+    m_Localized: Deliver the black box to Bram
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696677
+    m_Localized: Silent Exchange
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696678
+    m_Localized: Sell the black box to the highest bidder.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696679
+    m_Localized: Offer of Silence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696680
+    m_Localized: Take the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696681
+    m_Localized: Exchange
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696682
+    m_Localized: Talk to Kael
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696683
+    m_Localized: Reach the cache
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696684
+    m_Localized: Have the black box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696685
+    m_Localized: Talk to Kael (final)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696686
+    m_Localized: Deliver the black box to Kael
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

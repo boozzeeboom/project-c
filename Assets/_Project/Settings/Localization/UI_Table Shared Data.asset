@@ -1711,6 +1711,226 @@ MonoBehaviour:
     m_Key: ui.interaction_hint.use_e
     m_Metadata:
       m_Items: []
+  - m_Id: 7460170132004864
+    m_Key: quest.q001.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502336
+    m_Key: quest.q001.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502337
+    m_Key: quest.q001.stage.follow_note
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502338
+    m_Key: quest.q001.stage.collect_first_evidence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502339
+    m_Key: quest.q001.stage.sela_testimony
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502340
+    m_Key: quest.q001.stage.resonance_check
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502341
+    m_Key: quest.q001.stage.choose_route
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170207502342
+    m_Key: quest.q001.stage.wait_branch
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696640
+    m_Key: quest.q001.stage.final_report
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696641
+    m_Key: quest.q001.objective.reach_old_dock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696642
+    m_Key: quest.q001.objective.talk_bram
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696643
+    m_Key: quest.q001.objective.fragment_dock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696644
+    m_Key: quest.q001.objective.fragment_archive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696645
+    m_Key: quest.q001.objective.reach_salt_archive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696646
+    m_Key: quest.q001.objective.talk_sela
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696647
+    m_Key: quest.q001.objective.fragment_sela
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696648
+    m_Key: quest.q001.objective.have_vault_key
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696649
+    m_Key: quest.q001.objective.reach_glass_well
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696650
+    m_Key: quest.q001.objective.talk_veska
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696651
+    m_Key: quest.q001.objective.talk_lyra_choice
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696652
+    m_Key: quest.q001.objective.branch_resolved
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696653
+    m_Key: quest.q001.objective.final_talk_lyra
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696654
+    m_Key: quest.q001a.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696655
+    m_Key: quest.q001a.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696656
+    m_Key: quest.q001a.stage.lens_calibration
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696657
+    m_Key: quest.q001a.stage.decode_lighthouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696658
+    m_Key: quest.q001a.stage.report_veska
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696659
+    m_Key: quest.q001a.objective.talk_veska
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696660
+    m_Key: quest.q001a.objective.lighthouse_have_lens
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696661
+    m_Key: quest.q001a.objective.reach_lighthouse
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696662
+    m_Key: quest.q001a.objective.have_lens
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696663
+    m_Key: quest.q001a.objective.talk_sela
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696664
+    m_Key: quest.q001a.objective.talk_veska_final
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696665
+    m_Key: quest.q001b.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696666
+    m_Key: quest.q001b.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696667
+    m_Key: quest.q001b.stage.bram_method
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696668
+    m_Key: quest.q001b.stage.recover_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696669
+    m_Key: quest.q001b.stage.check_broker_story
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696670
+    m_Key: quest.q001b.stage.return_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696671
+    m_Key: quest.q001b.objective.talk_bram
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696672
+    m_Key: quest.q001b.objective.reach_quarantine_cove
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696673
+    m_Key: quest.q001b.objective.have_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696674
+    m_Key: quest.q001b.objective.talk_noll
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696675
+    m_Key: quest.q001b.objective.talk_bram_final
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696676
+    m_Key: quest.q001b.objective.deliver_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696677
+    m_Key: quest.q001c.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696678
+    m_Key: quest.q001c.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696679
+    m_Key: quest.q001c.stage.offer_silence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696680
+    m_Key: quest.q001c.stage.take_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696681
+    m_Key: quest.q001c.stage.exchange
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696682
+    m_Key: quest.q001c.objective.talk_kael
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696683
+    m_Key: quest.q001c.objective.reach_cache
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696684
+    m_Key: quest.q001c.objective.have_blackbox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696685
+    m_Key: quest.q001c.objective.talk_kael_final
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7460170211696686
+    m_Key: quest.q001c.objective.deliver_blackbox
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

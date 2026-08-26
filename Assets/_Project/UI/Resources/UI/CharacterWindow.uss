@@ -1411,7 +1411,9 @@
 
 /* === Quest journal redesign: compact list + dedicated detail pane === */
 .quests-section {
-    min-height: 0 !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 200px !important;
 }
 .quests-layout {
     flex-direction: row !important;
@@ -1498,8 +1500,8 @@
 .quest-list-row {
     flex-direction: row !important;
     align-items: center !important;
-    min-height: 34px !important;
-    padding: 3px 5px !important;
+    min-height: 28px !important;
+    padding: 2px 4px !important;
     border-bottom-width: 1px !important;
     border-bottom-color: rgba(80, 100, 130, 0.18) !important;
 }
@@ -1512,8 +1514,8 @@
     border-left-color: rgb(255, 220, 130) !important;
 }
 .quest-list-row-state {
-    width: 18px !important;
-    font-size: 12px !important;
+    width: 16px !important;
+    font-size: 10px !important;
     flex-shrink: 0 !important;
     -unity-text-align: middle-center !important;
 }
@@ -1521,18 +1523,18 @@
     flex-grow: 1 !important;
     min-width: 0 !important;
     flex-direction: column !important;
-    margin-left: 4px !important;
+    margin-left: 3px !important;
 }
 .quest-list-row-title {
-    font-size: 10px !important;
+    font-size: 9px !important;
     color: rgb(225, 225, 235) !important;
     white-space: normal !important;
     overflow: hidden !important;
 }
 .quest-list-row-progress {
-    font-size: 9px !important;
+    font-size: 8px !important;
     color: rgb(160, 200, 170) !important;
-    margin-top: 1px !important;
+    margin-top: 0 !important;
 }
 .quest-details {
     flex: 1 1 0 !important;

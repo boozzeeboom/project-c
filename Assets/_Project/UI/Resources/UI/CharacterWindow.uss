@@ -1444,33 +1444,53 @@
 }
 .quest-filter-toggle {
     flex-direction: row !important;
+    align-self: flex-start !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
     width: auto !important;
     min-width: 0 !important;
     min-height: 20px !important;
     height: 20px !important;
-    margin: 0 5px 1px 0 !important;
-    padding: 0 !important;
+    margin: 0 4px 2px 0 !important;
+    padding: 2px 5px !important;
     font-size: 10px !important;
     color: rgb(220, 220, 230) !important;
-    flex-shrink: 0 !important;
+    background-color: rgba(45, 60, 85, 0.55) !important;
+    border-width: 1px !important;
+    border-color: rgba(100, 125, 165, 0.55) !important;
+    border-radius: 3px !important;
 }
-.quest-filter-toggle > .unity-toggle__input {
-    width: 16px !important;
-    min-width: 16px !important;
-    height: 16px !important;
-    min-height: 16px !important;
-    margin: 0 3px 0 0 !important;
+.quest-filter-toggle:hover {
+    background-color: rgba(70, 95, 135, 0.75) !important;
+    border-color: rgba(140, 170, 215, 0.8) !important;
+}
+.quest-filter-toggle .unity-toggle__input {
+    width: 14px !important;
+    min-width: 14px !important;
+    max-width: 14px !important;
+    height: 14px !important;
+    min-height: 14px !important;
+    max-height: 14px !important;
+    margin: 0 4px 0 0 !important;
     padding: 0 !important;
+    flex-grow: 0 !important;
     flex-shrink: 0 !important;
 }
-.quest-filter-toggle > .unity-toggle__label {
+.quest-filter-toggle .unity-toggle__label {
     width: auto !important;
     min-width: 0 !important;
+    max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
     -unity-text-align: middle-left !important;
 }
->>>>>>> REPLACE
+.quest-filter-toggle:checked {
+    background-color: rgba(70, 110, 170, 0.75) !important;
+    border-color: rgba(150, 190, 240, 0.9) !important;
+}
 .quests-list {
     flex-grow: 1 !important;
     flex-shrink: 1 !important;

@@ -66,7 +66,7 @@
 
 **Задача:** Добавить realtime Point Lights к фонарным housing-объектам `MD2_Lamp_*_Housing` в городе `gorod port_3_3_unity_1` для визуального lighting-пилота.
 **Тикет:** `T-LIGHT05`
-**Коммит:** будет добавлен после фиксации этапа.
+**Коммит:** `c077c8bf` — T-LIGHT05: добавить realtime-свет фонарей MD2
 
 **Изменения:**
 - `Assets/_Project/Scenes/World/WorldScene_0_0.unity` — добавлены 11 дочерних Point Lights.

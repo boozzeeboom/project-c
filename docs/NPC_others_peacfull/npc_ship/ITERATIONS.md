@@ -1,5 +1,24 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-10: ShipCrewSpawner для «Горгоны»
+
+**Задача:** подключить fixed crew manifest к server-side lifecycle корабля и реализовать exact prefab spawn с NGO parent и duplicate guard.
+
+**Статус:** Этап 4 завершён; runtime spawn и Play Mode не запускались.
+
+**Изменения:**
+- `Assets/_Project/Scripts/PeacefulShip/Crew/ShipCrewSpawner.cs` — новый server-only spawner, runtime mapping и idempotent reuse.
+- `Assets/_Project/Prefabs/Ships/Горгона.prefab` — добавлен и настроен `ShipCrewSpawner`.
+- `docs/NPC_others_peacfull/npc_ship/Elite_NPC/07_IMPLEMENTATION_STAGE_04_SHIP_CREW_SPAWNER_2026-09-08.md` — отчёт этапа.
+
+**Проверка:** `validate_script` без diagnostics; `check_compile_errors` — `No compile errors`; prefab dependencies подтверждают manifest и spawner.
+
+**Следующий этап:** Этап 5 — explicit moving-ship attachment API в `NpcBrain`.
+
+**Коммит:** будет добавлен после создания коммита этапа.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-09: ship-local anchors для fixed crew «Горгоны»
 
 **Задача:** добавить ShipRoot-local anchors для deterministic spawn, pilot seat stand и MVP patrol.

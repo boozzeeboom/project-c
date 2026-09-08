@@ -26,6 +26,7 @@ GameObject:
   - component: {fileID: 7069218737246205380}
   - component: {fileID: 8235191999910160661}
   - component: {fileID: 4619214482105915630}
+  - component: {fileID: 2737849099917518376}
   m_Layer: 0
   m_Name: "\u0413\u043E\u0440\u0433\u043E\u043D\u0430"
   m_TagString: Ship
@@ -464,6 +465,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleServer
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &2737849099917518376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 409003302271648103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf62144cf23a9f34793849be303990e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Crew.ShipCrewSpawner
+  ShowTopMostFoldoutHeaderGroup: 1
+  manifest: {fileID: 11400000, guid: 71d5c58f2fc323d4cbd707e2a60e897a, type: 2}
+  crewAnchors: {fileID: 2649807090273828449}
+  spawnOnNetworkSpawn: 1
+  debugLogs: 1
 --- !u!1 &969220329215835122
 GameObject:
   m_ObjectHideFlags: 0

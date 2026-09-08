@@ -553,18 +553,20 @@ CurrentNpcOccupant
 
 ### Этап 4 — реализовать `ShipCrewSpawner`
 
-1. Добавить компонент на корень `Горгона`.
-2. Сослаться на manifest.
-3. Запускать spawn только на сервере после `NetworkObject.IsSpawned`.
-4. Сделать spawn idempotent.
-5. Спавнить точный prefab в local pose.
-6. Вызывать `NetworkObject.Spawn(destroyWithScene: true)`.
-7. Делать explicit NGO parent к ShipRoot.
-8. Убрать зависимость от player activation radius.
-9. Убрать зависимость от ground raycast generic spawner.
-10. Сохранять runtime mapping `memberId → NetworkObject`.
+**Статус:** ✅ DONE — `T-CREW-10`, документировано в `07_IMPLEMENTATION_STAGE_04_SHIP_CREW_SPAWNER_2026-09-08.md`.
 
-**Acceptance:** при появлении «Горгоны» создаётся ровно один нужный пилот и не создаётся goblin из crew path.
+1. Компонент `ShipCrewSpawner` добавлен на корень `Горгоны`.
+2. Компонент ссылается на `ShipCrewManifest_Gorgona.asset` и `CrewAnchors`.
+3. Spawn запускается только на сервере после network spawn корабля.
+4. Runtime mapping и повторное использование существующего `npcId` защищают от дублей.
+5. Точный prefab берётся из manifest entry и ставится в anchor pose.
+6. Используется `NetworkObject.Spawn(destroyWithScene: true)`.
+7. После spawn выполняется explicit NGO parent к ShipRoot.
+8. Spawn не зависит от player activation radius.
+9. Spawn не использует ground raycast generic spawner.
+10. Сохраняется mapping `memberId → NetworkObject`.
+
+**Acceptance:** fixed crew path создаёт exact named pilot; generic `NpcSpawner` пока намеренно остаётся до отдельного Этапа 8.
 
 ### Этап 5 — explicit moving-ship attachment
 

@@ -17,7 +17,7 @@
 
 **Следующий этап:** Этап 2 — `ShipCrewManifest`.
 
-**Коммит:** будет добавлен после создания коммита этапа.
+**Коммит:** `4db549af` — T-CREW-07: create Gorgona pilot identity and prefab.
 
 ---
 

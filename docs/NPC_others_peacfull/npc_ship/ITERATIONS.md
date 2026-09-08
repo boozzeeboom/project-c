@@ -15,7 +15,7 @@
 
 **Следующий этап:** Этап 5 — explicit moving-ship attachment API в `NpcBrain`.
 
-**Коммит:** будет добавлен после создания коммита этапа.
+**Коммит:** `57c82125` — T-CREW-10: add Gorgona crew spawner.
 
 ---
 

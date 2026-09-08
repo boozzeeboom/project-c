@@ -35,7 +35,7 @@
 - **Stage 4 / T-LIGHT05:** P2.4 — локальные Point/Spot Lights в пилотных локациях — realtime-пилот фонарных столбов выполнен.
 - **Stage 5 / T-LIGHT06:** P2.5 — Reflection Probes и включение blending/box projection.
 - **Stage 6 / T-LIGHT07:** P3.6 — emissive-материалы.
-- **Stage 7 / T-LIGHT08:** P3.7 — настройка Day/Twilight/Night Volume Profiles.
+- **Stage 7 / T-LIGHT08:** P3.7 — настройка Day/Twilight/Night Volume Profiles — ночная экспозиция скорректирована, полный tuning ещё не закрыт.
 
 Каждый этап имеет отдельный коммит, документ результата и проверку `git diff --check`. Никакие несвязанные изменения рабочего дерева в этап не включаются.
 
@@ -76,6 +76,14 @@
 - Все 11 источников включены и сохранены в сцене.
 - Это независимый realtime-пилот; bake и Light Probe Groups для него не требуются.
 - Визуальная приёмка выполняется ручным Play Mode-прогоном пользователя.
+
+### Коррекция ночного Volume — 2026-09-08
+
+- В `NightVolumeProfile.asset` обнаружена экстремальная экспозиция `postExposure = -7`.
+- Это значение значительно подавляло результат realtime Point Lights ночью.
+- Значение исправлено на `-0.8`, соответствующее утверждённому направлению плана.
+- Синий `colorFilter`, контраст, saturation, Bloom и temperature overlay пока не изменялись.
+- Для применения runtime-копии профиля требуется новый запуск Play Mode.
 
 ---
 

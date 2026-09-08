@@ -80,3 +80,21 @@
 - Play Mode-визуальная проверка остаётся за пользователем.
 
 **Следующий этап:** ручная проверка результата в Play Mode; T-LIGHT04 и bake пока не запускать.
+
+## Итерация 5 от 2026-09-08
+
+**Задача:** Исправить ночную невидимость realtime Point Lights, вызванную экстремальным Night Volume exposure.
+**Тикет:** `T-LIGHT08`
+**Коммит:** будет добавлен после фиксации этапа.
+
+**Изменения:**
+- `Assets/_Project/ScriptableObjects/DayNight/Volumes/NightVolumeProfile.asset` — `ColorAdjustments.postExposure` изменён с `-7` на `-0.8`.
+
+**Подтверждённая причина:**
+- Ночной профиль имел `postExposure = -7`, тогда как утверждённое направление плана — около `-0.8`.
+- Синий фильтр и дополнительные shader/temperature effects сохранены без изменений для изолированной проверки.
+
+**Проверки:**
+- Asset readback: `m_Value: -0.8`.
+- `check_compile_errors`: `No compile errors`.
+- Новый Play Mode-прогон ещё требуется, потому что DayNightController создаёт runtime-копию профиля при запуске.

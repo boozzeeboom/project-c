@@ -54,7 +54,7 @@
 | 4 | T-LIGHT05 | Пилотные Point/Spot Lights | ✅ Realtime-пилот фонарей завершён |
 | 5 | T-LIGHT06 | Reflection Probes | ⏳ Не начат |
 | 6 | T-LIGHT07 | Emissive материалы | ⏳ Не начат |
-| 7 | T-LIGHT08 | Day/Twilight/Night Volume tuning | ⏳ Не начат |
+| 7 | T-LIGHT08 | Day/Twilight/Night Volume tuning | ⚠️ Ночная экспозиция исправлена; полный tuning не завершён |
 
 ## Результат Stage 1 / T-LIGHT02
 
@@ -91,6 +91,18 @@
 
 **Ограничение:** визуальная проверка в Play Mode и screenshots не выполнялись автоматически; визуальный результат должен подтвердить пользователь.
 
+## Коррекция Night Volume / T-LIGHT08
+
+- В `Assets/_Project/ScriptableObjects/DayNight/Volumes/NightVolumeProfile.asset` найдено `ColorAdjustments.postExposure = -7`.
+- Значение изменено через Unity Editor API на `-0.8`.
+- Причина исправления: realtime Point Lights были визуально подавлены экстремальным ночным exposure.
+- Синий фильтр `colorFilter`, contrast `5`, saturation `-10`, Bloom и temperature volume не изменялись.
+- Проверка ассета после записи: `m_Value: -0.8`.
+- `check_compile_errors`: `No compile errors`.
+- Runtime-проверка после изменения не выполнялась; DayNightController создаёт runtime-копии профилей при старте, поэтому нужен новый Play Mode-прогон.
+
+**Статус:** это точечная коррекция причины проблемы, а не завершение всего P3.7.
+
 ## Проверки Stage 0
 
 - [x] План прочитан полностью.
@@ -105,4 +117,4 @@
 
 ## Следующий шаг
 
-Пользователь должен проверить в Play Mode зону фонарей. Если тёплое локальное освещение видно и качество приемлемо, следующим техническим шагом остаётся расширение realtime-пилота на согласованные доковые зоны. T-LIGHT04 и массовый bake остаются заблокированными решением по GI.
+Пользователь должен перезапустить Play Mode и проверить ночную зону фонарей. Если свет стал виден, следующим техническим шагом остаётся отдельный tuning синего Night Volume и temperature overlay. T-LIGHT04 и массовый bake остаются заблокированными решением по GI.

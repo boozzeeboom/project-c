@@ -1,3 +1,8 @@
+v0.1.45 
+
+World, Ships & Named Crews
+Since v0.1.31, the project has expanded with improved world and ship data, corrected FBX engine and propeller pivots, and a server-authoritative named crew system for NPC ships. Named pilots, ship-local crew manifests, deck anchors, ship attachment, spawning, and captain identities are now in place. Outside the Git history, the Primum port received a full blocking and low-poly pass, and the first light ship was modeled in low-poly style.
+----------------------------------
 v0.1.31
 
 Markets & Contracts

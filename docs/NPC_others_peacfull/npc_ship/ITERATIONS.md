@@ -1,5 +1,31 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-06: MVP-контракт именной команды «Горгоны»
+
+**Задача:** перейти от ресерча к последовательной реализации fixed named crew для движущегося корабля «Горгона».
+
+**Статус:** Этап 0 завершён; код и Unity-ассеты не изменялись.
+
+**Документация:**
+- `docs/NPC_others_peacfull/npc_ship/Elite_NPC/03_IMPLEMENTATION_STAGE_00_MVP_CONTRACT_2026-09-08.md`
+- `docs/NPC_others_peacfull/npc_ship/Elite_NPC/02_SHIP_CREW_RESEARCH_REVIEW_AND_PLAN_2026-09-08.md`
+
+**Зафиксировано:**
+- стабильный pilot ID: `gorgona_pilot_01`;
+- MVP activity: `Patrol`;
+- `NpcShipController` остаётся источником движения корабля;
+- NPC не является fake `NetworkPlayer` и не попадает в `ShipController._pilots`;
+- pilot seat будет отдельным NPC occupant state;
+- fixed crew не заменяется случайным NPC после смерти;
+- generic `NpcSpawner` на «Горгоне» должен быть отключён после подключения fixed crew;
+- attachment должен быть explicit и не зависеть только от `_platformMask`.
+
+**Следующий этап:** Этап 1 — identity и named prefab.
+
+**Коммит:** будет добавлен после создания коммита этапа.
+
+---
+
 ## Итерация от 2026-07-?? — Ресерч: «корабли тупят в доках» (только документация)
 
 **Задача:** глубокий ресерч кода, префабов и сцены — почему NPC-корабли застревают

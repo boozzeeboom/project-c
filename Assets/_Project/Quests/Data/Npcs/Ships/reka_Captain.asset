@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da5e4b0f6b8a20541b6d1a4ae82cf468, type: 3}
+  m_Name: reka_Captain
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.NpcDefinition
+  npcId: reka_captain_01
+  displayName: "\u041A\u0430\u043F\u0438\u0442\u0430\u043D \u0420\u0435\u043A\u0430"
+  factionRef: {fileID: 0}
+  faction: 11
+  portrait: {fileID: 0}
+  prefab: {fileID: 1129901004007867531, guid: 9dec1ec7e2aade146bea413bc0ca2265, type: 3}
+  animatorTriggerPrefix: rekaCaptain
+  defaultDialogTree: {fileID: 0}
+  questOffers: []
+  questOfferRefs: []
+  questTurnIns: []
+  questTurnInRefs: []
+  services: 0
+  interactionRadius: 3
+  showGreeting: 0
+  greetingText: 
+  attitudeLinks: []
+  personalAttitudeMin: -100
+  personalAttitudeMax: 200
+  voicePrefix: 

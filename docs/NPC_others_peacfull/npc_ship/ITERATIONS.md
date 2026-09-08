@@ -1,5 +1,27 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-13: капитаны для остальных NPC-кораблей
+
+**Задача:** создать и назначить fixed named captain crew для всех 20 ship prefabs с существующим `NpcSpawner`, кроме уже настроенной «Горгоны»; два light ship без `NpcSpawner` оставить без изменений.
+
+**Статус:** статический этап завершён; Play Mode, host/client NGO replication и визуальный ручной прогон не выполнялись.
+
+**Изменения:**
+- Созданы 20 `NpcDefinition` в `Assets/_Project/Quests/Data/Npcs/Ships/` и 20 named captain prefabs в `Assets/_Project/Prefabs/NPC/Ships/Captains/`.
+- Созданы 20 `ShipCrewManifest_<slug>.asset` в `Assets/_Project/Resources/PeacefulShip/`.
+- На 20 кораблях добавлены/настроены `CrewAnchors` и `ShipCrewSpawner`, `spawnOnNetworkSpawn=true`, временные `debugLogs=true`.
+- На обработанных кораблях `NpcSpawner` отключён; `ShipDeckNav`, `NpcShipController` и `NetworkObject` сохранены.
+- Captain prefabs добавлены в `Assets/DefaultNetworkPrefabs.asset`, identities — в `Assets/_Project/Quests/Data/QuestDatabase.asset`.
+- Runtime attachment остаётся через официальный `ShipCrewSpawner → NpcBrain.AttachToShipDeck()`.
+
+**Проверка:** `20/20` ship configurations прошли статическую проверку; manifest/definition/prefab links корректны; duplicate `npcId` отсутствуют; `QuestDatabase` содержит 20 новых captain refs; `DefaultNetworkPrefabs` содержит 20 новых captain refs; `check_compile_errors` — `No compile errors`.
+
+**Документ:** `docs/NPC_others_peacfull/npc_ship/Elite_NPC/10_IMPLEMENTATION_STAGE_06_ALL_SHIP_CAPTAINS_2026-09-08.md`.
+
+**Следующий этап:** ручной Play Mode-прогон пользователем: spawn, отсутствие generic дублей, deck attachment, движение вместе с кораблём и anchor clearance.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-12: гайд добавления именного экипажа на пустой корабль
 
 **Задача:** сохранить полный пошаговый порядок создания fixed named crew для нового ship prefab, начиная с корабля без NPC-компонентов и crew data.

@@ -1,5 +1,24 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-08: ShipCrewManifest для «Горгоны»
+
+**Задача:** описать fixed named crew отдельным ship-specific asset и добавить editor validation до подключения runtime spawner.
+
+**Статус:** Этап 2 завершён; runtime spawn и Play Mode не запускались.
+
+**Изменения:**
+- `Assets/_Project/Scripts/PeacefulShip/Crew/ShipCrewManifest.cs` — новый manifest type, entry, roles, respawn policies и validation.
+- `Assets/_Project/Resources/PeacefulShip/ShipCrewManifest_Gorgona.asset` — manifest с одним required pilot `gorgona_pilot_01`.
+- `docs/NPC_others_peacfull/npc_ship/Elite_NPC/05_IMPLEMENTATION_STAGE_02_CREW_MANIFEST_2026-09-08.md` — отчёт этапа.
+
+**Проверка:** `validate_script` без diagnostics; `check_compile_errors` — `No compile errors`; manifest references подтверждены через editor metadata.
+
+**Следующий этап:** Этап 3 — ship-local anchors.
+
+**Коммит:** будет добавлен после создания коммита этапа.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-07: identity и named prefab пилота «Горгоны»
 
 **Задача:** создать отдельные identity asset и NetworkObject prefab variant для fixed pilot `gorgona_pilot_01`.

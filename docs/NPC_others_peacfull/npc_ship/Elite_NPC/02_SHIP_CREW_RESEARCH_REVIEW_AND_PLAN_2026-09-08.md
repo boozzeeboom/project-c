@@ -524,18 +524,20 @@ CurrentNpcOccupant
 
 ### Этап 2 — создать manifest команды
 
-1. Создать `ShipCrewManifest` и serializable entry.
-2. Добавить в entry `npcDefinition`, exact prefab, role, required, respawn policy.
-3. Создать `ShipCrewManifest_Gorgona.asset`.
-4. Добавить pilot entry.
-5. Провести editor validation:
+**Статус:** ✅ DONE — `T-CREW-08`, документировано в `05_IMPLEMENTATION_STAGE_02_CREW_MANIFEST_2026-09-08.md`.
+
+1. Создан `ShipCrewManifest` и serializable entry в `Assets/_Project/Scripts/PeacefulShip/Crew/ShipCrewManifest.cs`.
+2. Entry содержит `npcDefinition`, exact prefab, role, required, respawn policy, spawn/seat/activity anchor IDs.
+3. Создан `Assets/_Project/Resources/PeacefulShip/ShipCrewManifest_Gorgona.asset`.
+4. Добавлен pilot entry `gorgona_pilot_01` с ролью `Pilot`, `required=true` и `respawnPolicy=Never`.
+5. Добавлена editor validation:
    - prefab не null;
    - `NpcController` присутствует;
    - `NpcController.Definition` совпадает с entry;
-   - `npcId` не дублируется;
-   - role не конфликтует с seat.
+   - `memberId` и `npcId` не дублируются;
+   - повторное использование role выдаёт warning.
 
-**Acceptance:** asset описывает состав «Горгоны» без ссылок на generic `NpcSpawner`.
+**Acceptance:** asset описывает состав «Горгоны» без ссылок на generic `NpcSpawner`; compile errors отсутствуют.
 
 ### Этап 3 — добавить ship-local anchors
 

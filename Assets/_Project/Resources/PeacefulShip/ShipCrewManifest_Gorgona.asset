@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b8144b41819d664db9d61ec326ccafb, type: 3}
+  m_Name: ShipCrewManifest_Gorgona
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Crew.ShipCrewManifest
+  shipId: gorgona
+  members:
+  - memberId: gorgona_pilot_01
+    npcDefinition: {fileID: 11400000, guid: 1fad34b70083a634580ce57bd6c0e45d, type: 2}
+    prefab: {fileID: 1129901004007867531, guid: dc37e7b5110cc134a9483023d802e3e5, type: 3}
+    role: 0
+    required: 1
+    respawnPolicy: 0
+    spawnAnchorId: pilot_spawn
+    seatAnchorId: pilot_seat_stand
+    activityAnchorIds:
+    - patrol_01
+    - patrol_02
+    - patrol_03

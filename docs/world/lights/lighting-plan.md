@@ -32,7 +32,7 @@
 - **Stage 1 / T-LIGHT02:** P1.1 — `Additional Lights: Per Pixel`.
 - **Stage 2 / T-LIGHT03:** P1.2 — LightingSettings и пилотный bake только для `WorldScene_0_0` — инфраструктура создана, bake заблокирован результатом `0 lightmaps`.
 - **Stage 3 / T-LIGHT04:** P1.3 — Light Probe Groups в пилотной сцене.
-- **Stage 4 / T-LIGHT05:** P2.4 — локальные Point/Spot Lights в пилотных локациях.
+- **Stage 4 / T-LIGHT05:** P2.4 — локальные Point/Spot Lights в пилотных локациях — realtime-пилот фонарных столбов выполнен.
 - **Stage 5 / T-LIGHT06:** P2.5 — Reflection Probes и включение blending/box projection.
 - **Stage 6 / T-LIGHT07:** P3.6 — emissive-материалы.
 - **Stage 7 / T-LIGHT08:** P3.7 — настройка Day/Twilight/Night Volume Profiles.
@@ -67,6 +67,15 @@
 ### Текущий статус выполнения
 
 **Stage 2 / T-LIGHT03 заблокирован после создания инфраструктуры.** Нельзя переходить к Light Probe Groups или массовому bake, пока не принято решение по источникам GI и корректной маркировке статической геометрии. Sun/Moon и DayNightController не изменялись.
+
+### Выполнение Stage 4 / T-LIGHT05 — 2026-09-08
+
+- В `WorldScene_0_0` найдены 11 объектов `MD2_Lamp_01_Housing`–`MD2_Lamp_11_Housing` внутри `gorod port_3_3_unity_1`.
+- В каждый housing добавлен дочерний `*_PointLight`.
+- Параметры: Point, Realtime, цвет `#FFB070`, intensity `2.0`, range `15 m`, shadows off.
+- Все 11 источников включены и сохранены в сцене.
+- Это независимый realtime-пилот; bake и Light Probe Groups для него не требуются.
+- Визуальная приёмка выполняется ручным Play Mode-прогоном пользователя.
 
 ---
 

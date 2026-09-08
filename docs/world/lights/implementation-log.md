@@ -51,7 +51,7 @@
 | 1 | T-LIGHT02 | Additional Lights → Per Pixel | ✅ Завершён |
 | 2 | T-LIGHT03 | LightingSettings + пилотный bake `WorldScene_0_0` | ⚠️ Инфраструктура создана; bake заблокирован |
 | 3 | T-LIGHT04 | Light Probe Groups в пилотной сцене | ⏳ Не начат |
-| 4 | T-LIGHT05 | Пилотные Point/Spot Lights | ⏳ Не начат |
+| 4 | T-LIGHT05 | Пилотные Point/Spot Lights | ✅ Realtime-пилот фонарей завершён |
 | 5 | T-LIGHT06 | Reflection Probes | ⏳ Не начат |
 | 6 | T-LIGHT07 | Emissive материалы | ⏳ Не начат |
 | 7 | T-LIGHT08 | Day/Twilight/Night Volume tuning | ⏳ Не начат |
@@ -79,6 +79,18 @@
 
 **Вывод:** P1.2 нельзя считать завершённым. Для валидного GI требуется отдельное решение: какие источники участвуют в bake и какие renderer-и мира получают `Contribute GI`. До этого P1.3 и массовый bake не запускаются.
 
+## Результат Stage 4 / T-LIGHT05
+
+- Активная сцена: `Assets/_Project/Scenes/World/WorldScene_0_0.unity`.
+- Внутри `WorldRoot_0_0/Primum/gorod port_3_3_unity_1` найдено 11 housing-объектов: `MD2_Lamp_01_Housing`–`MD2_Lamp_11_Housing`.
+- Созданы дочерние источники `MD2_Lamp_01_PointLight`–`MD2_Lamp_11_PointLight`.
+- Параметры каждого источника: `LightType.Point`, `Realtime`, intensity `2`, range `15`, color `#FFB070`, shadows `None`.
+- Проверка сцены: 11 включённых Point Lights, каждый является дочерним своего housing.
+- `check_compile_errors`: `No compile errors`.
+- Сцена сохранена; bake не запускался.
+
+**Ограничение:** визуальная проверка в Play Mode и screenshots не выполнялись автоматически; визуальный результат должен подтвердить пользователь.
+
 ## Проверки Stage 0
 
 - [x] План прочитан полностью.
@@ -93,4 +105,4 @@
 
 ## Следующий шаг
 
-Не запускать T-LIGHT04. Сначала принять решение по GI-источникам и статическим renderer flags для связки `BootstrapScene + WorldScene_0_0`; после этого повторить пилотный bake и только при `lightmapCount > 0` переходить к Light Probe Groups.
+Пользователь должен проверить в Play Mode зону фонарей. Если тёплое локальное освещение видно и качество приемлемо, следующим техническим шагом остаётся расширение realtime-пилота на согласованные доковые зоны. T-LIGHT04 и массовый bake остаются заблокированными решением по GI.

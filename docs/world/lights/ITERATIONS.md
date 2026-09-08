@@ -61,3 +61,22 @@
 - `manage_scene.validate` выявил существующий missing script на `[Ship_Key_Container]/[KeyRod_ShipHeavy]`; он не относится к T-LIGHT03 и не исправлялся.
 
 **Статус:** инфраструктура создана, но GI bake заблокирован. До принятия решения по источникам GI и static flags переходить к T-LIGHT04 нельзя.
+
+## Итерация 4 от 2026-09-08
+
+**Задача:** Добавить realtime Point Lights к фонарным housing-объектам `MD2_Lamp_*_Housing` в городе `gorod port_3_3_unity_1` для визуального lighting-пилота.
+**Тикет:** `T-LIGHT05`
+**Коммит:** будет добавлен после фиксации этапа.
+
+**Изменения:**
+- `Assets/_Project/Scenes/World/WorldScene_0_0.unity` — добавлены 11 дочерних Point Lights.
+- Источники названы `MD2_Lamp_01_PointLight`–`MD2_Lamp_11_PointLight`.
+- Параметры: intensity `2`, range `15`, color `#FFB070`, shadows off.
+
+**Проверки:**
+- Найдены и обработаны все 11 housing-объектов.
+- Все 11 источников включены и имеют правильного родителя.
+- `check_compile_errors`: `No compile errors`.
+- Play Mode-визуальная проверка остаётся за пользователем.
+
+**Следующий этап:** ручная проверка результата в Play Mode; T-LIGHT04 и bake пока не запускать.

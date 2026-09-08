@@ -13,7 +13,7 @@
 
 **Следующий этап:** Stage 6 — deck-aware activity movement для `Patrol`.
 
-**Коммит:** будет добавлен после фактического commit этапа.
+**Коммит:** `9b16cd3c` — T-CREW-12: document named crew setup guide.
 
 ---
 

@@ -26,7 +26,7 @@
 
 **Задача:** Выполнить P1.1: перевести Additional Lights с `Per Vertex` на `Per Pixel` через Unity MCP и проверить компиляцию.
 **Тикет:** `T-LIGHT02`
-**Коммит:** будет добавлен после фиксации этапа.
+**Коммит:** `566349d2` — T-LIGHT09: добавить глобальный контроль дополнительного света
 
 **Изменения:**
 - `Assets/_Project/Settings/ProjectC_URP.asset` — `m_AdditionalLightsRenderingMode` изменён с `PerVertex` на `PerPixel` через Unity MCP.

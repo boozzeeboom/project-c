@@ -212,6 +212,19 @@ Prefab = MyShip_Pilot.prefab
 
 Это двустороннее соответствие обязательно. `ShipCrewManifest.OnValidate()` и `ShipCrewSpawner` проверяют, что `NpcController.Definition` prefab совпадает с `npcDefinition` entry.
 
+### 2.3.1. Переименовать overhead name label
+
+Внутри каждого NPC prefab есть child `Text (TMP)`, который отображает имя персонажа над NPC. Базовый prefab `[Mira] - DON`T DELETE DEFOULT.prefab` содержит имя `MIRA`; это значение нельзя оставлять у нового персонажа.
+
+При создании капитана:
+
+- в `Text (TMP)` установить имя конкретного персонажа, например `Капитан Альбатрос`;
+- использовать то же человекочитаемое имя, которое задано в `NpcDefinition.displayName`;
+- не менять общий базовый prefab Mira — переименование выполнять только в создаваемом named prefab или его variant;
+- в будущем переименовывать `Text (TMP)` согласно имени создаваемого персонажа, даже если prefab собран на базе Mira.
+
+`NpcDefinition.displayName` и значение `Text (TMP)` должны оставаться согласованными. Нельзя оставлять `MIRA`, `Unknown NPC` или имя другого персонажа на новом fixed crew prefab.
+
 ### 2.4. Настроить NPC как crew member
 
 Проверить:

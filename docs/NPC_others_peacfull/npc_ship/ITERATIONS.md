@@ -1,5 +1,15 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-14: overhead name label в гайде named crew
+
+**Задача:** дополнить общий гайд обязательным переименованием `Text (TMP)` над каждым named NPC.
+
+**Изменение:** `docs/NPC_others_peacfull/npc_ship/Elite_NPC/09_GUIDE_ADD_NAMED_CREW_TO_EMPTY_SHIP_2026-09-08.md` теперь требует заменить базовое имя `MIRA` на имя создаваемого персонажа, например `Капитан Альбатрос`, и синхронизировать его с `NpcDefinition.displayName`.
+
+**Статус:** документационное изменение завершено; runtime и Play Mode не требуются.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-13: капитаны для остальных NPC-кораблей
 
 **Задача:** создать и назначить fixed named captain crew для всех 20 ship prefabs с существующим `NpcSpawner`, кроме уже настроенной «Горгоны»; два light ship без `NpcSpawner` оставить без изменений.

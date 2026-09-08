@@ -1,5 +1,22 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-12: гайд добавления именного экипажа на пустой корабль
+
+**Задача:** сохранить полный пошаговый порядок создания fixed named crew для нового ship prefab, начиная с корабля без NPC-компонентов и crew data.
+
+**Статус:** документационный этап завершён; runtime проверки не требуются для самого гайда.
+
+**Изменения:**
+- `docs/NPC_others_peacfull/npc_ship/Elite_NPC/09_GUIDE_ADD_NAMED_CREW_TO_EMPTY_SHIP_2026-09-08.md` — полный порядок identity, named prefab, NGO registration, manifest, anchors, `ShipDeckNav`, `ShipCrewSpawner`, explicit attachment, activities, seat, generic spawn и lifecycle checks.
+
+**Проверка:** содержание сверено с текущими `ShipCrewManifest`, `ShipCrewSpawner`, `NpcBrain`, `NpcSocialBrain`, `ShipDeckNav`, asset metadata `Горгона.prefab`, `Gorgona_Pilot.prefab` и `ShipCrewManifest_Gorgona.asset`.
+
+**Следующий этап:** Stage 6 — deck-aware activity movement для `Patrol`.
+
+**Коммит:** будет добавлен после фактического commit этапа.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-11: explicit moving-ship attachment для fixed crew «Горгоны»
 
 **Задача:** добавить официальный attach/detach API в `NpcBrain` и перевести `ShipCrewSpawner` на единый explicit ship-deck attachment path.

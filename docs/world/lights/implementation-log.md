@@ -4,9 +4,9 @@
 
 - **Дата старта:** 2026-09-08
 - **Рабочий источник правды:** `docs/world/lights/lighting-plan.md`
-- **Завершённый этап:** Stage 1 / T-LIGHT02 — `Additional Lights: Per Pixel`
-- **Текущий этап:** Stage 2 / T-LIGHT03 — LightingSettings и пилотный bake `WorldScene_0_0`
-- **Статус этапа:** инфраструктура создана; bake заблокирован результатом `0 lightmaps`
+- **Завершённые этапы:** Stage 1 / T-LIGHT02, Stage 4 / T-LIGHT05 и Stage 7 / T-LIGHT08
+- **Текущий этап:** Stage 8 / T-LIGHT09 — глобальное управление дополнительным светом
+- **Статус этапа:** контроллер реализован и добавлен в Bootstrap; Play Mode-приёмка остаётся за пользователем
 - **Статус Unity Editor:** подключён; изменения выполнены через Unity MCP
 
 ## Решение по плану
@@ -55,6 +55,7 @@
 | 5 | T-LIGHT06 | Reflection Probes | ⏳ Не начат |
 | 6 | T-LIGHT07 | Emissive материалы | ⏳ Не начат |
 | 7 | T-LIGHT08 | Day/Twilight/Night Volume tuning | ⚠️ Ночная экспозиция исправлена; полный tuning не завершён |
+| 8 | T-LIGHT09 | Глобальный контроль интенсивности дополнительных источников по группам и времени суток | ✅ Реализован; Play Mode-приёмка pending |
 
 ## Результат Stage 1 / T-LIGHT02
 
@@ -84,7 +85,7 @@
 - Активная сцена: `Assets/_Project/Scenes/World/WorldScene_0_0.unity`.
 - Внутри `WorldRoot_0_0/Primum/gorod port_3_3_unity_1` найдено 11 housing-объектов: `MD2_Lamp_01_Housing`–`MD2_Lamp_11_Housing`.
 - Созданы дочерние источники `MD2_Lamp_01_PointLight`–`MD2_Lamp_11_PointLight`.
-- Параметры каждого источника: `LightType.Point`, `Realtime`, intensity `2`, range `15`, color `#FFB070`, shadows `None`.
+- Параметры каждого источника: `LightType.Point`, `Realtime`, intensity `50`, range `30`, color `#FFB070`, shadows `None`.
 - Проверка сцены: 11 включённых Point Lights, каждый является дочерним своего housing.
 - `check_compile_errors`: `No compile errors`.
 - Сцена сохранена; bake не запускался.
@@ -102,6 +103,18 @@
 - Runtime-проверка после изменения не выполнялась; DayNightController создаёт runtime-копии профилей при старте, поэтому нужен новый Play Mode-прогон.
 
 **Статус:** это точечная коррекция причины проблемы, а не завершение всего P3.7.
+
+## Результат Stage 8 / T-LIGHT09
+
+- В `Assets/_Project/Scenes/World/WorldScene_0_0.unity` параметры 11 источников `MD2_Lamp_01_PointLight`–`MD2_Lamp_11_PointLight` изменены на intensity `50` и range `30`.
+- Создан `Assets/_Project/Scripts/Core/Lighting/AdditionalLightIntensityController.cs`.
+- Контроллер добавлен в `Assets/_Project/Scenes/BootstrapScene.unity` на глобальный объект `DayNightController`.
+- Контроллер обнаруживает все не-Directional источники во всех загруженных сценах, сохраняет их авторскую базовую интенсивность и применяет первый совпавший профиль группы.
+- В профиле по умолчанию есть группа `CityLamps` для `MD2_Lamp_` и catch-all группа `AllAdditionalLights` для остальных дополнительных источников.
+- Интенсивность задаётся через `AnimationCurve` по времени `0–24` и плавно изменяется при переходе между периодами суток.
+- Источник времени — `DayNightController.ServerTimeOfDay`, с fallback на `ServerWeatherController.TimeOfDay`.
+- Проверки: `check_compile_errors` — `No compile errors`; scene readback — 11 источников, intensity `50–50`, range `30–30`.
+- Автоматический Play Mode и screenshots не выполнялись; визуальная приёмка остаётся за пользователем.
 
 ## Проверки Stage 0
 

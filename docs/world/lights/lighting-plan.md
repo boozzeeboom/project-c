@@ -72,7 +72,7 @@
 
 - В `WorldScene_0_0` найдены 11 объектов `MD2_Lamp_01_Housing`–`MD2_Lamp_11_Housing` внутри `gorod port_3_3_unity_1`.
 - В каждый housing добавлен дочерний `*_PointLight`.
-- Параметры: Point, Realtime, цвет `#FFB070`, intensity `2.0`, range `15 m`, shadows off.
+- Параметры: Point, Realtime, цвет `#FFB070`, intensity `50`, range `30 m`, shadows off.
 - Все 11 источников включены и сохранены в сцене.
 - Это независимый realtime-пилот; bake и Light Probe Groups для него не требуются.
 - Визуальная приёмка выполняется ручным Play Mode-прогоном пользователя.
@@ -85,6 +85,19 @@
 - Синий `colorFilter`, контраст, saturation, Bloom и temperature overlay пока не изменялись.
 - Для применения runtime-копии профиля требуется новый запуск Play Mode.
 
+### Глобальное управление дополнительным светом — T-LIGHT09
+
+- Создан `Assets/_Project/Scripts/Core/Lighting/AdditionalLightIntensityController.cs`.
+- Контроллер добавлен в `BootstrapScene` на объект `DayNightController`.
+- Все не-Directional источники во всех загруженных сценах обнаруживаются автоматически.
+- Исходная интенсивность каждого источника сохраняется как базовая; профиль группы применяется множителем.
+- Группы проверяются сверху вниз по совпадению имени, поэтому специализированные группы должны находиться выше catch-all группы.
+- Профиль `CityLamps` управляет источниками `MD2_Lamp_`.
+- Профиль `AllAdditionalLights` управляет остальными дополнительными источниками.
+- Время берётся из `DayNightController.ServerTimeOfDay`, fallback — `ServerWeatherController.TimeOfDay`.
+- Переходы выполняются через `AnimationCurve` по шкале `0–24` с плавной интерполяцией.
+- T-LIGHT09 реализован; Play Mode и screenshots остаются ручным gate пользователя.
+
 ---
 
 ## Текущее состояние
@@ -94,6 +107,7 @@
 |---|---|---|---|---|---|
 | `Sun` | Directional | Realtime | 0.15 × фаза | phase-driven | 2048px, 2 cascades |
 | `Moon` | Directional | Realtime | 1.0 × фаза | ~(0.68, 0.85, 0.84) | 2048px, 2 cascades |
+| `MD2_Lamp_*` | Point ×11 | Realtime | 50 × T-LIGHT09 group | `#FFB070` | off |
 
 ### Система день/ночь
 - **DayNightController** с 5 фазами: Morning, Midday, Evening, Twilight, Night
@@ -107,9 +121,9 @@ Cel-shaded / comic-book стилизация: существующие cloud sha
 ### Что отсутствует (критические пробелы)
 - ❌ Нет Light Probes / Light Probe Groups
 - ❌ Нет Reflection Probes
-- ❌ Нет локальных источников света (point/spot)
+- ✅ Локальные Point Lights добавлены в пилотной сцене `WorldScene_0_0`
 - ❌ Нет LightingSettings (невозможно запекать GI)
-- ❌ Additional Lights = Per Vertex (низкое качество для локальных источников)
+- ✅ Additional Lights = Per Pixel
 - ❌ Нет emissive-материалов для окон/деталей
 
 ---

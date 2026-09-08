@@ -85,7 +85,7 @@
 
 **Задача:** Исправить ночную невидимость realtime Point Lights, вызванную экстремальным Night Volume exposure.
 **Тикет:** `T-LIGHT08`
-**Коммит:** будет добавлен после фиксации этапа.
+**Коммит:** `6aff2304` — T-LIGHT08: исправить ночную экспозицию lighting volume
 
 **Изменения:**
 - `Assets/_Project/ScriptableObjects/DayNight/Volumes/NightVolumeProfile.asset` — `ColorAdjustments.postExposure` изменён с `-7` на `-0.8`.
@@ -98,3 +98,27 @@
 - Asset readback: `m_Value: -0.8`.
 - `check_compile_errors`: `No compile errors`.
 - Новый Play Mode-прогон ещё требуется, потому что DayNightController создаёт runtime-копию профиля при запуске.
+
+## Итерация 6 от 2026-09-08
+
+**Задача:** Усилить realtime-фонари и добавить глобальное управление интенсивностью всех дополнительных источников по группам и времени суток.
+**Тикет:** `T-LIGHT09`
+**Коммит:** будет добавлен после фиксации этапа.
+
+**Изменения:**
+- `Assets/_Project/Scenes/World/WorldScene_0_0.unity` — 11 источников `MD2_Lamp_*_PointLight` переведены на intensity `50`, range `30`.
+- `Assets/_Project/Scripts/Core/Lighting/AdditionalLightIntensityController.cs` — создан глобальный контроллер групповой интенсивности.
+- `Assets/_Project/Scenes/BootstrapScene.unity` — контроллер добавлен на `DayNightController`.
+
+**Архитектура:**
+- Контролируются все не-Directional источники во всех загруженных сценах.
+- Для каждого источника сохраняется базовая интенсивность; групповой профиль применяется как множитель.
+- Группы проверяются сверху вниз по совпадению имени.
+- `CityLamps` управляет `MD2_Lamp_`; `AllAdditionalLights` является catch-all группой.
+- Профили используют `AnimationCurve` по времени суток `0–24` и плавную интерполяцию.
+- Время читается из `DayNightController.ServerTimeOfDay` с fallback на `ServerWeatherController.TimeOfDay`.
+
+**Проверки:**
+- `check_compile_errors`: `No compile errors`.
+- Readback WorldScene: `11` источников, intensity `50–50`, range `30–30`.
+- Play Mode и screenshots не выполнялись; визуальная приёмка остаётся за пользователем.

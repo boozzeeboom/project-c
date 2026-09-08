@@ -1,5 +1,26 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-07: identity и named prefab пилота «Горгоны»
+
+**Задача:** создать отдельные identity asset и NetworkObject prefab variant для fixed pilot `gorgona_pilot_01`.
+
+**Статус:** Этап 1 завершён; runtime Play Mode не запускался.
+
+**Изменения:**
+- `Assets/_Project/Quests/Data/Npcs/GorgonaPilot.asset` — новый `NpcDefinition` с `npcId=gorgona_pilot_01` и canonical prefab reference.
+- `Assets/_Project/Prefabs/NPC/Ships/Gorgona_Pilot.prefab` — новый variant базового named NPC prefab; `NpcController.definition` назначен на `GorgonaPilot.asset`.
+- `Assets/DefaultNetworkPrefabs.asset` — новый prefab подтверждён в dependency list.
+- `Assets/_Project/Quests/Data/QuestDatabase.asset` — новый `GorgonaPilot.asset` добавлен в список `npcs`.
+- `docs/NPC_others_peacfull/npc_ship/Elite_NPC/04_IMPLEMENTATION_STAGE_01_IDENTITY_AND_PREFAB_2026-09-08.md` — отчёт этапа.
+
+**Проверка:** `check_compile_errors` — `No compile errors`; component stack и prefab parent подтверждены через editor asset metadata.
+
+**Следующий этап:** Этап 2 — `ShipCrewManifest`.
+
+**Коммит:** будет добавлен после создания коммита этапа.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-06: MVP-контракт именной команды «Горгоны»
 
 **Задача:** перейти от ресерча к последовательной реализации fixed named crew для движущегося корабля «Горгона».

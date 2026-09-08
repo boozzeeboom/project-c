@@ -509,16 +509,18 @@ CurrentNpcOccupant
 
 ### Этап 1 — подготовить identity и prefab
 
-1. Создать `NpcDefinition` для пилота.
-2. Создать prefab-variant на базе текущего named NPC prefab либо отдельный named prefab.
-3. Проверить `NpcController.definition`.
-4. Проверить уникальность `npcId`.
-5. Заполнить canonical `NpcDefinition.prefab`.
-6. Проверить наличие в `DefaultNetworkPrefabs.asset`.
-7. Проверить `NetworkObject`, `NetworkTransform`, `NpcBrain`, `NpcSocialBrain`, `NpcTarget`, `NpcAttacker`, `NavMeshAgent`.
-8. Не менять baseline `_platformMask` на prefab глобально без отдельного решения; attachment будет явным через crew system.
+**Статус:** ✅ DONE — `T-CREW-07`, документировано в `04_IMPLEMENTATION_STAGE_01_IDENTITY_AND_PREFAB_2026-09-08.md`.
 
-**Acceptance:** prefab создаёт конкретного NPC с ожидаемым `NpcId`.
+1. Создан `Assets/_Project/Quests/Data/Npcs/GorgonaPilot.asset` с `npcId=gorgona_pilot_01`.
+2. Создан `Assets/_Project/Prefabs/NPC/Ships/Gorgona_Pilot.prefab` как variant текущего named NPC prefab.
+3. `NpcController.definition` назначен на `GorgonaPilot.asset`.
+4. Уникальность `npcId` подтверждена статически относительно выбранного нового asset; глобальный runtime duplicate scan ещё не выполнялся.
+5. Заполнена canonical `NpcDefinition.prefab` ссылка на `Gorgona_Pilot`.
+6. Наличие в `DefaultNetworkPrefabs.asset` подтверждено по dependency list; `QuestDatabase.asset` также получил ссылку на новый NPC в общем списке `npcs`.
+7. На variant сохранены `NetworkObject`, `NetworkTransform`, `NpcBrain`, `NpcSocialBrain`, `NpcTarget`, `NpcAttacker`, `NavMeshAgent` и `CharacterController`.
+8. Baseline `_platformMask` не изменялся; attachment остаётся задачей crew system.
+
+**Acceptance:** named prefab связан с конкретным `NpcDefinition` и ожидаемым `NpcId`; `check_compile_errors` — `No compile errors`.
 
 ### Этап 2 — создать manifest команды
 

@@ -30,7 +30,7 @@
 
 - **Stage 0 / T-LIGHT01:** аудит и утверждение плана, фиксация baseline и контрольных ворот.
 - **Stage 1 / T-LIGHT02:** P1.1 — `Additional Lights: Per Pixel`.
-- **Stage 2 / T-LIGHT03:** P1.2 — LightingSettings и пилотный bake только для `WorldScene_0_0`.
+- **Stage 2 / T-LIGHT03:** P1.2 — LightingSettings и пилотный bake только для `WorldScene_0_0` — инфраструктура создана, bake заблокирован результатом `0 lightmaps`.
 - **Stage 3 / T-LIGHT04:** P1.3 — Light Probe Groups в пилотной сцене.
 - **Stage 4 / T-LIGHT05:** P2.4 — локальные Point/Spot Lights в пилотных локациях.
 - **Stage 5 / T-LIGHT06:** P2.5 — Reflection Probes и включение blending/box projection.
@@ -54,9 +54,19 @@
 - Проверка компиляции: `No compile errors`.
 - В Unity Console ошибок нет; присутствуют только ранее существовавшие предупреждения/сообщения, не связанные с изменением URP Asset.
 
+### Выполнение Stage 2 — 2026-09-08
+
+- Создан `Assets/_Project/Settings/LightingSettings_World.asset`.
+- Для `WorldScene_0_0` назначены: Progressive GPU, Baked GI, Realtime GI off, Mixed Bake Mode `IndirectOnly`, 25 texels/unit, AO off, 2 bounces.
+- Пилотный bake запущен и проверен.
+- Результат: `lightmapCount: 0`; bake не считается валидным.
+- Причина по live-инвентаризации: `WorldScene_0_0` содержит 0 источников света; Bootstrap содержит только `Sun` и `Moon`, оба `Realtime`, и не содержит статической геометрии для GI.
+- В `WorldScene_0_0` найдено 7413 mesh renderers, но ни один renderer не имел собственного флага `Contribute GI`.
+- Generated lighting data очищены; пустой bake не сохраняется.
+
 ### Текущий статус выполнения
 
-Unity Editor подключён. Следующий этап — **Stage 2 / T-LIGHT03**: создать/назначить LightingSettings для пилота `WorldScene_0_0`, затем выполнить только пилотный bake и проверить результат до масштабирования на остальные 23 сцены.
+**Stage 2 / T-LIGHT03 заблокирован после создания инфраструктуры.** Нельзя переходить к Light Probe Groups или массовому bake, пока не принято решение по источникам GI и корректной маркировке статической геометрии. Sun/Moon и DayNightController не изменялись.
 
 ---
 

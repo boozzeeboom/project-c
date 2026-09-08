@@ -5,7 +5,8 @@
 - **Дата старта:** 2026-09-08
 - **Рабочий источник правды:** `docs/world/lights/lighting-plan.md`
 - **Завершённый этап:** Stage 1 / T-LIGHT02 — `Additional Lights: Per Pixel`
-- **Следующий этап:** Stage 2 / T-LIGHT03 — LightingSettings и пилотный bake `WorldScene_0_0`
+- **Текущий этап:** Stage 2 / T-LIGHT03 — LightingSettings и пилотный bake `WorldScene_0_0`
+- **Статус этапа:** инфраструктура создана; bake заблокирован результатом `0 lightmaps`
 - **Статус Unity Editor:** подключён; изменения выполнены через Unity MCP
 
 ## Решение по плану
@@ -48,7 +49,7 @@
 |---|---|---|---|
 | 0 | T-LIGHT01 | Аудит, утверждение плана, baseline и контрольные ворота | ✅ Документально завершён |
 | 1 | T-LIGHT02 | Additional Lights → Per Pixel | ✅ Завершён |
-| 2 | T-LIGHT03 | LightingSettings + пилотный bake `WorldScene_0_0` | ⏳ Не начат |
+| 2 | T-LIGHT03 | LightingSettings + пилотный bake `WorldScene_0_0` | ⚠️ Инфраструктура создана; bake заблокирован |
 | 3 | T-LIGHT04 | Light Probe Groups в пилотной сцене | ⏳ Не начат |
 | 4 | T-LIGHT05 | Пилотные Point/Spot Lights | ⏳ Не начат |
 | 5 | T-LIGHT06 | Reflection Probes | ⏳ Не начат |
@@ -64,6 +65,20 @@
 - Unity Console: ошибок нет; найденные предупреждения не относятся к Stage 1.
 - Сцены и LightingSettings на этом этапе не изменялись.
 
+## Результат Stage 2 / T-LIGHT03
+
+- Создан `Assets/_Project/Settings/LightingSettings_World.asset`.
+- Настройки: Progressive GPU, `bakedGI=true`, `realtimeGI=false`, `mixedBakeMode=IndirectOnly`, resolution `25`, AO off, max bounces `2`.
+- Settings назначены сцене `Assets/_Project/Scenes/World/WorldScene_0_0.unity`.
+- При первом bake активной была только `WorldScene_0_0`: `lights=0`, `meshRenderers=7413`, `contributeRenderers=0`, `lightmapCount=0`.
+- После additive-загрузки Bootstrap live-инвентаризация показала: `Sun` и `Moon` существуют только в Bootstrap и оба имеют `LightmapBakeType=Realtime`; статической геометрии в Bootstrap нет.
+- `WorldScene_0_0` получил `LightingSettings_World`, Bootstrap остался без LightingSettings.
+- Пустой результат bake очищен через `bake_clear`; generated `LightingData.asset` в рабочем дереве не остаётся.
+- Sun/Moon, DayNightController и режимы источников света не изменялись.
+- `manage_scene.validate` выявил существующий missing script на `[Ship_Key_Container]/[KeyRod_ShipHeavy]`; он не относится к T-LIGHT03 и не исправлялся.
+
+**Вывод:** P1.2 нельзя считать завершённым. Для валидного GI требуется отдельное решение: какие источники участвуют в bake и какие renderer-и мира получают `Contribute GI`. До этого P1.3 и массовый bake не запускаются.
+
 ## Проверки Stage 0
 
 - [x] План прочитан полностью.
@@ -78,4 +93,4 @@
 
 ## Следующий шаг
 
-Выполнить Stage 2 / T-LIGHT03: открыть `WorldScene_0_0`, создать/назначить `LightingSettings_World.asset`, проверить параметры bake и запечь только пилотную сцену. До визуальной приёмки пилота остальные 23 сцены не изменять.
+Не запускать T-LIGHT04. Сначала принять решение по GI-источникам и статическим renderer flags для связки `BootstrapScene + WorldScene_0_0`; после этого повторить пилотный bake и только при `lightmapCount > 0` переходить к Light Probe Groups.

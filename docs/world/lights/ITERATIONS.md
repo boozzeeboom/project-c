@@ -40,3 +40,24 @@
 - Сцены и LightingSettings не изменялись.
 
 **Следующий этап:** `T-LIGHT03` — пилотный LightingSettings и bake только для `WorldScene_0_0`.
+
+## Итерация 3 от 2026-09-08
+
+**Задача:** Создать LightingSettings для `WorldScene_0_0` и проверить пилотный bake без изменения Sun/Moon и DayNightController.
+**Тикет:** `T-LIGHT03`
+**Коммит:** будет добавлен после фиксации этапа.
+
+**Изменения:**
+- `Assets/_Project/Settings/LightingSettings_World.asset` — создан через Unity Editor API.
+- `Assets/_Project/Scenes/World/WorldScene_0_0.unity` — LightingSettings назначен сцене.
+- Пустой generated bake очищен после проверки.
+
+**Проверки:**
+- Settings: Progressive GPU, `IndirectOnly`, 25 texels/unit, AO off, 2 bounces.
+- Пилотный bake: `lightmapCount=0`.
+- `WorldScene_0_0`: 0 lights, 7413 mesh renderers, 0 renderer-и с собственным `Contribute GI`.
+- Bootstrap: 2 directional lights (`Sun`, `Moon`), обе `Realtime`; статической геометрии нет.
+- Ошибок компиляции после этапа нет.
+- `manage_scene.validate` выявил существующий missing script на `[Ship_Key_Container]/[KeyRod_ShipHeavy]`; он не относится к T-LIGHT03 и не исправлялся.
+
+**Статус:** инфраструктура создана, но GI bake заблокирован. До принятия решения по источникам GI и static flags переходить к T-LIGHT04 нельзя.

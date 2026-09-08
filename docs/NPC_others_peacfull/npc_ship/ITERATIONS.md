@@ -15,7 +15,7 @@
 
 **Следующий этап:** Этап 6 — deck-aware activity movement для `Patrol`.
 
-**Коммит:** будет добавлен после фактического commit этапа.
+**Коммит:** `a6a73418` — T-CREW-11: add explicit ship crew attachment.
 
 ---
 

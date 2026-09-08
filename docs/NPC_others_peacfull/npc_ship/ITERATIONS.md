@@ -1,5 +1,23 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-09: ship-local anchors для fixed crew «Горгоны»
+
+**Задача:** добавить ShipRoot-local anchors для deterministic spawn, pilot seat stand и MVP patrol.
+
+**Статус:** Этап 3 завершён; runtime spawn и Play Mode не запускались.
+
+**Изменения:**
+- `Assets/_Project/Prefabs/Ships/Горгона.prefab` — добавлены `CrewAnchors`, `PilotSpawn`, `PilotSeatStand`, `Patrol_01`, `Patrol_02`, `Patrol_03`.
+- `docs/NPC_others_peacfull/npc_ship/Elite_NPC/06_IMPLEMENTATION_STAGE_03_SHIP_LOCAL_ANCHORS_2026-09-08.md` — отчёт этапа.
+
+**Проверка:** prefab hierarchy и editor verification подтвердили parent/position/rotation/scale всех пяти anchors.
+
+**Следующий этап:** Этап 4 — `ShipCrewSpawner`.
+
+**Коммит:** будет добавлен после создания коммита этапа.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-08: ShipCrewManifest для «Горгоны»
 
 **Задача:** описать fixed named crew отдельным ship-specific asset и добавить editor validation до подключения runtime spawner.

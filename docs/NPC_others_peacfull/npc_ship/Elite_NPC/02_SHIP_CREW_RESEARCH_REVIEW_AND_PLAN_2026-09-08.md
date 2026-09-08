@@ -541,13 +541,15 @@ CurrentNpcOccupant
 
 ### Этап 3 — добавить ship-local anchors
 
-1. Добавить `CrewAnchors` на `Горгону`.
-2. Создать `PilotSpawn` и `PilotSeatStand`.
-3. Создать минимум две patrol точки на палубе.
-4. Проверить, что все точки являются детьми ShipRoot.
-5. Подключить точки через binding/anchor IDs.
+**Статус:** ✅ DONE — `T-CREW-09`, документировано в `06_IMPLEMENTATION_STAGE_03_SHIP_LOCAL_ANCHORS_2026-09-08.md`.
 
-**Acceptance:** все точки имеют стабильные ShipRoot-local transforms.
+1. На `Assets/_Project/Prefabs/Ships/Горгона.prefab` создан `CrewAnchors`.
+2. Созданы `PilotSpawn` и `PilotSeatStand`.
+3. Созданы три patrol точки: `Patrol_01`, `Patrol_02`, `Patrol_03`.
+4. Проверено, что все точки являются детьми `Горгона/CrewAnchors`, то есть двигаются вместе с ShipRoot.
+5. В manifest уже зафиксированы соответствующие binding IDs: `pilot_spawn`, `pilot_seat_stand`, `patrol_01`, `patrol_02`, `patrol_03`.
+
+**Acceptance:** все точки имеют стабильные ShipRoot-local transforms; runtime sampling ещё не проверялся.
 
 ### Этап 4 — реализовать `ShipCrewSpawner`
 

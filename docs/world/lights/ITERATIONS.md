@@ -21,3 +21,22 @@
 **Ограничение:** Unity Editor не подключён к MCP for Unity bridge, поэтому Stage 1 и последующие изменения Unity-сцен/ассетов не запускались. В рабочее дерево не включались несвязанные изменения.
 
 **Следующий этап:** `T-LIGHT02` — перевести Additional Lights на Per Pixel через Unity Editor и выполнить отдельную проверку.
+
+## Итерация 2 от 2026-09-08
+
+**Задача:** Выполнить P1.1: перевести Additional Lights с `Per Vertex` на `Per Pixel` через Unity MCP и проверить компиляцию.
+**Тикет:** `T-LIGHT02`
+**Коммит:** будет добавлен после фиксации этапа.
+
+**Изменения:**
+- `Assets/_Project/Settings/ProjectC_URP.asset` — `m_AdditionalLightsRenderingMode` изменён с `PerVertex` на `PerPixel` через Unity MCP.
+- `docs/world/lights/lighting-plan.md` — зафиксирован результат Stage 1 и следующий gate.
+- `docs/world/lights/implementation-log.md` — обновлён статус этапов и результат проверки.
+
+**Проверки:**
+- `pipeline_get_settings`: `m_AdditionalLightsRenderingMode: PerPixel`.
+- `check_compile_errors`: `No compile errors`.
+- Unity Console: ошибок нет.
+- Сцены и LightingSettings не изменялись.
+
+**Следующий этап:** `T-LIGHT03` — пилотный LightingSettings и bake только для `WorldScene_0_0`.

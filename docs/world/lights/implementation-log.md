@@ -4,9 +4,9 @@
 
 - **Дата старта:** 2026-09-08
 - **Рабочий источник правды:** `docs/world/lights/lighting-plan.md`
-- **Текущий этап:** Stage 0 / T-LIGHT01 — аудит и утверждение плана
-- **Следующий этап:** Stage 1 / T-LIGHT02 — `Additional Lights: Per Pixel`
-- **Статус Unity Editor:** не подключён к MCP for Unity bridge на момент аудита
+- **Завершённый этап:** Stage 1 / T-LIGHT02 — `Additional Lights: Per Pixel`
+- **Следующий этап:** Stage 2 / T-LIGHT03 — LightingSettings и пилотный bake `WorldScene_0_0`
+- **Статус Unity Editor:** подключён; изменения выполнены через Unity MCP
 
 ## Решение по плану
 
@@ -47,13 +47,22 @@
 | Этап | Тикет | Содержание | Статус |
 |---|---|---|---|
 | 0 | T-LIGHT01 | Аудит, утверждение плана, baseline и контрольные ворота | ✅ Документально завершён |
-| 1 | T-LIGHT02 | Additional Lights → Per Pixel | ⏳ Ожидает подключения Unity Editor |
+| 1 | T-LIGHT02 | Additional Lights → Per Pixel | ✅ Завершён |
 | 2 | T-LIGHT03 | LightingSettings + пилотный bake `WorldScene_0_0` | ⏳ Не начат |
 | 3 | T-LIGHT04 | Light Probe Groups в пилотной сцене | ⏳ Не начат |
 | 4 | T-LIGHT05 | Пилотные Point/Spot Lights | ⏳ Не начат |
 | 5 | T-LIGHT06 | Reflection Probes | ⏳ Не начат |
 | 6 | T-LIGHT07 | Emissive материалы | ⏳ Не начат |
 | 7 | T-LIGHT08 | Day/Twilight/Night Volume tuning | ⏳ Не начат |
+
+## Результат Stage 1 / T-LIGHT02
+
+- Изменён ассет `Assets/_Project/Settings/ProjectC_URP.asset` через `manage_graphics.pipeline_set_settings`.
+- `m_AdditionalLightsRenderingMode`: `PerVertex` → `PerPixel`.
+- Остальные значения URP Asset не изменялись намеренно: HDR off, MSAA 1x, shadow distance 1000, 2 cascades, limit 4 additional lights.
+- `check_compile_errors`: `No compile errors`.
+- Unity Console: ошибок нет; найденные предупреждения не относятся к Stage 1.
+- Сцены и LightingSettings на этом этапе не изменялись.
 
 ## Проверки Stage 0
 
@@ -69,4 +78,4 @@
 
 ## Следующий шаг
 
-После подключения Unity Editor выполнить только Stage 1 / T-LIGHT02, сохранить изменение URP Asset, проверить импорт/компиляцию и зафиксировать отдельный baseline до перехода к LightingSettings.
+Выполнить Stage 2 / T-LIGHT03: открыть `WorldScene_0_0`, создать/назначить `LightingSettings_World.asset`, проверить параметры bake и запечь только пилотную сцену. До визуальной приёмки пилота остальные 23 сцены не изменять.

@@ -1,5 +1,15 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-15: имена капитанов в Text (TMP)
+
+**Задача:** заменить базовую надпись `MIRA` внутри всех созданных captain NPC prefabs на имя соответствующего персонажа.
+
+**Изменение:** в 20 captain prefabs значение child `Text (TMP)` синхронизировано с `NpcDefinition.displayName`: `Капитан Альбатрос`, `Капитан Берег`, `Капитан Вавилон` и остальные соответствующие имена.
+
+**Проверка:** `20/20` prefab labels совпадают с `NpcController.Definition.displayName`; `check_compile_errors` — `No compile errors`.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-14: overhead name label в гайде named crew
 
 **Задача:** дополнить общий гайд обязательным переименованием `Text (TMP)` над каждым named NPC.

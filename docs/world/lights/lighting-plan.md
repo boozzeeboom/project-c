@@ -1,8 +1,55 @@
 # Lighting Plan — Project C: World Illumination
 
-> **Дата анализа**: 2025-07-16  
-> **Версия**: 1.0  
-> **Рендер-пайплайн**: URP 17.5.0, Forward, HDR off, MSAA off
+> **Дата анализа**: 2026-09-08
+> **Версия**: 1.1 — утверждённый рабочий план
+> **Рендер-пайплайн**: URP 17.5.0, Forward; HDR отключён в `ProjectC_URP.asset`
+
+## Статус утверждения — 2026-09-08
+
+**Решение:** план утверждён как рабочий, но реализация выполняется через пилотные сцены и контрольные ворота. Массовый bake всех 24 `WorldScene_X_Y` до визуальной приёмки пилота запрещён.
+
+### Подтверждено в проекте
+
+- Проект использует Unity `6000.5.2f1` и URP `17.5.0` (`ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`).
+- В проекте присутствуют 24 сцены `Assets/_Project/Scenes/World/WorldScene_X_Y.unity`.
+- `Assets/_Project/Settings/ProjectC_URP.asset` имеет `m_AdditionalLightsRenderingMode: 2`, что соответствует `Per Vertex`, лимит дополнительных источников — `4` на объект.
+- В URP Asset отключены `m_ReflectionProbeBlending` и `m_ReflectionProbeBoxProjection`.
+- В WorldScene-файлах `m_LightingSettings: {fileID: 0}`; определения `LightProbeGroup` и `ReflectionProbe` в просмотренном наборе сцен не обнаружены.
+- Три профиля Day/Night/Twilight существуют: `DayVolumeProfile.asset`, `NightVolumeProfile.asset`, `TwilightVolumeProfile.asset`.
+
+### Обязательные корректировки исходного текста
+
+1. **P1.1 остаётся первым изменением:** `Additional Lights` переводятся с `Per Vertex` на `Per Pixel`; после изменения нужен отдельный визуальный и GPU-baseline.
+2. **P1.2 больше не обещает автоматическое обновление baked GI при смене дня/ночи.** Baked lighting не является runtime-реактивным; для текущего phase-driven Sun/Moon bake рассматривается только после подтверждения совместимости с системой Day/Night.
+3. **P1.2 выполняется сначала только как пилот `WorldScene_0_0`.** Полный bake 24 сцен — отдельное решение после приёмки пилота.
+4. **P1.3 зависит от результата пилота P1.2.** Light Probe Groups расставляются после появления валидных lighting data и проверяются на корабле/NPC в тестовой сцене.
+5. **P2.5 выполняется после P1.1 и после инвентаризации металлических материалов.** Reflection Probe создаётся сначала в пилотной зоне; глобальная проба `50000×50000×10000` не принимается без профилирования памяти и визуальной проверки.
+6. **P3.6 и P3.7 идут после baseline.** Emissive и Volume-настройки не смешиваются с системными изменениями в одном коммите.
+
+### Утверждённая последовательность этапов
+
+- **Stage 0 / T-LIGHT01:** аудит и утверждение плана, фиксация baseline и контрольных ворот.
+- **Stage 1 / T-LIGHT02:** P1.1 — `Additional Lights: Per Pixel`.
+- **Stage 2 / T-LIGHT03:** P1.2 — LightingSettings и пилотный bake только для `WorldScene_0_0`.
+- **Stage 3 / T-LIGHT04:** P1.3 — Light Probe Groups в пилотной сцене.
+- **Stage 4 / T-LIGHT05:** P2.4 — локальные Point/Spot Lights в пилотных локациях.
+- **Stage 5 / T-LIGHT06:** P2.5 — Reflection Probes и включение blending/box projection.
+- **Stage 6 / T-LIGHT07:** P3.6 — emissive-материалы.
+- **Stage 7 / T-LIGHT08:** P3.7 — настройка Day/Twilight/Night Volume Profiles.
+
+Каждый этап имеет отдельный коммит, документ результата и проверку `git diff --check`. Никакие несвязанные изменения рабочего дерева в этап не включаются.
+
+### Контрольные ворота
+
+- До P1.2: зафиксировать текущий визуальный baseline в `WorldScene_0_0`.
+- После каждого изменения URP/Lighting: проверить отсутствие compile/import ошибок и сохранить сцену через Unity Editor.
+- После P1.2–P1.3: проверить динамический корабль и NPC в световой зоне; baked data не считать доказательством runtime day/night.
+- До перехода к P2: проверить стоимость дополнительных источников при лимите `4` lights per object.
+- До финального утверждения P3: выполнить ручной Play Mode-прогон и скриншоты; автоматическая проверка без визуальной приёмки недостаточна.
+
+### Текущий блокер
+
+На момент утверждения документа Unity Editor не подключён к MCP for Unity bridge. Поэтому Stage 0 закрыт документально, а создание/изменение Unity-ассетов и сцен начинается после запуска проекта в Unity Editor.
 
 ---
 

@@ -1,5 +1,24 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-08 — T-CREW-11: explicit moving-ship attachment для fixed crew «Горгоны»
+
+**Задача:** добавить официальный attach/detach API в `NpcBrain` и перевести `ShipCrewSpawner` на единый explicit ship-deck attachment path.
+
+**Статус:** Этап 5 завершён; compile/static checks пройдены, Play Mode и host/client runtime не запускались.
+
+**Изменения:**
+- `Assets/_Project/Scripts/AI/NpcBrain.cs` — добавлены `AttachToShipDeck`, `DetachFromShipDeck`, explicit attachment state, ожидание `ShipDeckNav.IsReady` и независимый от `_platformMask` fixed-update path.
+- `Assets/_Project/Scripts/PeacefulShip/Crew/ShipCrewSpawner.cs` — новый и reused crew member используют официальный `NpcBrain.AttachToShipDeck`; прямой spawner parenting удалён.
+- `docs/NPC_others_peacfull/npc_ship/Elite_NPC/08_IMPLEMENTATION_STAGE_05_EXPLICIT_SHIP_ATTACHMENT_2026-09-08.md` — отчёт Этапа 5.
+
+**Проверка:** `validate_script` для обоих C# файлов без ошибок; `check_compile_errors` — `No compile errors`.
+
+**Следующий этап:** Этап 6 — deck-aware activity movement для `Patrol`.
+
+**Коммит:** будет добавлен после фактического commit этапа.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-10: ShipCrewSpawner для «Горгоны»
 
 **Задача:** подключить fixed crew manifest к server-side lifecycle корабля и реализовать exact prefab spawn с NGO parent и duplicate guard.

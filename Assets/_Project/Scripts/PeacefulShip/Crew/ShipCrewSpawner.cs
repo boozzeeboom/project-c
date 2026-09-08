@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using ProjectC.AI;
+using ProjectC.Ship;
 using ProjectC.Quests;
 
 namespace ProjectC.PeacefulShip.Crew
@@ -84,6 +86,7 @@ namespace ProjectC.PeacefulShip.Crew
                 if (existingByNpcId.TryGetValue(member.npcDefinition.npcId, out var existing) && existing != null && existing.IsSpawned)
                 {
                     _spawnedByMemberId[member.memberId] = existing;
+                    AttachMemberToShipDeck(member.memberId, existing);
                     if (debugLogs)
                         Debug.Log($"[{nameof(ShipCrewSpawner)}:{name}] Reused existing crew member '{member.memberId}' ({member.npcDefinition.npcId}).", this);
                     continue;
@@ -165,12 +168,31 @@ namespace ProjectC.PeacefulShip.Crew
                 return;
             }
 
-            if (networkObject.transform.parent != transform)
-                networkObject.TrySetParent(_shipNetworkObject, true);
+            AttachMemberToShipDeck(member.memberId, networkObject);
 
             _spawnedByMemberId[member.memberId] = networkObject;
             if (debugLogs)
                 Debug.Log($"[{nameof(ShipCrewSpawner)}:{name}] Spawned '{member.memberId}' ({member.npcDefinition.npcId}) at anchor '{member.spawnAnchorId}'.", this);
+        }
+
+        private void AttachMemberToShipDeck(string memberId, NetworkObject networkObject)
+        {
+            if (networkObject == null || !networkObject.IsSpawned || _shipNetworkObject == null)
+                return;
+
+            var brain = networkObject.GetComponent<NpcBrain>();
+            if (brain == null)
+            {
+                Debug.LogError($"[{nameof(ShipCrewSpawner)}:{name}] Crew member '{memberId}' has no NpcBrain; cannot attach it to the ship deck.", this);
+                return;
+            }
+
+            var deckNav = _shipNetworkObject.GetComponent<ShipDeckNav>()
+                ?? _shipNetworkObject.GetComponentInChildren<ShipDeckNav>(true);
+            brain.AttachToShipDeck(_shipNetworkObject, deckNav);
+
+            if (debugLogs)
+                Debug.Log($"[{nameof(ShipCrewSpawner)}:{name}] Requested explicit ship-deck attachment for '{memberId}'.", this);
         }
 
         private Transform FindAnchor(string anchorId)

@@ -202,6 +202,11 @@ namespace ProjectC.AI
         private Vector3 _proxyLastPos;
         private NetworkObject _netObject;
         private bool _parentedToShip;
+        // T-CREW-11: explicit fixed-crew attachment. This path does not depend on platform probes or _platformMask.
+        private NetworkObject _explicitShipNetworkObject;
+        private ShipDeckNav _explicitShipDeckNav;
+        private bool _explicitShipAttachmentRequested;
+        private bool _explicitShipAttachmentActive;
 
         // T-CNPC-01: respawn tracking
         private int _respawnCount;
@@ -215,6 +220,95 @@ namespace ProjectC.AI
         private bool _isAggrod;
         private float _aggroDamageAccumulator;
         private readonly System.Collections.Generic.Queue<float> _recentHitTimes = new System.Collections.Generic.Queue<float>();
+
+        public bool IsExplicitShipAttachmentRequested => _explicitShipAttachmentRequested;
+        public bool IsExplicitShipAttachmentActive => _explicitShipAttachmentActive;
+
+        public void AttachToShipDeck(NetworkObject shipNetworkObject, ShipDeckNav deckNav = null)
+        {
+            if (!IsServer || shipNetworkObject == null)
+                return;
+
+            _explicitShipNetworkObject = shipNetworkObject;
+            _explicitShipDeckNav = deckNav != null
+                ? deckNav
+                : shipNetworkObject.GetComponent<ShipDeckNav>()
+                  ?? shipNetworkObject.GetComponentInChildren<ShipDeckNav>(true);
+            _explicitShipAttachmentRequested = true;
+            _explicitShipAttachmentActive = false;
+
+            TickExplicitShipAttachment();
+        }
+
+        public void DetachFromShipDeck()
+        {
+            if (!IsServer)
+                return;
+
+            _explicitShipAttachmentRequested = false;
+            _explicitShipAttachmentActive = false;
+            _explicitShipNetworkObject = null;
+            _explicitShipDeckNav = null;
+            EndRide();
+        }
+
+        private void TickExplicitShipAttachment()
+        {
+            if (!_explicitShipAttachmentRequested)
+                return;
+
+            if (_explicitShipNetworkObject == null || !_explicitShipNetworkObject.IsSpawned)
+                return;
+
+            if (_netObject == null)
+                _netObject = GetComponent<NetworkObject>();
+
+            if (_netObject == null)
+                return;
+
+            if (!_explicitShipAttachmentActive)
+            {
+                if (_netObject.transform.parent != _explicitShipNetworkObject.transform)
+                    _netObject.TrySetParent(_explicitShipNetworkObject, true);
+
+                _parentedToShip = _netObject.transform.parent == _explicitShipNetworkObject.transform;
+                if (!_parentedToShip)
+                    return;
+
+                _ridePlatform = _explicitShipNetworkObject.transform;
+                _rideLastPos = _ridePlatform.position;
+                _rideLastRot = _ridePlatform.rotation;
+                _explicitShipAttachmentActive = true;
+
+                if (_agent != null && !_agentAutoDrivePaused)
+                {
+                    _agent.updatePosition = false;
+                    _agent.updateRotation = false;
+                    _agentAutoDrivePaused = true;
+                }
+            }
+
+            if (_explicitShipDeckNav == null)
+                _explicitShipDeckNav = _explicitShipNetworkObject.GetComponent<ShipDeckNav>()
+                    ?? _explicitShipNetworkObject.GetComponentInChildren<ShipDeckNav>(true);
+
+            _deckNav = _explicitShipDeckNav;
+            if (_deckNav == null || !_deckNav.IsReady)
+            {
+                _deckNavActive = false;
+                return;
+            }
+
+            if (_deckNavActive)
+                return;
+
+            EnsureProxy();
+            if (_proxyAgent == null)
+                return;
+
+            WarpProxyToNpc();
+            _deckNavActive = true;
+        }
 
         public BrainState CurrentState => _state;
         public Vector3 SpawnPoint => _spawnPoint;
@@ -437,7 +531,22 @@ namespace ProjectC.AI
         private void FixedUpdate()
         {
             using var _ = ProjectCPerfCounters.NpcBrainFixedUpdate.Auto();
-            if (!IsServer || !_platformCarryEnabled) return;
+            if (!IsServer) return;
+
+            // T-CREW-11: fixed crew uses explicit attachment and must not depend on
+            // platform probe configuration (_platformMask may intentionally be zero).
+            if (_explicitShipAttachmentRequested)
+            {
+                TickExplicitShipAttachment();
+                if (!_explicitShipAttachmentActive)
+                    return;
+
+                if (_deckNavActive && _proxyAgent != null && _state != BrainState.Dead)
+                    DriveDeckNav();
+                return;
+            }
+
+            if (!_platformCarryEnabled) return;
             if (_platformMask == 0) return;
 
             Vector3 origin = transform.position + Vector3.up * _platformProbeUp;

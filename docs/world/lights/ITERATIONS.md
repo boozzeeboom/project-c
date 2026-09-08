@@ -45,7 +45,7 @@
 
 **Задача:** Создать LightingSettings для `WorldScene_0_0` и проверить пилотный bake без изменения Sun/Moon и DayNightController.
 **Тикет:** `T-LIGHT03`
-**Коммит:** будет добавлен после фиксации этапа.
+**Коммит:** `5c562887` — T-LIGHT03: создать lighting settings и зафиксировать блокер bake
 
 **Изменения:**
 - `Assets/_Project/Settings/LightingSettings_World.asset` — создан через Unity Editor API.

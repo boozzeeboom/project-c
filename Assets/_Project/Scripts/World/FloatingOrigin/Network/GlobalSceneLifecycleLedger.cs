@@ -119,15 +119,23 @@ namespace ProjectC.World.FloatingOrigin.Network
                 foreach (var entry in _plan.RetireOrder) if (load.Records.TryGetValue(entry.SourceId, out var receipt) && !receipt.Excluded) result.Add(entry.SourceId);
             return result.AsReadOnly();
         }
-        public bool TryRecordRetired(GlobalSceneReceiptToken token, out string error)
+        /// <summary>Read-only admission before an irreversible native retirement; it does not consume the receipt.</summary>
+        public bool CanRecordRetired(GlobalSceneReceiptToken token, out string error)
         {
             error = null; string sourceId = token.SourceId;
-            if (token.Generation == 0 || !Entry(token.Load, sourceId, out var load, out var entry) || !load.Records.TryGetValue(sourceId, out var receipt) || receipt.Excluded ||
+            if (token.Generation == 0 || !Entry(token.Load, sourceId, out var load, out _) || !load.Records.TryGetValue(sourceId, out var receipt) || receipt.Excluded ||
                 receipt.Generation != token.Generation) return Fail("stale_retirement_receipt", out error);
             foreach (var child in _children[sourceId])
                 if (load.Records.TryGetValue(child, out var childReceipt) && !childReceipt.Excluded)
                     return Fail("live_descendant_blocks_parent_retirement", out error);
-            load.Records.Remove(sourceId);
+            return true;
+        }
+        public bool TryRecordRetired(GlobalSceneReceiptToken token, out string error)
+        {
+            if (!CanRecordRetired(token, out error)) return false;
+            Entry(token.Load, token.SourceId, out var load, out var entry);
+            var receipt = load.Records[token.SourceId];
+            load.Records.Remove(token.SourceId);
             if (entry.IsNetwork) _objects.Remove(receipt.Lifetime.NetworkObjectId);
             return true;
         }

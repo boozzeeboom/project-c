@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO04I)
+
+**Задача:** Реализовать ограниченный native scene-source binding/executor поверх H ledger, не активируя неподготовленную игру.
+**Результат:** GlobalSceneSourceMarker хранит baked identity/frame/activation intent; GlobalSceneNativeExecutor проверяет каждый catalog root/NetworkObject и полный preloaded initial scene set. До NGO Start размещается только уже inactive static content по явной GlobalPosition; server Spawn NONSPATIAL scene services выполняется после native sweep с receipts после факта. Клиент включает prepared sources в OnClientStarted до NGO lookup; server public Additive synchronization сохраняет prepared scene instances. Remote approval и G player spawn ждут scene receipts; host-local approval не блокируется циклом до OnServerStarted. Protocol=0xF005, legacy=0 не изменён.
+**Retirement/guards:** CanRecordRetired — read-only preflight без потребления receipt. Local child-first Despawn(false)/deactivation → receipt; unknown runtime roots/NetworkObject descendants/persistent infrastructure блокируют retire. Explicit activation, enabled/inactive source, parent/frame/scene checks и post-native callback shutdown guards. Initial receipt timeout=60s. Rollback transform только до networking, для inactive unchanged identity; partial native failure означает fault/stop, не фиктивный atomic rollback.
+**Файлы:** новые GlobalSceneSourceMarker.cs (включая pure policy/admission contract), GlobalSceneNativeExecutor.cs, Editor ValidateGlobalSceneExecution.cs и три Unity-generated meta; изменены GlobalMotionPlayerBootstrap/NetworkStartup/NetworkContract, GlobalSceneLifecycleLedger, исторический H validator. Добавлены I report и два JSON, обновлены roadmap и этот журнал.
+**Проверки:** compile PASS; фактически выполнено **31 I + 56 H + 44 G + 40 hierarchy + 48 startup + 26 actor + 32 application + 32 transport + 33 protocol + 23 foundation = 365 pure PASS / 0 FAIL**. В static review исправлены client inactive/IsSpawned lookup deadlock и Single-mode reload hazard. Эти проверки НЕ выполняли native executor operations, не проверяли реальный NGO lifecycle, physics или gameplay.
+**Аудит/блокеры:** 58 prefab candidates, opt-in/profile assets/loaded profiles/adapters/source markers/scene executors=0; 26 scene candidates, loaded/dirty=1, uninspected=25, 61 Unreviewed observations, catalog assets=0. Прежние missing-component subtree diagnostics Inventory, Inventory/[ShipKeyServer], Toasts_and_meta не изменялись; сцены не загружались/не сохранялись.
+**Границы:** только inactive static content и nonspatial scene services. Spatial scene actors, bodies/nav/CC, replacements/exclusions, DDOL, pool/streaming/distributed unload/recovery и genuine prepared-content/global-persistence source ещё не реализованы. Baking/назначение markers/catalog/profile не выполнены. Без Play Mode, игровых сетевых сессий, тестовых GameObject, physics simulation и screenshots. Global mode/world shift выключены; полный T-FO04 и jitter fix не заявляются.
+**Коммит:** один коммит кода/meta/результатов/документации без собственного хеша отдельным коммитом. Temp runner и несвязанный LiberationSans fallback исключены; H/G исторические отчёты и JSON сохранены.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO04H)
 
 **Задача:** Подготовить reviewed scene catalog и lifecycle сценовых/дочерних объектов без активации native миграции.

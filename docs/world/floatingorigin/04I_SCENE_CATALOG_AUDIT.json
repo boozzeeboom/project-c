@@ -1,0 +1,2605 @@
+{
+    "scope": "Assets/_Project/Scenes + enabled build scenes + loaded saved-path scenes; not proof of every runtime loading path",
+    "sceneCandidates": 26,
+    "loadedInspected": 1,
+    "uninspected": 25,
+    "dirtyScenes": 1,
+    "observations": 61,
+    "catalogAssets": 0,
+    "validCatalogAssets": 0,
+    "draft": {
+        "schemaVersion": 1,
+        "expectedSceneGuids": [
+            "0c189e8a5a377ec4eb377cdaccad070c",
+            "0c4869cee3f8eca4e940714e4c7296ee",
+            "1157e3f67490ea141aeb64b391f7c57e",
+            "1a012ac305c02a243b7fadf24c4e63eb",
+            "2a20d4dd8d6b1e849bd3d23cb6c06955",
+            "336a190646b19bc46b22dd4e78f99800",
+            "347196732c2423044b7bd111ebe3b7f6",
+            "3b3a40ae04d068c49afbbb746dde17ef",
+            "404e89122169ce34783228d2f6ee4d97",
+            "44e8d678970139b4fa3c453ee43100ad",
+            "4b6d5fc4d9d7c8f418ef16c23b9b72f6",
+            "52fa95ed1e5b72a4195f3f3f29bcc01c",
+            "6564534364f333b44ae3e069d73c8082",
+            "7250b8eaaaa2e4943a13d9bace99c824",
+            "802095f887095174d8b6a9e3bdb39d2e",
+            "837a3910185f2b9478ce71df025ccc7c",
+            "96fef5d9be741c640a5ca489972cdb85",
+            "98e86cd99ba36d349979337df201267f",
+            "b4a32989f84a029498691f1ff873ed64",
+            "b9f5fd9052c2ee247b9ca197c96285bb",
+            "bb9e9b97bdbe13940ad8a64ba7b84975",
+            "c7856d25781937e4489f18149aafe7ee",
+            "c9c53520017f06e42bec2cf8612b2506",
+            "cdca512b3b65648459c919561c3c2d02",
+            "e9b4310239d1b384db3d05f187617014",
+            "f76f287a208cf4842811cb2aebfef69d"
+        ],
+        "scenes": [
+            {
+                "sceneGuid": "0c189e8a5a377ec4eb377cdaccad070c",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_4_0.unity",
+                "dependencyHash": "507fc3dbb90d94cc928530174909e079",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "0c4869cee3f8eca4e940714e4c7296ee",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_2_0.unity",
+                "dependencyHash": "bafbb3a3f73959215ae53948d61613db",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "1157e3f67490ea141aeb64b391f7c57e",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_3_0.unity",
+                "dependencyHash": "44bce2d52224e73fa5d5fa42aab7250d",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "1a012ac305c02a243b7fadf24c4e63eb",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_3_2.unity",
+                "dependencyHash": "4a9f6b5378536df07a449eba1ba417a1",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "2a20d4dd8d6b1e849bd3d23cb6c06955",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_1_3.unity",
+                "dependencyHash": "8c5071ca94ec785fb78fbf0b61c32097",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "assetPath": "Assets/_Project/Scenes/BootstrapScene.unity",
+                "dependencyHash": "b8abfe8b5d2745807b97a3771b9c6217",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": [
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:100000:1757335980",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "6638580c4982ea15b415432f56a6c08beeb7c2f8cb21a25b8da5fcd6ba08e552"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1010490802:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "12d78ac2206e78d4e48fe6dea0e599ee2ee51ff760754d53ed8f975faac419c4"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1044316355:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "9a183b477170d1e87e32f4d237d72e3989cb7ed26be802c4c1843b217a913a26"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1052858226:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "86dff1bd6d44ecf2241ef54451e10141b31983bbc23d44e0bf05e55533985e5b"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1114552034:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "38a5910ad29b8696b0781a49be39aa40e51a5112b86c915a4207e7023ba00cb3"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1149404328:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "e04bc53d19696bea3c31bb0b1402dc53409d72299c83d9438b7c375b3b459276"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1151906017:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "5f3f4ed32c5959db35e44333c0c5d591e82674ec72e578b9c459ff82c6ed9a69"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1181311400:0",
+                        "parentSourceId": "336a190646b19bc46b22dd4e78f99800:502945014:0",
+                        "isRoot": false,
+                        "isNetworkObject": true,
+                        "layoutHash": "2116446b97afa72ae55baa6e652985d18a3838a41dbafaf52b93656c9f064c48"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:121334975:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "8b9214bd2f8f3ac17dde765cefb0d7468822afed1ffca6549417b759a45f7873"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:124043118:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "2be1ea18ee2a0094bb19139e8b620e4050100336984c75fba16097f2f5f36663"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1280621414:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "60204f5e06dbbe4843b3fae78af93aba4f7304b1f6bd5534388e19b07cbfdf4e"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1286596461:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "aaa9502304f8284d4b0b11d4f3030eebb5afe0dbb11b55b188dcf59522a81bcc"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:133441436:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "1423111d85fe81ad861d2a7ee1add2fbd4f419c977a046aafd5e3a79d94e6228"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1341219859:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "311e8d19de2ff15c4d7f73f31dd294d5285b7ee1de0c05bd3e4afea1c56da942"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1354489780:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "1464a1e2bbc98fdc8197dac4863c0f35bb65b01a1ba9189830547e18218abd92"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1390457671:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "f4e712e4e59a7457508cc14f02e5bf0bf8fc3ec5dac6304372a1bed95221f517"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1391169739:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "6347eee1878d020be0eb1d49318f1a94953fcbcb7a3f82693cebb41c98d8e560"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1422682203:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "ea83f66850aaa1e27fd78ce92699a8dbad5b452a0aa07ebc1d08754e47a6ca84"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:142544340:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "cfec1ca11d6fc0b1eed994941fc2afe7109e375cae8ed0573fa596bcad61812f"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1441005091:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "ac012d93c071f9490f6e4f1000c21fffad3e19cc043e5d72b9d5b80dc9c25e01"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1471737520:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "6c8fcbd088feaa654868cd13cc8e68cd4e8060289493569eaad238d437f7aefa"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:154447836:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "6860970626f9795cf6084b20c040b3eefa4c9d3307862c2db239a33015bd044a"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1567705303:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "0ac3cc8bbc67f3596aba45d1697983e7286c5e93b7d57bfc229d8c97e6db7238"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1614026675:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "a39ce9b71903c0a3cac3e25db835807d6f868f88c812c33983dd7dcb1aa1dd36"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1622157771:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "65dfc5e1d60ad0457f1e7d7d98b4cdf8a6cdcc3a54f0d6797490ed40c99c1f21"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1633574711:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "ca1b00404516c55516e5201dc4bb0d5818f99b0c269923dafb2cfcf4a35395b8"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:168637385:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "de6f8e5bc326c7521168deebd629da3d0cb80fac50117ffc592f1494f96e2e3a"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:180883749:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "773ba7ab2e32ea57cd5f0792c3409adc48156900f1643e2bdb79b48a98ef4c3d"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1891644269:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "9c7fc1c99c76f6c2aa5e536455818d5adcf95f1c3365433ab31b04d7e6c3ea3b"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:1914598512:0",
+                        "parentSourceId": "336a190646b19bc46b22dd4e78f99800:267643486:0",
+                        "isRoot": false,
+                        "isNetworkObject": true,
+                        "layoutHash": "e1ef05610d51cc9cdbe6da21b69bd04e2278901356cd6684411cf3f612b5774d"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:2005785160:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "28ab42943bfdd19283a8d9f7181d5f5e40ec2e8d6dbc6772d091683e0cd1c764"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:2015383511:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "07807bc53fc06b7eee5683ece6c4bf8083f446b00f0455ef52ccc739939b999a"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:2047115830:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "d2f05f46b04b2979515710dae80980559f8ee4cf6d28ed94877457ad2853f313"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:2068372239:0",
+                        "parentSourceId": "336a190646b19bc46b22dd4e78f99800:639769239:0",
+                        "isRoot": false,
+                        "isNetworkObject": true,
+                        "layoutHash": "f27607fb3bbf420c4cbcc40c7a8c0e9fa0c7a04e01b263047e0a09bb669067e8"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:2074923228:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "5406daae8cd592c74ca9e0046b23a0f83eb9e393b4f572277db6e76eec35e2e0"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:2129841567:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "80a75c4d3c9eb2575843fa6838f311cd1ffe7a6a7eb35a4d4ebea1f0b1a2c88c"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:258728291:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "884c4494cba9793c3a32b0c237ab88da8af3710af32d450a69286cc28da96b6e"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:267643486:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "aa1da393caa6032b0ef09c28d6d4902ad9219abf6625d6bc4f9341dfacc7a0e2"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:299327984:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "240fbc53b6eeadd7b706897ad94dfba120b5a898c372c71dc32b1c7425ad9310"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:302907655:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "67b41719c1a9596456161f37faa319c90026c2249b61b3401b3decb6b2839d9a"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:323665103:0",
+                        "parentSourceId": "336a190646b19bc46b22dd4e78f99800:1633574711:0",
+                        "isRoot": false,
+                        "isNetworkObject": true,
+                        "layoutHash": "e47a6ecc850010c6cc60ad7adb46ed746618e60d1abed82eec919bfb87ca8da4"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:406607961:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "1a96fd072b33d88ab6b1c9b9a5c7fdfb614af2ca9efd11d6c3f8b1cd53ca0bfa"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:428382608:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "d853db0205ebaa5470d43d765d4e28ade68cf8e7cf2fa694da8d943e7e58ff2f"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:462870027:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "6d2c1d728c2d4bd9a5d58be5c0c7f21d20479f9b5caad500dc43df5dfb93a25c"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:467779776:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "eacdb0d343807a4f7965af7b00cb8d3f806edb45a31dffb188e02d93ac30df46"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:502236113:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "11285a978efe0d0a5d21eb1b85eb7472c45fcb1bc3f7a6bbb93c8a8bd985c4ec"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:502945014:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "4fa715b617a626fdef18640f5a94a703d13ba1c08ad800872e619406236924b3"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:504732896:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "09bfa49c9c491934d51b75985b2d479fbbd70e67ffd050c8424c8f1b8db38a5d"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:56021026:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "cf3893bec73e27a6be81bded2d35a8d0c65b5866b4261d9e72730e5ad6414cfa"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:582163927:0",
+                        "parentSourceId": "336a190646b19bc46b22dd4e78f99800:1633574711:0",
+                        "isRoot": false,
+                        "isNetworkObject": true,
+                        "layoutHash": "21530aa2078aa9e303f3c90c8cd04a968ed87b9be2a4629d4335c29c2d4ff7ee"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:639769239:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "550a97d3e7f332a3978b38317f31a6160e140c18f5d7b641411bdbe30a7791e4"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:650110126:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "f2862f953bf8b2e402120c377f3039c6419dc4747e1e050fa4288093aee04ac6"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:690069688:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "f3a927811bd45ce09c1276cfb0a9b50f90b4943cef2e583ed24d3d3f21f968ef"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:696825990:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "9994947073080b444e4f236d7c3111a419c21392fd63fc0621b0ac8a87064d1e"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:785754308:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "c9075d4f5a15ac9660c9f061cd27697942105ea80a7303754a122efd7ad27208"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:819670517:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "7b6260841835ce02b57a2bba73add794ffee21ec6564e9d60d621a3d9ea23e5b"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:880940880:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "c320f0c4cf79dfdcb895ab0fe427e3e5de13bfae90bf0eb3a94969bf1cd58f57"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:909089444:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": true,
+                        "layoutHash": "279b472daa79fff4e5de8d1cf324794a9541ce2af367d4503078db15201fc745"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:919820107:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "ef1aa187e75518776b52e126b9435d6746e5999698da4518644f382759ddda82"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:922958209:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "29c46cb03481c7e1370823a3cd9c5376edf582a9eba76acd455ea4965a92b3e4"
+                    },
+                    {
+                        "sourceId": "336a190646b19bc46b22dd4e78f99800:979231201:0",
+                        "parentSourceId": "",
+                        "isRoot": true,
+                        "isNetworkObject": false,
+                        "layoutHash": "e9fdd668fe8f22be3efe08344bb0a05fbf510729814ce2e3d45aefad52bce109"
+                    }
+                ]
+            },
+            {
+                "sceneGuid": "347196732c2423044b7bd111ebe3b7f6",
+                "assetPath": "Assets/_Project/Scenes/BootstrapScene (копия с компьютера DESKTOP-K00O7HK).unity",
+                "dependencyHash": "91f8ab1d7c183fefe559440542610943",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "3b3a40ae04d068c49afbbb746dde17ef",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_4_1.unity",
+                "dependencyHash": "88456d52522437fc4a32b0b6f32f9513",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "404e89122169ce34783228d2f6ee4d97",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_2_3.unity",
+                "dependencyHash": "afc0872275ad0c80beb95e31e6cfa4ed",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "44e8d678970139b4fa3c453ee43100ad",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_1_1.unity",
+                "dependencyHash": "18e79aca29fa73c0a53284e8e2cbaec2",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "4b6d5fc4d9d7c8f418ef16c23b9b72f6",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_5_3.unity",
+                "dependencyHash": "8dcd0b93e2bf42aad461de40394cd5e4",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "52fa95ed1e5b72a4195f3f3f29bcc01c",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_4_3.unity",
+                "dependencyHash": "0a3fc6aa9ead1c1eee604da800c2f165",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "6564534364f333b44ae3e069d73c8082",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_5_2.unity",
+                "dependencyHash": "7b166dcc5a88a9cd5344d9019320fe27",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "7250b8eaaaa2e4943a13d9bace99c824",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_0_1.unity",
+                "dependencyHash": "ffaa942121007899859efdd3c83b84e1",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "802095f887095174d8b6a9e3bdb39d2e",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_4_2.unity",
+                "dependencyHash": "cd08924372391f19962cfd6ab5272f15",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "837a3910185f2b9478ce71df025ccc7c",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_0_0.unity",
+                "dependencyHash": "4f8caef8060d58954f9dca3c676f47cf",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "96fef5d9be741c640a5ca489972cdb85",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_0_2.unity",
+                "dependencyHash": "620a95d2a0b6e17fcb9a9f60ee1724a1",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "98e86cd99ba36d349979337df201267f",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_3_1.unity",
+                "dependencyHash": "231f3d0b184c21ce85bd09363c7800d2",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "b4a32989f84a029498691f1ff873ed64",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_5_0.unity",
+                "dependencyHash": "a0d66f9d8a4495990f6d63ad3a676d37",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "b9f5fd9052c2ee247b9ca197c96285bb",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_5_1.unity",
+                "dependencyHash": "38d492ef5fb131aba8c283f910171491",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "bb9e9b97bdbe13940ad8a64ba7b84975",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_1_0.unity",
+                "dependencyHash": "8499fc62258c50d7b424dc5592fef8f3",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "c7856d25781937e4489f18149aafe7ee",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_1_2.unity",
+                "dependencyHash": "1713d37d33975b37f4f35baf97084a94",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "c9c53520017f06e42bec2cf8612b2506",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_0_3.unity",
+                "dependencyHash": "52278d00f4c43f43f79be99acab1d594",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "cdca512b3b65648459c919561c3c2d02",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_2_1.unity",
+                "dependencyHash": "1ebb021c5f6f7b3d3cba6a15c59d614d",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "e9b4310239d1b384db3d05f187617014",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_2_2.unity",
+                "dependencyHash": "e7888f4950ac84b31456d57aa3fe3de1",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            },
+            {
+                "sceneGuid": "f76f287a208cf4842811cb2aebfef69d",
+                "assetPath": "Assets/_Project/Scenes/World/WorldScene_3_3.unity",
+                "dependencyHash": "ab0c76d0ed48b46368736d8c473dbc9c",
+                "inspectedComplete": false,
+                "saved": false,
+                "observations": []
+            }
+        ],
+        "entries": [
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:100000:1757335980",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1010490802:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1044316355:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1052858226:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1114552034:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1149404328:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1151906017:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1181311400:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": "336a190646b19bc46b22dd4e78f99800:502945014:0"
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:121334975:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:124043118:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1280621414:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1286596461:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:133441436:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1341219859:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1354489780:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1390457671:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1391169739:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1422682203:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:142544340:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1441005091:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1471737520:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:154447836:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1567705303:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1614026675:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1622157771:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1633574711:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:168637385:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:180883749:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1891644269:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:1914598512:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": "336a190646b19bc46b22dd4e78f99800:267643486:0"
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:2005785160:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:2015383511:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:2047115830:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:2068372239:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": "336a190646b19bc46b22dd4e78f99800:639769239:0"
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:2074923228:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:2129841567:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:258728291:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:267643486:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:299327984:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:302907655:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:323665103:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": "336a190646b19bc46b22dd4e78f99800:1633574711:0"
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:406607961:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:428382608:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:462870027:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:467779776:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:502236113:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:502945014:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:504732896:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:56021026:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:582163927:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": "336a190646b19bc46b22dd4e78f99800:1633574711:0"
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:639769239:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:650110126:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:690069688:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:696825990:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:785754308:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:819670517:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:880940880:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:909089444:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:919820107:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:922958209:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            },
+            {
+                "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+                "sourceId": "336a190646b19bc46b22dd4e78f99800:979231201:0",
+                "reviewNote": "",
+                "treatment": 0,
+                "spatial": false,
+                "replacementPrefabHash": 0,
+                "poseKind": 0,
+                "worldPosition": {
+                    "X": 0.0,
+                    "Y": 0.0,
+                    "Z": 0.0
+                },
+                "parentLocalPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "parentSourceId": ""
+            }
+        ]
+    },
+    "warnings": [
+        "UNINSPECTED: Assets/_Project/Scenes/BootstrapScene (копия с компьютера DESKTOP-K00O7HK).unity",
+        "DIRTY: dependency hash is for saved disk content, not this live scene: Assets/_Project/Scenes/BootstrapScene.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_0_0.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_0_1.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_0_2.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_0_3.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_1_0.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_1_1.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_1_2.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_1_3.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_2_0.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_2_1.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_2_2.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_2_3.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_3_0.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_3_1.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_3_2.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_3_3.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_4_0.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_4_1.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_4_2.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_4_3.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_5_0.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_5_1.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_5_2.unity",
+        "UNINSPECTED: Assets/_Project/Scenes/World/WorldScene_5_3.unity"
+    ],
+    "errors": [
+        "Missing script/component in observed subtree: 336a190646b19bc46b22dd4e78f99800:1633574711:0 (Inventory)",
+        "Missing script/component in observed subtree: 336a190646b19bc46b22dd4e78f99800:582163927:0 (Inventory/[ShipKeyServer])",
+        "Missing script/component in observed subtree: 336a190646b19bc46b22dd4e78f99800:502945014:0 (Toasts_and_meta)"
+    ]
+}

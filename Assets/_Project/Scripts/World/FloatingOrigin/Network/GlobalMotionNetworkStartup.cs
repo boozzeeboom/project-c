@@ -59,6 +59,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             { error = "existing_approval_or_payload_requires_explicit_auth_composition"; return false; }
             if (bootstrap == null || !bootstrap.isActiveAndEnabled || bootstrap.gameObject != manager.gameObject || !(bootstrap is IGlobalMotionSpawnBootstrap provider))
             { error = "prepared_global_spawn_parent_bootstrap_missing"; return false; }
+            if (!(provider is IGlobalMotionSceneAdmission)) { error = "native_scene_admission_contract_missing"; return false; }
             var world = manager.GetComponent<GlobalMotionWorld>();
             if (world == null || !world.isActiveAndEnabled) { error = "global_motion_world_missing"; return false; }
             if (!GlobalMotionPrefabInspector.TryBuildHello(manager.NetworkConfig, profile, false, out var hello, out error)) return false;
@@ -121,6 +122,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 if (!LocalContractUnchanged(out var error) || !GlobalMotionNetworkContract.ValidateHello(request.Payload, _hello, out error))
                 { response.Reason = "global-motion:" + error; return; }
+                bool hostLocal = _manager.IsHost && request.ClientNetworkId == NetworkManager.ServerClientId;
+                if (!(_bootstrap is IGlobalMotionSceneAdmission scenes) || !GlobalSceneExecutionPolicy.CanAcceptPeer(hostLocal, scenes.CanAcceptScenePeer))
+                { response.Reason = "global-motion:initial_scene_content_not_ready_retry"; return; }
                 _approved.Add(request.ClientNetworkId);
                 response.Approved = true; response.Reason = string.Empty;
             }

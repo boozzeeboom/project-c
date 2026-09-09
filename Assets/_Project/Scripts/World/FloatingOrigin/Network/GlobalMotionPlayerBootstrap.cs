@@ -14,12 +14,14 @@ namespace ProjectC.World.FloatingOrigin.Network
     /// Not installed on current assets. Native bodies/nav, general world spawning, AOI and streaming are NOT implemented here.
     /// </summary>
     [DisallowMultipleComponent, DefaultExecutionOrder(-19000)]
-    public sealed class GlobalMotionPlayerBootstrap : MonoBehaviour, IGlobalMotionSpawnBootstrap, IGlobalMotionSpawnBootstrapLifecycle
+    public sealed class GlobalMotionPlayerBootstrap : MonoBehaviour, IGlobalMotionSpawnBootstrap, IGlobalMotionSpawnBootstrapLifecycle, IGlobalMotionSceneAdmission
     {
         [SerializeField] private MonoBehaviour _sourceBehaviour;
         private IGlobalMotionPlayerSpawnSource Source => _sourceBehaviour as IGlobalMotionPlayerSpawnSource;
         private NetworkManager _manager;
         private GlobalMotionWorld _world;
+        private GlobalSceneNativeExecutor _sceneExecutor;
+        public bool CanAcceptScenePeer => _active && _sceneExecutor != null && _sceneExecutor.CanAcceptScenePeer;
         private GameObject _prefab;
         private PlayerHandler _handler;
         private bool _active, _handlerRegistered;
@@ -89,7 +91,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             var controller = prefab.GetComponent<CharacterController>();
             foreach (var collider in prefab.GetComponentsInChildren<Collider>(true))
                 if (collider != controller) { error = "player_factory_requires_root_controller_only"; return false; }
-            return true;
+            var scenes = GetComponent<GlobalSceneNativeExecutor>();
+            if (scenes == null || !scenes.isActiveAndEnabled) { error = "prepared_native_scene_executor_missing"; return false; }
+            return scenes.ValidatePreparation(manager, profile, definitions, out error);
         }
 
         public void InstallNetworkStart(NetworkManager manager, GlobalMotionStartRole role, GlobalMotionNetworkProfile profile)
@@ -98,6 +102,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             _manager = manager; _world = GetComponent<GlobalMotionWorld>(); _prefab = manager.NetworkConfig.PlayerPrefab;
             if (_world == null || !_world.AttachManagerForStartup(manager)) throw new InvalidOperationException("Motion world manager unavailable.");
             _frames.Clear(); foreach (var frame in Source.PreparedFrames) _frames.Add(frame.Id, frame);
+            _sceneExecutor = GetComponent<GlobalSceneNativeExecutor>();
+            _sceneExecutor.PrepareBeforeNetworkStart(manager, profile, Source.PreparedFrames);
             _handler = new PlayerHandler(this);
             // Add fails without replacing somebody else's handler. Runtime replacement of our exclusive registration is unsupported.
             if (!manager.PrefabHandler.AddHandler(_prefab, _handler)) throw new InvalidOperationException("Player prefab handler already owned.");
@@ -112,6 +118,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                 if (entry.Key != null && !entry.Key.IsSpawned) Destroy(entry.Key.gameObject);
             _instances.Clear();
             if (_world != null) foreach (int id in _ownedFrames) _world.UnregisterFrame(id);
+            if (_sceneExecutor != null) _sceneExecutor.Release();
+            _sceneExecutor = null;
             _ownedFrames.Clear(); _frameLeases.Clear(); _frames.Clear(); _prefab = null; _manager = null; _world = null;
         }
         public void PeerConnected(NetworkManager manager, ulong clientId)
@@ -153,7 +161,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 if (!GlobalMotionNetworkStartup.IsInstalled(_manager) || _sourceBehaviour == null || !_sourceBehaviour.isActiveAndEnabled || _world == null || !_world.isActiveAndEnabled)
                 { FailSession("spawn_lease_world_or_source_lost"); return; }
+                if (_sceneExecutor == null || !_sceneExecutor.HasPreparedPlacement) { FailSession("native_scene_preparation_lost"); return; }
                 if (!EnsureFrames()) return;
+                if (_manager.IsServer && !CanAcceptScenePeer) return;
                 if (_manager.IsServer)
                 {
                     _queue.CopyTo(_work); int budget = PerFrameBudget;
@@ -206,7 +216,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         {
             try
             {
-                if (!_active || _manager == null || _manager.IsServer || !EnsureFrames() || !seed.IsValid || seed.OwnerId != ownerId ||
+                if (!_active || _manager == null || _manager.IsServer || _sceneExecutor == null || !_sceneExecutor.HasPreparedPlacement || !EnsureFrames() || !seed.IsValid || seed.OwnerId != ownerId ||
                     !Source.TryGetReplicaFrame(seed, out int frameId) || !_frames.TryGetValue(frameId, out var frame) || !frame.Coordinates.TryToLocal(seed.Position, out var local))
                     throw new InvalidOperationException("No prepared local frame for explicit spawn seed.");
                 return CreateInstance(new Placement { Frame = frame, Seed = seed, Deadline = Time.realtimeSinceStartupAsDouble + WaitSeconds }, local, seed.Rotation, seed.Scale);

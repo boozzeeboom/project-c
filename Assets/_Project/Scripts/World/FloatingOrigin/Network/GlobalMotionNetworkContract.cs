@@ -28,8 +28,8 @@ namespace ProjectC.World.FloatingOrigin.Network
     /// <summary>Compatibility metadata, NOT authentication or proof of native world readiness.</summary>
     public static class GlobalMotionNetworkContract
     {
-        // T-FO04H binds scene digest to the reviewed catalog; reject peers using only an asserted scene hash.
-        public const ushort ProtocolVersion = 0xF004;
+        // T-FO04I requires controlled initial native scene placement/spawn and remote scene-readiness admission.
+        public const ushort ProtocolVersion = 0xF005;
         public static bool IsReservedProtocolVersion(ushort version) => (version & 0xFF00) == 0xF000;
         public const byte FormatVersion = 1;
         public const int HelloSize = 72;

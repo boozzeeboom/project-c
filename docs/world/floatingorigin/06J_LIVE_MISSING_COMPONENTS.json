@@ -1,0 +1,45 @@
+{
+  "date": "2026-09-09",
+  "verdict": "Live inventory of missing MonoBehaviour references in the loaded scenes",
+  "scenesInspected": 2,
+  "totalMissing": 3,
+  "rows": [
+    {
+      "scene": "Assets/_Project/Scenes/World/WorldScene_0_0.unity",
+      "objectPath": "WorldRoot_0_0/Boundaries_0_0/South",
+      "rootName": "WorldRoot_0_0",
+      "componentIndex": 3,
+      "isPartOfPrefabInstance": false,
+      "isAddedGameObjectOverride": false,
+      "prefabAssetPath": "",
+      "nearestPrefabRootPath": "",
+      "fixBelongsTo": "scene_object"
+    },
+    {
+      "scene": "Assets/_Project/Scenes/World/WorldScene_0_0.unity",
+      "objectPath": "WorldRoot_0_0/Boundaries_0_0/SouthPoleBlocker",
+      "rootName": "WorldRoot_0_0",
+      "componentIndex": 3,
+      "isPartOfPrefabInstance": false,
+      "isAddedGameObjectOverride": false,
+      "prefabAssetPath": "",
+      "nearestPrefabRootPath": "",
+      "fixBelongsTo": "scene_object"
+    },
+    {
+      "scene": "Assets/_Project/Scenes/World/WorldScene_0_0.unity",
+      "objectPath": "[Ship_Key_Container]/[KeyRod_ShipHeavy]",
+      "rootName": "[Ship_Key_Container]",
+      "componentIndex": 5,
+      "isPartOfPrefabInstance": false,
+      "isAddedGameObjectOverride": false,
+      "prefabAssetPath": "",
+      "nearestPrefabRootPath": "",
+      "fixBelongsTo": "scene_object"
+    }
+  ],
+  "notes": [
+    "Missing components inside a prefab instance originate in the prefab asset; removing them per-scene would only create overrides.",
+    "Read-only: nothing was removed, no scene or prefab was modified or saved."
+  ]
+}

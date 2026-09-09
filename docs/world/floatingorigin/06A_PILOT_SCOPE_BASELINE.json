@@ -1,0 +1,3634 @@
+{
+  "date": "2026-09-09",
+  "unityVersion": "6000.5.2f1",
+  "ngoVersion": "2.13.0",
+  "verdict": "BLOCKED: registration policy and dirty/uninspected native scene scope require explicit decisions",
+  "scenesOpened": false,
+  "previewSceneCreated": false,
+  "assetsChanged": false,
+  "runtimeTested": false,
+  "canCreateUnregisteredVariantWithoutPolicyChange": false,
+  "protectedFiles": [
+    {
+      "path": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+      "guid": "224427a7f796e5b448f07ed8c2a1469b",
+      "sha256": "711661bfea0e3df7eeb5744812dbddd9585a4e3acfb53f0b1bacd8cf45d27d16",
+      "bytes": 15328,
+      "dirty": false
+    },
+    {
+      "path": "Assets/_Project/Prefabs/NetworkPlayer.prefab.meta",
+      "guid": "",
+      "sha256": "50acda3877f6234919d0694e48031a720ff1f6b5727b27ab84a33e211b1238b6",
+      "bytes": 154,
+      "dirty": false
+    },
+    {
+      "path": "Assets/_Project/Scenes/BootstrapScene.unity",
+      "guid": "336a190646b19bc46b22dd4e78f99800",
+      "sha256": "3b4cfc082a1d661cb35d2fd2c2edb9480c7ce2fcd676c20ead00b90ca0544ed7",
+      "bytes": 782247,
+      "dirty": false
+    },
+    {
+      "path": "Assets/_Project/Scenes/BootstrapScene.unity.meta",
+      "guid": "",
+      "sha256": "2aaeccccfe8bf72ca2087708e446bc5c7887900098faf4b0255f31732ca36ae1",
+      "bytes": 155,
+      "dirty": false
+    },
+    {
+      "path": "Assets/_Project/Scenes/World/WorldScene_0_0.unity",
+      "guid": "837a3910185f2b9478ce71df025ccc7c",
+      "sha256": "ed0a125340e2be8d8f9857fef40dff572f154acd5b1f8cab706e47fcb7407fc8",
+      "bytes": 2760856,
+      "dirty": false
+    },
+    {
+      "path": "Assets/_Project/Scenes/World/WorldScene_0_0.unity.meta",
+      "guid": "",
+      "sha256": "5752123a3b80cbfcc55eca07c6389f7cb96a4e2a5dc368eecc6bbe3dfb2e8064",
+      "bytes": 155,
+      "dirty": false
+    },
+    {
+      "path": "Assets/DefaultNetworkPrefabs.asset",
+      "guid": "47e0edea8caccef4a9991014881e9d20",
+      "sha256": "13eada1f579dbb774acd9969ec4d7bc29a7804fca3a25b8c99122510b99fe99e",
+      "bytes": 12940,
+      "dirty": false
+    },
+    {
+      "path": "Assets/DefaultNetworkPrefabs.asset.meta",
+      "guid": "",
+      "sha256": "6f3e00795698aa5c2c03eb9067e2f0eb6a6c3664f8bea208baff7430a40067a5",
+      "bytes": 189,
+      "dirty": false
+    }
+  ],
+  "loadedScenes": [
+    {
+      "path": "Assets/_Project/Scenes/BootstrapScene.unity",
+      "loaded": true,
+      "dirty": true,
+      "preview": false,
+      "roots": 56,
+      "missingComponentObjects": [
+        "Inventory[1]/[ShipKeyServer][2]|componentIndex=2|identity=UNRESOLVED",
+        "Toasts_and_meta[22]/[ShipKeyToast][0]|componentIndex=2|identity=UNRESOLVED",
+        "Toasts_and_meta[22]/[ShipOwnershipRegistry][3]|componentIndex=1|identity=UNRESOLVED"
+      ],
+      "relevant": [
+        {
+          "objectPath": "ScenePlacedObjectSpawner[7]",
+          "type": "ProjectC.World.Scene.ScenePlacedObjectSpawner",
+          "index": 1,
+          "enabled": true
+        },
+        {
+          "objectPath": "Runtime[9]",
+          "type": "ProjectC.World.Scene.ClientSceneLoader",
+          "index": 1,
+          "enabled": true
+        },
+        {
+          "objectPath": "[ShipPositionServer][52]",
+          "type": "ProjectC.Core.ShipPosition.ShipPositionServer",
+          "index": 1,
+          "enabled": true
+        },
+        {
+          "objectPath": "[PlayerPositionServer][53]",
+          "type": "ProjectC.Core.ShipPosition.PlayerPositionServer",
+          "index": 1,
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "managers": [
+    {
+      "path": "NetworkManager[3]",
+      "selectedPlayerPrefab": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+      "globalProfile": "UNASSIGNED",
+      "globalBootstrap": "UNASSIGNED",
+      "globalSessionCoordinator": "UNASSIGNED",
+      "prefabLists": [
+        "Assets/DefaultNetworkPrefabs.asset"
+      ]
+    }
+  ],
+  "player": {
+    "path": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+    "assetType": "Regular",
+    "childCount": 1,
+    "components": [
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "Unity.Netcode.NetworkObject",
+        "index": 1,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "Unity.Netcode.Components.NetworkTransform",
+        "index": 2,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "ProjectC.Player.NetworkPlayer",
+        "index": 3,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "UnityEngine.CharacterController",
+        "index": 4,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "ProjectC.Player.PlayerInputReader",
+        "index": 5,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "ProjectC.Player.CharacterEquipmentVisualApplier",
+        "index": 6,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "ProjectC.Player.CharacterCustomisationApplier",
+        "index": 7,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "ProjectC.Player.PlayerRespawnTracker",
+        "index": 8,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]",
+        "type": "ProjectC.Rendering.EdgeDetectionTarget",
+        "index": 9,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]",
+        "type": "UnityEngine.Animator",
+        "index": 1,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/HumanM_BodyMesh[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/HumanM_BodyMesh[0]",
+        "type": "UnityEngine.SkinnedMeshRenderer",
+        "index": 1,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-neck[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-neck[0]/B-head[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-neck[0]/B-head[0]/B-jaw[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-handProp.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-indexFinger01.L[1]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-indexFinger01.L[1]/B-indexFinger02.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-indexFinger01.L[1]/B-indexFinger02.L[0]/B-indexFinger03.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-middleFinger01.L[2]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-middleFinger01.L[2]/B-middleFinger02.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-middleFinger01.L[2]/B-middleFinger02.L[0]/B-middleFinger03.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-pinky01.L[3]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-pinky01.L[3]/B-pinky02.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-pinky01.L[3]/B-pinky02.L[0]/B-pinky03.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-ringFinger01.L[4]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-ringFinger01.L[4]/B-ringFinger02.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-ringFinger01.L[4]/B-ringFinger02.L[0]/B-ringFinger03.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-thumb01.L[5]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-thumb01.L[5]/B-thumb02.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.L[1]/B-upperArm.L[0]/B-forearm.L[0]/B-hand.L[0]/B-thumb01.L[5]/B-thumb02.L[0]/B-thumb03.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-handProp.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-indexFinger01.R[1]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-indexFinger01.R[1]/B-indexFinger02.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-indexFinger01.R[1]/B-indexFinger02.R[0]/B-indexFinger03.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-middleFinger01.R[2]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-middleFinger01.R[2]/B-middleFinger02.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-middleFinger01.R[2]/B-middleFinger02.R[0]/B-middleFinger03.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-pinky01.R[3]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-pinky01.R[3]/B-pinky02.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-pinky01.R[3]/B-pinky02.R[0]/B-pinky03.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-ringFinger01.R[4]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-ringFinger01.R[4]/B-ringFinger02.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-ringFinger01.R[4]/B-ringFinger02.R[0]/B-ringFinger03.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-thumb01.R[5]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-thumb01.R[5]/B-thumb02.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-spine[0]/B-chest[0]/B-shoulder.R[2]/B-upperArm.R[0]/B-forearm.R[0]/B-hand.R[0]/B-thumb01.R[5]/B-thumb02.R[0]/B-thumb03.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-thigh.L[1]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-thigh.L[1]/B-shin.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-thigh.L[1]/B-shin.L[0]/B-foot.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-thigh.L[1]/B-shin.L[0]/B-foot.L[0]/B-toe.L[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-thigh.R[2]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-thigh.R[2]/B-shin.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-thigh.R[2]/B-shin.R[0]/B-foot.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-hips[0]/B-thigh.R[2]/B-shin.R[0]/B-foot.R[0]/B-toe.R[0]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      },
+      {
+        "objectPath": "NetworkPlayer[0]/Visual_Model[0]/Body[0]/Rig[1]/B-root[0]/B-spineProxy[1]",
+        "type": "UnityEngine.Transform",
+        "index": 0,
+        "enabled": true
+      }
+    ],
+    "references": [
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "Unity.Netcode.NetworkObject",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "Unity.Netcode.NetworkObject",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "Unity.Netcode.NetworkObject",
+        "property": "m_Script",
+        "assetPath": "Packages/com.unity.netcode.gameobjects/Runtime/Core/NetworkObject.cs",
+        "guid": "d5a57f767e5e46a458fc5d3c628d0cbb"
+      },
+      {
+        "component": "Unity.Netcode.Components.NetworkTransform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "Unity.Netcode.Components.NetworkTransform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "Unity.Netcode.Components.NetworkTransform",
+        "property": "m_Script",
+        "assetPath": "Packages/com.unity.netcode.gameobjects/Runtime/Components/NetworkTransform.cs",
+        "guid": "e96cb6065543e43c4a752faaa1468eb1"
+      },
+      {
+        "component": "ProjectC.Player.NetworkPlayer",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.NetworkPlayer",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.NetworkPlayer",
+        "property": "m_Script",
+        "assetPath": "Assets/_Project/Scripts/Player/NetworkPlayer.cs",
+        "guid": "6d4738d8edd6a3b4b96a16c0d8db4582"
+      },
+      {
+        "component": "ProjectC.Player.NetworkPlayer",
+        "property": "cameraPrefab",
+        "assetPath": "Assets/_Project/Prefabs/ThirdPersonCamera.prefab",
+        "guid": "020b4cd7c3349134b8c1de87bed1f706"
+      },
+      {
+        "component": "UnityEngine.CharacterController",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.CharacterController",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.PlayerInputReader",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.PlayerInputReader",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.PlayerInputReader",
+        "property": "m_Script",
+        "assetPath": "Assets/_Project/Scripts/Player/PlayerInputReader.cs",
+        "guid": "08238e40e5e488d43adbcf46b6255767"
+      },
+      {
+        "component": "ProjectC.Player.CharacterEquipmentVisualApplier",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.CharacterEquipmentVisualApplier",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.CharacterEquipmentVisualApplier",
+        "property": "m_Script",
+        "assetPath": "Assets/_Project/Scripts/Player/CharacterEquipmentVisualApplier.cs",
+        "guid": "5e2a3ca49c9134241ba88fc10759baef"
+      },
+      {
+        "component": "ProjectC.Player.CharacterEquipmentVisualApplier",
+        "property": "_animator",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "m_Script",
+        "assetPath": "Assets/_Project/Scripts/Player/CharacterCustomisationApplier.cs",
+        "guid": "f29c574315ed9aa4eab474dd7b9e315f"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "_visualRoot",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "_animator",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "_bodyRenderer",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "_maleModel",
+        "assetPath": "Assets/Generated_Models/Testing blender/testing.fbx",
+        "guid": "64d03e19a47344c4082d5f3794201498"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "_femaleModel",
+        "assetPath": "Assets/Generated_Models/Character_17866748877224/BLENDER/1_5.fbx",
+        "guid": "8d8759fb497b71644bc3333cf392cd51"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "_maleController",
+        "assetPath": "Assets/_Project/Animations/PlayerAnimation_Default.overrideController",
+        "guid": "338e6f98c539c104ab75f7b10ca83003"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "_femaleController",
+        "assetPath": "Assets/_Project/Animations/PlayerAnimation_Female.overrideController",
+        "guid": "2b25a6d3b7b061943aaab184f6d4bea6"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "_maleMaterial",
+        "assetPath": "Assets/Generated_Models/male_character_game_ready_rigged/male_character_game_ready_rigged_Material.mat",
+        "guid": "2157c018de5d3c94b9dce93d2adf6326"
+      },
+      {
+        "component": "ProjectC.Player.CharacterCustomisationApplier",
+        "property": "_femaleMaterial",
+        "assetPath": "Assets/Generated_Models/Character_17866748877224/Character_17866748877224_Material.mat",
+        "guid": "6406a184f850ae54ab555641691edbda"
+      },
+      {
+        "component": "ProjectC.Player.PlayerRespawnTracker",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.PlayerRespawnTracker",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Player.PlayerRespawnTracker",
+        "property": "m_Script",
+        "assetPath": "Assets/_Project/Scripts/Player/PlayerRespawnTracker.cs",
+        "guid": "a0c353eed11e41148a4ea4925daa88cc"
+      },
+      {
+        "component": "ProjectC.Rendering.EdgeDetectionTarget",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Rendering.EdgeDetectionTarget",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "ProjectC.Rendering.EdgeDetectionTarget",
+        "property": "m_Script",
+        "assetPath": "Assets/_Project/Scripts/Core/EdgeDetectionTarget.cs",
+        "guid": "3da150fe0135f484e9f68b703677b997"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[1]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Animator",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Animator",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Animator",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Animator",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Animator",
+        "property": "m_Avatar",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Animator",
+        "property": "m_Controller",
+        "assetPath": "Assets/_Project/Animations/PlayerAnimation_Default.overrideController",
+        "guid": "338e6f98c539c104ab75f7b10ca83003"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Materials.Array.data[0]",
+        "assetPath": "Packages/com.unity.render-pipelines.universal/Runtime/Materials/Lit.mat",
+        "guid": "31321ba15b8f8eb4c954353edc038b1d"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Mesh",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[1]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[2]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[3]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[4]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[5]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[6]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[7]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[8]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[9]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[10]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[11]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[12]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[13]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[14]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[15]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[16]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[17]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[18]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[19]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[20]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[21]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[22]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[23]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[24]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[25]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[26]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[27]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[28]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[29]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[30]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[31]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[32]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[33]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[34]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[35]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[36]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[37]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[38]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[39]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[40]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[41]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[42]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[43]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[44]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[45]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[46]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[47]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[48]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[49]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[50]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_Bones.Array.data[51]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.SkinnedMeshRenderer",
+        "property": "m_RootBone",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[1]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[1]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[2]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[1]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[2]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[1]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[2]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[3]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[4]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[5]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[1]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[2]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[3]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[4]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[5]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Children.Array.data[0]",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_CorrespondingSourceObject",
+        "assetPath": "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx",
+        "guid": "2faa610713d3b3c439473daa55e8c60a"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabInstance",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_PrefabAsset",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_GameObject",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      },
+      {
+        "component": "UnityEngine.Transform",
+        "property": "m_Father",
+        "assetPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+        "guid": "224427a7f796e5b448f07ed8c2a1469b"
+      }
+    ],
+    "networkBehaviourOrder": [
+      "NetworkPlayer[0]:Unity.Netcode.Components.NetworkTransform",
+      "NetworkPlayer[0]:ProjectC.Player.NetworkPlayer",
+      "NetworkPlayer[0]:ProjectC.Player.PlayerRespawnTracker"
+    ],
+    "blockers": [
+      "missing GlobalMotionReplicator",
+      "missing explicit opt-in GlobalMotionPoseAdapter",
+      "stock NetworkTransform present",
+      "NetworkObject flags require explicit global-only overrides"
+    ],
+    "autoParentSync": true,
+    "synchronizeTransform": true,
+    "activeSceneSync": false,
+    "sceneMigrationSync": true,
+    "dontDestroyWithOwner": false,
+    "height": 1.8,
+    "radius": 0.3,
+    "stepOffset": 0.3,
+    "slopeLimit": 45.0,
+    "skinWidth": 0.08,
+    "center": [
+      0.0,
+      0.9,
+      0.0
+    ]
+  },
+  "registry": {
+    "path": "Assets/DefaultNetworkPrefabs.asset",
+    "autoGenerate": true,
+    "isDefault": true,
+    "dirty": false,
+    "count": 58,
+    "prefabs": [
+      "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+      "Assets/_Project/Prefabs/TestPlayer.prefab",
+      "Assets/_Project/Prefabs/NEWCHESTPREFAB.prefab",
+      "Assets/_Project/Prefabs/PlayerSpawner.prefab",
+      "Assets/_Project/Prefabs/PickupItem_Test.prefab",
+      "Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab",
+      "Assets/_Project/Prefabs/AI/Npc_Goblin.prefab",
+      "Assets/_Project/Prefabs/NPC_Ship_HeavyII_03.prefab",
+      "Assets/_Project/Prefabs/AI/Npc_Goblin 2.prefab",
+      "Assets/_Project/Prefabs/ResourceNode_Default.prefab",
+      "Assets/_Project/Prefabs/Ships/Ship_Light_root_fbx_test.prefab",
+      "Assets/_Project/Prefabs/AI/Npc_peacfull_market_zone.prefab",
+      "Assets/_Project/Prefabs/NPC_ZONES/Npc_peacfull_market_zone Variant.prefab",
+      "Assets/_Project/Prefabs/Ships/DONT-DELETE-NPC REFERENCE SHIP.prefab",
+      "Assets/_Project/Prefabs/Ships/Гигант.prefab",
+      "Assets/_Project/Prefabs/Ships/Пещера.prefab",
+      "Assets/_Project/Prefabs/Ships/Мастодонт.prefab",
+      "Assets/_Project/Prefabs/Ships/Странник.prefab",
+      "Assets/_Project/Prefabs/Ships/Олимп.prefab",
+      "Assets/_Project/Prefabs/Ships/Вавилон.prefab",
+      "Assets/_Project/Prefabs/Ships/Берег.prefab",
+      "Assets/_Project/Prefabs/Ships/Река.prefab",
+      "Assets/_Project/Prefabs/Ships/Угольщик.prefab",
+      "Assets/_Project/Prefabs/Ships/Торренс.prefab",
+      "Assets/_Project/Prefabs/Ships/Ветроворот.prefab",
+      "Assets/_Project/Prefabs/Ships/Летучий.prefab",
+      "Assets/_Project/Prefabs/Ships/Скат.prefab",
+      "Assets/_Project/Prefabs/Ships/Горгона.prefab",
+      "Assets/_Project/Prefabs/Ships/Цитадель.prefab",
+      "Assets/_Project/Prefabs/Ships/Альбатрос.prefab",
+      "Assets/_Project/Prefabs/Ships/Шмель.prefab",
+      "Assets/_Project/Prefabs/Ships/Сильфида.prefab",
+      "Assets/_Project/Prefabs/Ships/Жук.prefab",
+      "Assets/_Project/Prefabs/Ships/Лорейн.prefab",
+      "Assets/_Project/Prefabs/SPAWN_TEST.prefab",
+      "Assets/_Project/Prefabs/NPC/[Mira] - DON`T DELETE DEFOULT.prefab",
+      "Assets/_Project/Prefabs/Ships/Ship_Light_root (копия с компьютера DESKTOP-K00O7HK).prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Gorgona_Pilot.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/npc_reference_ship_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/albatros_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/bereg_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/vavilon_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/vetrovorot_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/gigant_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/zhuk_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/letuchiy_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/lorein_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/mastodont_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/olimp_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/peshchera_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/reka_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/silfida_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/skat_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/strannik_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/torrens_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/ugolshchik_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/citadel_Captain.prefab",
+      "Assets/_Project/Prefabs/NPC/Ships/Captains/shmel_Captain.prefab"
+    ]
+  },
+  "worldDependencies": [
+    "Assets/_Project/Prefabs/Ships/Торренс.prefab",
+    "Assets/_Project/Prefabs/Ships/Летучий.prefab",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Primium_farm_0_1.asset",
+    "Assets/_Project/Resources/Items/Q001/item_q001_blackbox_core.asset",
+    "Assets/_Project/Docking/Resources/Data/DockStation_Road to Tertius.asset",
+    "Assets/_Project/MetaRequirement_Test/Materials/Key_Blue.mat",
+    "Assets/_Project/Scripts/Ship/RepairManager.cs",
+    "Assets/_Project/Resources/Items/Item_Antigrav_Antigrav_Bronze_AGB-12.asset",
+    "Assets/_Project/Resources/Items/Clothing/Clothing_SteelChestplate.asset",
+    "Assets/_Project/Prefabs/PickupItem_Test.prefab",
+    "Assets/_Project/Resources/Items/Q001/item_q001_fragment_dock.asset",
+    "Assets/_Project/Resources/AI/NpcPersonality_DEFAULT.asset",
+    "Assets/_Project/Materials/Docking/M_Pad_OccupiedNpc.mat",
+    "Assets/_Project/Resources/Items/Clothing/Clothing_TravelerBoots.asset",
+    "Assets/_Project/Scripts/PeacefulShip/Stations/NpcProximityZoneBuilds.cs",
+    "Assets/_Project/Materials/Docking/M_Pad_Occupied.mat",
+    "Assets/_Project/Data/Modules/ModuleShopDatabase.asset",
+    "Assets/_Project/Resources/Items/Q001/item_q001_fragment_sela.asset",
+    "Assets/_Project/Prefabs/Ships/Жук.prefab",
+    "Assets/_Project/Resources/Items/Key_Ship_Medium.asset",
+    "Assets/_Project/Art/Models/Peaks/Himalayi_massiv_northwest_1.fbx",
+    "Assets/_Project/Resources/ResourceNodes/ResourceNode_IronVein.asset",
+    "Assets/_Project/Art/Models/Peaks/Himalayi_massiv_west_1.fbx",
+    "Assets/_Project/Materials/Docking/M_Pad_AssignedOther.mat",
+    "Assets/_Project/Art/Models/Peaks/Europe_Alps_LowPoly_1.fbx",
+    "Assets/_Project/Scripts/Docking/Stations/PadTriggerReference.cs",
+    "Assets/_Project/Resources/Materials/ResourceNode_Default.mat",
+    "Assets/_Project/Materials/Docking/M_Pad_Free.mat",
+    "Assets/_Project/Prefabs/Ships/Берег.prefab",
+    "Assets/_Project/Art/Models/Primum/gorod port_3_3_unity_1.fbx",
+    "Assets/_Project/Resources/ResourceNodes/ResourceNode_PlantHerb.asset",
+    "Assets/_Project/Quests/Data/Npcs/Q001/Kael_Q001.asset",
+    "Assets/_Project/Prefabs/Ships/Лорейн.prefab",
+    "Assets/_Project/Prefabs/NPC_ZONES/Pad_01.prefab",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Road to Tertius.asset",
+    "Assets/_Project/Resources/Items/Item_Equipment_Cigar_Box.asset",
+    "Assets/_Project/Prefabs/Ships/Ship_Light_root (копия с компьютера DESKTOP-K00O7HK).prefab",
+    "Assets/_Project/Prefabs/Ships/Пещера.prefab",
+    "Assets/_Project/Art/Models/Peaks/SouthAmerica_Andes_LowPoly_1.fbx",
+    "Assets/_Project/Quests/Data/Npcs/OnboardingAlfa.asset",
+    "Assets/_Project/Resources/AI/NpcSpawner_Quest.asset",
+    "Assets/_Project/Quests/Data/Npcs/Q001/Veska_Q001.asset",
+    "Assets/_Project/Generated/UPPER_DOCK_Blockout_Deck_Combined.asset",
+    "Assets/_Project/Docking/Resources/Data/DockStation_Primium_farm_0_3.asset",
+    "Assets/_Project/Data/WindZones/Spline-Primum-Quartus.asset",
+    "Assets/_Project/Art/Models/Peaks/Himalayi_massiv_east_1.fbx",
+    "Assets/_Project/Prefabs/NPC_ZONES/RepairManager.prefab",
+    "Assets/_Project/Models/City/Primum/gorod port.glb",
+    "Assets/_Project/Docking/Resources/Data/DockStation_Primium_farm_0_4.asset",
+    "Packages/com.unity.splines/Runtime/SplineContainer.cs",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Quartus.asset",
+    "Assets/_Project/Docking/Resources/Data/DockStation_Primium_farm_0_2.asset",
+    "Assets/_Project/Materials/Material/character.mat",
+    "Assets/_Project/Docking/Resources/Data/DockStation_Primium_farm_0_1.asset",
+    "Assets/_Project/Resources/Items/Q001/item_q001_false_seal.asset",
+    "Packages/com.unity.render-pipelines.universal/Shaders/Particles/ParticlesUnlit.shader",
+    "Assets/_Project/Materials/World/WorldGroundMaterial.mat",
+    "Assets/_Project/Resources/Items/Q001/item_q001_resonance_lens.asset",
+    "Assets/_Project/Prefabs/Ships/Гигант.prefab",
+    "Assets/_Project/Prefabs/Ships/Ship_Light_root_fbx_test.prefab",
+    "Assets/_Project/Docking/Resources/Data/DockStation_Road to Secund.asset",
+    "Assets/_Project/Docking/Resources/Data/DockStationDefinition_TEST_NPC.asset",
+    "Assets/_Project/Scripts/Core/PickupItem.cs",
+    "Assets/_Project/Docking/Resources/Data/DockStationDefinition_Primium.asset",
+    "Packages/com.unity.render-pipelines.universal/Runtime/Materials/Lit.mat",
+    "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset",
+    "Assets/_Project/Art/Models/Peaks/NorthAmerica_Rockies_LowPoly_1.fbx",
+    "Assets/_Project/Resources/Items/Item_Equipment_Cigarettes.asset",
+    "Assets/_Project/Resources/Items/Item_Equipment_Hunting_Crossbow.asset",
+    "Packages/com.unity.render-pipelines.universal/Shaders/Lit.shader",
+    "Assets/_Project/Materials/Ship/Medium.mat",
+    "Assets/_Project/Prefabs/Ships/Ветроворот.prefab",
+    "Assets/_Project/Resources/Items/Weapons/Weapon_Crossbow.asset",
+    "Assets/_Project/Prefabs/Ships/Цитадель.prefab",
+    "Assets/_Project/Prefabs/Ships/Мастодонт.prefab",
+    "Assets/_Project/Resources/Items/Weapons/Weapon_WoodenSword.asset",
+    "Assets/_Project/Data/WindZones/Spline-Primum-Secund.asset",
+    "Assets/_Project/Scripts/MetaRequirement/MetaRequirement.cs",
+    "Assets/_Project/Materials/Docking/M_Pad_Pending.mat",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Road to Quartus.asset",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Primium_farm_0_4.asset",
+    "Assets/_Project/Quests/Data/Npcs/Q001/Noll_Q001.asset",
+    "Assets/_Project/Scripts/Crafting/CraftingStation.cs",
+    "Assets/_Project/Resources/Items/Clothing/Clothing_WorkerHelmet.asset",
+    "Assets/_Project/Prefabs/Ships/Вавилон.prefab",
+    "Packages/com.unity.netcode.gameobjects/Runtime/Core/NetworkObject.cs",
+    "Assets/_Project/Scripts/AI/NpcSpawner.cs",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Primium_farm_0_2.asset",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Primium.asset",
+    "Assets/_Project/Quests/Testing/M13QuestTriggerZone.cs",
+    "Assets/_Project/Resources/Crafting/Stations/Station_Shipyard.asset",
+    "Assets/_Project/Resources/Materials/CraftingStation_Default.mat",
+    "Assets/_Project/Generated/MD2_Deck_Blockout_Combined.asset",
+    "Assets/_Project/Art/Models/Peaks/Himalayi_massiv_1_1.fbx",
+    "Assets/_Project/Resources/Items/Key_light_ship.asset",
+    "Packages/com.unity.ugui/Runtime/TMP/TextMeshPro.cs",
+    "Assets/_Project/Materials/Docking/M_Pad_AssignedToMe.mat",
+    "Assets/_Project/Resources/Items/Pickaxe.asset",
+    "Assets/_Project/Settings/LightingSettings_World.asset",
+    "Assets/_Project/Scripts/Docking/Stations/DockingPadTriggerBox.cs",
+    "Assets/_Project/Quests/Data/Npcs/Q001/Lyra_Q001.asset",
+    "Assets/_Project/Scripts/Docking/Stations/StationRootReference.cs",
+    "Assets/_Project/Scripts/ResourceNode/ResourceNode.cs",
+    "Assets/_Project/Quests/Data/Npcs/Q001/Sela_Q001.asset",
+    "Assets/_Project/Resources/Data/Factions/GuildOfSuccess.asset",
+    "Assets/_Project/Resources/Items/Item_Equipment_Cargo_Power_of_Attorney.asset",
+    "Assets/_Project/Docking/Resources/Data/DockStation_Road to Quartus.asset",
+    "Assets/_Project/MetaRequirement_Test/Materials/Key_Red.mat",
+    "Assets/_Project/Resources/Items/Q001/item_q001_fragment_archive.asset",
+    "Assets/_Project/Scripts/UI/Billboard.cs",
+    "Assets/_Project/Trade/Scripts/Network/MarketZone.cs",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Primium_farm_0_3.asset",
+    "Assets/_Project/Prefabs/Ships/Горгона.prefab",
+    "Assets/_Project/Prefabs/Ships/Олимп.prefab",
+    "Assets/_Project/Resources/Items/Weapons/Weapon_IronDagger.asset",
+    "Assets/_Project/Resources/Items/Item_Equipment_Cargo_Coveralls.asset",
+    "Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab",
+    "Assets/_Project/Scripts/Docking/Stations/PadStateSync.cs",
+    "Assets/_Project/Prefabs/Ships/Странник.prefab",
+    "Assets/_Project/Prefabs/Ships/Альбатрос.prefab",
+    "Assets/_Project/Prefabs/Ships/Сильфида.prefab",
+    "Assets/_Project/Prefabs/NPC_ZONES/Npc_peacfull_market_zone Variant.prefab",
+    "Assets/_Project/Scripts/Docking/Network/DockStationController.cs",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Road to Secund.asset",
+    "Assets/_Project/Materials/Docking/M_Pad_Neutral.mat",
+    "Assets/_Project/Scripts/Ship/SplineWindZone.cs",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Tertius.asset",
+    "Assets/_Project/Quests/Data/Npcs/Q001/Bram_Q001.asset",
+    "Assets/_Project/Docking/Resources/Data/DockStation_Farm_0_0.asset",
+    "Assets/_Project/Prefabs/Ships/Скат.prefab",
+    "Assets/_Project/Scripts/Docking/Zones/OuterCommZone.cs",
+    "Assets/_Project/Prefabs/NPC/[Mira] - DON`T DELETE DEFOULT.prefab",
+    "Assets/_Project/Generated/LP2_Exact_Form_Sheets_Combined.asset",
+    "Assets/_Project/Generated/gorod port_Combined.asset",
+    "Assets/_Project/Resources/Items/Q001/item_q001_false_manifest.asset",
+    "Assets/_Project/MetaRequirement_Test/Materials/Key_Green.mat",
+    "Assets/_Project/Prefabs/Ships/Шмель.prefab",
+    "Assets/_Project/Prefabs/SPAWN_TEST.prefab",
+    "Assets/_Project/Resources/Crafting/Stations/Station_CraftingTable.asset",
+    "Assets/_Project/Resources/Items/Weapons/Weapon_Grenade_Basic.asset",
+    "Assets/_Project/Resources/Items/Weapons/Weapon_IronSpear.asset",
+    "Assets/_Project/Prefabs/Ships/Река.prefab",
+    "Assets/_Project/Prefabs/Ships/Угольщик.prefab",
+    "Assets/_Project/Scripts/Docking/Stations/DockPadVisualMarker.cs",
+    "Assets/_Project/Trade/Data/Markets/MarketConfig_Secundus.asset",
+    "Assets/_Project/Resources/ResourceNodes/ResourceNode_CopperVein.asset",
+    "Assets/_Project/Resources/Items/Weapons/Weapon_AntigravBlade.asset"
+  ],
+  "runtimeCreationCandidates": [
+    "NetworkManagerController.cs:133:networkManager = gameObject.AddComponent<Unity.Netcode.NetworkManager>();",
+    "NetworkManagerController.cs:145:transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();",
+    "NetworkManagerController.cs:291:go.AddComponent<ProjectC.Trade.Client.MarketClientState>();",
+    "NetworkManagerController.cs:315:go.AddComponent<ProjectC.Trade.Client.ContractClientState>();",
+    "NetworkManagerController.cs:341:go.AddComponent<ProjectC.Items.Client.InventoryClientState>();",
+    "NetworkManagerController.cs:365:go.AddComponent<ProjectC.Ship.Client.ShipTelemetryClientState>();",
+    "NetworkManagerController.cs:391:go.AddComponent<ProjectC.MetaRequirement.MetaRequirementClientState>();",
+    "NetworkManagerController.cs:414:go.AddComponent<ProjectC.ResourceNode.GatheringClientState>();",
+    "NetworkManagerController.cs:437:go.AddComponent<ProjectC.Crafting.CraftingClientState>();",
+    "NetworkManagerController.cs:460:go.AddComponent<ProjectC.Trade.Client.ExchangeClientState>();",
+    "NetworkManagerController.cs:483:go.AddComponent<ProjectC.Trade.Client.ShipCargoClientState>();",
+    "NetworkManagerController.cs:507:go.AddComponent<ProjectC.Stats.StatsClientState>();",
+    "NetworkManagerController.cs:531:go.AddComponent<ProjectC.Equipment.EquipmentClientState>();",
+    "NetworkManagerController.cs:555:go.AddComponent<ProjectC.Skills.SkillsClientState>();",
+    "NetworkManagerController.cs:579:go.AddComponent<ProjectC.Crafting.RecipeKnowledgeClientState>();",
+    "NetworkManagerController.cs:603:go.AddComponent<ProjectC.Docking.Client.DockingClientState>();",
+    "NetworkManagerController.cs:627:go.AddComponent<ProjectC.Combat.Client.CombatClientState>();",
+    "NetworkManagerController.cs:652:go.AddComponent<ProjectC.Combat.Client.TargetHighlightService>();",
+    "NetworkManagerController.cs:677:go.AddComponent<ProjectC.Combat.Client.TargetLockService>();",
+    "NetworkManagerController.cs:702:go.AddComponent<ProjectC.Combat.Client.DamageNumberService>();",
+    "NetworkManagerController.cs:727:go.AddComponent<ProjectC.Skills.Vfx.SkillVfxService>();",
+    "NetworkManagerController.cs:752:var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();",
+    "NetworkManagerController.cs:756:go.AddComponent<SkillTreeWindow>();",
+    "NetworkManagerController.cs:780:var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();",
+    "NetworkManagerController.cs:782:go.AddComponent<SocialSkillTreeWindow>();",
+    "NetworkManagerController.cs:801:go.AddComponent<ProjectC.Input.InputBindingsRuntime>();",
+    "NetworkManagerController.cs:817:var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();",
+    "NetworkManagerController.cs:819:go.AddComponent<ProjectC.UI.EscMenu.EscMenuWindow>();",
+    "NetworkManagerController.cs:844:var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();",
+    "NetworkManagerController.cs:847:go.AddComponent<ProjectC.Customisation.UI.CustomisationWindow>();",
+    "NetworkManagerController.cs:860:var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();",
+    "NetworkManagerController.cs:862:go.AddComponent<ProjectC.UI.Settings.KeybindingsWindow>();",
+    "NetworkManagerController.cs:876:go.AddComponent<ProjectC.UI.UIManager>();",
+    "NetworkManagerController.cs:1045:transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();",
+    "NetworkManagerController.cs:1096:transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();",
+    "NetworkManagerController.cs:1154:transport = gameObject.AddComponent<UnityTransport>();"
+  ],
+  "blockers": [
+    "missing GlobalMotionReplicator",
+    "missing explicit opt-in GlobalMotionPoseAdapter",
+    "stock NetworkTransform present",
+    "NetworkObject flags require explicit global-only overrides",
+    "NGO NetworkPrefabProcessor auto-registers every imported root-NetworkObject prefab regardless of folder; an unassigned global-only variant is not registration-isolated.",
+    "Unsaved loaded scene: Assets/_Project/Scenes/BootstrapScene.unity",
+    "Unresolved missing component(s): Assets/_Project/Scenes/BootstrapScene.unity",
+    "WorldScene_0_0 hierarchy/native pose/collider/nav/marker coverage UNINSPECTED; dependency metadata is not a scene audit."
+  ],
+  "limitations": [
+    "No default registry setting/list change, no prefab creation or variant, no scene opening/preview/saving, no Play Mode/physics/screenshots/auth/save-file access.",
+    "Runtime-created DDOL client services and NetworkPlayer OnSpawn additions require separate semantic/native coverage; component absence in Edit Mode is not runtime absence.",
+    "Missing script identities remain unresolved; GameObject names do not establish the missing C# class."
+  ],
+  "integrityChecks": [
+    "Loaded scene set, dirty flags and hierarchy/component fingerprint unchanged",
+    "Auto-generation setting, exact serialized registry and dirty flag unchanged",
+    "Canonical player, Bootstrap, WorldScene_0_0, default registry and their meta bytes unchanged"
+  ]
+}

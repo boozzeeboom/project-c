@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO06A)
+
+**Задача:** Завершить read-only preflight конкретного pilot scope после E, не включая global mode и не меняя пользовательские assets/settings.
+**Результат:** Проверены actual NetworkManager selection и canonical NetworkPlayer, загруженная Bootstrap, NGO default registry/settings и WorldScene_0_0 asset dependencies. Найдены 4 группы player blockers: отсутствуют replicator/opt-in adapter, присутствует stock NetworkTransform, требуются global-only NO flag overrides. CC параметры, hierarchy/NetworkBehaviour order и visual references сохранены в JSON. Bootstrap dirty=true, 56 roots, 3 missing component entries с UNRESOLVED identity, enabled legacy position services и ClientSceneLoader; ничего не удалено. WorldScene hierarchy не осмотрена, прежний полный H census не закрыт.
+**Registration boundary:** GenerateDefaultNetworkPrefabs=true, active default list=58 entries. Установленный NGO processor добавляет любой импортированный prefab с root NetworkObject независимо от папки: отдельная PilotAssets не обеспечивает изоляцию. Registration сама не означает spawn/global activation. Настройка и список не изменены; proposed явная регистрация с отключением auto-generation требует отдельного подтверждения, поскольку меняет добавление будущих сетевых prefab.
+**Файлы:** `docs/world/floatingorigin/06A_PILOT_SCOPE_PREFLIGHT.md`, `06A_PILOT_SCOPE_BASELINE.json`, `tools/AuditFo06APilot.cs` вне Assets, roadmap и этот журнал. Runtime C# проекта не менялся; Temp runner в коммит не входит.
+**Проверки:** Сохранённый read-only audit успешно выполнен внутри Editor, nested JSON evidence прошёл round-trip. Три integrity assertions PASS: loaded scene/hierarchy/dirty fingerprint; полное serialized registry и setting/dirty; SHA256 восьми protected файлов (player/Bootstrap/World/registry + meta). No compile errors. Исторические 678 pure checks E не перезапускались и не выдаются за новую проверку. No scene open/save/preview, prefab/GameObject creation, Play Mode/screenshots/physics/network/builds/auth или actual save access.
+**Остаток:** Pilot configuration BLOCKED, global mode/world shift выключены. Согласовать registration policy → isolated player variant/pilot list → dirty Bootstrap/missing scripts/legacy service ownership → native WorldScene/catalog/frames/physics → issuer/store/config → пользовательский Host+client acceptance. Полные T-FO03–09 не закрыты, jitter fixed не заявляется.
+**Коммит:** один audit/results/docs commit; TMP fallback, Temp runner, engine assets/settings/packages и исторические отчёты исключены.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO05E)
 
 **Задача:** Связать подготовленные D/G/C/B с actual NMC global-session lifecycle без активации в текущей игре и без fake account identity.

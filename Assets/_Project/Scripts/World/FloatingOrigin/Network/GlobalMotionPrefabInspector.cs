@@ -74,8 +74,10 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (config.ProtocolVersion != GlobalMotionNetworkContract.ProtocolVersion || !config.ConnectionApproval || !config.ForceSamePrefabs)
             { error = "configure_global_protocol_approval_and_fixed_prefab_catalog_before_start"; return false; }
             if (config.NetworkTopology != NetworkTopologyTypes.ClientServer) { error = "distributed_authority_not_supported"; return false; }
-            if (!GlobalMotionNetworkContract.TryParseDigest(profile.SceneLayoutDigest, out var sceneDigest))
-            { error = "reviewed_scene_layout_digest_missing"; return false; }
+            if (profile.SceneCatalog == null) { error = "reviewed_scene_catalog_missing"; return false; }
+            if (!GlobalSceneCatalogCompiler.TryCompile(profile.SceneCatalog.Data, out var scenePlan, out error)) return false;
+            if (!GlobalSceneCatalogCompiler.TryMatchDigest(scenePlan, profile.SceneLayoutDigest, out var sceneDigest))
+            { error = "declared_scene_digest_does_not_match_catalog"; return false; }
             if (config.PlayerPrefab == null || config.Prefabs == null) { error = "player_or_prefab_registry_missing"; return false; }
             if (profile.Prefabs == null || profile.Prefabs.Length == 0 || profile.Prefabs.Length > GlobalMotionNetworkContract.MaxPrefabs)
             { error = "classified_catalog_missing_or_too_large"; return false; }
@@ -113,6 +115,14 @@ namespace ProjectC.World.FloatingOrigin.Network
                     { error = "profile_entry_not_registered_or_duplicate"; return false; }
                     layouts.Add(layout);
                 }
+                foreach (var planned in scenePlan.SpawnOrder)
+                    if (planned.Treatment == GlobalSceneTreatment.ReplaceWithNetworkPrefab)
+                    {
+                        bool matched = false;
+                        foreach (var layout in layouts)
+                            if (layout.prefabHash == planned.ReplacementPrefabHash && layout.role == (planned.Spatial ? GlobalPrefabRole.Spatial : GlobalPrefabRole.NonSpatial)) { matched = true; break; }
+                        if (!matched) { error = "scene_replacement_not_in_classified_prefab_catalog"; return false; }
+                    }
                 if (!GlobalMotionNetworkContract.TryBuildDigest(layouts, playerHash, out var digest, out error)) return false;
                 hello = GlobalMotionNetworkContract.CreateHello(digest, sceneDigest); return true;
             }

@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO04H)
+
+**Задача:** Подготовить reviewed scene catalog и lifecycle сценовых/дочерних объектов без активации native миграции.
+**Результат:** GlobalSceneCatalogCompiler проверяет замкнутость заявленного scene/observation/review набора, координатную семантику, authored parent graph, replacement/exclusion; deterministic SHA256 и immutable ordered plan. Profile/hello требуют computed catalog digest = declared digest, replacement prefab hash/role сверяются с классификацией. Protocol=0xF004, G hash-only global контракт несовместим; legacy=0 сохраняется.
+**Lifecycle:** pure receipt ledger с уникальными ledger/load generations, same-parent/frame registration, duplicate/stale network identity rejection и отдельными registration tokens также для non-network content. Child-first cleanup/exclusions, indexed child lookup, no silent clear of live/unseen sources. Fault остаётся fail-closed до внешнего recovery. Это НЕ native Spawn/Despawn/SetParent/scene loader и НЕ readiness certificate.
+**Файлы:** существующая untracked GlobalMotionSceneCatalog.cs сохранена без переписывания; новые GlobalSceneCatalogCompiler.cs, GlobalSceneLifecycleLedger.cs, Editor AuditGlobalSceneCatalog.cs и ValidateGlobalSceneCatalog.cs; пять Unity-generated meta. Изменены profile/PrefabInspector/NetworkContract, исторический G validator, roadmap и журнал; добавлены H report и два generated JSON.
+**Проверки:** compile PASS; реально выполнены **56 catalog/lifecycle + 44 spawn + 40 hierarchy + 48 startup + 26 actor + 32 application + 32 transport + 33 protocol + 23 foundation = 334 pure PASS / 0 FAIL**. Повторный prefab guard: 58 candidates, opt-in/profile assets/loaded profiles/adapters=0.
+**Реальные ограничения аудита:** 26 сцен-кандидатов, inspected=1 (dirty), uninspected=25, observations=61 (все draft entries Unreviewed), catalog assets=0. Missing-component diagnostics в трёх пересекающихся/отдельных поддеревьях: Inventory, Inventory/[ShipKeyServer], Toasts_and_meta; это не обязательно три уникальных скрипта. Находки не исправлялись, dirty scene не сохранялась, неизвестные сцены не загружались. Реальный каталог не утверждён.
+**Границы:** native NGO in-scene sweep происходит до OnServerStarted; следующий executor должен контролировать pre-start placement, а не только поздний callback. Runtime binding/baked scene IDs, native bridges, pools и full source provider ещё не реализованы. Scene/prefab/profile activation, Play Mode, physics simulation, сетевые сессии и screenshots не выполнялись; world shift выключен, jitter fixed не заявляется.
+**Коммит:** один коммит source/meta/результатов/документации; без собственного хеша отдельным коммитом. Temp runner, LiberationSans fallback и исторические G/F artifacts не включаются/не переписываются.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO04G)
 
 **Задача:** Реализовать ограниченный concrete player spawn bootstrap и initial local placement, не активируя неполную миграцию.

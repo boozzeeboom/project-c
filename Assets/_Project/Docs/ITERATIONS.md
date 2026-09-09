@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO04B)
+
+**Задача:** Связать global motion protocol с NGO lifecycle/control/motion без преждевременного подключения к игре.
+**Результат:** Добавлены GlobalMotionSession, GlobalMotionControl/Receiver, GlobalMotionAdmission и настоящий NetworkBehaviour GlobalMotionReplicator. Reliable control/initial sync/keyframes, unreliable owner→server→clients motion, sender+owner+epoch/time/rate проверки, baseline acknowledgement, stop/rebind при ownership/parent изменениях и Tick cleanup. Компонент не пишет Transform и не установлен на существующие префабы.
+**Изменения:** четыре новых source в `Assets/_Project/Scripts/World/FloatingOrigin/Network/` + Unity-generated meta; Editor `ValidateGlobalMotionTransport.cs` + meta; `docs/world/floatingorigin/04B_NGO_TRANSPORT.md`, roadmap и эта запись.
+**Проверки:** compile PASS; реально выполнены **32 новых + 33 protocol + 23 foundation = 88 PASS / 0 FAIL** в Edit Mode. Control payload 3/144/132 байта. Реальные RPC-сессии, Host/clients, gameplay, physics и screenshots не запускались.
+**Границы:** старый NT, scene/prefab layout, gameplay RPC и сохранения не менялись. Следующий T-FO04C — frame/pose adapter и session coordinator. World shift выключен; пользователю игровой тест пока не требуется.
+**Коммит:** код и документация вместе, без отдельного коммита хеша; несвязанный LiberationSans fallback не включать.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO04A)
 
 **Задача:** Продолжить floating-origin реализацию: независимый от origin сетевой формат и receive/interpolation state machine без замены работающих компонентов.

@@ -83,15 +83,38 @@ namespace ProjectC.Player
 
         // T-FO04D: dormant unless the root adapter explicitly requires global coordinates.
         private GlobalMotionActorLink _coordinateLink;
+        private readonly GlobalMotionSpawnLatch _globalSpawnLatch = new GlobalMotionSpawnLatch();
         private GlobalMotionActorLink Coordinates => _coordinateLink ??= new GlobalMotionActorLink(this);
         public bool CanSimulateInCurrentCoordinates => Coordinates.CanSimulate;
         public bool UsesGlobalCoordinates => Coordinates.Required;
 
         public bool CanApplyGlobalBaseline(MotionPoseRole role) => true;
-        public bool IsGlobalMotionReady(MotionPoseRole role) => IsSpawned;
+        public bool IsGlobalMotionReady(MotionPoseRole role) => IsSpawned && (!UsesGlobalCoordinates || _globalSpawnLatch.Released);
+
+        // T-FO04G: factory calls this while the clone is inactive and already in its prepared local frame.
+        internal void PrepareGlobalInitialSpawn()
+        {
+            if (!UsesGlobalCoordinates || IsSpawned) throw new System.InvalidOperationException("Expected unspawned global player.");
+            _globalSpawnLatch.Reset();
+            _controller = GetComponent<CharacterController>();
+            if (_controller == null) throw new System.InvalidOperationException("Global player controller missing.");
+            _controller.enabled = false;
+        }
+        internal bool ReleaseGlobalInitialSpawn(MotionStreamBinding binding)
+        {
+            var adapter = GetComponent<GlobalMotionPoseAdapter>();
+            if (!UsesGlobalCoordinates || !IsSpawned || adapter == null || !adapter.IsBaselinePlaced ||
+                adapter.Transport.Control.Baseline.Binding != binding || _controller == null) return false;
+            if (_globalSpawnLatch.Released) return _globalSpawnLatch.Applied == binding;
+            if (!_globalSpawnLatch.TryRelease(binding)) return false;
+            // Preserve game state. This is initial placement, not SetInputEnabled/death/pilot state manipulation.
+            _controller.enabled = IsOwner && _inputEnabled && !_inShip;
+            return true;
+        }
         public void OnGlobalBaselineApplied(MotionStreamBinding binding)
         {
             Coordinates.State.RecordBaseline(binding);
+            _globalSpawnLatch.Record(binding);
             ClearCoordinateInput();
             _currentPlatform = null;
             _platformLastPos = Vector3.zero; _platformLastRot = Quaternion.identity;
@@ -255,7 +278,7 @@ namespace ProjectC.Player
         {
             _inputEnabled = enabled;
             if (_controller != null)
-                _controller.enabled = enabled;
+                _controller.enabled = enabled && (!UsesGlobalCoordinates || _globalSpawnLatch.Released);
 
             // T-HP01-fix: отключаем SkillInputService целиком, иначе его собственный
             // Update() продолжает обрабатывать клавиши независимо от _inputEnabled.
@@ -310,6 +333,7 @@ namespace ProjectC.Player
         {
             base.OnNetworkSpawn();
             Coordinates.State.ResetLifetime();
+            _globalSpawnLatch.Reset();
 
             networkObject = GetComponent<NetworkObject>();
             _controller = GetComponent<CharacterController>();
@@ -440,6 +464,7 @@ namespace ProjectC.Player
             {
                 StartCoroutine(RestorePlayerPositionCoroutine());
             }
+            if (UsesGlobalCoordinates) _controller.enabled = false;
         }
 
         /// <summary>
@@ -643,6 +668,8 @@ namespace ProjectC.Player
 
         public override void OnNetworkDespawn()
         {
+            _globalSpawnLatch.Reset();
+            if (UsesGlobalCoordinates && _controller != null) _controller.enabled = false;
             Coordinates.State.ResetLifetime();
             base.OnNetworkDespawn();
 

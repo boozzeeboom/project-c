@@ -57,6 +57,12 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
         }
 
+        protected override void OnNetworkPostSpawn()
+        {
+            base.OnNetworkPostSpawn();
+            GlobalMotionPlayerBootstrap.NotifyPostSpawn(this);
+        }
+
         protected override void OnSynchronize<T>(ref BufferSerializer<T> serializer)
         {
             var state = serializer.IsWriter ? _serverControl : default;
@@ -76,6 +82,7 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         public override void OnNetworkDespawn()
         {
+            GlobalMotionPlayerBootstrap.NotifyDespawn(this);
             Unsubscribe();
             _receiver.Reset(); _admission.Stop();
             _serverSession = null; _ownerPoseValidator = null;
@@ -305,6 +312,8 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         private void OnNetworkTick()
         {
+            if (IsServer && IsSpawned && isActiveAndEnabled && _serverControl.IsActive)
+                GlobalMotionPlayerBootstrap.RefreshSpawnSeed(this);
             if (!IsServer || !IsSpawned || !isActiveAndEnabled || !_serverControl.IsActive || ServerNow < _nextKeyframeTime) return;
             if (HasCompetingWriter()) { StopServer(); return; }
             _serverControl.Revision = checked(_serverControl.Revision + 1);

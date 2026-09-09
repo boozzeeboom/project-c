@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO04G)
+
+**Задача:** Реализовать ограниченный concrete player spawn bootstrap и initial local placement, не активируя неполную миграцию.
+**Результат:** GlobalMotionPlayerBootstrap + startup installation/release; approved-peer tickets с epoch/serial, bounded queue, registration подготовленных frames после World.IsRunning; NGO typed global seed до instantiation; local scene/pose и initial CC hold до Awake; PostSpawn Bind → first World baseline → exact-binding initial release → ACK. Seed не передаёт origin/frame ID клиента, обновляется на network ticks для late join. Protocol=0xF003, F/E global peers несовместимы; legacy=0 сохраняется.
+**Guards:** только enabled root NetworkPlayer/CC, без stock NT даже disabled, bodies/nav/joints/других colliders и дополнительных native participants; server initial World spawn синхронный. Frame lease не пересоздаётся молча; remote plans требуют game rules; foreign handler не заменяется при установке. Unspawned failures/Despawn/Release/OnDestroy очищают bookkeeping. Ошибки initial lifecycle приводят к fail-closed shutdown, не к фиктивному игроку. HP/velocities/input intent/docking/Animator не сбрасываются; SetInputEnabled не используется как coordinate pause.
+**Изменения:** новые GlobalMotionSpawnContracts.cs, GlobalMotionPlayerBootstrap.cs, Editor ValidateGlobalMotionSpawn.cs и три Unity-generated meta; NetworkPlayer, GlobalMotionNetworkStartup/World/Replicator/NetworkContract и hierarchy validator; G report/JSON, roadmap и этот журнал.
+**Проверки:** исправлены Scene namespace collision и только Editor serializer accessibility/definite-assignment ошибки. Compile PASS; фактически выполнены **44 spawn + 40 hierarchy + 48 startup + 26 actor + 32 application + 32 transport + 33 protocol + 23 foundation = 278 pure PASS / 0 FAIL**. Повторный audit: 58 candidates, opt-in=0/profile assets=0/loaded enabled profiles и adapters=0. Без Play Mode, тестовых GameObject, physics, реальных сетевых сессий и screenshots; runtime UNTESTED.
+**Границы:** реализация IGlobalMotionPlayerSpawnSource отсутствует намеренно: prepared content/global persistence/AOI/scene coverage должны быть настоящими, startup без них блокируется. Legacy ClientSceneLoader должен быть заменён внешним content bridge, здесь не отключается. General scene-object/child lifecycle, pools, physics/nav/ship bridges и actual late join/reconnect ещё не завершены. Scene/prefab/profile activation и world shift не выполнялись; полный T-FO04/jitter fix не заявляются.
+**Коммит:** один коммит кода/meta/результатов/документации, без собственного хеша отдельным коммитом. Исторические E/F artifacts сохраняются; Temp runner и несвязанный LiberationSans fallback не включаются.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO04F)
 
 **Задача:** Подключить limited custom parent/unparent placement к новым global baselines, не активируя неподготовленные игровые объекты.

@@ -35,6 +35,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         private readonly Action<NetworkManager.ConnectionApprovalRequest, NetworkManager.ConnectionApprovalResponse> _approval;
         private readonly HashSet<ulong> _approved = new HashSet<ulong>();
         private readonly HashSet<ulong> _notified = new HashSet<ulong>();
+        private bool _bootstrapInstalled;
         public bool IsDisposed { get; private set; }
 
         private GlobalMotionNetworkStartup(NetworkManager manager, GlobalMotionNetworkProfile profile, MonoBehaviour bootstrap,
@@ -84,6 +85,16 @@ namespace ProjectC.World.FloatingOrigin.Network
                 manager.OnServerStopped += gate.Stopped;
                 manager.OnClientStopped += gate.Stopped;
                 Sessions.Add(manager, gate);
+                if (provider is IGlobalMotionSpawnBootstrapLifecycle lifecycle)
+                {
+                    gate._bootstrapInstalled = true; // Release also covers a partially installed handler.
+                    lifecycle.InstallNetworkStart(manager, role, profile);
+                    if (manager.IsListening || manager.ShutdownInProgress || !gate.LocalContractUnchanged(out error))
+                    {
+                        error = error ?? "bootstrap_started_network_during_install";
+                        gate.CancelBeforeStart(); gate = null; return false;
+                    }
+                }
                 return true;
             }
             catch (Exception e)
@@ -151,6 +162,12 @@ namespace ProjectC.World.FloatingOrigin.Network
         {
             if (IsDisposed) return;
             IsDisposed = true;
+            if (_bootstrapInstalled)
+            {
+                _bootstrapInstalled = false;
+                try { (_bootstrap as IGlobalMotionSpawnBootstrapLifecycle)?.ReleaseNetworkStart(_manager); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
             if (_manager != null)
             {
                 if (_manager.ConnectionApprovalCallback == _approval) _manager.ConnectionApprovalCallback = null;

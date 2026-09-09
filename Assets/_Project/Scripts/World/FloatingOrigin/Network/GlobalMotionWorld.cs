@@ -49,6 +49,17 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (_manager.IsListening) Started();
         }
 
+        // NetworkManagerController may add its manager after this component's OnEnable.
+        internal bool AttachManagerForStartup(NetworkManager manager)
+        {
+            if (manager == null || manager.gameObject != gameObject || manager.IsListening || _running) return false;
+            if (_manager != null) return _manager == manager;
+            _manager = manager;
+            _manager.OnServerStarted += Started; _manager.OnClientStarted += Started;
+            _manager.OnServerStopped += Stopped; _manager.OnClientStopped += Stopped;
+            return true;
+        }
+
         // Preserve the issuer while the SAME NGO session is alive. Events stay subscribed
         // while disabled so a real network shutdown/restart still retires the old session.
         private void OnDisable() => ReleaseFrames();

@@ -28,8 +28,8 @@ namespace ProjectC.World.FloatingOrigin.Network
     /// <summary>Compatibility metadata, NOT authentication or proof of native world readiness.</summary>
     public static class GlobalMotionNetworkContract
     {
-        // T-FO04F changes baseline hierarchy semantics; do not mix with the T-FO04E global protocol.
-        public const ushort ProtocolVersion = 0xF002;
+        // T-FO04G adds pre-instantiation global seed and initial player readiness semantics; reject E/F peers.
+        public const ushort ProtocolVersion = 0xF003;
         public static bool IsReservedProtocolVersion(ushort version) => (version & 0xFF00) == 0xF000;
         public const byte FormatVersion = 1;
         public const int HelloSize = 72;

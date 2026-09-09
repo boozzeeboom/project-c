@@ -191,3 +191,8 @@ Assets/Generated_Models/*
 !Assets/_Project/Prefabs/FloatingOrigin/**/*.prefab.meta
 !Assets/_Project/Prefabs/FloatingOrigin/**/*.asset.meta
 
+# BootstrapScene — deliberately tracked in git (T-FO06E): the floating-origin pilot must
+# review and change NetworkManager configuration, which needs reviewable scene history.
+# Exact paths only: every other scene, including its DESKTOP copy, stays with Lore VCS.
+!Assets/_Project/Scenes/BootstrapScene.unity
+!Assets/_Project/Scenes/BootstrapScene.unity.meta

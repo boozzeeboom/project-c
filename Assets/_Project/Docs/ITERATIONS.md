@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO06C)
+
+**Задача:** Сделать пилотный префаб floating-origin отслеживаемым в Git по указанию пользователя.
+**Результат:** Общее правило `*.prefab` из блока Lore VCS сохранено; в конец `.gitignore` добавлено узкое отрицание для `Assets/_Project/Prefabs/FloatingOrigin` — сам префаб, его `.meta` и `.meta` папки. Метаданные включены осознанно: без них GUID нестабилен при клонировании. Глобальное снятие правила отклонено, так как добавило бы в Git все префабы проекта (корабли, NPC, зоны) и конфликтовало с Lore VCS. Отрицания размещены после правил `*.prefab` и `*.meta`, иначе не срабатывают. Сам `.gitignore` перечисляет себя, но остаётся tracked, поэтому правка коммитится.
+**Проверки:** `git check-ignore -v` — пилотный префаб и оба `.meta` отслеживаются; `Assets/_Project/Prefabs/NetworkPlayer.prefab` и `BootstrapScene.unity` по-прежнему игнорируются. Повторная read-only верификация после правки: Spatial contract PASS, 6 NetworkBehaviour, пять NO flags = false, canonical остался legacy, 8 protected файлов побайтово равны 06A, автогенерация off, registry=58, пилот не зарегистрирован и не выбран. No compile errors. Play Mode/physics/network/screenshots/builds не запускались.
+**Файлы:** `.gitignore`, пилотный префаб + `.meta`, `.meta` папки, `06C_PILOT_PREFAB_TRACKING.md`, уточнение §6 в `06B_PILOT_PLAYER_PREFAB.md`, roadmap и этот журнал.
+**Остаток:** Изменение касается только версионирования; пилот не активирован, global mode/world shift выключены. Далее: классификация profile/catalog (эффективный registry должен точно совпадать с classified catalog — это все 58+ записей, не только игрок), prepared frames/markers/native executor, dirty Bootstrap с legacy position services/ClientSceneLoader/3 missing scripts, native audit WorldScene_0_0, issuer/store. Jitter fixed не заявляется.
+**Коммит:** один commit versioning/asset/docs; TMP fallback, Temp-скрипты, DefaultNetworkPrefabs.asset, canonical префаб и сцены исключены.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO06B)
 
 **Задача:** Перевести регистрацию сетевых префабов в явный режим и создать изолированный пилотный префаб игрока, не активируя global mode.

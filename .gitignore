@@ -182,3 +182,11 @@ lore-save.bat
 *.meta
 Assets/_Project/Localization/Export/*
 Assets/Generated_Models/*
+
+# Floating origin pilot assets — deliberately tracked in git (T-FO06C).
+# Narrow exception to the content-asset rules above: only this folder, so the rest
+# of the prefab/meta content stays with Lore VCS. Metas are required for stable GUIDs.
+!Assets/_Project/Prefabs/FloatingOrigin.meta
+!Assets/_Project/Prefabs/FloatingOrigin/**/*.prefab
+!Assets/_Project/Prefabs/FloatingOrigin/**/*.prefab.meta
+

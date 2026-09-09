@@ -16,6 +16,7 @@ using ProjectC.UI;
 using ProjectC.Skills;  // T-INP-01: SkillInputService
 using ProjectC.Input;   // T-INP-14: InputBindingsConfig
 using ProjectC.World.Streaming;
+using ProjectC.World.FloatingOrigin.Network;
 using ProjectC.World.Chest;
 using System.Collections.Generic;
 using Unity.Profiling;
@@ -31,7 +32,7 @@ namespace ProjectC.Player
     /// • Сундуки: E открыть
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
-    public class NetworkPlayer : NetworkBehaviour
+    public class NetworkPlayer : NetworkBehaviour, IGlobalMotionActorParticipant
     {
         [Header("Движение (пеший)")]
         [SerializeField] private float walkSpeed = 5f;
@@ -79,6 +80,34 @@ namespace ProjectC.Player
 
         [Header("Инвентарь")]
         [SerializeField] private float pickupRange = 3f;
+
+        // T-FO04D: dormant unless the root adapter explicitly requires global coordinates.
+        private GlobalMotionActorLink _coordinateLink;
+        private GlobalMotionActorLink Coordinates => _coordinateLink ??= new GlobalMotionActorLink(this);
+        public bool CanSimulateInCurrentCoordinates => Coordinates.CanSimulate;
+        public bool UsesGlobalCoordinates => Coordinates.Required;
+
+        public bool CanApplyGlobalBaseline(MotionPoseRole role) => true;
+        public bool IsGlobalMotionReady(MotionPoseRole role) => IsSpawned;
+        public void OnGlobalBaselineApplied(MotionStreamBinding binding)
+        {
+            Coordinates.State.RecordBaseline(binding);
+            ClearCoordinateInput();
+            _currentPlatform = null;
+            _platformLastPos = Vector3.zero; _platformLastRot = Quaternion.identity;
+            _platformMissFrames = 0; _onPlatform = false;
+            _hasServerPosition = false;
+            _nearestPickup = null; _nearestChest = null; _nearestNetworkChest = null;
+            _nearestShip = null; _nearestNpcLoot = null;
+            _pendingCanBoardShipId = ulong.MaxValue; _pendingCanUseInteractableId = ulong.MaxValue;
+            var animationPlayer = GetComponent<SkillAnimationPlayer>();
+            if (animationPlayer != null) animationPlayer.OnGlobalMotionBaseline();
+            // Do not change _inputEnabled, controller.enabled, velocity, HP or piloting state.
+        }
+        private void ClearCoordinateInput()
+        {
+            _moveInput = Vector2.zero; _jumpPressed = false; _runPressed = false; _platformDelta = Vector3.zero;
+        }
 
         // Компоненты
         private CharacterController _controller;
@@ -237,6 +266,7 @@ namespace ProjectC.Player
 
         private void Awake()
         {
+            _coordinateLink = new GlobalMotionActorLink(this);
             // Whole-model swap: подписываемся в Awake, чтобы гарантированно получить
             // BodySwapped до того, как CharacterCustomisationApplier.OnEnable применит
             // снапшот и заменит тело (respawn race).
@@ -279,6 +309,7 @@ namespace ProjectC.Player
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            Coordinates.State.ResetLifetime();
 
             networkObject = GetComponent<NetworkObject>();
             _controller = GetComponent<CharacterController>();
@@ -437,6 +468,11 @@ namespace ProjectC.Player
                 shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
             }
 
+            if (UsesGlobalCoordinates)
+            {
+                Debug.LogWarning("[T-FO04D] Legacy player position restore is blocked for a global-coordinate actor; global persistence is not integrated yet.", this);
+                yield break;
+            }
             bool restored = ppServer.RestorePlayer(this);
             if (restored)
             {
@@ -602,6 +638,7 @@ namespace ProjectC.Player
 
         public override void OnNetworkDespawn()
         {
+            Coordinates.State.ResetLifetime();
             base.OnNetworkDespawn();
 
             // FIX (2026-06-04, см. OnNetworkSpawn): для scene-placed non-player
@@ -679,6 +716,12 @@ namespace ProjectC.Player
         {
             using var _ = ProjectCPerfCounters.PlayerUpdate.Auto();
             if (!IsOwner) return;
+            if (!CanSimulateInCurrentCoordinates)
+            {
+                ClearCoordinateInput();
+                PublishInteractionHint(InteractionHintKind.None);
+                return;
+            }
 
             // T-HP01-fix: после смерти блокируем ВЕСЬ ввод (движение, скиллы, F/E, всё).
             // Было: SetInputEnabled(false) отключал только CharacterController — скиллы работали.
@@ -915,6 +958,8 @@ namespace ProjectC.Player
         private void FixedUpdate()
         {
             if (!IsOwner) return;
+            if (!CanSimulateInCurrentCoordinates) { ClearCoordinateInput(); return; }
+            if (UsesGlobalCoordinates) { _hasServerPosition = false; return; } // Legacy correction is a competing float-position writer.
 
             if (_hasServerPosition)
             {
@@ -960,6 +1005,7 @@ namespace ProjectC.Player
 
         private void ProcessMovement(Vector2 moveInput, bool jump, bool run)
         {
+            if (!CanSimulateInCurrentCoordinates) return;
             // T-HP01: CharacterController может быть выключен (смерть) — не двигаем
             if (_controller == null || !_controller.enabled) return;
 
@@ -1942,6 +1988,7 @@ namespace ProjectC.Player
         [Rpc(SendTo.Everyone)]
         public void TeleportAllClientRpc(Vector3 position, RpcParams rpcParams = default)
         {
+            if (RejectLegacyCoordinateWrite(nameof(TeleportAllClientRpc))) return;
             // Для non-owned объектов просто устанавливаем позицию
             if (!IsOwner)
             {
@@ -1956,6 +2003,7 @@ namespace ProjectC.Player
         /// </summary>
         public void TeleportToPosition(Vector3 position)
         {
+            if (RejectLegacyCoordinateWrite(nameof(TeleportToPosition))) return;
             Debug.Log($"[NetworkPlayer] Teleport to {position}");
 
             // Отключаем CharacterController чтобы избежать коллизий
@@ -1981,8 +2029,16 @@ namespace ProjectC.Player
         /// <summary>
         /// Телепортировать локального игрока (вызов с владельца)
         /// </summary>
+        private bool RejectLegacyCoordinateWrite(string operation)
+        {
+            if (!UsesGlobalCoordinates) return false;
+            Debug.LogWarning($"[T-FO04D] {operation} blocked for global-coordinate actor: use a server-issued global baseline, not a legacy Vector3 teleport.", this);
+            return true;
+        }
+
         public void TeleportLocal(Vector3 position)
         {
+            if (RejectLegacyCoordinateWrite(nameof(TeleportLocal))) return;
             if (IsOwner)
             {
                 TeleportServerRpc(position);

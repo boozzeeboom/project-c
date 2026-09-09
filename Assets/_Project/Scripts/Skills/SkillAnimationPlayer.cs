@@ -31,6 +31,7 @@
 using System.Collections.Generic;
 using ProjectC.Player; // CharacterCustomisationApplier (BodySwapped)
 using UnityEngine;
+using ProjectC.World.FloatingOrigin.Network;
 
 namespace ProjectC.Skills
 {
@@ -76,9 +77,30 @@ namespace ProjectC.Skills
 
         // Позиция Y персонажа перед началом каста (для предотвращения ухода под пол).
         private float _castStartY;
+        private GlobalMotionActorLink _coordinateLink;
+        private GlobalMotionActorLink Coordinates => _coordinateLink ??= new GlobalMotionActorLink(this);
+
+        public void OnGlobalMotionBaseline()
+        {
+            if (!Coordinates.Required) return;
+            _castStartY = transform.position.y;
+            DiscardCoordinateCast(); // A teleport/handoff baseline is not an origin-rebase transaction.
+        }
+        private void DiscardCoordinateCast()
+        {
+            _triggerScheduled = false;
+            bool wasCasting = _isCasting;
+            bool restoreRootMotion = _savedApplyRootMotion;
+            if (wasCasting && _animator != null) _animator.ResetTrigger(_skillTriggerName);
+            Restore();
+            if (wasCasting && _animator != null) _animator.applyRootMotion = restoreRootMotion;
+            _impactFired = true;
+            // Do not disable the Animator, rewrite a clip, clear cooldowns or replay a queued impact on resume.
+        }
 
         private void Awake()
         {
+            _coordinateLink = new GlobalMotionActorLink(this);
             _skillStateHash = Animator.StringToHash(_skillStateName);
             if (_animator == null)
             {
@@ -104,6 +126,7 @@ namespace ProjectC.Skills
 
         private void OnBodySwapped(Animator newAnimator)
         {
+            if (Coordinates.Required) DiscardCoordinateCast(); // Restore the OLD animator before replacing its reference.
             _animator = newAnimator;
             _originalController = null;
             _overrideCache.Clear();
@@ -148,6 +171,7 @@ namespace ProjectC.Skills
 
         private void LateUpdate()
         {
+            if (!Coordinates.CanSimulate) { DiscardCoordinateCast(); return; }
             if (_triggerScheduled)
             {
                 _triggerScheduled = false;
@@ -175,6 +199,7 @@ namespace ProjectC.Skills
 
         private void Update()
         {
+            if (!Coordinates.CanSimulate) { DiscardCoordinateCast(); return; }
             if (!_isCasting || _animator == null || CurrentSkill == null || CurrentSkill.attackClip == null) return;
 
             float now = Time.unscaledTime;
@@ -231,6 +256,7 @@ namespace ProjectC.Skills
 
         public void Play(SkillNodeConfig skill, SkillInputSlot originalSlot)
         {
+            if (!Coordinates.CanSimulate) return;
             if (skill == null || skill.attackClip == null) return;
             if (_animator == null || _animator.runtimeAnimatorController == null) return;
             if (_waitForFinish && _isCasting)
@@ -282,6 +308,7 @@ namespace ProjectC.Skills
         /// <summary>Вызывается из Animation Event в клипе (если есть).</summary>
         public void OnAttackImpact()
         {
+            if (!Coordinates.CanSimulate) { DiscardCoordinateCast(); return; }
             if (!_isCasting || _impactFired) return;
             _impactFired = true;
             FireImpactRpc();
@@ -305,7 +332,8 @@ namespace ProjectC.Skills
 
         private void FireImpactRpc()
         {
-            var sis = SkillInputService.Instance;
+            if (!Coordinates.CanSimulate) return;
+            var sis = Coordinates.Required ? GetComponent<SkillInputService>() : SkillInputService.Instance;
             if (sis != null) sis.TryActivate(OriginalSlot, skipAnimation: true);
         }
 

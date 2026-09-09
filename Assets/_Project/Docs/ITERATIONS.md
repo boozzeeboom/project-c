@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO04D)
+
+**Задача:** Подключить dormant coordinate readiness/cache hooks к игровым контроллерам, не активируя неполную миграцию.
+**Результат:** `GlobalMotionActorContract.cs` (interface/state/link), serialized opt-in=false, two-stage baseline placed → actor ready → publication acknowledgement. Gates в NetworkPlayer Update/Fixed/Move, ShipController input/physics, NpcBrain, NpcSocialBrain.Tick, NpcShipController.NavTick, SkillInputService и SkillAnimationPlayer. Baseline обновляет пространственные кэши, но не velocity/HP/docking/aggro. Старые Vector3 player teleports/restore/correction блокируются только в global mode.
+**Native граница:** Ship/NPC требуют внешней подготовки body/nav и exact-binding Confirm API. Сам gate НЕ замораживает Rigidbody/NavMeshAgent; native bridge ещё не реализован. SetInputEnabled/ExitDocked/ForceSurrender не используются как coordinate pause. Initial placement и полная активация префабов остаются впереди.
+**Изменения:** новый contract + Editor `ValidateGlobalMotionActorReadiness.cs` и два Unity-generated meta; `GlobalMotionPoseAdapter.cs`, `GlobalMotionWorld.cs`; семь игровых исходников из `04D_ACTOR_READINESS.md`; отчёт, roadmap и этот журнал.
+**Проверки:** compile PASS; реально выполнены **26 actor + 32 application + 32 transport + 33 protocol + 23 foundation = 146 PASS / 0 FAIL**. Только pure/state/compiled-contract checks. Play Mode, GameObject-тесты, physics simulation, сеть и screenshots не запускались; native/gameplay результат не заявляется.
+**Границы:** сцены/префабы не менялись, opt-in нигде не включён; legacy gates проходят исходное поведение. Animator не отключается; stale cast cancellation касается opt-in teleport/handoff, не будущего rebase. Тикет T-FO04 в целом не завершён. Следующий T-FO04E — согласованные spawn/parent/prefab contracts; world shift выключен.
+**Коммит:** один коммит кода, meta и документации; без отдельной фиксации хеша. Несвязанный LiberationSans fallback оставлен вне этапа.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO04C)
 
 **Задача:** Добавить session/frame coordinator и безопасно ограниченный Unity pose adapter поверх global motion transport, не включая неподготовленную игру.

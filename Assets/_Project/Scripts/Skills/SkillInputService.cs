@@ -144,6 +144,7 @@ namespace ProjectC.Skills
         {
             // 1) Owner-only guard.
             if (_ownerPlayer == null || !_ownerPlayer.IsSpawned) return;
+            if (!_ownerPlayer.CanSimulateInCurrentCoordinates) return;
 
             // UI modal gate: не пропускаем ЛКМ/ПКМ и fallback-атаки поверх
             // диалогов, рынка, ремонта, персонажа, меню и прочих окон.
@@ -263,6 +264,7 @@ namespace ProjectC.Skills
         public bool TryActivate(SkillInputSlot slot, bool skipAnimation = false)
         {
             if (slot == SkillInputSlot.None) return false;
+            if (_ownerPlayer != null && !_ownerPlayer.CanSimulateInCurrentCoordinates) return false;
 
             // 0) Any modal UI open — block all combat attacks.
             // Проверка дублируется здесь, чтобы защитить вызовы TryActivate()

@@ -119,7 +119,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (!CanStart(actor) || !actor.Frame.Coordinates.TryToLocal(globalPosition, out _)) return false;
             var validator = WrapRules(actor, gameRules);
             if (!actor.Transport.ActivateWorldServer(_serverSession, authority, globalPosition, rotation, scale, validator)) return false;
-            if (actor.PrepareBaseline()) return true;
+            // Placement may succeed while native actor readiness is still awaiting explicit confirmation.
+            if (actor.PrepareBaseline() || actor.IsBaselinePlaced) return true;
             actor.Transport.StopServer(); return false;
         }
 
@@ -131,7 +132,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             var validator = WrapRules(actor, gameRules);
             if (!actor.Transport.ActivateParentLocalServer(_serverSession, authority, parent.Transport,
                 localPosition, localRotation, localScale, validator)) return false;
-            if (actor.PrepareBaseline()) return true;
+            if (actor.PrepareBaseline() || actor.IsBaselinePlaced) return true;
             actor.Transport.StopServer(); return false;
         }
 

@@ -425,7 +425,7 @@ namespace ProjectC.PeacefulShip.Stations
         public void NavTick(float dt) {
             if (!IsServer || !useNewNavTick) return;
             var ship = GetComponent<ShipController>();
-            if (ship == null) return;
+            if (ship == null || !ship.CanSimulateInCurrentCoordinates) return;
             // M3.2.10: guard — если спавн тайминг или IsDocked до NavMode, синхронизируем.
             // НО НЕ делаем return — Docked handler должен дойти до dwell-check.
             // Control authority: живой пилот на борту → NPC уступает управление силовому конвейеру игрока.

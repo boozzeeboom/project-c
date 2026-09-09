@@ -44,6 +44,7 @@ using ProjectC.Core;
 using ProjectC.Ship;
 using ProjectC.Quests;
 using ProjectC.Factions;
+using ProjectC.World.FloatingOrigin.Network;
 
 namespace ProjectC.AI
 {
@@ -52,7 +53,7 @@ namespace ProjectC.AI
     /// Агрессия и cooldown централизованно — через CombatServer / NpcAttacker.
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
-    public class NpcBrain : NetworkBehaviour
+    public class NpcBrain : NetworkBehaviour, IGlobalMotionActorParticipant
     {
         public enum BrainState
         {
@@ -177,6 +178,43 @@ namespace ProjectC.AI
         [Tooltip("На кораблях с NetworkObject приклеивать NPC через TrySetParent (надёжнее carry). Fallback — carry без NetworkObject.")]
         [SerializeField] private bool _useParentingOnShips = true;
 
+
+        // T-FO04D: native nav preparation/goal conversion belongs to the future world/deck bridge.
+        private GlobalMotionActorLink _coordinateLink;
+        private GlobalMotionActorLink Coordinates => _coordinateLink ??= new GlobalMotionActorLink(this);
+        public bool CanSimulateInCurrentCoordinates => Coordinates.CanSimulate;
+        public bool CanApplyGlobalBaseline(MotionPoseRole role)
+        {
+            if (_agent == null) _agent = GetComponent<NavMeshAgent>();
+            return (_agent == null || !_agent.enabled) && (_proxyAgent == null || !_proxyAgent.enabled);
+        }
+        public bool IsGlobalMotionReady(MotionPoseRole role)
+        {
+            if (role != MotionPoseRole.Authority)
+                return (_agent == null || !_agent.enabled || (!_agent.updatePosition && !_agent.updateRotation)) &&
+                    (_proxyAgent == null || !_proxyAgent.enabled);
+            return Coordinates.State.NativePreparedFor(Coordinates.State.AppliedBinding) && HasPreparedNavigation();
+        }
+        private bool HasPreparedNavigation()
+        {
+            if (_state == BrainState.Dead || (_target != null && !_target.IsAlive())) return false;
+            if (_deckNavActive)
+                return _deckNav != null && _deckNav.IsReady && _proxyAgent != null && _proxyAgent.enabled && _proxyAgent.isOnNavMesh;
+            return _agent != null && _agent.enabled && _agent.isOnNavMesh;
+        }
+        public bool ConfirmGlobalNavigationPrepared(MotionStreamBinding binding)
+        {
+            // Caller must first restore the correct nav frame, paths/goals and social/respawn caches.
+            return IsServer && HasPreparedNavigation() && Coordinates.ConfirmNativePrepared(binding);
+        }
+        public void OnGlobalBaselineApplied(MotionStreamBinding binding)
+        {
+            if (Coordinates.State.RecordBaseline(binding)) _spawnPoint = transform.position;
+            if (_ridePlatform != null) { _rideLastPos = _ridePlatform.position; _rideLastRot = _ridePlatform.rotation; }
+            if (_proxyAgent != null) _proxyLastPos = _proxyAgent.transform.position; // Native sandbox point, not world-offset data.
+            _rideMissFrames = 0; _nextTickTime = Time.unscaledTime;
+            // No SetDestination/Warp, state/aggro reset, surrender, parent change or native re-enable here.
+        }
 
         // --- runtime ---
         private NavMeshAgent _agent;
@@ -350,6 +388,7 @@ namespace ProjectC.AI
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            Coordinates.State.ResetLifetime();
 
             // T-JITTER01: на хосте (IsServer && IsClient) NavMeshAgent.updatePosition
             // двигает transform напрямую, а NetworkTransform.Interpolate «дерётся»
@@ -401,6 +440,7 @@ namespace ProjectC.AI
 
         public override void OnNetworkDespawn()
         {
+            Coordinates.State.ResetLifetime();
             base.OnNetworkDespawn();
             ProjectCPerfCounters.ActiveNpcs--;
             if (_target != null)
@@ -523,6 +563,7 @@ namespace ProjectC.AI
         {
             using var _ = ProjectCPerfCounters.NpcBrainUpdate.Auto();
             if (!IsServer || _state == BrainState.Dead || _state == BrainState.Surrendered) return;
+            if (!CanSimulateInCurrentCoordinates) return;
             if (Time.unscaledTime < _nextTickTime) return;
             _nextTickTime = Time.unscaledTime + (1f / Mathf.Max(1, tickRate));
             Tick();
@@ -531,7 +572,7 @@ namespace ProjectC.AI
         private void FixedUpdate()
         {
             using var _ = ProjectCPerfCounters.NpcBrainFixedUpdate.Auto();
-            if (!IsServer) return;
+            if (!IsServer || !CanSimulateInCurrentCoordinates) return;
 
             // T-CREW-11: fixed crew uses explicit attachment and must not depend on
             // platform probe configuration (_platformMask may intentionally be zero).
@@ -748,6 +789,7 @@ namespace ProjectC.AI
 
         public void ForceChaseTarget(IDamageTarget target)
         {
+            if (!CanSimulateInCurrentCoordinates) return;
             if (target == null) return;
             _aggroTarget = target;
             _socialOverrideLock = true;
@@ -767,6 +809,7 @@ namespace ProjectC.AI
 
         public void ForceFlee(Vector3 fromPosition)
         {
+            if (!CanSimulateInCurrentCoordinates) return;
             _socialOverrideLock = true;
             _socialOverrideLockExpireTime = Time.unscaledTime + _socialOverrideTimeout;
             Vector3 fleeDir = (transform.position - fromPosition).normalized;

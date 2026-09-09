@@ -10,6 +10,7 @@ using ProjectC.Trade.Core; // T-CARGO-02: ShipClass, TradeWorld, ShipClassLimits
 using ProjectC.Ship.Combat; // T-HULL: ShipHull, ShipDamageConfig, HullState
 using Unity.Profiling;
 using ProjectC.Core;
+using ProjectC.World.FloatingOrigin.Network;
 
 namespace ProjectC.Player
 {
@@ -37,7 +38,7 @@ namespace ProjectC.Player
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(NetworkObject))]
-    public class ShipController : NetworkBehaviour
+    public class ShipController : NetworkBehaviour, IGlobalMotionActorParticipant
     {
         [Header("Класс Корабля")]
         [Tooltip("Класс определяет характеристики полёта. НЕ путать с грузовым классом (Trade.Core.ShipClass, маппинг в ShipClassMappingConfig).")]
@@ -232,7 +233,7 @@ namespace ProjectC.Player
                 /// </summary>
                 public void ApplyServerInput(float thrust, float yaw, float pitch, float vertical, bool boost = false)
                 {
-                    if (!IsServer) return;
+                    if (!IsServer || !CanSimulateInCurrentCoordinates) return;
                     if (_netIsDocked.Value) return;   // T-DOCK-09: docked-blocks
                     if (_rb == null || _rb.isKinematic) return;  // safety
                     if (!_engineRunning && !_hasNpcPilot) return; // ENGINE-STATE: двигатель выключен
@@ -442,6 +443,31 @@ namespace ProjectC.Player
         private Vector3 _activeMeziyTorque;  // Применяемый момент от мезиевой тяги
         private bool _meziyActive = false;    // Флаг активной мезиевой тяги
 
+        // T-FO04D: native physics must be prepared externally; no fake undocking or pilot removal.
+        private GlobalMotionActorLink _coordinateLink;
+        private GlobalMotionActorLink Coordinates => _coordinateLink ??= new GlobalMotionActorLink(this);
+        public bool CanSimulateInCurrentCoordinates => Coordinates.CanSimulate;
+        public bool CanObserveInCurrentCoordinates => Coordinates.CanObserve;
+        public bool CanApplyGlobalBaseline(MotionPoseRole role) => _rb != null && _rb.isKinematic;
+        public bool IsGlobalMotionReady(MotionPoseRole role) => _rb != null &&
+            (role == MotionPoseRole.Authority ? Coordinates.State.NativePreparedFor(Coordinates.State.AppliedBinding) : _rb.isKinematic);
+        public bool ConfirmGlobalPhysicsPrepared(MotionStreamBinding binding)
+        {
+            // The future physics bridge restores body/region/caches first, then confirms this exact binding.
+            return IsServer && _rb != null && Coordinates.ConfirmNativePrepared(binding);
+        }
+        public void OnGlobalBaselineApplied(MotionStreamBinding binding)
+        {
+            Coordinates.State.RecordBaseline(binding);
+            ClearCoordinateInput();
+            // Physical velocities, smoothing state, docking, pilots, cargo and engine remain unchanged.
+        }
+        private void ClearCoordinateInput()
+        {
+            _sumThrust = 0f; _sumYaw = 0f; _sumPitch = 0f; _sumVertical = 0f;
+            _boostCount = 0; _inputCount = 0;
+        }
+
         // Rigidbody
         private Rigidbody _rb;
 
@@ -492,6 +518,7 @@ namespace ProjectC.Player
 
         private void Awake()
         {
+            _coordinateLink = new GlobalMotionActorLink(this);
             _rb = GetComponent<Rigidbody>();
             if (_rb != null)
             {
@@ -752,6 +779,7 @@ namespace ProjectC.Player
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            Coordinates.State.ResetLifetime();
 
             // T-PERF-opt: регистрация в статическом реестре SplineWindZone (все корабли, не только сервер)
             SplineWindZone.AllShips.Add(this);
@@ -806,6 +834,7 @@ namespace ProjectC.Player
 
         public override void OnNetworkDespawn()
         {
+            Coordinates.State.ResetLifetime();
             // T-PERF-opt: удаление из статического реестра SplineWindZone
             SplineWindZone.AllShips.Remove(this);
 
@@ -1212,6 +1241,7 @@ namespace ProjectC.Player
         {
             using var _ = ProjectCPerfCounters.ShipControllerFixedUpdate.Auto();
             if (_rb == null) return;
+            if (!CanSimulateInCurrentCoordinates) { ClearCoordinateInput(); return; }
 
             // T-KEY-07: telemetry update — server-only, throttled внутри метода.
             if (IsServer) UpdateTelemetryState();
@@ -1529,6 +1559,7 @@ namespace ProjectC.Player
         [Rpc(SendTo.Server)]
                 private void SubmitShipInputRpc(float thrust, float yaw, float pitch, float vertical, bool boost, RpcParams rpcParams = default)
                 {
+                    if (!CanSimulateInCurrentCoordinates) return;
                     if (!_pilots.Contains(rpcParams.Receive.SenderClientId)) return;
                     // T-DOCK-09: если корабль пристыкован — двигатель заблокирован, ввод игнорируем.
                     // Defense in depth — owner-side guard есть в SendShipInput, но клиент может
@@ -1545,6 +1576,8 @@ namespace ProjectC.Player
 
                 public void SendShipInput(float thrust, float yaw, float pitch, float vertical, bool boost)
                 {
+                    // Clients observe a server-authoritative ship; they must not require local authority to submit pilot input.
+                    if (!CanObserveInCurrentCoordinates) return;
                     // Guard: не отправляем RPC если NGO не готов или корабль не spawned
                     // (защита от NRE в __endSendRpc при scene transition / shutdown)
                     if (NetworkManager.Singleton == null || !IsSpawned) return;

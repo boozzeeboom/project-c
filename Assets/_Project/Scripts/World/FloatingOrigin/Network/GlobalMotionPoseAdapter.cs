@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 
 namespace ProjectC.World.FloatingOrigin.Network
 {
-    public enum MotionAdapterStatus { Unbound, WaitingForControl, WaitingForParent, InvalidFrame, DriverBlocked, OutOfRange, Ready, Faulted }
+    public enum MotionAdapterStatus { Unbound, WaitingForControl, WaitingForParent, InvalidFrame, DriverBlocked, OutOfRange, Ready, Faulted, WaitingForActors }
 
     /// <summary>
     /// Explicitly bound Unity pose adapter. Does not register itself, disable gameplay scripts,
@@ -18,6 +18,13 @@ namespace ProjectC.World.FloatingOrigin.Network
     [DisallowMultipleComponent, DefaultExecutionOrder(10000)]
     public sealed class GlobalMotionPoseAdapter : NetworkBehaviour
     {
+        [SerializeField, Tooltip("Opt-in for coordinated prefab migration only. Keep false in the current legacy game.")]
+        private bool _coordinatesRequired = false;
+        public bool CoordinatesRequired => _coordinatesRequired;
+        private bool _preparingBaseline;
+        private bool _checkingParticipants;
+        private readonly List<MonoBehaviour> _rootScripts = new List<MonoBehaviour>();
+        private readonly List<IGlobalMotionActorParticipant> _participants = new List<IGlobalMotionActorParticipant>();
         private GlobalMotionReplicator _transport;
         private Rigidbody _body;
         private CharacterController _controller;
@@ -33,20 +40,22 @@ namespace ProjectC.World.FloatingOrigin.Network
         public GlobalMotionReplicator Transport => _transport;
         public MotionAdapterStatus Status { get; private set; } = MotionAdapterStatus.Unbound;
         public double InterpolationDelay { get; set; } = 0.1d;
-        public bool IsBaselineReady => Status == MotionAdapterStatus.Ready && !_faulted && _hasApplied && ContextValid() &&
+        public bool IsBaselinePlaced => !_preparingBaseline && !_faulted && _hasApplied && ContextValid() &&
             !HasCompetingWriter() && _transport.Control.IsActive && _transport.Control.Baseline.Binding == _appliedBinding &&
             Frame.Coordinates.ContainsLocal(CurrentPosition) && HierarchyReady();
+        public bool IsBaselineReady => Status == MotionAdapterStatus.Ready && IsBaselinePlaced &&
+            ResolveRole(out var role) && ParticipantsReady(role);
         public bool IsReadyForSimulation => IsBaselineReady && ResolveRole(out var role) && role == MotionPoseRole.Authority;
 
         public bool Bind(GlobalMotionWorld world, int frameId)
         {
-            if (World != null || !isActiveAndEnabled || world == null || !world.TryGetFrame(frameId, out var frame)) return false;
+            if (!CoordinatesRequired || World != null || !isActiveAndEnabled || world == null || !world.TryGetFrame(frameId, out var frame)) return false;
             _transport = GetComponent<GlobalMotionReplicator>();
             if (_transport == null || !_transport.IsSpawned || _transport.NetworkManager != world.Manager ||
                 _transport.NetworkObject == null || _transport.NetworkObject.gameObject != gameObject || HasCompetingWriter() ||
                 !gameObject.scene.GetPhysicsScene().Equals(frame.Physics)) return false;
             _body = GetComponent<Rigidbody>(); _controller = GetComponent<CharacterController>(); _agent = GetComponent<NavMeshAgent>();
-            if (!SupportedStructure()) return false;
+            if (!SupportedStructure() || !CollectParticipants()) return false;
             _objectId = _transport.NetworkObjectId;
             if (!world.RegisterActor(this, _objectId)) return false;
             World = world; Frame = frame; _hasApplied = false; _faulted = false;
@@ -84,26 +93,81 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         public bool PrepareBaseline()
         {
+            if (_preparingBaseline) return false;
             if (!ContextValid()) return Block(MotionAdapterStatus.InvalidFrame);
             if (!ResolveRole(out var role)) return Block(MotionAdapterStatus.WaitingForControl);
             if (!SupportedStructure()) return Block(MotionAdapterStatus.DriverBlocked);
             var snapshot = _transport.Control.Baseline;
+            var frame = Frame;
             if (_hasApplied && _appliedBinding == snapshot.Binding)
             {
-                // Re-evaluate actual authority/driver readiness, not only a potentially stale echo pose.
                 if (role == MotionPoseRole.Authority && !Frame.Coordinates.ContainsLocal(CurrentPosition)) return Block(MotionAdapterStatus.OutOfRange);
                 if (role != MotionPoseRole.Authority && ((_body != null && !_body.isKinematic) ||
                     (_agent != null && _agent.enabled && (_agent.updatePosition || _agent.updateRotation)))) return Block(MotionAdapterStatus.DriverBlocked);
                 if (!TryPlan(new GlobalMotionPose(snapshot), out _)) return false;
-                if (!_transport.AcknowledgeBaselineApplied(snapshot.Binding)) return Block(MotionAdapterStatus.DriverBlocked);
-                Status = MotionAdapterStatus.Ready; return true;
             }
-            if (!TryPlan(new GlobalMotionPose(snapshot), out var plan)) return false;
-            if (!WritePose(plan, role, true)) return false;
-            if (!ContextValid() || _transport.Control.Baseline.Binding != snapshot.Binding ||
-                !_transport.AcknowledgeBaselineApplied(snapshot.Binding)) return Block(MotionAdapterStatus.WaitingForControl);
-            _appliedBinding = snapshot.Binding; _hasApplied = true; Status = MotionAdapterStatus.Ready;
+            else
+            {
+                if (!TryPlan(new GlobalMotionPose(snapshot), out var plan)) return false;
+                _transport.RevokeBaselineAcknowledgement();
+                _preparingBaseline = true;
+                try
+                {
+                    foreach (var actor in _participants)
+                        if (!ParticipantAlive(actor) || !actor.CanApplyGlobalBaseline(role)) return Block(MotionAdapterStatus.WaitingForActors);
+                    if (!ContextValid() || !ReferenceEquals(frame, Frame) || _transport.Control.Baseline.Binding != snapshot.Binding) return Block(MotionAdapterStatus.WaitingForControl);
+                    if (!WritePose(plan, role, true)) return false;
+                    foreach (var actor in _participants)
+                    {
+                        if (!ParticipantAlive(actor)) throw new InvalidOperationException("A required baseline participant was destroyed.");
+                        actor.OnGlobalBaselineApplied(snapshot.Binding);
+                        if (!ContextValid() || !ReferenceEquals(frame, Frame) || _transport.Control.Baseline.Binding != snapshot.Binding)
+                            return Block(MotionAdapterStatus.WaitingForControl);
+                    }
+                    _appliedBinding = snapshot.Binding; _hasApplied = true;
+                }
+                catch (Exception e) { return FaultActor(e); }
+                finally { _preparingBaseline = false; }
+            }
+            if (!ParticipantsReady(role)) return Block(MotionAdapterStatus.WaitingForActors);
+            if (!_transport.AcknowledgeBaselineApplied(snapshot.Binding)) return Block(MotionAdapterStatus.DriverBlocked);
+            Status = MotionAdapterStatus.Ready; return true;
+        }
+
+        private bool CollectParticipants()
+        {
+            _participants.Clear(); _rootScripts.Clear(); GetComponents(_rootScripts);
+            foreach (var script in _rootScripts)
+            {
+                if (script == null) return false;
+                if (script is IGlobalMotionActorParticipant participant) _participants.Add(participant);
+            }
             return true;
+        }
+        private static bool ParticipantAlive(IGlobalMotionActorParticipant actor) => actor != null &&
+            (!(actor is UnityEngine.Object obj) || obj != null);
+        private bool ParticipantsReady(MotionPoseRole role)
+        {
+            if (_checkingParticipants || _preparingBaseline || _faulted) return false;
+            _checkingParticipants = true;
+            try
+            {
+                foreach (var actor in _participants)
+                    if (!ParticipantAlive(actor) || !actor.IsGlobalMotionReady(role)) return false;
+                return true;
+            }
+            catch (Exception e) { return FaultActor(e); }
+            finally { _checkingParticipants = false; }
+        }
+        private bool FaultActor(Exception e)
+        {
+            _faulted = true; Status = MotionAdapterStatus.Faulted;
+            if (_transport != null)
+            {
+                _transport.RevokeBaselineAcknowledgement();
+                if (_transport.IsServer && _transport.IsSpawned && _transport.NetworkManager.IsListening) _transport.StopServer();
+            }
+            Debug.LogException(e, this); return false;
         }
 
         internal void ApplyFixedPose()
@@ -154,7 +218,7 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         public bool ValidateCandidate(GlobalMotionSnapshot snapshot)
         {
-            return ContextValid() && snapshot.TryValidate(out _) && snapshot.Binding == _transport.Control.Baseline.Binding &&
+            return IsBaselineReady && snapshot.TryValidate(out _) && snapshot.Binding == _transport.Control.Baseline.Binding &&
                 TryPlan(new GlobalMotionPose(snapshot), out _, false);
         }
 
@@ -255,7 +319,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (_body != null && transform.parent != null && transform.parent.GetComponentInParent<Rigidbody>() != null) return false;
             return true;
         }
-        private bool ContextValid() => !_faulted && isActiveAndEnabled && World != null && World.IsCurrent(Frame) &&
+        private bool ContextValid() => CoordinatesRequired && !_faulted && isActiveAndEnabled && World != null && World.IsCurrent(Frame) &&
             _transport != null && _transport.IsSpawned && _transport.NetworkObjectId == _objectId &&
             _transport.NetworkManager == World.Manager && gameObject.scene.GetPhysicsScene().Equals(Frame.Physics);
         private bool ResolveRole(out MotionPoseRole role)

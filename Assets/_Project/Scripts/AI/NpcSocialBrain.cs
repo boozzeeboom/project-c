@@ -212,6 +212,7 @@ namespace ProjectC.AI
 
         public void Tick(NpcBrain brain)
         {
+            if (_brain != null && !_brain.CanSimulateInCurrentCoordinates) return;
             if (Time.unscaledTime < _nextSocialTick) return;
             _nextSocialTick = Time.unscaledTime + socialTickInterval;
             if (_brain == null || _agent == null) return;

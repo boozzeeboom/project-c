@@ -1,0 +1,48 @@
+{
+  "date": "2026-09-09",
+  "scenePath": "Assets/_Project/Scenes/BootstrapScene.unity",
+  "verdict": "Read-only identification of missing scripts in the saved scene file",
+  "sceneDirtyInEditor": true,
+  "scenePathIsSavedFile": true,
+  "monoBehaviours": 136,
+  "scriptReferences": 118,
+  "nonScriptReferences": 18,
+  "distinctScriptGuids": 84,
+  "unresolvedScriptGuids": 3,
+  "missingBehaviours": 3,
+  "missing": [
+    {
+      "behaviourFileId": "486220329",
+      "gameObjectFileId": "486220328",
+      "gameObjectName": "'[ShipKeyToast]'",
+      "scriptGuid": "7e4592bffcae97841b2e9d1893479783",
+      "scriptFileId": "11500000",
+      "resolvedAssetPath": "",
+      "guidFoundInMetaFile": ""
+    },
+    {
+      "behaviourFileId": "582163930",
+      "gameObjectFileId": "582163927",
+      "gameObjectName": "'[ShipKeyServer]'",
+      "scriptGuid": "d915eb76076361f4bad13b481fe4c1cc",
+      "scriptFileId": "11500000",
+      "resolvedAssetPath": "",
+      "guidFoundInMetaFile": ""
+    },
+    {
+      "behaviourFileId": "1948101065",
+      "gameObjectFileId": "1948101063",
+      "gameObjectName": "'[ShipOwnershipRegistry]'",
+      "scriptGuid": "75a1a6152c04c0040b2c48c6fe27c18b",
+      "scriptFileId": "11500000",
+      "resolvedAssetPath": "",
+      "guidFoundInMetaFile": ""
+    }
+  ],
+  "notes": [
+    "GameObject names do not establish a C# class. Only the script GUID identifies the missing asset.",
+    "Only MonoScript references (fileID 11500000) are considered; engine built-in object references are counted separately and are not missing scripts.",
+    "Nothing was deleted, replaced or repaired; the scene was neither loaded nor saved by this tool.",
+    "The editor holds unsaved changes for this scene, so live components may differ from this saved-file analysis."
+  ]
+}

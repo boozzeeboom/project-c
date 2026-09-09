@@ -48,7 +48,7 @@ namespace ProjectC.Core
             }
             if (_globalMotionProfile == null || !_globalMotionProfile.EnforceGlobalContracts)
             {
-                if (networkManager.NetworkConfig.ProtocolVersion != GlobalMotionNetworkContract.ProtocolVersion) return true;
+                if (!GlobalMotionNetworkContract.IsReservedProtocolVersion(networkManager.NetworkConfig.ProtocolVersion)) return true;
                 Debug.LogError("[T-FO04E] Reserved global protocol requires an enabled global profile.", this);
                 UpdateStatus("Глобальный сетевой профиль не настроен"); return false;
             }

@@ -118,12 +118,13 @@ namespace ProjectC.World.FloatingOrigin.Network
         {
             if (!CanStart(actor) || !actor.Frame.Coordinates.TryToLocal(globalPosition, out _)) return false;
             var validator = WrapRules(actor, gameRules);
-            if (!actor.Transport.ActivateWorldServer(_serverSession, authority, globalPosition, rotation, scale, validator)) return false;
+            if (!actor.Transport.ActivateWorldServer(_serverSession, authority, globalPosition, rotation, scale, validator, actor.CanPrepareControl)) return false;
             // Placement may succeed while native actor readiness is still awaiting explicit confirmation.
             if (actor.PrepareBaseline() || actor.IsBaselinePlaced) return true;
             actor.Transport.StopServer(); return false;
         }
 
+        /// <summary>Explicit parent-local pose. Baseline application installs the hierarchy on every peer; caller must not SetParent first.</summary>
         public bool StartParentStream(GlobalMotionPoseAdapter actor, GlobalMotionAuthority authority, GlobalMotionPoseAdapter parent,
             Vector3 localPosition, Quaternion localRotation, Vector3 localScale, Func<GlobalMotionSnapshot, bool> gameRules = null)
         {
@@ -131,7 +132,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 !ReferenceEquals(actor.Frame, parent.Frame)) return false;
             var validator = WrapRules(actor, gameRules);
             if (!actor.Transport.ActivateParentLocalServer(_serverSession, authority, parent.Transport,
-                localPosition, localRotation, localScale, validator)) return false;
+                localPosition, localRotation, localScale, validator, actor.CanPrepareControl)) return false;
             if (actor.PrepareBaseline() || actor.IsBaselinePlaced) return true;
             actor.Transport.StopServer(); return false;
         }

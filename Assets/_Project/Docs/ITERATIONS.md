@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO04F)
+
+**Задача:** Подключить limited custom parent/unparent placement к новым global baselines, не активируя неподготовленные игровые объекты.
+**Результат:** GlobalMotionHierarchy pure policy; server candidate preflight до InstallServerControl; parent resolve по session/object/spawn + same frame/scene + ready/no-cycle; SetParent(false) и явная pose только при новом binding до cache callbacks/ACK. World detach использует GlobalPosition, а не старый local Vector3. Same-binding drift не исправляется reparent на каждом sample.
+**Guards:** Rigidbody/joints, произвольные colliders/2D, enabled NavMeshAgent и cross-scene/frame changes блокируются. Root CC допускается при unit-scale parent с восстановлением enabled. Не переписываются velocities/HP/docking/Animator; native hierarchy/physics rollback отсутствует. Ошибка после записи → Faulted/revoke/Stop при живой сети, требуется внешний recovery. Global protocol поднят до 0xF002, F000–F0FF reserved; legacy=0 не меняется.
+**Изменения:** GlobalMotionHierarchy.cs, Editor ValidateGlobalMotionHierarchy.cs и два Unity-generated meta; GlobalMotionPoseAdapter, GlobalMotionReplicator, GlobalMotionWorld, GlobalMotionNetworkContract, NetworkManagerController; F report/validation JSON, roadmap и журнал.
+**Проверки:** после исправления CS1729 только в новом validator compile PASS (pose получается через public buffer без расширения production API). Финальный source review пройден. Реально выполнены **40 hierarchy + 48 startup + 26 actor + 32 application + 32 transport + 33 protocol + 23 foundation = 234 pure PASS / 0 FAIL**. Повторный asset guard: 58 candidates, opt-in=0/profile assets=0/loaded enabled profiles и adapters=0. Play Mode, GameObject-тесты, native physics/network и screenshots не запускались; runtime UNTESTED.
+**Границы:** сцены/префабы/профиль не изменялись, world shift выключен. NPC/crew/player gameplay parenting пока не перенаправлен; concrete spawn/bootstrap/initial placement, child lifecycle и native bridges T-FO05–08 ещё обязательны. Полный T-FO04 и jitter fix не заявляются.
+**Коммит:** один коммит кода/meta/документации, без отдельного собственного хеша. E artifacts, Temp runner и несвязанный LiberationSans fallback не изменяются/не включаются.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO04E)
 
 **Задача:** Завершить dormant startup/layout/spawn/parent contracts без активации неполной координатной миграции.

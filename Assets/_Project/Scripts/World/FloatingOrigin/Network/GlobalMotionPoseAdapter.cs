@@ -12,7 +12,8 @@ namespace ProjectC.World.FloatingOrigin.Network
 
     /// <summary>
     /// Explicitly bound Unity pose adapter. Does not register itself, disable gameplay scripts,
-    /// change origins, set parents, toggle isKinematic or replace NetworkTransform.
+    /// change origins, toggle isKinematic or replace NetworkTransform. New trusted baselines can
+    /// install an explicitly validated custom parent hierarchy; ordinary motion never reparents.
     /// Existing movement/root-motion systems must use IsReadyForSimulation in the later actor integration.
     /// </summary>
     [DisallowMultipleComponent, DefaultExecutionOrder(10000)]
@@ -35,6 +36,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         private bool _faulted;
         private readonly List<Rigidbody> _bodies = new List<Rigidbody>();
         private readonly List<Joint> _joints = new List<Joint>();
+        private readonly List<Collider> _colliders = new List<Collider>();
         public GlobalMotionWorld World { get; private set; }
         public GlobalMotionFrame Frame { get; private set; }
         public GlobalMotionReplicator Transport => _transport;
@@ -93,6 +95,29 @@ namespace ProjectC.World.FloatingOrigin.Network
             World = null; Frame = null; _hasApplied = false; Status = MotionAdapterStatus.Unbound;
         }
 
+        /// <summary>Server preflight before control publication. Normal refusal leaves the previous control intact.</summary>
+        internal bool CanPrepareControl(GlobalMotionControl candidate)
+        {
+            if (_preparingBaseline || !ContextValid() || !candidate.IsValid || !candidate.IsActive ||
+                candidate.Baseline.Binding.NetworkObjectId != _objectId || !SupportedStructure() ||
+                !GlobalMotionApplication.TryResolveRole(candidate, _transport.IsServer, _transport.NetworkManager.LocalClientId,
+                    _transport.OwnerClientId, out var role)) return false;
+            var frame = Frame;
+            _preparingBaseline = true;
+            try
+            {
+                if (!TryPlanHierarchy(new GlobalMotionPose(candidate.Baseline), out var firstPlan, out _, out var firstChange, true, false, role) ||
+                    !CanWriteBaselinePlan(firstPlan, role, firstChange)) return false;
+                foreach (var actor in _participants)
+                    if (!ParticipantAlive(actor) || !actor.CanApplyGlobalBaseline(role)) return false;
+                return ContextValid() && ReferenceEquals(frame, Frame) && SupportedStructure() &&
+                    TryPlanHierarchy(new GlobalMotionPose(candidate.Baseline), out var plan, out _, out var change, true, false, role) &&
+                    CanWriteBaselinePlan(plan, role, change);
+            }
+            catch (Exception e) { return FaultActor(e); }
+            finally { _preparingBaseline = false; }
+        }
+
         public bool PrepareBaseline()
         {
             if (_preparingBaseline) return false;
@@ -110,7 +135,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
             else
             {
-                if (!TryPlan(new GlobalMotionPose(snapshot), out var plan)) return false;
+                if (!TryPlanHierarchy(new GlobalMotionPose(snapshot), out _, out _, out _, true)) return false;
                 _transport.RevokeBaselineAcknowledgement();
                 _preparingBaseline = true;
                 try
@@ -118,7 +143,10 @@ namespace ProjectC.World.FloatingOrigin.Network
                     foreach (var actor in _participants)
                         if (!ParticipantAlive(actor) || !actor.CanApplyGlobalBaseline(role)) return Block(MotionAdapterStatus.WaitingForActors);
                     if (!ContextValid() || !ReferenceEquals(frame, Frame) || _transport.Control.Baseline.Binding != snapshot.Binding) return Block(MotionAdapterStatus.WaitingForControl);
-                    if (!WritePose(plan, role, true)) return false;
+                    // Re-plan after participant preflight: parent pose/hierarchy or native components may have changed.
+                    if (!SupportedStructure()) return Block(MotionAdapterStatus.DriverBlocked);
+                    if (!TryPlanHierarchy(new GlobalMotionPose(snapshot), out var plan, out var desiredParent, out var changeParent, true)) return false;
+                    if (!WritePose(plan, role, true, desiredParent, changeParent)) return false;
                     foreach (var actor in _participants)
                     {
                         if (!ParticipantAlive(actor)) throw new InvalidOperationException("A required baseline participant was destroyed.");
@@ -132,6 +160,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 finally { _preparingBaseline = false; }
             }
             if (!ParticipantsReady(role)) return Block(MotionAdapterStatus.WaitingForActors);
+            if (!IsBaselinePlaced || _transport.Control.Baseline.Binding != snapshot.Binding) return Block(MotionAdapterStatus.WaitingForControl);
             if (!_transport.AcknowledgeBaselineApplied(snapshot.Binding)) return Block(MotionAdapterStatus.DriverBlocked);
             Status = MotionAdapterStatus.Ready; return true;
         }
@@ -224,24 +253,54 @@ namespace ProjectC.World.FloatingOrigin.Network
                 TryPlan(new GlobalMotionPose(snapshot), out _, false);
         }
 
-        private bool TryPlan(GlobalMotionPose pose, out MotionUnityPose plan, bool reportFailure = true)
+        private bool TryPlan(GlobalMotionPose pose, out MotionUnityPose plan, bool reportFailure = true) =>
+            TryPlanHierarchy(pose, out plan, out _, out _, false, reportFailure);
+
+        private bool TryPlanHierarchy(GlobalMotionPose pose, out MotionUnityPose plan, out Transform desiredParent,
+            out bool changeParent, bool allowChange, bool reportFailure = true, MotionPoseRole candidateRole = MotionPoseRole.Unavailable)
         {
-            plan = default;
+            plan = default; desiredParent = transform.parent; changeParent = false;
             if (!ContextValid()) return PlanningFailure(MotionAdapterStatus.InvalidFrame, reportFailure);
+            var role = candidateRole;
+            if (role == MotionPoseRole.Unavailable && !ResolveRole(out role))
+                return PlanningFailure(MotionAdapterStatus.WaitingForControl, reportFailure);
             if (pose.Binding.Space == MotionCoordinateSpace.World)
             {
-                if (transform.parent != null && transform.parent.GetComponent<NetworkObject>() != null)
-                    return PlanningFailure(MotionAdapterStatus.WaitingForParent, reportFailure);
-                if (GlobalMotionApplication.TryWorldPlan(pose, Frame.Coordinates, out plan)) return true;
-                return PlanningFailure(MotionAdapterStatus.OutOfRange, reportFailure);
+                // Keep an ordinary content container, but never keep a hidden network ancestor for world data.
+                if (CurrentNetworkAncestor() != null) desiredParent = null;
+                if (!GlobalMotionApplication.TryWorldPlan(pose, Frame.Coordinates, out plan))
+                    return PlanningFailure(MotionAdapterStatus.OutOfRange, reportFailure);
             }
-            if (!TryParent(pose.Binding, out var parent)) return PlanningFailure(MotionAdapterStatus.WaitingForParent, reportFailure);
-            if (!ResolveRole(out var role) || !GlobalMotionApplication.CanUseParentTransform(role,
-                parent._body != null && parent._body.interpolation != RigidbodyInterpolation.None))
+            else
+            {
+                if (!TryResolveParent(pose.Binding, out var parent)) return PlanningFailure(MotionAdapterStatus.WaitingForParent, reportFailure);
+                desiredParent = parent.transform;
+                if (!GlobalMotionHierarchy.CanUseParentPose(role, _transport.IsServer,
+                    parent._body != null && parent._body.interpolation != RigidbodyInterpolation.None))
+                    return PlanningFailure(MotionAdapterStatus.DriverBlocked, reportFailure);
+                if (!GlobalMotionApplication.TryParentPlan(pose, Frame.Coordinates, parent.Transport.Control.Baseline.Binding,
+                    parent.transform.localToWorldMatrix, parent.transform.rotation, out plan))
+                    return PlanningFailure(MotionAdapterStatus.OutOfRange, reportFailure);
+            }
+            changeParent = transform.parent != desiredParent;
+            if (!changeParent) return true;
+            if (!allowChange) return PlanningFailure(MotionAdapterStatus.WaitingForParent, reportFailure);
+            var oldNetworkParent = CurrentNetworkAncestor();
+            if (oldNetworkParent != null && (!World.TryGetActor(oldNetworkParent.NetworkObjectId, out var previousParent) ||
+                previousParent.Transport == null || previousParent.Transport.NetworkObject != oldNetworkParent || !ReferenceEquals(previousParent.Frame, Frame)))
                 return PlanningFailure(MotionAdapterStatus.DriverBlocked, reportFailure);
-            if (GlobalMotionApplication.TryParentPlan(pose, Frame.Coordinates, parent.Transport.Control.Baseline.Binding,
-                parent.transform.localToWorldMatrix, parent.transform.rotation, out plan)) return true;
-            return PlanningFailure(MotionAdapterStatus.OutOfRange, reportFailure);
+            _colliders.Clear(); GetComponentsInChildren(true, _colliders);
+            bool unsupportedCollider = GetComponentInChildren<Collider2D>(true) != null || GetComponentInChildren<Rigidbody2D>(true) != null;
+            foreach (var collider in _colliders) if (collider != _controller) unsupportedCollider = true;
+            if (!GlobalMotionHierarchy.CanChangeHierarchy(role, CustomHierarchyConfigured, _bodies.Count != 0 || _joints.Count != 0,
+                _agent != null && _agent.enabled, unsupportedCollider)) return PlanningFailure(MotionAdapterStatus.DriverBlocked, reportFailure);
+            if (_controller != null && desiredParent != null)
+            {
+                var scale = desiredParent.lossyScale;
+                if (!GlobalMotionSnapshot.Finite(scale) || (scale - Vector3.one).sqrMagnitude > 1e-8f)
+                    return PlanningFailure(MotionAdapterStatus.DriverBlocked, reportFailure);
+            }
+            return true;
         }
 
         private bool PlanningFailure(MotionAdapterStatus status, bool reportFailure)
@@ -250,22 +309,40 @@ namespace ProjectC.World.FloatingOrigin.Network
             return false;
         }
 
-        private bool TryParent(MotionStreamBinding binding, out GlobalMotionPoseAdapter parent)
+        private bool TryResolveParent(MotionStreamBinding binding, out GlobalMotionPoseAdapter parent)
         {
             parent = null;
-            if (World == null || !World.TryGetActor(binding.ParentNetworkObjectId, out parent) || parent == this ||
-                !ReferenceEquals(parent.Frame, Frame) || transform.parent != parent.transform || !parent.IsBaselineReady) return false;
-            var p = parent.Transport.Control.Baseline.Binding;
-            return p.SessionId == binding.SessionId && p.NetworkObjectId == binding.ParentNetworkObjectId && p.SpawnGeneration == binding.ParentSpawnGeneration;
+            if (World == null || !World.TryGetActor(binding.ParentNetworkObjectId, out parent) ||
+                parent.World != World || parent.Transport == null) return false;
+            bool wouldCycle = parent == this || parent.transform.IsChildOf(transform);
+            // Do not recurse into readiness when the prospective Transform hierarchy is cyclic.
+            bool parentReady = !wouldCycle && parent.IsBaselineReady;
+            return GlobalMotionHierarchy.ParentMatches(binding, parent.Transport.Control.Baseline.Binding, parentReady,
+                ReferenceEquals(parent.Frame, Frame), parent.gameObject.scene == gameObject.scene, wouldCycle);
         }
+        private bool TryParent(MotionStreamBinding binding, out GlobalMotionPoseAdapter parent) =>
+            TryResolveParent(binding, out parent) && transform.parent == parent.transform;
+        private NetworkObject CurrentNetworkAncestor() => transform.parent != null ? transform.parent.GetComponentInParent<NetworkObject>(true) : null;
 
         private bool HierarchyReady()
         {
             if (_appliedBinding.Space == MotionCoordinateSpace.ParentLocal) return TryParent(_appliedBinding, out _);
-            return transform.parent == null || transform.parent.GetComponent<NetworkObject>() == null;
+            return CurrentNetworkAncestor() == null;
         }
 
-        private bool WritePose(MotionUnityPose plan, MotionPoseRole role, bool baseline)
+        private bool CanWriteBaselinePlan(MotionUnityPose plan, MotionPoseRole role, bool changeParent)
+        {
+            bool navWrites = _agent != null && _agent.enabled && (_agent.updatePosition || _agent.updateRotation);
+            bool matches = (CurrentPosition - plan.Position).sqrMagnitude <= 1e-10f &&
+                Quaternion.Angle(CurrentRotation, plan.Rotation) <= 0.001f && transform.localScale.Equals(plan.Scale);
+            if (!plan.IsValid || HasCompetingWriter() || !GlobalMotionApplication.CanWrite(role, true, _body != null,
+                _body == null || _body.isKinematic, navWrites, matches)) return false;
+            if ((_body != null || _controller != null) && (plan.Scale.x <= 0f || plan.Scale.y <= 0f || plan.Scale.z <= 0f)) return false;
+            if (_body != null && plan.Binding.Space == MotionCoordinateSpace.ParentLocal) return false;
+            return !changeParent || (CustomHierarchyConfigured && _body == null && (_agent == null || !_agent.enabled));
+        }
+
+        private bool WritePose(MotionUnityPose plan, MotionPoseRole role, bool baseline, Transform desiredParent = null, bool changeParent = false)
         {
             bool navWrites = _agent != null && _agent.enabled && (_agent.updatePosition || _agent.updateRotation);
             bool matches = (CurrentPosition - plan.Position).sqrMagnitude <= 1e-10f &&
@@ -274,6 +351,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                 _body == null || _body.isKinematic, navWrites, matches)) return Block(MotionAdapterStatus.DriverBlocked);
             if ((_body != null || _controller != null) && (plan.Scale.x <= 0f || plan.Scale.y <= 0f || plan.Scale.z <= 0f)) return Block(MotionAdapterStatus.DriverBlocked);
             if (_body != null && plan.Binding.Space == MotionCoordinateSpace.ParentLocal) return Block(MotionAdapterStatus.DriverBlocked);
+            if (changeParent && (!baseline || !CustomHierarchyConfigured || _body != null || (_agent != null && _agent.enabled)))
+                return Block(MotionAdapterStatus.DriverBlocked);
             if (navWrites) return true; // Already-matching authoritative baseline: do not touch a live NavMeshAgent.
             bool controllerEnabled = _controller != null && _controller.enabled;
             var interpolation = _body != null ? _body.interpolation : RigidbodyInterpolation.None;
@@ -281,6 +360,15 @@ namespace ProjectC.World.FloatingOrigin.Network
             try
             {
                 if (_controller != null && controllerEnabled) _controller.enabled = false;
+                if (changeParent)
+                {
+                    var frame = Frame;
+                    transform.SetParent(desiredParent, false);
+                    // Native NGO parenting is off; another MonoBehaviour callback can still invalidate the operation.
+                    if (transform.parent != desiredParent || !ContextValid() || !ReferenceEquals(frame, Frame) ||
+                        _transport.Control.Baseline.Binding != plan.Binding)
+                        throw new InvalidOperationException("Custom parenting invalidated the baseline transaction.");
+                }
                 if (_body != null)
                 {
                     if (baseline)
@@ -300,10 +388,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
             catch (Exception e)
             {
-                _faulted = true; Status = MotionAdapterStatus.Faulted;
-                _transport.RevokeBaselineAcknowledgement();
-                if (_transport.IsServer && _transport.IsSpawned) _transport.StopServer();
-                Debug.LogException(e, this); return false;
+                // No automatic hierarchy/physics rollback after a partial write. External recovery is required.
+                return FaultActor(e);
             }
             finally
             {
@@ -321,7 +407,10 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (_body != null && transform.parent != null && transform.parent.GetComponentInParent<Rigidbody>() != null) return false;
             return true;
         }
-        private bool ContextValid() => CoordinatesRequired && !_faulted && isActiveAndEnabled && World != null && World.IsCurrent(Frame) &&
+        private bool CustomHierarchyConfigured => _transport != null && _transport.NetworkObject != null &&
+            !_transport.NetworkObject.AutoObjectParentSync && !_transport.NetworkObject.SynchronizeTransform &&
+            GlobalMotionNetworkStartup.IsInstalled(_transport.NetworkManager);
+        private bool ContextValid() => CoordinatesRequired && CustomHierarchyConfigured && !_faulted && isActiveAndEnabled && World != null && World.IsCurrent(Frame) &&
             _transport != null && _transport.IsSpawned && _transport.NetworkObjectId == _objectId &&
             _transport.NetworkManager == World.Manager && gameObject.scene.GetPhysicsScene().Equals(Frame.Physics);
         private bool ResolveRole(out MotionPoseRole role)

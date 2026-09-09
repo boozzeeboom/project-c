@@ -88,28 +88,31 @@ namespace ProjectC.World.FloatingOrigin.Network
         public override void OnDestroy() { Unsubscribe(); base.OnDestroy(); }
 
         public bool ActivateWorldServer(GlobalMotionSession session, GlobalMotionAuthority authority,
-            GlobalPosition position, Quaternion rotation, Vector3 scale, Func<GlobalMotionSnapshot, bool> ownerPoseValidator = null)
+            GlobalPosition position, Quaternion rotation, Vector3 scale, Func<GlobalMotionSnapshot, bool> ownerPoseValidator = null,
+            Func<GlobalMotionControl, bool> baselinePreflight = null)
         {
-            // A directly network-parented actor must use the explicit parent-local contract.
-            if (transform.parent != null && transform.parent.GetComponent<NetworkObject>() != null) return false;
+            // Custom detach must be planned before publishing; the transport never changes Transform.parent.
+            bool networkParented = transform.parent != null && transform.parent.GetComponentInParent<NetworkObject>(true) != null;
+            if (networkParented && (!CustomHierarchyConfigured || baselinePreflight == null)) return false;
             return ActivateServer(session, authority, MotionCoordinateSpace.World, position, Vector3.zero,
-                rotation, scale, 0, 0, ownerPoseValidator);
+                rotation, scale, 0, 0, ownerPoseValidator, baselinePreflight);
         }
 
         public bool ActivateParentLocalServer(GlobalMotionSession session, GlobalMotionAuthority authority,
             GlobalMotionReplicator parent, Vector3 localPosition, Quaternion localRotation, Vector3 localScale,
-            Func<GlobalMotionSnapshot, bool> ownerPoseValidator = null)
+            Func<GlobalMotionSnapshot, bool> ownerPoseValidator = null, Func<GlobalMotionControl, bool> baselinePreflight = null)
         {
             if (parent == null || parent == this || !parent.IsSpawned || !parent.IsServer ||
                 parent.NetworkManager != NetworkManager || !parent.Control.HasStream || !parent.Control.IsActive ||
-                !ReferenceEquals(parent._serverSession, session) || transform.parent != parent.transform) return false;
+                !ReferenceEquals(parent._serverSession, session)) return false;
+            if (transform.parent != parent.transform && (!CustomHierarchyConfigured || !parent.CustomHierarchyConfigured || baselinePreflight == null)) return false;
             return ActivateServer(session, authority, MotionCoordinateSpace.ParentLocal, GlobalPosition.Zero, localPosition,
-                localRotation, localScale, parent.NetworkObjectId, parent.Control.Baseline.Binding.SpawnGeneration, ownerPoseValidator);
+                localRotation, localScale, parent.NetworkObjectId, parent.Control.Baseline.Binding.SpawnGeneration, ownerPoseValidator, baselinePreflight);
         }
 
         private bool ActivateServer(GlobalMotionSession session, GlobalMotionAuthority authority, MotionCoordinateSpace space,
             GlobalPosition world, Vector3 local, Quaternion rotation, Vector3 scale, ulong parentId, ulong parentLifetime,
-            Func<GlobalMotionSnapshot, bool> validator)
+            Func<GlobalMotionSnapshot, bool> validator, Func<GlobalMotionControl, bool> baselinePreflight)
         {
             if (!IsServer || !IsSpawned || !isActiveAndEnabled || session == null || HasCompetingWriter() ||
                 (authority != GlobalMotionAuthority.Server && authority != GlobalMotionAuthority.Owner)) return false;
@@ -127,6 +130,18 @@ namespace ProjectC.World.FloatingOrigin.Network
             var baseline = space == MotionCoordinateSpace.World
                 ? GlobalMotionSnapshot.CreateWorld(binding, 0, ServerNow, world, rotation, scale)
                 : GlobalMotionSnapshot.CreateParentLocal(binding, 0, ServerNow, local, rotation, scale);
+            if (baselinePreflight != null)
+            {
+                ulong revision = _serverControl.Revision;
+                ulong owner = OwnerClientId;
+                var candidate = new GlobalMotionControl { HasStream = true, IsActive = true, Revision = checked(revision + 1),
+                    Authority = authority, PublisherClientId = publisher, Baseline = baseline };
+                try { if (!baselinePreflight(candidate)) return false; }
+                catch (Exception e) { Debug.LogException(e, this); return false; }
+                if (!IsSpawned || !IsServer || !isActiveAndEnabled || HasCompetingWriter() || !CustomHierarchyConfigured ||
+                    NetworkManager == null || !NetworkManager.IsListening || _serverControl.Revision != revision || OwnerClientId != owner ||
+                    (_serverSession != null && !ReferenceEquals(_serverSession, session))) return false;
+            }
             InstallServerControl(session, validator, authority, publisher, baseline);
             return true;
         }
@@ -298,6 +313,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             _nextKeyframeTime = ServerNow + ReliableKeyframeInterval;
         }
 
+        private bool CustomHierarchyConfigured => NetworkObject != null && !NetworkObject.AutoObjectParentSync &&
+            !NetworkObject.SynchronizeTransform && GlobalMotionNetworkStartup.IsInstalled(NetworkManager);
         private double ServerNow => Math.Max(0d, NetworkManager.ServerTime.Time);
         private bool HasCompetingWriter() { var nt = GetComponent<NetworkTransform>(); return nt != null && nt.enabled; }
         private void Unsubscribe() { if (_ticks != null) _ticks.Tick -= OnNetworkTick; _ticks = null; }

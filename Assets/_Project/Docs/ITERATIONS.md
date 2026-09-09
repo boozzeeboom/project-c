@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO05C)
+
+**Задача:** Подготовить executable authoritative global player capture/merge и live guard перед B publication, не включая save/load в игре.
+**Результат:** GlobalMotionPlayerCheckpointSource читает только latest server-accepted WORLD motion, проверяет полный connected-player roster и выдаёт ephemeral snapshots по explicit trusted stable identity leases. Lease привязана к реальным NetworkClient/PlayerObject refs и session/run/spawn; native source только на World Unity thread. Новые readonly World/Replicator APIs не меняют wire, sequence или Transform. Ship/ParentLocal/unmapped/unready players блокируют весь capture, не пропускаются.
+**Evidence/liveness:** Instance-issued snapshots (weak table), bounded freshness, exact full binding/owner/identity lease/roster. Новая обычная accepted motion допустима при монотонных seq/time — сохраняется исходный свежий point-in-time. Same-sequence rewrite, teleport/authority/respawn/reconnect/expiry отвергаются. Final capture pass без participant callbacks выявляет изменения во время обхода readiness.
+**Merge/commit:** Offline записи сохраняются, active IDs обновляются по global point и trusted caller UTC timestamp; clock regression не клэмпится. Single-use prepared batches, B CAS original observation и optional synchronous publicationGuard до staging и перед publish с raw-state recheck. Pending после позднего отказа явно возвращается без авто-cleanup/retry; escaped storage failure после входа не маскируется как NotApplied. Не вызываются legacy restore/Transform teleport, реальные files или auto-save loop.
+**Файлы:** новые GlobalPlayerCaptureContracts.cs, GlobalMotionPlayerCheckpointSource.cs, GlobalPlayerCheckpointCapture.cs и Editor ValidateGlobalCheckpointCapture.cs, четыре Unity-generated meta. Точечно изменены GlobalMotionWorld, GlobalMotionReplicator и GlobalPlayerCheckpointRepository; A/B schemas и F005 protocol сохранены. C report/validation JSON, roadmap и этот журнал.
+**Проверки:** compile PASS; **58 capture/merge/guard + 502 прежних = 560 pure PASS / 0 FAIL**. Контролируемый source, pure GlobalMotionAdmission/policy и реальный B repository against in-memory storage: ownership/freshness/sequence/identity/scope guards, offline retention, non-starvation при движении, staged expiry/teleport, explicit pending quarantine, CAS/single-use/re-entrancy/thread cases. Compiled native seams только inspected, реальные NGO actors/source/disk не запускались.
+**Границы:** auth mapping до spawn и genuine G provider/restore-plan не реализованы; поиск отдельного account provider в исследованном пути inconclusive. Ship/ParentLocal/NPC/RPC, disconnect final-save, native disk/crash/network/IL2CPP и scheduling/performance acceptance открыты. Guard повторно: 58 candidates, opt-in/profile/loaded profiles/adapters/markers/executors=0. No GameObjects/Play Mode/physics/network/screenshots/builds или actual save access. Global mode/world shift выключены, jitter fixed не заявляется.
+**Коммит:** один commit source/meta/results/docs. Temp/Aura runners и несвязанный LiberationSans fallback исключены; historical A/B/I reports/JSON не переписывались.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO05B)
 
 **Задача:** Реализовать отдельный transactional global player checkpoint repository с backup/recovery, не подключая его к работающим saves и source G.

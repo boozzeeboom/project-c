@@ -31,6 +31,23 @@ namespace ProjectC.World.FloatingOrigin.Network
         private Func<GlobalMotionSnapshot, bool> _ownerPoseValidator;
 
         public GlobalMotionControl Control => _receiver.Control;
+
+        /// <summary>
+        /// Main-thread read of the latest SERVER-ACCEPTED sample, not receiver interpolation or its older reliable keyframe.
+        /// No Transform reads, publication, sequence advancement or lifecycle changes. Caller validates world/frame/actor readiness.
+        /// </summary>
+        public bool TryReadServerAcceptedMotion(out GlobalMotionSnapshot snapshot, out GlobalMotionAuthority authority, out ulong publisherClientId)
+        {
+            snapshot = default; authority = default; publisherClientId = 0;
+            if (!IsServer || !IsSpawned || !isActiveAndEnabled || NetworkManager == null || !NetworkManager.IsListening || NetworkManager.ShutdownInProgress ||
+                !_baselineApplied || !CustomHierarchyConfigured || HasCompetingWriter() || _serverSession == null || !_serverControl.HasStream || !_serverControl.IsActive ||
+                !_serverControl.Baseline.TryValidate(out _) || _serverControl.Baseline.Binding.SessionId != _serverSession.SessionId ||
+                _serverControl.Baseline.Binding.NetworkObjectId != NetworkObjectId || !Control.IsActive || Control.Baseline.Binding != _serverControl.Baseline.Binding) return false;
+            if (_serverControl.Authority == GlobalMotionAuthority.Owner)
+            { if (_serverControl.PublisherClientId != OwnerClientId) return false; }
+            else if (_serverControl.Authority != GlobalMotionAuthority.Server || _serverControl.PublisherClientId != Unity.Netcode.NetworkManager.ServerClientId) return false;
+            snapshot = _serverControl.Baseline; authority = _serverControl.Authority; publisherClientId = _serverControl.PublisherClientId; return true;
+        }
         public MotionAdmissionReject LastAdmissionRejection { get; private set; }
         public bool CanPublish
         {

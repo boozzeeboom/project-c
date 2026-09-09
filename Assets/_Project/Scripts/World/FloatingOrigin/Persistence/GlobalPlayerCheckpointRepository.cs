@@ -58,12 +58,13 @@ namespace ProjectC.World.FloatingOrigin.Persistence
                 try { using (_storage.AcquireLease()) return Observe(ReadState()); }
                 catch (Exception e) { return Unavailable("inspect:" + e.GetType().Name); }
         }
-        public CheckpointTransactionResult TryCommit(CheckpointStoreObservation expected, IReadOnlyList<GlobalPlayerPositionRecord> allPlayers, bool authorizePlayerRemovals = false)
-            => Write(expected, allPlayers, false, authorizePlayerRemovals);
+        /// <summary>Optional synchronous read-only game-state guard, checked under the lease before staging and before publication.</summary>
+        public CheckpointTransactionResult TryCommit(CheckpointStoreObservation expected, IReadOnlyList<GlobalPlayerPositionRecord> allPlayers, bool authorizePlayerRemovals = false, Func<bool> publicationGuard = null)
+            => Write(expected, allPlayers, false, authorizePlayerRemovals, publicationGuard);
         public CheckpointTransactionResult TryRecoverBackup(CheckpointStoreObservation expected)
-            => Write(expected, null, true, false);
+            => Write(expected, null, true, false, null);
 
-        private CheckpointTransactionResult Write(CheckpointStoreObservation expected, IReadOnlyList<GlobalPlayerPositionRecord> players, bool recovery, bool allowRemovals)
+        private CheckpointTransactionResult Write(CheckpointStoreObservation expected, IReadOnlyList<GlobalPlayerPositionRecord> players, bool recovery, bool allowRemovals, Func<bool> publicationGuard)
         {
             if (!Owned(expected)) return Result(CheckpointTransactionStatus.Conflict, null, "observation_not_owned_by_this_repository");
             lock (_gate)
@@ -89,6 +90,14 @@ namespace ProjectC.World.FloatingOrigin.Persistence
                         catch (Exception e) { return Result(CheckpointTransactionStatus.NotApplied, before, "invalid_snapshot_request:" + e.Message); }
                         if (!GlobalPlayerCheckpointSnapshotCodec.TryEncode(candidate, out var bytes, out var encodeError))
                             return Result(CheckpointTransactionStatus.NotApplied, before, encodeError);
+                        if (publicationGuard != null)
+                        {
+                            bool allowed = false; string guardError = null;
+                            try { allowed = publicationGuard(); } catch (Exception e) { guardError = e.GetType().Name; }
+                            var guarded = ReadState();
+                            if (guarded.Fingerprint != before.Fingerprint) return Result(CheckpointTransactionStatus.Conflict, guarded, "store_changed_during_publication_guard");
+                            if (!allowed) return Result(CheckpointTransactionStatus.NotApplied, before, "publication_guard_refused_before_staging:" + guardError);
+                        }
                         string quarantine = recovery && before.Primary != null ? Guid.NewGuid().ToString("N") : null;
                         Exception operationError = null;
                         try
@@ -97,6 +106,13 @@ namespace ProjectC.World.FloatingOrigin.Persistence
                             var staged = ReadState();
                             if (!CheckpointBytes.Equal(staged.Primary, before.Primary) || !CheckpointBytes.Equal(staged.Backup, before.Backup) || !CheckpointBytes.Equal(staged.Pending, bytes))
                                 throw new IOException("State or staged bytes changed before publication.");
+                            if (publicationGuard != null)
+                            {
+                                if (!publicationGuard()) throw new InvalidOperationException("Publication guard refused after staging.");
+                                var guarded = ReadState();
+                                if (!CheckpointBytes.Equal(guarded.Primary, before.Primary) || !CheckpointBytes.Equal(guarded.Backup, before.Backup) || !CheckpointBytes.Equal(guarded.Pending, bytes))
+                                    throw new IOException("Store changed during final publication guard.");
+                            }
                             _storage.PublishPending(before.Primary != null, quarantine);
                         }
                         catch (Exception e) { operationError = e; }

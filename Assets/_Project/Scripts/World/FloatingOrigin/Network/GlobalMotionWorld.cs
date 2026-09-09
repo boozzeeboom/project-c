@@ -27,6 +27,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         private GlobalMotionSession _serverSession;
         private ulong _run;
         private bool _running;
+        private int _mainThreadId;
         private readonly Dictionary<int, GlobalMotionFrame> _frames = new Dictionary<int, GlobalMotionFrame>();
         private readonly Dictionary<ulong, GlobalMotionPoseAdapter> _actors = new Dictionary<ulong, GlobalMotionPoseAdapter>();
         private readonly List<GlobalMotionPoseAdapter> _ordered = new List<GlobalMotionPoseAdapter>();
@@ -34,9 +35,21 @@ namespace ProjectC.World.FloatingOrigin.Network
         public bool IsRunning => isActiveAndEnabled && _running && _manager != null && _manager.IsListening;
         public ulong RunGeneration => _run;
         public int RegisteredActorCount => _actors.Count;
+        public bool IsOnWorldThread => _mainThreadId != 0 && System.Threading.Thread.CurrentThread.ManagedThreadId == _mainThreadId;
+
+        /// <summary>Read-only checkpoint scope. Never exposes the issuer or admits off-thread Unity access.</summary>
+        public bool TryGetServerCheckpointScope(out ulong sessionId, out ulong runGeneration)
+        {
+            sessionId = 0; runGeneration = 0;
+            if (!IsOnWorldThread ||
+                !IsRunning || _manager != NetworkManager.Singleton || !_manager.IsServer || _manager.ShutdownInProgress ||
+                _serverSession == null || !GlobalMotionNetworkStartup.IsInstalled(_manager)) return false;
+            sessionId = _serverSession.SessionId; runGeneration = _run; return true;
+        }
 
         private void OnEnable()
         {
+            _mainThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
             if (_manager == null)
             {
                 _manager = GetComponent<NetworkManager>();

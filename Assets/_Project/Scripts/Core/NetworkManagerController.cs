@@ -8,6 +8,7 @@ using ProjectC.Player;
 using ProjectC.Stats;
 using ProjectC.Equipment;
 using ProjectC.Skills;
+using ProjectC.World.FloatingOrigin.Network;
 using ProjectC.Skills.UI;  // T-INP-09: SkillTreeWindow
 
 namespace ProjectC.Core
@@ -28,6 +29,44 @@ namespace ProjectC.Core
         [SerializeField] private int maxReconnectAttempts = 5;
 
         private Unity.Netcode.NetworkManager networkManager;
+
+        [Header("Global motion migration (leave unassigned in the legacy game)")]
+        [SerializeField] private GlobalMotionNetworkProfile _globalMotionProfile;
+        [SerializeField] private MonoBehaviour _globalSpawnBootstrap;
+        private GlobalMotionNetworkStartup _globalMotionStartup;
+
+        private bool PrepareGlobalMotionStart(GlobalMotionStartRole role)
+        {
+            if (_globalMotionStartup != null && !_globalMotionStartup.IsDisposed)
+            {
+                if (networkManager.IsListening || networkManager.ShutdownInProgress)
+                {
+                    UpdateStatus("Дождитесь полного завершения сетевой сессии");
+                    return false;
+                }
+                _globalMotionStartup.CancelBeforeStart();
+            }
+            if (_globalMotionProfile == null || !_globalMotionProfile.EnforceGlobalContracts)
+            {
+                if (networkManager.NetworkConfig.ProtocolVersion != GlobalMotionNetworkContract.ProtocolVersion) return true;
+                Debug.LogError("[T-FO04E] Reserved global protocol requires an enabled global profile.", this);
+                UpdateStatus("Глобальный сетевой профиль не настроен"); return false;
+            }
+            if (GlobalMotionNetworkStartup.TryPrepare(networkManager, _globalMotionProfile, _globalSpawnBootstrap,
+                role, out _globalMotionStartup, out var error)) return true;
+            Debug.LogError("[T-FO04E] Network startup blocked: " + error, this);
+            UpdateStatus("Сетевой контракт не готов: " + error); return false;
+        }
+        private bool StartWithGlobalCleanup(Func<bool> start)
+        {
+            try
+            {
+                bool started = start();
+                if (!started) _globalMotionStartup?.CancelBeforeStart();
+                return started;
+            }
+            catch { _globalMotionStartup?.CancelBeforeStart(); throw; }
+        }
 
         // Состояние reconnect
         private string _lastServerIp = "127.0.0.1";
@@ -974,13 +1013,15 @@ namespace ProjectC.Core
                 networkManager.Shutdown();
             }
 
+            if (!PrepareGlobalMotionStart(GlobalMotionStartRole.Host)) return;
+
             // Reset persistence BEFORE NGO spawns the new NetworkPlayer. Otherwise
             // the player can consume DataLoaded/RestoreCompleted from the previous host session.
             ProjectC.Core.ShipPosition.ShipPositionServer.Instance?.PrepareForServerStart();
 
             // Start host - NGO handles NetworkConfig internally
             Debug.Log("[NMC] Calling StartHost()...");
-            networkManager.StartHost();
+            StartWithGlobalCleanup(networkManager.StartHost);
             Debug.Log($"[NMC] StartHost() completed. IsHost={networkManager.IsHost}, IsServer={networkManager.IsServer}");
         }
 
@@ -1023,12 +1064,14 @@ namespace ProjectC.Core
                 networkManager.Shutdown();
             }
 
+            if (!PrepareGlobalMotionStart(GlobalMotionStartRole.Server)) return;
+
             // Reset persistence BEFORE NGO starts the new server session.
             ProjectC.Core.ShipPosition.ShipPositionServer.Instance?.PrepareForServerStart();
 
             // Start server - NGO handles NetworkConfig internally
             Debug.Log("[NMC] Calling StartServer()...");
-            networkManager.StartServer();
+            StartWithGlobalCleanup(networkManager.StartServer);
             Debug.Log($"[NMC] StartServer() completed. IsServer={networkManager.IsServer}");
             UpdateStatus($"Сервер запущен на порту {serverPort}");
         }
@@ -1072,12 +1115,13 @@ namespace ProjectC.Core
             transport.SetConnectionData(targetIp, targetPort);
             Debug.Log($"[NMC] Client transport configured: {targetIp}:{targetPort}");
 
+            if (!PrepareGlobalMotionStart(GlobalMotionStartRole.Client)) yield break;
             UpdateStatus($"Подключение к {targetIp}:{targetPort}...");
 
             try
             {
                 Debug.Log("[NMC] Starting client...");
-                networkManager.StartClient();
+                StartWithGlobalCleanup(networkManager.StartClient);
                 Debug.Log($"[NMC] StartClient() completed. IsClient={networkManager.IsClient}, IsListening={networkManager.IsListening}");
             }
             catch (Exception ex)

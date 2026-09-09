@@ -53,6 +53,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             _transport = GetComponent<GlobalMotionReplicator>();
             if (_transport == null || !_transport.IsSpawned || _transport.NetworkManager != world.Manager ||
                 _transport.NetworkObject == null || _transport.NetworkObject.gameObject != gameObject || HasCompetingWriter() ||
+                _transport.NetworkObject.SynchronizeTransform || _transport.NetworkObject.AutoObjectParentSync ||
+                !GlobalMotionNetworkStartup.IsInstalled(world.Manager) ||
                 !gameObject.scene.GetPhysicsScene().Equals(frame.Physics)) return false;
             _body = GetComponent<Rigidbody>(); _controller = GetComponent<CharacterController>(); _agent = GetComponent<NavMeshAgent>();
             if (!SupportedStructure() || !CollectParticipants()) return false;

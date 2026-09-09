@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 using ProjectC.World.Scene;
+using ProjectC.World.FloatingOrigin.Network;
 
 namespace ProjectC.World.Scene
 {
@@ -112,6 +113,7 @@ namespace ProjectC.World.Scene
         private void SpawnInAllLoadedScenes()
         {
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
+            if (GlobalMotionNetworkStartup.IsInstalled(NetworkManager.Singleton)) return; // Explicit global bootstrap owns placement/spawn.
 
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -165,6 +167,7 @@ namespace ProjectC.World.Scene
 
         private void SpawnInScene(SceneID sceneId)
         {
+            if (GlobalMotionNetworkStartup.IsInstalled(NetworkManager.Singleton)) return;
             var scene = SceneManager.GetSceneByName($"WorldScene_{sceneId.GridX}_{sceneId.GridZ}");
             if (!scene.isLoaded)
             {

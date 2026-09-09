@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO04E)
+
+**Задача:** Завершить dormant startup/layout/spawn/parent contracts без активации неполной координатной миграции.
+**Результат:** Канонический SHA256 prefab catalog с выбранным PlayerPrefab и порядком NB, strict 72-byte hello; opt-in profile class (asset не создан), read-only metadata preflight, per-manager approval gate и IGlobalMotionSpawnBootstrap. Startup не перезаписывает native hash/config поля, чужой callback или непустой payload. Approval не создаёт legacy player автоматически; concrete global placement/spawn/parenting ещё не реализованы.
+**Guards:** NetworkManagerController проверяет контракт до всех трёх Start; adapter Bind требует startup gate и отключённые native spawn/parent flags; global player не добавляет combat NB поздно; legacy ScenePlacedObjectSpawner уступает активной global session provider. При unassigned/disabled profile сохраняется legacy ветка. ValidateNetworkStart — read-only контракт уже подготовленного мира, не native freeze/loader.
+**Изменения:** четыре новых runtime source GlobalMotionNetworkContract/Profile/PrefabInspector/NetworkStartup; два новых Editor source ValidateGlobalMotionNetworkContracts и AuditGlobalMotionPrefabContracts; шесть Unity-generated meta; четыре существующих source (NetworkManagerController, NetworkPlayer, GlobalMotionPoseAdapter, ScenePlacedObjectSpawner); `04E_NETWORK_STARTUP_CONTRACTS.md`, два generated JSON, roadmap и этот журнал.
+**Проверки:** compile PASS; реально выполнены **48 startup + 26 actor + 32 application + 32 transport + 33 protocol + 23 foundation = 194 pure PASS / 0 FAIL**. Audit: один prefab list, 58 candidate prefabs, opt-in candidates=0, profile assets=0, loaded enabled profiles/adapters=0. Проверки не создавали тестовых GameObject и не выполняли Play Mode/physics/network/screenshots. Live callbacks, runtime/gameplay и performance UNTESTED.
+**Границы:** текущие scenes/prefabs не редактировались, world shift выключен; scene digest — заявленный будущий manifest, не доказанная полнота сцен. Concrete spawn/parent/native bridges и T-FO05–08 ещё обязательны. T-FO04 в целом не завершён; jitter fixed не заявляется.
+**Коммит:** один коммит кода, meta, audit и документации; временный Temp runner и несвязанный LiberationSans fallback не включать. Собственный хеш отдельным коммитом не фиксируется.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO04D)
 
 **Задача:** Подключить dormant coordinate readiness/cache hooks к игровым контроллерам, не активируя неполную миграцию.

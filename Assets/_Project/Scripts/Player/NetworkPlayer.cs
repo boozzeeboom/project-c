@@ -495,6 +495,11 @@ namespace ProjectC.Player
         private void RegisterWithCombatServer()
         {
             if (!IsServer) return;
+            if (UsesGlobalCoordinates && (GetComponent<PlayerAttacker>() == null || GetComponent<PlayerTarget>() == null))
+            {
+                Debug.LogError("[T-FO04E] Global player requires PlayerAttacker and PlayerTarget baked into both peer prefabs; runtime NetworkBehaviour addition is blocked.", this);
+                return;
+            }
 
             // 1. ALWAYS add components first (pull-up будет ждать OnNetworkSpawn компонентов).
             //    GetComponent → AddComponent — идемпотентно.

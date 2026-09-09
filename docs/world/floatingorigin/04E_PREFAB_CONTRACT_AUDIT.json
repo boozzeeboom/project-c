@@ -1,0 +1,870 @@
+{
+    "date": "2026-09-09",
+    "scope": "Candidate prefab union from NetworkPrefabsList assets under Assets, explicit NetworkPlayer and persistent references in loaded NetworkManagers. Spatial-role preflight is hypothetical, not an automatic classification. Loaded-scene opt-in counts do not prove unloaded-scene coverage.",
+    "prefabListAssets": 1,
+    "candidatePrefabs": 58,
+    "optInCandidates": 0,
+    "profileAssets": 0,
+    "loadedControllersWithGlobalProfile": 0,
+    "loadedOptInAdapters": 0,
+    "entries": [
+        {
+            "path": "Assets/_Project/Prefabs/AI/Npc_Goblin 2.prefab",
+            "hash": 367998008,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/AI/Npc_Goblin.prefab",
+            "hash": 1158540882,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/AI/Npc_peacfull_market_zone.prefab",
+            "hash": 2631140274,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NEWCHESTPREFAB.prefab",
+            "hash": 3689767629,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync",
+            "behaviourCount": 1,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.World.Chest.NetworkChestContainer|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/albatros_Captain.prefab",
+            "hash": 1711107420,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/bereg_Captain.prefab",
+            "hash": 2106787251,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/citadel_Captain.prefab",
+            "hash": 2236782212,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/gigant_Captain.prefab",
+            "hash": 740719245,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/letuchiy_Captain.prefab",
+            "hash": 1029213120,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/lorein_Captain.prefab",
+            "hash": 776316408,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/mastodont_Captain.prefab",
+            "hash": 1653186043,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/npc_reference_ship_Captain.prefab",
+            "hash": 1949152336,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/olimp_Captain.prefab",
+            "hash": 3721203597,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/peshchera_Captain.prefab",
+            "hash": 3953811701,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/reka_Captain.prefab",
+            "hash": 3304849273,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/shmel_Captain.prefab",
+            "hash": 3862541461,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/silfida_Captain.prefab",
+            "hash": 1018890598,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/skat_Captain.prefab",
+            "hash": 127944819,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/strannik_Captain.prefab",
+            "hash": 1092219698,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/torrens_Captain.prefab",
+            "hash": 127779059,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/ugolshchik_Captain.prefab",
+            "hash": 2729079007,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/vavilon_Captain.prefab",
+            "hash": 1026872563,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/vetrovorot_Captain.prefab",
+            "hash": 2569981586,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Captains/zhuk_Captain.prefab",
+            "hash": 728561809,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/Ships/Gorgona_Pilot.prefab",
+            "hash": 123739435,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC/[Mira] - DON`T DELETE DEFOULT.prefab",
+            "hash": 3922810461,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC_Ship_HeavyII_03.prefab",
+            "hash": 3370466519,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, SpatialContent",
+            "behaviourCount": 3,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NPC_ZONES/Npc_peacfull_market_zone Variant.prefab",
+            "hash": 112631674,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 4,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Combat.NpcAttacker|1",
+                "r|Assembly-CSharp:ProjectC.Combat.NpcTarget|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcBrain|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab",
+            "hash": 1492151759,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, SpatialContent, InactiveBehaviourObject",
+            "behaviourCount": 1,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.World.Chest.NetworkChestContainer|1"
+            ],
+            "spatialPreflightIssue": "inactive_network_behaviour_object"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+            "hash": 186599647,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent, Player",
+            "behaviourCount": 3,
+            "orderedBehaviours": [
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Player.NetworkPlayer|1",
+                "r|Assembly-CSharp:ProjectC.Player.PlayerRespawnTracker|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/PickupItem_Test.prefab",
+            "hash": 2635125627,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, SpatialContent",
+            "behaviourCount": 0,
+            "orderedBehaviours": [],
+            "spatialPreflightIssue": "invalid_behaviour_count"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/PlayerSpawner.prefab",
+            "hash": 3294520962,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, SpatialContent, Player",
+            "behaviourCount": 1,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.NetworkPlayer|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/ResourceNode_Default.prefab",
+            "hash": 3826684259,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, SpatialContent",
+            "behaviourCount": 2,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.ResourceNode.ResourceNode|1",
+                "r|Assembly-CSharp:ProjectC.MetaRequirement.MetaRequirement|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/SPAWN_TEST.prefab",
+            "hash": 2387852292,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, SpatialContent, InactiveBehaviourObject",
+            "behaviourCount": 1,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|1"
+            ],
+            "spatialPreflightIssue": "inactive_network_behaviour_object"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/DONT-DELETE-NPC REFERENCE SHIP.prefab",
+            "hash": 408340042,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 9,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Ship_Light_root (копия с компьютера DESKTOP-K00O7HK).prefab",
+            "hash": 1359040424,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 6,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Ship_Light_root_fbx_test.prefab",
+            "hash": 3849520571,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 6,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Альбатрос.prefab",
+            "hash": 2675069416,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Берег.prefab",
+            "hash": 364781085,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Вавилон.prefab",
+            "hash": 564068132,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Ветроворот.prefab",
+            "hash": 1187984134,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Гигант.prefab",
+            "hash": 1334684183,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Горгона.prefab",
+            "hash": 2632469702,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Жук.prefab",
+            "hash": 2805379807,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Летучий.prefab",
+            "hash": 960756635,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Лорейн.prefab",
+            "hash": 2709529494,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Мастодонт.prefab",
+            "hash": 16123404,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Олимп.prefab",
+            "hash": 889697702,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Пещера.prefab",
+            "hash": 1754185835,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Река.prefab",
+            "hash": 3600934654,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Сильфида.prefab",
+            "hash": 2721880555,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Скат.prefab",
+            "hash": 3773739218,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Странник.prefab",
+            "hash": 2540130139,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Торренс.prefab",
+            "hash": 1843051452,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Угольщик.prefab",
+            "hash": 2271310375,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Цитадель.prefab",
+            "hash": 792698817,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/Ships/Шмель.prefab",
+            "hash": 3352378734,
+            "features": "RootNetworkObject, StockTransformSync, StockParentSync, EnabledNetworkTransform, SpatialContent",
+            "behaviourCount": 10,
+            "orderedBehaviours": [
+                "r|Assembly-CSharp:ProjectC.Player.ShipController|1",
+                "r|Unity.Netcode.Runtime:Unity.Netcode.Components.NetworkTransform|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Combat.ShipHull|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleVisualApplier|1",
+                "r|Assembly-CSharp:ProjectC.Ship.Key.ShipOwnershipRequirement|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Stations.NpcShipController|1",
+                "r|Assembly-CSharp:ProjectC.AI.NpcSpawner|0",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipDeckNav|1",
+                "r|Assembly-CSharp:ProjectC.Ship.ShipModuleServer|1",
+                "r|Assembly-CSharp:ProjectC.PeacefulShip.Crew.ShipCrewSpawner|1"
+            ],
+            "spatialPreflightIssue": "missing_global_motion_components_or_optin"
+        },
+        {
+            "path": "Assets/_Project/Prefabs/TestPlayer.prefab",
+            "hash": 2163092052,
+            "features": "RootNetworkObject, StockTransformSync, SpatialContent",
+            "behaviourCount": 0,
+            "orderedBehaviours": [],
+            "spatialPreflightIssue": "invalid_behaviour_count"
+        }
+    ],
+    "warnings": []
+}

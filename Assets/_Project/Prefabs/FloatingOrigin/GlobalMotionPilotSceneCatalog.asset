@@ -1,0 +1,3333 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 968676dea83cea84584e7d6ebbbb1ab6, type: 3}
+  m_Name: GlobalMotionPilotSceneCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalMotionSceneCatalog
+  _data:
+    schemaVersion: 1
+    expectedSceneGuids:
+    - 336a190646b19bc46b22dd4e78f99800
+    - 837a3910185f2b9478ce71df025ccc7c
+    scenes:
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      assetPath: Assets/_Project/Scenes/BootstrapScene.unity
+      dependencyHash: eaafee82d910f50f16b064877bb0ba96
+      inspectedComplete: 1
+      saved: 1
+      observations:
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:100000:1757335980
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 5d087e0441d58155bd964a3efa9c1763955c87337d5a510cd329bf235e0469de
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1010490802:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: ae3283a08d8a6d135f12eafeee6525aadd0229d6ae26d1680c32c7da467a979d
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1044316355:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 8a427473f83eaaa3d2411f601d5d537e2793249499d89b3175f04c74ea5f79a7
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1052858226:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 8c1d5c92051ef9c8481e37e9ac541c47aea19aca38bba9b1401c941e56509ea5
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1114552034:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 09eaab52afa9929b1fedf0d8caf258979a587e8c889a165a80b8a4d861fbbeb4
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1149404328:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: f1eee37aea06f41916cd17e737e733f47c9cfd8d1affef2eda6151664c60b74c
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1151906017:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 2d2139b4eb1e604d9cf817fa65ea52a24b055dadd51a5dd6f43307d60eaf9ed5
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1181311400:0
+        parentSourceId: 336a190646b19bc46b22dd4e78f99800:502945014:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: bce71b5faadea6fafcf81e42984cdfdf2cd353627bc733438194c7b0c43b41b2
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:121334975:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 071cd03c7c0551fcba85c03d7dcc33a7e5ee75d3bd0300c8279bfb0c37391214
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:124043118:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: fe0312858faeca64e29057a8e774de22bb05de811b310b1085464a6e1c30f335
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1280621414:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: ba4e35328c443c46e6f37d552aae776ad140dfd59c9f43e1bb7daa573570c29e
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1286596461:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 6013cdce54eba69a1935754696cf345b7c2279e0e5e76dee909f50a65eb33b85
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:133441436:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 15388b28ccfc7fe6bb48a7f4db262aef0d89ea1cfaa0493b4a10abd3076989bd
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1341219859:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 27727a12d9ba09e870ddeffd8dd168470276f1811c6f181c1820a6c32a089419
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1354489780:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: f26f4b6b83e9fe8d72f3766d036290ec3b8172ad2971404b7e2d7290bf5df898
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1390457671:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 9d769746c6f61c0198038450f24a8781f6a462a7050984ed4882a5931a528634
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1391169739:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: f61b34e4767ac15553da8854462c7a9d59927b15db2f63841b41ab52883daafa
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1422682203:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 178e0e512c5f0f20ec5b384af539689c921ab23430d39514be7ff97cae6017cc
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:142544340:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 94b29fe5d33db6696fcadc734241f4704320f000d5c1480bb75cb88af83665b0
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1441005091:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 05af99945aa585c1a69a35493bf72d85bf7db7d8718dc144fd8b5cb001ed4f6d
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1471737520:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 303d4913f390237fded6c03abb2eb9de94072f7fb867855f21c2e1751eb304a0
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:154447836:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: ffdcba5ccef4cb5006f29567796643798bab67c635bbd78aa3ae35f90b2405aa
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1567705303:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: c69b27ac9b319d473725be9839aa7bb7b783eabc3034bb17d65598c6ef9ab641
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1614026675:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: a2f6d8725a52d4f6deff8465acdf33b5eb602a14514b82abad3ec6352bba4622
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1622157771:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 58a2cae411d2736aeb2e49398119ec273726f87a843c779e7781be2f3ac9dbed
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1633574711:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 45259104da1980968d91961752822b3fe59c2fcdc6e251cf70ceabb755aa0b40
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:168637385:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 028ad342955b91bd74265dc6b4fedecb096348597a4e582ddaf78d4da8a37263
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:180883749:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: a2e371f4ded97022d527c95978e42c719c082386d9b08943186f05c31e173bc5
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1891644269:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: bc6b0bd66b3bfa34f4d6d50feabedb3d86657eaca13ec34b0319cfa710ef1576
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:1914598512:0
+        parentSourceId: 336a190646b19bc46b22dd4e78f99800:267643486:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: a9fd0c0144c7268c7433f855e1625cec6f010218bc09adb48744462242ea3477
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:2005785160:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: cd9223850c117511ad8392237a9260ad227cc2b402ec9094668c59f318f1cfc4
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:2015383511:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 6648c8307ec205c58e21a0b83ac588ba3d288c0f2804899edd3768b883b58287
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:2047115830:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 59f3cd667bcc48ba5c98eefe5bd16efe142406d888a3f02dcd2bd050f44e42f2
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:2068372239:0
+        parentSourceId: 336a190646b19bc46b22dd4e78f99800:639769239:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: fa4829bcc8c4fc9d68f2a0613d254c124ca344d4db58eb19af53a0eb2b39bb42
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:2074923228:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: aece1006dd322b0cf40c44579ef5b36d162f72195593e2a07e87705d9e95e9d5
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:2129841567:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 48900275f328c9adbba1255b3e10c31db47afa29f989d5d38ca0f7d85b07855f
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:258728291:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: ba4899b829e331865443d7927e8e154e09c0fb98f4b26fea4556a66dfa14aefa
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:267643486:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 633b2126f80ad69ff1c034b57f23eb3390bce7eb57fbda6e96bbeafab9f1c303
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:299327984:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 889d16f96250150a20d7937a09fad32a1a0c5320283cd0c1fcbc4cc103165198
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:302907655:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: c3375c09260d19e31d069cff1129a1153dd900b917b56fcef832dfabd86941c8
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:323665103:0
+        parentSourceId: 336a190646b19bc46b22dd4e78f99800:1633574711:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: e59a3e3ec63718945c411254617aaa57fceea6e7e637a166af22f86ad150b3b5
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:406607961:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 30e0f378f730340032108d935a8afea1c38fe0ce5e7c755443d1092929de3a0e
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:428382608:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 66a6f85d569f44283f5d35c5be1bf337a9363d4d80637d84669e360b5fdf3d51
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:462870027:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 2c74f5853336f5a3d2d604dae825990c45ef36b560a7055e15806ab19551677c
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:467779776:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: dc6ed85490aedd2b5fab63bf0b9054cf7fec7198544446f56926346dd6f25d06
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:502236113:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: ab410b7187ba428cdbcf73c29db7bef29443852528f08214e4e28a3aa0f12e89
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:502945014:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: ee4b5f86f28a0ca32a2551b311082c34c6f223fb9dfd824576cf8d1edf103b60
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:504732896:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 381a23cbcc758e5fb76fac7bfce48a4c969fb052593b9db22794365617b8871f
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:56021026:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 4464647304037a8ae79beb2da143ca060679bb8c0a83c09f1db78ddb94aa79a2
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:582163927:0
+        parentSourceId: 336a190646b19bc46b22dd4e78f99800:1633574711:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 3c91edd07c429dbe13e9648858b5f92b5f059a98844f9e8a2cf8bf3c900a9b97
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:639769239:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: f3585ed6f2115e2432fffaf0a3d001fee642a68853e988665e483103c826a95c
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:650110126:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: b49443f8084493f701cfc770328b7930f4c5a791d43498e2160ca51fca742489
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:690069688:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 252d04276eb7ba961c3ced30924cc1c26590f007936bf15190b2dbeddd34f7bf
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:696825990:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: b463de0b8c5887b6f55884f34366c8d41ab0f39a5b7a79780ddb9dec53979625
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:785754308:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 67945d43688bad89a64b6c90fd6401aa900671b07f20b8a7b172c5e2207edead
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:819670517:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 9b26084e855bcc16b454675ab9e7b1f3944df90d217965fb5c5b40c0fa21e7a1
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:880940880:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 39eb2540ed048c0efcb46435603c1191908a3a7e7aa98264e4a276fd2283cf4a
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:909089444:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 0d2430d93e4372bfd0df0e453367de86b5d1189db92492ee3e3e08d7b28bfa85
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:919820107:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: eb6ecacc85612a668cdb1f01a750b9d15a50949925982e019a3fa47dc190c5e9
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:922958209:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 98b9928a426ed6a37637d4fa10694386a99bbbe3b023360d97d366202d852e61
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:979231201:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 2577d86a4de1073611ce7031cd7ddee453eef6f90621ccd1817f5167ed964e7f
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      assetPath: Assets/_Project/Scenes/World/WorldScene_0_0.unity
+      dependencyHash: 6c398b072e1a6faa501a9565f8c1479b
+      inspectedComplete: 1
+      saved: 1
+      observations:
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1052965413:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: c073572f5a1c7266c4d334ac93692847e1f3fe15e68ead8f44f66d5dedaabd13
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1171079311907173941:1418405993
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: f8452b9971ffc12ded5027e1356a6f9b0d29e87a841af55ea25a185cbd25ac43
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1177720397:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 6ec58ef8e8de217aca79383c8e451541704e65d3051a31caac87b75d3b415063
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1266341961:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 86131a3326773858def09fe866d5d4c9221b6d23e032bb99ed024e75be12c419
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:1509794190
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: b06013f5742bfb882735e0562e96ac0e1fd886d8380e2f26c3eedf89e543740b
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:1945707758
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 951b818680a48d188638c979f7eae22ea26a8ecaaff41a0ee05339ecfbd41161
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:2060387816
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 4e766d6721fd78dd22c0445f552cb7b340ac133c026b5bbf72ae32945a5b89f8
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1369468113:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 55555fca592db6a72d0e1a55dbef85a240c9396156204381be3ffd888785805c
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 4105fb3bdf85ea92e7885168d37684038b3d36fc4285e2ed599d4903d3aaae43
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1453572262:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 3426780385b0740611a68bd99ae212d36135a234b992cafc492550a897f23b78
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1490161952:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 6eaaa9020cfb63e4dac84e5e5cc9735ed1d1df133a35997f4032929c9535f74c
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1505408850:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: efc0b41e78632c5eab15bdbb224ce73cadb8bd207e05f94c216376016580d6b7
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1526913969:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 5859af4e10552b79858813fc5ec44f591a0093f3fb66493d853b3f2a45d9ce06
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1570784353:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: da2c56f5e127211255b93b694b7e6502047b2d9f1294e812cc163114e8b07746
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1587185407317693831:333968926
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 7c1431bc6dd779d741b93cc76379f20de4334f1a5d59aa5eb26bb23229469845
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1615803702:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: ddc8ae87cc2b947173a86ca2469751e90e7b83800bf95d55521f414f8baffaa8
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1631178272:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: a2905a0eb552cda6c14a21fc9559e4b6f86b574f1e71dbc6ba5dd4a0050e8a26
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1656927025:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 255bc512911c1548d881d18a35fa9a22b167ba88520fcbbf55eba6bdd1827f19
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1683511478:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 680c85a237dbafe7ed771cdb0b1edd2df610c7ca60728ec82c1b7559c0fb5c8d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1739546879:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 96a200693a50f0a5e4406892f77919d128bbfa4484d7111f88fe10f42643d799
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:182231080:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: ae05b866e7564d26f506ca04ab5865eb6488d7dafe119eea43183c8ea6df233b
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: df93cd482692ddb28faaead3545f8d15cff302617175748b556f6af45cd55833
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:192250732:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: fd453ca74ddbbd2d3b10ea19a83d76b1333395b9a6e2f8b2e02c04d9fa58cf83
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1987571259:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: c9363da2531a240468ba27ab877e53c5f07c81584b1c0bf54dd161c2fc13de58
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:2099880783:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: cf4fc2d709fef12e37773010b3f4fa114444e3f5fd3c6082032702af31ffa98a
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:226542065:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 856c7543e6dae94c6aa78bc1407ceda7258d69fba1e7df24d52837fc0b609b68
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:2356130661414943933:1707764219
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 6647579b6d37cf12025693044b701735319aa3c464d6f13a1de6654e88eaa4cc
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:269601135:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 22e220e32124a8796ecc53d38c9786b9ce25227128c286d5313a985585ade430
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:288977810:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 385ce9577546c84fde376fa3df1fbd073a8add82ae8f18176bafdf6ee03dfb1d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:302175164:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: f773f2989ee6daca3e5e3ec436e32c6fd1a12760a14e8ff7507131b0037737de
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:326467913:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 32c650f1fd7aa36210f192eef81d0a32e14965c5424c7e092900a234dd4bcc61
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:1170723420
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 351f2803f93ea7d2ee20e8a0de534d2b4815540a6d98e7ba15e09cdd4be8190b
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:8645957853286282446
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 862a0c8cf594a77d3788d032fefaea8b3c1097f157865e7871d78f3aeb9547db
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:3892824241647204050:432274426
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: d8b42db8e566d2e87debeb0f288db855a93c080079c4a93009f46addaba4c8cb
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:409003302271648103:2066362739
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 0cf778fedb958adbcec1eb71e6c5def3dd5d6fc03af7a6bc945e1da35c9a16b5
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:409548021:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 9cbd73bc5a125eb5618f6c4dc434bb37ffa0fef5734178a3c8a22c8949f8ddee
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:4157880980074026618:1551839791
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 7403c868ad1d57a8f9171e2fb3f637aa0d4aa5e463a6ba9a0c9859ba36b2eeb7
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:4375928684233543869:1485405139
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: fcba27d43f5764cb4855a951193adfc5ffe59c414277a7861562f7fd16dd559a
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:4649566693282215820:2977119022265116449
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 138299d329ea83661197e688ff8b9cad46ef5f4391c18bb3b00daf4f25558b82
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:4649566693282215820:391879212
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 5fb3f711ebe6d4a655cd1f584aa76471b9473b42ed223e263ea87681bc05aa8a
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:478164232:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 61085ca24a1e90e7269fbf326d909e353635273ab70cb9f2e0e45598ba2a9ae2
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:4794494763504228605:453181472
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: f0ad7ec325718875cecefb0078d1a934059ff39bc1e74060c34c5ba371a8922d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:52261661:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 98b28d43ff8a59fdf0b23eace6936d64c275e939f1c2736fcd7730fd4d6a13db
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5280015872767050384:1832724165
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: ed9c3ff20e133f2dc17123fc4e995d30e979cfd838fff4b8271e891e646b0c06
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1417069060
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 5a861dc803d6af69eaeadf0c418ebf28a935bfe59418a00f4071bf1817a29462
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1444966576
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: c2cda21437cc41be50e2610fe1879be824e23130f8886189a348b4abaf664d1e
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1949731729
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 9426df6b1740de3f8f061aa23c540d6293cc691e37f221d6784267e20fa30390
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1962216530
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 7e23dcfc1c262697f834250032961fa0212a55918b3e1076442fbdea93c1bd1a
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1989364759
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: fd5f5091322b3cb501e895836d8515cebe6d1e777098e40435c8f525d7d45582
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:2054275749
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 502d9b43ec52ebf3e2efd93430c21bc5f872df7417484d471349ffde0edb6dcf
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:309181553
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 3ac44f664d5089b14e0fb7996cb17617519cb892ddd16dfe0dcf61c8f717817c
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:486707325
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: e9b3392c59e23b987c32c02e331e60f93b248da92a394ad49451336ff4c6d04d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:688441823
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 2e3e07da509e99639000bd5d7daa30026b9d2036012f98c68a1a837e9087a5ae
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:900637289
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 12fb27801b3f85413a0c755d20d01106ed86a045ca25c2694140c2d10180a4ce
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:921825918
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 2050dd4f9e2ae9dc7fd810a075dc5136d892e2e711674192bd3c5a49812f7986
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:9752808
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: cf1ff7dbc11d9be3d601df42e8e2b9abc5e343218f6db15891d920de04d6a839
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5954733007135301770:1672342611
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 01b4f6ad0542b4a2ccbcff846f949819a88c5844f9dd8c91f0bafeaa400f74b0
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:5962711429974873311:1526862534
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: a7610824a3cb7d122a088b1b894be65bee1c3eac69d2edc5614fe4209326ccae
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:613190468:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: c29adcf9d43a2c2b38bf7f9462f0f0cb42ae95f8d27b40944ef35f0cc61313bb
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:616215517:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: b62b530bdeb20724508caeca94c8ad12413645945f312d2ab45815b71eea058d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:6314410203132540618:744699252
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 83dd08093b77c10ffcb2c1b582bf6062c2f8e53acc8b602ddfaf934f8c818fd9
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:6321653361273976007:1230577403
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: d995c259b7e7c7de27ebe69b7ec7349c8cb79abf426a43f176f9c7dfa2168e77
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:6368427781584931994:1961728343
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 3eeefaa3b59bd1e7f5306f5cb439de37e45584974d2ad850f9fe335551446391
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:6423233993187137997:1961986156
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 34e761c587f8a7b354c26da7edacaed5313917e4278aa5f52aaaef049637265d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 8a05585183b52473db09bb2a209e4670524b16435e2760f7477fcb0737a60ebc
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:666140169:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 0348f400a40e889f73f4008e35c4bad24b4d1102c261a20edd7269df7ed4fea6
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:6716019714239139776:1585813856
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 092c5146376b0d2a38dca8bcf226b71d6c1b72844b6bc3ebe3eb05a7d4a2f691
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7069497028711984000:1553188250
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: a4ba7ecb4225d45f04ced9f3143437604812e354b71d3d4a02a0da0a15e773db
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7136846278023162379:542155640
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 809834bacd071672a1bee711f3c23550644c10efdefe41d75c798e79c3593052
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:740835310:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 97f1b1b45bf4a20a68d4eb6f700bf3fb973293a65c8b24f4cc06793fb5e5a915
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7448045:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 2ae5cf2145ab5093c1f5d72c8d5d9dfcd5610a33aaaa606d9db100941c908091
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1154386615
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1177720397:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: e226d041699023cc10b0402097647926e9d332cdf13f07dc0e0385b0ecc9adc5
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1357539577
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1505408850:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: ea99c54dd8083222e7ea132dc7f2b9e2293be7d4ca1480a46e085da0bd58be58
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:174338747
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1631178272:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 8ef7c85435432c3c163c43300108c65e7a30a1e152e4682bee2bb05e68ad95a7
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1795549719
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1656927025:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 473d9def70274c16d0705506ac274f7427794f5d0374fbc04f9eb6758c2f75d1
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:2091713471
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:226542065:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 74ab2649900bea1d75a4d76ee329fedb792dc182d33932b5e92123794a4ebf62
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:409735755
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1987571259:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 0e13d20c37800ef83cd8b3523ef9d350f0e452ae1d4d001b3f52ad85d88f44e8
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:5082629194708434532
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1266341961:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 217d84aba65b69b8d356a2ba773e37079a683772cf39502f4277acc399ab4eeb
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:583178782
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:182231080:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 44d566122d482f7f93ea8387863d3360f935961394fc5c0128d68ccbec038f75
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:8030880911573377953:968626607
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 77343e37d9647940c407befd74c67ec992baa339d2ad006e696b8e2841a95fac
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1058181883
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: bba6ea13c53912716a249d69edbd4e97b52b049cc539701ee95faf9752a5edcf
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1377942717
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: fd863f8f68020acbb26719bee440418ea9a4073428aba96c6e47aa688df77ce1
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:160254273
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 6c818ad548b89a2dc599e1149b986abe8098778c644d8e5a47107f85d4398a95
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1625955771
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 2a8b68e7e86d4ff687a1128066379371f63b58e0eb440bee82cdb2ef47dbabfe
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1891874029
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 1bb72208887331695786478f93b0667d3d6948b5479872ce4d65cd627a10017d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2565592759201354974
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 4963eaed8215a93b6cc5288f61b2b9af24fa35ff1dc7d2f6955bfd146371ad26
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:801983718
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: d92754a2a4eeda4c47a73a13d74ba62529e41317b3f24142fbf6ff63cd8d34e3
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:961525693
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 87ab4ef3e05f860a14ffba35d37c5750d052dd5ca6280aee54a523d9c2b557a1
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:8707299315759427390:1296217192
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 669cabe33f33d6e712c6d8d3151a5e780403dd289cb43ee87d3d03f8a13690b4
+    entries:
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:100000:1757335980
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1010490802:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1044316355:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1052858226:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1114552034:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1149404328:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1151906017:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1181311400:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 336a190646b19bc46b22dd4e78f99800:502945014:0
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:121334975:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:124043118:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1280621414:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1286596461:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:133441436:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1341219859:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1354489780:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1390457671:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1391169739:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1422682203:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:142544340:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1441005091:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1471737520:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:154447836:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1567705303:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1614026675:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1622157771:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1633574711:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:168637385:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:180883749:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1891644269:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:1914598512:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 336a190646b19bc46b22dd4e78f99800:267643486:0
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:2005785160:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:2015383511:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:2047115830:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:2068372239:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 336a190646b19bc46b22dd4e78f99800:639769239:0
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:2074923228:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:2129841567:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:258728291:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:267643486:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:299327984:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:302907655:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:323665103:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 336a190646b19bc46b22dd4e78f99800:1633574711:0
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:406607961:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:428382608:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:462870027:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:467779776:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:502236113:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:502945014:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:504732896:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:56021026:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:582163927:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 336a190646b19bc46b22dd4e78f99800:1633574711:0
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:639769239:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:650110126:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:690069688:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:696825990:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:785754308:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:819670517:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:880940880:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:909089444:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:919820107:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:922958209:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:979231201:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1052965413:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1171079311907173941:1418405993
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1177720397:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1266341961:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:1509794190
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:1945707758
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:2060387816
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1369468113:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1453572262:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1490161952:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1505408850:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1526913969:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1570784353:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1587185407317693831:333968926
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1615803702:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1631178272:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1656927025:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1683511478:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1739546879:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:182231080:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:192250732:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1987571259:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:2099880783:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:226542065:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:2356130661414943933:1707764219
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:269601135:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:288977810:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:302175164:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:326467913:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:1170723420
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:8645957853286282446
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:3892824241647204050:432274426
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:409003302271648103:2066362739
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:409548021:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:4157880980074026618:1551839791
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:4375928684233543869:1485405139
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:4649566693282215820:2977119022265116449
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:4649566693282215820:391879212
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:478164232:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:4794494763504228605:453181472
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:52261661:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5280015872767050384:1832724165
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1417069060
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1444966576
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1949731729
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1962216530
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1989364759
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:2054275749
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:309181553
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:486707325
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:688441823
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:900637289
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:921825918
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:9752808
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5954733007135301770:1672342611
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:5962711429974873311:1526862534
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:613190468:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:616215517:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:6314410203132540618:744699252
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:6321653361273976007:1230577403
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:6368427781584931994:1961728343
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:6423233993187137997:1961986156
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:666140169:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:6716019714239139776:1585813856
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7069497028711984000:1553188250
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7136846278023162379:542155640
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:740835310:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7448045:0
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1154386615
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1177720397:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1357539577
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1505408850:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:174338747
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1631178272:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1795549719
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1656927025:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:2091713471
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:226542065:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:409735755
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1987571259:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:5082629194708434532
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1266341961:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:583178782
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:182231080:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:8030880911573377953:968626607
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1058181883
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1377942717
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:160254273
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1625955771
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1891874029
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2565592759201354974
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:801983718
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:961525693
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:8707299315759427390:1296217192
+      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
+        leaves this source exactly as authored and does not place, activate, spawn
+        or retire it.'
+      treatment: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 

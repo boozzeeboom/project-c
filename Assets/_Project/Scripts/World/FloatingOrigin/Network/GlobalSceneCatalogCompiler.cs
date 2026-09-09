@@ -62,8 +62,11 @@ namespace ProjectC.World.FloatingOrigin.Network
                     if (entry == null || !IsSourceId(entry.sourceId, entry.sceneGuid) || !expected.Contains(entry.sceneGuid) || entries.ContainsKey(entry.sourceId) ||
                         !observations.TryGetValue(entry.sourceId, out var observation) || string.IsNullOrWhiteSpace(entry.reviewNote) || entry.reviewNote.Length > 2048 ||
                         entry.parentSourceId != observation.parentSourceId || entry.parentSourceId == entry.sourceId ||
-                        entry.treatment < GlobalSceneTreatment.PreserveContent || entry.treatment > GlobalSceneTreatment.Exclude)
+                        entry.treatment < GlobalSceneTreatment.PreserveContent || entry.treatment > GlobalSceneTreatment.Unmanaged)
                         return Fail("unreviewed_duplicate_unknown_or_reparented_entry", out error);
+                    // Unmanaged means the global system controls nothing about this source, so it cannot own a frame or pose.
+                    if (entry.treatment == GlobalSceneTreatment.Unmanaged && entry.spatial)
+                        return Fail("unmanaged_source_cannot_be_spatial", out error);
                     if ((entry.treatment == GlobalSceneTreatment.SceneNetworkObject && !observation.isNetworkObject) ||
                         (entry.treatment == GlobalSceneTreatment.PreserveContent && observation.isNetworkObject) ||
                         ((entry.treatment == GlobalSceneTreatment.ReplaceWithNetworkPrefab) != (entry.replacementPrefabHash != 0)))

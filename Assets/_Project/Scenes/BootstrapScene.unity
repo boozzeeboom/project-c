@@ -582,6 +582,7 @@ GameObject:
   m_Component:
   - component: {fileID: 56021028}
   - component: {fileID: 56021027}
+  - component: {fileID: 56021029}
   m_Layer: 0
   m_Name: RespawnManager
   m_TagString: Untagged
@@ -620,6 +621,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &56021029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 56021026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:56021026:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &74037408
 GameObject:
   m_ObjectHideFlags: 0
@@ -1365,6 +1381,7 @@ GameObject:
   - component: {fileID: 121334977}
   - component: {fileID: 121334976}
   - component: {fileID: 121334978}
+  - component: {fileID: 121334979}
   m_Layer: 0
   m_Name: '[SkillsServer]'
   m_TagString: Untagged
@@ -1427,6 +1444,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Skills.SkillsServer
   ShowTopMostFoldoutHeaderGroup: 1
   _config: {fileID: 11400000, guid: 7b31d7c5f6716ee4eb76413487668f99, type: 2}
+--- !u!114 &121334979
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 121334975}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:121334975:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &124043118
 GameObject:
   m_ObjectHideFlags: 0
@@ -1438,6 +1470,7 @@ GameObject:
   - component: {fileID: 124043120}
   - component: {fileID: 124043123}
   - component: {fileID: 124043126}
+  - component: {fileID: 124043127}
   m_Layer: 0
   m_Name: DEBUG_UI_MANAGER
   m_TagString: Untagged
@@ -1494,6 +1527,21 @@ MonoBehaviour:
   canvasSortOrder: 100
   referenceResolution: {x: 1920, y: 1080}
   uiScaleMatch: 0.5
+--- !u!114 &124043127
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 124043118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:124043118:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &125745127
 GameObject:
   m_ObjectHideFlags: 0
@@ -1806,6 +1854,7 @@ GameObject:
   m_Component:
   - component: {fileID: 133441438}
   - component: {fileID: 133441437}
+  - component: {fileID: 133441439}
   m_Layer: 0
   m_Name: '[NpcAttitudeClientState]'
   m_TagString: Untagged
@@ -1841,6 +1890,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &133441439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 133441436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:133441436:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &136673070
 GameObject:
   m_ObjectHideFlags: 0
@@ -2002,6 +2066,7 @@ GameObject:
   m_Component:
   - component: {fileID: 142544342}
   - component: {fileID: 142544341}
+  - component: {fileID: 142544343}
   m_Layer: 0
   m_Name: '[ReputationClientState]'
   m_TagString: Untagged
@@ -2037,6 +2102,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &142544343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 142544340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:142544340:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &154447836
 GameObject:
   m_ObjectHideFlags: 0
@@ -2047,6 +2127,7 @@ GameObject:
   m_Component:
   - component: {fileID: 154447838}
   - component: {fileID: 154447837}
+  - component: {fileID: 154447839}
   m_Layer: 0
   m_Name: Runtime
   m_TagString: Untagged
@@ -2091,6 +2172,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &154447839
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 154447836}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:154447836:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!43 &165211402
 Mesh:
   m_ObjectHideFlags: 0
@@ -2284,6 +2380,7 @@ GameObject:
   - component: {fileID: 168637388}
   - component: {fileID: 168637387}
   - component: {fileID: 168637386}
+  - component: {fileID: 168637393}
   m_Layer: 0
   m_Name: Moon
   m_TagString: Untagged
@@ -2501,6 +2598,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &168637393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 168637385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:168637385:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &169359487
 GameObject:
   m_ObjectHideFlags: 0
@@ -2663,6 +2775,7 @@ GameObject:
   - component: {fileID: 180883752}
   - component: {fileID: 180883750}
   - component: {fileID: 180883751}
+  - component: {fileID: 180883753}
   m_Layer: 0
   m_Name: Sun
   m_TagString: Untagged
@@ -2779,6 +2892,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 45, y: -30, z: 0}
+--- !u!114 &180883753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180883749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:180883749:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &181875464
 GameObject:
   m_ObjectHideFlags: 0
@@ -3841,6 +3969,7 @@ GameObject:
   - component: {fileID: 258728294}
   - component: {fileID: 258728293}
   - component: {fileID: 258728292}
+  - component: {fileID: 258728295}
   m_Layer: 0
   m_Name: '[ShipHudPanel]'
   m_TagString: Untagged
@@ -3902,6 +4031,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &258728295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 258728291}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:258728291:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &260307623
 GameObject:
   m_ObjectHideFlags: 0
@@ -4352,6 +4496,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 267643487}
+  - component: {fileID: 267643488}
   m_Layer: 0
   m_Name: Contracts
   m_TagString: Untagged
@@ -4375,6 +4520,21 @@ Transform:
   - {fileID: 1914598514}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &267643488
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 267643486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:267643486:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &267699624
 GameObject:
   m_ObjectHideFlags: 0
@@ -4537,6 +4697,7 @@ GameObject:
   - component: {fileID: 299327986}
   - component: {fileID: 299327985}
   - component: {fileID: 299327987}
+  - component: {fileID: 299327988}
   m_Layer: 0
   m_Name: '[StatsServer]'
   m_TagString: Untagged
@@ -4602,6 +4763,21 @@ MonoBehaviour:
   _sourceMapConfig: {fileID: 11400000, guid: b5db92f42aa69f44b855fc0f7c75b90a, type: 2}
   _debugConfig: {fileID: 11400000, guid: fc24e92a28b539d4ab7efe0da7b90121, type: 2}
   _healthConfig: {fileID: 0}
+--- !u!114 &299327988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 299327984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:299327984:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &302907655
 GameObject:
   m_ObjectHideFlags: 0
@@ -4614,6 +4790,7 @@ GameObject:
   - component: {fileID: 302907656}
   - component: {fileID: 302907662}
   - component: {fileID: 302907663}
+  - component: {fileID: 302907664}
   m_Layer: 0
   m_Name: DayNightController
   m_TagString: Untagged
@@ -4838,6 +5015,21 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
+--- !u!114 &302907664
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 302907655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:302907655:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &304872469
 GameObject:
   m_ObjectHideFlags: 0
@@ -5250,6 +5442,7 @@ GameObject:
   - component: {fileID: 323665105}
   - component: {fileID: 323665104}
   - component: {fileID: 323665106}
+  - component: {fileID: 323665107}
   m_Layer: 0
   m_Name: '[InventoryServer]'
   m_TagString: Untagged
@@ -5314,6 +5507,21 @@ MonoBehaviour:
   maxSlots: 1000
   maxOpsPerMinute: 60
   _dropPickupPrefab: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+--- !u!114 &323665107
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 323665103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:323665103:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &406607961
 GameObject:
   m_ObjectHideFlags: 0
@@ -5325,6 +5533,7 @@ GameObject:
   - component: {fileID: 406607963}
   - component: {fileID: 406607962}
   - component: {fileID: 406607964}
+  - component: {fileID: 406607965}
   m_Layer: 0
   m_Name: '[GatheringServer]'
   m_TagString: Untagged
@@ -5390,6 +5599,21 @@ MonoBehaviour:
   _cooldownCheckInterval: 1
   _maxOpsPerMinute: 30
   _debugMode: 1
+--- !u!114 &406607965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406607961}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:406607961:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &410215716
 GameObject:
   m_ObjectHideFlags: 0
@@ -5930,6 +6154,7 @@ GameObject:
   - component: {fileID: 428382610}
   - component: {fileID: 428382609}
   - component: {fileID: 428382612}
+  - component: {fileID: 428382613}
   m_Layer: 0
   m_Name: '[QuestClientState]'
   m_TagString: Untagged
@@ -6003,6 +6228,21 @@ MonoBehaviour:
   m_PivotReferenceSize: 0
   m_Pivot: 0
   m_WorldSpaceCollider: {fileID: 0}
+--- !u!114 &428382613
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 428382608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:428382608:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &446055738
 GameObject:
   m_ObjectHideFlags: 0
@@ -6301,6 +6541,7 @@ GameObject:
   m_Component:
   - component: {fileID: 462870029}
   - component: {fileID: 462870028}
+  - component: {fileID: 462870030}
   m_Layer: 0
   m_Name: ConstellationController
   m_TagString: Untagged
@@ -6361,6 +6602,21 @@ Transform:
   - {fileID: 2145140712}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &462870030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 462870027}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:462870027:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &467779776
 GameObject:
   m_ObjectHideFlags: 0
@@ -6372,6 +6628,7 @@ GameObject:
   - component: {fileID: 467779778}
   - component: {fileID: 467779777}
   - component: {fileID: 467779779}
+  - component: {fileID: 467779780}
   m_Layer: 0
   m_Name: '[CraftingServer]'
   m_TagString: Untagged
@@ -6436,6 +6693,21 @@ MonoBehaviour:
   baseRecipes: []
   _maxOpsPerMinute: 30
   _debugMode: 0
+--- !u!114 &467779780
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 467779776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:467779776:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!43 &469942781
 Mesh:
   m_ObjectHideFlags: 0
@@ -7165,6 +7437,7 @@ GameObject:
   - component: {fileID: 502236115}
   - component: {fileID: 502236114}
   - component: {fileID: 502236117}
+  - component: {fileID: 502236118}
   m_Layer: 0
   m_Name: MainCamera
   m_TagString: MainCamera
@@ -7290,6 +7563,21 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &502236118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 502236113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:502236113:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &502945014
 GameObject:
   m_ObjectHideFlags: 0
@@ -7299,6 +7587,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 502945015}
+  - component: {fileID: 502945016}
   m_Layer: 0
   m_Name: Toasts_and_meta
   m_TagString: Untagged
@@ -7325,6 +7614,21 @@ Transform:
   - {fileID: 1948101064}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &502945016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 502945014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:502945014:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &504732896
 GameObject:
   m_ObjectHideFlags: 0
@@ -7335,6 +7639,7 @@ GameObject:
   m_Component:
   - component: {fileID: 504732898}
   - component: {fileID: 504732897}
+  - component: {fileID: 504732899}
   m_Layer: 0
   m_Name: '[CraftingTimeService]'
   m_TagString: Untagged
@@ -7376,6 +7681,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &504732899
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 504732896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:504732896:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &506085502
 GameObject:
   m_ObjectHideFlags: 0
@@ -8276,6 +8596,7 @@ GameObject:
   m_Component:
   - component: {fileID: 582163928}
   - component: {fileID: 582163929}
+  - component: {fileID: 582163930}
   m_Layer: 0
   m_Name: '[ShipKeyServer]'
   m_TagString: Untagged
@@ -8324,6 +8645,21 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &582163930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 582163927}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:582163927:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &587905878
 GameObject:
   m_ObjectHideFlags: 0
@@ -9341,6 +9677,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 639769240}
+  - component: {fileID: 639769241}
   m_Layer: 0
   m_Name: Markets
   m_TagString: Untagged
@@ -9366,6 +9703,21 @@ Transform:
   - {fileID: 1585240180}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &639769241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 639769239}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:639769239:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &650110126
 GameObject:
   m_ObjectHideFlags: 0
@@ -9378,6 +9730,7 @@ GameObject:
   - component: {fileID: 650110129}
   - component: {fileID: 650110128}
   - component: {fileID: 650110127}
+  - component: {fileID: 650110131}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: Untagged
@@ -9478,6 +9831,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &650110131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 650110126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:650110126:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &678974586
 GameObject:
   m_ObjectHideFlags: 0
@@ -9640,6 +10008,7 @@ GameObject:
   - component: {fileID: 690069690}
   - component: {fileID: 690069689}
   - component: {fileID: 690069691}
+  - component: {fileID: 690069692}
   m_Layer: 0
   m_Name: '[EquipmentServer]'
   m_TagString: Untagged
@@ -9702,6 +10071,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.EquipmentServer
   ShowTopMostFoldoutHeaderGroup: 1
   _maxOpsPerSec: 5
+--- !u!114 &690069692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 690069688}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:690069688:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &691778543
 GameObject:
   m_ObjectHideFlags: 0
@@ -10101,6 +10485,7 @@ GameObject:
   - component: {fileID: 696825993}
   - component: {fileID: 696825992}
   - component: {fileID: 696825991}
+  - component: {fileID: 696825994}
   m_Layer: 0
   m_Name: '[CraftingWindow]'
   m_TagString: Untagged
@@ -10161,6 +10546,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &696825994
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 696825990}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:696825990:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!43 &703565134
 Mesh:
   m_ObjectHideFlags: 0
@@ -11162,6 +11562,7 @@ GameObject:
   - component: {fileID: 785754311}
   - component: {fileID: 785754310}
   - component: {fileID: 785754309}
+  - component: {fileID: 785754312}
   m_Layer: 0
   m_Name: '[CharacterWindow]'
   m_TagString: Untagged
@@ -11223,6 +11624,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &785754312
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 785754308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:785754308:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &819670517
 GameObject:
   m_ObjectHideFlags: 0
@@ -11233,6 +11649,7 @@ GameObject:
   m_Component:
   - component: {fileID: 819670518}
   - component: {fileID: 819670519}
+  - component: {fileID: 819670520}
   m_Layer: 0
   m_Name: '[PlayerPositionServer]'
   m_TagString: Untagged
@@ -11268,6 +11685,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.ShipPosition.PlayerPositionServer
   _debugMode: 1
+--- !u!114 &819670520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 819670517}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:819670517:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &824355302
 GameObject:
   m_ObjectHideFlags: 0
@@ -11857,6 +12289,7 @@ GameObject:
   m_Component:
   - component: {fileID: 880940882}
   - component: {fileID: 880940881}
+  - component: {fileID: 880940883}
   m_Layer: 0
   m_Name: AltitudeCorridorSystem
   m_TagString: Untagged
@@ -11897,6 +12330,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &880940883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880940880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:880940880:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &884253956
 GameObject:
   m_ObjectHideFlags: 0
@@ -12268,6 +12716,7 @@ GameObject:
   - component: {fileID: 909089445}
   - component: {fileID: 909089447}
   - component: {fileID: 909089449}
+  - component: {fileID: 909089450}
   m_Layer: 0
   m_Name: CloudManager
   m_TagString: Untagged
@@ -12408,6 +12857,21 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &909089450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 909089444}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:909089444:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &909305749
 GameObject:
   m_ObjectHideFlags: 0
@@ -12599,6 +13063,7 @@ GameObject:
   m_Component:
   - component: {fileID: 919820109}
   - component: {fileID: 919820108}
+  - component: {fileID: 919820110}
   m_Layer: 0
   m_Name: '[CustomisationClientState]'
   m_TagString: Untagged
@@ -12634,6 +13099,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &919820110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919820107}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:919820107:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &922958209
 GameObject:
   m_ObjectHideFlags: 0
@@ -12645,6 +13125,7 @@ GameObject:
   - component: {fileID: 922958212}
   - component: {fileID: 922958211}
   - component: {fileID: 922958210}
+  - component: {fileID: 922958213}
   m_Layer: 0
   m_Name: '[RepairManagerWindow]'
   m_TagString: Untagged
@@ -12705,6 +13186,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &922958213
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 922958209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:922958209:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &946603317
 GameObject:
   m_ObjectHideFlags: 0
@@ -13241,6 +13737,7 @@ GameObject:
   - component: {fileID: 979231204}
   - component: {fileID: 979231203}
   - component: {fileID: 979231202}
+  - component: {fileID: 979231206}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: Untagged
@@ -13341,6 +13838,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &979231206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 979231201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:979231201:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1010490802
 GameObject:
   m_ObjectHideFlags: 0
@@ -13352,6 +13864,7 @@ GameObject:
   - component: {fileID: 1010490804}
   - component: {fileID: 1010490803}
   - component: {fileID: 1010490805}
+  - component: {fileID: 1010490806}
   m_Layer: 0
   m_Name: '[ShipCargoServer]'
   m_TagString: Untagged
@@ -13415,6 +13928,21 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _exchangeRateConfig: {fileID: 11400000, guid: d10a814fd884a8547b1d6a6441847075, type: 2}
   _maxOpsPerMinute: 30
+--- !u!114 &1010490806
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010490802}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1010490802:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1016559445
 GameObject:
   m_ObjectHideFlags: 0
@@ -14064,6 +14592,7 @@ GameObject:
   - component: {fileID: 1044316358}
   - component: {fileID: 1044316357}
   - component: {fileID: 1044316356}
+  - component: {fileID: 1044316359}
   m_Layer: 0
   m_Name: '[QuestTracker]'
   m_TagString: Untagged
@@ -14124,6 +14653,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1044316359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1044316355}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1044316355:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!43 &1046153784
 Mesh:
   m_ObjectHideFlags: 0
@@ -14313,6 +14857,7 @@ GameObject:
   - component: {fileID: 1052858228}
   - component: {fileID: 1052858227}
   - component: {fileID: 1052858229}
+  - component: {fileID: 1052858230}
   m_Layer: 0
   m_Name: '[CombatServer]'
   m_TagString: Untagged
@@ -14375,6 +14920,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Combat.CombatServer
   ShowTopMostFoldoutHeaderGroup: 1
   _debugLog: 1
+--- !u!114 &1052858230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1052858226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1052858226:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1109248175
 GameObject:
   m_ObjectHideFlags: 0
@@ -14537,6 +15097,7 @@ GameObject:
   - component: {fileID: 1114552037}
   - component: {fileID: 1114552036}
   - component: {fileID: 1114552035}
+  - component: {fileID: 1114552038}
   m_Layer: 0
   m_Name: '[ShipCargoConsoleWindow]'
   m_TagString: Untagged
@@ -14596,6 +15157,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1114552038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1114552034}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1114552034:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1126622116
 GameObject:
   m_ObjectHideFlags: 0
@@ -15170,6 +15746,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1149404329}
+  - component: {fileID: 1149404330}
   m_Layer: 0
   m_Name: WorldRoot
   m_TagString: Untagged
@@ -15195,6 +15772,21 @@ Transform:
   - {fileID: 1760152537}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1149404330
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1149404328}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1149404328:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1151612742
 GameObject:
   m_ObjectHideFlags: 0
@@ -15239,6 +15831,12 @@ GameObject:
   - component: {fileID: 1151906020}
   - component: {fileID: 1151906019}
   - component: {fileID: 1151906024}
+  - component: {fileID: 1151906025}
+  - component: {fileID: 1151906030}
+  - component: {fileID: 1151906029}
+  - component: {fileID: 1151906027}
+  - component: {fileID: 1151906032}
+  - component: {fileID: 1151906031}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -15263,8 +15861,8 @@ MonoBehaviour:
   enableAutoReconnect: 1
   reconnectDelay: 3
   maxReconnectAttempts: 5
-  _globalMotionProfile: {fileID: 0}
-  _globalSpawnBootstrap: {fileID: 0}
+  _globalMotionProfile: {fileID: 11400000, guid: 21f017ff137c07945bc4de67e52122a7, type: 2}
+  _globalSpawnBootstrap: {fileID: 1151906027}
   _globalSessionCoordinator: {fileID: 0}
 --- !u!114 &1151906020
 MonoBehaviour:
@@ -15311,7 +15909,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkManager
   NetworkManagerExpanded: 0
   NetworkConfig:
-    ProtocolVersion: 0
+    ProtocolVersion: 61446
     NetworkTransport: {fileID: 1151906020}
     PlayerPrefab: {fileID: 100000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
     Prefabs:
@@ -15319,7 +15917,7 @@ MonoBehaviour:
       - {fileID: 11400000, guid: 47e0edea8caccef4a9991014881e9d20, type: 2}
     TickRate: 30
     ClientConnectionBufferTimeout: 10
-    ConnectionApproval: 0
+    ConnectionApproval: 1
     ConnectionData: 
     EnableTimeResync: 0
     TimeResyncInterval: 30
@@ -15366,6 +15964,89 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10a034f62e4498a439e7c7591f4020c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Localization.LocalizationBootstrap
+--- !u!114 &1151906025
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151906017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1151906017:0
+  _frameId: 0
+  _activateWhenReady: 0
+--- !u!114 &1151906027
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151906017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1dc4ebd96e30c04eb9f99cdaf8fa1e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalMotionPlayerBootstrap
+  _sourceBehaviour: {fileID: 1151906032}
+--- !u!114 &1151906029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151906017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f5ee45db6975b14eb4b99e2f5d24a16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneNativeExecutor
+--- !u!114 &1151906030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151906017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07010f451b99c30488c33cf008c2395f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalMotionWorld
+--- !u!114 &1151906031
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151906017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1e6a1df0e53256488a07dfb7bc893b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Pilot.GlobalMotionPilotRuntime
+  _profile: {fileID: 11400000, guid: 21f017ff137c07945bc4de67e52122a7, type: 2}
+  _bootstrap: {fileID: 1151906027}
+  _autoStartHost: 1
+--- !u!114 &1151906032
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151906017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad2e1c9ca17a9e34ea5e56486f59cb4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Pilot.GlobalMotionPilotSpawnSource
+  _worldScenePath: Assets/_Project/Scenes/World/WorldScene_0_0.unity
+  _respawnObjectName: Respawn_Default
+  _maxLocalCoordinate: 100000
+  _verticalSpawnOffset: 1
 --- !u!1 &1181311400
 GameObject:
   m_ObjectHideFlags: 0
@@ -15377,6 +16058,7 @@ GameObject:
   - component: {fileID: 1181311402}
   - component: {fileID: 1181311401}
   - component: {fileID: 1181311403}
+  - component: {fileID: 1181311404}
   m_Layer: 0
   m_Name: '[MetaRequirementRegistry]'
   m_TagString: Untagged
@@ -15438,6 +16120,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.MetaRequirement.MetaRequirementRegistry
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1181311404
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1181311400}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1181311400:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!43 &1191220282
 Mesh:
   m_ObjectHideFlags: 0
@@ -16568,6 +17265,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1280621415}
+  - component: {fileID: 1280621416}
   m_Layer: 0
   m_Name: Clouds
   m_TagString: Untagged
@@ -16592,6 +17290,21 @@ Transform:
   - {fileID: 95592634}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1280621416
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1280621414}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1280621414:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1286596461
 GameObject:
   m_ObjectHideFlags: 0
@@ -16603,6 +17316,7 @@ GameObject:
   - component: {fileID: 1286596463}
   - component: {fileID: 1286596462}
   - component: {fileID: 1286596464}
+  - component: {fileID: 1286596465}
   m_Layer: 0
   m_Name: '[DockingServer]'
   m_TagString: Untagged
@@ -16666,6 +17380,21 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   maxOpsPerMinute: 30
   debugMode: 0
+--- !u!114 &1286596465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1286596461}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1286596461:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1294777391
 GameObject:
   m_ObjectHideFlags: 0
@@ -16949,6 +17678,7 @@ GameObject:
   - component: {fileID: 1341219861}
   - component: {fileID: 1341219860}
   - component: {fileID: 1341219862}
+  - component: {fileID: 1341219863}
   m_Layer: 0
   m_Name: '[ExchangeServer]'
   m_TagString: Untagged
@@ -17012,6 +17742,21 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   exchangeRateConfig: {fileID: 11400000, guid: d10a814fd884a8547b1d6a6441847075, type: 2}
   maxOpsPerMinute: 30
+--- !u!114 &1341219863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1341219859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1341219859:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1341328900
 GameObject:
   m_ObjectHideFlags: 0
@@ -17325,6 +18070,7 @@ GameObject:
   - component: {fileID: 1354489781}
   - component: {fileID: 1354489782}
   - component: {fileID: 1354489783}
+  - component: {fileID: 1354489784}
   m_Layer: 0
   m_Name: '[KnowledgeToast]'
   m_TagString: Untagged
@@ -17385,6 +18131,21 @@ MonoBehaviour:
   m_PivotReferenceSize: 0
   m_Pivot: 0
   m_WorldSpaceCollider: {fileID: 0}
+--- !u!114 &1354489784
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1354489780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1354489780:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1390457671
 GameObject:
   m_ObjectHideFlags: 0
@@ -17396,6 +18157,7 @@ GameObject:
   - component: {fileID: 1390457674}
   - component: {fileID: 1390457673}
   - component: {fileID: 1390457672}
+  - component: {fileID: 1390457675}
   m_Layer: 0
   m_Name: '[CustomisationWindow]'
   m_TagString: Untagged
@@ -17456,6 +18218,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1390457675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1390457671}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1390457671:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1391169739
 GameObject:
   m_ObjectHideFlags: 0
@@ -17467,6 +18244,7 @@ GameObject:
   - component: {fileID: 1391169742}
   - component: {fileID: 1391169741}
   - component: {fileID: 1391169740}
+  - component: {fileID: 1391169743}
   m_Layer: 0
   m_Name: '[GatheringToast]'
   m_TagString: Untagged
@@ -17527,6 +18305,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1391169743
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1391169739}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1391169739:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1392657047
 GameObject:
   m_ObjectHideFlags: 0
@@ -17598,6 +18391,7 @@ GameObject:
   - component: {fileID: 1422682206}
   - component: {fileID: 1422682205}
   - component: {fileID: 1422682204}
+  - component: {fileID: 1422682207}
   m_Layer: 0
   m_Name: '[CommPanelWindow]'
   m_TagString: Untagged
@@ -17657,6 +18451,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1422682207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1422682203}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1422682203:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1430883874
 GameObject:
   m_ObjectHideFlags: 0
@@ -18271,6 +19080,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1441005092}
   - component: {fileID: 1441005093}
+  - component: {fileID: 1441005094}
   m_Layer: 0
   m_Name: '[ShipPositionServer]'
   m_TagString: Untagged
@@ -18308,6 +19118,21 @@ MonoBehaviour:
   saveIntervalSec: 5
   restoreDelaySec: 6
   debugMode: 1
+--- !u!114 &1441005094
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1441005091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1441005091:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1445737466
 GameObject:
   m_ObjectHideFlags: 0
@@ -18781,6 +19606,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1471737522}
   - component: {fileID: 1471737521}
+  - component: {fileID: 1471737523}
   m_Layer: 0
   m_Name: WindManager
   m_TagString: Untagged
@@ -18823,6 +19649,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1471737523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1471737520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1471737520:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1494078986
 GameObject:
   m_ObjectHideFlags: 0
@@ -19749,6 +20590,7 @@ GameObject:
   - component: {fileID: 1567705304}
   - component: {fileID: 1567705305}
   - component: {fileID: 1567705306}
+  - component: {fileID: 1567705307}
   m_Layer: 0
   m_Name: MainMenu
   m_TagString: Untagged
@@ -19811,6 +20653,21 @@ MonoBehaviour:
   versionText: 0.1.45
   changelogUrl: https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/UI/MainMenu/changelogs.md
   changelogTimeoutSeconds: 8
+--- !u!114 &1567705307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1567705303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1567705303:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1574058698
 GameObject:
   m_ObjectHideFlags: 0
@@ -20409,6 +21266,7 @@ GameObject:
   - component: {fileID: 1614026678}
   - component: {fileID: 1614026677}
   - component: {fileID: 1614026676}
+  - component: {fileID: 1614026679}
   m_Layer: 0
   m_Name: EventSystem
   m_TagString: Untagged
@@ -20477,6 +21335,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1614026679
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1614026675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1614026675:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1620809321
 GameObject:
   m_ObjectHideFlags: 0
@@ -20585,6 +21458,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1622157772}
+  - component: {fileID: 1622157773}
   m_Layer: 0
   m_Name: TestObjects
   m_TagString: Untagged
@@ -20613,6 +21487,21 @@ Transform:
   - {fileID: 1932759460}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1622157773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1622157771}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1622157771:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1624092368
 GameObject:
   m_ObjectHideFlags: 0
@@ -20984,6 +21873,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1633574712}
+  - component: {fileID: 1633574713}
   m_Layer: 0
   m_Name: Inventory
   m_TagString: Untagged
@@ -21009,6 +21899,21 @@ Transform:
   - {fileID: 582163928}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1633574713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1633574711}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1633574711:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1637109026
 GameObject:
   m_ObjectHideFlags: 0
@@ -22177,6 +23082,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1757335982}
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1757335983}
   m_SourcePrefab: {fileID: 100100000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
 --- !u!1 &1757335981 stripped
 GameObject:
@@ -22198,6 +23106,21 @@ MonoBehaviour:
   logAutoSpawn: 1
   warnIfNoPlayerObject: 1
   useScenePlayerAsHost: 1
+--- !u!114 &1757335983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1757335981}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:100000:1757335980
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1760152536
 GameObject:
   m_ObjectHideFlags: 0
@@ -23871,6 +24794,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1891644271}
   - component: {fileID: 1891644270}
+  - component: {fileID: 1891644272}
   m_Layer: 0
   m_Name: ScenePlacedObjectSpawner
   m_TagString: Untagged
@@ -23906,6 +24830,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1891644272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1891644269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1891644269:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1892454260
 GameObject:
   m_ObjectHideFlags: 0
@@ -24386,6 +25325,7 @@ GameObject:
   - component: {fileID: 1914598514}
   - component: {fileID: 1914598513}
   - component: {fileID: 1914598515}
+  - component: {fileID: 1914598516}
   m_Layer: 0
   m_Name: '[ContractServer]'
   m_TagString: Untagged
@@ -24453,6 +25393,21 @@ MonoBehaviour:
   autoRegenerateContracts: 1
   autoInitContracts: 1
   maxOpsPerMinute: 30
+--- !u!114 &1914598516
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1914598512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:1914598512:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!21 &1924856317
 Material:
   serializedVersion: 8
@@ -26173,6 +27128,7 @@ GameObject:
   - component: {fileID: 2005785163}
   - component: {fileID: 2005785162}
   - component: {fileID: 2005785161}
+  - component: {fileID: 2005785164}
   m_Layer: 0
   m_Name: '[CraftingProgressController]'
   m_TagString: Untagged
@@ -26233,6 +27189,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2005785164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2005785160}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:2005785160:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2015383511
 GameObject:
   m_ObjectHideFlags: 0
@@ -26244,6 +27215,7 @@ GameObject:
   - component: {fileID: 2015383514}
   - component: {fileID: 2015383513}
   - component: {fileID: 2015383512}
+  - component: {fileID: 2015383515}
   m_Layer: 0
   m_Name: '[QuestToast]'
   m_TagString: Untagged
@@ -26303,6 +27275,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2015383515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2015383511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:2015383511:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2030790984
 GameObject:
   m_ObjectHideFlags: 0
@@ -26753,6 +27740,7 @@ GameObject:
   - component: {fileID: 2047115832}
   - component: {fileID: 2047115831}
   - component: {fileID: 2047115833}
+  - component: {fileID: 2047115834}
   m_Layer: 0
   m_Name: '[NpcShipServer]'
   m_TagString: Untagged
@@ -26816,6 +27804,21 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   allSchedules: []
   debugMode: 1
+--- !u!114 &2047115834
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2047115830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:2047115830:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2065220597
 GameObject:
   m_ObjectHideFlags: 0
@@ -26979,6 +27982,7 @@ GameObject:
   - component: {fileID: 2068372240}
   - component: {fileID: 2068372243}
   - component: {fileID: 2068372242}
+  - component: {fileID: 2068372244}
   m_Layer: 0
   m_Name: '[MarketServer]'
   m_TagString: Untagged
@@ -27071,6 +28075,21 @@ MonoBehaviour:
   useFileRepository: 0
   fileRepoRoot: 
   maxOpsPerMinute: 30
+--- !u!114 &2068372244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2068372239}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:2068372239:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2074923228
 GameObject:
   m_ObjectHideFlags: 0
@@ -27082,6 +28101,7 @@ GameObject:
   - component: {fileID: 2074923229}
   - component: {fileID: 2074923230}
   - component: {fileID: 2074923231}
+  - component: {fileID: 2074923232}
   m_Layer: 0
   m_Name: ServerWeatherController
   m_TagString: Untagged
@@ -27163,6 +28183,21 @@ MonoBehaviour:
   _calendarBroadcastInterval: 10
   _temperature: 20
   _tempBroadcastInterval: 10
+--- !u!114 &2074923232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2074923228}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:2074923228:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2082704823
 GameObject:
   m_ObjectHideFlags: 0
@@ -28224,6 +29259,7 @@ GameObject:
   - component: {fileID: 2129841569}
   - component: {fileID: 2129841568}
   - component: {fileID: 2129841570}
+  - component: {fileID: 2129841571}
   m_Layer: 0
   m_Name: '[QuestServer]'
   m_TagString: Untagged
@@ -28289,6 +29325,21 @@ MonoBehaviour:
   maxActiveQuestsPerPlayer: 20
   debugMode: 1
   maxOpsPerMinute: 30
+--- !u!114 &2129841571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2129841567}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:2129841567:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2133598743
 GameObject:
   m_ObjectHideFlags: 0

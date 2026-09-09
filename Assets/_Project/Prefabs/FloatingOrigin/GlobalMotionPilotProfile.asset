@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f58c38ae7d68d564b85566944f5475f8, type: 3}
+  m_Name: GlobalMotionPilotProfile
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalMotionNetworkProfile
+  _enforceGlobalContracts: 1
+  _sceneLayoutDigest: bfe8008aa885a818b05f799799c504a1b174f87fdc0d73df2043a3ab91d93199
+  _sceneCatalog: {fileID: 11400000, guid: 3362073206f496d4c97ccb81c12ccbd3, type: 2}
+  _prefabs:
+  - prefab: {fileID: 100000, guid: 3898761cfa525d244822026575a1f242, type: 3}
+    role: 1
+  _registryLists:
+  - {fileID: 11400000, guid: 633f6b7bd98070143a56ef7eebc4399c, type: 2}

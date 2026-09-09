@@ -293,6 +293,7 @@ GameObject:
   - component: {fileID: 7448052}
   - component: {fileID: 7448047}
   - component: {fileID: 7448046}
+  - component: {fileID: 7448053}
   m_Layer: 0
   m_Name: '[ResourceNode_CopperVein]'
   m_TagString: Untagged
@@ -454,6 +455,21 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &7448053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7448045}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7448045:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &9752808
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -521,13 +537,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9752811}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
 --- !u!4 &9752809 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7166673925411305578, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
   m_PrefabInstance: {fileID: 9752808}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &9752810 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 9752808}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &9752811
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9752810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:9752808
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &9837641
 GameObject:
   m_ObjectHideFlags: 0
@@ -569,6 +608,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 14177345}
+  - component: {fileID: 14177346}
   m_Layer: 0
   m_Name: WorldRoot_0_0
   m_TagString: Untagged
@@ -599,6 +639,21 @@ Transform:
   - {fileID: 1029052514}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &14177346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 14177344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &16503946
 GameObject:
   m_ObjectHideFlags: 0
@@ -1748,6 +1803,7 @@ GameObject:
   - component: {fileID: 52261663}
   - component: {fileID: 52261662}
   - component: {fileID: 52261668}
+  - component: {fileID: 52261669}
   m_Layer: 0
   m_Name: DockStation_TestZone
   m_TagString: Untagged
@@ -1881,6 +1937,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.PadStateSync
   ShowTopMostFoldoutHeaderGroup: 1
   debugMode: 1
+--- !u!114 &52261669
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 52261661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:52261661:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &54609437
 GameObject:
   m_ObjectHideFlags: 0
@@ -5670,7 +5741,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: e6290d9962fa94d4f977ebd87fe52812, type: 2}
     - target: {fileID: 4149803177450251974, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 898820923
+      value: 3807793733
       objectReference: {fileID: 0}
     - target: {fileID: 4149803177450251974, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -5724,6 +5795,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 160254276}
     - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -5733,6 +5807,26 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4909245970462092621, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   m_PrefabInstance: {fileID: 160254273}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &160254275 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  m_PrefabInstance: {fileID: 160254273}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &160254276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 160254275}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:160254273
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &160903248
 GameObject:
   m_ObjectHideFlags: 0
@@ -6430,13 +6524,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 174338750}
   m_SourcePrefab: {fileID: 100100000, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
 --- !u!4 &174338748 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2699941460075462476, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
   m_PrefabInstance: {fileID: 174338747}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &174338749 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+  m_PrefabInstance: {fileID: 174338747}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &174338750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 174338749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:174338747
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &176069938
 GameObject:
   m_ObjectHideFlags: 0
@@ -6899,6 +7016,7 @@ GameObject:
   - component: {fileID: 182231086}
   - component: {fileID: 182231085}
   - component: {fileID: 182231088}
+  - component: {fileID: 182231089}
   m_Layer: 0
   m_Name: "\u0424\u0435\u0440\u043C\u0430 \u041F\u0440\u0438\u043C\u0443\u043C\u0430
     0_4"
@@ -7077,6 +7195,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.PadStateSync
   ShowTopMostFoldoutHeaderGroup: 1
   debugMode: 1
+--- !u!114 &182231089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 182231080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:182231080:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &183340388
 GameObject:
   m_ObjectHideFlags: 0
@@ -7610,6 +7743,7 @@ GameObject:
   - component: {fileID: 192250733}
   - component: {fileID: 192250735}
   - component: {fileID: 192250736}
+  - component: {fileID: 192250737}
   m_Layer: 0
   m_Name: Pickup_Weapon_IronDagger
   m_TagString: Untagged
@@ -7697,6 +7831,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &192250737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 192250732}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:192250732:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &192682514
 GameObject:
   m_ObjectHideFlags: 0
@@ -8509,6 +8658,7 @@ GameObject:
   - component: {fileID: 226542071}
   - component: {fileID: 226542070}
   - component: {fileID: 226542073}
+  - component: {fileID: 226542074}
   m_Layer: 0
   m_Name: "\u0424\u0435\u0440\u043C\u0430 \u041F\u0440\u0438\u043C\u0443\u043C\u0430
     0_2"
@@ -8689,6 +8839,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.PadStateSync
   ShowTopMostFoldoutHeaderGroup: 1
   debugMode: 1
+--- !u!114 &226542074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 226542065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:226542065:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &227093813
 GameObject:
   m_ObjectHideFlags: 0
@@ -10337,6 +10502,7 @@ GameObject:
   - component: {fileID: 269601137}
   - component: {fileID: 269601136}
   - component: {fileID: 269601138}
+  - component: {fileID: 269601139}
   m_Layer: 0
   m_Name: TriggerZone_DiscoverQuest
   m_TagString: Untagged
@@ -10395,6 +10561,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.Testing.M13QuestTriggerZone
   questId: collect_copper_ore
   oneShot: 1
+--- !u!114 &269601139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 269601135}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:269601135:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &273922102
 GameObject:
   m_ObjectHideFlags: 0
@@ -11048,6 +11229,7 @@ GameObject:
   - component: {fileID: 288977813}
   - component: {fileID: 288977812}
   - component: {fileID: 288977811}
+  - component: {fileID: 288977814}
   m_Layer: 0
   m_Name: TriggerZone_StageIntro
   m_TagString: Untagged
@@ -11106,6 +11288,21 @@ Transform:
   - {fileID: 26562341}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &288977814
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288977810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:288977810:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &289504500
 GameObject:
   m_ObjectHideFlags: 0
@@ -11477,6 +11674,7 @@ GameObject:
   - component: {fileID: 302175165}
   - component: {fileID: 302175167}
   - component: {fileID: 302175168}
+  - component: {fileID: 302175169}
   m_Layer: 0
   m_Name: Pickup_Clothing_TravelerBoots
   m_TagString: Untagged
@@ -11564,6 +11762,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &302175169
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 302175164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:302175164:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &303014343
 GameObject:
   m_ObjectHideFlags: 0
@@ -11876,7 +12089,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1227428318
+      value: 387796851
       objectReference: {fileID: 0}
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -11937,8 +12150,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 309181555}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+--- !u!1 &309181554 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 309181553}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &309181555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 309181554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:309181553
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &317456588
 GameObject:
   m_ObjectHideFlags: 0
@@ -12364,6 +12600,7 @@ GameObject:
   m_Component:
   - component: {fileID: 326467915}
   - component: {fileID: 326467914}
+  - component: {fileID: 326467916}
   m_Layer: 0
   m_Name: Crossbow
   m_TagString: Untagged
@@ -12403,6 +12640,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &326467916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 326467913}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:326467913:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &326914576
 GameObject:
   m_ObjectHideFlags: 0
@@ -13133,8 +13385,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1587185407317693831, guid: 7a9c517d79f5dad478d743dd2652cf1d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 333968928}
   m_SourcePrefab: {fileID: 100100000, guid: 7a9c517d79f5dad478d743dd2652cf1d, type: 3}
+--- !u!1 &333968927 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1587185407317693831, guid: 7a9c517d79f5dad478d743dd2652cf1d, type: 3}
+  m_PrefabInstance: {fileID: 333968926}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &333968928
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 333968927}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1587185407317693831:333968926
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &334539686
 GameObject:
   m_ObjectHideFlags: 0
@@ -15103,6 +15378,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4649566693282215820, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
       insertIndex: -1
       addedObject: {fileID: 391879215}
+    - targetCorrespondingSourceObject: {fileID: 4649566693282215820, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 391879217}
   m_SourcePrefab: {fileID: 100100000, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
 --- !u!1 &391879213 stripped
 GameObject:
@@ -15161,6 +15439,21 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &391879217
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 391879213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:4649566693282215820:391879212
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &392476057
 GameObject:
   m_ObjectHideFlags: 0
@@ -15843,6 +16136,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 409548022}
+  - component: {fileID: 409548023}
   m_Layer: 0
   m_Name: Respawn_Default
   m_TagString: Untagged
@@ -15865,6 +16159,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &409548023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 409548021}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:409548021:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &409735755
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -15948,13 +16257,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 409735758}
   m_SourcePrefab: {fileID: 100100000, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
 --- !u!4 &409735756 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2699941460075462476, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
   m_PrefabInstance: {fileID: 409735755}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &409735757 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+  m_PrefabInstance: {fileID: 409735755}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &409735758
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 409735757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:409735755
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &410772914
 GameObject:
   m_ObjectHideFlags: 0
@@ -16594,8 +16926,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3892824241647204050, guid: 5661f1364cf80b642905e7a79fcb5dfd, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 432274428}
   m_SourcePrefab: {fileID: 100100000, guid: 5661f1364cf80b642905e7a79fcb5dfd, type: 3}
+--- !u!1 &432274427 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3892824241647204050, guid: 5661f1364cf80b642905e7a79fcb5dfd, type: 3}
+  m_PrefabInstance: {fileID: 432274426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &432274428
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 432274427}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:3892824241647204050:432274426
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &433166879
 GameObject:
   m_ObjectHideFlags: 0
@@ -17083,8 +17438,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4794494763504228605, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 453181474}
   m_SourcePrefab: {fileID: 100100000, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
+--- !u!1 &453181473 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4794494763504228605, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
+  m_PrefabInstance: {fileID: 453181472}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &453181474
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 453181473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:4794494763504228605:453181472
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &454154388
 GameObject:
   m_ObjectHideFlags: 0
@@ -18110,6 +18488,7 @@ GameObject:
   - component: {fileID: 478164233}
   - component: {fileID: 478164235}
   - component: {fileID: 478164236}
+  - component: {fileID: 478164237}
   m_Layer: 0
   m_Name: Pickup_Clothing_SteelChestplate
   m_TagString: Untagged
@@ -18197,6 +18576,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &478164237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478164232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:478164232:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &482823033
 GameObject:
   m_ObjectHideFlags: 0
@@ -18419,7 +18813,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3610562802
+      value: 1179236541
       objectReference: {fileID: 0}
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -18480,8 +18874,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 486707327}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+--- !u!1 &486707326 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 486707325}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &486707327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 486707326}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:486707325
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &487831825
 GameObject:
   m_ObjectHideFlags: 0
@@ -20878,8 +21295,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7136846278023162379, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 542155642}
   m_SourcePrefab: {fileID: 100100000, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
+--- !u!1 &542155641 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7136846278023162379, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
+  m_PrefabInstance: {fileID: 542155640}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &542155642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542155641}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7136846278023162379:542155640
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &542274848
 GameObject:
   m_ObjectHideFlags: 0
@@ -22223,13 +22663,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 583178785}
   m_SourcePrefab: {fileID: 100100000, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
 --- !u!4 &583178783 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2699941460075462476, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
   m_PrefabInstance: {fileID: 583178782}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &583178784 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+  m_PrefabInstance: {fileID: 583178782}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &583178785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 583178784}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:583178782
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &583201782
 GameObject:
   m_ObjectHideFlags: 0
@@ -23462,6 +23925,7 @@ GameObject:
   m_Component:
   - component: {fileID: 613190470}
   - component: {fileID: 613190469}
+  - component: {fileID: 613190471}
   m_Layer: 0
   m_Name: Throw_grenade
   m_TagString: Untagged
@@ -23501,6 +23965,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &613190471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 613190468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:613190468:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &615846118
 GameObject:
   m_ObjectHideFlags: 0
@@ -23696,6 +24175,7 @@ GameObject:
   - component: {fileID: 616215518}
   - component: {fileID: 616215520}
   - component: {fileID: 616215521}
+  - component: {fileID: 616215522}
   m_Layer: 0
   m_Name: Pickup_Weapon_AntigravBlade
   m_TagString: Untagged
@@ -23783,6 +24263,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &616215522
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 616215517}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:616215517:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &617911806
 GameObject:
   m_ObjectHideFlags: 0
@@ -24969,6 +25464,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 654695915}
+  - component: {fileID: 654695916}
   m_Layer: 0
   m_Name: Q001_RuntimeTest_Line
   m_TagString: Untagged
@@ -25017,6 +25513,21 @@ Transform:
   - {fileID: 1503800703}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &654695916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 654695914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &657121077
 GameObject:
   m_ObjectHideFlags: 0
@@ -25462,6 +25973,7 @@ GameObject:
   - component: {fileID: 666140172}
   - component: {fileID: 666140171}
   - component: {fileID: 666140170}
+  - component: {fileID: 666140173}
   m_Layer: 0
   m_Name: ContrailVFX
   m_TagString: Untagged
@@ -30287,6 +30799,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &666140173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 666140169}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:666140169:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &670287505
 GameObject:
   m_ObjectHideFlags: 0
@@ -30918,13 +31445,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 688441826}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
 --- !u!4 &688441824 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7166673925411305578, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
   m_PrefabInstance: {fileID: 688441823}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &688441825 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 688441823}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &688441826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 688441825}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:688441823
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &689412674
 GameObject:
   m_ObjectHideFlags: 0
@@ -33491,6 +34041,7 @@ GameObject:
   - component: {fileID: 740835311}
   - component: {fileID: 740835313}
   - component: {fileID: 740835314}
+  - component: {fileID: 740835315}
   m_Layer: 0
   m_Name: Pickup_Clothing_WorkerHelmet
   m_TagString: Untagged
@@ -33578,6 +34129,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &740835315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 740835310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:740835310:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &742507243
 GameObject:
   m_ObjectHideFlags: 0
@@ -33747,8 +34313,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6314410203132540618, guid: c4d2b5ad8c8b04a458e2285699f4aea0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 744699254}
   m_SourcePrefab: {fileID: 100100000, guid: c4d2b5ad8c8b04a458e2285699f4aea0, type: 3}
+--- !u!1 &744699253 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6314410203132540618, guid: c4d2b5ad8c8b04a458e2285699f4aea0, type: 3}
+  m_PrefabInstance: {fileID: 744699252}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &744699254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 744699253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:6314410203132540618:744699252
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &744730165
 GameObject:
   m_ObjectHideFlags: 0
@@ -36571,6 +37160,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 801983721}
     - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -36580,6 +37172,26 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4909245970462092621, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   m_PrefabInstance: {fileID: 801983718}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &801983720 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  m_PrefabInstance: {fileID: 801983718}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &801983721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 801983720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:801983718
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &802995996
 GameObject:
   m_ObjectHideFlags: 0
@@ -39697,7 +40309,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3748959928
+      value: 587665021
       objectReference: {fileID: 0}
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -39758,8 +40370,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 900637291}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+--- !u!1 &900637290 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 900637289}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &900637291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 900637290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:900637289
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &901879574
 GameObject:
   m_ObjectHideFlags: 0
@@ -41014,13 +41649,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 921825921}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
 --- !u!4 &921825919 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7166673925411305578, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
   m_PrefabInstance: {fileID: 921825918}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &921825920 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 921825918}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &921825921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 921825920}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:921825918
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &923713897
 GameObject:
   m_ObjectHideFlags: 0
@@ -42032,6 +42690,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 961525696}
     - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -42041,6 +42702,26 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4909245970462092621, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   m_PrefabInstance: {fileID: 961525693}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &961525695 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  m_PrefabInstance: {fileID: 961525693}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &961525696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 961525695}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:961525693
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &961610739
 GameObject:
   m_ObjectHideFlags: 0
@@ -42587,8 +43268,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8030880911573377953, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 968626609}
   m_SourcePrefab: {fileID: 100100000, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
+--- !u!1 &968626608 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8030880911573377953, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
+  m_PrefabInstance: {fileID: 968626607}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &968626609
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 968626608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:8030880911573377953:968626607
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &969825629
 GameObject:
   m_ObjectHideFlags: 0
@@ -44954,6 +45658,7 @@ GameObject:
   - component: {fileID: 1052965419}
   - component: {fileID: 1052965414}
   - component: {fileID: 1052965420}
+  - component: {fileID: 1052965421}
   m_Layer: 0
   m_Name: '[ResourceNode_IronVein]'
   m_TagString: Untagged
@@ -45115,6 +45820,21 @@ MonoBehaviour:
   _consumeOnUse: 0
   _interactableDisplayName: IronVein
   _customFailureMessage: 
+--- !u!114 &1052965421
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1052965413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1052965413:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &1058181883
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -45187,6 +45907,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1058181886}
     - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -45196,6 +45919,26 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4909245970462092621, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   m_PrefabInstance: {fileID: 1058181883}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1058181885 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  m_PrefabInstance: {fileID: 1058181883}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1058181886
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1058181885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1058181883
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1062770532
 GameObject:
   m_ObjectHideFlags: 0
@@ -49450,13 +50193,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1154386618}
   m_SourcePrefab: {fileID: 100100000, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
 --- !u!4 &1154386616 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2699941460075462476, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
   m_PrefabInstance: {fileID: 1154386615}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1154386617 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+  m_PrefabInstance: {fileID: 1154386615}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1154386618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1154386617}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1154386615
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1154762293
 GameObject:
   m_ObjectHideFlags: 0
@@ -50061,8 +50827,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 337059921531908604, guid: 63ec9b91ddcbabc4c8b0fa75b88ba812, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1170723422}
   m_SourcePrefab: {fileID: 100100000, guid: 63ec9b91ddcbabc4c8b0fa75b88ba812, type: 3}
+--- !u!1 &1170723421 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 337059921531908604, guid: 63ec9b91ddcbabc4c8b0fa75b88ba812, type: 3}
+  m_PrefabInstance: {fileID: 1170723420}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1170723422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1170723421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:1170723420
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1171704488
 GameObject:
   m_ObjectHideFlags: 0
@@ -50565,6 +51354,7 @@ GameObject:
   - component: {fileID: 1177720403}
   - component: {fileID: 1177720402}
   - component: {fileID: 1177720405}
+  - component: {fileID: 1177720406}
   m_Layer: 0
   m_Name: "\u0424\u0435\u0440\u043C\u0430 \u041F\u0440\u0438\u043C\u0443\u043C\u0430
     0_1"
@@ -50745,6 +51535,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.PadStateSync
   ShowTopMostFoldoutHeaderGroup: 1
   debugMode: 1
+--- !u!114 &1177720406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1177720397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1177720397:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!21 &1180655582
 Material:
   serializedVersion: 8
@@ -52509,8 +53314,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6321653361273976007, guid: f1dfd7bb0a4c6ba479d7d5d88814691a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1230577405}
   m_SourcePrefab: {fileID: 100100000, guid: f1dfd7bb0a4c6ba479d7d5d88814691a, type: 3}
+--- !u!1 &1230577404 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6321653361273976007, guid: f1dfd7bb0a4c6ba479d7d5d88814691a, type: 3}
+  m_PrefabInstance: {fileID: 1230577403}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1230577405
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1230577404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:6321653361273976007:1230577403
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1234667619
 GameObject:
   m_ObjectHideFlags: 0
@@ -53456,6 +54284,7 @@ GameObject:
   - component: {fileID: 1266341967}
   - component: {fileID: 1266341966}
   - component: {fileID: 1266341969}
+  - component: {fileID: 1266341970}
   m_Layer: 0
   m_Name: "\u0421\u0440\u0435\u0434\u043D\u044F\u044F 0_0"
   m_TagString: Untagged
@@ -53638,6 +54467,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.PadStateSync
   ShowTopMostFoldoutHeaderGroup: 1
   debugMode: 1
+--- !u!114 &1266341970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1266341961}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1266341961:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1267015647
 GameObject:
   m_ObjectHideFlags: 0
@@ -55335,8 +56179,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8707299315759427390, guid: 5126f1674446bb742996bb08fd308bf9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1296217194}
   m_SourcePrefab: {fileID: 100100000, guid: 5126f1674446bb742996bb08fd308bf9, type: 3}
+--- !u!1 &1296217193 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8707299315759427390, guid: 5126f1674446bb742996bb08fd308bf9, type: 3}
+  m_PrefabInstance: {fileID: 1296217192}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1296217194
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1296217193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:8707299315759427390:1296217192
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1303401453
 GameObject:
   m_ObjectHideFlags: 0
@@ -58576,13 +59443,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1357539580}
   m_SourcePrefab: {fileID: 100100000, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
 --- !u!4 &1357539578 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2699941460075462476, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
   m_PrefabInstance: {fileID: 1357539577}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1357539579 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+  m_PrefabInstance: {fileID: 1357539577}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1357539580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1357539579}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1357539577
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1358794012
 GameObject:
   m_ObjectHideFlags: 0
@@ -59035,6 +59925,7 @@ GameObject:
   - component: {fileID: 1369468116}
   - component: {fileID: 1369468115}
   - component: {fileID: 1369468114}
+  - component: {fileID: 1369468118}
   m_Layer: 0
   m_Name: '[Ship_Key_Container]'
   m_TagString: Untagged
@@ -59137,6 +60028,21 @@ Transform:
   - {fileID: 1714947190}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1369468118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1369468113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1369468113:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1370108603
 GameObject:
   m_ObjectHideFlags: 0
@@ -59823,6 +60729,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1377942720}
     - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -59832,6 +60741,26 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4909245970462092621, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   m_PrefabInstance: {fileID: 1377942717}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1377942719 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  m_PrefabInstance: {fileID: 1377942717}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1377942720
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1377942719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1377942717
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1378342617
 GameObject:
   m_ObjectHideFlags: 0
@@ -61467,13 +62396,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1417069063}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
 --- !u!4 &1417069061 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7166673925411305578, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
   m_PrefabInstance: {fileID: 1417069060}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1417069062 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 1417069060}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1417069063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1417069062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1417069060
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1417923646
 GameObject:
   m_ObjectHideFlags: 0
@@ -61590,8 +62542,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1171079311907173941, guid: 17d138159a0aa7c48a38261299bb3280, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1418405995}
   m_SourcePrefab: {fileID: 100100000, guid: 17d138159a0aa7c48a38261299bb3280, type: 3}
+--- !u!1 &1418405994 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1171079311907173941, guid: 17d138159a0aa7c48a38261299bb3280, type: 3}
+  m_PrefabInstance: {fileID: 1418405993}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1418405995
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1418405994}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1171079311907173941:1418405993
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1420419061
 GameObject:
   m_ObjectHideFlags: 0
@@ -62382,7 +63357,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1666353127
+      value: 309179360
       objectReference: {fileID: 0}
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -62443,8 +63418,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1444966578}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+--- !u!1 &1444966577 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 1444966576}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1444966578
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1444966577}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1444966576
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1445588696
 GameObject:
   m_ObjectHideFlags: 0
@@ -62766,6 +63764,7 @@ GameObject:
   - component: {fileID: 1453572263}
   - component: {fileID: 1453572265}
   - component: {fileID: 1453572266}
+  - component: {fileID: 1453572267}
   m_Layer: 0
   m_Name: Pickup_Weapon_WoodenSword
   m_TagString: Untagged
@@ -62853,6 +63852,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1453572267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1453572262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1453572262:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1455508728
 GameObject:
   m_ObjectHideFlags: 0
@@ -64402,8 +65416,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4375928684233543869, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1485405141}
   m_SourcePrefab: {fileID: 100100000, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
+--- !u!1 &1485405140 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4375928684233543869, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
+  m_PrefabInstance: {fileID: 1485405139}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1485405141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1485405140}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:4375928684233543869:1485405139
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1486337354
 GameObject:
   m_ObjectHideFlags: 0
@@ -64733,6 +65770,7 @@ GameObject:
   - component: {fileID: 1490161954}
   - component: {fileID: 1490161953}
   - component: {fileID: 1490161958}
+  - component: {fileID: 1490161959}
   m_Layer: 0
   m_Name: '[CraftingStation_Table]'
   m_TagString: Untagged
@@ -64874,6 +65912,21 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _config: {fileID: 11400000, guid: cc82c1049f182794285ae3860b345c15, type: 2}
   _metaRequirement: {fileID: 0}
+--- !u!114 &1490161959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1490161952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1490161952:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!21 &1494651763
 Material:
   serializedVersion: 8
@@ -65431,6 +66484,7 @@ GameObject:
   - component: {fileID: 1505408857}
   - component: {fileID: 1505408856}
   - component: {fileID: 1505408855}
+  - component: {fileID: 1505408860}
   m_Layer: 0
   m_Name: Road to Tertius
   m_TagString: Untagged
@@ -65631,6 +66685,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1000
   m_Center: {x: 0.0068359375, y: 0, z: -0.0056152344}
+--- !u!114 &1505408860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1505408850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1505408850:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1507431765
 GameObject:
   m_ObjectHideFlags: 0
@@ -65848,7 +66917,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6290783574738113837, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3011155965
+      value: 181246392
       objectReference: {fileID: 0}
     - target: {fileID: 6290783574738113837, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -65857,8 +66926,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1334246185813415076, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1509794192}
   m_SourcePrefab: {fileID: 100100000, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
+--- !u!1 &1509794191 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1334246185813415076, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
+  m_PrefabInstance: {fileID: 1509794190}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1509794192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1509794191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:1509794190
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1510645061
 GameObject:
   m_ObjectHideFlags: 0
@@ -67095,8 +68187,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5962711429974873311, guid: f88cc8ec7bdd02a4c95b6ef9806a9296, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1526862536}
   m_SourcePrefab: {fileID: 100100000, guid: f88cc8ec7bdd02a4c95b6ef9806a9296, type: 3}
+--- !u!1 &1526862535 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5962711429974873311, guid: f88cc8ec7bdd02a4c95b6ef9806a9296, type: 3}
+  m_PrefabInstance: {fileID: 1526862534}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1526862536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1526862535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5962711429974873311:1526862534
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1526913969
 GameObject:
   m_ObjectHideFlags: 0
@@ -67106,6 +68221,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1526913970}
+  - component: {fileID: 1526913971}
   m_Layer: 0
   m_Name: '[MetaRequirement_Test]'
   m_TagString: Untagged
@@ -67131,6 +68247,21 @@ Transform:
   - {fileID: 643943212}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1526913971
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1526913969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1526913969:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1529031589
 GameObject:
   m_ObjectHideFlags: 0
@@ -68727,8 +69858,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4157880980074026618, guid: 822e0bd9fb98bfc4ea7f82954ec00ab3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1551839793}
   m_SourcePrefab: {fileID: 100100000, guid: 822e0bd9fb98bfc4ea7f82954ec00ab3, type: 3}
+--- !u!1 &1551839792 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4157880980074026618, guid: 822e0bd9fb98bfc4ea7f82954ec00ab3, type: 3}
+  m_PrefabInstance: {fileID: 1551839791}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1551839793
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1551839792}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:4157880980074026618:1551839791
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &1553188250
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -68792,8 +69946,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7069497028711984000, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1553188252}
   m_SourcePrefab: {fileID: 100100000, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
+--- !u!1 &1553188251 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7069497028711984000, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
+  m_PrefabInstance: {fileID: 1553188250}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1553188252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553188251}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7069497028711984000:1553188250
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1556374239
 GameObject:
   m_ObjectHideFlags: 0
@@ -69480,6 +70657,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1570784355}
   - component: {fileID: 1570784354}
+  - component: {fileID: 1570784356}
   m_Layer: 0
   m_Name: Crossbow_weapon
   m_TagString: Untagged
@@ -69519,6 +70697,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1570784356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1570784353}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1570784353:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1572006710
 GameObject:
   m_ObjectHideFlags: 0
@@ -70371,8 +71564,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6716019714239139776, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1585813858}
   m_SourcePrefab: {fileID: 100100000, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
+--- !u!1 &1585813857 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6716019714239139776, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
+  m_PrefabInstance: {fileID: 1585813856}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1585813858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1585813857}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:6716019714239139776:1585813856
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1586727016
 GameObject:
   m_ObjectHideFlags: 0
@@ -71661,6 +72877,7 @@ GameObject:
   - component: {fileID: 1615803704}
   - component: {fileID: 1615803703}
   - component: {fileID: 1615803708}
+  - component: {fileID: 1615803709}
   m_Layer: 0
   m_Name: '[CraftingStation_Shipyard]'
   m_TagString: Untagged
@@ -71802,6 +73019,21 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _config: {fileID: 11400000, guid: 6a78a8acb74d0de4aaf6da84932d3bd8, type: 2}
   _metaRequirement: {fileID: 0}
+--- !u!114 &1615803709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1615803702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1615803702:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1617057526
 GameObject:
   m_ObjectHideFlags: 0
@@ -72359,6 +73591,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1625955774}
     - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -72368,6 +73603,26 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4909245970462092621, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   m_PrefabInstance: {fileID: 1625955771}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1625955773 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  m_PrefabInstance: {fileID: 1625955771}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1625955774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1625955773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1625955771
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1629782628
 GameObject:
   m_ObjectHideFlags: 0
@@ -72566,6 +73821,7 @@ GameObject:
   - component: {fileID: 1631178279}
   - component: {fileID: 1631178278}
   - component: {fileID: 1631178277}
+  - component: {fileID: 1631178282}
   m_Layer: 0
   m_Name: Road to Secund
   m_TagString: Untagged
@@ -72766,6 +74022,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1000
   m_Center: {x: 0.0078125, y: 0, z: -0.00390625}
+--- !u!114 &1631178282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1631178272}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1631178272:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1631371161
 GameObject:
   m_ObjectHideFlags: 0
@@ -73658,6 +74929,7 @@ GameObject:
   - component: {fileID: 1656927031}
   - component: {fileID: 1656927030}
   - component: {fileID: 1656927033}
+  - component: {fileID: 1656927034}
   m_Layer: 0
   m_Name: "\u0424\u0435\u0440\u043C\u0430 \u041F\u0440\u0438\u043C\u0443\u043C\u0430
     0_3"
@@ -73837,6 +75109,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.PadStateSync
   ShowTopMostFoldoutHeaderGroup: 1
   debugMode: 1
+--- !u!114 &1656927034
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1656927025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1656927025:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1660080225
 GameObject:
   m_ObjectHideFlags: 0
@@ -74420,8 +75707,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5954733007135301770, guid: cd50dee177b57174cb2645e50b31b70c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1672342613}
   m_SourcePrefab: {fileID: 100100000, guid: cd50dee177b57174cb2645e50b31b70c, type: 3}
+--- !u!1 &1672342612 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5954733007135301770, guid: cd50dee177b57174cb2645e50b31b70c, type: 3}
+  m_PrefabInstance: {fileID: 1672342611}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1672342613
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1672342612}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5954733007135301770:1672342611
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1672478931
 GameObject:
   m_ObjectHideFlags: 0
@@ -74842,6 +76152,7 @@ GameObject:
   - component: {fileID: 1683511479}
   - component: {fileID: 1683511481}
   - component: {fileID: 1683511482}
+  - component: {fileID: 1683511483}
   m_Layer: 0
   m_Name: Pickup_Weapon_IronSpear
   m_TagString: Untagged
@@ -74929,6 +76240,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1683511483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683511478}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1683511478:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1684895724
 GameObject:
   m_ObjectHideFlags: 0
@@ -75690,8 +77016,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2356130661414943933, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1707764221}
   m_SourcePrefab: {fileID: 100100000, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
+--- !u!1 &1707764220 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2356130661414943933, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
+  m_PrefabInstance: {fileID: 1707764219}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1707764221
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1707764220}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:2356130661414943933:1707764219
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1709472077
 GameObject:
   m_ObjectHideFlags: 0
@@ -76622,6 +77971,7 @@ GameObject:
   - component: {fileID: 1739546881}
   - component: {fileID: 1739546885}
   - component: {fileID: 1739546880}
+  - component: {fileID: 1739546886}
   m_Layer: 0
   m_Name: '[ResourceNode_PlantHerb]'
   m_TagString: Untagged
@@ -76763,6 +78113,21 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &1739546886
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1739546879}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1739546879:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1740545977
 GameObject:
   m_ObjectHideFlags: 0
@@ -78656,13 +80021,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1795549722}
   m_SourcePrefab: {fileID: 100100000, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
 --- !u!4 &1795549720 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2699941460075462476, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
   m_PrefabInstance: {fileID: 1795549719}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1795549721 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+  m_PrefabInstance: {fileID: 1795549719}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1795549722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1795549721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1795549719
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1796687223
 GameObject:
   m_ObjectHideFlags: 0
@@ -80053,8 +81441,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5280015872767050384, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1832724167}
   m_SourcePrefab: {fileID: 100100000, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
+--- !u!1 &1832724166 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5280015872767050384, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
+  m_PrefabInstance: {fileID: 1832724165}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1832724167
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1832724166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5280015872767050384:1832724165
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1835214878
 GameObject:
   m_ObjectHideFlags: 0
@@ -81904,6 +83315,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1891874032}
     - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -81913,6 +83327,26 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4909245970462092621, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   m_PrefabInstance: {fileID: 1891874029}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1891874031 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  m_PrefabInstance: {fileID: 1891874029}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1891874032
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1891874031}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1891874029
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1892729564
 GameObject:
   m_ObjectHideFlags: 0
@@ -82081,6 +83515,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1895139888}
+  - component: {fileID: 1895139889}
   m_Layer: 0
   m_Name: NPC
   m_TagString: Untagged
@@ -82105,6 +83540,21 @@ Transform:
   - {fileID: 160254274}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1895139889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1895139887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1899733312
 GameObject:
   m_ObjectHideFlags: 0
@@ -84025,7 +85475,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6290783574738113837, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2812290597
+      value: 527533709
       objectReference: {fileID: 0}
     - target: {fileID: 6290783574738113837, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -84034,8 +85484,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1334246185813415076, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1945707760}
   m_SourcePrefab: {fileID: 100100000, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
+--- !u!1 &1945707759 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1334246185813415076, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
+  m_PrefabInstance: {fileID: 1945707758}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1945707760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945707759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:1945707758
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!134 &1948101063
 PhysicsMaterial:
   m_ObjectHideFlags: 0
@@ -84169,13 +85642,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1949731732}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
 --- !u!4 &1949731730 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7166673925411305578, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
   m_PrefabInstance: {fileID: 1949731729}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1949731731 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 1949731729}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1949731732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1949731731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1949731729
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1949971253
 GameObject:
   m_ObjectHideFlags: 0
@@ -85028,8 +86524,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6368427781584931994, guid: f029b503c412a1f43a43ef1fcadbf0d7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1961728345}
   m_SourcePrefab: {fileID: 100100000, guid: f029b503c412a1f43a43ef1fcadbf0d7, type: 3}
+--- !u!1 &1961728344 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6368427781584931994, guid: f029b503c412a1f43a43ef1fcadbf0d7, type: 3}
+  m_PrefabInstance: {fileID: 1961728343}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1961728345
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1961728344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:6368427781584931994:1961728343
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &1961986156
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -85093,8 +86612,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6423233993187137997, guid: 8724ae8f508dbc94f882c0450956dc78, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1961986158}
   m_SourcePrefab: {fileID: 100100000, guid: 8724ae8f508dbc94f882c0450956dc78, type: 3}
+--- !u!1 &1961986157 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6423233993187137997, guid: 8724ae8f508dbc94f882c0450956dc78, type: 3}
+  m_PrefabInstance: {fileID: 1961986156}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1961986158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1961986157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:6423233993187137997:1961986156
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &1962216530
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -85162,13 +86704,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1962216533}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
 --- !u!4 &1962216531 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7166673925411305578, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
   m_PrefabInstance: {fileID: 1962216530}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1962216532 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 1962216530}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1962216533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1962216532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1962216530
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1962951582
 GameObject:
   m_ObjectHideFlags: 0
@@ -86212,6 +87777,7 @@ GameObject:
   - component: {fileID: 1987571266}
   - component: {fileID: 1987571265}
   - component: {fileID: 1987571264}
+  - component: {fileID: 1987571269}
   m_Layer: 0
   m_Name: Road to Quartus
   m_TagString: Untagged
@@ -86412,6 +87978,21 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1000
   m_Center: {x: 0.0078125, y: 0, z: -0.0078125}
+--- !u!114 &1987571269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1987571259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1987571259:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &1989364759
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -86479,13 +88060,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1989364762}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
 --- !u!4 &1989364760 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7166673925411305578, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
   m_PrefabInstance: {fileID: 1989364759}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1989364761 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 1989364759}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1989364762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1989364761}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1989364759
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &1990001304
 GameObject:
   m_ObjectHideFlags: 0
@@ -88567,7 +90171,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2264955001
+      value: 2636104558
       objectReference: {fileID: 0}
     - target: {fileID: 4811265474252765593, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -88632,8 +90236,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2054275751}
   m_SourcePrefab: {fileID: 100100000, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+--- !u!1 &2054275750 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5886009066709116313, guid: 445e7593fd6b3f54ea4968e1ba62958a, type: 3}
+  m_PrefabInstance: {fileID: 2054275749}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2054275751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2054275750}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:2054275749
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2056283414
 GameObject:
   m_ObjectHideFlags: 0
@@ -88904,7 +90531,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6290783574738113837, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1410024905
+      value: 1975447298
       objectReference: {fileID: 0}
     - target: {fileID: 6290783574738113837, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -88913,8 +90540,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1334246185813415076, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2060387818}
   m_SourcePrefab: {fileID: 100100000, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
+--- !u!1 &2060387817 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1334246185813415076, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
+  m_PrefabInstance: {fileID: 2060387816}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2060387818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2060387817}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:2060387816
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2060928744
 GameObject:
   m_ObjectHideFlags: 0
@@ -89031,8 +90681,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 409003302271648103, guid: b81f079e28f223d4b9fa06564918bc4c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2066362741}
   m_SourcePrefab: {fileID: 100100000, guid: b81f079e28f223d4b9fa06564918bc4c, type: 3}
+--- !u!1 &2066362740 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 409003302271648103, guid: b81f079e28f223d4b9fa06564918bc4c, type: 3}
+  m_PrefabInstance: {fileID: 2066362739}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2066362741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2066362740}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:409003302271648103:2066362739
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2066588783
 GameObject:
   m_ObjectHideFlags: 0
@@ -90416,13 +92089,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2091713474}
   m_SourcePrefab: {fileID: 100100000, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
 --- !u!4 &2091713472 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2699941460075462476, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
   m_PrefabInstance: {fileID: 2091713471}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2091713473 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+  m_PrefabInstance: {fileID: 2091713471}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2091713474
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2091713473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:2091713471
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2092484998
 GameObject:
   m_ObjectHideFlags: 0
@@ -90650,6 +92346,7 @@ GameObject:
   - component: {fileID: 2099880788}
   - component: {fileID: 2099880787}
   - component: {fileID: 2099880791}
+  - component: {fileID: 2099880792}
   m_Layer: 0
   m_Name: DockStation_Primium
   m_TagString: Untagged
@@ -90800,6 +92497,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.PadStateSync
   ShowTopMostFoldoutHeaderGroup: 1
   debugMode: 1
+--- !u!114 &2099880792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2099880783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:2099880783:0
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1 &2100964174
 GameObject:
   m_ObjectHideFlags: 0
@@ -92466,7 +94178,7 @@ PrefabInstance:
       objectReference: {fileID: 565436165}
     - target: {fileID: 4149803177450251974, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1276478489
+      value: 1489169756
       objectReference: {fileID: 0}
     - target: {fileID: 4149803177450251974, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -92536,10 +94248,33 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 908139681}
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2565592759201354976}
     - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+--- !u!1 &2565592759201354975 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  m_PrefabInstance: {fileID: 2565592759201354974}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2565592759201354976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2565592759201354975}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2565592759201354974
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &2977119022265116449
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -92610,7 +94345,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9005265592825029471, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1993853404
+      value: 600307464
       objectReference: {fileID: 0}
     - target: {fileID: 9005265592825029471, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -92619,8 +94354,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4649566693282215820, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2977119022265116451}
   m_SourcePrefab: {fileID: 100100000, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
+--- !u!1 &2977119022265116450 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4649566693282215820, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
+  m_PrefabInstance: {fileID: 2977119022265116449}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2977119022265116451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2977119022265116450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:4649566693282215820:2977119022265116449
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &3281526143421661472
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -92764,8 +94522,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5082629194708434534}
   m_SourcePrefab: {fileID: 100100000, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+--- !u!1 &5082629194708434533 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7747837703169966031, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
+  m_PrefabInstance: {fileID: 5082629194708434532}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5082629194708434534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5082629194708434533}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:5082629194708434532
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1001 &8645957853286282446
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -92833,8 +94614,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 337059921531908604, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8645957853286282448}
   m_SourcePrefab: {fileID: 100100000, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
+--- !u!1 &8645957853286282447 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 337059921531908604, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
+  m_PrefabInstance: {fileID: 8645957853286282446}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8645957853286282448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8645957853286282447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:8645957853286282446
+  _frameId: 0
+  _activateWhenReady: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

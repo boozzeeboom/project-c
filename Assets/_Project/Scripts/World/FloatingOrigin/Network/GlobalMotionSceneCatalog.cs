@@ -5,7 +5,12 @@ using UnityEngine;
 
 namespace ProjectC.World.FloatingOrigin.Network
 {
-    public enum GlobalSceneTreatment : byte { Unreviewed, PreserveContent, SceneNetworkObject, ReplaceWithNetworkPrefab, Exclude }
+    /// <summary>
+    /// Reviewed disposition of an authored scene source. <see cref="Unmanaged"/> is an explicit, reviewed
+    /// decision that the global system does not place, activate, spawn or retire this source: it stays exactly
+    /// as authored. It is NOT silent exclusion — the entry still requires a review note and identity binding.
+    /// </summary>
+    public enum GlobalSceneTreatment : byte { Unreviewed, PreserveContent, SceneNetworkObject, ReplaceWithNetworkPrefab, Exclude, Unmanaged }
     public enum GlobalScenePoseKind : byte { None, World, ParentLocal }
 
     [Serializable]
@@ -61,6 +66,8 @@ namespace ProjectC.World.FloatingOrigin.Network
         public GlobalSceneTreatment Treatment { get; }
         public bool Spatial { get; }
         public bool IsNetwork => Treatment == GlobalSceneTreatment.SceneNetworkObject || Treatment == GlobalSceneTreatment.ReplaceWithNetworkPrefab;
+        /// <summary>False for reviewed sources the executor deliberately leaves untouched.</summary>
+        public bool IsManaged => Treatment != GlobalSceneTreatment.Unmanaged;
         public uint ReplacementPrefabHash { get; }
         public GlobalScenePoseKind PoseKind { get; }
         public GlobalPosition WorldPosition { get; }

@@ -9,7 +9,8 @@ using Unity.Netcode.Components;
 namespace ProjectC.World.FloatingOrigin.Network
 {
     /// <summary>
-    /// Initial loaded-scene executor only: inactive static content and inactive NON-spatial in-scene services.
+    /// Initial loaded-scene executor only: inactive static content, inactive NON-spatial in-scene services and
+    /// reviewed Unmanaged sources that are deliberately left exactly as authored.
     /// No dynamic bodies/nav, spatial scene actors, replacements/exclusions, DDOL migration or streaming transaction.
     /// Never attached or activated automatically. Real prepared-content source remains mandatory in the player bootstrap.
     /// </summary>
@@ -27,6 +28,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             public Vector3 BeforePosition, BeforeScale, LocalTarget;
             public Quaternion BeforeRotation;
             public bool WasActive, Activate, Positioned, Activated, Recorded, Retired;
+            public bool Unmanaged;
             public GlobalSceneReceiptToken Receipt;
         }
         private sealed class Preparation
@@ -70,7 +72,17 @@ namespace ProjectC.World.FloatingOrigin.Network
                 var scene = SceneManager.GetSceneAt(i);
                 if (!scene.isLoaded || string.IsNullOrEmpty(scene.path) || !paths.TryGetValue(scene.path, out string guid)) throw new InvalidOperationException("loaded_scene_not_in_saved_catalog_scope");
                 result.Scenes.Add(guid, scene);
-                foreach (var root in scene.GetRootGameObjects()) { candidates.Add(root); foreach (var no in root.GetComponentsInChildren<NetworkObject>(true)) candidates.Add(no.gameObject); }
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    bool rootBound = root.GetComponent<GlobalSceneSourceMarker>() != null;
+                    bool hasBoundNetworkDescendant = false;
+                    foreach (var no in root.GetComponentsInChildren<NetworkObject>(true))
+                        if (no.GetComponent<GlobalSceneSourceMarker>() != null) { hasBoundNetworkDescendant = true; break; }
+                    // Runtime UI/services created outside the reviewed scene scope are not catalog sources.
+                    if (!rootBound && !hasBoundNetworkDescendant) continue;
+                    candidates.Add(root);
+                    foreach (var no in root.GetComponentsInChildren<NetworkObject>(true)) candidates.Add(no.gameObject);
+                }
             }
             // I supports an identical, fully preloaded initial catalog on every peer. No implicit scene loads during join.
             if (result.Scenes.Count != profile.SceneCatalog.Data.expectedSceneGuids.Length)
@@ -83,6 +95,16 @@ namespace ProjectC.World.FloatingOrigin.Network
                 var no = go.GetComponent<NetworkObject>();
                 frameMap.TryGetValue(marker.FrameId, out var frame);
                 bool frameValid = frame != null && frame.Scene == scene && frame.Physics.Equals(scene.GetPhysicsScene());
+                if (!entry.IsManaged)
+                {
+                    // Identity is still bound and verified; the source itself is left untouched.
+                    if (entry.Spatial || marker.FrameId != 0) throw new InvalidOperationException("unmanaged_source_must_be_nonspatial_and_frameless:" + go.name);
+                    var unmanagedNode = new Node { Entry = entry, Marker = marker, Network = no, Scene = scene,
+                        Parent = go.transform.parent, WasActive = go.activeSelf, Activate = false, Unmanaged = true };
+                    result.BySource.Add(entry.SourceId, unmanagedNode);
+                    result.Nodes.Add(unmanagedNode);
+                    continue;
+                }
                 string issue = GlobalSceneExecutionPolicy.Validate(new GlobalSceneExecutionFacts { Treatment = entry.Treatment, Spatial = entry.Spatial, NetworkObject = no != null,
                     ActiveSelf = go.activeSelf, ActiveInHierarchy = go.activeInHierarchy, ActivateWhenReady = marker.ActivateWhenReady, FrameValid = frameValid, UnsupportedNative = UnsupportedOwnedSubtree(go, entry.Spatial) });
                 if (issue != null || (!entry.Spatial && marker.FrameId != 0)) throw new InvalidOperationException(issue ?? "nonspatial_frame_must_be_zero");
@@ -102,6 +124,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 while (parent != null && parent.GetComponent<GlobalSceneSourceMarker>() == null) parent = parent.parent;
                 string parentId = parent == null ? "" : parent.GetComponent<GlobalSceneSourceMarker>().SourceId;
                 if (parentId != entry.ParentSourceId) throw new InvalidOperationException("authored_parent_binding_mismatch");
+                if (!entry.IsManaged) continue; // Reviewed as untouched: never placed, activated, spawned or retired.
                 if (entry.IsNetwork || entry.Spatial)
                     for (var ancestor = node.Parent; ancestor != null; ancestor = ancestor.parent)
                     {
@@ -113,8 +136,15 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
             // Includes DDOL and inactive objects. No unknown/foreign/dynamic network object may hide from this boundary.
             foreach (var no in UnityEngine.Object.FindObjectsByType<NetworkObject>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                if (!candidates.Contains(no.gameObject) || no.NetworkManager != manager || no.gameObject.activeSelf || no.gameObject.activeInHierarchy || no.IsSpawned)
+            {
+                if (!candidates.Contains(no.gameObject) || no.NetworkManager != manager || no.IsSpawned)
                     throw new InvalidOperationException("uncontrolled_network_source_before_native_sweep:" + no.name);
+                // Unmanaged sources are reviewed to stay as authored, so their active state is not ours to require.
+                var bound = no.GetComponent<GlobalSceneSourceMarker>();
+                bool unmanaged = bound != null && result.BySource.TryGetValue(bound.SourceId, out var boundNode) && boundNode.Unmanaged;
+                if (!unmanaged && (no.gameObject.activeSelf || no.gameObject.activeInHierarchy))
+                    throw new InvalidOperationException("uncontrolled_network_source_before_native_sweep:" + no.name);
+            }
             foreach (var marker in UnityEngine.Object.FindObjectsByType<GlobalSceneSourceMarker>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (!candidates.Contains(marker.gameObject)) throw new InvalidOperationException("extra_baked_marker_outside_authored_roots_or_network_objects");
             return result;
@@ -216,7 +246,18 @@ namespace ProjectC.World.FloatingOrigin.Network
                         if (node.Network != null && !node.Network.IsSpawned) { CanAcceptScenePeer = false; continue; }
                         continue;
                     }
-                    if (node.Entry.ParentSourceId.Length != 0 && !_prepared.BySource[node.Entry.ParentSourceId].Recorded) continue;
+                    if (node.Entry.ParentSourceId.Length != 0)
+                    {
+                        var parentNode = _prepared.BySource[node.Entry.ParentSourceId];
+                        if (!parentNode.Unmanaged && !parentNode.Recorded) continue;
+                    }
+                    if (node.Unmanaged)
+                    {
+                        if (!_ledger.TryRecordLive(_loads[node.Entry.SceneGuid], node.Entry.SourceId, 0, default, out node.Receipt, out var unmanagedError))
+                            throw new InvalidOperationException(unmanagedError);
+                        node.Recorded = true;
+                        continue;
+                    }
                     if (node.Network != null && !_manager.IsServer && !node.Network.IsSpawned) continue;
                     if (node.Activate && !node.Marker.gameObject.activeSelf) { node.Activated = true; node.Marker.gameObject.SetActive(true); }
                     if (!_installed || _manager == null || _manager.ShutdownInProgress) return;
@@ -239,7 +280,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                     node.Recorded = true;
                 }
                 bool ready = !_retiring;
-                foreach (var node in _prepared.Nodes) if (!node.Recorded || node.Retired || (node.Network != null && !node.Network.IsSpawned)) ready = false;
+                foreach (var node in _prepared.Nodes)
+                    if (!node.Recorded || node.Retired || (!node.Unmanaged && node.Network != null && !node.Network.IsSpawned)) ready = false;
                 CanAcceptScenePeer = ready;
                 if (!ready && Time.realtimeSinceStartupAsDouble - _startedAt > 60d) throw new InvalidOperationException("Initial scene receipts timed out.");
             }
@@ -254,7 +296,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             { error = "retirement_unavailable"; return false; }
             // Never deactivate external persistent infrastructure or forget dynamic player/scene additions.
             var scene = _prepared.Scenes[guid];
-            var roots = new HashSet<GameObject>(); foreach (var node in _prepared.Nodes) if (node.Scene == scene && node.Parent == null) roots.Add(node.Marker.gameObject);
+            // Includes reviewed Unmanaged roots: they are accounted for by the catalog even though nothing manages them.
+            var roots = new HashSet<GameObject>(); foreach (var node in _prepared.BySource.Values) if (node.Scene == scene && node.Parent == null) roots.Add(node.Marker.gameObject);
             foreach (var root in scene.GetRootGameObjects())
             {
                 if (!roots.Contains(root)) { error = "unmanaged_runtime_root_blocks_retirement"; return false; }
@@ -266,7 +309,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
             }
             foreach (var node in _prepared.Nodes)
-                if (node.Scene == scene && (!node.Recorded || !node.Activate || (node.Network != null && !_manager.IsServer && node.Network.IsSpawned)))
+                if (node.Scene == scene && (!node.Recorded || (!node.Unmanaged && (!node.Activate || (node.Network != null && !_manager.IsServer && node.Network.IsSpawned)))))
                 { error = "persistent_unaccounted_or_still_spawned_client_source"; return false; }
             _busy = true; _retiring = true; CanAcceptScenePeer = false;
             try
@@ -275,6 +318,12 @@ namespace ProjectC.World.FloatingOrigin.Network
                 {
                     var node = _prepared.BySource[id]; RequireIdentity(node);
                     if (!_ledger.CanRecordRetired(node.Receipt, out error)) throw new InvalidOperationException(error);
+                    if (node.Unmanaged)
+                    {
+                        if (!_ledger.TryRecordRetired(node.Receipt, out error)) throw new InvalidOperationException(error);
+                        node.Retired = true;
+                        continue;
+                    }
                     if (node.Network != null && _manager.IsServer && node.Network.IsSpawned) node.Network.Despawn(destroy: false);
                     if (!_installed || _manager == null || _manager.ShutdownInProgress) { error = "retirement_interrupted_by_shutdown"; return false; }
                     if (node.Network != null && node.Network.IsSpawned) throw new InvalidOperationException("Native object remained spawned.");

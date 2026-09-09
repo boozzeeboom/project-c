@@ -29,6 +29,10 @@ namespace ProjectC.World.FloatingOrigin.Network
     {
         public static string Validate(GlobalSceneExecutionFacts facts)
         {
+            // Reviewed-but-unmanaged sources keep their authored state: no placement, activation, spawn or
+            // native subtree restriction applies, so only the "nothing is managed" invariant is checked.
+            if (facts.Treatment == GlobalSceneTreatment.Unmanaged)
+                return facts.Spatial ? "unmanaged_source_cannot_be_spatial" : null;
             if (facts.Treatment != GlobalSceneTreatment.PreserveContent && facts.Treatment != GlobalSceneTreatment.SceneNetworkObject)
                 return "replacement_and_exclusion_need_extended_executor";
             if (facts.NetworkObject != (facts.Treatment == GlobalSceneTreatment.SceneNetworkObject)) return "source_network_kind_mismatch";

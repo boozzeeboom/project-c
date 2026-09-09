@@ -33,6 +33,8 @@ namespace ProjectC.World.FloatingOrigin.Network
         private readonly byte[] _previousPayload;
         private readonly List<NetworkPrefabsList> _previousRegistry;
         private readonly List<NetworkPrefabsList> _installedRegistry;
+        private readonly GameObject _previousPlayerPrefab;
+        private readonly GameObject _installedPlayerPrefab;
         private readonly bool _server;
         private readonly Action<NetworkManager.ConnectionApprovalRequest, NetworkManager.ConnectionApprovalResponse> _approval;
         private readonly HashSet<ulong> _approved = new HashSet<ulong>();
@@ -41,11 +43,13 @@ namespace ProjectC.World.FloatingOrigin.Network
         public bool IsDisposed { get; private set; }
 
         private GlobalMotionNetworkStartup(NetworkManager manager, GlobalMotionNetworkProfile profile, MonoBehaviour bootstrap,
-            GlobalMotionStartRole role, byte[] hello, List<NetworkPrefabsList> previousRegistry, List<NetworkPrefabsList> installedRegistry)
+            GlobalMotionStartRole role, byte[] hello, List<NetworkPrefabsList> previousRegistry, List<NetworkPrefabsList> installedRegistry,
+            GameObject previousPlayerPrefab, GameObject installedPlayerPrefab)
         {
             _manager = manager; _profile = profile; _bootstrapObject = bootstrap; _bootstrap = (IGlobalMotionSpawnBootstrap)bootstrap;
             _config = manager.NetworkConfig; _hello = hello; _previousPayload = _config.ConnectionData;
             _previousRegistry = previousRegistry; _installedRegistry = installedRegistry;
+            _previousPlayerPrefab = previousPlayerPrefab; _installedPlayerPrefab = installedPlayerPrefab;
             _server = role != GlobalMotionStartRole.Client; _approval = Approve;
         }
 
@@ -72,6 +76,27 @@ namespace ProjectC.World.FloatingOrigin.Network
             return true;
         }
 
+        private static bool TryApplyProfilePlayerPrefab(NetworkManager manager, GlobalMotionNetworkProfile profile,
+            out GameObject previous, out GameObject installed, out string error)
+        {
+            previous = null; installed = null; error = null;
+            if (profile == null || !profile.EnforceGlobalContracts || profile.Prefabs == null || profile.Prefabs.Length == 0) return true;
+            var spatial = new List<GameObject>();
+            foreach (var entry in profile.Prefabs)
+                if (entry != null && entry.prefab != null && entry.role == GlobalPrefabRole.Spatial) spatial.Add(entry.prefab);
+            if (spatial.Count != 1) { error = "global_profile_requires_one_spatial_player_prefab_for_pilot"; return false; }
+            var candidate = spatial[0];
+            if (candidate.GetComponent<NetworkObject>() == null) { error = "global_player_prefab_missing_network_object"; return false; }
+            previous = manager.NetworkConfig.PlayerPrefab;
+            installed = candidate;
+            manager.NetworkConfig.PlayerPrefab = candidate;
+            return true;
+        }
+        private static void RestorePlayerPrefab(NetworkManager manager, GameObject previous, GameObject installed)
+        {
+            if (manager == null || manager.NetworkConfig == null || installed == null) return;
+            if (ReferenceEquals(manager.NetworkConfig.PlayerPrefab, installed)) manager.NetworkConfig.PlayerPrefab = previous;
+        }
         private static void RestoreRegistry(NetworkManager manager, List<NetworkPrefabsList> previous, List<NetworkPrefabsList> installed)
         {
             if (installed == null || manager == null || manager.NetworkConfig == null) return;
@@ -101,7 +126,13 @@ namespace ProjectC.World.FloatingOrigin.Network
             // Applied to the live config only, before hello and the ownership hash, and restored on any exit.
             if (!TryApplyProfileRegistry(manager, profile, out var previousRegistry, out var installedRegistry, out error))
                 return false;
+            if (!TryApplyProfilePlayerPrefab(manager, profile, out var previousPlayerPrefab, out var installedPlayerPrefab, out error))
+            {
+                RestoreRegistry(manager, previousRegistry, installedRegistry);
+                return false;
+            }
             bool registryOwnedByGate = false;
+            bool playerPrefabOwnedByGate = false;
             try
             {
                 if (!GlobalMotionPrefabInspector.TryBuildHello(manager.NetworkConfig, profile, false, out var hello, out error)) return false;
@@ -118,8 +149,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                 { error = "bootstrap_changed_network_start_ownership"; return false; }
                 if (!GlobalMotionPrefabInspector.TryBuildHello(manager.NetworkConfig, profile, false, out var after, out error) ||
                     !GlobalMotionNetworkContract.ValidateHello(after, hello, out error)) return false;
-                gate = new GlobalMotionNetworkStartup(manager, profile, bootstrap, role, hello, previousRegistry, installedRegistry);
-                registryOwnedByGate = true;
+                gate = new GlobalMotionNetworkStartup(manager, profile, bootstrap, role, hello, previousRegistry, installedRegistry,
+                    previousPlayerPrefab, installedPlayerPrefab);
+                registryOwnedByGate = true; playerPrefabOwnedByGate = true;
                 manager.NetworkConfig.ConnectionData = hello;
                 if (gate._server) manager.ConnectionApprovalCallback = gate._approval;
                 manager.OnClientConnectedCallback += gate.Connected;
@@ -147,6 +179,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 // Once the gate exists it owns restoration through Release; avoid restoring twice.
                 if (!registryOwnedByGate) RestoreRegistry(manager, previousRegistry, installedRegistry);
+                if (!playerPrefabOwnedByGate) RestorePlayerPrefab(manager, previousPlayerPrefab, installedPlayerPrefab);
             }
         }
 
@@ -222,6 +255,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 if (_manager.ConnectionApprovalCallback == _approval) _manager.ConnectionApprovalCallback = null;
                 if (ReferenceEquals(_config.ConnectionData, _hello)) _config.ConnectionData = _previousPayload;
+                RestorePlayerPrefab(_manager, _previousPlayerPrefab, _installedPlayerPrefab);
                 RestoreRegistry(_manager, _previousRegistry, _installedRegistry);
                 _manager.OnClientConnectedCallback -= Connected; _manager.OnClientDisconnectCallback -= Disconnected;
                 _manager.OnServerStopped -= Stopped; _manager.OnClientStopped -= Stopped;

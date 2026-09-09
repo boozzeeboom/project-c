@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO06L)
+
+**Задача:** Подготовить и зафиксировать первый global static-world pilot: `NetworkPlayer_GlobalPilot`, reviewed catalog для `BootstrapScene` + `WorldScene_0_0`, explicit `Unmanaged` treatment и native scene admission до NGO spawn.
+**Результат:** Добавлен `GlobalSceneTreatment.Unmanaged` с обязательной catalog/review binding и сохранением authored state без placement/activation/spawn/retirement. Обновлены catalog compiler, policy, executor seams и protocol `0xF005 → 0xF006`. Созданы/подключены `GlobalMotionPilotSceneCatalog`, `GlobalMotionPilotProfile`, `GlobalPilotNetworkPrefabs`, `GlobalMotionPilotSpawnSource` и `GlobalMotionPilotRuntime`; global startup временно заменяет `NetworkConfig.PlayerPrefab` только в памяти и восстанавливает legacy prefab при release/failure. Каталог содержит 150 observations (`BootstrapScene=61`, `WorldScene_0_0=89`) с digest `bfe8008aa885a818b05f799799c504a1b174f87fdc0d73df2043a3ab91d93199`.
+**Проверки:** Compile ранее подтверждён как `No compile errors`; pure execution validator — `32 passed / 0 failed`. Edit Mode snapshot содержит 150 уникальных live markers. Runtime native preparation остановилась до player spawn с `scene_preparation:catalog_source_not_bound:336a190646b19bc46b22dd4e78f99800:1044316355:0`; поэтому персонаж не появляется и Host/client acceptance не пройдены.
+**Граница:** Play Mode, screenshots и игровые acceptance-прогоны выполняет пользователь; автоматически не запускаются. `GroundPlane_0_0` намеренно не восстанавливается. Независимый `LiberationSans SDF - Fallback.asset` в этап не входит.
+**Следующий шаг:** Исправить executor candidate binding так, чтобы все 150 catalog entries связывались со всеми marked descendants reviewed roots; добавить диагностику `catalog/markers/bound`, затем передать сборку пользователю для ручного Host/client прогона. Только после пользовательского PASS проверять grounding, движение, камеру и release/restore.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, обновлён этот журнал.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO06K)
 
 **Задача:** Проверить результат ручной уборки и составить каталог пилота.

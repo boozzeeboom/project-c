@@ -1,0 +1,40 @@
+{
+  "date": "2026-09-09",
+  "verdict": "Read-only observation sizing for the declared pilot scene set",
+  "networkObjectScriptGuid": "d5a57f767e5e46a458fc5d3c628d0cbb",
+  "totalObservations": 95,
+  "totalEntriesRequired": 95,
+  "scenes": [
+    {
+      "path": "Assets/_Project/Scenes/BootstrapScene.unity",
+      "sceneGuid": "336a190646b19bc46b22dd4e78f99800",
+      "gameObjects": 222,
+      "roots": 55,
+      "networkObjects": 18,
+      "rootNetworkObjects": 13,
+      "observations": 60,
+      "monoBehaviours": 133,
+      "missingScripts": 0,
+      "missingScriptGuids": []
+    },
+    {
+      "path": "Assets/_Project/Scenes/World/WorldScene_0_0.unity",
+      "sceneGuid": "837a3910185f2b9478ce71df025ccc7c",
+      "gameObjects": 1191,
+      "roots": 26,
+      "networkObjects": 23,
+      "rootNetworkObjects": 14,
+      "observations": 35,
+      "monoBehaviours": 345,
+      "missingScripts": 1,
+      "missingScriptGuids": [
+        "41bc0fc7a014832489bfd2db2ba89173"
+      ]
+    }
+  ],
+  "notes": [
+    "The compiler requires exactly one reviewed entry per observation, each with a non-empty review note.",
+    "Counts come from the saved YAML. Prefab-instance objects can expose additional identity, so the project's own audit remains the authoring source.",
+    "No scene was loaded, modified or saved; no catalog was drafted."
+  ]
+}

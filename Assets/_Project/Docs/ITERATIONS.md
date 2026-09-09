@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO06B)
+
+**Задача:** Перевести регистрацию сетевых префабов в явный режим и создать изолированный пилотный префаб игрока, не активируя global mode.
+**Registration:** `GenerateDefaultNetworkPrefabs=true → false`, персистится в новом `ProjectSettings/NetcodeForGameObjects.asset` (Git его не игнорирует). `DefaultNetworkPrefabs.asset` не изменён: 58 entries, serialized-содержимое, bytes и meta идентичны, canonical player остался в списке. Список продолжает использоваться через NetworkConfig; отключён только AssetPostprocessor. Следствие: новые сетевые префабы требуют явной регистрации, а автоудаление записей больше не работает.
+**Pilot prefab:** `Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab` создан независимой копией, а не variant — override мог бы вернуть удалённый NetworkTransform. Удалён NetworkTransform, добавлены PlayerAttacker, PlayerTarget, GlobalMotionReplicator и GlobalMotionPoseAdapter с `_coordinatesRequired=true`; SynchronizeTransform/AutoObjectParentSync/SceneMigrationSynchronization выставлены false, остальные два флага перепроверены. Порядок NetworkBehaviour (6) одинаков у сервера и клиентов, так как это один asset.
+**Уточнение 06A:** ValidateLayout для Spatial требует **пятое** условие — baked PlayerAttacker/PlayerTarget; это совпадает с существующей ошибкой NetworkPlayer для global-игрока. Skill-компоненты, добавляемые owner-only в рантайме, — обычные MonoBehaviour и на порядок NetworkBehaviour не влияют.
+**Файлы:** `06B_PILOT_PLAYER_PREFAB.md`, `06B_PILOT_PLAYER_PREFAB.json`, `tools/VerifyFo06BPilotPrefab.cs`, `ProjectSettings/NetcodeForGameObjects.asset`, roadmap и этот журнал. Runtime C# проекта не менялся.
+**Проверки:** Spatial contract PASS (features включают Adapter/Replicator/CoordinatesRequired/PlayerAttacker/PlayerTarget), pilot hash `3692800100` ≠ canonical `186599647`, у пилота нет stock writers/nested NO/body/joint/nav/2D и лишних participants, canonical остался legacy, 8 protected файлов побайтово равны committed 06A baseline, автогенерация off, registry=58, pilot не зарегистрирован, выбранный PlayerPrefab по-прежнему canonical. No compile errors; 678 pure checks E не перезапускались. No Play Mode/physics/network/screenshots/builds/auth/save access.
+**Остаток:** Пилот попадает под `.gitignore` `*.prefab`, существует только локально — принудительная публикация не выполнялась и требует решения. Далее: классификация profile/catalog (эффективный registry должен точно совпадать с classified catalog), prepared frames/markers/native executor, dirty Bootstrap с legacy position services/ClientSceneLoader/3 missing scripts, native audit WorldScene_0_0, issuer/store. Global mode/world shift выключены, jitter fixed не заявляется.
+**Коммит:** один docs/results/tool/settings commit; пилотный префаб, TMP fallback, Temp-скрипты, DefaultNetworkPrefabs.asset и сцены исключены.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO06A)
 
 **Задача:** Завершить read-only preflight конкретного pilot scope после E, не включая global mode и не меняя пользовательские assets/settings.

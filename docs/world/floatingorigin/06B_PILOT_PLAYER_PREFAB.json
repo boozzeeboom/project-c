@@ -1,0 +1,158 @@
+{
+  "date": "2026-09-09",
+  "unityVersion": "6000.5.2f1",
+  "ngoVersion": "2.13.0",
+  "canonicalPath": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+  "pilotPath": "Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab",
+  "verdict": "Pilot player prefab authored and contract-valid; pilot NOT selected, NOT registered, global mode still off",
+  "autoRegistrationEnabled": false,
+  "pilotRegistered": false,
+  "pilotSelectedAsPlayerPrefab": false,
+  "runtimeTested": false,
+  "selectedPlayerPrefabInScene": "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+  "registryPath": "Assets/DefaultNetworkPrefabs.asset",
+  "layoutContract": "PASS",
+  "layoutFeatures": "RootNetworkObject, Adapter, Replicator, CoordinatesRequired, SpatialContent, Player, PlayerAttacker, PlayerTarget",
+  "pilotHash": 3692800100,
+  "canonicalHash": 186599647,
+  "registryEntries": 58,
+  "pilotRootComponents": [
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "UnityEngine.Transform",
+      "index": 0,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "Unity.Netcode.NetworkObject",
+      "index": 1,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.Player.NetworkPlayer",
+      "index": 2,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "UnityEngine.CharacterController",
+      "index": 3,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.Player.PlayerInputReader",
+      "index": 4,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.Player.CharacterEquipmentVisualApplier",
+      "index": 5,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.Player.CharacterCustomisationApplier",
+      "index": 6,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.Player.PlayerRespawnTracker",
+      "index": 7,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.Rendering.EdgeDetectionTarget",
+      "index": 8,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.Combat.PlayerAttacker",
+      "index": 9,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.Combat.PlayerTarget",
+      "index": 10,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.World.FloatingOrigin.Network.GlobalMotionReplicator",
+      "index": 11,
+      "enabled": true
+    },
+    {
+      "objectPath": "NetworkPlayer_GlobalPilot",
+      "type": "ProjectC.World.FloatingOrigin.Network.GlobalMotionPoseAdapter",
+      "index": 12,
+      "enabled": true
+    }
+  ],
+  "pilotNetworkBehaviourOrder": [
+    "ProjectC.Player.NetworkPlayer|1",
+    "ProjectC.Player.PlayerRespawnTracker|1",
+    "ProjectC.Combat.PlayerAttacker|1",
+    "ProjectC.Combat.PlayerTarget|1",
+    "ProjectC.World.FloatingOrigin.Network.GlobalMotionReplicator|1",
+    "ProjectC.World.FloatingOrigin.Network.GlobalMotionPoseAdapter|1"
+  ],
+  "pilotNetworkObjectFlags": [
+    {
+      "name": "SynchronizeTransform",
+      "value": false
+    },
+    {
+      "name": "AutoObjectParentSync",
+      "value": false
+    },
+    {
+      "name": "SceneMigrationSynchronization",
+      "value": false
+    },
+    {
+      "name": "ActiveSceneSynchronization",
+      "value": false
+    },
+    {
+      "name": "DontDestroyWithOwner",
+      "value": false
+    }
+  ],
+  "unchangedProtectedFiles": [
+    "Assets/_Project/Prefabs/NetworkPlayer.prefab",
+    "Assets/_Project/Prefabs/NetworkPlayer.prefab.meta",
+    "Assets/_Project/Scenes/BootstrapScene.unity",
+    "Assets/_Project/Scenes/BootstrapScene.unity.meta",
+    "Assets/_Project/Scenes/World/WorldScene_0_0.unity",
+    "Assets/_Project/Scenes/World/WorldScene_0_0.unity.meta",
+    "Assets/DefaultNetworkPrefabs.asset",
+    "Assets/DefaultNetworkPrefabs.asset.meta"
+  ],
+  "integrityChecks": [
+    "Pilot Spatial layout contract PASS with baked PlayerAttacker/PlayerTarget, replicator, opt-in adapter and no stock writers",
+    "Root CharacterController only, no stock transform/body/joint/nav/2D writers",
+    "Canonical player still legacy: stock NetworkTransform present, no global components",
+    "All 8 protected files byte-identical to the committed 06A baseline",
+    "Automatic registration off; registry still 58 entries and pilot unregistered",
+    "Scene selection still the canonical player: Assets/_Project/Prefabs/NetworkPlayer.prefab"
+  ],
+  "limitations": [
+    "Independent copy, not a prefab variant: canonical visual/gameplay edits will NOT propagate and must be re-applied deliberately.",
+    "Owner-only SkillInputService/SkillAnimationPlayer/SkillAnimationEventPassthrough are plain MonoBehaviours, so runtime addition does not change NetworkBehaviour ordering; their gameplay behaviour on the pilot is untested.",
+    "No Play Mode, physics, network session, screenshots, builds, auth or save access; contract validation is Edit Mode metadata only."
+  ],
+  "remainingBlockers": [
+    "Pilot is not registered in any NetworkPrefabsList; a real session requires an effective registry that matches a classified profile catalog exactly.",
+    "GlobalMotionNetworkProfile, reviewed scene catalog/digest, prepared frames, markers and native scene executor do not exist yet.",
+    "Bootstrap still holds enabled legacy ShipPositionServer/PlayerPositionServer, an active ClientSceneLoader and 3 unresolved missing scripts.",
+    "WorldScene_0_0 hierarchy remains uninspected; trusted account issuer and explicit store ownership remain unconfirmed."
+  ]
+}

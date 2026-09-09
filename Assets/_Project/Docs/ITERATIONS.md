@@ -1,5 +1,15 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO03 — census)
+
+**Задача:** Сделать воспроизводимую инвентаризацию пространственных зависимостей до runtime миграции.
+**Результат:** `FloatingOriginMigrationCensus.cs` прочитал 639 C#, 48 shader-файлов, 75 prefab assets и открытую Bootstrap; 2033 source candidates, 1391 prefab records, 197 scene records, errors=0. Найдены 50 prefab NetworkTransform и дополнительные Pickup/Drop RPC за пределами Scripts/. Классифицированы 16 RPC-кандидатов и поля docking/NPC DTO. Полный semantic/closed-scene gate остаётся открытым.
+**Изменения:** Editor scanner + Unity-generated meta; четыре generated census отчёта и `03_BOUNDARY_REVIEW.md` в `docs/world/floatingorigin`; статус roadmap. Дополнительно finite guard extreme rebase translation в OriginRebasePlan и regression test.
+**Проверки:** compile PASS; foundation **23 PASS / 0 FAIL**; census errors=[]. Unity fake-null ошибка первого запуска scanner исправлена, повторный запуск успешен. Play Mode/сеть/физика/скриншоты не запускались. Работающие gameplay consumers не менялись, world shift не включён.
+**Ограничения:** 2033 совпадения — кандидаты, не список доказанных багов. Missing scripts исходных assets отмечены, но не изменялись. Bootstrap наблюдалась dirty, не сохранялась. Один коммит кода/результатов/документации без отдельного хеша.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO02)
 
 **Задача:** Реализовать проверяемое global-double/local-frame ядро без включения частично мигрированного мира.

@@ -158,6 +158,11 @@ namespace ProjectC.EditorTools.FloatingOrigin
                 Expect<ArgumentOutOfRangeException>(() => OriginRebasePlan.TryCreate(frame, Vector3.zero, 0f, 256f, out _));
                 Expect<ArgumentOutOfRangeException>(() => OriginRebasePlan.TryCreate(frame, Vector3.zero, 2048f, 4096f, out _));
             }, passed, failed);
+            Check("Extreme custom rebase policy cannot emit infinite float translation", () =>
+            {
+                var frame = new LocalCoordinateFrame(GlobalPosition.Zero, float.MaxValue);
+                Require(!OriginRebasePlan.TryCreate(frame, new Vector3(float.MaxValue, 0f, 0f), 2e38f, 2e38f, out _));
+            }, passed, failed);
             Check("10000 steps and repeated rebases keep global trajectory", () =>
             {
                 var start = new GlobalPosition(1000000000d, 3000d, -1000000000d);

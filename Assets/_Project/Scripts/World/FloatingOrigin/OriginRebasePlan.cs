@@ -54,6 +54,9 @@ namespace ProjectC.World.FloatingOrigin
             // Use the actual representable origin change, not merely the requested rounding.
             var translation = new Vector3((float)(frame.Origin.X - origin.X),
                 (float)(frame.Origin.Y - origin.Y), (float)(frame.Origin.Z - origin.Z));
+            if (!GlobalPosition.IsFiniteValue(translation.x) || !GlobalPosition.IsFiniteValue(translation.y) ||
+                !GlobalPosition.IsFiniteValue(translation.z))
+                return false;
             plan = new OriginRebasePlan(frame, after, translation);
             return true;
         }

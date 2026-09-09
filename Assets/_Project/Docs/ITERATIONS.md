@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO05D)
+
+**Задача:** Реализовать explicit pre-spawn identity/restore plans и concrete source G; после этапа оценить оставшуюся интеграцию и тесты.
+**Результат:** GlobalPlayerSpawnPlanResolver + GlobalMotionCheckpointSpawnSource реально реализуют G interface для fixed prepared frames. Configure до старта требует actual scene/physics definitions и explicit replica frame; actual I.ValidatePreparation остаётся обязательным. После connection/World start trusted caller назначает stable PlayerId actual NetworkClient reference/session/run, затем готовит checkpoint либо явно заданный first-spawn с pose/rules/frame/nonce/deadline. Нет account ID из clientId, implicit zero или nearest frame; ship/out-of-frame/unknown checkpoint без explicit first-spawn блокируются.
+**Интеграционный код:** G factory guard до instantiate, после Awake/OnEnable до SpawnAsPlayerObject, confirm actual initial-ready player и handoff identity в C; original source/client/queue/nonce проверяются. Новое поле ReservationId — только server-memory plan, не wire/save. B readonly IsObservationCurrent проверяет raw published lineage без lease через NGO callbacks. Source не подключает startup/auth/loading/save schedule самостоятельно.
+**Исправления review:** C.TryRetire немедленно запрещает доступ при retirement внутри readiness callback и откладывает dictionary cleanup до unwind; D.Clear не вызывает throwing busy Dispose. Cancel не отзывает identity Completed player. Disconnect observer не удаляет still-live/ref-matching peer по позднему ID-only сигналу; stale cleanup выполняется до capacity check. Native partial spawn failure требует halt/despawn/session shutdown, а не заявления об атомарном rollback.
+**Файлы:** новые GlobalPlayerSpawnPlanResolver.cs, GlobalMotionCheckpointSpawnSource.cs, Editor ValidateGlobalCheckpointSpawn.cs и 3 Unity-generated meta. Изменены GlobalMotionSpawnContracts.cs, GlobalMotionPlayerBootstrap.cs, GlobalPlayerCheckpointRepository.cs и GlobalMotionPlayerCheckpointSource.cs. Отчёт/оценка `docs/world/floatingorigin/05D_CHECKPOINT_SPAWN_SOURCE.md`, JSON, roadmap, этот журнал.
+**Проверки:** No compile errors; **60 D + 560 прежних = 620 pure PASS / 0 FAIL**. Pure lookup/projection/pose/rules/nonce/deadline/cancel policy, actual B repository с memory storage и fake-interface guard dispatch. Native Mono sources, actual identity/NGO/CC/disposal, disk/crash/network/IL2CPP UNTESTED. Guard: 58 prefab candidates; opt-in/profile/loaded profiles/adapters/markers/executors/checkpointSources=0. Ни GameObjects, ни сцены/префабы, реальные saves, Play Mode, physics, networking, builds или screenshots не использовались.
+**Остаток:** Concrete fixed-frame G source теперь есть, но actual auth input (поиск inconclusive), orchestration/configuration, content/catalog/frame/prefab migration и native save lifecycle отсутствуют. Полные T-FO04–09 и semantic T-FO03 не закрыты. Оценка после D: 4–6 этапов до узкого fixed-frame Host+client прогона; 8–12 до первого реального rebase; 20–35 итераций по 10 крупным блокам до полной интеграции плюс ориентировочно 2–3 пользовательских тестовых цикла. Рубежи включают предыдущие, не суммируются; unknown native/scene scope может увеличить оценку. World shift/global mode выключены, jitter fixed не заявляется.
+**Коммит:** один code/meta/results/docs commit, без TMP fallback, Temp runner, historical A/B/C report/JSON, scenes/prefabs/profile/catalog или package changes.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO05C)
 
 **Задача:** Подготовить executable authoritative global player capture/merge и live guard перед B publication, не включая save/load в игре.

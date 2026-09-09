@@ -58,6 +58,24 @@ namespace ProjectC.World.FloatingOrigin.Persistence
                 try { using (_storage.AcquireLease()) return Observe(ReadState()); }
                 catch (Exception e) { return Unavailable("inspect:" + e.GetType().Name); }
         }
+        /// <summary>Read-only observation fence for a prepared restore. Does not hold a disk lease across native spawn callbacks.</summary>
+        public bool IsObservationCurrent(CheckpointStoreObservation expected, out string error)
+        {
+            error = null;
+            if (!Owned(expected)) { error = "observation_not_owned_by_this_repository"; return false; }
+            lock (_gate)
+                try
+                {
+                    using (_storage.AcquireLease())
+                    {
+                        var current = ReadState();
+                        if (current.Fingerprint != expected.Fingerprint) { error = "store_changed_since_restore_observation"; return false; }
+                        if (current.Status != CheckpointStoreStatus.Ready && current.Status != CheckpointStoreStatus.Empty) { error = "store_not_ready_for_restore"; return false; }
+                        return true;
+                    }
+                }
+                catch (Exception e) { error = "restore_observation_unavailable:" + e.GetType().Name; return false; }
+        }
         /// <summary>Optional synchronous read-only game-state guard, checked under the lease before staging and before publication.</summary>
         public CheckpointTransactionResult TryCommit(CheckpointStoreObservation expected, IReadOnlyList<GlobalPlayerPositionRecord> allPlayers, bool authorizePlayerRemovals = false, Func<bool> publicationGuard = null)
             => Write(expected, allPlayers, false, authorizePlayerRemovals, publicationGuard);

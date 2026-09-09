@@ -53,8 +53,9 @@ namespace ProjectC.World.FloatingOrigin.Network
         public Quaternion Rotation { get; }
         public Vector3 Scale { get; }
         public Func<GlobalMotionSnapshot, bool> OwnerRules { get; }
-        public GlobalMotionPlayerSpawnPlan(int frameId, GlobalPosition position, Quaternion rotation, Vector3 scale, Func<GlobalMotionSnapshot, bool> ownerRules)
-        { FrameId = frameId; Position = position; Rotation = rotation; Scale = scale; OwnerRules = ownerRules; }
+        public Guid ReservationId { get; } // Server-local only; never added to the wire seed or save format.
+        public GlobalMotionPlayerSpawnPlan(int frameId, GlobalPosition position, Quaternion rotation, Vector3 scale, Func<GlobalMotionSnapshot, bool> ownerRules, Guid reservationId = default)
+        { FrameId = frameId; Position = position; Rotation = rotation; Scale = scale; OwnerRules = ownerRules; ReservationId = reservationId; }
         public bool TryProject(LocalCoordinateFrame frame, ulong clientId, out Vector3 local)
         {
             local = default;
@@ -71,6 +72,41 @@ namespace ProjectC.World.FloatingOrigin.Network
         IReadOnlyList<GlobalMotionSpawnFrame> PreparedFrames { get; }
         bool TryGetPlayerPlan(ulong approvedClientId, out GlobalMotionPlayerSpawnPlan plan);
         bool TryGetReplicaFrame(GlobalMotionSpawnSeed seed, out int localFrameId);
+    }
+    /// <summary>Optional leased-source lifecycle. Validation is read-only; confirm/cancel are explicit server factory operations.</summary>
+    public interface IGlobalMotionPlayerSpawnPlanGuard
+    {
+        bool ValidatePlayerPlan(ulong clientId, GlobalMotionPlayerSpawnPlan plan, out string error);
+        bool ConfirmPlayerSpawn(ulong clientId, GlobalMotionPlayerSpawnPlan plan, NetworkObject player, out string error);
+        void CancelPlayerPlan(ulong clientId, Guid reservationId);
+        void ReleaseDisconnectedPlayer(ulong clientId);
+    }
+    public static class GlobalMotionSpawnPlanGuards
+    {
+        public static bool Validate(IGlobalMotionPlayerSpawnSource source, ulong clientId, GlobalMotionPlayerSpawnPlan plan, out string error)
+        {
+            error = null;
+            if (source == null) { error = "spawn_source_missing"; return false; }
+            var guard = source as IGlobalMotionPlayerSpawnPlanGuard;
+            if (guard == null) { if (plan.ReservationId == Guid.Empty) return true; error = "reserved_plan_requires_source_guard"; return false; }
+            try { return guard.ValidatePlayerPlan(clientId, plan, out error); }
+            catch (Exception e) { error = "spawn_plan_guard:" + e.GetType().Name; return false; }
+        }
+        public static bool Confirm(IGlobalMotionPlayerSpawnSource source, ulong clientId, GlobalMotionPlayerSpawnPlan plan, NetworkObject player, out string error)
+        {
+            error = null;
+            if (source == null) { error = "spawn_source_missing"; return false; }
+            var guard = source as IGlobalMotionPlayerSpawnPlanGuard;
+            if (guard == null) { if (plan.ReservationId == Guid.Empty) return true; error = "reserved_plan_requires_source_guard"; return false; }
+            try { return guard.ConfirmPlayerSpawn(clientId, plan, player, out error); }
+            catch (Exception e) { error = "spawn_plan_confirmation:" + e.GetType().Name; return false; }
+        }
+        public static void Cancel(IGlobalMotionPlayerSpawnSource source, ulong clientId, GlobalMotionPlayerSpawnPlan plan)
+        {
+            if (!(source is IGlobalMotionPlayerSpawnPlanGuard guard)) return;
+            try { guard.CancelPlayerPlan(clientId, plan.ReservationId); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
     }
     public interface IGlobalMotionSpawnBootstrapLifecycle
     {

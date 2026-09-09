@@ -76,7 +76,7 @@ namespace ProjectC.World.FloatingOrigin.Persistence
                 _registrations.Add(player.OwnerClientId, proposed); lease = proposed.Lease; return true;
             }
             catch (Exception e) { return PositionJsonSafety.Fail("identity_binding:" + e.GetType().Name, out error); }
-            finally { _busy = false; }
+            finally { _busy = false; if (_disposed) _registrations.Clear(); }
         }
         public bool TryUnbind(GlobalPlayerIdentityLease lease)
         {
@@ -127,7 +127,7 @@ namespace ProjectC.World.FloatingOrigin.Persistence
                 _issued.Add(candidate, new object()); snapshot = candidate; return true;
             }
             catch (Exception e) { return PositionJsonSafety.Fail("native_checkpoint_capture:" + e.GetType().Name, out error); }
-            finally { _busy = false; }
+            finally { _busy = false; if (_disposed) _registrations.Clear(); }
         }
         public bool IsCurrent(GlobalPlayerCaptureSnapshot snapshot, double maximumSampleAge, out string error)
         {
@@ -168,7 +168,7 @@ namespace ProjectC.World.FloatingOrigin.Persistence
         private bool Scope(out NetworkManager manager, out ulong session, out ulong run)
         {
             manager = null; session = 0; run = 0;
-            if (_world == null || !_world.TryGetServerCheckpointScope(out session, out run)) return false;
+            if (_disposed || _world == null || !_world.TryGetServerCheckpointScope(out session, out run)) return false;
             manager = _world.Manager; return manager != null;
         }
         private bool ScopeMatches(NetworkManager manager, ulong session, ulong run) => Scope(out var now, out ulong currentSession, out ulong currentRun) && now == manager && currentSession == session && currentRun == run;
@@ -178,10 +178,15 @@ namespace ProjectC.World.FloatingOrigin.Persistence
             if (_disposed || _busy || Thread.CurrentThread.ManagedThreadId != _threadId) return PositionJsonSafety.Fail("capture_source_disposed_reentrant_or_wrong_thread", out error);
             return true;
         }
+        /// <summary>Fail closed immediately, including retirement inside a native readiness callback; defer collection cleanup until it unwinds.</summary>
+        public bool TryRetire()
+        {
+            if (Thread.CurrentThread.ManagedThreadId != _threadId) return false;
+            _disposed = true; if (!_busy) _registrations.Clear(); return true;
+        }
         public void Dispose()
         {
-            if (_busy || Thread.CurrentThread.ManagedThreadId != _threadId) throw new InvalidOperationException("Dispose source on owning thread outside capture.");
-            _disposed = true; _registrations.Clear();
+            if (!TryRetire()) throw new InvalidOperationException("Retire source on its owning Unity thread.");
         }
     }
 }

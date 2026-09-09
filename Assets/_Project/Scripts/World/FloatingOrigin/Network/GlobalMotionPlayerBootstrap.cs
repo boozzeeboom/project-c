@@ -131,7 +131,12 @@ namespace ProjectC.World.FloatingOrigin.Network
             // Host callback may precede OnServerStarted. Processing waits for World.IsRunning, never registers during Validate.
         }
         public void PeerDisconnected(NetworkManager manager, ulong clientId)
-        { if (manager != _manager) return; _connected.Remove(clientId); _queue.Cancel(clientId); _deadlines.Remove(clientId); }
+        {
+            if (manager != _manager) return;
+            _connected.Remove(clientId); _queue.Cancel(clientId); _deadlines.Remove(clientId);
+            if (Source is IGlobalMotionPlayerSpawnPlanGuard guard)
+                try { guard.ReleaseDisconnectedPlayer(clientId); } catch (Exception e) { FailSession("source_disconnect_cleanup_failed"); Debug.LogException(e, this); }
+        }
 
         private bool EnsureFrames()
         {
@@ -196,17 +201,29 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (client.PlayerObject != null) { FailPeer(ticket.ClientId, "player_already_exists"); return; }
             if (!_frames.TryGetValue(plan.FrameId, out var frame) || !plan.TryProject(frame.Coordinates, ticket.ClientId, out var local))
             { FailPeer(ticket.ClientId, "invalid_explicit_player_plan"); return; }
+            var source = Source;
+            if (!GlobalMotionSpawnPlanGuards.Validate(source, ticket.ClientId, plan, out var guardError))
+            { GlobalMotionSpawnPlanGuards.Cancel(source, ticket.ClientId, plan); FailPeer(ticket.ClientId, guardError ?? "spawn_plan_guard_refused"); return; }
             var record = new Placement { Frame = frame, Plan = plan, Ticket = ticket, ServerFactory = true, Deadline = Time.realtimeSinceStartupAsDouble + WaitSeconds };
-            var value = CreateInstance(record, local, plan.Rotation, plan.Scale);
+            NetworkObject value = null;
             try
             {
-                if (!_queue.IsCurrent(ticket)) { DestroyUnspawned(value); return; }
+                value = CreateInstance(record, local, plan.Rotation, plan.Scale);
+                // Awake/OnEnable may change peer, content or source. Revalidate the original reservation before NGO publication.
+                if (!_queue.IsCurrent(ticket) || !ReferenceEquals(Source, source) || !_manager.ConnectedClients.TryGetValue(ticket.ClientId, out var current) ||
+                    !ReferenceEquals(current, client) || current.PlayerObject != null || !GlobalMotionSpawnPlanGuards.Validate(source, ticket.ClientId, plan, out guardError))
+                    throw new InvalidOperationException(guardError ?? "spawn_plan_changed_during_instantiation");
                 value.SpawnAsPlayerObject(ticket.ClientId, false);
-                if (!value.IsSpawned || record.Failed || !record.Ready || !_queue.IsCurrent(ticket)) throw new InvalidOperationException("Player spawn did not complete initial placement.");
-                _queue.Complete(ticket); _deadlines.Remove(ticket.ClientId);
+                if (!value.IsSpawned || record.Failed || !record.Ready || !_queue.IsCurrent(ticket) || !ReferenceEquals(Source, source) ||
+                    !_manager.ConnectedClients.TryGetValue(ticket.ClientId, out current) || !ReferenceEquals(current, client) || current.PlayerObject != value)
+                    throw new InvalidOperationException("Player spawn did not complete initial placement.");
+                if (!GlobalMotionSpawnPlanGuards.Confirm(source, ticket.ClientId, plan, value, out guardError) || !ReferenceEquals(Source, source) || !_queue.Complete(ticket))
+                    throw new InvalidOperationException(guardError ?? "spawn_identity_confirmation_failed");
+                _deadlines.Remove(ticket.ClientId);
             }
             catch (Exception e)
             {
+                GlobalMotionSpawnPlanGuards.Cancel(source, ticket.ClientId, plan);
                 if (value != null && !value.IsSpawned) DestroyUnspawned(value);
                 else if (value != null && _manager != null && _manager.IsListening && !_manager.ShutdownInProgress) value.Despawn(true);
                 FailSession("player_spawn_failed:" + e.GetType().Name); Debug.LogException(e, this);

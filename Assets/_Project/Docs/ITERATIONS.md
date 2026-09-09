@@ -1,5 +1,15 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO02)
+
+**Задача:** Реализовать проверяемое global-double/local-frame ядро без включения частично мигрированного мира.
+**Результат:** Добавлены GlobalPosition, LocalCoordinateFrame, GlobalGridCoordinates и OriginRebasePlan в `Assets/_Project/Scripts/World/FloatingOrigin/`; Editor validator — `Assets/_Project/Editor/FloatingOrigin/ValidateFloatingOriginFoundation.cs`.
+**Проверки:** Unity compile PASS; фактический вызов Run() вне Play Mode: **22 PASS, 0 FAIL**. Проверены точность на 10^9 м, независимые frames, границы сетки, repeated rebases, finite/overflow guards, NGO double serialization и JSON. Это НЕ runtime/visual/network-session PASS.
+**Документация:** `docs/world/floatingorigin/02_FOUNDATION_IMPLEMENTATION.md`. Игровые consumers, сцены, префабы и сохранения не изменялись; floating origin не включён. Полная миграция продолжается отдельными этапами.
+**Коммит:** код, Unity-generated meta, отчёт и эта запись вместе; отдельный коммит хеша не создаётся.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO01)
 
 **Задача:** Начать полноценную floating-origin миграцию MMO Host + Clients после отрицательного T-JITTER18.

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using Unity.Netcode;
 
 namespace ProjectC.World.FloatingOrigin.Network
 {
@@ -37,6 +38,27 @@ namespace ProjectC.World.FloatingOrigin.Network
         public const int MaxManifestBytes = 4 * 1024 * 1024;
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false, true);
         private const GlobalPrefabFeatures RequiredSpatial = GlobalPrefabFeatures.Adapter | GlobalPrefabFeatures.Replicator | GlobalPrefabFeatures.CoordinatesRequired;
+
+        /// <summary>
+        /// Validates a profile-declared prefab registry composition. Returns null when the declaration is
+        /// acceptable; <paramref name="replacement"/> stays null when no override was declared.
+        /// Pure: reads nothing from a live NetworkManager and mutates no configuration.
+        /// </summary>
+        public static string ValidateRegistryComposition(NetworkPrefabsList[] declared, out List<NetworkPrefabsList> replacement)
+        {
+            replacement = null;
+            if (declared == null || declared.Length == 0) return null;
+            if (declared.Length > MaxPrefabs) return "profile_registry_too_many_lists";
+            var composed = new List<NetworkPrefabsList>(declared.Length);
+            foreach (var list in declared)
+            {
+                if (list == null) return "profile_registry_contains_null_list";
+                if (composed.Contains(list)) return "profile_registry_contains_duplicate_list";
+                composed.Add(list);
+            }
+            replacement = composed;
+            return null;
+        }
 
         public static string ValidateLayout(GlobalPrefabLayout entry)
         {

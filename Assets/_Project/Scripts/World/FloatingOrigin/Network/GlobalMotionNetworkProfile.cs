@@ -1,4 +1,5 @@
 using System;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace ProjectC.World.FloatingOrigin.Network
@@ -17,9 +18,14 @@ namespace ProjectC.World.FloatingOrigin.Network
         private string _sceneLayoutDigest = "";
         [SerializeField] private GlobalMotionSceneCatalog _sceneCatalog;
         [SerializeField] private PrefabEntry[] _prefabs = Array.Empty<PrefabEntry>();
+        [SerializeField, Tooltip("Exact prefab registry required by this profile. When set, it replaces " +
+            "NetworkConfig.Prefabs.NetworkPrefabsLists for the global start only and is restored on release. " +
+            "Leave empty to use the scene configuration unchanged. Does not modify any scene or list asset.")]
+        private NetworkPrefabsList[] _registryLists = Array.Empty<NetworkPrefabsList>();
         public bool EnforceGlobalContracts => _enforceGlobalContracts;
         public string SceneLayoutDigest => _sceneLayoutDigest;
         public GlobalMotionSceneCatalog SceneCatalog => _sceneCatalog;
         public PrefabEntry[] Prefabs => _prefabs;
+        public NetworkPrefabsList[] RegistryLists => _registryLists;
     }
 }

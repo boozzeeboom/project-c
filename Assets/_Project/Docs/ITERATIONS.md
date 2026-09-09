@@ -1,5 +1,19 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO06F)
+
+**Задача:** Реализовать вариант B — применять пилотный реестр только в global-пути, не меняя сцену и не ломая legacy.
+**Результат:** `GlobalMotionNetworkProfile` получил декларативное `_registryLists` (пустое = конфигурация сцены без изменений, поведение по умолчанию не меняется). В подготовке запуска добавлены `TryApplyProfileRegistry`/`RestoreRegistry`: подмена только над живой конфигурацией, ни сцена, ни ассеты списков не записываются. Исходный экземпляр списка сохраняется и восстанавливается дословно — через `Release` при остановке/отмене и через `finally` на путях отказа до создания gate; владение передаётся gate в момент создания, поэтому двойного восстановления нет. Восстановление срабатывает только если текущий список — установленный нами, тем же приёмом, что уже применён для `ConnectionData`.
+**Ключевая деталь:** `Prefabs.Prefabs` — агрегированный `[NonSerialized]` кэш `m_Prefabs`, пересобираемый в `Initialize()`; в редакторе он уже заполнен из default-списка через `OnValidate`. Проверка каталога перечисляет и списки, и кэш, поэтому подмена только `NetworkPrefabsLists` оставила бы старые 58 записей в эффективном реестре. После подмены и после восстановления вызывается `Prefabs.Initialize()`. Подмена выполняется до сборки hello и до снятия хеша конфигурации, поэтому защита `bootstrap_changed_network_start_ownership` продолжает проверять именно вмешательство bootstrap.
+**Принятое последствие:** `Initialize()` подписывает `OnAdd`/`OnRemove` на списки без предварительной отписки, поэтому наш вызов плюс собственный вызов NGO при старте дают повторную подписку. Обработчики срабатывают только при изменении списка в рантайме, чего пилот не делает; пакет не правился.
+**Валидация:** состав реестра вынесен в чистый `GlobalMotionNetworkContract.ValidateRegistryComposition` — отклоняются `null`-элементы, дубликаты и превышение предела; пустое объявление означает отсутствие подмены. Добавлен `ValidateGlobalRegistryComposition` — 13 чистых проверок на in-memory `NetworkConfig`/`NetworkPrefabsList`, без GameObject, NetworkManager, сцен, записи ассетов и Play Mode; проверяется и поведение NGO, на которое опирается подмена.
+**Файлы:** изменены `GlobalMotionNetworkProfile.cs`, `GlobalMotionNetworkStartup.cs`, `GlobalMotionNetworkContract.cs`; новый `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalRegistryComposition.cs` с `.meta` (в этой папке метаданные скриптов исторически отслеживаются, общее правило `*.meta` не менялось). Отчёт `06F_GLOBAL_PATH_REGISTRY_SWAP.md`, roadmap и этот журнал.
+**Проверки:** прогон всех валидаторов floating-origin — **16 из 16, 691 PASS / 0 FAIL** (678 прежних без изменений + 13 новых), регрессий нет. No compile errors. Фактическая подмена в реальном запуске НЕ проверялась: профиль не создан, запуск требует каталога, frames и executor. Play Mode/physics/network/native executor/screenshots/builds/auth/save access не использовались.
+**Остаток:** Создать профиль с каталогом из одной Spatial-записи и ссылкой на пилотный список; scene catalog/markers/frames/native executor; выбрать пилота как PlayerPrefab и вывести legacy position services и ClientSceneLoader; три missing-компонента и несохранённое состояние Bootstrap; иерархия WorldScene_0_0; issuer/store; пользовательский Host+client gate. Global mode/world shift выключены, jitter fixed не заявляется.
+**Коммит:** один code/validator/docs commit; TMP fallback, Temp-скрипты прогона, профиль, сцены, префабы и реестры исключены.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO06E)
 
 **Задача:** Добавить BootstrapScene в Git и определить, как применять пилотный реестр.

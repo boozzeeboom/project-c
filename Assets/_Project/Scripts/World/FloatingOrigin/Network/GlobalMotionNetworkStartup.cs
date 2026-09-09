@@ -31,6 +31,8 @@ namespace ProjectC.World.FloatingOrigin.Network
         private readonly NetworkConfig _config;
         private readonly byte[] _hello;
         private readonly byte[] _previousPayload;
+        private readonly List<NetworkPrefabsList> _previousRegistry;
+        private readonly List<NetworkPrefabsList> _installedRegistry;
         private readonly bool _server;
         private readonly Action<NetworkManager.ConnectionApprovalRequest, NetworkManager.ConnectionApprovalResponse> _approval;
         private readonly HashSet<ulong> _approved = new HashSet<ulong>();
@@ -39,11 +41,44 @@ namespace ProjectC.World.FloatingOrigin.Network
         public bool IsDisposed { get; private set; }
 
         private GlobalMotionNetworkStartup(NetworkManager manager, GlobalMotionNetworkProfile profile, MonoBehaviour bootstrap,
-            GlobalMotionStartRole role, byte[] hello)
+            GlobalMotionStartRole role, byte[] hello, List<NetworkPrefabsList> previousRegistry, List<NetworkPrefabsList> installedRegistry)
         {
             _manager = manager; _profile = profile; _bootstrapObject = bootstrap; _bootstrap = (IGlobalMotionSpawnBootstrap)bootstrap;
             _config = manager.NetworkConfig; _hello = hello; _previousPayload = _config.ConnectionData;
+            _previousRegistry = previousRegistry; _installedRegistry = installedRegistry;
             _server = role != GlobalMotionStartRole.Client; _approval = Approve;
+        }
+
+        /// <summary>
+        /// Applies the profile's declared registry to the live config only. Scene assets and prefab lists are
+        /// never written; the previous list instance is returned so release can put it back verbatim.
+        /// </summary>
+        private static bool TryApplyProfileRegistry(NetworkManager manager, GlobalMotionNetworkProfile profile,
+            out List<NetworkPrefabsList> previous, out List<NetworkPrefabsList> installed, out string error)
+        {
+            previous = null; installed = null; error = null;
+            // A missing or disabled profile is reported by the hello builder, not silently overridden here.
+            if (profile == null || !profile.EnforceGlobalContracts) return true;
+            error = GlobalMotionNetworkContract.ValidateRegistryComposition(profile.RegistryLists, out var replacement);
+            if (error != null) return false;
+            if (replacement == null) return true;
+            var prefabs = manager.NetworkConfig.Prefabs;
+            if (prefabs == null) { error = "network_prefab_configuration_missing"; return false; }
+            previous = prefabs.NetworkPrefabsLists;
+            prefabs.NetworkPrefabsLists = replacement;
+            installed = replacement;
+            // The aggregated prefab view is a cache rebuilt from the lists; without this it keeps the scene registry.
+            prefabs.Initialize();
+            return true;
+        }
+
+        private static void RestoreRegistry(NetworkManager manager, List<NetworkPrefabsList> previous, List<NetworkPrefabsList> installed)
+        {
+            if (installed == null || manager == null || manager.NetworkConfig == null) return;
+            var prefabs = manager.NetworkConfig.Prefabs;
+            if (prefabs == null || !ReferenceEquals(prefabs.NetworkPrefabsLists, installed)) return;
+            prefabs.NetworkPrefabsLists = previous ?? new List<NetworkPrefabsList>();
+            prefabs.Initialize();
         }
         public static bool IsInstalled(NetworkManager manager) => manager != null && Sessions.TryGetValue(manager, out var gate) && !gate.IsDisposed;
 
@@ -62,12 +97,17 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (!(provider is IGlobalMotionSceneAdmission)) { error = "native_scene_admission_contract_missing"; return false; }
             var world = manager.GetComponent<GlobalMotionWorld>();
             if (world == null || !world.isActiveAndEnabled) { error = "global_motion_world_missing"; return false; }
-            if (!GlobalMotionPrefabInspector.TryBuildHello(manager.NetworkConfig, profile, false, out var hello, out error)) return false;
-            var originalConfig = manager.NetworkConfig;
-            var originalTransport = originalConfig.NetworkTransport;
-            var originalPayload = originalConfig.ConnectionData;
+            // T-FO06F: the global path may require a different registry than the scene's legacy one.
+            // Applied to the live config only, before hello and the ownership hash, and restored on any exit.
+            if (!TryApplyProfileRegistry(manager, profile, out var previousRegistry, out var installedRegistry, out error))
+                return false;
+            bool registryOwnedByGate = false;
             try
             {
+                if (!GlobalMotionPrefabInspector.TryBuildHello(manager.NetworkConfig, profile, false, out var hello, out error)) return false;
+                var originalConfig = manager.NetworkConfig;
+                var originalTransport = originalConfig.NetworkTransport;
+                var originalPayload = originalConfig.ConnectionData;
                 // cache:false does not initialize or change NGO's cached config hash.
                 ulong originalConfigHash = originalConfig.GetConfig(false);
                 if (!provider.ValidateNetworkStart(manager, role, profile, out error)) return false;
@@ -78,7 +118,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                 { error = "bootstrap_changed_network_start_ownership"; return false; }
                 if (!GlobalMotionPrefabInspector.TryBuildHello(manager.NetworkConfig, profile, false, out var after, out error) ||
                     !GlobalMotionNetworkContract.ValidateHello(after, hello, out error)) return false;
-                gate = new GlobalMotionNetworkStartup(manager, profile, bootstrap, role, hello);
+                gate = new GlobalMotionNetworkStartup(manager, profile, bootstrap, role, hello, previousRegistry, installedRegistry);
+                registryOwnedByGate = true;
                 manager.NetworkConfig.ConnectionData = hello;
                 if (gate._server) manager.ConnectionApprovalCallback = gate._approval;
                 manager.OnClientConnectedCallback += gate.Connected;
@@ -101,6 +142,11 @@ namespace ProjectC.World.FloatingOrigin.Network
             catch (Exception e)
             {
                 gate?.CancelBeforeStart(); gate = null; error = "global_startup_prepare_failed:" + e.GetType().Name; return false;
+            }
+            finally
+            {
+                // Once the gate exists it owns restoration through Release; avoid restoring twice.
+                if (!registryOwnedByGate) RestoreRegistry(manager, previousRegistry, installedRegistry);
             }
         }
 
@@ -176,6 +222,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 if (_manager.ConnectionApprovalCallback == _approval) _manager.ConnectionApprovalCallback = null;
                 if (ReferenceEquals(_config.ConnectionData, _hello)) _config.ConnectionData = _previousPayload;
+                RestoreRegistry(_manager, _previousRegistry, _installedRegistry);
                 _manager.OnClientConnectedCallback -= Connected; _manager.OnClientDisconnectCallback -= Disconnected;
                 _manager.OnServerStopped -= Stopped; _manager.OnClientStopped -= Stopped;
             }

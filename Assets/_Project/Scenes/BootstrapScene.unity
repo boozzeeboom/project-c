@@ -6806,7 +6806,6 @@ GameObject:
   m_Component:
   - component: {fileID: 486220331}
   - component: {fileID: 486220330}
-  - component: {fileID: 486220329}
   m_Layer: 0
   m_Name: '[ShipKeyToast]'
   m_TagString: Untagged
@@ -6814,18 +6813,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &486220329
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 486220328}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e4592bffcae97841b2e9d1893479783, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.Key.ShipKeyToast
 --- !u!114 &486220330
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8289,7 +8276,6 @@ GameObject:
   m_Component:
   - component: {fileID: 582163928}
   - component: {fileID: 582163929}
-  - component: {fileID: 582163930}
   m_Layer: 0
   m_Name: '[ShipKeyServer]'
   m_TagString: Untagged
@@ -8338,18 +8324,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &582163930
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 582163927}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d915eb76076361f4bad13b481fe4c1cc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.Key.ShipKeyServer
 --- !u!1 &587905878
 GameObject:
   m_ObjectHideFlags: 0
@@ -15289,6 +15263,9 @@ MonoBehaviour:
   enableAutoReconnect: 1
   reconnectDelay: 3
   maxReconnectAttempts: 5
+  _globalMotionProfile: {fileID: 0}
+  _globalSpawnBootstrap: {fileID: 0}
+  _globalSessionCoordinator: {fileID: 0}
 --- !u!114 &1151906020
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24939,7 +24916,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1948101064}
-  - component: {fileID: 1948101065}
   m_Layer: 0
   m_Name: '[ShipOwnershipRegistry]'
   m_TagString: Untagged
@@ -24962,18 +24938,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 502945015}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1948101065
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1948101063}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 75a1a6152c04c0040b2c48c6fe27c18b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.Network.ShipOwnershipRegistry
 --- !u!1 &1960816343
 GameObject:
   m_ObjectHideFlags: 0

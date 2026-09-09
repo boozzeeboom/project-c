@@ -189,4 +189,5 @@ Assets/Generated_Models/*
 !Assets/_Project/Prefabs/FloatingOrigin.meta
 !Assets/_Project/Prefabs/FloatingOrigin/**/*.prefab
 !Assets/_Project/Prefabs/FloatingOrigin/**/*.prefab.meta
+!Assets/_Project/Prefabs/FloatingOrigin/**/*.asset.meta
 

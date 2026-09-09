@@ -1,5 +1,20 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO06D)
+
+**Задача:** Сократить реестр до минимального пилотного, чтобы проверить игрока раньше, и точно зафиксировать остаток.
+**Результат:** Создан `Assets/_Project/Prefabs/FloatingOrigin/GlobalPilotNetworkPrefabs.asset` — ровно 1 запись (пилотный игрок, hash 3692800100), `Override=None`, `IsDefault=false`, ни одной ссылки из сцен. `DefaultNetworkPrefabs.asset` не изменён: 58 entries, serialized-содержимое и байты идентичны, пилот в него не утёк.
+**Классификация 58 записей:** прогон реального валидатора контракта. Spatial-ready=0, NonSpatial-ready=1 (`NEWCHESTPREFAB`), требуют миграции=57, битых=0. Причины по Spatial: 54 `missing_global_motion_components_or_optin`, 2 `invalid_behaviour_count`, 2 `inactive_network_behaviour_object`. NonSpatial присваивался только при фактическом отсутствии пространственного содержимого, иначе запись отнесена к миграции.
+**Структурный блокер:** `TestPlayer` и `PickupItem_Test` не имеют ни одного NetworkBehaviour; `NetworkChestContainer_Test` и `SPAWN_TEST` держат NetworkBehaviour на выключенном GameObject. Эти проверки выполняются до ветвления по роли, поэтому 4 записи не проходят ни одну роль — путь полного реестра блокирован структурно, а не только объёмом. Исправления не выполнялись.
+**Остаток вне пилота:** спавн кораблей, NPC, торговых и квестовых зон, предметов, сундуков, pickup-объектов, ресурсных узлов, станций крафта и тестовых спавнеров не будет работать. Также остаются legacy ShipPositionServer/PlayerPositionServer, активный ClientSceneLoader, 3 неопознанных missing-компонента, неосмотренная WorldScene_0_0, issuer и store ownership.
+**Чтобы пилот запустился:** пилотный список должен ЗАМЕНИТЬ default в BootstrapScene (эффективный реестр = все списки + встроенные записи, иначе станет 59 и каталог обязан описывать все 59); затем profile с каталогом из одной Spatial-записи и корректным SceneLayoutDigest, scene catalog/markers/frames/native executor, выбор пилота как PlayerPrefab, вывод legacy services, issuer/store и пользовательский Host+client gate.
+**Файлы:** пилотный список + `.meta`, `.gitignore` (исключение расширено на `*.asset.meta` в пилотной папке для стабильных GUID), `06D_PILOT_REGISTRY_AND_REMAINDER.md`, `06D_REGISTRY_CLASSIFICATION.json`, `tools/AuditFo06DRegistryClassification.cs`, roadmap и этот журнал.
+**Проверки:** аудит не изменил default-реестр (содержимое и байты); после создания списка перепроверены запись/override/IsDefault/hash и неизменность default-реестра; `git check-ignore` — `.meta` пилотного списка отслеживается, `NetworkPlayer.prefab.meta` по-прежнему игнорируется. No compile errors. Play Mode/physics/network/native executor/screenshots/builds/auth/save access не использовались.
+**Остаток:** Global mode/world shift выключены, пилот не подключён, jitter fixed не заявляется.
+**Коммит:** один asset/versioning/results/docs commit; TMP fallback, Temp-скрипты, DefaultNetworkPrefabs.asset, canonical префаб и сцены исключены.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO06C)
 
 **Задача:** Сделать пилотный префаб floating-origin отслеживаемым в Git по указанию пользователя.

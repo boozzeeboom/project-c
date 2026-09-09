@@ -474,6 +474,7 @@ namespace ProjectC.Player
         /// </summary>
         private System.Collections.IEnumerator RestorePlayerPositionCoroutine()
         {
+            if (UsesGlobalCoordinates) yield break; // G/D own the explicit initial global plan; never await legacy float persistence.
             // Ждём завершения полного server restore: сначала должны быть сброшены
             // stale-флаги предыдущего host-сеанса, затем загружены players и ships.
             var ppServer = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance;
@@ -495,7 +496,7 @@ namespace ProjectC.Player
 
             if (UsesGlobalCoordinates)
             {
-                Debug.LogWarning("[T-FO04D] Legacy player position restore is blocked for a global-coordinate actor; global persistence is not integrated yet.", this);
+                Debug.LogWarning("[T-FO05E] Actor switched to global coordinates while awaiting legacy restore; legacy restore remains blocked.", this);
                 yield break;
             }
             bool restored = ppServer.RestorePlayer(this);

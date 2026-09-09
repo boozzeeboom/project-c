@@ -36,6 +36,8 @@ namespace ProjectC.World.FloatingOrigin.Persistence
             public GlobalMotionFrame Frame;
             public double Issued, Deadline;
             public bool Completed;
+            public NetworkObject ConfirmedPlayer;
+            public MotionStreamBinding ConfirmedLifetime;
             public GlobalPlayerIdentityLease CaptureLease;
         }
         private NetworkManager _manager;
@@ -49,6 +51,11 @@ namespace ProjectC.World.FloatingOrigin.Persistence
         private readonly Dictionary<ulong, Entry> _entries = new Dictionary<ulong, Entry>();
         public IReadOnlyList<GlobalMotionSpawnFrame> PreparedFrames => _frames;
         public GlobalMotionPlayerCheckpointSource CheckpointSource => _configured ? _capture : null;
+        public bool CancelConfigurationBeforeStart()
+        {
+            if (_threadId != Thread.CurrentThread.ManagedThreadId || _busy || (_manager != null && (_manager.IsListening || _manager.ShutdownInProgress))) return false;
+            RequestRetirement(); return true;
+        }
         private void OnEnable() { _threadId = Thread.CurrentThread.ManagedThreadId; }
         private void OnDisable() => RequestRetirement();
         private void OnDestroy() => RequestRetirement();
@@ -176,8 +183,23 @@ namespace ProjectC.World.FloatingOrigin.Persistence
                     return PositionJsonSafety.Fail("spawned_player_does_not_match_reserved_global_pose", out error);
                 if (!_capture.TryBindVerifiedIdentity(entry.Identity.PlayerId, networkPlayer, out var captureLease, out error)) return false;
                 entry.CaptureLease = captureLease;
-                if (!ValidateEntry(entry, plan, player, out error)) { _capture.TryUnbind(captureLease); entry.CaptureLease = null; return false; }
-                entry.Completed = true; return true;
+                if (!ValidateEntry(entry, plan, player, out error) || !transport.TryReadServerAcceptedMotion(out var after, out _, out _) || !GlobalPlayerCapturePolicy.SameAcceptedSample(accepted, after))
+                { _capture.TryUnbind(captureLease); entry.CaptureLease = null; return PositionJsonSafety.Fail(error ?? "initial_pose_changed_during_capture_handoff", out error); }
+                entry.ConfirmedPlayer = player; entry.ConfirmedLifetime = after.Binding; entry.Completed = true; return true;
+            }
+            finally { End(); }
+        }
+        public bool TryGetConfirmedPlayer(GlobalPlayerConnectionIdentity identity, Guid reservationId, out NetworkObject player)
+        {
+            player = null; if (!Enter(out _)) return false;
+            try
+            {
+                if (!FindIdentity(identity, out var entry) || !entry.Completed || entry.CaptureLease == null || entry.Resolution == null ||
+                    entry.Resolution.Plan.ReservationId != reservationId || !ConnectionCurrent(entry, false) || entry.ConfirmedPlayer == null || !entry.ConfirmedPlayer.IsSpawned ||
+                    entry.Client.PlayerObject != entry.ConfirmedPlayer) return false;
+                var transport = entry.ConfirmedPlayer.GetComponent<GlobalMotionReplicator>();
+                if (transport == null || !transport.TryReadServerAcceptedMotion(out var accepted, out _, out _) || !GlobalPlayerCapturePolicy.SameActorLifetime(entry.ConfirmedLifetime, accepted.Binding)) return false;
+                player = entry.ConfirmedPlayer; return true;
             }
             finally { End(); }
         }

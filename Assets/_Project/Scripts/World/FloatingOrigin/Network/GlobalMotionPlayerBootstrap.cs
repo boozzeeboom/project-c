@@ -18,6 +18,7 @@ namespace ProjectC.World.FloatingOrigin.Network
     {
         [SerializeField] private MonoBehaviour _sourceBehaviour;
         private IGlobalMotionPlayerSpawnSource Source => _sourceBehaviour as IGlobalMotionPlayerSpawnSource;
+        public bool UsesSource(IGlobalMotionPlayerSpawnSource source) => source != null && ReferenceEquals(Source, source);
         private NetworkManager _manager;
         private GlobalMotionWorld _world;
         private GlobalSceneNativeExecutor _sceneExecutor;

@@ -9,6 +9,7 @@ using ProjectC.Stats;
 using ProjectC.Equipment;
 using ProjectC.Skills;
 using ProjectC.World.FloatingOrigin.Network;
+using ProjectC.World.FloatingOrigin.Persistence;
 using ProjectC.Skills.UI;  // T-INP-09: SkillTreeWindow
 
 namespace ProjectC.Core
@@ -34,6 +35,11 @@ namespace ProjectC.Core
         [SerializeField] private GlobalMotionNetworkProfile _globalMotionProfile;
         [SerializeField] private MonoBehaviour _globalSpawnBootstrap;
         private GlobalMotionNetworkStartup _globalMotionStartup;
+        [SerializeField] private GlobalMotionSessionCoordinator _globalSessionCoordinator;
+        private bool _lastSessionWasGlobal;
+        private string _lastGlobalStopError;
+        private bool HasGlobalSession => (_globalMotionStartup != null && !_globalMotionStartup.IsDisposed) ||
+            (_globalSessionCoordinator != null && _globalSessionCoordinator.OwnsSession(networkManager));
 
         private bool PrepareGlobalMotionStart(GlobalMotionStartRole role)
         {
@@ -44,16 +50,22 @@ namespace ProjectC.Core
                     UpdateStatus("Дождитесь полного завершения сетевой сессии");
                     return false;
                 }
-                _globalMotionStartup.CancelBeforeStart();
+                if (!CancelPreparedGlobalStart()) return false;
             }
             if (_globalMotionProfile == null || !_globalMotionProfile.EnforceGlobalContracts)
             {
-                if (!GlobalMotionNetworkContract.IsReservedProtocolVersion(networkManager.NetworkConfig.ProtocolVersion)) return true;
+                if (!GlobalMotionNetworkContract.IsReservedProtocolVersion(networkManager.NetworkConfig.ProtocolVersion)) { _lastSessionWasGlobal = false; return true; }
                 Debug.LogError("[T-FO04E] Reserved global protocol requires an enabled global profile.", this);
                 UpdateStatus("Глобальный сетевой профиль не настроен"); return false;
             }
+            if (_globalSessionCoordinator == null || _globalSessionCoordinator.gameObject != gameObject || !_globalSessionCoordinator.isActiveAndEnabled)
+            { UpdateStatus("Глобальная сессия не подготовлена: отсутствует session coordinator"); return false; }
+            if (!_globalSessionCoordinator.PrepareNetworkStart(networkManager, _globalSpawnBootstrap, role, out var error))
+            { UpdateStatus("Глобальная сессия не готова: " + error); return false; }
+            _lastSessionWasGlobal = true;
             if (GlobalMotionNetworkStartup.TryPrepare(networkManager, _globalMotionProfile, _globalSpawnBootstrap,
-                role, out _globalMotionStartup, out var error)) return true;
+                role, out _globalMotionStartup, out error)) return true;
+            if (!_globalSessionCoordinator.CancelBeforeStart()) error += ":session_cleanup_blocked";
             Debug.LogError("[T-FO04E] Network startup blocked: " + error, this);
             UpdateStatus("Сетевой контракт не готов: " + error); return false;
         }
@@ -62,10 +74,41 @@ namespace ProjectC.Core
             try
             {
                 bool started = start();
-                if (!started) _globalMotionStartup?.CancelBeforeStart();
+                if (!started) CancelPreparedGlobalStart();
                 return started;
             }
-            catch { _globalMotionStartup?.CancelBeforeStart(); throw; }
+            catch { CancelPreparedGlobalStart(); throw; }
+        }
+        private bool CancelPreparedGlobalStart()
+        {
+            _globalMotionStartup?.CancelBeforeStart();
+            if (_globalSessionCoordinator != null && _globalSessionCoordinator.OwnsSession(networkManager) && !_globalSessionCoordinator.CancelBeforeStart())
+            { UpdateStatus("Очистка global preparation заблокирована: " + _globalSessionCoordinator.LastError); return false; }
+            return true;
+        }
+        private bool TryStopNetworkSession(bool explicitAbandonGlobalCheckpoint = false)
+        {
+            _lastGlobalStopError = null;
+            if (networkManager == null) return true;
+            if (networkManager.ShutdownInProgress) return true; // Teardown already began elsewhere; no false final-save claim.
+            if (!networkManager.IsListening && !networkManager.IsConnectedClient) return true;
+            if (HasGlobalSession)
+            {
+                string error = "global_session_stop_owner_missing";
+                if (!explicitAbandonGlobalCheckpoint && (_globalSessionCoordinator == null || !_globalSessionCoordinator.PrepareStop(false, out error)))
+                { _lastGlobalStopError = error; UpdateStatus("Выход заблокирован: checkpoint не подтверждён. " + error); return false; }
+                if (explicitAbandonGlobalCheckpoint)
+                {
+                    _globalSessionCoordinator?.PrepareStop(true, out _);
+                    Debug.LogWarning("[T-FO05E] Explicit shutdown without final global checkpoint.", this);
+                }
+            }
+            networkManager.Shutdown(); return true;
+        }
+        public void DisconnectWithoutGlobalCheckpoint()
+        {
+            CancelInvoke(nameof(TryReconnect)); _isReconnecting = false; _reconnectAttempts = 0;
+            if (TryStopNetworkSession(true)) UpdateStatus("Отключено без финального global checkpoint");
         }
 
         // Состояние reconnect
@@ -944,7 +987,7 @@ namespace ProjectC.Core
 
             if (networkManager.IsListening || networkManager.IsConnectedClient)
             {
-                networkManager.Shutdown();
+                if (!TryStopNetworkSession()) return;
             }
 
             ConnectToServer(_lastServerIp, _lastServerPort);
@@ -970,7 +1013,7 @@ namespace ProjectC.Core
             // Просто Shutdown + reconnect
             if (networkManager.IsListening || networkManager.IsConnectedClient)
             {
-                networkManager.Shutdown();
+                if (!TryStopNetworkSession()) return;
             }
 
             ConnectToServer(_lastServerIp, _lastServerPort);
@@ -1010,18 +1053,18 @@ namespace ProjectC.Core
             if (networkManager.IsListening)
             {
                 Debug.LogWarning("[NMC] Already listening! Shutting down first...");
-                networkManager.Shutdown();
+                if (!TryStopNetworkSession()) return;
             }
 
             if (!PrepareGlobalMotionStart(GlobalMotionStartRole.Host)) return;
 
             // Reset persistence BEFORE NGO spawns the new NetworkPlayer. Otherwise
             // the player can consume DataLoaded/RestoreCompleted from the previous host session.
-            ProjectC.Core.ShipPosition.ShipPositionServer.Instance?.PrepareForServerStart();
+            if (!HasGlobalSession) ProjectC.Core.ShipPosition.ShipPositionServer.Instance?.PrepareForServerStart();
 
             // Start host - NGO handles NetworkConfig internally
             Debug.Log("[NMC] Calling StartHost()...");
-            StartWithGlobalCleanup(networkManager.StartHost);
+            if (!StartWithGlobalCleanup(networkManager.StartHost)) { UpdateStatus("Не удалось запустить Host"); return; }
             Debug.Log($"[NMC] StartHost() completed. IsHost={networkManager.IsHost}, IsServer={networkManager.IsServer}");
         }
 
@@ -1061,17 +1104,17 @@ namespace ProjectC.Core
             if (networkManager.IsListening)
             {
                 Debug.LogWarning("[NMC] Already listening! Shutting down first...");
-                networkManager.Shutdown();
+                if (!TryStopNetworkSession()) return;
             }
 
             if (!PrepareGlobalMotionStart(GlobalMotionStartRole.Server)) return;
 
             // Reset persistence BEFORE NGO starts the new server session.
-            ProjectC.Core.ShipPosition.ShipPositionServer.Instance?.PrepareForServerStart();
+            if (!HasGlobalSession) ProjectC.Core.ShipPosition.ShipPositionServer.Instance?.PrepareForServerStart();
 
             // Start server - NGO handles NetworkConfig internally
             Debug.Log("[NMC] Calling StartServer()...");
-            StartWithGlobalCleanup(networkManager.StartServer);
+            if (!StartWithGlobalCleanup(networkManager.StartServer)) { UpdateStatus("Не удалось запустить сервер"); return; }
             Debug.Log($"[NMC] StartServer() completed. IsServer={networkManager.IsServer}");
             UpdateStatus($"Сервер запущен на порту {serverPort}");
         }
@@ -1099,7 +1142,7 @@ namespace ProjectC.Core
             if (networkManager.IsListening)
             {
                 Debug.LogWarning("[NMC] Already listening! Shutting down before connect...");
-                networkManager.Shutdown();
+                if (!TryStopNetworkSession()) yield break;
                 yield return new WaitForSecondsRealtime(0.25f);
             }
 
@@ -1121,7 +1164,7 @@ namespace ProjectC.Core
             try
             {
                 Debug.Log("[NMC] Starting client...");
-                StartWithGlobalCleanup(networkManager.StartClient);
+                if (!StartWithGlobalCleanup(networkManager.StartClient)) { UpdateStatus("Не удалось запустить клиент"); yield break; }
                 Debug.Log($"[NMC] StartClient() completed. IsClient={networkManager.IsClient}, IsListening={networkManager.IsListening}");
             }
             catch (Exception ex)
@@ -1146,7 +1189,7 @@ namespace ProjectC.Core
                 // NOTE (cleanup Phase 9, 2026-06-05): legacy _inventory.SaveToPrefs() убран —
                 // v2 серверный инвентарь авторитативен, persistence = ответственность сервера.
 
-                networkManager.Shutdown();
+                if (!TryStopNetworkSession()) return;
                 UpdateStatus("Отключено");
             }
         }
@@ -1156,37 +1199,54 @@ namespace ProjectC.Core
         /// Не перезагружает BootstrapScene: это предотвращает дублирование DontDestroyOnLoad
         /// NetworkManagerController и сбрасывает ClientSceneLoader перед следующим StartHost.
         /// </summary>
-        public void ShutdownForMainMenu(Action onComplete = null)
+        public void ShutdownForMainMenu(Action onComplete = null, Action<string> onBlocked = null)
         {
             CancelInvoke(nameof(TryReconnect));
             _isReconnecting = false;
             _reconnectAttempts = 0;
-            StartCoroutine(ShutdownForMainMenuCoroutine(onComplete));
+            StartCoroutine(ShutdownForMainMenuCoroutine(onComplete, false, onBlocked));
         }
 
-private IEnumerator ShutdownForMainMenuCoroutine(Action onComplete)
+        public void ShutdownForMainMenuWithoutGlobalCheckpoint(Action onComplete = null)
         {
-            if (networkManager != null && (networkManager.IsListening || networkManager.IsConnectedClient))
+            CancelInvoke(nameof(TryReconnect)); _isReconnecting = false; _reconnectAttempts = 0;
+            StartCoroutine(ShutdownForMainMenuCoroutine(onComplete, true));
+        }
+private IEnumerator ShutdownForMainMenuCoroutine(Action onComplete, bool explicitAbandonGlobalCheckpoint = false, Action<string> onBlocked = null)
+        {
+            bool wasGlobal = HasGlobalSession || _lastSessionWasGlobal;
+            if (networkManager != null && (networkManager.IsListening || networkManager.IsConnectedClient || (wasGlobal && networkManager.ShutdownInProgress)))
             {
                 Debug.Log("[NMC] ShutdownForMainMenu: stopping network session");
 
                 // Save while the host and player objects are still alive. NGO.Shutdown()
                 // despawns the player before the next persistence tick can collect it.
-                var shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
-                if (shipPositionServer != null)
-                    shipPositionServer.SaveNow();
-
-                networkManager.Shutdown();
+                if (!wasGlobal)
+                {
+                    var shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
+                    if (shipPositionServer != null) shipPositionServer.SaveNow();
+                }
+                if (!TryStopNetworkSession(explicitAbandonGlobalCheckpoint))
+                {
+                    onBlocked?.Invoke(_lastGlobalStopError ?? "global_checkpoint_not_confirmed");
+                    yield break;
+                }
 
                 // NGO завершает часть teardown в следующем кадре.
                 yield return null;
 
                 float timeout = 2f;
-                while (networkManager.IsListening || networkManager.IsConnectedClient)
+                while (networkManager.IsListening || networkManager.IsConnectedClient || (wasGlobal && networkManager.ShutdownInProgress))
                 {
                     if (timeout <= 0f)
                     {
                         Debug.LogWarning("[NMC] ShutdownForMainMenu: timeout while waiting for NGO shutdown");
+                        if (wasGlobal)
+                        {
+                            UpdateStatus("Завершение global-сессии ещё не подтверждено");
+                            onBlocked?.Invoke("global_shutdown_not_completed");
+                            yield break; // Never report successful return while a global teardown is still running.
+                        }
                         break;
                     }
 
@@ -1196,7 +1256,7 @@ private IEnumerator ShutdownForMainMenuCoroutine(Action onComplete)
             }
 
             var sceneLoader = ProjectC.World.Scene.ClientSceneLoader.Instance;
-            if (sceneLoader != null)
+            if (!wasGlobal && sceneLoader != null)
             {
                 bool resetComplete = false;
                 sceneLoader.ResetForMainMenu(() => resetComplete = true);

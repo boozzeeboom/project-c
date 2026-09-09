@@ -437,7 +437,7 @@ namespace ProjectC.UI.EscMenu
             var networkController = FindAnyObjectByType<ProjectC.Core.NetworkManagerController>();
             if (networkController != null)
             {
-                networkController.ShutdownForMainMenu(OnReturnedToMainMenu);
+                networkController.ShutdownForMainMenu(OnReturnedToMainMenu, OnExitToMenuBlocked);
                 return;
             }
 
@@ -450,6 +450,13 @@ namespace ProjectC.UI.EscMenu
             }
 
             OnReturnedToMainMenu();
+        }
+
+        private void OnExitToMenuBlocked(string reason)
+        {
+            _exitInProgress = false;
+            Debug.LogWarning("[EscMenuWindow] Session remains active: final checkpoint was not confirmed. " + reason);
+            Show(); // Existing menu only: no automatic abandon or false 'returned to main menu' callback.
         }
 
         private void OnReturnedToMainMenu()

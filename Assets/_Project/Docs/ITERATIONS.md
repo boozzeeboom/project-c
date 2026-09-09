@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO05E)
+
+**Задача:** Связать подготовленные D/G/C/B с actual NMC global-session lifecycle без активации в текущей игре и без fake account identity.
+**Результат:** GlobalMotionSessionCoordinator принимает explicit prepared frames/repository/timing/trusted Host policy, конфигурирует D перед существующим startup gate, принимает session-token + actual NetworkClient trusted receipts и откладывает identity/plans до World/frame readiness. Проверяются role, source ownership, уникальный PlayerId, текущая connection и confirmed PlayerObject/spawn lifetime. Account provider в исследованном пути не подтверждён (inconclusive); approval/72-byte hello не заменяются и не объявляются auth.
+**Persistence/stop:** C/B checkpoint по расписанию только для полного verified/confirmed roster, backoff при неподготовленном capture, Applied-only success и latched write fault без automatic retry/quarantine. NMC deliberate stop/reconnect/restart требуют checkpoint до Shutdown либо явного abandon API; no-live-player stop не выдумывает final snapshot. Emergency/transport teardown отмечается unplanned. Individual unexpected-disconnect final-save и same-connection respawn ещё открыты.
+**Legacy/UI isolation:** Global start блокируется при любых loaded ShipPositionServer/PlayerPositionServer, даже disabled: ShipPositionServer подписывается в Awake. Компоненты не удалялись; legacy-файлы не менялись. NMC global paths пропускают old Prepare/SaveNow/ClientSceneLoader reset, global NetworkPlayer рано выходит из legacy restore coroutine. Отказ checkpoint вызывает отдельный onBlocked; EscMenu сбрасывает exit-progress и открывает существующее меню, без новой layout/localization. Global teardown timeout не вызывает false success.
+**Файлы:** новые GlobalSessionPersistencePolicy.cs, GlobalMotionSessionCoordinator.cs, Editor ValidateGlobalSessionOrchestration.cs и 3 meta. Точечно изменены NetworkManagerController.cs, GlobalMotionPlayerBootstrap.cs, GlobalMotionCheckpointSpawnSource.cs, NetworkPlayer.cs и EscMenuWindow.cs. Report `05E_SESSION_ORCHESTRATION.md`, JSON, roadmap и этот журнал.
+**Проверки:** No compile errors; **58 E + 620 прежних = 678 pure PASS / 0 FAIL**, после final teardown guard повторены. Pure policies/schedule/ref-token/role/stop и actual C/B с memory storage; compiled native/menu seams только inspected. Actual E/NMC/auth/GUI/NGO/disk/native readiness, реальные saves, сцены, GameObjects, Play Mode, physics, network, builds/screenshots не вызывались. Read-only prefab guard: 58 candidates; opt-in/profile/loaded profile/adapters/markers/executors/source/session=0. Wire F005 и A/B formats сохранены.
+**Остаток:** Код orchestration готов, actual issuer/config/store ownership и pilot content/catalog/markers/frames/prefab/profile не подготовлены. Native disk/readiness/GUI/Host+client acceptance остаётся пользовательским. Оценка D — ориентир, не автоматический процент/обратный счётчик; полные T-FO04–09 и semantic T-FO03 открыты, global mode/world shift выключены, jitter fixed не заявляется.
+**Коммит:** один code/meta/results/docs commit; TMP fallback, Temp runner, historical A–D reports/JSON, legacy save files, scene/prefab/profile/catalog и packages исключены.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO05D)
 
 **Задача:** Реализовать explicit pre-spawn identity/restore plans и concrete source G; после этапа оценить оставшуюся интеграцию и тесты.

@@ -23,6 +23,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         private bool _hasPendingControl;
         private bool _baselineApplied;
         private uint _publishSequence;
+        private bool _hasPublishedInBinding;
         private int _lastPublishTick;
         private bool _hasPublishedTick;
         private double _nextKeyframeTime;
@@ -79,7 +80,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             _receiver.Reset(); _admission.Stop();
             _serverSession = null; _ownerPoseValidator = null;
             _serverControl = default; _pendingControl = default; _hasPendingControl = false;
-            _baselineApplied = false; _publishSequence = 0; _hasPublishedTick = false;
+            _baselineApplied = false; _publishSequence = 0; _hasPublishedTick = false; _hasPublishedInBinding = false;
             LastAdmissionRejection = MotionAdmissionReject.None;
             base.OnNetworkDespawn();
         }
@@ -134,9 +135,16 @@ namespace ProjectC.World.FloatingOrigin.Network
         public bool AcknowledgeBaselineApplied(MotionStreamBinding binding)
         {
             if (!IsSpawned || !Control.IsActive || binding != Control.Baseline.Binding || HasCompetingWriter()) return false;
-            if (!_baselineApplied) { _publishSequence = Control.Baseline.Sequence; _baselineApplied = true; }
+            if (!_baselineApplied)
+            {
+                _publishSequence = GlobalMotionApplication.ResumeSequence(_hasPublishedInBinding, _publishSequence, Control.Baseline.Sequence);
+                _baselineApplied = true;
+            }
             return true;
         }
+
+        /// <summary>Local readiness gate only. Does not rewind sequence or change the server binding.</summary>
+        public void RevokeBaselineAcknowledgement() => _baselineApplied = false;
 
         public bool PublishWorld(GlobalPosition position, Quaternion rotation, Vector3 scale)
         {
@@ -166,6 +174,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
             else SubmitOwnerMotionRpc(sample);
             _publishSequence = sample.Sequence;
+            _hasPublishedInBinding = true;
             _lastPublishTick = tick; _hasPublishedTick = true;
             return true; // Client: submitted, not an acknowledgement of server acceptance.
         }
@@ -276,7 +285,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             var previous = Control;
             if (!_receiver.TryApply(control, sender, Unity.Netcode.NetworkManager.ServerClientId, NetworkObjectId)) return;
             if (!control.IsActive || !previous.HasStream || previous.Baseline.Binding != control.Baseline.Binding)
-            { _baselineApplied = false; _publishSequence = 0; _hasPublishedTick = false; }
+            { _baselineApplied = false; _publishSequence = 0; _hasPublishedTick = false; _hasPublishedInBinding = false; }
         }
 
         private void OnNetworkTick()

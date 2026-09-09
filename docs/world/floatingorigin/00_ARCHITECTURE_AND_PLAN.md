@@ -85,7 +85,8 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - T-FO03: scanner и машинный census выполнены (639 C#, 48 shader files, 75 prefab assets, Bootstrap); первичная классификация 16 RPC и docking/NPC DTO сохранена. Полный semantic/closed-world-scene gate ещё открыт. Отчёт `03_BOUNDARY_REVIEW.md`.
 - T-FO04A: реализованы versioned global/parent-local motion snapshots и bounded receive/interpolation buffer. Pure Edit Mode checks: 33 новых + 23 foundation, все PASS. Отчёт `04A_NETWORK_PROTOCOL_AND_BUFFER.md`. NGO transport, выдача generations и prefab/scene integration ещё не подключены; это НЕ полный T-FO04.
 - T-FO04B: реализованы explicit session/generation issuer, reliable control + server admission и настоящий NGO GlobalMotionReplicator. Компонент не установлен на префабы/сцены и не пишет Transform. 32 новых + 56 прежних pure проверок = 88 PASS. Отчёт `04B_NGO_TRANSPORT.md`. Живые сетевые сессии не тестировались.
-- T-FO04C (frame/pose adapter и session coordinator), prefab/scene integration и T-FO05–09: ещё не реализованы. Runtime floating origin не включён, устранение микротряски не подтверждено.
+- T-FO04C: реализованы GlobalMotionWorld (session/frame registry), GlobalMotionPoseAdapter и pure application policy. Новые компоненты не установлены на сцены/префабы. Compile PASS; 32 новых + 88 прежних pure проверок = 120 PASS / 0 FAIL. Отчёт `04C_FRAME_POSE_ADAPTER.md`. Native lifecycle/physics и gameplay не тестировались; unsupported nav/joints/nested bodies и interpolated-parent server replica блокируются.
+- Следующий T-FO04D — dormant actor readiness/lifecycle/cache hooks и согласованная подготовка spawn/parent/prefab миграции. Prefab/scene integration и T-FO05–09 ещё не выполнены. Runtime floating origin не включён, устранение микротряски не подтверждено.
 
 ## 4. Приёмка полного решения
 

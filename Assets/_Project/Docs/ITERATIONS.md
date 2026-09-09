@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO04C)
+
+**Задача:** Добавить session/frame coordinator и безопасно ограниченный Unity pose adapter поверх global motion transport, не включая неподготовленную игру.
+**Результат:** GlobalMotionWorld с одним issuer на живую NGO-сессию и immutable PhysicsScene frame registrations; GlobalMotionPoseAdapter с explicit Bind, baseline-before-publish, role separation, parent-chain readiness, synchronous pooled despawn и guarded Transform/CC/kinematic Rigidbody writes. Authority не получает обычные echo poses; remote dynamic body, активный nav teleport, вложенная физика/joints и интерполируемый parent render pose для server replica блокируются. В transport добавлены revoke acknowledgement и безопасный sequence resume.
+**Изменения:** `GlobalMotionApplication.cs`, `GlobalMotionWorld.cs`, `GlobalMotionPoseAdapter.cs`, `GlobalMotionReplicator.cs`; Editor `ValidateGlobalMotionApplication.cs`; четыре Unity-generated meta; `docs/world/floatingorigin/04C_FRAME_POSE_ADAPTER.md`, roadmap и эта запись.
+**Проверки:** compile PASS; фактически вызваны Run(): **32 application + 32 transport + 33 protocol + 23 foundation = 120 PASS / 0 FAIL**. Это чистые Edit Mode проверки, не native callbacks/physics/runtime tests. Play Mode, GameObject-тесты, screenshots и реальные сетевые сессии не выполнялись.
+**Lifecycle:** disable намеренно unbind/stop; повторное включение требует explicit Bind/reactivation. Coordinator сохраняет issuer при disable/re-enable внутри той же NGO-сессии; реальный shutdown его очищает. Despawn cleanup не отправляет RPC.
+**Границы:** компоненты не установлены на игровые префабы/сцены; gameplay controllers пока не читают IsReadyForSimulation. NT, Animator/root-motion, RPC/persistence и world shift не подключались/не менялись. Следующий T-FO04D — dormant actor readiness/lifecycle/cache hooks и согласованная spawn/parent/prefab подготовка. Полный T-FO04 не завершён, jitter fixed не заявляется.
+**Коммит:** код, meta и документация вместе; без отдельного коммита хеша. Несвязанный LiberationSans fallback не включать.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO04B)
 
 **Задача:** Связать global motion protocol с NGO lifecycle/control/motion без преждевременного подключения к игре.

@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO05A)
+
+**Задача:** Подготовить безопасный global player position persistence контракт как зависимость G source, без активации save/load миграции и пересечения runtime gate T-FO04.
+**Исходная граница:** PlayerPositionSaveData сохраняет float px/py/pz и NGO clientId в общем ShipPositions.json с ships. PlayerPositionServer восстанавливает по clientId, repository пишет через JsonUtility + File.WriteAllText. Постоянная account identity в исследованном пути не подтверждена; нет оснований сохранять runtime frameId или считать clientId устойчивым ключом. Старый DTO/repository/collector/restore не изменялись.
+**Результат:** GlobalPlayerPositionRecord (immutable global point/persistent ID/ship affinity/timestamp); fileless GlobalPlayerPositionCodec с отдельным schema v1, invariant round-trip double strings, typed SHA256 и exact canonical JSON validation. Missing/unknown/duplicate/malformed/default inputs отклоняются. Checksum не является authentication. Persisted frame/origin/NGO ids отсутствуют, нулевая точка возможна только как явно предоставленные данные.
+**Legacy import:** LegacyPlayerPositionImport создаёт all-player draft только для текущего известного compact JsonUtility wrapper. Требуются digest конкретного input text, полное взаимно-однозначное identity сопоставление и reviewed absolute либо explicit valid local-frame provenance. Нельзя угадать origin, восстановить потерянную float precision или принять новый clientId за identity. Ships не конвертируются/не отбрасываются; весь supplied text удерживается, но это НЕ disk backup. Older/pretty/reordered/extended layouts fail-closed; ошибка одной записи не публикует частичный результат.
+**Файлы:** три новых runtime helper в Scripts/World/FloatingOrigin/Persistence, Editor ValidateGlobalPlayerPersistence, четыре script meta + folder meta; 05A_PLAYER_GLOBAL_PERSISTENCE.md, 05A_STATIC_VALIDATION.json; roadmap и этот журнал. Другие runtime C#, scenes/prefabs/assets/packages не изменялись.
+**Проверки:** compile PASS; **69 persistence + 365 прежних = 434 pure PASS / 0 FAIL**. Frozen v1 JSON/checksum и known legacy fixture, double extremes/100 generated points, independent frames/locale, integrity/shape/size bounds, identity/provenance/timestamp guards и unchanged legacy DTO. Всё выполнено в памяти; настоящий persistentDataPath/ShipPositions.json/repository не читались и не вызывались. Guard: 58 candidates, opt-in/profile assets/loaded profiles/adapters/markers/executors=0.
+**Границы:** нет transactional storage/backup/recovery, auth mapping, native restore/checkpoint collection или genuine source G; ships/RPC и дальнейшие native bridges открыты. Нельзя записывать player-only draft поверх unified legacy file. Без Play Mode, сетевых сессий, GameObject/physics тестов, screenshots и builds; actual save/reconnect/runtime UNTESTED. NGO protocol остаётся 0xF005, legacy=0; global mode/world shift выключены, jitter fixed не заявляется.
+**Коммит:** один коммит кода/meta/результатов/документации. Temp/Aura runners и несвязанный LiberationSans fallback исключены; исторические I/H/G reports и JSON не переписываются.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO04I)
 
 **Задача:** Реализовать ограниченный native scene-source binding/executor поверх H ledger, не активируя неподготовленную игру.

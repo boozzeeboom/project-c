@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO04A)
+
+**Задача:** Продолжить floating-origin реализацию: независимый от origin сетевой формат и receive/interpolation state machine без замены работающих компонентов.
+**Результат:** Добавлены MotionStreamBinding, GlobalMotionSnapshot, GlobalMotionPose, GlobalMotionBuffer в `Assets/_Project/Scripts/World/FloatingOrigin/Network/`. Разделены World/ParentLocal, session/spawn/authority/discontinuity/parent generations; atomic decode, strict binding, stale/reordered packet rejection, bounded interpolation без хранения client origin.
+**Изменения:** четыре runtime source + Unity-generated meta; `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionProtocol.cs` + meta; `docs/world/floatingorigin/04A_NETWORK_PROTOCOL_AND_BUFFER.md`, статус roadmap и эта запись.
+**Проверки:** compile PASS после исправления CS0165 в новом validator; реально выполнены **33 motion + 23 foundation = 56 PASS, 0 FAIL** вне Play Mode. NGO payload world=123, parent-local=111 байт. Игровые соединения, physics и screenshots не запускались.
+**Ограничения:** это готовый codec/buffer, но НЕ подключённый NGO transport. T-FO03 semantic/closed-scene gate остаётся открыт. Existing NT, gameplay RPC, saves, prefab layout и scene transforms не менялись. Следующий T-FO04B — lifecycle/control/motion integration. Пользователю игровые тесты пока не нужны.
+**Коммит:** код, отчёт и журнал вместе, без дополнительного коммита хеша; несвязанный LiberationSans fallback не включать.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO03 — census)
 
 **Задача:** Сделать воспроизводимую инвентаризацию пространственных зависимостей до runtime миграции.

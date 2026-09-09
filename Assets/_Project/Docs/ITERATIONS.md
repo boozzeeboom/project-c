@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-09 (T-FO05B)
+
+**Задача:** Реализовать отдельный transactional global player checkpoint repository с backup/recovery, не подключая его к работающим saves и source G.
+**Результат:** Immutable полный player snapshot с StoreId/revision/fresh commit/parent IDs и canonical UTF8 envelope поверх frozen A v1 records. Repository-instance observation fingerprint связывает primary/backup/pending bytes; cooperative lease сериализует чтение/публикацию. Нет persisted runtime frame/NGO ids, default save path или auth inference.
+**Native adapter:** DirectoryGlobalPlayerCheckpointStorage требует явный canonical absolute local directory, использует фиксированные non-legacy filenames, FileShare.None lock, CreateNew pending + Flush(true), File.Replace с previous backup либо File.Move при первой записи. Нет File.Copy overwrite/delete-before-move fallback. Permission/IO errors не означают Empty; unknown/future/foreign schema и broken backup lineage блокируются. Native adapter фактически не вызывался.
+**Recovery/guards:** Backup только как explicit RecoveryCandidate, не автоматическая загрузка; recovery сохраняет known-good backup и corrupt primary bytes в quarantine, mint-ит fresh CommitId против ABA. Pending никогда не авто-promote-ится, только явный byte-verified quarantine. После exception результат публикации перепроверяется; Applied/NotApplied/Conflict/Unavailable/Indeterminate/RecoveryRequired не маскируют partial/uncertain state. Missing offline players требуют explicit removal authorization, older timestamps отвергаются.
+**Файлы:** GlobalPlayerCheckpointSnapshot.cs, GlobalPlayerCheckpointStorage.cs, GlobalPlayerCheckpointRepository.cs; Editor ValidateGlobalCheckpointTransactions.cs и четыре Unity-generated script meta. 05B_CHECKPOINT_TRANSACTIONS.md / 05B_STATIC_VALIDATION.json, roadmap и существующий журнал. A formats/legacy repository/current save-load и прочий runtime не изменялись.
+**Проверки:** compile PASS; **68 transaction-model + 434 прежних = 502 pure PASS / 0 FAIL**. Golden envelope, immutable/sorted scope, staged partial/corrupt writes, exceptions before/after publication/quarantine, broken backup/head, unsupported replace, lost read access, stale/cooperative/reentrant writers, explicit recovery/ABA, offline/timestamp guards. Всё на in-memory storage model; не доказательство native disk crash atomicity.
+**Границы:** user save data не читались/не писались, реальные backups не создавались. Native FS/Replace/Flush/locking/power-loss/IL2CPP acceptance, authoritative collector/merge, stable identity/auth mapping, G spawn source и ship/RPC migration открыты. Нет directory fsync/гарантии всех FS/cloud mounts или универсального recovery любых blocked файлов; quarantines не очищаются автоматически. No Play Mode/GameObjects/network/physics/screenshots/builds. Guard: 58 candidates, opt-in/profile/loaded profiles/adapters/markers/executors=0. Global mode/world shift выключены, jitter fixed не заявляется.
+**Коммит:** один коммит code/meta/results/docs; Temp/Aura runners и LiberationSans fallback исключены. Исторические A/I/H reports/JSON сохранены.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO05A)
 
 **Задача:** Подготовить безопасный global player position persistence контракт как зависимость G source, без активации save/load миграции и пересечения runtime gate T-FO04.

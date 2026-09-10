@@ -1,5 +1,21 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06 — exact coordinate/rebase census refinement)
+
+**Задача:** Уточнить числовые coordinate/frame facts и существующие origin-shift contracts перед проектированием rebase transaction.
+
+**Подтверждено:** `WorldRoot_0_0=(0,0,0)`, `Respawn_Default=(39992,0,40000)`, delta `(39992,0,40000)`, расстояние около `56571` units; `WorldRoot_0_0` имеет 8 прямых дочерних структур, но aggregate city AABB не получен. `Respawn_Default` не имеет render/collider bounds.
+
+**Кодовые boundaries:** `NetworkPlayer_GlobalPilot` использует `GlobalMotionReplicator + GlobalMotionPoseAdapter`; legacy `NetworkPlayer` использует `NetworkTransform`. `GlobalMotionPoseAdapter` регистрируется в `GlobalMotionWorld`, где actor/frame lifetime привязан к NGO run и PhysicsScene. `MainCamera.prefab` содержит `FloatingOriginMP`; его `threshold=150000`, `shiftRounding=10000`, root-name heuristic и `ApplyWorldShift()`/`OnWorldShifted` не являются готовой closed-world rebase transaction.
+
+**INCONCLUSIVE:** полный city AABB/collider bounds, полный список runtime ship roots/deck/navmesh/colliders, camera-follow owner и момент синхронизации rebase с NGO tick/physics/baseline. Поэтому код rebase не изменялся и Play Mode автоматически не запускался.
+
+**Граница:** Read-only scripts/prefab metadata и docs only; сцены, префабы, catalog/profile и runtime code не изменялись. TMP fallback и `ProjectSettings/EditorSettings.asset` исключаются.
+
+**Следующий шаг:** Получить asset-level bounds/ownership census для city meshes/colliders, ship prefabs и camera follow chain; затем отдельно спроектировать transaction.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06 — read-only rebase boundary census)
 
 **Задача:** Зафиксировать фактические границы следующего floating-origin этапа после успешного native startup/player gate, не переходя к общему transform shift.

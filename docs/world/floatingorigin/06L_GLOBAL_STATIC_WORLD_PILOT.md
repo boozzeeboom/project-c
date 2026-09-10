@@ -1083,3 +1083,31 @@ Read-only census не дал достаточных данных для implemen
 - `WorldRoot_0_0`/`Respawn_Default`/pilot prefab/legacy prefab/camera/ship boundaries зафиксированы как следующие design inputs.
 - Текущий commit startup gate: `28a412f5`.
 - Этот census требует отдельной документационной фиксации; implementation transaction ещё не проектировалась.
+
+## 35. T-FO06 — exact coordinate/rebase census refinement — 2026-09-10
+
+### Подтверждённые числовые данные
+
+- `WorldRoot_0_0`: world position `(0,0,0)`, rotation identity, scale `(1,1,1)`.
+- `Respawn_Default`: root-level world position `(39992,0,40000)`, rotation identity, scale `(1,1,1)`.
+- Относительная разница `Respawn_Default - WorldRoot_0_0`: `(39992,0,40000)`; расстояние от нулевой точки — примерно `56571` Unity units.
+- `Respawn_Default` содержит только Transform/marker и не имеет собственного render/collider AABB; его bounds практически точечные.
+- `WorldRoot_0_0` имеет `8` прямых дочерних структур, но агрегированный AABB всех descendants read-only инструментами не получен.
+
+### Координатные и сетевые контракты
+
+- `NetworkPlayer_GlobalPilot.prefab` содержит `GlobalMotionReplicator` и `GlobalMotionPoseAdapter`; legacy `NetworkPlayer.prefab` содержит `NetworkTransform` и не содержит `GlobalMotionPoseAdapter`.
+- `GlobalMotionPoseAdapter.Bind()` регистрирует actor через `GlobalMotionWorld.RegisterActor`; `GlobalMotionWorld` хранит actors в `Dictionary<ulong, GlobalMotionPoseAdapter>` и frame registration привязана к текущему NGO run/PhysicsScene.
+- `GlobalMotionWorld` прямо документирует, что регистрация не двигает content и что изменение populated frame требует отдельной rebase transaction.
+- `FloatingOriginMP` — отдельный legacy shift controller на `MainCamera.prefab`. Он использует heuristic `worldRootNames`, исключает player/camera roots, имеет `threshold=150000` и `shiftRounding=10000`, вызывает `ApplyShiftToAllRoots()` и `OnWorldShifted`.
+- `FloatingOriginMP.ApplyWorldShift()` применяет переданный offset напрямую, без проверки threshold; server/client mode, physics handling и NetworkTransform correction остаются отдельными responsibilities.
+
+### Dynamic ship boundary
+
+Статический census не дал достоверного полного списка runtime ship instances с `Rigidbody + NetworkObject + ShipDeckNav`. Это **INCONCLUSIVE**: ships, deck navmesh и часть colliders могут создаваться/регистрироваться после загрузки сцены. Подтверждено только требование `ShipController` к `Rigidbody` и `NetworkObject` и необходимость рассматривать каждый ship root вместе с его deck/navmesh structure.
+
+### Почему implementation пока не начинается
+
+Точные агрегированные city AABB/collider bounds, полный ship/deck bounds, фактический camera-follow owner и момент синхронизации rebase с NGO tick/physics/baseline не подтверждены. Поэтому существующий `FloatingOriginMP` нельзя принять как готовую T-FO06 transaction: его root-name heuristic и direct all-roots shift не доказывают closed-world ownership для текущего pilot.
+
+Следующий шаг — отдельный read-only runtime-independent census по prefab/scene asset bounds и исходным ownership markers; до получения этих данных код rebase не менять и Play Mode автоматически не запускать.

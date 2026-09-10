@@ -20,30 +20,13 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         [SerializeField] private float _verticalSpawnOffset = 1f;
 
         private readonly List<GlobalMotionSpawnFrame> _frames = new List<GlobalMotionSpawnFrame>();
-        private LocalCoordinateFrame _configuredFrame;
-        private bool _hasConfiguredFrame;
         private GlobalPosition _spawnPosition;
         private bool _prepared;
 
         public IReadOnlyList<GlobalMotionSpawnFrame> PreparedFrames => _frames;
-        public string RespawnObjectName => _respawnObjectName;
-        public float MaxLocalCoordinate => _maxLocalCoordinate;
 
         private void Awake() => Prepare();
         public bool RefreshPreparedContent() => Prepare();
-
-        public bool TryConfigureInitialFrame(LocalCoordinateFrame frame, out string error)
-        {
-            error = null;
-            if (!frame.IsValid || Math.Abs(frame.MaxLocalCoordinate - _maxLocalCoordinate) > 0.001f)
-            {
-                error = "invalid_initial_frame_or_local_limit_mismatch";
-                return false;
-            }
-            _configuredFrame = frame;
-            _hasConfiguredFrame = true;
-            return true;
-        }
 
         public bool ValidatePreparedContent(GlobalMotionStartRole role, GlobalMotionNetworkProfile profile, out string error)
         {
@@ -85,10 +68,8 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             var respawn = FindInScene(scene, _respawnObjectName);
             if (respawn == null) return false;
 
-            var frame = _hasConfiguredFrame ? _configuredFrame : new LocalCoordinateFrame(GlobalPosition.Zero, _maxLocalCoordinate);
-            var localSpawn = respawn.transform.position + Vector3.up * _verticalSpawnOffset;
-            if (!frame.ContainsLocal(localSpawn)) return false;
-            _spawnPosition = frame.ToGlobal(localSpawn);
+            _spawnPosition = GlobalPosition.FromLegacyAbsolute(respawn.transform.position + Vector3.up * _verticalSpawnOffset);
+            var frame = new LocalCoordinateFrame(GlobalPosition.Zero, _maxLocalCoordinate);
             _frames.Add(new GlobalMotionSpawnFrame(1, frame, scene));
             _prepared = _frames[0].IsValid;
             return _prepared;

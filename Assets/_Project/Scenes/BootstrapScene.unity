@@ -15837,7 +15837,6 @@ GameObject:
   - component: {fileID: 1151906027}
   - component: {fileID: 1151906032}
   - component: {fileID: 1151906031}
-  - component: {fileID: 1151906033}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -16048,18 +16047,6 @@ MonoBehaviour:
   _respawnObjectName: Respawn_Default
   _maxLocalCoordinate: 100000
   _verticalSpawnOffset: 1
---- !u!114 &1151906033
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1151906017}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f547fcf3d02943f4bb3fda426a7e41cf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Pilot.GlobalMotionPilotFrameBridge
 --- !u!1 &1181311400
 GameObject:
   m_ObjectHideFlags: 0

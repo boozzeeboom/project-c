@@ -802,11 +802,12 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:1010490802:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [ShipCargoServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -838,11 +839,12 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:1052858226:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [CombatServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -928,11 +930,12 @@ MonoBehaviour:
       parentSourceId: 336a190646b19bc46b22dd4e78f99800:502945014:0
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:121334975:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [SkillsServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -982,11 +985,12 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:1286596461:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [DockingServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -1018,11 +1022,12 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:1341219859:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [ExchangeServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -1360,11 +1365,12 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:2047115830:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [NpcShipServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -1467,11 +1473,12 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:299327984:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [StatsServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -1521,11 +1528,12 @@ MonoBehaviour:
       parentSourceId: 336a190646b19bc46b22dd4e78f99800:1633574711:0
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:406607961:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [GatheringServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -1575,11 +1583,12 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:467779776:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [CraftingServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -1719,11 +1728,12 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:690069688:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L batch correction: [EquipmentServer] is an authored Bootstrap
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
+        established. The global pilot does not restore, reparent or treat this source
+        as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0

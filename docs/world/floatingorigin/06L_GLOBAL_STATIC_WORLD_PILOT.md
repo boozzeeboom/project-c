@@ -854,3 +854,50 @@ scene_preparation:persistent_bootstrap_service_runtime_location_mismatch:[QuestS
 - Нормальный gameplay playtest по-прежнему не разрешён.
 
 Следующий шаг — новый пользовательский startup gate из canonical `Assets/_Project/Scenes/BootstrapScene.unity` с `Start Host`. Проверить, проходит ли native preflight дальше `[QuestServer]`; при успехе зафиксировать полную последовательность `catalog=150;markers=150;bound=150` → `StartHost()` → local player spawn → отсутствие duplicate `WorldScene_0_0` и legacy loader takeover.
+
+## 30. T-FO06L.2.x follow-up 7 — batch Bootstrap service ownership correction — 2026-09-10
+
+### Причина пакетной коррекции
+
+Новый отказ `scene_preparation:persistent_bootstrap_service_runtime_location_mismatch:[GatheringServer]` показал, что runtime DDOL audit нельзя использовать как единственное доказательство authored ownership. Для сохранённых roots сопоставлены scene path, `NetworkObject`, source marker и наличие собственного `DontDestroyOnLoad` пути.
+
+### Read-only evidence and decision
+
+В текущем сохранённом catalog было `150` entries с distribution `AuthoredSceneContent=38;BootstrapService=9;PersistentBootstrapService=26;SceneOwnedNetworkGameplay=55;ShipOrRigidbodyRoot=22`. Из оставшихся persistent entries ровно десять являются authored Bootstrap `NetworkObject` services:
+
+- `[ShipCargoServer]` — `336a190646b19bc46b22dd4e78f99800:1010490802:0`;
+- `[CombatServer]` — `336a190646b19bc46b22dd4e78f99800:1052858226:0`;
+- `[SkillsServer]` — `336a190646b19bc46b22dd4e78f99800:121334975:0`;
+- `[DockingServer]` — `336a190646b19bc46b22dd4e78f99800:1286596461:0`;
+- `[ExchangeServer]` — `336a190646b19bc46b22dd4e78f99800:1341219859:0`;
+- `[NpcShipServer]` — `336a190646b19bc46b22dd4e78f99800:2047115830:0`;
+- `[StatsServer]` — `336a190646b19bc46b22dd4e78f99800:299327984:0`;
+- `[GatheringServer]` — `336a190646b19bc46b22dd4e78f99800:406607961:0`;
+- `[CraftingServer]` — `336a190646b19bc46b22dd4e78f99800:467779776:0`;
+- `[EquipmentServer]` — `336a190646b19bc46b22dd4e78f99800:690069688:0`.
+
+`[QuestServer]` из заявленного класса уже был исправлен в follow-up 6 и оставлен `BootstrapService`; поэтому в этом batch изменены именно десять ещё persistent entries. Для всех сохранены `treatment: Unmanaged`, authored scene placement, active state и NGO lifecycle; DDOL restoration и native gate не ослаблялись.
+
+### Узкий batch-фикс
+
+Для десяти entries ownership изменён с `PersistentBootstrapService` на `BootstrapService`. Review notes зафиксировали общий invariant: authored root остаётся в canonical `BootstrapScene`, а отсутствие собственного DDOL пути не компенсируется runtime relocation.
+
+После batch-коррекции фактическая distribution: `AuthoredSceneContent=38;BootstrapService=19;PersistentBootstrapService=16;SceneOwnedNetworkGameplay=55;ShipOrRigidbodyRoot=22`.
+
+Переданный ранее ожидаемый итог `BootstrapService=20;PersistentBootstrapService=15` не выводится из текущего сохранённого catalog без дополнительного одиннадцатого source. Все оставшиеся `PersistentBootstrapService` entries, кроме этих десяти, не имеют observed `NetworkObject`; перевод любого из них в `BootstrapService` нарушит compiler invariant `requiresNetworkIdentity`. Поэтому дополнительный root не переклассифицировался без нового доказательства.
+
+Новый catalog/profile digest:
+
+`f6c2a4668b1fa3432432b5ab69bf7ae7500fd98293a6106446964958a0584954`
+
+### Проверки и следующий gate
+
+- Compiled catalog: `entries=150`.
+- Profile digest matches compiled catalog: **True**.
+- `ValidateGlobalSceneCatalog.Run()`: **58 passed / 0 failed**.
+- `ValidateGlobalSceneExecution.Run()`: **36 passed / 0 failed**.
+- Unity compile: **No compile errors**.
+- Runtime native preparation, `StartHost()`, local player spawn, duplicate `WorldScene_0_0` and legacy scene-loader suppression после этой коррекции остаются **UNVERIFIED**.
+- Play Mode и screenshots не выполнялись; нормальный gameplay playtest по-прежнему не разрешён.
+
+Следующий шаг — один пользовательский startup gate из canonical `Assets/_Project/Scenes/BootstrapScene.unity` с `Start Host`. Зафиксировать фактический результат `catalog=150;markers=150;bound=150` и имя следующего блокера, если native preflight всё ещё остановится.

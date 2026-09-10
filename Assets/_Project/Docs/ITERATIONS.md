@@ -1,5 +1,23 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 7 — batch correction Bootstrap services)
+
+**Задача:** Исправить весь оставшийся класс authored Bootstrap network services одним ownership-анализом после отказа `scene_preparation:persistent_bootstrap_service_runtime_location_mismatch:[GatheringServer]`, не смешивая authored scene location с runtime DDOL audit.
+
+**Read-only evidence:** В catalog было `150` entries с distribution `AuthoredSceneContent=38`, `BootstrapService=9`, `PersistentBootstrapService=26`, `SceneOwnedNetworkGameplay=55`, `ShipOrRigidbodyRoot=22`. Десять remaining persistent entries с observed `NetworkObject` были сопоставлены с authored roots `[ShipCargoServer]`, `[CombatServer]`, `[SkillsServer]`, `[DockingServer]`, `[ExchangeServer]`, `[NpcShipServer]`, `[StatsServer]`, `[GatheringServer]`, `[CraftingServer]` и `[EquipmentServer]`. `[QuestServer]` уже имел `BootstrapService` после follow-up 6.
+
+**Решение:** Для этих десяти entries ownership изменён с `PersistentBootstrapService` на `BootstrapService`; `treatment: Unmanaged` сохранён. Scene placement, authored active state, NGO lifecycle, DDOL restoration, `SceneOwnedNetworkGameplay`, `ShipOrRigidbodyRoot`, `GroundPlane_0_0`, fail-closed native admission и legacy loader не изменялись.
+
+**Результат:** Compiled catalog остаётся `entries=150`; distribution после batch correction — `AuthoredSceneContent=38`, `BootstrapService=19`, `PersistentBootstrapService=16`, `SceneOwnedNetworkGameplay=55`, `ShipOrRigidbodyRoot=22`. Digest catalog/profile — `f6c2a4668b1fa3432432b5ab69bf7ae7500fd98293a6106446964958a0584954`.
+
+**Ограничение:** Переданный ранее итог `BootstrapService=20`, `PersistentBootstrapService=15` не выводится из текущего saved catalog без дополнительного source. Оставшиеся persistent entries не имеют observed `NetworkObject`, поэтому их перевод в `BootstrapService` нарушит compiler invariant; одиннадцатый root без нового доказательства не менялся.
+
+**Проверки:** `ValidateGlobalSceneCatalog.Run()` — **58 passed / 0 failed**; `ValidateGlobalSceneExecution.Run()` — **36 passed / 0 failed**; profile digest match — `True`; Unity compile — **No compile errors**. Play Mode и screenshots не выполнялись.
+
+**Следующий gate:** Пользовательский startup gate из `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Зафиксировать `catalog=150;markers=150;bound=150`, `StartHost()`, local player spawn, duplicate `WorldScene_0_0` и legacy loader takeover. Нормальный gameplay playtest не начинать до этого результата.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 6 — исправление ownership QuestServer)
 
 **Задача:** Продолжить startup gate после фактического отказа `persistent_bootstrap_service_runtime_location_mismatch:[QuestServer]`.

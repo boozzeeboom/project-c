@@ -53,7 +53,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         {
             try
             {
-                if (!RestoreCatalogedDdolRoots(profile, out var restoreError))
+                if (!RejectCatalogedDdolRoots(profile, out var restoreError))
                 {
                     error = "scene_preparation:" + restoreError;
                     return false;
@@ -85,14 +85,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                 result.Scenes.Add(guid, scene);
                 foreach (var root in scene.GetRootGameObjects())
                 {
-                    bool rootBound = root.GetComponent<GlobalSceneSourceMarker>() != null;
-                    bool hasBoundNetworkDescendant = false;
-                    foreach (var no in root.GetComponentsInChildren<NetworkObject>(true))
-                        if (no.GetComponent<GlobalSceneSourceMarker>() != null) { hasBoundNetworkDescendant = true; break; }
-                    // Runtime UI/services created outside the reviewed scene scope are not catalog sources.
-                    if (!rootBound && !hasBoundNetworkDescendant) continue;
-                    // Bind every authored marker in the reviewed root, not only roots and NetworkObject descendants.
-                    // Non-NetworkObject marked descendants are still catalog sources and must not be silently skipped.
+                    // The catalog covers every authored marker, including marker-only descendants without a
+                    // NetworkObject ancestor. Collect the complete loaded-scene marker set; unknown runtime
+                    // markers remain fail-closed through the catalog binding and extra-marker checks below.
                     foreach (var marker in root.GetComponentsInChildren<GlobalSceneSourceMarker>(true))
                         if (candidates.Add(marker.gameObject)) liveMarkerCount++;
                 }
@@ -103,6 +98,14 @@ namespace ProjectC.World.FloatingOrigin.Network
                 if (marker == null || !plan.TryGet(marker.SourceId, out var entry) || !result.Scenes.TryGetValue(entry.SceneGuid, out var scene) || go.scene != scene || result.BySource.ContainsKey(marker.SourceId))
                     throw new InvalidOperationException("missing_duplicate_wrong_scene_baked_source_marker:" + go.name);
                 var no = go.GetComponent<NetworkObject>();
+                string ownershipIssue = GlobalSceneExecutionPolicy.ValidateOwnership(new GlobalSceneOwnershipFacts
+                {
+                    Ownership = entry.Ownership,
+                    NetworkObject = no != null,
+                    HasRigidbody = go.GetComponentsInChildren<Rigidbody>(true).Length != 0,
+                    ScenePath = scene.path
+                });
+                if (ownershipIssue != null) throw new InvalidOperationException(ownershipIssue + ":" + go.name);
                 frameMap.TryGetValue(marker.FrameId, out var frame);
                 bool frameValid = frame != null && frame.Scene == scene && frame.Physics.Equals(scene.GetPhysicsScene());
                 if (!entry.IsManaged)
@@ -219,7 +222,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         public void PrepareBeforeNetworkStart(NetworkManager manager, GlobalMotionNetworkProfile profile, IReadOnlyList<GlobalMotionSpawnFrame> frames)
         {
             if (!Application.isPlaying) throw new InvalidOperationException("Native preparation requires user-started Play Mode or player runtime.");
-            if (!RestoreCatalogedDdolRoots(profile, out var restoreError)) throw new InvalidOperationException("scene_preparation:" + restoreError);
+            if (!RejectCatalogedDdolRoots(profile, out var restoreError)) throw new InvalidOperationException("scene_preparation:" + restoreError);
             _prepared = BuildPreparation(manager, profile, frames); _manager = manager; _world = manager.GetComponent<GlobalMotionWorld>();
             if (_world == null) throw new InvalidOperationException("Motion world missing.");
             _installed = true; _faulted = false; _networkRan = false; _retiring = false; CanAcceptScenePeer = false;
@@ -348,8 +351,23 @@ namespace ProjectC.World.FloatingOrigin.Network
                     }
                     if (node.Unmanaged)
                     {
-                        if (!_ledger.TryRecordLive(_loads[node.Entry.SceneGuid], node.Entry.SourceId, 0, default, out node.Receipt, out var unmanagedError))
-                            throw new InvalidOperationException(unmanagedError);
+                        if (node.Entry.RequiresNetworkLifecycle)
+                        {
+                            if (node.Network == null) throw new InvalidOperationException("Scene-owned network gameplay source lost NetworkObject.");
+                            if (node.Network.NetworkManager != null && node.Network.NetworkManager != _manager)
+                                throw new InvalidOperationException("Scene-owned network gameplay source belongs to a foreign manager.");
+                            if (!node.Network.IsSpawned) continue;
+                            if (node.Network.NetworkManager != _manager) continue;
+                            var issued = _receiptIssuer.Allocate(node.Network.NetworkObjectId);
+                            var gameplayLifetime = new GlobalSceneInstanceLifetime(issued.SessionId, issued.NetworkObjectId, issued.SpawnGeneration);
+                            if (!_ledger.TryRecordLive(_loads[node.Entry.SceneGuid], node.Entry.SourceId, 0, gameplayLifetime, out node.Receipt, out var gameplayError))
+                                throw new InvalidOperationException(gameplayError);
+                        }
+                        else
+                        {
+                            if (!_ledger.TryRecordLive(_loads[node.Entry.SceneGuid], node.Entry.SourceId, 0, default, out node.Receipt, out var unmanagedError))
+                                throw new InvalidOperationException(unmanagedError);
+                        }
                         node.Recorded = true;
                         continue;
                     }
@@ -404,7 +422,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
             }
             foreach (var node in _prepared.Nodes)
-                if (node.Scene == scene && (!node.Recorded || (!node.Unmanaged && (!node.Activate || (node.Network != null && !_manager.IsServer && node.Network.IsSpawned)))))
+                if (node.Scene == scene && (!node.Recorded ||
+                    (node.Entry.RequiresNetworkLifecycle && node.Network != null && node.Network.IsSpawned) ||
+                    (!node.Unmanaged && (!node.Activate || (node.Network != null && !_manager.IsServer && node.Network.IsSpawned)))))
                 { error = "persistent_unaccounted_or_still_spawned_client_source"; return false; }
             _busy = true; _retiring = true; CanAcceptScenePeer = false;
             try
@@ -471,7 +491,15 @@ namespace ProjectC.World.FloatingOrigin.Network
         private void OnDestroy() { if (_installed && _manager != null && _manager.IsListening) Fault(new InvalidOperationException("Scene executor destroyed.")); Release(); }
 
 
-        private static bool RestoreCatalogedDdolRoots(GlobalMotionNetworkProfile profile, out string error)
+        private static bool IsDontDestroyOnLoadScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            // Unity exposes the DDOL pseudo-scene without an asset path; its name is empty in some editor/runtime versions.
+            return scene.IsValid() &&
+                (string.IsNullOrEmpty(scene.path) || string.Equals(scene.path, "DontDestroyOnLoad", StringComparison.Ordinal)) &&
+                (string.IsNullOrEmpty(scene.name) || string.Equals(scene.name, "DontDestroyOnLoad", StringComparison.Ordinal));
+        }
+
+        private static bool RejectCatalogedDdolRoots(GlobalMotionNetworkProfile profile, out string error)
         {
             error = null;
             if (profile == null || profile.SceneCatalog == null || profile.SceneCatalog.Data == null)
@@ -502,7 +530,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             var roots = new Dictionary<GameObject, UnityEngine.SceneManagement.Scene>();
             foreach (var marker in Resources.FindObjectsOfTypeAll<GlobalSceneSourceMarker>())
             {
-                if (marker == null || marker.gameObject.scene.name != "DontDestroyOnLoad") continue;
+                if (marker == null || !IsDontDestroyOnLoadScene(marker.gameObject.scene)) continue;
                 if (!sourceSceneById.TryGetValue(marker.SourceId, out var sceneGuid)) continue;
                 if (!loadedScenesByGuid.TryGetValue(sceneGuid, out var targetScene))
                 {
@@ -511,7 +539,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
 
                 var root = marker.transform.root.gameObject;
-                if (root.scene.name != "DontDestroyOnLoad") continue;
+                if (!IsDontDestroyOnLoadScene(root.scene)) continue;
                 if (roots.TryGetValue(root, out var previousScene) && previousScene != targetScene)
                 {
                     error = "ddol_root_contains_multiple_cataloged_scene_guids;root=" + root.name +
@@ -521,19 +549,13 @@ namespace ProjectC.World.FloatingOrigin.Network
                 roots[root] = targetScene;
             }
 
-            int restored = 0;
-            foreach (var pair in roots)
+            if (roots.Count > 0)
             {
-                SceneManager.MoveGameObjectToScene(pair.Key, pair.Value);
-                if (pair.Key.scene != pair.Value)
-                {
-                    error = "cataloged_ddol_root_restore_failed;root=" + pair.Key.name + ";targetScene=" + pair.Value.path;
-                    return false;
-                }
-                restored++;
+                var first = new List<string>();
+                foreach (var pair in roots) first.Add(pair.Key.name + "->" + pair.Value.path);
+                error = "cataloged_source_in_ddol;restoration_forbidden;roots=" + string.Join("|", first);
+                return false;
             }
-            if (restored > 0)
-                Debug.Log("[T-FO06L] Native preflight restored cataloged DDOL root(s): " + restored);
             return true;
         }
 }

@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2 — scene-owned gameplay lifecycle contract)
+
+**Задача:** Реализовать ownership-aware lifecycle contract для authored `NetworkObject` sources в `BootstrapScene` и `WorldScene_0_0`, не принимая `Unmanaged` как замену ownership и не используя DDOL restoration, partial binding или mixed-root parenting.
+**Результат:** Добавлен `GlobalSceneOwnership` с категориями `AuthoredSceneContent`, `BootstrapService`, `SceneOwnedNetworkGameplay` и `ShipOrRigidbodyRoot`; `Unspecified` запрещён. Все 150 catalog entries классифицированы как `authored=54`, `bootstrap=19`, `sceneGameplay=55`, `ships=22`. Ownership проверяется компилятором, policy и native executor, включается в digest; профиль согласован с digest `d491f599e5fd9a7437a48e6d9474c53aff2320464f6851e24e08d58f68cd02b4`.
+**Lifecycle:** `SceneOwnedNetworkGameplay` остаётся treatment-compatible с `Unmanaged`, но требует явного valid NGO lifetime receipt; ledger учитывает `RequiresNetworkLifecycle`, защищает network identity и stale generations, а executor не разрешает retirement spawned gameplay source. Cataloged DDOL roots отвергаются fail-closed; legacy scene loading передаётся через `ClientSceneLoader.TryRetireForGlobalPilot()`.
+**Изменения:** ownership model/compiler digest, scene catalog/profile, source policy, lifecycle ledger, native executor, pilot runtime, execution/catalog validators и pure catalog fixture для ordinary content.
+**Проверки:** Unity compile — `No compile errors`; `ValidateGlobalSceneExecution.Run()` — **35 passed / 0 failed**; `ValidateGlobalSceneCatalog.Run()` — **57 passed / 0 failed**; static snapshot — `catalog=150;markers=150;bound=150`; digest match — `d491f599e5fd9a7437a48e6d9474c53aff2320464f6851e24e08d58f68cd02b4`. Play Mode, Host/client, native startup, grounding, physics, camera, rebase и screenshots не выполнялись.
+**Граница:** В этап входят только изменения T-FO06L.2; `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` исключаются как посторонние. После отдельного implementation-коммита пользовательский Play Mode gate может быть рассмотрен; static PASS не равен runtime acceptance.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 24.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.1 — ownership/NetworkObject boundaries, read-only classification)
 
 **Задача:** Зафиксировать границы ownership для `BootstrapScene` и `WorldScene_0_0` до нового Play Mode, не повторяя DDOL restoration как архитектурное решение.

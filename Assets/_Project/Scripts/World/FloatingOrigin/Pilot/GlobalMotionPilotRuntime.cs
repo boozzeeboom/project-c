@@ -74,7 +74,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
-            if (!RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out var restoreError))
+            if (!RejectCatalogedSceneRootsFromDontDestroyOnLoad(out var restoreError))
             {
                 _startRequested = false;
                 Debug.LogError("[T-FO06L] Pilot could not restore cataloged scene roots from DontDestroyOnLoad: " + restoreError, this);
@@ -98,7 +98,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
 
             // Content preparation may execute legacy Awake/OnEnable paths that re-parent authored roots.
             // Repeat the cataloged DDOL restoration immediately before the native preflight boundary.
-            if (!RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out restoreError))
+            if (!RejectCatalogedSceneRootsFromDontDestroyOnLoad(out restoreError))
             {
                 _startRequested = false;
                 Debug.LogError("[T-FO06L] Pilot could not restore cataloged scene roots after content preparation: " + restoreError, this);
@@ -213,7 +213,15 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             return true;
         }
 
-private bool RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out string error)
+        private static bool IsDontDestroyOnLoadScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            // Unity exposes the DDOL pseudo-scene without an asset path; its name is empty in some editor/runtime versions.
+            return scene.IsValid() &&
+                (string.IsNullOrEmpty(scene.path) || string.Equals(scene.path, "DontDestroyOnLoad", System.StringComparison.Ordinal)) &&
+                (string.IsNullOrEmpty(scene.name) || string.Equals(scene.name, "DontDestroyOnLoad", System.StringComparison.Ordinal));
+        }
+
+        private bool RejectCatalogedSceneRootsFromDontDestroyOnLoad(out string error)
         {
             error = null;
             if (_profile == null || _profile.SceneCatalog == null)
@@ -259,7 +267,7 @@ private bool RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out string error)
             var markers = UnityEngine.Resources.FindObjectsOfTypeAll<GlobalSceneSourceMarker>();
             foreach (var marker in markers)
             {
-                if (marker == null || marker.gameObject.scene.name != "DontDestroyOnLoad") continue;
+                if (marker == null || !IsDontDestroyOnLoadScene(marker.gameObject.scene)) continue;
                 ddolMarkerCount++;
                 if (!sourceSceneById.TryGetValue(marker.SourceId, out var sceneGuid)) continue;
                 catalogedDdolMarkerCount++;
@@ -270,7 +278,7 @@ private bool RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out string error)
                 }
 
                 var root = marker.transform.root.gameObject;
-                if (root.scene.name != "DontDestroyOnLoad") continue;
+                if (!IsDontDestroyOnLoadScene(root.scene)) continue;
                 if (roots.TryGetValue(root, out var previousScene) && previousScene != targetScene)
                 {
                     error = "ddol_root_contains_multiple_cataloged_scene_guids;root=" + root.name +
@@ -280,19 +288,15 @@ private bool RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out string error)
                 roots[root] = targetScene;
             }
 
-            int restored = 0;
-            foreach (var pair in roots)
-            {
-                SceneManager.MoveGameObjectToScene(pair.Key, pair.Value);
-                if (pair.Key.scene != pair.Value)
-                {
-                    error = "cataloged_ddol_root_restore_failed;root=" + pair.Key.name + ";targetScene=" + pair.Value.path;
-                    return false;
-                }
-                restored++;
-            }
             Debug.Log("[T-FO06L] Cataloged DDOL audit: markers=" + ddolMarkerCount +
-                ";catalogedMarkers=" + catalogedDdolMarkerCount + ";roots=" + roots.Count + ";restored=" + restored, this);
+                ";catalogedMarkers=" + catalogedDdolMarkerCount + ";roots=" + roots.Count + ";restored=0", this);
+            if (roots.Count > 0)
+            {
+                var descriptions = new System.Collections.Generic.List<string>();
+                foreach (var pair in roots) descriptions.Add(pair.Key.name + "->" + pair.Value.path);
+                error = "cataloged_source_in_ddol;restoration_forbidden;roots=" + string.Join("|", descriptions);
+                return false;
+            }
             return true;
         }
 

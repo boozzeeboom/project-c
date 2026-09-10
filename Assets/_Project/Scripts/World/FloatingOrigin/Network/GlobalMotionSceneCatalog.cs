@@ -12,6 +12,7 @@ namespace ProjectC.World.FloatingOrigin.Network
     /// </summary>
     public enum GlobalSceneTreatment : byte { Unreviewed, PreserveContent, SceneNetworkObject, ReplaceWithNetworkPrefab, Exclude, Unmanaged }
     public enum GlobalScenePoseKind : byte { None, World, ParentLocal }
+    public enum GlobalSceneOwnership : byte { Unspecified, AuthoredSceneContent, BootstrapService, SceneOwnedNetworkGameplay, ShipOrRigidbodyRoot }
 
     [Serializable]
     public sealed class GlobalSceneObservation
@@ -33,6 +34,7 @@ namespace ProjectC.World.FloatingOrigin.Network
     {
         public string sceneGuid = "", sourceId = "", reviewNote = "";
         public GlobalSceneTreatment treatment;
+        public GlobalSceneOwnership ownership;
         public bool spatial;
         public uint replacementPrefabHash;
         public GlobalScenePoseKind poseKind;
@@ -64,8 +66,10 @@ namespace ProjectC.World.FloatingOrigin.Network
         public string SceneGuid { get; }
         public string SourceId { get; }
         public GlobalSceneTreatment Treatment { get; }
+        public GlobalSceneOwnership Ownership { get; }
         public bool Spatial { get; }
         public bool IsNetwork => Treatment == GlobalSceneTreatment.SceneNetworkObject || Treatment == GlobalSceneTreatment.ReplaceWithNetworkPrefab;
+        public bool RequiresNetworkLifecycle => Ownership == GlobalSceneOwnership.SceneOwnedNetworkGameplay;
         /// <summary>False for reviewed sources the executor deliberately leaves untouched.</summary>
         public bool IsManaged => Treatment != GlobalSceneTreatment.Unmanaged;
         public uint ReplacementPrefabHash { get; }
@@ -77,7 +81,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         public string ParentSourceId { get; }
         internal GlobalScenePlannedEntry(GlobalSceneEntry entry)
         {
-            SceneGuid = entry.sceneGuid; SourceId = entry.sourceId; Treatment = entry.treatment; Spatial = entry.spatial;
+            SceneGuid = entry.sceneGuid; SourceId = entry.sourceId; Treatment = entry.treatment; Ownership = entry.ownership; Spatial = entry.spatial;
             ReplacementPrefabHash = entry.replacementPrefabHash; PoseKind = entry.poseKind; WorldPosition = entry.worldPosition;
             ParentLocalPosition = entry.parentLocalPosition; Rotation = entry.rotation; Scale = entry.scale; ParentSourceId = entry.parentSourceId;
         }

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GlobalMotionPilotProfile
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalMotionNetworkProfile
   _enforceGlobalContracts: 1
-  _sceneLayoutDigest: bfe8008aa885a818b05f799799c504a1b174f87fdc0d73df2043a3ab91d93199
+  _sceneLayoutDigest: d491f599e5fd9a7437a48e6d9474c53aff2320464f6851e24e08d58f68cd02b4
   _sceneCatalog: {fileID: 11400000, guid: 3362073206f496d4c97ccb81c12ccbd3, type: 2}
   _prefabs:
   - prefab: {fileID: 100000, guid: 3898761cfa525d244822026575a1f242, type: 3}

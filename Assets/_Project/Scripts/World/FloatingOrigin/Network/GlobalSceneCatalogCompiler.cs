@@ -67,6 +67,15 @@ namespace ProjectC.World.FloatingOrigin.Network
                     // Unmanaged means the global system controls nothing about this source, so it cannot own a frame or pose.
                     if (entry.treatment == GlobalSceneTreatment.Unmanaged && entry.spatial)
                         return Fail("unmanaged_source_cannot_be_spatial", out error);
+                    if (entry.ownership == GlobalSceneOwnership.Unspecified)
+                        return Fail("scene_source_ownership_missing", out error);
+                    if ((entry.ownership == GlobalSceneOwnership.AuthoredSceneContent && observation.isNetworkObject) ||
+                        (entry.ownership != GlobalSceneOwnership.AuthoredSceneContent && !observation.isNetworkObject))
+                        return Fail("scene_source_ownership_conflicts_with_observed_network_identity", out error);
+                    if ((entry.ownership == GlobalSceneOwnership.BootstrapService && sourcePath(scenes, entry.sceneGuid) != "Assets/_Project/Scenes/BootstrapScene.unity") ||
+                        (entry.ownership == GlobalSceneOwnership.SceneOwnedNetworkGameplay && sourcePath(scenes, entry.sceneGuid) == "Assets/_Project/Scenes/BootstrapScene.unity") ||
+                        (entry.ownership == GlobalSceneOwnership.ShipOrRigidbodyRoot && sourcePath(scenes, entry.sceneGuid) == "Assets/_Project/Scenes/BootstrapScene.unity"))
+                        return Fail("scene_source_ownership_scene_boundary_mismatch", out error);
                     if ((entry.treatment == GlobalSceneTreatment.SceneNetworkObject && !observation.isNetworkObject) ||
                         (entry.treatment == GlobalSceneTreatment.PreserveContent && observation.isNetworkObject) ||
                         ((entry.treatment == GlobalSceneTreatment.ReplaceWithNetworkPrefab) != (entry.replacementPrefabHash != 0)))
@@ -113,7 +122,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                     writer.Write(entries.Count);
                     foreach (var entry in entries.Values)
                     {
-                        writer.Write(entry.sceneGuid); writer.Write(entry.sourceId); writer.Write(entry.reviewNote); writer.Write((byte)entry.treatment); writer.Write(entry.spatial);
+                        writer.Write(entry.sceneGuid); writer.Write(entry.sourceId); writer.Write(entry.reviewNote); writer.Write((byte)entry.treatment); writer.Write((byte)entry.ownership); writer.Write(entry.spatial);
                         writer.Write(entry.replacementPrefabHash); writer.Write((byte)entry.poseKind); writer.Write(entry.parentSourceId);
                         writer.Write(entry.worldPosition.X); writer.Write(entry.worldPosition.Y); writer.Write(entry.worldPosition.Z);
                         Vector(writer, entry.parentLocalPosition); writer.Write(entry.rotation.x); writer.Write(entry.rotation.y); writer.Write(entry.rotation.z); writer.Write(entry.rotation.w); Vector(writer, entry.scale); CheckSize(stream);
@@ -131,6 +140,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             var actual = plan.CopyDigest(); int diff = 0; for (int i = 0; i < actual.Length; i++) diff |= actual[i] ^ expected[i];
             if (diff != 0) return false; digest = actual; return true;
         }
+        private static string sourcePath(SortedDictionary<string, GlobalSceneSource> scenes, string sceneGuid) => scenes.TryGetValue(sceneGuid, out var source) ? source.assetPath : "";
         private static bool Network(GlobalSceneEntry e) => e.treatment == GlobalSceneTreatment.SceneNetworkObject || e.treatment == GlobalSceneTreatment.ReplaceWithNetworkPrefab;
         private static bool ValidPose(GlobalSceneEntry e)
         {

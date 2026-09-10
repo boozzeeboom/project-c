@@ -81,10 +81,11 @@ namespace ProjectC.World.FloatingOrigin.Network
             error = null; token = default;
             if (!Entry(ticket, sourceId, out var load, out var entry) || load.Faulted || load.Records.ContainsKey(sourceId) || entry.Treatment == GlobalSceneTreatment.Exclude)
                 return Fail("unavailable_duplicate_or_excluded_source", out error);
-            if ((entry.Spatial ? frameId <= 0 : frameId != 0) || (entry.IsNetwork ? !lifetime.IsValid || lifetime.SessionId != _session : !lifetime.Equals(default)))
+            bool requiresNetworkLifetime = entry.IsNetwork || entry.RequiresNetworkLifecycle;
+            if ((entry.Spatial ? frameId <= 0 : frameId != 0) || (requiresNetworkLifetime ? !lifetime.IsValid || lifetime.SessionId != _session : !lifetime.Equals(default)))
                 return Fail("wrong_frame_or_instance_lifetime", out error);
-            if (entry.IsNetwork && _objects.ContainsKey(lifetime.NetworkObjectId)) return Fail("network_object_already_registered", out error);
-            if (entry.IsNetwork && _highestSpawn.TryGetValue(lifetime.NetworkObjectId, out var previous) && lifetime.SpawnGeneration <= previous)
+            if (requiresNetworkLifetime && _objects.ContainsKey(lifetime.NetworkObjectId)) return Fail("network_object_already_registered", out error);
+            if (requiresNetworkLifetime && _highestSpawn.TryGetValue(lifetime.NetworkObjectId, out var previous) && lifetime.SpawnGeneration <= previous)
                 return Fail("reused_or_stale_network_lifetime", out error);
             if (entry.ParentSourceId.Length != 0)
             {
@@ -95,7 +96,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             load.Records.Add(sourceId, new Receipt { Frame = frameId, Lifetime = lifetime, Generation = generation });
             token = new GlobalSceneReceiptToken(ticket, sourceId, generation);
             load.Accounted.Add(sourceId);
-            if (entry.IsNetwork) { _objects.Add(lifetime.NetworkObjectId, sourceId); _highestSpawn[lifetime.NetworkObjectId] = lifetime.SpawnGeneration; }
+            if (requiresNetworkLifetime) { _objects.Add(lifetime.NetworkObjectId, sourceId); _highestSpawn[lifetime.NetworkObjectId] = lifetime.SpawnGeneration; }
             return true;
         }
         public bool TryRecordExclusion(GlobalSceneLoadTicket ticket, string sourceId)
@@ -136,7 +137,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             Entry(token.Load, token.SourceId, out var load, out var entry);
             var receipt = load.Records[token.SourceId];
             load.Records.Remove(token.SourceId);
-            if (entry.IsNetwork) _objects.Remove(receipt.Lifetime.NetworkObjectId);
+            if (entry.IsNetwork || entry.RequiresNetworkLifecycle) _objects.Remove(receipt.Lifetime.NetworkObjectId);
             return true;
         }
         public bool MarkFaulted(GlobalSceneLoadTicket ticket)

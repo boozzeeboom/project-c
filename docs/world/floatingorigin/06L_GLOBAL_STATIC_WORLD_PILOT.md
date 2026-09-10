@@ -626,3 +626,31 @@ Static code audit found the following relevant relocation families:
 - повторно выполняет static/native validators и создаёт отдельный commit.
 
 Только после этого пользовательский свежий Play Mode из `Assets/_Project/Scenes/BootstrapScene.unity` является первым нормальным startup gate. Его acceptance sequence: native preparation → `NetworkManager.StartHost()` → player spawn → stable scene ownership → `Road to Quartus` остаётся в `WorldScene_0_0` → отсутствие duplicate `WorldScene_0_0`/legacy streaming takeover. Grounding, camera, jitter, rebase, physics и client admission проверяются отдельными последующими gates.
+
+## 24. T-FO06L.2 — scene-owned gameplay lifecycle contract, static gate — 2026-09-10
+
+### Реализация
+
+- Введён явный `GlobalSceneOwnership`: `AuthoredSceneContent`, `BootstrapService`, `SceneOwnedNetworkGameplay` и `ShipOrRigidbodyRoot`; `Unspecified` запрещён.
+- Все `150` catalog entries классифицированы по фактически наблюдаемой ownership boundary: `authored=54`, `bootstrap=19`, `sceneGameplay=55`, `ships=22`.
+- Ownership включён в compiler policy и digest; текущий digest профиля: `d491f599e5fd9a7437a48e6d9474c53aff2320464f6851e24e08d58f68cd02b4`.
+- `SceneOwnedNetworkGameplay` отделён от старого `GlobalSceneTreatment.Unmanaged`: treatment не выдаёт lifecycle ownership автоматически; scene-owned gameplay требует явного NGO lifetime receipt.
+- Native executor теперь fail-closed отвергает cataloged DDOL roots, проверяет ownership, ожидаемый `NetworkManager`, spawn/lifetime receipt и не допускает retirement spawned scene-owned gameplay.
+- `ClientSceneLoader.TryRetireForGlobalPilot()` остаётся единственным handoff seam для legacy streaming; partial binding, DDOL restoration как архитектура, mixed-root `SetParent` и sync-flag relaxation не добавлялись.
+
+### Изменение pure fixtures
+
+Каталожный тест ordinary content приведён в соответствие с ownership policy: после удаления observed `NetworkObject` fixture явно становится `AuthoredSceneContent`. Это сохраняет проверку stale-retirement protection и не ослабляет компилятор.
+
+### Проверки
+
+- Unity compile: `No compile errors`.
+- `ValidateGlobalSceneExecution.Run()`: **35 passed / 0 failed**.
+- `ValidateGlobalSceneCatalog.Run()`: **57 passed / 0 failed**.
+- Static snapshot: `catalog=150; markers=150; bound=150`.
+- Catalog digest/profile match: `d491f599e5fd9a7437a48e6d9474c53aff2320464f6851e24e08d58f68cd02b4`.
+- Play Mode, native startup, Host/client, grounding, physics, camera, rebase и screenshots не выполнялись; пользовательский runtime gate остаётся UNVERIFIED.
+
+### Граница коммита
+
+В T-FO06L.2 входят ownership/compiler/ledger/executor/runtime изменения, catalog/profile, validators и эта документация. `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` являются посторонними и не включаются. После этого отдельного implementation-коммита пользовательский Play Mode gate может быть рассмотрен, но сам по себе static PASS не является runtime acceptance.

@@ -502,7 +502,19 @@ namespace ProjectC.UI.MainMenu
         private void OnDebugDeleteTimeClicked() => SetDebugStatus(PersistenceDebugTools.DeleteWorldTimeSaves());
         private void OnDebugDeleteTradeClicked() => SetDebugStatus(PersistenceDebugTools.DeleteTradeSaves());
 
-        private void OnHostClicked() { var n = FindAnyObjectByType<NetworkManagerController>(); if (n != null) { n.StartHost(); Hide(); } else Debug.LogError("[MainMenuWindow] NMC not found"); }
+        private void OnHostClicked()
+        {
+            var pilot = FindAnyObjectByType<ProjectC.World.FloatingOrigin.Pilot.GlobalMotionPilotRuntime>();
+            if (pilot != null && pilot.isActiveAndEnabled)
+            {
+                pilot.StartPilotHost();
+                return;
+            }
+
+            var n = FindAnyObjectByType<NetworkManagerController>();
+            if (n != null) { n.StartHost(); Hide(); }
+            else Debug.LogError("[MainMenuWindow] NMC not found");
+        }
         private void OnConnectClicked() { if (_ipPanel != null) { if (_ipField != null) _ipField.value = "127.0.0.1"; NavigateTo(_ipPanel); } }
         private void OnIpConnectClicked() { var ip = _ipField?.value?.Trim() ?? "127.0.0.1"; if (string.IsNullOrEmpty(ip)) ip = "127.0.0.1"; var n = FindAnyObjectByType<NetworkManagerController>(); if (n != null) { n.ConnectToServer(ip, 7777); Hide(); } else Debug.LogError("[MainMenuWindow] NMC not found"); }
         private void OnSettingsClicked() { NavigateTo(BuildSettingsPanel()); }

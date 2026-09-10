@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — отключить непреднамеренный pilot autostart)
+
+**Наблюдение:** Ошибка `uncontrolled_network_source_before_native_sweep:Road to Quartus` возникала ещё до нажатия `Start Host`.
+**Причина:** В `BootstrapScene` у `GlobalMotionPilotRuntime` было `_autoStartHost: 1`; `Start()` автоматически вызывал `StartPilotHost()` сразу после входа в Play Mode. Кнопки Host при этом шли в обычный `NetworkManagerController.StartHost()`, а не в pilot path.
+**Изменение:** `_autoStartHost` установлен в `0`. `MainMenuWindow` и `NetworkTestMenu` сначала вызывают активный `GlobalMotionPilotRuntime.StartPilotHost()`, а при отсутствии pilot сохраняют обычный NMC Host. Pilot UI не скрывается до подтверждённой готовности local player.
+**Проверки:** `NetworkTestMenu.cs` и `MainMenuWindow.cs` — standard validation: `0 warnings / 0 errors`; Compile — `No compile errors`. Play Mode после изменения ещё не запускался.
+**Следующий gate:** Войти в Play Mode, проверить отсутствие native preparation до клика, нажать `Start Host` и прислать следующую фактическую точку startup/error.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 17; обновлён этот журнал.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — разрешить cataloged Unmanaged source до NGO startup)
 
 **Runtime отказ:** После отката frame bridge native preparation остановилась на `uncontrolled_network_source_before_native_sweep:Road to Quartus`.

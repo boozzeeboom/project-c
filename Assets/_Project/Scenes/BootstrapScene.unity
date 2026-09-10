@@ -16030,7 +16030,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Pilot.GlobalMotionPilotRuntime
   _profile: {fileID: 11400000, guid: 21f017ff137c07945bc4de67e52122a7, type: 2}
   _bootstrap: {fileID: 1151906027}
-  _autoStartHost: 1
+  _autoStartHost: 0
 --- !u!114 &1151906032
 MonoBehaviour:
   m_ObjectHideFlags: 0

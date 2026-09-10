@@ -335,3 +335,29 @@ Read-only разбор `WorldScene_0_0` показал, что `Road to Quartus`
 - Play Mode после исправления ещё не запускался пользователем.
 
 Следующий ручной gate: новый запуск из `BootstrapScene` → Start Host. Ожидаемый результат — пройти `Road to Quartus` и получить либо `catalog_markers_bound_mismatch`, либо следующую фактическую причину. Partial binding и автоматическое принятие неизвестных NetworkObject запрещены.
+
+## 17. Отключение непреднамеренного autostart pilot — 2026-09-10
+
+### Фактическое наблюдение
+
+Пользователь получил ту же ошибку ещё до нажатия `Start Host`. Причина подтверждена в `BootstrapScene`: у `GlobalMotionPilotRuntime` было `_autoStartHost: 1`, а его `Start()` немедленно вызывал `StartPilotHost()` в начале Play Mode. Ошибка не была вызвана кнопкой UI.
+
+Дополнительно обе кнопки Host (`MainMenuWindow` и `NetworkTestMenu`) вызывали обычный `NetworkManagerController.StartHost()`, поэтому ручной Host не проходил через pilot startup path.
+
+### Изменение
+
+- В `BootstrapScene` установлено `_autoStartHost: 0`.
+- Host-кнопки теперь сначала ищут активный `GlobalMotionPilotRuntime` и вызывают `StartPilotHost()`.
+- Если pilot отсутствует, сохраняется прежний обычный `NetworkManagerController.StartHost()`.
+- Pilot UI не скрывается сразу после клика: меню закрывается только после подтверждённой готовности local pilot player штатным one-shot handoff.
+
+Это возвращает контроль запуска пользователю и одновременно сохраняет pilot ownership для ручного Host в этой сцене.
+
+### Проверки
+
+- `NetworkTestMenu.cs`: стандартная валидация — 0 warnings, 0 errors.
+- `MainMenuWindow.cs`: стандартная валидация — 0 warnings, 0 errors.
+- Compile: `No compile errors`.
+- Play Mode после изменения ещё не запускался.
+
+Следующий gate: войти в Play Mode, убедиться, что до клика `Start Host` pilot не выполняет native preparation, затем нажать `Start Host` и зафиксировать следующую фактическую точку прохождения/ошибку.

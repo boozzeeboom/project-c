@@ -87,6 +87,13 @@ namespace ProjectC.UI
 
         private void StartAsHost()
         {
+            var pilot = FindAnyObjectByType<ProjectC.World.FloatingOrigin.Pilot.GlobalMotionPilotRuntime>();
+            if (pilot != null && pilot.isActiveAndEnabled)
+            {
+                pilot.StartPilotHost();
+                return;
+            }
+
             if (_nmc != null)
             {
                 _nmc.StartHost();

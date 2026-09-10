@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 4 — исправление ownership CloudManager)
+
+**Задача:** Продолжить startup gate после фактического отказа `persistent_bootstrap_service_runtime_location_mismatch:CloudManager`.
+**Диагностика:** Пользовательский лог от 2026-09-10 18:43:14 показал `Cataloged DDOL audit: markers=16;catalogedMarkers=16;persistentBootstrapRoots=16;restored=0`, после чего native preflight отклонил `CloudManager`. Live Edit Mode audit подтвердил: `CloudManager` — inactive root `BootstrapScene`, без parent, с `CloudManager`, `VeilRaymarchMeshController`, `NetworkObject` и baked marker `336a190646b19bc46b22dd4e78f99800:909089444:0`.
+**Решение:** В текущем сохранённом runtime состоянии `CloudManager` не достигает `Awake()`, потому что GameObject неактивен; его `DontDestroyOnLoad(gameObject)` не выполняется. Entry оставлен `Unmanaged`, ownership изменён с `PersistentBootstrapService` на `BootstrapService`, чтобы authored root оставался в canonical `BootstrapScene`. Это не добавляет DDOL restoration и не расширяет принятие обычного authored content или scene gameplay.
+**Изменения:** `GlobalMotionPilotSceneCatalog.asset`, `GlobalMotionPilotProfile.asset` (digest обновлён до `4b028fe6a302e32510648f3716d86ec857bda85fb1fc77f6c6631f3aa3affce5`), этот журнал и `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`.
+**Проверки:** Unity compile — `No compile errors`; `ValidateGlobalSceneCatalog.Run()` — `58 passed / 0 failed`; `ValidateGlobalSceneExecution.Run()` — `36 passed / 0 failed`; Play Mode после изменения не выполнялся.
+**Следующий gate:** Новый пользовательский Play Mode из `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Ожидается прохождение CloudManager ownership check и следующий полный native startup результат. Это всё ещё startup gate, не нормальный gameplay playtest.
+**Граница:** Не активировать CloudManager только ради прохождения gate; `GroundPlane_0_0` не восстанавливать; исключить `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset`.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 3 — исправление ownership PlayerSpawner)
 
 **Задача:** Продолжить startup gate после фактического отказа `persistent_bootstrap_service_runtime_location_mismatch:PlayerSpawner`.

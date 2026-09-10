@@ -730,3 +730,44 @@ cataloged_source_in_ddol;restoration_forbidden
 Следующий этап — новый пользовательский startup gate: fresh Play Mode из `Assets/_Project/Scenes/BootstrapScene.unity`, `Start Host`, затем зафиксировать полный результат native preparation, `StartHost()`, local player spawn и duplicate/legacy scene checks. До его успешного прохождения нормальный gameplay playtest не начинать.
 
 Граница этапа: `GroundPlane_0_0` не восстанавливается; обычный authored content, `SceneOwnedNetworkGameplay` и `ShipOrRigidbodyRoot` не переводятся в DDOL; unrelated `LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` не входят.
+
+## 27. T-FO06L.2.x follow-up 4 — CloudManager ownership correction — 2026-09-10
+
+### Фактический runtime отказ
+
+Следующий пользовательский startup gate от 2026-09-10 18:43:14 завершился на:
+
+```text
+[T-FO06L] Pilot global startup refused: scene_preparation:persistent_bootstrap_service_runtime_location_mismatch:CloudManager
+```
+
+Перед отказом повторно получен audit `markers=16;catalogedMarkers=16;persistentBootstrapRoots=16;restored=0`.
+
+### Read-only evidence and decision
+
+- `CloudManager` найден root-level в `Assets/_Project/Scenes/BootstrapScene.unity`.
+- У объекта нет parent; в Edit Mode `IsActive=false`.
+- На root присутствуют `CloudManager`, `VeilRaymarchMeshController`, `NetworkObject` и `GlobalSceneSourceMarker`.
+- Source ID: `336a190646b19bc46b22dd4e78f99800:909089444:0`.
+- `CloudManager.Awake()` содержит `DontDestroyOnLoad(gameObject)`, но для inactive GameObject этот путь в текущем сохранённом runtime состоянии не выполняется.
+- Поиск по проекту не выявил отдельного кода, который активирует именно этот root перед native preflight.
+
+Поэтому текущая live location — authored BootstrapScene, а не DDOL. Не следует активировать CloudManager только для прохождения pilot gate: это изменило бы фактическую cloud/runtime семантику и могло бы скрыть ошибку классификации.
+
+### Узкий фикс
+
+`CloudManager` оставлен `treatment: Unmanaged`, но ownership изменён с `PersistentBootstrapService` на `BootstrapService`. Catalog/profile digest обновлён:
+
+`4b028fe6a302e32510648f3716d86ec857bda85fb1fc77f6c6631f3aa3affce5`
+
+Это не разрешает DDOL restoration и не меняет обработку обычного authored content, `SceneOwnedNetworkGameplay`, `ShipOrRigidbodyRoot` или unknown roots.
+
+### Проверки и следующий gate
+
+- Unity compile: **No compile errors**.
+- `ValidateGlobalSceneCatalog.Run()`: **58 passed / 0 failed**.
+- `ValidateGlobalSceneExecution.Run()`: **36 passed / 0 failed**.
+- Runtime native binding, `StartHost()` и player spawn после этой коррекции остаются **UNVERIFIED**.
+- Нормальный gameplay playtest по-прежнему не разрешён.
+
+Следующий этап — новый пользовательский startup gate из canonical `Assets/_Project/Scenes/BootstrapScene.unity` с `Start Host`. Нужно получить следующий полный `[T-FO06L]` результат и проверить, прошёл ли native preflight дальше CloudManager. Только после полного startup gate с native preparation, `StartHost()`, player spawn и отсутствием duplicate/legacy scene takeover можно переходить к нормальному Host/player runtime playtest.

@@ -1810,11 +1810,12 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:909089444:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: 'T-FO06L.2.x correction: CloudManager is an inactive authored Bootstrap
+        NetworkObject kept in BootstrapScene; its Awake DDOL path is not reached
+        in the current saved runtime state. The global pilot does not restore, reparent
+        or treat this source as scene gameplay.'
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0

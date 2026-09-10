@@ -1,5 +1,19 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06 — ship prefab bounds census)
+
+**Задача:** Получить asset-level размеры ship prefabs для оценки rebase transaction без запуска Play Mode и без предположения о runtime instance layout.
+
+**Результат:** В `Assets/_Project/Prefabs/Ships` найдено 23 prefab assets. Для 20 именованных NPC ships зафиксированы агрегированные prefab AABB sizes: диапазон X `7.20–133.00`, Y около `2.55`, Z `18.00–272.95`. Отдельно отмечены `DONT-DELETE-NPC REFERENCE SHIP`, `Ship_Light_root (копия...)` и `Ship_Light_root_fbx_test` как reference/test assets.
+
+**Ограничение:** Эти размеры не дают pivot offsets, instance world positions, Rigidbody center-of-mass, collider geometry или ShipDeckNav bounds. Полный runtime ship instance census остаётся **INCONCLUSIVE**; scene-owned и dynamic ship roots нельзя классифицировать только по prefab AABB.
+
+**Граница:** Read-only asset query only; сцены, префабы, catalog/profile и runtime code не изменялись. Play Mode автоматически не запускался. TMP fallback и `ProjectSettings/EditorSettings.asset` исключаются.
+
+**Следующий шаг:** Использовать полученный масштабный диапазон как input для instance-level ownership/bounds inspection, затем проектировать rebase transaction только для явно классифицированных groups.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06 — exact coordinate/rebase census refinement)
 
 **Задача:** Уточнить числовые coordinate/frame facts и существующие origin-shift contracts перед проектированием rebase transaction.

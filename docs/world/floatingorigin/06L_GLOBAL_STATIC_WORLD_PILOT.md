@@ -1111,3 +1111,38 @@ Read-only census не дал достаточных данных для implemen
 Точные агрегированные city AABB/collider bounds, полный ship/deck bounds, фактический camera-follow owner и момент синхронизации rebase с NGO tick/physics/baseline не подтверждены. Поэтому существующий `FloatingOriginMP` нельзя принять как готовую T-FO06 transaction: его root-name heuristic и direct all-roots shift не доказывают closed-world ownership для текущего pilot.
 
 Следующий шаг — отдельный read-only runtime-independent census по prefab/scene asset bounds и исходным ownership markers; до получения этих данных код rebase не менять и Play Mode автоматически не запускать.
+
+## 36. T-FO06 — ship prefab bounds census — 2026-09-10
+
+### Полученные asset-level bounds
+
+Read-only `list_all_prefabs_with_bounding_boxes` для `Assets/_Project/Prefabs/Ships` вернул `23` prefab assets. Размеры ниже — агрегированные prefab AABB sizes, не world transforms экземпляров и не доказательство collider/navmesh bounds.
+
+| Prefab | Size X | Size Y | Size Z |
+|---|---:|---:|---:|
+| `Альбатрос` | 13.20 | 2.55 | 80.56 |
+| `Берег` | 22.00 | 2.55 | 51.16 |
+| `Вавилон` | 69.16 | 2.55 | 148.18 |
+| `Ветроворот` | 49.28 | 2.55 | 30.02 |
+| `Гигант` | 107.20 | 2.55 | 272.95 |
+| `Горгона` | 13.60 | 2.55 | 52.50 |
+| `Жук` | 17.52 | 2.55 | 59.70 |
+| `Летучий` | 20.00 | 2.55 | 45.00 |
+| `Лорейн` | 7.20 | 2.55 | 18.00 |
+| `Мастодонт` | 133.00 | 2.55 | 104.48 |
+| `Олимп` | 29.26 | 2.55 | 72.27 |
+| `Пещера` | 26.60 | 2.55 | 221.85 |
+| `Река` | 22.00 | 2.55 | 57.00 |
+| `Сильфида` | 13.36 | 2.55 | 58.65 |
+| `Скат` | 9.00 | 2.55 | 48.00 |
+| `Странник` | 27.50 | 2.55 | 127.76 |
+| `Торренс` | 10.64 | 2.55 | 56.25 |
+| `Угольщик` | 21.76 | 2.55 | 28.80 |
+| `Цитадель` | 33.00 | 2.55 | 57.38 |
+| `Шмель` | 12.72 | 2.55 | 45.36 |
+
+Дополнительно обнаружены три reference/test assets: `DONT-DELETE-NPC REFERENCE SHIP.prefab` `(8.04,2.55,20.23)`, `Ship_Light_root (копия с компьютера DESKTOP-K00O7HK).prefab` `(6.00,2.60,18.13)` и `Ship_Light_root_fbx_test.prefab` `(10.19,8.18,18.46)`. Они не считаются автоматически runtime ship instances.
+
+### Ограничение bounds
+
+Bounds sizes подтверждают масштабный диапазон ship actors, но не дают pivot offset, actual scene position, Rigidbody center-of-mass, collider geometry или `ShipDeckNav` bounds. Поэтому ship rebase должен использовать instance-level runtime/scene records, а не только prefab AABB. Полный instance census остаётся **INCONCLUSIVE**.

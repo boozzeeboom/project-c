@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 5 — исправление ownership ServerWeatherController)
+
+**Задача:** Продолжить startup gate после фактического отказа `persistent_bootstrap_service_runtime_location_mismatch:ServerWeatherController`.
+**Диагностика:** Пользовательский лог, экспортированный 2026-09-10 в 18:47:03, показал `markers=16;catalogedMarkers=16;persistentBootstrapRoots=16;restored=0`, после чего native preflight отклонил `ServerWeatherController`. Read-only Bootstrap audit подтвердил root-level объект `ServerWeatherController` в canonical `Assets/_Project/Scenes/BootstrapScene.unity`, без parent, active и с baked marker `336a190646b19bc46b22dd4e78f99800:2074923228:0`; на объекте присутствуют `NetworkObject`, `ServerWeatherController` и `GlobalSceneSourceMarker`.
+**Решение:** Это authored Bootstrap `NetworkObject`, а не подтверждённый DDOL root. Entry оставлен `Unmanaged`, ownership изменён с `PersistentBootstrapService` на `BootstrapService`. Объект не активировался дополнительно, DDOL restoration и ослабление native gate не добавлялись.
+**Изменения:** `GlobalMotionPilotSceneCatalog.asset`, `GlobalMotionPilotProfile.asset` (digest обновлён до `d3f6617d0626a442b2134b3052942fdc19bfe31633ba9c22fd07dc302539a3e6`), этот журнал и `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`.
+**Статическая проверка:** Ownership distribution — `AuthoredSceneContent=38`, `BootstrapService=8`, `PersistentBootstrapService=27`, `SceneOwnedNetworkGameplay=55`, `ShipOrRigidbodyRoot=22`; catalog `150`; profile digest match — `True`; `ValidateGlobalSceneCatalog.Run()` — `58 passed / 0 failed`; `ValidateGlobalSceneExecution.Run()` — `36 passed / 0 failed`; Unity compile — `No compile errors`.
+**Следующий gate:** Пользовательский новый Play Mode из `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Нормальный gameplay playtest по-прежнему не разрешён: runtime native preparation, `catalog=150;markers=150;bound=150`, `StartHost()`, local player spawn, duplicate `WorldScene_0_0` и legacy loader takeover ещё не подтверждены.
+**Граница:** Не активировать `ServerWeatherController` только ради прохождения gate; `GroundPlane_0_0` не восстанавливать; исключить `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset`.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 4 — исправление ownership CloudManager)
 
 **Задача:** Продолжить startup gate после фактического отказа `persistent_bootstrap_service_runtime_location_mismatch:CloudManager`.

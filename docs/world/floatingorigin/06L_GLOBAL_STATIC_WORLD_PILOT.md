@@ -771,3 +771,44 @@ cataloged_source_in_ddol;restoration_forbidden
 - Нормальный gameplay playtest по-прежнему не разрешён.
 
 Следующий этап — новый пользовательский startup gate из canonical `Assets/_Project/Scenes/BootstrapScene.unity` с `Start Host`. Нужно получить следующий полный `[T-FO06L]` результат и проверить, прошёл ли native preflight дальше CloudManager. Только после полного startup gate с native preparation, `StartHost()`, player spawn и отсутствием duplicate/legacy scene takeover можно переходить к нормальному Host/player runtime playtest.
+
+## 28. T-FO06L.2.x follow-up 5 — ServerWeatherController ownership correction — 2026-09-10
+
+### Фактический runtime отказ
+
+Следующий пользовательский startup gate, экспортированный 2026-09-10 в 18:47:03, завершился на:
+
+```text
+[T-FO06L] Pilot global startup refused: scene_preparation:persistent_bootstrap_service_runtime_location_mismatch:ServerWeatherController
+```
+
+Перед отказом повторно получен audit `markers=16;catalogedMarkers=16;persistentBootstrapRoots=16;restored=0`. Legacy scene loader был retired; до native preparation, `StartHost()`, local player spawn и duplicate/legacy scene verification выполнение не дошло.
+
+### Read-only evidence and decision
+
+- `ServerWeatherController` найден root-level в `Assets/_Project/Scenes/BootstrapScene.unity`.
+- Root имеет `m_Father: {fileID: 0}`, `m_IsActive: 1` и baked marker `336a190646b19bc46b22dd4e78f99800:2074923228:0`.
+- На root присутствуют `NetworkObject`, `ServerWeatherController` и `GlobalSceneSourceMarker`; `NetworkObject` остаётся authored scene object (`InScenePlaced=false`, `IsSpawned=false` до старта NGO).
+- В текущей реализации `ServerWeatherController.OnNetworkSpawn()` устанавливает серверный singleton и запускает серверную логику, но сам скрипт не является доказательством DDOL ownership.
+- Поэтому фактическая live location на native-preparation boundary — authored `BootstrapScene`, а не DDOL.
+
+### Узкий фикс
+
+`ServerWeatherController` оставлен `treatment: Unmanaged`, но ownership изменён с `PersistentBootstrapService` на `BootstrapService`. DDOL restoration, активация объекта и ослабление fail-closed проверки не добавлялись.
+
+Новый catalog/profile digest:
+
+`d3f6617d0626a442b2134b3052942fdc19bfe31633ba9c22fd07dc302539a3e6`
+
+После фикса distribution ownership: `AuthoredSceneContent=38;BootstrapService=8;PersistentBootstrapService=27;SceneOwnedNetworkGameplay=55;ShipOrRigidbodyRoot=22`.
+
+### Проверки и следующий gate
+
+- Unity compile: **No compile errors**.
+- `ValidateGlobalSceneCatalog.Run()`: **58 passed / 0 failed**.
+- `ValidateGlobalSceneExecution.Run()`: **36 passed / 0 failed**.
+- Catalog closed-world binding remains `catalog=150`; profile digest matches compiled catalog.
+- Runtime native preparation, `StartHost()`, local player spawn, duplicate `WorldScene_0_0` and legacy scene-loader suppression после этой коррекции остаются **UNVERIFIED**.
+- Нормальный gameplay playtest по-прежнему не разрешён.
+
+Следующий шаг — новый пользовательский startup gate из canonical `Assets/_Project/Scenes/BootstrapScene.unity` с `Start Host`. Если native preflight пройдёт дальше, зафиксировать полную последовательность `catalog=150;markers=150;bound=150` → `StartHost()` → local player spawn → отсутствие duplicate `WorldScene_0_0` и legacy loader takeover.

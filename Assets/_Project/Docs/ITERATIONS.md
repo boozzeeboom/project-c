@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 6 — исправление ownership QuestServer)
+
+**Задача:** Продолжить startup gate после фактического отказа `persistent_bootstrap_service_runtime_location_mismatch:[QuestServer]`.
+**Диагностика:** Свежий пользовательский лог от 2026-09-10 18:55:14 показал `markers=16;catalogedMarkers=16;persistentBootstrapRoots=16;restored=0`; legacy loader был retired, но native preparation остановилась на `[QuestServer]`. Read-only inspection подтвердил authored root-level `NetworkObject` в canonical `Assets/_Project/Scenes/BootstrapScene.unity`, `m_Father: {fileID: 0}`, `m_IsActive: 1` и baked marker `336a190646b19bc46b22dd4e78f99800:2129841567:0`.
+**Решение:** Это Bootstrap network service, а не подтверждённый persistent DDOL root. Entry сохранён как `Unmanaged`, ownership изменён с `PersistentBootstrapService` на `BootstrapService`. Объект не активировался и не перемещался; DDOL restoration и ослабление fail-closed native gate не добавлялись.
+**Изменения:** `Assets/_Project/Prefabs/FloatingOrigin/GlobalMotionPilotSceneCatalog.asset`, `Assets/_Project/Prefabs/FloatingOrigin/GlobalMotionPilotProfile.asset` (digest обновлён до `75d2e9d4b6e158e0cc523a446201e1bae891521d5636bc99b904ed6e0d2aecf2`), `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, этот журнал.
+**Проверки:** Compiled catalog `entries=150`; profile digest match — `True`; `ValidateGlobalSceneCatalog.Run()` — **58 passed / 0 failed**; `ValidateGlobalSceneExecution.Run()` — **36 passed / 0 failed**; Unity compile — `No compile errors`. Play Mode не запускался.
+**Следующий gate:** Новый пользовательский startup gate из `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Нормальный gameplay playtest по-прежнему не разрешён: native preparation, `catalog=150;markers=150;bound=150`, `StartHost()`, local player spawn, duplicate `WorldScene_0_0` и legacy loader takeover ещё не подтверждены.
+**Граница:** Не активировать и не перемещать `[QuestServer]` только ради прохождения gate; `GroundPlane_0_0` не восстанавливать; исключить `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset`.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 5 — исправление ownership ServerWeatherController)
 
 **Задача:** Продолжить startup gate после фактического отказа `persistent_bootstrap_service_runtime_location_mismatch:ServerWeatherController`.

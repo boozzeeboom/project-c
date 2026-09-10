@@ -1414,11 +1414,10 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:2129841567:0
-      reviewNote: T-FO06L.2.x confirmed persistent Bootstrap infrastructure; may
-        remain in DontDestroyOnLoad. The global pilot does not restore, reparent
-        or treat this source as authored scene gameplay.
+      reviewNote: T-FO06L.2.x confirmed authored Bootstrap network service; the
+        source remains in BootstrapScene and is not treated as persistent DDOL.
       treatment: 5
-      ownership: 5
+      ownership: 2
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0

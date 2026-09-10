@@ -812,3 +812,45 @@ cataloged_source_in_ddol;restoration_forbidden
 - Нормальный gameplay playtest по-прежнему не разрешён.
 
 Следующий шаг — новый пользовательский startup gate из canonical `Assets/_Project/Scenes/BootstrapScene.unity` с `Start Host`. Если native preflight пройдёт дальше, зафиксировать полную последовательность `catalog=150;markers=150;bound=150` → `StartHost()` → local player spawn → отсутствие duplicate `WorldScene_0_0` и legacy loader takeover.
+
+## 29. T-FO06L.2.x follow-up 6 — QuestServer ownership correction — 2026-09-10
+
+### Фактический runtime отказ
+
+Свежий пользовательский startup gate, экспортированный 2026-09-10 в 18:55:14, завершился на:
+
+```text
+[T-FO06L] Pilot global startup refused:
+scene_preparation:persistent_bootstrap_service_runtime_location_mismatch:[QuestServer]
+```
+
+Перед отказом legacy loader был retired; DDOL audit показал `markers=16;catalogedMarkers=16;persistentBootstrapRoots=16;restored=0`. Native preparation снова не завершилась, поэтому `StartHost()`, local player spawn и duplicate/legacy scene checks не выполнялись.
+
+### Read-only evidence and decision
+
+- `[QuestServer]` подтверждён как active root-level object в canonical `Assets/_Project/Scenes/BootstrapScene.unity`: `m_Father: {fileID: 0}`, `m_IsActive: 1`.
+- На authored root присутствуют `NetworkObject`, `ProjectC.Quests.QuestServer` и `GlobalSceneSourceMarker`; baked source ID — `336a190646b19bc46b22dd4e78f99800:2129841567:0`.
+- `QuestServer.cs` содержит только документационное указание на bootstrap lifecycle; отдельного `DontDestroyOnLoad` вызова в исходнике нет. Сохранённый object остаётся authored Bootstrap root на native-preparation boundary.
+- Поэтому catalog entry не соответствует `PersistentBootstrapService`; это Bootstrap network service, который должен оставаться в canonical BootstrapScene.
+
+### Узкий фикс
+
+`[QuestServer]` оставлен `treatment: Unmanaged`, но ownership изменён с `PersistentBootstrapService` на `BootstrapService`. Объект не активировался и не перемещался; DDOL restoration, ослабление fail-closed native gate, `SceneOwnedNetworkGameplay` и `ShipOrRigidbodyRoot` не изменялись.
+
+Новый catalog/profile digest:
+
+`75d2e9d4b6e158e0cc523a446201e1bae891521d5636bc99b904ed6e0d2aecf2`
+
+После фикса distribution ownership: `AuthoredSceneContent=38;BootstrapService=9;PersistentBootstrapService=26;SceneOwnedNetworkGameplay=55;ShipOrRigidbodyRoot=22`.
+
+### Проверки и следующий gate
+
+- Compiled catalog: `entries=150`.
+- Profile digest matches compiled catalog: **True**.
+- `ValidateGlobalSceneCatalog.Run()`: **58 passed / 0 failed**.
+- `ValidateGlobalSceneExecution.Run()`: **36 passed / 0 failed**.
+- Unity compile: **No compile errors**.
+- Runtime native preparation, `StartHost()`, local player spawn, duplicate `WorldScene_0_0` and legacy scene-loader suppression после этой коррекции остаются **UNVERIFIED**.
+- Нормальный gameplay playtest по-прежнему не разрешён.
+
+Следующий шаг — новый пользовательский startup gate из canonical `Assets/_Project/Scenes/BootstrapScene.unity` с `Start Host`. Проверить, проходит ли native preflight дальше `[QuestServer]`; при успехе зафиксировать полную последовательность `catalog=150;markers=150;bound=150` → `StartHost()` → local player spawn → отсутствие duplicate `WorldScene_0_0` и legacy loader takeover.

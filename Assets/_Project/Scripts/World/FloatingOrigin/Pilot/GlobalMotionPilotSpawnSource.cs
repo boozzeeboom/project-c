@@ -27,6 +27,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
 
         private void Awake() => Prepare();
         public bool RefreshPreparedContent() => Prepare();
+        public bool RefreshPreparedContent(UnityEngine.SceneManagement.Scene preparedScene) => Prepare(preparedScene);
 
         public bool ValidatePreparedContent(GlobalMotionStartRole role, GlobalMotionNetworkProfile profile, out string error)
         {
@@ -59,12 +60,12 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             return true;
         }
 
-        private bool Prepare()
+        private bool Prepare(UnityEngine.SceneManagement.Scene? preparedScene = null)
         {
             _frames.Clear();
             _prepared = false;
-            var scene = SceneManager.GetSceneByPath(_worldScenePath);
-            if (!scene.IsValid() || !scene.isLoaded) return false;
+            var scene = preparedScene ?? SceneManager.GetSceneByPath(_worldScenePath);
+            if (!scene.IsValid() || !scene.isLoaded || !string.Equals(scene.path, _worldScenePath, StringComparison.Ordinal)) return false;
             var respawn = FindInScene(scene, _respawnObjectName);
             if (respawn == null) return false;
 

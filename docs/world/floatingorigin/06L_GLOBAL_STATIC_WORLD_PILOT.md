@@ -1162,3 +1162,39 @@ Bounds sizes подтверждают масштабный диапазон ship
 ### Решение
 
 Общий shift `WorldRoot_0_0`, scene-owned `NetworkObject`, ship/Rigidbody roots или их deck/navmesh structures не разрешается. Следующий этап — design-only participant/transaction contract; не включать `FloatingOriginMP`, не выполнять player-only shift и не считать Edit Mode bounds доказательством runtime camera, velocity, interpolation-history или NGO tick ordering.
+
+## 38. T-FO06L.2.x follow-up 11 — удержание WorldScene до native preparation — 2026-09-10
+
+### Фактический runtime отказ
+
+Новый пользовательский Console Log от `2026-09-10 21:56:20` снова останавливает pilot до `GlobalMotionNetworkStartup.TryPrepare`:
+
+```text
+[T-FO06L] Retired 1 legacy scene loader(s): network callbacks detached, coroutines stopped, load requests blocked for the pilot lifetime.
+[T-FO06L] Pilot world scene is not loaded: Assets/_Project/Scenes/World/WorldScene_0_0.unity
+```
+
+При этом до отказа уже выполнялись `ShipFuelSystem`, `ShipDeckNav`, ship services, pickup visuals и другие `WorldScene_0_0` `Awake/OnEnable` paths. Следовательно, это не новый catalog/readiness/rebase census blocker. `NetworkSceneManager.Dispose()` и `NetworkSpawnManager.DespawnAndDestroyNetworkObjects()` появляются при shutdown после отказа и остаются вторичными последствиями.
+
+### Проверенная цепочка owners
+
+- `ClientSceneLoader` после `TryRetireForGlobalPilot()` отписывает свой `NetworkManagerController` callback, останавливает свои coroutines и блокирует дальнейшие legacy load/unload requests.
+- `WorldSceneManager` до этого follow-up оставался активным: он сохранял подписки на `ClientSceneLoader.OnScene*` и продолжал `Update`/preload logic, поэтому его ownership не был явно передан pilot.
+- `ServerSceneManager` вызывает `UnloadScene` только из NGO `UnloadSceneClientRpc`; это post-network path и не объясняет отказ до `StartHost`.
+- Critical pilot path повторно получал сцену через `SceneManager.GetSceneByPath` после `LoadSceneAsync`, вместо передачи exact loaded-scene handle к spawn source.
+
+### Исправление
+
+- `WorldSceneManager.TryRetireForGlobalPilot()` отписывает legacy events, останавливает coroutines, блокирует `Update` и preload и оставляет scene lifetime pilot-у.
+- `GlobalMotionPilotRuntime` ретирует `WorldSceneManager` и `ClientSceneLoader` до additive load и блокирует параллельные pilot host requests.
+- После additive load pilot получает exact `Scene` handle из `SceneManager.GetSceneAt`, проверяет тот же handle через следующий кадр и передаёт его в `GlobalMotionPilotSpawnSource.RefreshPreparedContent(Scene)`.
+- При повторном отказе diagnostic теперь содержит `name/path/handle/isLoaded` и полный список загруженных сцен, чтобы отличить фактический unload от неправильного path lookup. Fail-open и partial binding не добавлялись.
+
+### Проверки и границы
+
+- Unity Editor после изменений сообщает `hasCompilationErrors=false`.
+- Play Mode, screenshots и новый ручной Host gate пользователем ещё не выполнены.
+- `BootstrapScene`, `WorldScene_0_0`, catalog/profile/digest, `GroundPlane_0_0`, NGO registry и rebase transaction не изменялись.
+- Предупреждения `ShipCargoVisual`, NavMesh и вторичные NGO shutdown exceptions не включены в этот fix: их причинная связь с первичным world-scene gate не доказана.
+
+Следующий gate: новый ручной запуск из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Нужны фактические строки retirement owners, отсутствие `Pilot world scene is not loaded`, затем `catalog=150;markers=150;bound=150`, `StartHost`, player spawn и отсутствие duplicate/legacy scene takeover.

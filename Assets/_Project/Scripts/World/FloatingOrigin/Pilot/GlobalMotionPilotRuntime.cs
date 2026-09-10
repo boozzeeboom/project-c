@@ -22,6 +22,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         private Coroutine _startRoutine;
         private bool _startedByPilot;
         private bool _startRequested;
+        private static GlobalMotionPilotRuntime _activeRequestOwner;
 
         private void Start()
         {
@@ -31,6 +32,12 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         public void StartPilotHost()
         {
             if (_startedByPilot || _startRequested) return;
+            if (_activeRequestOwner != null && _activeRequestOwner != this)
+            {
+                Debug.LogError("[T-FO06L] Duplicate pilot host request refused; another pilot runtime owns preparation.", this);
+                return;
+            }
+            _activeRequestOwner = this;
             _startRequested = true;
             _startRoutine = StartCoroutine(PrepareAndStartHost());
         }
@@ -53,8 +60,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             }
 
             const string worldScenePath = "Assets/_Project/Scenes/World/WorldScene_0_0.unity";
-            var worldScene = SceneManager.GetSceneByPath(worldScenePath);
-            if (!worldScene.IsValid() || !worldScene.isLoaded)
+            if (!TryFindLoadedSceneHandle(worldScenePath, out var worldScene))
             {
                 var load = SceneManager.LoadSceneAsync(worldScenePath, LoadSceneMode.Additive);
                 if (load == null)
@@ -64,13 +70,21 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                     yield break;
                 }
                 while (!load.isDone) yield return null;
-                worldScene = SceneManager.GetSceneByPath(worldScenePath);
+                // Allow SceneManager to publish the final loaded-scene handle before binding content.
+                yield return null;
+                if (!TryFindLoadedSceneHandle(worldScenePath, out worldScene))
+                {
+                    _startRequested = false;
+                    Debug.LogError("[T-FO06L] Pilot world scene is not loaded: " + worldScenePath + ";scenes=" + DescribeLoadedScenes(), this);
+                    yield break;
+                }
             }
 
-            if (!worldScene.IsValid() || !worldScene.isLoaded)
+            // Preserve and revalidate the exact loaded Scene handle; a path-only lookup can hide an unload/reload race.
+            if (!IsExactLoadedScene(worldScene))
             {
                 _startRequested = false;
-                Debug.LogError("[T-FO06L] Pilot world scene is not loaded: " + worldScenePath, this);
+                Debug.LogError("[T-FO06L] Pilot world scene handle was lost before preparation: " + DescribeScene(worldScene) + ";scenes=" + DescribeLoadedScenes(), this);
                 yield break;
             }
 
@@ -89,7 +103,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             }
 
             var source = GetComponent<GlobalMotionPilotSpawnSource>();
-            if (source == null || !source.RefreshPreparedContent())
+            if (source == null || !source.RefreshPreparedContent(worldScene))
             {
                 _startRequested = false;
                 Debug.LogError("[T-FO06L] Pilot spawn source could not prepare the loaded world scene.", this);
@@ -195,6 +209,18 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         private bool RetireLegacySceneLoadersForPilot()
         {
             int retired = 0;
+            var worldManagers = UnityEngine.Object.FindObjectsByType<ProjectC.World.WorldSceneManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var worldManager in worldManagers)
+            {
+                if (worldManager == null) continue;
+                bool alreadyRetired = worldManager.IsRetiredForGlobalPilot;
+                if (!worldManager.TryRetireForGlobalPilot(out var error))
+                {
+                    Debug.LogError("[T-FO06L] Legacy world scene manager handoff refused: " + worldManager.name + ";" + error, this);
+                    return false;
+                }
+                if (!alreadyRetired) retired++;
+            }
             var loaders = UnityEngine.Object.FindObjectsByType<ProjectC.World.Scene.ClientSceneLoader>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var loader in loaders)
             {
@@ -209,8 +235,48 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             }
 
             if (retired > 0)
-                Debug.Log("[T-FO06L] Retired " + retired + " legacy scene loader(s): network callbacks detached, coroutines stopped, load requests blocked for the pilot lifetime.", this);
+                Debug.Log("[T-FO06L] Retired " + retired + " legacy scene owner(s): callbacks detached, coroutines stopped, load requests blocked for the pilot lifetime.", this);
             return true;
+        }
+
+        private static bool TryFindLoadedSceneHandle(string scenePath, out UnityEngine.SceneManagement.Scene result)
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (scene.IsValid() && scene.isLoaded && string.Equals(scene.path, scenePath, System.StringComparison.Ordinal))
+                {
+                    result = scene;
+                    return true;
+                }
+            }
+            result = default;
+            return false;
+        }
+
+        private static bool IsExactLoadedScene(UnityEngine.SceneManagement.Scene target)
+        {
+            if (!target.IsValid() || !target.isLoaded) return false;
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (scene.handle == target.handle) return scene.isLoaded;
+            }
+            return false;
+        }
+
+        private static string DescribeScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid()) return "invalid";
+            return "name=" + scene.name + ",path=" + scene.path + ",handle=" + scene.handle + ",loaded=" + scene.isLoaded;
+        }
+
+        private static string DescribeLoadedScenes()
+        {
+            var descriptions = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+                descriptions.Add(DescribeScene(SceneManager.GetSceneAt(i)));
+            return string.Join("|", descriptions);
         }
 
         private static bool IsDontDestroyOnLoadScene(UnityEngine.SceneManagement.Scene scene)
@@ -303,6 +369,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
 
         private void OnDestroy()
         {
+            if (_activeRequestOwner == this) _activeRequestOwner = null;
             if (_startup != null && _manager != null && !_manager.IsListening)
                 _startup.CancelBeforeStart();
         }

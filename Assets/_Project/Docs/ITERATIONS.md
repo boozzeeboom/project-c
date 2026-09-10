@@ -1,5 +1,23 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 11 — удержание world scene перед native preparation)
+
+**Задача:** Исправить повторный ручной Start Host отказ `Pilot world scene is not loaded` после того, как `WorldScene_0_0` уже начал выполнять `Awake/OnEnable`.
+
+**Диагностика:** Проверка владельцев показала, что `ClientSceneLoader` ретировался, но `WorldSceneManager` оставался активным legacy-координатором и продолжал владеть preload path. Кроме того, pilot после `LoadSceneAsync` повторно разрешал сцену только через `GetSceneByPath`, не сохраняя exact loaded-scene handle до `GlobalMotionPilotSpawnSource` и native boundary. `ServerSceneManager` имеет unload RPC только после NGO startup и первичным blocker не является.
+
+**Результат:** Добавлен явный `WorldSceneManager.TryRetireForGlobalPilot()` с отпиской от legacy events, остановкой корутин и блокировкой Update/preload. Pilot ретирует оба legacy scene owner до additive load. `GlobalMotionPilotRuntime` теперь сохраняет exact loaded `Scene` handle через enumeration `SceneManager.GetSceneAt`, повторно проверяет его присутствие/loaded state и передаёт тот же handle в `GlobalMotionPilotSpawnSource`. Добавлен guard против параллельных pilot host requests.
+
+**Проверки:** Unity Editor сообщает `hasCompilationErrors=false` после изменений. Play Mode, Host/player spawn, screenshots и новый ручной startup gate не выполнялись автоматически; runtime результат остаётся **UNVERIFIED**.
+
+**Граница:** `WorldScene_0_0`, `BootstrapScene`, catalog/profile/digest, `GroundPlane_0_0`, NGO registry и rebase transaction не изменялись. Предупреждения NavMesh/ShipCargoVisual и вторичные NGO shutdown `NullReferenceException` не исправлялись как несвязанные с первичным gate.
+
+**Следующий шаг:** Пользовательский новый Play Mode из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Ожидается лог retirement legacy scene owners, отсутствие `Pilot world scene is not loaded`, затем проверка `catalog=150;markers=150;bound=150`, `StartHost`, player spawn и отсутствия duplicate/legacy scene takeover.
+
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, новый раздел follow-up 11.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06M — exact read-only city/ship/camera boundary census)
 
 **Задача:** Закрыть доступный Edit Mode census по city render/collider bounds, `Respawn_Default`, всем 22 ship/Rigidbody roots, `ShipDeckNav` и camera prefab chain перед design-only rebase transaction.

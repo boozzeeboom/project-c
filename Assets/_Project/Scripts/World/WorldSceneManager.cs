@@ -65,6 +65,30 @@ namespace ProjectC.World
         private bool _preloadTriggeredZ = false;
         private Transform _playerTransform;
         private bool _isInitialized = false;
+        private bool _retiredForGlobalPilot;
+
+        public bool IsRetiredForGlobalPilot => _retiredForGlobalPilot;
+
+        /// <summary>
+        /// Retires the legacy scene/chunk coordinator before the explicit global pilot owns scene lifetime.
+        /// This disables preload and FloatingOrigin side effects without unloading any scene.
+        /// </summary>
+        public bool TryRetireForGlobalPilot(out string error)
+        {
+            error = null;
+            if (_retiredForGlobalPilot)
+            {
+                enabled = false;
+                return true;
+            }
+
+            _retiredForGlobalPilot = true;
+            UnsubscribeFromEvents();
+            StopAllCoroutines();
+            _isInitialized = false;
+            enabled = false;
+            return true;
+        }
 
         #endregion
 
@@ -84,6 +108,7 @@ namespace ProjectC.World
 
         private void Start()
         {
+            if (_retiredForGlobalPilot) return;
             AutoFindReferences();
             SubscribeToEvents();
             _isInitialized = true;
@@ -100,7 +125,7 @@ namespace ProjectC.World
 
         private void Update()
         {
-            if (!_isInitialized) return;
+            if (_retiredForGlobalPilot || !_isInitialized) return;
 
             if (_playerTransform == null)
             {
@@ -240,6 +265,7 @@ namespace ProjectC.World
 
         private void TriggerPreload(SceneID targetScene)
         {
+            if (_retiredForGlobalPilot) return;
             if (sceneRegistry != null && !sceneRegistry.IsValid(targetScene))
             {
                 LogDebug($"Preload target invalid: {targetScene}");

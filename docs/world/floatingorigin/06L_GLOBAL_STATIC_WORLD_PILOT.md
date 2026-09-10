@@ -665,16 +665,17 @@ Static code audit found the following relevant relocation families:
 cataloged_source_in_ddol;restoration_forbidden
 ```
 
-`16` Bootstrap-root объектов с baked `GlobalSceneSourceMarker` были перемещены в `DontDestroyOnLoad`. Каталог всё ещё описывал их как `AuthoredSceneContent`, поэтому новый контракт корректно отказал в принятии persistent infrastructure и не выполнил restoration обратно в authored scene.
+`16` ранее подтверждённых Bootstrap-root объектов с baked `GlobalSceneSourceMarker` были перемещены в `DontDestroyOnLoad`. После этого отдельный свежий Start Host выявил ещё пять сериализованных Bootstrap client/UI roots с `dontDestroyOnLoad=true`, которые оставались в каталоге как `AuthoredSceneContent`; первым фактическим отказом был `[NpcAttitudeClientState]` (`sourceId=336a190646b19bc46b22dd4e78f99800:133441436:0`). Контракт корректно отказал в принятии этих persistent services и не выполнил restoration обратно в authored scene.
 
 ### Узкий фикс
 
 - Добавлен отдельный ownership `PersistentBootstrapService`.
-- Переклассифицированы только подтверждённые 16 DDOL roots: `PlayerSpawner`, `[ShipCargoServer]`, `[CombatServer]`, `NetworkManager`, `[SkillsServer]`, `[DockingServer]`, `[ExchangeServer]`, `Runtime`, `[NpcShipServer]`, `ServerWeatherController`, `[QuestServer]`, `[StatsServer]`, `[GatheringServer]`, `[CraftingServer]`, `[EquipmentServer]` и `CloudManager`.
+- Переклассифицированы подтверждённые 21 DDOL roots: прежние 16 roots (`PlayerSpawner`, `[ShipCargoServer]`, `[CombatServer]`, `NetworkManager`, `[SkillsServer]`, `[DockingServer]`, `[ExchangeServer]`, `Runtime`, `[NpcShipServer]`, `ServerWeatherController`, `[QuestServer]`, `[StatsServer]`, `[GatheringServer]`, `[CraftingServer]`, `[EquipmentServer]` и `CloudManager`) плюс `[QuestClientState]`, `[QuestTracker]`, `[ReputationClientState]`, `[NpcAttitudeClientState]` и `[CustomisationClientState]`.
 - Три nested Bootstrap entries (`[MetaRequirementRegistry]`, `[ContractServer]`, `[ShipKeyServer]`) сохранены как `BootstrapService`; их ownership не расширялся за пределы подтверждённых DDOL roots.
 - `SceneOwnedNetworkGameplay`, `ShipOrRigidbodyRoot`, `GroundPlane_0_0`, DDOL restoration и mixed-root parenting не изменялись.
 - Native executor и pilot принимают persistent Bootstrap services в DDOL без восстановления в authored scene; обычные cataloged roots по-прежнему отвергаются fail-closed.
-- Profile digest пересчитан и сохранён: `42ec3d9e66b1eb99365233aa6ce6949beb163db2e5f9fe1fcf9060e5cf94c046`.
+- Profile digest пересчитан и сохранён: `a4bbb6e8cf21ca711490d7ba82811fec77ad190ddf6035bfcecbfb371727ab95`.
+- Ownership distribution после correction: `AuthoredSceneContent=47`, `BootstrapService=5`, `PersistentBootstrapService=21`, `SceneOwnedNetworkGameplay=55`, `ShipOrRigidbodyRoot=22`.
 
 ### Проверки
 
@@ -682,8 +683,9 @@ cataloged_source_in_ddol;restoration_forbidden
 - `ValidateGlobalSceneCatalog.Run()`: **58 passed / 0 failed**.
 - `ValidateGlobalSceneExecution.Run()`: **36 passed / 0 failed**.
 - Static snapshot: `catalog=150;markers=150;bound=150`.
-- Catalog/profile digest match: `42ec3d9e66b1eb99365233aa6ce6949beb163db2e5f9fe1fcf9060e5cf94c046`.
-- Play Mode после ownership-фикса не выполнялся; новый runtime gate остаётся за пользователем. Screenshots не выполнялись.
+- Catalog/profile digest match: `a4bbb6e8cf21ca711490d7ba82811fec77ad190ddf6035bfcecbfb371727ab95`.
+- Play Mode после follow-up correction не выполнялся; новый runtime gate остаётся за пользователем. Screenshots не выполнялись.
+- Нормальный gameplay плейтест пока не начинать: сначала нужен чистый startup gate без DDOL rejection, с native preparation, `StartHost`, player spawn и проверкой отсутствия duplicate/legacy scene takeover. После его успешного пользовательского подтверждения можно передавать отдельный Host/player runtime плейтест; grounding, camera, physics, rebase и jitter остаются последующими gates.
 
 ### Граница коммита
 

@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up — runtime-confirmed persistent client/UI roots)
+
+**Задача:** Исправить повторный пользовательский Start Host отказ `cataloged_source_in_ddol;restoration_forbidden` для пяти Bootstrap client/UI roots, которые фактически вызывают `DontDestroyOnLoad` и оставались ошибочно классифицированы как `AuthoredSceneContent`.
+**Диагностика:** Edit Mode audit подтвердил пять сериализованных Bootstrap roots с baked markers и `dontDestroyOnLoad=true`: `[QuestClientState]`, `[QuestTracker]`, `[ReputationClientState]`, `[NpcAttitudeClientState]` и `[CustomisationClientState]`. Свежий runtime первым предъявил `NpcAttitudeClientState` (`sourceId=336a190646b19bc46b22dd4e78f99800:133441436:0`). Это был catalog mismatch, а не основание для DDOL restoration.
+**Результат:** Эти пять и только эти пять entries переклассифицированы в `PersistentBootstrapService`. Каталог сохранён closed-world: `catalog=150;markers=150;bound=150`. Ownership distribution: `AuthoredSceneContent=47`, `BootstrapService=5`, `PersistentBootstrapService=21`, `SceneOwnedNetworkGameplay=55`, `ShipOrRigidbodyRoot=22`.
+**Контракт:** Persistent Bootstrap services могут оставаться в `DontDestroyOnLoad`; обычный authored content, `SceneOwnedNetworkGameplay`, `ShipOrRigidbodyRoot`, `GroundPlane_0_0`, restoration обратно в scene и mixed-root parenting не разрешались.
+**Проверки:** Unity compile — `No compile errors`; `ValidateGlobalSceneCatalog.Run()` — **58 passed / 0 failed**; `ValidateGlobalSceneExecution.Run()` — **36 passed / 0 failed**; новый digest — `a4bbb6e8cf21ca711490d7ba82811fec77ad190ddf6035bfcecbfb371727ab95`. Play Mode после этого исправления не выполнялся.
+**Следующий gate:** Пользовательский новый `Start Host` из `Assets/_Project/Scenes/BootstrapScene.unity`. Нормальный плейтест ещё не начинать: сначала нужен чистый startup gate — отсутствие cataloged DDOL rejection, native preparation, `StartHost`, spawn и отсутствие duplicate/legacy scene takeover. Если этот gate пройдёт, отдельным этапом передаётся нормальный Host/player runtime плейтест; grounding, camera, physics, rebase и jitter остаются последующими gates.
+**Граница:** В этап входят только пять ownership reclassifications, digest и документация. `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` исключаются.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x — PersistentBootstrapService после fail-closed DDOL gate)
 
 **Задача:** Завершить узкий ownership-fix после runtime отказа `cataloged_source_in_ddol;restoration_forbidden`, не возвращая DDOL restoration и не расширяя ownership scene gameplay.

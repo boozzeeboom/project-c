@@ -819,11 +819,11 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:1044316355:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
+      reviewNote: T-FO06L.2.x runtime-confirmed persistent Bootstrap client/UI service;
+        may remain in DontDestroyOnLoad. The global pilot does not restore, reparent
+        or treat this source as authored scene gameplay.
       treatment: 5
-      ownership: 1
+      ownership: 5
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -999,11 +999,11 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:133441436:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
+      reviewNote: T-FO06L.2.x runtime-confirmed persistent Bootstrap client/UI service;
+        may remain in DontDestroyOnLoad. The global pilot does not restore, reparent
+        or treat this source as authored scene gameplay.
       treatment: 5
-      ownership: 1
+      ownership: 5
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -1107,11 +1107,11 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:142544340:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
+      reviewNote: T-FO06L.2.x runtime-confirmed persistent Bootstrap client/UI service;
+        may remain in DontDestroyOnLoad. The global pilot does not restore, reparent
+        or treat this source as authored scene gameplay.
       treatment: 5
-      ownership: 1
+      ownership: 5
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -1539,11 +1539,11 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:428382608:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
+      reviewNote: T-FO06L.2.x runtime-confirmed persistent Bootstrap client/UI service;
+        may remain in DontDestroyOnLoad. The global pilot does not restore, reparent
+        or treat this source as authored scene gameplay.
       treatment: 5
-      ownership: 1
+      ownership: 5
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -1827,11 +1827,11 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:919820107:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
+      reviewNote: T-FO06L.2.x runtime-confirmed persistent Bootstrap client/UI service;
+        may remain in DontDestroyOnLoad. The global pilot does not restore, reparent
+        or treat this source as authored scene gameplay.
       treatment: 5
-      ownership: 1
+      ownership: 5
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0

@@ -74,10 +74,10 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
-            if (!RestoreBootstrapSceneRootsFromDontDestroyOnLoad())
+            if (!RestoreBootstrapSceneRootsFromDontDestroyOnLoad(out var restoreError))
             {
                 _startRequested = false;
-                Debug.LogError("[T-FO06L] Pilot could not restore cataloged Bootstrap roots from DontDestroyOnLoad.", this);
+                Debug.LogError("[T-FO06L] Pilot could not restore cataloged Bootstrap roots from DontDestroyOnLoad: " + restoreError, this);
                 yield break;
             }
 
@@ -204,23 +204,45 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             return true;
         }
 
-        private bool RestoreBootstrapSceneRootsFromDontDestroyOnLoad()
+        private bool RestoreBootstrapSceneRootsFromDontDestroyOnLoad(out string error)
         {
-            if (_profile == null || _profile.SceneCatalog == null) return false;
+            error = null;
+            if (_profile == null || _profile.SceneCatalog == null)
+            {
+                error = "profile_or_scene_catalog_missing";
+                return false;
+            }
 
-            var bootstrapScene = SceneManager.GetSceneByPath("Assets/_Project/Scenes/BootstrapScene.unity");
-            if (!bootstrapScene.IsValid() || !bootstrapScene.isLoaded) return false;
+            const string bootstrapPath = "Assets/_Project/Scenes/BootstrapScene.unity";
+            var bootstrapScene = SceneManager.GetSceneByPath(bootstrapPath);
+            if (!bootstrapScene.IsValid() || !bootstrapScene.isLoaded)
+            {
+                var activeScene = SceneManager.GetActiveScene();
+                var managerScene = gameObject.scene;
+                error = "cataloged_bootstrap_scene_not_loaded;expectedPath=" + bootstrapPath +
+                    ";activePath=" + (activeScene.IsValid() ? activeScene.path : "<invalid>") +
+                    ";managerScene=" + (managerScene.IsValid() ? managerScene.path : "<invalid>");
+                return false;
+            }
 
             string bootstrapGuid = null;
+            string catalogedPaths = string.Empty;
             foreach (var scene in _profile.SceneCatalog.Data.scenes)
             {
-                if (scene != null && scene.assetPath == bootstrapScene.path)
+                if (scene == null) continue;
+                if (catalogedPaths.Length != 0) catalogedPaths += ",";
+                catalogedPaths += scene.assetPath;
+                if (scene.assetPath == bootstrapPath)
                 {
                     bootstrapGuid = scene.sceneGuid;
                     break;
                 }
             }
-            if (string.IsNullOrEmpty(bootstrapGuid)) return false;
+            if (string.IsNullOrEmpty(bootstrapGuid))
+            {
+                error = "bootstrap_scene_catalog_entry_missing;expectedPath=" + bootstrapPath + ";catalogedPaths=" + catalogedPaths;
+                return false;
+            }
 
             var catalogedBootstrapSources = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
             foreach (var entry in _profile.SceneCatalog.Data.entries)

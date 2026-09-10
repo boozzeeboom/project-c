@@ -1,12 +1,23 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — диагностировать Bootstrap scene path mismatch)
+
+**Результат пользователя:** После ручного нажатия `Start Host` pilot остановился на `Pilot could not restore cataloged Bootstrap roots from DontDestroyOnLoad`.
+**Причина:** Editor работал со сценой `Assets/BootstrapScene.unity`, тогда как catalog и Build Settings используют `Assets/_Project/Scenes/BootstrapScene.unity` с GUID `336a190646b19bc46b22dd4e78f99800`. Активный файл оказался отдельным некаталогированным дубликатом; restoration method жёстко искал только catalog path и возвращал общий `false` до проверки roots.
+**Исправление:** `GlobalMotionPilotRuntime` сохраняет разрешение через cataloged Bootstrap path `Assets/_Project/Scenes/BootstrapScene.unity` (NetworkManager может уже находиться в `DontDestroyOnLoad`) и добавляет диагностику `expectedPath`, `activePath` и `managerScene`. Некаталогированный дубликат остаётся fail-closed. UI handoff также использует cataloged Bootstrap scene.
+**Проверки:** Изменение C# применено; Unity bridge во время проверки был недоступен (`No Unity Editor instances found` / timeout), поэтому compile и Play Mode после исправления не подтверждены.
+**Следующий gate:** Открыть `Assets/_Project/Scenes/BootstrapScene.unity`, нажать `Start Host` и прислать следующий свежий результат.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 18; исправлена запись предыдущего autostart gate.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — отключить непреднамеренный pilot autostart)
 
 **Наблюдение:** Ошибка `uncontrolled_network_source_before_native_sweep:Road to Quartus` возникала ещё до нажатия `Start Host`.
 **Причина:** В `BootstrapScene` у `GlobalMotionPilotRuntime` было `_autoStartHost: 1`; `Start()` автоматически вызывал `StartPilotHost()` сразу после входа в Play Mode. Кнопки Host при этом шли в обычный `NetworkManagerController.StartHost()`, а не в pilot path.
-**Изменение:** `_autoStartHost` установлен в `0`. `MainMenuWindow` и `NetworkTestMenu` сначала вызывают активный `GlobalMotionPilotRuntime.StartPilotHost()`, а при отсутствии pilot сохраняют обычный NMC Host. Pilot UI не скрывается до подтверждённой готовности local player.
-**Проверки:** `NetworkTestMenu.cs` и `MainMenuWindow.cs` — standard validation: `0 warnings / 0 errors`; Compile — `No compile errors`. Play Mode после изменения ещё не запускался.
-**Следующий gate:** Войти в Play Mode, проверить отсутствие native preparation до клика, нажать `Start Host` и прислать следующую фактическую точку startup/error.
+**Изменение:** В активном на тот момент дубликате `Assets/BootstrapScene.unity` значение `_autoStartHost` было установлено в `0`. `MainMenuWindow` и `NetworkTestMenu` сначала вызывают активный `GlobalMotionPilotRuntime.StartPilotHost()`, а при отсутствии pilot сохраняют обычный NMC Host. Pilot UI не скрывается до подтверждённой готовности local player.
+**Проверки:** `NetworkTestMenu.cs` и `MainMenuWindow.cs` — standard validation: `0 warnings / 0 errors`; Compile — `No compile errors`. Позже установлено, что это был некataloged duplicate scene, поэтому изменение не является исправлением cataloged Bootstrap asset. Play Mode после изменения ещё не запускался.
+**Следующий gate:** Использовать `Assets/_Project/Scenes/BootstrapScene.unity`; проверить отсутствие native preparation до клика, нажать `Start Host` и прислать следующую фактическую точку startup/error.
 **Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 17; обновлён этот журнал.
 
 ---

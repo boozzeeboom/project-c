@@ -361,3 +361,39 @@ Read-only разбор `WorldScene_0_0` показал, что `Road to Quartus`
 - Play Mode после изменения ещё не запускался.
 
 Следующий gate: войти в Play Mode, убедиться, что до клика `Start Host` pilot не выполняет native preparation, затем нажать `Start Host` и зафиксировать следующую фактическую точку прохождения/ошибку.
+
+## 18. Исправление Bootstrap scene path mismatch — 2026-09-10
+
+### Фактическая причина
+
+После ручного нажатия `Start Host` отказ произошёл на восстановлении cataloged Bootstrap roots:
+
+```text
+[T-FO06L] Pilot could not restore cataloged Bootstrap roots from DontDestroyOnLoad.
+```
+
+Read-only проверка установила расхождение путей:
+
+- активная сцена Unity: `Assets/BootstrapScene.unity`;
+- cataloged и build-enabled Bootstrap: `Assets/_Project/Scenes/BootstrapScene.unity`;
+- cataloged Bootstrap GUID: `336a190646b19bc46b22dd4e78f99800`;
+- `Assets/BootstrapScene.unity` — отдельный дубликат, отсутствующий в catalog и выключенный в `EditorBuildSettings`.
+
+`GlobalMotionPilotRuntime` жёстко запрашивал только catalog path. Поэтому восстановление возвращало `false` ещё до проверки marker roots. Это был scene-path mismatch, а не отсутствие разрешённых `DontDestroyOnLoad` roots.
+
+### Изменение
+
+- `GlobalMotionPilotRuntime` сохраняет разрешение Bootstrap через cataloged path `Assets/_Project/Scenes/BootstrapScene.unity`; это важно, потому что `NetworkManager` может уже находиться в `DontDestroyOnLoad`.
+- При отсутствии cataloged Bootstrap в loaded scenes выводятся `expectedPath`, `activePath` и `managerScene`; некаталогированный дубликат не принимается.
+- Catalog entry дополнительно проверяется по `sceneGuid`; fail-closed binding и список cataloged paths сохраняются.
+- UI handoff продолжает использовать cataloged Bootstrap scene, чтобы не скрывать меню в некаталогированной сцене.
+- Каталог, digest, treatment-правила и fail-closed binding не ослаблялись.
+
+### Проверки и границы
+
+- Изменён только `GlobalMotionPilotRuntime.cs` и документация.
+- Standard script validation не завершилась: Unity bridge был недоступен (`No Unity Editor instances found` / timeout).
+- Свежий Play Mode после исправления не выполнен.
+- Для следующего runtime gate необходимо запускать cataloged сцену `Assets/_Project/Scenes/BootstrapScene.unity`, а не `Assets/BootstrapScene.unity`.
+
+Следующий gate: открыть cataloged Bootstrap, нажать `Start Host` и проверить, что ошибка path mismatch исчезла. Если startup остановится снова, новый лог покажет точное условие отказа вместо общего сообщения.

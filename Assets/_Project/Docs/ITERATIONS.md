@@ -1,5 +1,21 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06M — exact read-only city/ship/camera boundary census)
+
+**Задача:** Закрыть доступный Edit Mode census по city render/collider bounds, `Respawn_Default`, всем 22 ship/Rigidbody roots, `ShipDeckNav` и camera prefab chain перед design-only rebase transaction.
+
+**Результат:** Для additive-loaded `WorldScene_0_0` подтверждены `10236` descendant GameObjects под 58 roots, `6345` renderers и `1004` colliders под `WorldRoot_0_0`. Renderer AABB: center `(39995.240,2713.469,36717.140)`, size `(78866.400,5734.984,70395.140)`; collider AABB: center `(40894.710,2392.994,36170.610)`, size `(73852.910,2216.482,69762.030)`. `Respawn_Default` находится отдельно в `(39992,0,40000)` и не имеет собственного collider.
+
+**Ship boundary:** Найдены ровно `22` ship-like `Rigidbody + NetworkObject` roots. Все имеют `mass=1000` и `Interpolate`; текущий Edit Mode snapshot показывает `Discrete`. Двадцать roots имеют `ShipDeckNav`, два light/reference roots — нет. `ShipDeckNav` использует baked data, `_registerUnderShip=true`, separation `5000m`, re-registration threshold `2500m` и cooldown `30s`.
+
+**Camera/lifecycle:** Loaded Bootstrap `MainCamera` не содержит `SpringArmCamera`; pilot prefab ссылается на `ThirdPersonCamera.prefab`, где `SpringArmCamera` получает target runtime. Legacy `MainCamera.prefab/FloatingOriginMP` остаётся отдельным asset-level компонентом. Intended execution orders подтверждены кодом, но runtime NGO tick/physics/interpolation order и moving-platform state остаются **UNVERIFIED**.
+
+**Граница:** Read-only Edit Mode census; новая документация `docs/world/floatingorigin/06M_REBASE_BOUNDARY_CENSUS.md` и дополнение `06L_GLOBAL_STATIC_WORLD_PILOT.md`. Сцены, префабы, catalog/profile и runtime code не изменялись; Play Mode, screenshots и origin shift не выполнялись. TMP fallback и `ProjectSettings/EditorSettings.asset` исключаются.
+
+**Следующий шаг:** Design-only participant set и atomic transaction contract. Не включать `FloatingOriginMP`, не делать player-only shift и не использовать общий `SetParent` для city root, scene-owned `NetworkObject` или ship/Rigidbody roots.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06 — ship prefab bounds census)
 
 **Задача:** Получить asset-level размеры ship prefabs для оценки rebase transaction без запуска Play Mode и без предположения о runtime instance layout.

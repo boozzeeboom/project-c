@@ -1146,3 +1146,19 @@ Read-only `list_all_prefabs_with_bounding_boxes` для `Assets/_Project/Prefabs
 ### Ограничение bounds
 
 Bounds sizes подтверждают масштабный диапазон ship actors, но не дают pivot offset, actual scene position, Rigidbody center-of-mass, collider geometry или `ShipDeckNav` bounds. Поэтому ship rebase должен использовать instance-level runtime/scene records, а не только prefab AABB. Полный instance census остаётся **INCONCLUSIVE**.
+
+## 37. T-FO06M — exact read-only city/ship/camera boundary census — 2026-09-10
+
+В Edit Mode выполнен точный instance-level census для additive-loaded `WorldScene_0_0`; сцены и runtime code не изменялись, Play Mode и origin shift не выполнялись. Полный отчёт: `docs/world/floatingorigin/06M_REBASE_BOUNDARY_CENSUS.md`.
+
+### Подтверждено
+
+- `WorldRoot_0_0`: `10236` descendants, `6345` renderers и `1004` colliders; renderer AABB center `(39995.240,2713.469,36717.140)`, size `(78866.400,5734.984,70395.140)`; collider AABB center `(40894.710,2392.994,36170.610)`, size `(73852.910,2216.482,69762.030)`.
+- `Respawn_Default` — отдельный root-level object в `(39992,0,40000)` без собственного Renderer/Collider; он не является child `WorldRoot_0_0`.
+- В сцене найдено ровно `22` ship-like `Rigidbody + NetworkObject` roots. Все имеют `mass=1000` и `RigidbodyInterpolation.Interpolate`; текущий scene snapshot показывает `CollisionDetectionMode.Discrete`. Двадцать именованных ships имеют `ShipDeckNav`; два light/reference roots его не имеют.
+- `ShipDeckNav` использует `_registerUnderShip=true`, separation `5000m`, регистрацию baked `NavMeshData` в `ShipRoot.position`, drift threshold `2500m`, cooldown `30s` и не более одного `AddNavMeshData` за кадр. Runtime origin/agent/navmesh bounds остаются отдельным UNVERIFIED пунктом.
+- Loaded Bootstrap camera — root-level `MainCamera` без `SpringArmCamera`. Pilot player ссылается на `ThirdPersonCamera.prefab`, где `SpringArmCamera.target=None` в authored asset и target назначается runtime. Legacy `MainCamera.prefab/FloatingOriginMP` не считается активным canonical pilot camera.
+
+### Решение
+
+Общий shift `WorldRoot_0_0`, scene-owned `NetworkObject`, ship/Rigidbody roots или их deck/navmesh structures не разрешается. Следующий этап — design-only participant/transaction contract; не включать `FloatingOriginMP`, не выполнять player-only shift и не считать Edit Mode bounds доказательством runtime camera, velocity, interpolation-history или NGO tick ordering.

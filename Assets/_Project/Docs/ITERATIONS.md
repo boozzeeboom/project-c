@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — остановить legacy callbacks и повторную загрузку сцен)
+
+**Задача:** Исправить повторный отказ `Startup lease or initial scene set changed` после Start Host, не разрешая посторонние сцены или partial catalog binding.
+**Диагностика:** В пользовательском Editor.log после Host connect повторно загружается `WorldScene_0_0`, затем `WorldScene_0_1`, `WorldScene_1_0`, `WorldScene_1_1`. Отключённый через `enabled=false` ClientSceneLoader сохранял подписку на `NetworkManagerController.OnPlayerConnected` и корутины; callback запускал legacy `LoadSceneWithNeighbors`. Предыдущая гипотеза о DontDestroyOnLoad не подтвердилась. Конкретный lease/singleton snapshot в момент отказа недоступен после выхода из Play Mode.
+**Результат:** В `ClientSceneLoader.cs` добавлен явный `TryRetireForGlobalPilot`: отписка, остановка корутин, runtime guards на повторные load/connect входы, учёт незавершённых native AsyncOperation и отказ при in-flight operations; menu reset защищён до полного shutdown. `GlobalMotionPilotRuntime.cs` вызывает handoff до additive load и повторно после загрузки. `GlobalSceneNativeExecutor.cs` проверяет реальные Scene handles и сообщает отдельно lease/manager/scene причину с expected/actual name/path/handle/isLoaded. Retirement сохраняется до уничтожения компонента; обычный legacy startup его не вызывает.
+**Проверки:** Compile — `No compile errors`; существующий чистый `ValidateGlobalSceneExecution.Run()` — `32 passed / 0 failed` (не runtime-тест handoff). Play Mode, screenshots и Host/player spawn после исправления не запускались; приёмочный gate — UNVERIFIED. Общий `git diff --check` выявил whitespace только в постороннем TMP; этот файл не исправляется и не включается в этап.
+**Граница:** Scene/prefab/catalog/profile/digest не изменены, 150-source binding сохранён, `GroundPlane_0_0` не восстановлен. Предыдущие незакоммиченные crafting/recipe, TMP и Packages изменения остаются вне этапа. Не создавать отдельный коммит только для записи хеша.
+**Следующий шаг:** Пользовательский новый Play Mode-сеанс из BootstrapScene → Start Host. Если отказ останется, нужен полный новый diagnostic с expected/actual. Успех Host/player spawn пока не объявляется.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 13; обновлён этот журнал.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — вывести legacy scene loader из pilot ownership)
 
 **Задача:** Устранить startup-блокер `legacy_scene_loader_must_be_retired_by_content_bridge`, не обходя проверку ownership и не удаляя legacy-систему из обычного режима.

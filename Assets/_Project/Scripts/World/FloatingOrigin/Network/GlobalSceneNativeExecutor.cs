@@ -232,14 +232,59 @@ namespace ProjectC.World.FloatingOrigin.Network
             Advance();
         }
         private void Update() { if (_installed && _networkRan && !_retiring) Advance(); }
+        private bool InitialPreparedSceneSetIsIntact(out string error)
+        {
+            error = null;
+            if (_prepared == null || _prepared.Scenes.Count == 0)
+            { error = "preparation_missing"; return false; }
+            foreach (var expected in _prepared.Scenes)
+                if (!expected.Value.IsValid() || !expected.Value.isLoaded)
+                { error = "prepared_scene_unloaded:guid=" + expected.Key + ";" + DescribeScene(expected.Value); return false; }
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                // Do not silently accept pathless, pending or unknown scenes. A matching path alone
+                // also cannot prove identity: an additive duplicate/reload has a different handle.
+                if (!scene.IsValid() || !scene.isLoaded || string.IsNullOrEmpty(scene.path))
+                { error = "invalid_or_pending_scene:" + DescribeScene(scene); return false; }
+                bool isPrepared = false;
+                foreach (var prepared in _prepared.Scenes.Values)
+                    if (prepared == scene) { isPrepared = true; break; }
+                if (!isPrepared)
+                { error = "unexpected_scene_instance:" + DescribeScene(scene); return false; }
+            }
+            if (SceneManager.sceneCount != _prepared.Scenes.Count)
+            { error = "scene_count_mismatch:expected=" + _prepared.Scenes.Count + ";actual=" + SceneManager.sceneCount; return false; }
+            return true;
+        }
+        private static string DescribeScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid()) return "handle=" + scene.handle + ",invalid";
+            return "name=" + scene.name + ",path=" + scene.path + ",handle=" + scene.handle + ",loaded=" + scene.isLoaded;
+        }
+        private string DescribeSceneSets()
+        {
+            var expected = new List<string>();
+            if (_prepared != null)
+                foreach (var entry in _prepared.Scenes) expected.Add(entry.Key + ":" + DescribeScene(entry.Value));
+            var actual = new List<string>();
+            for (int i = 0; i < SceneManager.sceneCount; i++) actual.Add(DescribeScene(SceneManager.GetSceneAt(i)));
+            return ";expected=[" + string.Join(" | ", expected) + "];actual=[" + string.Join(" | ", actual) + "]";
+        }
         private void Advance()
         {
             if (_busy || _faulted || _manager == null || !_manager.IsListening || _manager.ShutdownInProgress || _world == null || !_world.IsRunning) return;
             _busy = true;
             try
             {
-                if (!GlobalMotionNetworkStartup.IsInstalled(_manager) || _manager != NetworkManager.Singleton || SceneManager.sceneCount != _prepared.Scenes.Count)
-                    throw new InvalidOperationException("Startup lease or initial scene set changed; streaming bridge required.");
+                if (!GlobalMotionNetworkStartup.IsInstalled(_manager))
+                    throw new InvalidOperationException("startup_lease_missing" + DescribeSceneSets());
+                if (_manager != NetworkManager.Singleton)
+                    throw new InvalidOperationException("startup_manager_replaced:prepared=" + _manager.name + ";singleton=" +
+                        (NetworkManager.Singleton == null ? "<null>" : NetworkManager.Singleton.name) + DescribeSceneSets());
+                if (!InitialPreparedSceneSetIsIntact(out var sceneError))
+                    throw new InvalidOperationException("initial_scene_set_changed:" + sceneError + DescribeSceneSets());
                 foreach (var node in _prepared.Nodes)
                 {
                     if (node.Retired) continue;

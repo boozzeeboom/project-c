@@ -2,6 +2,8 @@
 
 Дата: 2026-09-09. Предыдущий этап: T-FO06K.
 
+Актуальный статус на 2026-09-10 — раздел 13: повторная legacy-загрузка сцен подтверждена в Editor.log; исправлен pilot handoff загрузчика. Повторный пользовательский Play Mode после этого изменения ещё не выполнен, runtime admission остаётся UNVERIFIED.
+
 ## 1. Позиция в общем плане
 
 T-FO06L — ограниченный подготовительный пилот внутри этапа T-FO06 «Контент и client rebase». Он не закрывает T-FO06 целиком, T-FO04 или T-FO09. Цель этапа — подготовить один global player prefab, статичный reviewed scope из `BootstrapScene` и `WorldScene_0_0`, явный scene catalog и native admission до запуска NGO.
@@ -179,3 +181,46 @@ legacy_scene_loader_must_be_retired_by_content_bridge
 - независимый concave `MeshCollider` на `CABIN_ENTRY_DOOR_PIVOT` не изменялся.
 
 Следующий gate — пользовательский Play Mode-запуск с проверкой исчезновения `legacy_scene_loader_must_be_retired_by_content_bridge` и перехода к следующей фактической причине, если она существует. Не ослаблять validation и не завершать весь T-FO04–T-FO09 до этого runtime feedback.
+
+## 13. Повторная загрузка legacy-сцен после Start Host — 2026-09-10
+
+Пользователь подтвердил повторение `Startup lease or initial scene set changed; streaming bridge required` в `GlobalSceneNativeExecutor.Advance()` после Start Host. Предыдущая попытка сравнивать только пути/количество загруженных сцен не устранила проблему. Объяснение через DontDestroyOnLoad не было подтверждено и не считается установленной причиной.
+
+### Фактические свидетельства
+
+В текущем `Logs/Editor.log` сохранён пользовательский запуск:
+
+- строка 34854: первая загрузка `Assets/_Project/Scenes/World/WorldScene_0_0.unity`;
+- строка 35968: `[NMC] HandleClientConnected: clientId=0, IsServer=True, IsClient=True`;
+- строка 37879: повторная загрузка того же `WorldScene_0_0`;
+- строки 37891–37892: отказ executor в `Advance:258`;
+- строки 37963–37975: завершения загрузок `WorldScene_0_1`, `WorldScene_1_0`, `WorldScene_1_1`.
+
+Номера относятся к исследованному логу, который впоследствии может быть заменён. Сам log-файл не включается в коммит.
+
+Цепочка в коде до исправления: `NetworkManagerController.HandleClientConnected` вызывает `OnPlayerConnected`; подписанный в `Start()` `ClientSceneLoader.OnPlayerConnected` вызывает `OnClientConnectedCallback`, который запускает `AutoLoadInitialSceneCoroutine`; спустя 0.5 секунды Host вызывает `LoadSceneWithNeighborsCoroutine(0,0)`. Его внутренний `_loadedScenes` не знает о world scene, загруженной пилотом напрямую, поэтому legacy-путь повторно загружает центр и соседей. `loader.enabled=false` не снимал C#-подписку и не останавливал корутины. Новый сценовый экземпляр — реальное нарушение initial scope, а не повод разрешать неизвестные scenes.
+
+В момент расследования редактор уже был в Edit Mode. Состояние конкретной startup-сессии в момент отказа не удалось прочитать; старое объединённое сообщение не различало lease/singleton/scenes. Подмена manager или потеря lease этим логом не доказаны.
+
+### Исправление
+
+- `ClientSceneLoader.TryRetireForGlobalPilot(out error)` — явный pilot-only handoff. Снимается подписка с сохранённого экземпляра `NetworkManagerController`, вызывается `StopAllCoroutines`, устанавливается runtime retirement-флаг и отключается компонент.
+- Retirement запрещает повторные подписки в `Start`, `Update`, connect callbacks, public load/preload/unload входы и внутренние auto-load/load routines, даже если сторонний код снова включит компонент. Обычный legacy startup этот метод не вызывает.
+- Активные native load/unload AsyncOperation отслеживаются отдельно от корутин. При незавершённых операциях/transition handoff возвращает `legacy_scene_operations_in_flight`, не выдавая ложного подтверждения отмены native загрузки.
+- `ResetForMainMenu` не может выгрузить сцены работающего/подготовленного global pilot. Явная menu-cleanup после полного shutdown остаётся разрешена, но не возвращает legacy ownership.
+- `GlobalMotionPilotRuntime` выполняет handoff **до** своей первой additive-загрузки и повторно после загрузки/восстановления Bootstrap roots, учитывая также уже отключённые loaders.
+- `GlobalSceneNativeExecutor` проверяет реальные экземпляры `Scene` (handle), а не только совпадение path. Unknown, duplicate/reloaded, pathless, pending и потерянные prepared scenes не пропускаются.
+- Отказ теперь различает `startup_lease_missing`, `startup_manager_replaced`, `initial_scene_set_changed:<reason>`. Диагностика содержит expected/actual scene sets с name/path/handle/isLoaded.
+
+Retirement действует до уничтожения данного компонента, в том числе после неудачного запуска. Для следующего ручного gate требуется новый Play Mode-сеанс из BootstrapScene. Автоматическое возвращение legacy ownership внутри того же Play Mode этим изменением не реализуется.
+
+### Проверки и границы
+
+- Компиляция после исправлений: `No compile errors`.
+- Существующий `ValidateGlobalSceneExecution.Run()`: `32 passed / 0 failed`, вызван в Edit Mode. Это чистые policy/ledger/seam проверки, не runtime-тест нового handoff.
+- Read-only code review подтвердил порядок handoff и guards; выявленный открытый menu-reset вход защищён до финальной compile-проверки.
+- Play Mode, screenshots, Host/player spawn и release/restore после изменения **не запускались** автоматически и остаются UNVERIFIED.
+- Scene/prefab/assets и catalog/digest в этом исправлении не менялись; 150-marker binding не ослаблен. `GroundPlane_0_0` не восстанавливался.
+- Предшествующие незакоммиченные изменения `CraftingStation`, трёх рецептов, TMP и любые изменения Packages не включаются в этот этап.
+
+Пользовательский gate: новый Play Mode → Start Host; отсутствие повторного центра/соседей; затем native admission/player spawn. Если возникнет отказ, сохранить целую строку новой диагностики expected/actual. Не разрешать partial binding или произвольные сцены ради прохождения gate.

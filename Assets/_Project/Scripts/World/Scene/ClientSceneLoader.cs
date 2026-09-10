@@ -43,6 +43,7 @@ namespace ProjectC.World.Scene
 
         private void OnDestroy()
         {
+            UnsubscribeNetworkEvents();
             if (logSingleton) Debug.Log($"[CSL] OnDestroy: instanceId={gameObject.GetEntityId()}, _instance==this: {_instance == this}");
             if (_instance == this)
                 _instance = null;
@@ -72,6 +73,7 @@ namespace ProjectC.World.Scene
         #region Private State
         private readonly HashSet<SceneID> _loadedScenes = new HashSet<SceneID>();
         private readonly HashSet<SceneID> _loadingScenes = new HashSet<SceneID>();
+        private readonly List<AsyncOperation> _pendingSceneOperations = new List<AsyncOperation>();
         private SceneID _currentScene = new SceneID(-1, -1);
         private bool _isInitialized = false;
         private bool _isLoadingInitialScene = false;
@@ -79,7 +81,40 @@ namespace ProjectC.World.Scene
         private Vector3 _lastPlayerPos;
         private Vector3 _teleportTarget;
         private float _lastTeleportTime;
+        private ProjectC.Core.NetworkManagerController _networkEvents;
+        private bool _retiredForGlobalPilot;
+        public bool IsRetiredForGlobalPilot => _retiredForGlobalPilot;
 
+        /// <summary>
+        /// Explicit test-pilot handoff, retained for this component's lifetime (including failed startup).
+        /// Does not unload scenes or cancel native AsyncOperations. Ordinary legacy startup never calls this.
+        /// </summary>
+        public bool TryRetireForGlobalPilot(out string error)
+        {
+            error = null;
+            _pendingSceneOperations.RemoveAll(operation => operation == null || operation.isDone);
+            if (_pendingSceneOperations.Count != 0 || _loadingScenes.Count != 0 || _isTransitioning)
+            {
+                error = "legacy_scene_operations_in_flight:native=" + _pendingSceneOperations.Count +
+                    ";loading=" + _loadingScenes.Count + ";transitioning=" + _isTransitioning;
+                return false;
+            }
+            if (_retiredForGlobalPilot) { enabled = false; return true; }
+
+            // Disabling a MonoBehaviour alone leaves C# subscriptions and coroutines alive.
+            _retiredForGlobalPilot = true;
+            UnsubscribeNetworkEvents();
+            StopAllCoroutines();
+            _isLoadingInitialScene = false;
+            enabled = false;
+            return true;
+        }
+
+        private void UnsubscribeNetworkEvents()
+        {
+            if (_networkEvents != null) _networkEvents.OnPlayerConnected -= OnPlayerConnected;
+            _networkEvents = null;
+        }
 
         private const float SCENE_SIZE = 79999f;
         #endregion
@@ -93,10 +128,11 @@ namespace ProjectC.World.Scene
         #region Unity Lifecycle
         private void Start()
         {
-            var nmc = FindAnyObjectByType<ProjectC.Core.NetworkManagerController>();
-            if (nmc != null)
+            if (_retiredForGlobalPilot) return;
+            _networkEvents = FindAnyObjectByType<ProjectC.Core.NetworkManagerController>();
+            if (_networkEvents != null)
             {
-                nmc.OnPlayerConnected += OnPlayerConnected;
+                _networkEvents.OnPlayerConnected += OnPlayerConnected;
             }
 
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
@@ -111,6 +147,7 @@ namespace ProjectC.World.Scene
 
 private void Update()
         {
+            if (_retiredForGlobalPilot) return;
             if (Time.frameCount % 120 == 0 && logUpdate)
             {
                 Debug.Log($"[CSL] Update: this={gameObject.GetEntityId()}, _instance={_instance?.gameObject?.GetEntityId()}, _currentScene={_currentScene}, loaded={_loadedScenes.Count}");
@@ -264,6 +301,7 @@ ManageLoadedScenesCount();
         #region Private Methods
         private void OnPlayerConnected(ulong clientId)
         {
+            if (_retiredForGlobalPilot) return;
             if (logPlayerFinding) Debug.Log($"[CSL] OnPlayerConnected: clientId={clientId}");
             StartCoroutine(UpdatePlayerTransformAfterSpawn(clientId));
             OnClientConnectedCallback(clientId);
@@ -333,6 +371,7 @@ ManageLoadedScenesCount();
 
         private void OnClientConnectedCallback(ulong clientId)
         {
+            if (_retiredForGlobalPilot) return;
             if (logPlayerFinding) Debug.Log($"[CSL] OnClientConnectedCallback: clientId={clientId}");
 
             if (NetworkManager.Singleton != null &&
@@ -348,6 +387,7 @@ ManageLoadedScenesCount();
 
         private IEnumerator AutoLoadInitialSceneCoroutine()
         {
+            if (_retiredForGlobalPilot) yield break;
             if (logPlayerFinding) Debug.Log("[CSL] AutoLoadInitialSceneCoroutine STARTING...");
             if (logPlayerFinding) Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: _currentScene={_currentScene}, _isLoadingInitialScene={_isLoadingInitialScene}");
             yield return new WaitForSeconds(0.5f);
@@ -622,17 +662,19 @@ ManageLoadedScenesCount();
 
         public void LoadScene(SceneID targetScene, Vector3 localSpawnPos)
         {
+            if (_retiredForGlobalPilot) return;
             StartCoroutine(LoadSceneCoroutine(targetScene, localSpawnPos));
         }
 
         public void LoadSceneWithNeighbors(SceneID center)
         {
+            if (_retiredForGlobalPilot) return;
             StartCoroutine(LoadSceneWithNeighborsCoroutine(center));
         }
 
         public void UnloadScene(SceneID scene)
         {
-            if (!_loadedScenes.Contains(scene)) return;
+            if (_retiredForGlobalPilot || !_loadedScenes.Contains(scene)) return;
             StartCoroutine(UnloadSceneCoroutine(scene));
         }
 
@@ -652,6 +694,12 @@ ManageLoadedScenesCount();
         /// </summary>
         public void ResetForMainMenu(System.Action onComplete = null)
         {
+            var manager = NetworkManager.Singleton;
+            if (_retiredForGlobalPilot && manager != null && (manager.IsListening || manager.ShutdownInProgress ||
+                ProjectC.World.FloatingOrigin.Network.GlobalMotionNetworkStartup.IsInstalled(manager)))
+                throw new System.InvalidOperationException("legacy_menu_reset_cannot_unload_active_global_pilot");
+            // Explicit menu cleanup remains available after the pilot is fully stopped.
+            // It does not restore this component's legacy scene-loading ownership.
             StopAllCoroutines();
             StartCoroutine(ResetForMainMenuCoroutine(onComplete));
         }
@@ -680,8 +728,10 @@ ManageLoadedScenesCount();
             {
                 var asyncOp = SceneManager.UnloadSceneAsync(scene);
                 if (asyncOp == null) continue;
+                _pendingSceneOperations.Add(asyncOp);
                 while (!asyncOp.isDone)
                     yield return null;
+                _pendingSceneOperations.Remove(asyncOp);
             }
 
             _loadedScenes.Clear();
@@ -702,8 +752,16 @@ ManageLoadedScenesCount();
 public SceneID GetCurrentScene() => _currentScene;
         public bool IsSceneLoaded(SceneID scene) => _loadedScenes.Contains(scene);
         public IEnumerable<SceneID> GetLoadedScenes() => _loadedScenes;
-        public void LoadSceneOnly(SceneID scene) => StartCoroutine(LoadSceneAsync(scene));
-        public void LoadInitialScene(SceneID scene) => StartCoroutine(LoadSceneWithNeighborsCoroutine(scene));
+        public void LoadSceneOnly(SceneID scene)
+        {
+            if (_retiredForGlobalPilot) return;
+            StartCoroutine(LoadSceneAsync(scene));
+        }
+        public void LoadInitialScene(SceneID scene)
+        {
+            if (_retiredForGlobalPilot) return;
+            StartCoroutine(LoadSceneWithNeighborsCoroutine(scene));
+        }
         #endregion
 
         #region Scene Loading Coroutines
@@ -784,6 +842,7 @@ public SceneID GetCurrentScene() => _currentScene;
 
         private IEnumerator LoadSceneWithNeighborsCoroutine(SceneID center)
         {
+            if (_retiredForGlobalPilot) yield break;
             if (logSceneLoading) Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine START: center={center}, _isLoadingInitialScene={_isLoadingInitialScene}, _currentScene={_currentScene}");
             _isTransitioning = true;
 
@@ -881,6 +940,7 @@ public SceneID GetCurrentScene() => _currentScene;
 
         private IEnumerator LoadSceneAsync(SceneID sceneId)
         {
+            if (_retiredForGlobalPilot) yield break;
             string scenePath = sceneRegistry != null ? sceneRegistry.GetScenePath(sceneId) : $"Assets/_Project/Scenes/World/WorldScene_{sceneId.GridX}_{sceneId.GridZ}.unity";
             string sceneName = sceneRegistry != null ? sceneRegistry.GetSceneName(sceneId) : $"WorldScene_{sceneId.GridX}_{sceneId.GridZ}";
             if (logSceneLoading) Debug.Log($"[CSL] LoadSceneAsync START: {scenePath}");
@@ -902,8 +962,10 @@ public SceneID GetCurrentScene() => _currentScene;
                 yield break;
             }
 
+            _pendingSceneOperations.Add(asyncOp);
             while (!asyncOp.isDone)
                 yield return null;
+            _pendingSceneOperations.Remove(asyncOp);
 
             var loadedScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(sceneName);
             if (loadedScene.isLoaded)
@@ -944,8 +1006,10 @@ public SceneID GetCurrentScene() => _currentScene;
             }
             else
             {
+                _pendingSceneOperations.Add(asyncOp);
                 while (!asyncOp.isDone)
                     yield return null;
+                _pendingSceneOperations.Remove(asyncOp);
             }
 
             if (logSceneLoading) Debug.Log($"[CSL] UnloadSceneCoroutine COMPLETE: {scene}");

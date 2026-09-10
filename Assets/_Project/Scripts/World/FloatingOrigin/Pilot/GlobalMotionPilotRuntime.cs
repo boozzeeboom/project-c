@@ -45,6 +45,13 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
+            // Retire callbacks/coroutines before our first additive load, not just before NGO starts.
+            if (!RetireLegacySceneLoadersForPilot())
+            {
+                _startRequested = false;
+                yield break;
+            }
+
             const string worldScenePath = "Assets/_Project/Scenes/World/WorldScene_0_0.unity";
             var worldScene = SceneManager.GetSceneByPath(worldScenePath);
             if (!worldScene.IsValid() || !worldScene.isLoaded)
@@ -116,13 +123,18 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             var loaders = UnityEngine.Object.FindObjectsByType<ProjectC.World.Scene.ClientSceneLoader>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var loader in loaders)
             {
-                if (loader == null || !loader.isActiveAndEnabled) continue;
-                loader.enabled = false;
-                retired++;
+                if (loader == null) continue;
+                bool alreadyRetired = loader.IsRetiredForGlobalPilot;
+                if (!loader.TryRetireForGlobalPilot(out var error))
+                {
+                    Debug.LogError("[T-FO06L] Legacy loader handoff refused: " + loader.name + ";" + error, this);
+                    return false;
+                }
+                if (!alreadyRetired) retired++;
             }
 
             if (retired > 0)
-                Debug.Log("[T-FO06L] Retired " + retired + " active legacy scene loader(s) through the pilot content bridge.", this);
+                Debug.Log("[T-FO06L] Retired " + retired + " legacy scene loader(s): network callbacks detached, coroutines stopped, load requests blocked for the pilot lifetime.", this);
             return true;
         }
 

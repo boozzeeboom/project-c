@@ -74,6 +74,13 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
+            if (!RetireLegacySceneLoadersForPilot())
+            {
+                _startRequested = false;
+                Debug.LogError("[T-FO06L] Pilot could not retire the legacy scene loader through the content bridge.", this);
+                yield break;
+            }
+
             var source = GetComponent<GlobalMotionPilotSpawnSource>();
             if (source == null || !source.RefreshPreparedContent())
             {
@@ -88,6 +95,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 Debug.LogError("[T-FO06L] Pilot global startup refused: " + error, this);
                 yield break;
             }
+
             if (!_manager.StartHost())
             {
                 _startup.CancelBeforeStart();
@@ -96,9 +104,26 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 Debug.LogError("[T-FO06L] Pilot host failed to start.", this);
                 yield break;
             }
+
             _startedByPilot = true;
             _startRequested = false;
             _startRoutine = null;
+        }
+
+        private bool RetireLegacySceneLoadersForPilot()
+        {
+            int retired = 0;
+            var loaders = UnityEngine.Object.FindObjectsByType<ProjectC.World.Scene.ClientSceneLoader>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var loader in loaders)
+            {
+                if (loader == null || !loader.isActiveAndEnabled) continue;
+                loader.enabled = false;
+                retired++;
+            }
+
+            if (retired > 0)
+                Debug.Log("[T-FO06L] Retired " + retired + " active legacy scene loader(s) through the pilot content bridge.", this);
+            return true;
         }
 
         private bool RestoreBootstrapSceneRootsFromDontDestroyOnLoad()

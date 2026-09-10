@@ -156,3 +156,26 @@ Read-only проверка установила фактическую прич�
 - Host/client, player spawn, physics и screenshots остаются `UNVERIFIED`.
 
 Следующий gate — пользовательский Play Mode-прогон с ожиданием диагностики `catalog=150;markers=150;bound=150` либо следующей фактической причины отказа. Executor нельзя ослаблять до partial binding.
+
+## 12. Обновление после проверки legacy scene ownership — 2026-09-10
+
+Повторный compile/runtime анализ подтвердил отдельный startup-блокер:
+
+```text
+legacy_scene_loader_must_be_retired_by_content_bridge
+```
+
+Исправлено в `GlobalMotionPilotRuntime`:
+
+- после восстановления cataloged Bootstrap roots pilot вызывает `RetireLegacySceneLoadersForPilot()`;
+- метод находит активные `ProjectC.World.Scene.ClientSceneLoader` и отключает только их компоненты;
+- `Runtime`, `NetworkManager`, scene catalog, digest и legacy loader-код не удаляются и не изменяются для обычного режима;
+- global pilot остаётся единственным владельцем additive-загрузки `WorldScene_0_0` в своём startup scope.
+
+Проверки после исправления:
+
+- Compile: `No compile errors`;
+- ручной Play Mode, Host/client, native preparation, player spawn, physics и screenshots ещё не выполнялись;
+- независимый concave `MeshCollider` на `CABIN_ENTRY_DOOR_PIVOT` не изменялся.
+
+Следующий gate — пользовательский Play Mode-запуск с проверкой исчезновения `legacy_scene_loader_must_be_retired_by_content_bridge` и перехода к следующей фактической причине, если она существует. Не ослаблять validation и не завершать весь T-FO04–T-FO09 до этого runtime feedback.

@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — вывести legacy scene loader из pilot ownership)
+
+**Задача:** Устранить startup-блокер `legacy_scene_loader_must_be_retired_by_content_bridge`, не обходя проверку ownership и не удаляя legacy-систему из обычного режима.
+**Результат:** `GlobalMotionPilotRuntime` после восстановления cataloged Bootstrap roots вызывает `RetireLegacySceneLoadersForPilot()`. Метод отключает только активные компоненты `ProjectC.World.Scene.ClientSceneLoader`, оставляя `Runtime`, `NetworkManager`, catalog, digest и legacy-код без изменений.
+**Проверки:** Compile — `No compile errors`. Ручной Play Mode, Host/client, native preparation, player spawn, physics и screenshots после исправления ещё не выполнялись.
+**Граница:** Независимый concave `MeshCollider` на `Ship_Light_root/.../CABIN_ENTRY_DOOR_PIVOT` не изменялся. Полный T-FO04–T-FO09 не является prerequisite текущего T-FO06L pilot.
+**Следующий шаг:** Пользовательский Play Mode-запуск; проверить отсутствие `legacy_scene_loader_must_be_retired_by_content_bridge` и зафиксировать следующий фактический runtime gate.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, обновлён этот журнал.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — восстановить Bootstrap identity перед native preparation)
 
 **Задача:** Исправить повторный Play Mode отказ `catalog_markers_bound_mismatch:catalog=150;markers=134;bound=134`, не ослабляя closed-world binding и не восстанавливая `GroundPlane_0_0`.

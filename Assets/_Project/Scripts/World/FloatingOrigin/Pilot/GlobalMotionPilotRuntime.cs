@@ -74,10 +74,10 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
-            if (!RestoreBootstrapSceneRootsFromDontDestroyOnLoad(out var restoreError))
+            if (!RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out var restoreError))
             {
                 _startRequested = false;
-                Debug.LogError("[T-FO06L] Pilot could not restore cataloged Bootstrap roots from DontDestroyOnLoad: " + restoreError, this);
+                Debug.LogError("[T-FO06L] Pilot could not restore cataloged scene roots from DontDestroyOnLoad: " + restoreError, this);
                 yield break;
             }
 
@@ -204,7 +204,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             return true;
         }
 
-        private bool RestoreBootstrapSceneRootsFromDontDestroyOnLoad(out string error)
+private bool RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out string error)
         {
             error = null;
             if (_profile == null || _profile.SceneCatalog == null)
@@ -225,48 +225,56 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 return false;
             }
 
-            string bootstrapGuid = null;
-            string catalogedPaths = string.Empty;
+            var loadedScenesByGuid = new System.Collections.Generic.Dictionary<string, UnityEngine.SceneManagement.Scene>(System.StringComparer.Ordinal);
+            var sourceSceneById = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.Ordinal);
             foreach (var scene in _profile.SceneCatalog.Data.scenes)
             {
-                if (scene == null) continue;
-                if (catalogedPaths.Length != 0) catalogedPaths += ",";
-                catalogedPaths += scene.assetPath;
-                if (scene.assetPath == bootstrapPath)
-                {
-                    bootstrapGuid = scene.sceneGuid;
-                    break;
-                }
+                if (scene == null || string.IsNullOrEmpty(scene.sceneGuid) || string.IsNullOrEmpty(scene.assetPath)) continue;
+                var loaded = SceneManager.GetSceneByPath(scene.assetPath);
+                if (loaded.IsValid() && loaded.isLoaded) loadedScenesByGuid[scene.sceneGuid] = loaded;
             }
-            if (string.IsNullOrEmpty(bootstrapGuid))
-            {
-                error = "bootstrap_scene_catalog_entry_missing;expectedPath=" + bootstrapPath + ";catalogedPaths=" + catalogedPaths;
-                return false;
-            }
-
-            var catalogedBootstrapSources = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
             foreach (var entry in _profile.SceneCatalog.Data.entries)
-                if (entry != null && entry.sceneGuid == bootstrapGuid)
-                    catalogedBootstrapSources.Add(entry.sourceId);
+            {
+                if (entry == null || string.IsNullOrEmpty(entry.sourceId) || string.IsNullOrEmpty(entry.sceneGuid)) continue;
+                if (sourceSceneById.TryGetValue(entry.sourceId, out var previousGuid) && previousGuid != entry.sceneGuid)
+                {
+                    error = "catalog_source_spans_scene_guids:" + entry.sourceId;
+                    return false;
+                }
+                sourceSceneById[entry.sourceId] = entry.sceneGuid;
+            }
 
-            var roots = new System.Collections.Generic.HashSet<GameObject>();
+            var roots = new System.Collections.Generic.Dictionary<GameObject, UnityEngine.SceneManagement.Scene>();
             var markers = UnityEngine.Object.FindObjectsByType<GlobalSceneSourceMarker>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var marker in markers)
             {
-                if (marker == null || marker.gameObject.scene.name != "DontDestroyOnLoad" ||
-                    !catalogedBootstrapSources.Contains(marker.SourceId)) continue;
+                if (marker == null || marker.gameObject.scene.name != "DontDestroyOnLoad") continue;
+                if (!sourceSceneById.TryGetValue(marker.SourceId, out var sceneGuid)) continue;
+                if (!loadedScenesByGuid.TryGetValue(sceneGuid, out var targetScene))
+                {
+                    error = "cataloged_ddol_source_scene_not_loaded;sourceId=" + marker.SourceId + ";sceneGuid=" + sceneGuid;
+                    return false;
+                }
+
                 var root = marker.transform.root.gameObject;
-                if (root.scene.name == "DontDestroyOnLoad") roots.Add(root);
+                if (root.scene.name != "DontDestroyOnLoad") continue;
+                if (roots.TryGetValue(root, out var previousScene) && previousScene != targetScene)
+                {
+                    error = "ddol_root_contains_multiple_cataloged_scene_guids;root=" + root.name +
+                        ";firstScene=" + previousScene.path + ";secondScene=" + targetScene.path;
+                    return false;
+                }
+                roots[root] = targetScene;
             }
 
             int restored = 0;
-            foreach (var root in roots)
+            foreach (var pair in roots)
             {
-                SceneManager.MoveGameObjectToScene(root, bootstrapScene);
+                SceneManager.MoveGameObjectToScene(pair.Key, pair.Value);
                 restored++;
             }
             if (restored > 0)
-                Debug.Log("[T-FO06L] Restored " + restored + " cataloged Bootstrap root(s) from DontDestroyOnLoad before native preparation.", this);
+                Debug.Log("[T-FO06L] Restored " + restored + " cataloged scene root(s) from DontDestroyOnLoad before native preparation.", this);
             return true;
         }
 

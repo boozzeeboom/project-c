@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — восстановить cataloged DDOL roots перед native preparation)
+
+**Результат пользователя:** Диагностика `Road to Quartus` показала `catalogBound=True`, `unmanaged=True`, `candidate=False`, совпадающий `NetworkManager`, `isSpawned=False`, `inScenePlaced=True`, `scene=`.
+**Причина:** Authored root оказался в `DontDestroyOnLoad`; executor собирал candidates только из loaded scene roots. Простое принятие DDOL запрещено, так как `RequireIdentity` требует исходную cataloged scene.
+**Исправление:** `GlobalMotionPilotRuntime` теперь восстанавливает все catalog-bound DDOL roots в соответствующие загруженные сцены по `sourceId -> sceneGuid`. Mixed-scene root и отсутствующая целевая сцена отклоняются fail-closed.
+**Проверки:** `GlobalMotionPilotRuntime.cs` — 0 warnings / 0 errors; Compile — `No compile errors`. Play Mode после изменения не выполнялся.
+**Следующий gate:** Свежий ручной `Start Host` из `Assets/_Project/Scenes/BootstrapScene.unity`.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 20.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — диагностировать uncontrolled NetworkObject Road to Quartus)
 
 **Результат пользователя:** После исправления Bootstrap path ручной `Start Host` проходит до native preparation, затем останавливается на `uncontrolled_network_source_before_native_sweep:Road to Quartus`.

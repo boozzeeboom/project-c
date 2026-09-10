@@ -435,3 +435,29 @@ scene_preparation:uncontrolled_network_source_before_native_sweep:Road to Quartu
 - Play Mode после диагностического изменения не выполнялся.
 
 Следующий gate: выполнить свежий Play Mode из cataloged Bootstrap и прислать полный однострочный отказ с полями состояния `Road to Quartus`. По этим полям будет применён следующий узкий фикс без ослабления closed-world проверки.
+
+## 20. Восстановление cataloged DDOL roots — 2026-09-10
+
+### Результат runtime gate
+
+Полная диагностика отказа показала:
+
+```text
+catalogBound=True;unmanaged=True;candidate=False;networkManager=NetworkManager;expectedManager=NetworkManager;isSpawned=False;activeSelf=True;activeInHierarchy=True;inScenePlaced=True;scene=
+```
+
+`Road to Quartus` не был неизвестным и не был spawned. Его authored root оказался в `DontDestroyOnLoad`, поэтому candidate enumeration, которая обходила только loaded scene roots, не включила его. При этом native executor обязан видеть объект в исходной cataloged сцене: `RequireIdentity` проверяет `marker.gameObject.scene == node.Scene`.
+
+### Исправление
+
+`GlobalMotionPilotRuntime` теперь перед native preparation восстанавливает все catalog-bound roots из `DontDestroyOnLoad` в соответствующие загруженные cataloged сцены. Для каждого DDOL marker используется его `sourceId → sceneGuid`; если один DDOL root содержит источники разных сцен или целевая cataloged сцена не загружена, startup остаётся fail-closed.
+
+Это исправляет candidate enumeration без принятия неизвестных DDOL NetworkObject и без ослабления политики `Unmanaged`.
+
+### Проверки
+
+- `GlobalMotionPilotRuntime.cs`: standard validation — `0 warnings, 0 errors`.
+- Unity compile: `No compile errors`.
+- Play Mode после изменения не выполнялся.
+
+Следующий gate: свежий ручной `Start Host` из `Assets/_Project/Scenes/BootstrapScene.unity`. Ожидаемый первый новый лог — восстановление cataloged root(s); затем native preparation должна пройти `Road to Quartus` или выдать следующий конкретный catalog/runtime blocker.

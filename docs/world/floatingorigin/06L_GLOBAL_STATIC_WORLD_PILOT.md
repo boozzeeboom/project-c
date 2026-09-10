@@ -301,3 +301,37 @@ Console подтвердил первичную техническую ошиб�
 4. отдельно подтвердить player grounding у `Respawn_Default`, поскольку `GroundPlane_0_0` намеренно удалён.
 
 Это не разрешение partial scene ownership, не возврат GroundPlane и не замена реального rebase сглаживанием. Runtime Play Mode/screenshot после кода отката автоматически не выполняются.
+
+## 16. Исправление pre-start проверки cataloged Unmanaged NetworkObject — 2026-09-10
+
+### Фактический runtime отказ
+
+После отката frame bridge пользовательский Host дошёл до native preparation и остановился на:
+
+```text
+uncontrolled_network_source_before_native_sweep:Road to Quartus
+```
+
+Read-only разбор `WorldScene_0_0` показал, что `Road to Quartus` — scene-authored `DockStation` с `NetworkObject`, `OuterCommZone`, trigger collider и `GlobalSceneSourceMarker`. Его source ID `837a3910185f2b9478ce71df025ccc7c:1987571259:0` уже присутствует в `GlobalMotionPilotSceneCatalog.asset`, с `treatment: 5` (`Unmanaged`), `spatial: false`, `frameId: 0`. В YAML этого объекта `InScenePlaced = 0`; до запуска NGO его `NetworkManager` остаётся `null`.
+
+Причина была в pre-start sweep `GlobalSceneNativeExecutor`: он требовал `no.NetworkManager == manager` от каждого cataloged NetworkObject, включая `Unmanaged` source. Это противоречило контракту `Unmanaged`: executor не должен его регистрировать, размещать, активировать или спавнить.
+
+### Изменение
+
+В sweep добавлено узкое разрешение только для уже проверенного cataloged `Unmanaged` объекта, если одновременно выполнены условия:
+
+- его `GlobalSceneSourceMarker` найден в подготовленном catalog binding;
+- source действительно имеет `Unmanaged` treatment;
+- `NetworkManager == null` до NGO startup;
+- `NetworkObject` не spawned.
+
+Неизвестный/внешний NetworkObject, объект другого manager или уже spawned объект по-прежнему вызывает `uncontrolled_network_source_before_native_sweep`. Active-state restriction также сохранена для всех managed sources.
+
+### Проверки и следующий gate
+
+- Compile: `No compile errors`.
+- Catalog source ID и digest не изменялись; `Road to Quartus` не исключался и не добавлялся повторно.
+- `GroundPlane_0_0` не восстанавливался.
+- Play Mode после исправления ещё не запускался пользователем.
+
+Следующий ручной gate: новый запуск из `BootstrapScene` → Start Host. Ожидаемый результат — пройти `Road to Quartus` и получить либо `catalog_markers_bound_mismatch`, либо следующую фактическую причину. Partial binding и автоматическое принятие неизвестных NetworkObject запрещены.

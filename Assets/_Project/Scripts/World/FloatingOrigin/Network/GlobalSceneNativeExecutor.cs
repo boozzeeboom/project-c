@@ -140,11 +140,13 @@ namespace ProjectC.World.FloatingOrigin.Network
             // Includes DDOL and inactive objects. No unknown/foreign/dynamic network object may hide from this boundary.
             foreach (var no in UnityEngine.Object.FindObjectsByType<NetworkObject>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                if (!candidates.Contains(no.gameObject) || no.NetworkManager != manager || no.IsSpawned)
-                    throw new InvalidOperationException("uncontrolled_network_source_before_native_sweep:" + no.name);
-                // Unmanaged sources are reviewed to stay as authored, so their active state is not ours to require.
+                // Reviewed Unmanaged sources are intentionally untouched by this executor and may be unassigned before NGO starts.
                 var bound = no.GetComponent<GlobalSceneSourceMarker>();
                 bool unmanaged = bound != null && result.BySource.TryGetValue(bound.SourceId, out var boundNode) && boundNode.Unmanaged;
+                bool unassignedReviewedUnmanaged = unmanaged && no.NetworkManager == null && !no.IsSpawned;
+                if (!candidates.Contains(no.gameObject) || no.IsSpawned || (no.NetworkManager != manager && !unassignedReviewedUnmanaged))
+                    throw new InvalidOperationException("uncontrolled_network_source_before_native_sweep:" + no.name);
+                // Unmanaged sources are reviewed to stay as authored, so their active state is not ours to require.
                 if (!unmanaged && (no.gameObject.activeSelf || no.gameObject.activeInHierarchy))
                     throw new InvalidOperationException("uncontrolled_network_source_before_native_sweep:" + no.name);
             }

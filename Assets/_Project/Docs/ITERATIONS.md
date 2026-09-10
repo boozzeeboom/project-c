@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — разрешить cataloged Unmanaged source до NGO startup)
+
+**Runtime отказ:** После отката frame bridge native preparation остановилась на `uncontrolled_network_source_before_native_sweep:Road to Quartus`.
+**Read-only классификация:** `Road to Quartus` — scene-authored `DockStation` с `NetworkObject`, `OuterCommZone`, trigger collider и `GlobalSceneSourceMarker`; source ID `837a3910185f2b9478ce71df025ccc7c:1987571259:0` уже есть в `GlobalMotionPilotSceneCatalog.asset` с `treatment: 5` (`Unmanaged`), `spatial=false`, `frameId=0`. В scene YAML `InScenePlaced=0`, поэтому до NGO startup `NetworkManager=null`.
+**Причина:** pre-start sweep требовал `no.NetworkManager == manager` даже для reviewed `Unmanaged` source, хотя этот treatment означает, что executor не регистрирует, не размещает, не активирует и не спавнит source.
+**Исправление:** Разрешён только catalog-bound `Unmanaged` NetworkObject с `NetworkManager=null` и `IsSpawned=false`. Unknown/foreign-manager/spawned objects по-прежнему блокируют native preparation; active-state validation managed sources сохранена.
+**Проверки:** Compile — `No compile errors`; catalog/digest/150 binding и GroundPlane_0_0 не изменялись. Новый Play Mode после исправления ещё не запускался.
+**Следующий gate:** Пользовательский новый BootstrapScene → Start Host. Ожидается прохождение `Road to Quartus` и следующая фактическая startup-причина, если она существует. Partial binding и автоматическое принятие неизвестных NetworkObject запрещены.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 16; обновлён этот журнал.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — откат небезопасного initial frame bridge)
 
 **Результат пользователя:** После initial XZ frame bridge player появлялся, но карта WorldScene_0_0 не была видна/доступна, player падал; ships создавались. Поэтому jitter нельзя было оценить. Это отрицательный runtime gate, не частичный успех anti-jitter.

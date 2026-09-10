@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — восстановить Bootstrap identity перед native preparation)
+
+**Задача:** Исправить повторный Play Mode отказ `catalog_markers_bound_mismatch:catalog=150;markers=134;bound=134`, не ослабляя closed-world binding и не восстанавливая `GroundPlane_0_0`.
+**Диагностика:** На диске `BootstrapScene` и `WorldScene_0_0` содержат все 150 сериализованных markers (`61 + 89`). Во время Play Mode 16 Bootstrap markers уже были перемещены в `DontDestroyOnLoad` persistent roots, поэтому executor, который принимает только authored catalog scenes, видел 134 markers.
+**Результат:** `GlobalMotionPilotRuntime` перед native preparation находит cataloged Bootstrap markers в `DontDestroyOnLoad` и переносит их корневые GameObjects обратно в загруженную `BootstrapScene`. Catalog, digest, `GlobalSceneNativeExecutor` и `Unmanaged` contract не ослаблены.
+**Проверки:** Compile — `No compile errors`. Play Mode после этого исправления, Host/client, player spawn, physics и screenshots не запускались; пользовательский runtime gate остаётся `UNVERIFIED`.
+**Граница:** `GroundPlane_0_0` не восстанавливался. Независимый `LiberationSans SDF - Fallback.asset` в этап не входит.
+**Следующий шаг:** Пользовательский Play Mode-прогон с ожиданием `catalog=150;markers=150;bound=150` или следующей фактической причины отказа. Не принимать partial binding.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, обновлён этот журнал.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — подготовить world scene перед pilot startup)
 
 **Задача:** Разобрать первый пользовательский Play Mode отказ после исправления catalog binding.

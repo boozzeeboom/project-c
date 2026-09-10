@@ -67,6 +67,13 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
+            if (!RestoreBootstrapSceneRootsFromDontDestroyOnLoad())
+            {
+                _startRequested = false;
+                Debug.LogError("[T-FO06L] Pilot could not restore cataloged Bootstrap roots from DontDestroyOnLoad.", this);
+                yield break;
+            }
+
             var source = GetComponent<GlobalMotionPilotSpawnSource>();
             if (source == null || !source.RefreshPreparedContent())
             {
@@ -92,6 +99,50 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             _startedByPilot = true;
             _startRequested = false;
             _startRoutine = null;
+        }
+
+        private bool RestoreBootstrapSceneRootsFromDontDestroyOnLoad()
+        {
+            if (_profile == null || _profile.SceneCatalog == null) return false;
+
+            var bootstrapScene = SceneManager.GetSceneByPath("Assets/_Project/Scenes/BootstrapScene.unity");
+            if (!bootstrapScene.IsValid() || !bootstrapScene.isLoaded) return false;
+
+            string bootstrapGuid = null;
+            foreach (var scene in _profile.SceneCatalog.Data.scenes)
+            {
+                if (scene != null && scene.assetPath == bootstrapScene.path)
+                {
+                    bootstrapGuid = scene.sceneGuid;
+                    break;
+                }
+            }
+            if (string.IsNullOrEmpty(bootstrapGuid)) return false;
+
+            var catalogedBootstrapSources = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+            foreach (var entry in _profile.SceneCatalog.Data.entries)
+                if (entry != null && entry.sceneGuid == bootstrapGuid)
+                    catalogedBootstrapSources.Add(entry.sourceId);
+
+            var roots = new System.Collections.Generic.HashSet<GameObject>();
+            var markers = UnityEngine.Object.FindObjectsByType<GlobalSceneSourceMarker>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var marker in markers)
+            {
+                if (marker == null || marker.gameObject.scene.name != "DontDestroyOnLoad" ||
+                    !catalogedBootstrapSources.Contains(marker.SourceId)) continue;
+                var root = marker.transform.root.gameObject;
+                if (root.scene.name == "DontDestroyOnLoad") roots.Add(root);
+            }
+
+            int restored = 0;
+            foreach (var root in roots)
+            {
+                SceneManager.MoveGameObjectToScene(root, bootstrapScene);
+                restored++;
+            }
+            if (restored > 0)
+                Debug.Log("[T-FO06L] Restored " + restored + " cataloged Bootstrap root(s) from DontDestroyOnLoad before native preparation.", this);
+            return true;
         }
 
         private void OnDestroy()

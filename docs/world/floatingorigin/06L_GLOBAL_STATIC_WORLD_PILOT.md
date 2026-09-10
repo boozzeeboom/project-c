@@ -126,3 +126,33 @@ scene_preparation:catalog_source_not_bound:336a190646b19bc46b22dd4e78f99800:1044
 - `GroundPlane_0_0` не восстанавливается и catalog/digest не изменяются.
 
 Проверка после исправления: Compile — `No compile errors`. Повторный Play Mode gate ожидает пользовательского запуска.
+
+## 11. Обновление после повторного runtime gate — 2026-09-10
+
+Повторный Play Mode gate дошёл до native preparation, но остановился на:
+
+```text
+[T-FO06L] Pilot global startup refused: scene_preparation:catalog_markers_bound_mismatch:catalog=150;markers=134;bound=134
+```
+
+Read-only проверка установила фактическую причину расхождения:
+
+- на диске обе сцены содержат все `150` сериализованных `GlobalSceneSourceMarker` (`BootstrapScene=61`, `WorldScene_0_0=89`);
+- во время Play Mode `16` Bootstrap-маркеров уже находятся в сцене `DontDestroyOnLoad`;
+- это persistent Bootstrap infrastructure: `NetworkManager`/`Runtime`, client-state и UI/service roots;
+- executor намеренно сканирует только загруженные catalog scenes и не принимает DDOL relocation как подмену authored scene identity.
+
+Исправлено в `GlobalMotionPilotRuntime`:
+
+- перед `RefreshPreparedContent()` пилот находит cataloged Bootstrap markers в `DontDestroyOnLoad`;
+- переносит их корневые GameObject обратно в загруженную `BootstrapScene`;
+- не меняет catalog, digest, `GlobalSceneNativeExecutor` или `Unmanaged` closed-world binding;
+- не восстанавливает `GroundPlane_0_0` и не затрагивает независимый TMP fallback asset.
+
+Проверки после исправления:
+
+- Compile: `No compile errors`;
+- Play Mode после этого исправления пользователем ещё не выполнен;
+- Host/client, player spawn, physics и screenshots остаются `UNVERIFIED`.
+
+Следующий gate — пользовательский Play Mode-прогон с ожиданием диагностики `catalog=150;markers=150;bound=150` либо следующей фактической причины отказа. Executor нельзя ослаблять до partial binding.

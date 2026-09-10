@@ -24,5 +24,6 @@ MonoBehaviour:
   - item: {fileID: 11400000, guid: 141ce43e22c9a9d4d90e07d84f364be9, type: 2}
     quantity: 1
   _craftSeconds: 10
+  _recipeId: recipe_iron_ingot
   _requiredSkillLevel: 0
   _requiredSkill: 0

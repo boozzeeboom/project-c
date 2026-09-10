@@ -24,5 +24,6 @@ MonoBehaviour:
   - item: {fileID: 11400000, guid: ee18a4c20d7871047b17490cc7c08be3, type: 2}
     quantity: 1
   _craftSeconds: 10
+  _recipeId: recipe_copper_ingot
   _requiredSkillLevel: 0
   _requiredSkill: 0

@@ -196,3 +196,4 @@ Assets/Generated_Models/*
 # Exact paths only: every other scene, including its DESKTOP copy, stays with Lore VCS.
 !Assets/_Project/Scenes/BootstrapScene.unity
 !Assets/_Project/Scenes/BootstrapScene.unity.meta
+Assets/TextMesh Pro/Resources/Fonts & Materials/*

@@ -1,5 +1,6 @@
 // CraftingStation.cs (T-C04) - scene-placed NetworkBehaviour. Server: state machine +
 // CompleteCraft. Client: trigger register + IInteractable. Pattern: ResourceNode T-G02.
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using ProjectC.Core;
@@ -26,13 +27,13 @@ namespace ProjectC.Crafting
             NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<ulong> _jobOwnerClientId = new NetworkVariable<ulong>(
             0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        private readonly NetworkVariable<string> _activeRecipeId = new NetworkVariable<string>(
-            null, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private readonly NetworkVariable<FixedString64Bytes> _activeRecipeId = new NetworkVariable<FixedString64Bytes>(
+            default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         public CraftingStationConfig Config => _config;
         public CraftingJobState CurrentState => _replicatedState.Value;
         public ulong CurrentOwner => _jobOwnerClientId.Value;
-        public string ActiveRecipeId => _activeRecipeId.Value;
+        public string ActiveRecipeId => _activeRecipeId.Value.ToString();
 
         // IInteractable
         public string InstanceId => NetworkObjectId.ToString();
@@ -133,7 +134,7 @@ namespace ProjectC.Crafting
         public void ServerStartCraft(ulong clientId, string recipeId, float startTime, float duration, System.Collections.Generic.List<CommittedIngredientDto> committed, string resultItemName)
         {
             _jobOwnerClientId.Value = clientId;
-            _activeRecipeId.Value = recipeId;
+            _activeRecipeId.Value = new FixedString64Bytes(recipeId ?? string.Empty);
             _replicatedState.Value = CraftingJobState.InProgress;
             // обновим CraftingWorld.GetJob(this.netId)
             var job = CraftingWorld.GetJob(NetworkObjectId);
@@ -155,7 +156,7 @@ namespace ProjectC.Crafting
         {
             _replicatedState.Value = CraftingJobState.Buffered;
             _jobOwnerClientId.Value = 0;
-            _activeRecipeId.Value = null;
+            _activeRecipeId.Value = default;
             var job = CraftingWorld.GetJob(NetworkObjectId);
             if (job != null)
             {
@@ -176,7 +177,7 @@ namespace ProjectC.Crafting
         {
             _replicatedState.Value = CraftingJobState.Empty;
             _jobOwnerClientId.Value = 0;
-            _activeRecipeId.Value = null;
+            _activeRecipeId.Value = default;
             var job = CraftingWorld.GetJob(NetworkObjectId);
             if (job != null) job.Reset();
         }

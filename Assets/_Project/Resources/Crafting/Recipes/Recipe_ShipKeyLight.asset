@@ -26,5 +26,6 @@ MonoBehaviour:
   - item: {fileID: 11400000, guid: 40135c9da6cb33c4aa6d1141e2e15508, type: 2}
     quantity: 1
   _craftSeconds: 30
+  _recipeId: recipe_ship_key_light
   _requiredSkillLevel: 0
   _requiredSkill: 0

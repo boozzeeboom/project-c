@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — initial XZ frame bridge перед NGO)
+
+**Задача:** После пользовательского подтверждения Host/player spawn продолжить T-FO06 без подмены origin только у player: поместить WorldScene_0_0, его физическое содержимое и pilot player в один ненулевой initial frame до NGO start.
+**Диагностика:** Сохранённый `Respawn_Default`=(39992,0,40000), а source создавал frame с origin=(0,0,0), поэтому player стартовал около 56.6 км от float origin. Read-only Edit Mode census временно открытой WorldScene_0_0 подтвердил 58 existing roots, все с baked marker/marked subtree; среди них WorldRoot_0_0 (16 NetworkObject, 8 CharacterController, 8 NavMeshAgent), 20 корабельных Rigidbody roots, pickups/chests/resources/docking/NPC/Q001. Jitter сохранялся по пользовательскому наблюдению; точный компонент jitter не измерялся.
+**Результат:** Добавлен `GlobalMotionPilotFrameBridge` на Bootstrap `NetworkManager` и чистый `GlobalMotionPilotInitialFramePlan`. До TryPrepare/StartHost bridge вычисляет XZ origin=(39992,0,40000), создаёт transient unmarked parent в WorldScene, parent-ит все existing marked roots с worldPositionStays=true, применяет один общий offset=(-39992,0,-40000) и вызывает Physics.SyncTransforms. Source принимает этот явный LocalCoordinateFrame и сохраняет authored global spawn через frame.ToGlobal; bootstrap проецирует его обратно в local около (0,1,0) до Awake/OnEnable player. Y намеренно не сдвигается до отдельной altitude/cloud/shader миграции. Failure до commit восстанавливает parent/translation.
+**Контракт:** Catalog/digest и все 150 Unmanaged/spatial=false entries не менялись; executor не управляет individual lifecycle/placement. Bridge — отдельная pre-NGO coordinate-boundary операция над common unmarked scene parent, marker identity после bridge остаётся closed-world compatible. Future TryRetireScene с bridge root намеренно не расширялся и остаётся задачей отдельной retirement/rebase transaction.
+**Проверки:** Compile — `No compile errors`; отражением подтверждены Transform.SetParent(Transform,bool) и Physics.SyncTransforms; planner для authored respawn дал local=(0,0,0), origin=Global(39992,0,40000), translation=(-39992,0,-40000), roundTrip=true. Bridge не запускался в Play Mode, screenshots не делались; пользовательский runtime gate остаётся UNVERIFIED. Scoped `git diff --check` чист для code/docs, но Git отмечает стандартное пустое Unity-поле `m_Name: ` нового MonoBehaviour в BootstrapScene как trailing whitespace; scene YAML вручную не переписывался.
+**Граница:** Сохранена только BootstrapScene для добавления bridge component через Unity. WorldScene/prefab/catalog/profile/digest/physics configuration не сохранялись. Предшествующие CraftingStation/recipe/TMP изменения не входят в этап. Один commit: bridge code, pilot/source integration, Bootstrap wiring, отчёт и этот журнал; без отдельной записи хеша.
+**Следующий шаг:** Пользовательский новый Play Mode из BootstrapScene → Start Host: проверить исчезновение стартовых меню, player/world coherence около local origin и реальное поведение jitter. Full runtime rebase, independent client origins, nav/physics handoff и T-FO07–T-FO09 не объявлять готовыми.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 15; обновлён этот журнал.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — подтверждён startup/spawn; закрытие стартового меню)
 
 **Результат пользователя:** После `9f45d953` ошибок нет, игра запустилась и персонаж появился. Меню StartHost оставалось открытым, jitter персонажа сохранился. Это подтверждение startup/spawn, не приёмка полного floating origin. Скриншоты не предоставлены.

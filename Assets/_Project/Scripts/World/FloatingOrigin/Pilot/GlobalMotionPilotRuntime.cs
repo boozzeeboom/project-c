@@ -19,6 +19,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
 
         private GlobalMotionNetworkStartup _startup;
         private NetworkManager _manager;
+        private GlobalMotionPilotFrameBridge _frameBridge;
         private Coroutine _startRoutine;
         private bool _startedByPilot;
         private bool _startRequested;
@@ -89,10 +90,14 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             }
 
             var source = GetComponent<GlobalMotionPilotSpawnSource>();
-            if (source == null || !source.RefreshPreparedContent())
+            string frameError = null;
+            _frameBridge ??= GetComponent<GlobalMotionPilotFrameBridge>();
+            if (source == null || _frameBridge == null ||
+                !_frameBridge.TryPrepare(worldScene, source.RespawnObjectName, source.MaxLocalCoordinate, out frameError) ||
+                !source.TryConfigureInitialFrame(_frameBridge.Frame, out frameError) || !source.RefreshPreparedContent())
             {
                 _startRequested = false;
-                Debug.LogError("[T-FO06L] Pilot spawn source could not prepare the loaded world scene.", this);
+                Debug.LogError("[T-FO06L] Pilot could not prepare the common initial world frame: " + (frameError ?? "spawn_source_not_prepared"), this);
                 yield break;
             }
 

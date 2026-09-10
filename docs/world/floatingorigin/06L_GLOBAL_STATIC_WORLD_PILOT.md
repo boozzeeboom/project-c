@@ -2,7 +2,7 @@
 
 Дата: 2026-09-09. Предыдущий этап: T-FO06K.
 
-Актуальный статус на 2026-09-10 — раздел 14: пользователь подтвердил запуск игры без ошибок и появление персонажа после исправления legacy handoff. Стартовое меню оставалось открытым — добавлено закрытие после готовности локального pilot player, визуальная проверка этой правки ожидается. Jitter сохраняется; текущий fixed-frame pilot с origin=(0,0,0) ещё не выполняет rebase и не является проверкой устранения дрожания.
+Актуальный статус на 2026-09-10 — раздел 15: пользователь подтвердил запуск игры без ошибок и появление персонажа после исправления legacy handoff. Стартовое меню оставалось открытым — добавлено закрытие после готовности локального pilot player, визуальная проверка этой правки ожидается. Для следующего narrow gate реализован one-time initial XZ frame bridge: WorldScene_0_0 и player будут помещены в один frame с origin у Respawn_Default до NGO start. Runtime этого placement ещё не выполнялся пользователем; jitter fixed не заявляется.
 
 ## 1. Позиция в общем плане
 
@@ -269,3 +269,41 @@ Retirement действует до уничтожения данного ком�
 - Read-only review проверил readiness и one-shot hide; визуальное исчезновение меню после этой правки — UNVERIFIED.
 - Следующий пользовательский прогон: новый Play Mode из BootstrapScene; после появления готового персонажа стартовые меню должны исчезнуть. Jitter этой UI-правкой **не исправлялся**; полноценный rebase/anti-jitter gate остаётся открытым.
 - Предыдущие незакоммиченные `CraftingStation`, три recipe assets и TMP остаются вне этого этапа. Один коммит: UI code + этот отчёт + существующий ITERATIONS, без отдельной записи хеша коммитом.
+
+## 15. Initial XZ frame bridge для WorldScene_0_0 — 2026-09-10
+
+После пользовательского подтверждения Host/player spawn продолжен следующий узкий T-FO06 gate: initial placement всех существующих корней `WorldScene_0_0` и pilot player в одном ненулевом локальном frame **до** NGO start. Это не runtime rebase-loop, не independent-client origin и не T-FO07 physics-region handoff.
+
+### Основание и границы
+
+Read-only Edit Mode census временно открытой `WorldScene_0_0` подтвердил 58 существующих root GameObject. Каждый root уже имеет `GlobalSceneSourceMarker` либо marked subtree; непомеченных world roots не обнаружено. Среди них есть `WorldRoot_0_0` (16 NetworkObject descendants, 8 CharacterController и 8 NavMeshAgent), 20 корабельных roots с Rigidbody/NetworkObject, pickup/chest/resource/docking roots, NPC/Q001 roots и `Respawn_Default`.
+
+Это исключает unsafe вариант «передвинуть только player». Общая translation применяется к единому runtime parent всех корней, поэтому authored взаимные offsets, children, render, colliders, Rigidbody, CharacterController и NavMesh-related transforms получают одну и ту же XZ-поправку. Individual transform rewrites, AddComponent на gameplay objects, NetworkObject spawn/activation и scene asset pose edits не применяются.
+
+`Respawn_Default` в сохранённой сцене имеет authored position `(39992, 0, 40000)`. По плану глобальная высота пока не переносится: origin определяется как `(39992, 0, 40000)`, а translation общего parent — `(-39992, 0, -40000)`. Чистая проверка planner подтвердила `TryToLocal(authoredRespawn) = (0,0,0)` и корректный global round-trip. С source vertical offset player получает local `(0,1,0)`, но его authored global position остаётся прежней.
+
+### Реализация
+
+Добавлен `Assets/_Project/Scripts/World/FloatingOrigin/Pilot/GlobalMotionPilotFrameBridge.cs`:
+
+- `GlobalMotionPilotInitialFramePlan` — чистое создание XZ frame и translation с finite/range guard;
+- `GlobalMotionPilotFrameBridge.TryPrepare(...)` разрешён только в Play Mode до `NetworkManager.IsListening`;
+- bridge находит authored respawn до shift, проверяет наличие baked markers на каждом world root, создаёт не маркированный transient `[T-FO06L] Initial Frame Root` в `WorldScene_0_0`, parent-ит в него все 58 existing roots с `worldPositionStays=true`, затем единожды применяет translation и вызывает `Physics.SyncTransforms()`;
+- failure до commit выполняет rollback parent/translation. После успешной подготовки anchor сохраняется на весь pilot run; автоматическое rebase, unload/retirement transaction и возврат к legacy внутри того же Play Mode этим этапом не выполняются.
+
+`GlobalMotionPilotRuntime` получает bridge на `NetworkManager` и вызывает его после additive load, DDOL restoration и final legacy-loader handoff, но до `GlobalMotionPilotSpawnSource.RefreshPreparedContent()` и `GlobalMotionNetworkStartup.TryPrepare()`.
+
+`GlobalMotionPilotSpawnSource` теперь получает явно подготовленный `LocalCoordinateFrame`: после bridge он переводит текущую local pose `Respawn_Default + Vector3.up` обратно в authored global position через `frame.ToGlobal`, а `GlobalMotionPlayerBootstrap` проецирует ту же global point обратно в local `(0,1,0)` перед Awake/OnEnable player prefab.
+
+Catalog/digest не менялись. Все 150 catalog entries остаются `Unmanaged/spatial=false`; executor по-прежнему не управляет их individual placement/lifecycle. Bridge — отдельная pre-NGO coordinate-boundary операция над общим unmarked scene parent. При `BuildPreparation()` marker parent identity снимается уже после bridge; nearest marked parent identity для catalog roots остаётся пустой, поэтому existing closed-world binding не ослабляется. Future `TryRetireScene` для сцены с bridge root намеренно останется blocked как unmanaged runtime root до отдельной retirement/rebase transaction — этот API не используется текущим pilot.
+
+В `BootstrapScene` на уже существующий `NetworkManager` добавлен `GlobalMotionPilotFrameBridge`; сцена сохранена через Unity. Другие scenes/prefabs не сохранялись.
+
+### Проверки и следующий runtime gate
+
+- Compile: `No compile errors`.
+- Проверено через `unity_reflect`: доступны `Transform.SetParent(Transform,bool)` и `Physics.SyncTransforms()`.
+- Чистая planner-проверка: origin `Global(39992,0,40000)`, translation `(-39992,0,-40000)`, local respawn `(0,0,0)`, global round-trip `true`.
+- Изменение не запускалось в Play Mode, screenshots не делались. Следующий пользовательский gate: новый Play Mode из BootstrapScene → дождаться/нажать Start Host; подтвердить исчезновение стартовых меню, player/local world coherence около origin и фактическое изменение или сохранение jitter.
+- Scoped `git diff --check` не полностью чист: Unity при добавлении компонента записывает пустое стандартное поле `m_Name: ` в `BootstrapScene.unity`, которое Git классифицирует как trailing whitespace. Scene YAML вручную не переписывался; все code/docs files проходят `diff --check`.
+- Даже успешный initial-frame gate не будет доказательством full runtime rebase, разных client origins, physics/nav handoff, ship deck attachment или полного T-FO06–T-FO09.

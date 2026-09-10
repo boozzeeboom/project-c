@@ -5,8 +5,8 @@
 **Результат пользователя:** После ручного нажатия `Start Host` pilot остановился на `Pilot could not restore cataloged Bootstrap roots from DontDestroyOnLoad`.
 **Причина:** Editor работал со сценой `Assets/BootstrapScene.unity`, тогда как catalog и Build Settings используют `Assets/_Project/Scenes/BootstrapScene.unity` с GUID `336a190646b19bc46b22dd4e78f99800`. Активный файл оказался отдельным некаталогированным дубликатом; restoration method жёстко искал только catalog path и возвращал общий `false` до проверки roots.
 **Исправление:** `GlobalMotionPilotRuntime` сохраняет разрешение через cataloged Bootstrap path `Assets/_Project/Scenes/BootstrapScene.unity` (NetworkManager может уже находиться в `DontDestroyOnLoad`) и добавляет диагностику `expectedPath`, `activePath` и `managerScene`. Некаталогированный дубликат остаётся fail-closed. UI handoff также использует cataloged Bootstrap scene.
-**Проверки:** Изменение C# применено; Unity bridge во время проверки был недоступен (`No Unity Editor instances found` / timeout), поэтому compile и Play Mode после исправления не подтверждены.
-**Следующий gate:** Открыть `Assets/_Project/Scenes/BootstrapScene.unity`, нажать `Start Host` и прислать следующий свежий результат.
+**Проверки:** `Assets/_Project/Scenes/BootstrapScene.unity` сохранена с `_autoStartHost: 0`; scene diff — ровно 1 строка. `GlobalMotionPilotRuntime.cs` — standard validation: `0 warnings / 0 errors`; Compile — `No compile errors`. Play Mode после исправления не выполнялся.
+**Следующий gate:** Открыть/использовать `Assets/_Project/Scenes/BootstrapScene.unity`, нажать `Start Host` и прислать следующий свежий результат.
 **Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 18; исправлена запись предыдущего autostart gate.
 
 ---

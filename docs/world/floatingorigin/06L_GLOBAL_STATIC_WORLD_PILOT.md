@@ -391,9 +391,10 @@ Read-only проверка установила расхождение путе�
 
 ### Проверки и границы
 
-- Изменён только `GlobalMotionPilotRuntime.cs` и документация.
-- Standard script validation не завершилась: Unity bridge был недоступен (`No Unity Editor instances found` / timeout).
+- Обновлены `GlobalMotionPilotRuntime.cs`, `Assets/_Project/Scenes/BootstrapScene.unity` (`_autoStartHost: 0`) и документация.
+- Scene diff проверен: изменена ровно одна строка `_autoStartHost`, без посторонней сериализации.
+- Standard script validation: 0 warnings, 0 errors; Unity compile: `No compile errors`.
 - Свежий Play Mode после исправления не выполнен.
-- Для следующего runtime gate необходимо запускать cataloged сцену `Assets/_Project/Scenes/BootstrapScene.unity`, а не `Assets/BootstrapScene.unity`.
+- Следующий runtime gate запускается из cataloged сцены `Assets/_Project/Scenes/BootstrapScene.unity`, а не из `Assets/BootstrapScene.unity`.
 
 Следующий gate: открыть cataloged Bootstrap, нажать `Start Host` и проверить, что ошибка path mismatch исчезла. Если startup остановится снова, новый лог покажет точное условие отказа вместо общего сообщения.

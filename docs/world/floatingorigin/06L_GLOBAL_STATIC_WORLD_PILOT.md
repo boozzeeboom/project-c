@@ -398,3 +398,40 @@ Read-only проверка установила расхождение путе�
 - Следующий runtime gate запускается из cataloged сцены `Assets/_Project/Scenes/BootstrapScene.unity`, а не из `Assets/BootstrapScene.unity`.
 
 Следующий gate: открыть cataloged Bootstrap, нажать `Start Host` и проверить, что ошибка path mismatch исчезла. Если startup остановится снова, новый лог покажет точное условие отказа вместо общего сообщения.
+
+## 19. Диагностика uncontrolled NetworkObject — 2026-09-10
+
+### Результат следующего ручного gate
+
+После запуска из правильной cataloged Bootstrap-сцены и нажатия `Start Host` path mismatch больше не является отказом. Native preparation снова остановилась на:
+
+```text
+scene_preparation:uncontrolled_network_source_before_native_sweep:Road to Quartus
+```
+
+Статический scene audit подтверждает, что `Road to Quartus` содержит marker и `NetworkObject` на одном GameObject, source ID присутствует в catalog, а `InScenePlaced = 0`. Однако stack trace не показывал, какое именно runtime-условие нарушено.
+
+### Изменение
+
+В `GlobalSceneNativeExecutor` добавлена fail-closed диагностика для каждого uncontrolled network source:
+
+- `sourceId`;
+- `catalogBound`;
+- `unmanaged`;
+- `candidate`;
+- фактический и ожидаемый `NetworkManager`;
+- `isSpawned`;
+- `activeSelf` / `activeInHierarchy`;
+- `enabled` и `InScenePlaced`;
+- `SynchronizeTransform` и `AutoObjectParentSync`;
+- scene path.
+
+Проверка `Unmanaged` не ослаблена. Разрешённым остаётся только catalog-bound, non-spawned источник без runtime `NetworkManager`; unknown, spawned, foreign-manager и non-candidate источники по-прежнему блокируют startup.
+
+### Проверки
+
+- Standard script validation: 0 ошибок; 2 существующих advisory warnings о Rigidbody/GC.
+- Unity compile: `No compile errors`.
+- Play Mode после диагностического изменения не выполнялся.
+
+Следующий gate: выполнить свежий Play Mode из cataloged Bootstrap и прислать полный однострочный отказ с полями состояния `Road to Quartus`. По этим полям будет применён следующий узкий фикс без ослабления closed-world проверки.

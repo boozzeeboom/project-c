@@ -142,18 +142,52 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 // Reviewed Unmanaged sources are intentionally untouched by this executor and may be unassigned before NGO starts.
                 var bound = no.GetComponent<GlobalSceneSourceMarker>();
-                bool unmanaged = bound != null && result.BySource.TryGetValue(bound.SourceId, out var boundNode) && boundNode.Unmanaged;
+                bool catalogBound = false;
+                bool unmanaged = false;
+                if (bound != null && result.BySource.TryGetValue(bound.SourceId, out var boundNode))
+                {
+                    catalogBound = true;
+                    unmanaged = boundNode.Unmanaged;
+                }
+                bool candidate = candidates.Contains(no.gameObject);
                 bool unassignedReviewedUnmanaged = unmanaged && no.NetworkManager == null && !no.IsSpawned;
-                if (!candidates.Contains(no.gameObject) || no.IsSpawned || (no.NetworkManager != manager && !unassignedReviewedUnmanaged))
-                    throw new InvalidOperationException("uncontrolled_network_source_before_native_sweep:" + no.name);
+                if (!candidate || no.IsSpawned || (no.NetworkManager != manager && !unassignedReviewedUnmanaged))
+                    throw new InvalidOperationException(DescribeUncontrolledNetworkSource(no, bound, catalogBound, unmanaged, candidate, manager));
                 // Unmanaged sources are reviewed to stay as authored, so their active state is not ours to require.
                 if (!unmanaged && (no.gameObject.activeSelf || no.gameObject.activeInHierarchy))
-                    throw new InvalidOperationException("uncontrolled_network_source_before_native_sweep:" + no.name);
+                    throw new InvalidOperationException("uncontrolled_network_source_before_native_sweep:active_state;" + DescribeNetworkSource(no, bound, catalogBound, unmanaged, candidate, manager));
             }
             foreach (var marker in UnityEngine.Object.FindObjectsByType<GlobalSceneSourceMarker>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (!candidates.Contains(marker.gameObject)) throw new InvalidOperationException("extra_baked_marker_outside_authored_roots_or_network_objects");
             return result;
         }
+        private static string DescribeUncontrolledNetworkSource(NetworkObject no, GlobalSceneSourceMarker marker, bool catalogBound,
+            bool unmanaged, bool candidate, NetworkManager expectedManager)
+        {
+            return "uncontrolled_network_source_before_native_sweep:" + DescribeNetworkSource(no, marker, catalogBound, unmanaged, candidate, expectedManager);
+        }
+
+        private static string DescribeNetworkSource(NetworkObject no, GlobalSceneSourceMarker marker, bool catalogBound,
+            bool unmanaged, bool candidate, NetworkManager expectedManager)
+        {
+            var actualManager = no.NetworkManager;
+            return "name=" + no.name +
+                ";sourceId=" + (marker == null ? "<none>" : marker.SourceId) +
+                ";catalogBound=" + catalogBound +
+                ";unmanaged=" + unmanaged +
+                ";candidate=" + candidate +
+                ";networkManager=" + (actualManager == null ? "<null>" : actualManager.name) +
+                ";expectedManager=" + (expectedManager == null ? "<null>" : expectedManager.name) +
+                ";isSpawned=" + no.IsSpawned +
+                ";activeSelf=" + no.gameObject.activeSelf +
+                ";activeInHierarchy=" + no.gameObject.activeInHierarchy +
+                ";enabled=" + no.enabled +
+                ";inScenePlaced=" + no.InScenePlaced +
+                ";synchronizeTransform=" + no.SynchronizeTransform +
+                ";autoObjectParentSync=" + no.AutoObjectParentSync +
+                ";scene=" + no.gameObject.scene.path;
+        }
+
         private static bool UnsupportedOwnedSubtree(GameObject source, bool spatial)
         {
             var stack = new Stack<Transform>(); stack.Push(source.transform);

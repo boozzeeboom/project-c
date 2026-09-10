@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — диагностировать uncontrolled NetworkObject Road to Quartus)
+
+**Результат пользователя:** После исправления Bootstrap path ручной `Start Host` проходит до native preparation, затем останавливается на `uncontrolled_network_source_before_native_sweep:Road to Quartus`.
+**Статическая классификация:** `Road to Quartus` имеет catalog marker и `NetworkObject` на одном GameObject; source ID присутствует в catalog, `InScenePlaced=0`.
+**Изменение:** В `GlobalSceneNativeExecutor` добавлена подробная fail-closed диагностика фактических `catalogBound`, `unmanaged`, `candidate`, `NetworkManager`, `IsSpawned`, active-state, `InScenePlaced`, sync/lifetime flags и scene path. Разрешение `Unmanaged` не расширялось.
+**Проверки:** `GlobalSceneNativeExecutor.cs` — 0 ошибок, 2 advisory warnings; Compile — `No compile errors`. Play Mode после изменения не выполнялся.
+**Следующий gate:** Свежий Play Mode из `Assets/_Project/Scenes/BootstrapScene.unity`; прислать полный отказной лог с полями состояния `Road to Quartus`.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 19.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — диагностировать Bootstrap scene path mismatch)
 
 **Результат пользователя:** После ручного нажатия `Start Host` pilot остановился на `Pilot could not restore cataloged Bootstrap roots from DontDestroyOnLoad`.

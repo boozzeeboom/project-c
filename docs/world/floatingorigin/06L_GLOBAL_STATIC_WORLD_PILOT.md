@@ -665,17 +665,17 @@ Static code audit found the following relevant relocation families:
 cataloged_source_in_ddol;restoration_forbidden
 ```
 
-`16` ранее подтверждённых Bootstrap-root объектов с baked `GlobalSceneSourceMarker` были перемещены в `DontDestroyOnLoad`. После этого отдельный свежий Start Host выявил ещё пять сериализованных Bootstrap client/UI roots с `dontDestroyOnLoad=true`, которые оставались в каталоге как `AuthoredSceneContent`; первым фактическим отказом был `[NpcAttitudeClientState]` (`sourceId=336a190646b19bc46b22dd4e78f99800:133441436:0`). Контракт корректно отказал в принятии этих persistent services и не выполнил restoration обратно в authored scene.
+`16` ранее подтверждённых Bootstrap-root объектов с baked `GlobalSceneSourceMarker` были перемещены в `DontDestroyOnLoad`. Затем свежие Start Host попытки выявили пять client/UI roots, а после их классификации — ещё девять известных persistent roots. Последний фактический отказ был на `[ShipHudPanel]` (`sourceId=336a190646b19bc46b22dd4e78f99800:258728291:0`, `ownership=AuthoredSceneContent`). Контракт корректно отказал в принятии root и не выполнил restoration обратно в authored scene.
 
 ### Узкий фикс
 
 - Добавлен отдельный ownership `PersistentBootstrapService`.
-- Переклассифицированы подтверждённые 21 DDOL roots: прежние 16 roots (`PlayerSpawner`, `[ShipCargoServer]`, `[CombatServer]`, `NetworkManager`, `[SkillsServer]`, `[DockingServer]`, `[ExchangeServer]`, `Runtime`, `[NpcShipServer]`, `ServerWeatherController`, `[QuestServer]`, `[StatsServer]`, `[GatheringServer]`, `[CraftingServer]`, `[EquipmentServer]` и `CloudManager`) плюс `[QuestClientState]`, `[QuestTracker]`, `[ReputationClientState]`, `[NpcAttitudeClientState]` и `[CustomisationClientState]`.
+- Переклассифицированы подтверждённые 30 DDOL roots: прежние 16 roots (`PlayerSpawner`, `[ShipCargoServer]`, `[CombatServer]`, `NetworkManager`, `[SkillsServer]`, `[DockingServer]`, `[ExchangeServer]`, `Runtime`, `[NpcShipServer]`, `ServerWeatherController`, `[QuestServer]`, `[StatsServer]`, `[GatheringServer]`, `[CraftingServer]`, `[EquipmentServer]` и `CloudManager`), пять client/UI roots (`[QuestClientState]`, `[QuestTracker]`, `[ReputationClientState]`, `[NpcAttitudeClientState]`, `[CustomisationClientState]`) и девять roots из свежего runtime evidence: `[ShipHudPanel]`, `ConstellationController`, `[PlayerPositionServer]`, `[KnowledgeToast]`, `[GatheringToast]`, `[ShipPositionServer]`, `WindManager`, `[CraftingProgressController]`, `[QuestToast]`.
 - Три nested Bootstrap entries (`[MetaRequirementRegistry]`, `[ContractServer]`, `[ShipKeyServer]`) сохранены как `BootstrapService`; их ownership не расширялся за пределы подтверждённых DDOL roots.
 - `SceneOwnedNetworkGameplay`, `ShipOrRigidbodyRoot`, `GroundPlane_0_0`, DDOL restoration и mixed-root parenting не изменялись.
 - Native executor и pilot принимают persistent Bootstrap services в DDOL без восстановления в authored scene; обычные cataloged roots по-прежнему отвергаются fail-closed.
-- Profile digest пересчитан и сохранён: `a4bbb6e8cf21ca711490d7ba82811fec77ad190ddf6035bfcecbfb371727ab95`.
-- Ownership distribution после correction: `AuthoredSceneContent=47`, `BootstrapService=5`, `PersistentBootstrapService=21`, `SceneOwnedNetworkGameplay=55`, `ShipOrRigidbodyRoot=22`.
+- Profile digest пересчитан и сохранён: `9f5bafcb7217fc2a692195afacceab88dc28252def241d5dfbcfa39e950bbdaa`.
+- Ownership distribution после correction: `AuthoredSceneContent=38`, `BootstrapService=5`, `PersistentBootstrapService=30`, `SceneOwnedNetworkGameplay=55`, `ShipOrRigidbodyRoot=22`.
 
 ### Проверки
 
@@ -683,9 +683,9 @@ cataloged_source_in_ddol;restoration_forbidden
 - `ValidateGlobalSceneCatalog.Run()`: **58 passed / 0 failed**.
 - `ValidateGlobalSceneExecution.Run()`: **36 passed / 0 failed**.
 - Static snapshot: `catalog=150;markers=150;bound=150`.
-- Catalog/profile digest match: `a4bbb6e8cf21ca711490d7ba82811fec77ad190ddf6035bfcecbfb371727ab95`.
-- Play Mode после follow-up correction не выполнялся; новый runtime gate остаётся за пользователем. Screenshots не выполнялись.
-- Нормальный gameplay плейтест пока не начинать: сначала нужен чистый startup gate без DDOL rejection, с native preparation, `StartHost`, player spawn и проверкой отсутствия duplicate/legacy scene takeover. После его успешного пользовательского подтверждения можно передавать отдельный Host/player runtime плейтест; grounding, camera, physics, rebase и jitter остаются последующими gates.
+- Catalog/profile digest match: `9f5bafcb7217fc2a692195afacceab88dc28252def241d5dfbcfa39e950bbdaa`.
+- Play Mode после follow-up 2 correction не выполнялся; новый runtime gate остаётся за пользователем. Screenshots не выполнялись.
+- Нормальный gameplay плейтест пока не начинать: сначала нужен один чистый startup gate без DDOL rejection, с native preparation, `StartHost`, player spawn и проверкой отсутствия duplicate/legacy scene takeover. После его успешного пользовательского подтверждения можно передавать отдельный Host/player runtime плейтест; grounding, camera, physics, rebase и jitter остаются последующими gates.
 
 ### Граница коммита
 

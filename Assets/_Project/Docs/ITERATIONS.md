@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 2 — complete known DDOL root classification)
+
+**Задача:** Продолжить startup gate после нового отказа `cataloged_source_in_ddol;restoration_forbidden` на `[ShipHudPanel]` и убрать повторное прохождение одного и того же DDOL класса по одному root за раз.
+**Диагностика:** Пользовательский лог от 2026-09-10 18:33:33 показал `sourceId=336a190646b19bc46b22dd4e78f99800:258728291:0`, `[ShipHudPanel]`, `ownership=AuthoredSceneContent`. В том же экспортированном runtime логе предыдущий DDOL audit уже перечислял девять оставшихся persistent Bootstrap roots: `ShipHudPanel`, `ConstellationController`, `PlayerPositionServer`, `KnowledgeToast`, `GatheringToast`, `ShipPositionServer`, `WindManager`, `CraftingProgressController` и `QuestToast`. Их scene components подтверждены вызовами `DontDestroyOnLoad` или фактическим runtime relocation.
+**Результат:** Эти девять и только эти девять entries переклассифицированы в `PersistentBootstrapService`. Ownership distribution: `AuthoredSceneContent=38`, `BootstrapService=5`, `PersistentBootstrapService=30`, `SceneOwnedNetworkGameplay=55`, `ShipOrRigidbodyRoot=22`. Catalog remains closed-world: `catalog=150;markers=150;bound=150`.
+**Контракт:** Persistent Bootstrap services могут оставаться в `DontDestroyOnLoad`; обычный authored content, `SceneOwnedNetworkGameplay`, `ShipOrRigidbodyRoot`, `GroundPlane_0_0`, restoration обратно в scene и mixed-root parenting не разрешались. Никакие runtime-created unmarked client/UI objects в каталог не добавлялись.
+**Проверки:** Unity compile — `No compile errors`; `ValidateGlobalSceneCatalog.Run()` — **58 passed / 0 failed**; `ValidateGlobalSceneExecution.Run()` — **36 passed / 0 failed**; новый digest — `9f5bafcb7217fc2a692195afacceab88dc28252def241d5dfbcfa39e950bbdaa`. Play Mode после этого изменения не выполнялся.
+**Следующий gate:** Пользовательский новый `Start Host` из `Assets/_Project/Scenes/BootstrapScene.unity`. Это всё ещё не нормальный gameplay-плейтест: сначала нужен один чистый startup gate без cataloged DDOL rejection, с native preparation, `StartHost`, spawn и отсутствием duplicate/legacy scene takeover. После его успешного подтверждения можно переходить к нормальному Host/player runtime-плейтесту.
+**Граница:** В этап входят только девять ownership reclassifications, digest и документация. `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` исключаются.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up — runtime-confirmed persistent client/UI roots)
 
 **Задача:** Исправить повторный пользовательский Start Host отказ `cataloged_source_in_ddol;restoration_forbidden` для пяти Bootstrap client/UI roots, которые фактически вызывают `DontDestroyOnLoad` и оставались ошибочно классифицированы как `AuthoredSceneContent`.

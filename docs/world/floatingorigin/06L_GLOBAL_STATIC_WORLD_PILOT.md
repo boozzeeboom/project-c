@@ -517,3 +517,112 @@ markers=0;catalogedMarkers=0;roots=0;restored=0
 - Play Mode после изменения не выполнялся.
 
 Следующий gate: свежий ручной `Start Host`. В случае повторного DDOL-переноса должен появиться лог `Native preflight restored cataloged DDOL root(s): ...` перед обработкой scene catalog.
+
+## 23. T-FO06L.1 — ownership/NetworkObject boundaries, read-only classification — 2026-09-10
+
+### Граница этапа
+
+Этот подэтап выполнен только в Edit Mode. Play Mode, DDOL round-trip, scene/prefab/catalog mutation и общий `SetParent` для смешанных scene-owned `NetworkObject` не выполнялись. Текущие незакоммиченные изменения двух floating-origin scripts не включаются в этот документационный коммит:
+
+- `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalSceneNativeExecutor.cs`;
+- `Assets/_Project/Scripts/World/FloatingOrigin/Pilot/GlobalMotionPilotRuntime.cs`.
+
+Посторонние изменения `LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` также не относятся к этапу.
+
+### Фактический scene census
+
+Живой Edit Mode audit открыл только cataloged сцены `BootstrapScene` и `WorldScene_0_0`, перечислил все их authored descendants и закрыл дополнительно открытые сцены без сохранения.
+
+| Сцена | NetworkObject | Классификация |
+|---|---:|---|
+| `Assets/_Project/Scenes/BootstrapScene.unity` | 19 | scene-owned Bootstrap network services: 19 |
+| `Assets/_Project/Scenes/World/WorldScene_0_0.unity` | 77 | scene-owned gameplay: 45; docking gameplay: 10; ship/Rigidbody roots: 22 |
+| **Итого** | **96** | все 96 имеют `GlobalSceneSourceMarker` |
+
+В текущем Edit Mode snapshot у всех 96 authored `NetworkObject` одинаковая наблюдаемая граница: `InScenePlaced=false`, `IsSpawned=false`, `NetworkManager=<null>`, `SynchronizeTransform=true`, `AutoObjectParentSync=true`, `ActiveSceneSynchronization=false`, `SceneMigrationSynchronization=false`. Это состояние до NGO startup, а не доказательство допустимости runtime relocation.
+
+### Полный список authored NetworkObject boundaries
+
+**BootstrapScene — 19:** `[CombatServer]`, `[CraftingServer]`, `[DockingServer]`, `[EquipmentServer]`, `[ExchangeServer]`, `[GatheringServer]`, `[NpcShipServer]`, `[QuestServer]`, `[ShipCargoServer]`, `[SkillsServer]`, `[StatsServer]`, `CloudManager`, `Contracts/[ContractServer]`, `Inventory/[InventoryServer]`, `Inventory/[ShipKeyServer]`, `Markets/[MarketServer]`, `PlayerSpawner`, `ServerWeatherController`, `Toasts_and_meta/[MetaRequirementRegistry]`.
+
+**WorldScene_0_0 — 22 ship/Rigidbody roots:** `Ship_Light_root`, `Ship_Light_root (копия с компьютера DESKTOP-K00O7HK)`, `Альбатрос`, `Берег`, `Вавилон`, `Ветроворот`, `Гигант`, `Горгона`, `Жук`, `Летучий`, `Лорейн`, `Мастодонт`, `Олимп`, `Пещера`, `Река`, `Сильфида`, `Скат`, `Странник`, `Торренс`, `Угольщик`, `Цитадель`, `Шмель`.
+
+**WorldScene_0_0 — 10 docking/network gameplay roots:**
+
+- `DockStation_Primium` — `837a3910185f2b9478ce71df025ccc7c:2099880783:0`;
+- `DockStation_TestZone` — `837a3910185f2b9478ce71df025ccc7c:52261661:0`;
+- `WorldRoot_0_0/Primum_farms/Средняя 0_0` — `837a3910185f2b9478ce71df025ccc7c:1266341961:0`;
+- `WorldRoot_0_0/Primum_farms/Ферма Примума 0_1` — `837a3910185f2b9478ce71df025ccc7c:1177720397:0`;
+- `WorldRoot_0_0/Primum_farms/Ферма Примума 0_2` — `837a3910185f2b9478ce71df025ccc7c:226542065:0`;
+- `WorldRoot_0_0/Primum_farms/Ферма Примума 0_3` — `837a3910185f2b9478ce71df025ccc7c:1656927025:0`;
+- `WorldRoot_0_0/Primum_farms/Ферма Примума 0_4` — `837a3910185f2b9478ce71df025ccc7c:182231080:0`;
+- `WorldRoot_0_0/Secund/Верхняя панель (1)/Road to Secund` — `837a3910185f2b9478ce71df025ccc7c:1631178272:0`;
+- `WorldRoot_0_0/Tertius/Верхняя панель (1)/Road to Tertius` — `837a3910185f2b9478ce71df025ccc7c:1505408850:0`;
+- `WorldRoot_0_0/Quartus/Верхняя панель (1)/Road to Quartus` — `837a3910185f2b9478ce71df025ccc7c:1987571259:0`.
+
+Каждый из этих 10 roots имеет `DockStationController`, `OuterCommZone`, `PadStateSync`, `NetworkObject` и `GlobalSceneSourceMarker`. `Road to Quartus` дополнительно подтверждён по runtime отказу и имеет trigger `SphereCollider`; его source ID уже catalog-bound.
+
+**WorldScene_0_0 — остальные 45 scene-owned gameplay sources:**
+
+- crafting: `[CraftingStation_Shipyard]`, `[CraftingStation_Table]`;
+- resources: `[ResourceNode_CopperVein]`, `[ResourceNode_IronVein]`, `[ResourceNode_PlantHerb]`;
+- chests: `Chest_East`, `Chest_Main`, `Chest_North`;
+- ordinary pickups: `[Pickup_TimeCrystal]`, `Pickup_Clothing_SteelChestplate`, `Pickup_Clothing_TravelerBoots`, `Pickup_Clothing_WorkerHelmet`, `Pickup_Food_1`, `Pickup_Food_2`, `Pickup_Res_1`, `Pickup_Res_2`, `Pickup_Weapon_AntigravBlade`, `Pickup_Weapon_IronDagger`, `Pickup_Weapon_IronSpear`, `Pickup_Weapon_WoodenSword`;
+- authored NPCs: `NPC/[Mira]`, `NPC/[Onboarding alfa]`, `Q001_RuntimeTest_Line/Q001_NPC_Bram__Bram`, `Q001_RuntimeTest_Line/Q001_NPC_Kael__Kael`, `Q001_RuntimeTest_Line/Q001_NPC_Lyra__Lyra`, `Q001_RuntimeTest_Line/Q001_NPC_Noll__Noll`, `Q001_RuntimeTest_Line/Q001_NPC_Sela__Sela`, `Q001_RuntimeTest_Line/Q001_NPC_Veska__Veska`;
+- Q001 pickups: `Q001_RuntimeTest_Line/Q001_Pickup_blackbox_core`, `Q001_RuntimeTest_Line/Q001_Pickup_false_manifest`, `Q001_RuntimeTest_Line/Q001_Pickup_false_seal`, `Q001_RuntimeTest_Line/Q001_Pickup_fragment_archive`, `Q001_RuntimeTest_Line/Q001_Pickup_fragment_dock`, `Q001_RuntimeTest_Line/Q001_Pickup_fragment_sela`, `Q001_RuntimeTest_Line/Q001_Pickup_resonance_lens`;
+- market actors: `WorldRoot_0_0/Primum_farms/Средняя 0_0/Market_zone_farm_0_0/Npc_peacfull_market_zone`, the four corresponding `Market_zone_Primium_farm_0_1`…`0_4/Npc_peacfull_market_zone` objects, and `Market_zone_Road to Secund`, `Market_zone_Road to Tertius`, `Market_zone_Road to Quartus` variants;
+- scene spawners: `SPAWN_TEST`, `SPAWN_TEST cult`.
+
+### Ownership decisions
+
+1. **Static city render/collider content** — remains authored scene content and is not a `NetworkObject` boundary. It must not be moved by the native network executor merely because a parent contains a marker.
+2. **Scene-owned Bootstrap network services** — the 19 authored Bootstrap `NetworkObject` roots remain owned by the cataloged `BootstrapScene`. The `NetworkManager` root itself is a persistent Bootstrap service, but its runtime-created client states/UI/services are a separate DDOL infrastructure category and are not authored world roots.
+3. **SceneOwnedNetworkGameplay** — all authored docking stations, NPCs, pickups, chests, resource/crafting objects and scene spawners belong here. They are not passive static `Unmanaged` sources. Current catalog binding remains unchanged in this read-only stage; a later implementation must give this group one explicit lifecycle owner.
+4. **ShipOrRigidbodyRoot** — all 22 ship roots are separate dynamic actors. Their `Rigidbody`, `ShipController`, `NetworkTransform` and ship-specific services exclude them from a common static-world rebase or mixed-root parenting operation. Ship rebase/physics participation is a later, explicit contract.
+5. **Persistent services** — `NetworkManagerController` calls `DontDestroyOnLoad` on the `NetworkManager` root and creates additional persistent client states/UI/service roots. `DockingWorld`, `DockingClientState`, `NpcShipWorld`, `NpcShipClientState`, `NpcShipTrafficManager`, `NpcCargoService`, `ShipPositionServer` and `PlayerPositionServer` also create DDOL runtime infrastructure. These objects do not acquire ownership of authored `WorldScene_0_0` roots.
+6. **Legacy streaming ownership** — authored `Runtime/ClientSceneLoader` is DDOL-capable and can load/unload world scenes; `WorldSceneManager` is another DDOL scene/chunk coordination layer. `GlobalMotionPilotRuntime` must retire the legacy loader before pilot ownership is transferred. A disabled component without detached callbacks/coroutines is not sufficient; the existing explicit retirement path is the relevant handoff seam.
+7. **Runtime-generated DDOL infrastructure** — factory-created singleton services, UI, toasts, client state and docking/ship services are not valid catalog substitutes for scene-authored roots. They must either remain in a dedicated persistent scene/service boundary or remain outside the authored catalog with explicit ownership.
+
+### Decision for `Road to Quartus` and docking analogues
+
+`Road to Quartus`, `Road to Secund`, `Road to Tertius`, the five Primium farm stations and the two named test stations are classified as:
+
+```text
+SceneOwnedNetworkGameplay
+subtype=DockingStation
+lifecycle=authored-scene-owned
+```
+
+They must remain in `WorldScene_0_0`, preserve their catalog marker, parent and scene identity, and be initialized/spawned through one explicit scene/network lifecycle path. Their docking runtime counterpart (`DockingWorld` and client state) is persistent service infrastructure, not a reason to move the station roots to DDOL. `Unmanaged` is not accepted as a substitute for this contract, and no partial binding or automatic sync-flag relaxation is introduced here.
+
+### Sources capable of DDOL relocation
+
+Static code audit found the following relevant relocation families:
+
+- Bootstrap/network: `NetworkManagerController`, `ClientSceneLoader`, `WorldSceneManager`;
+- persistent client state and UI factories: Inventory/Contract/Market/Exchange/Crafting/Gathering/Equipment/Skills/Stats/MetaRequirement/Quest/Customisation/Recipe knowledge states, `UIManager`, `InputBindingsRuntime`, settings windows, toast/HUD services;
+- ship and docking services: `ShipPositionServer`, `PlayerPositionServer`, `DockingWorld`, `DockingClientState`, `NpcShipWorld`, `NpcShipClientState`, `NpcShipTrafficManager`, `NpcCargoService`;
+- world visuals/services: `CloudManager`, `WindManager`, `ConstellationController`, `HorizonVeilRenderer`, `VeilRaymarchMeshController`, combat/target/VFX services;
+- explicit scene moves: `GlobalMotionPilotRuntime.RestoreCatalogedSceneRootsFromDontDestroyOnLoad`, `GlobalSceneNativeExecutor.RestoreCatalogedDdolRoots`, and player-only `GlobalMotionPlayerBootstrap` placement.
+
+`NpcBrain.TrySetParent` ship attachment is a different operation: it is NGO network parenting for an already spawned NPC to an already spawned ship, not a scene-identity/DDOL mechanism. It must not be conflated with world-root relocation.
+
+### Native and compile checks
+
+- Unity compile: `No compile errors`.
+- `GlobalSceneNativeExecutor.cs`: 0 errors, 2 existing advisory warnings.
+- `GlobalMotionPilotRuntime.cs`: 0 warnings, 0 errors.
+- `Validate Native Scene Execution Contracts`: `32 passed / 0 failed`.
+- Scene census: `19 + 77 = 96` authored NetworkObjects; no scene/catalog/digest changes; no Play Mode.
+
+### Playtest gate after this classification
+
+Нормальный T-FO06L pilot Play Mode ещё **не разрешён** этим этапом. Сначала требуется отдельная implementation stage, которая:
+
+- переводит docking/network sources из пассивной `Unmanaged` трактовки в явный `SceneOwnedNetworkGameplay` lifecycle contract;
+- убирает зависимость startup от DDOL restoration как архитектуры, оставляя его только fail-closed diagnostic guard;
+- подтверждает один owner для legacy loader retirement и additive scene admission;
+- сохраняет `catalog=150;markers=150;bound=150` и закрытый world scene set;
+- повторно выполняет static/native validators и создаёт отдельный commit.
+
+Только после этого пользовательский свежий Play Mode из `Assets/_Project/Scenes/BootstrapScene.unity` является первым нормальным startup gate. Его acceptance sequence: native preparation → `NetworkManager.StartHost()` → player spawn → stable scene ownership → `Road to Quartus` остаётся в `WorldScene_0_0` → отсутствие duplicate `WorldScene_0_0`/legacy streaming takeover. Grounding, camera, jitter, rebase, physics и client admission проверяются отдельными последующими gates.

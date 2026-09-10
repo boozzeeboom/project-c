@@ -1,5 +1,18 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.1 — ownership/NetworkObject boundaries, read-only classification)
+
+**Задача:** Зафиксировать границы ownership для `BootstrapScene` и `WorldScene_0_0` до нового Play Mode, не повторяя DDOL restoration как архитектурное решение.
+**Результат:** Edit Mode census подтвердил `19` authored `NetworkObject` в BootstrapScene и `77` в WorldScene_0_0. World objects классифицированы как `45` scene-owned gameplay, `10` docking/network gameplay и `22` ship/Rigidbody roots; все `96` имеют `GlobalSceneSourceMarker`. Для всех в текущем snapshot: `InScenePlaced=false`, `IsSpawned=false`, `NetworkManager=<null>`, `SynchronizeTransform=true`, `AutoObjectParentSync=true`, `ActiveSceneSynchronization=false`, `SceneMigrationSynchronization=false`.
+**Решение:** `Road to Quartus`, `Road to Secund`, `Road to Tertius`, пять Primium farm stations и две тестовые станции выделены в `SceneOwnedNetworkGameplay / DockingStation`. Они остаются в `WorldScene_0_0`; `Unmanaged` не считается lifecycle contract. Ship/Rigidbody roots отделены от static content и не участвуют в общем mixed-root parenting.
+**DDOL audit:** Зафиксированы runtime relocation families: `NetworkManagerController`, `ClientSceneLoader`, `WorldSceneManager`, persistent client/UI factories, docking/ship services, world visual services, а также pilot restoration methods. `DockingWorld` и другие DDOL services не получают ownership authored station roots. Legacy loader retirement остаётся отдельным handoff seam.
+**Проверки:** Unity compile — `No compile errors`; `Validate Native Scene Execution Contracts` — `32 passed / 0 failed`; оба floating-origin scripts validated без ошибок (у `GlobalSceneNativeExecutor.cs` сохранены 2 advisory warnings). Play Mode, screenshots, scene/catalog/digest mutation не выполнялись.
+**Граница:** Текущие незакоммиченные `GlobalSceneNativeExecutor.cs` и `GlobalMotionPilotRuntime.cs`, а также посторонние `LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` в коммит не входят.
+**Следующий этап:** Реализовать явный lifecycle contract для `SceneOwnedNetworkGameplay`, убрать DDOL round-trip из архитектуры executor и повторить static/native validators. Только после отдельного implementation-коммита разрешается первый нормальный пользовательский Play Mode gate из `Assets/_Project/Scenes/BootstrapScene.unity`.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 23.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — reconcile DDOL roots на native-preflight boundary)
 
 **Результат пользователя:** Первый pilot audit восстановил 16 cataloged DDOL roots, второй audit показал 0 DDOL roots, но native sweep снова получил `Road to Quartus` с `candidate=False` и пустым `scene=`.

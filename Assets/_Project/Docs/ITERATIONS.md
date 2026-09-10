@@ -1,5 +1,19 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 9 — server-side player factory и deferred quest snapshot)
+
+**Задача:** Исправить ранний runtime shutdown после follow-up 8, когда `CreatePlayerObject = true` направил host/server в запрещённый client-side custom prefab handler `GlobalMotionPlayerBootstrap.CreateReplica()`.
+
+**Диагностика:** `StartHost()` завершался на `replica_factory:InvalidOperationException` (`No prepared local frame for explicit spawn seed`) и `Player prefab is null`; это происходило до создания PlayerObject и было архитектурным конфликтом между NGO approval auto-spawn и server-side `GlobalMotionPlayerBootstrap.SpawnPlayer()`.
+
+**Изменение:** В `GlobalMotionNetworkStartup.Approve()` восстановлено `response.CreatePlayerObject = false`; ручной spawn в `NetworkPlayerSpawner` не возвращён. В `QuestServer.OnClientConnectedForSnapshot()` initial quest snapshot получил bounded retry — 30 попыток по 0.1 секунды до фактического появления `ConnectedClients[clientId].PlayerObject`. Остальные snapshot paths, каталог, профиль, сцены и prefab assets не изменялись.
+
+**Проверки:** Unity compile — **No compile errors**; `git diff --check` — **PASS**. Play Mode и screenshots не выполнялись; пользовательский Host gate остаётся следующим шагом. Посторонние изменения `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` исключаются.
+
+**Изменённые файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkStartup.cs`, `Assets/_Project/Quests/Network/QuestServer.cs`, `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, этот журнал.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 8 — восстановить NGO PlayerPrefab auto-spawn)
 
 **Задача:** Продолжить startup gate после batch ownership correction, когда Host стартовал, но `QuestServer` получил `no NetworkPlayer for client 0`, а local player/menu handoff не был подтверждён.

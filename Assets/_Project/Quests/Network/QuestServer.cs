@@ -53,6 +53,9 @@ namespace ProjectC.Quests
 
         // Per-client rate limiting
         private readonly Dictionary<ulong, List<float>> _opTimestamps = new Dictionary<ulong, List<float>>();
+        private const int InitialQuestSnapshotMaxAttempts = 30;
+        private const float InitialQuestSnapshotRetryIntervalSeconds = 0.1f;
+        private readonly HashSet<ulong> _initialQuestSnapshotPending = new HashSet<ulong>();
 
         // ============================================================
         // LIFECYCLE
@@ -1045,9 +1048,42 @@ namespace ProjectC.Quests
 
             // Небольшая задержка не нужна — SendTo.Owner RPC дождётся готовности client'а.
             BroadcastBothChange(clientId);
-            // T-Q15 fix: push initial quest snapshot (rep+attitude уже отправлено выше).
-            // Без этого CharacterWindow → таб КВЕСТЫ пустой при P до любого Accept/TurnIn.
-            SendQuestSnapshotToClient(clientId);
+            // T-Q15 fix: defer the initial quest snapshot until the explicit server-side
+            // player factory has assigned ConnectedClients[clientId].PlayerObject.
+            QueueInitialQuestSnapshot(clientId);
+        }
+
+        private void QueueInitialQuestSnapshot(ulong clientId)
+        {
+            if (!_initialQuestSnapshotPending.Add(clientId)) return;
+            StartCoroutine(SendInitialQuestSnapshotWhenPlayerReady(clientId));
+        }
+
+        private System.Collections.IEnumerator SendInitialQuestSnapshotWhenPlayerReady(ulong clientId)
+        {
+            for (int attempt = 0; attempt < InitialQuestSnapshotMaxAttempts; attempt++)
+            {
+                if (!IsServer || NetworkManager == null || !NetworkManager.ConnectedClients.ContainsKey(clientId))
+                {
+                    _initialQuestSnapshotPending.Remove(clientId);
+                    yield break;
+                }
+
+                if (FindNetworkPlayer(clientId) != null)
+                {
+                    SendQuestSnapshotToClient(clientId);
+                    _initialQuestSnapshotPending.Remove(clientId);
+                    yield break;
+                }
+
+                yield return new WaitForSeconds(InitialQuestSnapshotRetryIntervalSeconds);
+            }
+
+            _initialQuestSnapshotPending.Remove(clientId);
+            if (debugMode)
+            {
+                Debug.LogWarning($"[QuestServer] Initial quest snapshot timed out: no NetworkPlayer for client {clientId} after {InitialQuestSnapshotMaxAttempts} attempts");
+            }
         }
 
         /// <summary>Find NetworkPlayer for clientId (server-side). null если player object не spawned.</summary>

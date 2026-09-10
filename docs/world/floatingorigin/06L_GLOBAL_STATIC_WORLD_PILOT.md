@@ -940,3 +940,33 @@ response.CreatePlayerObject = false;
 - Unrelated `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` остаются вне этапа.
 
 Следующий gate выполняет пользователь: новый Play Mode из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Нужны строки auto-spawn, local player readiness/menu handoff и отсутствие последующего disconnect. Если `QuestServer` всё ещё увидит `no NetworkPlayer`, следующий фикс должен разбирать фактический порядок NGO callbacks, не возвращая ручной spawn.
+
+## 32. T-FO06L.2.x follow-up 9 — восстановить server-side player factory и отложить initial quest snapshot — 2026-09-10
+
+### Фактический runtime отказ
+
+После follow-up 8 пользовательский Host завершился внутри `StartHost()` на custom prefab handler:
+
+```text
+[T-FO04G] replica_factory:InvalidOperationException
+InvalidOperationException: No prepared local frame for explicit spawn seed.
+[Netcode] [NetworkObject] Player prefab is null! Cannot spawn player object!
+```
+
+Стек показал `GlobalMotionPlayerBootstrap.CreateReplica()` → NGO prefab handler → `HandleConnectionApproval`. `CreateReplica()` намеренно запрещает server-side путь при `_manager.IsServer`, поэтому `response.CreatePlayerObject = true` направлял host/server в client-side replica path и вызывал shutdown. `QuestServer` и `Player prefab is null` были downstream-симптомами отсутствующего PlayerObject.
+
+### Узкий фикс
+
+В `GlobalMotionNetworkStartup.Approve()` восстановлено `response.CreatePlayerObject = false`. Server-side PlayerObject снова должен создаваться единственным проектным путём `PeerConnected → GlobalMotionPlayerBootstrap.SpawnPlayer() → CreateInstance() → SpawnAsPlayerObject()`. `NetworkPlayerSpawner` не возвращает ручной spawn и остаётся диагностическим монитором.
+
+В `QuestServer.OnClientConnectedForSnapshot()` initial quest snapshot переведён на bounded retry: до `30` попыток с интервалом `0.1` секунды проверяется фактический `ConnectedClients[clientId].PlayerObject`/`NetworkPlayer`; snapshot отправляется только после его появления. Остальные snapshot paths и загрузка состояния клиента не изменялись. При disconnect, shutdown или timeout retry завершается без отправки ложного snapshot.
+
+### Проверки и границы
+
+- Unity compile: **No compile errors**.
+- `git diff --check`: **PASS**.
+- Изменены только `GlobalMotionNetworkStartup.cs` и `QuestServer.cs` из runtime-кода; каталог, профиль, сцены и prefab assets не изменялись.
+- `LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` остаются посторонними рабочими изменениями и в этап не входят.
+- Play Mode, screenshots и пользовательский Host runtime gate не выполнялись автоматически.
+
+Следующий gate выполняет пользователь: новый Play Mode из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Ожидаемая последовательность: `PeerConnected(0)` → `SpawnPlayer` → `CreateInstance` → `SpawnAsPlayerObject` → `ConnectedClients[0].PlayerObject != null` → quest snapshot sent → local pilot ready/menu handoff. Строки `replica_factory`, `Player prefab is null` и последующий disconnect должны отсутствовать.

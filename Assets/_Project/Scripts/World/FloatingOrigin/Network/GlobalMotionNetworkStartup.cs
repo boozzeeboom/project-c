@@ -195,7 +195,10 @@ namespace ProjectC.World.FloatingOrigin.Network
         }
         private void Approve(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
         {
-            response.Approved = false; response.CreatePlayerObject = false; response.Pending = false;
+            // The global pilot still uses NGO's sole PlayerPrefab auto-spawn path.
+            // CreatePlayerObject=false leaves ConnectedClients[clientId].PlayerObject null
+            // and prevents the startup handoff and initial client snapshots.
+            response.Approved = false; response.CreatePlayerObject = true; response.Pending = false;
             response.PlayerPrefabHash = null; response.Position = null; response.Rotation = null;
             try
             {

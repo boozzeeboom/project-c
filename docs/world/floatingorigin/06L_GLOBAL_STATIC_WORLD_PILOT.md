@@ -901,3 +901,42 @@ scene_preparation:persistent_bootstrap_service_runtime_location_mismatch:[QuestS
 - Play Mode и screenshots не выполнялись; нормальный gameplay playtest по-прежнему не разрешён.
 
 Следующий шаг — один пользовательский startup gate из canonical `Assets/_Project/Scenes/BootstrapScene.unity` с `Start Host`. Зафиксировать фактический результат `catalog=150;markers=150;bound=150` и имя следующего блокера, если native preflight всё ещё остановится.
+
+## 31. T-FO06L.2.x follow-up 8 — восстановить NGO PlayerPrefab auto-spawn — 2026-09-10
+
+### Фактический runtime симптом
+
+После batch ownership correction пользовательский Host прошёл native preparation и `StartHost()`, но runtime сообщил:
+
+```text
+[QuestServer] OnClientConnectedForSnapshot: client=0
+[QuestServer] SendQuestSnapshotToClient: no NetworkPlayer for client 0
+```
+
+Одновременно отсутствовали подтверждение auto-spawn от `NetworkPlayerSpawner` и лог готовности local pilot player/скрытия startup menus. `NetworkTestMenu` показывал одного подключённого игрока, но это не доказывало наличие `ConnectedClients[0].PlayerObject`.
+
+### Read-only причина
+
+В `GlobalMotionNetworkStartup.Approve()` глобальный connection approval выставлял:
+
+```csharp
+response.CreatePlayerObject = false;
+```
+
+Это явно запрещало NGO создать PlayerObject через `NetworkConfig.PlayerPrefab`. При этом `TryApplyProfilePlayerPrefab()` уже устанавливает единственный spatial prefab профиля — `NetworkPlayer_GlobalPilot.prefab`, содержащий `NetworkObject`, `NetworkPlayer`, `GlobalMotionReplicator` и `GlobalMotionPoseAdapter`. Ручной `SpawnAsPlayerObject` не возвращался.
+
+`QuestServer`-сообщение о `no NetworkPlayer` признано downstream-симптомом отсутствующего NGO PlayerObject, а не основанием для ручного spawn или ослабления startup gate.
+
+### Узкий фикс
+
+В `GlobalMotionNetworkStartup.Approve()` установлено `response.CreatePlayerObject = true`. Остальные approval-проверки, global hello, scene admission, catalog ownership и единственный `NetworkConfig.PlayerPrefab` path не изменялись.
+
+### Проверки и границы
+
+- Unity compile: **No compile errors**.
+- Изменён только `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkStartup.cs` из runtime-кода; catalog, profile, scenes и prefabs не изменялись.
+- Play Mode, screenshots и пользовательский Host runtime gate после фикса **не выполнялись автоматически**.
+- Ручной `SpawnAsPlayerObject` не добавлялся.
+- Unrelated `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` остаются вне этапа.
+
+Следующий gate выполняет пользователь: новый Play Mode из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Нужны строки auto-spawn, local player readiness/menu handoff и отсутствие последующего disconnect. Если `QuestServer` всё ещё увидит `no NetworkPlayer`, следующий фикс должен разбирать фактический порядок NGO callbacks, не возвращая ручной spawn.

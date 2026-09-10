@@ -1,5 +1,19 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 8 — восстановить NGO PlayerPrefab auto-spawn)
+
+**Задача:** Продолжить startup gate после batch ownership correction, когда Host стартовал, но `QuestServer` получил `no NetworkPlayer for client 0`, а local player/menu handoff не был подтверждён.
+
+**Диагностика:** Read-only inspection показал, что `GlobalMotionNetworkStartup.TryApplyProfilePlayerPrefab()` корректно устанавливает единственный spatial prefab `NetworkPlayer_GlobalPilot.prefab`, но `GlobalMotionNetworkStartup.Approve()` выставлял `response.CreatePlayerObject = false`. Это запрещало NGO создать `ConnectedClients[0].PlayerObject` через `NetworkConfig.PlayerPrefab`. `NetworkPlayerSpawner` остаётся диагностическим и ручной `SpawnAsPlayerObject` не является допустимым recovery path.
+
+**Изменение:** В `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkStartup.cs` установлено `response.CreatePlayerObject = true`; approval validation, scene admission, catalog/ownership checks и профильный PlayerPrefab path не изменялись.
+
+**Проверки:** Unity compile — **No compile errors**. Catalog/profile/scenes/prefabs не изменялись. Play Mode и screenshots не выполнялись; следующий runtime gate выполняет пользователь.
+
+**Следующий gate:** Новый Play Mode из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Проверить NGO auto-spawn, `ConnectedClients[0].PlayerObject`, local pilot readiness, скрытие startup menus и отсутствие disconnect. Если `QuestServer` снова получит `no NetworkPlayer`, диагностировать callback order по свежему логу; ручной spawn не возвращать.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 7 — batch correction Bootstrap services)
 
 **Задача:** Исправить весь оставшийся класс authored Bootstrap network services одним ownership-анализом после отказа `scene_preparation:persistent_bootstrap_service_runtime_location_mismatch:[GatheringServer]`, не смешивая authored scene location с runtime DDOL audit.

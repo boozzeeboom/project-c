@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 3 — исправление ownership PlayerSpawner)
+
+**Задача:** Продолжить startup gate после фактического отказа `persistent_bootstrap_service_runtime_location_mismatch:PlayerSpawner`.
+**Диагностика:** Свежий пользовательский лог от 2026-09-10 18:37:56 показал `Cataloged DDOL audit: markers=16;catalogedMarkers=16;persistentBootstrapRoots=16;restored=0`, после чего native preflight отклонил `PlayerSpawner`. Live Bootstrap audit подтвердил: `PlayerSpawner` — root `BootstrapScene`, `activeSelf=false`, с `NetworkObject`, `NetworkPlayer`, `NetworkPlayerSpawner` и baked marker `336a190646b19bc46b22dd4e78f99800:100000:1757335980`; ни один компонент не перемещает этот объект в DDOL.
+**Решение:** Это не persistent Bootstrap service и не разрешение на DDOL restoration. Entry сохранён как `Unmanaged`, но ownership изменён с `PersistentBootstrapService` на `BootstrapService`, чтобы authored root оставался в canonical `BootstrapScene` и проходил ownership policy как Bootstrap NetworkObject. Обычный authored content, `SceneOwnedNetworkGameplay`, `ShipOrRigidbodyRoot`, unknown roots и mixed-root parenting по-прежнему не принимаются.
+**Изменения:** `GlobalMotionPilotSceneCatalog.asset`, `GlobalMotionPilotProfile.asset` (digest обновлён до `dc5616f54e110d5e62063fd3273a4fd6fb3f5b1d6bd5801052fa6c1da3ab1b43`), этот журнал и `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`.
+**Проверки:** Unity compile — `No compile errors`; `ValidateGlobalSceneCatalog.Run()` — `58 passed / 0 failed`; `ValidateGlobalSceneExecution.Run()` — `36 passed / 0 failed`; Play Mode после изменения не выполнялся.
+**Следующий gate:** Новый пользовательский Play Mode из `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Ожидается отсутствие mismatch для `PlayerSpawner`, затем проверка native preparation, `StartHost()`, local player spawn и отсутствия duplicate/legacy scene takeover. Это всё ещё startup gate, не нормальный gameplay playtest.
+**Граница:** Не запускать Play Mode автоматически; `GroundPlane_0_0` не восстанавливать; исключить `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset`.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 2 — complete known DDOL root classification)
 
 **Задача:** Продолжить startup gate после нового отказа `cataloged_source_in_ddol;restoration_forbidden` на `[ShipHudPanel]` и убрать повторное прохождение одного и того же DDOL класса по одному root за раз.

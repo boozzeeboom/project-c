@@ -690,3 +690,43 @@ cataloged_source_in_ddol;restoration_forbidden
 ### Граница коммита
 
 В отдельный T-FO06L.2.x входят только ownership reclassification, digest, policy/validator fixture и документация этого fail-closed runtime результата. `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` исключаются.
+
+## 26. T-FO06L.2.x follow-up 3 — PlayerSpawner ownership correction — 2026-09-10
+
+### Фактический runtime отказ
+
+Свежий пользовательский запуск из canonical `Assets/_Project/Scenes/BootstrapScene.unity` дошёл до native preflight и остановился на:
+
+```text
+[T-FO06L] Pilot global startup refused: scene_preparation:persistent_bootstrap_service_runtime_location_mismatch:PlayerSpawner
+```
+
+Перед отказом audit сообщил `markers=16;catalogedMarkers=16;persistentBootstrapRoots=16;restored=0`. Это означает, что cataloged persistent roots были обнаружены, но `PlayerSpawner` не был в DDOL — он оставался authored root BootstrapScene.
+
+### Read-only evidence and decision
+
+- `PlayerSpawner` найден root-level в `Assets/_Project/Scenes/BootstrapScene.unity`, без parent, `activeSelf=false`.
+- На объекте присутствуют `NetworkObject`, `NetworkPlayer`, `NetworkPlayerSpawner` и `GlobalSceneSourceMarker`.
+- `NetworkPlayerSpawner` является диагностическим компонентом: старый ручной `SpawnAsPlayerObject` удалён; фактический PlayerObject создаётся через `NetworkConfig.PlayerPrefab`.
+- В runtime/source search не найдено кода, который переносит именно этот `PlayerSpawner` в `DontDestroyOnLoad`; `NetworkManagerController.Awake()` переносит свой собственный root, а не PlayerSpawner.
+- Поэтому `PlayerSpawner` не соответствует `PersistentBootstrapService`. Это authored Bootstrap NetworkObject, который должен оставаться в canonical BootstrapScene.
+
+### Узкий фикс
+
+`PlayerSpawner` оставлен `treatment: Unmanaged`, но ownership изменён с `PersistentBootstrapService` на `BootstrapService`. Это меняет только ownership classification и digest; DDOL acceptance, restoration, mixed-root parenting, unknown runtime roots и scene gameplay boundaries не ослабляются.
+
+Новый digest профиля:
+
+`dc5616f54e110d5e62063fd3273a4fd6fb3f5b1d6bd5801052fa6c1da3ab1b43`
+
+### Проверки и следующий gate
+
+- Unity compile: **No compile errors**.
+- `ValidateGlobalSceneCatalog.Run()`: **58 passed / 0 failed**.
+- `ValidateGlobalSceneExecution.Run()`: **36 passed / 0 failed**.
+- Static closed-world count remains expected `catalog=150;markers=150;bound=150` by catalog/compiler contract; native runtime binding after this correction is still **UNVERIFIED**.
+- Play Mode after this correction was not run automatically.
+
+Следующий этап — новый пользовательский startup gate: fresh Play Mode из `Assets/_Project/Scenes/BootstrapScene.unity`, `Start Host`, затем зафиксировать полный результат native preparation, `StartHost()`, local player spawn и duplicate/legacy scene checks. До его успешного прохождения нормальный gameplay playtest не начинать.
+
+Граница этапа: `GroundPlane_0_0` не восстанавливается; обычный authored content, `SceneOwnedNetworkGameplay` и `ShipOrRigidbodyRoot` не переводятся в DDOL; unrelated `LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` не входят.

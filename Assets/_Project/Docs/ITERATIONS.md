@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — подготовить world scene перед pilot startup)
+
+**Задача:** Разобрать первый пользовательский Play Mode отказ после исправления catalog binding.
+**Диагностика:** Лог показал `pilot_frame_not_prepared`. При старте была загружена только `BootstrapScene`; `WorldScene_0_0` не была загружена, поэтому `GlobalMotionPilotSpawnSource.Awake()` не смог найти `Respawn_Default` и не подготовил frame.
+**Результат:** `GlobalMotionPilotRuntime` теперь перед `GlobalMotionNetworkStartup.TryPrepare` additive загружает `Assets/_Project/Scenes/World/WorldScene_0_0.unity`, дожидается завершения загрузки, повторно подготавливает `GlobalMotionPilotSpawnSource` и только затем запускает Host. Если world scene уже загружена, повторная загрузка не выполняется.
+**Проверки:** Compile — `No compile errors`. Новый Play Mode/native startup gate ещё не запускался пользователем после исправления.
+**Граница:** `GroundPlane_0_0` остаётся удалённым; catalog/digest и scene YAML не изменялись. Независимый `LiberationSans SDF - Fallback.asset` в этап не входит.
+**Следующий шаг:** Повторить ручной Play Mode Host/client запуск. Ожидаемая первая проверка — additive loaded scenes (`BootstrapScene` + `WorldScene_0_0`), затем отсутствие `pilot_frame_not_prepared` и переход к следующему фактическому startup error, если он есть.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, обновлён этот журнал.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — исправить binding executor)
 
 **Задача:** Продолжить T-FO06L после отказа native preparation на `catalog_source_not_bound`, не восстанавливая удалённый `GroundPlane_0_0`.

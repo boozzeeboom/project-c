@@ -106,3 +106,23 @@ scene_preparation:catalog_source_not_bound:336a190646b19bc46b22dd4e78f99800:1044
 - фактический Play Mode/native preparation/Host/client startup ещё не запускались.
 
 Следующий gate — пользовательский ручной Host/client Play Mode-прогон текущего pilot scope. Если startup снова остановится, диагностика должна содержать значения `catalog=...;markers=...;bound=...`; повторную правку выполнять только по этой фактической причине.
+
+## 10. Обновление после первого ручного Play Mode запуска — 2026-09-10
+
+Фактический лог показал новую причину остановки до Bootstrap:
+
+```text
+[T-FO06L] Pilot global startup refused: pilot_frame_not_prepared
+```
+
+На момент `GlobalMotionPilotRuntime.Start()` была загружена только `BootstrapScene`; `WorldScene_0_0` отсутствовала среди loaded scenes. Поэтому `GlobalMotionPilotSpawnSource.Awake()` не нашёл `Respawn_Default`, оставил `_prepared = false`, и validation остановила запуск до native catalog binding.
+
+Исправлено:
+
+- `GlobalMotionPilotRuntime` теперь перед global `TryPrepare` дожидается/загружает `WorldScene_0_0` additive;
+- после загрузки вызывается повторная подготовка `GlobalMotionPilotSpawnSource`;
+- host запускается только после подтверждения loaded world scene и prepared frame;
+- уже загруженная `WorldScene_0_0` повторно не загружается;
+- `GroundPlane_0_0` не восстанавливается и catalog/digest не изменяются.
+
+Проверка после исправления: Compile — `No compile errors`. Повторный Play Mode gate ожидает пользовательского запуска.

@@ -26,6 +26,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         public IReadOnlyList<GlobalMotionSpawnFrame> PreparedFrames => _frames;
 
         private void Awake() => Prepare();
+        public bool RefreshPreparedContent() => Prepare();
 
         public bool ValidatePreparedContent(GlobalMotionStartRole role, GlobalMotionNetworkProfile profile, out string error)
         {
@@ -58,19 +59,20 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             return true;
         }
 
-        private void Prepare()
+        private bool Prepare()
         {
             _frames.Clear();
             _prepared = false;
             var scene = SceneManager.GetSceneByPath(_worldScenePath);
-            if (!scene.IsValid() || !scene.isLoaded) return;
+            if (!scene.IsValid() || !scene.isLoaded) return false;
             var respawn = FindInScene(scene, _respawnObjectName);
-            if (respawn == null) return;
+            if (respawn == null) return false;
 
             _spawnPosition = GlobalPosition.FromLegacyAbsolute(respawn.transform.position + Vector3.up * _verticalSpawnOffset);
             var frame = new LocalCoordinateFrame(GlobalPosition.Zero, _maxLocalCoordinate);
             _frames.Add(new GlobalMotionSpawnFrame(1, frame, scene));
             _prepared = _frames[0].IsValid;
+            return _prepared;
         }
 
         private static GameObject FindInScene(UnityEngine.SceneManagement.Scene scene, string objectName)

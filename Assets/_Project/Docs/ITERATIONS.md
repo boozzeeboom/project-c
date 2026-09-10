@@ -1,5 +1,25 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 10 — успешный native startup/player gate)
+
+**Задача:** Закрыть ручной startup gate после исправления readiness для catalog-bound `Unmanaged` sources и подтвердить прохождение Host/player path.
+
+**Результат пользователя:** Exported Unity Console Log от `2026-09-10 20:05:41` подтвердил `ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>`, запуск Host на порту `7777`, `PeerConnected(0)`, подготовленный spawn plan, вход в `SpawnPlayer`, `OnActorPostSpawn`, `CompletePlacement ready=True;baseline=True` и вызов `SpawnAsPlayerObject` для `NetworkPlayer_GlobalPilot(Clone)`. После этого зафиксировано `Local pilot player ready; startup menus hidden=2; origin=(0,0,0); local=(39992,1,40000)`.
+
+**Quest handoff:** Ранний callback snapshot пришёл до появления PlayerObject, но bounded retry дождался игрока; затем отправлен snapshot с `1 quest`. Это подтверждает исправленный порядок initial snapshot без возврата ручного spawn.
+
+**Границы:** В логе не обнаружены `replica_factory`, `Player prefab is null`, повторная загрузка `WorldScene_0_0` или соседних сцен. Формального loaded-scene handle counter нет, поэтому duplicate/legacy suppression отмечается как отсутствие наблюдаемого отказа, а не как отдельный instrumentation PASS. Последующий disconnect после EscMenu не классифицируется как startup failure по предоставленной последовательности.
+
+**Незакрыто:** `origin=(0,0,0)` и local player около `(39992,1,40000)` означают, что floating-origin rebase не реализован. Grounding, движение, камера, physics, multiplayer client и jitter не проверялись; screenshots не предоставлены. В логе также остаются независимые warnings по ShipDeckNav/NavMesh, PlayerTarget HP, missing script, NpcSocialBrain Animator parameters, ShipCargoVisual, resource nodes и раннему registry order.
+
+**Изменения этапа:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalSceneNativeExecutor.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionPlayerBootstrap.cs`, `Assets/_Project/Scripts/Core/NetworkManagerController.cs`, `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, этот журнал. Catalog/profile/scenes/prefabs не изменялись; `GroundPlane_0_0` не восстанавливался. TMP fallback и `ProjectSettings/EditorSettings.asset` исключаются.
+
+**Проверки:** Пользовательский runtime startup/player gate — **PASS по Console Log**; Unity compile — **No compile errors** до gate; `GlobalSceneNativeExecutor` diff-check исправлен до commit. Нормальный gameplay/rebase этап не закрыт.
+
+**Следующий шаг:** Read-only classification actual city render/collider content, `Respawn_Default`, player/camera roots и ship/Rigidbody boundaries перед проектированием согласованной rebase transaction. Play Mode автоматически не запускать.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 9 — server-side player factory и deferred quest snapshot)
 
 **Задача:** Исправить ранний runtime shutdown после follow-up 8, когда `CreatePlayerObject = true` направил host/server в запрещённый client-side custom prefab handler `GlobalMotionPlayerBootstrap.CreateReplica()`.

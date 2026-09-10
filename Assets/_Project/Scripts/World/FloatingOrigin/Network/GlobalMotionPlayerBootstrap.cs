@@ -32,6 +32,9 @@ namespace ProjectC.World.FloatingOrigin.Network
         private readonly GlobalMotionSpawnQueue _queue = new GlobalMotionSpawnQueue();
         private readonly List<GlobalMotionSpawnTicket> _work = new List<GlobalMotionSpawnTicket>();
         private readonly Dictionary<ulong, double> _deadlines = new Dictionary<ulong, double>();
+        private double _lastBootstrapWaitLogAt = double.NegativeInfinity;
+        private string _lastBootstrapWaitState;
+
         private readonly HashSet<ulong> _connected = new HashSet<ulong>();
         private readonly Dictionary<GlobalMotionReplicator, Placement> _instances = new Dictionary<GlobalMotionReplicator, Placement>();
         private readonly List<GlobalMotionReplicator> _instanceWork = new List<GlobalMotionReplicator>();
@@ -123,12 +126,15 @@ namespace ProjectC.World.FloatingOrigin.Network
             _sceneExecutor = null;
             _ownedFrames.Clear(); _frameLeases.Clear(); _frames.Clear(); _prefab = null; _manager = null; _world = null;
         }
-        public void PeerConnected(NetworkManager manager, ulong clientId)
+public void PeerConnected(NetworkManager manager, ulong clientId)
         {
             if (!_active || manager != _manager) throw new InvalidOperationException("Wrong bootstrap lease.");
             if (!manager.IsServer || !_connected.Add(clientId)) return;
             if (!_queue.TryAdd(clientId, out _)) { FailPeer(clientId, "spawn_queue_full"); return; }
             _deadlines[clientId] = Time.realtimeSinceStartupAsDouble + WaitSeconds;
+            Debug.Log("[T-FO06G] PeerConnected queued: client=" + clientId + ";deadline=" + WaitSeconds + "s;worldRunning=" +
+                (_world != null && _world.IsRunning) + ";scenePrepared=" + (_sceneExecutor != null && _sceneExecutor.HasPreparedPlacement) +
+                ";sceneReady=" + CanAcceptScenePeer, this);
             // Host callback may precede OnServerStarted. Processing waits for World.IsRunning, never registers during Validate.
         }
         public void PeerDisconnected(NetworkManager manager, ulong clientId)
@@ -160,7 +166,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
             return true;
         }
-        private void Update()
+private void Update()
         {
             if (!_active || _manager == null || _manager.ShutdownInProgress) return;
             try
@@ -168,8 +174,22 @@ namespace ProjectC.World.FloatingOrigin.Network
                 if (!GlobalMotionNetworkStartup.IsInstalled(_manager) || _sourceBehaviour == null || !_sourceBehaviour.isActiveAndEnabled || _world == null || !_world.isActiveAndEnabled)
                 { FailSession("spawn_lease_world_or_source_lost"); return; }
                 if (_sceneExecutor == null || !_sceneExecutor.HasPreparedPlacement) { FailSession("native_scene_preparation_lost"); return; }
-                if (!EnsureFrames()) return;
-                if (_manager.IsServer && !CanAcceptScenePeer) return;
+                if (_world == null || !_world.IsRunning)
+                {
+                    LogBootstrapWait("world_not_running");
+                    return;
+                }
+                if (!EnsureFrames())
+                {
+                    LogBootstrapWait("frames_not_ready");
+                    return;
+                }
+                if (_manager.IsServer && !CanAcceptScenePeer)
+                {
+                    CheckQueuedDeadlines();
+                    LogBootstrapWait("scene_admission_wait;canAccept=" + CanAcceptScenePeer + ";prepared=" + _sceneExecutor.HasPreparedPlacement);
+                    return;
+                }
                 if (_manager.IsServer)
                 {
                     _queue.CopyTo(_work); int budget = PerFrameBudget;
@@ -179,7 +199,12 @@ namespace ProjectC.World.FloatingOrigin.Network
                         if (!_manager.ConnectedClients.ContainsKey(ticket.ClientId)) { PeerDisconnected(_manager, ticket.ClientId); continue; }
                         if (!_deadlines.TryGetValue(ticket.ClientId, out var deadline) || Time.realtimeSinceStartupAsDouble > deadline) { FailPeer(ticket.ClientId, "spawn_plan_timeout"); continue; }
                         if (budget <= 0) break;
-                        if (!Source.TryGetPlayerPlan(ticket.ClientId, out var plan)) continue;
+                        if (!Source.TryGetPlayerPlan(ticket.ClientId, out var plan))
+                        {
+                            LogBootstrapWait("spawn_plan_unavailable;client=" + ticket.ClientId);
+                            continue;
+                        }
+                        Debug.Log("[T-FO06G] Spawn plan ready: client=" + ticket.ClientId + ";frame=" + plan.FrameId + ";position=" + plan.Position, this);
                         if (!_queue.IsCurrent(ticket)) continue;
                         budget--; SpawnPlayer(ticket, plan);
                     }
@@ -195,8 +220,29 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
             catch (Exception e) { FailSession("spawn_update:" + e.GetType().Name); Debug.LogException(e, this); }
         }
+
+        private void CheckQueuedDeadlines()
+        {
+            _queue.CopyTo(_work);
+            double now = Time.realtimeSinceStartupAsDouble;
+            foreach (var ticket in _work)
+                if (_queue.IsCurrent(ticket) && (!_deadlines.TryGetValue(ticket.ClientId, out var deadline) || now > deadline))
+                    FailPeer(ticket.ClientId, "spawn_scene_admission_timeout");
+        }
+
+        private void LogBootstrapWait(string state)
+        {
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (string.Equals(_lastBootstrapWaitState, state, StringComparison.Ordinal) && now - _lastBootstrapWaitLogAt < 1d) return;
+            _lastBootstrapWaitState = state;
+            _lastBootstrapWaitLogAt = now;
+            Debug.LogWarning("[T-FO06G] Bootstrap waiting: " + state + ";queue=" + _work.Count + ";worldRunning=" +
+                (_world != null && _world.IsRunning) + ";scenePrepared=" + (_sceneExecutor != null && _sceneExecutor.HasPreparedPlacement) +
+                ";sceneReady=" + CanAcceptScenePeer, this);
+        }
         private void SpawnPlayer(GlobalMotionSpawnTicket ticket, GlobalMotionPlayerSpawnPlan plan)
         {
+            Debug.Log("[T-FO06G] SpawnPlayer entered: client=" + ticket.ClientId + ";frame=" + plan.FrameId + ";position=" + plan.Position, this);
             if (_manager == null || !_manager.IsListening || _manager.ShutdownInProgress || _manager != NetworkManager.Singleton ||
                 !_queue.IsCurrent(ticket) || !_manager.ConnectedClients.TryGetValue(ticket.ClientId, out var client)) return;
             if (client.PlayerObject != null) { FailPeer(ticket.ClientId, "player_already_exists"); return; }
@@ -215,6 +261,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                     !ReferenceEquals(current, client) || current.PlayerObject != null || !GlobalMotionSpawnPlanGuards.Validate(source, ticket.ClientId, plan, out guardError))
                     throw new InvalidOperationException(guardError ?? "spawn_plan_changed_during_instantiation");
                 value.SpawnAsPlayerObject(ticket.ClientId, false);
+                Debug.Log("[T-FO06G] SpawnAsPlayerObject called: client=" + ticket.ClientId + ";object=" + value.name, this);
                 if (!value.IsSpawned || record.Failed || !record.Ready || !_queue.IsCurrent(ticket) || !ReferenceEquals(Source, source) ||
                     !_manager.ConnectedClients.TryGetValue(ticket.ClientId, out current) || !ReferenceEquals(current, client) || current.PlayerObject != value)
                     throw new InvalidOperationException("Player spawn did not complete initial placement.");
@@ -270,6 +317,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         }
         private void OnActorPostSpawn(GlobalMotionReplicator actor)
         {
+            Debug.Log("[T-FO06G] OnActorPostSpawn entered: object=" + (actor == null ? "<null>" : actor.name), this);
             if (!_active || actor.NetworkManager != _manager || actor.GetComponent<NetworkPlayer>() == null) return;
             if (!_instances.TryGetValue(actor, out var record)) { FailSession("player_spawn_bypassed_global_factory"); return; }
             try
@@ -293,11 +341,16 @@ namespace ProjectC.World.FloatingOrigin.Network
         {
             var adapter = actor.GetComponent<GlobalMotionPoseAdapter>();
             adapter.PrepareBaseline();
-            if (!adapter.IsBaselinePlaced) return;
+            if (!adapter.IsBaselinePlaced)
+            {
+                Debug.LogWarning("[T-FO06G] Baseline not ready: object=" + actor.name + ";status=" + adapter.Status, this);
+                return;
+            }
             var binding = actor.Control.Baseline.Binding;
             if (!record.ServerFactory && !record.Seed.Matches(binding, actor.OwnerClientId)) throw new InvalidOperationException("Initial seed lifetime mismatch.");
             if (!actor.GetComponent<NetworkPlayer>().ReleaseGlobalInitialSpawn(binding)) throw new InvalidOperationException("Initial controller gate refused.");
             record.Ready = adapter.PrepareBaseline();
+            Debug.Log("[T-FO06G] CompletePlacement finished: object=" + actor.name + ";ready=" + record.Ready + ";baseline=" + adapter.IsBaselineReady, this);
         }
         private bool RefreshSeed(GlobalMotionReplicator actor)
         {

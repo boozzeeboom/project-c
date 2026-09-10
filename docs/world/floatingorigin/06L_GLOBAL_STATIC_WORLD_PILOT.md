@@ -970,3 +970,73 @@ InvalidOperationException: No prepared local frame for explicit spawn seed.
 - Play Mode, screenshots и пользовательский Host runtime gate не выполнялись автоматически.
 
 Следующий gate выполняет пользователь: новый Play Mode из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Ожидаемая последовательность: `PeerConnected(0)` → `SpawnPlayer` → `CreateInstance` → `SpawnAsPlayerObject` → `ConnectedClients[0].PlayerObject != null` → quest snapshot sent → local pilot ready/menu handoff. Строки `replica_factory`, `Player prefab is null` и последующий disconnect должны отсутствовать.
+
+## 33. T-FO06L.2.x follow-up 10 — успешный native startup/player gate — 2026-09-10
+
+### Результат пользовательского runtime gate
+
+Пользовательский Play Mode-прогон из canonical `BootstrapScene` после нажатия `Start Host` прошёл native preparation, Host startup и server-side player factory. Exported Console Log создан `2026-09-10 20:05:41`.
+
+Подтверждённая последовательность:
+
+```text
+[T-FO06G] Native scene readiness: ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>
+[NetworkTestMenu] Сервер запущен на порту 7777
+[NMC] HandleClientConnected: clientId=0, IsServer=True, IsClient=True
+[T-FO06G] PeerConnected queued: client=0;...;worldRunning=True;scenePrepared=True;sceneReady=True
+[T-FO06G] Spawn plan ready: client=0;frame=1;position=Global(39992, 1, 40000)
+[T-FO06G] SpawnPlayer entered: client=0;frame=1;position=Global(39992, 1, 40000)
+[T-FO06G] OnActorPostSpawn entered: object=NetworkPlayer_GlobalPilot(Clone)
+[T-FO06G] CompletePlacement finished: object=NetworkPlayer_GlobalPilot(Clone);ready=True;baseline=True
+[T-FO06G] SpawnAsPlayerObject called: client=0;object=NetworkPlayer_GlobalPilot(Clone)
+[T-FO06L] Local pilot player ready; startup menus hidden=2;origin=(0,0,0);local=(39992.00, 1.00, 40000.00)
+```
+
+Это закрывает текущий startup gate:
+
+- native closed-world readiness — **PASS**: `cataloged nodes=150`, `recorded=150`, `pending=0`, `unspawned=0`, `retired=0`, blocker отсутствует;
+- Host/client startup и локальный client `0` — **PASS**;
+- server-side explicit player spawn — **PASS**;
+- `NetworkPlayer_GlobalPilot` post-spawn placement и baseline — **PASS**;
+- startup menu handoff — **PASS**: обработаны `2` стартовых меню;
+- initial quest snapshot — **PASS по последовательности**: ранний callback до появления PlayerObject дождался игрока, затем отправлен snapshot с `1` quest.
+
+В предоставленном логе не зафиксирован повторный `WorldScene_0_0`/neighbor load или `replica_factory` отказ. Это подтверждает отсутствие наблюдаемого duplicate/legacy takeover в данном прогоне, но не заменяет отдельный счётчик loaded-scene handles.
+
+### Границы результата
+
+Лог не является доказательством grounding, устойчивой опоры, движения, камеры, physics/rebase transaction или устранения jitter. Начальный frame по-прежнему имеет `origin=(0,0,0)`, а player находится примерно в `(39992, 1, 40000)` local coordinates; floating-origin rebase ещё не реализован.
+
+Сессия завершилась последующим disconnect после открытия EscMenu. По предоставленной последовательности это выглядит как завершение пользовательского Play Mode, а не как startup failure; отдельного stack trace причины остановки в экспортированном логе нет.
+
+### Незакрытые runtime-наблюдения
+
+Следующие предупреждения не были причиной native admission blocker, но требуют отдельных этапов диагностики:
+
+- повторяющиеся `ShipDeckNav`: `Failed to create agent because it is not close enough to the NavMesh`;
+- `PlayerTarget`: `HP init FAILED after 20 retries for client=0`;
+- missing script warning на одном Behaviour;
+- `NpcSocialBrain`: отсутствуют Animator parameters `WorkVariant` и `Work`;
+- `ShipCargoVisual`: пустые `_boxPrefabs`;
+- resource node warnings о `_resultItem`/`_requiredTool`;
+- ранние `ShipHull`/`ShipOwnershipRequirement` warnings до появления соответствующих server registries.
+
+Их причинная связь с T-FO06L startup не доказана этим логом; они не должны исправляться массово в рамках текущего commit.
+
+### Изменение и проверки этапа
+
+На этапе сохранены узкие изменения T-FO06G:
+
+- `GlobalSceneNativeExecutor` не записывает и не блокирует readiness для catalog-bound `Unmanaged` источников;
+- `GlobalMotionPlayerBootstrap` логирует очередь, plan, explicit spawn, post-spawn и baseline;
+- `NetworkManagerController` логирует явный путь shutdown для следующей диагностики.
+
+Проверки:
+
+- пользовательский Play Mode startup/player gate — **PASS по Console Log**;
+- Unity compile до runtime gate — **No compile errors**;
+- screenshots — **не предоставлены**;
+- grounding, camera, movement, physics, multiplayer client и jitter — **UNVERIFIED**;
+- `GroundPlane_0_0` не восстанавливался; catalog/profile/digest не изменялись.
+
+Следующий этап общего плана — read-only classification actual city render/collider content, `Respawn_Default`, player/camera roots и ship/Rigidbody boundaries перед проектированием согласованной rebase transaction. Не выполнять общий `SetParent`, player-only origin shift или новый Play Mode автоматически.

@@ -103,6 +103,7 @@ namespace ProjectC.Core
                     Debug.LogWarning("[T-FO05E] Explicit shutdown without final global checkpoint.", this);
                 }
             }
+            Debug.LogWarning("[T-FO06G] NetworkManagerController requested Shutdown; explicitAbandon=" + explicitAbandonGlobalCheckpoint + ";stack=" + Environment.StackTrace, this);
             networkManager.Shutdown(); return true;
         }
         public void DisconnectWithoutGlobalCheckpoint()

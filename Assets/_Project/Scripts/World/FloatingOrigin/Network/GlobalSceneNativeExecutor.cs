@@ -45,6 +45,11 @@ namespace ProjectC.World.FloatingOrigin.Network
         private GlobalMotionSession _receiptIssuer;
         private readonly Dictionary<string, GlobalSceneLoadTicket> _loads = new Dictionary<string, GlobalSceneLoadTicket>(StringComparer.Ordinal);
         private bool _installed, _networkRan, _busy, _faulted, _retiring;
+        private bool _lastLoggedCanAccept;
+        private int _lastLoggedRecordedCount = -1;
+        private int _lastLoggedPendingCount = -1;
+        private double _lastReadinessLogAt = double.NegativeInfinity;
+
         private double _startedAt;
         public bool HasPreparedPlacement => _installed && !_faulted;
         public bool CanAcceptScenePeer { get; private set; }
@@ -361,6 +366,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 {
                     if (node.Retired) continue;
                     RequireIdentity(node);
+                    if (node.Unmanaged) continue;
                     if (node.Recorded)
                     {
                         if (node.Network != null && !node.Network.IsSpawned) { CanAcceptScenePeer = false; continue; }
@@ -415,9 +421,26 @@ namespace ProjectC.World.FloatingOrigin.Network
                     node.Recorded = true;
                 }
                 bool ready = !_retiring;
+                int recordedCount = 0;
+                int pendingCount = 0;
+                int unspawnedCount = 0;
+                int retiredCount = 0;
                 foreach (var node in _prepared.Nodes)
-                    if (!node.Recorded || node.Retired || (!node.Unmanaged && node.Network != null && !node.Network.IsSpawned)) ready = false;
+                {
+                    if (node.Unmanaged)
+                    {
+                        recordedCount++;
+                        continue;
+                    }
+
+                    if (node.Recorded) recordedCount++;
+                    if (!node.Recorded) pendingCount++;
+                    if (node.Retired) retiredCount++;
+                    if (node.Network != null && !node.Network.IsSpawned) unspawnedCount++;
+                    if (!node.Recorded || node.Retired || (node.Network != null && !node.Network.IsSpawned)) ready = false;
+                }
                 CanAcceptScenePeer = ready;
+                LogReadiness(ready, recordedCount, pendingCount, unspawnedCount, retiredCount);
                 if (!ready && Time.realtimeSinceStartupAsDouble - _startedAt > 60d) throw new InvalidOperationException("Initial scene receipts timed out.");
             }
             catch (Exception e) { Fault(e); }
@@ -483,6 +506,43 @@ namespace ProjectC.World.FloatingOrigin.Network
                 (node.Entry.Spatial && (node.Frame == null || !node.Frame.IsValid || node.Marker.FrameId != node.Frame.Id || node.Frame.Scene != node.Scene)))
                 throw new InvalidOperationException("Bound source/frame/scene/parent identity changed.");
         }
+        private void LogReadiness(bool ready, int recordedCount, int pendingCount, int unspawnedCount, int retiredCount)
+        {
+            double now = Time.realtimeSinceStartupAsDouble;
+            bool changed = ready != _lastLoggedCanAccept || recordedCount != _lastLoggedRecordedCount || pendingCount != _lastLoggedPendingCount;
+            if (!changed && now - _lastReadinessLogAt < 1d) return;
+            _lastLoggedCanAccept = ready;
+            _lastLoggedRecordedCount = recordedCount;
+            _lastLoggedPendingCount = pendingCount;
+            _lastReadinessLogAt = now;
+            Debug.Log("[T-FO06G] Native scene readiness: ready=" + ready + ";recorded=" + recordedCount + ";pending=" + pendingCount +
+                ";unspawned=" + unspawnedCount + ";retired=" + retiredCount + ";nodes=" + (_prepared == null ? 0 : _prepared.Nodes.Count) +
+                ";blocker=" + DescribeReadinessBlocker(), this);
+        }
+        private string DescribeReadinessBlocker()
+        {
+            if (_prepared == null) return "<no-preparation>";
+            foreach (var node in _prepared.Nodes)
+            {
+                if (node.Unmanaged) continue;
+                bool unspawned = node.Network != null && !node.Network.IsSpawned;
+                if (node.Recorded && !node.Retired && !unspawned) continue;
+                bool parentRecorded = true;
+                if (!string.IsNullOrEmpty(node.Entry.ParentSourceId))
+                {
+                    parentRecorded = _prepared.BySource.TryGetValue(node.Entry.ParentSourceId, out var parent) &&
+                        (parent.Recorded || parent.Unmanaged);
+                }
+                return "source=" + node.Entry.SourceId + ";scene=" + (node.Marker == null ? "<invalid>" : node.Marker.gameObject.scene.path) + ";marker=" +
+                    (node.Marker == null ? "<null>" : node.Marker.name) + ";parent=" +
+                    (string.IsNullOrEmpty(node.Entry.ParentSourceId) ? "<root>" : node.Entry.ParentSourceId) +
+                    ";parentRecorded=" + parentRecorded + ";recorded=" + node.Recorded + ";retired=" + node.Retired +
+                    ";unmanaged=" + node.Unmanaged + ";network=" + (node.Network == null ? "<null>" : node.Network.name) +
+                    ";spawned=" + (node.Network != null && node.Network.IsSpawned);
+            }
+            return "<none>";
+        }
+
         private void Fault(Exception error)
         {
             _faulted = true; CanAcceptScenePeer = false;

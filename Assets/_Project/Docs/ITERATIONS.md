@@ -1,5 +1,21 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06 — read-only rebase boundary census)
+
+**Задача:** Зафиксировать фактические границы следующего floating-origin этапа после успешного native startup/player gate, не переходя к общему transform shift.
+
+**Read-only результат:** `WorldRoot_0_0` является hierarchy anchor static city render/collider content; `Respawn_Default` остаётся отдельным root-level marker около `(39992,0,40000)` и не вложен в `WorldRoot_0_0`. Pilot prefab `NetworkPlayer_GlobalPilot` использует `GlobalMotionPoseAdapter` + `GlobalMotionReplicator`, а legacy `NetworkPlayer` использует `NetworkTransform`. `MainCamera` находится в Bootstrap hierarchy; ship roots имеют отдельные Rigidbody/NetworkObject boundaries, а `ShipDeckNav` относится к соответствующей deck structure.
+
+**Архитектурное следствие:** Общий `SetParent` для city root, ship/Rigidbody roots и scene-placed NetworkObject не принимается. В будущей transaction должны быть разделены city render/collider group, anchors, pilot/frame state, camera follow state, каждый ship root с deck/navmesh и scene-owned gameplay roots.
+
+**Неопределённость:** Точные city AABB/collider bounds относительно `Respawn_Default`, полный ship/deck AABB census, camera-follow ownership, authored-vs-dynamic ship lifecycle и sync-момент с NGO/physics/baseline не установлены. Эти данные помечены **INCONCLUSIVE**; код rebase не изменялся, Play Mode автоматически не запускался.
+
+**Проверки и границы:** Read-only исследование завершено без изменения сцен, префабов, catalog/profile или runtime code. Startup gate commit `28a412f5` остаётся предыдущим этапом. TMP fallback и `ProjectSettings/EditorSettings.asset` не относятся к этапу.
+
+**Следующий шаг:** Выполнить отдельный точный read-only AABB/ownership census для city colliders, `Respawn_Default`, camera follow и всех `ShipOrRigidbodyRoot`; только после него проектировать rebase transaction.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 10 — успешный native startup/player gate)
 
 **Задача:** Закрыть ручной startup gate после исправления readiness для catalog-bound `Unmanaged` sources и подтвердить прохождение Host/player path.

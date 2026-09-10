@@ -1040,3 +1040,46 @@ InvalidOperationException: No prepared local frame for explicit spawn seed.
 - `GroundPlane_0_0` не восстанавливался; catalog/profile/digest не изменялись.
 
 Следующий этап общего плана — read-only classification actual city render/collider content, `Respawn_Default`, player/camera roots и ship/Rigidbody boundaries перед проектированием согласованной rebase transaction. Не выполнять общий `SetParent`, player-only origin shift или новый Play Mode автоматически.
+
+## 34. T-FO06 — read-only rebase boundary census — 2026-09-10
+
+### Подтверждённые границы
+
+Read-only исследование проекта после успешного startup gate установило следующие границы:
+
+- `Assets/_Project/Scenes/World/WorldScene_0_0.unity/WorldRoot_0_0` — основной hierarchy anchor сцены; под ним находятся static city render/collider content и ship-related scene structures.
+- `Respawn_Default` — отдельный root-level marker в `WorldScene_0_0`, с authored global position около `(39992, 0, 40000)`; он не является дочерним объектом `WorldRoot_0_0`.
+- `Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab` — текущий pilot player с `NetworkObject`, `NetworkPlayer`, `GlobalMotionPoseAdapter`, `GlobalMotionReplicator` и `CharacterController`.
+- legacy `Assets/_Project/Prefabs/NetworkPlayer.prefab` использует `NetworkTransform` и не должен автоматически смешиваться с frame-aware pilot path.
+- `MainCamera` находится в Bootstrap hierarchy; camera follow/rebase coupling пока не подтверждён по точной runtime-иерархии.
+- Ship roots имеют отдельные `Rigidbody`/`NetworkObject` boundaries; `ShipDeckNav` относится к физической структуре соответствующего корабля и не является независимым static-world root.
+
+### Следствие для rebase design
+
+Общий `SetParent` для `WorldRoot_0_0`, ship/Rigidbody roots и scene-placed NetworkObject не принимается. Минимальная будущая transaction должна отдельно определить:
+
+1. static city render/collider group под `WorldRoot_0_0`;
+2. `Respawn_Default` и остальные authored positional anchors;
+3. pilot player и `GlobalMotionPoseAdapter` frame state;
+4. `MainCamera`/camera follow state;
+5. каждый `ShipOrRigidbodyRoot` вместе с Rigidbody, NetworkObject, NetworkTransform/ship services и attached `ShipDeckNav`;
+6. scene-owned gameplay roots, включая docking stations, NPC, pickups, chests и resource/crafting objects.
+
+### Что осталось неопределённым
+
+Read-only census не дал достаточных данных для implementation transaction:
+
+- точные AABB/коллайдерные bounds полного city mesh относительно `Respawn_Default`;
+- полный проверенный список transform/AABB всех `ShipOrRigidbodyRoot` и их deck collider/navmesh extents;
+- точная runtime camera-follow hierarchy и ownership камеры;
+- для каждого ship root — authored scene placement против dynamic spawn/reconciliation path;
+- единый момент rebase относительно NGO tick, physics step и `GlobalMotionPoseAdapter` baseline.
+
+Эти пункты отмечены как **INCONCLUSIVE**, а не заполняются предположениями. До их закрытия код rebase не изменяется и Play Mode автоматически не запускается.
+
+### Проверки этапа
+
+- Исследование выполнено read-only; сцены, префабы, catalog/profile и runtime code не изменялись.
+- `WorldRoot_0_0`/`Respawn_Default`/pilot prefab/legacy prefab/camera/ship boundaries зафиксированы как следующие design inputs.
+- Текущий commit startup gate: `28a412f5`.
+- Этот census требует отдельной документационной фиксации; implementation transaction ещё не проектировалась.

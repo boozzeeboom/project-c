@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — повторно проверить cataloged DDOL roots перед TryPrepare)
+
+**Результат пользователя:** После восстановления cataloged DDOL roots отказ сохранился с `candidate=False`, `networkManager=NetworkManager`, `isSpawned=False` и пустым `scene=`.
+**Причина для следующей проверки:** Не было подтверждения, что DDOL marker был найден restoration-проходом и что root не возвращался в DDOL после content preparation.
+**Изменение:** DDOL markers ищутся через `Resources.FindObjectsOfTypeAll`; restoration повторяется после `RefreshPreparedContent()` непосредственно перед `TryPrepare`; после перемещения проверяется фактическая сцена root; добавлен audit `markers/catalogedMarkers/roots/restored`.
+**Проверки:** `GlobalMotionPilotRuntime.cs` — 0 warnings / 0 errors; Compile — `No compile errors`. Play Mode после изменения не выполнялся.
+**Следующий gate:** Свежий `Start Host` и полный лог `Cataloged DDOL audit` вместе с последующим отказом.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 21.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — восстановить cataloged DDOL roots перед native preparation)
 
 **Результат пользователя:** Диагностика `Road to Quartus` показала `catalogBound=True`, `unmanaged=True`, `candidate=False`, совпадающий `NetworkManager`, `isSpawned=False`, `inScenePlaced=True`, `scene=`.

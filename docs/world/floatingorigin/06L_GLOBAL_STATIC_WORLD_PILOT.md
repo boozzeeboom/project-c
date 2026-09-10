@@ -461,3 +461,28 @@ catalogBound=True;unmanaged=True;candidate=False;networkManager=NetworkManager;e
 - Play Mode после изменения не выполнялся.
 
 Следующий gate: свежий ручной `Start Host` из `Assets/_Project/Scenes/BootstrapScene.unity`. Ожидаемый первый новый лог — восстановление cataloged root(s); затем native preparation должна пройти `Road to Quartus` или выдать следующий конкретный catalog/runtime blocker.
+
+## 21. Повторная DDOL-проверка перед TryPrepare — 2026-09-10
+
+### Результат gate
+
+Повторный runtime gate показал тот же отказ `Road to Quartus` с `candidate=False` и пустым `scene=`. Предыдущий restoration fix не дал достаточного подтверждения, возвращается ли root в WorldScene до native preflight или он снова перемещается после content preparation.
+
+### Изменение
+
+`GlobalMotionPilotRuntime` усилен дополнительным boundary audit:
+
+- DDOL markers ищутся через `Resources.FindObjectsOfTypeAll`, чтобы не зависеть от охвата обычного scene search;
+- restoration повторяется непосредственно после `RefreshPreparedContent()` и перед `GlobalMotionNetworkStartup.TryPrepare()`;
+- после `SceneManager.MoveGameObjectToScene` проверяется фактическая принадлежность root целевой сцене;
+- каждый проход выводит `markers`, `catalogedMarkers`, `roots` и `restored`.
+
+Это не принимает DDOL source как допустимый runtime state: объект должен быть возвращён в cataloged scene до `RequireIdentity` и native sweep.
+
+### Проверки
+
+- `GlobalMotionPilotRuntime.cs`: standard validation — `0 warnings, 0 errors`.
+- Unity compile: `No compile errors`.
+- Play Mode после изменения не выполнялся.
+
+Следующий gate: нажать `Start Host` из cataloged Bootstrap и прислать строки `Cataloged DDOL audit` и последующий отказ, если он останется.

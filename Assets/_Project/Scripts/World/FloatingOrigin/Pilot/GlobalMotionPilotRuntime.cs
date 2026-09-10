@@ -96,6 +96,15 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
+            // Content preparation may execute legacy Awake/OnEnable paths that re-parent authored roots.
+            // Repeat the cataloged DDOL restoration immediately before the native preflight boundary.
+            if (!RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out restoreError))
+            {
+                _startRequested = false;
+                Debug.LogError("[T-FO06L] Pilot could not restore cataloged scene roots after content preparation: " + restoreError, this);
+                yield break;
+            }
+
             if (!GlobalMotionNetworkStartup.TryPrepare(_manager, _profile, _bootstrap, GlobalMotionStartRole.Host, out _startup, out var error))
             {
                 _startRequested = false;
@@ -245,11 +254,15 @@ private bool RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out string error)
             }
 
             var roots = new System.Collections.Generic.Dictionary<GameObject, UnityEngine.SceneManagement.Scene>();
-            var markers = UnityEngine.Object.FindObjectsByType<GlobalSceneSourceMarker>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            int ddolMarkerCount = 0;
+            int catalogedDdolMarkerCount = 0;
+            var markers = UnityEngine.Resources.FindObjectsOfTypeAll<GlobalSceneSourceMarker>();
             foreach (var marker in markers)
             {
                 if (marker == null || marker.gameObject.scene.name != "DontDestroyOnLoad") continue;
+                ddolMarkerCount++;
                 if (!sourceSceneById.TryGetValue(marker.SourceId, out var sceneGuid)) continue;
+                catalogedDdolMarkerCount++;
                 if (!loadedScenesByGuid.TryGetValue(sceneGuid, out var targetScene))
                 {
                     error = "cataloged_ddol_source_scene_not_loaded;sourceId=" + marker.SourceId + ";sceneGuid=" + sceneGuid;
@@ -271,10 +284,15 @@ private bool RestoreCatalogedSceneRootsFromDontDestroyOnLoad(out string error)
             foreach (var pair in roots)
             {
                 SceneManager.MoveGameObjectToScene(pair.Key, pair.Value);
+                if (pair.Key.scene != pair.Value)
+                {
+                    error = "cataloged_ddol_root_restore_failed;root=" + pair.Key.name + ";targetScene=" + pair.Value.path;
+                    return false;
+                }
                 restored++;
             }
-            if (restored > 0)
-                Debug.Log("[T-FO06L] Restored " + restored + " cataloged scene root(s) from DontDestroyOnLoad before native preparation.", this);
+            Debug.Log("[T-FO06L] Cataloged DDOL audit: markers=" + ddolMarkerCount +
+                ";catalogedMarkers=" + catalogedDdolMarkerCount + ";roots=" + roots.Count + ";restored=" + restored, this);
             return true;
         }
 

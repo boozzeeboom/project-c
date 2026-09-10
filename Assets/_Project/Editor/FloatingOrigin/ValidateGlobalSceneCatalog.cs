@@ -34,6 +34,7 @@ namespace ProjectC.EditorTools.FloatingOrigin
             Check("Unreviewed decision fails", () => Refused(d => d.entries[0].treatment = GlobalSceneTreatment.Unreviewed));
             Check("Missing review note fails", () => Refused(d => d.entries[0].reviewNote = " "));
             Check("Missing ownership fails", () => Refused(d => d.entries[0].ownership = GlobalSceneOwnership.Unspecified));
+            Check("Persistent Bootstrap service is an unmanaged Bootstrap source", () => { var d = PersistentData(); Require(GlobalSceneCatalogCompiler.TryCompile(d, out _, out _)); d.entries[0].treatment = GlobalSceneTreatment.PreserveContent; Require(!GlobalSceneCatalogCompiler.TryCompile(d, out _, out _)); });
             Check("Missing observed entry fails", () => Refused(d => d.entries = new[] { d.entries[0] }));
             Check("Extra unknown entry fails", () => Refused(d => { var list = new List<GlobalSceneEntry>(d.entries); list.Add(new GlobalSceneEntry()); d.entries = list.ToArray(); }));
             Check("Duplicate observation fails", () => Refused(d => d.scenes[0].observations[1] = d.scenes[0].observations[0]));
@@ -79,6 +80,14 @@ namespace ProjectC.EditorTools.FloatingOrigin
             Check("Ordinary content also has stale-retirement protection", () => { var d = Data(); d.entries = new[] { d.entries[0] }; d.scenes[0].observations = new[] { d.scenes[0].observations[0] }; d.scenes[0].observations[0].isNetworkObject = false; d.entries[0].treatment = GlobalSceneTreatment.PreserveContent; d.entries[0].ownership = GlobalSceneOwnership.AuthoredSceneContent; var l = new GlobalSceneLifecycleLedger(Compile(d), 7); l.TryBeginLoad(GuidA, out var t); var old = Live(l, t, Root, 1, default); l.TryRecordRetired(old, out _); Live(l, t, Root, 1, default); Require(!l.TryRecordRetired(old, out _)); });
             Check("Catalog-bound handshake rejects G asserted-hash protocol", () => { Require(GlobalMotionNetworkContract.ProtocolVersion >= 0xF004 && GlobalMotionNetworkContract.IsReservedProtocolVersion(GlobalMotionNetworkContract.ProtocolVersion)); var digest = new byte[32]; digest[0] = 1; var current = GlobalMotionNetworkContract.CreateHello(digest, digest); var old = (byte[])current.Clone(); old[6] = 3; old[7] = 0xf0; Require(!GlobalMotionNetworkContract.ValidateHello(old, current, out _)); });
             return new Report { passed = ok.Count, failed = bad.Count, checks = ok.ToArray(), failures = bad.ToArray() };
+        }
+        private static GlobalSceneCatalogData PersistentData()
+        {
+            const string guid = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+            const string root = guid + ":1:0";
+            return new GlobalSceneCatalogData { expectedSceneGuids = new[] { guid }, scenes = new[] { new GlobalSceneSource { sceneGuid = guid, assetPath = "Assets/_Project/Scenes/BootstrapScene.unity", dependencyHash = new string('c', 32), inspectedComplete = true, saved = true,
+                observations = new[] { new GlobalSceneObservation { sourceId = root, isRoot = true, isNetworkObject = false, layoutHash = new string('d', 64) } } } },
+                entries = new[] { new GlobalSceneEntry { sceneGuid = guid, sourceId = root, reviewNote = "persistent Bootstrap fixture", treatment = GlobalSceneTreatment.Unmanaged, ownership = GlobalSceneOwnership.PersistentBootstrapService } } };
         }
         private static GlobalSceneCatalogData Data()
         {

@@ -53,7 +53,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         {
             try
             {
-                if (!RejectCatalogedDdolRoots(profile, out var restoreError))
+                if (!ValidateCatalogedDdolRoots(profile, out var restoreError))
                 {
                     error = "scene_preparation:" + restoreError;
                     return false;
@@ -73,7 +73,12 @@ namespace ProjectC.World.FloatingOrigin.Network
                 throw new InvalidOperationException(error ?? "catalog_digest_mismatch");
             var result = new Preparation { Plan = plan };
             var paths = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var source in profile.SceneCatalog.Data.scenes) paths.Add(source.assetPath, source.sceneGuid);
+            var scenePathsByGuid = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var source in profile.SceneCatalog.Data.scenes)
+            {
+                paths.Add(source.assetPath, source.sceneGuid);
+                scenePathsByGuid.Add(source.sceneGuid, source.assetPath);
+            }
             var frameMap = new Dictionary<int, GlobalMotionSpawnFrame>();
             foreach (var frame in frames) { if (frame == null || !frame.IsValid) throw new InvalidOperationException("invalid_prepared_frame"); frameMap.Add(frame.Id, frame); }
             var candidates = new HashSet<GameObject>();
@@ -92,10 +97,27 @@ namespace ProjectC.World.FloatingOrigin.Network
                         if (candidates.Add(marker.gameObject)) liveMarkerCount++;
                 }
             }
+            // Bootstrap services may deliberately persist in DDOL. They remain catalog-bound, but are not moved
+            // back into the authored scene and are accepted only under the explicit PersistentBootstrapService ownership.
+            foreach (var marker in Resources.FindObjectsOfTypeAll<GlobalSceneSourceMarker>())
+            {
+                if (marker == null || !IsDontDestroyOnLoadScene(marker.gameObject.scene) ||
+                    !plan.TryGet(marker.SourceId, out var persistentEntry) || !persistentEntry.IsPersistentBootstrapService)
+                    continue;
+                if (!scenePathsByGuid.TryGetValue(persistentEntry.SceneGuid, out var authoredPath) || !result.Scenes.ContainsKey(persistentEntry.SceneGuid))
+                    throw new InvalidOperationException("persistent_bootstrap_service_scene_not_loaded:" + marker.name + ";path=" + authoredPath);
+                if (candidates.Add(marker.gameObject)) liveMarkerCount++;
+            }
             foreach (var go in candidates)
             {
                 var marker = go.GetComponent<GlobalSceneSourceMarker>();
-                if (marker == null || !plan.TryGet(marker.SourceId, out var entry) || !result.Scenes.TryGetValue(entry.SceneGuid, out var scene) || go.scene != scene || result.BySource.ContainsKey(marker.SourceId))
+                if (marker == null || !plan.TryGet(marker.SourceId, out var entry) || !result.Scenes.TryGetValue(entry.SceneGuid, out var authoredScene) || result.BySource.ContainsKey(marker.SourceId))
+                    throw new InvalidOperationException("missing_duplicate_wrong_scene_baked_source_marker:" + go.name);
+                bool persistentDdol = IsDontDestroyOnLoadScene(go.scene);
+                if (persistentDdol != entry.IsPersistentBootstrapService)
+                    throw new InvalidOperationException("persistent_bootstrap_service_runtime_location_mismatch:" + go.name);
+                var scene = persistentDdol ? go.scene : authoredScene;
+                if (!persistentDdol && go.scene != authoredScene)
                     throw new InvalidOperationException("missing_duplicate_wrong_scene_baked_source_marker:" + go.name);
                 var no = go.GetComponent<NetworkObject>();
                 string ownershipIssue = GlobalSceneExecutionPolicy.ValidateOwnership(new GlobalSceneOwnershipFacts
@@ -103,7 +125,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                     Ownership = entry.Ownership,
                     NetworkObject = no != null,
                     HasRigidbody = go.GetComponentsInChildren<Rigidbody>(true).Length != 0,
-                    ScenePath = scene.path
+                    ScenePath = scenePathsByGuid[entry.SceneGuid]
                 });
                 if (ownershipIssue != null) throw new InvalidOperationException(ownershipIssue + ":" + go.name);
                 frameMap.TryGetValue(marker.FrameId, out var frame);
@@ -222,7 +244,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         public void PrepareBeforeNetworkStart(NetworkManager manager, GlobalMotionNetworkProfile profile, IReadOnlyList<GlobalMotionSpawnFrame> frames)
         {
             if (!Application.isPlaying) throw new InvalidOperationException("Native preparation requires user-started Play Mode or player runtime.");
-            if (!RejectCatalogedDdolRoots(profile, out var restoreError)) throw new InvalidOperationException("scene_preparation:" + restoreError);
+            if (!ValidateCatalogedDdolRoots(profile, out var restoreError)) throw new InvalidOperationException("scene_preparation:" + restoreError);
             _prepared = BuildPreparation(manager, profile, frames); _manager = manager; _world = manager.GetComponent<GlobalMotionWorld>();
             if (_world == null) throw new InvalidOperationException("Motion world missing.");
             _installed = true; _faulted = false; _networkRan = false; _retiring = false; CanAcceptScenePeer = false;
@@ -499,7 +521,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 (string.IsNullOrEmpty(scene.name) || string.Equals(scene.name, "DontDestroyOnLoad", StringComparison.Ordinal));
         }
 
-        private static bool RejectCatalogedDdolRoots(GlobalMotionNetworkProfile profile, out string error)
+        private static bool ValidateCatalogedDdolRoots(GlobalMotionNetworkProfile profile, out string error)
         {
             error = null;
             if (profile == null || profile.SceneCatalog == null || profile.SceneCatalog.Data == null)
@@ -510,6 +532,7 @@ namespace ProjectC.World.FloatingOrigin.Network
 
             var loadedScenesByGuid = new Dictionary<string, UnityEngine.SceneManagement.Scene>(StringComparer.Ordinal);
             var sourceSceneById = new Dictionary<string, string>(StringComparer.Ordinal);
+            var entryBySourceId = new Dictionary<string, GlobalSceneEntry>(StringComparer.Ordinal);
             foreach (var scene in profile.SceneCatalog.Data.scenes)
             {
                 if (scene == null || string.IsNullOrEmpty(scene.sceneGuid) || string.IsNullOrEmpty(scene.assetPath)) continue;
@@ -525,6 +548,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                     return false;
                 }
                 sourceSceneById[entry.sourceId] = entry.sceneGuid;
+                entryBySourceId[entry.sourceId] = entry;
             }
 
             var roots = new Dictionary<GameObject, UnityEngine.SceneManagement.Scene>();
@@ -532,6 +556,12 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 if (marker == null || !IsDontDestroyOnLoadScene(marker.gameObject.scene)) continue;
                 if (!sourceSceneById.TryGetValue(marker.SourceId, out var sceneGuid)) continue;
+                if (!entryBySourceId.TryGetValue(marker.SourceId, out var entry) || entry.ownership != GlobalSceneOwnership.PersistentBootstrapService)
+                {
+                    error = "cataloged_source_in_ddol;restoration_forbidden;sourceId=" + marker.SourceId + ";ownership=" +
+                        (entry == null ? GlobalSceneOwnership.Unspecified.ToString() : entry.ownership.ToString());
+                    return false;
+                }
                 if (!loadedScenesByGuid.TryGetValue(sceneGuid, out var targetScene))
                 {
                     error = "cataloged_ddol_source_scene_not_loaded;sourceId=" + marker.SourceId + ";sceneGuid=" + sceneGuid;
@@ -549,13 +579,6 @@ namespace ProjectC.World.FloatingOrigin.Network
                 roots[root] = targetScene;
             }
 
-            if (roots.Count > 0)
-            {
-                var first = new List<string>();
-                foreach (var pair in roots) first.Add(pair.Key.name + "->" + pair.Value.path);
-                error = "cataloged_source_in_ddol;restoration_forbidden;roots=" + string.Join("|", first);
-                return false;
-            }
             return true;
         }
 }

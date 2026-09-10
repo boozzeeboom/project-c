@@ -654,3 +654,37 @@ Static code audit found the following relevant relocation families:
 ### Граница коммита
 
 В T-FO06L.2 входят ownership/compiler/ledger/executor/runtime изменения, catalog/profile, validators и эта документация. `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` являются посторонними и не включаются. После этого отдельного implementation-коммита пользовательский Play Mode gate может быть рассмотрен, но сам по себе static PASS не является runtime acceptance.
+
+## 25. T-FO06L.2.x — PersistentBootstrapService после fail-closed DDOL gate — 2026-09-10
+
+### Фактический runtime отказ
+
+Свежий пользовательский Play Mode остановился до загрузки мира на ожидаемом fail-closed барьере:
+
+```text
+cataloged_source_in_ddol;restoration_forbidden
+```
+
+`16` Bootstrap-root объектов с baked `GlobalSceneSourceMarker` были перемещены в `DontDestroyOnLoad`. Каталог всё ещё описывал их как `AuthoredSceneContent`, поэтому новый контракт корректно отказал в принятии persistent infrastructure и не выполнил restoration обратно в authored scene.
+
+### Узкий фикс
+
+- Добавлен отдельный ownership `PersistentBootstrapService`.
+- Переклассифицированы только подтверждённые 16 DDOL roots: `PlayerSpawner`, `[ShipCargoServer]`, `[CombatServer]`, `NetworkManager`, `[SkillsServer]`, `[DockingServer]`, `[ExchangeServer]`, `Runtime`, `[NpcShipServer]`, `ServerWeatherController`, `[QuestServer]`, `[StatsServer]`, `[GatheringServer]`, `[CraftingServer]`, `[EquipmentServer]` и `CloudManager`.
+- Три nested Bootstrap entries (`[MetaRequirementRegistry]`, `[ContractServer]`, `[ShipKeyServer]`) сохранены как `BootstrapService`; их ownership не расширялся за пределы подтверждённых DDOL roots.
+- `SceneOwnedNetworkGameplay`, `ShipOrRigidbodyRoot`, `GroundPlane_0_0`, DDOL restoration и mixed-root parenting не изменялись.
+- Native executor и pilot принимают persistent Bootstrap services в DDOL без восстановления в authored scene; обычные cataloged roots по-прежнему отвергаются fail-closed.
+- Profile digest пересчитан и сохранён: `42ec3d9e66b1eb99365233aa6ce6949beb163db2e5f9fe1fcf9060e5cf94c046`.
+
+### Проверки
+
+- Unity compile: `No compile errors`.
+- `ValidateGlobalSceneCatalog.Run()`: **58 passed / 0 failed**.
+- `ValidateGlobalSceneExecution.Run()`: **36 passed / 0 failed**.
+- Static snapshot: `catalog=150;markers=150;bound=150`.
+- Catalog/profile digest match: `42ec3d9e66b1eb99365233aa6ce6949beb163db2e5f9fe1fcf9060e5cf94c046`.
+- Play Mode после ownership-фикса не выполнялся; новый runtime gate остаётся за пользователем. Screenshots не выполнялись.
+
+### Граница коммита
+
+В отдельный T-FO06L.2.x входят только ownership reclassification, digest, policy/validator fixture и документация этого fail-closed runtime результата. `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` исключаются.

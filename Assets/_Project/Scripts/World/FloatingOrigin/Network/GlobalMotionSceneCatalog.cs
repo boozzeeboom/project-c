@@ -12,7 +12,7 @@ namespace ProjectC.World.FloatingOrigin.Network
     /// </summary>
     public enum GlobalSceneTreatment : byte { Unreviewed, PreserveContent, SceneNetworkObject, ReplaceWithNetworkPrefab, Exclude, Unmanaged }
     public enum GlobalScenePoseKind : byte { None, World, ParentLocal }
-    public enum GlobalSceneOwnership : byte { Unspecified, AuthoredSceneContent, BootstrapService, SceneOwnedNetworkGameplay, ShipOrRigidbodyRoot }
+    public enum GlobalSceneOwnership : byte { Unspecified, AuthoredSceneContent, BootstrapService, SceneOwnedNetworkGameplay, ShipOrRigidbodyRoot, PersistentBootstrapService }
 
     [Serializable]
     public sealed class GlobalSceneObservation
@@ -70,6 +70,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         public bool Spatial { get; }
         public bool IsNetwork => Treatment == GlobalSceneTreatment.SceneNetworkObject || Treatment == GlobalSceneTreatment.ReplaceWithNetworkPrefab;
         public bool RequiresNetworkLifecycle => Ownership == GlobalSceneOwnership.SceneOwnedNetworkGameplay;
+        public bool IsPersistentBootstrapService => Ownership == GlobalSceneOwnership.PersistentBootstrapService;
         /// <summary>False for reviewed sources the executor deliberately leaves untouched.</summary>
         public bool IsManaged => Treatment != GlobalSceneTreatment.Unmanaged;
         public uint ReplacementPrefabHash { get; }

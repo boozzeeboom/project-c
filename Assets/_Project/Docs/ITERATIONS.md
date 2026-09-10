@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L.2.x — PersistentBootstrapService после fail-closed DDOL gate)
+
+**Задача:** Завершить узкий ownership-fix после runtime отказа `cataloged_source_in_ddol;restoration_forbidden`, не возвращая DDOL restoration и не расширяя ownership scene gameplay.
+**Результат:** Введён и применён `PersistentBootstrapService` для ровно 16 подтверждённых Bootstrap DDOL roots: `PlayerSpawner`, `[ShipCargoServer]`, `[CombatServer]`, `NetworkManager`, `[SkillsServer]`, `[DockingServer]`, `[ExchangeServer]`, `Runtime`, `[NpcShipServer]`, `ServerWeatherController`, `[QuestServer]`, `[StatsServer]`, `[GatheringServer]`, `[CraftingServer]`, `[EquipmentServer]` и `CloudManager`. Nested `[MetaRequirementRegistry]`, `[ContractServer]` и `[ShipKeyServer]` оставлены `BootstrapService`.
+**Контракт:** Persistent Bootstrap services могут оставаться в `DontDestroyOnLoad`; authored scene content, `SceneOwnedNetworkGameplay`, `ShipOrRigidbodyRoot`, `GroundPlane_0_0`, mixed-root parenting и restoration обратно в scene не изменялись. Digest пересчитан: `42ec3d9e66b1eb99365233aa6ce6949beb163db2e5f9fe1fcf9060e5cf94c046`.
+**Проверки:** Unity compile — `No compile errors`; `ValidateGlobalSceneCatalog.Run()` — **58 passed / 0 failed**; `ValidateGlobalSceneExecution.Run()` — **36 passed / 0 failed**; static snapshot — `catalog=150;markers=150;bound=150`; catalog/profile digest match подтверждён. Play Mode после фикса и screenshots не выполнялись.
+**Граница:** В этап входят только ownership reclassification, digest, policy/validator fixture и документация runtime fail-closed результата. `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` и `ProjectSettings/EditorSettings.asset` исключаются.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 25.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L.2 — scene-owned gameplay lifecycle contract)
 
 **Задача:** Реализовать ownership-aware lifecycle contract для authored `NetworkObject` sources в `BootstrapScene` и `WorldScene_0_0`, не принимая `Unmanaged` как замену ownership и не используя DDOL restoration, partial binding или mixed-root parenting.

@@ -69,13 +69,18 @@ namespace ProjectC.World.FloatingOrigin.Network
                         return Fail("unmanaged_source_cannot_be_spatial", out error);
                     if (entry.ownership == GlobalSceneOwnership.Unspecified)
                         return Fail("scene_source_ownership_missing", out error);
+                    bool requiresNetworkIdentity = entry.ownership == GlobalSceneOwnership.BootstrapService ||
+                        entry.ownership == GlobalSceneOwnership.SceneOwnedNetworkGameplay || entry.ownership == GlobalSceneOwnership.ShipOrRigidbodyRoot;
                     if ((entry.ownership == GlobalSceneOwnership.AuthoredSceneContent && observation.isNetworkObject) ||
-                        (entry.ownership != GlobalSceneOwnership.AuthoredSceneContent && !observation.isNetworkObject))
+                        (requiresNetworkIdentity && !observation.isNetworkObject))
                         return Fail("scene_source_ownership_conflicts_with_observed_network_identity", out error);
                     if ((entry.ownership == GlobalSceneOwnership.BootstrapService && sourcePath(scenes, entry.sceneGuid) != "Assets/_Project/Scenes/BootstrapScene.unity") ||
+                        (entry.ownership == GlobalSceneOwnership.PersistentBootstrapService && sourcePath(scenes, entry.sceneGuid) != "Assets/_Project/Scenes/BootstrapScene.unity") ||
                         (entry.ownership == GlobalSceneOwnership.SceneOwnedNetworkGameplay && sourcePath(scenes, entry.sceneGuid) == "Assets/_Project/Scenes/BootstrapScene.unity") ||
                         (entry.ownership == GlobalSceneOwnership.ShipOrRigidbodyRoot && sourcePath(scenes, entry.sceneGuid) == "Assets/_Project/Scenes/BootstrapScene.unity"))
                         return Fail("scene_source_ownership_scene_boundary_mismatch", out error);
+                    if (entry.ownership == GlobalSceneOwnership.PersistentBootstrapService && entry.treatment != GlobalSceneTreatment.Unmanaged)
+                        return Fail("persistent_bootstrap_service_must_be_unmanaged", out error);
                     if ((entry.treatment == GlobalSceneTreatment.SceneNetworkObject && !observation.isNetworkObject) ||
                         (entry.treatment == GlobalSceneTreatment.PreserveContent && observation.isNetworkObject) ||
                         ((entry.treatment == GlobalSceneTreatment.ReplaceWithNetworkPrefab) != (entry.replacementPrefabHash != 0)))

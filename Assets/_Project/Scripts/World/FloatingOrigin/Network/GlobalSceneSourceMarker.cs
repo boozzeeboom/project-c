@@ -40,6 +40,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (facts.Ownership == GlobalSceneOwnership.Unspecified) return "scene_source_ownership_missing";
             if (facts.Ownership == GlobalSceneOwnership.AuthoredSceneContent)
                 return facts.NetworkObject ? "authored_content_cannot_have_network_identity" : null;
+            if (facts.Ownership == GlobalSceneOwnership.PersistentBootstrapService)
+                return facts.ScenePath == "Assets/_Project/Scenes/BootstrapScene.unity" && !facts.HasRigidbody ? null : "persistent_bootstrap_service_scene_or_rigidbody_mismatch";
             if (!facts.NetworkObject) return "owned_network_source_missing_network_identity";
             if (facts.Ownership == GlobalSceneOwnership.BootstrapService)
                 return facts.ScenePath == "Assets/_Project/Scenes/BootstrapScene.unity" && !facts.HasRigidbody ? null : "bootstrap_service_scene_or_rigidbody_mismatch";

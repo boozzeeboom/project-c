@@ -2,7 +2,7 @@
 
 Дата: 2026-09-09. Предыдущий этап: T-FO06K.
 
-Актуальный статус на 2026-09-10 — раздел 13: повторная legacy-загрузка сцен подтверждена в Editor.log; исправлен pilot handoff загрузчика. Повторный пользовательский Play Mode после этого изменения ещё не выполнен, runtime admission остаётся UNVERIFIED.
+Актуальный статус на 2026-09-10 — раздел 14: пользователь подтвердил запуск игры без ошибок и появление персонажа после исправления legacy handoff. Стартовое меню оставалось открытым — добавлено закрытие после готовности локального pilot player, визуальная проверка этой правки ожидается. Jitter сохраняется; текущий fixed-frame pilot с origin=(0,0,0) ещё не выполняет rebase и не является проверкой устранения дрожания.
 
 ## 1. Позиция в общем плане
 
@@ -224,3 +224,48 @@ Retirement действует до уничтожения данного ком�
 - Предшествующие незакоммиченные изменения `CraftingStation`, трёх рецептов, TMP и любые изменения Packages не включаются в этот этап.
 
 Пользовательский gate: новый Play Mode → Start Host; отсутствие повторного центра/соседей; затем native admission/player spawn. Если возникнет отказ, сохранить целую строку новой диагностики expected/actual. Не разрешать partial binding или произвольные сцены ради прохождения gate.
+
+## 14. Первый успешный пользовательский startup/spawn; меню и jitter — 2026-09-10
+
+После `9f45d953` пользователь сообщил: ошибок нет, игра запустилась, персонаж появился. Главное меню со Start Host осталось поверх игры; за ним виден персонаж, который продолжает дрожать как раньше. Это пользовательское подтверждение Host/startup и появления персонажа, **не** приёмка камеры, grounding, multiplayer, streaming/release или устранения jitter. Скриншоты не предоставлены; автоматический Play Mode/захват изображений не выполнялся.
+
+### Почему меню оставалось открытым и что изменено
+
+В актуальной `BootstrapScene` включено `_autoStartHost: 1` на `GlobalMotionPilotRuntime`. Пилот напрямую вызывает NGO `StartHost`, а `Hide()` у `MainMenuWindow`/`NetworkTestMenu` вызывается в обычных обработчиках UI-кнопок. `MainMenuWindow.Start()` независимо вызывает `Show()`; успешное создание local player раньше не инициировало закрытие меню в pilot-пути.
+
+Живой Edit Mode осмотр подтвердил два конкретных UI-объекта:
+
+- `MainMenu` с активным `MainMenuWindow` и baked marker `336a190646b19bc46b22dd4e78f99800:1567705303:0`;
+- `TestObjects/NetworkTestCanvas` с активным `NetworkTestMenu` и ссылками на Host/Client/Server/Load World buttons. Компонент находится на Canvas, а не на дочернем `MenuPanel`.
+
+Изменён **только** `GlobalMotionPilotRuntime.cs`:
+
+- после успешного `StartHost` coroutine ждёт хотя бы один кадр, native scene admission и настоящий `ConnectedClients[LocalClientId].PlayerObject`;
+- обязательны `IsSpawned`, `IsPlayerObject`, `IsOwner`, совпадение NetworkManager, global coordinate mode, `CanSimulateInCurrentCoordinates` и `GlobalMotionPoseAdapter.IsBaselineReady`;
+- один раз вызывается штатный `Hide()` у активных стартовых меню двух указанных типов в BootstrapScene;
+- early connection callback не используется как сигнал готовности, потому что global bootstrap спавнит player позже;
+- при failed/disposed startup меню не скрывается; ожидание ограничено 60 секундами;
+- лог содержит число обработанных меню и фактические origin/local координаты; нулевое число совпадений даёт warning, а не ложный success;
+- gameplay/Esc/settings панели, cursor/input policy, локализация, scene/prefab assets и catalog/digest не изменялись. Автоматический startup и legacy button handlers сохранены.
+
+Допущение этой узкой UI-правки: стартовые меню уже активны в BootstrapScene, как подтверждено осмотром. Позднее создание/перенос некаталогизированного меню в DDOL не принимается автоматически; это не причина расширять scene ownership.
+
+### Почему этот прогон ещё не проверяет rebase
+
+В `GlobalMotionPilotSpawnSource.Prepare()` по-прежнему:
+
+- frame создаётся через `new LocalCoordinateFrame(GlobalPosition.Zero, _maxLocalCoordinate)`;
+- `_maxLocalCoordinate = 100000f`, offset спавна — `Vector3.up * 1f`;
+- сериализованный корневой `Respawn_Default` расположен в `(39992, 0, 40000)`;
+- `LocalCoordinateFrame.TryToLocal()` вычисляет `global - Origin`, поэтому начальная локальная позиция по сохранённым данным — `(39992, 1, 40000)`, а не окрестность нуля. Это около 56.6 км от нулевой точки; не измерение текущей runtime-позиции после движения;
+- текущие catalog entries имеют `Unmanaged/spatial=false`, и executor не перемещает world content.
+
+Пользовательское наблюдение jitter остаётся отрицательным результатом. Точная составляющая дрожания (анимация/камера/контроллер/точность) в этом сеансе отдельно не измерялась, но важное ограничение доказано кодом: local origin не перенесён к игроку. Нельзя объявлять существующий global network contract или успешный spawn готовым floating-origin исправлением. Простая смена origin только у игрока отделит его от authored world/colliders; она **не выполнялась**. Следующий отдельный этап T-FO06 должен обеспечить согласованное размещение reviewed content/player/camera относительно ненулевого origin с сохранением глобальных координат, а не маскировать jitter сглаживанием.
+
+### Проверки и следующий пользовательский gate
+
+- Compile после UI-правки: `No compile errors`.
+- `git diff --check` для изменённого script — PASS.
+- Read-only review проверил readiness и one-shot hide; визуальное исчезновение меню после этой правки — UNVERIFIED.
+- Следующий пользовательский прогон: новый Play Mode из BootstrapScene; после появления готового персонажа стартовые меню должны исчезнуть. Jitter этой UI-правкой **не исправлялся**; полноценный rebase/anti-jitter gate остаётся открытым.
+- Предыдущие незакоммиченные `CraftingStation`, три recipe assets и TMP остаются вне этого этапа. Один коммит: UI code + этот отчёт + существующий ITERATIONS, без отдельной записи хеша коммитом.

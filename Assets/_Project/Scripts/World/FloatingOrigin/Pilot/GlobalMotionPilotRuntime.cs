@@ -114,7 +114,73 @@ namespace ProjectC.World.FloatingOrigin.Pilot
 
             _startedByPilot = true;
             _startRequested = false;
+            yield return CloseStartupMenusWhenLocalPlayerReady();
             _startRoutine = null;
+        }
+
+        private IEnumerator CloseStartupMenusWhenLocalPlayerReady()
+        {
+            // This launcher bypasses the menu button handlers that normally call Hide().
+            // Connection callbacks are too early: the global bootstrap spawns the player later.
+            // Wait a frame as well so MainMenuWindow.Start/Show has already run.
+            yield return null;
+            double deadline = Time.realtimeSinceStartupAsDouble + 60d;
+            while (_manager != null && _manager == NetworkManager.Singleton && _manager.IsHost &&
+                !_manager.ShutdownInProgress && _startup != null && !_startup.IsDisposed &&
+                GlobalMotionNetworkStartup.IsInstalled(_manager))
+            {
+                if (_bootstrap != null && _bootstrap.CanAcceptScenePeer &&
+                    _manager.ConnectedClients.TryGetValue(_manager.LocalClientId, out var client))
+                {
+                    var playerObject = client.PlayerObject;
+                    if (playerObject != null && playerObject.IsSpawned && playerObject.IsPlayerObject &&
+                        playerObject.IsOwner && playerObject.NetworkManager == _manager)
+                    {
+                        var player = playerObject.GetComponent<ProjectC.Player.NetworkPlayer>();
+                        var adapter = playerObject.GetComponent<GlobalMotionPoseAdapter>();
+                        if (player != null && player.UsesGlobalCoordinates && player.CanSimulateInCurrentCoordinates &&
+                            adapter != null && adapter.IsBaselineReady)
+                        {
+                            int hiddenMenus = CloseStartupMenus();
+                            var origin = adapter.Frame.Coordinates.Origin;
+                            if (hiddenMenus == 0)
+                                Debug.LogWarning("[T-FO06L] Local player ready, but no active Bootstrap startup menus matched; UI handoff was not confirmed.", this);
+                            else
+                                Debug.Log("[T-FO06L] Local pilot player ready; startup menus hidden=" + hiddenMenus + ";origin=(" +
+                                    origin.X + "," + origin.Y + "," + origin.Z + ");local=" + playerObject.transform.position, this);
+                            yield break;
+                        }
+                    }
+                }
+                if (Time.realtimeSinceStartupAsDouble >= deadline)
+                {
+                    Debug.LogWarning("[T-FO06L] Startup menus left visible: local pilot player did not become ready within 60s.", this);
+                    yield break;
+                }
+                yield return null;
+            }
+            // Failed/disposed startup must not hide the only way back to the menu.
+        }
+
+        private int CloseStartupMenus()
+        {
+            int hiddenMenus = 0;
+            var bootstrapScene = SceneManager.GetSceneByPath("Assets/_Project/Scenes/BootstrapScene.unity");
+            foreach (var menu in UnityEngine.Object.FindObjectsByType<ProjectC.UI.MainMenu.MainMenuWindow>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (!menu.isActiveAndEnabled || menu.gameObject.scene != bootstrapScene) continue;
+                menu.EnsureBuilt();
+                menu.Hide();
+                hiddenMenus++;
+            }
+            foreach (var menu in UnityEngine.Object.FindObjectsByType<ProjectC.UI.NetworkTestMenu>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (!menu.isActiveAndEnabled || menu.gameObject.scene != bootstrapScene) continue;
+                menu.Hide();
+                hiddenMenus++;
+            }
+            // One-shot startup handoff only. Do not close gameplay/Esc/settings panels or take over cursor policy.
+            return hiddenMenus;
         }
 
         private bool RetireLegacySceneLoadersForPilot()

@@ -1,5 +1,17 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — подтверждён startup/spawn; закрытие стартового меню)
+
+**Результат пользователя:** После `9f45d953` ошибок нет, игра запустилась и персонаж появился. Меню StartHost оставалось открытым, jitter персонажа сохранился. Это подтверждение startup/spawn, не приёмка полного floating origin. Скриншоты не предоставлены.
+**Диагностика меню:** В Bootstrap включён `_autoStartHost: 1`; pilot запускает NGO напрямую в обход UI button handlers с `Hide()`. Активны `MainMenu` (`MainMenuWindow`, baked marker подтверждён) и `TestObjects/NetworkTestCanvas` (`NetworkTestMenu`). `MainMenuWindow.Start()` вызывает `Show()` независимо от состояния pilot.
+**Изменение:** В `GlobalMotionPilotRuntime.cs` после успешного StartHost добавлен one-shot UI handoff: минимум один кадр ожидания, native admission, настоящий local owner PlayerObject, готовые global coordinates и baseline; затем штатный Hide только стартовых MainMenuWindow/NetworkTestMenu в Bootstrap. Failure/disposed startup меню не скрывает; timeout 60s. Диагностика содержит число обработанных меню, origin и local position; при нуле совпадений — warning. Cursor/gameplay/Esc/settings/локализация не меняются.
+**Jitter:** `GlobalMotionPilotSpawnSource` всё ещё использует origin=(0,0,0) и limit=100000; сохранённый Respawn_Default=(39992,0,40000), offset=+1 Y. Поэтому начальный Unity local остаётся около 56.6 км от нуля. Согласованного rebase мира/игрока/камеры здесь нет; менять только player origin нельзя. Антиджиттер-результат — FAIL по наблюдению пользователя, реальный rebase gate ещё не выполнен.
+**Проверки:** Compile — `No compile errors`; scoped `git diff --check` — PASS; read-only review readiness/hide. Play Mode и screenshots автоматически не запускались; исчезновение меню после правки — UNVERIFIED.
+**Граница:** Один runtime script + `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md` (раздел 14) + этот журнал. Scene/prefab/catalog/digest, спавн, координаты, физика и анимация не изменялись. Предшествующие незакоммиченные CraftingStation/recipes/TMP не входят в этап.
+**Следующий шаг:** Пользователь проверяет исчезновение меню в новом Play Mode-сеансе. Следующий отдельный T-FO06 этап — согласованное размещение reviewed world/player/camera в ненулевом local frame и дальнейший rebase, а не очередная попытка скрыть jitter сглаживанием.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — остановить legacy callbacks и повторную загрузку сцен)
 
 **Задача:** Исправить повторный отказ `Startup lease or initial scene set changed` после Start Host, не разрешая посторонние сцены или partial catalog binding.

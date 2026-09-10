@@ -51,7 +51,17 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         public bool ValidatePreparation(NetworkManager manager, GlobalMotionNetworkProfile profile, IReadOnlyList<GlobalMotionSpawnFrame> frames, out string error)
         {
-            try { BuildPreparation(manager, profile, frames); error = null; return true; }
+            try
+            {
+                if (!RestoreCatalogedDdolRoots(profile, out var restoreError))
+                {
+                    error = "scene_preparation:" + restoreError;
+                    return false;
+                }
+                BuildPreparation(manager, profile, frames);
+                error = null;
+                return true;
+            }
             catch (Exception e) { error = "scene_preparation:" + e.Message; return false; }
         }
         private Preparation BuildPreparation(NetworkManager manager, GlobalMotionNetworkProfile profile, IReadOnlyList<GlobalMotionSpawnFrame> frames)
@@ -209,6 +219,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         public void PrepareBeforeNetworkStart(NetworkManager manager, GlobalMotionNetworkProfile profile, IReadOnlyList<GlobalMotionSpawnFrame> frames)
         {
             if (!Application.isPlaying) throw new InvalidOperationException("Native preparation requires user-started Play Mode or player runtime.");
+            if (!RestoreCatalogedDdolRoots(profile, out var restoreError)) throw new InvalidOperationException("scene_preparation:" + restoreError);
             _prepared = BuildPreparation(manager, profile, frames); _manager = manager; _world = manager.GetComponent<GlobalMotionWorld>();
             if (_world == null) throw new InvalidOperationException("Motion world missing.");
             _installed = true; _faulted = false; _networkRan = false; _retiring = false; CanAcceptScenePeer = false;
@@ -458,5 +469,72 @@ namespace ProjectC.World.FloatingOrigin.Network
         }
         private void OnDisable() { if (_installed && _manager != null && _manager.IsListening) Fault(new InvalidOperationException("Scene executor disabled.")); }
         private void OnDestroy() { if (_installed && _manager != null && _manager.IsListening) Fault(new InvalidOperationException("Scene executor destroyed.")); Release(); }
-    }
+
+
+        private static bool RestoreCatalogedDdolRoots(GlobalMotionNetworkProfile profile, out string error)
+        {
+            error = null;
+            if (profile == null || profile.SceneCatalog == null || profile.SceneCatalog.Data == null)
+            {
+                error = "profile_or_scene_catalog_missing";
+                return false;
+            }
+
+            var loadedScenesByGuid = new Dictionary<string, UnityEngine.SceneManagement.Scene>(StringComparer.Ordinal);
+            var sourceSceneById = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var scene in profile.SceneCatalog.Data.scenes)
+            {
+                if (scene == null || string.IsNullOrEmpty(scene.sceneGuid) || string.IsNullOrEmpty(scene.assetPath)) continue;
+                var loaded = SceneManager.GetSceneByPath(scene.assetPath);
+                if (loaded.IsValid() && loaded.isLoaded) loadedScenesByGuid[scene.sceneGuid] = loaded;
+            }
+            foreach (var entry in profile.SceneCatalog.Data.entries)
+            {
+                if (entry == null || string.IsNullOrEmpty(entry.sourceId) || string.IsNullOrEmpty(entry.sceneGuid)) continue;
+                if (sourceSceneById.TryGetValue(entry.sourceId, out var previousGuid) && previousGuid != entry.sceneGuid)
+                {
+                    error = "catalog_source_spans_scene_guids:" + entry.sourceId;
+                    return false;
+                }
+                sourceSceneById[entry.sourceId] = entry.sceneGuid;
+            }
+
+            var roots = new Dictionary<GameObject, UnityEngine.SceneManagement.Scene>();
+            foreach (var marker in Resources.FindObjectsOfTypeAll<GlobalSceneSourceMarker>())
+            {
+                if (marker == null || marker.gameObject.scene.name != "DontDestroyOnLoad") continue;
+                if (!sourceSceneById.TryGetValue(marker.SourceId, out var sceneGuid)) continue;
+                if (!loadedScenesByGuid.TryGetValue(sceneGuid, out var targetScene))
+                {
+                    error = "cataloged_ddol_source_scene_not_loaded;sourceId=" + marker.SourceId + ";sceneGuid=" + sceneGuid;
+                    return false;
+                }
+
+                var root = marker.transform.root.gameObject;
+                if (root.scene.name != "DontDestroyOnLoad") continue;
+                if (roots.TryGetValue(root, out var previousScene) && previousScene != targetScene)
+                {
+                    error = "ddol_root_contains_multiple_cataloged_scene_guids;root=" + root.name +
+                        ";firstScene=" + previousScene.path + ";secondScene=" + targetScene.path;
+                    return false;
+                }
+                roots[root] = targetScene;
+            }
+
+            int restored = 0;
+            foreach (var pair in roots)
+            {
+                SceneManager.MoveGameObjectToScene(pair.Key, pair.Value);
+                if (pair.Key.scene != pair.Value)
+                {
+                    error = "cataloged_ddol_root_restore_failed;root=" + pair.Key.name + ";targetScene=" + pair.Value.path;
+                    return false;
+                }
+                restored++;
+            }
+            if (restored > 0)
+                Debug.Log("[T-FO06L] Native preflight restored cataloged DDOL root(s): " + restored);
+            return true;
+        }
+}
 }

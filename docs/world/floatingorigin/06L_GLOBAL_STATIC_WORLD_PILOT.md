@@ -486,3 +486,34 @@ catalogBound=True;unmanaged=True;candidate=False;networkManager=NetworkManager;e
 - Play Mode после изменения не выполнялся.
 
 Следующий gate: нажать `Start Host` из cataloged Bootstrap и прислать строки `Cataloged DDOL audit` и последующий отказ, если он останется.
+
+## 22. Reconcile DDOL roots на native-preflight boundary — 2026-09-10
+
+### Результат gate
+
+Получены два audit:
+
+```text
+markers=16;catalogedMarkers=16;roots=16;restored=16
+markers=0;catalogedMarkers=0;roots=0;restored=0
+```
+
+После второго audit `Road to Quartus` снова попадал в native sweep как `candidate=False` с пустым `scene=`. Это доказывает, что перемещение в DDOL происходит внутри подготовительного промежутка между pilot audit и `GlobalSceneNativeExecutor.BuildPreparation`.
+
+### Исправление
+
+`GlobalSceneNativeExecutor` теперь сам выполняет cataloged DDOL reconciliation:
+
+- перед `BuildPreparation` в `ValidatePreparation`;
+- перед `BuildPreparation` в `PrepareBeforeNetworkStart`;
+- с тем же fail-closed контролем source ID, scene GUID, mixed-scene roots и фактического результата перемещения.
+
+Таким образом native executor получает объект уже в исходной cataloged сцене даже если внешний NGO/config preflight повторно перевёл authored root в `DontDestroyOnLoad`.
+
+### Проверки
+
+- `GlobalSceneNativeExecutor.cs`: standard validation — 0 ошибок, 2 существующих advisory warnings.
+- Unity compile: `No compile errors`.
+- Play Mode после изменения не выполнялся.
+
+Следующий gate: свежий ручной `Start Host`. В случае повторного DDOL-переноса должен появиться лог `Native preflight restored cataloged DDOL root(s): ...` перед обработкой scene catalog.

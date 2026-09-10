@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — reconcile DDOL roots на native-preflight boundary)
+
+**Результат пользователя:** Первый pilot audit восстановил 16 cataloged DDOL roots, второй audit показал 0 DDOL roots, но native sweep снова получил `Road to Quartus` с `candidate=False` и пустым `scene=`.
+**Вывод:** Перемещение authored roots в DDOL происходит между внешним pilot audit и `GlobalSceneNativeExecutor.BuildPreparation`.
+**Исправление:** `GlobalSceneNativeExecutor` теперь повторно восстанавливает catalog-bound DDOL roots непосредственно перед `BuildPreparation` в `ValidatePreparation` и `PrepareBeforeNetworkStart`, с fail-closed проверкой scene GUID и фактического перемещения.
+**Проверки:** `GlobalSceneNativeExecutor.cs` — 0 ошибок, 2 advisory warnings; Compile — `No compile errors`. Play Mode после изменения не выполнялся.
+**Следующий gate:** Свежий `Start Host`; ожидать лог `Native preflight restored cataloged DDOL root(s): ...` при повторном DDOL-переносе.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, раздел 22.
+
+---
+
 ## Итерация от 2026-09-10 (T-FO06L — повторно проверить cataloged DDOL roots перед TryPrepare)
 
 **Результат пользователя:** После восстановления cataloged DDOL roots отказ сохранился с `candidate=False`, `networkManager=NetworkManager`, `isSpawned=False` и пустым `scene=`.

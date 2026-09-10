@@ -86,3 +86,23 @@ scene_preparation:catalog_source_not_bound:336a190646b19bc46b22dd4e78f99800:1044
 ## 8. Состав текущего этапа
 
 К этапу относятся изменения в pilot catalog/profile/registry, BootstrapScene и WorldScene_0_0 wiring, `Unmanaged` contract/compiler/policy/executor, protocol `0xF006`, pilot spawn source/runtime и execution validator. Независимое изменение `Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` в этап не входит.
+
+## 9. Обновление после продолжения этапа — 2026-09-10
+
+`GroundPlane_0_0` подтверждённо оставлен удалённым и не восстанавливается. Каталог и digest не пересобираются из-за земли.
+
+Исправлен `GlobalSceneNativeExecutor.BuildPreparation()`:
+
+- candidate enumeration теперь добавляет все `GlobalSceneSourceMarker` внутри reviewed roots;
+- marked descendants без `NetworkObject` больше не пропускаются;
+- сохранены проверки duplicate, wrong-scene, parent identity и внешних runtime roots;
+- добавлена обязательная проверка `catalog / markers / bound`;
+- ошибка `catalog_source_not_bound` теперь содержит все три счётчика.
+
+Проверки после исправления:
+
+- Compile: `No compile errors`;
+- `Validate Native Scene Execution Contracts`: `32 pure checks passed`;
+- фактический Play Mode/native preparation/Host/client startup ещё не запускались.
+
+Следующий gate — пользовательский ручной Host/client Play Mode-прогон текущего pilot scope. Если startup снова остановится, диагностика должна содержать значения `catalog=...;markers=...;bound=...`; повторную правку выполнять только по этой фактической причине.

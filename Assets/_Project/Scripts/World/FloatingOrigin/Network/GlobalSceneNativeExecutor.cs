@@ -67,6 +67,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             var frameMap = new Dictionary<int, GlobalMotionSpawnFrame>();
             foreach (var frame in frames) { if (frame == null || !frame.IsValid) throw new InvalidOperationException("invalid_prepared_frame"); frameMap.Add(frame.Id, frame); }
             var candidates = new HashSet<GameObject>();
+            int liveMarkerCount = 0;
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
@@ -80,13 +81,12 @@ namespace ProjectC.World.FloatingOrigin.Network
                         if (no.GetComponent<GlobalSceneSourceMarker>() != null) { hasBoundNetworkDescendant = true; break; }
                     // Runtime UI/services created outside the reviewed scene scope are not catalog sources.
                     if (!rootBound && !hasBoundNetworkDescendant) continue;
-                    candidates.Add(root);
-                    foreach (var no in root.GetComponentsInChildren<NetworkObject>(true)) candidates.Add(no.gameObject);
+                    // Bind every authored marker in the reviewed root, not only roots and NetworkObject descendants.
+                    // Non-NetworkObject marked descendants are still catalog sources and must not be silently skipped.
+                    foreach (var marker in root.GetComponentsInChildren<GlobalSceneSourceMarker>(true))
+                        if (candidates.Add(marker.gameObject)) liveMarkerCount++;
                 }
             }
-            // I supports an identical, fully preloaded initial catalog on every peer. No implicit scene loads during join.
-            if (result.Scenes.Count != profile.SceneCatalog.Data.expectedSceneGuids.Length)
-                throw new InvalidOperationException("initial_executor_requires_entire_catalog_preloaded_on_each_peer");
             foreach (var go in candidates)
             {
                 var marker = go.GetComponent<GlobalSceneSourceMarker>();
@@ -116,10 +116,13 @@ namespace ProjectC.World.FloatingOrigin.Network
                     throw new InvalidOperationException("invalid_explicit_static_world_pose");
                 result.BySource.Add(entry.SourceId, node);
             }
+            if (liveMarkerCount != plan.SpawnOrder.Count || result.BySource.Count != plan.SpawnOrder.Count)
+                throw new InvalidOperationException("catalog_markers_bound_mismatch:catalog=" + plan.SpawnOrder.Count + ";markers=" + liveMarkerCount + ";bound=" + result.BySource.Count);
             foreach (var entry in plan.SpawnOrder)
             {
                 if (!result.Scenes.ContainsKey(entry.SceneGuid)) continue;
-                if (!result.BySource.TryGetValue(entry.SourceId, out var node)) throw new InvalidOperationException("catalog_source_not_bound:" + entry.SourceId);
+                if (!result.BySource.TryGetValue(entry.SourceId, out var node))
+                    throw new InvalidOperationException("catalog_source_not_bound:" + entry.SourceId + ":catalog=" + plan.SpawnOrder.Count + ";markers=" + liveMarkerCount + ";bound=" + result.BySource.Count);
                 var parent = node.Parent;
                 while (parent != null && parent.GetComponent<GlobalSceneSourceMarker>() == null) parent = parent.parent;
                 string parentId = parent == null ? "" : parent.GetComponent<GlobalSceneSourceMarker>().SourceId;

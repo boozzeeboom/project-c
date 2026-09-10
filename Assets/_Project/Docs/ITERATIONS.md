@@ -1,5 +1,16 @@
 # Журнал итераций
 
+## Итерация от 2026-09-10 (T-FO06L — исправить binding executor)
+
+**Задача:** Продолжить T-FO06L после отказа native preparation на `catalog_source_not_bound`, не восстанавливая удалённый `GroundPlane_0_0`.
+**Результат:** `GlobalSceneNativeExecutor.BuildPreparation()` теперь перечисляет все `GlobalSceneSourceMarker` внутри reviewed roots, включая marked descendants без `NetworkObject`. Добавлена обязательная проверка согласованности `catalog / markers / bound`; диагностика `catalog_source_not_bound` теперь содержит счётчики. Внешние runtime roots без marker, duplicate, wrong-scene и parent identity guards сохранены.
+**Проверки:** Compile — `No compile errors`; `Validate Native Scene Execution Contracts` — `32 pure checks passed`. Runtime native preparation, Play Mode, Host/client, grounding и screenshots не запускались.
+**Граница:** `GroundPlane_0_0` подтверждённо удалён и не восстанавливается. Текущий catalog/digest не изменялся. Независимый `LiberationSans SDF - Fallback.asset` в этап не входит.
+**Следующий шаг:** Передать текущую сборку пользователю для ручного Host/client Play Mode-прогона. При повторном отказе использовать фактические значения `catalog=...;markers=...;bound=...`; не разрешать silent skip.
+**Документация:** `docs/world/floatingorigin/06L_GLOBAL_STATIC_WORLD_PILOT.md`, обновлён этот журнал.
+
+---
+
 ## Итерация от 2026-09-09 (T-FO06L)
 
 **Задача:** Подготовить и зафиксировать первый global static-world pilot: `NetworkPlayer_GlobalPilot`, reviewed catalog для `BootstrapScene` + `WorldScene_0_0`, explicit `Unmanaged` treatment и native scene admission до NGO spawn.

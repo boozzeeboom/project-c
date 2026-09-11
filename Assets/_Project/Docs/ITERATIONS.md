@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06AA — closure)
+
+**Задача:** Закрыть diagnosis-driven slice после подтверждения порядка respawn writer и отделить его от floating-origin rebase scope.
+
+**Итог:** Capture 02 доказал порядок `FixedUpdate → NGO NetworkTick → NetworkPlayer.Update/CharacterController.Move до y=-8.02 → PlayerRespawnTracker.Update после 0.526s ниже death threshold → TeleportToClientRpc на y=2502.77 → следующий frame movement с y=2502.77`. Историческая placement anomaly объяснена штатным server-authoritative fall respawn; unknown competing writer для перехода не требуется.
+
+**Статус:** `initialGlobalSpawnGate=PARTIAL_RUNTIME_CONFIRMATION`, `initialPlacementAnomaly=EXPLAINED_AS_SERVER_AUTHORITATIVE_FALL_RESPAWN`, `controlledRebase=NOT_IMPLEMENTED`, `rollback=NOT_IMPLEMENTED`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Граница:** Dormant read-only instrumentation оставлена для evidence ordering; gameplay semantics не изменялись. Повторять тот же respawn capture не требуется.
+
+**Следующий этап:** Отдельная reviewed integration explicit user-controlled rebase driver с ordered `rebase.*` markers, native adapters и fail-closed readiness gates.
+
+**Файлы:** `docs/world/floatingorigin/06AA_CLOSURE.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AA — runtime capture 02: respawn writer order confirmed)
 
 **Задача:** Точечно проверить пользовательский capture после instrumentation и установить фактический порядок respawn writer относительно `NetworkPlayer.Update`, `CharacterController.Move`, `FixedUpdate` и NGO tick.

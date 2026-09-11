@@ -1,0 +1,36 @@
+{
+  "ticket": "T-FO06AA",
+  "date": "2026-09-11",
+  "status": "CLOSED_DIAGNOSIS_SLICE",
+  "findings": {
+    "initialGlobalSpawnGate": "PARTIAL_RUNTIME_CONFIRMATION",
+    "initialGateNetworkSpawnArmed": true,
+    "baselineBeforeInitialGateRelease": true,
+    "historicalPlacementAnomaly": "EXPLAINED_AS_SERVER_AUTHORITATIVE_FALL_RESPAWN",
+    "respawnWriter": "PlayerRespawnTracker.TeleportToClientRpc",
+    "competingWriterRequiredForObservedJump": false,
+    "controlledRebaseObserved": false,
+    "rollbackObserved": false
+  },
+  "runtimeOrder": [
+    "NetworkPlayer.FixedUpdate",
+    "NGO NetworkTick",
+    "NetworkPlayer.Update",
+    "CharacterController.Move to y=-8.02",
+    "PlayerRespawnTracker.Update",
+    "FallThresholdReached after 0.526 seconds",
+    "PerformRespawn",
+    "TeleportToClientRpc target y=2502.77",
+    "Physics.SyncTransforms",
+    "next frame movement from y=2502.77"
+  ],
+  "scopeBoundary": {
+    "controlledRebase": "NOT_IMPLEMENTED",
+    "automaticTrigger": "NOT_IMPLEMENTED",
+    "applyRebuildValidatePublish": "NOT_CONNECTED",
+    "nativeRollback": "NOT_IMPLEMENTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "instrumentation": "DORMANT_READ_ONLY_EVIDENCE",
+  "nextStep": "Separate explicit user-controlled rebase driver integration with ordered rebase markers, native adapters and fail-closed readiness gates."
+}

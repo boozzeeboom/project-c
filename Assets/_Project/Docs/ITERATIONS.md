@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06Y — второй пользовательский runtime capture follow-up)
+
+**Задача:** Проверить второй предоставленный пользователем Unity Console export от `2026-09-11 18:53:31` (`805` записей, `15 секунд`) после предыдущего T-FO06Y capture follow-up.
+
+**Результат:** Во втором export снова отсутствуют строки `[T-FO06Y]`; найдено `0` probe records. Причина отсутствия instrumentation по логам остаётся **INCONCLUSIVE**. Созданы `docs/world/floatingorigin/06Y_RUNTIME_CAPTURE_FOLLOWUP_02.md` и `.json`.
+
+**Подтверждено:** Static native/player startup PASS: `ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>`, `CompletePlacement ready=True;baseline=True`, `SpawnAsPlayerObject`, `origin=(0,0,0);local=(39992.00,1.00,40000.00)`. Снова наблюдались `20` ShipDeckNav registrations, `20` explicit crew attachment requests и `20` named crew spawns, но NavMesh agent failures повторяются в `ShipDeckNav.cs:200`, `NpcBrain.cs:688` и `ShipCrewSpawner.cs:154`. Дополнительно появился warning `The referenced script (Unknown) on this Behaviour is missing!`; его связь с jitter не доказана.
+
+**Граница:** Movement/CharacterController, grounding/platform carry, Animator/root motion, NGO tick/control/baseline, physics ordering, camera ownership/history, post-rebase continuity и Unity rollback — **UNVERIFIED**. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`; runtime rebase и live manifest не выполнялись.
+
+**Следующий шаг:** Повторить serial capture с явным включением `Capture Enabled` на `NetworkPlayer_GlobalPilot(Clone)` и проверить появление `[T-FO06Y]` до экспорта. До этого не подключать concrete adapters, `Apply/Rebuild/Validate/Publish` или общий transform shift.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Y — пользовательский runtime capture follow-up)
 
 **Задача:** Проверить предоставленный пользователем Unity Console export от `2026-09-11 18:49:19` (`768` записей, около `15 секунд`) после подготовки dormant `GlobalMotionRuntimeEvidenceProbe`.

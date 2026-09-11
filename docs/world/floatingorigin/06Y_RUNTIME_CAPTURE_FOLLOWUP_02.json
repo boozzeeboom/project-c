@@ -1,0 +1,52 @@
+{
+  "ticket": "T-FO06Y",
+  "attempt": 2,
+  "date": "2026-09-11",
+  "source": {
+    "exportedAt": "2026-09-11 18:53:31",
+    "logEntries": 805,
+    "gameplayDurationSeconds": 15
+  },
+  "status": "CAPTURE_ATTEMPTED_02;NO_PROBE_RECORDS;RUNTIME_UNVERIFIED",
+  "observed": {
+    "tFo06yLines": 0,
+    "nativeSceneReady": true,
+    "nativeSceneRecorded": 150,
+    "nativeScenePending": 0,
+    "nativeSceneUnspawned": 0,
+    "nativeSceneRetired": 0,
+    "nativeSceneBlocker": "<none>",
+    "initialPlayerPlacement": "PASS",
+    "initialOrigin": "(0,0,0)",
+    "initialPlayerLocal": "(39992.00,1.00,40000.00)",
+    "shipDeckRegistrations": 20,
+    "crewAttachmentRequests": 20,
+    "namedCrewSpawns": 20,
+    "navMeshWarnings": "REPEATED",
+    "missingScriptWarning": true,
+    "jitter": "NOT_ISOLATED_BY_PROBE"
+  },
+  "missingEvidence": [
+    "player.FixedUpdate",
+    "CharacterController.Move",
+    "grounding",
+    "platform carry",
+    "Animator/root motion",
+    "NetworkTickSystem.Tick",
+    "accepted NGO control",
+    "baseline acknowledgement",
+    "Physics.SyncTransforms",
+    "camera owner/target/lag/collision history",
+    "post-rebase baseline continuity",
+    "Unity-state rollback"
+  ],
+  "gateDecision": {
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "liveManifestPublication": false,
+    "admittedParticipants": 0,
+    "navMeshPassengerBlocker": "INCONCLUSIVE",
+    "decision": "The second supplied 15-second log again contains no [T-FO06Y] records. Static/native/player startup passes, but runtime proof and rebase readiness remain NOT READY."
+  }
+}

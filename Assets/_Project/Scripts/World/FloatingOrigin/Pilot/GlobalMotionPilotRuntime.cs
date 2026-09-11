@@ -119,6 +119,54 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
+            // SceneManager can briefly expose an unloading Scene handle after a legacy unload/reload race.
+            // Do not pass that transient state to native preparation: wait for the exact pilot scene set to settle.
+            const string bootstrapScenePath = "Assets/_Project/Scenes/BootstrapScene.unity";
+            bool sceneSetStable = false;
+            string unstableScene = null;
+            for (int frame = 0; frame < 120; frame++)
+            {
+                if (!IsExactLoadedScene(worldScene))
+                {
+                    _startRequested = false;
+                    Debug.LogError("[T-FO06L] Pilot world scene handle was lost during scene-set stabilization: " +
+                        DescribeScene(worldScene) + ";scenes=" + DescribeLoadedScenes(), this);
+                    yield break;
+                }
+
+                unstableScene = null;
+                for (int i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    var scene = SceneManager.GetSceneAt(i);
+                    if (IsDontDestroyOnLoadScene(scene)) continue;
+                    if (!scene.IsValid() || scene.isLoaded) continue;
+                    if (string.Equals(scene.path, worldScenePath, System.StringComparison.Ordinal) ||
+                        string.Equals(scene.path, bootstrapScenePath, System.StringComparison.Ordinal))
+                    {
+                        unstableScene = DescribeScene(scene);
+                        break;
+                    }
+                }
+
+                if (unstableScene == null)
+                {
+                    sceneSetStable = true;
+                    break;
+                }
+
+                if (frame == 0)
+                    Debug.LogWarning("[T-FO06L] Waiting for cataloged scene unload race to settle: " + unstableScene, this);
+                yield return null;
+            }
+
+            if (!sceneSetStable)
+            {
+                _startRequested = false;
+                Debug.LogError("[T-FO06L] Pilot scene set did not stabilize before native preparation: " +
+                    unstableScene + ";scenes=" + DescribeLoadedScenes(), this);
+                yield break;
+            }
+
             if (!GlobalMotionNetworkStartup.TryPrepare(_manager, _profile, _bootstrap, GlobalMotionStartRole.Host, out _startup, out var error))
             {
                 _startRequested = false;

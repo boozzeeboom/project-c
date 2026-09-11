@@ -1235,3 +1235,44 @@ Catalog, digest, `Unmanaged`/ownership rules и `GroundPlane_0_0` не изме�
 - Предупреждения NavMesh, missing script, `ShipCargoVisual` и вторичные NGO shutdown `NullReferenceException` не являются частью этого узкого фикса и не исправлялись.
 
 Следующий пользовательский gate: новый Play Mode из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Нужны строки `catalog=150;markers=150;bound=150`, успешный Host/player path и отсутствие новой ошибки `loaded_scene_not_in_saved_catalog_scope`. Если появится отказ по authored scene, использовать его полный `DescribeScene(name/path/handle/loaded)`; fail-closed scope не ослаблять.
+
+## 40. Stabilize transient unloading Scene handles before native preparation - 2026-09-11
+
+### Runtime evidence
+
+The next user-controlled Start Host reached the new diagnostic:
+
+```text
+scene_preparation:loaded_scene_not_in_saved_catalog_scope:name=WorldScene_0_0,path=Assets/_Project/Scenes/World/WorldScene_0_0.unity,handle=568105589213756034,loaded=False
+```
+
+The path was cataloged, but Unity exposed a non-loaded WorldScene handle during native preparation. This is a transient unload/reload race, not a catalog digest or partial-binding failure. The exact caller that initiated the unload is not proven by this log; code search only confirms the legacy ClientSceneLoader/ServerSceneManager unload paths.
+
+### Change
+
+`GlobalMotionPilotRuntime` now waits up to 120 frames immediately before `GlobalMotionNetworkStartup.TryPrepare()` while the pilot scene set settles. It verifies that the preserved WorldScene handle remains loaded and waits for transient unloading handles for the cataloged Bootstrap/World paths to disappear. If the exact handle is lost or the set does not stabilize, startup remains fail-closed with the full scene census.
+
+The native executor remains fail-closed; it does not ignore `loaded=false` scenes. Catalog/profile/digest, DDOL ownership, `GroundPlane_0_0` and legacy scene assets were not changed.
+
+### Checks and next gate
+
+The next user-controlled Start Host on `2026-09-11` passed this gate:
+
+- Unity compile: `No compile errors`.
+- Native readiness: `ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>`.
+- Host path: server started on port `7777`; `PeerConnected` reported `worldRunning=True;scenePrepared=True;sceneReady=True`.
+- Player path: `Spawn plan ready`, `SpawnPlayer entered`, `OnActorPostSpawn`, `CompletePlacement ready=True;baseline=True`, `SpawnAsPlayerObject` and `Local pilot player ready`.
+- Frame: `origin=(0,0,0);local=(39992.00,1.00,40000.00)`.
+- No second `WorldScene_0_0` load, `loaded_scene_not_in_saved_catalog_scope`, stabilization failure or legacy-owner takeover was observed in the exported log. Duplicate suppression remains only an observational result because the current log has no exact scene-handle counter.
+
+This closes the **T-FO06L static pilot startup/player runtime gate**. It does not implement or validate floating-origin rebase, grounding, movement, camera, physics, multiplayer client, jitter or screenshot acceptance.
+
+The remaining warnings are outside this gate: NavMesh placement/registration, empty `ShipCargoVisual._boxPrefabs`, resource-node references, early combat/ownership registry order, missing `NpcSocialBrain` Animator parameters, `PlayerTarget` HP initialization and the unrelated TMP importer warning.
+
+## 41. User-controlled static pilot startup/player gate passed - 2026-09-11
+
+The exported Console Log from `2026-09-11 07:36:57` confirms that the 120-frame scene-set stabilization did not reject the pilot. Native preparation repeatedly reported `ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>`. The host reached `PeerConnected` with `worldRunning=True;scenePrepared=True;sceneReady=True`, spawned `NetworkPlayer_GlobalPilot(Clone)`, completed baseline placement and hid the startup menus.
+
+The local pilot ended in the intended static frame: `origin=(0,0,0)` and `local=(39992.00,1.00,40000.00)`. Twenty NPC ship controllers were discovered and the session shut down through the normal disconnect path. No second world-scene load, old `loaded_scene_not_in_saved_catalog_scope` refusal or new stabilization failure was present in the supplied log.
+
+This is a **PASS for T-FO06L static startup/player integration** and a **PASS for the native closed-world binding gate**. Duplicate suppression and exact legacy-owner absence remain observational rather than separately instrumented. The result must not be interpreted as a completed rebase transaction; the next integration stage remains the read-only participant/boundary census followed by design of the atomic rebase transaction.

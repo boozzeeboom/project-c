@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06L.2.x follow-up 13 — успешный runtime gate после стабилизации Scene handle)
+
+**Задача:** Закрыть пользовательский Start Host gate после отказа `loaded_scene_not_in_saved_catalog_scope` с `WorldScene_0_0;loaded=False`.
+
+**Результат:** Пользовательский Console Log от `2026-09-11 07:36:57` подтвердил успешную стабилизацию pilot scene set и native preparation: `ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>`. Хост запущен, `PeerConnected` получил `worldRunning=True;scenePrepared=True;sceneReady=True`, создан и размещён `NetworkPlayer_GlobalPilot(Clone)`, а локальный игрок получил `origin=(0,0,0);local=(39992,1,40000)`.
+
+**Подтверждено:** `StartHost`, player spawn, `CompletePlacement ready=True;baseline=True`, `SpawnAsPlayerObject`, скрытие startup menus и повторная native readiness после runtime-инициализации. Обнаружено 20 `NpcShipController`; повторной загрузки `WorldScene_0_0` или отказа по scene handle в предоставленном логе нет. Отсутствие duplicate/legacy takeover подтверждено только по отсутствию наблюдаемого отказа; отдельного handle-count instrumentation нет.
+
+**Проверки:** Unity compile — `No compile errors`; `git diff --check` — `PASS`; пользовательский runtime startup/player gate — **PASS по Console Log**. Floating-origin rebase, grounding, movement, camera, physics, multiplayer client, jitter и screenshots остаются вне этого gate.
+
+**Граница:** Изменены только `GlobalMotionPilotRuntime.cs`, рабочая документация и этот журнал. Catalog/profile/scenes/prefabs, `GroundPlane_0_0`, native fail-closed validation и legacy-owner contract не ослаблялись. Unrelated changes в TMP fallback, `Packages/packages-lock.json` и `ProjectSettings/EditorSettings.asset` не включать.
+
+**Следующий шаг:** Перейти к следующему read-only boundary/rebase этапу; не считать успешный static pilot startup реализацией floating-origin rebase.
+
+---
+
 ## Iteration 2026-09-11 (T-FO06L.2.x follow-up 12 - exclude DDOL from authored scene scope)
 
 **Task:** Fix the user-reported Start Host refusal `scene_preparation:loaded_scene_not_in_saved_catalog_scope` after legacy-owner retirement and cataloged DDOL audit.

@@ -1,0 +1,40 @@
+{
+  "ticket": "T-FO06AC",
+  "date": "2026-09-11",
+  "scope": "native adapter contract",
+  "ticketAssignment": "next free substage after T-FO06AB; no existing 06AC report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNativeAdapterContracts.cs"
+  ],
+  "requiredCoverage": [
+    "Transform",
+    "Rigidbody",
+    "ShipDeckNav",
+    "CameraHistory",
+    "NetworkBaseline"
+  ],
+  "validation": [
+    "explicit adapter identity",
+    "sealed closed-world set",
+    "no duplicate IDs",
+    "no overlapping coverage",
+    "current adapter required",
+    "native readiness required",
+    "Capture/Apply/Rebuild/Validate/Restore capabilities required",
+    "full UnityStateRollbackCoverage required"
+  ],
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "scopeBoundary": {
+    "adapterInstances": "NOT_CONNECTED",
+    "unityStateCapture": "NOT_IMPLEMENTED",
+    "worldShift": "NOT_IMPLEMENTED",
+    "nativeRollback": "NOT_IMPLEMENTED",
+    "participantAdmission": "NOT_READY",
+    "liveManifestPublication": "NOT_READY",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "Connect the sealed adapter set to the runtime driver only after participant admission and live manifest publication are proven."
+}

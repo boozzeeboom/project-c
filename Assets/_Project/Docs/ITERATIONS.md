@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06AC — native adapter contract)
+
+**Задача:** Зафиксировать concrete native adapter seam для Transform, Rigidbody, ShipDeckNav, CameraHistory и NetworkBaseline, сохранив participant admission и live manifest gates fail-closed.
+
+**Результат:** Созданы `GlobalMotionNativeAdapterCapability`, `GlobalMotionNativeAdapterDescriptor`, `IGlobalMotionNativeAdapter` и sealed `GlobalMotionNativeAdapterSet`. Валидация требует явные IDs, полное непересекающееся coverage, актуальность/native readiness и полный набор Capture/Apply/Rebuild/Validate/Restore capabilities.
+
+**Граница:** Контракт не вызывает Unity APIs, не создаёт adapter instances, не захватывает/изменяет state, не подключён к runtime driver и не реализует rollback. Compile PASS (`No compile errors`); Play Mode не запускался.
+
+**Следующий этап:** Подключать adapter set к runtime driver только после доказанного participant admission и live manifest publication.
+
+**Файлы:** `GlobalMotionNativeAdapterContracts.cs`, `docs/world/floatingorigin/06AC_NATIVE_ADAPTER_CONTRACT.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AB — explicit user-controlled runtime driver boundary)
 
 **Задача:** После закрытия T-FO06AA подключить explicit user-controlled request boundary к существующему closed-world coordinator, не выполняя native rebase mutation.

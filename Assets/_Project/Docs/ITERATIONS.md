@@ -975,3 +975,19 @@
 
 ---
 
+## Итерация от 2026-09-11 (T-FO06N — participant-manifest design/read-only slice)
+
+**Задача:** Зафиксировать stable IDs, canonical ordering и digest contract для закрытого participant manifest без runtime discovery.
+
+**Результат:** Созданы `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseParticipantManifest.cs` и `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionRebaseParticipantManifest.cs`. Fixed coverage contract включает `CITY_STATIC`, `WORLD_ANCHORS`, `PLAYER_FRAME`, `CAMERA`, 22 `SHIP_ROOT` и 20 `SHIP_DECK_NAV`; `NETWORK_GAMEPLAY_ROOT/<stable-id>` допускается только explicit entry без guessed count.
+
+**Проверки:** Меню `ProjectC/World/Floating Origin/Validate Rebase Participant Manifest` — **10 pure checks PASS / 0 FAIL**. Unity compile — **No compile errors**. Проверены deterministic canonical bytes/digest, duplicate/invalid identities, required coverage, missing/wrong-kind entries и defensive copies.
+
+**Граница:** Реальный source census, serialized manifest asset, camera owner/history, NGO tick/physics ordering, runtime `ShipDeckNav` registration, concrete adapters, scene mutation и runtime rebase остаются **INCONCLUSIVE/NOT READY**. Play Mode не выполнялся.
+
+**Документация:** `docs/world/floatingorigin/06N_PARTICIPANT_MANIFEST_DESIGN.md`.
+
+**Следующий шаг:** Read-only source census/identity mapping или отдельная runtime instrumentation slice; не подключать concrete adapters и `Apply/Rebuild`.
+
+---
+

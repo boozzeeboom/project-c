@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06Q — camera, ShipDeckNav and NGO boundary audit)
+
+**Задача:** Закрыть source-level boundaries для camera ownership/history, runtime ShipDeckNav registration и NGO tick/physics/baseline ordering перед созданием adapters.
+
+**Результат:** По исходникам зафиксированы `NetworkPlayer.SpawnCamera()` и `SpringArmCamera` history state, `ShipDeckNav` pending registration/re-registration/cooldown, `GlobalMotionReplicator` NetworkTickSystem subscription, существующие `Physics.SyncTransforms()` points и NetworkTransform/global baseline seams. Добавлен отчёт `06Q_CAMERA_NAV_NETWORK_BOUNDARY_AUDIT.md`.
+
+**Подтверждено:** Camera runtime binding создаётся отдельным `ThirdPersonCamera_{OwnerClientId}` root и хранится в `NetworkPlayer._myCamera`; `ShipDeckNav` регистрируется через round-robin queue и кэширует nav origin/ship pose; global motion и physics имеют отдельные hooks; Bootstrap/spatial/ship NetworkObject ownership policies существуют в source contract.
+
+**Проверки:** Read-only source investigation; runtime/scene/prefab state не изменялся. Play Mode, screenshots, runtime camera ownership, ShipDeckNav registration, physics ordering, NGO baseline ordering и rebase mutation не выполнялись.
+
+**Граница:** Source hooks не доказывают exact runtime ordering, camera owner/history continuity, passenger provenance, NavMesh registration validity, Host server/client sequencing или native rollback. Все эти пункты остаются **INCONCLUSIVE**; runtime rebase readiness — **NOT READY**.
+
+**Следующий шаг:** Подготовить только dormant explicit runtime probes/contracts для user-controlled Play Mode capture либо получить reviewed policy decision; автоматический Play Mode и runtime rebase не запускать.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06P — reviewed participant identity mapping)
 
 **Задача:** Перевести exact census records в deterministic candidate mapping для fixed participant IDs, определить boundary candidates и классифицировать NetworkObject candidates без automatic admission.

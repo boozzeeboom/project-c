@@ -1,0 +1,59 @@
+{
+  "ticket": "T-FO06AA",
+  "capture": "runtime capture 02 after respawn-writer instrumentation",
+  "date": "2026-09-11",
+  "source": "pointwise Unity MCP console review",
+  "window": "2026-09-11T23:53:47+05:00",
+  "initialGate": {
+    "networkSpawnArmed": true,
+    "baselineSyncBeforeRelease": true,
+    "initialGateReleased": true,
+    "earlyArmedMarkerObserved": false,
+    "factoryPoseMarkerObserved": false,
+    "blockedFixedUpdateMarkerObserved": false,
+    "status": "PARTIAL_RUNTIME_CONFIRMATION"
+  },
+  "writerOrder": {
+    "frame": 181,
+    "sequence": [
+      "player.FixedUpdate.begin at y=-7.50",
+      "ngo.NetworkTick",
+      "player.Update.begin",
+      "player.Update.beforeProcessMovement",
+      "movement.CharacterController.Move.before",
+      "movement.CharacterController.Move.after at y=-8.02",
+      "respawn.Update.begin y=-8.025",
+      "respawn.FallThresholdReached elapsed=0.526 delay=0.500",
+      "respawn.PerformRespawn.begin",
+      "respawn.TeleportRpc.begin target y=2502.77",
+      "respawn.TeleportRpc.beforePositionWrite",
+      "respawn.TeleportRpc.afterPositionWrite y=2502.77",
+      "respawn.TeleportRpc.afterPhysicsSync",
+      "respawn.TeleportRpc.end"
+    ],
+    "respawnWriterConfirmed": "PlayerRespawnTracker.TeleportToClientRpc",
+    "competingWriterRequired": false
+  },
+  "nextFrame": {
+    "frame": 182,
+    "playerUpdatePosition": "y=2502.77",
+    "movementAfterPosition": "y=2502.75",
+    "respawnUpdateY": "2502.753"
+  },
+  "scheduling": {
+    "observedOrder": "FixedUpdate -> NGO NetworkTick -> Update/Move -> respawn.Update/TeleportRpc -> LateUpdate",
+    "repeatedFixedUpdateOrNetworkTick": true,
+    "schedulingExplainsCoordinateJump": false
+  },
+  "warnings": {
+    "unityErrorsOrExceptionsInPointwiseSample": false,
+    "navMeshAgentCreationWarning": true
+  },
+  "classification": {
+    "initialPlacementAnomaly": "EXPLAINED_AS_SERVER_AUTHORITATIVE_FALL_RESPAWN",
+    "controlledRebase": "NOT_OBSERVED",
+    "rollback": "NOT_OBSERVED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "Stop repeating respawn capture; proceed with separate explicit user-controlled rebase driver integration and ordered rebase markers."
+}

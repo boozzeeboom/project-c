@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06AA — runtime capture 02: respawn writer order confirmed)
+
+**Задача:** Точечно проверить пользовательский capture после instrumentation и установить фактический порядок respawn writer относительно `NetworkPlayer.Update`, `CharacterController.Move`, `FixedUpdate` и NGO tick.
+
+**Результат:** На `frame=181` подтверждена последовательность `NetworkPlayer.Update/CharacterController.Move` на `y=-8.02`, затем `respawn.Update` после `0.526s` ниже death threshold, затем `PerformRespawn` и `TeleportToClientRpc` с прямой записью target `y=2502.77`. На `frame=182` movement уже начинается с `y=2502.77`. Историческая anomaly объяснена server-authoritative fall respawn; неизвестный competing writer для этого перехода не требуется.
+
+**Scheduling:** Наблюдался порядок `FixedUpdate → NGO NetworkTick → Update/Move → respawn.Update/TeleportRpc → LateUpdate`. Повторные FixedUpdate/NetworkTick остаются characteristic scheduling, но не являются причиной координатного скачка.
+
+**Warnings:** Unity errors/exceptions в точечной выборке не найдены. `Failed to create agent because it is not close enough to the NavMesh` сохраняется.
+
+**Решение:** Не расширять T-FO06AA initial spawn gate до respawn suppression и не повторять instrumentation capture. Следующий этап — отдельный explicit user-controlled rebase driver с ordered `rebase.*` markers.
+
+**Файлы:** `docs/world/floatingorigin/06AA_RUNTIME_CAPTURE_02.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AA — respawn writer runtime instrumentation)
 
 **Задача:** Добавить узкие read-only markers вокруг respawn writer, `NetworkPlayer.Update`, `CharacterController.Move` и прямых position writes для следующего пользовательского capture.

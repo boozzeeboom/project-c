@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06N — design-only participant set и atomic rebase transaction contract)
+
+**Задача:** Продолжить интеграционный план после успешного static pilot startup/player gate и формализовать закрытый participant set будущего rebase transaction.
+
+**Результат:** Создан `docs/world/floatingorigin/06N_REBASE_TRANSACTION_CONTRACT.md`. Зафиксированы `CITY_STATIC`, `WORLD_ANCHORS`, 22 отдельных `SHIP_ROOT`, 20 `SHIP_DECK_NAV`, `PLAYER_FRAME`, camera participant и explicit per-root policy для scene-owned NetworkObject/NPC/crew. Запрещены implicit unknown participants, общий `SetParent`, player-only shift, `FloatingOriginMP` и восстановление `GroundPlane_0_0`.
+
+**Контракт:** Описаны фазы `REQUEST → FREEZE → PREFLIGHT → CAPTURE → APPLY → REBUILD → VALIDATE → PUBLISH → RELEASE`, immutable transaction/frame identity, per-participant rollback snapshots, fail-closed abort и fault state при недоказанном rollback.
+
+**Проверки и ограничения:** Этап design-only; C# runtime, сцены, префабы и settings не изменялись, Play Mode и screenshots не выполнялись. Camera owner/history, NGO tick/physics ordering, runtime ShipDeckNav registration, streamed content и moving-platform passenger state остаются **INCONCLUSIVE** и блокируют прямой runtime shift.
+
+**Следующий шаг:** Отдельная implementation slice coordinator/preflight/snapshot skeleton с fail-closed gates; не включать `FloatingOriginMP` и не выполнять общий transform shift.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06L.2.x follow-up 13 — успешный runtime gate после стабилизации Scene handle)
 
 **Задача:** Закрыть пользовательский Start Host gate после отказа `loaded_scene_not_in_saved_catalog_scope` с `WorldScene_0_0;loaded=False`.

@@ -111,6 +111,24 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - Следующий ближайший фокус: подтвердить вариант расширения контракта; решить судьбу удалённой `GroundPlane_0_0`; затем каталог на 150 записей (treatment/reviewNote/spatial/позы) (25 world-сцен в него входить не обязаны) и составить каталог только для него; затем profile с каталогом из одной Spatial-записи, ссылкой на пилотный список в `_registryLists` и корректным SceneLayoutDigest; классификация профиля/каталога (эффективный registry должен точно совпадать с classified catalog, а не только игрок), согласование dirty Bootstrap/missing scripts/legacy service ownership и реальный native audit WorldScene. Ранее выполнено: согласовать **явную prefab registration policy** перед созданием isolated global player variant; proposed disable auto-generation сохраняет текущие 58 legacy entries, но меняет будущую регистрацию сетевых prefab и требует отдельного подтверждения. Затем — variant/layout и отдельный pilot list, сохранность canonical visual/CC config, согласование dirty Bootstrap/missing scripts/service ownership и реальный native audit WorldScene. Порядок и ограничения — §6 `06A_PILOT_SCOPE_PREFLIGHT.md`. Trusted account issuer/его реальные вызовы, catalog/markers/frames/physics, profile и explicit store/configuration всё ещё необходимы. Остаются AOI/streaming, ship/ParentLocal composition, RPC/DTO, individual disconnect final-save/respawn, client rebase, multi-region physics/Host, NavMesh/AI, visual/global-height consumers и user acceptance. Полные T-FO04–09 и semantic T-FO03 не закрыты; world shift выключен, jitter fixed не заявляется.
 - Оценка после D (подробно §8 отчёта): примерно **4–6 этапов до ограниченного fixed-frame Host+client прогона**, **8–12 до первого настоящего rebase-прогона**, **20–35 сопоставимых итераций до полной интеграции по 10 крупным блокам**, плюс ориентировочно 2–3 пользовательских цикла проверки/исправления. Диапазоны включают предыдущие рубежи, не суммируются; не календарная гарантия. Unknown scene/native scope и результаты первых тестов могут увеличить оценку. 620 pure checks не означают процент runtime готовности.
 
+## 3.1 Актуализация статуса на 2026-09-11
+
+Главный план сохраняет правильную последовательность: pure contracts и read-only boundary audits → user-controlled runtime evidence → concrete adapters → только затем `Apply/Rebuild/Validate/Publish` и полноценная rebase transaction. Исторические пункты выше не переписываются.
+
+- `T-FO06N`: design-only closed-world participant set и atomic transaction contract; затем compile-verified coordinator/preflight/snapshot skeleton. Coordinator останавливается на `Captured`.
+- `T-FO06O–P`: read-only participant identity census и deterministic candidate mapping; owner-reviewed final manifest ещё не опубликован.
+- `T-FO06Q`: source-level camera/ShipDeckNav/NGO boundary audit; runtime ordering и ownership остаются INCONCLUSIVE.
+- `T-FO06R`: catalog/NetworkObject policy cross-audit; `96/96` matches, automatic admission `0`.
+- `T-FO06S`: fail-closed participant admission policy; live manifest publication отсутствует.
+- `T-FO06T`: dormant seven-part runtime-proof contract; user runtime evidence отсутствует.
+- `T-FO06U`: user log подтверждает initial startup/native preparation, но фиксирует повторные NavMesh agent failures; deck readiness и passenger provenance INCONCLUSIVE.
+- `T-FO06V`: pure ShipDeckNav/NavMesh readiness contract; `15/15` pure checks PASS, runtime registration и completed passenger attachment не доказаны.
+- `T-FO06W`: пакет camera ownership/history и Unity-state rollback contracts; `35/35` pure checks PASS, runtime camera/rollback evidence не доказано.
+
+Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W. NavMesh diagnosis, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
+
+Runtime rebase readiness остаётся **NOT READY**; `GroundPlane_0_0`, `FloatingOriginMP`, player-only shifting и generic shared `SetParent` остаются исключёнными.
+
 ## 4. Приёмка полного решения
 
 - Позиция прежнего FAIL (~56.5 км), 30 км+, origin: обычные Idle/walk/run/jump, без замороженного Animator и без hide/render tricks; пользовательское видео/скриншоты.

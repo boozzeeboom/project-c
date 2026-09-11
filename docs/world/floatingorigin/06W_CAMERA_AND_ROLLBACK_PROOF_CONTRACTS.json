@@ -1,0 +1,43 @@
+{
+  "ticket": "T-FO06W",
+  "date": "2026-09-11",
+  "previousCommit": "112e53b3",
+  "scope": "pure camera ownership/history and Unity-state rollback proof contracts",
+  "checks": {
+    "camera": {
+      "planned": 15,
+      "passed": 15,
+      "failed": 0
+    },
+    "rollback": {
+      "planned": 20,
+      "passed": 20,
+      "failed": 0
+    },
+    "totalPassed": 35,
+    "totalFailed": 0
+  },
+  "architectureAlignment": {
+    "rebaseTransactionRemainsFailClosed": true,
+    "applyRebuildValidatePublishConnected": false,
+    "playerOnlyShiftEnabled": false,
+    "floatingOriginMpEnabled": false,
+    "runtimeStartupChanged": false
+  },
+  "runtime": {
+    "playModeExecuted": false,
+    "cameraRuntimeEvidence": "UNVERIFIED",
+    "rollbackRuntimeEvidence": "UNVERIFIED",
+    "shipDeckNavRuntimeEvidence": "UNVERIFIED",
+    "passengerProvenance": "UNVERIFIED",
+    "ngoPhysicsOrdering": "UNVERIFIED",
+    "rebaseReadiness": "NOT READY",
+    "admittedParticipants": 0
+  },
+  "batchedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/CameraOwnershipHistoryContract.cs",
+    "Assets/_Project/Editor/FloatingOrigin/ValidateCameraOwnershipHistoryContract.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/UnityStateRollbackContract.cs",
+    "Assets/_Project/Editor/FloatingOrigin/ValidateUnityStateRollbackContract.cs"
+  ]
+}

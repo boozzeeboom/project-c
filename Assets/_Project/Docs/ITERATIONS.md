@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06W — camera ownership/history и Unity-state rollback contracts)
+
+**Задача:** Сверить продвижение с главным архитектурным планом и пакетно закрыть две независимые pure proof boundaries из T-FO06T/T-FO06N: camera ownership/history и Unity-state rollback.
+
+**Результат:** Созданы `CameraOwnershipHistoryContract.cs`, `ValidateCameraOwnershipHistoryContract.cs`, `UnityStateRollbackContract.cs`, `ValidateUnityStateRollbackContract.cs`, отчёты `06W_CAMERA_AND_ROLLBACK_PROOF_CONTRACTS.json/.md`. Главный план дополнен актуальным статусом T-FO06N–T-FO06W. Runtime startup, `ShipDeckNav.cs`, `NpcBrain.cs`, `ShipCrewSpawner.cs`, сцены и prefabs не изменялись.
+
+**Проверки:** Camera validator — `15 pure checks PASS / 0 FAIL`; rollback validator — `20 pure checks PASS / 0 FAIL`; Unity compile — `No compile errors`; всего `35 PASS / 0 FAIL`. Play Mode и runtime mutation не выполнялись.
+
+**Граница:** Pure contracts — **PASS**. Runtime camera ownership/history, native rollback, NavMesh readiness, passenger provenance, NGO/physics ordering и runtime rebase — **UNVERIFIED/INCONCLUSIVE**. Runtime rebase readiness — **NOT READY**, admitted participants `0`.
+
+**Следующий шаг:** Не подключать contracts автоматически. Получить user/owner evidence для runtime boundaries; classification 55 scene-owned gameplay roots и participant mapping остаются отдельными reviewed gates.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06V — ShipDeckNav/NavMesh readiness gate)
 
 **Задача:** Добавить только dormant pure fail-closed readiness contract для `ShipDeckNav`/NavMesh и completed passenger attachment после пользовательского T-FO06U capture, не исправляя runtime warnings и не меняя startup.

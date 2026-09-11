@@ -1,0 +1,39 @@
+{
+  "ticket": "T-FO06AF",
+  "date": "2026-09-11",
+  "scope": "live manifest session evidence gate",
+  "ticketAssignment": "next free substage after T-FO06AE; no existing 06AF report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseLiveManifestSessionEvidence.cs"
+  ],
+  "requiredEvidence": [
+    "valid live manifest receipt",
+    "session identity",
+    "publisher observation",
+    "server acceptance",
+    "peer digest match",
+    "peer entry-count match",
+    "no manifest drift",
+    "observed peer count greater than zero"
+  ],
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "participantAdmission": "NOT_READY",
+    "liveManifestPublication": "NOT_PROVEN",
+    "runtimeAdapterReady": "NOT_READY",
+    "runtimeProofComplete": false,
+    "rollbackReady": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "scopeBoundary": {
+    "runtimeDiscovery": "NOT_CONNECTED",
+    "transportPublication": "NOT_CONNECTED",
+    "runtimeDriver": "NOT_CONNECTED",
+    "nativeMutation": "NOT_IMPLEMENTED",
+    "nativeRollback": "NOT_IMPLEMENTED"
+  },
+  "nextStep": "Obtain user-controlled runtime capture with concrete session, publisher/server and peer digest/count evidence before changing live publication state."
+}

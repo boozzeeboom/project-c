@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06AF — live manifest session evidence)
+
+**Задача:** Отделить pure receipt eligibility от фактического наблюдения participant manifest в конкретной runtime session.
+
+**Результат:** Созданы `GlobalMotionRebaseLiveManifestSessionEvidence` и `GlobalMotionRebaseLiveManifestSessionEvidenceGate`. Gate требует valid receipt, session identity, publisher observation, server acceptance, peer digest/count match, отсутствие manifest drift и `ObservedPeerCount > 0`.
+
+**Граница:** Runtime discovery, transport publication, runtime driver, native adapters, Unity mutation и rollback не подключались. Фактического session evidence не предоставлено; `liveManifestPublication=NOT_PROVEN`, `participantAdmission=NOT_READY`, `runtimeRebaseReadiness=NOT_READY`. Compile PASS (`No compile errors`); Play Mode не запускался.
+
+**Следующий этап:** Получить user-controlled runtime capture с конкретными session/publisher/server/peer evidence.
+
+**Файлы:** `GlobalMotionRebaseLiveManifestSessionEvidence.cs`, `docs/world/floatingorigin/06AF_LIVE_MANIFEST_SESSION_EVIDENCE.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AE — live manifest receipt source)
 
 **Задача:** Подготовить pure evidence source для participant admission и live manifest publication, сохранив runtime discovery и публикацию отключёнными.

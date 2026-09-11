@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06R — catalog and NetworkObject policy cross-audit)
+
+**Задача:** Сопоставить все live scene-owned NetworkObjects с reviewed `GlobalMotionPilotSceneCatalog.asset` и отделить catalog identity match от runtime participant admission.
+
+**Результат:** Создан `AuditGlobalMotionRebaseCatalogNetworkPolicies.cs`, который в read-only Edit Mode проверяет marker/sourceId/catalog binding, ownership, treatment, spatial/pose policy и Rigidbody/ship-root boundary. Добавлен отчёт `06R_CATALOG_NETWORK_POLICY_AUDIT.json` и документация `06R_CATALOG_NETWORK_POLICY_AUDIT.md`.
+
+**Подтверждено:** `96/96` NetworkObject candidates имеют catalog match, `0` missing entries, catalog содержит `150` entries по `2` scenes. Классификация: `19` BootstrapService, `55` SceneOwnedNetworkGameplay, `22` ShipOrRigidbodyRoot. Все `96` имеют `treatment=Unmanaged`, `spatial=false`, `poseKind=None`; автоматически admitted `0`.
+
+**Проверки:** Unity compile — `No compile errors`; read-only menu audit выполнен; `records=96;matched=96;missing=0;admitted=0;blocked=96`. Сцены, catalog, префабы и runtime state не изменялись. Play Mode, spawn, physics/NavMesh mutation, NGO baseline mutation и rebase не выполнялись.
+
+**Граница:** Catalog identity/ownership match — **PASS**, но runtime participant admission — **NOT READY**. Catalog ownership не доказывает NetworkObject authority/lifetime, camera/deck/runtime ordering или native rollback. `NETWORK_GAMEPLAY_ROOT` и ship entries остаются policy-review required.
+
+**Следующий шаг:** Получить explicit policy decision для 55 world gameplay roots и 22 ship roots, либо оставить их вне live manifest до runtime evidence; не выводить spatial admission из одной catalog ownership записи.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Q — camera, ShipDeckNav and NGO boundary audit)
 
 **Задача:** Закрыть source-level boundaries для camera ownership/history, runtime ShipDeckNav registration и NGO tick/physics/baseline ordering перед созданием adapters.

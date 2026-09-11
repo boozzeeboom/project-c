@@ -1,0 +1,56 @@
+{
+  "ticket": "T-FO06Z",
+  "stage": "RUNTIME_CAPTURE_FOLLOWUP_01",
+  "date": "2026-09-11",
+  "scope": "User-controlled Play Mode capture inspected pointwise through Unity MCP; no runtime rebase or project asset mutation performed.",
+  "editor": {
+    "playMode": true,
+    "activeScene": "Assets/_Project/Scenes/BootstrapScene.unity",
+    "hasCompilationErrors": false,
+    "probeRecords": "present"
+  },
+  "shipDeckNav": {
+    "sampledDeckCount": 20,
+    "allSampledRegistered": true,
+    "allSampledNativeInstancesValid": true,
+    "allSampledReady": true,
+    "navMeshData": "NavMesh-DeckNavSurface",
+    "regFalseSearchMatches": 0
+  },
+  "passengers": {
+    "sampledPassengerCount": 20,
+    "allSampledActive": true,
+    "allSampledProxyCreated": true,
+    "allSampledOnNavMesh": true,
+    "allSampledDeckNavigationActive": true,
+    "onNavFalseSearchMatches": 0,
+    "navActiveFalseSearch": "INCONCLUSIVE_MCP_TIMEOUT"
+  },
+  "playerAndRebase": {
+    "observedRevisions": [1, 2, 3, 4, 5, 6],
+    "adapterReady": true,
+    "baselinePlaced": true,
+    "postRebaseGrounded": true,
+    "postRebaseCharacterControllerGrounded": true,
+    "movementObserved": true,
+    "jumpEvidence": "INCOMPLETE_IN_SAMPLED_MCP_WINDOW"
+  },
+  "warnings": [
+    {
+      "message": "Failed to create agent because it is not close enough to the NavMesh",
+      "classification": "TRANSIENT_STARTUP_WARNING_OBSERVED"
+    }
+  ],
+  "gate": {
+    "shipDeckNavRuntime": "OBSERVED_PASS_WITH_TRANSIENT_NAVMESH_WARNINGS",
+    "passengerProvenance": "OBSERVED_PASS_WITH_TRANSIENT_NAVMESH_WARNINGS",
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "liveManifestPublication": false,
+    "applyRebuildValidatePublishConnected": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "Separate controlled rebase/post-rebase continuity and rollback/admission gate before any concrete adapter or runtime rebase activation."
+}

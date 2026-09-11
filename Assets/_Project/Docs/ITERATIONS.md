@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06Z runtime follow-up 01 — точечная проверка Unity MCP)
+
+**Задача:** Проверить пользовательский Play Mode capture после T-FO06Z без загрузки полного Console Log в контекст и зафиксировать ShipDeckNav/passenger evidence.
+
+**Результат:** Unity MCP подтвердил активный Play Mode в canonical `BootstrapScene`, отсутствие compile errors и наличие `[T-FO06Y]` records. В sampled snapshots наблюдались `decks=20`; все 20 deck entries имели `reg=True`, `instance=True`, `ready=True`, `data=NavMesh-DeckNavSurface`. Зафиксировано `passengerCount=20`; все 20 passengers имели `active=True`, `proxy=True`, `onNav=True`, `navActive=True`. Точечные фильтры `reg=False` и `onNav=False` вернули `0` совпадений.
+
+**Rebase/player evidence:** Observed revisions `1→2→3→4→5→6`, `adapter=Ready`, `baselinePlaced=True`, после placement/rebase `grounded=True`, `ccGrounded=True`, `ccEnabled=True`; движение подтверждено изменением позиции игрока. Jump в sampled MCP window отдельно не подтверждён.
+
+**Граница и warnings:** Повторно наблюдалось `Failed to create agent because it is not close enough to the NavMesh`; поэтому readiness классифицирована как observed с transient startup warning, а не как полностью чистый NavMesh запуск. Фильтр `navActive=False` завершился MCP timeout и помечен **INCONCLUSIVE**. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`, `liveManifestPublication=false`, `Apply/Rebuild/Validate/Publish` не подключались. Сцены, префабы, NavMesh и runtime rebase не изменялись.
+
+**Файлы:** `docs/world/floatingorigin/06Z_RUNTIME_CAPTURE_FOLLOWUP_01.md`, `docs/world/floatingorigin/06Z_RUNTIME_CAPTURE_FOLLOWUP_01.json`, обновлены `docs/world/floatingorigin/06Z_SHIP_DECK_RUNTIME_EVIDENCE_ADAPTER.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md` и этот журнал.
+
+**Следующий шаг:** Отдельный serial gate для controlled rebase/post-rebase continuity, rollback evidence и participant/admission policy. До него не подключать concrete adapters, live manifest или `Apply/Rebuild/Validate/Publish`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Z — dormant ShipDeckNav/passenger runtime evidence adapter)
 
 **Задача:** Продолжить T-FO06Y после успешного baseline/movement capture и добавить read-only evidence для отдельного ShipDeckNav/passenger gate, не включая runtime rebase.

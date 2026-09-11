@@ -43,41 +43,61 @@
 
 - Unity compile: **No compile errors**.
 - `validate_script` для трёх изменённых C# файлов: `0 errors`; инструмент сообщил только общий warning о возможных аллокациях строк при runtime logging.
-- Play Mode и screenshots не выполнялись.
+- Пользовательский Play Mode capture через точечный Unity MCP: `[T-FO06Y]` records присутствуют.
+- Active scene: canonical `BootstrapScene`; `hasCompilationErrors=false`.
+- Сцены, префабы, NavMesh и runtime rebase этим follow-up не изменялись.
 
-## 5. Gate decision
+## 5. Runtime capture result
+
+В sampled `[T-FO06Y]` snapshots подтверждены:
+
+- `decks=20`; все deck entries имеют `reg=True`, `instance=True`, `ready=True`, `data=NavMesh-DeckNavSurface`;
+- `passengerCount=20`; все passengers имеют `active=True`, `proxy=True`, `onNav=True`, `navActive=True`;
+- `reg=False` и `onNav=False` point filters вернули `0` совпадений;
+- отдельная проверка `navActive=False` была **INCONCLUSIVE** из-за MCP timeout, хотя все sampled snapshots содержат `navActive=True`;
+- observed revisions: `1 → 2 → 3 → 4 → 5 → 6`;
+- `adapter=Ready`, `baselinePlaced=True`, `grounded=True`, `ccGrounded=True`, `ccEnabled=True` после rebase/placement;
+- движение игрока наблюдалось по изменению позиции.
+
+## 6. Warning qualification
+
+Во время запуска многократно наблюдалось:
 
 ```text
+Failed to create agent because it is not close enough to the NavMesh
+```
+
+Финальные sampled snapshots всё равно показывают 20/20 passengers в состоянии `active=True`, `proxy=True`, `onNav=True`, `navActive=True`. Поэтому deck/passenger state классифицируется как observed readiness с transient startup warning, а не как полностью чистый NavMesh запуск.
+
+## 7. Gate decision
+
+```text
+shipDeckNavRuntime = OBSERVED_PASS_WITH_TRANSIENT_NAVMESH_WARNINGS
+passengerProvenance = OBSERVED_PASS_WITH_TRANSIENT_NAVMESH_WARNINGS
 runtimeProofComplete = false
 runtimeAdapterReady = false
 rollbackReady = false
 admittedParticipants = 0
 liveManifestPublication = false
 applyRebuildValidatePublishConnected = false
-shipDeckNavRuntime = UNVERIFIED_UNTIL_USER_CAPTURE
-passengerProvenance = UNVERIFIED_UNTIL_USER_CAPTURE
+runtimeRebaseReadiness = NOT_READY
 ```
 
-Этот этап не устраняет jitter и не доказывает runtime rebase readiness. `GroundPlane_0_0`, `FloatingOriginMP`, player-only shift и generic shared `SetParent` остаются исключёнными.
+Capture закрывает evidence gap для sampled deck/passenger state, но не разрешает concrete adapter activation, live manifest publication или общий runtime rebase. Rollback proof отсутствует; jump evidence в доступном sampled MCP window неполный.
 
-## 6. Следующий шаг
+`GroundPlane_0_0`, `FloatingOriginMP`, player-only shift и generic shared `SetParent` остаются исключёнными.
 
-Пользовательский serial capture из canonical `BootstrapScene` с включённым `Capture Enabled` должен проверить в строках `[T-FO06Y]` для каждого ship/crew:
+## 8. Следующий шаг
 
-1. `reg=true`, `instance=true`, `ready=true`;
-2. proxy `created=true` и `onNav=true`;
-3. `active=true`, resolved deck и стабильный ship NetworkObject identity;
-4. сохранение этих состояний после controlled movement и отдельного deck/passenger участка.
+Отдельный serial gate должен проверить controlled rebase/post-rebase continuity, rollback evidence и participant/admission policy. До его завершения не подключать concrete adapters, live manifest или `Apply/Rebuild/Validate/Publish`.
 
-До появления такого evidence не подключать concrete adapters, live manifest, `Apply/Rebuild/Validate/Publish` или runtime rebase.
-
-## 7. Состав этапа
+## 9. Состав этапа
 
 - `Assets/_Project/Scripts/Ship/ShipDeckNav.cs`;
 - `Assets/_Project/Scripts/AI/NpcBrain.cs`;
 - `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRuntimeEvidenceProbe.cs`;
-- этот отчёт;
-- `06Z_SHIP_DECK_RUNTIME_EVIDENCE_ADAPTER.json`;
+- `06Z_SHIP_DECK_RUNTIME_EVIDENCE_ADAPTER.md/.json`;
+- `06Z_RUNTIME_CAPTURE_FOLLOWUP_01.md/.json`;
 - обновления roadmap и `Assets/_Project/Docs/ITERATIONS.md`.
 
 Сцены и префабы этим этапом не изменялись.

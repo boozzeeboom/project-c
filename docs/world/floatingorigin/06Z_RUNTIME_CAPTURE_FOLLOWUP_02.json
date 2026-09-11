@@ -1,0 +1,94 @@
+{
+  "ticket": "T-FO06Z",
+  "stage": "RUNTIME_CAPTURE_FOLLOWUP_02",
+  "date": "2026-09-11",
+  "scope": "Pointwise Unity MCP review of one user-controlled Play Mode run after movement, jump and Play Mode stop.",
+  "editorAfterStop": {
+    "playMode": false,
+    "activeScene": "Assets/_Project/Scenes/BootstrapScene.unity",
+    "hasCompilationErrors": false,
+    "selectedGameObject": "NetworkPlayer_GlobalPilot"
+  },
+  "baseline": {
+    "frame": 162,
+    "syncTransformsBegin": true,
+    "syncTransformsEnd": true,
+    "actorApplied": true,
+    "acknowledgeApplied": true,
+    "adapterReady": true,
+    "binding": "5038395829736550539/94/1/1/2"
+  },
+  "movement": {
+    "observed": true,
+    "sampledStart": [39992.0, 2502.17, 40000.0],
+    "sampledEnd": [39988.3, 2502.17, 40004.43],
+    "groundedAfterMovement": true,
+    "characterControllerGroundedAfterMovement": true
+  },
+  "jump": {
+    "explicitJumpLabel": false,
+    "instrumentedVerticalEvidence": true,
+    "samples": [
+      {"frame": 528, "grounded": false, "velocityY": 6.07, "motionY": 0.22},
+      {"frame": 529, "grounded": false, "velocityY": 5.21, "motionY": 0.11}
+    ],
+    "landedEvidence": true
+  },
+  "revisions": {
+    "sampled": [1, 2, 20, 21],
+    "bindingStable": true,
+    "adapterReadyStable": true,
+    "baselinePlacedStable": true
+  },
+  "shipDeckNav": {
+    "sampledDeckCount": 20,
+    "allRegistered": true,
+    "allNativeInstancesValid": true,
+    "allReady": true,
+    "navMeshData": "NavMesh-DeckNavSurface"
+  },
+  "passengers": {
+    "sampledPassengerCount": 20,
+    "allActive": true,
+    "allProxyCreated": true,
+    "allOnNavMesh": true,
+    "allDeckNavigationActive": true
+  },
+  "camera": {
+    "earlyLateUpdateEvidence": true,
+    "lateCursorNoneSkipObserved": true,
+    "continuity": "INCONCLUSIVE"
+  },
+  "rebaseAndRollback": {
+    "explicitRebaseMarkers": false,
+    "rebaseTransaction": "INCONCLUSIVE",
+    "rollbackMarkers": false,
+    "shutdownMarkers": false,
+    "rollback": "NOT_OBSERVED"
+  },
+  "warnings": [
+    {
+      "message": "Failed to create agent because it is not close enough to the NavMesh",
+      "classification": "TRANSIENT_STARTUP_WARNING_OBSERVED"
+    }
+  ],
+  "gate": {
+    "baseline": "PASS",
+    "movement": "PASS",
+    "jump": "PASS_INSTRUMENTED",
+    "shipDeckNav": "PASS_WITH_TRANSIENT_NAVMESH_WARNINGS",
+    "passengerProvenance": "PASS_WITH_TRANSIENT_NAVMESH_WARNINGS",
+    "bindingContinuity": "PASS_SAMPLED",
+    "cameraContinuity": "INCONCLUSIVE",
+    "controlledRebase": "INCONCLUSIVE",
+    "rollback": "NOT_OBSERVED",
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "liveManifestPublication": false,
+    "applyRebuildValidatePublishConnected": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "Do not activate runtime integration; resolve the missing controlled rebase and rollback evidence boundaries in a separately reviewed gate."
+}

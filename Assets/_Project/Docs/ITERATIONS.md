@@ -1,3 +1,21 @@
+## Итерация от 2026-09-11 (T-FO06Z runtime follow-up 02 — pointwise review после движения и прыжка)
+
+**Задача:** Проверить завершённый пользовательский Play Mode capture точечно через Unity MCP после движения, прыжка и остановки теста без передачи полного Console Log.
+
+**Результат:** После остановки Play Mode подтверждены `playMode=false`, canonical `BootstrapScene` и `hasCompilationErrors=false`. На `frame=162` зафиксированы `Physics.SyncTransforms.begin/end`, `baseline.ActorApplied`, `baseline.AcknowledgeApplied` и `adapter=Ready` с binding `5038395829736550539/94/1/1/2`.
+
+**Movement/jump:** Player movement подтверждён изменением позиции примерно с `(39992.00,2502.17,40000.00)` до `(39988.30,2502.17,40004.43)`. Instrumented jump подтверждён на `frame=528/529` через `grounded=False`, `velocity.y=6.07/5.21` и `motion.y=0.22/0.11`; позднее подтверждено возвращение `grounded=True;ccGrounded=True`.
+
+**Deck/passenger:** Sampled snapshots подтвердили `decks=20`, `passengerCount=20`, все deck entries `reg=True;instance=True;ready=True`, все passengers `active=True;proxy=True;onNav=True;navActive=True`. Повторные NavMesh warnings сохранены как transient startup warning.
+
+**Граница:** Sampled revisions `1,2,20,21` сохраняли один binding identity и `adapter=Ready`, но explicit rebase markers не найдены. Фильтры `rollback`, `shutdown` и `disconnect` не нашли evidence; поздняя camera evidence содержит `LateUpdate.skip(cursor=None)`. Поэтому camera continuity, controlled rebase и rollback остаются `INCONCLUSIVE/NOT_OBSERVED`; `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, admission/live manifest отсутствуют. Сцены, префабы, код и NavMesh не изменялись.
+
+**Файлы:** `docs/world/floatingorigin/06Z_RUNTIME_CAPTURE_FOLLOWUP_02.md`, `docs/world/floatingorigin/06Z_RUNTIME_CAPTURE_FOLLOWUP_02.json`, обновлены `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md` и этот журнал.
+
+**Следующий шаг:** Не включать concrete adapters, live manifest или `Apply/Rebuild/Validate/Publish`; отдельно закрыть controlled rebase transaction и rollback evidence.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Z runtime follow-up 01 — точечная проверка Unity MCP)
 
 **Задача:** Проверить пользовательский Play Mode capture после T-FO06Z без загрузки полного Console Log в контекст и зафиксировать ShipDeckNav/passenger evidence.

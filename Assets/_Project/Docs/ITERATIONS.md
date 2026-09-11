@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06Z — post-playtest follow-up 03 и закрытие повторного capture gate)
+
+**Задача:** Проверить завершённый Play Mode capture точечно через Unity MCP, зафиксировать runtime evidence и определить, требуется ли ещё один идентичный capture.
+
+**Результат:** После остановки Play Mode подтверждены `playMode=false`, canonical `BootstrapScene`, `hasCompilationErrors=false`, baseline на `frame=221`, стабильный binding `4872018665147106836/94/1/1/2`, post-placement movement и `20/20` deck/passenger readiness. На `frame=221` записаны `SyncTransforms`, `ActorApplied`, `AcknowledgeApplied`; позднее `ccGrounded=True` и movement до примерно `(39993.45,2502.17,40000.56)`.
+
+**Новая anomaly:** В начале окна игрок падает с `y=1.00` до `y=-7.41` за frames `221–235`, затем на том же `frame=235` sampled state уже находится на `y=2502.77` при отсутствии explicit `ActorApplied`, `SyncTransforms` или `rebase.*` marker. Это не считается controlled rebase; initial placement или competing writer остаётся `INCONCLUSIVE`. Повторные `FixedUpdate` и пачки `NetworkTick` в одном frame также остаются `INCONCLUSIVE`.
+
+**Граница:** Фильтры `rebase` и `rollback` вернули `0`; runtime driver не подключён. `Jump=NOT_OBSERVED` в доступном pointwise окне; NavMesh warning остаётся transient qualification. Compile errors отсутствуют; два MCP client-handler lifecycle messages не являются игровыми ошибками.
+
+**Решение:** Повторный одинаковый capture gate закрыт. Дальше не запускаем тот же тест по кругу. Следующий этап — implementation/debugging slice для initial placement/writer boundary и reviewed runtime driver с ordered markers/native rollback; после изменения runtime потребуется один новый serial Play Mode capture.
+
+**Файлы:** `docs/world/floatingorigin/06Z_RUNTIME_CAPTURE_FOLLOWUP_03.md/.json`; обновлены roadmap и этот журнал. Код, сцены, префабы и NavMesh не изменялись.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Z — reviewed controlled-rebase transaction boundary contract)
 
 **Задача:** Продолжить интеграцию после source audit безопасным runtime-independent этапом: зафиксировать explicit user-controlled trigger, строгую последовательность rebase phases и отдельную rollback boundary до подключения concrete adapters.

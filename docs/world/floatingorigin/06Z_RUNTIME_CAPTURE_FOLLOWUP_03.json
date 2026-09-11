@@ -1,0 +1,57 @@
+{
+  "ticket": "T-FO06Z",
+  "date": "2026-09-11",
+  "scope": "post-playtest pointwise Unity MCP review",
+  "editor": {
+    "playMode": false,
+    "activeAssetPath": "Assets/_Project/Scenes/BootstrapScene.unity",
+    "selectedGameObject": "NetworkPlayer_GlobalPilot",
+    "hasCompilationErrors": false
+  },
+  "capture": {
+    "probeRecordsWindow": 41,
+    "binding": "4872018665147106836/94/1/1/2",
+    "baselineFrame": 221,
+    "stablePlacementRange": "frames 245-290",
+    "movementRange": "frames 291-300"
+  },
+  "findings": {
+    "baseline": "PASS",
+    "movement": "PASS_AFTER_PLACEMENT_RECOVERY",
+    "jump": "NOT_OBSERVED",
+    "initialPlacementOrWriterAnomaly": "INCONCLUSIVE",
+    "runtimeSchedulingOrder": "INCONCLUSIVE",
+    "cameraOwnership": "PASS_SAMPLED",
+    "shipDeckNav": "PASS_WITH_TRANSIENT_NAVMESH_WARNING",
+    "passengerProvenance": "PASS_WITH_TRANSIENT_NAVMESH_WARNING",
+    "rebaseMarkers": [],
+    "rollbackMarkers": [],
+    "rebase": "NOT_OBSERVED",
+    "rollback": "NOT_OBSERVED"
+  },
+  "anomaly": {
+    "initialY": 1.0,
+    "lowestObservedY": -7.41,
+    "recoveredY": 2502.77,
+    "recoveryFrame": 235,
+    "explicitMarkerForRecovery": false
+  },
+  "deckPassenger": {
+    "decks": 20,
+    "passengers": 20,
+    "allSampledDecksReady": true,
+    "allSampledPassengersOnNavMesh": true
+  },
+  "gate": {
+    "editorStopped": "PASS",
+    "compile": "PASS",
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "liveManifestPublication": false,
+    "applyRebuildValidatePublishConnected": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "Stop repeating identical captures; implement reviewed runtime driver/marker boundary and diagnose initial placement or competing writer before the next serial Play Mode capture."
+}

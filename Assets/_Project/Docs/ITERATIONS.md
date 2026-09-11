@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06Y — fourth user runtime capture follow-up)
+
+**Задача:** Точечно разобрать текущий пользовательский Play Mode capture через Unity MCP без загрузки полного Console Log в контекст.
+
+**Результат:** В активном Play Mode подтверждены baseline transition на frame `271`, `Physics.SyncTransforms.begin/end`, `baseline.ActorApplied`, `baseline.AcknowledgeApplied`, `adapter=Ready`, jump, controlled movement, стабильный binding `5044784805265246929/94/1/1/2` и post-movement stable state. Camera после примерно frame `597` перешла в `skip(... cursor=None)` при сохранённом target.
+
+**Граница:** Runtime rebase, post-rebase continuity, rollback, participant admission, live manifest и passenger/NavMesh readiness не подтверждены. Повторные FixedUpdate/NetworkTick остаются `INCONCLUSIVE`. Play Mode агентом не останавливался; код, сцены и префабы не изменялись.
+
+**Файлы:** `docs/world/floatingorigin/06Y_RUNTIME_CAPTURE_FOLLOWUP_04.md`, `docs/world/floatingorigin/06Y_RUNTIME_CAPTURE_FOLLOWUP_04.json`, обновлены `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md` и этот журнал.
+
+**Следующий шаг:** Отдельный user-controlled участок с фактическим runtime rebase/post-rebase continuity, rollback и passenger/deck readiness; не подключать concrete adapters и `Apply/Rebuild/Validate/Publish`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Y — next serial runtime evidence gate)
 
 **Задача:** Зафиксировать следующий user-controlled capture gate после source analysis 04 и подготовить дальнейшую интеграцию без преждевременного подключения runtime rebase.

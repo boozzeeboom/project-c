@@ -1,0 +1,77 @@
+{
+  "ticket": "T-FO06Y",
+  "attempt": 4,
+  "date": "2026-09-11",
+  "source": "Pointwise Unity MCP Console queries during active Play Mode; full export not used.",
+  "editor": {
+    "playMode": true,
+    "activeScene": "Assets/_Project/Scenes/BootstrapScene.unity",
+    "selectedGameObject": "NetworkPlayer_GlobalPilot",
+    "hasCompilationErrors": false
+  },
+  "evidenceWindow": {
+    "frames": "271..1381",
+    "fixedTime": "2.8200..31.8600",
+    "aggregatedProbeRecordsObserved": 126,
+    "binding": "5044784805265246929/94/1/1/2"
+  },
+  "confirmed": {
+    "baselineOrdering": true,
+    "physicsBaselineSync": true,
+    "adapterReady": true,
+    "baselinePlaced": true,
+    "jump": true,
+    "controlledMovement": true,
+    "bindingContinuity": true,
+    "postMovementStable": true,
+    "rootMotionDisplacement": false,
+    "cameraTargetPresent": true
+  },
+  "baselineFrame": 271,
+  "movementSamples": [
+    {"frame": 412, "position": [39992.07, 2502.17, 40000.71], "motion": [0.0, -0.05, 0.12]},
+    {"frame": 449, "position": [39990.21, 2502.17, 40001.48], "motion": [0.0, -0.05, -0.13]},
+    {"frame": 482, "position": [39991.30, 2502.17, 40002.87], "motion": [-0.23, -0.12, -0.17]},
+    {"frame": 522, "position": [39992.68, 2502.17, 39999.43], "motion": [0.09, -0.03, 0.02]}
+  ],
+  "jumpSamples": [
+    {"frame": 330, "y": 2502.542, "velocityY": 17.889},
+    {"frame": 345, "y": 2507.801, "velocityY": 10.264},
+    {"frame": 370, "y": 2509.958, "velocityY": -3.251},
+    {"frame": 395, "y": 2503.013, "velocityY": -16.749}
+  ],
+  "camera": {
+    "fullLateUpdateObservedThroughFrame": 560,
+    "skipObservedFromApproximatelyFrame": 597,
+    "skipReason": "cursor=None",
+    "targetLost": false
+  },
+  "network": {
+    "controlRevisionsObserved": "1..30",
+    "networkTickObservedThroughApproximately": 889,
+    "repeatedFixedUpdateOrMultipleNetworkTick": true,
+    "orderingDecision": "INCONCLUSIVE"
+  },
+  "targetedSearches": {
+    "rebase": "NO_MATCH_IN_CURRENT_CONSOLE_BUFFER",
+    "rollback": "NO_MATCH_IN_CURRENT_CONSOLE_BUFFER",
+    "ShipDeckNav": "NO_MATCH_IN_CURRENT_CONSOLE_BUFFER",
+    "Failed to create agent": "NO_MATCH_IN_CURRENT_CONSOLE_BUFFER"
+  },
+  "gate": {
+    "baselineOrderingConfirmed": true,
+    "physicsBaselineConfirmed": true,
+    "controlledMovementConfirmed": true,
+    "jumpConfirmed": true,
+    "bindingContinuityConfirmed": true,
+    "postMovementStable": true,
+    "runtimeRebaseConfirmed": false,
+    "postRebaseContinuity": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "liveManifestPublication": false,
+    "passengerNavMesh": "INCONCLUSIVE",
+    "runtimeProofComplete": false
+  },
+  "scope": "No code, scene, prefab, or runtime mutation performed by the agent; Play Mode was not stopped by the agent."
+}

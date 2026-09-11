@@ -6,7 +6,7 @@ namespace ProjectC.World.FloatingOrigin.Network
     /// T-FO06AB: explicit user-controlled runtime boundary for the next rebase slice.
     /// The driver validates the trigger, delegates closed-world preparation to the existing
     /// coordinator and emits ordered evidence. It fails closed before native Apply/Rebuild/Validate/Publish
-    /// until a concrete adapter is supplied.
+    /// until a concrete adapter and a proven readiness bundle are supplied.
     /// </summary>
     public interface IGlobalMotionRebaseRuntimeDriverAdapter
     {
@@ -24,6 +24,7 @@ namespace ProjectC.World.FloatingOrigin.Network
 
     /// <summary>
     /// Runtime driver shell. It accepts no automatic threshold trigger and performs no Unity state mutation itself.
+    /// Readiness authorization is explicit and fail-closed.
     /// </summary>
     public sealed class GlobalMotionRebaseRuntimeDriver
     {
@@ -31,10 +32,14 @@ namespace ProjectC.World.FloatingOrigin.Network
         private readonly IGlobalMotionRebaseRuntimeDriverAdapter _adapter;
         private GlobalMotionRebaseTriggerRequest _trigger;
         private GlobalMotionRebaseRequest _request;
+        private GlobalMotionRebaseReadinessBundle _readiness;
+        private bool _readinessAuthorized;
 
         public GlobalMotionRebaseTransactionPhase Phase { get; private set; } = GlobalMotionRebaseTransactionPhase.Idle;
         public Guid ActiveTransactionId => _trigger.TransactionId;
         public GlobalMotionRebaseTransactionPhase LastTerminalPhase { get; private set; } = GlobalMotionRebaseTransactionPhase.Idle;
+        public bool IsReadinessAuthorized => _readinessAuthorized && _readiness.IsReady;
+        public GlobalMotionRebaseReadinessBundle Readiness => _readiness;
 
         public GlobalMotionRebaseRuntimeDriver(
             GlobalMotionRebaseCoordinator coordinator,
@@ -44,12 +49,38 @@ namespace ProjectC.World.FloatingOrigin.Network
             _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         }
 
+        public bool TryAuthorizeReadiness(GlobalMotionRebaseReadinessBundle readiness, out string error)
+        {
+            error = null;
+            if (Phase != GlobalMotionRebaseTransactionPhase.Idle)
+            {
+                error = "readiness_authorization_requires_idle:phase=" + Phase;
+                return false;
+            }
+            if (!readiness.IsReady)
+            {
+                error = "readiness_bundle_not_ready:" + (string.IsNullOrEmpty(readiness.FailureReason) ? "unknown" : readiness.FailureReason);
+                return false;
+            }
+
+            _readiness = readiness;
+            _readinessAuthorized = true;
+            Record("ReadinessAuthorized", "manifest=" + readiness.ManifestDigest + ";session=" + readiness.SessionIdentity + ";participants=" + readiness.ParticipantCount);
+            return true;
+        }
+
         public bool TryRequestUserControlled(
             ulong frameGeneration,
             string reason,
             out string error)
         {
             error = null;
+            if (!IsReadinessAuthorized)
+            {
+                error = "readiness_bundle_not_authorized";
+                Record("Rejected", error);
+                return false;
+            }
             if (Phase != GlobalMotionRebaseTransactionPhase.Idle)
             {
                 error = "driver_not_idle:phase=" + Phase;
@@ -97,6 +128,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             _coordinator.Reset();
             _trigger = default;
             _request = default;
+            _readiness = GlobalMotionRebaseReadinessBundle.Blocked("readiness_reset");
+            _readinessAuthorized = false;
             Phase = GlobalMotionRebaseTransactionPhase.Idle;
             LastTerminalPhase = GlobalMotionRebaseTransactionPhase.Idle;
             Record("Reset", null);

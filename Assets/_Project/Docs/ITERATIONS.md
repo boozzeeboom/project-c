@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06AH — runtime driver readiness authorization)
+
+**Задача:** Интегрировать aggregated readiness bundle с explicit runtime driver boundary, сохранив fail-closed поведение.
+
+**Результат:** `GlobalMotionRebaseRuntimeDriver` теперь хранит readiness bundle, предоставляет `TryAuthorizeReadiness`, требует `IsReadinessAuthorized` перед `TryRequestUserControlled` и очищает authorization при `TryReset`. Authorization возможна только в `Idle` и только для `bundle.IsReady == true`.
+
+**Граница:** Concrete adapters, valid bundle creation, manifest publication, participant discovery, Unity mutation, Apply/Rebuild/Validate/Publish, rollback, BootstrapScene и Play Mode не изменялись. Compile PASS (`No compile errors`); текущие gates: `readinessBundle=BLOCKED`, `readinessAuthorization=NOT_GRANTED`, `nativeApplyPipeline=NOT_CONNECTED`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Следующий этап:** Получить user-controlled runtime evidence, достаточный для valid readiness bundle, до подключения concrete adapters.
+
+**Файлы:** `GlobalMotionRebaseRuntimeDriver.cs`, `docs/world/floatingorigin/06AH_DRIVER_READINESS_AUTHORIZATION.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AG — aggregated rebase readiness bundle)
 
 **Задача:** Безопасно объединить уже существующие независимые validators в единый read-only readiness result.

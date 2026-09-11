@@ -1,0 +1,42 @@
+{
+  "ticket": "T-FO06AH",
+  "date": "2026-09-11",
+  "scope": "runtime driver readiness authorization",
+  "ticketAssignment": "next free substage after T-FO06AG; no existing 06AH report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseRuntimeDriver.cs"
+  ],
+  "integration": [
+    "GlobalMotionRebaseReadinessBundle",
+    "GlobalMotionRebaseRuntimeDriver.TryAuthorizeReadiness",
+    "TryRequestUserControlled admission check"
+  ],
+  "behavior": {
+    "authorizationRequiresIdle": true,
+    "authorizationRequiresReadyBundle": true,
+    "requestRequiresAuthorization": true,
+    "resetClearsAuthorization": true,
+    "automaticTrigger": false
+  },
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "readinessBundle": "BLOCKED",
+    "readinessAuthorization": "NOT_GRANTED",
+    "participantAdmission": "NOT_READY",
+    "liveManifestPublication": "NOT_PROVEN",
+    "nativeApplyPipeline": "NOT_CONNECTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "scopeBoundary": {
+    "validBundleCreation": "NOT_PROVEN",
+    "participantDiscovery": "NOT_CONNECTED",
+    "manifestPublication": "NOT_CONNECTED",
+    "nativeMutation": "NOT_IMPLEMENTED",
+    "nativeRollback": "NOT_IMPLEMENTED",
+    "bootstrapScene": "UNCHANGED"
+  },
+  "nextStep": "Obtain user-controlled runtime evidence sufficient to produce a valid readiness bundle before considering concrete adapter connection."
+}

@@ -1,0 +1,43 @@
+{
+  "ticket": "T-FO06AE",
+  "date": "2026-09-11",
+  "scope": "live manifest receipt source",
+  "ticketAssignment": "next free substage after T-FO06AD; no existing 06AE report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseLiveManifestReceipt.cs"
+  ],
+  "receiptFields": [
+    "manifestDigest",
+    "publisherIdentity",
+    "sessionGeneration",
+    "publicationGeneration",
+    "entryCount"
+  ],
+  "issueRequirements": [
+    "required manifest coverage",
+    "valid publisher identity",
+    "non-zero session generation",
+    "non-zero publication generation",
+    "admission policy pass for every manifest entry"
+  ],
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "participantAdmission": "NOT_READY",
+    "runtimeAdapterReady": "NOT_READY",
+    "runtimeProofComplete": false,
+    "rollbackReady": false,
+    "liveManifestPublication": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "scopeBoundary": {
+    "runtimeDiscovery": "NOT_CONNECTED",
+    "transportPublication": "NOT_CONNECTED",
+    "runtimeDriver": "NOT_CONNECTED",
+    "nativeMutation": "NOT_IMPLEMENTED",
+    "nativeRollback": "NOT_IMPLEMENTED"
+  },
+  "nextStep": "Obtain user-controlled evidence for reviewed admission and actual live publication, then validate the receipt against a real runtime session."
+}

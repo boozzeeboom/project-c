@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06AE — live manifest receipt source)
+
+**Задача:** Подготовить pure evidence source для participant admission и live manifest publication, сохранив runtime discovery и публикацию отключёнными.
+
+**Результат:** Созданы `GlobalMotionRebaseLiveManifestReceipt` и `GlobalMotionRebaseLiveManifestReceiptSource`. Receipt фиксирует manifest digest, publisher identity, session/publication generations и entry count. Выдача разрешается только после required manifest coverage и admission policy pass для каждого entry; validation повторяет digest/count/publisher checks.
+
+**Граница:** Receipt не публикуется в NGO, не обнаруживает Unity objects, не подключён к runtime driver, native adapters, Apply/Rebuild/Validate/Publish или rollback. Текущие gates остаются `participantAdmission=NOT_READY`, `liveManifestPublication=false`, `runtimeRebaseReadiness=NOT_READY`. Compile PASS (`No compile errors`); Play Mode не запускался.
+
+**Следующий этап:** Получить user-controlled evidence для reviewed admission и фактической live publication, затем валидировать receipt на реальной runtime session.
+
+**Файлы:** `GlobalMotionRebaseLiveManifestReceipt.cs`, `docs/world/floatingorigin/06AE_LIVE_MANIFEST_RECEIPT_SOURCE.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AD — runtime readiness gate)
 
 **Задача:** Добавить fail-closed gate перед подключением sealed native adapter set к runtime driver.

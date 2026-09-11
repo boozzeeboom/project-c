@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06V — ShipDeckNav/NavMesh readiness gate)
+
+**Задача:** Добавить только dormant pure fail-closed readiness contract для `ShipDeckNav`/NavMesh и completed passenger attachment после пользовательского T-FO06U capture, не исправляя runtime warnings и не меняя startup.
+
+**Результат:** Созданы `ShipDeckNavReadinessContract.cs`, `ValidateShipDeckNavReadinessContract.cs`, `06V_SHIP_DECK_NAV_READINESS_GATE.json` и `06V_SHIP_DECK_NAV_READINESS_GATE.md`. Контракт требует отдельный valid `NavMeshDataInstance`, созданный proxy agent, `proxyAgentIsOnNavMesh`, explicit attachment request, resolved anchor, completed attachment и passenger provenance. Одна строка `ShipDeckNav Registered` или один attachment request readiness не дают.
+
+**Проверки:** Validator содержит 15 pure checks, включая deterministic failure precedence и evidence immutability. Unity compile — `No compile errors`; menu validator — `15 pure checks PASS / 0 FAIL`. Play Mode, runtime rebase, live manifest admission, scene/prefab mutation и runtime startup changes не выполнялись.
+
+**Граница:** Pure contract/validator — **PASS только после compile verification**. Runtime NavMeshDataInstance validity, proxy-agent readiness, `isOnNavMesh`, completed passenger attachment и provenance — **UNVERIFIED/INCONCLUSIVE**. Runtime rebase readiness — **NOT READY**, admitted participants `0`.
+
+**Следующий шаг:** Не подключать contract автоматически и не менять `ShipDeckNav.cs`, `NpcBrain.cs` или `ShipCrewSpawner.cs`; отдельный user-controlled runtime evidence capture возможен только после согласования adapter boundary.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06U — user Play Mode runtime-proof audit)
 
 **Задача:** Проверить предоставленный пользователем 15-секундный Unity runtime log против dormant proof contract T-FO06T и fail-closed admission policy T-FO06S.

@@ -1,0 +1,32 @@
+{
+  "ticket": "T-FO06V",
+  "date": "2026-09-11",
+  "previousCommit": "389c3aee",
+  "scope": "pure fail-closed ShipDeckNav/NavMesh readiness and completed passenger attachment contract",
+  "checks": {
+    "planned": 15,
+    "passed": 15,
+    "failed": 0
+  },
+  "requirements": {
+    "shipDeckNavRegistration": true,
+    "navMeshDataInstanceValid": true,
+    "proxyAgentCreated": true,
+    "proxyAgentIsOnNavMesh": true,
+    "passengerAttachmentRequested": true,
+    "passengerAnchorResolved": true,
+    "passengerAttachmentCompleted": true,
+    "passengerProvenanceRecorded": true
+  },
+  "runtime": {
+    "runtimeStartupChanged": false,
+    "playModeExecuted": false,
+    "runtimeRebaseExecuted": false,
+    "liveManifestAdmission": false,
+    "sceneOrPrefabMutation": false,
+    "runtimeReadiness": "UNVERIFIED",
+    "rebaseReadiness": "NOT READY",
+    "admittedParticipants": 0
+  },
+  "blocker": "T-FO06U recorded repeated NavMesh agent creation failures; Registered and attachment requested are not sufficient evidence."
+}

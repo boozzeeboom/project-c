@@ -240,6 +240,17 @@ namespace ProjectC.Player
         public bool IsInShip => _inShip;
         public ShipController CurrentShip => _currentShip;
 
+        // T-FO06Y: read-only runtime evidence surface for the dormant pilot probe.
+        public CharacterController DiagnosticController => _controller;
+        public Animator DiagnosticAnimator => _animator;
+        public Vector3 DiagnosticVelocity => _velocity;
+        public bool DiagnosticIsGrounded => _isGrounded;
+        public bool DiagnosticOnPlatform => _onPlatform;
+        public Vector3 DiagnosticPlatformDelta => _platformDelta;
+        public string DiagnosticPlatformName => _currentPlatform != null ? _currentPlatform.name : "<none>";
+        public bool DiagnosticControllerEnabled => _controller != null && _controller.enabled;
+        public SpringArmCamera DiagnosticCamera => _myCamera;
+
         /// <summary>
         /// T-PLAYER-PERSIST: последний корабль игрока (не обнуляется при выходе).
         /// Используется для ship-proximity respawn когда IsInShip=false после падения с корабля.
@@ -991,6 +1002,7 @@ namespace ProjectC.Player
         private void FixedUpdate()
         {
             if (!IsOwner) return;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "FixedUpdate.begin", $"pos={transform.position} grounded={_controller != null && _controller.isGrounded} velocity={_velocity}");
             if (!CanSimulateInCurrentCoordinates) { ClearCoordinateInput(); return; }
             if (UsesGlobalCoordinates) { _hasServerPosition = false; return; } // Legacy correction is a competing float-position writer.
 
@@ -1008,6 +1020,7 @@ namespace ProjectC.Player
             }
 
             transform.rotation = Quaternion.Slerp(transform.rotation, transform.rotation, rotationSpeed * Time.fixedDeltaTime);
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "FixedUpdate.end", $"pos={transform.position} grounded={_controller != null && _controller.isGrounded} velocity={_velocity}");
         }
 
         /// <summary>
@@ -1126,7 +1139,10 @@ namespace ProjectC.Player
             // Y держит keep-grounded (-2) — нет подпрыгивания от отдельных Move.
             Vector3 motion = horizontalVel + windVel;
             motion.y += _velocity.y;
-            _controller.Move(motion * Time.deltaTime + _platformDelta);
+            Vector3 controllerMotion = motion * Time.deltaTime + _platformDelta;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.before", $"motion={controllerMotion} grounded={_controller.isGrounded} onPlatform={_onPlatform} platformDelta={_platformDelta}");
+            _controller.Move(controllerMotion);
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.after", $"pos={transform.position} grounded={_controller.isGrounded} velocity={_velocity}");
         }
 
         // ==================== MOVING-PLATFORM CARRY ====================
@@ -1255,8 +1271,9 @@ namespace ProjectC.Player
             }
 
             // НЕ двигаем контроллер здесь — дельта уходит в ЕДИНЫЙ Move в ProcessMovement
-            // (два отдельных Move за кадр заставляли isGrounded мигать → «подпрыгивание»).
+            // (два отдельных Move за кадр заставляли isGrounded мигать → «подпрыгивание").
             _platformDelta = deltaPos;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "PlatformCarry", $"platform={platform.name} delta={deltaPos} yaw={_carryYaw}");
 
             _platformLastPos = platform.position;
             _platformLastRot = platform.rotation;

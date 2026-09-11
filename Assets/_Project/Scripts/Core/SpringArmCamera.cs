@@ -128,6 +128,15 @@ namespace ProjectC.Core
         public Camera CameraComponent => _camera;
         public Transform TargetTransform => target;
 
+        // T-FO06Y: read-only runtime evidence surface for camera ownership/history capture.
+        public bool CameraInitialized => _cameraInitialized;
+        public Vector3 LagTargetPosition => _lagTargetPos;
+        public float LagSpeed => _lagSpeed;
+        public bool WasColliding => _wasColliding;
+        public Vector3 LastCollisionPosition => _lastCollisionPos;
+        public float CollisionExitTime => _collisionExitTime;
+        public bool IsShipMode => _isShip;
+
         public Vector3 CameraForward
         {
             get
@@ -255,7 +264,13 @@ namespace ProjectC.Core
 
         private void LateUpdate()
         {
-            if (target == null || Cursor.lockState != CursorLockMode.Locked) return;
+            if (target == null || Cursor.lockState != CursorLockMode.Locked)
+            {
+                ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.skip", $"target={(target != null ? target.name : "<none>")} cursor={Cursor.lockState}");
+                return;
+            }
+
+            ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.begin", $"target={target.name} lagTarget={_lagTargetPos} colliding={_wasColliding}");
 
             // Auto-snap при большом скачке (телепорт, загрузка сохранения, респавн).
             // UpdateLag ловит только >100m; здесь обрабатываем 10-100m.
@@ -284,6 +299,7 @@ namespace ProjectC.Core
             UpdateAdaptiveDistance();
             SmoothPosition(resolvedPos);
             UpdateLookAt();
+            ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.end", $"pos={transform.position} lagTarget={_lagTargetPos} colliding={_wasColliding} collisionPos={_lastCollisionPos}");
         }
 
         private void ReadInput()

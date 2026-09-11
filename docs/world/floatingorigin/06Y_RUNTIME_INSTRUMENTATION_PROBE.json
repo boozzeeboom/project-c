@@ -1,0 +1,49 @@
+{
+  "ticket": "T-FO06Y",
+  "date": "2026-09-11",
+  "status": "INSTRUMENTATION_READY;COMPILE_PASS;RUNTIME_UNVERIFIED",
+  "scope": {
+    "runtimeStartedByAssistant": false,
+    "playModeExecuted": false,
+    "runtimeRebaseExecuted": false,
+    "participantAdmissionChanged": false,
+    "defaultCaptureEnabled": false
+  },
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRuntimeEvidenceProbe.cs",
+    "Assets/_Project/Scripts/Player/NetworkPlayer.cs",
+    "Assets/_Project/Scripts/Core/SpringArmCamera.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionReplicator.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionPoseAdapter.cs",
+    "Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab"
+  ],
+  "evidenceChannels": {
+    "playerMovement": ["FixedUpdate.begin", "FixedUpdate.end", "CharacterController.Move.before", "CharacterController.Move.after"],
+    "characterController": ["isGrounded", "enabled", "velocity", "platformDelta"],
+    "platformCarry": ["PlatformCarry", "onPlatform", "platform name", "applied delta"],
+    "animator": ["enabled", "applyRootMotion", "deltaPosition", "deltaRotation"],
+    "ngoOrdering": ["NetworkTick", "ControlAccepted", "AcknowledgeApplied"],
+    "physicsOrdering": ["SyncTransforms.begin", "SyncTransforms.end"],
+    "cameraOwnershipHistory": ["LateUpdate.begin", "LateUpdate.end", "Billboard.ActiveCamera", "target", "lagTarget", "collision history"],
+    "baselineContinuity": ["ControlAccepted", "ActorApplied", "AdapterReady", "AcknowledgeApplied", "revision", "sequence", "binding generations"]
+  },
+  "configuration": {
+    "sampleEveryFrames": 5,
+    "maxEventsPerFrame": 128,
+    "logPrefix": "[T-FO06Y]"
+  },
+  "staticVerification": {
+    "unityCompile": "No compile errors",
+    "pilotPrefabProbePresent": true,
+    "runtimeRecords": false
+  },
+  "gateDecision": {
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "applyRebuildValidatePublishConnected": false,
+    "navMeshPassengerBlocker": "UNCHANGED",
+    "decision": "Instrumentation is ready for a user-controlled capture; runtime proof and rebase readiness remain NOT READY."
+  }
+}

@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06Y — dormant runtime instrumentation probe)
+
+**Задача:** Подготовить отдельный user-controlled runtime capture для изоляции jitter boundaries после T-FO06X, не запуская Play Mode и не подключая runtime rebase.
+
+**Результат:** Создан `GlobalMotionRuntimeEvidenceProbe.cs` и добавлен только в isolated `NetworkPlayer_GlobalPilot.prefab`; `_captureEnabled=false` по умолчанию. Read-only hooks в `NetworkPlayer`, `SpringArmCamera`, `GlobalMotionReplicator` и `GlobalMotionPoseAdapter` записывают ordered `[T-FO06Y]` markers для movement/CharacterController, grounding/platform carry, Animator root-motion state, NGO tick/control/baseline, `Physics.SyncTransforms()` и camera target/lag/collision history.
+
+**Проверки:** Unity compile — **No compile errors** после исправления local-name conflict, namespace и Unity 6 obsolete API. Pilot prefab metadata подтверждает новый компонент. Play Mode, screenshots, runtime state mutation, rebase, admission и live manifest не выполнялись. Reports: `docs/world/floatingorigin/06Y_RUNTIME_INSTRUMENTATION_PROBE.md/.json`.
+
+**Граница:** Runtime evidence ещё отсутствует. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`; NavMesh/passenger blocker сохраняется. Runtime rebase readiness — **NOT READY**.
+
+**Следующий шаг:** Пользователь вручную включает `Capture Enabled` на `NetworkPlayer_GlobalPilot(Clone)` в Play Mode и экспортирует `[T-FO06Y]` lines вместе с Console Log. До этого не подключать concrete adapters, `Apply/Rebuild/Validate/Publish` или общий transform shift.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06X — новый 20-секундный Host runtime-proof follow-up)
 
 **Задача:** Проверить новый предоставленный пользователем 20-секундный Host Play Mode log против T-FO06T/T-FO06S и зафиксировать визуально сохраняющийся jitter без преждевременного включения runtime rebase.

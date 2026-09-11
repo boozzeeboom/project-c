@@ -151,6 +151,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                     {
                         if (!ParticipantAlive(actor)) throw new InvalidOperationException("A required baseline participant was destroyed.");
                         actor.OnGlobalBaselineApplied(snapshot.Binding);
+                        GlobalMotionRuntimeEvidenceProbe.RecordEvent("baseline", "ActorApplied", $"binding={snapshot.Binding.SessionId}/{snapshot.Binding.NetworkObjectId}/{snapshot.Binding.SpawnGeneration}/{snapshot.Binding.AuthorityGeneration}/{snapshot.Binding.DiscontinuityGeneration}");
                         if (!ContextValid() || !ReferenceEquals(frame, Frame) || _transport.Control.Baseline.Binding != snapshot.Binding)
                             return Block(MotionAdapterStatus.WaitingForControl);
                     }
@@ -162,6 +163,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (!ParticipantsReady(role)) return Block(MotionAdapterStatus.WaitingForActors);
             if (!IsBaselinePlaced || _transport.Control.Baseline.Binding != snapshot.Binding) return Block(MotionAdapterStatus.WaitingForControl);
             if (!_transport.AcknowledgeBaselineApplied(snapshot.Binding)) return Block(MotionAdapterStatus.DriverBlocked);
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("baseline", "AdapterReady", $"status={Status} binding={snapshot.Binding.SessionId}/{snapshot.Binding.NetworkObjectId}/{snapshot.Binding.SpawnGeneration}/{snapshot.Binding.AuthorityGeneration}/{snapshot.Binding.DiscontinuityGeneration}");
             Status = MotionAdapterStatus.Ready; return true;
         }
 
@@ -383,7 +385,12 @@ namespace ProjectC.World.FloatingOrigin.Network
                 { transform.localPosition = plan.ParentLocalPosition; transform.localRotation = plan.ParentLocalRotation; }
                 else transform.SetPositionAndRotation(plan.Position, plan.Rotation);
                 if (!transform.localScale.Equals(plan.Scale)) transform.localScale = plan.Scale;
-                if (baseline || _body == null) Physics.SyncTransforms();
+                if (baseline || _body == null)
+                {
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("physics", "SyncTransforms.begin", $"baseline={baseline} role={role} binding={plan.Binding.SessionId}/{plan.Binding.NetworkObjectId}/{plan.Binding.SpawnGeneration}/{plan.Binding.AuthorityGeneration}/{plan.Binding.DiscontinuityGeneration}");
+                    Physics.SyncTransforms();
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("physics", "SyncTransforms.end", $"baseline={baseline} role={role}");
+                }
                 return true;
             }
             catch (Exception e)

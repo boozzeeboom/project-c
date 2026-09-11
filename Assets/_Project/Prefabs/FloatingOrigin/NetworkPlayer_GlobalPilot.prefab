@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 9031079689282532457}
   - component: {fileID: 563896862074197155}
   - component: {fileID: 204321592989762599}
+  - component: {fileID: 6469824223323257216}
   m_Layer: 0
   m_Name: NetworkPlayer_GlobalPilot
   m_TagString: Player
@@ -295,6 +296,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalMotionPoseAdapter
   ShowTopMostFoldoutHeaderGroup: 1
   _coordinatesRequired: 1
+--- !u!114 &6469824223323257216
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 362c842a9002d1340ad2599dfe0b5051, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe
+  _captureEnabled: 0
+  _sampleEveryFrames: 5
+  _maxEventsPerFrame: 128
 --- !u!1 &1062441620158583446
 GameObject:
   m_ObjectHideFlags: 0

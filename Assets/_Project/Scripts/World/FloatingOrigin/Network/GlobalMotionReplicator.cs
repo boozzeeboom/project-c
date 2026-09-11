@@ -178,6 +178,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 _publishSequence = GlobalMotionApplication.ResumeSequence(_hasPublishedInBinding, _publishSequence, Control.Baseline.Sequence);
                 _baselineApplied = true;
+                var acceptedBinding = Control.Baseline.Binding;
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("baseline", "AcknowledgeApplied", $"revision={Control.Revision} sequence={Control.Baseline.Sequence} binding={acceptedBinding.SessionId}/{acceptedBinding.NetworkObjectId}/{acceptedBinding.SpawnGeneration}/{acceptedBinding.AuthorityGeneration}/{acceptedBinding.DiscontinuityGeneration}");
             }
             return true;
         }
@@ -323,12 +325,15 @@ namespace ProjectC.World.FloatingOrigin.Network
         {
             var previous = Control;
             if (!_receiver.TryApply(control, sender, Unity.Netcode.NetworkManager.ServerClientId, NetworkObjectId)) return;
+            var binding = control.Baseline.Binding;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("ngo", "ControlAccepted", $"revision={control.Revision} active={control.IsActive} sequence={control.Baseline.Sequence} binding={binding.SessionId}/{binding.NetworkObjectId}/{binding.SpawnGeneration}/{binding.AuthorityGeneration}/{binding.DiscontinuityGeneration}");
             if (!control.IsActive || !previous.HasStream || previous.Baseline.Binding != control.Baseline.Binding)
             { _baselineApplied = false; _publishSequence = 0; _hasPublishedTick = false; _hasPublishedInBinding = false; }
         }
 
         private void OnNetworkTick()
         {
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("ngo", "NetworkTick", $"tick={(NetworkManager != null ? NetworkManager.ServerTime.Tick : -1)} server={IsServer} spawned={IsSpawned} active={_serverControl.IsActive}");
             if (IsServer && IsSpawned && isActiveAndEnabled && _serverControl.IsActive)
                 GlobalMotionPlayerBootstrap.RefreshSpawnSeed(this);
             if (!IsServer || !IsSpawned || !isActiveAndEnabled || !_serverControl.IsActive || ServerNow < _nextKeyframeTime) return;

@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06AD — runtime readiness gate)
+
+**Задача:** Добавить fail-closed gate перед подключением sealed native adapter set к runtime driver.
+
+**Результат:** Созданы `GlobalMotionRebaseRuntimeReadinessEvidence` и `GlobalMotionRebaseRuntimeReadinessGate`. Gate требует live manifest publication, required manifest coverage, sealed/full native adapter set и admission evidence для каждого manifest entry. Текущие project gates закономерно блокируют подключение: `participantAdmission=NOT_READY`, `runtimeAdapterReady=NOT_READY`, `runtimeProofComplete=false`, `rollbackReady=false`, `liveManifestPublication=false`.
+
+**Граница:** Unity state, runtime driver, native adapters, participant discovery, manifest publication и rollback не изменялись. Compile PASS (`No compile errors`); Play Mode не запускался.
+
+**Следующий этап:** Подготовить evidence source для participant admission/live manifest без подключения native adapters до live receipts.
+
+**Файлы:** `GlobalMotionRebaseRuntimeReadinessGate.cs`, `docs/world/floatingorigin/06AD_RUNTIME_READINESS_GATE.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AC — native adapter contract)
 
 **Задача:** Зафиксировать concrete native adapter seam для Transform, Rigidbody, ShipDeckNav, CameraHistory и NetworkBaseline, сохранив participant admission и live manifest gates fail-closed.

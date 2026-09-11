@@ -1,0 +1,38 @@
+{
+  "ticket": "T-FO06AD",
+  "date": "2026-09-11",
+  "scope": "runtime readiness gate for native adapter connection",
+  "ticketAssignment": "next free substage after T-FO06AC; no existing 06AD report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseRuntimeReadinessGate.cs"
+  ],
+  "validation": [
+    "participant manifest required",
+    "live manifest publication required",
+    "required manifest coverage required",
+    "sealed native adapter set required",
+    "full native adapter coverage required",
+    "current/native-ready adapters required",
+    "Capture/Apply/Rebuild/Validate/Restore capabilities required",
+    "admission evidence required for every manifest entry"
+  ],
+  "currentProjectGate": {
+    "participantAdmission": "NOT_READY",
+    "runtimeAdapterReady": "NOT_READY",
+    "runtimeProofComplete": false,
+    "rollbackReady": false,
+    "liveManifestPublication": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "scopeBoundary": {
+    "nativeAdapterConnection": "BLOCKED_BY_READINESS",
+    "unityStateMutation": "NOT_IMPLEMENTED",
+    "runtimeDriverConnection": "NOT_CONNECTED",
+    "nativeRollback": "NOT_IMPLEMENTED"
+  },
+  "nextStep": "Prepare participant admission and live manifest evidence source without connecting native adapters until live receipts are proven."
+}

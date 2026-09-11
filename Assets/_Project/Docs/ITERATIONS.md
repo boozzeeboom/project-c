@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06O — read-only participant identity census)
+
+**Задача:** Получить доказательные identity records для fixed participant scope в уже загруженных canonical scenes, не включая runtime discovery и не изменяя Unity state.
+
+**Результат:** Создан `AuditGlobalMotionRebaseParticipantIdentities.cs`, который собирает `GlobalObjectId`, loaded hierarchy path, root identity, component types и диагностические candidate roles для `BootstrapScene` и `WorldScene_0_0`. Отчёт записывается в `docs/world/floatingorigin/06O_PARTICIPANT_IDENTITY_CENSUS.json`; добавлен рабочий документ `06O_PARTICIPANT_IDENTITY_CENSUS.md`.
+
+**Подтверждено:** Canonical scenes loaded `2/2`, `BootstrapScene` — `56` roots и `isDirty=false`, `WorldScene_0_0` — `58` roots и `isDirty=false`; найдено `22` ship-root candidates, `20` `ShipDeckNav`, `1` camera candidate и `96` `NetworkObject` candidates. `WorldRoot_0_0` и `Respawn_Default` зафиксированы как root-level marker candidates.
+
+**Проверки:** Unity compile — `No compile errors`; read-only audit выполнен в Edit Mode; сцены не сохранялись и не изменялись. Play Mode, runtime rebase, transform/physics/NavMesh mutation, camera ownership mutation, NGO baseline mutation и prefab changes не выполнялись.
+
+**Граница:** Census является evidence report, а не serialized live manifest. Candidate discovery не даёт права на automatic adoption и не доказывает camera ownership, runtime `ShipDeckNav` registration, NetworkObject lifetime/authority или participant policy. Reviewed mapping, explicit city/anchor/network boundaries и runtime ordering остаются **INCONCLUSIVE**; runtime rebase readiness — **NOT READY**.
+
+**Следующий шаг:** Выполнить reviewed mapping exact census records к `SHIP_ROOT/01–22` и `SHIP_DECK_NAV/01–20`, определить explicit `CITY_STATIC`/`WORLD_ANCHORS` boundaries и классифицировать scene-owned NetworkObject candidates без подключения runtime rebase.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06N — compile-verified coordinator/preflight/snapshot skeleton)
 
 **Задача:** Реализовать только первый fail-closed coordinator slice после design-only transaction contract, не подключая Unity objects и не выполняя runtime shift.

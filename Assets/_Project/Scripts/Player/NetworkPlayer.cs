@@ -769,6 +769,7 @@ namespace ProjectC.Player
         {
             using var _ = ProjectCPerfCounters.PlayerUpdate.Auto();
             if (!IsOwner) return;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "Update.begin", $"position={transform.position} controllerEnabled={_controller != null && _controller.enabled} inShip={_inShip} inputEnabled={_inputEnabled}");
             if (!CanSimulateInCurrentCoordinates)
             {
                 ClearCoordinateInput();
@@ -964,6 +965,7 @@ namespace ProjectC.Player
                     SubmitJumpRpc();
                 }
 
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "Update.beforeProcessMovement", $"position={transform.position} moveInput={_moveInput} jump={_jumpPressed} run={_runPressed}");
                 ProcessMovement(_moveInput, _jumpPressed, _runPressed);
 
                 // Снос ветром интегрирован в ProcessMovement (единый Move, без подпрыгивания)
@@ -1371,7 +1373,10 @@ namespace ProjectC.Player
                 // Двигатель остаётся в текущем состоянии (вкл/выкл).
 
                 // Телепорт на палубу
-                transform.position = _currentShip.GetExitPosition();
+                Vector3 exitPosition = _currentShip.GetExitPosition();
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "ShipExit.beforePositionWrite", $"position={transform.position} target={exitPosition} ship={_currentShip.name}");
+                transform.position = exitPosition;
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "ShipExit.afterPositionWrite", $"position={transform.position} target={exitPosition}");
 
                 // COMPOSITE SHIP (Phase 1): отпарентить от корабля
                 transform.SetParent(null);
@@ -2069,11 +2074,14 @@ namespace ProjectC.Player
         public void TeleportToPosition(Vector3 position)
         {
             if (RejectLegacyCoordinateWrite(nameof(TeleportToPosition))) return;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "LegacyTeleport.begin", $"position={transform.position} target={position} isOwner={IsOwner} isServer={IsServer} isClient={IsClient}");
             Debug.Log($"[NetworkPlayer] Teleport to {position}");
 
             // Отключаем CharacterController чтобы избежать коллизий
             _controller.enabled = false;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "LegacyTeleport.beforePositionWrite", $"target={position} controllerEnabled={_controller.enabled}");
             transform.position = position;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "LegacyTeleport.afterPositionWrite", $"position={transform.position}");
             _controller.enabled = true;
 
             // Сбрасываем velocity

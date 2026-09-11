@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06AA — respawn writer runtime instrumentation)
+
+**Задача:** Добавить узкие read-only markers вокруг respawn writer, `NetworkPlayer.Update`, `CharacterController.Move` и прямых position writes для следующего пользовательского capture.
+
+**Результат:** В `PlayerRespawnTracker` добавлены markers для server `Update`, fall threshold, `PerformRespawn`, `TeleportToClientRpc` до/после записи позиции, `Physics.SyncTransforms` и завершения RPC. В `NetworkPlayer` добавлены markers для owner `Update`, входа в `ProcessMovement`, выхода из корабля и legacy teleport paths. Существующие `FixedUpdate` и `CharacterController.Move` markers сохранены.
+
+**Граница:** Movement semantics, authority, respawn target, controller state, initial spawn gate и rebase/rollback behavior не изменялись. Compile PASS (`No compile errors`). Play Mode после instrumentation не запускался.
+
+**Следующий этап:** Один пользовательский Play Mode capture и точечный MCP review последовательности `respawn.* → player.Update.* → movement.CharacterController.Move.* → player.FixedUpdate.*` относительно `ngo.NetworkTick` и `baseline.*`.
+
+**Файлы:** `PlayerRespawnTracker.cs`, `NetworkPlayer.cs`, `docs/world/floatingorigin/06AA_RESPAWN_WRITER_RUNTIME_INSTRUMENTATION.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AA — respawn writer source audit)
 
 **Задача:** После runtime capture 01 проверить исходники `PlayerRespawnTracker` и связанные position writers, не меняя runtime semantics.

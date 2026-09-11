@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using ProjectC.World;
+using ProjectC.World.FloatingOrigin.Network;
 
 namespace ProjectC.Player
 {
@@ -72,6 +73,7 @@ namespace ProjectC.Player
             if (_respawnManager == null) return;
 
             float y = transform.position.y;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "Update.begin", $"owner={OwnerClientId} y={y:F3} deathY={_deathY:F3} respawning={_isRespawning} fallStart={_fallStartTime:F3}");
 
             if (y <= _deathY)
             {
@@ -82,6 +84,7 @@ namespace ProjectC.Player
 
                 if (Time.time - _fallStartTime >= _respawnDelay)
                 {
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "FallThresholdReached", $"owner={OwnerClientId} y={y:F3} elapsed={(Time.time - _fallStartTime):F3} delay={_respawnDelay:F3}");
                     PerformRespawn();
                 }
             }
@@ -99,6 +102,7 @@ namespace ProjectC.Player
         /// </summary>
         private bool PerformRespawn()
         {
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "PerformRespawn.begin", $"owner={OwnerClientId} position={transform.position} server={IsServer} client={IsClient}");
             if (_isRespawning)
             {
                 if (_debugLog) Debug.LogWarning($"[PlayerRespawnTracker] PerformRespawn skipped: already respawning (client={OwnerClientId})");
@@ -217,19 +221,23 @@ namespace ProjectC.Player
 
         private void ResetRespawningFlag()
         {
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "ResetRespawningFlag", $"owner={OwnerClientId} position={transform.position}");
             _isRespawning = false;
         }
 
         [ClientRpc]
         private void TeleportToClientRpc(Vector3 targetPosition)
         {
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "TeleportRpc.begin", $"owner={OwnerClientId} target={targetPosition} position={transform.position} isOwner={IsOwner} isServer={IsServer} isClient={IsClient}");
             // Отключаем CharacterController чтобы избежать конфликта с ручной установкой позиции
             if (_controller != null)
             {
                 _controller.enabled = false;
             }
 
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "TeleportRpc.beforePositionWrite", $"owner={OwnerClientId} target={targetPosition} controllerEnabled={_controller != null && _controller.enabled}");
             transform.position = targetPosition;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "TeleportRpc.afterPositionWrite", $"owner={OwnerClientId} position={transform.position}");
 
             if (_controller != null)
             {
@@ -244,9 +252,11 @@ namespace ProjectC.Player
             }
 
             Physics.SyncTransforms();
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "TeleportRpc.afterPhysicsSync", $"owner={OwnerClientId} position={transform.position} controllerEnabled={_controller != null && _controller.enabled}");
 
             _isRespawning = false;
 
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "TeleportRpc.end", $"owner={OwnerClientId} position={transform.position} target={targetPosition} controllerEnabled={_controller != null && _controller.enabled}");
             if (_debugLog && IsOwner)
             {
                 Debug.Log($"[PlayerRespawnTracker] Client teleported to {targetPosition}");

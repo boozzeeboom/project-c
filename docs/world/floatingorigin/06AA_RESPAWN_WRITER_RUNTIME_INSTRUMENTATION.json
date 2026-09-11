@@ -1,0 +1,48 @@
+{
+  "ticket": "T-FO06AA",
+  "date": "2026-09-11",
+  "scope": "read-only respawn writer runtime instrumentation",
+  "changedFiles": [
+    "Assets/_Project/Scripts/Player/PlayerRespawnTracker.cs",
+    "Assets/_Project/Scripts/Player/NetworkPlayer.cs"
+  ],
+  "markers": {
+    "respawn": [
+      "Update.begin",
+      "FallThresholdReached",
+      "PerformRespawn.begin",
+      "ResetRespawningFlag",
+      "TeleportRpc.begin",
+      "TeleportRpc.beforePositionWrite",
+      "TeleportRpc.afterPositionWrite",
+      "TeleportRpc.afterPhysicsSync",
+      "TeleportRpc.end"
+    ],
+    "player": [
+      "Update.begin",
+      "Update.beforeProcessMovement",
+      "ShipExit.beforePositionWrite",
+      "ShipExit.afterPositionWrite",
+      "LegacyTeleport.begin",
+      "LegacyTeleport.beforePositionWrite",
+      "LegacyTeleport.afterPositionWrite"
+    ],
+    "existing": [
+      "player.FixedUpdate.begin",
+      "movement.CharacterController.Move.before",
+      "movement.CharacterController.Move.after"
+    ]
+  },
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "semanticsChanged": false,
+  "scopeBoundary": {
+    "controlledRebase": "NOT_IMPLEMENTED",
+    "automaticTrigger": "NOT_IMPLEMENTED",
+    "rollback": "NOT_IMPLEMENTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "User-controlled Play Mode capture followed by pointwise Unity MCP review of marker ordering around respawn, CharacterController.Move, FixedUpdate and NGO ticks."
+}

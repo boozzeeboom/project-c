@@ -1,0 +1,40 @@
+{
+  "ticket": "T-FO06AG",
+  "date": "2026-09-11",
+  "scope": "aggregated rebase readiness bundle",
+  "ticketAssignment": "next free substage after T-FO06AF; no existing 06AG report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseReadinessBundle.cs"
+  ],
+  "aggregatedValidators": [
+    "live manifest session evidence",
+    "native adapter readiness",
+    "runtime readiness gate"
+  ],
+  "validationOrder": [
+    "manifest/session evidence",
+    "native adapter and runtime readiness",
+    "final readiness bundle"
+  ],
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "manifestSessionProven": false,
+    "nativeAdaptersReady": false,
+    "runtimeReady": false,
+    "participantAdmission": "NOT_READY",
+    "liveManifestPublication": "NOT_PROVEN",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "scopeBoundary": {
+    "participantDiscovery": "NOT_CONNECTED",
+    "manifestPublication": "NOT_CONNECTED",
+    "nativeAdapterInvocation": "NOT_CONNECTED",
+    "runtimeDriver": "NOT_CONNECTED",
+    "unityMutation": "NOT_IMPLEMENTED",
+    "nativeRollback": "NOT_IMPLEMENTED"
+  },
+  "nextStep": "Use the bundle as a read-only evidence result in user-controlled runtime capture before any runtime-driver connection or native mutation."
+}

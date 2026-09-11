@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06AG — aggregated rebase readiness bundle)
+
+**Задача:** Безопасно объединить уже существующие независимые validators в единый read-only readiness result.
+
+**Результат:** Созданы `GlobalMotionRebaseReadinessBundle` и `GlobalMotionRebaseReadinessBundleBuilder`. В фиксированном порядке агрегируются manifest/session evidence, native adapter readiness и runtime readiness. Первый отказ возвращается с namespaced reason `manifest_session:<reason>` или `runtime_readiness:<reason>`.
+
+**Граница:** Новых runtime side effects нет: participant discovery, manifest publication, native adapter invocation, runtime driver, Unity mutation, Apply/Rebuild/Validate/Publish и rollback не подключались. Текущие gates остаются `manifestSessionProven=false`, `nativeAdaptersReady=false`, `runtimeReady=false`, `liveManifestPublication=NOT_PROVEN`, `runtimeRebaseReadiness=NOT_READY`. Compile PASS (`No compile errors`); Play Mode не запускался.
+
+**Следующий этап:** Использовать bundle как единый read-only evidence result в user-controlled runtime capture.
+
+**Файлы:** `GlobalMotionRebaseReadinessBundle.cs`, `docs/world/floatingorigin/06AG_READINESS_BUNDLE.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AF — live manifest session evidence)
 
 **Задача:** Отделить pure receipt eligibility от фактического наблюдения participant manifest в конкретной runtime session.

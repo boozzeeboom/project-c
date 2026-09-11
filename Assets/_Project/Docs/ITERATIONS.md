@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06Y — пользовательский runtime capture follow-up)
+
+**Задача:** Проверить предоставленный пользователем Unity Console export от `2026-09-11 18:49:19` (`768` записей, около `15 секунд`) после подготовки dormant `GlobalMotionRuntimeEvidenceProbe`.
+
+**Результат:** В export отсутствуют строки с префиксом `[T-FO06Y]`; фактически найдено `0` probe records. Причина отсутствия не устанавливается по одному export; runtime instrumentation evidence не получено. Созданы `docs/world/floatingorigin/06Y_RUNTIME_CAPTURE_FOLLOWUP.md` и `.json`.
+
+**Подтверждено:** Static native/player startup повторно PASS: `ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>`, `CompletePlacement ready=True;baseline=True`, `SpawnAsPlayerObject` и `origin=(0,0,0);local=(39992.00,1.00,40000.00)`. Наблюдались `20` ShipDeckNav registrations, `20` explicit crew attachment requests и `20` named crew spawns; повторные NavMesh agent failures в `ShipDeckNav.cs:200`, `NpcBrain.cs:688` и `ShipCrewSpawner.cs:154` сохраняют deck/passenger evidence как **INCONCLUSIVE**.
+
+**Граница:** Player movement/CharacterController, grounding/platform carry, Animator/root motion, NGO tick/control/baseline, physics ordering, camera ownership/history, post-rebase continuity и Unity rollback — **UNVERIFIED** из-за отсутствия `[T-FO06Y]` records. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`; runtime rebase и live manifest не выполнялись.
+
+**Следующий шаг:** Повторить serial user-controlled capture с явным включением `Capture Enabled` на `NetworkPlayer_GlobalPilot(Clone)` и проверить наличие `[T-FO06Y]` строк перед экспортом. До этого не подключать concrete adapters, `Apply/Rebuild/Validate/Publish` или общий transform shift.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Y — dormant runtime instrumentation probe)
 
 **Задача:** Подготовить отдельный user-controlled runtime capture для изоляции jitter boundaries после T-FO06X, не запуская Play Mode и не подключая runtime rebase.

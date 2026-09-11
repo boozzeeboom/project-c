@@ -1,3 +1,26 @@
+## Итерация от 2026-09-11 (T-FO06AA — initial global spawn gate integration)
+
+**Задача:** Перейти от повторного baseline/movement capture к distinct implementation slice и закрыть окно initial placement/writer anomaly, обнаруженное в T-FO06Z runtime follow-up 03.
+
+**Причина:** `GlobalMotionSpawnLatch` ранее имел только `Released`. До первого `RecordBaseline` `GlobalMotionActorLink.Required` мог оставаться false, поэтому `NetworkPlayer.FixedUpdate` мог пройти legacy simulation и CharacterController gravity до того, как global baseline был применён. Это соответствует наблюдаемому переходу `y≈1 → y=-7.41 → y≈2502.77` без rebase markers.
+
+**Изменения:**
+- добавлен явный `Armed` state в `GlobalMotionSpawnLatch`;
+- `GlobalMotionPlayerBootstrap` arms global initial gate до `SetActive(true)`;
+- `NetworkPlayer.OnNetworkSpawn` сохраняет prepared armed state;
+- `CanSimulateInCurrentCoordinates` и `IsGlobalMotionReady` fail-closed до exact baseline release;
+- добавлены ordered evidence markers `spawn.InitialGateArmed`, `spawn.FactoryPosePrepared`, `spawn.NetworkSpawn`, `player.FixedUpdate.blocked`, `spawn.InitialGateReleased`.
+
+**Граница:** Изменение не выполняет rebase, не добавляет automatic trigger и не реализует native rollback. Это исправление initial spawn lifecycle, а не доказательство controlled rebase.
+
+**Проверки:** `check_compile_errors` — `No compile errors`; Play Mode после изменения не запускался, согласно пользовательскому правилу.
+
+**Следующий этап:** Reviewed runtime driver integration с explicit user-controlled request и ordered `rebase.*` markers; не повторять baseline/movement capture до появления driver.
+
+**Файлы:** `GlobalMotionSpawnContracts.cs`, `NetworkPlayer.cs`, `GlobalMotionPlayerBootstrap.cs`, `docs/world/floatingorigin/06AA_INITIAL_GLOBAL_SPAWN_GATE.md/.json`, roadmap.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Z — post-playtest follow-up 03 и закрытие повторного capture gate)
 
 **Задача:** Проверить завершённый Play Mode capture точечно через Unity MCP, зафиксировать runtime evidence и определить, требуется ли ещё один идентичный capture.

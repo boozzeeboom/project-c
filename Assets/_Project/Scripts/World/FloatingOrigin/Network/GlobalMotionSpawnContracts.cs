@@ -118,8 +118,10 @@ namespace ProjectC.World.FloatingOrigin.Network
     public sealed class GlobalMotionSpawnLatch
     {
         public MotionStreamBinding Applied { get; private set; }
+        public bool Armed { get; private set; }
         public bool Released { get; private set; }
-        public void Reset() { Applied = default; Released = false; }
+        public void Reset() { Applied = default; Armed = false; Released = false; }
+        public void Arm() { Armed = true; Released = false; }
         public void Record(MotionStreamBinding binding)
         {
             if (!binding.IsValid) throw new ArgumentException("Invalid binding.");

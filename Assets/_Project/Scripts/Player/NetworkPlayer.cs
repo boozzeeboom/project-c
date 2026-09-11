@@ -85,20 +85,25 @@ namespace ProjectC.Player
         private GlobalMotionActorLink _coordinateLink;
         private readonly GlobalMotionSpawnLatch _globalSpawnLatch = new GlobalMotionSpawnLatch();
         private GlobalMotionActorLink Coordinates => _coordinateLink ??= new GlobalMotionActorLink(this);
-        public bool CanSimulateInCurrentCoordinates => Coordinates.CanSimulate;
+        public bool CanSimulateInCurrentCoordinates =>
+            (!_globalSpawnLatch.Armed || _globalSpawnLatch.Released) && Coordinates.CanSimulate;
         public bool UsesGlobalCoordinates => Coordinates.Required;
 
         public bool CanApplyGlobalBaseline(MotionPoseRole role) => true;
-        public bool IsGlobalMotionReady(MotionPoseRole role) => IsSpawned && (!UsesGlobalCoordinates || _globalSpawnLatch.Released);
+        public bool IsGlobalMotionReady(MotionPoseRole role) => IsSpawned &&
+            (!_globalSpawnLatch.Armed || _globalSpawnLatch.Released) &&
+            (!UsesGlobalCoordinates || _globalSpawnLatch.Released);
 
         // T-FO04G: factory calls this while the clone is inactive and already in its prepared local frame.
         internal void PrepareGlobalInitialSpawn()
         {
             if (!UsesGlobalCoordinates || IsSpawned) throw new System.InvalidOperationException("Expected unspawned global player.");
             _globalSpawnLatch.Reset();
+            _globalSpawnLatch.Arm();
             _controller = GetComponent<CharacterController>();
             if (_controller == null) throw new System.InvalidOperationException("Global player controller missing.");
             _controller.enabled = false;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("spawn", "InitialGateArmed", $"object={name} controllerEnabled={_controller.enabled} position={transform.position}");
         }
         internal bool ReleaseGlobalInitialSpawn(MotionStreamBinding binding)
         {
@@ -109,6 +114,7 @@ namespace ProjectC.Player
             if (!_globalSpawnLatch.TryRelease(binding)) return false;
             // Preserve game state. This is initial placement, not SetInputEnabled/death/pilot state manipulation.
             _controller.enabled = IsOwner && _inputEnabled && !_inShip;
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("spawn", "InitialGateReleased", $"object={name} controllerEnabled={_controller.enabled} position={transform.position} binding={binding.SessionId}/{binding.NetworkObjectId}/{binding.SpawnGeneration}/{binding.AuthorityGeneration}/{binding.DiscontinuityGeneration}");
             return true;
         }
         public void OnGlobalBaselineApplied(MotionStreamBinding binding)
@@ -344,7 +350,10 @@ namespace ProjectC.Player
         {
             base.OnNetworkSpawn();
             Coordinates.State.ResetLifetime();
+            bool preservePreparedGlobalSpawn = _globalSpawnLatch.Armed;
             _globalSpawnLatch.Reset();
+            if (preservePreparedGlobalSpawn) _globalSpawnLatch.Arm();
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("spawn", "NetworkSpawn", $"object={name} armed={_globalSpawnLatch.Armed} position={transform.position}");
 
             networkObject = GetComponent<NetworkObject>();
             _controller = GetComponent<CharacterController>();
@@ -1003,7 +1012,13 @@ namespace ProjectC.Player
         {
             if (!IsOwner) return;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "FixedUpdate.begin", $"pos={transform.position} grounded={_controller != null && _controller.isGrounded} velocity={_velocity}");
-            if (!CanSimulateInCurrentCoordinates) { ClearCoordinateInput(); return; }
+            if (!CanSimulateInCurrentCoordinates)
+            {
+                ClearCoordinateInput();
+                if (_globalSpawnLatch.Armed && !_globalSpawnLatch.Released)
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "FixedUpdate.blocked", "reason=global_initial_spawn_gate");
+                return;
+            }
             if (UsesGlobalCoordinates) { _hasServerPosition = false; return; } // Legacy correction is a competing float-position writer.
 
             if (_hasServerPosition)

@@ -1,0 +1,32 @@
+{
+  "ticket": "T-FO06AA",
+  "date": "2026-09-11",
+  "scope": "initial global spawn gate integration",
+  "cause": "GlobalMotionSpawnLatch had no armed state; before first baseline RecordBaseline, GlobalMotionActorLink.Required could remain false and legacy CharacterController gravity could run.",
+  "changes": [
+    "Added GlobalMotionSpawnLatch.Armed and Arm().",
+    "Armed the global initial gate before activating the factory clone.",
+    "Preserved the armed state through NetworkPlayer.OnNetworkSpawn.",
+    "Blocked simulation and reported not-ready until exact baseline release.",
+    "Added ordered spawn and blocked FixedUpdate evidence markers."
+  ],
+  "markers": [
+    "spawn.InitialGateArmed",
+    "spawn.FactoryPosePrepared",
+    "spawn.NetworkSpawn",
+    "player.FixedUpdate.blocked",
+    "spawn.InitialGateReleased"
+  ],
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "scope_boundary": {
+    "controlledRebase": "NOT_IMPLEMENTED",
+    "automaticTrigger": "NOT_IMPLEMENTED",
+    "applyRebuildValidatePublish": "NOT_CONNECTED",
+    "nativeRollback": "NOT_IMPLEMENTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "next_step": "Implement reviewed runtime driver with explicit user-controlled request and ordered rebase markers; do not repeat identical baseline/movement capture before that driver exists."
+}

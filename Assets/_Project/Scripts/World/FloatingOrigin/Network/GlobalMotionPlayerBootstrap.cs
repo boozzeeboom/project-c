@@ -301,6 +301,7 @@ private void Update()
                 SceneManager.MoveGameObjectToScene(instance, record.Frame.Scene);
                 instance.transform.SetPositionAndRotation(local, rotation); instance.transform.localScale = scale;
                 var player = instance.GetComponent<NetworkPlayer>(); player.PrepareGlobalInitialSpawn();
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("spawn", "FactoryPosePrepared", $"object={instance.name} local={local} frame={record.Frame.Id}");
                 transport = instance.GetComponent<GlobalMotionReplicator>(); _instances.Add(transport, record);
                 instance.SetActive(true); // Correct scene/local pose and disabled controller BEFORE Awake/OnEnable.
                 return instance.GetComponent<NetworkObject>();

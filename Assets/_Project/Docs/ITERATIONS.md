@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06S — fail-closed participant admission policy gate)
+
+**Задача:** Добавить pure fail-closed admission policy contract для будущего reviewed participant manifest без automatic discovery, live manifest publication или runtime rebase.
+
+**Результат:** Созданы `GlobalMotionRebaseParticipantAdmissionPolicy.cs` и `ValidateGlobalMotionRebaseParticipantAdmissionPolicy.cs`. Policy требует одновременно `IdentityReviewed`, `ExplicitPolicyReviewed`, `CatalogSpatial`, `RuntimeAdapterReady`, `RuntimeProofComplete` и `RollbackReady`; порядок отказов детерминирован. Добавлены отчёты `06S_PARTICIPANT_ADMISSION_POLICY_GATE.json` и `06S_PARTICIPANT_ADMISSION_POLICY_GATE.md`.
+
+**Подтверждено:** Unity compile — `No compile errors`; menu validator выполнил `10 pure checks PASS / 0 FAIL`. Policy одинаково применима к `SHIP_ROOT` и `NETWORK_GAMEPLAY_ROOT`; admission не изменяет entry identity или evidence. Все текущие `96/96` NetworkObject catalog matches остаются вне admission, поскольку catalog имеет `spatial=false`; automatic manifest publication отсутствует.
+
+**Проверки:** `git diff --check` до документационного обновления — `PASS`; Play Mode, сцены, prefabs, physics/NavMesh mutation, camera ownership mutation, NGO baseline mutation, runtime adapters, runtime proof, rollback proof и rebase не выполнялись.
+
+**Граница:** Admission contract — **PASS** как pure policy и validator. Live participant admission и runtime rebase readiness — **NOT READY**. Camera/history, ShipDeckNav/passenger provenance, NGO tick/baseline ordering, physics ordering и native Unity rollback остаются **INCONCLUSIVE**.
+
+**Следующий шаг:** Оставить policy dormant до появления concrete reviewed adapters, runtime evidence и rollback contracts; не публиковать live manifest и не подключать automatic discovery по одному catalog identity match.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06R — catalog and NetworkObject policy cross-audit)
 
 **Задача:** Сопоставить все live scene-owned NetworkObjects с reviewed `GlobalMotionPilotSceneCatalog.asset` и отделить catalog identity match от runtime participant admission.

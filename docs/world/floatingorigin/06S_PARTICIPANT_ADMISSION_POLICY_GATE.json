@@ -1,0 +1,56 @@
+{
+    "generatedOn": "2026-09-11",
+    "status": "PURE_POLICY_GATE_PASS;LIVE_MANIFEST_NOT_CREATED",
+    "policyPath": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseParticipantAdmissionPolicy.cs",
+    "validatorPath": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionRebaseParticipantAdmissionPolicy.cs",
+    "compile": {
+        "status": "PASS",
+        "result": "No compile errors"
+    },
+    "validation": {
+        "menuPath": "ProjectC/World/Floating Origin/Validate Participant Admission Policy",
+        "status": "PASS",
+        "passed": 10,
+        "failed": 0,
+        "log": "[T-FO06S] Admission policy: 10 pure checks PASS / 0 FAIL; live manifest binding remains unimplemented."
+    },
+    "gates": [
+        "identity_reviewed",
+        "explicit_policy_reviewed",
+        "catalog_spatial",
+        "runtime_adapter_ready",
+        "runtime_proof_complete",
+        "rollback_ready"
+    ],
+    "failurePrecedence": [
+        "participant_id_missing",
+        "identity_not_reviewed:<ParticipantId>",
+        "explicit_policy_not_reviewed:<ParticipantId>",
+        "catalog_spatial_false:<ParticipantId>",
+        "runtime_adapter_not_ready:<ParticipantId>",
+        "runtime_proof_incomplete:<ParticipantId>",
+        "rollback_not_ready:<ParticipantId>"
+    ],
+    "scope": {
+        "shipRoot": "All six gates required",
+        "networkGameplayRoot": "All six gates required",
+        "automaticDiscovery": false,
+        "automaticManifestPublication": false,
+        "runtimeRebase": false
+    },
+    "currentCatalogBoundary": {
+        "networkObjectCandidates": 96,
+        "catalogMatches": 96,
+        "catalogSpatialFalse": 96,
+        "automaticallyAdmitted": 0,
+        "interpretation": "Catalog identity matching does not establish spatial runtime readiness."
+    },
+    "inconclusiveBoundaries": [
+        "camera ownership and history continuity",
+        "runtime ShipDeckNav registration and passenger provenance",
+        "NGO tick and network baseline ordering",
+        "physics ordering and Rigidbody state",
+        "native Unity-state rollback"
+    ],
+    "decision": "Admission contract is compile-verified and pure-validation verified. No participant is admitted to a live manifest or runtime rebase transaction."
+}

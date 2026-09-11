@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06P — reviewed participant identity mapping)
+
+**Задача:** Перевести exact census records в deterministic candidate mapping для fixed participant IDs, определить boundary candidates и классифицировать NetworkObject candidates без automatic admission.
+
+**Результат:** Создан `BuildGlobalMotionRebaseParticipantMapping.cs`, который читает только `06O_PARTICIPANT_IDENTITY_CENSUS.json`, проверяет canonical scene state, фиксированные counts и pairing `SHIP_DECK_NAV/01–20` с `SHIP_ROOT/03–22`. Добавлены `06P_PARTICIPANT_IDENTITY_MAPPING.json` и `06P_PARTICIPANT_IDENTITY_MAPPING.md`.
+
+**Подтверждено:** Mapping сформировал `42` fixed candidates (`22` ship roots + `20` deck-nav), `CITY_STATIC` boundary candidate для `WorldRoot_0_0`, `WORLD_ANCHORS` для `Respawn_Default` и `CAMERA` для `BootstrapScene/MainCamera`. Все `96` NetworkObject candidates получили explicit policy classification с `admitted=false`; automatic `NETWORK_GAMEPLAY_ROOT` adoption не выполняется.
+
+**Проверки:** Unity compile — `No compile errors`; read-only mapping menu выполнен в Edit Mode; отчет создан. Сцены, префабы и runtime state не изменялись. Play Mode, runtime rebase, transform/physics/NavMesh mutation, camera ownership mutation и NGO baseline mutation не выполнялись.
+
+**Граница:** Deterministic ordinal mapping является candidate evidence, а не окончательным owner-reviewed gameplay order. Camera ownership/history, runtime `ShipDeckNav` registration, passenger provenance, NetworkObject authority/lifetime и live manifest digest остаются **INCONCLUSIVE**; runtime rebase readiness — **NOT READY**.
+
+**Следующий шаг:** Получить owner-reviewed approval ordinal mapping и отдельно закрыть camera/runtime deck/network policy evidence; не создавать live manifest и не подключать `Apply/Rebuild/Validate/Publish` до закрытия этих gates.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06O — read-only participant identity census)
 
 **Задача:** Получить доказательные identity records для fixed participant scope в уже загруженных canonical scenes, не включая runtime discovery и не изменяя Unity state.

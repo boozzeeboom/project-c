@@ -1276,3 +1276,45 @@ The exported Console Log from `2026-09-11 07:36:57` confirms that the 120-frame 
 The local pilot ended in the intended static frame: `origin=(0,0,0)` and `local=(39992.00,1.00,40000.00)`. Twenty NPC ship controllers were discovered and the session shut down through the normal disconnect path. No second world-scene load, old `loaded_scene_not_in_saved_catalog_scope` refusal or new stabilization failure was present in the supplied log.
 
 This is a **PASS for T-FO06L static startup/player integration** and a **PASS for the native closed-world binding gate**. Duplicate suppression and exact legacy-owner absence remain observational rather than separately instrumented. The result must not be interpreted as a completed rebase transaction; the read-only participant/boundary census is documented in `06M_REBASE_BOUNDARY_CENSUS.md`, and the next design-only stage is `T-FO06N` in `06N_REBASE_TRANSACTION_CONTRACT.md`.
+
+## 42. T-FO06X — повторный 20-секундный Host runtime-proof capture — 2026-09-11
+
+### Результат пользовательского запуска
+
+Новый Console export пользователя создан `2026-09-11 17:35:20`, содержит `828` записей и соответствует примерно `20` секундам Host Play Mode. Пользователь сообщает: визуально игра работает, но jitter персонажа сохраняется.
+
+Повторно подтверждены:
+
+- `Native scene readiness: ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>`;
+- `StartHost`, `PeerConnected` с `worldRunning=True;scenePrepared=True;sceneReady=True`;
+- `Spawn plan ready` с `Global(39992,1,40000)`;
+- `CompletePlacement ready=True;baseline=True` и `SpawnAsPlayerObject`;
+- `Local pilot player ready;startup menus hidden=2;origin=(0,0,0);local=(39992.00,1.00,40000.00)`;
+- `PlayerRespawnTracker` сообщает teleported position `(39992.00,2502.77,40000.00)`;
+- обнаружение `20 NpcShipController(s)` и восстановление `22/22` кораблей.
+
+Static pilot startup/player gate этим запуском повторно закрыт. Но frame origin остаётся `(0,0,0)`, player остаётся примерно в `40 км` от локального origin, а фактического runtime rebase в логе нет.
+
+### NavMesh и passenger blocker
+
+В логе присутствуют `20` `ShipDeckNav Registered` и `20` последовательностей named crew attachment request/spawn. Однако повторяются ошибки:
+
+```text
+Failed to create agent because it is not close enough to the NavMesh
+```
+
+Источники: `ShipDeckNav.cs:200`, `NpcBrain.cs:688` и `ShipCrewSpawner.cs:154`. Поэтому registration log не доказывает valid `NavMeshDataInstance`, `proxyAgent.isOnNavMesh`, completed attachment или passenger provenance. T-FO06V остаётся runtime **INCONCLUSIVE**.
+
+### Proof gates
+
+Camera ownership/history, NGO tick ordering, physics ordering, post-rebase network baseline continuity и Unity-state rollback в capture отсутствуют. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, live manifest не публиковался, admitted participants `0`.
+
+### Решение по jitter
+
+Визуальное наблюдение пользователя `character jitter remains` принято как отрицательный результат запуска. Этот лог подтверждает только то, что player продолжает работать при local coordinates около `(39992,1,40000)` и origin `(0,0,0)`; он не изолирует причину jitter между movement/prediction, Animator/root motion, CharacterController grounding, NGO interpolation, camera smoothing, platform carry и floating-point precision. Исправление jitter не заявляется.
+
+### Граница и следующий gate
+
+Код, сцены, prefabs, catalog/profile, `GroundPlane_0_0`, `FloatingOriginMP`, participant admission и runtime rebase mutation в рамках T-FO06X не изменялись. Несвязанные gameplay warnings массово не исправлялись.
+
+Следующий этап — отдельный serial user-controlled instrumentation capture для camera owner/history, player movement/Animator/CharacterController, NGO tick/physics ordering и baseline continuity. NavMesh/passenger blocker сохраняется. До появления этих records не подключать concrete adapters, `Apply/Rebuild/Validate/Publish`, player-only shift или общий transform shift.

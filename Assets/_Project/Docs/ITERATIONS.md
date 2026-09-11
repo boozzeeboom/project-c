@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06X — новый 20-секундный Host runtime-proof follow-up)
+
+**Задача:** Проверить новый предоставленный пользователем 20-секундный Host Play Mode log против T-FO06T/T-FO06S и зафиксировать визуально сохраняющийся jitter без преждевременного включения runtime rebase.
+
+**Результат:** Созданы `06X_USER_PLAYTEST_RUNTIME_PROOF_FOLLOWUP.md` и `.json`. Повторно подтверждены `ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>`, успешные `StartHost`/`PeerConnected`, `CompletePlacement ready=True;baseline=True`, `SpawnAsPlayerObject`, скрытие двух startup menus и `origin=(0,0,0);local=(39992.00,1.00,40000.00)`. Пользователь сообщил, что визуально игра работает, но jitter персонажа сохраняется.
+
+**Доказательства:** Наблюдались `20` `ShipDeckNav Registered`, `20` explicit crew attachment requests и `20` named crew spawns. Одновременно повторяются `Failed to create agent because it is not close enough to the NavMesh` в `ShipDeckNav.cs:200`, `NpcBrain.cs:688` и `ShipCrewSpawner.cs:154`; valid deck registration, proxy `isOnNavMesh`, completed attachment и passenger provenance не доказаны. Camera ownership/history, NGO/physics ordering, post-rebase baseline и rollback не записаны.
+
+**Граница:** Static native/player startup — **PASS** для этого запуска. Jitter — **PRESENT по пользовательскому наблюдению**, его точный источник — **INCONCLUSIVE**. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, live manifest не публиковался, admitted participants `0`; `Apply/Rebuild/Validate/Publish` и frame mutation не выполнялись. Несвязанные gameplay warnings массово не исправлялись.
+
+**Следующий шаг:** Отдельный serial user-controlled instrumentation capture для camera/player movement/Animator/CharacterController/NGO tick/physics/baseline; NavMesh/passenger blocker сохраняется. До новых records не подключать concrete adapters и не выполнять общий transform shift.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06W — camera ownership/history и Unity-state rollback contracts)
 
 **Задача:** Сверить продвижение с главным архитектурным планом и пакетно закрыть две независимые pure proof boundaries из T-FO06T/T-FO06N: camera ownership/history и Unity-state rollback.

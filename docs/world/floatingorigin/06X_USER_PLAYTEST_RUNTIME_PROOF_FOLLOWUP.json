@@ -1,0 +1,88 @@
+{
+  "ticket": "T-FO06X",
+  "date": "2026-09-11",
+  "source": {
+    "kind": "user_supplied_unity_console_export",
+    "exportedAtLocal": "2026-09-11 17:35:20",
+    "reportedDurationSeconds": 20,
+    "totalEntries": 828,
+    "userVisualObservation": "Gameplay is visually working, but character jitter remains."
+  },
+  "status": "RUNTIME_STARTUP_PASS;JITTER_PRESENT;REBASE_PROOF_INCOMPLETE",
+  "evidence": {
+    "nativeScenePreparation": {
+      "status": "PASS",
+      "observed": "ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>"
+    },
+    "hostAndPlayerStartup": {
+      "status": "PASS",
+      "observed": [
+        "worldRunning=True;scenePrepared=True;sceneReady=True",
+        "Spawn plan ready: client=0;frame=1;position=Global(39992, 1, 40000)",
+        "CompletePlacement finished;ready=True;baseline=True",
+        "SpawnAsPlayerObject called",
+        "Local pilot player ready;startup menus hidden=2;origin=(0,0,0);local=(39992.00, 1.00, 40000.00)"
+      ],
+      "respawnObservation": "PlayerRespawnTracker teleported player 0 to (39992.00, 2502.77, 40000.00)."
+    },
+    "shipDeckNav": {
+      "status": "INCONCLUSIVE",
+      "observedRegistrations": 20,
+      "blocker": "Repeated 'Failed to create agent because it is not close enough to the NavMesh' warnings at ShipDeckNav.cs:200 and related agent creation paths. Registration logs do not prove valid NavMeshDataInstance readiness."
+    },
+    "passengerProvenance": {
+      "status": "INCONCLUSIVE",
+      "observedCrewAttachmentRequests": 20,
+      "observedCrewSpawns": 20,
+      "blocker": "Explicit attachment requests and named crew spawns were logged, but completed attachment, resolved deck anchor and passenger provenance were not logged."
+    },
+    "cameraOwnershipHistory": {
+      "status": "UNVERIFIED",
+      "observed": false
+    },
+    "ngoTickOrdering": {
+      "status": "UNVERIFIED",
+      "observed": false
+    },
+    "physicsOrdering": {
+      "status": "UNVERIFIED",
+      "observed": false
+    },
+    "networkBaselineContinuity": {
+      "status": "UNVERIFIED",
+      "observed": "Initial placement reported baseline=True; no post-rebase baseline continuity was captured."
+    },
+    "unityStateRollback": {
+      "status": "UNVERIFIED",
+      "observed": false
+    },
+    "jitter": {
+      "status": "PRESENT",
+      "sourceIsolated": false,
+      "observedConstraint": "The player remains near local coordinates (39992, 1, 40000) while frame origin remains (0,0,0); no runtime rebase occurred."
+    }
+  },
+  "relevantWarningsForNextGate": [
+    "Repeated ShipDeckNav/NavMesh agent creation failures",
+    "NavMeshAgent creation warnings during NpcBrain and ShipCrewSpawner paths"
+  ],
+  "unrelatedOrOutOfScopeWarnings": [
+    "missing Meziy modules",
+    "empty ShipCargoVisual _boxPrefabs",
+    "early CombatServer/MetaRequirementRegistry ordering warnings",
+    "missing ResourceNodeConfig item/tool references",
+    "PlayerTarget HP initialization failure",
+    "NpcSocialBrain Animator parameter warnings",
+    "missing ship module references"
+  ],
+  "admission": {
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "liveManifestPublication": false,
+    "admittedParticipants": 0,
+    "applyRebuildValidatePublishConnected": false,
+    "decision": "No participant may pass T-FO06S admission from this capture."
+  },
+  "decision": "The capture repeats the static native/player startup PASS, records persistent NavMesh/passenger evidence blockers, and confirms the user's visual jitter observation. Runtime rebase readiness remains NOT READY; the jitter source is not isolated by this log."
+}

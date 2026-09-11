@@ -124,6 +124,7 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO06U`: user log подтверждает initial startup/native preparation, но фиксирует повторные NavMesh agent failures; deck readiness и passenger provenance INCONCLUSIVE.
 - `T-FO06V`: pure ShipDeckNav/NavMesh readiness contract; `15/15` pure checks PASS, runtime registration и completed passenger attachment не доказаны.
 - `T-FO06W`: пакет camera ownership/history и Unity-state rollback contracts; `35/35` pure checks PASS, runtime camera/rollback evidence не доказано.
+- `T-FO06X`: новый пользовательский 20-секундный Host capture повторяет static native/player startup PASS и фиксирует визуально сохраняющийся jitter. `20` ShipDeckNav registrations и `20` crew attachment/spawn sequences наблюдались, но повторные NavMesh agent failures сохраняют deck/passenger evidence в статусе INCONCLUSIVE. Camera/history, NGO/physics ordering, post-rebase baseline и rollback не записаны; `admitted=0`.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W. NavMesh diagnosis, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

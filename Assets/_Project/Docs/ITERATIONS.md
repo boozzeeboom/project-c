@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06Y — source analysis runtime evidence gates)
+
+**Задача:** Проверить по исходникам probe/adapter/replicator/camera, почему третий capture содержит частичную evidence, но не содержит `Physics.SyncTransforms`, `baseline.AcknowledgeApplied` и `baseline.ActorApplied`.
+
+**Результат:** Read-only анализ подтвердил условия записи: `AcknowledgeApplied` появляется только при переходе `_baselineApplied=false → true`; `ActorApplied` — только в ветке нового binding; `SyncTransforms.begin/end` — только при фактическом `WritePose` baseline/body-less pose. `RecordEvent` также требует активный probe и `_captureEnabled=true`, а camera `LateUpdate.begin/end` требует target и locked cursor.
+
+**Интерпретация:** Отсутствие baseline/physics markers совместимо с тем, что initial baseline произошёл до evidence window или в окне не было нового binding/WritePose. Причина scheduling anomaly с повторными `FixedUpdate`/несколькими `NetworkTick` остаётся **INCONCLUSIVE**; NavMesh/passenger readiness также **INCONCLUSIVE**.
+
+**Граница:** Сцены, префабы, runtime state и координатная логика не изменялись. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`; concrete adapters и `Apply/Rebuild/Validate/Publish` остаются заблокированы.
+
+**Файлы:** `docs/world/floatingorigin/06Y_RUNTIME_EVIDENCE_SOURCE_ANALYSIS_04.md`, `docs/world/floatingorigin/06Y_RUNTIME_EVIDENCE_SOURCE_ANALYSIS_04.json`, обновлены `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md` и этот журнал.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Y — третий пользовательский runtime capture follow-up)
 
 **Задача:** Проанализировать третий предоставленный пользователем Unity Console export от `2026-09-11 18:56:49` (`1319` записей) после появления `[T-FO06Y]` evidence.

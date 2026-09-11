@@ -1,0 +1,46 @@
+{
+  "ticket": "T-FO06Y",
+  "stage": "SOURCE_ANALYSIS_04",
+  "date": "2026-09-11",
+  "basis": {
+    "capture": "06Y_RUNTIME_CAPTURE_FOLLOWUP_03",
+    "exportedAt": "2026-09-11 18:56:49",
+    "probeWindow": "frame=2958..3324",
+    "sources": [
+      "GlobalMotionRuntimeEvidenceProbe.cs",
+      "GlobalMotionPoseAdapter.cs",
+      "GlobalMotionReplicator.cs",
+      "SpringArmCamera.cs"
+    ]
+  },
+  "sourceFindings": {
+    "recordEvent": "Requires active probe and captureEnabled=true; events are buffered and flushed in LateUpdate.",
+    "baselineAcknowledgeApplied": "Emitted only on transition from baselineApplied=false to true.",
+    "baselineActorApplied": "Emitted only in the new-binding baseline application branch.",
+    "physicsSyncTransforms": "Emitted only when WritePose performs baseline placement or body-less pose write.",
+    "cameraLateUpdate": "skip is emitted when target is null or cursor is not locked; begin/end require both conditions to pass."
+  },
+  "interpretation": {
+    "probeFailure": "NOT_SUPPORTED_BY_CAPTURE",
+    "missingBaselineAndPhysicsEvidence": "COMPATIBLE_WITH_PRE_CAPTURE_BASELINE_OR_NO_NEW_BINDING",
+    "exactBaselineTiming": "INCONCLUSIVE",
+    "runtimeSchedulingAnomalyCause": "INCONCLUSIVE",
+    "navMeshPassengerReadiness": "INCONCLUSIVE"
+  },
+  "gateDecision": {
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "liveManifestPublication": false,
+    "applyRebuildValidatePublishConnected": false,
+    "decision": "Source analysis explains why several required markers can be absent during an idle capture, but it does not provide the missing runtime evidence. A controlled baseline transition/rebase capture remains required."
+  },
+  "nextSerialGate": [
+    "Enable the probe before baseline handshake or capture a reviewed baseline transition",
+    "Capture controlled movement",
+    "Capture controlled rebase and post-rebase continuity",
+    "Export Physics.SyncTransforms and baseline phase records",
+    "Recheck deck/passenger readiness after isolating the NavMesh warning"
+  ]
+}

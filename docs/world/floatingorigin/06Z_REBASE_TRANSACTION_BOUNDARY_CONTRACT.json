@@ -1,0 +1,41 @@
+{
+  "ticket": "T-FO06Z",
+  "date": "2026-09-11",
+  "asset": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseTransactionContract.cs",
+  "scope": "runtime-independent transaction boundary",
+  "trigger": {
+    "accepted": "UserControlled",
+    "automaticThresholdTriggerAdded": false,
+    "validation": ["transaction_id", "frame_generation", "bounded_reason"]
+  },
+  "forwardPhases": [
+    "Idle",
+    "Requested",
+    "FramePrepared",
+    "Applied",
+    "PhysicsSynchronized",
+    "Validated",
+    "Published",
+    "Completed"
+  ],
+  "rollbackPhases": ["RollbackBegun", "Restored", "RollbackCompleted"],
+  "runtimeMutation": false,
+  "coordinatorConnected": false,
+  "nativeRollbackImplemented": false,
+  "compile": "PASS",
+  "compileMessage": "No compile errors",
+  "playModeExecuted": false,
+  "gate": {
+    "transactionBoundaryContract": "PASS",
+    "runtimeTrigger": "NOT_CONNECTED",
+    "controlledRebase": "INCONCLUSIVE",
+    "rollback": "NOT_IMPLEMENTED",
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "liveManifestPublication": false,
+    "applyRebuildValidatePublishConnected": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  }
+}

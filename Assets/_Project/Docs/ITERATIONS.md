@@ -1,3 +1,21 @@
+## Итерация от 2026-09-11 (T-FO06Z — reviewed controlled-rebase transaction boundary contract)
+
+**Задача:** Продолжить интеграцию после source audit безопасным runtime-independent этапом: зафиксировать explicit user-controlled trigger, строгую последовательность rebase phases и отдельную rollback boundary до подключения concrete adapters.
+
+**Результат:** Создан `GlobalMotionRebaseTransactionContract.cs`. Он валидирует только `UserControlled` trigger, transaction/frame identity и bounded reason; допускает forward sequence `Requested → FramePrepared → Applied → PhysicsSynchronized → Validated → Published → Completed`, а rollback sequence `RollbackBegun → Restored → RollbackCompleted`. Fail-closed `Aborted/Faulted` transitions отделены от successful completion.
+
+**Граница:** Контракт не подключён к `GlobalMotionRebaseCoordinator`, не вызывает Unity APIs, не меняет Transform/Rigidbody/NavMesh/camera/NGO, не публикует manifest/frame и не реализует native rollback. Automatic threshold trigger намеренно не добавлялся.
+
+**Проверки:** Unity compile — `No compile errors`. Play Mode, scene/prefab save, runtime trigger, frame mutation, rollback и screenshots не выполнялись.
+
+**Gate:** `transactionBoundaryContract=PASS`, `runtimeTrigger=NOT_CONNECTED`, `controlledRebase=INCONCLUSIVE`, `rollback=NOT_IMPLEMENTED`, `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`, `liveManifestPublication=false`, `applyRebuildValidatePublishConnected=false`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseTransactionContract.cs`, `docs/world/floatingorigin/06Z_REBASE_TRANSACTION_BOUNDARY_CONTRACT.md/.json`; обновлены roadmap и этот журнал.
+
+**Следующий шаг:** Не подключать contract автоматически и не вызывать `Apply/Rebuild/Validate/Publish`; сначала подготовить отдельный reviewed runtime driver с ordered markers и native rollback evidence.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Z — source audit controlled-rebase trigger и rollback boundary)
 
 **Задача:** Продолжить план после T-FO06Z runtime follow-up 02 и документально проверить, существует ли в проекте уже интегрированный runtime trigger controlled rebase, подключены ли `Apply/Rebuild/Validate/Publish`, и является ли rollback contract рабочим runtime restore.

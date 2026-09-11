@@ -1,3 +1,21 @@
+## Итерация от 2026-09-11 (T-FO06Z — source audit controlled-rebase trigger и rollback boundary)
+
+**Задача:** Продолжить план после T-FO06Z runtime follow-up 02 и документально проверить, существует ли в проекте уже интегрированный runtime trigger controlled rebase, подключены ли `Apply/Rebuild/Validate/Publish`, и является ли rollback contract рабочим runtime restore.
+
+**Результат:** Прямой read-only поиск по `Assets/_Project/Scripts/World/FloatingOrigin/Network`, `Assets/_Project/Scripts` и floating-origin reports подтвердил, что `GlobalMotionRebaseCoordinator` реализует только `Idle → Requested → Frozen → Preflighted → Captured` с abort cleanup. Interface-level `TryApply`, `TryRebuild`, `TryValidate` и `TryRestore` существуют, но штатная `TryPrepare` их не вызывает; publish boundary отсутствует. Интегрированный runtime trigger и ordered `rebase.*`/`rollback.*` markers в проверенных областях не найдены.
+
+**Rollback boundary:** `UnityStateRollbackContract` остаётся runtime-independent validator: он проверяет переданное evidence envelope, но не захватывает и не восстанавливает `Transform`, `Rigidbody`, ShipDeckNav, camera history или network baseline. Последний runtime capture не содержит native rollback markers.
+
+**Ограничение аудита:** Изолированный project-audit через Unity exploration agent завершился `network error`; поэтому утверждение «trigger не найдено» относится к прямым audited paths и точным lifecycle identifiers, а не к недоказуемому отсутствию любого внешнего вызова во всём проекте.
+
+**Gate:** `sourceAudit=PASS_WITH_SCOPE_LIMIT`, `runtimeTrigger=NOT_FOUND_IN_AUDITED_SOURCES`, `controlledRebase=INCONCLUSIVE`, `rollback=NOT_OBSERVED`, `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`, `liveManifestPublication=false`, `applyRebuildValidatePublishConnected=false`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Изменения:** Созданы `docs/world/floatingorigin/06Z_SOURCE_AUDIT_AND_TRIGGER_ABSENCE.md` и `.json`; код, сцены, префабы, NavMesh и runtime configuration не изменялись.
+
+**Следующий шаг:** Не подключать concrete adapters, live manifest или `Apply/Rebuild/Validate/Publish`; сначала согласовать отдельный reviewed runtime boundary с explicit user-controlled trigger, ordered phase markers и native rollback evidence.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Z runtime follow-up 02 — pointwise review после движения и прыжка)
 
 **Задача:** Проверить завершённый пользовательский Play Mode capture точечно через Unity MCP после движения, прыжка и остановки теста без передачи полного Console Log.

@@ -1,0 +1,39 @@
+{
+  "ticket": "T-FO06Z",
+  "date": "2026-09-11",
+  "scope": "read-only source audit",
+  "auditedPaths": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/*.cs",
+    "Assets/_Project/Scripts/**/*.cs",
+    "docs/world/floatingorigin/*.md"
+  ],
+  "agentAudit": "network_error",
+  "findings": {
+    "coordinatorPhases": ["Idle", "Requested", "Frozen", "Preflighted", "Captured", "Aborted", "Faulted"],
+    "participantInterfaceMethods": ["TryPreflight", "TryCapture", "TryApply", "TryRebuild", "TryValidate", "TryRestore"],
+    "connectedCoordinatorMethods": ["TryFreeze", "TryPreflight", "TryCapture", "TryRestore", "TryRelease"],
+    "applyConnected": false,
+    "rebuildConnected": false,
+    "validateConnected": false,
+    "publishConnected": false,
+    "runtimeTriggerFoundInAuditedSources": false,
+    "nativeRollbackImplemented": false,
+    "probeDefaultCaptureEnabled": false,
+    "phaseMarkersFound": [],
+    "rollbackMarkersFound": []
+  },
+  "gate": {
+    "sourceAudit": "PASS_WITH_SCOPE_LIMIT",
+    "runtimeTrigger": "NOT_FOUND_IN_AUDITED_SOURCES",
+    "controlledRebase": "INCONCLUSIVE",
+    "rollback": "NOT_OBSERVED",
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "liveManifestPublication": false,
+    "applyRebuildValidatePublishConnected": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "Review an explicit user-controlled runtime trigger and native rollback boundary before any Apply/Rebuild/Validate/Publish integration."
+}

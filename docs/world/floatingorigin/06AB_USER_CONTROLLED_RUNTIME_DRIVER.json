@@ -1,0 +1,38 @@
+{
+  "ticket": "T-FO06AB",
+  "date": "2026-09-11",
+  "scope": "explicit user-controlled runtime driver boundary",
+  "ticketAssignment": "next free substage after T-FO06AA; no existing 06AB report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseRuntimeDriver.cs"
+  ],
+  "implementation": {
+    "triggerKind": "UserControlled only",
+    "coordinatorIntegration": "TryPrepare connected",
+    "phaseMarkers": [
+      "rebase.Requested",
+      "rebase.FramePrepared",
+      "rebase.AbortRequested",
+      "rebase.Aborted",
+      "rebase.Faulted",
+      "rebase.Reset"
+    ],
+    "failClosedAt": "native_apply_pipeline_not_connected",
+    "resetRequires": ["Aborted", "Faulted"]
+  },
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "scopeBoundary": {
+    "automaticTrigger": "NOT_CONNECTED",
+    "transformMutation": "NOT_CONNECTED",
+    "rigidbodyMutation": "NOT_CONNECTED",
+    "navMeshMutation": "NOT_CONNECTED",
+    "cameraMutation": "NOT_CONNECTED",
+    "networkBaselineMutation": "NOT_CONNECTED",
+    "nativeRollback": "NOT_IMPLEMENTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "Define concrete native adapter contract while keeping participant admission and live manifest gates fail-closed."
+}

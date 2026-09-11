@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06AB — explicit user-controlled runtime driver boundary)
+
+**Задача:** После закрытия T-FO06AA подключить explicit user-controlled request boundary к существующему closed-world coordinator, не выполняя native rebase mutation.
+
+**Результат:** Создан `GlobalMotionRebaseRuntimeDriver` и `IGlobalMotionRebaseRuntimeDriverAdapter`. Driver валидирует только `UserControlled` request, создаёт transaction identity, связывает request с `GlobalMotionRebaseCoordinator.TryPrepare`, пишет ordered `rebase.*` markers и fail-closed останавливается на `native_apply_pipeline_not_connected`. Reset разрешён только после `Aborted`/`Faulted`.
+
+**Граница:** Automatic trigger, Transform/Rigidbody/NavMesh/camera/NGO mutation, native rollback и успешные `Applied/PhysicsSynchronized/Validated/Published/Completed` не подключены. Компонент в BootstrapScene не добавлялся. Compile PASS (`No compile errors`); Play Mode не запускался.
+
+**Следующий этап:** Concrete native adapter contract при сохранении participant admission и live manifest gates в fail-closed состоянии.
+
+**Файлы:** `GlobalMotionRebaseRuntimeDriver.cs`, `docs/world/floatingorigin/06AB_USER_CONTROLLED_RUNTIME_DRIVER.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AA — closure)
 
 **Задача:** Закрыть diagnosis-driven slice после подтверждения порядка respawn writer и отделить его от floating-origin rebase scope.

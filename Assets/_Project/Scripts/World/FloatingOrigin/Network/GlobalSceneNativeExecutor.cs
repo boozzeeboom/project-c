@@ -91,7 +91,11 @@ namespace ProjectC.World.FloatingOrigin.Network
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
-                if (!scene.isLoaded || string.IsNullOrEmpty(scene.path) || !paths.TryGetValue(scene.path, out string guid)) throw new InvalidOperationException("loaded_scene_not_in_saved_catalog_scope");
+                // DDOL is audited separately below through its cataloged source markers. It is not an authored
+                // scene instance and must not be treated as an unknown scene in the closed-world scene set.
+                if (IsDontDestroyOnLoadScene(scene)) continue;
+                if (!scene.isLoaded || string.IsNullOrEmpty(scene.path) || !paths.TryGetValue(scene.path, out string guid))
+                    throw new InvalidOperationException("loaded_scene_not_in_saved_catalog_scope:" + DescribeScene(scene));
                 result.Scenes.Add(guid, scene);
                 foreach (var root in scene.GetRootGameObjects())
                 {
@@ -318,9 +322,14 @@ namespace ProjectC.World.FloatingOrigin.Network
                 if (!expected.Value.IsValid() || !expected.Value.isLoaded)
                 { error = "prepared_scene_unloaded:guid=" + expected.Key + ";" + DescribeScene(expected.Value); return false; }
 
+            int authoredLoadedSceneCount = 0;
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
+                // DDOL is intentionally outside the authored scene set. Its cataloged markers are checked by
+                // ValidateCatalogedDdolRoots and by the marker/network census, not by scene-handle identity.
+                if (IsDontDestroyOnLoadScene(scene)) continue;
+                authoredLoadedSceneCount++;
                 // Do not silently accept pathless, pending or unknown scenes. A matching path alone
                 // also cannot prove identity: an additive duplicate/reload has a different handle.
                 if (!scene.IsValid() || !scene.isLoaded || string.IsNullOrEmpty(scene.path))
@@ -331,8 +340,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                 if (!isPrepared)
                 { error = "unexpected_scene_instance:" + DescribeScene(scene); return false; }
             }
-            if (SceneManager.sceneCount != _prepared.Scenes.Count)
-            { error = "scene_count_mismatch:expected=" + _prepared.Scenes.Count + ";actual=" + SceneManager.sceneCount; return false; }
+            if (authoredLoadedSceneCount != _prepared.Scenes.Count)
+            { error = "scene_count_mismatch:expected=" + _prepared.Scenes.Count + ";actualAuthored=" + authoredLoadedSceneCount; return false; }
             return true;
         }
         private static string DescribeScene(UnityEngine.SceneManagement.Scene scene)

@@ -1,3 +1,19 @@
+## Iteration 2026-09-11 (T-FO06L.2.x follow-up 12 - exclude DDOL from authored scene scope)
+
+**Task:** Fix the user-reported Start Host refusal `scene_preparation:loaded_scene_not_in_saved_catalog_scope` after legacy-owner retirement and cataloged DDOL audit.
+
+**Diagnosis:** `GlobalSceneNativeExecutor.BuildPreparation()` treated every `SceneManager.GetSceneAt(...)` result as an authored scene. Persistent Bootstrap roots are already in the special `DontDestroyOnLoad` scene and are audited separately; that scene must not expand the closed authored scope of `BootstrapScene + WorldScene_0_0`.
+
+**Change:** DDOL is skipped by authored scene enumeration in `BuildPreparation()` and `InitialPreparedSceneSetIsIntact()`. DDOL markers remain under the separate ownership/identity/network census. Unknown authored scenes remain fail-closed and the diagnostic now includes `name/path/handle/isLoaded`.
+
+**Checks:** Unity compile: `No compile errors`. User Play Mode, native preparation, `catalog=150;markers=150;bound=150`, Host/player spawn and screenshots remain **UNVERIFIED**.
+
+**Boundary:** Catalog/profile/digest, scene assets, `GroundPlane_0_0`, ownership rules and legacy loader contract were not changed.
+
+**Next:** User-controlled Play Mode from `Assets/_Project/Scenes/BootstrapScene.unity` -> `Start Host`; verify the 150/150/150 binding, player spawn and no duplicate/legacy scene takeover.
+
+---
+
 # Журнал итераций
 
 ## Итерация от 2026-09-10 (T-FO06L.2.x follow-up 11 — удержание world scene перед native preparation)

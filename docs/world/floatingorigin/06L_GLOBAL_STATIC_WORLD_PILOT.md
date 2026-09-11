@@ -1198,3 +1198,40 @@ Bounds sizes подтверждают масштабный диапазон ship
 - Предупреждения `ShipCargoVisual`, NavMesh и вторичные NGO shutdown exceptions не включены в этот fix: их причинная связь с первичным world-scene gate не доказана.
 
 Следующий gate: новый ручной запуск из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Нужны фактические строки retirement owners, отсутствие `Pilot world scene is not loaded`, затем `catalog=150;markers=150;bound=150`, `StartHost`, player spawn и отсутствие duplicate/legacy scene takeover.
+
+## 39. Исправление closed-world проверки загруженных сцен — 2026-09-11
+
+### Фактический runtime отказ
+
+Свежий пользовательский лог остановил Start Host уже после успешного pilot handoff и DDOL audit:
+
+```text
+[T-FO06L] Pilot global startup refused: scene_preparation:loaded_scene_not_in_saved_catalog_scope
+```
+
+До отказа были подтверждены `Retired 1 legacy scene owner(s)` и два `Cataloged DDOL audit` с `markers=16;catalogedMarkers=16;persistentBootstrapRoots=16;restored=0`. Поэтому отказ произошёл внутри `GlobalSceneNativeExecutor.BuildPreparation()`, а не на загрузке `WorldScene_0_0`, catalog binding или `GlobalMotionNetworkStartup`.
+
+### Причина
+
+Executor трактовал каждый элемент `SceneManager.GetSceneAt(...)` как authored scene. Persistent Bootstrap roots уже находятся в специальной сцене `DontDestroyOnLoad`; они проверяются отдельным cataloged DDOL audit, но не являются дополнительной authored scene частью закрытого pilot scope. Из-за этого native preflight ошибочно отвергал загруженный набор до проверки `catalog=150;markers=150;bound=150`.
+
+### Изменение
+
+В `GlobalSceneNativeExecutor`:
+
+- `DontDestroyOnLoad` scene исключается из authored loaded-scene enumeration в `BuildPreparation()`;
+- DDOL-маркеры остаются под отдельной проверкой `ValidateCatalogedDdolRoots()` и marker/network census;
+- `InitialPreparedSceneSetIsIntact()` считает и сравнивает только authored loaded scenes, сохраняя exact `Scene` handle checks;
+- unknown, invalid, duplicate/reloaded и pathless authored scenes по-прежнему отвергаются fail-closed;
+- диагностическая ошибка теперь включает `DescribeScene(scene)` вместо общего сообщения.
+
+Catalog, digest, `Unmanaged`/ownership rules и `GroundPlane_0_0` не изменялись. Partial binding и произвольные сцены не разрешались.
+
+### Проверки и следующий gate
+
+- Unity compile: `No compile errors`.
+- Play Mode после изменения пользователем ещё не выполнен.
+- Native preparation, `catalog=150;markers=150;bound=150`, `StartHost()`, player spawn, menu handoff и отсутствие duplicate/legacy takeover остаются **UNVERIFIED**.
+- Предупреждения NavMesh, missing script, `ShipCargoVisual` и вторичные NGO shutdown `NullReferenceException` не являются частью этого узкого фикса и не исправлялись.
+
+Следующий пользовательский gate: новый Play Mode из canonical `Assets/_Project/Scenes/BootstrapScene.unity` → `Start Host`. Нужны строки `catalog=150;markers=150;bound=150`, успешный Host/player path и отсутствие новой ошибки `loaded_scene_not_in_saved_catalog_scope`. Если появится отказ по authored scene, использовать его полный `DescribeScene(name/path/handle/loaded)`; fail-closed scope не ослаблять.

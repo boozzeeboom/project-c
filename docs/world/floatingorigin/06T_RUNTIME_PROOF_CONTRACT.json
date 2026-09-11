@@ -1,0 +1,51 @@
+{
+    "generatedOn": "2026-09-11",
+    "status": "DORMANT_RUNTIME_PROOF_CONTRACT_PASS;LIVE_PROBES_NOT_CREATED",
+    "contractPath": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseRuntimeProofContract.cs",
+    "validatorPath": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionRebaseRuntimeProofContract.cs",
+    "compile": {
+        "status": "PASS",
+        "result": "No compile errors",
+        "correction": "Initial CS1503 byte-mask conversion was corrected before the final compile check."
+    },
+    "validation": {
+        "menuPath": "ProjectC/World/Floating Origin/Validate Runtime Proof Contract",
+        "status": "PASS",
+        "passed": 11,
+        "failed": 0,
+        "log": "[T-FO06T] Runtime proof contract: 11 pure checks PASS / 0 FAIL; probes and live admission remain unimplemented."
+    },
+    "requirements": [
+        "camera_ownership_history",
+        "ship_deck_nav_registration",
+        "passenger_provenance",
+        "network_tick_ordering",
+        "physics_ordering",
+        "network_baseline_continuity",
+        "unity_state_rollback"
+    ],
+    "contractRules": [
+        "capture identity is required",
+        "participant identity is required",
+        "frame generation is required",
+        "evidence reference is required",
+        "required proof scope must be non-empty and supported",
+        "verified proof must be within the required scope",
+        "all required proof flags must be verified"
+    ],
+    "scope": {
+        "runtimeProbeCollection": false,
+        "automaticAdmission": false,
+        "liveManifestPublication": false,
+        "rebaseMutation": false,
+        "unityObjectAccess": false
+    },
+    "inconclusiveBoundaries": [
+        "active camera ownership/history continuity",
+        "runtime ShipDeckNav registration and passenger provenance",
+        "NGO tick and baseline ordering",
+        "physics/Rigidbody ordering",
+        "native Unity-state rollback"
+    ],
+    "decision": "The dormant proof envelope and deterministic validator are ready for a future user-controlled Play Mode capture, but no runtime evidence is claimed and no participant is admitted."
+}

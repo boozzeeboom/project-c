@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06T — dormant runtime-proof contract)
+
+**Задача:** Подготовить явный immutable contract для будущих user-controlled Play Mode runtime proof captures, не собирая Unity state и не подключая live admission.
+
+**Результат:** Созданы `GlobalMotionRebaseRuntimeProofContract.cs` и `ValidateGlobalMotionRebaseRuntimeProofContract.cs`. Контракт фиксирует семь независимых требований: camera ownership/history, ShipDeckNav registration, passenger provenance, NGO tick ordering, physics ordering, network baseline continuity и Unity-state rollback. Добавлены отчёты `06T_RUNTIME_PROOF_CONTRACT.json` и `06T_RUNTIME_PROOF_CONTRACT.md`.
+
+**Подтверждено:** Финальная Unity compile-проверка — `No compile errors`; menu validator выполнил `11 pure checks PASS / 0 FAIL`. Первоначальная `CS1503` ошибка byte-mask conversion исправлена до финальной проверки. Требования и verified scope валидируются fail-closed с детерминированным первым отсутствующим proof.
+
+**Проверки:** Контракт не обращается к Unity objects, scenes, Transform, Rigidbody, NavMesh, camera или NGO; runtime probes, Play Mode, live manifest publication, automatic admission и rebase mutation не выполнялись. Catalog/profile/prefab/scene state не изменялись.
+
+**Граница:** Dormant runtime-proof contract — **PASS**. Runtime evidence и runtime rebase readiness — **NOT READY**. Camera/history, ShipDeckNav/passenger provenance, NGO tick/baseline ordering, physics ordering и native Unity rollback остаются **INCONCLUSIVE**.
+
+**Следующий шаг:** Использовать контракт только для отдельного user-controlled Play Mode capture после согласования конкретных probe adapters; до фактических records не менять admission policy и не публиковать live manifest.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06S — fail-closed participant admission policy gate)
 
 **Задача:** Добавить pure fail-closed admission policy contract для будущего reviewed participant manifest без automatic discovery, live manifest publication или runtime rebase.

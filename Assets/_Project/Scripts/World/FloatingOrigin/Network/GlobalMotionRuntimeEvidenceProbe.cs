@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Text;
 using Unity.Netcode;
 using UnityEngine;
+using ProjectC.AI;
 using ProjectC.Core;
 using ProjectC.Player;
+using ProjectC.Ship;
 using ProjectC.UI;
 
 namespace ProjectC.World.FloatingOrigin.Network
@@ -124,6 +126,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 AppendPlayerSample(builder);
                 AppendCameraSample(builder);
                 AppendMotionSample(builder);
+                AppendDeckAndPassengerSample(builder);
             }
 
             Debug.Log(builder.ToString(), this);
@@ -207,6 +210,49 @@ namespace ProjectC.World.FloatingOrigin.Network
                 .Append('/').Append(binding.DiscontinuityGeneration)
                 .Append(" adapter=").Append(_adapter != null ? _adapter.Status.ToString() : "missing")
                 .Append(" baselinePlaced=").Append(_adapter != null && _adapter.IsBaselinePlaced);
+        }
+
+        private void AppendDeckAndPassengerSample(StringBuilder builder)
+        {
+            ShipDeckNav[] decks = FindObjectsByType<ShipDeckNav>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            NpcBrain[] brains = FindObjectsByType<NpcBrain>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            builder.Append(" decks=").Append(decks.Length);
+            for (int i = 0; i < decks.Length; i++)
+            {
+                ShipDeckNav deck = decks[i];
+                if (deck == null) continue;
+
+                NetworkObject networkObject = deck.GetComponent<NetworkObject>();
+                builder.Append("[").Append(deck.name)
+                    .Append("#").Append(networkObject != null ? networkObject.NetworkObjectId : 0UL)
+                    .Append(" reg=").Append(deck.IsRegistered)
+                    .Append(" instance=").Append(deck.IsNavMeshInstanceValid)
+                    .Append(" ready=").Append(deck.IsReady)
+                    .Append(" data=").Append(deck.NavMeshDataName)
+                    .Append(" origin=").Append(deck.NavFrameOrigin.ToString("F2"))
+                    .Append("]");
+            }
+
+            int attachedCount = 0;
+            builder.Append(" passengers=");
+            for (int i = 0; i < brains.Length; i++)
+            {
+                NpcBrain brain = brains[i];
+                if (brain == null || !brain.IsExplicitShipAttachmentRequested) continue;
+                attachedCount++;
+                builder.Append("[").Append(brain.name)
+                    .Append(" ship=").Append(brain.AttachedShipName)
+                    .Append("#").Append(brain.AttachedShipNetworkObjectId)
+                    .Append(" active=").Append(brain.IsExplicitShipAttachmentActive)
+                    .Append(" deck=").Append(brain.DeckNavName)
+                    .Append(" proxy=").Append(brain.IsDeckProxyCreated)
+                    .Append(" onNav=").Append(brain.IsDeckProxyOnNavMesh)
+                    .Append(" navActive=").Append(brain.IsDeckNavigationActive)
+                    .Append("]");
+            }
+
+            builder.Append(" passengerCount=").Append(attachedCount);
         }
 
         private void CacheReferences()

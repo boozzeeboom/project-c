@@ -87,6 +87,15 @@ namespace ProjectC.Ship
         /// <summary>true, если навмеш палубы зарегистрирован и валиден.</summary>
         public bool IsReady => _registered && _instance.valid;
 
+        /// <summary>Read-only runtime evidence: registration lifecycle reached Register().</summary>
+        public bool IsRegistered => _registered;
+
+        /// <summary>Read-only runtime evidence for the native NavMeshDataInstance.</summary>
+        public bool IsNavMeshInstanceValid => _instance.valid;
+
+        /// <summary>Stable human-readable identity of the baked deck NavMeshData.</summary>
+        public string NavMeshDataName => _deckNavMeshData != null ? _deckNavMeshData.name : string.Empty;
+
         /// <summary>Точка нав-песочницы этого корабля.</summary>
         public Vector3 NavFrameOrigin => _navFrameOrigin;
 

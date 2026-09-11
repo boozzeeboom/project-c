@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06Z — dormant ShipDeckNav/passenger runtime evidence adapter)
+
+**Задача:** Продолжить T-FO06Y после успешного baseline/movement capture и добавить read-only evidence для отдельного ShipDeckNav/passenger gate, не включая runtime rebase.
+
+**Результат:** В `ShipDeckNav` добавлены read-only признаки регистрации и валидности native `NavMeshDataInstance`; в `NpcBrain` добавлены read-only признаки explicit attachment, deck proxy и `isOnNavMesh`. `GlobalMotionRuntimeEvidenceProbe` теперь пишет эти данные в существующие `[T-FO06Y]` строки для всех runtime `ShipDeckNav` и NPC с explicit ship attachment.
+
+**Проверки:** Unity compile — `No compile errors`; validation трёх изменённых scripts — `0 errors` и только общий warning об аллокациях строк при runtime logging. Play Mode, screenshots, scene/prefab save, NavMesh mutation, runtime rebase, admission и live manifest не выполнялись.
+
+**Граница:** Это dormant evidence adapter, а не исправление NavMesh и не runtime participant admission. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`, `liveManifestPublication=false`, `applyRebuildValidatePublishConnected=false`. ShipDeckNav/passenger readiness остаются `UNVERIFIED` до пользовательского capture.
+
+**Следующий шаг:** Пользовательский serial capture с включённым `Capture Enabled` должен подтвердить для deck/crew `reg=true`, `instance=true`, `ready=true`, `proxy=true`, `onNav=true`, active attachment и стабильную ship identity. До этого не подключать concrete adapters, `Apply/Rebuild/Validate/Publish` или общий transform shift.
+
+**Изменения:** `Assets/_Project/Scripts/Ship/ShipDeckNav.cs`, `Assets/_Project/Scripts/AI/NpcBrain.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRuntimeEvidenceProbe.cs`, `docs/world/floatingorigin/06Z_SHIP_DECK_RUNTIME_EVIDENCE_ADAPTER.md`, `docs/world/floatingorigin/06Z_SHIP_DECK_RUNTIME_EVIDENCE_ADAPTER.json`, обновлены roadmap и этот журнал.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Y — fourth user runtime capture follow-up)
 
 **Задача:** Точечно разобрать текущий пользовательский Play Mode capture через Unity MCP без загрузки полного Console Log в контекст.

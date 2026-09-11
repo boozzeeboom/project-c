@@ -1,0 +1,52 @@
+{
+  "ticket": "T-FO06Z",
+  "stage": "SHIP_DECK_RUNTIME_EVIDENCE_ADAPTER",
+  "date": "2026-09-11",
+  "scope": "Dormant read-only runtime evidence extension for the existing T-FO06Y probe; no Play Mode or runtime mutation executed.",
+  "changedSources": [
+    "Assets/_Project/Scripts/Ship/ShipDeckNav.cs",
+    "Assets/_Project/Scripts/AI/NpcBrain.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRuntimeEvidenceProbe.cs"
+  ],
+  "evidenceAdded": {
+    "shipDeckNav": [
+      "IsRegistered",
+      "IsNavMeshInstanceValid",
+      "NavMeshDataName"
+    ],
+    "npcBrain": [
+      "IsDeckNavigationActive",
+      "IsDeckProxyCreated",
+      "IsDeckProxyOnNavMesh",
+      "AttachedShipName",
+      "AttachedShipNetworkObjectId",
+      "DeckNavName"
+    ],
+    "probeOutput": [
+      "ShipDeckNav registration/native instance validity/ready/data/origin",
+      "Explicit passenger attachment/ship identity/deck proxy/on-nav state"
+    ]
+  },
+  "checks": {
+    "unityCompile": "No compile errors",
+    "scriptValidationErrors": 0,
+    "scriptValidationWarnings": 1,
+    "playMode": false,
+    "screenshots": false,
+    "sceneMutation": false,
+    "prefabMutation": false,
+    "runtimeRebase": false
+  },
+  "gate": {
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "liveManifestPublication": false,
+    "applyRebuildValidatePublishConnected": false,
+    "shipDeckNavRuntime": "UNVERIFIED_UNTIL_USER_CAPTURE",
+    "passengerProvenance": "UNVERIFIED_UNTIL_USER_CAPTURE"
+  },
+  "decision": "PASS_DORMANT_EVIDENCE_ADAPTER;_RUNTIME_REBASE_NOT_READY",
+  "nextStep": "User-controlled serial capture with [T-FO06Y] deck/passenger evidence before any concrete adapter or rebase activation."
+}

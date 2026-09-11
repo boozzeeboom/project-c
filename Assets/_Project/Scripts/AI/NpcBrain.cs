@@ -262,6 +262,24 @@ namespace ProjectC.AI
         public bool IsExplicitShipAttachmentRequested => _explicitShipAttachmentRequested;
         public bool IsExplicitShipAttachmentActive => _explicitShipAttachmentActive;
 
+        /// <summary>Read-only runtime evidence for the explicit deck-navigation path.</summary>
+        public bool IsDeckNavigationActive => _deckNavActive;
+
+        /// <summary>True after the deck proxy NavMeshAgent has been created.</summary>
+        public bool IsDeckProxyCreated => _proxyAgent != null;
+
+        /// <summary>True only when the deck proxy is enabled and attached to a NavMesh.</summary>
+        public bool IsDeckProxyOnNavMesh => _proxyAgent != null && _proxyAgent.enabled && _proxyAgent.isOnNavMesh;
+
+        /// <summary>Identity of the ship currently requested by explicit attachment.</summary>
+        public string AttachedShipName => _explicitShipNetworkObject != null ? _explicitShipNetworkObject.name : string.Empty;
+
+        /// <summary>Network identity of the ship currently requested by explicit attachment.</summary>
+        public ulong AttachedShipNetworkObjectId => _explicitShipNetworkObject != null ? _explicitShipNetworkObject.NetworkObjectId : 0UL;
+
+        /// <summary>Identity of the currently resolved ShipDeckNav.</summary>
+        public string DeckNavName => _deckNav != null ? _deckNav.name : string.Empty;
+
         public void AttachToShipDeck(NetworkObject shipNetworkObject, ShipDeckNav deckNav = null)
         {
             if (!IsServer || shipNetworkObject == null)

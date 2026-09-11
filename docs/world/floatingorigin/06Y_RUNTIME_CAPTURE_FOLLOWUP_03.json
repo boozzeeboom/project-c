@@ -1,0 +1,81 @@
+{
+  "ticket": "T-FO06Y",
+  "attempt": 3,
+  "date": "2026-09-11",
+  "source": {
+    "exportedAt": "2026-09-11 18:56:49",
+    "logEntries": 1319,
+    "evidenceWindow": {
+      "firstFrame": 2958,
+      "firstFixedTime": 44.52,
+      "lastProbeFrame": 3324,
+      "lastProbeFixedTime": 51.98
+    }
+  },
+  "runtimePilot": "NetworkPlayer_GlobalPilot(Clone)",
+  "binding": "5641052402999880809/94/1/1/2",
+  "status": "CAPTURE_ATTEMPTED_03;PROBE_RECORDS_PRESENT;RUNTIME_ORDERING_INCONCLUSIVE",
+  "observed": {
+    "probeRecords": "PRESENT",
+    "adapter": "Ready",
+    "baselinePlaced": true,
+    "playerFixedUpdate": true,
+    "characterControllerMove": true,
+    "playerPosition": "(39992.000,2502.165,40000.000)",
+    "velocity": "(0.000,-2.000,0.000)",
+    "grounded": true,
+    "ccGrounded": true,
+    "ccEnabled": true,
+    "onPlatform": false,
+    "platform": "<none>",
+    "platformDelta": "(0,0,0)",
+    "inShip": false,
+    "animatorEnabled": true,
+    "rootMotion": true,
+    "animatorDeltaPosition": "(0,0,0)",
+    "animatorDeltaRotation": "(0,0,0)",
+    "networkTicks": "1269..1494",
+    "controlAcceptedRevisions": "42..50",
+    "spawned": true,
+    "active": true,
+    "server": true,
+    "camera": "ThirdPersonCamera_0",
+    "cameraActiveOwner": true,
+    "cameraTarget": "NetworkPlayer_GlobalPilot(Clone)",
+    "cameraLateUpdate": "skip_dominant_until_frame_3158;begin_end_observed_from_frame_3159",
+    "cameraHistoryChanged": true,
+    "origin": "(0,0,0)",
+    "runtimeRebase": false
+  },
+  "orderingObservations": {
+    "probeInFixed": false,
+    "duplicateFixedUpdateFramesObserved": [2958, 2968, 2989, 2991, 2998, 3000, 3002],
+    "multipleNetworkTicksInFrame": true,
+    "classification": "RUNTIME_SCHEDULING_ORDER_ANOMALY_OBSERVED_CAUSE_INCONCLUSIVE"
+  },
+  "missingEvidence": [
+    "Physics.SyncTransforms.begin/end",
+    "baseline.AcknowledgeApplied",
+    "baseline.ActorApplied",
+    "post-rebase baseline continuity",
+    "controlled movement or jump",
+    "moving-platform carry",
+    "ship passenger state",
+    "runtime rebase",
+    "Unity-state rollback"
+  ],
+  "blockers": {
+    "navMeshPassengerEvidence": "INCONCLUSIVE",
+    "warning": "Failed to create agent because it is not close enough to the NavMesh",
+    "disconnectShutdown": "NOT_ROLLBACK_EVIDENCE"
+  },
+  "gateDecision": {
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "liveManifestPublication": false,
+    "admittedParticipants": 0,
+    "applyRebuildValidatePublishConnected": false,
+    "decision": "Probe records are now present and confirm partial player/camera/NGO instrumentation, but physics synchronization, applied baseline continuity, controlled movement/rebase, passenger readiness and rollback remain unproven."
+  }
+}

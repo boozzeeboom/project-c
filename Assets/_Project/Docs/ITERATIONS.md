@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06Y — третий пользовательский runtime capture follow-up)
+
+**Задача:** Проанализировать третий предоставленный пользователем Unity Console export от `2026-09-11 18:56:49` (`1319` записей) после появления `[T-FO06Y]` evidence.
+
+**Результат:** Probe records присутствуют в окне `frame=2958..3324`, `fixedTime=44.5200..51.9800`. Runtime pilot `NetworkPlayer_GlobalPilot(Clone)` сохраняет binding `5641052402999880809/94/1/1/2`; adapter сообщает `Ready`, `baselinePlaced=True`. Подтверждены player/CharacterController movement hooks, grounded state, Animator/root motion, NGO ticks/control/binding, camera ownership и позднее появление полноценного `camera.LateUpdate.begin/end`.
+
+**Runtime ordering:** Зафиксированы повторные `player.FixedUpdate.begin` в отдельных frames и несколько `ngo.NetworkTick` в одном frame; это scheduling/order anomaly, но причина по capture не установлена. `camera.LateUpdate.skip` преобладает до `frame=3158`, полноценное camera update наблюдается после `frame=3159`.
+
+**Граница:** В `[T-FO06Y]` отсутствуют `Physics.SyncTransforms.begin/end`, `baseline.AcknowledgeApplied` и `baseline.ActorApplied`. Игрок не двигался, `onPlatform=False`, `inShip=False`, `origin=(0,0,0)`, runtime rebase не выполнялся. Повторные NavMesh warnings сохраняют deck/passenger gate как **INCONCLUSIVE**; disconnect/shutdown не является rollback evidence.
+
+**Gate:** `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`, `liveManifestPublication=false`, `applyRebuildValidatePublishConnected=false`. Concrete adapters и runtime frame mutation остаются заблокированы.
+
+**Файлы:** `docs/world/floatingorigin/06Y_RUNTIME_CAPTURE_FOLLOWUP_03.md`, `docs/world/floatingorigin/06Y_RUNTIME_CAPTURE_FOLLOWUP_03.json`, обновлены `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md` и этот журнал. Пользовательские Play Mode, screenshots и runtime mutation автоматически не выполнялись.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Y — второй пользовательский runtime capture follow-up)
 
 **Задача:** Проверить второй предоставленный пользователем Unity Console export от `2026-09-11 18:53:31` (`805` записей, `15 секунд`) после предыдущего T-FO06Y capture follow-up.

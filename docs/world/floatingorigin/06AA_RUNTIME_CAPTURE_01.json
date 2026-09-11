@@ -1,0 +1,36 @@
+{
+  "ticket": "T-FO06AA",
+  "capture": "runtime capture 01",
+  "date": "2026-09-11",
+  "source": "pointwise Unity MCP console review after user-controlled Play Mode capture",
+  "window": "2026-09-11T23:37:37-23:37:43+05:00",
+  "gateEvidence": {
+    "networkSpawnArmed": true,
+    "baselineSyncBeforeRelease": true,
+    "initialGateReleased": true,
+    "initialGateArmedMarkerObserved": false,
+    "factoryPosePreparedMarkerObserved": false,
+    "blockedFixedUpdateMarkerObserved": false,
+    "orderingStatus": "PARTIAL_RUNTIME_CONFIRMATION"
+  },
+  "anomaly": {
+    "reproduced": true,
+    "negativePositionObserved": "frame=146 y=-6.36 to y=-9.18",
+    "respawnWriterObserved": true,
+    "respawnTarget": "(39992.00, 2502.77, 40000.00)",
+    "nextPositionObserved": "frame=147 y=2502.77",
+    "controlledRebaseMarkersObserved": false,
+    "classification": "RESPAWN_OR_CORRECTION_WRITER_CANDIDATE"
+  },
+  "warnings": {
+    "navMeshAgentCreationWarning": true,
+    "unityErrorsOrExceptionsInPointwiseSample": false,
+    "deckAndPassengerReadiness": "INCONCLUSIVE_DUE_TO_NAVMESH_WARNINGS"
+  },
+  "scopeBoundary": {
+    "controlledRebase": "NOT_OBSERVED",
+    "rollback": "NOT_OBSERVED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "Read-only audit and narrow instrumentation of PlayerRespawnTracker, respawn callbacks, teleport/set-position writers, and frame ordering against CharacterController.Move and NGO correction."
+}

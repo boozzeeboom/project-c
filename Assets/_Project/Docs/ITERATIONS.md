@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06AA — runtime capture 01 после initial global spawn gate)
+
+**Задача:** Точечно проверить пользовательский Play Mode capture через Unity MCP без выгрузки полного лога и определить, устраняет ли T-FO06AA историческую initial placement/writer anomaly.
+
+**Результат:** На `frame=137` подтверждены `spawn.NetworkSpawn(... armed=True)`, `Physics.SyncTransforms.begin/end`, `baseline.ActorApplied` и `spawn.InitialGateReleased` в правильном порядке. В доступной выборке не найдены `spawn.InitialGateArmed`, `spawn.FactoryPosePrepared` и `player.FixedUpdate.blocked`; поэтому runtime proof gate ordering классифицирован как `PARTIAL`, а не полный.
+
+**Аномалия:** После release gate переход повторился: на `frame=146` `CharacterController.Move.after` достиг `y=-9.18`, а `PlayerRespawnTracker` записал `Respawning ... pos=(39992.00,2502.77,40000.00)` и `Client teleported ...`. На следующем `frame=147` игрок был на `y=2502.77`. `rebase.*` и rollback markers не найдены. Это исключает T-FO06AA initial gate как достаточное объяснение и выделяет respawn/correction path как главный кандидат competing writer.
+
+**Warnings:** Unity errors/exceptions в точечной выборке не найдены. Повторяется `Failed to create agent because it is not close enough to the NavMesh`; deck/passenger readiness остаётся `INCONCLUSIVE`.
+
+**Следующий этап:** Не повторять тот же capture. Провести read-only audit и узкую instrumentation-проверку `PlayerRespawnTracker`, respawn callback order и всех teleport/set-position writers для `NetworkPlayer_GlobalPilot(Clone)`.
+
+**Файлы:** `docs/world/floatingorigin/06AA_RUNTIME_CAPTURE_01.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AA — initial global spawn gate integration)
 
 **Задача:** Перейти от повторного baseline/movement capture к distinct implementation slice и закрыть окно initial placement/writer anomaly, обнаруженное в T-FO06Z runtime follow-up 03.

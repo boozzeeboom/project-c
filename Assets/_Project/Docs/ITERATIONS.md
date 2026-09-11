@@ -959,3 +959,19 @@
 - `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` — подключены обработчики кнопок
 - `Assets/_Project/Scripts/UI/MainMenu/PersistenceDebugTools.cs` — удаление JSON/TXT persistence и trade PlayerPrefs с сохранением настроек и input bindings
 
+## Итерация от 2026-09-11 (T-FO06N — pure validation coverage coordinator)
+
+**Задача:** Закрыть pure validation gate для runtime-inert `GlobalMotionRebaseCoordinator` до перехода к participant-manifest design.
+
+**Результат:** Создан `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionRebaseCoordinator.cs` с 13 in-memory checks для request validation, closed-world participant set, stale/duplicate rejection, snapshot identity, freeze/release failures, reverse-order rollback, `Aborted/Faulted` и reset lifecycle.
+
+**Проверки:** Меню `ProjectC/World/Floating Origin/Validate Rebase Coordinator` — **13 pure checks PASS / 0 FAIL**. Unity compile — **No compile errors**. Play Mode, screenshots, scenes, prefabs, physics, NavMesh, camera, NGO baseline и runtime rebase не выполнялись.
+
+**Граница:** Доказан только coordinator state machine на fake gate/participants/snapshots. Serialized manifest/digest source, camera ownership/history, NGO tick/physics ordering, runtime `ShipDeckNav` registration, concrete adapters и rollback реального Unity state остаются **INCONCLUSIVE**. Runtime rebase readiness — **NOT READY**.
+
+**Документация:** `docs/world/floatingorigin/06N_COORDINATOR_VALIDATION.md`.
+
+**Следующий шаг:** Participant-manifest design/read-only slice; без runtime discovery, scene mutation, `Apply`, `Rebuild`, `Publish` и включения `FloatingOriginMP`.
+
+---
+

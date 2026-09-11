@@ -1,0 +1,68 @@
+{
+  "ticket": "T-FO06Y",
+  "stage": "RUNTIME_CAPTURE_GATE_05",
+  "date": "2026-09-11",
+  "basis": [
+    "06Y_RUNTIME_CAPTURE_FOLLOWUP_03",
+    "06Y_RUNTIME_EVIDENCE_SOURCE_ANALYSIS_04",
+    "git status at stage start"
+  ],
+  "scope": "Documentation-only serial gate preparation; no Play Mode, screenshots, scene/prefab save, network session, or runtime mutation executed by the agent.",
+  "confirmed": {
+    "probeRecords": true,
+    "probeWindow": "frame=2958..3324",
+    "binding": "5641052402999880809/94/1/1/2",
+    "adapter": "Ready",
+    "baselinePlaced": true,
+    "channels": [
+      "player.FixedUpdate",
+      "CharacterController.Move",
+      "grounding",
+      "Animator/root-motion state",
+      "NGO NetworkTick/control",
+      "camera owner/history"
+    ]
+  },
+  "missing": [
+    "Physics.SyncTransforms.begin/end during baseline transition",
+    "baseline.ActorApplied",
+    "baseline.AcknowledgeApplied",
+    "controlled movement/jump/platform carry",
+    "runtime rebase and post-rebase continuity",
+    "shutdown/disconnect rollback",
+    "passenger/deck/NavMesh readiness",
+    "participant admission",
+    "live manifest publication"
+  ],
+  "gate": {
+    "runtimeProofComplete": false,
+    "runtimeAdapterReady": false,
+    "rollbackReady": false,
+    "admittedParticipants": 0,
+    "liveManifestPublication": false,
+    "applyRebuildValidatePublishConnected": false,
+    "ordering": "RUNTIME_ORDERING_INCONCLUSIVE",
+    "navMeshPassenger": "INCONCLUSIVE"
+  },
+  "nextCapture": [
+    "baseline transition with active probe",
+    "ActorApplied and AcknowledgeApplied",
+    "Physics.SyncTransforms.begin/end",
+    "idle after adapter ready",
+    "controlled walk/run",
+    "jump",
+    "controlled rebase/post-rebase continuity",
+    "shutdown/disconnect rollback",
+    "passenger/deck readiness without NavMesh blocker"
+  ],
+  "workingTreeBoundary": {
+    "uncommittedFile": "Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab",
+    "observedChanges": [
+      "_captureEnabled: 1",
+      "Unity-recalculated GlobalObjectIdHash"
+    ],
+    "includedInStage": false,
+    "reason": "Probe is documented as disabled by default and prefab layout/hash changes require separate user review."
+  },
+  "decision": "BLOCKED_NOT_READY_UNTIL_NEXT_USER_CAPTURE"
+}

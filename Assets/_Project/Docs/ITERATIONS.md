@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06Y — next serial runtime evidence gate)
+
+**Задача:** Зафиксировать следующий user-controlled capture gate после source analysis 04 и подготовить дальнейшую интеграцию без преждевременного подключения runtime rebase.
+
+**Результат:** Созданы `docs/world/floatingorigin/06Y_RUNTIME_CAPTURE_GATE_05.md/.json`. Документированы подтверждённые probe channels, отсутствующие baseline/physics/rebase/rollback/passenger evidence, точные требования к следующему serial capture и fail-closed gate values.
+
+**Граница:** Play Mode, screenshots, сетевые сессии, scene/prefab save и runtime mutation агентом не выполнялись. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, `admittedParticipants=0`, `liveManifestPublication=false`, `applyRebuildValidatePublishConnected=false`. Concrete adapters, `Apply/Rebuild/Validate/Publish`, `FloatingOriginMP`, player-only shift и generic shared `SetParent` остаются заблокированы.
+
+**Рабочее дерево:** Обнаружено отдельное незакоммиченное изменение `Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab` (`_captureEnabled=1` и Unity-пересчёт `GlobalObjectIdHash`). Оно не изменялось и не включено в этот документационный этап; требуется отдельный user review, поскольку committed contract описывает probe как выключенный по умолчанию.
+
+**Файлы:** `docs/world/floatingorigin/06Y_RUNTIME_CAPTURE_GATE_05.md`, `docs/world/floatingorigin/06Y_RUNTIME_CAPTURE_GATE_05.json`, обновлены `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md` и этот журнал.
+
+**Следующий шаг:** Пользовательский serial capture с baseline transition, `Physics.SyncTransforms`, movement/jump, controlled rebase/post-rebase continuity, rollback и passenger/deck readiness без NavMesh blocker.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06Y — source analysis runtime evidence gates)
 
 **Задача:** Проверить по исходникам probe/adapter/replicator/camera, почему третий capture содержит частичную evidence, но не содержит `Physics.SyncTransforms`, `baseline.AcknowledgeApplied` и `baseline.ActorApplied`.

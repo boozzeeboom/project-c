@@ -1,0 +1,102 @@
+{
+    "generatedOn": "2026-09-11",
+    "ticket": "T-FO06U",
+    "source": {
+        "kind": "user_supplied_unity_console_export",
+        "exportedAtLocal": "2026-09-11 17:13:54",
+        "reportedDuration": "approximately 15 seconds",
+        "totalEntries": 868
+    },
+    "status": "RUNTIME_STARTUP_PASS;REBASE_PROOF_INCOMPLETE",
+    "evidence": {
+        "nativeScenePreparation": {
+            "status": "PASS",
+            "observed": "ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>"
+        },
+        "hostAndPlayerStartup": {
+            "status": "PASS",
+            "observed": [
+                "worldRunning=True;scenePrepared=True;sceneReady=True",
+                "CompletePlacement finished;ready=True;baseline=True",
+                "SpawnAsPlayerObject called",
+                "origin=(0,0,0);local=(39992.00, 1.00, 40000.00)"
+            ]
+        },
+        "shipDeckNav": {
+            "status": "INCONCLUSIVE",
+            "observedRegistrations": 20,
+            "registeredShips": [
+                "Сильфида",
+                "Пещера",
+                "Летучий",
+                "Жук",
+                "Мастодонт",
+                "Гигант",
+                "Вавилон",
+                "Ветроворот",
+                "Цитадель",
+                "Берег",
+                "Горгона",
+                "Скат",
+                "Лорейн",
+                "Странник",
+                "Альбатрос",
+                "Река",
+                "Олимп",
+                "Торренс",
+                "Шмель",
+                "Угольщик"
+            ],
+            "blocker": "Repeated 'Failed to create agent because it is not close enough to the NavMesh' warnings at ShipDeckNav.cs:200 and related agent creation paths. Registration log alone does not prove valid NavMesh readiness."
+        },
+        "passengerProvenance": {
+            "status": "INCONCLUSIVE",
+            "observedCrewRequests": 20,
+            "observedCrewSpawns": 20,
+            "blocker": "Explicit ship-deck attachment was requested and named captains were spawned, but no completed attachment/provenance proof or post-attachment state was logged."
+        },
+        "cameraOwnershipHistory": {
+            "status": "UNVERIFIED",
+            "observed": false
+        },
+        "networkTickOrdering": {
+            "status": "UNVERIFIED",
+            "observed": false
+        },
+        "physicsOrdering": {
+            "status": "UNVERIFIED",
+            "observed": false,
+            "note": "A ship collision log was present, but no rebase/physics ordering capture was performed."
+        },
+        "networkBaselineContinuity": {
+            "status": "UNVERIFIED",
+            "observed": "Initial player placement reported baseline=True; no rebase baseline continuity or post-shift NGO state was captured."
+        },
+        "unityStateRollback": {
+            "status": "UNVERIFIED",
+            "observed": false
+        }
+    },
+    "runtimeWarningsRelevantToNextGate": [
+        "Repeated ShipDeckNav/NavMesh agent creation failures",
+        "NavMeshAgent creation warnings during NpcBrain and ShipCrewSpawner paths"
+    ],
+    "unrelatedOrOutOfScopeWarnings": [
+        "missing Meziy modules",
+        "empty ShipCargoVisual _boxPrefabs",
+        "early CombatServer/MetaRequirementRegistry ordering warnings",
+        "missing ResourceNodeConfig item/tool references",
+        "PlayerTarget HP initialization failure",
+        "NpcSocialBrain Animator parameter warnings",
+        "missing ShipDamageConfig asset"
+    ],
+    "admission": {
+        "runtimeProofComplete": false,
+        "runtimeAdapterReady": false,
+        "rollbackReady": false,
+        "liveManifestPublication": false,
+        "admittedParticipants": 0,
+        "decision": "No participant may pass T-FO06S admission from this capture."
+    },
+    "decision": "The capture closes the static pilot startup/player gate for this run, but does not provide complete runtime proof for camera, NavMesh/deck, passenger provenance, NGO ordering, physics ordering, baseline continuity or rollback. Runtime rebase readiness remains NOT READY."
+}

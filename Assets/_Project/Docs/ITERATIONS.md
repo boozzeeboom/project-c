@@ -1,3 +1,19 @@
+## Итерация от 2026-09-11 (T-FO06U — user Play Mode runtime-proof audit)
+
+**Задача:** Проверить предоставленный пользователем 15-секундный Unity runtime log против dormant proof contract T-FO06T и fail-closed admission policy T-FO06S.
+
+**Результат:** Добавлены `06U_USER_PLAYTEST_RUNTIME_PROOF_AUDIT.json` и `06U_USER_PLAYTEST_RUNTIME_PROOF_AUDIT.md`. Подтверждены `ready=True;recorded=150;pending=0;unspawned=0;retired=0;nodes=150;blocker=<none>`, успешный Host/player startup, `CompletePlacement ready=True;baseline=True`, `SpawnAsPlayerObject` и `origin=(0,0,0);local=(39992,1,40000)`.
+
+**Подтверждено:** В логе наблюдаются 20 `ShipDeckNav Registered` и 20 named crew spawn/attachment request sequences, но рядом повторяются NavMesh agent failures в `ShipDeckNav.cs:200`, `NpcBrain.cs:688` и `ShipCrewSpawner.cs:154`; поэтому deck/NavMesh readiness и passenger provenance остаются **INCONCLUSIVE**.
+
+**Proof result:** Camera ownership/history, NGO tick ordering, physics ordering, post-rebase baseline continuity и Unity-state rollback — **UNVERIFIED**. `runtimeProofComplete=false`, `runtimeAdapterReady=false`, `rollbackReady=false`, admitted participants `0`; live manifest не публиковался.
+
+**Граница:** Static native preparation и initial Host/player gate — **PASS** для данного запуска. Floating-origin runtime proof и runtime rebase readiness — **NOT READY**. Несвязанные gameplay warnings не исправлялись массово.
+
+**Следующий шаг:** Отдельно подготовить минимальный user-controlled runtime capture для camera/deck/NGO/physics/baseline boundaries и удерживать admission fail-closed до устранения NavMesh blocker и появления rollback evidence.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06T — dormant runtime-proof contract)
 
 **Задача:** Подготовить явный immutable contract для будущих user-controlled Play Mode runtime proof captures, не собирая Unity state и не подключая live admission.

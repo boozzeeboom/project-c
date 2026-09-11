@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06N — compile-verified coordinator/preflight/snapshot skeleton)
+
+**Задача:** Реализовать только первый fail-closed coordinator slice после design-only transaction contract, не подключая Unity objects и не выполняя runtime shift.
+
+**Результат:** Создан `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseCoordinator.cs`. Coordinator остаётся plain C# class и реализует request validation, sealed closed-world participant set, freeze gate, participant preflight, immutable snapshot capture, reverse-order rollback и различение `Aborted/Faulted`. Фаза останавливается на `Captured`; `Apply/Rebuild/Validate/Publish` и публикация нового frame отсутствуют.
+
+**Проверки:** Первоначальная Unity compile-проверка обнаружила `CS0165` для `restoreError` в rollback path. Ошибка исправлена явной инициализацией локальной диагностической строки; повторная проверка — `No compile errors`. `git diff --check` — без вывода/ошибок. Play Mode, сцены, префабы, catalog/profile, physics, NavMesh, camera и screenshots не выполнялись.
+
+**Граница:** Изменены только coordinator script, рабочий документ `06N_REBASE_TRANSACTION_CONTRACT.md` и этот журнал. Concrete participant adapters, manifest digest source, camera ownership, NGO tick/physics ordering, runtime ShipDeckNav proof и доказательство Unity-state rollback остаются **INCONCLUSIVE**; runtime rebase readiness — **NOT READY**.
+
+**Следующий шаг:** Отдельно получить доказательства и реализовать concrete adapters/manifest policy только после закрытия camera, physics, NavMesh, network baseline и dynamic participant gates.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06N — design-only participant set и atomic rebase transaction contract)
 
 **Задача:** Продолжить интеграционный план после успешного static pilot startup/player gate и формализовать закрытый participant set будущего rebase transaction.

@@ -98,3 +98,24 @@ Transaction имеет один immutable `transactionId`, старый и но�
 `T-FO06N` фиксирует design-only closed-world participant set и atomic transaction contract. Данных достаточно, чтобы начать отдельную implementation slice, но недостаточно, чтобы объявить runtime rebase готовым: camera ownership, tick/physics ordering, runtime nav registration и часть dynamic gameplay boundaries остаются **INCONCLUSIVE**.
 
 Следующий этап должен реализовывать только coordinator/preflight/snapshot skeleton с fail-closed gates. Первый runtime shift, player-only workaround, включение `FloatingOriginMP` и общий transform-parenting остаются запрещёнными до завершения implementation checks.
+
+## 8. T-FO06N implementation slice — coordinator/preflight/snapshot skeleton
+
+Дата: 2026-09-11.
+
+Создан runtime-inert coordinator skeleton:
+
+- `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseCoordinator.cs`;
+- plain C# coordinator без `MonoBehaviour`, `Transform`, `Rigidbody`, `NavMesh`, camera, NGO baseline или scene access;
+- closed-world participant set с seal, exact count, stable identity и stale-participant rejection;
+- request validation для transaction identity, frame generation, valid plan, participant count и manifest digest;
+- fail-closed flow `REQUEST → FREEZE → PREFLIGHT → CAPTURE`;
+- immutable participant snapshots с identity check;
+- reverse-order restore, freeze release и `Aborted/Faulted` distinction при cleanup failure;
+- coordinator намеренно останавливается на `Captured`; `Apply`, `Rebuild`, `Validate`, `Publish` и runtime frame mutation не подключены.
+
+После создания Unity compile первоначально выявил только ошибку definite assignment `CS0165` для локального `restoreError` в rollback path. Ошибка исправлена через явную инициализацию диагностической строки перед вызовом `TryRestore`; повторная проверка Unity сообщает `No compile errors`.
+
+Сцены, префабы, catalog/profile, frame publication и runtime state не изменялись. Play Mode, physics simulation, screenshots и runtime rebase не выполнялись. Camera ownership, NGO tick/physics ordering, concrete participant adapters, manifest digest source, runtime `ShipDeckNav` proof, dynamic participant policy и доказательство Unity-state rollback остаются **INCONCLUSIVE** и блокируют следующий Apply/Rebuild slice.
+
+**Итог:** compile gate для runtime-inert coordinator skeleton — **PASS**; runtime rebase readiness — **NOT READY**.

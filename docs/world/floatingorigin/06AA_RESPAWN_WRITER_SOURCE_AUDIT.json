@@ -1,0 +1,39 @@
+{
+  "ticket": "T-FO06AA",
+  "date": "2026-09-11",
+  "scope": "PlayerRespawnTracker and position-writer source audit",
+  "mode": "READ_ONLY",
+  "files": [
+    "Assets/_Project/Scripts/Player/PlayerRespawnTracker.cs",
+    "Assets/_Project/Scripts/Player/NetworkPlayer.cs",
+    "Assets/_Project/Scripts/World/RespawnManager.cs",
+    "Assets/_Project/Scripts/Network/NetworkPlayerSpawner.cs",
+    "Assets/_Project/Scripts/Player/PlayerTarget.cs"
+  ],
+  "findings": {
+    "fallRespawn": "server Update detects y <= deathY and performs respawn after respawnDelay",
+    "primaryPositionWriter": "PlayerRespawnTracker.TeleportToClientRpc",
+    "primaryWriterBehavior": "disable CharacterController, assign transform.position, re-enable controller, reset velocity, Physics.SyncTransforms",
+    "runtimeCorrelation": "PlayerRespawnTracker logged respawn and client teleport to (39992.00, 2502.77, 40000.00)",
+    "legacyTeleportWriter": "NetworkPlayer.TeleportToPosition exists but is guarded for global coordinates",
+    "legacyPositionCorrection": "effectively disabled by 99999m threshold and global-path guards",
+    "networkTransformWriter": "active owner-authority replication found; independent large position correction not confirmed"
+  },
+  "ordering": {
+    "respawnVsCharacterControllerMove": "INCONCLUSIVE",
+    "respawnVsNetworkTick": "INCONCLUSIVE",
+    "singleWriterProven": false,
+    "reason": "No project transaction/fence establishes callback order between server respawn Update, ClientRpc delivery, owner Update/ProcessMovement, FixedUpdate and CharacterController.Move."
+  },
+  "gate": {
+    "respawnWriterSourceAudit": "PASS_WITH_ORDER_LIMIT",
+    "initialGlobalSpawnGate": "PARTIAL_RUNTIME_CONFIRMATION",
+    "initialPlacementAnomaly": "REPRODUCED",
+    "likelyWriter": "PlayerRespawnTracker.TeleportToClientRpc",
+    "writerExclusivity": "INCONCLUSIVE",
+    "controlledRebase": "NOT_OBSERVED",
+    "rollback": "NOT_OBSERVED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "next_step": "Add narrow read-only runtime markers around respawn Update, PerformRespawn, TeleportToClientRpc, NetworkPlayer.Update, CharacterController.Move and direct transform.position writers; then request one user-controlled Play Mode capture."
+}

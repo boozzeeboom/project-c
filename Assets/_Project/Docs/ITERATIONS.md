@@ -1,3 +1,17 @@
+## Итерация от 2026-09-11 (T-FO06AA — respawn writer source audit)
+
+**Задача:** После runtime capture 01 проверить исходники `PlayerRespawnTracker` и связанные position writers, не меняя runtime semantics.
+
+**Результат:** `PlayerRespawnTracker.TeleportToClientRpc` подтверждён как реальный direct `transform.position` writer: он отключает `CharacterController`, пишет target position, включает controller, сбрасывает velocity и вызывает `Physics.SyncTransforms`. Его runtime target `(39992.00,2502.77,40000.00)` совпадает с точечной записью `PlayerRespawnTracker` из capture. Fall detection работает server-side при `y <= _deathY` после `_respawnDelay`; manual RPC и combat death имеют дополнительные пути.
+
+**Ограничение:** Исходники не задают transaction/fence между server `PlayerRespawnTracker.Update`, ClientRpc delivery, owner `NetworkPlayer.Update/ProcessMovement`, `FixedUpdate` и `CharacterController.Move`. Единственный writer и точный callback order остаются `INCONCLUSIVE`; legacy correction фактически выключена, а global path отбрасывает legacy coordinate writes.
+
+**Решение:** Не расширять initial spawn gate до respawn gate без отдельного решения. Следующий этап — narrow read-only runtime instrumentation callback order и всех прямых position writers, затем один пользовательский Play Mode capture.
+
+**Файлы:** `docs/world/floatingorigin/06AA_RESPAWN_WRITER_SOURCE_AUDIT.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AA — runtime capture 01 после initial global spawn gate)
 
 **Задача:** Точечно проверить пользовательский Play Mode capture через Unity MCP без выгрузки полного лога и определить, устраняет ли T-FO06AA историческую initial placement/writer anomaly.

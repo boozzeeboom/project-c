@@ -33,13 +33,20 @@ namespace ProjectC.World.FloatingOrigin.Network
         private GlobalMotionRebaseTriggerRequest _trigger;
         private GlobalMotionRebaseRequest _request;
         private GlobalMotionRebaseReadinessBundle _readiness;
+        private GlobalMotionRebaseRuntimeInstallationIntent _installationIntent;
         private bool _readinessAuthorized;
+        private bool _installationIntentAuthorized;
 
         public GlobalMotionRebaseTransactionPhase Phase { get; private set; } = GlobalMotionRebaseTransactionPhase.Idle;
         public Guid ActiveTransactionId => _trigger.TransactionId;
         public GlobalMotionRebaseTransactionPhase LastTerminalPhase { get; private set; } = GlobalMotionRebaseTransactionPhase.Idle;
         public bool IsReadinessAuthorized => _readinessAuthorized && _readiness.IsReady;
+        public bool IsInstallationIntentAuthorized => _installationIntentAuthorized &&
+            IsReadinessAuthorized && _installationIntent.IsValid &&
+            string.Equals(_installationIntent.ManifestDigest, _readiness.ManifestDigest, StringComparison.Ordinal) &&
+            string.Equals(_installationIntent.SessionIdentity, _readiness.SessionIdentity, StringComparison.Ordinal);
         public GlobalMotionRebaseReadinessBundle Readiness => _readiness;
+        public GlobalMotionRebaseRuntimeInstallationIntent InstallationIntent => _installationIntent;
 
         public GlobalMotionRebaseRuntimeDriver(
             GlobalMotionRebaseCoordinator coordinator,
@@ -69,6 +76,43 @@ namespace ProjectC.World.FloatingOrigin.Network
             return true;
         }
 
+        public bool TryAuthorizeInstallationIntent(
+            GlobalMotionRebaseRuntimeInstallationIntent installationIntent,
+            out string error)
+        {
+            error = null;
+            if (Phase != GlobalMotionRebaseTransactionPhase.Idle)
+            {
+                error = "installation_authorization_requires_idle:phase=" + Phase;
+                return false;
+            }
+            if (!IsReadinessAuthorized)
+            {
+                error = "readiness_bundle_not_authorized";
+                return false;
+            }
+            if (!installationIntent.IsValid)
+            {
+                error = "installation_intent_invalid";
+                return false;
+            }
+            if (!string.Equals(installationIntent.ManifestDigest, _readiness.ManifestDigest, StringComparison.Ordinal))
+            {
+                error = "installation_manifest_digest_mismatch";
+                return false;
+            }
+            if (!string.Equals(installationIntent.SessionIdentity, _readiness.SessionIdentity, StringComparison.Ordinal))
+            {
+                error = "installation_session_identity_mismatch";
+                return false;
+            }
+
+            _installationIntent = installationIntent;
+            _installationIntentAuthorized = true;
+            Record("InstallationAuthorized", "installation=" + installationIntent.InstallationId + ";reason=" + installationIntent.Reason);
+            return true;
+        }
+
         public bool TryRequestUserControlled(
             ulong frameGeneration,
             string reason,
@@ -78,6 +122,12 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (!IsReadinessAuthorized)
             {
                 error = "readiness_bundle_not_authorized";
+                Record("Rejected", error);
+                return false;
+            }
+            if (!IsInstallationIntentAuthorized)
+            {
+                error = "installation_intent_not_authorized";
                 Record("Rejected", error);
                 return false;
             }
@@ -129,7 +179,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             _trigger = default;
             _request = default;
             _readiness = GlobalMotionRebaseReadinessBundle.Blocked("readiness_reset");
+            _installationIntent = default;
             _readinessAuthorized = false;
+            _installationIntentAuthorized = false;
             Phase = GlobalMotionRebaseTransactionPhase.Idle;
             LastTerminalPhase = GlobalMotionRebaseTransactionPhase.Idle;
             Record("Reset", null);

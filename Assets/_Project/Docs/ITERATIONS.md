@@ -1,3 +1,15 @@
+## Итерация от 2026-09-12 (T-FO06AL — driver installation authorization)
+
+**Задача:** Подключить pure installation intent к runtime driver как отдельную fail-closed admission boundary, не выполняя runtime installation или native mutation.
+
+**Результат:** `GlobalMotionRebaseRuntimeDriver` получил `TryAuthorizeInstallationIntent`, `IsInstallationIntentAuthorized` и `InstallationIntent`. User-controlled request теперь требует readiness authorization и exact match installation intent по manifest/session identity. `TryReset` очищает installation authorization.
+
+**Граница:** Valid bundle, concrete adapters, manifest publication, participant discovery, Unity mutation, Apply/Rebuild/Validate/Publish, rollback, BootstrapScene и Play Mode не изменялись. `validate_script` — PASS; compile — PASS; `git diff --check` — PASS; runtime rebase readiness остаётся `NOT_READY`.
+
+**Файлы:** `GlobalMotionRebaseRuntimeDriver.cs`, `docs/world/floatingorigin/06AL_DRIVER_INSTALLATION_AUTHORIZATION.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AK — runtime installation boundary)
 
 **Задача:** Зафиксировать pure boundary перед будущей serial runtime installation, допускающую только valid connection authorization и explicit user-controlled reason.

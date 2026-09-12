@@ -1,0 +1,36 @@
+{
+  "ticket": "T-FO06AZ",
+  "date": "2026-09-12",
+  "previousCommit": "70ef0cb0",
+  "scope": "pure NetworkBaseline identity, ownership/lifetime, tick/sequence continuity and acknowledgement lineage contract",
+  "checks": {
+    "planned": 19,
+    "passed": 19,
+    "failed": 0
+  },
+  "implementation": {
+    "contract": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkBaselineContract.cs",
+    "validator": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionNetworkBaselineContract.cs",
+    "classification": ["ObservationOnly", "Restorable"],
+    "observationOnlyRestoreClaimsRejected": true,
+    "restorableRequiresExplicitEvidence": true
+  },
+  "runtime": {
+    "compile": "PASS",
+    "playModeExecuted": false,
+    "networkObjectMutation": false,
+    "adapterRegistration": false,
+    "runtimeDriverConnection": false,
+    "bootstrapSceneMutation": false,
+    "liveManifestPublication": false,
+    "participantAdmission": "NOT_READY",
+    "runtimeRollbackEvidence": "NOT_OBSERVED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "gates": {
+    "networkBaselineConcreteAdapter": "BLOCKED",
+    "shipDeckNav": "SEPARATE_DESIGN_GATE",
+    "fullTransactionCapabilityChange": "NOT_AUTHORIZED",
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED"
+  }
+}

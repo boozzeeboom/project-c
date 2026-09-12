@@ -1,5 +1,19 @@
 # Iterations
 
+## Iteration 2026-09-12 (T-FO06AZ - NetworkBaseline readiness/continuity contract)
+
+Task: Add a pure fail-closed contract for NetworkBaseline identity, ownership/lifetime generations, baseline tick/sequence continuity and acknowledgement lineage without creating a misleading NGO restore adapter.
+
+Result: Created `GlobalMotionNetworkBaselineContract` with explicit `ObservationOnly` and `Restorable` classifications. Observation-only evidence rejects restore claims; restorable evidence requires explicit complete capture/apply/validate/restore proof. Created the Edit Mode validator with `19/19` pure checks PASS.
+
+Boundary: No concrete NetworkBaseline adapter, `FullTransaction` capability change, `GlobalMotionNativeAdapterSet` registration/seal, runtime driver connection, BootstrapScene/scene/prefab mutation, NGO state mutation, live manifest publication, participant admission or Play Mode. ShipDeckNav remains a separate deferred-NavMesh lifecycle gate; `runtimeRebaseReadiness=NOT_READY`.
+
+Checks: check_compile_errors=No compile errors; validate_script contract=0 errors, 0 warnings; validate_script validator=0 errors, 0 warnings; menu validator=`19 pure checks PASS / 0 FAIL`; Play Mode=not run.
+
+Files: `GlobalMotionNetworkBaselineContract.cs`, `ValidateGlobalMotionNetworkBaselineContract.cs`, `06AZ_NETWORK_BASELINE_READINESS_CONTINUITY_CONTRACT.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Iteration 2026-09-12 (T-FO06AY - remaining adapter blocker review)
 
 Task: Review whether ShipDeckNav and NetworkBaseline concrete adapters can be implemented safely after T-FO06AX.

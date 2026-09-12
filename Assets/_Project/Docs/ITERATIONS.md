@@ -1,5 +1,20 @@
 # Iterations
 
+## Iteration 2026-09-12 (T-FO06AY - remaining adapter blocker review)
+
+Task: Review whether ShipDeckNav and NetworkBaseline concrete adapters can be implemented safely after T-FO06AX.
+
+Result: Source review found two blockers: ShipDeckNav registration is deferred/asynchronous and lacks a transaction-safe synchronous rebuild/restore seam; NetworkBaseline lacks a dedicated readiness/rollback capability contract and its ownership/lifetime state is protocol-owned.
+
+Decision: Do not create partial or misleading adapters. First add a pure NetworkBaseline readiness/capability contract and separately design a reviewed ShipDeckNav synchronous lifecycle boundary. Concrete adapter registration, BootstrapScene installation, Apply/Rebuild/Validate/Publish and Play Mode remain blocked; runtimeRebaseReadiness=NOT_READY.
+
+Checks: read-only source investigation; no code, scene, prefab or runtime mutation; Play Mode not run.
+
+Files: docs/world/floatingorigin/06AY_REMAINING_ADAPTER_BLOCKERS.md; docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md.
+
+---
+
+
 ## Iteration 2026-09-12 (T-FO06AX - CameraHistory native adapter)
 
 Task: Add the explicit CameraHistory native adapter for one owner-reviewed SpringArmCamera without runtime installation or BootstrapScene changes.

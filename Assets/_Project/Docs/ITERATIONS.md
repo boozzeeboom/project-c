@@ -1,3 +1,19 @@
+# Iterations
+
+## Iteration 2026-09-12 (T-FO06AW - Rigidbody native adapter)
+
+Task: Add the second explicit concrete native adapter for an owner-reviewed Rigidbody without runtime installation or BootstrapScene changes.
+
+Result: Created GlobalMotionRigidbodyNativeAdapter with transaction-scoped capture/apply/rebuild/validate/restore for position, rotation, linear velocity and angular velocity. Rebuild calls Physics.SyncTransforms(); restore checks identity and restores physical state.
+
+Boundary: The adapter does not discover, self-register, enter GlobalMotionNativeAdapterSet, install into BootstrapScene or run Play Mode. ShipDeckNav, CameraHistory, NetworkBaseline, live manifest, participant admission and runtime rollback evidence remain open; runtimeRebaseReadiness=NOT_READY.
+
+Checks: check_compile_errors=No compile errors; validate_script=0 errors, 0 warnings; git diff --check=PASS; BootstrapScene mutation=none; Play Mode=not run.
+
+Files: Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRigidbodyNativeAdapter.cs; docs/world/floatingorigin/06AW_RIGIDBODY_NATIVE_ADAPTER.md; docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AR — user runtime evidence package)
 
 **Задача:** Комплексно подготовить intake boundary для пользовательского runtime evidence package и зафиксировать точный Host/Client capture protocol.

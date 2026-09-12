@@ -1,0 +1,40 @@
+{
+  "ticket": "T-FO06CF",
+  "date": "2026-09-12",
+  "status": "AUDITED_SOURCE_NOT_FOUND_INTEGRATION_BLOCKED",
+  "scope": "NpcBrain as server-owned passenger generation source",
+  "auditedPaths": [
+    "Assets/_Project/Scripts/AI/NpcBrain.cs",
+    "Assets/_Project/Scripts/AI/Editor/NpcBrainEditor.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerGenerationContract.cs",
+    "Assets/_Project/Scripts/PeacefulShip/Crew/ShipCrewSpawner.cs",
+    "Assets/_Project/Scripts/Player/ShipController.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseShipDeckNavLifecycleContract.cs"
+  ],
+  "confirmedSeams": {
+    "serverOnlyAttachToShipDeck": true,
+    "explicitAttachmentRequestedAndActive": true,
+    "spawnedShipGuard": true,
+    "shipParenting": true,
+    "deckNavReadinessGuard": true,
+    "snapshotCaptureRequiresActiveAttachment": true,
+    "snapshotRestoreIsServerOnly": true
+  },
+  "missingProducerContract": {
+    "generationSourceImplementation": false,
+    "shipSpawnGenerationProducer": false,
+    "attachmentGenerationProducer": false,
+    "serverOwnedLifecycleReceipt": false,
+    "despawnReuseInvalidation": false,
+    "editorReviewedGenerationBinding": false
+  },
+  "decision": "NPC_BRAIN_CANNOT_BE_ADAPTED_FROM_EXISTING_FIELDS_WITHOUT_SYNTHETIC_GENERATION",
+  "validation": {
+    "playModeExecuted": false,
+    "runtimeIntegrationExecuted": false,
+    "bootstrapSceneChanged": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "searchOutsideAuditedPaths": "INCONCLUSIVE",
+  "nextGate": "protocol-owned server lifecycle producer contract for ship lifetime and passenger attachment generations"
+}

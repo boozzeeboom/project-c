@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CF — NpcBrain passenger generation source audit)
+
+**Задача:** Проверить, может ли существующий server-only explicit attachment lifecycle `NpcBrain` быть legitimate producer-ом для `IGlobalMotionShipDeckPassengerGenerationSource` после T-FO06CE.
+
+**Результат:** Подтверждены explicit attach/detach seams, server authority, ship `IsSpawned`, parent attachment, `ShipDeckNav.IsReady`, active passenger snapshot capture и server-only restore. При этом реализации generation source, monotonic ship lifetime/attachment generations, server-owned lifecycle receipts и reviewed editor binding не найдено. `NpcBrain` нельзя адаптировать из текущих полей без synthetic generation из object reference/`IsSpawned`; integration остаётся BLOCKED.
+
+**Граница:** Только read-only source audit. `NpcBrain`, `ShipDeckNav`, `GlobalMotionShipDeckPassengerProtocolLedger`, `GlobalMotionNativeAdapterSet`, provider, BootstrapScene и runtime driver не изменялись; Play Mode не запускался; `runtimeRebaseReadiness=NOT_READY`. Search за пределами audited paths остаётся inconclusive.
+
+**Файлы:** `docs/world/floatingorigin/06CF_NPC_PASSENGER_GENERATION_SOURCE_AUDIT.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CE — ShipDeck passenger protocol ledger boundary)
 
 **Задача:** После T-FO06CD зафиксировать protocol-owned ledger boundary для passenger/deck lifecycle transaction, не подменяя отсутствующий server-owned generation producer и не подключая ledger к runtime.

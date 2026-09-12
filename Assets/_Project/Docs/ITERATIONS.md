@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CE — ShipDeck passenger protocol ledger boundary)
+
+**Задача:** После T-FO06CD зафиксировать protocol-owned ledger boundary для passenger/deck lifecycle transaction, не подменяя отсутствующий server-owned generation producer и не подключая ledger к runtime.
+
+**Результат:** Созданы immutable passenger ledger receipts и fail-closed contract с transaction/frame/generation identity, server/protocol ownership, monotonic phase ordering, capture/rebuild/validate/restore lineage, early rollback path и terminal `Faulted` state. После исправлений rollback больше не требует обычных capture/rebuild/validate receipts, а `Faulted` receipt не повторяет обычные требования. Pure validator: `8/8` PASS; `check_compile_errors=No compile errors`; script validation `0 warnings / 0 errors`.
+
+**Граница:** Ledger остаётся protocol-only и dormant. `NpcBrain`, `ShipDeckNav`, `GlobalMotionNativeAdapterSet`, provider, BootstrapScene и runtime driver не изменялись и не подключались; concrete runtime producer остаётся unbound, `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`. Search за пределами audited paths остаётся inconclusive.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerProtocolLedger.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerProtocolLedger.cs`, `docs/world/floatingorigin/06CE_SHIP_DECK_PASSENGER_PROTOCOL_LEDGER.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BO — protocol-owned NetworkBaseline native adapter seam)
 
 **Задача:** Перейти от capability boundary T-FO06BN к explicit producer seam, сохранив NGO ownership/lifetime внутри protocol-owned host и не устанавливая adapter в runtime.

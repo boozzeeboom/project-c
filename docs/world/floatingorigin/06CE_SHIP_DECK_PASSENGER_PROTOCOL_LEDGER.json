@@ -1,0 +1,40 @@
+{
+  "ticket": "T-FO06CE",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_PURE_ONLY_DORMANT",
+  "scope": "protocol-owned ShipDeck passenger lifecycle ledger",
+  "implementation": {
+    "ledger": "GlobalMotionShipDeckPassengerProtocolLedgerContract",
+    "receipt": "GlobalMotionShipDeckPassengerProtocolLedgerReceipt",
+    "validator": "ValidateGlobalMotionShipDeckPassengerProtocolLedger",
+    "runtimeBinding": false,
+    "integratedWithNpcBrain": false,
+    "integratedWithShipDeckNav": false,
+    "integratedWithNativeAdapterSet": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "scriptWarnings": 0,
+    "scriptErrors": 0,
+    "pureChecksPassed": 8,
+    "pureChecksFailed": 0,
+    "playModeExecuted": false,
+    "runtimeProducerBound": false
+  },
+  "protocol": {
+    "normalPath": ["CaptureRequested", "Captured", "RebuildRequested", "Rebuilt", "ValidateRequested", "Validated", "RestoreRequested", "Restored", "Completed"],
+    "rollbackPath": ["RollbackRequested", "RollbackCompleted"],
+    "faultIsTerminal": true,
+    "faultRevalidatesNormalReceipts": false,
+    "phaseSkipsRejected": true,
+    "missingGenerationFailClosed": true
+  },
+  "gates": {
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "providerBinding": "NOT EXECUTED",
+    "bootstrapScene": "UNCHANGED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "searchOutsideAuditedPaths": "INCONCLUSIVE",
+  "nextGate": "server-owned passenger generation producer receipts or explicit lifecycle host"
+}

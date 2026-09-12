@@ -366,6 +366,120 @@ namespace ProjectC.AI
             _deckNavActive = true;
         }
 
+        public bool TryCaptureFloatingOriginShipDeckSnapshot(
+            string transactionId,
+            out GlobalMotionNpcShipDeckSnapshot snapshot,
+            out string error)
+        {
+            snapshot = default;
+            if (string.IsNullOrWhiteSpace(transactionId) || transactionId.Trim() != transactionId)
+                return RejectFloatingOriginSnapshot("transaction_id_required", out error);
+            if (!IsServer)
+                return RejectFloatingOriginSnapshot("npc_ship_deck_server_authority_required", out error);
+            if (_explicitShipNetworkObject == null || !_explicitShipNetworkObject.IsSpawned ||
+                _explicitShipDeckNav == null || !_explicitShipAttachmentRequested || !_explicitShipAttachmentActive)
+                return RejectFloatingOriginSnapshot("npc_ship_attachment_not_ready", out error);
+            if (!_deckNavActive || _proxyAgent == null || !_proxyAgent.enabled || !_proxyAgent.isOnNavMesh)
+                return RejectFloatingOriginSnapshot("npc_ship_deck_proxy_not_ready", out error);
+
+            snapshot = new GlobalMotionNpcShipDeckSnapshot(
+                transactionId,
+                name,
+                _explicitShipDeckNav.name,
+                _explicitShipNetworkObject,
+                _explicitShipDeckNav,
+                _explicitShipAttachmentRequested,
+                _explicitShipAttachmentActive,
+                _parentedToShip,
+                _deckNavActive,
+                _agent == null || _agent.updatePosition,
+                _agent == null || _agent.updateRotation,
+                _proxyAgent != null,
+                _proxyAgent != null && _proxyAgent.enabled && _proxyAgent.isOnNavMesh,
+                _proxyAgent != null && _proxyAgent.hasPath,
+                _proxyAgent != null && _proxyAgent.isStopped,
+                transform.position,
+                transform.rotation,
+                transform.localPosition,
+                transform.localRotation,
+                _proxyAgent.transform.position,
+                _proxyAgent.hasPath ? _proxyAgent.destination : _proxyAgent.transform.position);
+            error = null;
+            return true;
+        }
+
+        public bool TryRestoreFloatingOriginShipDeckSnapshot(
+            GlobalMotionNpcShipDeckSnapshot snapshot,
+            out string error)
+        {
+            if (!GlobalMotionNpcShipDeckSnapshotContract.TryValidate(snapshot, out error))
+                return false;
+            if (!IsServer)
+                return RejectFloatingOriginSnapshot("npc_ship_deck_server_authority_required", out error);
+            if (!snapshot.ShipNetworkObject.IsSpawned)
+                return RejectFloatingOriginSnapshot("npc_ship_network_object_not_spawned", out error);
+
+            _explicitShipNetworkObject = snapshot.ShipNetworkObject;
+            _explicitShipDeckNav = snapshot.DeckNav;
+            _explicitShipAttachmentRequested = snapshot.AttachmentRequested;
+            _explicitShipAttachmentActive = snapshot.AttachmentActive;
+            _deckNav = snapshot.DeckNav;
+            _netObject = _netObject != null ? _netObject : GetComponent<NetworkObject>();
+
+            if (_netObject == null)
+                return RejectFloatingOriginSnapshot("npc_network_object_missing", out error);
+
+            if (snapshot.ParentToShip)
+            {
+                if (_netObject.transform.parent != snapshot.ShipNetworkObject.transform)
+                    _netObject.TrySetParent(snapshot.ShipNetworkObject, true);
+                if (_netObject.transform.parent != snapshot.ShipNetworkObject.transform)
+                    return RejectFloatingOriginSnapshot("npc_ship_parent_restore_failed", out error);
+                _parentedToShip = true;
+                transform.localPosition = snapshot.LocalPosition;
+                transform.localRotation = snapshot.LocalRotation;
+            }
+            else
+            {
+                if (_netObject.transform.parent != null)
+                    _netObject.TrySetParent((Transform)null, true);
+                _parentedToShip = false;
+                transform.SetPositionAndRotation(snapshot.WorldPosition, snapshot.WorldRotation);
+            }
+
+            _ridePlatform = snapshot.ShipNetworkObject.transform;
+            _rideLastPos = _ridePlatform.position;
+            _rideLastRot = _ridePlatform.rotation;
+
+            EnsureProxy();
+            if (_proxyAgent == null)
+                return RejectFloatingOriginSnapshot("npc_ship_proxy_restore_failed", out error);
+            if (snapshot.ProxyOnNavMesh && !_proxyAgent.Warp(snapshot.ProxyPosition))
+                return RejectFloatingOriginSnapshot("npc_ship_proxy_warp_restore_failed", out error);
+
+            _proxyLastPos = snapshot.ProxyPosition;
+            _deckNavActive = snapshot.DeckNavigationActive;
+            _proxyAgent.isStopped = snapshot.ProxyIsStopped;
+            if (snapshot.ProxyHasPath && _proxyAgent.isOnNavMesh)
+                _proxyAgent.SetDestination(snapshot.ProxyDestination);
+
+            if (_agent != null)
+            {
+                _agent.updatePosition = snapshot.AgentUpdatePosition;
+                _agent.updateRotation = snapshot.AgentUpdateRotation;
+                _agentAutoDrivePaused = !_agent.updatePosition || !_agent.updateRotation;
+            }
+
+            error = null;
+            return true;
+        }
+
+        private static bool RejectFloatingOriginSnapshot(string reason, out string error)
+        {
+            error = reason;
+            return false;
+        }
+
         public BrainState CurrentState => _state;
         public Vector3 SpawnPoint => _spawnPoint;
         public BehaviorType CurrentBehavior => _behaviorType;

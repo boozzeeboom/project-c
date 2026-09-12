@@ -575,6 +575,20 @@ Files: Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRigidbod
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06CA — NPC ship-deck snapshot contract)
+
+**Задача:** Связать ShipDeckNav snapshot boundary с фактическим состоянием `NpcBrain` passenger/proxy attachment через explicit server-owned capture/restore API.
+
+**Результат:** Созданы `GlobalMotionNpcShipDeckSnapshot`, `TryCaptureFloatingOriginShipDeckSnapshot` и `TryRestoreFloatingOriginShipDeckSnapshot`. Snapshot фиксирует transaction identity, ship/deck identity, parent/local/world pose, agent flags, proxy NavMesh/path state и destination. Capture/restore не вызываются автоматически и требуют server authority. Validator: `9/9` pure checks PASS; `check_compile_errors=No compile errors`; `git diff --check=PASS`.
+
+**Граница:** Combined NavMesh + passenger transaction host ещё не реализован; adapter host/provider/runtime driver/BootstrapScene/Play Mode не изменялись. `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Следующий этап:** Объединить ShipDeckNav и NpcBrain snapshots в одном ordered transaction host с fail-closed rollback.
+
+**Файлы:** `Assets/_Project/Scripts/AI/NpcBrain.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNpcShipDeckSnapshot.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckNavNativeAdapterSource.cs`, `docs/world/floatingorigin/06CA_NPC_SHIP_DECK_SNAPSHOT_CONTRACT.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AE — live manifest receipt source)
 
 **Задача:** Подготовить pure evidence source для participant admission и live manifest publication, сохранив runtime discovery и публикацию отключёнными.

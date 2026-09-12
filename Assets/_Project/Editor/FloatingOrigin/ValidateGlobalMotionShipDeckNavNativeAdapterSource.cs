@@ -79,6 +79,12 @@ namespace ProjectC.EditorTools.FloatingOrigin
                         error == "transaction_id_required", error);
                 });
 
+                Check("Passenger snapshot contract rejects incomplete identity", () =>
+                {
+                    Require(!GlobalMotionNpcShipDeckSnapshotContract.TryValidate(default, out string error) &&
+                        error == "transaction_id_required", error);
+                });
+
                 Check("Invalid request remains fail closed", () =>
                 {
                     var source = gameObject.GetComponent<GlobalMotionShipDeckNavNativeAdapterSource>();

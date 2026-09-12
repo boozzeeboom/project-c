@@ -1,0 +1,36 @@
+{
+  "ticket": "T-FO06CA",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTATION_SLICE_EXPLICIT_SERVER_BOUNDARY_NOT_INSTALLED",
+  "scope": "NpcBrain passenger/proxy snapshot and restore contract",
+  "implementation": {
+    "snapshot": "GlobalMotionNpcShipDeckSnapshot",
+    "capture": "NpcBrain.TryCaptureFloatingOriginShipDeckSnapshot",
+    "restore": "NpcBrain.TryRestoreFloatingOriginShipDeckSnapshot",
+    "automaticDiscovery": false,
+    "runtimeInstallation": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "pureChecksPassed": 9,
+    "pureChecksFailed": 0,
+    "menu": "ProjectC/World/Floating Origin/Validate ShipDeckNav Native Adapter Source",
+    "incompleteSnapshotRejected": true,
+    "gitDiffCheck": "PASS"
+  },
+  "limitations": {
+    "combinedNavMeshTransaction": false,
+    "adapterHostInvocation": false,
+    "runtimeCapture": false,
+    "runtimeRestore": false,
+    "nativeReady": false
+  },
+  "runtime": {
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "providerRuntimeBinding": "NOT_EXECUTED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "combined ShipDeckNav and NpcBrain transaction host"
+}

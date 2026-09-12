@@ -1,0 +1,84 @@
+{
+  "ticket": "T-FO06CN",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_DORMANT_PURE_VALIDATED_RUNTIME_BINDING_BLOCKED",
+  "scope": "Dormant protocol-owned ShipDeck passenger lifecycle coordinator implementation gate",
+  "implementation": {
+    "coordinator": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleCoordinator.cs",
+    "class": "GlobalMotionShipDeckPassengerLifecycleCoordinator",
+    "implements": ["IGlobalMotionShipDeckPassengerGenerationSource"],
+    "runtimeIndependent": true,
+    "dormant": true,
+    "acceptedFacts": ["ShipRegistered", "PassengerAttached", "PassengerDetached", "ShipInvalidated"],
+    "explicitServerAuthorizationRequired": true,
+    "protocolOwnershipRequired": true,
+    "shipLifetimeGeneration": "coordinator-owned, strictly monotonic, no reset/clear path, never reused within coordinator lifetime",
+    "passengerAttachmentGeneration": "coordinator-owned, strictly monotonic, reattach requires explicit previous lineage",
+    "ledgerOrder": "strictly monotonic coordinator ordinal",
+    "terminalInvalidation": true,
+    "sourceBehavior": "returns only active passenger generations; detach/invalidation fail closed"
+  },
+  "rejectionRules": [
+    "duplicate active ship registration",
+    "duplicate active passenger attachment",
+    "stale ship lifetime generation",
+    "stale or mismatched attachment generation",
+    "mismatched supplemental ship network identity",
+    "detach without matching active attachment",
+    "out-of-order phase",
+    "post-invalidation fact",
+    "missing stable identity, authorization, ownership or invalidation reason"
+  ],
+  "prohibitedInference": {
+    "isSpawned": false,
+    "networkObjectIdAsGeneration": false,
+    "objectReferences": false,
+    "shipDeckNavRegistrationGeneration": false,
+    "hostLocalBindingGeneration": false
+  },
+  "validator": {
+    "path": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleCoordinator.cs",
+    "menuItem": "ProjectC/World/Floating Origin/Validate ShipDeck Passenger Lifecycle Coordinator",
+    "pureChecksPassed": 11,
+    "pureChecksFailed": 0,
+    "result": "PASS",
+    "usesUnityObjects": false,
+    "usesNGO": false,
+    "playMode": "NOT_RUN"
+  },
+  "validation": {
+    "checkCompileErrors": "No compile errors",
+    "coordinatorScriptValidation": "0 warnings / 0 errors",
+    "validatorScriptValidation": "0 warnings / 0 errors",
+    "bootstrapSceneChanged": false,
+    "scenesChanged": false,
+    "prefabsChanged": false,
+    "providerBindingExecuted": false,
+    "adapterRegistrationExecuted": false,
+    "combinedTransactionHostBindingExecuted": false,
+    "runtimeDriverChanged": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleCoordinator.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleCoordinator.cs.meta",
+    "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleCoordinator.cs",
+    "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleCoordinator.cs.meta",
+    "docs/world/floatingorigin/06CN_SHIP_DECK_LIFECYCLE_COORDINATOR_IMPLEMENTATION.md",
+    "docs/world/floatingorigin/06CN_SHIP_DECK_LIFECYCLE_COORDINATOR_IMPLEMENTATION.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ],
+  "excludedBindings": [
+    "NpcShipController",
+    "ShipCrewSpawner",
+    "NpcBrain",
+    "ShipDeckNav",
+    "GlobalMotionShipDeckCombinedTransactionHost",
+    "provider",
+    "adapter set",
+    "BootstrapScene",
+    "runtime driver"
+  ],
+  "nextGate": "owner-review explicit server lifecycle facts, then perform a separate reviewed source binding without synthetic generation"
+}

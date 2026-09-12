@@ -1,0 +1,71 @@
+{
+  "ticket": "T-FO06CS",
+  "title": "ShipDeck lifecycle producer/bridge implementation gate",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED / COMPILE_VERIFIED / PURE_VALIDATED / DORMANT / RUNTIME_CALLER_BINDING_BLOCKED",
+  "producer": {
+    "type": "GlobalMotionShipDeckPassengerLifecycleProducerBridge",
+    "ownsExactlyOneCoordinator": true,
+    "coordinatorType": "GlobalMotionShipDeckPassengerLifecycleCoordinator",
+    "generationOwner": "coordinator",
+    "ledgerOrdinalOwner": "coordinator",
+    "ingressPhases": [
+      "ShipRegistered",
+      "PassengerAttached",
+      "PassengerDetached",
+      "ShipInvalidated"
+    ],
+    "methods": [
+      "TryRegisterShipServerAuthorized",
+      "TryAttachPassengerServerAuthorized",
+      "TryDetachPassengerServerAuthorized",
+      "TryInvalidateShipServerAuthorized"
+    ],
+    "mappingBoundary": "GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoffContract.TryMap after coordinator acceptance only"
+  },
+  "failClosed": {
+    "missingOwnership": true,
+    "missingStableIds": true,
+    "missingTransportIdentity": true,
+    "invalidLineage": true,
+    "staleFacts": true,
+    "duplicateFacts": true,
+    "outOfOrderFacts": true,
+    "postInvalidationFacts": true,
+    "rejectedFactEmitsMapping": false,
+    "inferenceSources": [
+      "IsSpawned",
+      "NetworkObjectId as stable protocol identity",
+      "Unity/NGO object references",
+      "callback order",
+      "ShipDeckNav.RegistrationGeneration",
+      "host-local binding generation"
+    ]
+  },
+  "validation": {
+    "validator": "ValidateGlobalMotionShipDeckPassengerLifecycleProducerBridge",
+    "pureChecksPassed": 11,
+    "pureChecksFailed": 0,
+    "compile": "No compile errors",
+    "scriptValidation": "0 warnings / 0 errors",
+    "playMode": "NOT RUN"
+  },
+  "integration": {
+    "runtimeCallerBinding": "NOT EXECUTED",
+    "providerBinding": "NOT EXECUTED",
+    "adapterRegistration": "NOT EXECUTED",
+    "combinedHostModified": false,
+    "bootstrapSceneChanged": false,
+    "scenesChanged": false,
+    "prefabsChanged": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerBridge.cs",
+    "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleProducerBridge.cs",
+    "docs/world/floatingorigin/06CS_SHIP_DECK_LIFECYCLE_PRODUCER_BRIDGE_IMPLEMENTATION.md",
+    "docs/world/floatingorigin/06CS_SHIP_DECK_LIFECYCLE_PRODUCER_BRIDGE_IMPLEMENTATION.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ]
+}

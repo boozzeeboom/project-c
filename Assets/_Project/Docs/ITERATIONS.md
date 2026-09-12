@@ -1,5 +1,21 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CS — ShipDeck lifecycle producer/bridge implementation gate)
+
+**Задача:** После `T-FO06CR` реализовать concrete explicit server/protocol-owned producer/bridge, который владеет одним `GlobalMotionShipDeckPassengerLifecycleCoordinator`, принимает все четыре lifecycle ingress и возвращает T-FO06CO mapping только для accepted facts.
+
+**Результат:** Создан runtime-independent `GlobalMotionShipDeckPassengerLifecycleProducerBridge`, реализующий `IGlobalMotionShipDeckPassengerGenerationSource` и владеющий ровно одним coordinator instance. `TryRegisterShipServerAuthorized`, `TryAttachPassengerServerAuthorized`, `TryDetachPassengerServerAuthorized` и `TryInvalidateShipServerAuthorized` требуют caller-supplied stable protocol `ShipId`/passenger identity, explicit supplemental `ShipNetworkObjectId`, ownership flags и expected lineage. Все facts проходят coordinator `TryAccept`; coordinator единолично выдаёт ship lifetime/attachment generations и ledger ordinals. Только accepted receipts преобразуются через T-FO06CO `TryMap`; rejected facts возвращают default mapping.
+
+**Fail-closed:** missing ownership/IDs, stale or mismatched lineage, duplicate active attachment, invalid detach, out-of-order, duplicate registration и post-invalidation facts отклоняются без mapping output. Bridge не использует `IsSpawned`, `NetworkObjectId` как stable protocol identity, Unity/NGO object references, callback order, `ShipDeckNav.RegistrationGeneration` или host-local binding generation.
+
+**Проверка:** Новый pure Edit Mode validator `ValidateGlobalMotionShipDeckPassengerLifecycleProducerBridge`: `11/11` PASS. `check_compile_errors=No compile errors`; обе новые scripts `validate_script=0 warnings / 0 errors`; Play Mode не запускался.
+
+**Граница:** Runtime caller binding не выполнялся. `NpcShipController`, `ShipCrewSpawner`, `NpcBrain`, `ShipDeckNav`, `GlobalMotionShipDeckCombinedTransactionHost`, provider, adapter set, `BootstrapScene`, сцены и prefabs не изменялись и не связывались; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerBridge.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleProducerBridge.cs`, `docs/world/floatingorigin/06CS_SHIP_DECK_LIFECYCLE_PRODUCER_BRIDGE_IMPLEMENTATION.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CR — ShipDeck lifecycle producer owner-review gate)
 
 **Задача:** После `T-FO06CQ` провести owner-review proposed ShipDeck lifecycle producer-а и определить, существует ли один legitimate server/protocol owner для `ShipRegistered`, `PassengerAttached`, `PassengerDetached` и `ShipInvalidated`.

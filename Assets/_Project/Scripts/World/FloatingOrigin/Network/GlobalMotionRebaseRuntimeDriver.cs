@@ -5,7 +5,7 @@ namespace ProjectC.World.FloatingOrigin.Network
     /// <summary>
     /// T-FO06AB: explicit user-controlled runtime boundary for the next rebase slice.
     /// The driver validates the trigger, delegates closed-world preparation to the existing
-    /// coordinator and emits ordered evidence. It fails closed before native Apply/Rebuild/Validate/Publish
+    /// coordinator and emits ordered transaction evidence. Native phases remain unreachable
     /// until a concrete adapter and a proven readiness bundle are supplied.
     /// </summary>
     public interface IGlobalMotionRebaseRuntimeDriverAdapter
@@ -20,6 +20,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         bool TryRebuild(GlobalMotionRebaseRequest request, out string error);
         bool TryValidate(GlobalMotionRebaseRequest request, out string error);
         bool TryPublish(GlobalMotionRebaseRequest request, out string error);
+        bool TryRestore(GlobalMotionRebaseRequest request, out string error);
     }
 
     /// <summary>
@@ -168,15 +169,41 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (!_coordinator.TryPrepare(_request, participants, out error))
                 return AbortWithReason("coordinator_prepare_refused:" + error, out error);
 
-            // The coordinator currently ends at Captured. Do not claim Apply or later phases.
-            return AbortWithReason("native_apply_pipeline_not_connected", out error);
+            if (!_adapter.TryApply(_request, out error))
+                return RollbackAfterFailure("apply_refused:" + error, out error);
+            if (!Advance(GlobalMotionRebaseTransactionPhase.Applied, out error))
+                return RollbackAfterFailure("apply_phase_refused:" + error, out error);
+
+            if (!_adapter.TryRebuild(_request, out error))
+                return RollbackAfterFailure("rebuild_refused:" + error, out error);
+            if (!Advance(GlobalMotionRebaseTransactionPhase.PhysicsSynchronized, out error))
+                return RollbackAfterFailure("physics_phase_refused:" + error, out error);
+
+            if (!_adapter.TryValidate(_request, out error))
+                return RollbackAfterFailure("validate_refused:" + error, out error);
+            if (!Advance(GlobalMotionRebaseTransactionPhase.Validated, out error))
+                return RollbackAfterFailure("validation_phase_refused:" + error, out error);
+
+            if (!_adapter.TryPublish(_request, out error))
+                return RollbackAfterFailure("publish_refused:" + error, out error);
+            if (!Advance(GlobalMotionRebaseTransactionPhase.Published, out error))
+                return RollbackAfterFailure("publish_phase_refused:" + error, out error);
+
+            if (!_coordinator.TryCommit(out error))
+                return RollbackAfterFailure("coordinator_commit_refused:" + error, out error);
+
+            if (!Advance(GlobalMotionRebaseTransactionPhase.Completed, out error))
+                return RollbackAfterFailure("completion_phase_refused:" + error, out error);
+
+            return true;
         }
 
         public bool TryReset(out string error)
         {
             error = null;
             if (Phase != GlobalMotionRebaseTransactionPhase.Aborted &&
-                Phase != GlobalMotionRebaseTransactionPhase.Faulted)
+                Phase != GlobalMotionRebaseTransactionPhase.Faulted &&
+                Phase != GlobalMotionRebaseTransactionPhase.RollbackCompleted)
             {
                 error = "driver_reset_requires_terminal_failure:phase=" + Phase;
                 return false;
@@ -234,6 +261,39 @@ namespace ProjectC.World.FloatingOrigin.Network
         private void Record(string phase, string payload)
         {
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("rebase", phase, payload);
+        }
+
+        private bool RollbackAfterFailure(string reason, out string error)
+        {
+            Record("RollbackRequested", "reason=" + reason);
+            var rollbackPhaseAdvanced = Advance(GlobalMotionRebaseTransactionPhase.RollbackBegun, out var phaseError);
+            var adapterRestored = _adapter.TryRestore(_request, out var adapterError);
+            var coordinatorAborted = _coordinator.TryAbort(out var coordinatorError);
+
+            if (rollbackPhaseAdvanced)
+                Advance(GlobalMotionRebaseTransactionPhase.Restored, out phaseError);
+
+            var rollbackSucceeded = rollbackPhaseAdvanced && adapterRestored && coordinatorAborted &&
+                Advance(GlobalMotionRebaseTransactionPhase.RollbackCompleted, out phaseError);
+            if (!rollbackSucceeded)
+            {
+                var details = reason + ";phase=" + (phaseError ?? "unknown") +
+                    ";adapter=" + (adapterError ?? "ok") +
+                    ";coordinator=" + (coordinatorError ?? "ok");
+                return Fail(GlobalMotionRebaseTransactionPhase.Faulted, "rollback_failed:" + details, out error);
+            }
+
+            if (_installationIntentAuthorized)
+            {
+                _installationIntent = default;
+                _installationIntentAuthorized = false;
+                Record("InstallationInvalidated", "reason=rollback_completed:" + reason);
+            }
+
+            error = reason;
+            LastTerminalPhase = GlobalMotionRebaseTransactionPhase.RollbackCompleted;
+            Record("RollbackCompleted", "reason=" + reason);
+            return false;
         }
     }
 }

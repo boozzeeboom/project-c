@@ -223,6 +223,31 @@ namespace ProjectC.World.FloatingOrigin.Network
             return true;
         }
 
+public bool TryCommit(out string error)
+        {
+            error = null;
+            if (Phase != GlobalMotionRebasePhase.Captured)
+            {
+                error = "coordinator_commit_requires_captured:phase=" + Phase;
+                return false;
+            }
+            if (!_frozen)
+            {
+                error = "coordinator_commit_requires_frozen_state";
+                return false;
+            }
+            if (!_gate.TryRelease(_request, out error))
+                return false;
+
+            _frozen = false;
+            _participants = null;
+            _snapshots.Clear();
+            _request = default;
+            Phase = GlobalMotionRebasePhase.Idle;
+            return true;
+        }
+
+
         public bool TryAbort(out string error)
         {
             error = null;

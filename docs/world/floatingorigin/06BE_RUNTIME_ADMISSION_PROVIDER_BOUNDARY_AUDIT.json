@@ -1,0 +1,17 @@
+{
+  "ticket": "T-FO06BE",
+  "date": "2026-09-12",
+  "status": "BLOCKED_BY_MISSING_PROVENANCE",
+  "providerImplementation": "NOT_IMPLEMENTED",
+  "nativeAdapterSet": "EMPTY_UNSEALED",
+  "runtimeProofProducer": "NOT_PRESENT",
+  "rollbackEvidenceProducer": "NOT_PRESENT",
+  "bootstrapSceneBinding": "NOT_CONNECTED",
+  "liveManifestPublication": "NOT_OBSERVED",
+  "runtimeRebaseReadiness": "NOT_READY",
+  "syntheticProviderCreated": false,
+  "sourceAudit": "PASS_FOR_AUDITED_PATHS",
+  "concreteProviderSearch": "INCONCLUSIVE_OUTSIDE_AUDITED_PATHS",
+  "playMode": "NOT_RUN",
+  "nextGate": "PROVENANCE_BEARING_EVIDENCE_SOURCE_CONTRACTS"
+}

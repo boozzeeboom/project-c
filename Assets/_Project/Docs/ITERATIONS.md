@@ -1,5 +1,18 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BE — runtime admission provider boundary audit)
+
+**Задача:** Проверить наличие legitimate provider для `IGlobalMotionRebaseRuntimeAdmissionEvidenceSource` после T-FO06BD, не создавая synthetic all-true evidence.
+
+**Результат:** В audited source paths concrete provider и runtime producers для complete adapter readiness, runtime proof и rollback evidence не найдены. Existing Transform/Rigidbody/Camera adapters остаются dormant; ShipDeckNav и NetworkBaseline заблокированы; `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`. Зафиксировано, что текущие immutable proof/rollback envelopes принимают уже полученное evidence и не являются producer-ами.
+
+**Граница:** Provider, BootstrapScene binding, native adapter registration, live publication, `FullTransaction`, runtime mutation и Play Mode не выполнялись. Search outside audited paths остаётся inconclusive. `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `docs/world/floatingorigin/06BE_RUNTIME_ADMISSION_PROVIDER_BOUNDARY_AUDIT.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+
 ## Итерация от 2026-09-12 (T-FO06BD — runtime manifest source compile gate)
 
 **Задача:** Подключить первый runtime source slice к dormant live-manifest архитектуре после T-FO06BC, сохранив fail-closed admission boundary.

@@ -39,9 +39,12 @@ namespace ProjectC.World.FloatingOrigin.Network
         [SerializeField] private ShipDeckNav _deckNav;
         [SerializeField] private NpcBrain[] _reviewedPassengers = Array.Empty<NpcBrain>();
         private ulong _reviewedPassengerBindingGeneration;
+        private GlobalMotionShipDeckPassengerLifecycleBindingReceipt _reviewedLifecycleBinding;
+        private bool _hasReviewedLifecycleBinding;
 
         public bool IsBound => ResolveDeckNav() != null;
         public ulong ReviewedPassengerBindingGeneration => _reviewedPassengerBindingGeneration;
+        public bool HasReviewedPassengerLifecycleBinding => _hasReviewedLifecycleBinding;
 
         public bool TryConfigureReviewedPassengers(NpcBrain[] passengers, out string error)
         {
@@ -58,6 +61,38 @@ namespace ProjectC.World.FloatingOrigin.Network
                 : _reviewedPassengerBindingGeneration + 1UL;
             error = null;
             return true;
+        }
+
+        /// <summary>
+        /// Explicit handoff of reviewed lifecycle receipts. This method never discovers or creates receipts.
+        /// </summary>
+        public bool TryConfigureReviewedPassengerLifecycleBinding(
+            ulong bindingGeneration,
+            GlobalMotionShipDeckPassengerLifecycleReceipt[] receipts,
+            out string error)
+        {
+            if (!GlobalMotionShipDeckPassengerLifecycleSourceBindingContract.TryBindActivePassengers(
+                    bindingGeneration, receipts, out var binding, out error))
+                return false;
+            if (!GlobalMotionShipDeckPassengerLifecycleBindingHandoffContract.TryValidate(
+                    binding, _reviewedPassengers == null ? 0 : _reviewedPassengers.Length,
+                    _reviewedPassengerBindingGeneration, out error))
+                return false;
+            _reviewedLifecycleBinding = binding;
+            _hasReviewedLifecycleBinding = true;
+            error = null;
+            return true;
+        }
+
+        public bool TryValidateReviewedPassengerLifecycleBinding(out string error)
+        {
+            if (!_hasReviewedLifecycleBinding)
+                return Reject("reviewed_lifecycle_binding_required", out error);
+            return GlobalMotionShipDeckPassengerLifecycleBindingHandoffContract.TryValidate(
+                _reviewedLifecycleBinding,
+                _reviewedPassengers == null ? 0 : _reviewedPassengers.Length,
+                _reviewedPassengerBindingGeneration,
+                out error);
         }
 
         public bool TryCapture(

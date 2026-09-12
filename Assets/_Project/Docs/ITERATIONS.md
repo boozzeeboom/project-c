@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CI — ShipDeck passenger lifecycle binding handoff)
+
+**Задача:** После T-FO06CH добавить explicit handoff seam между reviewed lifecycle binding и `GlobalMotionShipDeckCombinedTransactionHost`, не создавая runtime producer и не вызывая capture/rebuild/restore автоматически.
+
+**Результат:** Добавлены `GlobalMotionShipDeckPassengerLifecycleBindingHandoffContract`, pure validator и explicit host API `TryConfigureReviewedPassengerLifecycleBinding` / `TryValidateReviewedPassengerLifecycleBinding`. Handoff проверяет passenger count, binding generation, ship lifetime identity и ownership. Validator: `8/8` PASS; `check_compile_errors=No compile errors`; script validation `0 warnings / 0 errors`.
+
+**Граница:** Handoff принимает только explicit reviewed receipts и остаётся dormant. `NpcBrain` и `ShipDeckNav` не изменялись, runtime producer/source binding/adapter registration/BootstrapScene/Play Mode не выполнялись; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleBindingHandoffContract.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleBindingHandoffContract.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckCombinedTransactionHost.cs`, `docs/world/floatingorigin/06CI_SHIP_DECK_PASSENGER_LIFECYCLE_BINDING_HANDOFF.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CH — ShipDeck passenger lifecycle source binding preflight)
 
 **Задача:** После T-FO06CG зафиксировать explicit preflight binding для reviewed active-passenger lifecycle receipts одного ship lifetime, не создавая runtime producer и не подключая binding к combined host.

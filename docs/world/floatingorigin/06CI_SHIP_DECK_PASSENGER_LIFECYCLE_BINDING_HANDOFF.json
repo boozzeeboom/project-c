@@ -1,0 +1,37 @@
+{
+  "ticket": "T-FO06CI",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_PURE_ONLY_DORMANT",
+  "scope": "explicit lifecycle binding handoff into combined ShipDeck transaction host",
+  "implementation": {
+    "handoffContract": "GlobalMotionShipDeckPassengerLifecycleBindingHandoffContract",
+    "hostMethods": ["TryConfigureReviewedPassengerLifecycleBinding", "TryValidateReviewedPassengerLifecycleBinding"],
+    "validator": "ValidateGlobalMotionShipDeckPassengerLifecycleBindingHandoffContract",
+    "runtimeHandoff": false,
+    "receiptCreation": false
+  },
+  "invariants": {
+    "reviewedPassengerCountMatch": true,
+    "bindingGenerationMatch": true,
+    "shipLifetimeIdentityPreserved": true,
+    "serverOwnedRequired": true,
+    "protocolOwnedRequired": true,
+    "automaticDiscovery": false,
+    "captureRebuildRestoreAutoInvocation": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "scriptWarnings": 0,
+    "scriptErrors": 0,
+    "pureChecksPassed": 8,
+    "pureChecksFailed": 0,
+    "playModeExecuted": false
+  },
+  "gates": {
+    "serverOwnedLifecycleProducer": "NOT IMPLEMENTED",
+    "generationSourceBinding": "NOT BOUND",
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "handoff receipts from one legitimate server-owned lifecycle owner"
+}

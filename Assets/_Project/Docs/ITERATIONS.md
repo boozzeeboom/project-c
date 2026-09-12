@@ -533,6 +533,20 @@ Files: Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRigidbod
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BX — ShipDeckNav native adapter source)
+
+**Задача:** Продолжить concrete adapter integration после T-FO06BW отдельным serial gate для `ShipDeckNav`, не объявляя асинхронную NavMesh-регистрацию transaction-safe и не устанавливая adapter в runtime.
+
+**Результат:** Созданы `GlobalMotionShipDeckNavProtocolHost`, `IGlobalMotionShipDeckNavTransactionHost`, `GlobalMotionShipDeckNavNativeAdapter` и `GlobalMotionShipDeckNavNativeAdapterSource`. Host наблюдает только фактические `ShipDeckNav` registration/instance/readiness flags; passenger generation и synchronous rebuild/restore остаются недоступными. Validator: `6/6` pure checks PASS; `check_compile_errors=No compile errors`; `git diff --check=PASS`.
+
+**Граница:** Adapter descriptor покрывает только `ShipDeckNav`, но `NativeReady=false`; source не регистрируется и не создаёт sealed set. `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, provider runtime binding/live manifest/BootstrapScene/Play Mode не выполнялись, `runtimeRebaseReadiness=NOT_READY`.
+
+**Следующий этап:** Отдельно доказать transaction-safe synchronous NavMesh lifecycle с passenger/proxy capture, rebuild, validation и restore.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckNavProtocolHost.cs`, `GlobalMotionShipDeckNavNativeAdapter.cs`, `GlobalMotionShipDeckNavNativeAdapterSource.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckNavNativeAdapterSource.cs`, `docs/world/floatingorigin/06BX_SHIP_DECK_NAV_NATIVE_ADAPTER_SOURCE.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AE — live manifest receipt source)
 
 **Задача:** Подготовить pure evidence source для participant admission и live manifest publication, сохранив runtime discovery и публикацию отключёнными.

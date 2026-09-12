@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BC — live manifest runtime bridge)
+
+**Задача:** Перейти от report-only этапов к первому runtime code slice: server-authoritative publication reviewed manifest и peer digest/count acknowledgement.
+
+**Результат:** Созданы `GlobalMotionRebaseLiveManifestRuntimeBridge` и `IGlobalMotionRebaseLiveManifestRuntimeSource`. Bridge выдаёт receipt только после existing manifest/admission gates, реплицирует digest/count/session/publication identity и принимает exact-match acknowledgements от peers. Добавлен pure Editor validator: `6/6` checks PASS.
+
+**Граница:** Bridge остаётся dormant: runtime source не подключён, component не установлен в BootstrapScene, native adapters/driver/FullTransaction/rollback не подключались. Compile PASS; Play Mode не запускался; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `GlobalMotionRebaseLiveManifestRuntimeBridge.cs`, `ValidateGlobalMotionRebaseLiveManifestRuntimeBridge.cs`, `docs/world/floatingorigin/06BC_LIVE_MANIFEST_RUNTIME_BRIDGE.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BB — live manifest/admission runtime census)
 
 **Задача:** Проверить исходники на наличие фактического runtime bridge для participant discovery, live manifest publication и admission receipts после наблюдательного аудита `T-FO06BA`.

@@ -1,0 +1,28 @@
+{
+  "ticket": "T-FO06BC",
+  "date": "2026-09-12",
+  "classification": "CODE_IMPLEMENTED_DORMANT",
+  "runtimeBridge": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseLiveManifestRuntimeBridge.cs",
+  "validator": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionRebaseLiveManifestRuntimeBridge.cs",
+  "checks": {
+    "compileErrors": false,
+    "pureChecksPassed": 6,
+    "pureChecksFailed": 0,
+    "gitDiffCheck": true,
+    "playModeStarted": false
+  },
+  "capabilities": {
+    "serverManifestReceipt": true,
+    "peerDigestCountAcknowledgement": true,
+    "sessionEvidenceGate": true,
+    "runtimeSourceBinding": false,
+    "nativeAdapterInstallation": false,
+    "rebaseTransaction": false,
+    "rollback": false
+  },
+  "status": {
+    "liveManifestPublication": "NOT_OBSERVED",
+    "participantAdmission": "NOT_READY",
+    "runtimeRebaseReadiness": "NOT_READY"
+  }
+}

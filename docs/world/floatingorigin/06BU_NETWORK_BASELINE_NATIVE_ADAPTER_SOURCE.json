@@ -1,0 +1,35 @@
+{
+  "ticket": "T-FO06BU",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_FAIL_CLOSED_NO_RUNTIME_CHANGE",
+  "scope": "concrete MonoBehaviour source binding for the NetworkBaseline native adapter",
+  "implementation": {
+    "component": "GlobalMotionNetworkBaselineNativeAdapterSource",
+    "interface": "IGlobalMotionNativeAdapter",
+    "requires": [
+      "GlobalMotionNetworkBaselineProtocolHost",
+      "GlobalMotionReplicator"
+    ],
+    "delegatesTo": "GlobalMotionNetworkBaselineNativeAdapter",
+    "coverage": "NetworkBaseline",
+    "declaredCapabilities": "FullTransaction",
+    "nativeReady": false,
+    "selfRegistration": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "pureChecksPassed": 6,
+    "pureChecksFailed": 0,
+    "menu": "ProjectC/World/Floating Origin/Validate Network Baseline Native Adapter Source",
+    "result": "6 pure checks PASS / 0 FAIL",
+    "gitDiffCheck": "PASS"
+  },
+  "runtime": {
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED",
+    "providerBinding": "NOT_EXECUTED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "protocol-owned server receipts for ownership, spawn/lifetime and baseline-generation restore"
+}

@@ -1,0 +1,152 @@
+{
+  "ticket": "T-FO06CQ",
+  "date": "2026-09-12",
+  "status": "DOCS_ONLY_OWNERSHIP_GATED_INCONCLUSIVE_INTEGRATION_BLOCKED_RUNTIME_BINDING_BLOCKED",
+  "scope": "ShipDeck lifecycle fact-source ownership and explicit ingress decision gate after T-FO06CP",
+  "docsOnly": true,
+  "completeLegitimateProducer": false,
+  "auditedPaths": [
+    "Assets/_Project/Scripts/PeacefulShip/Stations/NpcShipController.cs",
+    "Assets/_Project/Scripts/PeacefulShip/Crew/ShipCrewSpawner.cs",
+    "Assets/_Project/Scripts/AI/NpcBrain.cs",
+    "Assets/_Project/Scripts/Ship/ShipDeckNav.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleCoordinator.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerContract.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckCombinedTransactionHost.cs"
+  ],
+  "coordinatorIngress": {
+    "method": "GlobalMotionShipDeckPassengerLifecycleCoordinator.TryAccept",
+    "factType": "GlobalMotionShipDeckPassengerLifecycleFact",
+    "receiptType": "GlobalMotionShipDeckPassengerLifecycleCoordinatorReceipt",
+    "mappingPath": "reviewed producer/bridge -> TryAccept -> coordinator receipt -> GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingMapping/Handoff -> GlobalMotionShipDeckCombinedTransactionHost",
+    "directCallbackBindingAllowed": false
+  },
+  "ownershipDecision": {
+    "legitimateOwner": "protocol-owned server GlobalMotionShipDeckPassengerLifecycleCoordinator via a reviewed lifecycle fact producer/bridge",
+    "issuedByCoordinator": [
+      "ShipLifetimeGeneration",
+      "AttachmentGeneration",
+      "LedgerOrdinal"
+    ],
+    "existingSeamsAreCompleteProducer": false,
+    "reason": "No audited seam combines stable protocol identity, server/protocol ownership, coordinator-compatible generation lineage, strict ordering and terminal invalidation."
+  },
+  "ingresses": [
+    {
+      "phase": "ShipRegistered",
+      "concreteSourceSeam": "server-only NpcShipController.OnNetworkSpawn registration in NpcShipZoneRegistry and NpcShipWorld",
+      "legitimateServerProtocolOwner": "reviewed server/protocol lifecycle producer feeding the protocol-owned coordinator; NpcShipController is a seam only",
+      "stableIdentitySource": "explicit owner-reviewed stable protocol ShipId; ShipNetworkObjectId is supplemental cross-check only; current NetworkObjectId-derived npcInstanceId is rejected",
+      "generationLineageSource": "new lifetime boundary; fact has no synthetic generation; coordinator allocates fresh never-reused ShipLifetimeGeneration",
+      "orderingGuarantees": [
+        "must be first event for the stable ShipId",
+        "opens coordinator ship ledger",
+        "duplicate active registration and stale/reused lifetime are rejected"
+      ],
+      "terminalGuarantees": "Matching ShipInvalidated must later close this lifetime; recreate requires a new explicit registration/lifetime.",
+      "mappingIntoTryAccept": "GlobalMotionShipDeckPassengerLifecycleFact.CreateShipRegistered(shipId, shipNetworkObjectId, serverAuthorized, protocolOwned) -> coordinator.TryAccept",
+      "failClosedWhenEvidenceMissing": [
+        "do not create a fact without stable ShipId",
+        "do not infer identity or generation from IsSpawned, NetworkObjectId, Unity/NGO reference or callback arrival",
+        "reject missing server/protocol ownership, accepted registration or required supplemental identity",
+        "no coordinator receipt is emitted"
+      ],
+      "decision": "CANDIDATE_SEAM_NOT_OWNER_BOUND"
+    },
+    {
+      "phase": "PassengerAttached",
+      "concreteSourceSeam": "server ShipCrewSpawner.EnsureCrewSpawned/SpawnMember spawn candidate plus NpcBrain.AttachToShipDeck completion path with ShipDeckNav.IsReady prerequisite",
+      "legitimateServerProtocolOwner": "one reviewed server/protocol producer joining accepted crew/passenger identity, matching ship lifetime, completed attachment and ready deck evidence; neither spawner nor brain alone",
+      "stableIdentitySource": "explicit reviewed stable protocol ShipId and passenger identity; manifest memberId/NPC identity is only a candidate pending stability review; object reference/name/NetworkObjectId are rejected",
+      "generationLineageSource": "fact carries expected ShipLifetimeGeneration and previousAttachmentGeneration; coordinator allocates the new strictly increasing AttachmentGeneration",
+      "orderingGuarantees": [
+        "requires prior ShipRegistered",
+        "requires matching ship lifetime and completed attachment",
+        "requires ShipDeckNav.IsReady and stable deck identity",
+        "duplicate active attachment and out-of-order facts are rejected",
+        "reattach requires prior accepted detach lineage"
+      ],
+      "terminalGuarantees": "ShipInvalidated is terminal and forbids later attach; spawn alone never establishes attachment.",
+      "mappingIntoTryAccept": "GlobalMotionShipDeckPassengerLifecycleFact.CreatePassengerAttached(shipId, shipNetworkObjectId, expectedShipLifetimeGeneration, passengerId, previousAttachmentGeneration, deckNavId, true, true) -> coordinator.TryAccept",
+      "failClosedWhenEvidenceMissing": [
+        "do not promote spawned object, _spawnedByMemberId, requested attachment, parent reference or IsSpawned to attached evidence",
+        "reject missing stable identities, matching lifetime, ownership, completed attach, deckNavId or IsReady",
+        "ShipDeckNav.RegistrationGeneration and callback order cannot synthesize attachment generation",
+        "no coordinator receipt is emitted"
+      ],
+      "decision": "CANDIDATE_SEAMS_NOT_OWNER_BOUND"
+    },
+    {
+      "phase": "PassengerDetached",
+      "concreteSourceSeam": "server NpcBrain.DetachFromShipDeck explicit detach seam; ship/crew cleanup is observation only",
+      "legitimateServerProtocolOwner": "same reviewed server/protocol lifecycle producer that closes the exact active attachment epoch; NpcBrain owns local state only",
+      "stableIdentitySource": "reviewed stable protocol ShipId and passenger identity plus the coordinator-recorded active attachment epoch",
+      "generationLineageSource": "matching expected ShipLifetimeGeneration and exact active AttachmentGeneration with reviewed DeckNavId; no new generation is issued on detach",
+      "orderingGuarantees": [
+        "requires matching active PassengerAttached",
+        "requires exact ship lifetime, passenger, deck and attachment generation",
+        "duplicate/stale detach is rejected",
+        "later attach must use a greater coordinator-issued generation"
+      ],
+      "terminalGuarantees": "After ShipInvalidated, detach is post-terminal and rejected; terminal invalidation does not require synthetic detach callbacks.",
+      "mappingIntoTryAccept": "GlobalMotionShipDeckPassengerLifecycleFact.CreatePassengerDetached(shipId, shipNetworkObjectId, expectedShipLifetimeGeneration, passengerId, attachmentGeneration, deckNavId, true, true) -> coordinator.TryAccept",
+      "failClosedWhenEvidenceMissing": [
+        "do not infer detach from map cleanup, IsSpawned=false, parent null, object destruction or callback order",
+        "reject missing completed server detach, active ledger state, exact generation, identity or ownership",
+        "reject stale generation and deck identity mismatch without a receipt"
+      ],
+      "decision": "CANDIDATE_SEAM_NOT_OWNER_BOUND"
+    },
+    {
+      "phase": "ShipInvalidated",
+      "concreteSourceSeam": "server NpcShipController.OnNetworkDespawn primary boundary; ShipCrewSpawner.OnNetworkDespawn and ShipDeckNav.OnNetworkDespawn are related cleanup seams",
+      "legitimateServerProtocolOwner": "reviewed server/protocol lifecycle authority confirming one terminal ship invalidation; no passenger detach callback set may substitute",
+      "stableIdentitySource": "explicit stable protocol ShipId matching registered lifetime; ShipNetworkObjectId supplemental only; recreated ship requires new protocol lifetime",
+      "generationLineageSource": "exact expected active ShipLifetimeGeneration in fact; coordinator allocates terminal LedgerOrdinal; explicit invalidation reason is required",
+      "orderingGuarantees": [
+        "must follow registration and accepted prior receipts",
+        "accepted exactly once for the matching lifetime",
+        "records terminal reason and ledger ordinal",
+        "clears active passenger generations"
+      ],
+      "terminalGuarantees": "Terminal invalidation rejects every later fact for the lifetime; recreate cannot continue prior lineage.",
+      "mappingIntoTryAccept": "GlobalMotionShipDeckPassengerLifecycleFact.CreateShipInvalidated(shipId, shipNetworkObjectId, expectedShipLifetimeGeneration, invalidationReason, true, true) -> coordinator.TryAccept",
+      "failClosedWhenEvidenceMissing": [
+        "do not infer terminal invalidation from OnNetworkDespawn alone, IsSpawned=false, object destruction, NavMesh unregister, crew-map cleanup, callback order or NetworkObjectId reuse",
+        "reject missing stable identity, matching lifetime, explicit reason, terminal authority or ownership",
+        "reject duplicate, stale, out-of-order and post-terminal facts"
+      ],
+      "decision": "SPLIT_SEAMS_NO_UNIFIED_TERMINAL_OWNER"
+    }
+  ],
+  "prohibitedInference": {
+    "IsSpawned": true,
+    "NetworkObjectId": true,
+    "UnityOrNGOReferences": true,
+    "CallbackOrder": true,
+    "ShipDeckNavRegistrationGeneration": true,
+    "HostLocalBindingGeneration": true
+  },
+  "integrationBlockers": {
+    "runtimeCallerBinding": "NOT EXECUTED",
+    "coordinator": "DORMANT",
+    "coordinatorHandoff": "DORMANT",
+    "providerBinding": "NOT EXECUTED",
+    "adapterRegistration": "NOT EXECUTED",
+    "bootstrapScene": "UNCHANGED",
+    "scenesChanged": false,
+    "prefabsChanged": false,
+    "runtimeConfigurationChanged": false,
+    "playMode": "NOT RUN",
+    "runtimeRebaseReadiness": "NOT_READY",
+    "searchOutsideAuditedPaths": "INCONCLUSIVE",
+    "decision": "INTEGRATION_BLOCKED"
+  },
+  "changedFiles": [
+    "docs/world/floatingorigin/06CQ_SHIP_DECK_LIFECYCLE_FACT_SOURCE_OWNERSHIP_AND_INGRESS_DECISION_GATE.md",
+    "docs/world/floatingorigin/06CQ_SHIP_DECK_LIFECYCLE_FACT_SOURCE_OWNERSHIP_AND_INGRESS_DECISION_GATE.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ],
+  "nextGate": "Create and owner-review one complete legitimate server/protocol lifecycle producer, then perform a separate serial binding gate; do not infer missing facts."
+}

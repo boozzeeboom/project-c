@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CQ — ShipDeck lifecycle fact-source ownership and explicit ingress decision gate)
+
+**Задача:** После `T-FO06CP` выполнить docs-only ownership review для четырёх ShipDeck lifecycle ingress, определить legitimate server/protocol owner, concrete source seam, required identity/generation/lineage и explicit mapping path в coordinator `TryAccept`.
+
+**Результат:** Для `ShipRegistered`, `PassengerAttached`, `PassengerDetached` и `ShipInvalidated` зафиксированы exact seams `NpcShipController`, `ShipCrewSpawner`, `NpcBrain` и `ShipDeckNav`, но complete legitimate producer не найден. Решение остаётся **INTEGRATION-BLOCKED**: stable protocol identities, coordinator-owned ship/attachment generations, strict ledger order, server/protocol ownership и terminal invalidation должны приходить как explicit facts. Inference из `IsSpawned`, `NetworkObjectId`, Unity/NGO references, callback order, `ShipDeckNav.RegistrationGeneration` и host-local binding generation явно отклонён. Mapping определён как reviewed producer → `GlobalMotionShipDeckPassengerLifecycleCoordinator.TryAccept` → typed coordinator handoff → combined host; mapping и runtime binding не выполнялись.
+
+**Граница:** Только документация изменена. Coordinator и handoff остаются dormant; provider/adapter/`BootstrapScene` binding не выполнялись; сцены, префабы и runtime configuration не изменялись; Play Mode не запускался. `runtimeRebaseReadiness=NOT_READY`; search outside audited paths остаётся `INCONCLUSIVE`.
+
+**Файлы:** `docs/world/floatingorigin/06CQ_SHIP_DECK_LIFECYCLE_FACT_SOURCE_OWNERSHIP_AND_INGRESS_DECISION_GATE.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CP — explicit ShipDeck lifecycle coordinator fact-source binding readiness audit)
 
 **Задача:** После `T-FO06CO` выполнить docs-only read-only audit готовности explicit fact-source binding для `GlobalMotionShipDeckPassengerLifecycleCoordinator`, зафиксировать exact source seams и four-phase ingress matrix без runtime caller binding.

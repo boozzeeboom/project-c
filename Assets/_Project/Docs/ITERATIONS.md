@@ -1,3 +1,15 @@
+## Итерация от 2026-09-12 (T-FO06AK — runtime installation boundary)
+
+**Задача:** Зафиксировать pure boundary перед будущей serial runtime installation, допускающую только valid connection authorization и explicit user-controlled reason.
+
+**Результат:** Созданы `GlobalMotionRebaseRuntimeInstallationIntent` и `GlobalMotionRebaseRuntimeInstallationBoundary.TryCreateUserControlledIntent`. Intent содержит уникальный installation ID, evidence identity и reason; automatic trigger и пустые причины блокируются. Runtime connection не устанавливается.
+
+**Граница:** Runtime driver, coordinator, BootstrapScene, participant discovery, manifest publication, native adapters, Apply/Rebuild/Validate/Publish, rollback, Unity state и Play Mode не изменялись. `validate_script` — PASS; compile — PASS; `git diff --check` — PASS; runtime rebase readiness остаётся `NOT_READY`.
+
+**Файлы:** `GlobalMotionRebaseRuntimeInstallationBoundary.cs`, `docs/world/floatingorigin/06AK_RUNTIME_INSTALLATION_BOUNDARY.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AJ — runtime connection authorization gate)
 
 **Задача:** Связать ранее созданный connection evidence token с текущими readiness bundle и sealed adapter set через pure exact-match authorization gate, не устанавливая runtime connection.

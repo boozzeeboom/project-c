@@ -1,0 +1,47 @@
+{
+  "ticket": "T-FO06AK",
+  "date": "2026-09-12",
+  "scope": "runtime installation boundary",
+  "ticketAssignment": "next free substage after T-FO06AJ; no existing 06AK report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseRuntimeInstallationBoundary.cs",
+    "docs/world/floatingorigin/06AK_RUNTIME_INSTALLATION_BOUNDARY.md",
+    "docs/world/floatingorigin/06AK_RUNTIME_INSTALLATION_BOUNDARY.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ],
+  "integration": [
+    "GlobalMotionRebaseRuntimeConnectionAuthorization",
+    "GlobalMotionRebaseRuntimeInstallationBoundary.TryCreateUserControlledIntent"
+  ],
+  "behavior": {
+    "requiresConnectionAuthorization": true,
+    "requiresExplicitReason": true,
+    "automaticTrigger": false,
+    "createsInstallationIntentOnly": true,
+    "installsRuntimeConnection": false,
+    "invokesNativeAdapters": false,
+    "mutatesUnityState": false
+  },
+  "verification": {
+    "scriptValidation": "PASS",
+    "compile": "PASS",
+    "gitDiffCheck": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "connectionEvidence": "NOT_PROVEN",
+    "connectionAuthorization": "NOT_GRANTED",
+    "installationIntent": "NOT_CREATED",
+    "nativeApplyPipeline": "NOT_CONNECTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "scopeBoundary": {
+    "adapterInstances": "NOT_CREATED",
+    "runtimeDriverInstallation": "NOT_CONNECTED",
+    "nativeMutation": "NOT_IMPLEMENTED",
+    "nativeRollback": "NOT_IMPLEMENTED",
+    "bootstrapScene": "UNCHANGED"
+  },
+  "nextStep": "Implement serial runtime installation only after user-controlled evidence and reviewed concrete adapters are available."
+}

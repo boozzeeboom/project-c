@@ -1,0 +1,14 @@
+{
+  "ticket": "T-FO06BK",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_DORMANT",
+  "component": "GlobalMotionRebaseUserControlledEvidenceIntake",
+  "runtimeProofSource": "IMPLEMENTED_FAIL_CLOSED",
+  "rollbackEvidenceSource": "IMPLEMENTED_FAIL_CLOSED",
+  "externalEvidenceSubmitted": false,
+  "automaticLogParsing": false,
+  "bootstrapSceneBinding": "NONE",
+  "playMode": "NOT_RUN",
+  "runtimeRebaseReadiness": "NOT_READY",
+  "nextGate": "EXPLICIT_USER_SUBMISSION_AND_PROVIDER_BINDING_REVIEW"
+}

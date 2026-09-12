@@ -1,5 +1,18 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BK — user-controlled structured evidence intake)
+
+**Задача:** Реализовать concrete structured evidence intake вместо очередного audit-only этапа.
+
+**Результат:** Создан `GlobalMotionRebaseUserControlledEvidenceIntake`, реализующий runtime-proof и rollback evidence source contracts. `TrySubmit` принимает только внешние validated evidence, explicit capture reference и `userSupplied=true`; проверяет proof/rollback contracts и participant/frame lineage. До submit источники fail closed; повторный submit запрещён без `Clear()`. `check_compile_errors=No compile errors`.
+
+**Граница:** Пользовательский capture ещё не submitted, provider/source binding и BootstrapScene не изменялись, Play Mode не запускался, runtime readiness не открывалась. `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseUserControlledEvidenceIntake.cs`, `docs/world/floatingorigin/06BK_USER_CONTROLLED_STRUCTURED_EVIDENCE_INTAKE.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+
 ## Итерация от 2026-09-12 (T-FO06BJ — runtime proof/evidence producer blocker review)
 
 **Задача:** Проверить, может ли существующий `GlobalMotionRuntimeEvidenceProbe` быть legitimate producer-ом structured runtime proof и rollback evidence.

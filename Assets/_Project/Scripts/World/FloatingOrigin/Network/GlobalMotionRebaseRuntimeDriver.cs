@@ -91,6 +91,11 @@ namespace ProjectC.World.FloatingOrigin.Network
                 error = "readiness_bundle_not_authorized";
                 return false;
             }
+            if (_installationIntentAuthorized)
+            {
+                error = "installation_authorization_already_granted";
+                return false;
+            }
             if (!installationIntent.IsValid)
             {
                 error = "installation_intent_invalid";
@@ -147,7 +152,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 return Fail(GlobalMotionRebaseTransactionPhase.Faulted, "trigger_invalid:" + error, out error);
 
             Phase = GlobalMotionRebaseTransactionPhase.Requested;
-            Record("Requested", "kind=UserControlled reason=" + reason);
+            Record("Requested", "kind=UserControlled installation=" + _installationIntent.InstallationId + ";reason=" + reason);
 
             if (!_adapter.TryPrepareUserControlled(_trigger, out _request, out var participants, out error))
                 return AbortWithReason("frame_prepare_refused:" + error, out error);

@@ -1,0 +1,48 @@
+{
+  "ticket": "T-FO06AI",
+  "date": "2026-09-12",
+  "scope": "runtime connection evidence contract",
+  "ticketAssignment": "next free substage after T-FO06AH; no existing 06AI report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseRuntimeConnectionGate.cs",
+    "docs/world/floatingorigin/06AI_RUNTIME_CONNECTION_EVIDENCE.md",
+    "docs/world/floatingorigin/06AI_RUNTIME_CONNECTION_EVIDENCE.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ],
+  "integration": [
+    "GlobalMotionRebaseReadinessBundle",
+    "GlobalMotionNativeAdapterSet",
+    "GlobalMotionRebaseRuntimeConnectionGate.TryBuildEvidence"
+  ],
+  "behavior": {
+    "requiresReadyBundle": true,
+    "requiresSealedAdapterSet": true,
+    "requiresAdapterValidation": true,
+    "invokesNativeAdapters": false,
+    "connectsRuntimeDriver": false,
+    "mutatesUnityState": false,
+    "automaticTrigger": false
+  },
+  "verification": {
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "connectionEvidence": "NOT_PROVEN",
+    "readinessBundle": "BLOCKED",
+    "participantAdmission": "NOT_READY",
+    "liveManifestPublication": "NOT_PROVEN",
+    "nativeApplyPipeline": "NOT_CONNECTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "scopeBoundary": {
+    "adapterInstances": "NOT_CREATED",
+    "manifestPublication": "NOT_CONNECTED",
+    "runtimeDriverInstallation": "NOT_CONNECTED",
+    "nativeMutation": "NOT_IMPLEMENTED",
+    "nativeRollback": "NOT_IMPLEMENTED",
+    "bootstrapScene": "UNCHANGED"
+  },
+  "nextStep": "Obtain user-controlled runtime evidence and reviewed concrete adapter instances before any serial runtime installation gate."
+}

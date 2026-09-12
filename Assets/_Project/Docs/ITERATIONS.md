@@ -1,3 +1,15 @@
+## Итерация от 2026-09-12 (T-FO06AI — runtime connection evidence contract)
+
+**Задача:** Связать уже созданный readiness bundle с sealed native adapter set через отдельный pure connection evidence contract, не подключая runtime и не выполняя Unity mutation.
+
+**Результат:** Созданы `GlobalMotionRebaseRuntimeConnectionEvidence` и `GlobalMotionRebaseRuntimeConnectionGate.TryBuildEvidence`. Gate требует `bundle.IsReady`, проверяет sealed/current/native-ready adapter set с полной capability/coverage validation и выдаёт immutable evidence token с manifest digest, session identity и adapter count. Native adapter methods не вызываются.
+
+**Граница:** Runtime driver, coordinator, BootstrapScene, participant discovery, manifest publication, Apply/Rebuild/Validate/Publish, rollback, Unity state и Play Mode не изменялись. Compile PASS (`No compile errors`); `git diff --check` PASS; runtime rebase readiness остаётся `NOT_READY`.
+
+**Файлы:** `GlobalMotionRebaseRuntimeConnectionGate.cs`, `docs/world/floatingorigin/06AI_RUNTIME_CONNECTION_EVIDENCE.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AH — runtime driver readiness authorization)
 
 **Задача:** Интегрировать aggregated readiness bundle с explicit runtime driver boundary, сохранив fail-closed поведение.

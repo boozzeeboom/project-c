@@ -1,5 +1,18 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BH — ShipDeckNav synchronous lifecycle contract)
+
+**Задача:** Зафиксировать transaction-safe lifecycle boundary для будущего `ShipDeckNav` native adapter без runtime регистрации или мутации NavMesh.
+
+**Результат:** Создан `GlobalMotionRebaseShipDeckNavLifecycleContract` с ordered phases от `Unbound` до `Restored`, generation lineage для регистрации/NavMesh/passenger attachment и fail-closed проверками synchronous rebuild/restore, capture и passenger restore. `check_compile_errors=No compile errors`.
+
+**Граница:** Concrete adapter, runtime registration/rebuild/restore, `GlobalMotionNativeAdapterSet`, BootstrapScene и Play Mode не изменялись; synchronous lifecycle остаётся UNVERIFIED; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseShipDeckNavLifecycleContract.cs`, `docs/world/floatingorigin/06BH_SHIP_DECK_NAV_SYNCHRONOUS_LIFECYCLE_CONTRACT.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+
 ## Итерация от 2026-09-12 (T-FO06BG — native adapter evidence source)
 
 **Задача:** Создать первый concrete provenance producer для native adapter readiness без принятия неполного adapter set.

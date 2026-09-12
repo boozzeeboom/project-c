@@ -1,0 +1,14 @@
+{
+  "ticket": "T-FO06BH",
+  "date": "2026-09-12",
+  "status": "COMPILE_VERIFIED_CONTRACT_ONLY_NOT_READY",
+  "contract": "GlobalMotionRebaseShipDeckNavLifecycleContract",
+  "phases": ["Unbound", "RegistrationRequested", "Registered", "Ready", "SnapshotCaptured", "RebuildRequested", "Rebuilt", "Validated", "Restored"],
+  "synchronousRebuild": "REQUIRED_NOT_PROVEN",
+  "synchronousRestore": "REQUIRED_NOT_PROVEN",
+  "concreteAdapter": "NOT_IMPLEMENTED",
+  "runtimeRegistration": "NOT_RUN",
+  "playMode": "NOT_RUN",
+  "runtimeRebaseReadiness": "NOT_READY",
+  "nextGate": "CONCRETE_SHIP_DECK_NAV_PRODUCER_OR_API_BLOCKER_REVIEW"
+}

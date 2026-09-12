@@ -1,3 +1,15 @@
+## Итерация от 2026-09-12 (T-FO06AN — readiness rollover invalidation)
+
+**Задача:** Исключить перенос старого installation intent при повторной авторизации readiness bundle.
+
+**Результат:** `TryAuthorizeReadiness` теперь очищает installation intent и его authorization при каждом успешном readiness rollover; `ReadinessAuthorized` evidence содержит `installationInvalidated=true`. Для нового readiness требуется новая installation authorization.
+
+**Граница:** Valid bundle, concrete adapters, manifest publication, participant discovery, Unity mutation, Apply/Rebuild/Validate/Publish, rollback, BootstrapScene и Play Mode не изменялись. `validate_script` — PASS; compile — PASS; `git diff --check` — PASS; runtime rebase readiness остаётся `NOT_READY`.
+
+**Файлы:** `GlobalMotionRebaseRuntimeDriver.cs`, `docs/world/floatingorigin/06AN_READINESS_ROLLOVER_INVALIDATION.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AM — driver installation identity evidence)
 
 **Задача:** Усилить driver installation admission: сделать authorization одноразовой до reset и связать `InstallationId` с `rebase.Requested` evidence.

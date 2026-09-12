@@ -70,9 +70,11 @@ namespace ProjectC.World.FloatingOrigin.Network
                 return false;
             }
 
+            _installationIntent = default;
+            _installationIntentAuthorized = false;
             _readiness = readiness;
             _readinessAuthorized = true;
-            Record("ReadinessAuthorized", "manifest=" + readiness.ManifestDigest + ";session=" + readiness.SessionIdentity + ";participants=" + readiness.ParticipantCount);
+            Record("ReadinessAuthorized", "manifest=" + readiness.ManifestDigest + ";session=" + readiness.SessionIdentity + ";participants=" + readiness.ParticipantCount + ";installationInvalidated=true");
             return true;
         }
 

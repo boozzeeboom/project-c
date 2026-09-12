@@ -1,0 +1,47 @@
+{
+  "ticket": "T-FO06AN",
+  "date": "2026-09-12",
+  "scope": "readiness rollover invalidation",
+  "ticketAssignment": "next free substage after T-FO06AM; no existing 06AN report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseRuntimeDriver.cs",
+    "docs/world/floatingorigin/06AN_READINESS_ROLLOVER_INVALIDATION.md",
+    "docs/world/floatingorigin/06AN_READINESS_ROLLOVER_INVALIDATION.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ],
+  "integration": [
+    "GlobalMotionRebaseRuntimeDriver.TryAuthorizeReadiness",
+    "GlobalMotionRebaseRuntimeInstallationIntent",
+    "ReadinessAuthorized evidence"
+  ],
+  "behavior": {
+    "readinessAuthorizationInvalidatesInstallationIntent": true,
+    "staleInstallationIdentityCannotSurviveRollover": true,
+    "installationReauthorizationRequired": true,
+    "installationInvalidationRecorded": true,
+    "automaticTrigger": false,
+    "nativeMutation": false
+  },
+  "verification": {
+    "scriptValidation": "PASS",
+    "compile": "PASS",
+    "gitDiffCheck": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "readinessAuthorization": "NOT_GRANTED",
+    "installationIntent": "NOT_CREATED",
+    "driverInstallationAuthorization": "NOT_GRANTED",
+    "nativeApplyPipeline": "NOT_CONNECTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "scopeBoundary": {
+    "validBundleCreation": "NOT_PROVEN",
+    "adapterInstances": "NOT_CREATED",
+    "runtimeDriverInstallation": "NOT_CONNECTED",
+    "nativeRollback": "NOT_IMPLEMENTED",
+    "bootstrapScene": "UNCHANGED"
+  },
+  "nextStep": "Obtain user-controlled evidence and concrete adapter instances before any runtime installation or native mutation."
+}

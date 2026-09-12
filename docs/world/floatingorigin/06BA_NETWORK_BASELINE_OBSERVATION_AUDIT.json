@@ -1,0 +1,33 @@
+{
+  "ticket": "T-FO06BA",
+  "date": "2026-09-12",
+  "sourceLog": "Q:\\Project-c_logs\\01.txt",
+  "classification": "OBSERVATION_ONLY",
+  "capture": {
+    "tag": "T-FO06Y",
+    "lines": 7995,
+    "frames": "885-8879",
+    "binding": "4780900133407987940/94/1/1/2",
+    "maxRevision": 198,
+    "maxSequence": 5227,
+    "maxNetworkTick": 5942
+  },
+  "evidence": {
+    "initialBaseline": "CONFIRMED",
+    "initialAcknowledgement": "CONFIRMED",
+    "initialTickSequenceContinuity": "OBSERVED",
+    "postRebaseContinuity": "NOT_PROVEN",
+    "rollbackCapability": "NOT_PROVEN",
+    "participantAdmission": "NOT_READY",
+    "shipDeckNav": "BLOCKED_BY_NAVMESH_WARNINGS",
+    "navMeshWarnings": 247
+  },
+  "authorization": {
+    "observationOnly": true,
+    "restorable": false,
+    "concreteAdapter": false,
+    "nativeAdapterSetRegistration": false,
+    "runtimeInstallation": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  }
+}

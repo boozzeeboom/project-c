@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BA — NetworkBaseline observation-only audit)
+
+**Задача:** Сопоставить полный `[T-FO06Y]` capture с pure `T-FO06AZ` NetworkBaseline contract без создания concrete adapter или изменения `FullTransaction`.
+
+**Результат:** Проверены `7995` строк и кадры `885–8879`; binding стабилен `4780900133407987940/94/1/1/2`; stream продолжается до `revision=198`, `sequence=5227`, `NetworkTick=5942`. Initial baseline и acknowledgement подтверждены; evidence классифицирована только как `ObservationOnly`. Restorable capability, post-rebase continuity, rollback, participant admission и native adapter installation не доказаны. `247` NavMesh warnings оставляют ShipDeckNav lifecycle blocker.
+
+**Граница:** `GlobalMotionNetworkBaselineNativeAdapter` не создан, `GlobalMotionNativeAdapterSet` остаётся `EMPTY / UNSEALED`, `FullTransaction`, BootstrapScene, сцены, префабы и runtime adapters не изменялись; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `docs/world/floatingorigin/06BA_NETWORK_BASELINE_OBSERVATION_AUDIT.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AQ follow-up — full log pointwise audit)
 
 **Задача:** Провести точечный аудит полного пользовательского лога `Q:\Project-c_logs\01.txt` без загрузки файла целиком в контекст и усилить evidence-report `T-FO06AQ`.

@@ -1,0 +1,77 @@
+{
+  "ticket": "T-FO06CM",
+  "date": "2026-09-12",
+  "status": "DESIGN_ONLY_READ_ONLY_CENSUS_DESIGN_SELECTED_IMPLEMENTATION_BLOCKED",
+  "scope": "Broadened ShipDeck lifecycle census and protocol-owned server coordinator design selection",
+  "auditedPaths": [
+    "Assets/_Project/Scripts/PeacefulShip/Stations/NpcShipController.cs",
+    "Assets/_Project/Scripts/PeacefulShip/Crew/ShipCrewSpawner.cs",
+    "Assets/_Project/Scripts/AI/NpcBrain.cs",
+    "Assets/_Project/Scripts/Ship/ShipDeckNav.cs",
+    "Assets/_Project/Scripts/World/Scene/ScenePlacedObjectSpawner.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerGenerationContract.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerContract.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleSourceBindingContract.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleBindingHandoffContract.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckCombinedTransactionHost.cs"
+  ],
+  "verdict": "DESIGN SELECTED / IMPLEMENTATION BLOCKED",
+  "census": {
+    "npcShipControllerShipRegistrationLifetime": "CONFIRMED_SEAM_ONLY",
+    "shipCrewSpawnerSpawnDespawn": "CONFIRMED_SEAM_ONLY",
+    "npcBrainAttachDetach": "CONFIRMED_SERVER_SEAM_ONLY",
+    "shipDeckNavReadiness": "CONFIRMED_PREREQUISITE_SEAM_ONLY",
+    "ngoSpawnDespawnOwnershipBoundaries": "SPLIT_NO_PROTOCOL_ATOMIC_OWNER_FOUND"
+  },
+  "selectedDesignOwner": {
+    "name": "GlobalMotionShipDeckPassengerLifecycleCoordinator",
+    "role": "single protocol-owned server lifecycle coordinator and immutable ledger owner",
+    "implemented": false,
+    "reason": "owns ship lifetime, passenger attachment, NGO authority and terminal invalidation order without selecting a passenger-local or spawn-only existing seam",
+    "rejectedExistingSeams": {
+      "NpcBrain": "passenger-local attach/detach; does not own ship registration/despawn or NGO ownership",
+      "ShipCrewSpawner": "crew spawn/cleanup seam; does not own attachment completion, ship invalidation or protocol order"
+    }
+  },
+  "receiptMapping": {
+    "ShipRegistered": "server-accepted ship registration opens a new explicit ship lifetime/spawn generation",
+    "PassengerAttached": "server-confirmed active attach plus parent completion and ShipDeckNav.IsReady opens a new attachment generation",
+    "PassengerDetached": "server-confirmed detach closes the matching active attachment generation",
+    "ShipInvalidated": "terminal server ship despawn/invalidation closes the ship lifetime, records last order/reason and forbids later passenger receipts"
+  },
+  "generationRequirements": {
+    "shipLifetimeSpawnGeneration": "server-issued, strictly monotonic per accepted ship lifetime, never reused after despawn/recreate",
+    "passengerAttachmentGeneration": "server-issued per ship/passenger attachment epoch, strictly increases for each new attach; detach closes the active value",
+    "ledgerOrder": "strictly monotonic coordinator order across all receipts"
+  },
+  "identityOwnershipOrderInvalidation": {
+    "identity": "explicit stable protocol ship/passenger identity; NetworkObjectId is supplemental transport identity only",
+    "ownership": "server authority and protocol ownership required; client/local owner observations cannot issue receipts",
+    "order": "ShipRegistered first; attach/detach pairs ordered; ShipInvalidated terminal",
+    "invalidation": "stale, duplicate, mismatched or post-terminal receipts fail closed"
+  },
+  "futureBindingPath": {
+    "generationSource": "IGlobalMotionShipDeckPassengerGenerationSource",
+    "sourceInput": "reviewed receipts from the selected coordinator, not direct component callbacks or object scans",
+    "combinedTransactionHost": "GlobalMotionShipDeckCombinedTransactionHost consumes reviewed lifecycle binding receipt",
+    "providerAdapterBinding": "deferred until a later reviewed gate"
+  },
+  "prohibitedSyntheticGeneration": {
+    "isSpawned": false,
+    "networkObjectId": false,
+    "objectReferences": false,
+    "hostLocalBindingGeneration": false,
+    "shipDeckNavRegistrationGeneration": false
+  },
+  "validation": {
+    "implementationCreated": false,
+    "providerBindingExecuted": false,
+    "adapterBindingExecuted": false,
+    "combinedTransactionHostBindingExecuted": false,
+    "bootstrapSceneChanged": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "searchOutsideAuditedPaths": "INCONCLUSIVE",
+  "nextGate": "implement and owner-review the selected protocol-owned coordinator without synthetic generation shortcuts"
+}

@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CM — protocol-owned ShipDeck lifecycle coordinator design gate)
+
+**Задача:** После `T-FO06CL` расширить read-only lifecycle census по `NpcShipController`, `ShipCrewSpawner`, `NpcBrain`, `ShipDeckNav` и NGO spawn/despawn/ownership boundaries и выбрать одного protocol-owned server lifecycle coordinator/ledger owner без реализации.
+
+**Результат:** Зафиксирован broadened census и выбран design owner `GlobalMotionShipDeckPassengerLifecycleCoordinator`; он должен владеть monotonic ship lifetime/spawn generation, passenger attachment generation, ordered receipts `ShipRegistered`, `PassengerAttached`, `PassengerDetached`, terminal `ShipInvalidated` и fail-closed invalidation. `NpcBrain` и `ShipCrewSpawner` намеренно не выбраны как owner только из-за существующих seams; future binding path направлен через `IGlobalMotionShipDeckPassengerGenerationSource` к combined transaction host.
+
+**Граница:** Synthetic generation из `IsSpawned`, `NetworkObjectId`, object references, `ShipDeckNav.RegistrationGeneration` и host-local binding generation запрещена. Coordinator/source implementation, provider/adapter/combined-host binding не выполнялись, `BootstrapScene` unchanged, Play Mode не запускался; `runtimeRebaseReadiness=NOT_READY`. Search за пределами audited paths остаётся inconclusive.
+
+**Файлы:** `docs/world/floatingorigin/06CM_SHIP_DECK_LIFECYCLE_COORDINATOR_DESIGN_GATE.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CL — ShipDeck lifecycle owner audit)
 
 **Задача:** После `T-FO06CK` провести read-only audit legitimate server-owned lifecycle owner-а для `IGlobalMotionShipDeckPassengerGenerationSource` на существующих ShipDeck attachment/spawn seams.

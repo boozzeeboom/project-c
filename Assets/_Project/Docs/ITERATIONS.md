@@ -1,5 +1,21 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CU — ShipDeck lifecycle caller binding decision gate)
+
+**Задача:** После `T-FO06CT` зафиксировать owner-reviewed caller boundary для `NpcShipController`, `ShipCrewSpawner`, `NpcBrain` и `ShipDeckNav`, не подключая runtime seam без stable protocol identity и terminal invalidation evidence.
+
+**Результат:** Создан pure `GlobalMotionShipDeckLifecycleCallerBindingContract`, принимающий explicit caller role, caller-supplied stable `ShipId`, supplemental `ShipNetworkObjectId`, ingress mask, terminal invalidation support и server/protocol ownership. Contract ничего не выводит из `NetworkObjectId`, `NpcInstanceId`, object references, callback order или `ShipDeckNav.RegistrationGeneration`; generations и lifecycle receipts остаются ответственностью producer bridge/coordinator.
+
+**Решение:** `NpcShipController` — кандидат для registration/invalidation, `ShipCrewSpawner` — candidate crew lifecycle source, `NpcBrain` — attach/detach seam, `ShipDeckNav` — readiness prerequisite. Runtime binding не выполнялся: stable protocol `ShipId`, unified producer ownership и terminal invalidation boundary не подтверждены.
+
+**Проверка:** Validator `ValidateGlobalMotionShipDeckLifecycleCallerBindingContract`: `10/10 PASS`; `check_compile_errors=No compile errors`; новые scripts `validate_script=0 warnings / 0 errors`; Play Mode не запускался.
+
+**Граница:** Caller scripts, combined host, provider, `GlobalMotionNativeAdapterSet`, runtime driver, `BootstrapScene`, сцены и prefabs не изменялись. `runtimeRebaseReadiness=NOT_READY`; search outside audited paths остаётся `INCONCLUSIVE`. Следующий этап — owner-reviewed stable identity/concrete server boundary, затем отдельный runtime caller binding/evidence gate.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckLifecycleCallerBindingContract.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckLifecycleCallerBindingContract.cs`, `docs/world/floatingorigin/06CU_SHIPDECK_LIFECYCLE_CALLER_BINDING_DECISION_GATE.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CT — ShipDeck lifecycle producer binding and explicit fact-source ingress)
 
 **Задача:** После `T-FO06CS` создать explicit binding façade между reviewed server/gameplay fact callers и producer bridge, сохранить accepted lifecycle receipts и подготовить typed active-passenger handoff без discovery, synthetic identity и runtime activation.

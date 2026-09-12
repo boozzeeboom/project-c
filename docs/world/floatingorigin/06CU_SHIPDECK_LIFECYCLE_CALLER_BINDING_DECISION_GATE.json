@@ -1,0 +1,41 @@
+{
+  "ticket": "T-FO06CU",
+  "date": "2026-09-12",
+  "status": "EXPLICIT_CALLER_CONTRACT_IMPLEMENTED_RUNTIME_BINDING_BLOCKED",
+  "implementation": {
+    "contract": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckLifecycleCallerBindingContract.cs",
+    "validator": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckLifecycleCallerBindingContract.cs"
+  },
+  "validation": {
+    "pureChecks": "10/10 PASS",
+    "compile": "No compile errors",
+    "newScriptDiagnostics": "0 warnings / 0 errors",
+    "playMode": "NOT_RUN"
+  },
+  "callerDecision": {
+    "NpcShipController": "CANDIDATE_REGISTER_INVALIDATE_STABLE_ID_UNCONFIRMED",
+    "ShipCrewSpawner": "CANDIDATE_CREW_LIFECYCLE_GENERATIONS_UNCONFIRMED",
+    "NpcBrain": "ATTACH_DETACH_SEAM_NOT_GLOBAL_OWNER",
+    "ShipDeckNav": "READINESS_PREREQUISITE_NOT_LIFECYCLE_OWNER"
+  },
+  "unchanged": {
+    "callerRuntimeScripts": true,
+    "scenes": true,
+    "prefabs": true,
+    "bootstrapScene": true,
+    "providerBinding": false,
+    "nativeAdapterSetRegistration": false,
+    "runtimeDriverInstallation": false
+  },
+  "readiness": {
+    "runtimeRebaseReadiness": "NOT_READY",
+    "searchOutsideAuditedPaths": "INCONCLUSIVE"
+  },
+  "blockers": [
+    "stable protocol ShipId owner not confirmed",
+    "unified lifecycle producer not confirmed",
+    "terminal invalidation boundary not confirmed",
+    "runtime lifecycle ordering evidence absent"
+  ],
+  "nextGate": "Owner-reviewed stable identity and concrete server boundary, followed by separate runtime caller binding/evidence gate"
+}

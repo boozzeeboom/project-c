@@ -84,6 +84,18 @@
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BV — native adapter evidence source binding)
+
+**Задача:** Добавить explicit binding API для `GlobalMotionRebaseNativeAdapterEvidenceSource`, не создавая synthetic readiness и не выполняя provider binding.
+
+**Результат:** Добавлены `TryConfigureSources` и `TryValidateSourceBindings`. Source валидирует reviewed Transform/Rigidbody/Camera targets, camera owner identity и typed ShipDeckNav/NetworkBaseline adapter sources до построения adapter set. Частичный набор отклоняется. Validator: `6/6` pure checks PASS; `check_compile_errors=No compile errors`; `git diff --check=PASS`.
+
+**Граница:** Binding API не создаёт/не регистрирует `GlobalMotionNativeAdapterSet`, provider binding/BootstrapScene/Play Mode не выполнялись; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseNativeAdapterEvidenceSource.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionRebaseNativeAdapterEvidenceSource.cs`, `docs/world/floatingorigin/06BV_NATIVE_ADAPTER_EVIDENCE_SOURCE_BINDING.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BN — protocol-owned NetworkBaseline reversible capability)
 
 **Задача:** После `T-FO06AZ` зафиксировать отдельную reviewed capability boundary для будущего server-coordinated reversible NGO baseline transaction, не объявляя observation-only evidence готовым adapter-ом.

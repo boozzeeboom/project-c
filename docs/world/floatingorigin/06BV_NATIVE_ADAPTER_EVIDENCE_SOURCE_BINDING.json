@@ -1,0 +1,39 @@
+{
+  "ticket": "T-FO06BV",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_FAIL_CLOSED_NO_RUNTIME_CHANGE",
+  "scope": "explicit binding API for GlobalMotionRebaseNativeAdapterEvidenceSource",
+  "implementation": {
+    "source": "GlobalMotionRebaseNativeAdapterEvidenceSource",
+    "apis": [
+      "TryConfigureSources",
+      "TryValidateSourceBindings"
+    ],
+    "validatedInputs": [
+      "Transform",
+      "Rigidbody",
+      "SpringArmCamera",
+      "camera owner identity",
+      "ShipDeckNav IGlobalMotionNativeAdapter",
+      "NetworkBaseline IGlobalMotionNativeAdapter"
+    ],
+    "partialSetRejected": true,
+    "runtimeDiscovery": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "pureChecksPassed": 6,
+    "pureChecksFailed": 0,
+    "menu": "ProjectC/World/Floating Origin/Validate Native Adapter Evidence Source Binding",
+    "result": "6 pure checks PASS / 0 FAIL",
+    "gitDiffCheck": "PASS"
+  },
+  "runtime": {
+    "adapterSetCreatedByBinding": false,
+    "providerBinding": "NOT_EXECUTED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "reviewed ShipDeckNav lifecycle source and protocol-owned NetworkBaseline restore capability"
+}

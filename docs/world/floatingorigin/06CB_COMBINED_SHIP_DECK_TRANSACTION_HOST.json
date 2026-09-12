@@ -1,0 +1,37 @@
+{
+  "ticket": "T-FO06CB",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTATION_SLICE_EXPLICIT_SERVER_BOUNDARY_NOT_INSTALLED",
+  "scope": "combined ShipDeckNav and reviewed NpcBrain passenger transaction host",
+  "implementation": {
+    "host": "GlobalMotionShipDeckCombinedTransactionHost",
+    "captureOrder": ["ShipDeckNav", "NpcBrain passengers"],
+    "rebuildOrder": ["ShipDeckNav synchronous rebuild", "NpcBrain passenger restore", "validation"],
+    "automaticDiscovery": false,
+    "runtimeInstallation": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "existingShipDeckValidatorPassed": 9,
+    "combinedHostPureChecksPassed": 6,
+    "combinedHostPureChecksFailed": 0,
+    "transactionIdentityAssignmentFixed": true,
+    "gitDiffCheck": "PENDING COMMIT REVIEW"
+  },
+  "limitations": {
+    "nativeAdapterImplementation": false,
+    "adapterSetRegistration": false,
+    "providerBinding": false,
+    "formalPartialPassengerRollback": false,
+    "attachmentLifetimeGenerationLedger": false,
+    "runtimeCapture": false,
+    "runtimeRestore": false
+  },
+  "runtime": {
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "formal rollback result and attachment/lifetime generation lineage"
+}

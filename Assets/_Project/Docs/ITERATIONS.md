@@ -589,6 +589,20 @@ Files: Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRigidbod
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06CB — combined ShipDeckNav and passenger transaction host)
+
+**Задача:** Объединить `ShipDeckNavFloatingOriginSnapshot` и `GlobalMotionNpcShipDeckSnapshot` в одном explicit owner-reviewed host с ordered capture/rebuild/validate/restore boundary.
+
+**Результат:** Создан `GlobalMotionShipDeckCombinedTransactionHost` с explicit `NpcBrain[]` binding и API `TryCapture`, `TryRebuild`, `TryValidate`, `TryRestore`. Исправлен compile error `CS0177` на успешном пути `ValidateIdentity(...)` явным `error = null`. Добавлен pure validator: `6/6` checks PASS; `check_compile_errors=No compile errors`.
+
+**Граница:** Host не реализует `IGlobalMotionNativeAdapter`, не зарегистрирован в `GlobalMotionNativeAdapterSet`, provider/runtime driver/BootstrapScene/Play Mode не изменялись. Partial passenger rollback и attachment/lifetime generation ledger остаются незакрытыми. `runtimeRebaseReadiness=NOT_READY`.
+
+**Следующий этап:** Formal rollback result и reviewed passenger attachment/lifetime generation lineage до adapter integration.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckCombinedTransactionHost.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckCombinedTransactionHost.cs`, `docs/world/floatingorigin/06CB_COMBINED_SHIP_DECK_TRANSACTION_HOST.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AE — live manifest receipt source)
 
 **Задача:** Подготовить pure evidence source для participant admission и live manifest publication, сохранив runtime discovery и публикацию отключёнными.

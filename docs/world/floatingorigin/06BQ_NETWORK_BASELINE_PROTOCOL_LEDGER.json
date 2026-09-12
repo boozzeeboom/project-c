@@ -1,0 +1,61 @@
+{
+  "ticket": "T-FO06BQ",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_PURE_ONLY_DORMANT",
+  "scope": "server-owned NetworkBaseline protocol ledger boundary",
+  "implementation": {
+    "ledgerContract": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkBaselineProtocolLedger.cs",
+    "validator": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionNetworkBaselineProtocolLedger.cs",
+    "receiptIdentity": [
+      "transaction",
+      "participant",
+      "NetworkObject lifetime",
+      "authority/discontinuity generations",
+      "control revision",
+      "baseline sequence",
+      "monotonic ordinal"
+    ],
+    "requiredReceipts": [
+      "capture",
+      "apply",
+      "validate",
+      "restore",
+      "ownership_restore",
+      "lifetime_restore",
+      "baseline_generation_restore"
+    ],
+    "phases": [
+      "CaptureRequested",
+      "Captured",
+      "ApplyRequested",
+      "Applied",
+      "ValidateRequested",
+      "Validated",
+      "RestoreRequested",
+      "Restored",
+      "Completed",
+      "Faulted"
+    ]
+  },
+  "checks": {
+    "planned": 10,
+    "passed": 10,
+    "failed": 0
+  },
+  "runtime": {
+    "compile": "PASS",
+    "playModeExecuted": false,
+    "ngoStateMutation": false,
+    "protocolOwnedHostPresent": false,
+    "adapterRegistration": false,
+    "providerBinding": "NOT_EXECUTED",
+    "bootstrapSceneMutation": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "gates": {
+    "networkBaselineAdapter": "SEAM_ONLY",
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED",
+    "fullTransactionAuthorization": "NOT_AUTHORIZED",
+    "nextGate": "reviewed concrete protocol-owned NGO host"
+  }
+}

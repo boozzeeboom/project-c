@@ -24,6 +24,18 @@
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BQ — server-owned NetworkBaseline protocol ledger boundary)
+
+**Задача:** После T-FO06BP добавить reviewed protocol boundary для server-owned NGO transaction ledger, не создавая concrete host и не выдавая synthetic rollback readiness.
+
+**Результат:** Созданы immutable ledger receipts и pure contract с identity/generation lineage, server/protocol ownership, monotonic ordinal, ordered capture/apply/validate/restore phases и terminal fault state. Validator: `10/10` pure checks PASS; `check_compile_errors=No compile errors`.
+
+**Граница:** Контракт не читает и не изменяет NGO state, `GlobalMotionReplicator`, ownership, spawn/lifetime, adapter registration, provider binding, BootstrapScene или runtime. Concrete protocol-owned host отсутствует; `GlobalMotionNetworkBaselineNativeAdapter=SEAM ONLY`, `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkBaselineProtocolLedger.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionNetworkBaselineProtocolLedger.cs`, `docs/world/floatingorigin/06BQ_NETWORK_BASELINE_PROTOCOL_LEDGER.md/.json`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BN — protocol-owned NetworkBaseline reversible capability)
 
 **Задача:** После `T-FO06AZ` зафиксировать отдельную reviewed capability boundary для будущего server-coordinated reversible NGO baseline transaction, не объявляя observation-only evidence готовым adapter-ом.

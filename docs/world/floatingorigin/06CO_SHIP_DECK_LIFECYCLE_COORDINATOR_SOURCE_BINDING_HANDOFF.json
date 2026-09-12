@@ -1,0 +1,74 @@
+{
+  "ticket": "T-FO06CO",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_PURE_VALIDATED_DORMANT_RUNTIME_BINDING_BLOCKED",
+  "scope": "typed lossless coordinator provenance mapping into downstream lifecycle receipt boundary",
+  "implementation": {
+    "mapping": "GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingMapping",
+    "handoff": "GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoff",
+    "contract": "GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoffContract",
+    "downstreamReceipt": "GlobalMotionShipDeckPassengerLifecycleReceipt",
+    "validator": "ValidateGlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoffContract",
+    "runtimeCallerBinding": false
+  },
+  "preservedProvenance": {
+    "stableProtocolShipId": true,
+    "supplementalShipNetworkObjectId": true,
+    "coordinatorOwnedShipLifetimeGeneration": true,
+    "passengerAttachmentGeneration": true,
+    "deckIdentity": true,
+    "coordinatorLedgerOrdinal": true,
+    "serverOwned": true,
+    "protocolOwned": true,
+    "lifecycleEventKind": true,
+    "terminalInvalidationReason": true
+  },
+  "rejections": {
+    "incompleteMappings": true,
+    "identityInference": false,
+    "generationInference": false,
+    "nonContiguousLedgerOrdinal": true,
+    "duplicateEvents": true,
+    "outOfOrderEvents": true,
+    "postInvalidationEvents": true,
+    "downstreamProvenanceMismatch": true
+  },
+  "forbiddenInferenceSources": [
+    "IsSpawned",
+    "NetworkObjectId as stable identity",
+    "Unity or NGO object references",
+    "ShipDeckNav.RegistrationGeneration",
+    "callback order",
+    "host-local binding generation"
+  ],
+  "validation": {
+    "pureChecksPassed": 7,
+    "pureChecksFailed": 0,
+    "coordinatorRegressionChecksPassed": 11,
+    "compileErrors": false,
+    "contractScriptWarnings": 0,
+    "contractScriptErrors": 0,
+    "validatorScriptWarnings": 0,
+    "validatorScriptErrors": 0,
+    "playModeExecuted": false,
+    "observedLog": "[T-FO06CO] Passenger coordinator handoff: 7 pure checks PASS / 0 FAIL; provenance handoff remains dormant."
+  },
+  "gates": {
+    "runtimeCallerBinding": "NOT EXECUTED",
+    "combinedTransactionHost": "NOT MODIFIED",
+    "providerAdapterRegistration": "NOT EXECUTED",
+    "bootstrapScene": "UNCHANGED",
+    "scenesPrefabs": "UNCHANGED",
+    "runtimeDriver": "UNCHANGED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoffContract.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerContract.cs",
+    "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoffContract.cs",
+    "docs/world/floatingorigin/06CO_SHIP_DECK_LIFECYCLE_COORDINATOR_SOURCE_BINDING_HANDOFF.md",
+    "docs/world/floatingorigin/06CO_SHIP_DECK_LIFECYCLE_COORDINATOR_SOURCE_BINDING_HANDOFF.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ]
+}

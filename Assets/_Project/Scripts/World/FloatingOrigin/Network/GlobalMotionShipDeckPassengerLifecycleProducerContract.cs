@@ -17,13 +17,17 @@ namespace ProjectC.World.FloatingOrigin.Network
     /// </summary>
     public readonly struct GlobalMotionShipDeckPassengerLifecycleReceipt
     {
+        public string ShipId { get; }
         public ulong ShipNetworkObjectId { get; }
         public ulong ShipSpawnGeneration { get; }
+        public ulong ShipLifetimeGeneration { get; }
         public string PassengerId { get; }
         public ulong AttachmentGeneration { get; }
         public string DeckNavId { get; }
         public GlobalMotionShipDeckPassengerLifecyclePhase Phase { get; }
         public int Ordinal { get; }
+        public ulong CoordinatorLedgerOrdinal { get; }
+        public string InvalidationReason { get; }
         public bool ServerOwned { get; }
         public bool ProtocolOwned { get; }
 
@@ -38,13 +42,45 @@ namespace ProjectC.World.FloatingOrigin.Network
             bool serverOwned,
             bool protocolOwned)
         {
+            ShipId = null;
             ShipNetworkObjectId = shipNetworkObjectId;
             ShipSpawnGeneration = shipSpawnGeneration;
+            ShipLifetimeGeneration = shipSpawnGeneration;
             PassengerId = passengerId;
             AttachmentGeneration = attachmentGeneration;
             DeckNavId = deckNavId;
             Phase = phase;
             Ordinal = ordinal;
+            CoordinatorLedgerOrdinal = 0UL;
+            InvalidationReason = null;
+            ServerOwned = serverOwned;
+            ProtocolOwned = protocolOwned;
+        }
+
+        public GlobalMotionShipDeckPassengerLifecycleReceipt(
+            string shipId,
+            ulong shipNetworkObjectId,
+            ulong shipLifetimeGeneration,
+            string passengerId,
+            ulong attachmentGeneration,
+            string deckNavId,
+            GlobalMotionShipDeckPassengerLifecyclePhase phase,
+            ulong coordinatorLedgerOrdinal,
+            string invalidationReason,
+            bool serverOwned,
+            bool protocolOwned)
+        {
+            ShipId = shipId;
+            ShipNetworkObjectId = shipNetworkObjectId;
+            ShipSpawnGeneration = shipLifetimeGeneration;
+            ShipLifetimeGeneration = shipLifetimeGeneration;
+            PassengerId = passengerId;
+            AttachmentGeneration = attachmentGeneration;
+            DeckNavId = deckNavId;
+            Phase = phase;
+            Ordinal = 0;
+            CoordinatorLedgerOrdinal = coordinatorLedgerOrdinal;
+            InvalidationReason = invalidationReason;
             ServerOwned = serverOwned;
             ProtocolOwned = protocolOwned;
         }

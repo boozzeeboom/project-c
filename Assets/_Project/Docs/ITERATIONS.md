@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CO — reviewed coordinator source-binding / fact-handoff gate)
+
+**Задача:** После `T-FO06CN` закрыть coordinator-to-downstream provenance mismatch typed explicit mapping/handoff contract-ом, не выполняя runtime caller binding.
+
+**Результат:** Созданы `GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingMapping`, `GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoff` и `GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoffContract`. Contract losslessly переносит stable protocol `ShipId`, supplemental `ShipNetworkObjectId`, coordinator-owned ship lifetime generation, passenger attachment generation, deck identity, contiguous coordinator ledger ordinal, server/protocol ownership, lifecycle event kind и invalidation reason в downstream `GlobalMotionShipDeckPassengerLifecycleReceipt`. It rejects incomplete mappings, invalid provenance, non-contiguous ledger sequence, duplicate/out-of-order/post-invalidation events and mismatched downstream conversion; it never infers identity or generations from `IsSpawned`, `NetworkObjectId`, object references, `ShipDeckNav.RegistrationGeneration`, callback order or host-local binding generation. Pure Edit Mode validator: `7/7` PASS; `check_compile_errors=No compile errors`; script validation `0 warnings / 0 errors`. Existing T-FO06CN validator remains `11/11` PASS.
+
+**Граница:** Handoff remains dormant and source-level only. No runtime caller binding, `NpcShipController`, `ShipCrewSpawner`, `NpcBrain`, `ShipDeckNav`, `GlobalMotionShipDeckCombinedTransactionHost`, provider/adapter registration, `BootstrapScene`, scenes, prefabs or runtime driver were modified or invoked. Play Mode was not run; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoffContract.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerContract.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleCoordinatorBindingHandoffContract.cs`, `docs/world/floatingorigin/06CO_SHIP_DECK_LIFECYCLE_COORDINATOR_SOURCE_BINDING_HANDOFF.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CN — dormant protocol-owned ShipDeck lifecycle coordinator implementation gate)
 
 **Задача:** После `T-FO06CM` реализовать выбранный `GlobalMotionShipDeckPassengerLifecycleCoordinator` как runtime-independent server lifecycle/ledger owner, не выполняя binding к существующим ShipDeck seams или runtime.

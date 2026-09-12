@@ -1,0 +1,37 @@
+{
+  "ticket": "T-FO06CH",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_PURE_ONLY_DORMANT",
+  "scope": "explicit active passenger lifecycle source binding preflight",
+  "implementation": {
+    "bindingReceipt": "GlobalMotionShipDeckPassengerLifecycleBindingReceipt",
+    "contract": "GlobalMotionShipDeckPassengerLifecycleSourceBindingContract",
+    "validator": "ValidateGlobalMotionShipDeckPassengerLifecycleSourceBindingContract",
+    "runtimeBinding": false,
+    "receiptCreation": false
+  },
+  "rules": {
+    "activePhaseRequired": "PassengerAttached",
+    "sameShipLifetimeRequired": true,
+    "uniquePassengerIdentityRequired": true,
+    "bindingGenerationRequired": true,
+    "automaticDiscovery": false,
+    "isSpawnedInference": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "scriptWarnings": 0,
+    "scriptErrors": 0,
+    "pureChecksPassed": 8,
+    "pureChecksFailed": 0,
+    "playModeExecuted": false
+  },
+  "gates": {
+    "lifecycleProducer": "NOT IMPLEMENTED",
+    "generationSourceBinding": "NOT BOUND",
+    "combinedTransactionHost": "UNCHANGED",
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "explicit handoff from one server-owned lifecycle owner"
+}

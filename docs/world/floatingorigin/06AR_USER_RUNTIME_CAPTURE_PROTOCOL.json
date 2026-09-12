@@ -1,0 +1,56 @@
+{
+  "ticket": "T-FO06AR",
+  "date": "2026-09-12",
+  "scope": "user runtime evidence package and capture protocol",
+  "ticketAssignment": "next complex stage after T-FO06AQ; no existing 06AR report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseUserControlledEvidencePackage.cs",
+    "docs/world/floatingorigin/06AR_USER_RUNTIME_CAPTURE_PROTOCOL.md",
+    "docs/world/floatingorigin/06AR_USER_RUNTIME_CAPTURE_PROTOCOL.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ],
+  "integration": [
+    "GlobalMotionRebaseUserControlledEvidenceReview",
+    "GlobalMotionRebaseUserControlledEvidencePackageGate.TrySeal"
+  ],
+  "behavior": {
+    "requiresReadyReview": true,
+    "requiresUserSuppliedCapture": true,
+    "requiresTrimmedCaptureReference": true,
+    "createsPackageOnly": true,
+    "publishesEvidence": false,
+    "installsRuntimeConnection": false,
+    "mutatesUnityState": false
+  },
+  "userTestRequiredForNextGate": true,
+  "userTest": {
+    "scene": "Assets/_Project/Scenes/BootstrapScene.unity",
+    "pilotPrefab": "Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab",
+    "mode": "user-controlled Host/Client Play Mode capture",
+    "requiredEvidence": [
+      "manifest publisher/server/peer agreement",
+      "baseline placement and acknowledgement",
+      "movement and jump after baseline",
+      "camera ownership/history",
+      "ShipDeckNav registration and passenger provenance",
+      "NGO tick and physics ordering",
+      "controlled rebase markers if installed",
+      "rollback capture/restore markers"
+    ]
+  },
+  "verification": {
+    "scriptValidation": "PASS",
+    "compile": "PASS",
+    "gitDiffCheck": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "evidenceReview": "BLOCKED_NO_RUNTIME_PACKAGE",
+    "evidencePackage": "NOT_SEALED",
+    "connectionAuthorization": "NOT_GRANTED",
+    "nativeApplyPipeline": "NOT_CONNECTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextStep": "User provides one complete capture export; then perform serial evidence review and package sealing."
+}

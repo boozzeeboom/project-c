@@ -1,3 +1,17 @@
+## Итерация от 2026-09-12 (T-FO06AR — user runtime evidence package)
+
+**Задача:** Комплексно подготовить intake boundary для пользовательского runtime evidence package и зафиксировать точный Host/Client capture protocol.
+
+**Результат:** Созданы `GlobalMotionRebaseUserControlledEvidencePackage` и `GlobalMotionRebaseUserControlledEvidencePackageGate.TrySeal`. Package требует ready comprehensive review, явный user-supplied capture reference и не выполняет runtime work. Документирован точный capture protocol для canonical BootstrapScene и isolated pilot.
+
+**Нужен ли тест пользователя:** Для текущей pure implementation — нет. Для следующего readiness gate — да: требуется один полный user-controlled capture; без него package остаётся `NOT_SEALED`.
+
+**Граница:** Play Mode, scene/prefab mutation, manifest publication, adapter installation, native mutation и rollback не выполнялись. `validate_script` — PASS; compile — PASS; `git diff --check` — PASS; runtime rebase readiness остаётся `NOT_READY`.
+
+**Файлы:** `GlobalMotionRebaseUserControlledEvidencePackage.cs`, `docs/world/floatingorigin/06AR_USER_RUNTIME_CAPTURE_PROTOCOL.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AQ — user-controlled runtime evidence review)
 
 **Задача:** Комплексно объединить существующие pure validators для проверки полного user-controlled runtime evidence package до создания readiness bundle и runtime installation.

@@ -1,5 +1,21 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CV — ShipDeck lifecycle stable identity/source boundary)
+
+**Задача:** После `T-FO06CU` определить source-level stable protocol identity для ShipDeck lifecycle и зафиксировать explicit boundary до caller binding.
+
+**Результат:** Read-only audit подтвердил `ProjectC.Player.ShipController.ShipPersistentId` как единственный source-level кандидат. При заданном `_shipPersistentId` используется explicit persistence ID; при пустом поле fallback строится из `scene.name/gameObject.name` и требует owner review для rename/pool/scene-reload сценариев. `ShipCrewManifest.shipId` используется только как explicit consistency cross-check. `NpcShipController.NpcInstanceId`, сформированный из `NetworkObjectId` с sentinel bit, отвергнут как protocol identity.
+
+**Реализация:** Добавлены `GlobalMotionShipDeckStableIdentityBoundary` и pure validator. Boundary требует caller-supplied persistent ID, supplemental network identity, owner review, server/protocol ownership и отдельное подтверждение terminal invalidation owner-а. Generations и lifecycle receipts не создаются.
+
+**Проверка:** Validator `11/11 PASS`; `check_compile_errors=No compile errors`; новые scripts `0 warnings / 0 errors`; Play Mode не запускался.
+
+**Граница:** `NpcShipController`, `ShipCrewSpawner`, `NpcBrain`, `ShipDeckNav`, provider, adapter set, combined host, `BootstrapScene`, сцены и prefabs не изменялись. Identity persistence across pool/scene reload, terminal invalidation timing и lifecycle ordering остаются UNVERIFIED; `runtimeRebaseReadiness=NOT_READY`; search outside audited paths `INCONCLUSIVE`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckStableIdentityBoundary.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckStableIdentityBoundary.cs`, `docs/world/floatingorigin/06CV_SHIP_DECK_LIFECYCLE_STABLE_IDENTITY_AND_SERVER_BOUNDARY.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CU — ShipDeck lifecycle caller binding decision gate)
 
 **Задача:** После `T-FO06CT` зафиксировать owner-reviewed caller boundary для `NpcShipController`, `ShipCrewSpawner`, `NpcBrain` и `ShipDeckNav`, не подключая runtime seam без stable protocol identity и terminal invalidation evidence.

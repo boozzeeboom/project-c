@@ -1,0 +1,41 @@
+{
+  "ticket": "T-FO06CV",
+  "date": "2026-09-12",
+  "status": "SOURCE_LEVEL_IDENTITY_BOUNDARY_IMPLEMENTED_RUNTIME_PERSISTENCE_UNVERIFIED",
+  "implementation": {
+    "boundary": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckStableIdentityBoundary.cs",
+    "validator": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckStableIdentityBoundary.cs"
+  },
+  "sourceEvidence": {
+    "primaryIdentity": "ProjectC.Player.ShipController.ShipPersistentId",
+    "manifestCrossCheck": "ProjectC.PeacefulShip.Crew.ShipCrewManifest.shipId",
+    "rejectedIdentity": "NpcShipController.NpcInstanceId derived from NetworkObjectId sentinel"
+  },
+  "validation": {
+    "pureChecks": "11/11 PASS",
+    "compile": "No compile errors",
+    "scriptDiagnostics": "0 warnings / 0 errors",
+    "playMode": "NOT_RUN"
+  },
+  "runtimeProof": {
+    "identityPersistenceAcrossPoolOrSceneReload": "UNVERIFIED",
+    "terminalInvalidationTiming": "UNVERIFIED",
+    "lifecycleOrdering": "UNVERIFIED"
+  },
+  "unchanged": {
+    "NpcShipController": true,
+    "ShipCrewSpawner": true,
+    "NpcBrain": true,
+    "ShipDeckNav": true,
+    "scenes": true,
+    "prefabs": true,
+    "bootstrapScene": true,
+    "providerBinding": false,
+    "nativeAdapterSetRegistration": false
+  },
+  "readiness": {
+    "runtimeRebaseReadiness": "NOT_READY",
+    "searchOutsideAuditedPaths": "INCONCLUSIVE"
+  },
+  "nextGate": "Owner-reviewed explicit identity publication/caller binding and user-controlled runtime evidence"
+}

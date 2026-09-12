@@ -1,5 +1,19 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CW — ShipDeck identity publication bridge)
+
+**Задача:** После `T-FO06CV` создать dormant explicit bridge для публикации owner-reviewed стабильной identity корабля в существующий ShipDeck lifecycle producer binding, не выполняя runtime caller binding.
+
+**Результат:** Создан `GlobalMotionShipDeckIdentityPublicationBridge`. Bridge принимает только caller-supplied `ShipController.ShipPersistentId` и supplemental `NetworkObjectId`, требует роль `NpcShipController`, оба ingress `ShipRegistered | ShipInvalidated`, owner/server/protocol ownership и отдельное подтверждение terminal invalidation. Он проверяет `ShipCrewManifest.shipId`, публикует identity ровно один раз, forwarding registration/invalidation выполняет через `GlobalMotionShipDeckPassengerLifecycleProducerBinding` и делегирует generation source без создания generations.
+
+**Проверка:** T-FO06CW validator `11/11 PASS`; regression T-FO06CV `11/11`, T-FO06CU `10/10`, T-FO06CT `12/12`; `check_compile_errors=No compile errors`; обе новые scripts `validate_script=0 warnings / 0 errors`; Play Mode и screenshots не запускались.
+
+**Граница:** Bridge остаётся dormant и не подключается к `NpcShipController.OnNetworkSpawn/OnNetworkDespawn`; caller binding, provider, adapter set, runtime driver, `BootstrapScene`, сцены и prefabs не изменялись. Persistence fallback identity, terminal invalidation timing и lifecycle ordering остаются UNVERIFIED; `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`, search outside audited paths `INCONCLUSIVE`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckIdentityPublicationBridge.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckIdentityPublicationBridge.cs`, `docs/world/floatingorigin/06CW_SHIP_DECK_IDENTITY_PUBLICATION_BRIDGE.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CV — ShipDeck lifecycle stable identity/source boundary)
 
 **Задача:** После `T-FO06CU` определить source-level stable protocol identity для ShipDeck lifecycle и зафиксировать explicit boundary до caller binding.

@@ -1,0 +1,58 @@
+{
+  "ticket": "T-FO06BP",
+  "date": "2026-09-12",
+  "status": "AUDITED_BLOCKED_NO_RUNTIME_CHANGE",
+  "scope": "source-level readiness audit for a concrete protocol-owned NGO NetworkBaseline transaction host",
+  "auditedSource": {
+    "replicator": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionReplicator.cs",
+    "publicSeams": [
+      "Control",
+      "TryReadServerAcceptedMotion",
+      "ActivateWorldServer",
+      "ActivateParentLocalServer",
+      "AcknowledgeBaselineApplied",
+      "StopServer",
+      "OnOwnershipChanged",
+      "OnNetworkDespawn",
+      "OnNetworkObjectParentChanged"
+    ],
+    "privateStateWithoutHostContract": [
+      "_serverControl",
+      "_serverSession",
+      "_baselineApplied",
+      "_ownerPoseValidator"
+    ]
+  },
+  "missingProtocolCapabilities": [
+    "immutable ownership/lifetime capture with exact NetworkObject spawn generation",
+    "control revision and binding generation capture/restore",
+    "acknowledgement lineage capture/restore",
+    "server-coordinated ownership restore receipt",
+    "reversible spawn/despawn/lifetime restoration",
+    "transaction-scoped restore after partial Apply/Rebuild/Validate/Publish",
+    "sealed Restorable evidence linked to GlobalMotionNetworkBaselineReversibleCapability"
+  ],
+  "decision": {
+    "concreteHostImplemented": false,
+    "networkBaselineAdapter": "SEAM_ONLY",
+    "stopAndReactivateIsRollback": false,
+    "localOwnershipMutationAsRollback": false,
+    "nextGate": "reviewed NGO protocol change with server-owned transaction ledger and explicit capture/restore receipts"
+  },
+  "checks": {
+    "sourceAudit": "COMPLETE_FOR_AUDITED_REPLICATOR_PATHS",
+    "compile": "PENDING_POST_DOCUMENTATION_CHECK",
+    "gitDiffCheck": "PENDING_POST_DOCUMENTATION_CHECK"
+  },
+  "runtime": {
+    "providerBinding": "NOT_EXECUTED",
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "inconclusive": [
+    "source paths outside GlobalMotionReplicator.cs were not used to infer an alternative host",
+    "runtime ownership/lifetime restoration remains untested because no host exists"
+  ]
+}

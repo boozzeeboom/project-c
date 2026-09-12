@@ -12,6 +12,18 @@
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BP — protocol-owned NetworkBaseline host readiness audit)
+
+**Задача:** Проверить, можно ли реализовать concrete `IGlobalMotionNetworkBaselineTransactionHost` поверх существующего `GlobalMotionReplicator`, не подменяя observation/reactivation API ложной rollback-семантикой.
+
+**Результат:** Source audit подтвердил public seams для accepted baseline observation, controlled activation, acknowledgement, stop и lifecycle invalidation. Одновременно отсутствуют transaction-safe capture/restore ownership, spawn/lifetime generation, control/binding/ack lineage и server-owned rollback receipts; private `_serverControl`, `_serverSession`, `_baselineApplied` и `_ownerPoseValidator` не образуют внешний host contract.
+
+**Граница:** Concrete protocol-owned host не создавался; `GlobalMotionNetworkBaselineNativeAdapter` остаётся `SEAM ONLY`, provider binding/registration/BootstrapScene/Play Mode не выполнялись, `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`. Search outside audited `GlobalMotionReplicator` paths остаётся inconclusive.
+
+**Файлы:** `docs/world/floatingorigin/06BP_NETWORK_BASELINE_HOST_READINESS_AUDIT.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BN — protocol-owned NetworkBaseline reversible capability)
 
 **Задача:** После `T-FO06AZ` зафиксировать отдельную reviewed capability boundary для будущего server-coordinated reversible NGO baseline transaction, не объявляя observation-only evidence готовым adapter-ом.

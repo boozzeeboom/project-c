@@ -33,6 +33,32 @@ namespace ProjectC.Ship
     /// через NavMeshSurface при корабле в origin/identity — см. §5 доки). Рантайм использует
     /// только UnityEngine.AI (без зависимости на ассембли Unity.AI.Navigation).
     /// </summary>
+    public readonly struct ShipDeckNavFloatingOriginSnapshot
+    {
+        public string TransactionId { get; }
+        public bool WasRegistered { get; }
+        public Vector3 NavFrameOrigin { get; }
+        public Vector3 LastRegisteredShipPosition { get; }
+        public bool RegistrationFailed { get; }
+        public ulong RegistrationGeneration { get; }
+
+        public ShipDeckNavFloatingOriginSnapshot(
+            string transactionId,
+            bool wasRegistered,
+            Vector3 navFrameOrigin,
+            Vector3 lastRegisteredShipPosition,
+            bool registrationFailed,
+            ulong registrationGeneration)
+        {
+            TransactionId = transactionId;
+            WasRegistered = wasRegistered;
+            NavFrameOrigin = navFrameOrigin;
+            LastRegisteredShipPosition = lastRegisteredShipPosition;
+            RegistrationFailed = registrationFailed;
+            RegistrationGeneration = registrationGeneration;
+        }
+    }
+
     public class ShipDeckNav : NetworkBehaviour
     {
         [Header("NavMesh палубы")]
@@ -62,6 +88,7 @@ namespace ProjectC.Ship
         private bool _registrationFailed;
         private float _nextReregistrationTime;
         private Vector3 _lastRegisteredShipPos;
+        private ulong _registrationGeneration;
 
         // Static slot counter — для старого slot-based режима (не используется при _registerUnderShip=true).
         private static int _nextSlot;
@@ -99,6 +126,79 @@ namespace ProjectC.Ship
         /// <summary>Точка нав-песочницы этого корабля.</summary>
         public Vector3 NavFrameOrigin => _navFrameOrigin;
 
+        /// <summary>Generation increments after each successful native NavMesh registration.</summary>
+        public ulong RegistrationGeneration => _registrationGeneration;
+
+        public bool TryCaptureFloatingOriginSnapshot(
+            string transactionId,
+            out ShipDeckNavFloatingOriginSnapshot snapshot,
+            out string error)
+        {
+            snapshot = default;
+            if (string.IsNullOrWhiteSpace(transactionId) || transactionId.Trim() != transactionId)
+                return Reject("transaction_id_required", out error);
+            if (!IsServer)
+                return Reject("ship_deck_nav_server_authority_required", out error);
+            if (!IsReady)
+                return Reject("ship_deck_nav_not_ready", out error);
+
+            snapshot = new ShipDeckNavFloatingOriginSnapshot(
+                transactionId,
+                _registered,
+                _navFrameOrigin,
+                _lastRegisteredShipPos,
+                _registrationFailed,
+                _registrationGeneration);
+            error = null;
+            return true;
+        }
+
+        public bool TryRebuildFloatingOriginSnapshot(
+            string transactionId,
+            Vector3 navFrameOrigin,
+            out string error)
+        {
+            if (string.IsNullOrWhiteSpace(transactionId) || transactionId.Trim() != transactionId)
+                return Reject("transaction_id_required", out error);
+            if (!IsServer)
+                return Reject("ship_deck_nav_server_authority_required", out error);
+            if (!IsReady)
+                return Reject("ship_deck_nav_not_ready", out error);
+
+            Unregister();
+            _registrationFailed = false;
+            if (!RegisterAt(navFrameOrigin))
+                return Reject("ship_deck_nav_synchronous_rebuild_failed", out error);
+
+            error = null;
+            return true;
+        }
+
+        public bool TryRestoreFloatingOriginSnapshot(
+            ShipDeckNavFloatingOriginSnapshot snapshot,
+            out string error)
+        {
+            if (string.IsNullOrWhiteSpace(snapshot.TransactionId) || snapshot.TransactionId.Trim() != snapshot.TransactionId)
+                return Reject("transaction_id_required", out error);
+            if (!IsServer)
+                return Reject("ship_deck_nav_server_authority_required", out error);
+
+            Unregister();
+            _registrationFailed = snapshot.RegistrationFailed;
+            if (!snapshot.WasRegistered)
+            {
+                error = null;
+                return true;
+            }
+
+            if (!RegisterAt(snapshot.NavFrameOrigin))
+                return Reject("ship_deck_nav_synchronous_restore_failed", out error);
+
+            _lastRegisteredShipPos = snapshot.LastRegisteredShipPosition;
+            error = null;
+            return true;
+        }
+
         // === Конвертации координат ===
         public Vector3 WorldToDeckLocal(Vector3 world) => transform.InverseTransformPoint(world);
         public Vector3 DeckLocalToWorld(Vector3 deckLocal) => transform.TransformPoint(deckLocal);
@@ -122,9 +222,6 @@ namespace ProjectC.Ship
         {
             base.OnNetworkSpawn();
             if (_registerServerOnly && !IsServer) return;
-
-            // PERF: ставим в round-robin очередь вместо random stagger.
-            // Очередь обрабатывается в LateUpdate — строго ≤1 корабль за кадр.
             s_pendingRegistrations.Enqueue(this);
         }
 
@@ -139,13 +236,8 @@ namespace ProjectC.Ship
         private void LateUpdate()
         {
             if (!IsServer) return;
-
-            // === Round-robin: обрабатываем очередь регистрации (≤1 за кадр) ===
             ProcessPendingRegistrations();
-
-            // Уже зарегистрирован — следим за дрейфом
-            if (!_registered) return;
-            if (!_registerUnderShip) return;
+            if (!_registered || !_registerUnderShip) return;
 
             Vector3 shipPos = transform.position;
             Vector3 delta = shipPos - _lastRegisteredShipPos;
@@ -156,16 +248,11 @@ namespace ProjectC.Ship
                     return;
 
                 Unregister();
-                // Re-registration — ставим в очередь, не блокируем кадр
                 s_pendingRegistrations.Enqueue(this);
                 _nextReregistrationTime = Time.time + 30f;
             }
         }
 
-        /// <summary>
-        /// PERF: обрабатывает очередь pending регистраций. Вызывается из LateUpdate любого ShipDeckNav.
-        /// Гарантирует ≤MAX_REGISTRATIONS_PER_FRAME за кадр.
-        /// </summary>
         private static void ProcessPendingRegistrations()
         {
             s_registrationsThisFrame = 0;
@@ -190,18 +277,19 @@ namespace ProjectC.Ship
         {
             if (_registered) return;
 
-            if (_registerUnderShip)
-                _navFrameOrigin = transform.position;
-            else
-                _navFrameOrigin = new Vector3(_nextSlot++ * _navFrameSeparation, 0f, 0f);
+            Vector3 origin = _registerUnderShip
+                ? transform.position
+                : new Vector3(_nextSlot++ * _navFrameSeparation, 0f, 0f);
+            RegisterAt(origin);
+        }
 
+        private bool RegisterAt(Vector3 origin)
+        {
+            if (_registered) return true;
+
+            _navFrameOrigin = origin;
             _lastRegisteredShipPos = transform.position;
 
-            // PERF: NavMesh.AddNavMeshData internally calls NavMeshManager.NotifyNavMeshAdded
-            // which logs to console → LogStringToConsole → Application.CallLogCallback (5KB GC alloc).
-            // SetStackTraceLogType убрал ExtractStackTrace, но сам CallLogCallback + аллокация строки остались.
-            // filterLogType = Exception глушит ВСЕ логи (кроме exception) на уровне ILogHandler,
-            // включая логи из C++ native кода — это надёжнее чем logEnabled.
             var prevFilter = Debug.unityLogger.filterLogType;
             Debug.unityLogger.filterLogType = LogType.Exception;
             try
@@ -219,12 +307,15 @@ namespace ProjectC.Ship
                                  $"Ship too far from origin — deck navigation disabled.", this);
 #endif
                 _registrationFailed = true;
-                return;
+                return false;
             }
             _registered = true;
+            _registrationFailed = false;
+            _registrationGeneration++;
 #if UNITY_EDITOR
             Debug.Log($"[ShipDeckNav:{name}] Registered at {_navFrameOrigin}", this);
 #endif
+            return true;
         }
 
         private void Unregister()
@@ -232,6 +323,12 @@ namespace ProjectC.Ship
             if (!_registered) return;
             if (_instance.valid) _instance.Remove();
             _registered = false;
+        }
+
+        private static bool Reject(string reason, out string error)
+        {
+            error = reason;
+            return false;
         }
     }
 }

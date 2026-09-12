@@ -1,0 +1,37 @@
+{
+  "ticket": "T-FO06BZ",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTATION_SLICE_DORMANT_FAIL_CLOSED",
+  "scope": "transaction-scoped ShipDeckNav NavMesh snapshot/rebuild/restore boundary",
+  "implementation": {
+    "snapshot": "ShipDeckNavFloatingOriginSnapshot",
+    "capture": "TryCaptureFloatingOriginSnapshot",
+    "rebuild": "TryRebuildFloatingOriginSnapshot",
+    "restore": "TryRestoreFloatingOriginSnapshot",
+    "generation": "RegistrationGeneration",
+    "runtimeInstallation": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "pureChecksPassed": 8,
+    "pureChecksFailed": 0,
+    "menu": "ProjectC/World/Floating Origin/Validate ShipDeckNav Native Adapter Source",
+    "transactionIdentityGuard": true,
+    "gitDiffCheck": "PASS"
+  },
+  "limitations": {
+    "passengerSnapshot": false,
+    "proxyPathAndVelocitySnapshot": false,
+    "passengerRestore": false,
+    "adapterHostInvocation": false,
+    "nativeReady": false
+  },
+  "runtime": {
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "providerRuntimeBinding": "NOT_EXECUTED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "passenger/proxy snapshot contract combined with NavMesh transaction host"
+}

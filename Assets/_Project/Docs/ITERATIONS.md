@@ -561,6 +561,20 @@ Files: Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRigidbod
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BZ — ShipDeckNav native snapshot boundary)
+
+**Задача:** Добавить transaction-scoped boundary для native `ShipDeckNav` NavMesh snapshot/rebuild/restore без установки adapter в runtime rebase pipeline.
+
+**Результат:** В `ShipDeckNav` добавлены `ShipDeckNavFloatingOriginSnapshot`, `RegistrationGeneration`, `TryCaptureFloatingOriginSnapshot`, `TryRebuildFloatingOriginSnapshot` и `TryRestoreFloatingOriginSnapshot`. Внутренний `RegisterAt` поддерживает explicit synchronous `Remove + AddNavMeshData`; обычная round-robin регистрация не изменялась. Validator: `8/8` pure checks PASS; `check_compile_errors=No compile errors`; `git diff --check=PASS`.
+
+**Граница:** Passenger/proxy state, NavMeshAgent path/velocity, NpcBrain attachment lifecycle и adapter host invocation остаются не реализованы. `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, provider binding, BootstrapScene и Play Mode не выполнялись, `runtimeRebaseReadiness=NOT_READY`.
+
+**Следующий этап:** Связать NavMesh snapshot с explicit passenger/proxy snapshot contract в одном reviewed transaction host.
+
+**Файлы:** `Assets/_Project/Scripts/Ship/ShipDeckNav.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckNavNativeAdapterSource.cs`, `docs/world/floatingorigin/06BZ_SHIP_DECK_NAV_NATIVE_SNAPSHOT_BOUNDARY.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AE — live manifest receipt source)
 
 **Задача:** Подготовить pure evidence source для participant admission и live manifest publication, сохранив runtime discovery и публикацию отключёнными.

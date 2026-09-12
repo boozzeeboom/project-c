@@ -72,6 +72,13 @@ namespace ProjectC.EditorTools.FloatingOrigin
                         error == "passenger_reviewed_sources_required", error);
                 });
 
+                Check("ShipDeckNav snapshot API validates transaction identity", () =>
+                {
+                    var deck = gameObject.GetComponent<ShipDeckNav>();
+                    Require(!deck.TryCaptureFloatingOriginSnapshot(" ", out _, out string error) &&
+                        error == "transaction_id_required", error);
+                });
+
                 Check("Invalid request remains fail closed", () =>
                 {
                     var source = gameObject.GetComponent<GlobalMotionShipDeckNavNativeAdapterSource>();

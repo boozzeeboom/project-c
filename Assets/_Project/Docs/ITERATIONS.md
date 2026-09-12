@@ -1,3 +1,15 @@
+## Итерация от 2026-09-12 (T-FO06AQ — user-controlled runtime evidence review)
+
+**Задача:** Комплексно объединить существующие pure validators для проверки полного user-controlled runtime evidence package до создания readiness bundle и runtime installation.
+
+**Результат:** Созданы `GlobalMotionRebaseUserControlledEvidenceReview` и `GlobalMotionRebaseUserControlledEvidenceReviewGate.TryReview`. В одном последовательном gate проверяются live manifest session, participant admission, sealed native adapters, runtime proof, rollback evidence, participant identity, frame generation и count matching.
+
+**Граница:** Gate не собирает runtime data, не создаёт readiness bundle автоматически, не публикует manifest, не вызывает adapters, не изменяет Unity state и не запускает Play Mode. `validate_script` — PASS; compile — PASS; `git diff --check` — PASS; текущий review заблокирован отсутствием user-controlled evidence, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `GlobalMotionRebaseUserControlledEvidenceReview.cs`, `docs/world/floatingorigin/06AQ_USER_CONTROLLED_EVIDENCE_REVIEW.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AP — consolidated integration status)
 
 **Задача:** Комплексно проанализировать цепочку `T-FO06AA–T-FO06AO`, зафиксировать фактически доказанное и определить следующий реальный gate вместо добавления эквивалентных pure micro-contracts.

@@ -1,0 +1,55 @@
+{
+  "ticket": "T-FO06AQ",
+  "date": "2026-09-12",
+  "scope": "user-controlled runtime evidence review",
+  "ticketAssignment": "next real gate after T-FO06AP; no existing 06AQ report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseUserControlledEvidenceReview.cs",
+    "docs/world/floatingorigin/06AQ_USER_CONTROLLED_EVIDENCE_REVIEW.md",
+    "docs/world/floatingorigin/06AQ_USER_CONTROLLED_EVIDENCE_REVIEW.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ],
+  "integratedValidators": [
+    "GlobalMotionRebaseLiveManifestSessionEvidenceGate",
+    "GlobalMotionRebaseRuntimeReadinessGate",
+    "GlobalMotionRebaseRuntimeProofContract",
+    "UnityStateRollbackContract"
+  ],
+  "behavior": {
+    "requiresLiveManifestSessionEvidence": true,
+    "requiresParticipantAdmission": true,
+    "requiresSealedNativeAdapters": true,
+    "requiresCompleteRuntimeProof": true,
+    "requiresCompleteRollbackEvidence": true,
+    "requiresParticipantIdentityMatch": true,
+    "requiresFrameGenerationMatch": true,
+    "requiresRollbackParticipantCountMatch": true,
+    "createsReadinessBundle": false,
+    "installsRuntimeConnection": false,
+    "mutatesUnityState": false
+  },
+  "verification": {
+    "scriptValidation": "PASS",
+    "compile": "PASS",
+    "gitDiffCheck": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "evidenceReview": "BLOCKED_NO_RUNTIME_PACKAGE",
+    "connectionEvidence": "NOT_PROVEN",
+    "connectionAuthorization": "NOT_GRANTED",
+    "installationIntent": "NOT_CREATED",
+    "driverInstallationAuthorization": "NOT_GRANTED",
+    "nativeApplyPipeline": "NOT_CONNECTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "scopeBoundary": {
+    "runtimeEvidenceCollection": "USER_CONTROLLED_PENDING",
+    "adapterInstances": "NOT_CREATED",
+    "bootstrapInstallation": "NOT_CONNECTED",
+    "nativeMutation": "NOT_IMPLEMENTED",
+    "nativeRollback": "NOT_IMPLEMENTED"
+  },
+  "nextStep": "Review a concrete user-controlled runtime evidence package, then build readiness only if every validator passes."
+}

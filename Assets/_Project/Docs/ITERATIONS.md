@@ -617,6 +617,20 @@ Files: Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRigidbod
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06CD — passenger attachment and lifetime generation source gate)
+
+**Задача:** Зафиксировать provenance boundary для passenger attachment и ship lifetime generation перед adapter seam.
+
+**Результат:** Source audit подтвердил explicit attachment и `NetworkObjectId`/`IsSpawned`, но не нашёл server-owned monotonic ship lifetime generation producer или protocol-owned attachment generation ledger в проверенных путях. Созданы `GlobalMotionShipDeckPassengerGeneration`, `IGlobalMotionShipDeckPassengerGenerationSource` и fail-closed contract. Validator: `5/5` pure checks PASS; `check_compile_errors=No compile errors`.
+
+**Граница:** Concrete generation source не создан и не привязан к combined host; automatic discovery и inference из `IsSpawned` запрещены. Adapter set/provider/runtime driver/BootstrapScene/Play Mode не изменялись. `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`. Search за пределами audited paths остаётся inconclusive.
+
+**Следующий этап:** Подтвердить существующий server-owned producer receipts либо отдельно спроектировать protocol-owned lifecycle ledger.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerGenerationContract.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerGenerationContract.cs`, `docs/world/floatingorigin/06CD_PASSENGER_GENERATION_SOURCE_GATE.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AE — live manifest receipt source)
 
 **Задача:** Подготовить pure evidence source для participant admission и live manifest publication, сохранив runtime discovery и публикацию отключёнными.

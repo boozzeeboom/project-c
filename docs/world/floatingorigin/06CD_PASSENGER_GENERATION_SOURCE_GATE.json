@@ -1,0 +1,33 @@
+{
+  "ticket": "T-FO06CD",
+  "date": "2026-09-12",
+  "status": "CONTRACT_GATE_SOURCE_NOT_FOUND_NOT_INSTALLED",
+  "scope": "reviewed passenger attachment and ship lifetime generation source",
+  "sourceAudit": {
+    "npcBrainExplicitAttachment": true,
+    "shipNetworkObjectIdObserved": true,
+    "networkObjectIsSpawnedObserved": true,
+    "serverOwnedShipLifetimeGenerationProducer": false,
+    "protocolOwnedAttachmentGenerationLedger": false,
+    "outsideAuditedPaths": "INCONCLUSIVE"
+  },
+  "implementation": {
+    "valueObject": "GlobalMotionShipDeckPassengerGeneration",
+    "sourceInterface": "IGlobalMotionShipDeckPassengerGenerationSource",
+    "contract": "GlobalMotionShipDeckPassengerGenerationContract",
+    "automaticDiscovery": false,
+    "runtimeBinding": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "pureChecksPassed": 5,
+    "pureChecksFailed": 0,
+    "playModeExecuted": false
+  },
+  "gates": {
+    "combinedHostAdapterIntegration": "BLOCKED",
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "server-owned producer receipts or protocol-owned lifecycle ledger design"
+}

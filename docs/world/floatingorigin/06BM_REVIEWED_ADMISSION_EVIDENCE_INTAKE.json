@@ -1,0 +1,14 @@
+{
+  "ticket": "T-FO06BM",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_DORMANT",
+  "component": "GlobalMotionRebaseReviewedAdmissionEvidenceIntake",
+  "sourceContract": "IGlobalMotionRebaseReviewedAdmissionEvidenceSource",
+  "reviewSubmission": false,
+  "runtimeFlagsForcedFalse": true,
+  "providerBinding": "NOT_EXECUTED",
+  "bootstrapScene": "UNCHANGED",
+  "playMode": "NOT_RUN",
+  "runtimeRebaseReadiness": "NOT_READY",
+  "nextGate": "SERIAL_BINDING_AFTER_COMPLETE_SOURCE_SET"
+}

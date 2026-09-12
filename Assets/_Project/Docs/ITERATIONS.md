@@ -1,5 +1,18 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BM — reviewed admission evidence intake)
+
+**Задача:** Реализовать concrete owner-reviewed source для первого входа admission provider.
+
+**Результат:** Создан `GlobalMotionRebaseReviewedAdmissionEvidenceIntake`. Он принимает только explicit owner review и три reviewed-флага identity/policy/catalog; runtime adapter/proof/rollback flags принудительно сохраняет `false`. До submit source fail closed, повторный submit требует `Clear()`. `check_compile_errors=No compile errors`.
+
+**Граница:** Review submission и provider binding не выполнялись, полный adapter source/proof/rollback producer отсутствуют, BootstrapScene и Play Mode не изменялись. `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseReviewedAdmissionEvidenceIntake.cs`, `docs/world/floatingorigin/06BM_REVIEWED_ADMISSION_EVIDENCE_INTAKE.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+
 ## Итерация от 2026-09-12 (T-FO06BL — provider source binding API)
 
 **Задача:** Выполнить реальное интеграционное действие после T-FO06BK: добавить explicit source-binding API в admission provider.

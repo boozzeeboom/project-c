@@ -1,0 +1,16 @@
+{
+  "ticket": "T-FO06BF",
+  "date": "2026-09-12",
+  "status": "COMPILE_VERIFIED_DORMANT_NOT_READY",
+  "provider": "IMPLEMENTED_FAIL_CLOSED",
+  "sourceContracts": 4,
+  "concreteProducers": "NOT_IMPLEMENTED",
+  "syntheticEvidence": false,
+  "bootstrapSceneBinding": "NONE",
+  "nativeAdapterRegistration": "NONE",
+  "liveManifestPublication": "NOT_OBSERVED",
+  "playMode": "NOT_RUN",
+  "runtimeRebaseReadiness": "NOT_READY",
+  "compileErrors": false,
+  "nextGate": "CONCRETE_PROVENANCE_SOURCE_PRODUCER"
+}

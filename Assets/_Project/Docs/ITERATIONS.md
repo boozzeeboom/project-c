@@ -1,5 +1,18 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BF — provenance-bearing admission provider boundary)
+
+**Задача:** Добавить fail-closed aggregation boundary для admission evidence после аудита T-FO06BE, не создавая synthetic readiness.
+
+**Результат:** Создан `GlobalMotionRebaseAdmissionEvidenceProvider` и четыре provenance-bearing source contracts для reviewed admission, native adapter readiness, runtime proof и rollback evidence. Provider валидирует каждый источник и требует совпадение participant/frame lineage между proof и rollback. `check_compile_errors=No compile errors`.
+
+**Граница:** Concrete producers не созданы, provider/source binding и BootstrapScene не изменялись, native adapters не регистрировались, Play Mode не запускался, live publication и controlled rebase не наблюдались. `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseAdmissionEvidenceProvider.cs`, `docs/world/floatingorigin/06BF_PROVENANCE_ADMISSION_PROVIDER_BOUNDARY.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+
 ## Итерация от 2026-09-12 (T-FO06BE — runtime admission provider boundary audit)
 
 **Задача:** Проверить наличие legitimate provider для `IGlobalMotionRebaseRuntimeAdmissionEvidenceSource` после T-FO06BD, не создавая synthetic all-true evidence.

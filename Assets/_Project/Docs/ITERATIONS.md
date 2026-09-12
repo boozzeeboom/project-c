@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CG — ShipDeck passenger lifecycle producer contract)
+
+**Задача:** После T-FO06CF создать protocol-owned receipt contract для будущего server-owned ship lifetime и passenger attachment generation producer-а, не подключая его к runtime.
+
+**Результат:** Созданы immutable lifecycle receipts и fail-closed contract с `ShipRegistered`, `PassengerAttached`, `PassengerDetached` и terminal `ShipInvalidated`. Контракт требует ship identity, explicit ship spawn generation, server/protocol ownership и monotonic attachment generation; automatic inference из `IsSpawned` запрещено. Pure validator: `8/8` PASS; `check_compile_errors=No compile errors`; script validation `0 warnings / 0 errors`.
+
+**Граница:** Это только protocol boundary. Реальный producer не создан и не bound; `NpcBrain`, `ShipDeckNav`, passenger ledger, `GlobalMotionNativeAdapterSet`, provider, BootstrapScene и runtime driver не изменялись. Play Mode не запускался, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerContract.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleProducerContract.cs`, `docs/world/floatingorigin/06CG_SHIP_DECK_PASSENGER_LIFECYCLE_PRODUCER_CONTRACT.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CF — NpcBrain passenger generation source audit)
 
 **Задача:** Проверить, может ли существующий server-only explicit attachment lifecycle `NpcBrain` быть legitimate producer-ом для `IGlobalMotionShipDeckPassengerGenerationSource` после T-FO06CE.

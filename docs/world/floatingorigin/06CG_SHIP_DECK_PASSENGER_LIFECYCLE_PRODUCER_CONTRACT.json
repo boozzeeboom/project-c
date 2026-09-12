@@ -1,0 +1,40 @@
+{
+  "ticket": "T-FO06CG",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_PURE_ONLY_DORMANT",
+  "scope": "protocol-owned ship lifetime and passenger attachment producer contract",
+  "implementation": {
+    "receipt": "GlobalMotionShipDeckPassengerLifecycleReceipt",
+    "contract": "GlobalMotionShipDeckPassengerLifecycleProducerContract",
+    "validator": "ValidateGlobalMotionShipDeckPassengerLifecycleProducerContract",
+    "runtimeProducer": false,
+    "generationSourceBinding": false
+  },
+  "phases": ["ShipRegistered", "PassengerAttached", "PassengerDetached", "ShipInvalidated"],
+  "invariants": {
+    "shipIdentityRequired": true,
+    "shipSpawnGenerationRequired": true,
+    "attachmentGenerationMonotonic": true,
+    "serverOwnedRequired": true,
+    "protocolOwnedRequired": true,
+    "unboundShipCanInvalidate": true,
+    "invalidationTerminal": true,
+    "automaticInferenceForbidden": true
+  },
+  "validation": {
+    "compileErrors": false,
+    "scriptWarnings": 0,
+    "scriptErrors": 0,
+    "pureChecksPassed": 8,
+    "pureChecksFailed": 0,
+    "playModeExecuted": false
+  },
+  "gates": {
+    "npcBrainIntegration": "NOT EXECUTED",
+    "shipDeckNavIntegration": "NOT EXECUTED",
+    "passengerProtocolLedger": "DORMANT",
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "bind one server-owned lifecycle owner to real ship and passenger transitions"
+}

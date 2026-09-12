@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BN — protocol-owned NetworkBaseline reversible capability)
+
+**Задача:** После `T-FO06AZ` зафиксировать отдельную reviewed capability boundary для будущего server-coordinated reversible NGO baseline transaction, не объявляя observation-only evidence готовым adapter-ом.
+
+**Результат:** Создан `GlobalMotionNetworkBaselineReversibleTransactionContract` и pure Edit Mode validator. Capability требует Restorable evidence, server authority, protocol ownership, explicit capture/apply/validate/restore boundaries, ownership/lifetime/baseline-generation restore и transaction identity. Receipt проверяет ordered phase lineage; `None`/`Faulted` и пропуск ранних границ отклоняются. Фактическая проверка: `16/16` pure checks PASS, `check_compile_errors=No compile errors`.
+
+**Граница:** Контракт не читает и не меняет NGO state, `GlobalMotionReplicator`, adapter set или Unity scene. Concrete NetworkBaseline producer/adapter, ShipDeckNav adapter, provider binding, runtime installation, rollback evidence и Play Mode не выполнялись. `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkBaselineReversibleTransactionContract.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionNetworkBaselineReversibleTransactionContract.cs`, `docs/world/floatingorigin/06BN_NETWORK_BASELINE_REVERSIBLE_CAPABILITY.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BM — reviewed admission evidence intake)
 
 **Задача:** Реализовать concrete owner-reviewed source для первого входа admission provider.

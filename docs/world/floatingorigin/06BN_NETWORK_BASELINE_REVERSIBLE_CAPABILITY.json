@@ -1,0 +1,35 @@
+{
+  "ticket": "T-FO06BN",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_PURE_ONLY_DORMANT",
+  "scope": "reviewed protocol-owned reversible NetworkBaseline capability boundary",
+  "implementation": {
+    "contract": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkBaselineReversibleTransactionContract.cs",
+    "validator": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionNetworkBaselineReversibleTransactionContract.cs",
+    "requiredBoundaries": ["capture", "apply", "validate", "restore", "ownership_restore", "lifetime_restore", "baseline_generation_restore"],
+    "observationOnlyRejected": true,
+    "serverAuthoritativeRequired": true,
+    "protocolOwnedRequired": true
+  },
+  "checks": {
+    "planned": 16,
+    "passed": 16,
+    "failed": 0
+  },
+  "runtime": {
+    "compile": "PASS",
+    "playModeExecuted": false,
+    "networkObjectMutation": false,
+    "adapterRegistration": false,
+    "runtimeDriverConnection": false,
+    "bootstrapSceneMutation": false,
+    "providerBinding": "NOT_EXECUTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "gates": {
+    "networkBaselineConcreteAdapter": "BLOCKED",
+    "shipDeckNav": "SEPARATE_LIFECYCLE_GATE",
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED",
+    "fullTransactionAuthorization": "NOT_AUTHORIZED"
+  }
+}

@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06AQ follow-up — full log pointwise audit)
+
+**Задача:** Провести точечный аудит полного пользовательского лога `Q:\Project-c_logs\01.txt` без загрузки файла целиком в контекст и усилить evidence-report `T-FO06AQ`.
+
+**Результат:** В `[T-FO06Y]` найдено `7995` строк с диапазоном кадров `885–8879`. Подтверждены baseline source line `3742`, respawn source line `3867`, jump source line `4342`, поздний stream `frame=8630/revision=191/seq=5064`. Поиск `rebase`, `rollback`, `manifest`, `admission`, `Exception` и `Error` дал `0` совпадений. Найдены `247` предупреждений `Failed to create agent because it is not close enough to the NavMesh`. Повторные `FixedUpdate`/`NetworkTick` внутри одного rendered frame подтверждены, включая `frame=886` (`16/24`).
+
+**Граница:** Полный лог усиливает только observational evidence. Controlled rebase, post-rebase continuity, rollback, peer agreement, participant admission и native adapter installation не доказаны. Сцены, префабы, `BootstrapScene`, `GlobalMotionNativeAdapterSet`, `FullTransaction` и runtime adapters не изменялись; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `docs/world/floatingorigin/06AQ_RUNTIME_CAPTURE_FOLLOWUP.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AQ follow-up — pointwise Play Mode evidence review)
 
 **Задача:** Зафиксировать частичный Host/Play Mode capture после `T-FO06AQ` без подключения runtime adapters, изменения сцен или авторизации rebase runtime.

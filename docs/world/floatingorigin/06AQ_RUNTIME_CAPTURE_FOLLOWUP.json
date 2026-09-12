@@ -2,6 +2,7 @@
   "ticket": "T-FO06AQ",
   "date": "2026-09-12",
   "classification": "PARTIAL_OBSERVATIONAL_HOST_CAPTURE",
+  "sourceLog": "Q:\\Project-c_logs\\01.txt",
   "scene": "Assets/_Project/Scenes/BootstrapScene.unity",
   "compilationErrors": false,
   "binding": "4780900133407987940/94/1/1/2",
@@ -10,7 +11,24 @@
     "respawnThreshold": 901,
     "postRespawnStable": "913-970",
     "controlledMovement": "942-970",
-    "jump": "971-984"
+    "jump": "971-984",
+    "fullLogCapture": "885-8879"
+  },
+  "fullLogAudit": {
+    "tFo06yLines": 7995,
+    "rebaseMatches": 0,
+    "rollbackMatches": 0,
+    "manifestMatches": 0,
+    "admissionMatches": 0,
+    "exceptionMatches": 0,
+    "errorMatches": 0,
+    "navMeshAgentWarnings": 247,
+    "baselineSourceLine": 3742,
+    "respawnSourceLine": 3867,
+    "jumpSourceLine": 4342,
+    "lateSampleFrame": 8630,
+    "lateSampleRevision": 191,
+    "lateSampleSequence": 5064
   },
   "confirmed": {
     "initialBaseline": true,
@@ -22,13 +40,13 @@
     "respawnWriter": "PlayerRespawnTracker server-authoritative fall-respawn"
   },
   "notObservedOrProven": {
-    "controlledRebase": true,
-    "postRebaseContinuity": true,
-    "rollback": true,
-    "liveManifestPublication": true,
-    "peerAgreement": true,
-    "participantAdmission": true,
-    "nativeAdapterInstallation": true
+    "controlledRebase": "NOT_OBSERVED",
+    "postRebaseContinuity": "NOT_PROVEN",
+    "rollback": "NOT_OBSERVED",
+    "liveManifestPublication": "NOT_PROVEN",
+    "peerAgreement": "NOT_PROVEN",
+    "participantAdmission": "NOT_READY",
+    "nativeAdapterInstallation": "NOT_CONNECTED"
   },
   "runtimeRebaseReadiness": "NOT_READY",
   "mutations": {

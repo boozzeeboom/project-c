@@ -79,7 +79,29 @@ native NetworkBaseline adapter installation
 
 `adapter=Ready` и `baselinePlaced=True` относятся только к существующему initial-baseline pipeline. Они не доказывают наличие или готовность native `NetworkBaseline` adapter и не подтверждают post-rebase continuity.
 
-## 7. Gate result
+## 7. Full-log pointwise audit
+
+Источник: `Q:\Project-c_logs\01.txt`.
+
+Точечный PowerShell-аудит полного файла, ограниченный строками с `[T-FO06Y]`, дал:
+
+- `7995` строк capture;
+- диапазон rendered frames `885–8879`;
+- `rebase` matches: `0`;
+- `rollback` matches: `0`;
+- `manifest` matches: `0`;
+- `admission` matches: `0`;
+- `Exception` matches: `0`;
+- `Error` matches: `0`;
+- `Failed to create agent because it is not close enough to the NavMesh`: `247`.
+
+Первичная baseline-последовательность найдена в source line `3742`, где присутствуют `ControlAccepted`, `SyncTransforms`, `ActorApplied`, `InitialGateReleased`, `AcknowledgeApplied` и `AdapterReady` при том же binding. Respawn-последовательность найдена в source line `3867`; jump — в source line `4342`.
+
+В полном capture сохраняется scheduling anomaly: например, на `frame=886` обнаружены `16` `FixedUpdate.begin` и `24` `NetworkTick`; на поздних кадрах повторные callbacks также продолжаются, например `frame=8873` (`2/2`), `frame=8874` (`3/2`) и `frame=8875` (`2/1`). Это подтверждает только повторение callbacks внутри rendered frame и не доказывает корректный rebase ordering.
+
+Поздний sampled state на `frame=8630` показывает `revision=191`, `seq=5064`, а поздние frames сохраняют тот же binding и `baseline.AdapterReady`; это обычное initial-baseline/control stream continuation, а не post-rebase evidence.
+
+## 8. Gate result
 
 ```text
 initialBaseline              = CONFIRMED
@@ -99,7 +121,7 @@ runtimeInstallation          = NOT_CONNECTED
 runtimeRebaseReadiness       = NOT_READY
 ```
 
-## 8. Решение и границы продолжения
+## 9. Решение и границы продолжения
 
 Этот capture можно использовать только как partial/observational follow-up к `T-FO06AQ`. Он не авторизует `GlobalMotionRebaseRuntimeDriver`, не создаёт readiness bundle и не даёт права изменять `FullTransaction` или подключать `GlobalMotionNativeAdapterSet`.
 

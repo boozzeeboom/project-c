@@ -1,5 +1,20 @@
 # Iterations
 
+## Iteration 2026-09-12 (T-FO06AX - CameraHistory native adapter)
+
+Task: Add the explicit CameraHistory native adapter for one owner-reviewed SpringArmCamera without runtime installation or BootstrapScene changes.
+
+Result: Created GlobalMotionCameraHistoryNativeAdapter and dormant SpringArmCamera capture/apply/restore/validate APIs covering camera pose, lag target/speed, collision state/history, ship mode and camera/target/billboard identity.
+
+Boundary: The adapter does not discover, self-register, enter GlobalMotionNativeAdapterSet, install into BootstrapScene, publish live camera ownership/history evidence or run Play Mode. ShipDeckNav, NetworkBaseline, live manifest, participant admission and runtime rollback evidence remain open; runtimeRebaseReadiness=NOT_READY.
+
+Checks: check_compile_errors=No compile errors; validate_script adapter=0 errors, 0 warnings; SpringArmCamera validation=0 errors with existing advisory warning; Play Mode=not run.
+
+Files: Assets/_Project/Scripts/Core/SpringArmCamera.cs; Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionCameraHistoryNativeAdapter.cs; docs/world/floatingorigin/06AX_CAMERA_HISTORY_NATIVE_ADAPTER.md; docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md.
+
+---
+
+
 ## Iteration 2026-09-12 (T-FO06AW - Rigidbody native adapter)
 
 Task: Add the second explicit concrete native adapter for an owner-reviewed Rigidbody without runtime installation or BootstrapScene changes.

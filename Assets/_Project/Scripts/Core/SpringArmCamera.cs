@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
 using ProjectC.UI;
+using ProjectC.World.FloatingOrigin;
+using ProjectC.World.FloatingOrigin.Network;
 
 namespace ProjectC.Core
 {
@@ -136,6 +138,191 @@ namespace ProjectC.Core
         public Vector3 LastCollisionPosition => _lastCollisionPos;
         public float CollisionExitTime => _collisionExitTime;
         public bool IsShipMode => _isShip;
+
+        /// <summary>
+        /// Explicit floating-origin camera-history snapshot. This API is dormant until a reviewed
+        /// native adapter invokes it; ordinary camera update flow does not call it.
+        /// </summary>
+        public readonly struct GlobalMotionCameraHistorySnapshot
+        {
+            public readonly Vector3 Position;
+            public readonly Quaternion Rotation;
+            public readonly Vector3 LagTargetPosition;
+            public readonly float LagSpeed;
+            public readonly bool WasColliding;
+            public readonly Vector3 LastCollisionPosition;
+            public readonly float CollisionExitTime;
+            public readonly bool IsShipMode;
+            public readonly bool CameraInitialized;
+            public readonly ulong CameraInstanceId;
+            public readonly ulong TargetInstanceId;
+            public readonly bool BillboardBound;
+
+            public GlobalMotionCameraHistorySnapshot(
+                Vector3 position,
+                Quaternion rotation,
+                Vector3 lagTargetPosition,
+                float lagSpeed,
+                bool wasColliding,
+                Vector3 lastCollisionPosition,
+                float collisionExitTime,
+                bool isShipMode,
+                bool cameraInitialized,
+                ulong cameraInstanceId,
+                ulong targetInstanceId,
+                bool billboardBound)
+            {
+                Position = position;
+                Rotation = rotation;
+                LagTargetPosition = lagTargetPosition;
+                LagSpeed = lagSpeed;
+                WasColliding = wasColliding;
+                LastCollisionPosition = lastCollisionPosition;
+                CollisionExitTime = collisionExitTime;
+                IsShipMode = isShipMode;
+                CameraInitialized = cameraInitialized;
+                CameraInstanceId = cameraInstanceId;
+                TargetInstanceId = targetInstanceId;
+                BillboardBound = billboardBound;
+            }
+        }
+
+        public bool IsGlobalMotionCameraReady =>
+            isActiveAndEnabled &&
+            _cameraInitialized &&
+            _camera != null &&
+            _camera.enabled &&
+            target != null &&
+            Billboard.ActiveCamera == transform;
+
+        public bool TryCaptureGlobalMotionCameraHistory(
+            out GlobalMotionCameraHistorySnapshot snapshot,
+            out string error)
+        {
+            snapshot = default;
+            if (!TryValidateGlobalMotionCameraState(out error)) return false;
+
+            snapshot = new GlobalMotionCameraHistorySnapshot(
+                transform.position,
+                transform.rotation,
+                _lagTargetPos,
+                _lagSpeed,
+                _wasColliding,
+                _lastCollisionPos,
+                _collisionExitTime,
+                _isShip,
+                _cameraInitialized,
+                UnityEngine.EntityId.ToULong(_camera.GetEntityId()),
+                UnityEngine.EntityId.ToULong(target.GetEntityId()),
+                Billboard.ActiveCamera == transform);
+            return true;
+        }
+
+        public bool TryApplyGlobalMotionCameraTranslation(Vector3 translation, out string error)
+        {
+            error = null;
+            if (!GlobalPosition.IsFiniteValue(translation.x) ||
+                !GlobalPosition.IsFiniteValue(translation.y) ||
+                !GlobalPosition.IsFiniteValue(translation.z))
+            {
+                error = "camera_translation_not_finite";
+                return false;
+            }
+            if (!TryValidateGlobalMotionCameraState(out error)) return false;
+
+            transform.position += translation;
+            _lagTargetPos += translation;
+            if (_wasColliding)
+                _lastCollisionPos += translation;
+            return IsFiniteGlobalMotionCameraState(out error);
+        }
+
+        public bool TryRestoreGlobalMotionCameraHistory(
+            GlobalMotionCameraHistorySnapshot snapshot,
+            out string error)
+        {
+            if (!TryValidateGlobalMotionCameraState(out error)) return false;
+            if (UnityEngine.EntityId.ToULong(_camera.GetEntityId()) != snapshot.CameraInstanceId ||
+                UnityEngine.EntityId.ToULong(target.GetEntityId()) != snapshot.TargetInstanceId ||
+                !snapshot.CameraInitialized ||
+                !snapshot.BillboardBound)
+            {
+                error = "camera_history_identity_mismatch";
+                return false;
+            }
+
+            transform.SetPositionAndRotation(snapshot.Position, snapshot.Rotation);
+            _lagTargetPos = snapshot.LagTargetPosition;
+            _lagSpeed = snapshot.LagSpeed;
+            _wasColliding = snapshot.WasColliding;
+            _lastCollisionPos = snapshot.LastCollisionPosition;
+            _collisionExitTime = snapshot.CollisionExitTime;
+            _isShip = snapshot.IsShipMode;
+            _cameraInitialized = snapshot.CameraInitialized;
+            return IsFiniteGlobalMotionCameraState(out error);
+        }
+
+        public bool TryValidateGlobalMotionCameraHistory(out string error)
+        {
+            return TryValidateGlobalMotionCameraState(out error) &&
+                IsFiniteGlobalMotionCameraState(out error);
+        }
+
+        private bool TryValidateGlobalMotionCameraState(out string error)
+        {
+            error = null;
+            if (!isActiveAndEnabled)
+            {
+                error = "camera_component_inactive";
+                return false;
+            }
+            if (!_cameraInitialized)
+            {
+                error = "camera_not_initialized";
+                return false;
+            }
+            if (_camera == null || !_camera.enabled)
+            {
+                error = "camera_component_not_ready";
+                return false;
+            }
+            if (target == null)
+            {
+                error = "camera_target_missing";
+                return false;
+            }
+            if (Billboard.ActiveCamera != transform)
+            {
+                error = "camera_billboard_binding_missing";
+                return false;
+            }
+            return true;
+        }
+
+        private bool IsFiniteGlobalMotionCameraState(out string error)
+        {
+            error = null;
+            if (!IsFinite(transform.position) || !IsFinite(transform.rotation) ||
+                !IsFinite(_lagTargetPos) || !IsFinite(_lastCollisionPos) ||
+                !GlobalPosition.IsFiniteValue(_lagSpeed) ||
+                !GlobalPosition.IsFiniteValue(_collisionExitTime))
+            {
+                error = "camera_history_state_not_finite";
+                return false;
+            }
+            return true;
+        }
+
+        private static bool IsFinite(Vector3 value) =>
+            GlobalPosition.IsFiniteValue(value.x) &&
+            GlobalPosition.IsFiniteValue(value.y) &&
+            GlobalPosition.IsFiniteValue(value.z);
+
+        private static bool IsFinite(Quaternion value) =>
+            GlobalPosition.IsFiniteValue(value.x) &&
+            GlobalPosition.IsFiniteValue(value.y) &&
+            GlobalPosition.IsFiniteValue(value.z) &&
+            GlobalPosition.IsFiniteValue(value.w);
 
         public Vector3 CameraForward
         {

@@ -1,0 +1,55 @@
+{
+  "ticket": "T-FO06BS",
+  "date": "2026-09-12",
+  "status": "AUDITED_BLOCKED_NO_RUNTIME_CHANGE",
+  "scope": "project source census for NGO ownership and spawn/lifetime producers",
+  "searchRoot": "Assets/_Project/Scripts",
+  "ownershipMutation": {
+    "patterns": ["ChangeOwnership", "RemoveOwnership"],
+    "matches": 0,
+    "interpretation": "no direct ownership mutation seam found in audited project scripts",
+    "onOwnershipChangedIsMutation": false
+  },
+  "lifetimeProducerFiles": [
+    "Assets/_Project/Scripts/AI/NpcLootPickup.cs",
+    "Assets/_Project/Scripts/AI/NpcSpawner.cs",
+    "Assets/_Project/Scripts/Combat/Client/DamageNumberService.cs",
+    "Assets/_Project/Scripts/Combat/Implementations/NpcTarget.cs",
+    "Assets/_Project/Scripts/Core/ServerStormManager.cs",
+    "Assets/_Project/Scripts/PeacefulShip/Crew/ShipCrewSpawner.cs",
+    "Assets/_Project/Scripts/World/Streaming/ChunkNetworkSpawner.cs",
+    "Assets/_Project/Scripts/World/Scene/ScenePlacedObjectSpawner.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionPlayerBootstrap.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalSceneNativeExecutor.cs",
+    "Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs"
+  ],
+  "producerDomains": [
+    "npc",
+    "loot",
+    "combat_effects",
+    "ships_and_crew",
+    "streaming",
+    "scene_execution",
+    "global_player_bootstrap",
+    "chests"
+  ],
+  "decision": {
+    "unifiedLifecycleOwnerFound": false,
+    "syntheticOwnershipHostCreated": false,
+    "despawnRecreateAsRollback": false,
+    "nextGate": "define an explicit server-owned lifecycle coordinator/ledger owner"
+  },
+  "runtime": {
+    "providerBinding": "NOT_EXECUTED",
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "inconclusive": [
+    "NGO package internals",
+    "generated code",
+    "serialized scene callbacks",
+    "external tooling and non-project ownership mutation"
+  ]
+}

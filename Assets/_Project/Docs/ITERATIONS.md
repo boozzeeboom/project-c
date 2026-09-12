@@ -48,6 +48,18 @@
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BS — NGO ownership/lifetime producer census)
+
+**Задача:** Расширить source census после T-FO06BR и найти прямые ownership mutation и spawn/lifetime producers для выбора server-owned NetworkBaseline host.
+
+**Результат:** В `Assets/_Project/Scripts` найдено `0` прямых `ChangeOwnership`/`RemoveOwnership` вызовов. Найдены 11 независимых spawn/despawn producer paths в NPC, loot, combat effects, ships/crew, streaming, scene execution, global player bootstrap и chests. Общего lifecycle owner-а или protocol-atomic ledger producer-а нет.
+
+**Граница:** Synthetic ownership host, reflection в NGO internals, despawn/recreate rollback, adapter registration, provider binding, BootstrapScene и Play Mode не выполнялись. `NetworkBaseline adapter=SEAM ONLY`, `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`. Package internals, generated code, serialized scene callbacks и external tooling остаются inconclusive.
+
+**Файлы:** `docs/world/floatingorigin/06BS_NGO_OWNERSHIP_LIFETIME_PRODUCER_CENSUS.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BN — protocol-owned NetworkBaseline reversible capability)
 
 **Задача:** После `T-FO06AZ` зафиксировать отдельную reviewed capability boundary для будущего server-coordinated reversible NGO baseline transaction, не объявляя observation-only evidence готовым adapter-ом.

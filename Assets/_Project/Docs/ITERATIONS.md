@@ -1,5 +1,18 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BL — provider source binding API)
+
+**Задача:** Выполнить реальное интеграционное действие после T-FO06BK: добавить explicit source-binding API в admission provider.
+
+**Результат:** `GlobalMotionRebaseAdmissionEvidenceProvider` получил `TryConfigureSources` и `TryValidateSourceBindings`. Binding принимает только `MonoBehaviour`, реализующие четыре требуемых source contracts; admission chain после binding сохраняет полную проверку adapter/proof/rollback и participant/frame lineage. `check_compile_errors=No compile errors`.
+
+**Граница:** API реализован, но вызов binding не выполнялся: concrete reviewed source, полный adapter set и rollback producer отсутствуют; BootstrapScene и Play Mode не изменялись. `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseAdmissionEvidenceProvider.cs`, `docs/world/floatingorigin/06BL_PROVIDER_SOURCE_BINDING_API.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+
 ## Итерация от 2026-09-12 (T-FO06BK — user-controlled structured evidence intake)
 
 **Задача:** Реализовать concrete structured evidence intake вместо очередного audit-only этапа.

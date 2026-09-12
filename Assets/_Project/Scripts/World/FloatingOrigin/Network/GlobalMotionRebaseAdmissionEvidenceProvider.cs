@@ -45,6 +45,34 @@ namespace ProjectC.World.FloatingOrigin.Network
         [SerializeField] private MonoBehaviour _runtimeProofSource;
         [SerializeField] private MonoBehaviour _rollbackSource;
 
+        public bool TryConfigureSources(
+            MonoBehaviour reviewedAdmissionSource,
+            MonoBehaviour nativeAdapterSource,
+            MonoBehaviour runtimeProofSource,
+            MonoBehaviour rollbackSource,
+            out string error)
+        {
+            if (!ValidateSource(reviewedAdmissionSource, typeof(IGlobalMotionRebaseReviewedAdmissionEvidenceSource), "reviewed_admission_source", out error) ||
+                !ValidateSource(nativeAdapterSource, typeof(IGlobalMotionRebaseNativeAdapterEvidenceSource), "native_adapter_source", out error) ||
+                !ValidateSource(runtimeProofSource, typeof(IGlobalMotionRebaseRuntimeProofEvidenceSource), "runtime_proof_source", out error) ||
+                !ValidateSource(rollbackSource, typeof(IGlobalMotionRebaseRollbackEvidenceSource), "rollback_source", out error))
+                return false;
+
+            _reviewedAdmissionSource = reviewedAdmissionSource;
+            _nativeAdapterSource = nativeAdapterSource;
+            _runtimeProofSource = runtimeProofSource;
+            _rollbackSource = rollbackSource;
+            return true;
+        }
+
+        public bool TryValidateSourceBindings(out string error)
+        {
+            return ValidateSource(_reviewedAdmissionSource, typeof(IGlobalMotionRebaseReviewedAdmissionEvidenceSource), "reviewed_admission_source", out error) &&
+                ValidateSource(_nativeAdapterSource, typeof(IGlobalMotionRebaseNativeAdapterEvidenceSource), "native_adapter_source", out error) &&
+                ValidateSource(_runtimeProofSource, typeof(IGlobalMotionRebaseRuntimeProofEvidenceSource), "runtime_proof_source", out error) &&
+                ValidateSource(_rollbackSource, typeof(IGlobalMotionRebaseRollbackEvidenceSource), "rollback_source", out error);
+        }
+
         public bool TryGetAdmissionEvidence(
             out GlobalMotionRebaseParticipantAdmissionEvidence evidence,
             out string error)
@@ -92,6 +120,20 @@ namespace ProjectC.World.FloatingOrigin.Network
                 true,
                 true,
                 true);
+            return true;
+        }
+
+        private static bool ValidateSource(
+            MonoBehaviour source,
+            Type contractType,
+            string sourceName,
+            out string error)
+        {
+            if (source == null)
+                return Reject(sourceName + "_missing", out error);
+            if (!contractType.IsInstanceOfType(source))
+                return Reject(sourceName + "_contract_missing", out error);
+            error = null;
             return true;
         }
 

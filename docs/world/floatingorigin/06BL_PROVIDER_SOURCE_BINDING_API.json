@@ -1,0 +1,16 @@
+{
+  "ticket": "T-FO06BL",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_DORMANT",
+  "provider": "GlobalMotionRebaseAdmissionEvidenceProvider",
+  "configureSourcesApi": true,
+  "validateBindingsApi": true,
+  "bindingExecuted": false,
+  "reviewedAdmissionSource": "MISSING",
+  "nativeAdapterSet": "INCOMPLETE",
+  "structuredEvidence": "EMPTY",
+  "bootstrapScene": "UNCHANGED",
+  "playMode": "NOT_RUN",
+  "runtimeRebaseReadiness": "NOT_READY",
+  "nextGate": "CONCRETE_SOURCE_BINDING_AFTER_ALL_PRODUCERS_EXIST"
+}

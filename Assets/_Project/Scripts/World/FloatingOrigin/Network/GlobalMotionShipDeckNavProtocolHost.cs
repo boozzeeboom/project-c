@@ -1,3 +1,5 @@
+using System;
+using ProjectC.AI;
 using ProjectC.Ship;
 using UnityEngine;
 
@@ -5,20 +7,36 @@ namespace ProjectC.World.FloatingOrigin.Network
 {
     /// <summary>
     /// T-FO06BX: observation-only ShipDeckNav transaction host.
-    /// It exposes the live registration state, but keeps synchronous rebuild, passenger
-    /// snapshot/restore and NavMesh rollback fail-closed until a reviewed native seam exists.
+    /// It exposes live registration and explicitly reviewed passenger readiness, but keeps
+    /// synchronous rebuild, snapshot/restore and NavMesh rollback fail-closed.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(ShipDeckNav))]
     public sealed class GlobalMotionShipDeckNavProtocolHost : MonoBehaviour, IGlobalMotionShipDeckNavTransactionHost
     {
         [SerializeField] private ShipDeckNav _deckNav;
+        [SerializeField] private NpcBrain[] _reviewedPassengers = Array.Empty<NpcBrain>();
 
         public bool IsBound => ResolveDeckNav() != null;
 
         private void Awake()
         {
             _deckNav = ResolveDeckNav();
+        }
+
+        public bool TryConfigureReviewedPassengers(NpcBrain[] passengers, out string error)
+        {
+            if (passengers == null || passengers.Length == 0)
+                return Reject("passenger_reviewed_sources_required", out error);
+
+            for (int i = 0; i < passengers.Length; i++)
+            {
+                if (passengers[i] == null)
+                    return Reject("passenger_reviewed_source_missing:index=" + i, out error);
+            }
+
+            _reviewedPassengers = passengers;
+            return TryValidateReviewedPassengers(out error);
         }
 
         public bool TryGetLifecycleEvidence(
@@ -36,13 +54,14 @@ namespace ProjectC.World.FloatingOrigin.Network
                     ? GlobalMotionShipDeckNavLifecyclePhase.Ready
                     : GlobalMotionShipDeckNavLifecyclePhase.Registered;
 
+            bool passengersReady = TryValidateReviewedPassengers(out _);
             evidence = new GlobalMotionRebaseShipDeckNavLifecycleEvidence(
                 "ship-deck-nav:" + deckNav.name,
                 deckNav.NavMeshDataName,
                 "observation-only",
                 deckNav.IsRegistered ? 1UL : 0UL,
                 deckNav.IsNavMeshInstanceValid ? 1UL : 0UL,
-                0UL,
+                passengersReady ? 1UL : 0UL,
                 phase,
                 false,
                 false,
@@ -113,6 +132,30 @@ namespace ProjectC.World.FloatingOrigin.Network
                 return false;
             if (!GlobalMotionRebaseShipDeckNavLifecycleContract.TryValidateReady(lifecycle, out error))
                 return false;
+            return true;
+        }
+
+        private bool TryValidateReviewedPassengers(out string error)
+        {
+            error = null;
+            if (_reviewedPassengers == null || _reviewedPassengers.Length == 0)
+                return Reject("passenger_attachment_generation_required", out error);
+
+            var deckNav = ResolveDeckNav();
+            if (deckNav == null)
+                return Reject("ship_deck_nav_missing", out error);
+
+            for (int i = 0; i < _reviewedPassengers.Length; i++)
+            {
+                var passenger = _reviewedPassengers[i];
+                if (passenger == null)
+                    return Reject("passenger_reviewed_source_missing:index=" + i, out error);
+                if (!passenger.IsExplicitShipAttachmentActive || !passenger.IsDeckNavigationActive ||
+                    !passenger.IsDeckProxyCreated || !passenger.IsDeckProxyOnNavMesh ||
+                    !string.Equals(passenger.DeckNavName, deckNav.name, StringComparison.Ordinal))
+                    return Reject("passenger_deck_readiness_not_proven:" + passenger.name, out error);
+            }
+
             return true;
         }
 

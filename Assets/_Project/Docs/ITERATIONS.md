@@ -547,6 +547,20 @@ Files: Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRigidbod
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BY — ShipDeckNav passenger provenance binding)
+
+**Задача:** Уточнить concrete ShipDeckNav host explicit owner-reviewed binding для passenger/proxy readiness без автоматического discovery и без открытия native readiness.
+
+**Результат:** `GlobalMotionShipDeckNavProtocolHost` получил `_reviewedPassengers` и `TryConfigureReviewedPassengers(NpcBrain[])`. Проверяются explicit attachment, deck navigation, proxy creation, proxy `isOnNavMesh` и совпадение `DeckNavName`. Пустой список и неподготовленные пассажиры отклоняются. Validator: `7/7` pure checks PASS; `check_compile_errors=No compile errors`; `git diff --check=PASS`.
+
+**Граница:** Passenger generation наблюдается только при явном reviewed binding; snapshot/restore, synchronous NavMesh rebuild, provider binding, adapter registration, BootstrapScene и Play Mode не выполнялись. `runtimeRebaseReadiness=NOT_READY`.
+
+**Следующий этап:** Transaction-safe snapshot/rebuild/restore для NavMesh instance и passenger/proxy state.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckNavProtocolHost.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckNavNativeAdapterSource.cs`, `docs/world/floatingorigin/06BY_SHIP_DECK_NAV_PASSENGER_PROVENANCE.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AE — live manifest receipt source)
 
 **Задача:** Подготовить pure evidence source для participant admission и live manifest publication, сохранив runtime discovery и публикацию отключёнными.

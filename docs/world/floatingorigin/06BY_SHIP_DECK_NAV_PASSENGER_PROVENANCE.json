@@ -1,0 +1,34 @@
+{
+  "ticket": "T-FO06BY",
+  "date": "2026-09-12",
+  "status": "INTEGRATION_FOLLOW_UP_OBSERVATION_ONLY_FAIL_CLOSED",
+  "scope": "explicit reviewed ShipDeckNav passenger/proxy provenance binding",
+  "implementation": {
+    "host": "GlobalMotionShipDeckNavProtocolHost",
+    "bindingApi": "TryConfigureReviewedPassengers(NpcBrain[], out string)",
+    "automaticDiscovery": false,
+    "runtimeMutation": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "pureChecksPassed": 7,
+    "pureChecksFailed": 0,
+    "menu": "ProjectC/World/Floating Origin/Validate ShipDeckNav Native Adapter Source",
+    "emptyBindingRejected": true,
+    "gitDiffCheck": "PASS"
+  },
+  "readiness": {
+    "passengerAttachmentGeneration": "observed only when explicit reviewed sources are ready",
+    "passengerSnapshot": false,
+    "synchronousNavMeshRebuild": false,
+    "passengerRestore": false,
+    "nativeReady": false
+  },
+  "runtime": {
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "providerRuntimeBinding": "NOT_EXECUTED",
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "transaction-safe NavMesh and passenger/proxy snapshot/rebuild/restore"
+}

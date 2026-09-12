@@ -5,6 +5,7 @@ using UnityEngine;
 using ProjectC.World.FloatingOrigin;
 using ProjectC.World.FloatingOrigin.Network;
 using ProjectC.Ship;
+using ProjectC.AI;
 
 namespace ProjectC.EditorTools.FloatingOrigin
 {
@@ -62,6 +63,13 @@ namespace ProjectC.EditorTools.FloatingOrigin
                     Require(descriptor.Capabilities == GlobalMotionNativeAdapterCapability.FullTransaction, "adapter_capabilities_invalid");
                     Require(descriptor.IsCurrent, "adapter_not_current");
                     Require(!descriptor.NativeReady, "adapter_reported_native_ready");
+                });
+
+                Check("Reviewed passenger binding remains explicit", () =>
+                {
+                    var host = gameObject.GetComponent<GlobalMotionShipDeckNavProtocolHost>();
+                    Require(!host.TryConfigureReviewedPassengers(Array.Empty<NpcBrain>(), out string error) &&
+                        error == "passenger_reviewed_sources_required", error);
                 });
 
                 Check("Invalid request remains fail closed", () =>

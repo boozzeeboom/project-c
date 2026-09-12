@@ -1,0 +1,16 @@
+{
+  "ticket": "T-FO06BG",
+  "date": "2026-09-12",
+  "status": "COMPILE_VERIFIED_PARTIAL_PRODUCER_NOT_READY",
+  "source": "GlobalMotionRebaseNativeAdapterEvidenceSource",
+  "transformAdapter": "EXPLICIT",
+  "rigidbodyAdapter": "EXPLICIT",
+  "cameraHistoryAdapter": "EXPLICIT",
+  "shipDeckNavAdapter": "BLOCKED_NOT_ASSIGNED",
+  "networkBaselineAdapter": "BLOCKED_NOT_ASSIGNED",
+  "partialSetAccepted": false,
+  "bootstrapSceneBinding": "NONE",
+  "playMode": "NOT_RUN",
+  "runtimeRebaseReadiness": "NOT_READY",
+  "nextGate": "SHIP_DECK_NAV_AND_NETWORK_BASELINE_ADAPTER_DESIGN"
+}

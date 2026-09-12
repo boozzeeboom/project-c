@@ -1,5 +1,18 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BG — native adapter evidence source)
+
+**Задача:** Создать первый concrete provenance producer для native adapter readiness без принятия неполного adapter set.
+
+**Результат:** Создан `GlobalMotionRebaseNativeAdapterEvidenceSource`. Он строит explicit Transform/Rigidbody/CameraHistory adapters из owner-reviewed targets, требует concrete ShipDeckNav и NetworkBaseline adapter sources, затем выполняет sealing и полный `TryValidateReady`.
+
+**Граница:** ShipDeckNav и NetworkBaseline producers отсутствуют, поэтому частичный set отклоняется. Runtime registration, BootstrapScene binding, manifest publication, Play Mode и rebase mutation не выполнялись. `check_compile_errors=No compile errors`; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseNativeAdapterEvidenceSource.cs`, `docs/world/floatingorigin/06BG_NATIVE_ADAPTER_EVIDENCE_SOURCE.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+
 ## Итерация от 2026-09-12 (T-FO06BF — provenance-bearing admission provider boundary)
 
 **Задача:** Добавить fail-closed aggregation boundary для admission evidence после аудита T-FO06BE, не создавая synthetic readiness.

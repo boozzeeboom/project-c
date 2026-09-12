@@ -96,6 +96,18 @@
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BW — admission source handoff preflight)
+
+**Задача:** Проверить typed handoff между `GlobalMotionRebaseNativeAdapterEvidenceSource` и `GlobalMotionRebaseAdmissionEvidenceProvider`, не создавая synthetic admission readiness и не изменяя runtime.
+
+**Результат:** В pure Edit Mode собран временный component graph с provider, native evidence source, NetworkBaseline adapter source и typed review/proof/rollback stubs. Source bindings и provider bindings проходят; `TryGetAdmissionEvidence` остаётся fail-closed на отсутствии submitted reviewed evidence, а NetworkBaseline readiness остаётся заблокированной. Validator: `6/6` pure checks PASS; `check_compile_errors=No compile errors`; `git diff --check=PASS`.
+
+**Граница:** Handoff является только pure preflight. `GlobalMotionNativeAdapterSet` не регистрировался, manifest publication/provider runtime binding/BootstrapScene/Play Mode не выполнялись, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionRebaseAdmissionSourceHandoff.cs`, `docs/world/floatingorigin/06BW_ADMISSION_SOURCE_HANDOFF.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BN — protocol-owned NetworkBaseline reversible capability)
 
 **Задача:** После `T-FO06AZ` зафиксировать отдельную reviewed capability boundary для будущего server-coordinated reversible NGO baseline transaction, не объявляя observation-only evidence готовым adapter-ом.

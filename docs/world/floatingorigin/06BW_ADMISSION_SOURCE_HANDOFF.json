@@ -1,0 +1,38 @@
+{
+  "ticket": "T-FO06BW",
+  "date": "2026-09-12",
+  "status": "INTEGRATION_PREFLIGHT_FAIL_CLOSED_NO_RUNTIME_CHANGE",
+  "scope": "typed handoff from native adapter evidence source to admission provider",
+  "graph": {
+    "provider": "GlobalMotionRebaseAdmissionEvidenceProvider",
+    "nativeEvidenceSource": "GlobalMotionRebaseNativeAdapterEvidenceSource",
+    "networkBaselineSource": "GlobalMotionNetworkBaselineNativeAdapterSource",
+    "reviewedAdmissionSource": "typed stub only",
+    "runtimeProofSource": "typed stub only",
+    "rollbackSource": "typed stub only"
+  },
+  "validation": {
+    "compileErrors": false,
+    "pureChecksPassed": 6,
+    "pureChecksFailed": 0,
+    "menu": "ProjectC/World/Floating Origin/Validate Admission Source Handoff",
+    "result": "6 pure checks PASS / 0 FAIL",
+    "gitDiffCheck": "PASS"
+  },
+  "admission": {
+    "sourceBindingsValidated": true,
+    "reviewedEvidenceSubmitted": false,
+    "syntheticEvidenceCreated": false,
+    "nativeAdapterReadiness": "BLOCKED",
+    "admissionEvidence": "NOT_PROVEN"
+  },
+  "runtime": {
+    "globalMotionNativeAdapterSet": "NOT_REGISTERED",
+    "liveManifestPublication": "NOT_EXECUTED",
+    "providerRuntimeBinding": "NOT_EXECUTED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "real reviewed runtime/protocol evidence sources without synthetic all-true stubs"
+}

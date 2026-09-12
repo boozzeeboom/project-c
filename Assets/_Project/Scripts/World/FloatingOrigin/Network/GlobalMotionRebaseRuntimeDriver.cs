@@ -217,6 +217,13 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         private bool Fail(GlobalMotionRebaseTransactionPhase terminal, string reason, out string error)
         {
+            if (_installationIntentAuthorized)
+            {
+                _installationIntent = default;
+                _installationIntentAuthorized = false;
+                Record("InstallationInvalidated", "reason=terminal_failure:" + reason);
+            }
+
             Phase = terminal;
             LastTerminalPhase = terminal;
             error = reason;

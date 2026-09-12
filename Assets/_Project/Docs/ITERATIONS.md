@@ -1,3 +1,15 @@
+## Итерация от 2026-09-12 (T-FO06AO — terminal failure invalidation)
+
+**Задача:** Исключить сохранение installation authorization после terminal failure текущей rebase attempt.
+
+**Результат:** `GlobalMotionRebaseRuntimeDriver.Fail` очищает installation intent и authorization, пишет `InstallationInvalidated`, затем terminal phase. После `Aborted/Faulted` требуется `TryReset` и новая readiness/installation authorization chain.
+
+**Граница:** Valid bundle, concrete adapters, manifest publication, participant discovery, Unity mutation, Apply/Rebuild/Validate/Publish, rollback, BootstrapScene и Play Mode не изменялись. `validate_script` — PASS; compile — PASS; `git diff --check` — PASS; runtime rebase readiness остаётся `NOT_READY`.
+
+**Файлы:** `GlobalMotionRebaseRuntimeDriver.cs`, `docs/world/floatingorigin/06AO_TERMINAL_FAILURE_INVALIDATION.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AN — readiness rollover invalidation)
 
 **Задача:** Исключить перенос старого installation intent при повторной авторизации readiness bundle.

@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CK — Combined snapshot lifecycle binding identity gate)
+
+**Задача:** Явно перенести reviewed lifecycle binding identity в `GlobalMotionShipDeckCombinedSnapshot` и добавить fail-closed validation на snapshot boundary после T-FO06CJ.
+
+**Результат:** Snapshot теперь переносит полный `GlobalMotionShipDeckPassengerLifecycleBindingReceipt`; `TryCapture` требует валидный reviewed lifecycle binding; snapshot validation повторно проверяет handoff contract и identity equality. Validator: `10/10` PASS; `check_compile_errors=No compile errors`; Play Mode не запускался.
+
+**Граница:** Runtime producer, `IGlobalMotionShipDeckPassengerGenerationSource`, `NpcBrain`, `ShipDeckNav`, passenger ledger, adapter set, BootstrapScene и runtime driver не подключались; `runtimeRebaseReadiness=NOT_READY`. Search за пределами audited paths остаётся inconclusive.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckCombinedTransactionHost.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckCombinedTransactionHost.cs`, `docs/world/floatingorigin/06CK_COMBINED_SNAPSHOT_LIFECYCLE_BINDING_IDENTITY.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CJ — Combined ShipDeck host lifecycle binding preflight)
 
 **Задача:** Проверить фактический Edit Mode handoff reviewed passenger lifecycle receipts в `GlobalMotionShipDeckCombinedTransactionHost` после T-FO06CI.

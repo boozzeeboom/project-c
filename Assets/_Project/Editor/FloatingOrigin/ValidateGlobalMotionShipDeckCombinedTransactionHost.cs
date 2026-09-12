@@ -41,6 +41,7 @@ namespace ProjectC.EditorTools.FloatingOrigin
             }
 
             GameObject gameObject = null;
+            GameObject unboundHostObject = null;
             GameObject passengerA = null;
             GameObject passengerB = null;
             try
@@ -90,6 +91,37 @@ namespace ProjectC.EditorTools.FloatingOrigin
                         new[] { firstReceipt, secondReceipt }, out error), error);
                     Require(host.HasReviewedPassengerLifecycleBinding, "lifecycle_binding_not_stored");
                     Require(host.TryValidateReviewedPassengerLifecycleBinding(out error), error);
+
+                    var snapshot = new GlobalMotionShipDeckCombinedSnapshot(
+                        "T-FO06CJ_snapshot",
+                        1UL,
+                        host.ReviewedPassengerBindingGeneration,
+                        new GlobalMotionShipDeckPassengerLifecycleBindingReceipt(
+                            17UL, 2UL, host.ReviewedPassengerBindingGeneration, 2, true, true),
+                        new ShipDeckNavFloatingOriginSnapshot(
+                            "T-FO06CJ_snapshot", false, Vector3.zero, Vector3.zero, false, 1UL),
+                        Array.Empty<GlobalMotionNpcShipDeckSnapshot>());
+                    Require(snapshot.LifecycleBinding.ShipNetworkObjectId == 17UL &&
+                        snapshot.LifecycleBinding.ShipSpawnGeneration == 2UL &&
+                        snapshot.LifecycleBinding.BindingGeneration == host.ReviewedPassengerBindingGeneration &&
+                        snapshot.LifecycleBinding.PassengerCount == 2 &&
+                        snapshot.LifecycleBinding.ServerOwned &&
+                        snapshot.LifecycleBinding.ProtocolOwned,
+                        "snapshot_lifecycle_binding_identity_not_carried");
+                });
+
+                Check("Capture requires reviewed lifecycle binding", () =>
+                {
+                    unboundHostObject = new GameObject("T-FO06CJ_TestUnboundHost");
+                    var unboundHost = unboundHostObject.AddComponent<GlobalMotionShipDeckCombinedTransactionHost>();
+                    var reviewedPassengers = new[]
+                    {
+                        passengerA.GetComponent<NpcBrain>(),
+                        passengerB.GetComponent<NpcBrain>()
+                    };
+                    Require(unboundHost.TryConfigureReviewedPassengers(reviewedPassengers, out string configureError), configureError);
+                    Require(!unboundHost.TryCapture("T-FO06CJ_capture", 1UL, out _, out string error) &&
+                        error == "reviewed_lifecycle_binding_required", error);
                 });
 
                 Check("Lifecycle binding generation mismatch remains rejected", () =>
@@ -143,6 +175,8 @@ namespace ProjectC.EditorTools.FloatingOrigin
                     UnityEngine.Object.DestroyImmediate(passengerA);
                 if (passengerB != null)
                     UnityEngine.Object.DestroyImmediate(passengerB);
+                if (unboundHostObject != null)
+                    UnityEngine.Object.DestroyImmediate(unboundHostObject);
                 if (gameObject != null)
                     UnityEngine.Object.DestroyImmediate(gameObject);
             }

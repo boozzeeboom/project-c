@@ -1,0 +1,30 @@
+{
+  "ticket": "T-FO06CK",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_PURE_VALIDATED_COMPILE_VERIFIED_DORMANT",
+  "scope": "Carry reviewed lifecycle binding identity through the combined snapshot boundary",
+  "implementation": {
+    "host": "GlobalMotionShipDeckCombinedTransactionHost",
+    "snapshot": "GlobalMotionShipDeckCombinedSnapshot",
+    "validator": "ValidateGlobalMotionShipDeckCombinedTransactionHost",
+    "snapshotLifecycleBinding": true,
+    "captureRequiresReviewedLifecycleBinding": true,
+    "snapshotValidationChecksLifecycleBinding": true,
+    "runtimeProducer": false,
+    "persistentSceneMutation": false
+  },
+  "validation": {
+    "combinedHostPureChecksPassed": 10,
+    "combinedHostPureChecksFailed": 0,
+    "compileErrors": false,
+    "playModeExecuted": false
+  },
+  "gates": {
+    "serverOwnedLifecycleProducer": "NOT IMPLEMENTED",
+    "generationSourceBinding": "NOT BOUND",
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "bootstrapScene": "UNCHANGED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "audit and select a legitimate server-owned lifecycle owner"
+}

@@ -10,6 +10,7 @@ namespace ProjectC.World.FloatingOrigin.Network
         public string TransactionId { get; }
         public ulong FrameGeneration { get; }
         public ulong PassengerBindingGeneration { get; }
+        public GlobalMotionShipDeckPassengerLifecycleBindingReceipt LifecycleBinding { get; }
         public ShipDeckNavFloatingOriginSnapshot DeckSnapshot { get; }
         public GlobalMotionNpcShipDeckSnapshot[] PassengerSnapshots { get; }
 
@@ -17,12 +18,14 @@ namespace ProjectC.World.FloatingOrigin.Network
             string transactionId,
             ulong frameGeneration,
             ulong passengerBindingGeneration,
+            GlobalMotionShipDeckPassengerLifecycleBindingReceipt lifecycleBinding,
             ShipDeckNavFloatingOriginSnapshot deckSnapshot,
             GlobalMotionNpcShipDeckSnapshot[] passengerSnapshots)
         {
             TransactionId = transactionId;
             FrameGeneration = frameGeneration;
             PassengerBindingGeneration = passengerBindingGeneration;
+            LifecycleBinding = lifecycleBinding;
             DeckSnapshot = deckSnapshot;
             PassengerSnapshots = passengerSnapshots;
         }
@@ -104,6 +107,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             snapshot = null;
             if (!ValidateIdentity(transactionId, frameGeneration, out error))
                 return false;
+            if (!TryValidateReviewedPassengerLifecycleBinding(out error))
+                return false;
             if (!ResolveDeckNav().TryCaptureFloatingOriginSnapshot(transactionId, out var deckSnapshot, out error))
                 return false;
 
@@ -121,6 +126,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 transactionId,
                 frameGeneration,
                 _reviewedPassengerBindingGeneration,
+                _reviewedLifecycleBinding,
                 deckSnapshot,
                 passengerSnapshots);
             return true;
@@ -266,6 +272,16 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (snapshot.PassengerBindingGeneration == 0 ||
                 snapshot.PassengerBindingGeneration != _reviewedPassengerBindingGeneration)
                 return Reject("passenger_binding_generation_mismatch", out error);
+            if (!TryValidateReviewedPassengerLifecycleBinding(out error))
+                return false;
+            if (!GlobalMotionShipDeckPassengerLifecycleBindingHandoffContract.TryValidate(
+                    snapshot.LifecycleBinding,
+                    _reviewedPassengers == null ? 0 : _reviewedPassengers.Length,
+                    _reviewedPassengerBindingGeneration,
+                    out error))
+                return false;
+            if (!BindingsMatch(snapshot.LifecycleBinding, _reviewedLifecycleBinding))
+                return Reject("lifecycle_binding_identity_mismatch", out error);
             if (!string.Equals(snapshot.DeckSnapshot.TransactionId, snapshot.TransactionId, StringComparison.Ordinal))
                 return Reject("deck_snapshot_transaction_mismatch", out error);
             if (snapshot.PassengerSnapshots == null || snapshot.PassengerSnapshots.Length == 0)
@@ -296,6 +312,18 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (_deckNav == null)
                 _deckNav = GetComponent<ShipDeckNav>();
             return _deckNav;
+        }
+
+        private static bool BindingsMatch(
+            GlobalMotionShipDeckPassengerLifecycleBindingReceipt left,
+            GlobalMotionShipDeckPassengerLifecycleBindingReceipt right)
+        {
+            return left.ShipNetworkObjectId == right.ShipNetworkObjectId &&
+                   left.ShipSpawnGeneration == right.ShipSpawnGeneration &&
+                   left.BindingGeneration == right.BindingGeneration &&
+                   left.PassengerCount == right.PassengerCount &&
+                   left.ServerOwned == right.ServerOwned &&
+                   left.ProtocolOwned == right.ProtocolOwned;
         }
 
         private static GlobalMotionShipDeckCombinedTransactionResult CreateResult(

@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CR — ShipDeck lifecycle producer owner-review gate)
+
+**Задача:** После `T-FO06CQ` провести owner-review proposed ShipDeck lifecycle producer-а и определить, существует ли один legitimate server/protocol owner для `ShipRegistered`, `PassengerAttached`, `PassengerDetached` и `ShipInvalidated`.
+
+**Результат:** Gate закрыт как **IMPLEMENTATION-BLOCKED**: в audited paths нет legitimate single server/protocol owner со stable protocol `ShipId`/passenger identity, coordinator-issued ship/attachment generations, complete four-phase ownership, contiguous ordering и terminal invalidation. `NpcShipController`, `ShipCrewSpawner`, `NpcBrain` и `ShipDeckNav` остаются раздельными seams и не promoted в producer: registration/despawn, spawn/reuse, attach/detach и NavMesh readiness по отдельности не дают unified protocol owner. Synthetic producer creation и inference из `IsSpawned`, `NetworkObjectId`, Unity/NGO object references, `ShipDeckNav.RegistrationGeneration`, callback order и host-local binding generation явно отклонены. Требуется explicit owner evidence для всех четырёх facts, coordinator-issued generations, ordering, terminal invalidation и typed handoff через `GlobalMotionShipDeckPassengerLifecycleCoordinator.TryAccept`.
+
+**Граница:** Только документация изменена. Proposed producer не создавался; coordinator и typed handoff остаются dormant; provider/adapter/`BootstrapScene` binding не выполнялись; сцены, префабы и runtime configuration не изменялись; Play Mode не запускался. `runtimeRebaseReadiness=NOT_READY`; search outside audited paths остаётся `INCONCLUSIVE`.
+
+**Файлы:** `docs/world/floatingorigin/06CR_SHIP_DECK_LIFECYCLE_PRODUCER_OWNER_REVIEW_GATE.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CQ — ShipDeck lifecycle fact-source ownership and explicit ingress decision gate)
 
 **Задача:** После `T-FO06CP` выполнить docs-only ownership review для четырёх ShipDeck lifecycle ingress, определить legitimate server/protocol owner, concrete source seam, required identity/generation/lineage и explicit mapping path в coordinator `TryAccept`.

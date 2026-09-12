@@ -60,6 +60,18 @@
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BT — concrete NetworkBaseline protocol host)
+
+**Задача:** Реализовать первый concrete `IGlobalMotionNetworkBaselineTransactionHost` поверх `GlobalMotionReplicator`, сохранив fail-closed границу до появления protocol-owned ownership/lifetime/baseline-generation restore.
+
+**Результат:** Создан `GlobalMotionNetworkBaselineProtocolHost` как реальный `MonoBehaviour` с `RequireComponent` и lazy `ResolveReplicator()`. Host читает accepted server baseline, формирует observation-only evidence/capture envelope и отслеживает transaction/lifetime identity. `Apply/Rebuild/Validate/Restore` остаются fail-closed; `IsRestorable=false`, `Restorable` capability не объявляется. Validator: `8/8` pure checks PASS; `check_compile_errors=No compile errors`.
+
+**Граница:** Runtime registration, provider binding, `GlobalMotionNativeAdapterSet`, BootstrapScene и Play Mode не выполнялись. `NativeReady=false`, NetworkBaseline остаётся `SEAM_ONLY`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkBaselineProtocolHost.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionNetworkBaselineProtocolHost.cs`, `docs/world/floatingorigin/06BT_NETWORK_BASELINE_PROTOCOL_HOST_IMPLEMENTATION.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BN — protocol-owned NetworkBaseline reversible capability)
 
 **Задача:** После `T-FO06AZ` зафиксировать отдельную reviewed capability boundary для будущего server-coordinated reversible NGO baseline transaction, не объявляя observation-only evidence готовым adapter-ом.

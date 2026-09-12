@@ -1,0 +1,48 @@
+{
+  "ticket": "T-FO06BT",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_FAIL_CLOSED_NO_RUNTIME_CHANGE",
+  "scope": "concrete protocol-owned NetworkBaseline transaction host implementation slice",
+  "implementation": {
+    "hostType": "GlobalMotionNetworkBaselineProtocolHost",
+    "interface": "IGlobalMotionNetworkBaselineTransactionHost",
+    "replicatorBinding": "RequireComponent plus lazy ResolveReplicator",
+    "acceptedServerBaselineObservation": true,
+    "observationOnlyEvidence": true,
+    "captureIdentityTracking": true,
+    "apply": "FAIL_CLOSED",
+    "rebuild": "FAIL_CLOSED",
+    "validate": "FAIL_CLOSED_UNTIL_CAPTURE_AND_RESTORE_PROOF",
+    "restore": "FAIL_CLOSED",
+    "isRestorable": false,
+    "restorableCapabilityDeclared": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "pureChecksPassed": 8,
+    "pureChecksFailed": 0,
+    "menu": "ProjectC/World/Floating Origin/Validate Network Baseline Protocol Host",
+    "result": "8 pure checks PASS / 0 FAIL"
+  },
+  "runtime": {
+    "nativeReady": false,
+    "networkBaselineAdapter": "SEAM_ONLY",
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED",
+    "providerBinding": "NOT_EXECUTED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "requiredBeforeRestorable": [
+    "server-owned ownership mutation receipts",
+    "spawn/lifetime generation restore",
+    "baseline-generation restore",
+    "ordered protocol capture/apply/validate/restore receipts"
+  ],
+  "inconclusive": [
+    "NGO package internals",
+    "generated code",
+    "serialized scene callbacks",
+    "external tooling"
+  ]
+}

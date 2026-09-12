@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BD — runtime manifest source compile gate)
+
+**Задача:** Подключить первый runtime source slice к dormant live-manifest архитектуре после T-FO06BC, сохранив fail-closed admission boundary.
+
+**Результат:** Создан `GlobalMotionRebaseSceneRuntimeManifestSource`, который выполняет детерминированный census `22` ship roots, `20` deck-nav и `20` passengers, проверяет attachment/NavMesh readiness и делегирует admission evidence отдельному provider. Исправлен namespace для `ShipController` (`ProjectC.Player`). `check_compile_errors=No compile errors`.
+
+**Граница:** Admission provider не реализован, synthetic all-true evidence не добавлялся, bridge/source binding и `BootstrapScene` не изменялись, Play Mode не запускался. Live manifest publication и peer agreement не наблюдались; `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseSceneRuntimeManifestSource.cs`, `docs/world/floatingorigin/06BD_RUNTIME_MANIFEST_SOURCE_COMPILE_GATE.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BC — live manifest runtime bridge)
 
 **Задача:** Перейти от report-only этапов к первому runtime code slice: server-authoritative publication reviewed manifest и peer digest/count acknowledgement.

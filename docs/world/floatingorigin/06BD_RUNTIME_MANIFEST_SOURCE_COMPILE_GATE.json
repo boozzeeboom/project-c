@@ -1,0 +1,33 @@
+{
+  "ticket": "T-FO06BD",
+  "date": "2026-09-12",
+  "title": "runtime manifest source compile gate",
+  "status": "COMPILE_VERIFIED_RUNTIME_NOT_CONNECTED",
+  "source": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseSceneRuntimeManifestSource.cs",
+  "checks": {
+    "compile": "PASS",
+    "git_diff_check": "PASS",
+    "play_mode": "NOT_RUN",
+    "bootstrap_scene_binding": "NOT_CONNECTED"
+  },
+  "coverage_contract": {
+    "ship_roots": 22,
+    "ship_deck_nav": 20,
+    "passengers": 20,
+    "fixed_identities": ["CITY_STATIC", "WORLD_ANCHORS", "PLAYER_FRAME", "CAMERA"]
+  },
+  "runtime_state": {
+    "admission_evidence_provider": "NOT_IMPLEMENTED",
+    "live_manifest_publication": "NOT_OBSERVED",
+    "peer_digest_count_agreement": "NOT_OBSERVED",
+    "native_adapter_set": "EMPTY_UNSEALED",
+    "full_transaction": "NOT_CONNECTED",
+    "runtime_rebase_readiness": "NOT_READY"
+  },
+  "negative_evidence": [
+    "No provider returning synthetic all-true admission evidence was added.",
+    "No BootstrapScene mutation was performed.",
+    "No Play Mode runtime counts or NavMesh readiness were claimed."
+  ],
+  "next_gate": "legitimate admission-evidence provider source review before serial BootstrapScene binding"
+}

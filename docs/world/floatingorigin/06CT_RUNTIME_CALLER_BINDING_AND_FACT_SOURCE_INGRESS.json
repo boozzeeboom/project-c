@@ -1,0 +1,33 @@
+{
+  "ticket": "T-FO06CT",
+  "date": "2026-09-12",
+  "status": "PURE_CONTRACT_IMPLEMENTED_RUNTIME_CALLER_BINDING_DORMANT",
+  "implementation": {
+    "binding": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerBinding.cs",
+    "validator": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleProducerBinding.cs",
+    "delegatesTo": "GlobalMotionShipDeckPassengerLifecycleProducerBridge",
+    "activeRosterHandoff": "GlobalMotionShipDeckPassengerLifecycleSourceBindingContract"
+  },
+  "validation": {
+    "tfo06ctPureChecks": "12/12 PASS",
+    "tfo06csRegressionChecks": "11/11 PASS",
+    "compile": "No compile errors",
+    "bindingScriptDiagnostics": "0 warnings / 0 errors",
+    "validatorScriptDiagnostics": "0 warnings / 0 errors",
+    "playMode": "NOT_RUN"
+  },
+  "unchanged": {
+    "scenes": true,
+    "prefabs": true,
+    "bootstrapScene": true,
+    "providerBinding": false,
+    "nativeAdapterSetRegistration": false,
+    "runtimeDriverInstallation": false,
+    "combinedHostRuntimeBinding": false
+  },
+  "readiness": {
+    "runtimeRebaseReadiness": "NOT_READY",
+    "searchOutsideAuditedPaths": "INCONCLUSIVE"
+  },
+  "nextGate": "Owner-reviewed/runtime caller boundary and user-controlled evidence for stable protocol identities, ordering and terminal invalidation"
+}

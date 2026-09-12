@@ -1,5 +1,19 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CT — ShipDeck lifecycle producer binding and explicit fact-source ingress)
+
+**Задача:** После `T-FO06CS` создать explicit binding façade между reviewed server/gameplay fact callers и producer bridge, сохранить accepted lifecycle receipts и подготовить typed active-passenger handoff без discovery, synthetic identity и runtime activation.
+
+**Результат:** Создан `GlobalMotionShipDeckPassengerLifecycleProducerBinding`, реализующий `IGlobalMotionShipDeckPassengerGenerationSource`. Binding делегирует четыре typed ingress в T-FO06CS bridge, сохраняет только accepted downstream receipts, фиксирует stable `ShipId`/supplemental `ShipNetworkObjectId`/coordinator-owned ship lifetime generation, поддерживает active passenger roster, exact detach, terminal invalidation и deterministic sorted handoff через `GlobalMotionShipDeckPassengerLifecycleSourceBindingContract`. После invalidation дальнейшие операции fail closed; rejected ingress не мутирует state.
+
+**Проверка:** Pure Edit Mode validator `ValidateGlobalMotionShipDeckPassengerLifecycleProducerBinding`: `12/12 PASS`. Regression T-FO06CS: `11/11 PASS`. `check_compile_errors=No compile errors`; обе новые scripts `validate_script=0 warnings / 0 errors`; Play Mode не запускался.
+
+**Граница:** Реальные callers `NpcShipController`, `ShipCrewSpawner`, `NpcBrain`, `ShipDeckNav` не bound. Combined host, provider, `GlobalMotionNativeAdapterSet`, runtime driver, `BootstrapScene`, сцены и prefabs не изменялись. `runtimeRebaseReadiness=NOT_READY`; search outside audited paths остаётся `INCONCLUSIVE`. Следующий этап — owner-reviewed/runtime caller boundary и пользовательский evidence capture, а не автоматическая установка binding.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerBinding.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckPassengerLifecycleProducerBinding.cs`, `docs/world/floatingorigin/06CT_RUNTIME_CALLER_BINDING_AND_FACT_SOURCE_INGRESS.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CS — ShipDeck lifecycle producer/bridge implementation gate)
 
 **Задача:** После `T-FO06CR` реализовать concrete explicit server/protocol-owned producer/bridge, который владеет одним `GlobalMotionShipDeckPassengerLifecycleCoordinator`, принимает все четыре lifecycle ingress и возвращает T-FO06CO mapping только для accepted facts.

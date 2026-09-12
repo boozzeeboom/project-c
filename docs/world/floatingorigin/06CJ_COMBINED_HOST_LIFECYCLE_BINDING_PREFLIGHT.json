@@ -1,0 +1,33 @@
+{
+  "ticket": "T-FO06CJ",
+  "date": "2026-09-12",
+  "status": "PREFLIGHT_VERIFIED_COMPILE_VERIFIED_PURE_ONLY_DORMANT",
+  "scope": "Edit Mode handoff of reviewed lifecycle receipts into combined ShipDeck host",
+  "implementation": {
+    "host": "GlobalMotionShipDeckCombinedTransactionHost",
+    "validator": "ValidateGlobalMotionShipDeckCombinedTransactionHost",
+    "testedPath": [
+      "TryConfigureReviewedPassengers",
+      "TryConfigureReviewedPassengerLifecycleBinding",
+      "TryValidateReviewedPassengerLifecycleBinding"
+    ],
+    "runtimeProducer": false,
+    "persistentSceneMutation": false
+  },
+  "validation": {
+    "combinedHostPureChecksPassed": 9,
+    "combinedHostPureChecksFailed": 0,
+    "compileErrors": false,
+    "scriptWarnings": 0,
+    "scriptErrors": 0,
+    "playModeExecuted": false
+  },
+  "gates": {
+    "serverOwnedLifecycleProducer": "NOT IMPLEMENTED",
+    "generationSourceBinding": "NOT BOUND",
+    "globalMotionNativeAdapterSet": "EMPTY / UNSEALED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "searchOutsideAuditedPaths": "INCONCLUSIVE",
+  "nextGate": "replace pure test receipts with one legitimate server-owned lifecycle owner"
+}

@@ -41,6 +41,8 @@ namespace ProjectC.EditorTools.FloatingOrigin
             }
 
             GameObject gameObject = null;
+            GameObject passengerA = null;
+            GameObject passengerB = null;
             try
             {
                 Check("Host binds required ShipDeckNav", () =>
@@ -63,6 +65,49 @@ namespace ProjectC.EditorTools.FloatingOrigin
                     var host = gameObject.GetComponent<GlobalMotionShipDeckCombinedTransactionHost>();
                     Require(!host.TryConfigureReviewedPassengers(new NpcBrain[] { null }, out string error) &&
                         error == "passenger_reviewed_source_missing:index=0", error);
+                });
+
+                Check("Reviewed lifecycle binding hands off explicitly", () =>
+                {
+                    var host = gameObject.GetComponent<GlobalMotionShipDeckCombinedTransactionHost>();
+                    passengerA = new GameObject("T-FO06CB_TestPassengerA");
+                    passengerB = new GameObject("T-FO06CB_TestPassengerB");
+                    var firstPassenger = passengerA.AddComponent<NpcBrain>();
+                    var secondPassenger = passengerB.AddComponent<NpcBrain>();
+                    Require(host.TryConfigureReviewedPassengers(
+                        new[] { firstPassenger, secondPassenger }, out string error), error);
+                    GlobalMotionShipDeckPassengerLifecycleProducerContract.TryRegisterShip(
+                        17UL, 2UL, true, true, out var registered, out error);
+                    Require(error == null, error);
+                    GlobalMotionShipDeckPassengerLifecycleProducerContract.TryAttachPassenger(
+                        registered, "Lyra", "DeckNav", 3UL, out var firstReceipt, out error);
+                    Require(error == null, error);
+                    GlobalMotionShipDeckPassengerLifecycleProducerContract.TryAttachPassenger(
+                        registered, "Bram", "DeckNav", 4UL, out var secondReceipt, out error);
+                    Require(error == null, error);
+                    Require(host.TryConfigureReviewedPassengerLifecycleBinding(
+                        host.ReviewedPassengerBindingGeneration,
+                        new[] { firstReceipt, secondReceipt }, out error), error);
+                    Require(host.HasReviewedPassengerLifecycleBinding, "lifecycle_binding_not_stored");
+                    Require(host.TryValidateReviewedPassengerLifecycleBinding(out error), error);
+                });
+
+                Check("Lifecycle binding generation mismatch remains rejected", () =>
+                {
+                    var host = gameObject.GetComponent<GlobalMotionShipDeckCombinedTransactionHost>();
+                    GlobalMotionShipDeckPassengerLifecycleProducerContract.TryRegisterShip(
+                        17UL, 2UL, true, true, out var registered, out string error);
+                    Require(error == null, error);
+                    GlobalMotionShipDeckPassengerLifecycleProducerContract.TryAttachPassenger(
+                        registered, "Lyra", "DeckNav", 3UL, out var firstReceipt, out error);
+                    Require(error == null, error);
+                    GlobalMotionShipDeckPassengerLifecycleProducerContract.TryAttachPassenger(
+                        registered, "Bram", "DeckNav", 4UL, out var secondReceipt, out error);
+                    Require(error == null, error);
+                    Require(!host.TryConfigureReviewedPassengerLifecycleBinding(
+                        host.ReviewedPassengerBindingGeneration + 1UL,
+                        new[] { firstReceipt, secondReceipt }, out error) &&
+                        error == "reviewed_binding_generation_mismatch", error);
                 });
 
                 Check("Capture validates transaction identity before runtime authority", () =>
@@ -94,6 +139,10 @@ namespace ProjectC.EditorTools.FloatingOrigin
             }
             finally
             {
+                if (passengerA != null)
+                    UnityEngine.Object.DestroyImmediate(passengerA);
+                if (passengerB != null)
+                    UnityEngine.Object.DestroyImmediate(passengerB);
                 if (gameObject != null)
                     UnityEngine.Object.DestroyImmediate(gameObject);
             }

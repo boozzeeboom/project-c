@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CJ — Combined ShipDeck host lifecycle binding preflight)
+
+**Задача:** Проверить фактический Edit Mode handoff reviewed passenger lifecycle receipts в `GlobalMotionShipDeckCombinedTransactionHost` после T-FO06CI.
+
+**Результат:** Расширен pure validator временным component graph: `NpcBrain[]` roster, explicit lifecycle receipts, `TryConfigureReviewedPassengerLifecycleBinding` и последующая validation. Добавлена проверка mismatched binding generation. Validator: `9/9` PASS; `check_compile_errors=No compile errors`; script validation `0 warnings / 0 errors`.
+
+**Граница:** Временные GameObjects уничтожаются validator-ом. Runtime producer, generation source binding, snapshot runtime operation, adapter registration, BootstrapScene и Play Mode не выполнялись; `runtimeRebaseReadiness=NOT_READY`. Search за пределами audited paths остаётся inconclusive.
+
+**Файлы:** `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckCombinedTransactionHost.cs`, `docs/world/floatingorigin/06CJ_COMBINED_HOST_LIFECYCLE_BINDING_PREFLIGHT.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CI — ShipDeck passenger lifecycle binding handoff)
 
 **Задача:** После T-FO06CH добавить explicit handoff seam между reviewed lifecycle binding и `GlobalMotionShipDeckCombinedTransactionHost`, не создавая runtime producer и не вызывая capture/rebuild/restore автоматически.

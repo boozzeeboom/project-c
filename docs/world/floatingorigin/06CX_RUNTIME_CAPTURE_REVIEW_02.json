@@ -40,7 +40,8 @@
     "runtimeRebaseMarkers": 0,
     "errors": 0,
     "exceptions": 0,
-    "navMeshAgentWarnings": 240
+    "navMeshAgentWarnings": 240,
+    "navMeshWarningsDisposition": "IGNORED_LEGACY"
   },
   "classification": {
     "initialBaseline": "PASS",
@@ -53,7 +54,7 @@
     "rollback": "NOT_OBSERVED",
     "manifestAdmission": "NOT_OBSERVED",
     "cameraContinuity": "INCONCLUSIVE",
-    "navMeshWarnings": "OPEN",
+    "navMeshWarnings": "IGNORED_LEGACY",
     "runtimeRebaseReadiness": "NOT_READY"
   },
   "nextGate": "Instrument writer transition y~0 to y~2502 and capture explicit user-controlled rebase markers"

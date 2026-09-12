@@ -56,7 +56,7 @@ Counts по полному log:
 - `Error`: `0`;
 - `Exception`: `0`.
 
-Сохраняются `240` сообщений `Failed to create agent because it is not close enough to the NavMesh`. Это не отменяет pointwise наблюдение `20` готовых deck/passenger состояний, но не позволяет считать общий ShipDeck/NavMesh runtime gate полностью чистым.
+В capture сохраняются `240` сообщений `Failed to create agent because it is not close enough to the NavMesh`. Пользователь подтвердил, что это старая, уже известная ошибка NavMesh и она **исключается из floating-origin acceptance**. Она не используется как blocker или объяснение текущего rebase-статуса.
 
 Camera evidence неполная: поздние записи содержат `camera.LateUpdate.skip(... cursor=None)`, поэтому непрерывность camera history не доказана.
 
@@ -74,7 +74,7 @@ Capture закрывает только следующие части:
 - rollback: **NOT OBSERVED**;
 - manifest/admission: **NOT OBSERVED**;
 - camera continuity: **INCONCLUSIVE**;
-- NavMesh warnings: **OPEN**.
+- NavMesh warnings: **IGNORED_LEGACY**.
 
 `runtimeRebaseReadiness` остаётся **NOT_READY**.
 

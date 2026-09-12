@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BB — live manifest/admission runtime census)
+
+**Задача:** Проверить исходники на наличие фактического runtime bridge для participant discovery, live manifest publication и admission receipts после наблюдательного аудита `T-FO06BA`.
+
+**Результат:** В audited source paths подтверждены только pure `TryAdmit`, receipt source/session gate, sealed adapter-set contract и plain runtime-driver contract. Concrete `MonoBehaviour`/`NetworkBehaviour` publisher/discovery/admission bridge не найден. `NetworkPlayer`, `ShipController` и `NpcBrain` являются actor participants, но не live manifest publisher-ами.
+
+**Граница:** Runtime discovery, NGO/transport publication, peer agreement, participant admission evidence, native adapter discovery, BootstrapScene installation и Unity mutation не выполнялись. `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `docs/world/floatingorigin/06BB_LIVE_MANIFEST_ADMISSION_RUNTIME_CENSUS.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BA — NetworkBaseline observation-only audit)
 
 **Задача:** Сопоставить полный `[T-FO06Y]` capture с pure `T-FO06AZ` NetworkBaseline contract без создания concrete adapter или изменения `FullTransaction`.

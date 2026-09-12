@@ -1,0 +1,28 @@
+{
+  "ticket": "T-FO06BB",
+  "date": "2026-09-12",
+  "scope": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network",
+    "Assets/_Project/Editor/FloatingOrigin"
+  ],
+  "classification": "SOURCE_CENSUS",
+  "pureContracts": {
+    "participantAdmissionPolicy": "IMPLEMENTED",
+    "liveManifestReceiptSource": "IMPLEMENTED",
+    "liveManifestSessionEvidenceGate": "IMPLEMENTED",
+    "nativeAdapterSet": "IMPLEMENTED_CONTRACT_ONLY",
+    "runtimeDriver": "IMPLEMENTED_CONTRACT_ONLY"
+  },
+  "runtimeBridge": {
+    "publisherComponent": "NOT_FOUND",
+    "participantDiscovery": "NOT_CONNECTED",
+    "serverPeerDigestAgreement": "NOT_PROVEN",
+    "participantAdmissionEvidence": "NOT_READY",
+    "nativeAdapterDiscovery": "NOT_CONNECTED"
+  },
+  "authorization": {
+    "bootstrapSceneInstallation": "NOT_AUTHORIZED",
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "ticket": "T-FO06BO",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTED_COMPILE_VERIFIED_PURE_ONLY_DORMANT",
+  "scope": "explicit protocol-owned NetworkBaseline native adapter producer seam",
+  "implementation": {
+    "adapter": "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkBaselineNativeAdapter.cs",
+    "validator": "Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionNetworkBaselineNativeAdapter.cs",
+    "hostContract": "IGlobalMotionNetworkBaselineTransactionHost",
+    "coverage": "NetworkBaseline",
+    "selfRegistration": false,
+    "identityGuards": ["participant", "session", "spawn_generation", "rollback_transaction"]
+  },
+  "checks": {
+    "planned": 6,
+    "passed": 6,
+    "failed": 0
+  },
+  "runtime": {
+    "compile": "PASS",
+    "playModeExecuted": false,
+    "protocolOwnedHostPresent": false,
+    "adapterRegistration": false,
+    "providerBinding": "NOT_EXECUTED",
+    "bootstrapSceneMutation": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "gates": {
+    "networkBaselineConcreteHost": "NOT_PRESENT",
+    "networkBaselineAdapter": "SEAM_ONLY",
+    "shipDeckNav": "BLOCKED_SEPARATE_LIFECYCLE_GATE",
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED",
+    "fullTransactionAuthorization": "NOT_AUTHORIZED"
+  }
+}

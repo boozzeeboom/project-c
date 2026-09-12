@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BO — protocol-owned NetworkBaseline native adapter seam)
+
+**Задача:** Перейти от capability boundary T-FO06BN к explicit producer seam, сохранив NGO ownership/lifetime внутри protocol-owned host и не устанавливая adapter в runtime.
+
+**Результат:** Созданы `IGlobalMotionNetworkBaselineTransactionHost` и `GlobalMotionNetworkBaselineNativeAdapter`. Adapter покрывает только `NetworkBaseline`, сообщает `NativeReady` только при полном T-FO06BN capability, проверяет participant identity до делегирования и отклоняет rollback evidence другого participant/transaction. Pure validator: `6/6` PASS; `check_compile_errors=No compile errors`.
+
+**Граница:** Реального protocol-owned NGO host нет; adapter не зарегистрирован, provider binding не выполнялся, `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, BootstrapScene и Play Mode не изменялись, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionNetworkBaselineNativeAdapter.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionNetworkBaselineNativeAdapter.cs`, `docs/world/floatingorigin/06BO_NETWORK_BASELINE_NATIVE_ADAPTER_SEAM.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BN — protocol-owned NetworkBaseline reversible capability)
 
 **Задача:** После `T-FO06AZ` зафиксировать отдельную reviewed capability boundary для будущего server-coordinated reversible NGO baseline transaction, не объявляя observation-only evidence готовым adapter-ом.

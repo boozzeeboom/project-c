@@ -1,3 +1,15 @@
+## Итерация от 2026-09-12 (T-FO06AJ — runtime connection authorization gate)
+
+**Задача:** Связать ранее созданный connection evidence token с текущими readiness bundle и sealed adapter set через pure exact-match authorization gate, не устанавливая runtime connection.
+
+**Результат:** Созданы `GlobalMotionRebaseRuntimeConnectionAuthorization` и `GlobalMotionRebaseRuntimeConnectionAuthorizationGate.TryAuthorize`. Gate требует valid evidence, ready bundle, повторную adapter validation, ordinal-совпадение manifest digest/session identity и точное совпадение adapter count. Native adapter methods не вызываются.
+
+**Граница:** Runtime driver, coordinator, BootstrapScene, participant discovery, manifest publication, Apply/Rebuild/Validate/Publish, rollback, Unity state и Play Mode не изменялись. `validate_script` — PASS; compile — PASS; `git diff --check` — PASS; runtime rebase readiness остаётся `NOT_READY`.
+
+**Файлы:** `GlobalMotionRebaseRuntimeConnectionAuthorization.cs`, `docs/world/floatingorigin/06AJ_RUNTIME_CONNECTION_AUTHORIZATION.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AI — runtime connection evidence contract)
 
 **Задача:** Связать уже созданный readiness bundle с sealed native adapter set через отдельный pure connection evidence contract, не подключая runtime и не выполняя Unity mutation.

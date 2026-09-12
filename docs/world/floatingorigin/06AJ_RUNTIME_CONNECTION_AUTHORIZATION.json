@@ -1,0 +1,54 @@
+{
+  "ticket": "T-FO06AJ",
+  "date": "2026-09-12",
+  "scope": "runtime connection authorization gate",
+  "ticketAssignment": "next free substage after T-FO06AI; no existing 06AJ report found",
+  "changedFiles": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseRuntimeConnectionAuthorization.cs",
+    "docs/world/floatingorigin/06AJ_RUNTIME_CONNECTION_AUTHORIZATION.md",
+    "docs/world/floatingorigin/06AJ_RUNTIME_CONNECTION_AUTHORIZATION.json",
+    "docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md",
+    "Assets/_Project/Docs/ITERATIONS.md"
+  ],
+  "integration": [
+    "GlobalMotionRebaseRuntimeConnectionEvidence",
+    "GlobalMotionRebaseReadinessBundle",
+    "GlobalMotionNativeAdapterSet",
+    "GlobalMotionRebaseRuntimeConnectionAuthorizationGate.TryAuthorize"
+  ],
+  "behavior": {
+    "requiresValidConnectionEvidence": true,
+    "requiresReadyBundle": true,
+    "requiresAdapterValidation": true,
+    "requiresExactManifestDigestMatch": true,
+    "requiresExactSessionIdentityMatch": true,
+    "requiresExactAdapterCountMatch": true,
+    "invokesNativeAdapters": false,
+    "installsRuntimeConnection": false,
+    "mutatesUnityState": false,
+    "automaticTrigger": false
+  },
+  "verification": {
+    "scriptValidation": "PASS",
+    "compile": "PASS",
+    "gitDiffCheck": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "currentProjectGate": {
+    "connectionEvidence": "NOT_PROVEN",
+    "connectionAuthorization": "NOT_GRANTED",
+    "readinessBundle": "BLOCKED",
+    "participantAdmission": "NOT_READY",
+    "liveManifestPublication": "NOT_PROVEN",
+    "nativeApplyPipeline": "NOT_CONNECTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "scopeBoundary": {
+    "adapterInstances": "NOT_CREATED",
+    "runtimeDriverInstallation": "NOT_CONNECTED",
+    "nativeMutation": "NOT_IMPLEMENTED",
+    "nativeRollback": "NOT_IMPLEMENTED",
+    "bootstrapScene": "UNCHANGED"
+  },
+  "nextStep": "Obtain user-controlled runtime evidence and reviewed concrete adapter instances before any serial runtime installation boundary."
+}

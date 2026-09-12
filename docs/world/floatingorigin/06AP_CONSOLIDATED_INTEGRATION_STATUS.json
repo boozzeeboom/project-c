@@ -1,0 +1,67 @@
+{
+  "ticket": "T-FO06AP",
+  "date": "2026-09-12",
+  "scope": "consolidated integration status and next gate",
+  "ticketAssignment": "next free documentation substage after T-FO06AO; no existing 06AP report found",
+  "reviewedStages": [
+    "T-FO06AA",
+    "T-FO06AB",
+    "T-FO06AC",
+    "T-FO06AD",
+    "T-FO06AE",
+    "T-FO06AF",
+    "T-FO06AG",
+    "T-FO06AH",
+    "T-FO06AI",
+    "T-FO06AJ",
+    "T-FO06AK",
+    "T-FO06AL",
+    "T-FO06AM",
+    "T-FO06AN",
+    "T-FO06AO"
+  ],
+  "proven": {
+    "pureContracts": true,
+    "compile": true,
+    "automaticTriggerExcluded": true,
+    "readinessAndInstallationAuthorizationFailClosed": true,
+    "rolloverInvalidation": true,
+    "terminalFailureInvalidation": true,
+    "coordinatorBeyondCaptured": false,
+    "runtimeInstallation": false,
+    "playMode": false
+  },
+  "missingEvidence": {
+    "concreteNativeAdapters": true,
+    "liveManifestPublication": true,
+    "peerDigestAndCountAgreement": true,
+    "participantAdmission": true,
+    "validReadinessBundle": true,
+    "bootstrapInstallation": true,
+    "applyRebuildValidatePublish": true,
+    "nativeRollback": true,
+    "controlledRebaseRuntimeCapture": true
+  },
+  "currentProjectGate": {
+    "connectionEvidence": "NOT_PROVEN",
+    "connectionAuthorization": "NOT_GRANTED",
+    "installationIntent": "NOT_CREATED",
+    "driverInstallationAuthorization": "NOT_GRANTED",
+    "nativeApplyPipeline": "NOT_CONNECTED",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextTicket": "T-FO06AQ",
+  "nextGate": "user-controlled runtime evidence collection and adapter-readiness review",
+  "verification": {
+    "sourceAudit": "PASS_FROM_EXISTING_REPORTS",
+    "compile": "PASS",
+    "playMode": "NOT_RUN_USER_CONTROLLED"
+  },
+  "scopeBoundary": {
+    "sceneMutation": "NONE",
+    "prefabMutation": "NONE",
+    "bootstrapInstallation": "NOT_CONNECTED",
+    "nativeMutation": "NOT_IMPLEMENTED",
+    "rollback": "NOT_IMPLEMENTED"
+  }
+}

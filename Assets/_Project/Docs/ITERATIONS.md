@@ -1,3 +1,15 @@
+## Итерация от 2026-09-12 (T-FO06AP — consolidated integration status)
+
+**Задача:** Комплексно проанализировать цепочку `T-FO06AA–T-FO06AO`, зафиксировать фактически доказанное и определить следующий реальный gate вместо добавления эквивалентных pure micro-contracts.
+
+**Результат:** Подтверждены compile/static fail-closed boundaries, provenance, readiness/installation authorization и invalidation rules. Зафиксировано, что concrete adapters, live manifest/peer evidence, participant admission, valid readiness bundle, runtime installation, native pipeline и rollback отсутствуют. Следующий этап определён как `T-FO06AQ` user-controlled runtime evidence collection and adapter-readiness review.
+
+**Граница:** Код runtime не изменялся; сцены, префабы, BootstrapScene, native mutation и Play Mode не запускались. Documentation/source review завершён; runtime rebase readiness остаётся `NOT_READY`.
+
+**Файлы:** `docs/world/floatingorigin/06AP_CONSOLIDATED_INTEGRATION_STATUS.md/.json`, `00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06AO — terminal failure invalidation)
 
 **Задача:** Исключить сохранение installation authorization после terminal failure текущей rebase attempt.

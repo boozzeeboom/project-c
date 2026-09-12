@@ -1,0 +1,14 @@
+{
+  "ticket": "T-FO06BJ",
+  "date": "2026-09-12",
+  "status": "BLOCKED_BY_MISSING_STRUCTURED_PRODUCER",
+  "runtimeEvidenceProbe": "LOG_ONLY",
+  "structuredRuntimeProofProducer": "NOT_FOUND_IN_AUDITED_PATH",
+  "rollbackEvidenceProducer": "NOT_FOUND_IN_AUDITED_PATH",
+  "automaticLogParser": "NOT_CREATED",
+  "searchOutsideAuditedPath": "INCONCLUSIVE",
+  "bootstrapSceneBinding": "NONE",
+  "playMode": "NOT_RUN",
+  "runtimeRebaseReadiness": "NOT_READY",
+  "nextGate": "USER_CONTROLLED_STRUCTURED_EVIDENCE_INTAKE"
+}

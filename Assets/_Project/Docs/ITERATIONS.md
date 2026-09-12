@@ -1,5 +1,18 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BJ — runtime proof/evidence producer blocker review)
+
+**Задача:** Проверить, может ли существующий `GlobalMotionRuntimeEvidenceProbe` быть legitimate producer-ом structured runtime proof и rollback evidence.
+
+**Результат:** Подтверждено, что probe остаётся log-only: он пишет `[T-FO06Y]` text markers, но не создаёт immutable proof/rollback envelopes, не выдаёт capture/frame lineage и не выполняет restore. Автоматический parser log → admission evidence не создавался.
+
+**Граница:** Runtime proof/rollback producer не реализован, user-controlled intake не выполнялся, BootstrapScene и runtime не изменялись, Play Mode не запускался. Search outside audited paths остаётся inconclusive; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `docs/world/floatingorigin/06BJ_RUNTIME_PROOF_AND_EVIDENCE_PRODUCER_BLOCKER_REVIEW.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+
 ## Итерация от 2026-09-12 (T-FO06BI — NetworkBaseline adapter boundary)
 
 **Задача:** Зафиксировать protocol-owned boundary для будущего `NetworkBaseline` native adapter и не превращать observation-only baseline в rollback readiness.

@@ -1,0 +1,17 @@
+{
+  "ticket": "T-FO06BI",
+  "date": "2026-09-12",
+  "status": "COMPILE_VERIFIED_CONTRACT_ONLY_NOT_READY",
+  "contract": "GlobalMotionRebaseNetworkBaselineAdapterBoundary",
+  "observationOnlyAccepted": false,
+  "restorableEvidenceRequired": true,
+  "protocolOwned": "REQUIRED_NOT_PROVEN",
+  "captureBoundary": "REQUIRED_NOT_PROVEN",
+  "restoreBoundary": "REQUIRED_NOT_PROVEN",
+  "ownershipRestore": "REQUIRED_NOT_PROVEN",
+  "lifetimeRestore": "REQUIRED_NOT_PROVEN",
+  "concreteAdapter": "NOT_IMPLEMENTED",
+  "playMode": "NOT_RUN",
+  "runtimeRebaseReadiness": "NOT_READY",
+  "nextGate": "PROTOCOL_OWNED_NETWORK_BASELINE_PRODUCER_OR_BLOCKER_REVIEW"
+}

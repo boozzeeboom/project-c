@@ -1,5 +1,18 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06BI — NetworkBaseline adapter boundary)
+
+**Задача:** Зафиксировать protocol-owned boundary для будущего `NetworkBaseline` native adapter и не превращать observation-only baseline в rollback readiness.
+
+**Результат:** Создан `GlobalMotionRebaseNetworkBaselineAdapterBoundary` с explicit source interface, Restorable-only classification и четырьмя обязательными boundaries: capture, restore, ownership restore и lifetime restore. `check_compile_errors=No compile errors`.
+
+**Граница:** Concrete producer/adapter, NGO state inspection, ownership/lifetime restore, `GlobalMotionNativeAdapterSet`, BootstrapScene и Play Mode не изменялись. Observation-only baseline остаётся недостаточным; `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRebaseNetworkBaselineAdapterBoundary.cs`, `docs/world/floatingorigin/06BI_NETWORK_BASELINE_ADAPTER_BOUNDARY.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+
 ## Итерация от 2026-09-12 (T-FO06BH — ShipDeckNav synchronous lifecycle contract)
 
 **Задача:** Зафиксировать transaction-safe lifecycle boundary для будущего `ShipDeckNav` native adapter без runtime регистрации или мутации NavMesh.

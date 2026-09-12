@@ -1,0 +1,42 @@
+{
+  "ticket": "T-FO06AQ",
+  "date": "2026-09-12",
+  "classification": "PARTIAL_OBSERVATIONAL_HOST_CAPTURE",
+  "scene": "Assets/_Project/Scenes/BootstrapScene.unity",
+  "compilationErrors": false,
+  "binding": "4780900133407987940/94/1/1/2",
+  "frames": {
+    "baseline": 885,
+    "respawnThreshold": 901,
+    "postRespawnStable": "913-970",
+    "controlledMovement": "942-970",
+    "jump": "971-984"
+  },
+  "confirmed": {
+    "initialBaseline": true,
+    "playerMovement": true,
+    "jump": true,
+    "cameraOwnershipHistory": true,
+    "deckRegistrations": "20/20",
+    "passengerProxyNavReadiness": "20/20",
+    "respawnWriter": "PlayerRespawnTracker server-authoritative fall-respawn"
+  },
+  "notObservedOrProven": {
+    "controlledRebase": true,
+    "postRebaseContinuity": true,
+    "rollback": true,
+    "liveManifestPublication": true,
+    "peerAgreement": true,
+    "participantAdmission": true,
+    "nativeAdapterInstallation": true
+  },
+  "runtimeRebaseReadiness": "NOT_READY",
+  "mutations": {
+    "scenes": false,
+    "prefabs": false,
+    "bootstrapScene": false,
+    "globalMotionNativeAdapterSet": false,
+    "fullTransaction": false,
+    "runtimeAdapters": false
+  }
+}

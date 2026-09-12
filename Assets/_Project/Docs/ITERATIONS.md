@@ -1,5 +1,19 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06AQ follow-up — pointwise Play Mode evidence review)
+
+**Задача:** Зафиксировать частичный Host/Play Mode capture после `T-FO06AQ` без подключения runtime adapters, изменения сцен или авторизации rebase runtime.
+
+**Результат:** Подтверждены initial baseline transition на `frame=885`, стабильный binding `4780900133407987940/94/1/1/2`, продолжение NGO/control stream, движение, jump, camera ownership/history, `20/20` deck registrations и `20/20` passenger/proxy/on-nav readiness. Падение на `frame=901` классифицировано как server-authoritative `PlayerRespawnTracker` fall-respawn. Scheduling anomaly с несколькими `FixedUpdate`/`NetworkTick` внутри одного rendered frame зафиксирована только как observation.
+
+**Граница:** `rebase.*`, rollback, manifest publisher/peer agreement, participant admission, post-rebase continuity и native adapter installation не наблюдались. `adapter=Ready` и `baselinePlaced=True` относятся только к initial-baseline pipeline. `runtimeRebaseReadiness=NOT_READY`; `BootstrapScene`, `GlobalMotionNativeAdapterSet`, `FullTransaction`, сцены, префабы и runtime adapters не изменялись.
+
+**Проверки:** `check_compile_errors=No compile errors`; точечный Unity MCP log query во время активного Play Mode был недоступен из-за потери TCP-соединения, поэтому отчёт опирается на предоставленный пользователем capture evidence; `git diff --check` — после подготовки коммита.
+
+**Файлы:** `docs/world/floatingorigin/06AQ_RUNTIME_CAPTURE_FOLLOWUP.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Iteration 2026-09-12 (T-FO06AZ - NetworkBaseline readiness/continuity contract)
 
 Task: Add a pure fail-closed contract for NetworkBaseline identity, ownership/lifetime generations, baseline tick/sequence continuity and acknowledgement lineage without creating a misleading NGO restore adapter.

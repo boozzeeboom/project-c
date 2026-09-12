@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CL — ShipDeck lifecycle owner audit)
+
+**Задача:** После `T-FO06CK` провести read-only audit legitimate server-owned lifecycle owner-а для `IGlobalMotionShipDeckPassengerGenerationSource` на существующих ShipDeck attachment/spawn seams.
+
+**Результат:** Подтверждены server-side attachment seams `NpcBrain`, реальный server-owned crew spawn producer `ShipCrewSpawner` и ship lifecycle registration `NpcShipController`. При этом legitimate generation source implementation, monotonic generation ledger и server-owned lifecycle receipts не найдены; runtime binding отсутствует. Вердикт: **INCONCLUSIVE / INTEGRATION BLOCKED**.
+
+**Граница:** Synthetic producer и inference из `IsSpawned` не создавались. Provider и adapter binding не выполнялись, `BootstrapScene` остался без изменений, Play Mode не запускался; `runtimeRebaseReadiness=NOT_READY`. Search за пределами audited paths остаётся inconclusive.
+
+**Файлы:** `docs/world/floatingorigin/06CL_SHIP_DECK_LIFECYCLE_OWNER_AUDIT.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CK — Combined snapshot lifecycle binding identity gate)
 
 **Задача:** Явно перенести reviewed lifecycle binding identity в `GlobalMotionShipDeckCombinedSnapshot` и добавить fail-closed validation на snapshot boundary после T-FO06CJ.

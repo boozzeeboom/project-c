@@ -1,0 +1,42 @@
+{
+  "ticket": "T-FO06CL",
+  "date": "2026-09-12",
+  "status": "AUDITED_INCONCLUSIVE_INTEGRATION_BLOCKED",
+  "scope": "Legitimate server-owned ShipDeck passenger lifecycle owner and generation source audit",
+  "auditedPaths": [
+    "Assets/_Project/Scripts/AI/NpcBrain.cs",
+    "Assets/_Project/Scripts/AI/Editor/NpcBrainEditor.cs",
+    "Assets/_Project/Scripts/PeacefulShip/Crew/ShipCrewSpawner.cs",
+    "Assets/_Project/Scripts/PeacefulShip/Stations/NpcShipController.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerGenerationContract.cs",
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckPassengerLifecycleProducerContract.cs"
+  ],
+  "verdict": "INCONCLUSIVE / INTEGRATION BLOCKED",
+  "confirmedSeams": {
+    "serverSideAttachment": true,
+    "serverSideSpawn": true,
+    "npcBrainExplicitAttachDetach": true,
+    "shipCrewSpawnerServerOwnedCrewSpawn": true,
+    "npcShipControllerRegistersShipLifecycle": true
+  },
+  "missingLifecycleEvidence": {
+    "legitimateGenerationSourceImplementation": false,
+    "monotonicGenerationLedger": false,
+    "serverOwnedLifecycleReceipts": false,
+    "runtimeBinding": false
+  },
+  "prohibitedShortcuts": {
+    "syntheticProducerCreated": false,
+    "isSpawnedInferenceUsed": false,
+    "objectReferenceGenerationInferenceUsed": false
+  },
+  "validation": {
+    "providerBindingExecuted": false,
+    "adapterBindingExecuted": false,
+    "bootstrapSceneChanged": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "searchOutsideAuditedPaths": "INCONCLUSIVE",
+  "nextGate": "protocol-owned server lifecycle producer with monotonic ship/passenger generations and immutable lifecycle receipts"
+}

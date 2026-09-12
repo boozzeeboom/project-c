@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CP — explicit ShipDeck lifecycle coordinator fact-source binding readiness audit)
+
+**Задача:** После `T-FO06CO` выполнить docs-only read-only audit готовности explicit fact-source binding для `GlobalMotionShipDeckPassengerLifecycleCoordinator`, зафиксировать exact source seams и four-phase ingress matrix без runtime caller binding.
+
+**Результат:** Для `NpcShipController`, `ShipCrewSpawner`, `NpcBrain`, `ShipDeckNav` и `GlobalMotionShipDeckCombinedTransactionHost` записаны точные server/native seams и границы их доказательной роли. Matrix требует explicit stable protocol `ShipId`/passenger identity, coordinator-owned ship lifetime и passenger attachment generations, server/protocol ownership, strict ordering и terminal `ShipInvalidated`. Зафиксировано, что `NetworkObjectId` — только supplemental identity, а не stable protocol identity или generation. И inference из `IsSpawned`, `NetworkObjectId` как stable identity, Unity/NGO object references, `ShipDeckNav.RegistrationGeneration`, callback order и host-local binding generation запрещено.
+
+**Граница:** Только документация изменена. Runtime caller binding не выполнялся; provider/adapter/`BootstrapScene`, сцены, префабы и runtime configuration не изменялись; Play Mode не запускался. `T-FO06CO` `7/7` и `T-FO06CN` `11/11` указаны как inherited pure validation evidence only, не runtime evidence. `runtimeRebaseReadiness=NOT_READY`; search outside audited paths остаётся `INCONCLUSIVE`.
+
+**Файлы:** `docs/world/floatingorigin/06CP_SHIP_DECK_LIFECYCLE_COORDINATOR_FACT_SOURCE_BINDING_READINESS_AUDIT.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CO — reviewed coordinator source-binding / fact-handoff gate)
 
 **Задача:** После `T-FO06CN` закрыть coordinator-to-downstream provenance mismatch typed explicit mapping/handoff contract-ом, не выполняя runtime caller binding.

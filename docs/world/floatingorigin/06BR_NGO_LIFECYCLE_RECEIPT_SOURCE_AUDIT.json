@@ -1,0 +1,66 @@
+{
+  "ticket": "T-FO06BR",
+  "date": "2026-09-12",
+  "status": "AUDITED_BLOCKED_NO_RUNTIME_CHANGE",
+  "scope": "source audit of NGO lifecycle receipt producers for the NetworkBaseline protocol ledger",
+  "auditedPaths": [
+    "Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionReplicator.cs",
+    "Assets/_Project/Scripts/Player/NetworkPlayer.cs",
+    "Assets/_Project/Scripts/AI/NpcSpawner.cs",
+    "Assets/_Project/Scripts/Player/PlayerRespawnTracker.cs"
+  ],
+  "confirmedSeams": {
+    "globalMotionReplicator": [
+      "TryReadServerAcceptedMotion",
+      "ActivateWorldServer",
+      "ActivateParentLocalServer",
+      "AcknowledgeBaselineApplied",
+      "StopServer",
+      "OnOwnershipChanged",
+      "OnNetworkDespawn",
+      "OnNetworkObjectParentChanged"
+    ],
+    "networkPlayer": [
+      "OnNetworkSpawn lifetime reset",
+      "OnNetworkDespawn lifetime reset",
+      "global spawn latch preservation",
+      "scene PlayerSpawner discrimination"
+    ],
+    "npcSpawner": [
+      "runtime NetworkObject creation",
+      "NetworkObject.Spawn(destroyWithScene: true)"
+    ],
+    "respawnTracker": [
+      "direct transform.position write",
+      "CharacterController disable/enable",
+      "Physics.SyncTransforms"
+    ]
+  },
+  "missingCentralProducer": [
+    "exact spawn/lifetime generation capture and restore",
+    "owner and ownership generation capture and restore",
+    "control revision and binding generation lineage",
+    "acknowledgement lineage",
+    "reversible despawn/spawn or pooled lifetime receipt",
+    "partial-transaction rollback receipt",
+    "ledger transaction identity binding"
+  ],
+  "decision": {
+    "concreteHostImplemented": false,
+    "adapterRegistration": false,
+    "syntheticActorCallbackHost": false,
+    "nextGate": "choose one server-owned NGO lifecycle owner and integrate the ledger there"
+  },
+  "runtime": {
+    "providerBinding": "NOT_EXECUTED",
+    "globalMotionNativeAdapterSet": "EMPTY_UNSEALED",
+    "bootstrapSceneMutation": false,
+    "playModeExecuted": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "inconclusive": [
+    "full-project ownership mutation census",
+    "all pooled spawn producers",
+    "all scene-object lifetime producers outside audited paths"
+  ]
+}

@@ -36,6 +36,18 @@
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06BR — NGO lifecycle receipt source audit)
+
+**Задача:** Проверить, где фактически находятся NGO spawn/despawn/ownership/lifetime seams для наполнения T-FO06BQ ledger receipts, не собирая synthetic host из actor callbacks.
+
+**Результат:** Подтверждены отдельные seams `GlobalMotionReplicator`, `NetworkPlayer`, `NpcSpawner` и `PlayerRespawnTracker`, но единого server-owned producer-а для exact spawn/lifetime generation, ownership generation, control/binding/ack lineage и reversible partial-transaction restore не найдено. Respawn direct position write отделён от NGO lifetime semantics. Full-project search вне audited paths остаётся inconclusive.
+
+**Граница:** Concrete host, adapter registration, provider binding, BootstrapScene и Play Mode не изменялись; `GlobalMotionNetworkBaselineNativeAdapter=SEAM ONLY`, `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Файлы:** `docs/world/floatingorigin/06BR_NGO_LIFECYCLE_RECEIPT_SOURCE_AUDIT.md/.json`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06BN — protocol-owned NetworkBaseline reversible capability)
 
 **Задача:** После `T-FO06AZ` зафиксировать отдельную reviewed capability boundary для будущего server-coordinated reversible NGO baseline transaction, не объявляя observation-only evidence готовым adapter-ом.

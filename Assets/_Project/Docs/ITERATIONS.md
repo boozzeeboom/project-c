@@ -1,5 +1,21 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CY — concrete controlled rebase vertical slice)
+
+**Задача:** Прекратить расширение pure floating-origin contracts и подготовить первый реальный user-controlled runtime rebase slice без запуска Play Mode.
+
+**Результат:** Добавлен `GlobalMotionControlledRebaseSlice` и установлен на `NetworkManager` в `BootstrapScene`. Slice явно ограничен загруженными root-объектами `WorldScene_0_0` и локальным NGO PlayerObject, если игрок не входит в уже зарегистрированный world root. Используется существующий `GlobalMotionRebaseCoordinator`, `OriginRebasePlan`, explicit freeze/capture/apply/physics-sync/validate/publish/commit и обратный путь rollback с восстановлением snapshots. Триггеры пользовательские: `F8` — успешный путь, `F9` — принудительный validation failure для проверки rollback. Evidence phases пишутся через существующий `[T-FO06Y]` probe как `runtimeRebase.*`.
+
+**Исправление плана:** После достижения достаточных контрактных границ продолжалось дробление на новые pure contracts вместо runtime-интеграции. Это признано ошибкой планирования и зафиксировано как причина задержки первого реального rebase. Новых pure contracts в этой итерации не добавлялось.
+
+**Границы интерпретации:** Переход `y≈0 → y≈2502` в предыдущем capture — обычный spawn teleport из `BootstrapScene` на игровую локацию, а не floating-origin rebase. Сообщения `Failed to create agent because it is not close enough to the NavMesh` остаются известной legacy-проблемой и исключены из floating-origin acceptance.
+
+**Проверка:** `check_compile_errors` — PASS; BootstrapScene сохранён с новым component binding. Play Mode и screenshots не запускались. Успешный runtime capture, rollback capture и post-rebase NGO baseline continuity остаются `NOT RUN` / `NOT INTEGRATED` до ручного пользовательского теста.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/06CY_CONTROLLED_REBASE_VERTICAL_SLICE.md`, `Assets/_Project/Scenes/BootstrapScene.unity`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CX — runtime capture review 02)
 
 **Задача:** Разобрать пользовательский Play Mode capture `Q:\Project-c_logs\02.txt` точечно и определить следующий implementation gate.

@@ -15837,6 +15837,7 @@ GameObject:
   - component: {fileID: 1151906027}
   - component: {fileID: 1151906032}
   - component: {fileID: 1151906031}
+  - component: {fileID: 1151906033}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -16047,6 +16048,29 @@ MonoBehaviour:
   _respawnObjectName: Respawn_Default
   _maxLocalCoordinate: 100000
   _verticalSpawnOffset: 1
+--- !u!114 &1151906033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151906017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d64cc16fff8ea7643a5e553ef2bf9bdd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalMotionControlledRebaseSlice
+  _worldScenePath: Assets/_Project/Scenes/World/WorldScene_0_0.unity
+  _includeAllWorldSceneRoots: 1
+  _additionalParticipantRoot: {fileID: 0}
+  _initialOriginX: 0
+  _initialOriginY: 0
+  _initialOriginZ: 0
+  _maxLocalCoordinate: 100000
+  _threshold: 256
+  _quantum: 256
+  _successKey: 289
+  _rollbackKey: 290
 --- !u!1 &1181311400
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,5 +1,19 @@
 # Iterations
 
+## Итерация от 2026-09-12 (T-FO06CX — runtime capture review 02)
+
+**Задача:** Разобрать пользовательский Play Mode capture `Q:\Project-c_logs\02.txt` точечно и определить следующий implementation gate.
+
+**Результат:** Capture содержит `9,580` строк, `827` T-FO06Y records, `frame=257..1080`, binding `4979100810912560704/94/1/1/2`. Подтверждены initial baseline, NGO control/ticks, движение, один jump, стабильные `165/165` summary с `adapter=Ready`, `baselinePlaced=True`, `decks=20` и pointwise passenger readiness. `313` non-zero movement records, `745` grounded records; `onPlatform=True` и `inShip=True` не наблюдались.
+
+**Негативный результат:** В capture нет `rebase`, `rollback`, `manifest`, `admission` или `runtimeRebase` markers. Ошибок и исключений нет, но есть `240` NavMesh agent warnings. Игрок начинает около `y=1`, падает ниже `deathY`, а поздние summary находятся около `y=2502`; этот файл не доказывает controlled rebase и не фиксирует полный writer transition. Camera continuity остаётся inconclusive из-за поздних `camera.LateUpdate.skip(cursor=None)`.
+
+**Решение:** `runtimeRebaseReadiness=NOT_READY`. Не добавлять новый pure contract и не устанавливать driver. Следующий узкий этап — instrumentation writer transition `y≈0 → y≈2502` и отдельный пользовательский capture с явными user-controlled rebase markers.
+
+**Файлы:** `docs/world/floatingorigin/06CX_RUNTIME_CAPTURE_REVIEW_02.md/.json`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CW — ShipDeck identity publication bridge)
 
 **Задача:** После `T-FO06CV` создать dormant explicit bridge для публикации owner-reviewed стабильной identity корабля в существующий ShipDeck lifecycle producer binding, не выполняя runtime caller binding.

@@ -1,0 +1,60 @@
+{
+  "ticket": "T-FO06CX",
+  "date": "2026-09-12",
+  "source": "Q:\\Project-c_logs\\02.txt",
+  "status": "BASELINE_MOVEMENT_PASS_REBASE_EVIDENCE_ABSENT",
+  "capture": {
+    "bytes": 2444598,
+    "lines": 9580,
+    "tfo06yRecords": 827,
+    "frameMin": 257,
+    "frameMax": 1080,
+    "fixedTimeMin": 2.90,
+    "fixedTimeMax": 27.06,
+    "summaryFrames": 165,
+    "binding": "4979100810912560704/94/1/1/2"
+  },
+  "observed": {
+    "initialBaseline": true,
+    "controlAccepted": true,
+    "syncTransformsBaseline": true,
+    "actorApplied": true,
+    "initialGateReleased": true,
+    "baselineAcknowledged": true,
+    "adapterReady": true,
+    "baselinePlacedTrueSummaries": 165,
+    "deckSummary20": 165,
+    "passengerReadySummaries": 165,
+    "cameraOwnerSummaries": 165,
+    "moveNonZero": 313,
+    "jumpTrue": 1,
+    "groundedTrue": 745,
+    "onPlatformTrue": 0,
+    "inShipTrue": 0
+  },
+  "missing": {
+    "rebaseMarkers": 0,
+    "rollbackMarkers": 0,
+    "manifestMarkers": 0,
+    "admissionMarkers": 0,
+    "runtimeRebaseMarkers": 0,
+    "errors": 0,
+    "exceptions": 0,
+    "navMeshAgentWarnings": 240
+  },
+  "classification": {
+    "initialBaseline": "PASS",
+    "ngoControlAndTicks": "PASS",
+    "movement": "PASS",
+    "jump": "PARTIAL_PASS",
+    "deckPassengerReadiness": "POINTWISE_PASS",
+    "controlledRebase": "NOT_OBSERVED",
+    "postRebaseContinuity": "NOT_OBSERVED",
+    "rollback": "NOT_OBSERVED",
+    "manifestAdmission": "NOT_OBSERVED",
+    "cameraContinuity": "INCONCLUSIVE",
+    "navMeshWarnings": "OPEN",
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "Instrument writer transition y~0 to y~2502 and capture explicit user-controlled rebase markers"
+}

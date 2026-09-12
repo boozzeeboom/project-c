@@ -1,0 +1,30 @@
+{
+  "ticket": "T-FO06CC",
+  "date": "2026-09-12",
+  "status": "IMPLEMENTATION_SLICE_EXPLICIT_SERVER_BOUNDARY_NOT_INSTALLED",
+  "scope": "combined ShipDeckNav rollback result and reviewed binding lineage",
+  "implementation": {
+    "contract": "GlobalMotionShipDeckCombinedTransactionContract",
+    "result": "GlobalMotionShipDeckCombinedTransactionResult",
+    "snapshotLineage": ["FrameGeneration", "PassengerBindingGeneration"],
+    "rollbackOrder": ["deck restore", "reverse-order passenger restore"],
+    "automaticDiscovery": false,
+    "runtimeInstallation": false
+  },
+  "validation": {
+    "compileErrors": false,
+    "combinedHostPureChecksPassed": 7,
+    "combinedHostPureChecksFailed": 0,
+    "playModeExecuted": false,
+    "gitDiffCheck": "PENDING COMMIT REVIEW"
+  },
+  "limitations": {
+    "atomicUnityRollbackProven": false,
+    "ngoAttachmentLifetimeLedger": false,
+    "nativeAdapterImplementation": false,
+    "adapterSetRegistration": false,
+    "providerBinding": false,
+    "runtimeRebaseReadiness": "NOT_READY"
+  },
+  "nextGate": "reviewed server-owned attachment/lifetime generation source before adapter seam"
+}

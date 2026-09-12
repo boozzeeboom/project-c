@@ -603,6 +603,20 @@ Files: Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRigidbod
 
 ---
 
+## Итерация от 2026-09-12 (T-FO06CC — combined ShipDeckNav rollback result and binding lineage)
+
+**Задача:** Добавить формальный результат combined transaction, explicit frame/binding lineage и best-effort rollback accounting после T-FO06CB.
+
+**Результат:** Созданы `GlobalMotionShipDeckCombinedTransactionContract` и `GlobalMotionShipDeckCombinedTransactionResult`. Combined snapshot теперь фиксирует `FrameGeneration` и `PassengerBindingGeneration`; host проверяет transaction/deck/passenger identity, выдаёт rollback result и пытается выполнить reverse-order passenger restore после deck restore. Validator: `7/7` pure checks PASS; `check_compile_errors=No compile errors`.
+
+**Граница:** Rollback остаётся best-effort и не является доказанным atomic Unity rollback. NGO attachment/lifetime ledger, adapter integration, provider/runtime driver/BootstrapScene и Play Mode не изменялись. `GlobalMotionNativeAdapterSet=EMPTY / UNSEALED`, `runtimeRebaseReadiness=NOT_READY`.
+
+**Следующий этап:** Reviewed server-owned attachment/lifetime generation source перед adapter seam.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckCombinedTransactionContract.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionShipDeckCombinedTransactionHost.cs`, `Assets/_Project/Editor/FloatingOrigin/ValidateGlobalMotionShipDeckCombinedTransactionHost.cs`, `docs/world/floatingorigin/06CC_COMBINED_SHIP_DECK_ROLLBACK_LINEAGE.md/.json`.
+
+---
+
 ## Итерация от 2026-09-11 (T-FO06AE — live manifest receipt source)
 
 **Задача:** Подготовить pure evidence source для participant admission и live manifest publication, сохранив runtime discovery и публикацию отключёнными.

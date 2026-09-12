@@ -85,6 +85,12 @@ namespace ProjectC.EditorTools.FloatingOrigin
                     Require(!host.TryRestore(null, out string error) &&
                         error == "combined_snapshot_missing", error);
                 });
+
+                Check("Transaction result requires lineage", () =>
+                {
+                    Require(!GlobalMotionShipDeckCombinedTransactionContract.TryValidate(default, out string error) &&
+                        error == "transaction_id_required", error);
+                });
             }
             finally
             {

@@ -301,8 +301,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             Debug.Log("[T-FO06CY] Controlled rebase completed: translation=" + plan.LocalTranslation + ";origin=" + _frame.Origin, this);
             // T-FO06DH: уведомить второго клиента о сдвиге (только success-путь).
             BroadcastRebaseShift(NetworkManager.Singleton, plan.LocalTranslation, request.FrameGeneration);
-            // T-FO07A: увести origin фреймов мира вслед за контентом (best-effort).
-            ShiftWorldFrameOrigins(plan.LocalTranslation);
+            // T-FO07B: drain акторов → сдвиг фреймов → перепривязка (best-effort).
+            RebindActorsAcrossFrameShift(plan.LocalTranslation);
         }
 
         private bool ApplyParticipants(GlobalMotionRebaseRequest request, out string error)
@@ -536,10 +536,100 @@ namespace ProjectC.World.FloatingOrigin.Network
         /// T-FO07A: сдвиг origin зарегистрированных фреймов вслед за контентом.
         /// Инвариант global: newOrigin = oldOrigin.Translated(-translation).
         /// Порядок на фрейм: сначала реестр, затем definition в bootstrap
-        /// (иначе EnsureFrames уронит сессию). Живой bound актор (пилот) даёт
-        /// честный отказ frame_has_bound_actors — его перепривязка следующий слайс.
+        /// (иначе EnsureFrames уронит сессию). Живой bound актор даёт честный отказ
+        /// frame_has_bound_actors; T-FO07B сначала делает drain через
+        /// RebindActorsAcrossFrameShift, затем вызывает этот метод.
         /// Best-effort, результат каждого фрейма в маркере.
         /// </summary>
+
+        /// <summary>
+        /// T-FO07B: drain → shift → rebind живых акторов-игроков через сдвиг фрейма.
+        /// Порядок: отвязка всех адаптеров → ShiftWorldFrameOrigins (теперь без
+        /// bound — проходит) → привязка каждого назад + рестарт потока с той же
+        /// global (newOrigin + local_new = old global, захват заранее не нужен).
+        /// Ошибка актора — best-effort в маркер, остальных не блокирует.
+        /// </summary>
+        private void RebindActorsAcrossFrameShift(Vector3 translation)
+        {
+            NetworkManager manager = NetworkManager.Singleton;
+            if (manager == null || !manager.IsServer)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorRebind", "skipped:no_server_authority");
+                return;
+            }
+            GlobalMotionWorld world = GetComponent<GlobalMotionWorld>();
+            if (world == null)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorRebind", "skipped:no_world");
+                return;
+            }
+            var drained = new System.Collections.Generic.List<DrainedActor>();
+            foreach (var clientEntry in manager.ConnectedClients)
+            {
+                NetworkClient client = clientEntry.Value;
+                if (client == null || client.PlayerObject == null) continue;
+                var adapter = client.PlayerObject.GetComponent<GlobalMotionPoseAdapter>();
+                if (adapter == null || adapter.World != world) continue;
+                int frameId = adapter.Frame != null ? adapter.Frame.Id : 0;
+                if (frameId <= 0) continue;
+                try
+                {
+                    adapter.Unbind();
+                    drained.Add(new DrainedActor(adapter, frameId));
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorDrained",
+                        "object=" + adapter.name + ";frame=" + frameId);
+                }
+                catch (Exception e)
+                {
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorDrained",
+                        "object=" + adapter.name + ";ok=False:" + e.GetType().Name);
+                }
+            }
+
+            ShiftWorldFrameOrigins(translation);
+
+            foreach (var record in drained)
+            {
+                if (record.Adapter == null) continue;
+                try
+                {
+                    if (!record.Adapter.Bind(world, record.FrameId))
+                    {
+                        GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorRebound",
+                            "object=" + record.Adapter.name + ";ok=False:bind_refused");
+                        continue;
+                    }
+                    if (!record.Adapter.TryCaptureWorld(out GlobalPosition truth, out Quaternion rotation, out Vector3 scale))
+                    {
+                        GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorRebound",
+                            "object=" + record.Adapter.name + ";ok=False:capture_refused");
+                        continue;
+                    }
+                    if (!world.StartWorldStream(record.Adapter, GlobalMotionAuthority.Owner, truth, rotation, scale, null))
+                    {
+                        GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorRebound",
+                            "object=" + record.Adapter.name + ";ok=False:stream_refused");
+                        continue;
+                    }
+                    record.Adapter.PrepareBaseline();
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorRebound",
+                        "object=" + record.Adapter.name + ";ok=True;placed=" + record.Adapter.IsBaselinePlaced);
+                }
+                catch (Exception e)
+                {
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorRebound",
+                        "object=" + (record.Adapter != null ? record.Adapter.name : "<null>") + ";ok=False:" + e.GetType().Name);
+                }
+            }
+        }
+
+        private sealed class DrainedActor
+        {
+            public readonly GlobalMotionPoseAdapter Adapter;
+            public readonly int FrameId;
+            public DrainedActor(GlobalMotionPoseAdapter adapter, int frameId) { Adapter = adapter; FrameId = frameId; }
+        }
+
         private void ShiftWorldFrameOrigins(Vector3 translation)
         {
             GlobalMotionWorld world = GetComponent<GlobalMotionWorld>();

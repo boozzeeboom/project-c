@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07B — перепривязка акторов через сдвиг)
+
+**Задача:** Закрыть отказ 07A (`frame_has_bound_actors=1`): drain пилота → сдвиг фрейма → rebind + рестарт потока с той же global (блокер DI).
+
+**Результат:** `RebindActorsAcrossFrameShift`: сбор адаптеров игроков сервера → `Unbind` (маркер `ActorDrained`) → существующий `ShiftWorldFrameOrigins` (теперь проходит) → на актора `Bind` + `TryCaptureWorld` (новый фрейм: та же global) + `StartWorldStream(Owner, truth, null)` (discontinuity lineage) + `PrepareBaseline` (маркер `ActorRebound(ok;placed)`). Rollback акторов не трогает (binding непрерывен). Ограничения в маркерах: второй клиент (чужой owner, rules=null) — отказ `stream_refused`, его поток down до следующего gate. Только существующие публичные пути, без новых контрактов/мутаций ядра.
+
+**Проверка:** `refresh_unity` (force + compile, повтор после MCP-дисконнекта) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled, Host: F8 → `ActorDrained` → `WorldFrameShifted(ok=True)` → `ActorRebound(ok=True)`, ревизии растут).
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/07B_ACTOR_REBIND_ACROSS_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07A-verify — подтверждение отказа по ф8_12)
 
 **Задача:** Проверить сдвиг фрейма на прогоне F8.

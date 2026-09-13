@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO06DD — сдвиг истории камеры)
+
+**Задача:** После F8 `collisionPos` навсегда в досдвиговых координатах (f8_3–f8_5). Dormant `TryApplyGlobalMotionCameraTranslation` (T-FO06AX) slice не вызывал. Риск: anti-pop окно после столкновения в момент F8 возвращает камеру к старой точке — поп на десятки км.
+
+**Результат:** Slice вызывает dormant API: success `+translation` (флаг `_cameraShiftApplied`), rollback назад только при флаге. Маркер `CameraShifted(ok=...)`. lagSpeed/collisionExitTime сдвига не требуют; полный camera rollback через snapshot — отдельный gate.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. f8_5 верифицирован отдельно: `Completed` + `NetworkPublished(58)` + `RespawnShifted(-2560)`, 0 телепортов, 0 ошибок — F8-путь полностью работает. Play Mode DD retest — NOT RUN (user-controlled).
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/06DD_CAMERA_HISTORY_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO06DC-verify — подтверждение флага по f9_5)
 
 **Задача:** Проверить фикс DC на свежем прогоне: одно нажатие F9.

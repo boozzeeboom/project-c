@@ -48,6 +48,9 @@ namespace ProjectC.World.FloatingOrigin.Network
         // T-FO06DC: прямой сдвиг deathY был применён (только success-путь).
         // Без флага F9-поток сдвигал deathY назад, хотя вперёд его не двигали.
         private bool _respawnShiftApplied;
+        // T-FO06DD: прямой сдвиг камеры был применён (только success-путь).
+        // Тот же флаг-паттерн, что и для deathY: rollback сдвигает назад только при флаге.
+        private bool _cameraShiftApplied;
 
         public LocalCoordinateFrame CurrentFrame => _frame;
         public ulong FrameGeneration => _frameGeneration;
@@ -118,6 +121,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             _rollbackNextValidation = forceValidationFailure;
             _rollbackPlayerRoot = null;
             _respawnShiftApplied = false;
+            _cameraShiftApplied = false;
             try
             {
                 ExecuteTransaction();
@@ -208,6 +212,10 @@ namespace ProjectC.World.FloatingOrigin.Network
             ShiftPlayerRespawnReference(playerRoot, plan.LocalTranslation);
             _respawnShiftApplied = true;
 
+            // T-FO06DD: увести камеру вместе с миром через dormant API.
+            if (ShiftCameraHistory(plan.LocalTranslation))
+                _cameraShiftApplied = true;
+
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
@@ -281,6 +289,12 @@ namespace ProjectC.World.FloatingOrigin.Network
                 ShiftPlayerRespawnReference(_rollbackPlayerRoot, -request.Plan.LocalTranslation);
                 _respawnShiftApplied = false;
             }
+            // T-FO06DD: вернуть камеру назад только если прямой сдвиг был применён.
+            if (_cameraShiftApplied)
+            {
+                ShiftCameraHistory(-request.Plan.LocalTranslation);
+                _cameraShiftApplied = false;
+            }
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",
@@ -341,6 +355,30 @@ namespace ProjectC.World.FloatingOrigin.Network
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase", "RespawnShifted",
                 "dy=" + translation.y.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
+        /// T-FO06DD: сдвиг истории камеры (позиция + lag + точка коллизии) вместе с миром
+        /// через dormant API SpringArmCamera. Без этого камера в anti-pop окне
+        /// (столкновение в момент F8) возвращается к досдвиговой collisionPos —
+        /// визуальный поп на десятки километров. Best-effort: неуспех — в маркер,
+        /// транзакцию не валит (камера догоняет через snap).
+        /// </summary>
+        private bool ShiftCameraHistory(Vector3 translation)
+        {
+            ProjectC.Core.SpringArmCamera camera = FindAnyObjectByType<ProjectC.Core.SpringArmCamera>();
+            if (camera == null)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CameraShifted", "ok=False;error=camera_not_found");
+                return false;
+            }
+            if (!camera.TryApplyGlobalMotionCameraTranslation(translation, out string error))
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CameraShifted", "ok=False;error=" + error);
+                return false;
+            }
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CameraShifted", "ok=True");
+            return true;
         }
 
         private bool TryBuildParticipants(

@@ -36,6 +36,15 @@ namespace ProjectC.World.FloatingOrigin.Network
         [SerializeField] private KeyCode _successKey = KeyCode.F8;
         [SerializeField] private KeyCode _rollbackKey = KeyCode.F9;
 
+        [Header("Automatic threshold trigger (T-FO09B)")]
+        [Tooltip("T-FO09B: автосдвиг при выходе фокуса за порог. Тот же путь транзакции, что F8.")]
+        [SerializeField] private bool _autoRebaseEnabled = true;
+        [SerializeField, Min(1f)] private float _autoCheckIntervalSec = 5f;
+        [Tooltip("T-FO09B: пауза после Completed/Rollback. 35с > 30с кулдауна палуб (06DF).")]
+        [SerializeField, Min(1f)] private float _autoCooldownSec = 35f;
+        private float _lastShiftEndTime = -1000f;
+        private float _nextAutoCheckTime;
+
         private readonly List<SceneParticipant> _participants = new List<SceneParticipant>();
         private LocalCoordinateFrame _frame;
         private ulong _frameGeneration;
@@ -111,6 +120,25 @@ namespace ProjectC.World.FloatingOrigin.Network
                 RequestControlledRebase(false);
             else if (IsKeyPressed(_rollbackKey))
                 RequestControlledRebase(true);
+            else
+                TryAutoRebase();
+        }
+
+        /// <summary>
+        /// T-FO09B: авто-проверка порога. Только сервер; кулдаун после сдвигов;
+        /// готовность плана проверяет тот же TryCreate (гистерезис бесплатен).
+        /// Маркер Requested несёт reason=auto_threshold.
+        /// </summary>
+        private void TryAutoRebase()
+        {
+            if (!_autoRebaseEnabled || Time.unscaledTime < _nextAutoCheckTime) return;
+            _nextAutoCheckTime = Time.unscaledTime + _autoCheckIntervalSec;
+            NetworkManager manager = NetworkManager.Singleton;
+            if (manager == null || !manager.IsServer) return;
+            if (Time.unscaledTime - _lastShiftEndTime < _autoCooldownSec) return;
+            if (!TryResolveLocalPlayer(out Transform playerRoot, out _)) return;
+            if (!ProjectC.World.FloatingOrigin.OriginRebasePlan.TryCreate(_frame, playerRoot.position, _threshold, _quantum, out _)) return;
+            RequestControlledRebase(false, "auto_threshold");
         }
 
         // T-FO06DH: приём серверного broadcast сдвига (Host + второй клиент).
@@ -168,7 +196,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             RequestControlledRebase(true);
         }
 
-        public void RequestControlledRebase(bool forceValidationFailure)
+        public void RequestControlledRebase(bool forceValidationFailure, string reason = "user_controlled")
         {
             if (_transactionActive)
             {
@@ -192,7 +220,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             _cameraShiftApplied = false;
             try
             {
-                ExecuteTransaction();
+                ExecuteTransaction(reason);
             }
             catch (Exception exception)
             {
@@ -207,7 +235,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
         }
 
-        private void ExecuteTransaction()
+        private void ExecuteTransaction(string reason)
         {
             if (!TryResolveLocalPlayer(out Transform playerRoot, out string playerError))
             {
@@ -238,7 +266,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase", "Requested",
                 "transaction=" + request.TransactionId.ToString("N") + ";frame=" + request.FrameGeneration +
-                ";reason=user_controlled;focus=" + localFocus + ";translation=" + plan.LocalTranslation);
+                ";reason=" + reason + ";focus=" + localFocus + ";translation=" + plan.LocalTranslation);
 
             var coordinator = new GlobalMotionRebaseCoordinator(new FreezeGate(this, playerRoot));
             if (!coordinator.TryPrepare(request, participantSet, out string error))
@@ -320,6 +348,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                 "transaction=" + request.TransactionId.ToString("N") + ";frame=" + _frameGeneration +
                 ";origin=" + _frame.Origin);
             Debug.Log("[T-FO06CY] Controlled rebase completed: translation=" + plan.LocalTranslation + ";origin=" + _frame.Origin, this);
+            // T-FO09B: точка кулдауна автотриггера (второй конец — конец Rollback).
+            _lastShiftEndTime = Time.unscaledTime;
             // T-FO06DH: уведомить второго клиента о сдвиге (только success-путь).
             BroadcastRebaseShift(NetworkManager.Singleton, plan.LocalTranslation, request.FrameGeneration);
             // T-FO07B: drain акторов → сдвиг фреймов → перепривязка (best-effort).
@@ -411,6 +441,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",
                 "reason=" + reason + ";error=" + (error ?? "none"));
+            // T-FO09B: откат тоже закрывает окно кулдауна автотриггера.
+            _lastShiftEndTime = Time.unscaledTime;
             Debug.LogWarning("[T-FO06CY] Controlled rebase rolled back: " + reason + ";restore=" + restored, this);
         }
 
@@ -789,6 +821,23 @@ namespace ProjectC.World.FloatingOrigin.Network
                 {
                     if (systems[j] == null) continue;
                     try { systems[j].Clear(); cleared++; }
+                    catch (Exception) { }
+                }
+                // T-FO09B (микрофикс, та же семья что 07C): world-space шлейфы хранят
+                // печёные точки — после сдвига короткая полоса на десятки км.
+                // Транзиентно, но гасится здесь же заодно с частицами.
+                TrailRenderer[] trails = target.GetComponentsInChildren<TrailRenderer>(false);
+                for (int j = 0; j < trails.Length; j++)
+                {
+                    if (trails[j] == null) continue;
+                    try { trails[j].Clear(); cleared++; }
+                    catch (Exception) { }
+                }
+                LineRenderer[] lines = target.GetComponentsInChildren<LineRenderer>(false);
+                for (int j = 0; j < lines.Length; j++)
+                {
+                    if (lines[j] == null) continue;
+                    try { lines[j].positionCount = 0; cleared++; }
                     catch (Exception) { }
                 }
             }

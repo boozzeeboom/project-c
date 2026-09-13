@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO09B — авторебейс, реализация)
+
+**Задача:** Реализовать авто-пороговый rebase по плану 09B + батч trails-clear.
+
+**Результат:** `GlobalMotionControlledRebaseSlice` +53/−4: `TryAutoRebase` (сервер, проверка 5с, кулдаун 35с), reason plumbing (`auto_threshold` в маркере), метки кулдауна в Completed/Rollback, `TrailRenderer.Clear` + `LineRenderer.positionCount=0` в clear-пути. Транзакция та же; отключение галкой в инспекторе. Безопасность = F8-эквивалентность.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS; скобки 162/162. Play Mode retest — NOT RUN (user-controlled: отлёт >256м → авто-Completed).
+
+**Файлы:** `.../Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/09B_AUTO_REBASE_IMPLEMENTATION.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09B-plan — остаток хост-клиента + план авторебейса)
 
 **Задача:** Точный полный анализ плана в рамках хост-клиента (персистенция уже восстановлена sibling-треком PERSIST-verify).

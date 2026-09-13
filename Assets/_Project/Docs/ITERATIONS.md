@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO09B-verify — автосдвиг работает, PASS)
+
+**Задача:** Разобрать ф8_23 (отлёт далеко, проверка автосдвига).
+
+**Результат:** PASS. 6× `Requested(reason=auto_threshold)` → 6× `Completed` (frame 2→7, origins идут за полётом), 0 errors, 1 легитимный респаун (падение → точка, без циклов), `grounded=True` 12003 записей. `ActorRebound`: 2× ok=True (пешком) + 4× `stream_refused;WaitingForControl` — известный честный отказ в полёте (07J, `inShip=True` в логе), полёт продолжается, нового дефекта нет. Кулдаун держит, лишних срабатываний нет — штатно. Без кода.
+
+**Проверка:** Точечный разбор лога. Компиляция не затрагивалась.
+
+**Файлы:** `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `docs/world/floatingorigin/09A_ACCEPTANCE_MATRIX.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09B-diagnose — свежий старт падает в пустоту, не FO)
 
 **Задача:** Разобрать ф8_22 (свежий старт без сейвов: вечное падение, города нет, F8 не помогает).

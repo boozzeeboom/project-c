@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07J — ветвь отказа в полёте, без кода)
+
+**Задача:** Назвать точную ветвь `stream_refused;status=WaitingForControl` из ф8_16.
+
+**Результат:** Найдена построчно: `CanPrepareControl` → World-ветка требует убрать сетевого предка, проверка `TryGetActor(ship)` падает (корабль не registered actor) → silent `DriverBlocked` без смены статуса (leftover `WaitingForControl` после `Bind`). Легальные пути (ParentLocal через ship-adapter / unparent-rebind-reparent) — вне best-effort, зафиксированы как gates T-FO08. Текущее поведение безопасно и стабильно (повторный F8 деградации не даёт).
+
+**Проверка:** Без кода — аудит + стабильное воспроизведение (ф8_15, ф8_16). Компиляция не затрагивалась.
+
+**Файлы:** `docs/world/floatingorigin/07J_PILOTED_REFUSAL_BRANCH.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07I — отказ рестарта потока в полёте)
 
 **Задача:** Разобрать `ActorRebound(ok=False:stream_refused)` из ф8_15 (F8 при пилотировании, `inShip=True`).

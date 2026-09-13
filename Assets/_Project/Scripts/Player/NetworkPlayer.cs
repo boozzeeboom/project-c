@@ -254,6 +254,19 @@ namespace ProjectC.Player
         public bool DiagnosticOnPlatform => _onPlatform;
         public Vector3 DiagnosticPlatformDelta => _platformDelta;
         public string DiagnosticPlatformName => _currentPlatform != null ? _currentPlatform.name : "<none>";
+
+        /// <summary>
+        /// T-FO06DG: сдвиг кэша платформы вместе с миром при controlled rebase.
+        /// Без этого первый кадр после F8 на палубе даёт deltaPos ≈ translation
+        /// (десятки км — верхнего клампа нет) и игрока швыряет одним Move.
+        /// Ротация translation-only планом не меняется. Вызывается slice на сервере
+        /// один раз за транзакцию (успех: +translation, rollback: -translation).
+        /// </summary>
+        public void ApplyRebaseTranslation(Vector3 translation)
+        {
+            _platformLastPos += translation;
+            _platformDelta = Vector3.zero;
+        }
         public bool DiagnosticControllerEnabled => _controller != null && _controller.enabled;
         public SpringArmCamera DiagnosticCamera => _myCamera;
 

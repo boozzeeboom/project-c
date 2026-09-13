@@ -230,6 +230,7 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO06DE-verify` (`ф8_7.txt`): PASS — `collisionPos=(59.875, -57.215, 63.664)` рядом с игроком, полная цепочка, телепортов 0, ошибок 0. Без изменений кода.
 - `T-FO06DF`: аудит ShipDeckNav — дрейф-детектор сам перерегистрирует палубы (ф8_7: 20/20), но 30с кулдаун проглотил бы повторный сдвиг. `NotifyWorldRebased()` сбрасывает кулдаун; slice вызывает в обоих путях, маркер `DecksNotified`. Compile PASS, 0 errors; retest NOT RUN. Report: `06DF_DECK_REBASE_NOTIFICATION.md`. `runtimeRebaseReadiness=NOT_READY`.
 - `T-FO06DF-verify` (`ф8_8.txt`): PASS — `DecksNotified(decks=20)`, 20/20 `Registered at` в новых координатах, игрок стабилен, телепортов 0, ошибок 0. Без изменений кода.
+- `T-FO06DG`: аудит platform carry — `deltaPos` без верхнего клампа, F8 на палубе дал бы флинг на translation первым кадром. `NetworkPlayer.ApplyRebaseTranslation` + расширение метода slice до `ShiftPlayerFrameReferences`. Compile PASS, 0 errors; retest NOT RUN (нужен `onPlatform=True`). Report: `06DG_PLATFORM_CACHE_SHIFT.md`. `runtimeRebaseReadiness=NOT_READY`.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W, T-FO06AZ и T-FO06BN. ShipDeckNav synchronous lifecycle, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

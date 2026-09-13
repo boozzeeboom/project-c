@@ -209,7 +209,7 @@ namespace ProjectC.World.FloatingOrigin.Network
 
             // T-FO06DB: увести deathY вместе с миром, иначе легитимная земля
             // окажется ниже порога и игрок будет ретелепортироваться каждые 0.5с.
-            ShiftPlayerRespawnReference(playerRoot, plan.LocalTranslation);
+            ShiftPlayerFrameReferences(playerRoot, plan.LocalTranslation);
             _respawnShiftApplied = true;
 
             // T-FO06DD: увести камеру вместе с миром через dormant API.
@@ -290,7 +290,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             // success-путь не выполняется, без флага deathY уходил бы в +2560.
             if (_respawnShiftApplied)
             {
-                ShiftPlayerRespawnReference(_rollbackPlayerRoot, -request.Plan.LocalTranslation);
+                ShiftPlayerFrameReferences(_rollbackPlayerRoot, -request.Plan.LocalTranslation);
                 _respawnShiftApplied = false;
             }
             // T-FO06DD: вернуть камеру назад только если прямой сдвиг был применён.
@@ -350,14 +350,16 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         /// <summary>
         /// T-FO06DB: сдвиг абсолютного порога падения игрока вместе с миром.
-        /// No-op при отсутствии трекера (трекер живёт на префабе игрока).
+        /// T-FO06DG: плюс сдвиг кэша платформы (иначе флинг на translation
+        /// первым кадром на палубе). No-op при отсутствии компонентов.
         /// </summary>
-        private void ShiftPlayerRespawnReference(Transform playerRoot, Vector3 translation)
+        private void ShiftPlayerFrameReferences(Transform playerRoot, Vector3 translation)
         {
             if (playerRoot == null) return;
             var tracker = playerRoot.GetComponent<ProjectC.Player.PlayerRespawnTracker>();
-            if (tracker == null) return;
-            tracker.ApplyRebaseTranslation(translation);
+            if (tracker != null) tracker.ApplyRebaseTranslation(translation);
+            var player = playerRoot.GetComponent<ProjectC.Player.NetworkPlayer>();
+            if (player != null) player.ApplyRebaseTranslation(translation);
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase", "RespawnShifted",
                 "dy=" + translation.y.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));

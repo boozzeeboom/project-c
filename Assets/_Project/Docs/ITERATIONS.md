@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO06DG — сдвиг кэша платформы)
+
+**Задача:** Аудит `ApplyPlatformCarry`: `deltaPos = platform.position - _platformLastPos` без верхнего клампа. F8 на палубе → первый кадр даёт дельту ≈ translation (десятки км) в единый Move → флинг сквозь геометрию. Во всех логах `onPlatform=False`, баг не наблюдался — чиним заранее.
+
+**Результат:** `NetworkPlayer.ApplyRebaseTranslation` сдвигает `_platformLastPos` + zero `_platformDelta`; `ShiftPlayerRespawnReference` расширен/переименован в `ShiftPlayerFrameReferences` (трекер + платформа за вызов, маркер/флаг прежние).
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: F8 на палубе, `onPlatform=True`).
+
+**Файлы:** `Assets/_Project/Scripts/Player/NetworkPlayer.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/06DG_PLATFORM_CACHE_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO06DF-verify — подтверждение палуб по ф8_8)
 
 **Задача:** Проверить уведомление палуб на прогоне F8.

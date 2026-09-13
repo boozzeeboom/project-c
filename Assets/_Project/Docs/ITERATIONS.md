@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO08A — сдвиг домашней точки NPC)
+
+**Задача:** Жалоба: внекорабельные NPC теряются после F8. Диагноз: `_spawnPoint` ставится при спавне и не едет — leash/flee/SetDestination тянут в досдвиговые координаты.
+
+**Результат:** Одна строка: `ApplyRebaseTranslation` сдвигает и `_spawnPoint`. Обход slice уже был (07E), изменений slice не потребовалось. Первый тикет серии T-FO08 (механики).
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: NPC вне кораблей → F8 → на месте).
+
+**Файлы:** `Assets/_Project/Scripts/AI/NpcBrain.cs`, `docs/world/floatingorigin/08A_NPC_SPAWNPOINT_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09A — матрица приёмки §4)
 
 **Задача:** Свести критерии приёмки §4 в проверяемую матрицу со статусами по всем тикетам серии.

@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07E — сдвиг кэшей carry пикапов/NPC)
+
+**Задача:** Жалоба: при F8 визуально теряются pickable предметы. Диагноз: `PickupDeckRide` carry прибавляет stale-дельту ≈ translation (двойной сдвиг) — предмет улетает с палубы; тот же паттерн у NPC fallback-carry.
+
+**Результат:** `ApplyRebaseTranslation` на `PickupDeckRide` + `NpcBrain`; slice обходит поддеревья в обоих путях (маркер `CarryCachesShifted`); клиент — scene-wide сдвиг пикапов в handler. Best-effort.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: пикапы на палубе → F8 → на месте).
+
+**Файлы:** `Assets/_Project/Scripts/Core/PickupDeckRide.cs`, `Assets/_Project/Scripts/AI/NpcBrain.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/07E_PICKUP_NPC_CARRY_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07D — аудит Rigidbody и пулов, без кода)
 
 **Задача:** План §2 п.4 (velocities/sleep/constraints) + пулы объектов при сдвиге.

@@ -95,6 +95,18 @@ namespace ProjectC.Core
         /// <summary>Текущая мировая «база» для бобаинга (обновляется через RefreshWorldBase).</summary>
         public Vector3 WorldBasePosition => _worldBasePosition;
 
+        /// <summary>
+        /// T-FO07E: сдвиг кэша платформы вместе с миром при controlled rebase.
+        /// Без этого первый LateUpdate после F8 прибавляет stale-дельту ≈ translation
+        /// (двойной сдвиг) — pickup улетает с палубы в пустоту. Ротация
+        /// translation-only планом не меняется. База бобаинга самовосстанавливается
+        /// из текущей позиции каждый кадр и сдвига не требует.
+        /// </summary>
+        public void ApplyRebaseTranslation(Vector3 translation)
+        {
+            _platformLastPos += translation;
+        }
+
         private void Awake()
         {
             _worldBasePosition = transform.position;

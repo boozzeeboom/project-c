@@ -755,6 +755,18 @@ namespace ProjectC.AI
             _rideLastRot = platform.rotation;
         }
 
+        /// <summary>
+        /// T-FO07E: сдвиг кэша платформы вместе с миром при controlled rebase
+        /// (только fallback-carry путь; parented/proxy пути кэш лишь перечитывают).
+        /// Без этого первый FixedUpdate после F8 прибавляет stale-дельту ≈ translation
+        /// (двойной сдвиг). Ротация translation-only планом не меняется.
+        /// Вызывается slice на сервере один раз за транзакцию.
+        /// </summary>
+        public void ApplyRebaseTranslation(Vector3 translation)
+        {
+            _rideLastPos += translation;
+        }
+
         private void BeginRide(Transform platform)
         {
             _ridePlatform = platform;

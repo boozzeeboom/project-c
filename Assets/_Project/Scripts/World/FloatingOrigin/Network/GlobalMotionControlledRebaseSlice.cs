@@ -285,6 +285,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO07C: погасить висящие world-space частицы.
             ClearShiftedParticles();
 
+            // T-FO07E: сдвинуть кэши carry пикапов/NPC (до кадров LateUpdate/FixedUpdate).
+            ShiftCarryCaches(plan.LocalTranslation);
+
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
@@ -372,6 +375,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             NotifyDeckRebase();
             // T-FO07C: тот же clear после возврата.
             ClearShiftedParticles();
+            // T-FO07E: вернуть кэши carry назад вместе с миром.
+            ShiftCarryCaches(-request.Plan.LocalTranslation);
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",
@@ -502,9 +507,19 @@ namespace ProjectC.World.FloatingOrigin.Network
                     try { clientSystems[i].Clear(); cleared++; }
                     catch (Exception) { }
                 }
+                // T-FO07E: carry пикапов считается локально на каждом пире (L3) —
+                // сдвинуть кэши; NPC-carry серверный, клиент его не трогает.
+                int clientPickups = 0;
+                ProjectC.Core.PickupDeckRide[] clientRides = FindObjectsByType<ProjectC.Core.PickupDeckRide>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                for (int i = 0; i < clientRides.Length; i++)
+                {
+                    if (clientRides[i] == null) continue;
+                    try { clientRides[i].ApplyRebaseTranslation(translation); clientPickups++; }
+                    catch (Exception) { }
+                }
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                     "runtimeRebase", "ClientShiftApplied",
-                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared);
+                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups);
             }
             catch (Exception e)
             {
@@ -683,6 +698,40 @@ namespace ProjectC.World.FloatingOrigin.Network
         /// в старых координатах (молнии veil/storm висят в десятках км до смерти).
         /// Best-effort, число в маркере. Локальные системы Clear переживают незаметно.
         /// </summary>
+
+        /// <summary>
+        /// T-FO07E: сдвиг кэшей platform-carry пикапов и NPC вместе с миром.
+        /// Без этого первый кадр после F8 прибавляет stale-дельту ≈ translation
+        /// (двойной сдвиг): pickup улетает с палубы, NPC fallback-carry — тоже.
+        /// Вызывать синхронно в транзакции (до LateUpdate/FixedUpdate кадров).
+        /// Best-effort, счётчики в маркере.
+        /// </summary>
+        private void ShiftCarryCaches(Vector3 translation)
+        {
+            int pickups = 0, npcs = 0;
+            for (int i = 0; i < _participants.Count; i++)
+            {
+                Transform target = _participants[i].Target;
+                if (target == null) continue;
+                ProjectC.Core.PickupDeckRide[] rides = target.GetComponentsInChildren<ProjectC.Core.PickupDeckRide>(false);
+                for (int j = 0; j < rides.Length; j++)
+                {
+                    if (rides[j] == null) continue;
+                    try { rides[j].ApplyRebaseTranslation(translation); pickups++; }
+                    catch (Exception) { }
+                }
+                ProjectC.AI.NpcBrain[] brains = target.GetComponentsInChildren<ProjectC.AI.NpcBrain>(false);
+                for (int j = 0; j < brains.Length; j++)
+                {
+                    if (brains[j] == null) continue;
+                    try { brains[j].ApplyRebaseTranslation(translation); npcs++; }
+                    catch (Exception) { }
+                }
+            }
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CarryCachesShifted",
+                "pickups=" + pickups + ";npcs=" + npcs);
+        }
+
         private void ClearShiftedParticles()
         {
             int cleared = 0;

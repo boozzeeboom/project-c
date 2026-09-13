@@ -1,5 +1,19 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO08B-verify + T-FO08C-design)
+
+**Задача:** Верификация ф8_18 («NPC продолжили свои пути») + следующий gate по плану.
+
+**Результат:**
+- Verify PASS, но честно: `NPC_RUNTIME/*` в логе — 0, `CarryCachesShifted(npcs=36)` как раньше. Все NPC сцены уже покрыты корнями (scene-placed) — сработал фикс 08A, ветка 08B осталась dormant-страховкой для спавнерных NPC из BootstrapScene. 14 `not close enough` после Completed — benign (тот же счётчик, что в ф8_17; палубные NPC видимы). Матрица 09A обновлена (городские NPC → PASS).
+- T-FO08C-design: проект ship-adapter (rebind пилота через ParentLocal). Проверено: путь `ReactivateFromCurrentPose → StartParentStream` уже написан, не хватает только регистрации корабля; `ShipController` уже `IGlobalMotionActorParticipant`, server-authoritative Rigidbody. Риски и открытый вопрос authority зафиксированы. Кода нет — реализация следующим gate после ревью.
+
+**Проверка:** Без кода — аудит + ф8_18. Компиляция не затрагивалась.
+
+**Файлы:** `docs/world/floatingorigin/09A_ACCEPTANCE_MATRIX.md`, `docs/world/floatingorigin/08C_SHIP_ADAPTER_DESIGN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO08B — рантайм-NPC участники сдвига)
 
 **Задача:** Жалоба: городские NPC пропадают после F8 (ф8_17), несмотря на 08A. Диагноз: тела NPC в BootstrapScene (спавнер инстанцирует в активную сцену) — не участники, остаются в старых кордах; навмеш уезжает (серия `not close enough` после Completed из NavMeshSurface:221).

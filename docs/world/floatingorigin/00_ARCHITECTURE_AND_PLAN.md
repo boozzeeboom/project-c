@@ -251,6 +251,8 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO09A`: матрица приёмки §4 — 8 разделов, статусы PASS/PARTIAL/OPEN/BLOCKED с доказательствами; ближайшие достижимые и блокеры перечислены. Живой документ. Report: `09A_ACCEPTANCE_MATRIX.md`.
 - `T-FO08A`: жалоба на потерю внекорабельных NPC — `_spawnPoint` не ехал, leash тянул в старые корды. Одна строка в `ApplyRebaseTranslation`; обход slice уже был. Compile PASS, 0 errors; retest NOT RUN. Report: `08A_NPC_SPAWNPOINT_SHIFT.md`.
 - `T-FO08B`: ф8_17 — тела городских NPC в BootstrapScene не были участниками (оставались в старых кордах, навмеш уезжал). `NPC_RUNTIME/*` участники + `_agent.Warp` + сдвиг печёных вейпоинтов. Compile PASS, 0 errors; retest NOT RUN. Report: `08B_RUNTIME_NPC_PARTICIPANTS.md`.
+- `T-FO08B-verify` (ф8_18): PASS — пути продолжают, 0 errors; `NPC_RUNTIME/*`=0: сработал фикс 08A, ветка 08B dormant-страховка. Матрица 09A обновлена.
+- `T-FO08C-design`: проект ship-adapter (ParentLocal rebind пилота) — путь в коде уже есть, нужна регистрация корабля; риски и вопрос authority зафиксированы. Без кода.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W, T-FO06AZ и T-FO06BN. ShipDeckNav synchronous lifecycle, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

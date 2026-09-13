@@ -54,3 +54,24 @@ Date: 2026-09-13. Design-first: кода нет, реализация следу
 Нужен построчный аудит `ShipController` движения (кто пишет `_rb`:
 сервер в `FixedUpdate`? интерполяция на клиентах?) + enum
 `GlobalMotionAuthority`. Без этого выбор authority — гадание.
+
+## Вердикт T-FO08C (2026-09-13): ОТЛОЖЕН со структурным доказательством
+
+Построчный аудит `GlobalMotionPoseAdapter` против `ShipController`:
+
+1. `HasCompetingWriter()` (PoseAdapter.cs:435): enabled `NetworkTransform`
+   на том же GO → `Bind` невозможен. Корабль: `NetworkTransform
+   (ServerAuthority)` (ShipController.cs:34) — штатная репликация движения.
+   Ship-adapter требует ЗАМЕНЫ репликации корабля (NT → Replicator-потоки) —
+   это миграция подсистемы, не малый gate.
+2. `SupportedStructure()` (408–416): `_joints.Count != 0 → false`,
+   больше одного Rigidbody в поддереве → false. Корабли с модулями/
+   составными частями рискуют не пройти.
+3. `Bind` (52–69): требует `GlobalMotionReplicator` на префабе,
+   `_coordinatesRequired=true`, `!SynchronizeTransform`, match физсцены —
+   хирургия префабов кораблей + bootstrap.
+
+Итого: rebind в полёте остаётся на честном отказе `stream_refused`
+(07J, стабильно, полёт идёт). Возврат к вопросу — только как отдельная
+v2-миграция репликации кораблей с топологией для тестов (второй клиент),
+не в рамках текущей серии. Без кода.

@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO08C-verdict — ship-adapter отложен)
+
+**Задача:** Решить, реализуем ли ship-adapter (08C-design) сейчас.
+
+**Результат:** ОТЛОЖЕН, со структурным доказательством по коду: `PoseAdapter.Bind` невозможен на корабле — `HasCompetingWriter` (enabled `NetworkTransform(ServerAuthority)`), риск `SupportedStructure` (joints/несколько Rigidbody), требования `Bind` (Replicator + opt-in + префабы). Это миграция репликации кораблей, не малый gate; без топологии тестов (второй клиент) вслепую не шипим. Rebind в полёте остаётся на честном стабильном `stream_refused` (07J). Без кода.
+
+**Проверка:** Построчный аудит (`PoseAdapter.cs:52–69, 408–435`, `ShipController.cs:34,41`). Компиляция не затрагивалась.
+
+**Файлы:** `docs/world/floatingorigin/08C_SHIP_ADAPTER_DESIGN.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO08B-verify + T-FO08C-design)
 
 **Задача:** Верификация ф8_18 («NPC продолжили свои пути») + следующий gate по плану.

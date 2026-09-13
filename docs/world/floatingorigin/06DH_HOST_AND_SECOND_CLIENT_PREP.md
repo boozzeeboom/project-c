@@ -62,3 +62,13 @@ NGO (`CustomMessagingManager`, проверено по исходникам па
 
 1. Compile: `refresh_unity` + `read_console` — 0 errors, 0 CS.
 2. Мультиплеер-тесты — NOT RUN (зафиксировано этим тикетом для будущего).
+
+## Верификация 2026-09-13 (ф8_10.txt, хост 1 игрок) — PASS
+
+Полная цепочка до `Completed`, все фазы DH на месте:
+`NetworkPublished(teleported=58)`, `RespawnShifted(dy=-2560.00)`,
+`CameraShifted(ok=True)`, `DecksNotified(decks=20)`,
+`BroadcastShifted(sent=True,frame=2)` — серверный гард хост не заблокировал,
+отправка при нуле вторых клиентов прошла без ошибок.
+Телепортов после — 0, ошибок — 0, «визуально всё ок» подтверждено.
+Без изменений кода.

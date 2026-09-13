@@ -767,6 +767,24 @@ namespace ProjectC.AI
         {
             _rideLastPos += translation;
             _spawnPoint += translation;
+            // T-FO08B: рантайм-NPC едет отдельным участником (тело уже сдвинуто
+            // participant-применением до этого вызова); внутренняя позиция агента
+            // stale — пересадить, иначе агент утащит NPC назад. Мир-навмеш едет
+            // вместе с геометрией, warp валиден. Off-mesh (палубы/proxy) — пропуск.
+            if (_agent != null && _agent.enabled && _agent.isOnNavMesh)
+            {
+                try { _agent.Warp(transform.position); }
+                catch (System.Exception) { }
+            }
+            // T-FO08B: печёные вейпоинты спавнера иначе ведут в досдвиговые корды
+            // (live-маркеры сцены двигаются сами и не затрагиваются).
+            if (_socialBrain == null)
+                _socialBrain = GetComponent<NpcSocialBrain>();
+            if (_socialBrain != null)
+            {
+                try { _socialBrain.ApplyRebaseTranslation(translation); }
+                catch (System.Exception) { }
+            }
         }
 
         private void BeginRide(Transform platform)

@@ -1174,5 +1174,19 @@ namespace ProjectC.AI
         public void HearEnemyVictoryRoar() { _morale.OnEnemyVictoryRoarHeard(); }
         public void OnLeaderDied() { _morale.OnLeaderDied(); }
         public float MoraleValue => _morale.current;
+
+        /// <summary>
+        /// T-FO08B: сдвиг печёных вейпоинтов вместе с миром при controlled rebase.
+        /// NpcSpawner печёт позиции маркеров на момент спавна; без сдвига патруль
+        /// ведёт в досдвиговые координаты. Live-маркеры (patrolWaypointMarkers)
+        /// читаются по месту и не затрагиваются. Ротация translation-only планом
+        /// не меняется. Вызывается из NpcBrain.ApplyRebaseTranslation.
+        /// </summary>
+        public void ApplyRebaseTranslation(Vector3 translation)
+        {
+            if (patrolWaypoints == null) return;
+            for (int i = 0; i < patrolWaypoints.Length; i++)
+                patrolWaypoints[i] += translation;
+        }
     }
 }

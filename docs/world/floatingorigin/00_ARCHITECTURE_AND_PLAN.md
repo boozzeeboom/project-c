@@ -250,6 +250,7 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO07J`: точная ветвь отказа (ф8_16, без кода) — `TryGetActor(ship)` падает в preflight, silent-false; легально чинится только ship-adapter (T-FO08) или reviewed unparent-процедурой. Повторный F8 стабилен. Report: `07J_PILOTED_REFUSAL_BRANCH.md`.
 - `T-FO09A`: матрица приёмки §4 — 8 разделов, статусы PASS/PARTIAL/OPEN/BLOCKED с доказательствами; ближайшие достижимые и блокеры перечислены. Живой документ. Report: `09A_ACCEPTANCE_MATRIX.md`.
 - `T-FO08A`: жалоба на потерю внекорабельных NPC — `_spawnPoint` не ехал, leash тянул в старые корды. Одна строка в `ApplyRebaseTranslation`; обход slice уже был. Compile PASS, 0 errors; retest NOT RUN. Report: `08A_NPC_SPAWNPOINT_SHIFT.md`.
+- `T-FO08B`: ф8_17 — тела городских NPC в BootstrapScene не были участниками (оставались в старых кордах, навмеш уезжал). `NPC_RUNTIME/*` участники + `_agent.Warp` + сдвиг печёных вейпоинтов. Compile PASS, 0 errors; retest NOT RUN. Report: `08B_RUNTIME_NPC_PARTICIPANTS.md`.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W, T-FO06AZ и T-FO06BN. ShipDeckNav synchronous lifecycle, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

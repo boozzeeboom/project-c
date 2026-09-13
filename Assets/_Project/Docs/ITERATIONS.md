@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO08B — рантайм-NPC участники сдвига)
+
+**Задача:** Жалоба: городские NPC пропадают после F8 (ф8_17), несмотря на 08A. Диагноз: тела NPC в BootstrapScene (спавнер инстанцирует в активную сцену) — не участники, остаются в старых кордах; навмеш уезжает (серия `not close enough` после Completed из NavMeshSurface:221).
+
+**Результат:** 3 правки: `NPC_RUNTIME/*` участники (`NetworkGameplayRoot`, палубные отсекаются containment-проверкой), `_agent.Warp` + проброс в social, новый `NpcSocialBrain.ApplyRebaseTranslation` (печёные вейпоинты). Попутно откачен конфликтующий `using System` (CS0104 Random).
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: городские NPC → F8 → на месте, гуляют).
+
+**Файлы:** `.../Network/GlobalMotionControlledRebaseSlice.cs`, `Scripts/AI/NpcBrain.cs`, `Scripts/AI/NpcSocialBrain.cs`, `docs/world/floatingorigin/08B_RUNTIME_NPC_PARTICIPANTS.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO08A — сдвиг домашней точки NPC)
 
 **Задача:** Жалоба: внекорабельные NPC теряются после F8. Диагноз: `_spawnPoint` ставится при спавне и не едет — leash/flee/SetDestination тянут в досдвиговые координаты.

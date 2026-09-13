@@ -847,6 +847,22 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
             }
 
+            // T-FO08B: рантайм-NPC, которых NpcSpawner инстанцирует в активную
+            // сцену (BootstrapScene, не под корни WorldScene) и которые не покрыты
+            // зарегистрированными корнями (палубные едут с кораблём и отсекаются
+            // IsContainedByRegisteredRoot). Без этого тела остаются в старых
+            // координатах, пока мир и навмеш уехали, — гуляющие по городу NPC
+            // «пропадают». Едут штатным путём (position + NetworkTeleport).
+            foreach (var runtimeBrain in UnityEngine.Object.FindObjectsByType<ProjectC.AI.NpcBrain>(UnityEngine.FindObjectsSortMode.None))
+            {
+                if (runtimeBrain == null || runtimeBrain.transform == null) continue;
+                Transform npcTransform = runtimeBrain.transform;
+                if (IsContainedByRegisteredRoot(npcTransform)) continue;
+                if (!AddParticipant("NPC_RUNTIME/" + npcTransform.name, npcTransform,
+                        GlobalMotionRebaseParticipantKind.NetworkGameplayRoot, participantSet, out error))
+                    return false;
+            }
+
             if (_additionalParticipantRoot != null && !IsContainedByRegisteredRoot(_additionalParticipantRoot))
             {
                 if (!AddParticipant("EXPLICIT_ADDITIONAL/" + _additionalParticipantRoot.name, _additionalParticipantRoot,

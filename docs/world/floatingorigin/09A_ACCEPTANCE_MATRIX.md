@@ -47,7 +47,7 @@ Date: 2026-09-13. Живой документ: обновлять по мере 
 |---|---|---|
 | Respawn после сдвига (deathY) | PASS | ф8_3→DB: цикл устранён; ф9_5: deathY=0 после rollback |
 | Rollback F9 | PASS | ф9_2–ф9_5, ф9_14: `RollbackCompleted`, net zero |
-| Save/load через сдвиг | OPEN | Checkpoint-источник dormant (05C не подключён) |
+| Save/load через сдвиг (хост-одиночка) | PASS | т-фо-персис_2: `PilotSpawnRestored` + игрок стоит в довидовой точке, 0 падений/респавнов/ошибок; корабли `Restored 22/22` |
 | Reconnect/late join | OPEN | Зафиксировано как gate (06DH) |
 | Смена authority/parent | PARTIAL | Parenting-аудит 07G ок; authority-смена не тестировалась |
 | Спавн-пулы через сдвиг | PASS | Аудит 07D (кэша нет) + пикапы ф9_14 |

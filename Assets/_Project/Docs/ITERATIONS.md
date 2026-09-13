@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO-PERSIST-verify — персистенция восстановлена, PASS)
+
+**Задача:** Подтвердить восстановление персистенции логом `т-фо-персис_2.txt`.
+
+**Результат:** PASS. `PilotSpawnRestored: client=0 pos=(40121.59, 2502.17, 40043.23)` → план принят → `CompletePlacement ready=True`. Игрок стабильно стоит в довидовой точке до кадра 710. Падений/респавнов/телепортов — 0, ошибок/исключений — 0. Корабли `Restored 22/22` с `RebaseCorrected`. Причина поломки (зафиксировано): игра стартует pilot-путём — `GlobalMotionPilotSpawnSource` всегда отдавал `Respawn_Default + 1м`, сейв не читался, а legacy restore для global-игрока пропущен by design (`yield break`); игрок падал и улетал на спавн через `FallThresholdReached → TeleportRpc`. Плюс сейв хранил пост-F8 координаты без отметки фрейма. Лечение: `rbx/rby/rbz/rbFrame` + кумулятив slice + `ApplyRebaseCorrection` + мост `TryGetLegacySpawn` + `EnsureDeathBelow`. Без кода (только документы/матрица).
+
+**Проверка:** Точечный разбор лога (2823, 2828, 2898, 4828–4948, кадры 700–710). Компиляция не затрагивалась.
+
+**Файлы:** `docs/world/floatingorigin/09A_ACCEPTANCE_MATRIX.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO-PERSIST03 — мост pilot source к legacy-сейву)
 
 **Задача:** Проверка T-FO-PERSIST01/02 rc — лог `т-фо-персис_1.txt` (простой запуск, должен был загрузить данные). Персистенция не работает.

@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07F — сдвиг штормовых ячеек)
+
+**Задача:** Штормовые ячейки — чистые мировые данные + шейдер: без сдвига остались бы в старых координатах на десятки км. `WindManager` кэша не имеет (live-позиции), карта/компас не найдены.
+
+**Результат:** `StormCellDirector.ApplyRebaseTranslation` (сдвиг + re-push в шейдер); slice в обоих путях (маркер `StormShifted`); клиент в handler (счётчик `storms=`). Best-effort.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: F8 при шторме).
+
+**Файлы:** `Assets/_Project/Scripts/World/Clouds/StormCellDirector.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/07F_STORM_CELL_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07E-verify — пикапы по ф9_14 + аудит реестра)
 
 **Задача:** Проверить фикс carry пикапов в игре.

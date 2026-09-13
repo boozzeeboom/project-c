@@ -244,6 +244,7 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO07D`: аудит Rigidbody/пулов без кода — velocities/sleep/constraints сохраняются по построению, пулы берут позицию при выдаче, кэша нет. Доглэйд 1–2 кадра, сетевая сторона закрыта DA. Report: `07D_RIGIDBODY_POOL_AUDIT.md`.
 - `T-FO07E`: жалоба на пропажу пикапов — диагноз: carry double-shift (`PickupDeckRide`, `NpcBrain` fallback). `ApplyRebaseTranslation` на обоих + обход в slice (маркер `CarryCachesShifted`) + клиентский scene-wide сдвиг. Compile PASS, 0 errors; retest NOT RUN. Report: `07E_PICKUP_NPC_CARRY_SHIFT.md`.
 - `T-FO07E-verify` (`ф9_14.txt`): PASS — `CarryCachesShifted(pickups=27,npcs=36)`, предметы видимы и подбираются; `InteractableManager` без кэша позиций. Без изменений кода.
+- `T-FO07F`: штормовые ячейки (мировые данные + шейдер) — `ApplyRebaseTranslation` + re-push; slice в обоих путях (`StormShifted`), клиент в handler. `WindManager` без кэша, карта/компас не найдены. Compile PASS, 0 errors; retest NOT RUN. Report: `07F_STORM_CELL_SHIFT.md`.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W, T-FO06AZ и T-FO06BN. ShipDeckNav synchronous lifecycle, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

@@ -295,6 +295,25 @@ namespace ProjectC.World.Clouds
                 Debug.Log($"[StormCellDirector] Cell added at {worldPos} r={radius} intensity={intensity:F2}. Total={_cells.Count}");
         }
 
+        /// <summary>
+        /// T-FO07F: сдвиг штормовых ячеек вместе с миром при controlled rebase.
+        /// Ячейки — чистые данные в мировых координатах (дрейф от ветра + push
+        /// в шейдер); без сдвига шторма остаются в старых координатах на десятки
+        /// километров, пока ветер их не унесёт. После сдвига сразу re-push в шейдер.
+        /// Возвращает число сдвинутых ячеек.
+        /// </summary>
+        public int ApplyRebaseTranslation(Vector3 translation)
+        {
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                var cell = _cells[i];
+                cell.WorldPosition += translation;
+                _cells[i] = cell;
+            }
+            if (_cells.Count > 0) PushStormCellsToShader();
+            return _cells.Count;
+        }
+
         public void RemoveCell(int index)
         {
             if (index < 0 || index >= _cells.Count) return;

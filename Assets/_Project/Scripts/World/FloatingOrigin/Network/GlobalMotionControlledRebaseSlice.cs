@@ -288,6 +288,10 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO07E: сдвинуть кэши carry пикапов/NPC (до кадров LateUpdate/FixedUpdate).
             ShiftCarryCaches(plan.LocalTranslation);
 
+            // T-FO07F: сдвинуть штормовые ячейки вместе с миром.
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "StormShifted",
+                "cells=" + ShiftStormCells(plan.LocalTranslation));
+
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
@@ -377,6 +381,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             ClearShiftedParticles();
             // T-FO07E: вернуть кэши carry назад вместе с миром.
             ShiftCarryCaches(-request.Plan.LocalTranslation);
+            // T-FO07F: вернуть шторма назад.
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "StormShifted",
+                "cells=" + ShiftStormCells(-request.Plan.LocalTranslation));
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",
@@ -519,7 +526,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                     "runtimeRebase", "ClientShiftApplied",
-                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups);
+                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups + ";storms=" + ShiftStormCells(translation));
             }
             catch (Exception e)
             {
@@ -706,6 +713,20 @@ namespace ProjectC.World.FloatingOrigin.Network
         /// Вызывать синхронно в транзакции (до LateUpdate/FixedUpdate кадров).
         /// Best-effort, счётчики в маркере.
         /// </summary>
+
+        /// <summary>
+        /// T-FO07F: сдвиг штормовых ячеек (чистые мировые данные + шейдер).
+        /// Директор — синглтон, работает на всех пирах: сервер сдвигает в транзакции,
+        /// клиент — в broadcast-handler. Best-effort, число в маркере.
+        /// </summary>
+        private int ShiftStormCells(Vector3 translation)
+        {
+            var director = ProjectC.World.Clouds.StormCellDirector.Instance;
+            if (director == null) return 0;
+            try { return director.ApplyRebaseTranslation(translation); }
+            catch (Exception) { return 0; }
+        }
+
         private void ShiftCarryCaches(Vector3 translation)
         {
             int pickups = 0, npcs = 0;

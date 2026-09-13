@@ -232,8 +232,10 @@ namespace ProjectC.Core
 
             transform.position += translation;
             _lagTargetPos += translation;
-            if (_wasColliding)
-                _lastCollisionPos += translation;
+            // T-FO06DE: безусловно — stale точка при colliding=False только мусорила
+            // в evidence-лог (f8_6: collisionPos навсегда в досдвиговых координатах),
+            // а потребляется значение лишь в anti-pop окне при _wasColliding.
+            _lastCollisionPos += translation;
             return IsFiniteGlobalMotionCameraState(out error);
         }
 

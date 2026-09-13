@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO06DE — безусловный сдвиг collision камеры + верификация f8_6)
+
+**Задача:** Из `f8_6.txt`: `CameraShifted(ok=True)` работает, но `collisionPos` после `Completed` навсегда `(39994.99, 2502.79, 40002.47)` — dormant API сдвигал `_lastCollisionPos` только при `_wasColliding`. Функционально безвредно (потребляется лишь в anti-pop окне при colliding), но мусорит в evidence-лог и маскирует настоящий stale.
+
+**Результат:** Гвард убран — сдвиг безусловный. Единственный телепорт в f8_6 — досдвиговый штатный spawn-fall респаун (y=-7.33 → точка спавна), после `Completed` телепортов 0, ошибок 0.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: F8 → `collisionPos` около игрока в новых координатах).
+
+**Файлы:** `Assets/_Project/Scripts/Core/SpringArmCamera.cs`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO06DD — сдвиг истории камеры)
 
 **Задача:** После F8 `collisionPos` навсегда в досдвиговых координатах (f8_3–f8_5). Dormant `TryApplyGlobalMotionCameraTranslation` (T-FO06AX) slice не вызывал. Риск: anti-pop окно после столкновения в момент F8 возвращает камеру к старой точке — поп на десятки км.

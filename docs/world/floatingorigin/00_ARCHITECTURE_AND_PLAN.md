@@ -241,6 +241,7 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO07B`: drain → shift → rebind живых акторов (пилот): `Unbind` → сдвиг → `Bind` + `StartWorldStream(Owner)` с той же global (discontinuity lineage) + `PrepareBaseline`; маркеры `ActorDrained`/`ActorRebound`; второй клиент (чужой owner) — честный отказ. Rollback акторов не трогает. Compile PASS, 0 errors; retest NOT RUN. Report: `07B_ACTOR_REBIND_ACROSS_SHIFT.md`.
 - `T-FO07B-verify` (`ф8_13.txt`): PASS — `ActorRebound(ok=True,placed=True)`, binding `.../1/1/3` (discontinuity 2→3), поток непрерывен, телепортов 0, ошибок 0. Блокер DI закрыт для host-пути. Без изменений кода.
 - `T-FO07C`: план §2 п.6 — аудит: local-space везде, кроме world-молний veil/storm. `ClearShiftedParticles` в обоих путях (маркер `ParticlesCleared`), клиент scene-wide в handler. Compile PASS, 0 errors; retest NOT RUN. Report: `07C_PARTICLE_CLEAR_ON_SHIFT.md`.
+- `T-FO07D`: аудит Rigidbody/пулов без кода — velocities/sleep/constraints сохраняются по построению, пулы берут позицию при выдаче, кэша нет. Доглэйд 1–2 кадра, сетевая сторона закрыта DA. Report: `07D_RIGIDBODY_POOL_AUDIT.md`.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W, T-FO06AZ и T-FO06BN. ShipDeckNav synchronous lifecycle, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

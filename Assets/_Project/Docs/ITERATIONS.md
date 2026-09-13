@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07D — аудит Rigidbody и пулов, без кода)
+
+**Задача:** План §2 п.4 (velocities/sleep/constraints) + пулы объектов при сдвиге.
+
+**Результат:** Чинить нечего. Rigidbody кораблей non-kinematic + Interpolate: slice трогает только Transform + SyncTransforms, velocities/sleep/constraints сохраняются по построению; доглэйд интерполяции 1–2 fixed-кадра, сетевая сторона закрыта DA-телепортом. Пулы (`VfxObjectPool`, `DamageNumberService`, cargo) позицию берут при выдаче — протухшего кэша нет. Снаряды в полёте и joints-handoff — отдельные треки.
+
+**Проверка:** Без кода — статический аудит. Компиляция не затрагивалась.
+
+**Файлы:** `docs/world/floatingorigin/07D_RIGIDBODY_POOL_AUDIT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07C — clear частиц при сдвиге)
 
 **Задача:** План §2 п.6 (particles/trails/lines): world-space молнии veil/storm висели бы в старых координатах до смерти частиц. Остальное VFX уже local-space (аудит).

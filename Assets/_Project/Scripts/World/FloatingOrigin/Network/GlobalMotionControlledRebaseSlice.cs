@@ -45,6 +45,9 @@ namespace ProjectC.World.FloatingOrigin.Network
         private bool _controllerWasEnabled;
         // T-FO06DB: корень игрока активной транзакции — для сдвига deathY при rollback.
         private Transform _rollbackPlayerRoot;
+        // T-FO06DC: прямой сдвиг deathY был применён (только success-путь).
+        // Без флага F9-поток сдвигал deathY назад, хотя вперёд его не двигали.
+        private bool _respawnShiftApplied;
 
         public LocalCoordinateFrame CurrentFrame => _frame;
         public ulong FrameGeneration => _frameGeneration;
@@ -114,6 +117,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             _transactionActive = true;
             _rollbackNextValidation = forceValidationFailure;
             _rollbackPlayerRoot = null;
+            _respawnShiftApplied = false;
             try
             {
                 ExecuteTransaction();
@@ -202,6 +206,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO06DB: увести deathY вместе с миром, иначе легитимная земля
             // окажется ниже порога и игрок будет ретелепортироваться каждые 0.5с.
             ShiftPlayerRespawnReference(playerRoot, plan.LocalTranslation);
+            _respawnShiftApplied = true;
 
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
@@ -269,7 +274,13 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO06DA: тот же сброс интерполяции после возврата позиций.
             PublishNetworkTeleport();
             // T-FO06DB: вернуть deathY назад вместе с миром.
-            ShiftPlayerRespawnReference(_rollbackPlayerRoot, -request.Plan.LocalTranslation);
+            // T-FO06DC: только если прямой сдвиг был применён — в F9-потоке
+            // success-путь не выполняется, без флага deathY уходил бы в +2560.
+            if (_respawnShiftApplied)
+            {
+                ShiftPlayerRespawnReference(_rollbackPlayerRoot, -request.Plan.LocalTranslation);
+                _respawnShiftApplied = false;
+            }
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",

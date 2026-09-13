@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO06DC — флаг прямого сдвига deathY)
+
+**Задача:** Из `f9_4.txt`: после F9-rollback игрок неуправляем, вечные телепорты к одной точке. Причина: прямой сдвиг deathY только на success-пути, а rollback сдвигал назад безусловно → `deathY=2560` при игроке на y=2502, условие `y <= deathY` всегда истинно.
+
+**Результат:** Флаг `_respawnShiftApplied` (сброс в начале транзакции): success ставит `true`, rollback сдвигает назад только при `true`. Вердикты по логам: `f8 to f9` — F8 успех, затем F9 `Rejected(no_rebase_plan)` (штатно: F9 не «отмена F8», откатывать нечего); `f8_4` — полный успех, джиттер ушёл (DA+DB работают); `f9_4` — баг тикета, исправлен.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: свежий прогон → F9 → НЕТ `RespawnShifted`, deathY=0, игрок управляем).
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/06DC_RESPAWN_SHIFT_FLAG.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO06DB — rebase-aware порог падения)
 
 **Задача:** Из `f8_3.txt`: после успешного F8 игрок «подпрыгивает на месте» — вечный цикл `respawn.Update(y=-57.8, deathY=0) → FallThresholdReached → TeleportRpc` каждые ~0.5с. Причина: `_deathY=0` абсолютный, а после сдвига -2560 легитимная земля (палубы, y≈-58) ниже порога. F9 (`f9_3.txt`) отработал штатно: `RollbackCompleted` — «нет изменений» и есть ожидаемый результат rollback.

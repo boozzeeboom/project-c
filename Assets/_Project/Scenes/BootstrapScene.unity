@@ -603,7 +603,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.RespawnManager
   _respawnPoints:
-  - fallbackPosition: {x: 39992, y: 2502.77, z: 40000}
+  - fallbackPosition: {x: 39835, y: 2533, z: 40003}
     spawnPoint: {fileID: 0}
     triggerZone: {fileID: 0}
 --- !u!4 &56021028

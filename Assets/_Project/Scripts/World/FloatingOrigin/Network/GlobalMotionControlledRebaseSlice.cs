@@ -644,7 +644,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                     if (!world.StartWorldStream(record.Adapter, GlobalMotionAuthority.Owner, truth, rotation, scale, null))
                     {
                         GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ActorRebound",
-                            "object=" + record.Adapter.name + ";ok=False:stream_refused");
+                            "object=" + record.Adapter.name + ";ok=False:stream_refused;status=" + record.Adapter.Status);
                         continue;
                     }
                     record.Adapter.PrepareBaseline();

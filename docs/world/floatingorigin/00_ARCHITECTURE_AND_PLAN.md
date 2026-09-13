@@ -246,6 +246,7 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO07E-verify` (`ф9_14.txt`): PASS — `CarryCachesShifted(pickups=27,npcs=36)`, предметы видимы и подбираются; `InteractableManager` без кэша позиций. Без изменений кода.
 - `T-FO07F`: штормовые ячейки (мировые данные + шейдер) — `ApplyRebaseTranslation` + re-push; slice в обоих путях (`StormShifted`), клиент в handler. `WindManager` без кэша, карта/компас не найдены. Compile PASS, 0 errors; retest NOT RUN. Report: `07F_STORM_CELL_SHIFT.md`.
 - `T-FO07G`: аудит посадки/parenting без кода — посаженный игрок едет с корнем, сдвиги ему положены и безвредны, выход live, ссылки целы. Report: `07G_BOARDING_PARENTING_AUDIT.md`.
+- `T-FO07I`: ф8_15 (F8 в полёте) — честный отказ рестарта потока посаженному пилоту (`stream_refused`, `WaitingForControl`), полёт продолжается, ошибок 0. В маркер добавлен `status=`. Полноценный rebind в полёте — отдельный gate. Compile PASS, 0 errors; retest NOT RUN. Report: `07I_PILOTED_REBIND_REFUSAL.md`.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W, T-FO06AZ и T-FO06BN. ShipDeckNav synchronous lifecycle, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

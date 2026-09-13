@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07I — отказ рестарта потока в полёте)
+
+**Задача:** Разобрать `ActorRebound(ok=False:stream_refused)` из ф8_15 (F8 при пилотировании, `inShip=True`).
+
+**Результат:** Штатный честный отказ, не баг: preflight не пишет World-baseline посаженному пилоту (сетевой предок запрещён). После: `WaitingForControl`, полёт продолжается, телепортов 0, ошибок 0. В маркер добавлен `status=` для точной ветви в следующем прогоне. Полноценный rebind в полёте — отдельный gate (потребителя потока пока нет).
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: F8 в полёте → `status=` в маркере).
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/07I_PILOTED_REBIND_REFUSAL.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07H — гейт координат глушил ввод в кресле)
 
 **Задача:** В кресле мёртв весь ввод (WASD/ENTER/T/P/F-выход, жив только ESC) — диагностика по `инпут_1.txt`.

@@ -804,6 +804,20 @@ namespace ProjectC.World.FloatingOrigin.Network
                     try { brains[j].ApplyRebaseTranslation(translation); npcs++; }
                     catch (Exception) { }
                 }
+                // T-FO09G: RespawnManager (BootstrapScene, вне корней WorldScene) —
+                // fallback-точки респавна печёные; без сдвига респавн/спасение
+                // возвращают в досдвиговые корды (за километры от спавна).
+                // Резолв по всей сцене: manager лежит в BootstrapScene, обход по
+                // поддеревьям участников (корни WorldScene) его не покрывает.
+                int respawnShifted = 0;
+                ProjectC.World.RespawnManager[] allRespawns = UnityEngine.Object.FindObjectsByType<ProjectC.World.RespawnManager>(UnityEngine.FindObjectsSortMode.None);
+                for (int j = 0; j < allRespawns.Length; j++)
+                {
+                    if (allRespawns[j] == null) continue;
+                    try { allRespawns[j].ApplyRebaseTranslation(translation); respawnShifted++; }
+                    catch (Exception) { }
+                }
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "RespawnPointsShifted", "managers=" + respawnShifted);
             }
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CarryCachesShifted",
                 "pickups=" + pickups + ";npcs=" + npcs);

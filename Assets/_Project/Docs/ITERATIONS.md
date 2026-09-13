@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO09G — RespawnManager fallback едут с миром)
+
+**Задача:** «Якорь — scene mismatch и там и там; телепортирует после сдвига в пустоту за километры».
+
+**Результат:** Две вещи. (1) `_spawnAnchor` (09F) — только для стартового спавна пилота, к респавну не относится; scene mismatch у RespawnManager — ограничение Unity-инспектора (Transform-референс не даёт кросс-сцену). (2) Реальная причина километров: `RespawnManager` в BootstrapScene не покрыт обходом сдвигов (участники = корни WorldScene) — fallback-точки оставались в досдвиговых кордах. Фикс: `RespawnManager.ApplyRebaseTranslation` (fallback едут, live-якоря нет) + slice `FindObjectsByType` по всей сцене с маркером `RespawnPointsShifted`. Rollback (−T) покрывается автоматически.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS; скобки 165/165. Play Mode retest — NOT RUN (user: F8 → `RespawnPointsShifted` → спасение рядом со спавном).
+
+**Файлы:** `Scripts/World/RespawnManager.cs`, `.../Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/09G_RESPAWN_MANAGER_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09F — якорь спавна из любой сцены)
 
 **Задача:** «Не могу якорь из другой сцены задать — scene mismatch crosscene».

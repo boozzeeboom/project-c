@@ -16,6 +16,22 @@ namespace ProjectC.World
         [Tooltip("Список точек респавна. Индекс 0 — fallback по умолчанию.")]
         [SerializeField] private List<RespawnPointData> _respawnPoints = new List<RespawnPointData>();
 
+        // T-FO09G: сдвиг всех fallback-позиций вместе с миром при controlled
+        // rebase. fallbackPosition — печёные мировые данные в сериализованном
+        // списке (spawnPoint live не трогаем). Без сдвига после F8/автосдвига
+        // респавн/спасение возвращают игрока в ДОСДВИГОВЫЕ координаты —
+        // за километры от спавна, в пустоту.
+        public void ApplyRebaseTranslation(Vector3 translation)
+        {
+            for (int i = 0; i < _respawnPoints.Count; i++)
+            {
+                RespawnPointData point = _respawnPoints[i];
+                if (point.spawnPoint != null) continue; // live-якорь двигается сам
+                point.fallbackPosition += translation;
+                _respawnPoints[i] = point;
+            }
+        }
+
         /// <summary>Количество зарегистрированных точек.</summary>
         public int Count => _respawnPoints.Count;
 

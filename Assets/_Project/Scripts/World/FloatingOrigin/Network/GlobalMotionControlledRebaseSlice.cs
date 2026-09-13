@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Unity.Netcode;
 using Unity.Netcode.Components;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -52,6 +53,30 @@ namespace ProjectC.World.FloatingOrigin.Network
         // Тот же флаг-паттерн, что и для deathY: rollback сдвигает назад только при флаге.
         private bool _cameraShiftApplied;
 
+        // T-FO06DH: именованный канал сдвига для второго клиента.
+        private const string RebaseShiftMessageName = "FO06_REBASE_SHIFT";
+
+        /// <summary>
+        /// T-FO06DH: payload broadcast сдвига. Сериализация только через
+        /// проверенные overloads NGO (BufferSerializer.SerializeValue для float,
+        /// WriteValueSafe/ReadValueSafe для INetworkSerializable).
+        /// </summary>
+        private struct RebaseShiftMessage : INetworkSerializable
+        {
+            public float Dx;
+            public float Dy;
+            public float Dz;
+            public ulong FrameGeneration;
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref Dx);
+                serializer.SerializeValue(ref Dy);
+                serializer.SerializeValue(ref Dz);
+                serializer.SerializeValue(ref FrameGeneration);
+            }
+        }
+
         public LocalCoordinateFrame CurrentFrame => _frame;
         public ulong FrameGeneration => _frameGeneration;
         public bool IsTransactionActive => _transactionActive;
@@ -74,10 +99,38 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (!Application.isPlaying || !_initialized || _transactionActive)
                 return;
 
+            TryRegisterShiftHandler();
+
             if (IsKeyPressed(_successKey))
                 RequestControlledRebase(false);
             else if (IsKeyPressed(_rollbackKey))
                 RequestControlledRebase(true);
+        }
+
+        // T-FO06DH: приём серверного broadcast сдвига (Host + второй клиент).
+        // OnEnable может сработать до появления Singleton — Update добирает регистрацию.
+        private bool _shiftHandlerRegistered;
+
+        private void OnEnable()
+        {
+            TryRegisterShiftHandler();
+        }
+
+        private void OnDisable()
+        {
+            NetworkManager manager = NetworkManager.Singleton;
+            if (_shiftHandlerRegistered && manager != null && manager.CustomMessagingManager != null)
+                manager.CustomMessagingManager.UnregisterNamedMessageHandler(RebaseShiftMessageName);
+            _shiftHandlerRegistered = false;
+        }
+
+        private void TryRegisterShiftHandler()
+        {
+            if (_shiftHandlerRegistered) return;
+            NetworkManager manager = NetworkManager.Singleton;
+            if (manager == null || manager.CustomMessagingManager == null) return;
+            manager.CustomMessagingManager.RegisterNamedMessageHandler(RebaseShiftMessageName, OnRebaseShiftMessage);
+            _shiftHandlerRegistered = true;
         }
 
         private static bool IsKeyPressed(KeyCode key)
@@ -117,6 +170,15 @@ namespace ProjectC.World.FloatingOrigin.Network
                 return;
             }
 
+            // T-FO06DH: транзакция — серверная. Клиент, нажавший F8, отклоняется:
+            // локальный apply без authority рассинхронизировал бы сцену.
+            NetworkManager manager = NetworkManager.Singleton;
+            if (manager == null || !manager.IsServer)
+            {
+                Reject("rebase_requires_server");
+                return;
+            }
+
             _transactionActive = true;
             _rollbackNextValidation = forceValidationFailure;
             _rollbackPlayerRoot = null;
@@ -148,7 +210,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
             _rollbackPlayerRoot = playerRoot;
 
-            if (!TryBuildParticipants(playerRoot, out GlobalMotionRebaseParticipantSet participantSet, out string participantError))
+            if (!TryBuildParticipants(playerRoot, NetworkManager.Singleton, out GlobalMotionRebaseParticipantSet participantSet, out string participantError))
             {
                 Reject("participant_scope_refused:" + participantError);
                 return;
@@ -237,6 +299,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                 "transaction=" + request.TransactionId.ToString("N") + ";frame=" + _frameGeneration +
                 ";origin=" + _frame.Origin);
             Debug.Log("[T-FO06CY] Controlled rebase completed: translation=" + plan.LocalTranslation + ";origin=" + _frame.Origin, this);
+            // T-FO06DH: уведомить второго клиента о сдвиге (только success-путь).
+            BroadcastRebaseShift(NetworkManager.Singleton, plan.LocalTranslation, request.FrameGeneration);
         }
 
         private bool ApplyParticipants(GlobalMotionRebaseRequest request, out string error)
@@ -396,6 +460,76 @@ namespace ProjectC.World.FloatingOrigin.Network
         /// не будет проглочен кулдауном. Без флага: идемпотентно и безопасно
         /// в обоих путях (успех/rollback).
         /// </summary>
+
+        /// <summary>
+        /// T-FO06DH: приём серверного сдвига вторым клиентом. Сервер входящее
+        /// игнорирует (применил синхронно). Клиент сдвигает ТОЛЬКО локальное
+        /// состояние: камеру и deathY/платформу локального игрока. Телепорт NT,
+        /// палубы и позиции игроков — серверные, клиент их не трогает.
+        /// Флаги транзакции не затрагиваются (своей транзакции у клиента нет).
+        /// </summary>
+        private void OnRebaseShiftMessage(ulong senderClientId, FastBufferReader reader)
+        {
+            NetworkManager manager = NetworkManager.Singleton;
+            if (manager == null || manager.IsServer) return;
+            try
+            {
+                reader.ReadValueSafe(out RebaseShiftMessage message);
+                var translation = new Vector3(message.Dx, message.Dy, message.Dz);
+                if (!GlobalPosition.IsFiniteValue(translation.x) ||
+                    !GlobalPosition.IsFiniteValue(translation.y) ||
+                    !GlobalPosition.IsFiniteValue(translation.z))
+                {
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ClientShiftApplied", "ok=False;error=translation_not_finite");
+                    return;
+                }
+                ShiftCameraHistory(translation);
+                if (TryResolveLocalPlayer(out Transform playerRoot, out _))
+                    ShiftPlayerFrameReferences(playerRoot, translation);
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent(
+                    "runtimeRebase", "ClientShiftApplied",
+                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId);
+            }
+            catch (Exception e)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ClientShiftApplied", "ok=False;error=" + e.GetType().Name);
+            }
+        }
+
+        /// <summary>
+        /// T-FO06DH: broadcast сдвига всем клиентам после Completed.
+        /// Rollback вещественного сдвига не делает (apply + restore = net zero) —
+        /// broadcast только на success-пути. Best-effort, результат в маркере.
+        /// </summary>
+        private void BroadcastRebaseShift(NetworkManager manager, Vector3 translation, ulong frameGeneration)
+        {
+            if (manager == null || manager.CustomMessagingManager == null)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "BroadcastShifted", "sent=False;error=no_messaging_manager");
+                return;
+            }
+            try
+            {
+                var message = new RebaseShiftMessage
+                {
+                    Dx = translation.x,
+                    Dy = translation.y,
+                    Dz = translation.z,
+                    FrameGeneration = frameGeneration
+                };
+                using (var writer = new FastBufferWriter(32, Allocator.Temp))
+                {
+                    writer.WriteValueSafe(message);
+                    manager.CustomMessagingManager.SendNamedMessageToAll(RebaseShiftMessageName, writer);
+                }
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "BroadcastShifted", "sent=True;frame=" + frameGeneration);
+            }
+            catch (Exception e)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "BroadcastShifted", "sent=False;error=" + e.GetType().Name);
+            }
+        }
+
         private void NotifyDeckRebase()
         {
             NetworkManager manager = NetworkManager.Singleton;
@@ -410,6 +544,7 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         private bool TryBuildParticipants(
             Transform playerRoot,
+            NetworkManager manager,
             out GlobalMotionRebaseParticipantSet participantSet,
             out string error)
         {
@@ -453,6 +588,22 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 if (!AddParticipant("PLAYER_FRAME/LOCAL", playerRoot, GlobalMotionRebaseParticipantKind.PlayerFrame, participantSet, out error))
                     return false;
+            }
+
+            // T-FO06DH: остальные подключённые игроки — иначе сервер оставит
+            // их PlayerObject в старых координатах, пока мир уехал.
+            if (manager != null)
+            {
+                foreach (var clientEntry in manager.ConnectedClients)
+                {
+                    NetworkClient remoteClient = clientEntry.Value;
+                    if (remoteClient == null || remoteClient.PlayerObject == null) continue;
+                    Transform remoteRoot = remoteClient.PlayerObject.transform;
+                    if (remoteRoot == null || remoteRoot == playerRoot || IsContainedByRegisteredRoot(remoteRoot)) continue;
+                    if (!AddParticipant("PLAYER_FRAME/REMOTE_" + clientEntry.Key, remoteRoot,
+                            GlobalMotionRebaseParticipantKind.PlayerFrame, participantSet, out error))
+                        return false;
+                }
             }
 
             if (_additionalParticipantRoot != null && !IsContainedByRegisteredRoot(_additionalParticipantRoot))

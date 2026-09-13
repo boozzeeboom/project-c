@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO06DH — Host + второй клиент, подготовка без тестов)
+
+**Задача:** Подготовить код под топологию Host + второй клиент, без запуска тестов (зафиксировать для будущей мультиплеер-отладки). Три дыры: участники — только локальный игрок; F8 на клиенте выполнялся бы локально без authority; client-side состояние второго клиента никто не сдвигал.
+
+**Результат:** (1) Участники — все `ConnectedClients[].PlayerObject` (`PLAYER_FRAME/REMOTE_<id>`). (2) `RequestControlledRebase` отклоняет не-сервер (`Rejected(rebase_requires_server)`). (3) Broadcast сдвига через `CustomMessagingManager` (`FO06_REBASE_SHIFT`, `RebaseShiftMessage : INetworkSerializable`, только проверенные overloads NGO): отправка после `Completed`, приёмник в `OnEnable/OnDisable` (+ добивка в `Update`), сервер игнорирует, клиент сдвигает только локальное (камера + deathY/платформа), маркеры `BroadcastShifted`/`ClientShiftApplied`. Сцена/префабы не менялись. Late join, потери пакетов, UX-заглушка F8 на клиенте — открытые gates.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Мультиплеер Play Mode — NOT RUN по поручению.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/06DH_HOST_AND_SECOND_CLIENT_PREP.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO06DG-verify — подтверждение платформы по ф8_9)
 
 **Задача:** Проверить сдвиг кэша платформы: F8 стоя на палубе.

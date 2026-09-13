@@ -282,6 +282,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // сдвиг в пределах 30с дрейф-детектор проглотит и палубы останутся на stale-навмеше.
             NotifyDeckRebase();
 
+            // T-FO07C: погасить висящие world-space частицы.
+            ClearShiftedParticles();
+
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
@@ -367,6 +370,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
             // T-FO06DF: тот же сброс кулдауна после возврата позиций.
             NotifyDeckRebase();
+            // T-FO07C: тот же clear после возврата.
+            ClearShiftedParticles();
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",
@@ -488,9 +493,18 @@ namespace ProjectC.World.FloatingOrigin.Network
                 ShiftCameraHistory(translation);
                 if (TryResolveLocalPlayer(out Transform playerRoot, out _))
                     ShiftPlayerFrameReferences(playerRoot, translation);
+                // T-FO07C: у клиента нет списка участников — clear всех активных систем сцены.
+                int cleared = 0;
+                ParticleSystem[] clientSystems = FindObjectsByType<ParticleSystem>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                for (int i = 0; i < clientSystems.Length; i++)
+                {
+                    if (clientSystems[i] == null) continue;
+                    try { clientSystems[i].Clear(); cleared++; }
+                    catch (Exception) { }
+                }
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                     "runtimeRebase", "ClientShiftApplied",
-                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId);
+                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared);
             }
             catch (Exception e)
             {
@@ -661,6 +675,30 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WorldFrameShifted", "id=" + id + ";ok=True");
             }
+        }
+
+        /// <summary>
+        /// T-FO07C: clear world-space частиц после сдвига/возврата мира.
+        /// Эмиттеры едут с корнями, но просимулированные world-частицы остаются
+        /// в старых координатах (молнии veil/storm висят в десятках км до смерти).
+        /// Best-effort, число в маркере. Локальные системы Clear переживают незаметно.
+        /// </summary>
+        private void ClearShiftedParticles()
+        {
+            int cleared = 0;
+            for (int i = 0; i < _participants.Count; i++)
+            {
+                Transform target = _participants[i].Target;
+                if (target == null) continue;
+                ParticleSystem[] systems = target.GetComponentsInChildren<ParticleSystem>(false);
+                for (int j = 0; j < systems.Length; j++)
+                {
+                    if (systems[j] == null) continue;
+                    try { systems[j].Clear(); cleared++; }
+                    catch (Exception) { }
+                }
+            }
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ParticlesCleared", "n=" + cleared);
         }
 
         private void NotifyDeckRebase()

@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07C — clear частиц при сдвиге)
+
+**Задача:** План §2 п.6 (particles/trails/lines): world-space молнии veil/storm висели бы в старых координатах до смерти частиц. Остальное VFX уже local-space (аудит).
+
+**Результат:** `ClearShiftedParticles` (сервер, поддеревья участников, маркер `ParticlesCleared`) в обоих путях; клиент — scene-wide clear в `OnRebaseShiftMessage` (счётчик в `ClientShiftApplied`). Best-effort. Полный VFX-handoff — отдельный gate.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: F8 в грозу → `ParticlesCleared(n>0)`).
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/07C_PARTICLE_CLEAR_ON_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07B-verify — перепривязка по ф8_13)
 
 **Задача:** Проверить drain → shift → rebind на прогоне F8.

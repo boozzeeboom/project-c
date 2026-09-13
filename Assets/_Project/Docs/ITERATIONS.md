@@ -1,5 +1,15 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO06DE-verify — подтверждение камеры по ф8_7)
+
+**Задача:** Проверить безусловный сдвиг collision на прогоне F8.
+
+**Результат:** PASS полностью. `CameraShifted(ok=True)`, `collisionPos` после `Completed` — `(59.875, -57.215, 63.664)` рядом с игроком (раньше навсегда stale `(39994.99, 2502.79, 40002.47)`). Полная цепочка до `Completed`, телепортов 0, ошибок 0, «визуально всё ок» подтверждено. Без изменений кода.
+
+**Файлы:** `docs/world/floatingorigin/06DD_CAMERA_HISTORY_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO06DE — безусловный сдвиг collision камеры + верификация f8_6)
 
 **Задача:** Из `f8_6.txt`: `CameraShifted(ok=True)` работает, но `collisionPos` после `Completed` навсегда `(39994.99, 2502.79, 40002.47)` — dormant API сдвигал `_lastCollisionPos` только при `_wasColliding`. Функционально безвредно (потребляется лишь в anti-pop окне при colliding), но мусорит в evidence-лог и маскирует настоящий stale.

@@ -46,3 +46,12 @@ Slice вызывает dormant API в транзакции (best-effort, мар�
 2. Play Mode (user): F8 → в логе `CameraShifted(ok=True)`; `collisionPos`
    в следующих кадрах — в новых координатах (около игрока, не 39991/2502/39999).
 3. F9: `RollbackCompleted` без `CameraShifted` (флаг не ставился).
+
+## Верификация 2026-09-13 (ф8_7.txt) — PASS
+
+Полная цепочка `Requested → ... → CameraShifted(ok=True) → Completed`,
+`NetworkPublished(teleported=58)`, `RespawnShifted(dy=-2560.00)`.
+`collisionPos` после `Completed` — `(59.875, -57.215, 63.664)`, т.е. рядом
+с игроком в новых координатах (раньше навсегда `(39994.99, 2502.79, 40002.47)`).
+Телепортов после — 0, ошибок — 0, «визуально всё ок» подтверждено.
+T-FO06DE закрыт полностью.

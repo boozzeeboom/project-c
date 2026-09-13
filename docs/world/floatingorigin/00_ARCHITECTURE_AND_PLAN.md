@@ -227,6 +227,7 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO06DC-verify` (`f9_5.txt`): PASS — `RollbackCompleted`, `NetworkPublished(teleported=58)`, `RespawnShifted` отсутствует, `deathY=0.000`, телепортов 0, игрок на спавне, ошибок 0. Без изменений кода.
 - `T-FO06DD`: stale `camera collisionPos` после F8 — slice подключён к dormant `TryApplyGlobalMotionCameraTranslation` (позиция + lag + collision), флаг `_cameraShiftApplied`, маркер `CameraShifted`. f8_5 верифицирован: полный успех F8, 0 телепортов, 0 ошибок. Compile PASS, 0 errors; DD retest NOT RUN. Report: `06DD_CAMERA_HISTORY_SHIFT.md`. `runtimeRebaseReadiness=NOT_READY`.
 - `T-FO06DE`: из `f8_6.txt` — `CameraShifted(ok=True)`, но `collisionPos` навсегда stale: гвард `if (_wasColliding)` убран, сдвиг безусловный (потребление только в anti-pop окне, гвард никто не проверяет). f8_6: единственный телепорт — досдвиговый штатный spawn-fall, после `Completed` 0, ошибок 0. Compile PASS, 0 errors; retest NOT RUN. `runtimeRebaseReadiness=NOT_READY`.
+- `T-FO06DE-verify` (`ф8_7.txt`): PASS — `collisionPos=(59.875, -57.215, 63.664)` рядом с игроком, полная цепочка, телепортов 0, ошибок 0. Без изменений кода.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W, T-FO06AZ и T-FO06BN. ShipDeckNav synchronous lifecycle, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

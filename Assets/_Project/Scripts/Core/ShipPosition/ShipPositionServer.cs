@@ -21,6 +21,7 @@ using System.Collections;
 using System.Collections.Generic;
 using ProjectC.PeacefulShip.Stations;
 using ProjectC.Player;
+using ProjectC.World.FloatingOrigin.Network;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -156,6 +157,10 @@ namespace ProjectC.Core.ShipPosition
 
             Debug.Log($"[ShipPositionServer] Loaded: {wrapper.ships?.Count ?? 0} ships, {wrapper.players?.Count ?? 0} players");
 
+            // T-FO-PERSIST01: привести сейв из сдвинутого фрейма к исходному origin
+            // до применения (корабли + игроки ниже читают уже скорректированные списки).
+            ApplyRebaseCorrection(wrapper);
+
             if (PlayerPositionServer.Instance != null)
                 PlayerPositionServer.Instance.LoadSavedPlayers(wrapper.players);
 
@@ -193,6 +198,73 @@ namespace ProjectC.Core.ShipPosition
 
             _restoreCompleted = true;
             _nextSaveTime = Time.time + saveIntervalSec;
+        }
+
+        /// <summary>
+        /// T-FO-PERSIST01: сейв хранит координаты в сдвинутом фрейме (пост-F8),
+        /// свежий старт грузит мир в исходном origin. Вычитаем суммарный сдвиг
+        /// из позиций до применения, иначе restore кладёт всё в пустоту со
+        /// смещением на десятки км, а игрок падает → респавн на спавн.
+        /// Ротация не трогается; inShip-игроки резолвятся через exit живого
+        /// корабля (он уже скорректирован); padId — ID, не координаты.
+        /// </summary>
+        private void ApplyRebaseCorrection(ShipPositionListWrapper wrapper)
+        {
+            if (wrapper == null) return;
+            var offset = new Vector3(wrapper.rbx, wrapper.rby, wrapper.rbz);
+            if (offset == Vector3.zero) return;
+            ShiftWrapperByOffset(wrapper);
+            Debug.Log($"[ShipPositionServer] T-FO-PERSIST01 RebaseCorrected: offset={offset} frame={wrapper.rbFrame}");
+        }
+
+        /// <summary>
+        /// T-FO-PERSIST03: единая точка сдвига сейва в исходный origin.
+        /// Используется и restore-путем, и мостом пилота (pilot source читает
+        /// файл раньше RestoreCoroutine). Чистая функция над wrapper.
+        /// </summary>
+        public static void ShiftWrapperByOffset(ShipPositionListWrapper wrapper)
+        {
+            if (wrapper == null) return;
+            var offset = new Vector3(wrapper.rbx, wrapper.rby, wrapper.rbz);
+            if (offset == Vector3.zero) return;
+            if (wrapper.ships != null)
+                foreach (var s in wrapper.ships)
+                {
+                    if (s == null) continue;
+                    s.px -= offset.x; s.py -= offset.y; s.pz -= offset.z;
+                    s.pxCruise -= offset.x; s.pyCruise -= offset.y; s.pzCruise -= offset.z;
+                    s.liftStartY -= offset.y;
+                }
+            if (wrapper.players != null)
+                foreach (var p in wrapper.players)
+                {
+                    if (p == null) continue;
+                    p.px -= offset.x; p.py -= offset.y; p.pz -= offset.z;
+                }
+        }
+
+        /// <summary>
+        /// T-FO-PERSIST03: синхронное чтение скорректированной позиции игрока из файла.
+        /// Для моста пилота: placement происходит раньше RestoreCoroutine (~3.5с против
+        /// ~9.5с), ждать корутину нельзя. Один маленький JSON на размещение, не тик.
+        /// Возвращает false без записи в position, если файла/записи нет.
+        /// </summary>
+        public static bool TryLoadCorrectedPlayer(ulong clientId, out Vector3 position)
+        {
+            position = default(Vector3);
+            ShipPositionListWrapper wrapper;
+            try { wrapper = new JsonShipPositionRepository().LoadAllWrapper(); }
+            catch (Exception) { return false; }
+            if (wrapper == null || wrapper.players == null) return false;
+            ShiftWrapperByOffset(wrapper);
+            foreach (var p in wrapper.players)
+            {
+                if (p == null || p.clientId != clientId) continue;
+                if (!float.IsFinite(p.px) || !float.IsFinite(p.py) || !float.IsFinite(p.pz)) return false;
+                position = new Vector3(p.px, p.py, p.pz);
+                return true;
+            }
+            return false;
         }
 
         private void ApplyRestore(ShipController ship, ShipPositionSaveData data)
@@ -300,6 +372,11 @@ namespace ProjectC.Core.ShipPosition
             }
 
             var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData };
+            // T-FO-PERSIST01: зафиксировать фрейм сейва (суммарный сдвиг мира).
+            // Свежий старт вычтет его обратно (ApplyRebaseCorrection).
+            var rebaseOffset = GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset;
+            wrapper.rbx = rebaseOffset.x; wrapper.rby = rebaseOffset.y; wrapper.rbz = rebaseOffset.z;
+            wrapper.rbFrame = GlobalMotionControlledRebaseSlice.CumulativeRebaseFrame;
             _repo.SaveAll(wrapper);
 
 #if UNITY_EDITOR

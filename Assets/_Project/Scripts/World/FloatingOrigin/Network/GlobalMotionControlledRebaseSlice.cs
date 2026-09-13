@@ -53,6 +53,12 @@ namespace ProjectC.World.FloatingOrigin.Network
         // Тот же флаг-паттерн, что и для deathY: rollback сдвигает назад только при флаге.
         private bool _cameraShiftApplied;
 
+        // T-FO-PERSIST01: суммарный сдвиг мира, записанный в сейв (ShipPositions.json).
+        // Свежий старт грузит мир в исходном origin — restore вычитает кумулятив.
+        // Статика живёт сессию; свежий старт = нули = исходный origin. Консистентно.
+        public static Vector3 CumulativeRebaseOffset { get; private set; }
+        public static int CumulativeRebaseFrame { get; private set; }
+
         // T-FO06DH: именованный канал сдвига для второго клиента.
         private const string RebaseShiftMessageName = "FO06_REBASE_SHIFT";
 
@@ -294,6 +300,11 @@ namespace ProjectC.World.FloatingOrigin.Network
 
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
+            // T-FO-PERSIST01: транзакция завершена — сдвиг входит в кумулятив сейва.
+            // Единственная точка роста: Rollback всегда означает отсутствие Completed
+            // (см. note в Rollback), поэтому симметричного вычитания нет.
+            CumulativeRebaseOffset += plan.LocalTranslation;
+            CumulativeRebaseFrame = (int)_frameGeneration;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase", "Published",
                 "origin=" + _frame.Origin + ";localFocusAfter=" + playerRoot.position);
@@ -359,6 +370,11 @@ namespace ProjectC.World.FloatingOrigin.Network
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "RollbackRequested", reason);
             bool restored = coordinator.TryAbort(out string error);
             Physics.SyncTransforms();
+            // T-FO-PERSIST01-note: кумулятив сейва трогает только Completed.
+            // Любой Rollback означает, что Completed этой транзакции не было:
+            // мир возвращён в пре-транзакционное состояние, которое кумулятив
+            // уже отражает через ранние Completed. Вычитать нечего (F9 net zero,
+            // apply/commit_refused — симметрично).
             // T-FO06DA: тот же сброс интерполяции после возврата позиций.
             PublishNetworkTeleport();
             // T-FO06DB: вернуть deathY назад вместе с миром.

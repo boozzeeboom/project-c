@@ -306,6 +306,21 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// T-FO-PERSIST02: опустить порог падения под восстановленную точку.
+        /// Свежий старт всегда начинает с _deathY = 0, а валидный сейв (пост-F8)
+        /// может лежать ниже — без этого restore телепортирует в точку, которую
+        /// Update через 0.5с сочтёт падением, и игрок улетает на спавн.
+        /// Только опускает, никогда не поднимает; сбрасывает таймер падения.
+        /// </summary>
+        public void EnsureDeathBelow(float y, float margin = 50f)
+        {
+            float floor = y - Mathf.Max(0f, margin);
+            if (floor < _deathY)
+                _deathY = floor;
+            _fallStartTime = float.MaxValue;
+        }
+
+        /// <summary>
         /// Публичный метод для принудительной установки индекса респавна из кода.
         /// </summary>
         public void SetRespawnIndex(RespawnManager manager, int index)

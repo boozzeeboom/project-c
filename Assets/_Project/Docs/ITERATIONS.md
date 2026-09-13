@@ -1,5 +1,33 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO-PERSIST03 — мост pilot source к legacy-сейву)
+
+**Задача:** Проверка T-FO-PERSIST01/02 rc — лог `т-фо-персис_1.txt` (простой запуск, должен был загрузить данные). Персистенция не работает.
+
+**Диагноз (строки лога, не гипотезы):** корабли — `Restored 22/22` + `RebaseCorrected offset=(-39936,-2560,-40192) frame=2` (01 работает); но игрок спавнится как `NetworkPlayer_GlobalPilot[Clone]` через pilot-путь (`SpawnAsPlayerObject`, `InitialGateReleased`, точка `Respawn_Default + 1м` = `(39992, 1, 40000)`). `GlobalMotionPilotSpawnSource` всегда отдаёт авторскую точку, сейв не читает. Legacy-coroutine молча выходит (`UsesGlobalCoordinates` → `yield break`). Дальше падение (`grounded=False`, y 1 → −6.3) → `FallThresholdReached` → `TeleportRpc(target=[39992, 2502.77, 40000])` = спавн (строки 2888–3618). FO checkpoint-сессия не ведёт (legacy на месте → fail-closed, чекпоинты не писались). Итог: ни одна из двух персистенций игрока не работала — поправка к §1/§4 дизайн-ноты.
+
+**Результат:** `ShipPositionServer.TryLoadCorrectedPlayer` (static, синхронное чтение + `ShiftWrapperByOffset` как единая точка коррекции) + `GlobalMotionPilotSpawnSource.TryGetLegacySpawn` (резолв раз на клиента, кэш hit/miss, проверка проекции во фрейм до выдачи плана, любой провал = тихий fallback на `Respawn_Default`; маркер `PilotSpawnRestored`) + `EnsureDeathBelow` в global-ветке coroutine перед `yield break` (placement уже применён).
+
+**Проверка:** баланс скобок 3/3 файлов ОК; сигнатуры `FromLegacyAbsolute(Vector3)` / `TryToLocal(GlobalPosition, out Vector3)` подтверждены по исходникам. Unity-MCP недоступен (8080 молчит) — **compile NOT VERIFIED**. Retest NOT RUN (за пользователем: старт с непустым сейвом → `PilotSpawnRestored` + игрок в довидовой точке, без `FallThresholdReached`).
+
+**Файлы:** `Assets/_Project/Scripts/Core/ShipPosition/ShipPositionServer.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Pilot/GlobalMotionPilotSpawnSource.cs`, `Assets/_Project/Scripts/Player/NetworkPlayer.cs`, `docs/world/floatingorigin/PERSIST01_REBASE_AWARE_RESTORE.md`, `Assets/_Project/Docs/ITERATIONS.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`.
+
+---
+
+## Итерация от 2026-09-13 (T-FO-PERSIST01/02 — персистенция после сдвига)
+
+**Задача:** «Каждый заход — со спавна», сломалось при вводе FO. Восстановить персистенцию персонажа и проверить работоспособность при переподключении после сдвига. Отдельные тикеты T-FO-PERSIST.
+
+**Диагноз (факты):** сейв пишется (`Saved 22 ships + 1 players`), restore-код активен; но сейв хранит пост-F8 координаты без отметки фрейма, а свежий старт грузит мир в исходном origin. Restore кладёт игрока/корабли в пустоту со смещением на T → падение → респавн на спавн. Живой пример: игрок сохранён на `(183, −15.6, 150)` при свежем `_deathY = 0`. FO-валидация legacy (`ValidateStart`) не при чём — живая игра идёт legacy-хостом, pilot не заспавнен. Вторичка: свежий `_deathY = 0` убивает даже валидные низкие сейвы (`ResetFallTimer` даёт лишь 0.5с).
+
+**Результат:** T-FO-PERSIST01 — аддитивные `rbx/rby/rbz/rbFrame` в `ShipPositionListWrapper` (старые файлы = нули = без коррекции); статический кумулятив slice (только Completed; Rollback никогда не вычитает — Completed после него невозможен, F9 net zero, доказательство в note); `ApplyRebaseCorrection` в `RestoreCoroutine` (корабли вкл. cruise/liftStartY, игроки; маркер `RebaseCorrected`); запись фрейма в `SaveCurrentState`. T-FO-PERSIST02 — `PlayerRespawnTracker.EnsureDeathBelow` + вызов из `RestorePlayerPositionCoroutine` после успешного restore (только опускает порог + сброс таймера).
+
+**Проверка:** баланс скобок 5/5 файлов ОК. Unity-MCP недоступен (порт 8080 молчит, Unity Editor не запущен) — **compile NOT VERIFIED, обязательно проверить Console (0 errors) после открытия редактора**. Retest NOT RUN (T-FO-PERSIST03 за пользователем: F8 → ходьба → выход в меню → новый заход → точка сохранена; в логе `RebaseCorrected` + `restored to position` без `FallThresholdReached`).
+
+**Файлы:** `Assets/_Project/Scripts/Core/ShipPosition/ShipPositionSaveData.cs`, `Assets/_Project/Scripts/Core/ShipPosition/ShipPositionServer.cs`, `Assets/_Project/Scripts/Player/PlayerRespawnTracker.cs`, `Assets/_Project/Scripts/Player/NetworkPlayer.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/PERSIST01_REBASE_AWARE_RESTORE.md`, `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO08G-verify — посадка/прыжок/бой/кулдаун)
 
 **Задача:** Разобрать ф8_21 (посадка, прыжок, бой, кулдаун при сдвиге; визуально ок со слов пользователя).

@@ -10,6 +10,11 @@ namespace ProjectC.World.FloatingOrigin.Pilot
     /// <summary>
     /// Explicit test-only spawn source for the first global pilot. It uses the authored Respawn_Default point,
     /// a single large local frame, and no save/auth identity. It is intentionally not a production persistence source.
+    /// T-FO-PERSIST03: мост к legacy-сейву — если в ShipPositions.json есть запись игрока,
+    /// начальная точка берётся из неё (со сдвигом в исходный origin), а не Respawn_Default.
+    /// Без записи поведение прежнее. inShip-записи используются как есть (корабль
+    /// отресторится в matching-точку тем же сейвом); провал проекции во фрейм —
+    /// тихий fallback на Respawn_Default, игрок обязан заспавниться.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class GlobalMotionPilotSpawnSource : MonoBehaviour, IGlobalMotionPlayerSpawnSource
@@ -22,6 +27,10 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         private readonly List<GlobalMotionSpawnFrame> _frames = new List<GlobalMotionSpawnFrame>();
         private GlobalPosition _spawnPosition;
         private bool _prepared;
+        // T-FO-PERSIST03: резолв на клиента (файл читается один раз на клиента,
+        // TryGetPlayerPlan дёргается каждый кадр до потребления плана).
+        private readonly Dictionary<ulong, GlobalPosition> _legacySpawns = new Dictionary<ulong, GlobalPosition>();
+        private readonly HashSet<ulong> _legacyMissed = new HashSet<ulong>();
 
         public IReadOnlyList<GlobalMotionSpawnFrame> PreparedFrames => _frames;
 
@@ -47,7 +56,54 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         {
             plan = default;
             if (!_prepared || approvedClientId == ulong.MaxValue) return false;
-            plan = new GlobalMotionPlayerSpawnPlan(1, _spawnPosition, Quaternion.identity, Vector3.one, null);
+            var spawn = _spawnPosition;
+            if (TryGetLegacySpawn(approvedClientId, out var legacy))
+                spawn = legacy;
+            plan = new GlobalMotionPlayerSpawnPlan(1, spawn, Quaternion.identity, Vector3.one, null);
+            return true;
+        }
+
+        /// <summary>
+        /// T-FO-PERSIST03: однократный резолв legacy-сейва на клиента.
+        /// Скорректированная точка — локальные координаты исходного origin;
+        /// стартовый фрейм пилота — тоже исходный origin, проекция обязана сойтись.
+        /// Любой провал = тихий fallback на Respawn_Default (план всегда валиден).
+        /// </summary>
+        private bool TryGetLegacySpawn(ulong clientId, out GlobalPosition position)
+        {
+            position = default;
+            if (_legacySpawns.TryGetValue(clientId, out position)) return true;
+            if (_legacyMissed.Contains(clientId)) return false;
+            _legacyMissed.Add(clientId);
+            Vector3 local;
+            try
+            {
+                if (!ProjectC.Core.ShipPosition.ShipPositionServer.TryLoadCorrectedPlayer(clientId, out local))
+                    return false;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[T-FO-PERSIST03] PilotSpawnLegacy: save read failed: " + e.GetType().Name, this);
+                return false;
+            }
+            var global = GlobalPosition.FromLegacyAbsolute(local);
+            Vector3 projected;
+            try
+            {
+                if (!_frames[0].Coordinates.TryToLocal(global, out projected))
+                {
+                    Debug.LogWarning("[T-FO-PERSIST03] PilotSpawnLegacy: outside pilot frame, default spawn. client=" + clientId, this);
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[T-FO-PERSIST03] PilotSpawnLegacy: projection failed: " + e.GetType().Name, this);
+                return false;
+            }
+            position = global;
+            _legacySpawns[clientId] = position;
+            Debug.Log("[T-FO-PERSIST03] PilotSpawnRestored: client=" + clientId + " pos=" + local, this);
             return true;
         }
 

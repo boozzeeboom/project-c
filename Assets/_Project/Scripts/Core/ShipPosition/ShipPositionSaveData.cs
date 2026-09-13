@@ -63,6 +63,13 @@ namespace ProjectC.Core.ShipPosition
     {
         public List<ShipPositionSaveData> ships = new List<ShipPositionSaveData>();
         public List<PlayerPositionSaveData> players = new List<PlayerPositionSaveData>(); // T-PLAYER-PERSIST
+
+        // T-FO-PERSIST01: суммарный сдвиг мира (LocalTranslation controlled rebase),
+        // применённый к сохранённым координатам. Свежий старт грузит мир в исходном
+        // origin — restore вычитает этот вектор из позиций до применения.
+        // Нули (старые файлы) = коррекции нет, обратно совместимо.
+        public float rbx, rby, rbz;
+        public int rbFrame;
     }
 
     /// <summary>

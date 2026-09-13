@@ -507,7 +507,16 @@ namespace ProjectC.Player
         /// </summary>
         private System.Collections.IEnumerator RestorePlayerPositionCoroutine()
         {
-            if (UsesGlobalCoordinates) yield break; // G/D own the explicit initial global plan; never await legacy float persistence.
+            // T-FO-PERSIST03: global placement (pilot source) уже поставил игрока —
+            // legacy restore пропущен by design, но восстановленная точка может лежать
+            // ниже свежего _deathY = 0 (пост-F8 сейвы). Только опустить порог, иначе
+            // Update через 0.5с сочтёт placement падением и вернёт игрока на спавн.
+            if (UsesGlobalCoordinates)
+            {
+                var globalTracker = GetComponent<PlayerRespawnTracker>();
+                if (globalTracker != null) globalTracker.EnsureDeathBelow(transform.position.y);
+                yield break; // G/D own the explicit initial global plan; never await legacy float persistence.
+            }
             // Ждём завершения полного server restore: сначала должны быть сброшены
             // stale-флаги предыдущего host-сеанса, затем загружены players и ships.
             var ppServer = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance;
@@ -537,7 +546,14 @@ namespace ProjectC.Player
             {
                 // Сбросить fall detection чтобы не тригернуть респавн после телепорта
                 var tracker = GetComponent<PlayerRespawnTracker>();
-                if (tracker != null) tracker.ResetFallTimer();
+                if (tracker != null)
+                {
+                    tracker.ResetFallTimer();
+                    // T-FO-PERSIST02: восстановленная точка (пост-F8 сейв) может лежать
+                    // ниже свежего _deathY = 0 — опустить порог под неё, иначе Update
+                    // через 0.5с сочтёт restore падением и вернёт игрока на спавн.
+                    tracker.EnsureDeathBelow(transform.position.y);
+                }
             }
         }
 

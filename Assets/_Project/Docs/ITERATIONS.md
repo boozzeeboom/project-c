@@ -1,5 +1,29 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO06DB — rebase-aware порог падения)
+
+**Задача:** Из `f8_3.txt`: после успешного F8 игрок «подпрыгивает на месте» — вечный цикл `respawn.Update(y=-57.8, deathY=0) → FallThresholdReached → TeleportRpc` каждые ~0.5с. Причина: `_deathY=0` абсолютный, а после сдвига -2560 легитимная земля (палубы, y≈-58) ниже порога. F9 (`f9_3.txt`) отработал штатно: `RollbackCompleted` — «нет изменений» и есть ожидаемый результат rollback.
+
+**Результат:** `PlayerRespawnTracker.ApplyRebaseTranslation`: `_deathY += translation.y` + сброс таймера. Slice вызывает раз за транзакцию: успех `+plan.LocalTranslation`, rollback `-request.Plan.LocalTranslation` (корень в `_rollbackPlayerRoot`, очистка в `finally`). Маркер `runtimeRebase.RespawnShifted(dy=...)`. Найдено вне scope: `camera collisionPos` навсегда остаётся в досдвиговых координатах (следующий gate); повторный F8 корректно `Rejected(no_rebase_plan)`.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled).
+
+**Файлы:** `Assets/_Project/Scripts/Player/PlayerRespawnTracker.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/06DB_REBASE_AWARE_RESPAWN_THRESHOLD.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
+## Итерация от 2026-09-13 (T-FO06DA — network teleport publication после controlled rebase)
+
+**Задача:** Закрыть gap из 06CY («NGO baseline publication after rebase: NOT integrated»): F8 завершается `Completed`, мир сдвигается (~56 км), но stock `NetworkTransform` кораблей/станций хранят досдвиговые буферы интерполяции — клиенты интерполируют сдвиг как обычное движение (в f8_2 при этом 0 errors, разнос визуально-сетевой).
+
+**Результат:** Новая фаза `PublishNetworkTeleport` в `GlobalMotionControlledRebaseSlice`: после `Validated` (и симметрично в `Rollback` после восстановления) на сервере для каждого участника обходятся активные `NetworkTransform` в поддереве и вызывается `nt.Teleport(t.position, t.rotation, t.localScale)` — значения не меняются, сбрасывается только флаг интерполяции. Только при `CanCommitToTransform`, иначе счётчик skipped; ошибки — в счётчик errors, транзакцию не валят (best-effort). Маркер evidence: `runtimeRebase.NetworkPublished(teleported=N;skipped=M;errors=K)`; без сервера — `skipped:no_server_authority`. Поток пилота (`GlobalMotionReplicator`, global-координаты) инвариантен к сдвигу и не трогается. Rigidbody velocities/sleep и NavMesh rebuild — вне scope (отдельные gates).
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors. Play Mode F8/F9 retest — NOT RUN (user-controlled).
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/06DA_NETWORK_TELEPORT_PUBLICATION.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO06CZ — rebase scope inactive roots + executor identity-drift survivability)
 
 **Задача:** Исправить два дефекта из пользовательских логов `f8_1.txt`/`f9_1.txt`: (1) отключённый корень `SPAWN_TEST cult` ошибочно попадал в scope controlled rebase и отклонял подготовку (`stale_participant`), (2) `GlobalSceneNativeExecutor` не переживал identity mismatch и аварийно выключал NGO (`Fault → Shutdown`), из-за чего исчезал визуальный мир.

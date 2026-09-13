@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -42,6 +43,8 @@ namespace ProjectC.World.FloatingOrigin.Network
         private bool _rollbackNextValidation;
         private CharacterController _frozenController;
         private bool _controllerWasEnabled;
+        // T-FO06DB: корень игрока активной транзакции — для сдвига deathY при rollback.
+        private Transform _rollbackPlayerRoot;
 
         public LocalCoordinateFrame CurrentFrame => _frame;
         public ulong FrameGeneration => _frameGeneration;
@@ -110,6 +113,7 @@ namespace ProjectC.World.FloatingOrigin.Network
 
             _transactionActive = true;
             _rollbackNextValidation = forceValidationFailure;
+            _rollbackPlayerRoot = null;
             try
             {
                 ExecuteTransaction();
@@ -123,6 +127,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 _rollbackNextValidation = false;
                 _transactionActive = false;
+                _rollbackPlayerRoot = null;
             }
         }
 
@@ -133,6 +138,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 Reject("local_player_unavailable:" + playerError);
                 return;
             }
+            _rollbackPlayerRoot = playerRoot;
 
             if (!TryBuildParticipants(playerRoot, out GlobalMotionRebaseParticipantSet participantSet, out string participantError))
             {
@@ -189,6 +195,13 @@ namespace ProjectC.World.FloatingOrigin.Network
                 return;
             }
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "Validated", "localFocusAfter=" + playerRoot.position);
+
+            // T-FO06DA: сброс интерполяции stock NetworkTransform после сдвига мира.
+            PublishNetworkTeleport();
+
+            // T-FO06DB: увести deathY вместе с миром, иначе легитимная земля
+            // окажется ниже порога и игрок будет ретелепортироваться каждые 0.5с.
+            ShiftPlayerRespawnReference(playerRoot, plan.LocalTranslation);
 
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
@@ -253,11 +266,70 @@ namespace ProjectC.World.FloatingOrigin.Network
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "RollbackRequested", reason);
             bool restored = coordinator.TryAbort(out string error);
             Physics.SyncTransforms();
+            // T-FO06DA: тот же сброс интерполяции после возврата позиций.
+            PublishNetworkTeleport();
+            // T-FO06DB: вернуть deathY назад вместе с миром.
+            ShiftPlayerRespawnReference(_rollbackPlayerRoot, -request.Plan.LocalTranslation);
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",
                 "reason=" + reason + ";error=" + (error ?? "none"));
             Debug.LogWarning("[T-FO06CY] Controlled rebase rolled back: " + reason + ";restore=" + restored, this);
+        }
+
+        /// <summary>
+        /// T-FO06DA: сброс интерполяции stock NetworkTransform после сдвига/возврата мира.
+        /// Значения не меняются — только флаг телепорта, иначе клиенты интерполируют
+        /// сдвиг в десятки километров как обычное движение. Best-effort: ошибки и
+        /// отсутствие authority уходят в счётчики evidence, транзакцию не валят.
+        /// Поток пилота (GlobalMotionReplicator, global-координаты) инвариантен к сдвигу.
+        /// </summary>
+        private void PublishNetworkTeleport()
+        {
+            NetworkManager manager = NetworkManager.Singleton;
+            if (manager == null || !manager.IsServer)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "NetworkPublished", "skipped:no_server_authority");
+                return;
+            }
+            int teleported = 0, skipped = 0, errors = 0;
+            for (int i = 0; i < _participants.Count; i++)
+            {
+                Transform target = _participants[i].Target;
+                if (target == null) continue;
+                NetworkTransform[] writers = target.GetComponentsInChildren<NetworkTransform>(false);
+                for (int j = 0; j < writers.Length; j++)
+                {
+                    NetworkTransform nt = writers[j];
+                    if (nt == null || !nt.IsSpawned) { skipped++; continue; }
+                    try
+                    {
+                        if (!nt.CanCommitToTransform) { skipped++; continue; }
+                        Transform t = nt.transform;
+                        nt.Teleport(t.position, t.rotation, t.localScale);
+                        teleported++;
+                    }
+                    catch (Exception) { errors++; }
+                }
+            }
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent(
+                "runtimeRebase", "NetworkPublished",
+                "teleported=" + teleported + ";skipped=" + skipped + ";errors=" + errors);
+        }
+
+        /// <summary>
+        /// T-FO06DB: сдвиг абсолютного порога падения игрока вместе с миром.
+        /// No-op при отсутствии трекера (трекер живёт на префабе игрока).
+        /// </summary>
+        private void ShiftPlayerRespawnReference(Transform playerRoot, Vector3 translation)
+        {
+            if (playerRoot == null) return;
+            var tracker = playerRoot.GetComponent<ProjectC.Player.PlayerRespawnTracker>();
+            if (tracker == null) return;
+            tracker.ApplyRebaseTranslation(translation);
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent(
+                "runtimeRebase", "RespawnShifted",
+                "dy=" + translation.y.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
         }
 
         private bool TryBuildParticipants(

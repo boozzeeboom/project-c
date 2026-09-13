@@ -293,6 +293,19 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// T-FO06DB: сдвиг абсолютных Y-референсов вместе с миром при controlled rebase.
+        /// Без этого после F8 легитимная земля оказывается ниже _deathY и игрок
+        /// бесконечно ретелепортируется каждые _respawnDelay секунд (см. f8_3.txt:
+        /// y=-56.9 при deathY=0 после сдвига -2560). Вызывается slice на сервере
+        /// один раз за транзакцию (успех: +translation, rollback: -translation).
+        /// </summary>
+        public void ApplyRebaseTranslation(Vector3 translation)
+        {
+            _deathY += translation.y;
+            _fallStartTime = float.MaxValue;
+        }
+
+        /// <summary>
         /// Публичный метод для принудительной установки индекса респавна из кода.
         /// </summary>
         public void SetRespawnIndex(RespawnManager manager, int index)

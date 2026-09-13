@@ -24,6 +24,15 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         [SerializeField] private float _maxLocalCoordinate = 100000f;
         [SerializeField] private float _verticalSpawnOffset = 1f;
 
+        // T-FO09F: явный якорь спавна. Позволяет задать Transform из любой
+        // открытой сцены (например WorldScene_0_0) прямо в инспекторе
+        // NetworkManager в BootstrapScene. Приоритет над _respawnObjectName:
+        // если назначен — используется его позиция (+offset), поиск по имени
+        // не выполняется. Проверка сцены смягчена: якорь может лежать в любой
+        // загруженной сцене, его мировая позиция уже глобальная.
+        [SerializeField, Tooltip("T-FO09F: явный якорь спавна из любой сцены. Приоритет над Respawn_Default.")]
+        private Transform _spawnAnchor;
+
         private readonly List<GlobalMotionSpawnFrame> _frames = new List<GlobalMotionSpawnFrame>();
         private GlobalPosition _spawnPosition;
         private bool _prepared;
@@ -120,6 +129,20 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         {
             _frames.Clear();
             _prepared = false;
+
+            // T-FO09F: явный якорь из любой загруженной сцены — приоритет над
+            // поиском по имени. Мировая позиция якоря уже глобальная, проверка
+            // пути worldScene не нужна (якорь может лежать вне WorldScene_0_0).
+            if (_spawnAnchor != null)
+            {
+                _spawnPosition = GlobalPosition.FromLegacyAbsolute(_spawnAnchor.position + Vector3.up * _verticalSpawnOffset);
+                var anchorScene = _spawnAnchor.gameObject.scene;
+                var anchorFrame = new LocalCoordinateFrame(GlobalPosition.Zero, _maxLocalCoordinate);
+                _frames.Add(new GlobalMotionSpawnFrame(1, anchorFrame, anchorScene));
+                _prepared = _frames[0].IsValid;
+                return _prepared;
+            }
+
             var scene = preparedScene ?? SceneManager.GetSceneByPath(_worldScenePath);
             if (!scene.IsValid() || !scene.isLoaded || !string.Equals(scene.path, _worldScenePath, StringComparison.Ordinal)) return false;
             var respawn = FindInScene(scene, _respawnObjectName);

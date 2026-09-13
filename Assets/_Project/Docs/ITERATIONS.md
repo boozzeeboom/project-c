@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO09F — якорь спавна из любой сцены)
+
+**Задача:** «Не могу якорь из другой сцены задать — scene mismatch crosscene».
+
+**Результат:** Новое поле `_spawnAnchor` (Transform) на `GlobalMotionPilotSpawnSource`: приоритет над поиском по имени, проверка пути worldScene для якоря смягчена (любая загруженная сцена, позиция глобальная). Без якоря — прежнее поведение. Правка CS0136 (shadowing) после первого прогона.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Editor-тест user: назначить Empty из WorldScene_0_0 на доказанной земле → в логе `local=<позиция якоря>`.
+
+**Файлы:** `.../Pilot/GlobalMotionPilotSpawnSource.cs`, `docs/world/floatingorigin/09F_SPAWN_ANCHOR_FIELD.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09E — fallback-точка висит в воздухе, без кода)
 
 **Задача:** Разобрать ф8_25 («Esc-спасение переносит в пустоту», точка «в нормальном месте»).

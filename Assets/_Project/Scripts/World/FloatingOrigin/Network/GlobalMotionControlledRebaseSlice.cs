@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 namespace ProjectC.World.FloatingOrigin.Network
@@ -64,10 +65,27 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (!Application.isPlaying || !_initialized || _transactionActive)
                 return;
 
-            if (UnityEngine.Input.GetKeyDown(_successKey))
+            if (IsKeyPressed(_successKey))
                 RequestControlledRebase(false);
-            else if (UnityEngine.Input.GetKeyDown(_rollbackKey))
+            else if (IsKeyPressed(_rollbackKey))
                 RequestControlledRebase(true);
+        }
+
+        private static bool IsKeyPressed(KeyCode key)
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null)
+                return false;
+
+            switch (key)
+            {
+                case KeyCode.F8:
+                    return keyboard.f8Key.wasPressedThisFrame;
+                case KeyCode.F9:
+                    return keyboard.f9Key.wasPressedThisFrame;
+                default:
+                    return false;
+            }
         }
 
         [ContextMenu("Request Controlled Rebase")]
@@ -262,13 +280,25 @@ namespace ProjectC.World.FloatingOrigin.Network
             {
                 GameObject[] roots = worldScene.GetRootGameObjects();
                 Array.Sort(roots, CompareNames);
+                var skippedInactive = new List<string>();
                 for (int i = 0; i < roots.Length; i++)
                 {
                     if (roots[i] == null || roots[i].transform == null)
                         continue;
+                    // T-FO06CZ: coordinator admission requires every participant to be current
+                    // (activeInHierarchy). Inactive executor-managed roots (e.g. disabled
+                    // SPAWN_TEST cult) are not rebase participants; including them fails
+                    // preparation with stale_participant and blocks F8/F9 entirely.
+                    if (!roots[i].activeInHierarchy)
+                    {
+                        skippedInactive.Add(roots[i].name);
+                        continue;
+                    }
                     if (!AddParticipant("WORLD_SCENE_ROOT/" + roots[i].name, roots[i].transform, GlobalMotionRebaseParticipantKind.CityStatic, participantSet, out error))
                         return false;
                 }
+                if (skippedInactive.Count > 0)
+                    Debug.Log("[T-FO06CZ] Inactive scene roots excluded from rebase scope: " + string.Join(", ", skippedInactive), this);
             }
 
             if (playerRoot != null && !IsContainedByRegisteredRoot(playerRoot))

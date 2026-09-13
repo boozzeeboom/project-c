@@ -1,5 +1,19 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO06CZ — rebase scope inactive roots + executor identity-drift survivability)
+
+**Задача:** Исправить два дефекта из пользовательских логов `f8_1.txt`/`f9_1.txt`: (1) отключённый корень `SPAWN_TEST cult` ошибочно попадал в scope controlled rebase и отклонял подготовку (`stale_participant`), (2) `GlobalSceneNativeExecutor` не переживал identity mismatch и аварийно выключал NGO (`Fault → Shutdown`), из-за чего исчезал визуальный мир.
+
+**Результат:** (1) `GlobalMotionControlledRebaseSlice.TryBuildParticipants` теперь исключает корни с `activeInHierarchy == false` из participant scope с логом `[T-FO06CZ] Inactive scene roots excluded from rebase scope: ...`. (2) `RequireIdentity` переписан на именованный диагноз (`TryDescribeIdentityChange`: `parent_changed`/`scene_changed`/`source_id_changed`/`marker_destroyed`/`activation_flag_changed`/`network_object_lost`/`frame_identity_changed` с sourceId/expected/actual; канонический префикс `Bound source/frame/scene/parent identity changed:` сохранён). Per-frame re-check уже-recorded источника маршрутизируется через `TryRequireRecordedIdentity` → `FaultSteadyState`: именованный `[T-FO06CZ]` error, `CanAcceptScenePeer=false`, ledger tickets `MarkFaulted`, **NGO session сохраняется**. `HasPreparedPlacement => _installed && (!_faulted || _networkRan)`: fault после старта сети не отзывает placement, bootstrap деградирует в существующую ветку `scene_admission_wait`, а не `FailSession → Shutdown`. Незакоммиченный перенос триггеров F8/F9 на Input System (`wasPressedThisFrame`) входит в тот же дифф.
+
+**Границы:** Writer identity drift остаётся неустановленным — проверенные код-пути окна (`ShipPositionServer.ApplyRestore`, `EnterDocked/ExitDocked`, `ApplyPersistenceFreeze`, `NpcShipController.RestoreFromSave`, `NpcShipWorld.RestoreNpcState`, `DockingWorld.AssignPad`, `ShipDeckNav.Register`) не трогают parent/scene каталогизированных объектов. Следующий occurrence будет именованным в `[T-FO06CZ]`. Pre-admission fail-closed сохранён: drift на ещё не recorded источнике и все прочие `Fault()` пути (disable/destroy/timeout/spawn failure) по-прежнему останавливают сессию. `SPAWN_TEST cult` остаётся в сцене (тестовый контент).
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS; `git diff BootstrapScene.unity | grep GlobalObjectIdHash` — empty (BootstrapScene не изменён). F8/F9 retest — NOT RUN (user-controlled).
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalSceneNativeExecutor.cs`, `docs/world/floatingorigin/06CZ_REBASE_SCOPE_AND_IDENTITY_DRIFT_FIX.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-12 (T-FO06CY — concrete controlled rebase vertical slice)
 
 **Задача:** Прекратить расширение pure floating-origin contracts и подготовить первый реальный user-controlled runtime rebase slice без запуска Play Mode.

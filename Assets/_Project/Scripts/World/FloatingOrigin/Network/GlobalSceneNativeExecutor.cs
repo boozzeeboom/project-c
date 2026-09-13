@@ -51,7 +51,12 @@ namespace ProjectC.World.FloatingOrigin.Network
         private double _lastReadinessLogAt = double.NegativeInfinity;
 
         private double _startedAt;
-        public bool HasPreparedPlacement => _installed && !_faulted;
+        /// <summary>
+        /// T-FO06CZ: a steady-state fault after the network ran must not retract completed
+        /// placement — otherwise the bootstrap Update fails with native_scene_preparation_lost
+        /// and shuts the session down. Faulted-after-start degrades to scene_admission_wait.
+        /// </summary>
+        public bool HasPreparedPlacement => _installed && (!_faulted || _networkRan);
         public bool CanAcceptScenePeer { get; private set; }
 
         public bool ValidatePreparation(NetworkManager manager, GlobalMotionNetworkProfile profile, IReadOnlyList<GlobalMotionSpawnFrame> frames, out string error)
@@ -374,7 +379,10 @@ namespace ProjectC.World.FloatingOrigin.Network
                 foreach (var node in _prepared.Nodes)
                 {
                     if (node.Retired) continue;
-                    RequireIdentity(node);
+                    // T-FO06CZ: the per-frame re-check of an already-recorded source must not
+                    // kill the NGO session (Fault()/Shutdown() despawned the whole world over a
+                    // single unexplained identity drift); the named reason is logged instead.
+                    if (!TryRequireRecordedIdentity(node)) return;
                     if (node.Unmanaged) continue;
                     if (node.Recorded)
                     {
@@ -510,10 +518,96 @@ namespace ProjectC.World.FloatingOrigin.Network
         }
         private static void RequireIdentity(Node node)
         {
-            if (node.Marker == null || node.Marker.SourceId != node.Entry.SourceId || node.Marker.transform.parent != node.Parent || node.Marker.gameObject.scene != node.Scene ||
-                node.Marker.ActivateWhenReady != node.Activate || (node.Entry.IsNetwork && node.Network == null) ||
-                (node.Entry.Spatial && (node.Frame == null || !node.Frame.IsValid || node.Marker.FrameId != node.Frame.Id || node.Frame.Scene != node.Scene)))
-                throw new InvalidOperationException("Bound source/frame/scene/parent identity changed.");
+            // T-FO06CZ: canonical message prefix preserved; the reason is now named
+            // (sub-check + sourceId + expected/actual) so the drift writer can be
+            // identified from the console capture instead of an opaque throw.
+            if (TryDescribeIdentityChange(node, out var reason))
+                throw new InvalidOperationException("Bound source/frame/scene/parent identity changed: " + reason);
+        }
+
+        /// <summary>T-FO06CZ: named identity-drift diagnosis without throwing.</summary>
+        private static bool TryDescribeIdentityChange(Node node, out string reason)
+        {
+            reason = null;
+            if (node.Marker == null)
+            {
+                reason = "marker_destroyed;sourceId=" + node.Entry.SourceId;
+                return true;
+            }
+            if (node.Marker.SourceId != node.Entry.SourceId)
+            {
+                reason = "source_id_changed;sourceId=" + node.Entry.SourceId + ";marker=" + node.Marker.name +
+                    ";expected=" + node.Entry.SourceId + ";actual=" + node.Marker.SourceId;
+                return true;
+            }
+            if (node.Marker.transform.parent != node.Parent)
+            {
+                reason = "parent_changed;sourceId=" + node.Entry.SourceId + ";marker=" + node.Marker.name +
+                    ";expected=" + DescribeParent(node.Parent) + ";actual=" + DescribeParent(node.Marker.transform.parent);
+                return true;
+            }
+            if (node.Marker.gameObject.scene != node.Scene)
+            {
+                reason = "scene_changed;sourceId=" + node.Entry.SourceId + ";marker=" + node.Marker.name +
+                    ";expected=" + node.Scene.path + ";actual=" + node.Marker.gameObject.scene.path;
+                return true;
+            }
+            if (node.Marker.ActivateWhenReady != node.Activate)
+            {
+                reason = "activation_flag_changed;sourceId=" + node.Entry.SourceId + ";marker=" + node.Marker.name +
+                    ";expected=" + node.Activate + ";actual=" + node.Marker.ActivateWhenReady;
+                return true;
+            }
+            if (node.Entry.IsNetwork && node.Network == null)
+            {
+                reason = "network_object_lost;sourceId=" + node.Entry.SourceId;
+                return true;
+            }
+            if (node.Entry.Spatial && (node.Frame == null || !node.Frame.IsValid || node.Marker.FrameId != node.Frame.Id || node.Frame.Scene != node.Scene))
+            {
+                reason = "frame_identity_changed;sourceId=" + node.Entry.SourceId + ";marker=" + node.Marker.name +
+                    ";frameId=" + node.Marker.FrameId + ";expectedFrameId=" + (node.Frame == null ? -1 : node.Frame.Id);
+                return true;
+            }
+            return false;
+        }
+
+        private static string DescribeParent(Transform parent)
+        {
+            if (parent == null) return "<root>";
+            var marker = parent.GetComponent<GlobalSceneSourceMarker>();
+            return marker != null ? marker.SourceId : parent.name;
+        }
+
+        /// <summary>
+        /// T-FO06CZ: steady-state fault for an already-recorded source. Unlike Fault() it
+        /// preserves the NGO session: observed once per run during ShipPositionServer
+        /// restore + ShipDeckNav re-registration, and Fault()/Shutdown() despawned the
+        /// whole network world because of a single unexplained identity drift.
+        /// The drift writer is not yet identified; the named reason is logged for capture.
+        /// </summary>
+        private void FaultSteadyState(string reason)
+        {
+            _faulted = true;
+            CanAcceptScenePeer = false;
+            if (_ledger != null) foreach (var ticket in _loads.Values) _ledger.MarkFaulted(ticket);
+            Debug.LogError("[T-FO06CZ] Scene executor steady-state fault (NGO session preserved): identity drift: " + reason, this);
+        }
+
+        /// <summary>
+        /// T-FO06CZ: routes an already-recorded source's identity drift to FaultSteadyState
+        /// (session preserved). Sources that have not been recorded yet keep the fail-closed
+        /// throw — the pre-admission path is unchanged.
+        /// </summary>
+        private bool TryRequireRecordedIdentity(Node node)
+        {
+            if (!TryDescribeIdentityChange(node, out var reason)) return true;
+            if (node.Recorded && _networkRan && !_retiring)
+            {
+                FaultSteadyState(reason + DescribeSceneSets());
+                return false;
+            }
+            throw new InvalidOperationException("Bound source/frame/scene/parent identity changed: " + reason);
         }
         private void LogReadiness(bool ready, int recordedCount, int pendingCount, int unspawnedCount, int retiredCount)
         {

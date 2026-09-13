@@ -216,6 +216,10 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (ShiftCameraHistory(plan.LocalTranslation))
                 _cameraShiftApplied = true;
 
+            // T-FO06DF: сбросить кулдаун пере-регистрации палуб — иначе повторный
+            // сдвиг в пределах 30с дрейф-детектор проглотит и палубы останутся на stale-навмеше.
+            NotifyDeckRebase();
+
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
@@ -295,6 +299,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                 ShiftCameraHistory(-request.Plan.LocalTranslation);
                 _cameraShiftApplied = false;
             }
+            // T-FO06DF: тот же сброс кулдауна после возврата позиций.
+            NotifyDeckRebase();
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",
@@ -379,6 +385,25 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CameraShifted", "ok=True");
             return true;
+        }
+
+        /// <summary>
+        /// T-FO06DF: уведомление палуб о мировом сдвиге (сброс 30с кулдауна).
+        /// Саму пере-регистрацию выполняет штатный дрейф-детектор в LateUpdate
+        /// (Unregister + очередь 1/кадр). Здесь только гарантия, что сдвиг
+        /// не будет проглочен кулдауном. Без флага: идемпотентно и безопасно
+        /// в обоих путях (успех/rollback).
+        /// </summary>
+        private void NotifyDeckRebase()
+        {
+            NetworkManager manager = NetworkManager.Singleton;
+            if (manager == null || !manager.IsServer)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "DecksNotified", "skipped:no_server_authority");
+                return;
+            }
+            int notified = ProjectC.Ship.ShipDeckNav.NotifyWorldRebased();
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "DecksNotified", "decks=" + notified);
         }
 
         private bool TryBuildParticipants(

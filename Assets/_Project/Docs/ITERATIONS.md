@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO06DF — уведомление палуб о сдвиге)
+
+**Задача:** Аудит ShipDeckNav: дрейф-детектор сам перерегистрирует 20 палуб после F8 (подтверждено ф8_7), но 30с кулдаун проглотил бы повторный сдвиг — палубы молча остались бы на stale-навмеше. Чиним заранее: в логе такое выглядело бы как «всё ок».
+
+**Результат:** `ShipDeckNav.NotifyWorldRebased()` (static, сервер): сброс `_nextReregistrationTime` живым инстансам; Unregister + очередь 1/кадр — штатным путём. Slice вызывает в обоих путях, маркер `DecksNotified(decks=N)`, идемпотентно, без флага.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: F8 → `DecksNotified(decks=20)`; второй F8 в пределах 30с → палубы снова Registered).
+
+**Файлы:** `Assets/_Project/Scripts/Ship/ShipDeckNav.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/06DF_DECK_REBASE_NOTIFICATION.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO06DE-verify — подтверждение камеры по ф8_7)
 
 **Задача:** Проверить безусловный сдвиг collision на прогоне F8.

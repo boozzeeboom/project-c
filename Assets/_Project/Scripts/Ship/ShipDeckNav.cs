@@ -325,6 +325,29 @@ namespace ProjectC.Ship
             _registered = false;
         }
 
+        /// <summary>
+        /// T-FO06DF: уведомление о мировом сдвиге (controlled rebase).
+        /// Дрейф-детектор в LateUpdate сам снимет и перерегистрирует палубы,
+        /// но 30-секундный кулдаун после прошлой пере-регистрации проглотил бы
+        /// повторный сдвиг — палубы остались бы на stale-навмеше молча.
+        /// Сбрасываем кулдаун всем живым серверным инстансам; сами инстансы
+        /// не трогаем (Unregister + очередь — штатным путём в LateUpdate).
+        /// Возвращает число затронутых палуб. Вызывать только на сервере.
+        /// </summary>
+        public static int NotifyWorldRebased()
+        {
+            int notified = 0;
+            ShipDeckNav[] decks = FindObjectsByType<ShipDeckNav>(FindObjectsSortMode.None);
+            for (int i = 0; i < decks.Length; i++)
+            {
+                ShipDeckNav deck = decks[i];
+                if (deck == null || !deck.isActiveAndEnabled || !deck.IsSpawned) continue;
+                deck._nextReregistrationTime = 0f;
+                notified++;
+            }
+            return notified;
+        }
+
         private static bool Reject(string reason, out string error)
         {
             error = reason;

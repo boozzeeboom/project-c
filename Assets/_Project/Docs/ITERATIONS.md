@@ -1,5 +1,15 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07A-verify — подтверждение отказа по ф8_12)
+
+**Задача:** Проверить сдвиг фрейма на прогоне F8.
+
+**Результат:** PASS. `WorldFrameShifted(id=1,ok=False:frame_has_bound_actors=1)` — ожидаемый отказ, реестр/definition не тронуты, `FailSession` нет, телепортов 0, ошибок 0, визуально ок. Без изменений кода.
+
+**Файлы:** `docs/world/floatingorigin/07A_WORLD_FRAME_ORIGIN_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07A — сдвиг origin фрейма мира)
 
 **Задача:** Первый executable шаг T-FO07 к блокеру DI: увести `Frame.Origin` вслед за контентом (`newOrigin = oldOrigin.Translated(-T)`), сохранив global-идентичность пилота.

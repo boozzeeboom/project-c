@@ -44,6 +44,13 @@ Date: 2026-09-13. Этап плана: T-FO07 (серверные регионы
 ## Проверка
 
 1. Compile: `refresh_unity` + `read_console` — 0 errors, 0 CS.
-2. Play Mode (user): F8 → `WorldFrameShifted(id=1;ok=False:frame_has_bound_actors=1)`
+2. Play Mode (user): F8 → `WorldFrameShifted(...frame_has_bound_actors=1)`
    (id может отличаться — смотреть фактический), игра без изменений,
    ошибок 0.
+
+## Верификация 2026-09-13 (f8_12.txt) — PASS
+
+`WorldFrameShifted(id=1,ok=False:frame_has_bound_actors=1)` — ровно ожидаемый
+отказ: пилот bound к фрейму 1, реестр и definition не тронуты, `FailSession`
+и `no implicit rebase` отсутствуют, телепортов после — 0, ошибок — 0,
+«визуально всё ок» подтверждено. T-FO07A закрыт; дальше 07B (перепривязка).

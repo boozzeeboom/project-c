@@ -45,3 +45,12 @@ Date: 2026-09-13
    `respawn.Update` с `deathY=0.000`, цикла телепортов нет, игрок управляем.
 3. F8 → `RespawnShifted(dy=-2560.00)`; затем F9 (reject, без маркеров) —
    deathY остаётся -2560, игрок стоит.
+
+## Верификация 2026-09-13 (f9_5.txt) — PASS
+
+Свежий прогон, одно нажатие F9: `Requested → Frozen → FramePrepared →
+RollbackRequested → Released → NetworkPublished(teleported=58,skipped=0,errors=0) →
+RollbackCompleted`, `RespawnShifted` отсутствует, `deathY=0.000` стабильно,
+телепортов после rollback — 0, игрок на `(39992.01, 2502.17, 40000.00)`,
+ошибок — 0. «Ничего визуально не произошло» = корректный результат:
+F9 = apply + restore, net zero. T-FO06DC закрыт полностью.

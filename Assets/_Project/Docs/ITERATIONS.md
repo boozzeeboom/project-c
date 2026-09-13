@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07A — сдвиг origin фрейма мира)
+
+**Задача:** Первый executable шаг T-FO07 к блокеру DI: увести `Frame.Origin` вслед за контентом (`newOrigin = oldOrigin.Translated(-T)`), сохранив global-идентичность пилота.
+
+**Результат:** `GlobalMotionWorld.RegisteredFrameIds()` + `TryShiftFrameOrigin` (fail-closed; при bound actors отказ `frame_has_bound_actors`, ядро immutable не тронуто, RunGeneration сохраняется); `GlobalMotionPlayerBootstrap.TryUpdateFrameDefinition` (синк definition + lease, иначе `EnsureFrames` уронит сессию); slice вызывает после `Completed` best-effort, маркер `WorldFrameShifted(id;ok=...)` на фрейм. Ожидаемо сегодня: отказ `frame_has_bound_actors=1` (пилот bound) — игра без изменений, перепривязка актора следующий слайс (07B).
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user-controlled: F8 → `WorldFrameShifted(...frame_has_bound_actors=1)`, без изменений игры).
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionWorld.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionPlayerBootstrap.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/07A_WORLD_FRAME_ORIGIN_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO06DF-verify2 — повторный F8 по ф8_11)
 
 **Задача:** Проверить повторный F8 через ~10с после первого.

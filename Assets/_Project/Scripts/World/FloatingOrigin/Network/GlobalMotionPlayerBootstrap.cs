@@ -166,6 +166,26 @@ public void PeerConnected(NetworkManager manager, ulong clientId)
             }
             return true;
         }
+
+        /// <summary>
+        /// T-FO07A: явное обновление definition фрейма после сдвига origin в мире.
+        /// Без этого `EnsureFrames` уронит сессию (`no implicit rebase`), увидев
+        /// расхождение definition с реестром. Вызывать только после успешного
+        /// `GlobalMotionWorld.TryShiftFrameOrigin` для того же id; иначе отказ.
+        /// </summary>
+        public bool TryUpdateFrameDefinition(int id, LocalCoordinateFrame coordinates, out string error)
+        {
+            error = null;
+            if (!_frames.TryGetValue(id, out var definition)) { error = "frame_definition_unknown"; return false; }
+            if (!coordinates.IsValid) { error = "coordinates_invalid"; return false; }
+            if (_world == null || !_world.TryGetFrame(id, out var frame)) { error = "world_frame_not_current"; return false; }
+            if (frame.Coordinates.Origin != coordinates.Origin ||
+                frame.Coordinates.MaxLocalCoordinate != coordinates.MaxLocalCoordinate)
+            { error = "world_frame_mismatch"; return false; }
+            _frames[id] = new GlobalMotionSpawnFrame(id, coordinates, definition.Scene);
+            _frameLeases[id] = frame;
+            return true;
+        }
 private void Update()
         {
             if (!_active || _manager == null || _manager.ShutdownInProgress) return;

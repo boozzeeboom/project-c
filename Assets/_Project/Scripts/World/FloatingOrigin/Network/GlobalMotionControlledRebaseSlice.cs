@@ -301,6 +301,8 @@ namespace ProjectC.World.FloatingOrigin.Network
             Debug.Log("[T-FO06CY] Controlled rebase completed: translation=" + plan.LocalTranslation + ";origin=" + _frame.Origin, this);
             // T-FO06DH: уведомить второго клиента о сдвиге (только success-путь).
             BroadcastRebaseShift(NetworkManager.Singleton, plan.LocalTranslation, request.FrameGeneration);
+            // T-FO07A: увести origin фреймов мира вслед за контентом (best-effort).
+            ShiftWorldFrameOrigins(plan.LocalTranslation);
         }
 
         private bool ApplyParticipants(GlobalMotionRebaseRequest request, out string error)
@@ -527,6 +529,47 @@ namespace ProjectC.World.FloatingOrigin.Network
             catch (Exception e)
             {
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "BroadcastShifted", "sent=False;error=" + e.GetType().Name);
+            }
+        }
+
+        /// <summary>
+        /// T-FO07A: сдвиг origin зарегистрированных фреймов вслед за контентом.
+        /// Инвариант global: newOrigin = oldOrigin.Translated(-translation).
+        /// Порядок на фрейм: сначала реестр, затем definition в bootstrap
+        /// (иначе EnsureFrames уронит сессию). Живой bound актор (пилот) даёт
+        /// честный отказ frame_has_bound_actors — его перепривязка следующий слайс.
+        /// Best-effort, результат каждого фрейма в маркере.
+        /// </summary>
+        private void ShiftWorldFrameOrigins(Vector3 translation)
+        {
+            GlobalMotionWorld world = GetComponent<GlobalMotionWorld>();
+            GlobalMotionPlayerBootstrap bootstrap = GetComponent<GlobalMotionPlayerBootstrap>();
+            if (world == null || bootstrap == null)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WorldFrameShifted", "skipped:no_frame_pipeline");
+                return;
+            }
+            var negated = new Vector3(-translation.x, -translation.y, -translation.z);
+            foreach (int id in world.RegisteredFrameIds())
+            {
+                if (!world.TryGetFrame(id, out var frame))
+                {
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WorldFrameShifted", "id=" + id + ";ok=False:frame_not_current");
+                    continue;
+                }
+                GlobalPosition newOrigin = frame.Coordinates.Origin.Translated(negated);
+                if (!world.TryShiftFrameOrigin(id, newOrigin, out string error))
+                {
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WorldFrameShifted", "id=" + id + ";ok=False:" + error);
+                    continue;
+                }
+                if (!world.TryGetFrame(id, out var shifted) ||
+                    !bootstrap.TryUpdateFrameDefinition(id, shifted.Coordinates, out error))
+                {
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WorldFrameShifted", "id=" + id + ";ok=False:" + error);
+                    continue;
+                }
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WorldFrameShifted", "id=" + id + ";ok=True");
             }
         }
 

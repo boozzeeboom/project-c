@@ -121,6 +121,41 @@ namespace ProjectC.World.FloatingOrigin.Network
         }
 
         public bool TryGetFrame(int id, out GlobalMotionFrame frame) => _frames.TryGetValue(id, out frame) && IsCurrent(frame);
+
+        /// <summary>
+        /// T-FO07A: снимок id зарегистрированных фреймов (итерация без мутации коллекции).
+        /// </summary>
+        public int[] RegisteredFrameIds()
+        {
+            var ids = new int[_frames.Count];
+            int i = 0;
+            foreach (int id in _frames.Keys) ids[i++] = id;
+            return ids;
+        }
+
+        /// <summary>
+        /// T-FO07A: явный сдвиг origin фрейма вслед за контентом.
+        /// Инвариант: newOrigin = oldOrigin.Translated(-translation контента).
+        /// Fail-closed: при bound actors отказ (их перепривязка — отдельный слайс);
+        /// maxLocal/physics наследуются, RunGeneration сохраняется (не рестарт).
+        /// Ядро (LocalCoordinateFrame/GlobalMotionFrame) остаётся immutable —
+        /// заменяется объект записи в реестре.
+        /// </summary>
+        public bool TryShiftFrameOrigin(int id, GlobalPosition newOrigin, out string error)
+        {
+            error = null;
+            if (!IsRunning) { error = "world_not_running"; return false; }
+            if (!_frames.TryGetValue(id, out var frame) || !IsCurrent(frame)) { error = "frame_not_current"; return false; }
+            if (!newOrigin.IsFinite) { error = "new_origin_not_finite"; return false; }
+            int bound = 0;
+            for (int i = 0; i < _ordered.Count; i++)
+                if (_ordered[i] != null && ReferenceEquals(_ordered[i].Frame, frame)) bound++;
+            if (bound > 0) { error = "frame_has_bound_actors=" + bound; return false; }
+            var shifted = new LocalCoordinateFrame(newOrigin, frame.Coordinates.MaxLocalCoordinate);
+            if (!shifted.IsValid) { error = "shifted_frame_invalid"; return false; }
+            _frames[id] = new GlobalMotionFrame(id, frame.RunGeneration, shifted, frame.Physics);
+            return true;
+        }
         public bool IsCurrent(GlobalMotionFrame frame) => IsRunning && frame != null && frame.RunGeneration == _run &&
             frame.Physics.IsValid() && _frames.TryGetValue(frame.Id, out var actual) && ReferenceEquals(actual, frame);
 

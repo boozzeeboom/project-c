@@ -384,6 +384,13 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO07F: вернуть шторма назад.
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "StormShifted",
                 "cells=" + ShiftStormCells(-request.Plan.LocalTranslation));
+            // T-FO08D: откат тоже рассылать клиентам (-T). Клиентский handler уже
+            // применил +T к пикапам/штормам/частицам; без обратного сообщения они
+            // навсегда в сдвинутом состоянии (сервер net zero, клиенты нет).
+            // Сервер свои broadcast игнорирует (OnRebaseShiftMessage: IsServer →
+            // return), двойного применения на хосте нет. Best-effort.
+            if (restored)
+                BroadcastRebaseShift(NetworkManager.Singleton, -request.Plan.LocalTranslation, request.FrameGeneration);
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",
@@ -536,8 +543,9 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         /// <summary>
         /// T-FO06DH: broadcast сдвига всем клиентам после Completed.
-        /// Rollback вещественного сдвига не делает (apply + restore = net zero) —
-        /// broadcast только на success-пути. Best-effort, результат в маркере.
+        /// T-FO08D: откат тоже рассылается (с -T) — иначе клиентский handler
+        /// навсегда остаётся в +T (пикапы/штормы), пока сервер net zero.
+        /// Сервер свои сообщения игнорирует, двойного применения нет.
         /// </summary>
         private void BroadcastRebaseShift(NetworkManager manager, Vector3 translation, ulong frameGeneration)
         {

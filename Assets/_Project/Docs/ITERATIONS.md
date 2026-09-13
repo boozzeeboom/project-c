@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO08D — broadcast отката клиентам)
+
+**Задача:** Статический аудит клиентского пути нашёл десинк: handler второго клиента применяет +T, а F9 broadcast не слал — клиенты навсегда в +T при net-zero сервере.
+
+**Результат:** Один вызов `BroadcastRebaseShift(-T)` в `Rollback` при `restored` + правка устаревшего комментария DH. Handler знаконезависимый, хост свои сообщения игнорирует. Без топологии второго клиента — только compile.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS. Runtime retest — NOT RUN (нужна связка хост+клиент).
+
+**Файлы:** `.../Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/08D_ROLLBACK_BROADCAST.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO08C-verdict — ship-adapter отложен)
 
 **Задача:** Решить, реализуем ли ship-adapter (08C-design) сейчас.

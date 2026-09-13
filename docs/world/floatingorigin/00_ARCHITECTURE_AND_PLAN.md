@@ -254,6 +254,7 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO08B-verify` (ф8_18): PASS — пути продолжают, 0 errors; `NPC_RUNTIME/*`=0: сработал фикс 08A, ветка 08B dormant-страховка. Матрица 09A обновлена.
 - `T-FO08C-design`: проект ship-adapter (ParentLocal rebind пилота) — путь в коде уже есть, нужна регистрация корабля; риски и вопрос authority зафиксированы. Без кода.
 - `T-FO08C-verdict`: ОТЛОЖЕН со структурным доказательством — `HasCompetingWriter` (NT ServerAuthority на корабле), `SupportedStructure` (joints/multi-RB), хирургия префабов. Требуется v2-миграция репликации + топология тестов, не малый gate. Rebind в полёте остаётся на стабильном `stream_refused`.
+- `T-FO08D`: десинк вторых клиентов на F9 (handler применил +T, отката не было) — broadcast `-T` при `restored`. Compile PASS, 0 errors; runtime NOT RUN (нет топологии). Report: `08D_ROLLBACK_BROADCAST.md`.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W, T-FO06AZ и T-FO06BN. ShipDeckNav synchronous lifecycle, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

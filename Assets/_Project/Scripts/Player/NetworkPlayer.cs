@@ -783,7 +783,11 @@ namespace ProjectC.Player
             using var _ = ProjectCPerfCounters.PlayerUpdate.Auto();
             if (!IsOwner) return;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "Update.begin", $"position={transform.position} controllerEnabled={_controller != null && _controller.enabled} inShip={_inShip} inputEnabled={_inputEnabled}");
-            if (!CanSimulateInCurrentCoordinates)
+            // T-FO07H: посаженный игрок едет координатами корабля (parent к ShipRoot),
+            // его собственный адаптер при этом WaitingForParent и гейт ниже всегда закрыт.
+            // Без исключения весь ввод в кресле мёртв, включая F-выход (софтлок).
+            // Координатную симуляцию в кресле ведёт корабль, не игрок.
+            if (!CanSimulateInCurrentCoordinates && !_inShip)
             {
                 ClearCoordinateInput();
                 PublishInteractionHint(InteractionHintKind.None);

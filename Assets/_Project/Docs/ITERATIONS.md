@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07H — гейт координат глушил ввод в кресле)
+
+**Задача:** В кресле мёртв весь ввод (WASD/ENTER/T/P/F-выход, жив только ESC) — диагностика по `инпут_1.txt`.
+
+**Результат:** Причина — `Update:786` гейт `CanSimulateInCurrentCoordinates`. Baseline ставит `CoordinatesRequired=true` (sticky), посадка парентит игрока к `ShipRoot` → адаптер `WaitingForParent` (103 occurrences с frame 1170) → гейт закрыт каждый кадр → весь диспетч мёртв, F-выход мёртв (софтлок). Фикс: `if (!CanSimulateInCurrentCoordinates && !_inShip)` — в кресле координаты ведёт корабль, не игрок. Пеший режим без изменений.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS (только MCP-шум). Play Mode retest — NOT RUN (user-controlled: сесть в кресло → WASD/ENTER/T/P/F).
+
+**Файлы:** `Assets/_Project/Scripts/Player/NetworkPlayer.cs`, `docs/world/floatingorigin/07H_SEATED_PLAYER_INPUT_GATE.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07G — аудит посадки/parenting, без кода)
 
 **Задача:** Проверить взаимодействие F8 с посаженным игроком (child ShipRoot) и рантайм-парентингом NPC/груза.

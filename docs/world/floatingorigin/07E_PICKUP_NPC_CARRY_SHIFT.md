@@ -39,3 +39,10 @@ Parented/proxy пути (видимый экипаж на палубах) кэш
 1. Compile: `refresh_unity` + `read_console` — 0 errors, 0 CS.
 2. Play Mode (user): пикапы на палубе → F8 → предметы на месте,
    `CarryCachesShifted(pickups>0)`.
+
+## Верификация 2026-09-13 (ф9_14.txt) — PASS
+
+Полный success-путь: `CarryCachesShifted(pickups=27,npcs=36)`,
+`ParticlesCleared(n=1)`, ошибок 0. Визуально: предметы перемещаются,
+остаются видимыми, подбираются. `InteractableManager` проверен отдельно:
+ссылки на объекты + live-дистанции, кэша позиций нет. T-FO07E закрыт полностью.

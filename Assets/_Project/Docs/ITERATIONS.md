@@ -1,5 +1,15 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07E-verify — пикапы по ф9_14 + аудит реестра)
+
+**Задача:** Проверить фикс carry пикапов в игре.
+
+**Результат:** PASS. Полный success-путь (`Completed`): `CarryCachesShifted(pickups=27,npcs=36)`, `ParticlesCleared(n=1)`, `NetworkPublished(58)`, ошибок 0. Визуально подтверждено: предметы перемещаются, остаются видимыми, подбираются. Дополнительно проверен `InteractableManager`: хранит ссылки на объекты (не позиции), дистанции считает live от `transform.position` — протухшего кэша нет, действий не требуется. Без изменений кода.
+
+**Файлы:** `docs/world/floatingorigin/07E_PICKUP_NPC_CARRY_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07E — сдвиг кэшей carry пикапов/NPC)
 
 **Задача:** Жалоба: при F8 визуально теряются pickable предметы. Диагноз: `PickupDeckRide` carry прибавляет stale-дельту ≈ translation (двойной сдвиг) — предмет улетает с палубы; тот же паттерн у NPC fallback-carry.

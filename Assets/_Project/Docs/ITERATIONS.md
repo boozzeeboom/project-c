@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO09C — «Спасение» на корабль)
+
+**Задача:** Баг: Esc-спасение возвращает на точку спавна (пустота); раньше падение с корабля возвращало на корабль.
+
+**Результат:** Диагноз — `PerformDefaultRespawn` намеренно шёл мимо ship-цепочки сразу на дефолтную точку. Фикс: общий `TryResolveShipRescuePosition` (текущий → последний → ближайший), ручное спасение идёт через него, дефолт — fallback; автореспавн переведён на тот же источник (без дублирования). Позиции live → сдвиги переживают.
+
+**Проверка:** `refresh_unity` (force + compile) — PASS; `read_console` — 0 errors, 0 CS; скобки 115/115. Play Mode retest — NOT RUN (user-controlled: падение с корабля → корабль; спасение в пустоте → `Rescue-to-ship`).
+
+**Файлы:** `Scripts/Player/PlayerRespawnTracker.cs`, `docs/world/floatingorigin/09C_RESCUE_TO_SHIP.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09B-verify — автосдвиг работает, PASS)
 
 **Задача:** Разобрать ф8_23 (отлёт далеко, проверка автосдвига).

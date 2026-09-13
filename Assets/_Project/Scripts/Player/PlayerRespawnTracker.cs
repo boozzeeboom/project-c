@@ -111,39 +111,14 @@ namespace ProjectC.Player
             _isRespawning = true;
             _fallStartTime = float.MaxValue;
 
-            // T-PLAYER-PERSIST: если игрок был на корабле — респавним на нём
-            var np = GetComponent<NetworkPlayer>();
-            if (np != null && np.IsInShip && np.CurrentShip != null && np.CurrentShip.IsSpawned)
+            // T-PLAYER-PERSIST + T-FO09C: ship-цепочка спасения
+            // (текущий → последний → ближайший owned), единый источник.
+            var autoPlayer = GetComponent<NetworkPlayer>();
+            if (TryResolveShipRescuePosition(autoPlayer, out Vector3 autoShipPos, out string autoSource))
             {
-                Vector3 shipPos = np.CurrentShip.GetExitPosition();
-                TeleportToClientRpc(shipPos);
+                TeleportToClientRpc(autoShipPos);
                 if (_debugLog)
-                    Debug.Log($"[PlayerRespawnTracker] Ship-proximity respawn (IsInShip) for client={OwnerClientId} at ship exit {shipPos}");
-
-                if (IsServer && !IsClient)
-                    Invoke(nameof(ResetRespawningFlag), 0.5f);
-                return true;
-            }
-
-            // T-PLAYER-PERSIST: fallback — LastShip (игрок вышел из корабля и упал)
-            if (np != null && np.LastShip != null && np.LastShip.IsSpawned)
-            {
-                Vector3 shipPos = np.LastShip.GetExitPosition();
-                TeleportToClientRpc(shipPos);
-                if (_debugLog)
-                    Debug.Log($"[PlayerRespawnTracker] Ship-proximity respawn (LastShip) for client={OwnerClientId} at ship exit {shipPos}");
-
-                if (IsServer && !IsClient)
-                    Invoke(nameof(ResetRespawningFlag), 0.5f);
-                return true;
-            }
-
-            // T-PLAYER-PERSIST: поиск ближайшего owned корабля (D5)
-            if (TryFindNearestOwnedShip(np, out Vector3 nearestShipPos))
-            {
-                TeleportToClientRpc(nearestShipPos);
-                if (_debugLog)
-                    Debug.Log($"[PlayerRespawnTracker] Nearest-owned-ship respawn for client={OwnerClientId} at {nearestShipPos}");
+                    Debug.Log($"[PlayerRespawnTracker] Ship-proximity respawn ({autoSource}) for client={OwnerClientId} at ship exit {autoShipPos}");
 
                 if (IsServer && !IsClient)
                     Invoke(nameof(ResetRespawningFlag), 0.5f);
@@ -349,7 +324,41 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// Респавн ТОЛЬКО на дефолтную точку RespawnManager, без ship-проверок.
+        /// T-FO09C: общая ship-цепочка спасения (текущий → последний → ближайший
+        /// owned). Раньше жила только в PerformRespawn, а ручное «Спасение»
+        /// (PerformDefaultRespawn) шло мимо неё сразу на дефолтную точку —
+        /// после удаления граунда под спавном (06K) это возврат в пустоту.
+        /// Позиции live (GetExitPosition/поиск), сдвиги мира переживают.
+        /// </summary>
+        private bool TryResolveShipRescuePosition(NetworkPlayer np, out Vector3 shipPos, out string source)
+        {
+            shipPos = Vector3.zero;
+            source = null;
+            if (np != null && np.IsInShip && np.CurrentShip != null && np.CurrentShip.IsSpawned)
+            {
+                shipPos = np.CurrentShip.GetExitPosition();
+                source = "IsInShip";
+                return true;
+            }
+            if (np != null && np.LastShip != null && np.LastShip.IsSpawned)
+            {
+                shipPos = np.LastShip.GetExitPosition();
+                source = "LastShip";
+                return true;
+            }
+            if (TryFindNearestOwnedShip(np, out Vector3 nearestShipPos))
+            {
+                shipPos = nearestShipPos;
+                source = "NearestOwned";
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// T-FO09C: ручное «Спасение» идёт той же ship-цепочкой, что автореспавн
+        /// (корабль → последний → ближайший); дефолтная точка — только fallback.
+        /// Раньше шло сразу на дефолтную точку = возврат в пустоту.
         /// </summary>
         private void PerformDefaultRespawn()
         {
@@ -360,6 +369,18 @@ namespace ProjectC.Player
             }
             _isRespawning = true;
             _fallStartTime = float.MaxValue;
+
+            var rescuePlayer = GetComponent<NetworkPlayer>();
+            if (TryResolveShipRescuePosition(rescuePlayer, out Vector3 rescueShipPos, out string rescueSource))
+            {
+                TeleportToClientRpc(rescueShipPos);
+                if (_debugLog)
+                    Debug.Log($"[PlayerRespawnTracker] Rescue-to-ship ({rescueSource}) for client={OwnerClientId} at {rescueShipPos}");
+
+                if (IsServer && !IsClient)
+                    Invoke(nameof(ResetRespawningFlag), 0.5f);
+                return;
+            }
 
             if (_respawnManager == null)
             {

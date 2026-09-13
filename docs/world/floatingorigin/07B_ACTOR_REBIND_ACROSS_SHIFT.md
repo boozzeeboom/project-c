@@ -43,7 +43,18 @@ Date: 2026-09-13. Продолжение 07A: `WorldFrameShifted → frame_has_b
 ## Проверка
 
 1. Compile: `refresh_unity` + `read_console` — 0 errors, 0 CS.
-2. Play Mode (user, Host): F8 → `ActorDrained` → `WorldFrameShifted(id=1;ok=True)` →
+2. Play Mode (user, Host): F8 → `ActorDrained` → `WorldFrameShifted(ok=True)` →
    `ActorRebound(ok=True)`; ревизии потока продолжают расти (новый binding —
    discontinuity, не разрыв); игрок стоит/ходит; ошибок 0.
 3. F9: без actor-маркеров (откат позиций, поток непрерывен).
+
+## Верификация 2026-09-13 (ф8_13.txt) — PASS
+
+`ActorDrained(NetworkPlayer_GlobalPilot[Clone],frame=1)` →
+`WorldFrameShifted(id=1,ok=True)` → `ActorRebound(ok=True,placed=True)`.
+Поток: `revision=5 active=False` (drain) → `revision=6 active=True sequence=0`
+с binding `.../94/1/1/3` — **DiscontinuityGeneration 2→3**, новый lineage,
+sequence продолжается (16, 44, 69). Игрок стабильно `(56.012, -57.835, 64.000)`,
+`baselinePlaced=True`, телепортов 0, ошибок 0, «визуально всё ок».
+Блокер T-FO06DI закрыт для host-пути: global-публикация непрерывна.
+Открыто: второй клиент (чужой owner, `stream_refused`) — отдельный gate.

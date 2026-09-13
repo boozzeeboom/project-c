@@ -1,5 +1,15 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO07B-verify — перепривязка по ф8_13)
+
+**Задача:** Проверить drain → shift → rebind на прогоне F8.
+
+**Результат:** PASS полностью. `ActorDrained` → `WorldFrameShifted(id=1,ok=True)` → `ActorRebound(ok=True,placed=True)`; поток: `active=False` → `active=True sequence=0`, binding `.../1/1/3` (discontinuity 2→3, lineage продолжается); игрок стабилен, `baselinePlaced=True`, телепортов 0, ошибок 0. Блокер DI закрыт для host-пути. Без изменений кода.
+
+**Файлы:** `docs/world/floatingorigin/07B_ACTOR_REBIND_ACROSS_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO07B — перепривязка акторов через сдвиг)
 
 **Задача:** Закрыть отказ 07A (`frame_has_bound_actors=1`): drain пилота → сдвиг фрейма → rebind + рестарт потока с той же global (блокер DI).

@@ -257,6 +257,7 @@ Baseline: `53c86fe2` (`minor changes - before floatingorigin`). Несвязан
 - `T-FO08D`: десинк вторых клиентов на F9 (handler применил +T, отката не было) — broadcast `-T` при `restored`. Compile PASS, 0 errors; runtime NOT RUN (нет топологии). Report: `08D_ROLLBACK_BROADCAST.md`.
 - `T-FO08E` (ф8_19): второго игрока в логе нет (`clientId=0` only, `ConnectedClients=1`) — пустая сцена у второго клиента вне FO. Решение: отладку >1 игрока отложить, фокус на хост-одиночку. Код DH/08D dormant. F8 здоров + пеший `ActorRebound(ok=True)`. Без кода.
 - `T-FO08F-verify` (f8_20): PASS — 4× F8 в глобально разных кордах, джиттер лечится сдвигом, 0 errors/телепортов, горы на местах. Персистенция (старт со спавна) — отдельная подсистема вне FO, фиксить отдельным треком. Без кода.
+- `T-FO08G-verify` (ф8_21): PASS с оговоркой — посадка/прыжок/бой визуально ок, лог чист (0 errors, одиночные легитимные респауны без циклов, 34 честных `no_rebase_plan`). Far-repeat в пределах 30с (кулдаун) остаётся OPEN. Без кода.
 
 Пакетирование допустимо только для независимых runtime-independent contracts и validators, как в T-FO06W, T-FO06AZ и T-FO06BN. ShipDeckNav synchronous lifecycle, runtime camera ownership, passenger attachment completion, NGO/physics ordering, final manifest review, scene-owned gameplay classification и native rollback должны оставаться отдельными serial/user-controlled gates.
 

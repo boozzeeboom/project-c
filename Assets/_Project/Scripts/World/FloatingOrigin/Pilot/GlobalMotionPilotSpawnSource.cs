@@ -24,6 +24,15 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         [SerializeField] private float _maxLocalCoordinate = 100000f;
         [SerializeField] private float _verticalSpawnOffset = 1f;
 
+        // T-FO09J: экстент фрейма спавна. Сейв хранит пост-сдвиговые локалы +
+        // кумулятив; свежий старт проецирует их в origin-0 мир — при origin в
+        // сотни км скорректированная точка (напр. 359439) не влезала в 100000
+        // → "outside pilot frame, default spawn" (вечный спавн на точке).
+        // 1M покрывает накопленный origin; после спавна автосдвиг сразу
+        // переносит origin к игроку (транзиентный джиттер ~3см, секунды).
+        // _maxLocalCoordinate остаётся для совместимости/инспектора.
+        private const float PilotSpawnFrameExtent = 1000000f;
+
         // T-FO09F: явный якорь спавна. Позволяет задать Transform из любой
         // открытой сцены (например WorldScene_0_0) прямо в инспекторе
         // NetworkManager в BootstrapScene. Приоритет над _respawnObjectName:
@@ -137,7 +146,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             {
                 _spawnPosition = GlobalPosition.FromLegacyAbsolute(_spawnAnchor.position + Vector3.up * _verticalSpawnOffset);
                 var anchorScene = _spawnAnchor.gameObject.scene;
-                var anchorFrame = new LocalCoordinateFrame(GlobalPosition.Zero, _maxLocalCoordinate);
+                var anchorFrame = new LocalCoordinateFrame(GlobalPosition.Zero, PilotSpawnFrameExtent);
                 _frames.Add(new GlobalMotionSpawnFrame(1, anchorFrame, anchorScene));
                 _prepared = _frames[0].IsValid;
                 return _prepared;
@@ -149,7 +158,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             if (respawn == null) return false;
 
             _spawnPosition = GlobalPosition.FromLegacyAbsolute(respawn.transform.position + Vector3.up * _verticalSpawnOffset);
-            var frame = new LocalCoordinateFrame(GlobalPosition.Zero, _maxLocalCoordinate);
+            var frame = new LocalCoordinateFrame(GlobalPosition.Zero, PilotSpawnFrameExtent);
             _frames.Add(new GlobalMotionSpawnFrame(1, frame, scene));
             _prepared = _frames[0].IsValid;
             return _prepared;

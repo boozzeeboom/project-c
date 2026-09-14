@@ -131,12 +131,15 @@ namespace ProjectC.World.FloatingOrigin.Network
         /// </summary>
         private void TryAutoRebase()
         {
-            if (!_autoRebaseEnabled || Time.unscaledTime < _nextAutoCheckTime) return;
+            if (!_autoRebaseEnabled) return;
+            // T-FO09J: игрока резолвим ДО троттлинга — иначе слот проверки
+            // сгорает до спавна, и после спавна сдвиг ждёт полные 5с.
+            if (!TryResolveLocalPlayer(out Transform playerRoot, out _)) return;
+            if (Time.unscaledTime < _nextAutoCheckTime) return;
             _nextAutoCheckTime = Time.unscaledTime + _autoCheckIntervalSec;
             NetworkManager manager = NetworkManager.Singleton;
             if (manager == null || !manager.IsServer) return;
             if (Time.unscaledTime - _lastShiftEndTime < _autoCooldownSec) return;
-            if (!TryResolveLocalPlayer(out Transform playerRoot, out _)) return;
             // T-FO09H-fix: вне фрейма обычный TryCreate молчит — recover даёт шанс.
             if (!ProjectC.World.FloatingOrigin.OriginRebasePlan.TryCreate(_frame, playerRoot.position, _threshold, _quantum, out _) &&
                 !ProjectC.World.FloatingOrigin.OriginRebasePlan.TryCreateRecover(_frame, playerRoot.position, _threshold, _quantum, out _)) return;

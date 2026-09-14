@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-14 (T-FO09J — экстент фрейма спавна 1M)
+
+**Задача:** ф10_32: перезаход всегда на точку спавна, не на старую позицию (многократно).
+
+**Результат:** Диагноз — origin вырос до ~359км за сессии, коррекция даёт 359439 > maxLocal 100000 → вечный `outside pilot frame, default spawn`. Математика sibling корректна; сломан капасити фрейма. Фикс минимальный: `PilotSpawnFrameExtent=1000000f` (оба пути спавна) + резолв игрока до троттлинга в авто (сдвиг сразу после спавна, recover 09H-fix покрывает). Origin-0 старт и коррекция не тронуты.
+
+**Проверка:** `refresh_unity` — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user: побегать → выход → `PilotSpawnRestored` на старой позиции).
+
+**Файлы:** `.../Pilot/GlobalMotionPilotSpawnSource.cs`, `.../Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/09J_SPAWN_FRAME_EXTENT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-14 (T-FO09H-verify — посадка+управление+F, PASS)
 
 **Задача:** ф9_31: перезаход с управлением после посадки.

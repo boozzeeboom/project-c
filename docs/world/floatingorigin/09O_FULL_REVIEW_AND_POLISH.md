@@ -38,6 +38,14 @@ FaultSteadyState), `GlobalMotionPilotSpawnSource` (spawn-пути),
 4. **Trails у клиента.** Сервер гасит Trail/Line (09B-батч), handler —
    только ParticleSystem. Зеркальный clear добавлен.
 
+## Поправка после коммита (sibling 09N)
+
+- Sibling тикетом `09N_RESCUE_TO_DEFAULT_SPAWN` вернул РУЧНОЕ Esc-спасение
+  строго на дефолтный городской спавн (откат моего 09C-маршрута через
+  ship-цепочку). Авто-респавн остался на общей цепочке
+  (`TryResolveShipRescuePosition`, строка ~117 — проверено, на месте).
+  Описание 09C выше читать с этой поправкой; решение sibling — не мое.
+
 ## Наблюдения — без изменений, зафиксировано
 
 5. `FaultSteadyState` перманентен (drift → `_faulted`+закрытие пиров

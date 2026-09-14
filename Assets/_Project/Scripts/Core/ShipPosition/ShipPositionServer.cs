@@ -267,6 +267,30 @@ namespace ProjectC.Core.ShipPosition
             return false;
         }
 
+        /// <summary>
+        /// T-FO09H: inShip/shipId записи сейва для моста пилота. Pilot placement
+        /// ставит игрока по сырым координатам (позиция корабля на момент сейва),
+        /// но сам корабль ресторится позже (~3.5с) — игрок падает рядом с пустым
+        /// местом. Вызывающий ждёт RestoreCompleted и телепортирует на exit
+        /// живого корабля. Сдвиг не нужен — нужен только ID.
+        /// </summary>
+        public static bool TryLoadPlayerShip(ulong clientId, out string shipPersistentId)
+        {
+            shipPersistentId = null;
+            ShipPositionListWrapper wrapper;
+            try { wrapper = new JsonShipPositionRepository().LoadAllWrapper(); }
+            catch (Exception) { return false; }
+            if (wrapper == null || wrapper.players == null) return false;
+            foreach (var p in wrapper.players)
+            {
+                if (p == null || p.clientId != clientId) continue;
+                if (!p.inShip || string.IsNullOrEmpty(p.shipPersistentId)) return false;
+                shipPersistentId = p.shipPersistentId;
+                return true;
+            }
+            return false;
+        }
+
         private void ApplyRestore(ShipController ship, ShipPositionSaveData data)
         {
             var rb = ship.GetComponent<Rigidbody>();

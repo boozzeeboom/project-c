@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO09H — посадка на корабль после рестарта)
+
+**Задача:** ф8_27: выход на корабле → перезаход: корабля рядом нет, падение, город (раньше спавн был на корабле).
+
+**Результат:** Регрессия FO-эпохи: global-ветка restore делает `yield break` до legacy inShip-восстановления; pilot ставит по сырым координатам, корабль приходит позже. Фикс: `TryLoadPlayerShip` (ID из сейва) + `WaitForShipAndBoard` (ждать RestoreCompleted, телепорт на exit живого корабля, только сервер). Без inShip-записи и без корабля — прежнее поведение.
+
+**Проверка:** `refresh_unity` — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user: выход на корабле → `boarded restored ship`).
+
+**Файлы:** `Scripts/Player/NetworkPlayer.cs`, `Scripts/Core/ShipPosition/ShipPositionServer.cs`, `docs/world/floatingorigin/09H_BOARD_AFTER_RESTART.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09G-fix — RespawnManager сдвигался 58 раз)
 
 **Задача:** ф8_26: персонаж попадает на −2000000+ (цель `(-2276453,-145947,-2276285)`).

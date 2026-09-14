@@ -515,6 +515,12 @@ namespace ProjectC.Player
             {
                 var globalTracker = GetComponent<PlayerRespawnTracker>();
                 if (globalTracker != null) globalTracker.EnsureDeathBelow(transform.position.y);
+                // T-FO09H: выход был на корабле — pilot поставил по сырым координатам
+                // (корабль ресторится позже). Дождаться RestoreCompleted и посадить
+                // на exit живого корабля; иначе игрок падает в пустоту места сейва.
+                // Без inShip-записи поведение прежнее (остаться + порог).
+                if (ProjectC.Core.ShipPosition.ShipPositionServer.TryLoadPlayerShip(OwnerClientId, out string savedShipId))
+                    yield return WaitForShipAndBoard(savedShipId, globalTracker);
                 yield break; // G/D own the explicit initial global plan; never await legacy float persistence.
             }
             // Ждём завершения полного server restore: сначала должны быть сброшены
@@ -555,6 +561,47 @@ namespace ProjectC.Player
                     tracker.EnsureDeathBelow(transform.position.y);
                 }
             }
+        }
+
+        /// <summary>
+        /// T-FO09H: посадка global-игрока на корабль выхода после рестарта.
+        /// Ждёт RestoreCompleted (корабли ~3.5с), ищет живой корабль по
+        /// ShipPersistentId из сейва, телепортирует на его exit. Корабля нет
+        /// (деспавн/ID не сошёлся) — остаться на pilot-точке (старое поведение).
+        /// Только сервер: позиция authoritative, реплицируется NT.
+        /// </summary>
+        private System.Collections.IEnumerator WaitForShipAndBoard(string shipPersistentId, PlayerRespawnTracker tracker)
+        {
+            var shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
+            float waited = 0f;
+            while (shipPositionServer == null || !shipPositionServer.RestoreCompleted)
+            {
+                if (waited > 30f) yield break;
+                yield return new WaitForSeconds(0.5f);
+                waited += 0.5f;
+                shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
+            }
+            if (!IsServer) yield break;
+            ShipController[] allShips = FindObjectsByType<ShipController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            for (int i = 0; i < allShips.Length; i++)
+            {
+                ShipController ship = allShips[i];
+                if (ship == null || !ship.IsSpawned || ship.ShipPersistentId != shipPersistentId) continue;
+                Vector3 exit = ship.GetExitPosition();
+                var controller = GetComponent<CharacterController>();
+                if (controller != null) controller.enabled = false;
+                transform.position = exit;
+                if (controller != null) controller.enabled = true;
+                Physics.SyncTransforms();
+                if (tracker != null)
+                {
+                    tracker.ResetFallTimer();
+                    tracker.EnsureDeathBelow(transform.position.y);
+                }
+                Debug.Log($"[NetworkPlayer] T-FO09H: boarded restored ship '{shipPersistentId}' at {exit}", this);
+                yield break;
+            }
+            Debug.Log($"[NetworkPlayer] T-FO09H: saved ship '{shipPersistentId}' not found — staying at pilot point", this);
         }
 
         /// <summary>

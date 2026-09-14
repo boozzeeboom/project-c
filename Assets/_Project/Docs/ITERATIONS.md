@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO09G-fix — RespawnManager сдвигался 58 раз)
+
+**Задача:** ф8_26: персонаж попадает на −2000000+ (цель `(-2276453,-145947,-2276285)`).
+
+**Результат:** Мой баг 09G: блок `FindObjectsByType<RespawnManager>` стоял ВНУТРИ цикла по участникам — один и тот же manager сдвигался на каждой итерации: 58× `RespawnPointsShifted`, fallback `(39835,2533,40003)+58×T=(−2276453,−145947,−2276285)` — арифметика сошлась точно. Спасение телепортировало в эту точку → цикл в пустоте. Фикс: блок вынесен из цикла — один сдвиг на вызов (rollback −T покрывается как раньше). Отравление только рантайм (YAML сцены не тронут) — лечится перезапуском Play Mode.
+
+**Проверка:** `refresh_unity` — PASS; `read_console` — 0 errors, 0 CS; скобки 165/165. Play Mode retest — NOT RUN (user: F8 → РОВНО ОДИН `RespawnPointsShifted(managers=1)` → спасение рядом со спавном).
+
+**Файлы:** `.../Network/GlobalMotionControlledRebaseSlice.cs`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09G — RespawnManager fallback едут с миром)
 
 **Задача:** «Якорь — scene mismatch и там и там; телепортирует после сдвига в пустоту за километры».

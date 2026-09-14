@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-14 (T-FO09O — полный ресерч и полировка)
+
+**Задача:** Внимательный полный ресерч + код-ревью всего FO; что незакрыто (кроме v2/тестов); нестыковки — исправить.
+
+**Результат:** Аудит Mode 2 (слайс 1243 строки целиком + executor + spawn + координатор + все Apply). CRITICAL исправлены: (1) rollback −T без +T травил кэши/ассеты/клиентов/книги — флаг `_localStateShifted` + `LocalRevertSkipped`; (2) мутация SO-ассетов коридоров на диск — clone-on-write (+SetCorridors); (3) дубли NPC ID валили транзакцию — instanceID-суффикс. MEDIUM: trails у клиента. Наблюдения (10 шт.) зафиксированы без изменений. Незакрытое/Deferred — списки в отчёте. Вердикт: код хоста закрыт, приёмка за тестами.
+
+**Проверка:** `refresh_unity` — PASS; `read_console` — 0 errors, 0 CS; скобки 182/182, 30/30, 37/37. Play Mode retest — NOT RUN (user: F8/F9-цикл, ассеты чисты в git status).
+
+**Файлы:** `.../Network/GlobalMotionControlledRebaseSlice.cs`, `Scripts/Ship/AltitudeCorridorSystem.cs`, `docs/world/floatingorigin/09O_FULL_REVIEW_AND_POLISH.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-14 (T-FO09M — коридоры высот едут с миром, блокер тряски кораблей)
 
 **Задача:** После FO-интеграций все корабли дёргает «порывами» даже при отключённом влиянии ветра на корабли (`_shipWindMultiplier=0`).

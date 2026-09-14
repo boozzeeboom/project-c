@@ -158,15 +158,37 @@ namespace ProjectC.Ship
             corridors.Clear();
             corridors.AddRange(newCorridors);
             FindGlobalCorridor();
+            // T-FO09O-fix: новый список — новые (возможно asset-) ссылки:
+            // сбросить флаг копирования, следующий сдвиг склонирует заново.
+            _corridorsCloned = false;
         }
 
         // T-FO09M: сдвиг коридоров вместе с миром. min/max — мировые высоты (+= t.y),
         // cityCenter — мировая точка (только !isGlobal). Без этого после F8 все
         // корабли оказываются ниже minAltitude → перманентная severity=1
         // турбулентность («рывки порывами»), а городские коридоры не матчатся
-        // (центры в десятках км). Runtime-only мутация, рестарт — чисто.
+        // (центры в десятках км).
+        // T-FO09O-fix: corridors — ScriptableObject-АССЕТЫ. Прямая мутация
+        // пишется на диск в Editor Play (футган cumulative corruption).
+        // Поэтому сначала EnsureRuntimeCorridors: одноразовые runtime-копии,
+        // ассеты pristine навсегда. Rollback ±T симметричен на копиях.
+        private bool _corridorsCloned;
+        private void EnsureRuntimeCorridors()
+        {
+            if (_corridorsCloned) return;
+            _corridorsCloned = true;
+            for (int i = 0; i < corridors.Count; i++)
+            {
+                var c = corridors[i];
+                if (c == null) continue;
+                var copy = Instantiate(c);
+                if (c == _globalCorridor) _globalCorridor = copy;
+                corridors[i] = copy;
+            }
+        }
         public int ApplyRebaseTranslation(Vector3 translation)
         {
+            EnsureRuntimeCorridors();
             int shifted = 0;
             var seen = new System.Collections.Generic.HashSet<AltitudeCorridorData>();
             for (int i = 0; i < corridors.Count; i++)

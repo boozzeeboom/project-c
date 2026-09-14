@@ -61,6 +61,11 @@ namespace ProjectC.World.FloatingOrigin.Network
         // T-FO06DD: прямой сдвиг камеры был применён (только success-путь).
         // Тот же флаг-паттерн, что и для deathY: rollback сдвигает назад только при флаге.
         private bool _cameraShiftApplied;
+        // T-FO09O: блок локального состояния (carry/NPC/storms/wind/corridors/
+        // respawn-points) был применён в success-пути. Rollback при
+        // apply/rebuild/validate-refused (сдвиги НЕ выполнялись) обязан его
+        // пропустить — иначе -T отравляет кэши, ассеты и клиентов без +T.
+        private bool _localStateShifted;
 
         // T-FO-PERSIST01: суммарный сдвиг мира, записанный в сейв (ShipPositions.json).
         // Свежий старт грузит мир в исходном origin — restore вычитает кумулятив.
@@ -223,6 +228,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             _rollbackPlayerRoot = null;
             _respawnShiftApplied = false;
             _cameraShiftApplied = false;
+            _localStateShifted = false;
             try
             {
                 ExecuteTransaction(reason);
@@ -349,12 +355,14 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO09M: сдвинуть коридоры высот (иначе перманентная турбулентность).
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
                 "cells=" + ShiftAltitudeCorridors(plan.LocalTranslation));
+            // T-FO09O: блок локального состояния применён полностью — rollback
+            // вправе вернуть его назад. До этой точки отказ = сдвигов не было.
+            _localStateShifted = true;
 
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
             // T-FO-PERSIST01: транзакция завершена — сдвиг входит в кумулятив сейва.
-            // Единственная точка роста: Rollback всегда означает отсутствие Completed
-            // (см. note в Rollback), поэтому симметричного вычитания нет.
+            // T-FO09K: симметричное вычитание — в Rollback при revertLocalState.
             CumulativeRebaseOffset += plan.LocalTranslation;
             CumulativeRebaseFrame = (int)_frameGeneration;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
@@ -449,23 +457,37 @@ namespace ProjectC.World.FloatingOrigin.Network
             NotifyDeckRebase();
             // T-FO07C: тот же clear после возврата.
             ClearShiftedParticles();
-            // T-FO07E: вернуть кэши carry назад вместе с миром.
-            ShiftCarryCaches(-request.Plan.LocalTranslation);
-            // T-FO07F: вернуть шторма назад.
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "StormShifted",
-                "cells=" + ShiftStormCells(-request.Plan.LocalTranslation));
-            // T-FO09L: вернуть AABB зон назад.
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WindShifted",
-                "zones=" + ShiftWindZones(-request.Plan.LocalTranslation));
-            // T-FO09M: вернуть коридоры высот назад (иначе турбулентность).
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
-                "cells=" + ShiftAltitudeCorridors(-request.Plan.LocalTranslation));
+            // T-FO09O: -T блок — только если success-путь сдвиги применил.
+            // Иначе откат apply/rebuild/validate-refused отравил бы кэши,
+            // шторма, ветер, коридоры, fallback-точки и клиентов без +T.
+            // Флаги respawn/camera выше — более тонкие, остаются как есть.
+            bool revertLocalState = restored && _localStateShifted;
+            if (revertLocalState)
+            {
+                // T-FO07E: вернуть кэши carry назад вместе с миром.
+                ShiftCarryCaches(-request.Plan.LocalTranslation);
+                // T-FO07F: вернуть шторма назад.
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "StormShifted",
+                    "cells=" + ShiftStormCells(-request.Plan.LocalTranslation));
+                // T-FO09L: вернуть AABB зон назад.
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WindShifted",
+                    "zones=" + ShiftWindZones(-request.Plan.LocalTranslation));
+                // T-FO09M: вернуть коридоры высот назад (иначе турбулентность).
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
+                    "cells=" + ShiftAltitudeCorridors(-request.Plan.LocalTranslation));
+                _localStateShifted = false;
+            }
+            else
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "LocalRevertSkipped",
+                    "restored=" + restored + ";shifted=" + _localStateShifted);
+            }
             // T-FO08D: откат тоже рассылать клиентам (-T). Клиентский handler уже
             // применил +T к пикапам/штормам/частицам; без обратного сообщения они
             // навсегда в сдвинутом состоянии (сервер net zero, клиенты нет).
             // Сервер свои broadcast игнорирует (OnRebaseShiftMessage: IsServer →
             // return), двойного применения на хосте нет. Best-effort.
-            if (restored)
+            if (revertLocalState)
             {
                 // T-FO09K: откат возвращает и книги. TryAbort вернул контент,
                 // но _frame/cumulative оставались "сдвинутыми": каждый F9 растил
@@ -473,6 +495,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                 // (ф8_34: global 80035 против города 40000). Дизайн PERSIST01
                 // требовал -= T, реализация отсутствовала.
                 // _frameGeneration монотонна (lineage 07B), откатываем origin.
+                // T-FO09O: только при revertLocalState — без success-сдвигов
+                // вычитать нечего (иначе фантом в обратную сторону).
                 _frame = request.Plan.Before;
                 CumulativeRebaseOffset -= request.Plan.LocalTranslation;
                 BroadcastRebaseShift(NetworkManager.Singleton, -request.Plan.LocalTranslation, request.FrameGeneration);
@@ -607,6 +631,22 @@ namespace ProjectC.World.FloatingOrigin.Network
                 {
                     if (clientSystems[i] == null) continue;
                     try { clientSystems[i].Clear(); cleared++; }
+                    catch (Exception) { }
+                }
+                // T-FO09O: сервер гасит и шлейфы (09B-батч) — клиент зеркалит,
+                // иначе stale-точки висят после сдвига.
+                TrailRenderer[] clientTrails = FindObjectsByType<TrailRenderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                for (int i = 0; i < clientTrails.Length; i++)
+                {
+                    if (clientTrails[i] == null) continue;
+                    try { clientTrails[i].Clear(); cleared++; }
+                    catch (Exception) { }
+                }
+                LineRenderer[] clientLines = FindObjectsByType<LineRenderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                for (int i = 0; i < clientLines.Length; i++)
+                {
+                    if (clientLines[i] == null) continue;
+                    try { clientLines[i].positionCount = 0; cleared++; }
                     catch (Exception) { }
                 }
                 // T-FO07E: carry пикапов считается локально на каждом пире (L3) —
@@ -1008,12 +1048,17 @@ namespace ProjectC.World.FloatingOrigin.Network
             // IsContainedByRegisteredRoot). Без этого тела остаются в старых
             // координатах, пока мир и навмеш уехали, — гуляющие по городу NPC
             // «пропадают». Едут штатным путём (position + NetworkTeleport).
+            int runtimeNpcIndex = 0;
             foreach (var runtimeBrain in UnityEngine.Object.FindObjectsByType<ProjectC.AI.NpcBrain>(UnityEngine.FindObjectsSortMode.None))
             {
                 if (runtimeBrain == null || runtimeBrain.transform == null) continue;
                 Transform npcTransform = runtimeBrain.transform;
                 if (IsContainedByRegisteredRoot(npcTransform)) continue;
-                if (!AddParticipant("NPC_RUNTIME/" + npcTransform.name, npcTransform,
+                // T-FO09O: суффикс-индекс — спавнерные клоны делят имена
+                // ("Citizen(Clone)" × N); дубли ID валят всю транзакцию
+                // (duplicate_participant_id), падая на подготовке.
+                // (GetInstanceID deprecated CS0619 — индекса вызова достаточно.)
+                if (!AddParticipant("NPC_RUNTIME/" + (runtimeNpcIndex++) + "/" + npcTransform.name, npcTransform,
                         GlobalMotionRebaseParticipantKind.NetworkGameplayRoot, participantSet, out error))
                     return false;
             }

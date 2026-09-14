@@ -1,7 +1,9 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 20 августа 2026 г. | **Текущая версия:** `v0.1.21`
+**Последнее обновление:** 14 сентября 2026 г. | **Текущая версия:** `v0.1.60`
 
+> **Что нового (08–14 сентября 2026):** **v0.1.60.** Floating Origin — большая интеграция (263 коммита, ~245 FO): controlled rebase slice — палубы кораблей, NPC, погода, камера, респаун и сохранения переживают сдвиг мировых координат; авто-сдвиг при отдалении; 19 verify-прогонов, финал f8_36 healthy. Свет — малая интеграция (T-LIGHT01–09): ночные фонари (realtime), фикс ночной экспозиции, Lighting Settings мира. Подробности: `docs/dev/RETRO_FO_LIGHT_2026-09-14.md`.
+>
 > **Что нового (5–20 августа 2026):** **v0.1.20 → v0.1.21.** Contract core refactor: разделены board offers, active contracts и terminal history; добавлен полный Receipt flow `Accept → Claim Cargo → Transport → Submit`, серверная валидация доставки и rollback при ошибках persistence. **v0.1.21** — локализационный фикс. Подробности: `docs/changelogs.md` и `docs/dev/RETROSPECTIVE_2026-08-17.md`.
 >
 > **☁️ Cloud Ocean 3.0 (T-CLD01, T-CLOUD02..42):** ~75 коммитов. Объёмная система облаков — 🟢 продакшн-готово. Volumetric raymarch (4 слоя 800–7000м), цветовые рампы день/закат, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal. Интерактивность: LocalDensityBuffer (96³), корабельный след (displacement + кильватерный конус), VFX contrail, штормовые ячейки (procedural cellular-форма «цветная капуста», иммунны к displacement, runtime save/load, anti-banding). Источник правды: `docs/world/CLOUD_system/3.0/STATUS.md`.
@@ -831,6 +833,7 @@
    - ✅ **NetworkPlayer** отслеживает локальную позицию
    - ✅ RPC для перехода между сценами (`LoadSceneTransitionClientRpc`)
    - ✅ Корректная работы с кораблём и персонажем
+   - ✅ **Controlled rebase slice (v0.1.60, T-FO06–09 + PERSIST01–03):** сдвиг корней сцен целиком (F8/авто/F9) — участники rebase: палубы кораблей, runtime-NPC (agent warp), погода/ветер, камера, респаун, сохранения (rebase-aware restore). Неактивные корни исключены из scope. Детали: `docs/dev/RETRO_FO_LIGHT_2026-09-14.md`
 
 4. **Фиксы и стабилизация:** ✅
    - ✅ Singleton для ClientSceneLoader (предотвращение дубликатов)
@@ -920,6 +923,7 @@
    - ✅ ConstellationController (215 stars, 24 constellations, sky dome radius 900000)
    - ✅ Runtime profile instantiation (prevents asset reset on play/stop)
    - ✅ **Edge Detection** (T-VFX01, 2026-07-29) — Borderlands-style пост-процесс: distance falloff, adaptive color, pencil stroke (`EdgeDetection.shader` + `EdgeDetectionRenderFeature`)
+   - ✅ **Освещение мира (v0.1.60, T-LIGHT01–09):** доп. источники на Per Pixel, Lighting Settings + baseline, realtime-свет фонарей, фикс ночной экспозиции volume, глобальный контроль доп. света. Доки: `docs/world/lights/`
    - ⏳ Moon orbit angle fine-tuning (low priority — mesh visible, phases work)
 
 **Результат:** Визуально различимый прототип — корабли, облака, пики, персонаж с анимациями.

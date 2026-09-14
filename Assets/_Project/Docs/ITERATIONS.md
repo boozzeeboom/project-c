@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-14 (T-FO09H-stale — ф8_30 на старом билде + громкий лог)
+
+**Задача:** ф8_30: после посадки снова мёртвое управление, хотя 09H-fix уже в main.
+
+**Результат:** В логе ровно 1 `RespawnPointsShifted` (09G-fix есть), но ноль `reconnect_board`/`recovered=true`/варнингов — running code БЕЗ 09H-fix: либо билд собран между 09G-fix и 09H-fix, либо Editor не подхватил. Сам диагноз 09H-fix (внефрейм → CanSimulate=false) в силе; позиция после посадки (120067,...) снова вне фрейма. Добавлен громкий лог вокруг запроса (`requesting reconnect rebase after board` / `slice not found`), чтобы следующий лог различил stale-билд и null-slice. Других изменений поведения нет.
+
+**Проверка:** `refresh_unity` — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user: обновить билд/код до main, затем тест).
+
+**Файлы:** `Scripts/Player/NetworkPlayer.cs`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09H-fix — recover вне фрейма, управление возвращается)
 
 **Задача:** ф8_29: после посадки на корабль — мёртвое управление, F не сажает.

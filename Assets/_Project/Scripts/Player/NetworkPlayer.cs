@@ -607,7 +607,12 @@ namespace ProjectC.Player
                 {
                     var nm = Unity.Netcode.NetworkManager.Singleton;
                     var slice = nm != null ? nm.GetComponent<ProjectC.World.FloatingOrigin.Network.GlobalMotionControlledRebaseSlice>() : null;
-                    if (slice != null) slice.RequestControlledRebase(false, "reconnect_board");
+                    if (slice != null)
+                    {
+                        Debug.Log("[NetworkPlayer] T-FO09H: requesting reconnect rebase after board", this);
+                        slice.RequestControlledRebase(false, "reconnect_board");
+                    }
+                    else Debug.LogWarning("[NetworkPlayer] T-FO09H: rebase slice not found on NetworkManager", this);
                 }
                 catch (System.Exception e) { Debug.LogWarning("[NetworkPlayer] T-FO09H: reconnect rebase request failed: " + e.GetType().Name, this); }
                 yield break;

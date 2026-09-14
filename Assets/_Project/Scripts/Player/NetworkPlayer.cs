@@ -599,6 +599,17 @@ namespace ProjectC.Player
                     tracker.EnsureDeathBelow(transform.position.y);
                 }
                 Debug.Log($"[NetworkPlayer] T-FO09H: boarded restored ship '{shipPersistentId}' at {exit}", this);
+                // T-FO09H-fix: телепорт мог вынести игрока за фрейм адаптера
+                // (CanSimulate=false → мёртвое управление и F). Сразу просим
+                // сдвиг к игроку (reason=reconnect_board); вне фрейма сработает
+                // recover-план, внутри — честный отказ. Best-effort.
+                try
+                {
+                    var nm = Unity.Netcode.NetworkManager.Singleton;
+                    var slice = nm != null ? nm.GetComponent<ProjectC.World.FloatingOrigin.Network.GlobalMotionControlledRebaseSlice>() : null;
+                    if (slice != null) slice.RequestControlledRebase(false, "reconnect_board");
+                }
+                catch (System.Exception e) { Debug.LogWarning("[NetworkPlayer] T-FO09H: reconnect rebase request failed: " + e.GetType().Name, this); }
                 yield break;
             }
             Debug.Log($"[NetworkPlayer] T-FO09H: saved ship '{shipPersistentId}' not found — staying at pilot point", this);

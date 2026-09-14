@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-13 (T-FO09H-fix — recover вне фрейма, управление возвращается)
+
+**Задача:** ф8_29: после посадки на корабль — мёртвое управление, F не сажает.
+
+**Результат:** Диагноз — телепорт вынес за фрейм адаптера (`CanSimulate=false` + `_inShip=false` → ранний return в Update до движения и F; `TryCreate` вне фрейма молчит — навсегда). Фикс: `TryCreateRecover` (аддитивный) + fallback в транзакции только вне ContainsLocal (`;recovered=true` в маркере) + предпроверка авто + немедленный `reconnect_board` после посадки. Старый `TryCreate`/отказы у origin не тронуты.
+
+**Проверка:** `refresh_unity` — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user: `reconnect_board;recovered=true` → Completed → управление+F).
+
+**Файлы:** `OriginRebasePlan.cs`, `.../Network/GlobalMotionControlledRebaseSlice.cs`, `Scripts/Player/NetworkPlayer.cs`, `docs/world/floatingorigin/09H_BOARD_FREEZE_FIX.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-13 (T-FO09I — ф8_28 inconclusive + карта корабельных работ)
 
 **Задача:** ф8_28 (выход на корабле → спавн в городе + пропажа кораблей) + вопрос «что план говорит про корабли».

@@ -61,6 +61,50 @@ namespace ProjectC.World.FloatingOrigin
             return true;
         }
 
+        /// <summary>
+        /// T-FO09H-fix: recover-план для фокуса ВНЕ фрейма. Обычный TryCreate
+        /// возвращает false вне ContainsLocal — и автотриггер, и транзакция
+        /// молча отказываются, а игрок остаётся с CanSimulate=false навсегда
+        /// (мёртвое управление после телепорта к кораблю). Здесь: та же
+        /// квантованная математика, но без гейтов ContainsLocal/порога;
+        /// финальная проверка представимости сохранена. Чисто аддитивно,
+        /// существующие проверки TryCreate не затрагиваются.
+        /// </summary>
+        public static bool TryCreateRecover(LocalCoordinateFrame frame, Vector3 localFocus,
+            float threshold, float quantum, out OriginRebasePlan plan)
+        {
+            plan = default;
+            if (!frame.IsValid)
+                return false;
+            if (!GlobalPosition.IsFiniteValue(threshold) || threshold <= 0f || threshold > frame.MaxLocalCoordinate)
+                throw new ArgumentOutOfRangeException(nameof(threshold));
+            if (!GlobalPosition.IsFiniteValue(quantum) || quantum <= 0f || quantum > threshold)
+                throw new ArgumentOutOfRangeException(nameof(quantum));
+            if (!GlobalPosition.IsFiniteValue(localFocus.x) ||
+                !GlobalPosition.IsFiniteValue(localFocus.y) ||
+                !GlobalPosition.IsFiniteValue(localFocus.z))
+                return false;
+
+            double sx = Math.Round((double)localFocus.x / quantum, MidpointRounding.AwayFromZero) * quantum;
+            double sy = Math.Round((double)localFocus.y / quantum, MidpointRounding.AwayFromZero) * quantum;
+            double sz = Math.Round((double)localFocus.z / quantum, MidpointRounding.AwayFromZero) * quantum;
+            var origin = new GlobalPosition(frame.Origin.X + sx, frame.Origin.Y + sy, frame.Origin.Z + sz);
+            var after = frame.WithOrigin(origin);
+            if (!after.IsValid)
+                return false;
+            if (!after.TryToLocal(frame.ToGlobal(localFocus), out Vector3 remaining) ||
+                Math.Abs(remaining.x) > threshold || Math.Abs(remaining.y) > threshold || Math.Abs(remaining.z) > threshold)
+                return false;
+
+            var translation = new Vector3((float)(frame.Origin.X - origin.X),
+                (float)(frame.Origin.Y - origin.Y), (float)(frame.Origin.Z - origin.Z));
+            if (!GlobalPosition.IsFiniteValue(translation.x) || !GlobalPosition.IsFiniteValue(translation.y) ||
+                !GlobalPosition.IsFiniteValue(translation.z))
+                return false;
+            plan = new OriginRebasePlan(frame, after, translation);
+            return true;
+        }
+
         /// <summary>Prefer reprojection for canonical positions rather than accumulating translations.</summary>
         public bool TryReproject(Vector3 oldLocalPosition, out Vector3 newLocalPosition)
         {

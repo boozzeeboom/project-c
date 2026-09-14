@@ -137,7 +137,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (manager == null || !manager.IsServer) return;
             if (Time.unscaledTime - _lastShiftEndTime < _autoCooldownSec) return;
             if (!TryResolveLocalPlayer(out Transform playerRoot, out _)) return;
-            if (!ProjectC.World.FloatingOrigin.OriginRebasePlan.TryCreate(_frame, playerRoot.position, _threshold, _quantum, out _)) return;
+            // T-FO09H-fix: вне фрейма обычный TryCreate молчит — recover даёт шанс.
+            if (!ProjectC.World.FloatingOrigin.OriginRebasePlan.TryCreate(_frame, playerRoot.position, _threshold, _quantum, out _) &&
+                !ProjectC.World.FloatingOrigin.OriginRebasePlan.TryCreateRecover(_frame, playerRoot.position, _threshold, _quantum, out _)) return;
             RequestControlledRebase(false, "auto_threshold");
         }
 
@@ -251,10 +253,23 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
 
             Vector3 localFocus = playerRoot.position;
+            bool recovered = false;
             if (!OriginRebasePlan.TryCreate(_frame, localFocus, _threshold, _quantum, out OriginRebasePlan plan))
             {
-                Reject("no_rebase_plan:localFocus=" + localFocus);
-                return;
+                // T-FO09H-fix: фокус вне фрейма — обычный план невозможен, но
+                // молчать нельзя (CanSimulate=false навсегда). Recover — ТОЛЬКО
+                // вне ContainsLocal; внутри фрейма в пределах порога — честный отказ.
+                if (_frame.ContainsLocal(localFocus))
+                {
+                    Reject("no_rebase_plan:localFocus=" + localFocus);
+                    return;
+                }
+                if (!ProjectC.World.FloatingOrigin.OriginRebasePlan.TryCreateRecover(_frame, localFocus, _threshold, _quantum, out plan))
+                {
+                    Reject("no_rebase_plan:localFocus=" + localFocus);
+                    return;
+                }
+                recovered = true;
             }
 
             var request = GlobalMotionRebaseRequest.Create(
@@ -266,7 +281,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase", "Requested",
                 "transaction=" + request.TransactionId.ToString("N") + ";frame=" + request.FrameGeneration +
-                ";reason=" + reason + ";focus=" + localFocus + ";translation=" + plan.LocalTranslation);
+                ";reason=" + reason + (recovered ? ";recovered=true" : "") + ";focus=" + localFocus + ";translation=" + plan.LocalTranslation);
 
             var coordinator = new GlobalMotionRebaseCoordinator(new FreezeGate(this, playerRoot));
             if (!coordinator.TryPrepare(request, participantSet, out string error))

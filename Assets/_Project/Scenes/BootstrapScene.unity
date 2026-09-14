@@ -16048,6 +16048,7 @@ MonoBehaviour:
   _respawnObjectName: Respawn_Default
   _maxLocalCoordinate: 100000
   _verticalSpawnOffset: 1
+  _spawnAnchor: {fileID: 0}
 --- !u!114 &1151906033
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16071,6 +16072,9 @@ MonoBehaviour:
   _quantum: 256
   _successKey: 289
   _rollbackKey: 290
+  _autoRebaseEnabled: 1
+  _autoCheckIntervalSec: 5
+  _autoCooldownSec: 35
 --- !u!1 &1181311400
 GameObject:
   m_ObjectHideFlags: 0

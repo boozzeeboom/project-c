@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-14 (T-FO09Q — чистка кода FloatingOrigin)
+
+**Задача:** Убрать ненужное в `Scripts/World/FloatingOrigin` (99 файлов, 17k строк).
+
+**Результат:** Граф ссылок по всем Assets (код+сцены+префабы+ассеты). Удалены 6 строгих орфанов (ноль ссылок вообще): `...RebaseNetworkBaselineAdapterBoundary`, `...ReviewedAdmissionEvidenceIntake`, `...RuntimeDriver`, `...UserControlledEvidenceIntake`, `...UserControlledEvidencePackage`, `...UserControlledEvidenceReview` (последний — каскадно, его дёргал только удалённый Package). Остальное осознанно оставлено: живой путь (слайс/план/координатор/исполнитель/спавн/мир/пилот) + dormant-фундамент v2 (контракты 04/05/06, адаптеры, пассажиры — все покрыты доками и Editor-валидаторами, удаление сломало бы компиляцию Editor). Удалён свой временный мусор (fo_*.txt).
+
+**Проверка:** `refresh_unity` (all, force) + `read_console` — 0 errors, 0 CS (первые CS2001 после удаления ушли повторным refresh — stale file list).
+
+**Файлы:** 6× `Network/*.cs` (git rm, история сохранена), `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-14 (T-FO09P — уборка документации FO)
 
 **Задача:** Разобрать ~260 файлов: архив процессного шума, читаемый главный каталог.

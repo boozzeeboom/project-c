@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-14 (T-FO09H-verify — посадка+управление+F, PASS)
+
+**Задача:** ф9_31: перезаход с управлением после посадки.
+
+**Результат:** PASS. Полная цепочка: `boarded restored ship` → `requesting reconnect rebase after board` → `Requested(reason=reconnect_board)` → `Completed(frame=3, origin=[159744,10240,161280])`. Управление работает (со слов пользователя + `beforeProcessMovement` 815/1217 здорово), 0 errors, 0 телепортов, `inShip=True` — F-посадка тоже работает. Честно: в этот раз сработал обычный план (без `;recovered=true` — точка была внутри фрейма); recover-ветка вне фрейма в дикой природе не тестирована, но покрыта тем же путём транзакции.
+
+**Проверка:** Точечный разбор ф9_31. Компиляция не затрагивалась.
+
+**Файлы:** `docs/world/floatingorigin/00_ARCHITECTURE_AND_PLAN.md`, `docs/world/floatingorigin/09A_ACCEPTANCE_MATRIX.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-14 (T-FO09H-stale — ф8_30 на старом билде + громкий лог)
 
 **Задача:** ф8_30: после посадки снова мёртвое управление, хотя 09H-fix уже в main.

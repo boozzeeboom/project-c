@@ -70,6 +70,25 @@ namespace ProjectC.Core
             public bool boundsValid;
         }
 
+        // T-FO09L: сдвиг кэшированных world-AABB сплайн-зон вместе с миром.
+        // boundsValid защёлкнут раз и навсегда; без сдвига после F8 предфильтр
+        // Contains отсекает корабли внутри уехавших зон (ветер молча умирает).
+        // entries пересчитываются каждый detect (Clear) — их трогать не надо.
+        public int ApplyRebaseTranslation(Vector3 translation)
+        {
+            int zones = 0;
+            foreach (var kv in _zoneStates)
+            {
+                var state = kv.Value;
+                if (state == null || !state.boundsValid) continue;
+                Bounds bounds = state.worldBounds;
+                bounds.center += translation;
+                state.worldBounds = bounds;
+                zones++;
+            }
+            return zones;
+        }
+
 
 
 

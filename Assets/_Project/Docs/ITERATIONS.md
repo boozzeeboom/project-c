@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-14 (T-FO09L — AABB сплайн-зон ветра едут с миром)
+
+**Задача:** Проверить смещение Spline Wind Zone (тестовые зоны в WorldScene_0_0).
+
+**Результат:** Сами зоны чистые (всё live, кэшей нет), но `WindManager.worldBounds` защёлкнут раз и умирал после сдвига (предфильтр отсекал корабли). Фикс: `ApplyRebaseTranslation` (сдвиг center) + `ShiftWindZones` с маркером `WindShifted` в обоих путях, вызовы вне циклов. `ShipWindZone` без кэшей.
+
+**Проверка:** `refresh_unity` — PASS; `read_console` — 0 errors, 0 CS. Play Mode retest — NOT RUN (user: корабль в зоне → F8 → ветер действует, `WindShifted(zones>0)`).
+
+**Файлы:** `Scripts/Core/WindManager.cs`, `.../Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/09L_WIND_ZONE_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-14 (T-FO09K — rollback возвращает книги)
 
 **Задача:** ф8_34: циклы город→город иногда дают спавн в пустоте (global 80035 против города 40000).

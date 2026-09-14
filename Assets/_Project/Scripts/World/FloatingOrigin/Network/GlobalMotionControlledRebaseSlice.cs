@@ -343,6 +343,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO07F: сдвинуть штормовые ячейки вместе с миром.
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "StormShifted",
                 "cells=" + ShiftStormCells(plan.LocalTranslation));
+            // T-FO09L: сдвинуть AABB сплайн-зон ветра (иначе предфильтр калит).
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WindShifted",
+                "zones=" + ShiftWindZones(plan.LocalTranslation));
 
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
@@ -448,6 +451,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO07F: вернуть шторма назад.
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "StormShifted",
                 "cells=" + ShiftStormCells(-request.Plan.LocalTranslation));
+            // T-FO09L: вернуть AABB зон назад.
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WindShifted",
+                "zones=" + ShiftWindZones(-request.Plan.LocalTranslation));
             // T-FO08D: откат тоже рассылать клиентам (-T). Клиентский handler уже
             // применил +T к пикапам/штормам/частицам; без обратного сообщения они
             // навсегда в сдвинутом состоянии (сервер net zero, клиенты нет).
@@ -808,6 +814,19 @@ namespace ProjectC.World.FloatingOrigin.Network
             var director = ProjectC.World.Clouds.StormCellDirector.Instance;
             if (director == null) return 0;
             try { return director.ApplyRebaseTranslation(translation); }
+            catch (Exception) { return 0; }
+        }
+
+        /// <summary>
+        /// T-FO09L: сдвиг кэшей WindManager (world-AABB сплайн-зон) вместе с миром.
+        /// Синглтон в BootstrapScene — вне участников, резолв напрямую.
+        /// Best-effort, число в маркере. Вызывать вне циклов (один раз на путь).
+        /// </summary>
+        private int ShiftWindZones(Vector3 translation)
+        {
+            var manager = ProjectC.Core.WindManager.Instance;
+            if (manager == null) return 0;
+            try { return manager.ApplyRebaseTranslation(translation); }
             catch (Exception) { return 0; }
         }
 

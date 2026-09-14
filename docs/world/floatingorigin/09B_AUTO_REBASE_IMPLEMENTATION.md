@@ -30,3 +30,16 @@ Date: 2026-09-13. По плану `09B_AUTO_REBASE_PLAN.md`.
 2. Play Mode (user): отлёт >256м → `Requested(reason=auto_threshold)` →
    `Completed`; повторных срабатываний подряд нет (кулдаун);
    F8/F9 ручные работают как раньше (`reason=user_controlled`).
+
+## Приложение: свёртка плана 09B_PLAN (2026-09-14)
+
+- Остаток хоста на момент плана: OPEN-кодом был только авторебейс
+  (реализован выше); остальное — PASS/тесты пользователя/DEFERRED.
+- Микроаудиты (закрыты без отдельного кода):
+  `ProjectileVisual`/`ThrowArcVisual` — transient, самозаживление;
+  закрыты батчем 09B (`TrailRenderer.Clear` + `LineRenderer.positionCount=0`
+  в `ClearShiftedParticles`). Combat DTO `targetPosition` — снапшот момента
+  удара, кэша нет. `AltitudeCorridorSystem` на тот момент — live-входы
+  (позже найден защёлкнутый кэш — см. 09M, исправлено clone-on-write).
+- Параметры: порог/квант 256м, опрос 5с, кулдаун 35с (>30с палуб 06DF);
+  гистерезис естественный (остаток < порога); F9 после авто — штатный rollback.

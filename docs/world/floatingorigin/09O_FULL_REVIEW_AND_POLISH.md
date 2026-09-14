@@ -90,3 +90,18 @@ FaultSteadyState), `GlobalMotionPilotSpawnSource` (spawn-пути),
 2. Play Mode retest — NOT RUN (user): штатный F8/F9-цикл + маркеры
    (`LocalRevertSkipped` в норме отсутствует; ассеты коридоров в
    `git status` чистые после сессии).
+
+## Приложение: свёрнутые безкодовые аудиты (2026-09-14)
+
+- **07D (Rigidbody/пулы):** чинить нечего. Slice двигает Transform +
+  `Physics.SyncTransforms()`, velocities/sleep/constraints не трогает
+  (план §2.4 по построению); интерполяция Rigidbody даёт ≤1–2 fixed-кадра
+  доглэйда, сетевая сторона закрыта телепортом NT (06DA). Пулы
+  (`VfxObjectPool`, `DamageNumberService`, `ShipCargoVisual`) позицию задают
+  при выдаче — протухших мировых кэшей нет. Вне gate: physics-handoff с
+  пассажирами в момент сдвига (трек 07/08), снаряды в полёте (transient).
+- **07G (посадка/parenting):** действий нет. Посаженный игрок — child
+  корня-корабля (`SetParent`, ~1445), едет с участником, отдельно не
+  регистрируется (`IsContainedByRegisteredRoot`); rebind читает мировую
+  позицию; выход — live `GetExitPosition()`; ссылки — object refs.
+  Выход в окно замороженной транзакции (~мс) гарда не требует.

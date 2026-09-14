@@ -75,3 +75,16 @@ Date: 2026-09-13. Design-first: кода нет, реализация следу
 (07J, стабильно, полёт идёт). Возврат к вопросу — только как отдельная
 v2-миграция репликации кораблей с топологией для тестов (второй клиент),
 не в рамках текущей серии. Без кода.
+
+## Приложение (свёртка 07I/07J, 2026-09-14)
+
+- **07I** (диагноз + маркер): F8 в полёте — полная цепочка до `Completed`,
+  `ActorDrained` → `WorldFrameShifted(ok=True)` →
+  `ActorRebound(ok=False:stream_refused)`; полёт идёт, 0 errors. В маркер
+  добавлен `status=` адаптера для различения gate'ов отказа.
+- **07J** (точная ветвь, по маркеру `status=WaitingForControl`): `Bind` →
+  `CanPrepareControl` → World-ветка видит сетевого предка (ShipRoot NO) →
+  корабль НЕ registered actor → `DriverBlocked` (silent, `reportFailure=false`,
+  статус-остаток после `Bind`). Легальные пути оба вне scope: ParentLocal-поток
+  (нужен ship adapter) либо unparent-rebind-reparent (отдельный reviewed gate).
+  Поведение стабильно: повторный F8 в полёте повторяет цикл без деградации.

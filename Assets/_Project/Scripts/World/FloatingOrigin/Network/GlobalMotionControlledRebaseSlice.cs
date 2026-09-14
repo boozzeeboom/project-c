@@ -454,7 +454,17 @@ namespace ProjectC.World.FloatingOrigin.Network
             // Сервер свои broadcast игнорирует (OnRebaseShiftMessage: IsServer →
             // return), двойного применения на хосте нет. Best-effort.
             if (restored)
+            {
+                // T-FO09K: откат возвращает и книги. TryAbort вернул контент,
+                // но _frame/cumulative оставались "сдвинутыми": каждый F9 растил
+                // кумулятив сейва фантомом → спавн в пустоте через сессии
+                // (ф8_34: global 80035 против города 40000). Дизайн PERSIST01
+                // требовал -= T, реализация отсутствовала.
+                // _frameGeneration монотонна (lineage 07B), откатываем origin.
+                _frame = request.Plan.Before;
+                CumulativeRebaseOffset -= request.Plan.LocalTranslation;
                 BroadcastRebaseShift(NetworkManager.Singleton, -request.Plan.LocalTranslation, request.FrameGeneration);
+            }
             GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                 "runtimeRebase",
                 restored ? "RollbackCompleted" : "RollbackFaulted",

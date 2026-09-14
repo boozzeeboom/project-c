@@ -346,6 +346,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO09L: сдвинуть AABB сплайн-зон ветра (иначе предфильтр калит).
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WindShifted",
                 "zones=" + ShiftWindZones(plan.LocalTranslation));
+            // T-FO09M: сдвинуть коридоры высот (иначе перманентная турбулентность).
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
+                "cells=" + ShiftAltitudeCorridors(plan.LocalTranslation));
 
             _frame = plan.After;
             _frameGeneration = request.FrameGeneration;
@@ -454,6 +457,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO09L: вернуть AABB зон назад.
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "WindShifted",
                 "zones=" + ShiftWindZones(-request.Plan.LocalTranslation));
+            // T-FO09M: вернуть коридоры высот назад (иначе турбулентность).
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
+                "cells=" + ShiftAltitudeCorridors(-request.Plan.LocalTranslation));
             // T-FO08D: откат тоже рассылать клиентам (-T). Клиентский handler уже
             // применил +T к пикапам/штормам/частицам; без обратного сообщения они
             // навсегда в сдвинутом состоянии (сервер net zero, клиенты нет).
@@ -615,7 +621,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                     "runtimeRebase", "ClientShiftApplied",
-                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups + ";storms=" + ShiftStormCells(translation));
+                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups + ";storms=" + ShiftStormCells(translation) + ";corridors=" + ShiftAltitudeCorridors(translation));
             }
             catch (Exception e)
             {
@@ -827,6 +833,20 @@ namespace ProjectC.World.FloatingOrigin.Network
             var manager = ProjectC.Core.WindManager.Instance;
             if (manager == null) return 0;
             try { return manager.ApplyRebaseTranslation(translation); }
+            catch (Exception) { return 0; }
+        }
+
+        /// <summary>
+        /// T-FO09M: сдвиг высотных коридоров вместе с миром (min/max/centers).
+        /// Синглтон в BootstrapScene — вне участников, резолв напрямую.
+        /// Без этого после F8 все корабли ниже minAltitude → перманентная
+        /// severity=1 турбулентность («рывки порывами»). Best-effort.
+        /// </summary>
+        private int ShiftAltitudeCorridors(Vector3 translation)
+        {
+            var system = ProjectC.Ship.AltitudeCorridorSystem.Instance;
+            if (system == null) return 0;
+            try { return system.ApplyRebaseTranslation(translation); }
             catch (Exception) { return 0; }
         }
 

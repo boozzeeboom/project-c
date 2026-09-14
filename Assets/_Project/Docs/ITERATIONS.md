@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-14 (T-FO09M — коридоры высот едут с миром, блокер тряски кораблей)
+
+**Задача:** После FO-интеграций все корабли дёргает «порывами» даже при отключённом влиянии ветра на корабли (`_shipWindMultiplier=0`).
+
+**Результат:** Корень — не ветер, а турбулентность высотных коридоров. `currentAlt=transform.position.y`, global min=1200; после F8 (типовой dy=-2560) корабли оказываются на y≈-60 → severity=1 перманентно на всех кораблях (~mass·50 Н случайных сил каждые 0.05с + моменты). Множитель ветра гейтит только `ApplyGlobalWind`, турбулентность идёт отдельно — поэтому отключение ветра не помогало. Плюс `cityCenter` не ехали → неверный выбор коридора. Отброшено: `NpcTestSpeedBooster` (нет в сценах/префабах), `ApplyRestore` (обнуляет скорости), FO teleport (корректен). Фикс по аналогии с 07F/09L: `AltitudeCorridorSystem.ApplyRebaseTranslation` (min/max+=t.y, cityCenter+=t для !isGlobal, дедуп) + `ShiftAltitudeCorridors` с маркером `CorridorsShifted` в success/rollback/client-handler.
+
+**Проверка:** `refresh_unity` — PASS; `read_console` — 0 errors (только MCP-шум). Play Mode retest — NOT RUN (user: пустые корабли стоят после F8, `CorridorsShifted(cells>=1)`, `TURBULENCE!` отсутствует).
+
+**Файлы:** `Scripts/Ship/AltitudeCorridorSystem.cs`, `.../Network/GlobalMotionControlledRebaseSlice.cs`, `docs/world/floatingorigin/09M_ALTITUDE_CORRIDOR_SHIFT.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-14 (T-FO09L — AABB сплайн-зон ветра едут с миром)
 
 **Задача:** Проверить смещение Spline Wind Zone (тестовые зоны в WorldScene_0_0).

@@ -160,6 +160,34 @@ namespace ProjectC.Ship
             FindGlobalCorridor();
         }
 
+        // T-FO09M: сдвиг коридоров вместе с миром. min/max — мировые высоты (+= t.y),
+        // cityCenter — мировая точка (только !isGlobal). Без этого после F8 все
+        // корабли оказываются ниже minAltitude → перманентная severity=1
+        // турбулентность («рывки порывами»), а городские коридоры не матчатся
+        // (центры в десятках км). Runtime-only мутация, рестарт — чисто.
+        public int ApplyRebaseTranslation(Vector3 translation)
+        {
+            int shifted = 0;
+            var seen = new System.Collections.Generic.HashSet<AltitudeCorridorData>();
+            for (int i = 0; i < corridors.Count; i++)
+            {
+                var c = corridors[i];
+                if (c == null || !seen.Add(c)) continue;
+                c.minAltitude += translation.y;
+                c.maxAltitude += translation.y;
+                if (!c.isGlobal)
+                    c.cityCenter += translation;
+                shifted++;
+            }
+            if (_globalCorridor != null && seen.Add(_globalCorridor))
+            {
+                _globalCorridor.minAltitude += translation.y;
+                _globalCorridor.maxAltitude += translation.y;
+                shifted++;
+            }
+            return shifted;
+        }
+
 #if UNITY_EDITOR
         /// <summary>
         /// Создать дефолтные коридоры через Editor (меню Tools).

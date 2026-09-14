@@ -356,9 +356,11 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// T-FO09C: ручное «Спасение» идёт той же ship-цепочкой, что автореспавн
-        /// (корабль → последний → ближайший); дефолтная точка — только fallback.
-        /// Раньше шло сразу на дефолтную точку = возврат в пустоту.
+        /// T-FO09M: ручное «Спасение» (Esc-меню) идёт СТРОГО на дефолтную точку
+        /// в городе — это кнопка «застрял», способ вернуться на спавн даже
+        /// с кораблём. Ship-цепочка здесь НЕ применяется (см. T-FO09C-revert):
+        /// возврат на корабль — только автореспавн при падении (PerformRespawn)
+        /// и посадка при перезаходе (WaitForShipAndBoard).
         /// </summary>
         private void PerformDefaultRespawn()
         {
@@ -369,18 +371,6 @@ namespace ProjectC.Player
             }
             _isRespawning = true;
             _fallStartTime = float.MaxValue;
-
-            var rescuePlayer = GetComponent<NetworkPlayer>();
-            if (TryResolveShipRescuePosition(rescuePlayer, out Vector3 rescueShipPos, out string rescueSource))
-            {
-                TeleportToClientRpc(rescueShipPos);
-                if (_debugLog)
-                    Debug.Log($"[PlayerRespawnTracker] Rescue-to-ship ({rescueSource}) for client={OwnerClientId} at {rescueShipPos}");
-
-                if (IsServer && !IsClient)
-                    Invoke(nameof(ResetRespawningFlag), 0.5f);
-                return;
-            }
 
             if (_respawnManager == null)
             {

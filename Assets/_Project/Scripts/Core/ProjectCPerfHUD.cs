@@ -15,11 +15,10 @@
 //   (например, NetworkManagerController).
 //   В Player-билде класс отключён через #if FALSE.
 //
-// ■ СТАТУС: ⏸ ОТКЛЮЧЁН (#if FALSE)
-//   Причина: нестабилен, требуется доработка интеграции
-//   с ProjectCPerfCounters и тестирование в билде.
-//   Чтобы включить обратно — заменить #if FALSE на
-//   #if DEVELOPMENT_BUILD || UNITY_EDITOR.
+// ■ СТАТУС: ✅ ВКЛЮЧЁН (T-ADM-08a, 2026-09-16)
+//   Условие: #if DEVELOPMENT_BUILD || UNITY_EDITOR.
+//   F3-хоткей по умолчанию ВЫКЛЮЧЕН (D1: PerfHUD только из админ-панели);
+//   включается флагом useHotkey в инспекторе.
 //
 // ■ ЗАВИСИМОСТИ
 //   - ProjectCPerfCounters (Assets/_Project/Scripts/Core/ProjectCPerfCounters.cs)
@@ -27,7 +26,7 @@
 // ■ ДИЗАЙН-ДОК
 //   docs/world/admin_tool/perfomance/PERFORMANCE_MONITORING_RESEARCH.md §4.2
 // ═══════════════════════════════════════════════════════════════════════════
-#if FALSE
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
 using UnityEngine;
 
 namespace ProjectC.Core
@@ -42,6 +41,8 @@ namespace ProjectC.Core
         [Header("Settings")]
         [SerializeField] private bool _showByDefault = false;
         [SerializeField] private KeyCode _toggleKey = KeyCode.F3;
+        [Tooltip("T-ADM-08a: хоткей-тоггл. По умолчанию ВЫКЛ (D1: PerfHUD только из админ-панели).")]
+        [SerializeField] private bool _useHotkey = false;
         [SerializeField] private float _updateInterval = 1f;
 
         [Header("Style")]
@@ -64,10 +65,15 @@ namespace ProjectC.Core
             _visible = _showByDefault;
         }
 
+        /// <summary>T-ADM-08a: видимость из AdminFacade. Не трогает _useHotkey.</summary>
+        public void SetVisible(bool visible) => _visible = visible;
+
+        public bool IsVisible => _visible;
+
         private void Update()
         {
-            // F3 toggle — support both Input System and legacy
-            if (UnityEngine.Input.GetKeyDown(_toggleKey))
+            // Тоггл хоткеем — только если явно разрешён (D1: по умолчанию управляется из админ-панели).
+            if (_useHotkey && UnityEngine.Input.GetKeyDown(_toggleKey))
                 _visible = !_visible;
 
             if (!_visible) return;

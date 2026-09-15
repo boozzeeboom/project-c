@@ -56,7 +56,7 @@ namespace ProjectC.Admin
                 var np = nm.LocalClient.PlayerObject.GetComponent<NetworkPlayer>();
                 if (np != null) return np;
             }
-            var all = FindObjectsByType<NetworkPlayer>(FindObjectsSortMode.None);
+            var all = FindObjectsByType<NetworkPlayer>();
             for (int i = 0; i < all.Length; i++)
                 if (all[i] != null && all[i].IsOwner) return all[i];
             return null;
@@ -153,7 +153,7 @@ namespace ProjectC.Admin
         public void SetPerfHud(bool visible)
         {
             var hud = FindAnyObjectByType<ProjectCPerfHUD>();
-            if (hud != null) hud.enabled = visible;
+            if (hud != null) hud.SetVisible(visible);
             else Debug.LogWarning("[AdminFacade] ProjectCPerfHUD not found (add component per its header)");
         }
 
@@ -205,7 +205,7 @@ namespace ProjectC.Admin
         {
             AdminLogBus.SetMuted(muted);
 
-            var spawners = FindObjectsByType<NpcSpawner>(FindObjectsSortMode.None);
+            var spawners = FindObjectsByType<NpcSpawner>();
             for (int i = 0; i < spawners.Length; i++)
                 if (spawners[i] != null) spawners[i].SetDebugLogs(!muted);
 
@@ -214,15 +214,15 @@ namespace ProjectC.Admin
             if (ShipPositionServer.Instance != null)
                 ShipPositionServer.Instance.SetDebugMode(!muted);
 
-            var trackers = FindObjectsByType<PlayerRespawnTracker>(FindObjectsSortMode.None);
+            var trackers = FindObjectsByType<PlayerRespawnTracker>();
             for (int i = 0; i < trackers.Length; i++)
                 if (trackers[i] != null) trackers[i].SetDebugLog(!muted);
 
-            var targets = FindObjectsByType<PlayerTarget>(FindObjectsSortMode.None);
+            var targets = FindObjectsByType<PlayerTarget>();
             for (int i = 0; i < targets.Length; i++)
                 if (targets[i] != null) targets[i].SetDebugLog(!muted);
 
-            var buffers = FindObjectsByType<LocalDensityBuffer>(FindObjectsSortMode.None);
+            var buffers = FindObjectsByType<LocalDensityBuffer>();
             for (int i = 0; i < buffers.Length; i++)
                 if (buffers[i] != null) buffers[i].SetVerboseLogging(!muted);
 

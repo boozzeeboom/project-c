@@ -192,7 +192,7 @@ namespace ProjectC.Core.ShipPosition
         public bool AdminTeleportPlayer(ulong clientId, Vector3 position)
         {
             if (!IsServerSafe()) return false;
-            var all = FindObjectsByType<NetworkPlayer>(FindObjectsSortMode.None);
+            var all = FindObjectsByType<NetworkPlayer>();
             for (int i = 0; i < all.Length; i++)
             {
                 var np = all[i];

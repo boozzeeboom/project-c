@@ -90,7 +90,23 @@ namespace ProjectC.Admin
         {
             IsVisible = visible;
             if (_root != null) _root.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-            if (visible) SwitchTab(_currentTab);
+            // Курсор — по аналогии с CraftingWindow/CustomisationWindow/CommPanelWindow:
+            // открыто = свободная мышь, закрыто = лок обратно в игру (только если сеть слушаем).
+            if (visible)
+            {
+                UnityEngine.Cursor.lockState = CursorLockMode.None;
+                UnityEngine.Cursor.visible = true;
+                SwitchTab(_currentTab);
+            }
+            else
+            {
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                if (nm != null && nm.IsListening)
+                {
+                    UnityEngine.Cursor.lockState = CursorLockMode.Locked;
+                    UnityEngine.Cursor.visible = false;
+                }
+            }
         }
 
         // ==================== Построение ====================
@@ -112,19 +128,19 @@ namespace ProjectC.Admin
             _doc.rootVisualElement.Add(_root);
 
             var panel = new VisualElement();
-            panel.style.width = 440;
+            panel.style.width = 400;
             panel.style.backgroundColor = new Color(0.05f, 0.05f, 0.08f, 0.94f);
             panel.style.borderLeftWidth = 2;
             panel.style.borderLeftColor = new Color(0.2f, 0.8f, 1f, 1f);
-            panel.style.paddingLeft = 8; panel.style.paddingRight = 8;
-            panel.style.paddingTop = 8; panel.style.paddingBottom = 8;
+            panel.style.paddingLeft = 6; panel.style.paddingRight = 6;
+            panel.style.paddingTop = 6; panel.style.paddingBottom = 6;
             panel.pickingMode = PickingMode.Position;
             _root.Add(panel);
 
             var header = new Label("⚙ Админ-панель (F12)");
-            header.style.fontSize = 18;
+            header.style.fontSize = 15;
             header.style.color = Color.cyan;
-            header.style.marginBottom = 6;
+            header.style.marginBottom = 4;
             panel.Add(header);
 
             _tabBar = new VisualElement();
@@ -137,6 +153,8 @@ namespace ProjectC.Admin
                 var id = tab;
                 var b = new Button(() => SwitchTab(id)) { text = TabTitles[tab] };
                 b.style.flexGrow = 1;
+                b.style.fontSize = 12;
+                b.style.paddingTop = 2; b.style.paddingBottom = 2;
                 b.style.marginRight = 2; b.style.marginBottom = 2;
                 _tabBar.Add(b);
             }
@@ -182,17 +200,19 @@ namespace ProjectC.Admin
         private Button AddButton(string label, System.Action onClick)
         {
             var b = new Button(() => { onClick?.Invoke(); RefreshStatus(); }) { text = label };
-            b.style.marginBottom = 3;
+            b.style.fontSize = 13;
+            b.style.paddingTop = 2; b.style.paddingBottom = 2;
+            b.style.marginBottom = 2;
             _content.Add(b);
             return b;
         }
 
-        private Label AddLabel(string text, int fontSize = 13)
+        private Label AddLabel(string text, int fontSize = 12)
         {
             var l = new Label(text);
             l.style.fontSize = fontSize;
             l.style.whiteSpace = WhiteSpace.Normal;
-            l.style.marginBottom = 3;
+            l.style.marginBottom = 2;
             _content.Add(l);
             return l;
         }

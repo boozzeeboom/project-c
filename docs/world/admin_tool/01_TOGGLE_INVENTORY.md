@@ -34,9 +34,9 @@
 
 | # | HUD | Класс → файл | Тоггл сейчас | Предложение L1 |
 |---|---|---|---|---|
-| H1 | Ship | `ProjectC.Ship.ShipDebugHUD` → `Ship/ShipDebugHUD.cs` | F3 | Кнопка + чекбокс; решить владельца F3 |
+| H1 | Ship | `ProjectC.Ship.ShipDebugHUD` → `Ship/ShipDebugHUD.cs` | F3 | ❌ УДАЛИТЬ (D1, T-ADM-00): мёртвый legacy, S-HUD-05 заменён `ShipHudController`; F3 в резерв |
 | H2 | Perf | `ProjectC.Core.ProjectCPerfHUD` → `Core/ProjectCPerfHUD.cs` | F3, но `#if FALSE` | Сначала включить (`#if DEVELOPMENT_BUILD \|\| UNITY_EDITOR`), потом кнопка |
-| H3 | Meziy legacy | `Ship/MeziyStatusHUD_Legacy.cs` | F4 | Кнопка; пометить legacy |
+| H3 | Meziy legacy | `Ship/MeziyStatusHUD_Legacy.cs` | F4 | ❌ УДАЛИТЬ парой с H1 (D1, T-ADM-00, тот же S-HUD-05); F4 в резерв |
 | H4 | Scene grid | `ProjectC.UI.SceneDebugHUD` → `UI/SceneDebugHUD.cs` | Нет (всегда вкл) | Добавить `SetVisible(bool)` + кнопку; сейчас `showGridOnUpdate`, `updateIntervalMs` |
 | H5 | DayNight | `DayNightController.showDebugOverlay` + `DayNightProfile.showDebugInfo` | Два флага | Одна кнопка ставит оба |
 | H6 | NGO summary | `NgoMetricsCollector.GetSummary()` → `Core/NgoMetricsCollector.cs:111` | Нет UI | Строка в админ-панели (обновление 1/с) |
@@ -118,7 +118,6 @@ L1: кнопки 1-в-1 + поле вывода отчёта + confirm-диал�
 | `Scripts/Admin/AdminCommandRegistry.cs` (L2) | Реестр команд консоли (позже) |
 
 ## §9. Что НЕ делать (hard rules, выжимка из AGENTS.md)
-
 1. Не переносить `NetworkManager`, не добавлять второй; не трогать `ClientSceneLoader`
    (обычный `SceneManager`, не `NetworkSceneManager`); не удалять `ScenePlacedObjectSpawner`;
    не разворачивать `WorldSceneManager`/стриминг без запроса.

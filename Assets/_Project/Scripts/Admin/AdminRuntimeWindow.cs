@@ -200,17 +200,19 @@ namespace ProjectC.Admin
         private Button AddButton(string label, System.Action onClick)
         {
             var b = new Button(() => { onClick?.Invoke(); RefreshStatus(); }) { text = label };
-            b.style.fontSize = 13;
-            b.style.paddingTop = 2; b.style.paddingBottom = 2;
+            b.style.fontSize = 14;
+            b.style.color = Color.white;
+            b.style.paddingTop = 3; b.style.paddingBottom = 3;
             b.style.marginBottom = 2;
             _content.Add(b);
             return b;
         }
 
-        private Label AddLabel(string text, int fontSize = 12)
+        private Label AddLabel(string text, int fontSize = 13)
         {
             var l = new Label(text);
             l.style.fontSize = fontSize;
+            l.style.color = new Color(0.92f, 0.92f, 0.92f);
             l.style.whiteSpace = WhiteSpace.Normal;
             l.style.marginBottom = 2;
             _content.Add(l);
@@ -220,6 +222,7 @@ namespace ProjectC.Admin
         private Toggle AddToggle(string label, bool value, System.Action<bool> onChange)
         {
             var t = new Toggle(label) { value = value };
+            t.style.fontSize = 14;
             t.RegisterValueChangedCallback(e => { onChange?.Invoke(e.newValue); RefreshStatus(); });
             t.style.marginBottom = 3;
             _content.Add(t);
@@ -263,9 +266,8 @@ namespace ProjectC.Admin
                 ? Facade().EnsureMoveCheats() : null;
             if (cheats == null) { AddLabel("Нет локального игрока."); return; }
 
-            AddButton("Переключить полёт камеры (V)", () => Facade().ToggleFly());
             AddToggle("GOD (бессмертие)", cheats.GodMode, v => Facade().SetGod(v));
-            AddToggle("NOCLIP (сквозь объекты, WASD+E/Q)", cheats.Noclip, v => Facade().SetNoclip(v));
+            AddToggle("✈ ПОЛЁТ + сквозь объекты (WASD+E/Q, Shift=быстро)", cheats.Noclip, v => Facade().SetNoclip(v));
             AddLabel("Скорость бега:");
             var row = new VisualElement();
             row.style.flexDirection = FlexDirection.Row;
@@ -274,24 +276,48 @@ namespace ProjectC.Admin
                 float mult = m;
                 var b = new Button(() => Facade().SetSpeedMult(mult)) { text = "x" + mult };
                 b.style.flexGrow = 1;
+                b.style.fontSize = 13;
                 row.Add(b);
             }
             _content.Add(row);
-            AddButton("След. пик (N)", () =>
+
+            // Пики: телепорт ИГРОКА (WorldCamera в рантайме нет — см. AdminFacade).
+            var peaks = Facade().GetPeaks();
+            AddLabel($"Пики ({peaks.Count}):", 13);
+            if (peaks.Count == 0)
             {
-                var cam = FindAnyObjectByType<ProjectC.Core.WorldCamera>();
-                if (cam != null) cam.TeleportToNextPeak();
-            });
-            AddButton("Пред. пик (B)", () =>
+                AddLabel("WorldGenerator не найден или пиков нет.");
+            }
+            else
             {
-                var cam = FindAnyObjectByType<ProjectC.Core.WorldCamera>();
-                if (cam != null) cam.TeleportToPreviousPeak();
-            });
-            AddButton("Случайный пик (R)", () =>
-            {
-                var cam = FindAnyObjectByType<ProjectC.Core.WorldCamera>();
-                if (cam != null) cam.TeleportToRandomPeak();
-            });
+                var nav = new VisualElement();
+                nav.style.flexDirection = FlexDirection.Row;
+                var prev = new Button(() => PeakStep(-1)) { text = "◀" };
+                prev.style.flexGrow = 1; prev.style.fontSize = 14;
+                var next = new Button(() => PeakStep(1)) { text = "▶" };
+                next.style.flexGrow = 1; next.style.fontSize = 14;
+                nav.Add(prev); nav.Add(next);
+                _content.Add(nav);
+                int show = Mathf.Min(peaks.Count, 15);
+                for (int i = 0; i < show; i++)
+                {
+                    int idx = i;
+                    AddButton($"#{idx} {peaks[i].name}", () => Facade().TeleportPlayerToPeak(idx));
+                }
+                if (peaks.Count > show)
+                    AddLabel($"…и ещё {peaks.Count - show} (листай индексом во вкладке Телепорт).", 12);
+            }
+        }
+
+        private int _peakCursor = -1;
+
+        private void PeakStep(int dir)
+        {
+            var peaks = Facade().GetPeaks();
+            if (peaks.Count == 0) return;
+            _peakCursor = (_peakCursor + dir + peaks.Count) % peaks.Count;
+            string name = Facade().TeleportPlayerToPeak(_peakCursor);
+            if (name != null) _peakIndex = _peakCursor.ToString();
         }
 
         private void BuildTeleportTab()

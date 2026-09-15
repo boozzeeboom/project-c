@@ -127,14 +127,38 @@ namespace ProjectC.Admin
         {
             var cam = FindAnyObjectByType<WorldCamera>();
             if (cam != null) cam.ToggleFlyMode();
-            else Debug.LogWarning("[AdminFacade] WorldCamera not found");
+            else Debug.LogWarning("[AdminFacade] WorldCamera not found (её нет в рантайм-сценах — полёт игрока через Noclip)");
         }
 
         public void TeleportToPeak(int index)
         {
             var cam = FindAnyObjectByType<WorldCamera>();
             if (cam != null) cam.TeleportToPeak(index);
-            else Debug.LogWarning("[AdminFacade] WorldCamera not found");
+            else Debug.LogWarning("[AdminFacade] WorldCamera not found — используй TeleportPlayerToPeak");
+        }
+
+        /// <summary>Пики напрямую из WorldGenerator (WorldCamera в рантайме нет).</summary>
+        public List<WorldGenerator.PeakInfo> GetPeaks()
+        {
+            var gen = FindAnyObjectByType<WorldGenerator>();
+            if (gen == null) return new List<WorldGenerator.PeakInfo>();
+            return gen.GetAllPeaks();
+        }
+
+        /// <summary>Телепорт ИГРОКА к пику (над вершиной +50м, CC-safe). Возвращает имя пика или null.</summary>
+        public string TeleportPlayerToPeak(int index)
+        {
+            var peaks = GetPeaks();
+            if (index < 0 || index >= peaks.Count)
+            {
+                Debug.LogWarning($"[AdminFacade] TeleportPlayerToPeak: bad index {index} (всего {peaks.Count})");
+                return null;
+            }
+            var peak = peaks[index];
+            Vector3 pos = peak.position + Vector3.up * (peak.height * 0.5f + 50f);
+            if (!TeleportLocalPlayer(pos)) return null;
+            Debug.Log($"[AdminFacade] Player teleported to peak '{peak.name}' at {pos}");
+            return peak.name;
         }
 
         // ==================== Респавн ====================
@@ -150,11 +174,20 @@ namespace ProjectC.Admin
 
         // ==================== HUD ====================
 
-        public void SetPerfHud(bool visible)
+        /// <summary>PerfHUD: найти или создать (в сценах его нет — см. шапку класса).</summary>
+        public ProjectCPerfHUD EnsurePerfHud()
         {
             var hud = FindAnyObjectByType<ProjectCPerfHUD>();
-            if (hud != null) hud.SetVisible(visible);
-            else Debug.LogWarning("[AdminFacade] ProjectCPerfHUD not found (add component per its header)");
+            if (hud != null) return hud;
+            var go = new GameObject("ProjectCPerfHUD (Admin)");
+            DontDestroyOnLoad(go);
+            Debug.Log("[AdminFacade] ProjectCPerfHUD auto-created (в сценах отсутствует)");
+            return go.AddComponent<ProjectCPerfHUD>();
+        }
+
+        public void SetPerfHud(bool visible)
+        {
+            EnsurePerfHud().SetVisible(visible);
         }
 
         public void SetSceneHud(bool visible)
@@ -176,7 +209,14 @@ namespace ProjectC.Admin
         public string GetNgoSummary()
         {
             var m = NgoMetricsCollector.Instance;
-            return m != null ? m.GetSummary() : "NGO metrics: collector not found";
+            if (m == null)
+            {
+                // В сценах коллектора нет — создаём (чистый счётчик, безопасно).
+                var go = new GameObject("NgoMetricsCollector (Admin)");
+                DontDestroyOnLoad(go);
+                m = go.AddComponent<NgoMetricsCollector>();
+            }
+            return m.GetSummary();
         }
 
         // ==================== Сдвиг мира / стриминг ====================

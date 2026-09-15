@@ -425,10 +425,6 @@ namespace ProjectC.Player
         [Tooltip("Визуал сопел при мезиевой тяге (опционально)")]
         [SerializeField] private MeziyThrusterVisual meziyVisual;
 
-        [Header("Legacy HUD (будет заменён)")]
-        [Tooltip("Показать LEGACY MeziyStatusHUD (IMGUI, правый нижний угол). F4 toggle внутри HUD.")]
-        [SerializeField] private bool _showLegacyMeziyHud = false;
-
         // Модификаторы от модулей (применяются в FixedUpdate)
         private float _moduleThrustMult = 1f;
         private float _moduleYawMult = 1f;
@@ -551,9 +547,6 @@ namespace ProjectC.Player
 
             // Инициализация между (Сессия 5_2)
             InitializeMeziySystem();
-
-            // Авто-назначение Debug HUD (Сессия 5_2)
-            InitializeDebugHUD();
 
         // Инициализация ветра
             _currentWindForce = Vector3.zero;
@@ -2172,42 +2165,6 @@ namespace ProjectC.Player
             }
             else
             {
-            }
-        }
-
-        /// <summary>
-        /// Сессия 5_2: Авто-назначение Debug HUD.
-        /// Добавляет ShipDebugHUD если его нет на объекте.
-        /// </summary>
-        private void InitializeDebugHUD()
-        {
-            // S-HUD-05: ShipDebugHUD и MeziyStatusHUD_Legacy больше не нужны — заменены ShipHudController.
-            // Оставлены только при _showLegacyMeziyHud = true (ручная настройка).
-            if (!_showLegacyMeziyHud) return;
-
-            // Legacy HUDs — только если явно включены
-            var hud = GetComponent<ShipDebugHUD>();
-            if (hud == null)
-            {
-                hud = gameObject.AddComponent<ShipDebugHUD>();
-            }
-
-            // Сессия 5_4 + Legacy: MeziyStatusHUD_Legacy — conditional по _showLegacyMeziyHud
-            var meziyHUD = GetComponent<MeziyStatusHUD_Legacy>();
-            if (_showLegacyMeziyHud)
-            {
-                if (meziyHUD == null)
-                {
-                    meziyHUD = gameObject.AddComponent<MeziyStatusHUD_Legacy>();
-                }
-                meziyHUD.enabled = true;
-            }
-            else
-            {
-                if (meziyHUD != null)
-                {
-                    meziyHUD.enabled = false;
-                }
             }
         }
 

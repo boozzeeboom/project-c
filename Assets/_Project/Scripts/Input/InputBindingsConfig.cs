@@ -126,6 +126,9 @@ namespace ProjectC.Input
 
             // Camera
             CameraZoom,       // Колесо мыши — приближение/отдаление камеры
+
+            // Admin (продолжение — новые действия добавлять ТОЛЬКО в конец, не ломать сериализацию!)
+            AdminPanel,       // F12 — админ-панель (T-ADM-01)
         }
 
         /// <summary>
@@ -193,6 +196,9 @@ namespace ProjectC.Input
 
             // ---- Camera ----
             new ActionBinding { action = GameAction.CameraZoom,     category = ActionCategory.UI,           key = Key.None,     mouseButtonRaw = 0, displayName = "Колесо мыши" },
+
+            // ---- Admin (продолжение — новые действия в конец, не ломать сериализацию!) ----
+            new ActionBinding { action = GameAction.AdminPanel,     category = ActionCategory.Debug,        key = Key.F12,      mouseButtonRaw = 0, displayName = "F12" },
         };
 
         // ==================== Helper Lookup ====================

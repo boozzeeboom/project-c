@@ -74,6 +74,7 @@ namespace ProjectC.Core
         private Vector3 _platformLastPos;
         private Quaternion _platformLastRot;
         private Vector3 _worldBasePosition;   // база для бобаинга когда не на палубе
+        private Vector3 _lastBob;              // прошлый применённый bob (чтобы база его не впитывала)
         private int _missFrames;
         private bool _warnedMaskEmpty;
 
@@ -89,7 +90,34 @@ namespace ProjectC.Core
         /// </summary>
         public void RefreshWorldBase()
         {
-            _worldBasePosition = transform.position;
+            // T-PICKUP-RIDE-01 fix (2026-09-15): база снимается БЕЗ прошлого bob.
+            // Старая версия делала слепок позиции с уже применённым bob — каждый кадр
+            // к базе прибавлялся A·sin(t), т.е. дискретное интегрирование синуса (~60×
+            // усиление): все пикапы синхронно прыгали «как на батуте».
+            // См. docs/dev/PICKUP_BOB_INTEGRATOR_FIX.md.
+            _worldBasePosition = transform.position - _lastBob;
+            _lastBob = Vector3.zero;
+        }
+
+        /// <summary>
+        /// T-PICKUP-RIDE-01 fix (2026-09-15): единая точка свободного режима.
+        /// Владелец (PickupItem/NpcLootPickup) считает bob и зовёт этот метод вместо
+        /// связки RefreshWorldBase + прямая запись в transform.position (она и была
+        /// интегратором). Внешние сдвиги (телепорт, спавн, rebase) поглощаются через
+        /// drift-сравнение: ожидаемая позиция = база + прошлый bob, всё сверх порога
+        /// 0.05 м — внешний сдвиг (межкадровый шаг bob не превышает ~0.01 м).
+        /// </summary>
+        public void ApplyFreeBob(Vector3 bobOffset)
+        {
+            Vector3 expected = _worldBasePosition + _lastBob;
+            Vector3 drift = transform.position - expected;
+            const float absorbThreshold = 0.05f;
+            if (drift.sqrMagnitude > absorbThreshold * absorbThreshold)
+            {
+                _worldBasePosition += drift;
+            }
+            _lastBob = bobOffset;
+            transform.position = _worldBasePosition + bobOffset;
         }
 
         /// <summary>Текущая мировая «база» для бобаинга (обновляется через RefreshWorldBase).</summary>
@@ -105,6 +133,10 @@ namespace ProjectC.Core
         public void ApplyRebaseTranslation(Vector3 translation)
         {
             _platformLastPos += translation;
+            // T-PICKUP-RIDE-01 fix (2026-09-15): база бобаинга тоже едет вместе с миром,
+            // иначе следующий ApplyFreeBob сочтёт сдвиг внешним и продублирует его.
+            // (Без явного сдвига drift-поглощение тоже сошлось бы за кадр, но явное точнее.)
+            _worldBasePosition += translation;
         }
 
         private void Awake()
@@ -117,6 +149,7 @@ namespace ProjectC.Core
             // R4: сбросить платформу чтобы не «висеть» на уничтоженной палубе
             _platform = null;
             _missFrames = 0;
+            _lastBob = Vector3.zero;
         }
 
         private void OnDestroy()
@@ -180,6 +213,10 @@ namespace ProjectC.Core
             if (deltaPos.sqrMagnitude > 0f)
             {
                 transform.position += deltaPos;
+                // T-PICKUP-RIDE-01 fix (2026-09-15): база бобаинга едет вместе с carry,
+                // иначе Update после отцепки «прыгнет» в старую базу. Слепок через
+                // RefreshWorldBase каждый кадр больше не нужен (он и был интегратором).
+                _worldBasePosition += deltaPos;
             }
             if (_carryYaw && Mathf.Abs(deltaYaw) > 0.0001f)
             {

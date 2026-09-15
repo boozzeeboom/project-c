@@ -308,7 +308,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 362c842a9002d1340ad2599dfe0b5051, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe
-  _captureEnabled: 1
+  _captureEnabled: 0
   _sampleEveryFrames: 5
   _maxEventsPerFrame: 128
 --- !u!1 &1062441620158583446

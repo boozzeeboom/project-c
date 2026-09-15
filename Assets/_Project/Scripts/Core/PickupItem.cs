@@ -48,6 +48,9 @@ namespace ProjectC.Items
         private Core.PickupDeckRide _deckRide;
         private bool _isCollected = false;
         private bool _isAwaitingServer = false;   // защита от двойного E
+        // T-PICKUP-RIDE-01 fix (2026-09-15): случайная фаза bob, чтобы все пикапы
+        // не качались синхронно (общий Time.time без оффсета давал «общий батут»).
+        private float _bobPhase;
 
         // IInteractable implementation
         public string InstanceId => gameObject.name + "_" + GetHashCode();
@@ -58,6 +61,7 @@ namespace ProjectC.Items
         private void Start()
                 {
                     _startPosition = transform.position;
+                    _bobPhase = Random.Range(0f, Mathf.PI * 2f);
 
                     // Ensure trigger collider exists
                     var collider = GetComponent<Collider>();
@@ -132,19 +136,16 @@ namespace ProjectC.Items
             // Visual bobbing (остановлено если собран)
             if (!_isCollected)
             {
-                // T-PICKUP-RIDE-01 final fix (2026-07-02):
-                // На палубе НЕ трогаем transform.position — LateUpdate PickupDeckRide сам
-                // двигает его за палубой через carry-формулу. Любая запись в position здесь
-                // рвёт carry (Update возвращает в _startPosition когда DeckParent==null
-                // и pickup сошёл с палубы).
-                // В свободном режиме: сначала RefreshWorldBase (фиксирует текущую мировую),
-                // потом бобаинг вокруг этой базы. Без RefreshWorldBase pickup «прыгает» обратно
-                // в старую _startPosition и дрейфит.
+                // T-PICKUP-RIDE-01 fix (2026-09-15): на палубе НЕ трогаем transform.position —
+                // LateUpdate PickupDeckRide сам двигает его за палубой через carry-формулу
+                // (и тянет за собой базу бобаинга). В свободном режиме — ApplyFreeBob
+                // вокруг стабильной базы. Старая связка «RefreshWorldBase каждый кадр +
+                // запись позиции» была интегратором синуса (~60× усиление) — все пикапы
+                // синхронно прыгали «как на батуте». См. docs/dev/PICKUP_BOB_INTEGRATOR_FIX.md.
                 if (_deckRide == null || _deckRide.DeckParent == null)
                 {
-                    _deckRide?.RefreshWorldBase();
-                    Vector3 bob = Vector3.up * Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
-                    transform.position = _deckRide.WorldBasePosition + bob;
+                    Vector3 bob = Vector3.up * Mathf.Sin(Time.time * floatSpeed + _bobPhase) * floatAmplitude;
+                    _deckRide?.ApplyFreeBob(bob);
                 }
                 transform.Rotate(Vector3.up, 30f * Time.deltaTime);
             }

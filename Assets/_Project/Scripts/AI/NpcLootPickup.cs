@@ -53,6 +53,8 @@ namespace ProjectC.AI
         private bool _collected = false;
         // T-PICKUP-RIDE-01: pickup едет с палубой движущегося корабля (L3 в carry-цепочке)
         private Core.PickupDeckRide _deckRide;
+        // T-PICKUP-RIDE-01 fix (2026-09-15): случайная фаза bob против синхронного «батута».
+        private float _bobPhase;
 
         // === IInteractable ===
         public string InstanceId => gameObject.name + "_" + GetHashCode();
@@ -75,6 +77,7 @@ namespace ProjectC.AI
         {
             base.OnNetworkSpawn();
             _startPosition = transform.position;
+            _bobPhase = Random.Range(0f, Mathf.PI * 2f);
 
             // Trigger collider
             var col = GetComponent<Collider>();
@@ -104,14 +107,21 @@ namespace ProjectC.AI
             // Visual bobbing (client + server, cheap).
             if (!_collected)
             {
-                // T-PICKUP-RIDE-01 final fix (2026-07-02):
-                // На палубе НЕ пишем transform.position (carry сам двигает за палубой).
-                // В свободном режиме RefreshWorldBase + bob вокруг актуальной базы.
+                // T-PICKUP-RIDE-01 fix (2026-09-15): на палубе НЕ пишем transform.position
+                // (carry сам двигает за палубой). В свободном режиме — ApplyFreeBob вокруг
+                // стабильной базы. Старая связка «RefreshWorldBase каждый кадр + запись»
+                // была интегратором синуса — все пикапы прыгали «как на батуте».
+                // _deckRide создаётся в OnNetworkSpawn: до него позицию не трогаем
+                // (раньше здесь был NRE на _deckRide.WorldBasePosition).
+                // См. docs/dev/PICKUP_BOB_INTEGRATOR_FIX.md.
+                if (_deckRide == null)
+                {
+                    _deckRide = GetComponent<Core.PickupDeckRide>();
+                }
                 if (_deckRide == null || _deckRide.DeckParent == null)
                 {
-                    _deckRide?.RefreshWorldBase();
-                    Vector3 bob = Vector3.up * Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
-                    transform.position = _deckRide.WorldBasePosition + bob;
+                    Vector3 bob = Vector3.up * Mathf.Sin(Time.time * floatSpeed + _bobPhase) * floatAmplitude;
+                    _deckRide?.ApplyFreeBob(bob);
                 }
             }
         }

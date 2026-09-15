@@ -37,6 +37,18 @@ namespace ProjectC.Core.ShipPosition
         private List<PlayerPositionSaveData> _savedPlayers = new();
         private bool _dataLoaded;
 
+        // T-FO-SAVE-GUARD: последние валидные позиции (анти-отравление сейва).
+        // Мир без граунда (платформы/палубы на 1000–2500): соскользнувший игрок
+        // падает километры до deathY, а автосейв каждые 5с пишет точку в падении
+        // поверх хорошей — следующий заход спавнит в пустоту. Держим последнюю
+        // хорошую точку, пока игрок активно падает.
+        private readonly Dictionary<ulong, Vector3> _lastGoodPositions = new();
+        // Падение глубже этого за один тик сбора (~5с) считается невалидным.
+        // Пешком: прыжки/ступеньки дают метры; 60м/тик = ~12м/с sustained = падение.
+        // На корабле (inShip) гард не применяется — вертикальная скорость кораблей
+        // законна, позиция вships всё равно резолвится через exit живого корабля.
+        private const float MaxFallPerCollectTick = 60f;
+
         private void Awake()
         {
             if (Instance != null) { Destroy(gameObject); return; }
@@ -65,6 +77,28 @@ namespace ProjectC.Core.ShipPosition
                     shipId = np.CurrentShip.ShipPersistentId;
 
                 Vector3 pos = np.GetEffectivePosition();
+
+                // T-FO-SAVE-GUARD: пеший игрок в активном падении — пишем последнюю
+                // хорошую точку вместо точки в пустоте, хорошую обновляем только
+                // валидными сэмплами. Приземлился/телепортировался на твёрдое —
+                // падение прекратилось, сейв возобновляется сам.
+                ulong cid = np.OwnerClientId;
+                if (!inShip && _lastGoodPositions.TryGetValue(cid, out Vector3 good))
+                {
+                    if (pos.y < good.y - MaxFallPerCollectTick)
+                    {
+                        Debug.LogWarning($"[PlayerPositionServer] T-FO-SAVE-GUARD falling, keep last good: client={cid} curY={pos.y:F1} goodY={good.y:F1}");
+                        pos = good;
+                    }
+                    else
+                    {
+                        _lastGoodPositions[cid] = pos;
+                    }
+                }
+                else
+                {
+                    _lastGoodPositions[cid] = pos;
+                }
 
                 collected.Add(new PlayerPositionSaveData
                 {
@@ -104,6 +138,7 @@ namespace ProjectC.Core.ShipPosition
             {
                 _pendingPlayers = new List<PlayerPositionSaveData>();
             }
+            _lastGoodPositions.Clear();
         }
 
 

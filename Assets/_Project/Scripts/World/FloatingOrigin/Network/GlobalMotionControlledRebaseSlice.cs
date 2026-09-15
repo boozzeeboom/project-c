@@ -70,8 +70,24 @@ namespace ProjectC.World.FloatingOrigin.Network
         // T-FO-PERSIST01: суммарный сдвиг мира, записанный в сейв (ShipPositions.json).
         // Свежий старт грузит мир в исходном origin — restore вычитает кумулятив.
         // Статика живёт сессию; свежий старт = нули = исходный origin. Консистентно.
+        // T-FO-RESET: НО статика переживает rehost в том же процессе (editor Play
+        // без reload domain, host→menu→host): мир грузится свежий (origin-0),
+        // а кумулятив остаётся от прошлой сессии. Сейв тегируется надутым rb,
+        // restore сдвигает на надутый live — ошибка компаундится каждый рехост
+        // (~40-80км за цикл, "теряется всё вообще"). Сбрасывать ОБЯЗАТЕЛЬНО
+        // в PrepareForServerStart (ShipPositionServer) до любых restore/save.
         public static Vector3 CumulativeRebaseOffset { get; private set; }
         public static int CumulativeRebaseFrame { get; private set; }
+
+        /// <summary>
+        /// T-FO-RESET: сброс кумулятива под свежий мир (origin-0). Вызывать только
+        /// на старте server-сессии (PrepareForServerStart), никогда mid-session.
+        /// </summary>
+        public static void ResetCumulativeRebase()
+        {
+            CumulativeRebaseOffset = Vector3.zero;
+            CumulativeRebaseFrame = 0;
+        }
 
         // T-FO06DH: именованный канал сдвига для второго клиента.
         private const string RebaseShiftMessageName = "FO06_REBASE_SHIFT";

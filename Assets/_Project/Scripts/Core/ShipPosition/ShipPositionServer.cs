@@ -134,6 +134,15 @@ namespace ProjectC.Core.ShipPosition
         {
             _restoreCompleted = false;
             _nextSaveTime = float.PositiveInfinity;
+            // T-FO-RESET: мир свежий (origin-0), а статика кумулятива могла пережить
+            // rehost в том же процессе. Сбросить до любых restore/save, иначе
+            // restore/save посчитаются от чужого сдвига. Старое значение в лог —
+            // ненулевое означает пойманный rehost-residue.
+            var prevOffset = GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset;
+            var prevFrame = GlobalMotionControlledRebaseSlice.CumulativeRebaseFrame;
+            GlobalMotionControlledRebaseSlice.ResetCumulativeRebase();
+            if (prevOffset != UnityEngine.Vector3.zero)
+                Debug.LogWarning($"[ShipPositionServer] T-FO-RESET discarded stale cumulative: offset={prevOffset} frame={prevFrame}");
             PlayerPositionServer.Instance?.BeginRestore();
         }
 
@@ -224,6 +233,13 @@ namespace ProjectC.Core.ShipPosition
         /// T-FO-PERSIST03: единая точка сдвига сейва в исходный origin.
         /// Используется и restore-путем, и мостом пилота (pilot source читает
         /// файл раньше RestoreCoroutine). Чистая функция над wrapper.
+        /// T-FO-RESTORE-FRAME: сейв минус файловый сдвиг даёт origin-0, но живой
+        /// мир к моменту restore уже может быть сдвинут (авто-rebase срабатывает
+        /// сразу после спавна, restore идёт на ~9.5с). Поэтому после вычитания
+        /// файлового сдвига прибавляем накопленный сдвиг ТЕКУЩЕЙ сессии —
+        /// иначе restore кладёт корабли/точки в origin-0 координаты живого
+        /// сдвинутого фрейма (~80км мимо, всё теряется). До первого rebase
+        /// сессии добавка нулевая, поведение прежнее.
         /// </summary>
         public static void ShiftWrapperByOffset(ShipPositionListWrapper wrapper)
         {
@@ -244,6 +260,23 @@ namespace ProjectC.Core.ShipPosition
                     if (p == null) continue;
                     p.px -= offset.x; p.py -= offset.y; p.pz -= offset.z;
                 }
+            var live = GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset;
+            if (live == Vector3.zero) return;
+            if (wrapper.ships != null)
+                foreach (var s in wrapper.ships)
+                {
+                    if (s == null) continue;
+                    s.px += live.x; s.py += live.y; s.pz += live.z;
+                    s.pxCruise += live.x; s.pyCruise += live.y; s.pzCruise += live.z;
+                    s.liftStartY += live.y;
+                }
+            if (wrapper.players != null)
+                foreach (var p in wrapper.players)
+                {
+                    if (p == null) continue;
+                    p.px += live.x; p.py += live.y; p.pz += live.z;
+                }
+            Debug.Log($"[ShipPositionServer] T-FO-RESTORE-FRAME live shift applied: fileOffset={offset} liveCumulative={live}");
         }
 
         /// <summary>

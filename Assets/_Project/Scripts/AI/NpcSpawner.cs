@@ -356,6 +356,9 @@ namespace ProjectC.AI
             }
         }
 
+        /// <summary>T-ADM-03: сеттер для AdminLogBus (мастер-mute). Поле и if'ы не трогаем.</summary>
+        public void SetDebugLogs(bool v) => _showDebugLogs = v;
+
         /// <summary>
         /// T-NPC-09 / T-NPC-S06: spawn NPC в конкретной точке.
         /// ВАЖНО (v0.3.1 fix): все конфиги (behavior, visual, social) применяются ДО Spawn(),

@@ -10,6 +10,7 @@
 // из экипированной ClothingItemData (Head+Chest+Legs+Feet+Back).
 
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using ProjectC.Combat.Core;
@@ -30,6 +31,16 @@ namespace ProjectC.Combat
 
         [Header("Debug")]
         [SerializeField] private bool _debugLog = false;
+
+        /// <summary>
+        /// T-ADM-05: god-mode админ-панели. Статика (per-process): в host-сессии
+        /// клиент и сервер делят процесс — работает; в чистом клиенте урон
+        /// считается на сервере и флаг не подействует (см. L1_DESIGN §6).
+        /// </summary>
+        public static readonly HashSet<ulong> GodModeClientIds = new HashSet<ulong>();
+
+        /// <summary>T-ADM-03: сеттер для AdminLogBus (мастер-mute). Поле и if'ы не трогаем.</summary>
+        public void SetDebugLog(bool v) => _debugLog = v;
 
         private ulong _clientId;
         private bool _hpInitialized;
@@ -212,6 +223,9 @@ namespace ProjectC.Combat
                 _clientId = NetworkObject.OwnerClientId;
 
             if (!result.isHit) return;
+
+            // T-ADM-05: god-mode (AdminMoveCheats). До HP-инициализации — бессмертие полное.
+            if (GodModeClientIds.Contains(_clientId)) return;
 
             if (!_hpInitialized)
             {

@@ -182,6 +182,33 @@ namespace ProjectC.Core.ShipPosition
             return true;
         }
 
+        /// <summary>T-ADM-03: сеттер для AdminLogBus (мастер-mute). Поле и if'ы не трогаем.</summary>
+        public void SetDebugMode(bool v) => _debugMode = v;
+
+        /// <summary>
+        /// T-ADM-05: админ-телепорт игрока по clientId (только сервер).
+        /// Возвращает false вне сервера или если игрок не найден.
+        /// </summary>
+        public bool AdminTeleportPlayer(ulong clientId, Vector3 position)
+        {
+            if (!IsServerSafe()) return false;
+            var all = FindObjectsByType<NetworkPlayer>(FindObjectsSortMode.None);
+            for (int i = 0; i < all.Length; i++)
+            {
+                var np = all[i];
+                if (np != null && np.IsSpawned && np.OwnerClientId == clientId)
+                {
+                    TeleportPlayer(np, position);
+                    if (_debugMode)
+                        Debug.Log($"[PlayerPositionServer] Admin teleport client={clientId} to {position}");
+                    return true;
+                }
+            }
+            if (_debugMode)
+                Debug.LogWarning($"[PlayerPositionServer] Admin teleport: client={clientId} not found");
+            return false;
+        }
+
         private void TeleportPlayer(NetworkPlayer np, Vector3 position)
         {
             var controller = np.GetComponent<CharacterController>();

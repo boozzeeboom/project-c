@@ -93,6 +93,9 @@ namespace ProjectC.Core.ShipPosition
         /// </summary>
         public void InvalidateShipCache() => _shipCacheDirty = true;
 
+        /// <summary>T-ADM-03: сеттер для AdminLogBus (мастер-mute). Поле и if'ы не трогаем.</summary>
+        public void SetDebugMode(bool v) => debugMode = v;
+
         /// <summary>
         /// PERF: получить список ShipController'ов с кэшированием на ~5 секунд.
         /// </summary>

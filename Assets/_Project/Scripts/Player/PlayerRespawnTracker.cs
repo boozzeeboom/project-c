@@ -259,6 +259,9 @@ namespace ProjectC.Player
             }
         }
 
+        /// <summary>T-ADM-03: сеттер для AdminLogBus (мастер-mute). Поле и if'ы не трогаем.</summary>
+        public void SetDebugLog(bool v) => _debugLog = v;
+
         /// <summary>
         /// T-HP01: Сброс таймера падения. Вызывается после респавна чтобы не тригерился мгновенно.
         /// </summary>

@@ -49,6 +49,9 @@ namespace ProjectC.World.Clouds
         [Header("Debug")]
         [SerializeField] private bool _verboseLogging = true;
 
+        /// <summary>T-ADM-03: сеттер для AdminLogBus (мастер-mute). Поле и if'ы не трогаем.</summary>
+        public void SetVerboseLogging(bool v) => _verboseLogging = v;
+
         [Header("Compute")]
         [SerializeField] private ComputeShader _compute;
 

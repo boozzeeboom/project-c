@@ -47,6 +47,9 @@ namespace ProjectC.Player
 
         private Vector2 _moveInput;
 
+        /// <summary>T-ADM-05: множитель скорости от админ-панели (AdminMoveCheats). Дефолт 1 = без изменений.</summary>
+        public float SpeedMultiplier { get; set; } = 1f;
+
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
@@ -124,7 +127,7 @@ namespace ProjectC.Player
 
                 // Скорость
                 bool running = _runAction.ReadValue<float>() > 0.5f;
-                float currentSpeed = running ? runSpeed : walkSpeed;
+                float currentSpeed = (running ? runSpeed : walkSpeed) * SpeedMultiplier;
 
                 _controller.Move(moveDirection * currentSpeed * Time.deltaTime);
             }

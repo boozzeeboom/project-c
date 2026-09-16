@@ -130,3 +130,4 @@ Bokeh — опция на потом (требует больше fillrate; пр
 | 2026-09-16 | Mavis | Создан файл: аудит пост-стека, ответ и план DistantFocus |
 | 2026-09-16 | Mavis | DF-001 реализован (Bokeh): GazeAutofocus.cs + FocusVolumeProfile + GO DistantFocus в BootstrapScene |
 | 2026-09-16 | Mavis | DF-001 rev.2: якорь-фокус на цель SpringArmCamera (фикс инверсии: персонаж резкий, фон мылится) |
+| 2026-09-16 | Mavis | DF-001 rev.3: фикс пустого профиля (AddObjectToAsset) + fallback-DoF в рантайме |

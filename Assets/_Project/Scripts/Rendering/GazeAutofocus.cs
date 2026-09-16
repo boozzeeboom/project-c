@@ -88,7 +88,14 @@ namespace ProjectC.Rendering
             _runtimeProfile = Instantiate(_focusVolume.sharedProfile);
             _focusVolume.profile = _runtimeProfile;
 
-            if (!_runtimeProfile.TryGet(out _dof)) { enabled = false; return; }
+            if (!_runtimeProfile.TryGet(out _dof))
+            {
+                // Самопочинка: в ассете нет DepthOfField (битый профиль) — создаём
+                // в рантайм-копии с нейтральными значениями, эффект не должен молча умирать.
+                Debug.LogWarning("[GazeAutofocus] DepthOfField отсутствует в профиле — создан fallback. Проверьте FocusVolumeProfile.asset.");
+                _dof = _runtimeProfile.Add<DepthOfField>(true);
+                _dof.mode.value = DepthOfFieldMode.Bokeh;
+            }
             if (_dof.mode.value == DepthOfFieldMode.Off) _dof.mode.value = DepthOfFieldMode.Bokeh;
 
             _currentFocus = _targetFocus = ResolveAnchorDistance();

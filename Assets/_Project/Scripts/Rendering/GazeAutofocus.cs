@@ -17,6 +17,12 @@ namespace ProjectC.Rendering
     /// Bokeh-параметры (aperture, focalLength, blades) живут в VolumeProfile-ассете.
     /// Floating Origin: мировых Vector3 между кадрами не хранит (только скаляры),
     /// хук сдвига не нужен.
+    /// DF-001 (rev.5): персонаж не должен мылиться НИКОГДА (не фоторежим).
+    /// Честная оптика не умеет «даль резкая + ближний резкий» одновременно,
+    /// поэтому добавлен чит киношников — авто-диафрагма: фокус на персонаже ->
+    /// широко (фон плывёт), фокус ушёл вдаль -> узко (глубина резкости растёт,
+    /// персонаж остаётся читаемым). Плюс физика: Bokeh 50мм f/5.6 на дистанциях
+    /// 2–12м даёт CoC ~2px на фоне — глазом не видно. База профиля: 85мм f/2.
     /// </summary>
     [RequireComponent(typeof(Volume))]
     [DisallowMultipleComponent]
@@ -57,6 +63,18 @@ namespace ProjectC.Rendering
         [Header("Состояние")]
         [Tooltip("Выкл = Volume weight 0 (эффект погашен, скрипт спит).")]
         [SerializeField] private bool _focusEnabled = true;
+
+        [Header("Авто-диафрагма (персонаж не мылится)")]
+        [Tooltip("Вкл: диафрагма едет от Near (фокус на персонаже) к Far (фокус вдали). Выкл: значение из ассета.")]
+        [SerializeField] private bool _autoAperture = true;
+        [Tooltip("Диафрагма при фокусе на персонаже (фон плывёт сильно).")]
+        [Range(1f, 32f)] [SerializeField] private float _nearAperture = 2f;
+        [Tooltip("Диафрагма при фокусе вдали (глубина резкости большая, персонаж читаем).")]
+        [Range(1f, 32f)] [SerializeField] private float _farAperture = 8f;
+        [Tooltip("Дистанция фокуса, с которой начинается зауживание.")]
+        [Min(1f)] [SerializeField] private float _farStart = 30f;
+        [Tooltip("Дистанция фокуса, где диафрагма уже полностью Far.")]
+        [Min(2f)] [SerializeField] private float _farEnd = 300f;
 
         [Header("Отладка")]
         [Tooltip("Писать в консоль камеру/якорь/фокус раз в секунду. Включить для диагностики.")]
@@ -128,6 +146,12 @@ namespace ProjectC.Rendering
 
             _currentFocus = Mathf.SmoothDamp(_currentFocus, _targetFocus, ref _smoothVelocity, _focusSmoothTime);
             _dof.focusDistance.value = Mathf.Max(_minFocusDistance, _currentFocus);
+
+            if (_autoAperture)
+            {
+                float t = Mathf.InverseLerp(_farStart, _farEnd, _currentFocus);
+                _dof.aperture.value = Mathf.Lerp(_nearAperture, _farAperture, t);
+            }
 
             if (_debugLog && _frameCounter % 60 == 0)
                 Debug.Log($"[GazeAutofocus] cam={_targetCamera.name} anchor={ResolveAnchorDistance():F1} target={_targetFocus:F1} cur={_currentFocus:F1}");

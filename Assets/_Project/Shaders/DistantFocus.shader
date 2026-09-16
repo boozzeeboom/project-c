@@ -33,6 +33,9 @@ Shader "Hidden/ProjectC/DistantFocusFar"
         // Динамика из FarFocusController (глобал, пишется каждый кадр).
         float _FarFocusLock;
 
+        // Диагностика из фичи: 0 выкл, 1 мылить всё, 2 показать глубину.
+        float _DebugView;
+
         struct Attributes
         {
             uint vertexID : SV_VertexID;
@@ -81,6 +84,14 @@ Shader "Hidden/ProjectC/DistantFocusFar"
                 half3 centerCol = SAMPLE_TEXTURE2D(_FarFocusSource, sampler_FarFocusSource, uv).rgb;
                 float depth = SceneDepthMeters(uv);
 
+                // Диагностика: ForceBlur мылит всё (проход бежит?),
+                // ShowDepth рисует полосы глубины (глубина живая?).
+                if (_DebugView > 1.5)
+                {
+                    float band = frac(log(max(depth, 1.0)) * 0.5);
+                    return half4(band, 1.0 - band, step(_FarStart, depth), 1.0);
+                }
+
                 // Дальняя зона: растёт к горизонту, гаснет при локе взгляда.
                 float farZone = smoothstep(_FarStart, _FarEnd, depth)
                     * (1.0 - saturate(_FarFocusLock)) * _FarStrength;
@@ -90,7 +101,7 @@ Shader "Hidden/ProjectC/DistantFocusFar"
                     * _NearStrength * saturate(_FarFocusLock);
 
                 float coc = max(farZone, nearZone);
-                float radius = coc * _MaxRadius;
+                float radius = (_DebugView > 0.5) ? _MaxRadius : coc * _MaxRadius;
                 // Персонаж и резкое: точный возврат, ноль размешивания соседей.
                 if (radius < 0.75) return half4(centerCol, 1.0);
 

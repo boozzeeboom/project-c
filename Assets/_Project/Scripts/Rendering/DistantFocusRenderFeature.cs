@@ -12,6 +12,14 @@ using UnityEngine.Rendering.Universal;
 
 namespace ProjectC.Rendering
 {
+    /// <summary>Самодиагностика прохода: ForceBlur доказывает что проход бежит, ShowDepth — что глубина живая.</summary>
+    public enum FarFocusDebugView
+    {
+        Off = 0,
+        ForceBlur = 1,
+        ShowDepth = 2
+    }
+
     [DisallowMultipleRendererFeature("Distant Focus (far-field)")]
     [SupportedOnRenderer(typeof(UniversalRendererData))]
     public sealed class DistantFocusRenderFeature : ScriptableRendererFeature
@@ -19,6 +27,10 @@ namespace ProjectC.Rendering
         [Header("Состояние")]
         [Tooltip("Выкл = проход не ставится, эффекта нет.")]
         public bool Active = true;
+
+        [Header("Диагностика")]
+        [Tooltip("ForceBlur = мылит весь кадр (проверка что проход бежит). ShowDepth = полосы глубины.")]
+        public FarFocusDebugView DebugView = FarFocusDebugView.Off;
 
         [Header("Дальняя зона (размыта, пока не смотрим)")]
         [Tooltip("Глубина (м), с которой начинается дальнее размытие. Настраивается под горы/здания.")]
@@ -73,6 +85,7 @@ namespace ProjectC.Rendering
             mat.SetFloat("_NearStrength", NearStrength);
             mat.SetFloat("_MaxRadius", MaxRadius);
             mat.SetFloat("_CharMax", CharMax);
+            mat.SetFloat("_DebugView", (float)DebugView);
 
             var pass = new DistantFocusPass(mat);
             pass.renderPassEvent = RenderPassEvent.AfterRenderingOpaques;

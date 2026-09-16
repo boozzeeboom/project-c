@@ -116,7 +116,7 @@ MonoBehaviour:
   EnablePerObjectTargets: 1
 --- !u!114 &-435488297958218500
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -128,6 +128,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.DistantFocusRenderFeature
   m_Active: 1
   Active: 1
+  DebugView: 0
   FarStart: 800
   FarEnd: 4000
   FarStrength: 1

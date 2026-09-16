@@ -135,3 +135,5 @@ Bokeh — опция на потом (требует больше fillrate; пр
 | 2026-09-16 | Mavis | DF-001 rev.5: авто-диафрагма (персонаж не мылится) + база профиля 85мм f/2 (CoC-фикс) |
 | 2026-09-16 | Mavis | DF-001 rev.6: гистерезис фокуса (deadband+settle) + мягкое боке 65мм f/2.8 HQ |
 | 2026-09-16 | Mavis | DF-001 rev.7: свой far-field проход (шейдер+фича+FarFocusController), Bokeh=Off, ресёрч в DESIGN_farfocus.md |
+| 2026-09-16 | Mavis | DF-001 rev.8-9: DebugView самодиагностики; принудительный Off |
+| 2026-09-16 | Mavis | DF-001 rev.10: фокус через Volume-Gaussian (свой проход Active=false) + живые ридонли |

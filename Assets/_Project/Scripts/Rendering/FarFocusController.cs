@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using ProjectC.Core;
 
@@ -38,15 +39,31 @@ namespace ProjectC.Rendering
 
         [Header("Лок взгляда (даль резкая)")]
         [Tooltip("Центр глубже этого (м) = кандидат на лок. Совместить с FarStart фичи.")]
-        [Min(1f)] [SerializeField] private float _farThreshold = 800f;
+        [Min(1f)] [SerializeField] private float _farThreshold = 60f;
         [Tooltip("Сколько держать взгляд, чтобы даль сфокусировалась (сек).")]
         [Min(0.1f)] [SerializeField] private float _lockTime = 1f;
         [Tooltip("Глубина при взгляде в небо мимо якоря. 0 = maxRayDistance.")]
         [Min(0f)] [SerializeField] private float _skyDepth;
 
+        [Header("Gaussian Volume (фокус через проверенный Volume)")]
+        [Tooltip("Вкл: писать gaussianStart/End в рантайм-копию профиля. Выкл: профиль рулится только ассетом.")]
+        [SerializeField] private bool _driveGaussian = true;
+        [Tooltip("Полоса блюра в покое (даль размыта): начало.")]
+        [Min(1f)] [SerializeField] private float _restStart = 60f;
+        [Tooltip("Полоса блюра в покое: конец.")]
+        [Min(2f)] [SerializeField] private float _restEnd = 300f;
+        [Tooltip("Полоса при локе вдаль (даль резкая): начало.")]
+        [Min(1f)] [SerializeField] private float _lockStart = 50000f;
+        [Tooltip("Полоса при локе вдаль: конец.")]
+        [Min(2f)] [SerializeField] private float _lockEnd = 100000f;
+
         [Header("Отладка")]
         [Tooltip("Лог раз в секунду: камера/центр/лок.")]
         [SerializeField] private bool _debugLog;
+        [Tooltip("Живое чтение: глубина центра (видно в Play).")]
+        public float DebugCenterDepth;
+        [Tooltip("Живое чтение: лок взгляда 0..1 (видно в Play).")]
+        public float DebugFarLock;
 
         private static readonly int LockId = Shader.PropertyToID("_FarFocusLock");
         private static readonly int CenterId = Shader.PropertyToID("_FarFocusCenterDepth");
@@ -56,6 +73,12 @@ namespace ProjectC.Rendering
         private float _lockTimer;
         private float _farLock;
         private int _frameCounter;
+        private bool _gaussianWarned;
+
+        // Рантайм-копия профиля: ассет не мутирует (паттерн DayNight).
+        private VolumeProfile _runtimeProfile;
+        private UnityEngine.Rendering.Volume _focusVolume;
+        private DepthOfField _dof;
 
         /// <summary>Глубина центра кадра, м (для HUD/отладки).</summary>
         public float CenterDepth => _centerDepth;
@@ -66,6 +89,15 @@ namespace ProjectC.Rendering
         {
             _cameraManuallySet = _targetCamera != null;
             EnsureBindings();
+
+            // Рантайм-копия профиля под Gaussian-драйв (ассет не мутирует).
+            _focusVolume = GetComponent<UnityEngine.Rendering.Volume>();
+            if (_focusVolume != null)
+            {
+                _runtimeProfile = Instantiate(_focusVolume.sharedProfile);
+                _focusVolume.profile = _runtimeProfile;
+                _runtimeProfile.TryGet(out _dof);
+            }
         }
 
         private void Update()
@@ -84,6 +116,26 @@ namespace ProjectC.Rendering
 
             Shader.SetGlobalFloat(LockId, _farLock);
             Shader.SetGlobalFloat(CenterId, _centerDepth);
+            DebugCenterDepth = _centerDepth;
+            DebugFarLock = _farLock;
+
+            // Gaussian-драйв через проверенный Volume-путь: лок уводит полосу
+            // за контент (даль резкая), покой держит полосу на дали.
+            // Персонаж (≤35м) всегда ближе Start → не мылится никогда.
+            if (_driveGaussian && _dof != null)
+            {
+                if (_dof.mode.value != DepthOfFieldMode.Gaussian)
+                {
+                    _dof.mode.value = DepthOfFieldMode.Gaussian;
+                    if (!_gaussianWarned)
+                    {
+                        _gaussianWarned = true;
+                        Debug.LogWarning("[FarFocus] DepthOfField переключён в Gaussian для драйва фокуса.");
+                    }
+                }
+                _dof.gaussianStart.value = Mathf.Lerp(_restStart, _lockStart, _farLock);
+                _dof.gaussianEnd.value = Mathf.Lerp(_restEnd, _lockEnd, _farLock);
+            }
 
             if (_debugLog && _frameCounter % 60 == 0)
                 Debug.Log($"[FarFocus] cam={_targetCamera.name} center={_centerDepth:F0} lock={_farLock:F2}");

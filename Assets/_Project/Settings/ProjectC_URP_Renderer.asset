@@ -127,10 +127,10 @@ MonoBehaviour:
   m_Name: DistantFocusRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.DistantFocusRenderFeature
   m_Active: 1
-  Active: 1
+  Active: 0
   DebugView: 0
-  FarStart: 800
-  FarEnd: 4000
+  FarStart: 60
+  FarEnd: 300
   FarStrength: 1
   CharMax: 40
   NearStrength: 0.35

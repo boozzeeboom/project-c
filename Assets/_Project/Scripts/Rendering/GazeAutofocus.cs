@@ -58,6 +58,13 @@ namespace ProjectC.Rendering
         [Tooltip("Выкл = Volume weight 0 (эффект погашен, скрипт спит).")]
         [SerializeField] private bool _focusEnabled = true;
 
+        [Header("Отладка")]
+        [Tooltip("Писать в консоль камеру/якорь/фокус раз в секунду. Включить для диагностики.")]
+        [SerializeField] private bool _debugLog;
+
+        // Ручная камера из инспектора (перебивает авто-привязку к ригу).
+        private bool _cameraManuallySet;
+
         // Рантайм-копия профиля: ассет из Inspector никогда не мутирует (паттерн DayNight).
         private VolumeProfile _runtimeProfile;
         private DepthOfField _dof;
@@ -78,10 +85,12 @@ namespace ProjectC.Rendering
 
         private void OnEnable()
         {
-            if (_targetCamera == null) _targetCamera = Camera.main;
+            // Привязки камеры/рига — ленивые (EnsureBindings): камера игрока
+            // (префаб ThirdPersonCamera) спавнится ПОЗЖЕ Bootstrap, разовый
+            // Camera.main здесь поймал бы статичную камеру Bootstrap.
+            _cameraManuallySet = _targetCamera != null;
             if (_focusVolume == null) _focusVolume = GetComponent<Volume>();
-            if (_cameraRig == null) _cameraRig = FindFirstObjectByType<SpringArmCamera>();
-            if (_focusVolume == null || _targetCamera == null) { enabled = false; return; }
+            if (_focusVolume == null) { enabled = false; return; }
 
             // Клонируем профиль: все Bokeh-настройки из ассета сохраняются,
             // но focusDistance пишем в копию.
@@ -98,6 +107,7 @@ namespace ProjectC.Rendering
             }
             if (_dof.mode.value == DepthOfFieldMode.Off) _dof.mode.value = DepthOfFieldMode.Bokeh;
 
+            EnsureBindings();
             _currentFocus = _targetFocus = ResolveAnchorDistance();
             _frameCounter = 0;
             ApplyEnabledState();
@@ -110,12 +120,27 @@ namespace ProjectC.Rendering
 
         private void Update()
         {
-            if (!_focusEnabled || _dof == null || _targetCamera == null) return;
+            if (!_focusEnabled || _dof == null) return;
+            EnsureBindings();
+            if (_targetCamera == null) return; // камера игрока ещё не заспавнилась — держим фокус
 
             if (_frameCounter++ % Mathf.Max(1, _raycastEveryNFrames) == 0) UpdateFocusTarget();
 
             _currentFocus = Mathf.SmoothDamp(_currentFocus, _targetFocus, ref _smoothVelocity, _focusSmoothTime);
             _dof.focusDistance.value = Mathf.Max(_minFocusDistance, _currentFocus);
+
+            if (_debugLog && _frameCounter % 60 == 0)
+                Debug.Log($"[GazeAutofocus] cam={_targetCamera.name} anchor={ResolveAnchorDistance():F1} target={_targetFocus:F1} cur={_currentFocus:F1}");
+        }
+
+        // Ленивая привязка: риг и камера игрока появляются после Bootstrap.
+        // Ручная камера из инспектора всегда побеждает.
+        private void EnsureBindings()
+        {
+            if (_cameraRig == null) _cameraRig = FindFirstObjectByType<SpringArmCamera>();
+            if (_cameraManuallySet) return;
+            Camera rigCam = _cameraRig != null ? _cameraRig.CameraComponent : null;
+            _targetCamera = rigCam != null ? rigCam : Camera.main;
         }
 
         private void UpdateFocusTarget()
@@ -128,6 +153,13 @@ namespace ProjectC.Rendering
             bool hasHit = Physics.Raycast(
                 new Ray(origin, dir), out RaycastHit hit,
                 maxDist, _focusLayers, QueryTriggerInteraction.Ignore);
+
+            // Якорь неизвестен (риг ещё без цели): чисто лучевой режим со СВЕЖЕЙ камеры.
+            if (!HasAnchor())
+            {
+                _targetFocus = hasHit ? Mathf.Max(_minFocusDistance, hit.distance) : ResolveSkyFocus();
+                return;
+            }
 
             // Луч прошёл рядом с якорем = персонаж в центре кадра.
             bool rayNearAnchor = DistancePointToRay(ResolveAnchorPoint(), origin, dir) <= _anchorSnapRadius;
@@ -159,6 +191,12 @@ namespace ProjectC.Rendering
             if (rigTarget != null) return rigTarget.position + Vector3.up * _anchorHeightOffset;
             // Якоря нет — точка перед камерой, чтобы старый чисто-лучевой режим не ломался.
             return _targetCamera.transform.position + _targetCamera.transform.forward * 10f;
+        }
+
+        private bool HasAnchor()
+        {
+            if (_manualAnchor != null) return true;
+            return _cameraRig != null && _cameraRig.TargetTransform != null;
         }
 
         private float ResolveAnchorDistance()

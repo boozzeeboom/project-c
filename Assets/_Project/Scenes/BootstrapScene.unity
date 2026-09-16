@@ -11961,6 +11961,7 @@ GameObject:
   - component: {fileID: 835669857}
   - component: {fileID: 835669856}
   - component: {fileID: 835669855}
+  - component: {fileID: 835669858}
   m_Layer: 0
   m_Name: DistantFocus
   m_TagString: Untagged
@@ -11975,13 +11976,17 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 835669854}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 73faf472a61cea64aa2d22c7a550ba1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.GazeAutofocus
   _targetCamera: {fileID: 0}
   _focusVolume: {fileID: 0}
+  _cameraRig: {fileID: 0}
+  _manualAnchor: {fileID: 0}
+  _anchorSnapRadius: 2
+  _anchorHeightOffset: 1.2
   _focusLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -11991,6 +11996,14 @@ MonoBehaviour:
   _minFocusDistance: 0.5
   _focusSmoothTime: 0.25
   _focusEnabled: 1
+  _focusDeadband: 0.75
+  _branchSettleFrames: 2
+  _autoAperture: 1
+  _nearAperture: 2
+  _farAperture: 8
+  _farStart: 30
+  _farEnd: 300
+  _debugLog: 0
 --- !u!114 &835669856
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12023,6 +12036,32 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &835669858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 835669854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 063448fcccafc2e469a55f8425c93824, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.FarFocusController
+  _targetCamera: {fileID: 0}
+  _cameraRig: {fileID: 0}
+  _manualAnchor: {fileID: 0}
+  _focusLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _raycastEveryNFrames: 4
+  _maxRayDistance: 0
+  _anchorSnapRadius: 2
+  _anchorHeightOffset: 1.2
+  _farThreshold: 800
+  _lockTime: 1
+  _skyDepth: 0
+  _debugLog: 0
 --- !u!43 &847314603
 Mesh:
   m_ObjectHideFlags: 0

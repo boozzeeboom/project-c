@@ -169,7 +169,7 @@ namespace ProjectC.Rendering
         // Ручная камера из инспектора всегда побеждает.
         private void EnsureBindings()
         {
-            if (_cameraRig == null) _cameraRig = FindFirstObjectByType<SpringArmCamera>();
+            if (_cameraRig == null) _cameraRig = FindAnyObjectByType<SpringArmCamera>();
             if (_cameraManuallySet) return;
             Camera rigCam = _cameraRig != null ? _cameraRig.CameraComponent : null;
             _targetCamera = rigCam != null ? rigCam : Camera.main;

@@ -114,6 +114,28 @@ MonoBehaviour:
   _edgeDetectionShader: {fileID: 4800000, guid: 684278897d3f4e848be809ed3679c5d0, type: 3}
   _edgeDetectionMaskShader: {fileID: 4800000, guid: 68cd8d2b66b56a14297b5a2616c5b9f5, type: 3}
   EnablePerObjectTargets: 1
+--- !u!114 &-435488297958218500
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32ce41df72cd1654ca2684f774f78217, type: 3}
+  m_Name: DistantFocusRenderFeature
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.DistantFocusRenderFeature
+  m_Active: 1
+  Active: 1
+  FarStart: 800
+  FarEnd: 4000
+  FarStrength: 1
+  CharMax: 40
+  NearStrength: 0.35
+  MaxRadius: 12
+  OverrideMaterial: {fileID: 0}
+  _distantFocusShader: {fileID: 4800000, guid: a3d252714ca399b49aa9da9fa8b65317, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -141,6 +163,7 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: -597003445878171204}
   - {fileID: -4923340904266724764}
+  - {fileID: -435488297958218500}
   m_RendererFeatureMap: bc59bf6e8704b7f7640a085588c7acbb
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}

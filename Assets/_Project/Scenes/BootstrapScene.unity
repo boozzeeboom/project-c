@@ -12061,7 +12061,14 @@ MonoBehaviour:
   _farThreshold: 800
   _lockTime: 1
   _skyDepth: 0
+  _driveGaussian: 1
+  _restStart: 800
+  _restEnd: 4000
+  _lockStart: 50000
+  _lockEnd: 100000
   _debugLog: 0
+  DebugCenterDepth: 0
+  DebugFarLock: 0
 --- !u!43 &847314603
 Mesh:
   m_ObjectHideFlags: 0

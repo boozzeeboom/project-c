@@ -64,11 +64,17 @@ namespace ProjectC.Rendering
         [Tooltip("Выкл = Volume weight 0 (эффект погашен, скрипт спит).")]
         [SerializeField] private bool _focusEnabled = true;
 
+        [Header("Стабильность фокуса (без плавания)")]
+        [Tooltip("Смена цели меньше этого (м) игнорируется — убивает дрожь фокуса.")]
+        [Min(0f)] [SerializeField] private float _focusDeadband = 0.75f;
+        [Tooltip("Новое направление фокуса принимается после стольких повторов подряд (1 = сразу).")]
+        [Range(1, 10)] [SerializeField] private int _branchSettleFrames = 2;
+
         [Header("Авто-диафрагма (персонаж не мылится)")]
         [Tooltip("Вкл: диафрагма едет от Near (фокус на персонаже) к Far (фокус вдали). Выкл: значение из ассета.")]
         [SerializeField] private bool _autoAperture = true;
         [Tooltip("Диафрагма при фокусе на персонаже (фон плывёт сильно).")]
-        [Range(1f, 32f)] [SerializeField] private float _nearAperture = 2f;
+        [Range(1f, 32f)] [SerializeField] private float _nearAperture = 2.8f;
         [Tooltip("Диафрагма при фокусе вдали (глубина резкости большая, персонаж читаем).")]
         [Range(1f, 32f)] [SerializeField] private float _farAperture = 8f;
         [Tooltip("Дистанция фокуса, с которой начинается зауживание.")]
@@ -90,6 +96,8 @@ namespace ProjectC.Rendering
         private float _currentFocus;
         private float _smoothVelocity;
         private int _frameCounter;
+        private int _lastBranch = -1;
+        private int _branchRepeat;
 
         /// <summary>Текущий фокус (для HUD/отладки).</summary>
         public float CurrentFocusDistance => _currentFocus;
@@ -181,7 +189,9 @@ namespace ProjectC.Rendering
             // Якорь неизвестен (риг ещё без цели): чисто лучевой режим со СВЕЖЕЙ камеры.
             if (!HasAnchor())
             {
-                _targetFocus = hasHit ? Mathf.Max(_minFocusDistance, hit.distance) : ResolveSkyFocus();
+                AcceptFocusTarget(
+                    hasHit ? Mathf.Max(_minFocusDistance, hit.distance) : ResolveSkyFocus(),
+                    hasHit ? 10 : 11);
                 return;
             }
 
@@ -191,21 +201,41 @@ namespace ProjectC.Rendering
             if (!hasHit)
             {
                 // Небо: если якорь в кадре — держим его, иначе уходим на даль.
-                _targetFocus = rayNearAnchor ? anchorDist : ResolveSkyFocus();
+                AcceptFocusTarget(rayNearAnchor ? anchorDist : ResolveSkyFocus(), rayNearAnchor ? 20 : 21);
                 return;
             }
 
             if (hit.distance <= anchorDist)
             {
                 // Препятствие перед якорем (стена в лицо) или сам якорь — фокус на попадание.
-                _targetFocus = Mathf.Max(_minFocusDistance, hit.distance);
+                AcceptFocusTarget(Mathf.Max(_minFocusDistance, hit.distance), 30);
                 return;
             }
 
             // Попадание ДАЛЬШЕ якоря: смотрим мимо персонажа.
             // Якорь в центре -> держим персонажа резким, фон мылится.
             // Якорь вне центра (камеру увели на объект) -> фокус на дальнее.
-            _targetFocus = rayNearAnchor ? anchorDist : hit.distance;
+            AcceptFocusTarget(rayNearAnchor ? anchorDist : hit.distance, rayNearAnchor ? 40 : 41);
+        }
+
+        // Приём цели с гистерезисом: ветка применяется после повторов подряд
+        // (не реагируем на одиночные чихи луча), микродвижки ниже deadband игнорятся.
+        private void AcceptFocusTarget(float candidate, int branch)
+        {
+            if (branch != _lastBranch)
+            {
+                _lastBranch = branch;
+                _branchRepeat = 1;
+                if (_branchSettleFrames > 1) return;
+            }
+            else
+            {
+                _branchRepeat++;
+                if (_branchRepeat < Mathf.Max(1, _branchSettleFrames)) return;
+            }
+
+            if (Mathf.Abs(candidate - _targetFocus) < Mathf.Max(0f, _focusDeadband)) return;
+            _targetFocus = candidate;
         }
 
         private Vector3 ResolveAnchorPoint()

@@ -85,6 +85,31 @@ namespace ProjectC.UI.EscMenu
                     SettingsManager.SetAntiAliasing(aa);
                 }));
 
+            // --- Эффекты (постобработка) ---
+            // Ключи локализации ui.esc_menu.section.effects / label.dof|edge|tempfilter —
+            // отдельным LOC-проходом; до тех пор русские литералы (RU-fallback).
+            panel.Add(SettingsWidgets.CreateSectionHeader("Эффекты"));
+
+            panel.Add(SettingsWidgets.CreateToggle("Глубина резкости (фокус)",
+                SettingsManager.DepthOfField,
+                v =>
+                {
+                    SettingsManager.SetDepthOfField(v);
+                    ProjectC.Rendering.GraphicsEffectsApplier.ApplyDepthOfField(v);
+                }));
+
+            panel.Add(SettingsWidgets.CreateToggle("Контурный едж",
+                SettingsManager.EdgeDetection,
+                v =>
+                {
+                    SettingsManager.SetEdgeDetection(v);
+                    ProjectC.Rendering.GraphicsEffectsApplier.ApplyEdgeDetection(v);
+                }));
+
+            panel.Add(SettingsWidgets.CreateToggle("Температура день/ночь",
+                SettingsManager.TemperatureFilter,
+                v => SettingsManager.SetTemperatureFilter(v)));
+
             return panel;
         }
     }

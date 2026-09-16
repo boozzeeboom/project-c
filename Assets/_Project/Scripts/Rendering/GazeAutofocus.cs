@@ -115,6 +115,9 @@ namespace ProjectC.Rendering
             // (префаб ThirdPersonCamera) спавнится ПОЗЖЕ Bootstrap, разовый
             // Camera.main здесь поймал бы статичную камеру Bootstrap.
             _cameraManuallySet = _targetCamera != null;
+            // Пользовательский тумблер (Esc → Графика → Эффекты): сцена может
+            // пересоздать объект после смены настройки — читаем актуальное.
+            _focusEnabled = SettingsManager.DepthOfField;
             if (_focusVolume == null) _focusVolume = GetComponent<Volume>();
             if (_focusVolume == null) { enabled = false; return; }
 

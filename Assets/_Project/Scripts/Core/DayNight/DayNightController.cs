@@ -746,6 +746,12 @@ namespace ProjectC.Core
 
         private void ApplyTemperatureFilter(float temperature)
         {
+            // Пользовательский тумблер (Esc → Графика → Эффекты) — поверх авторской настройки.
+            if (!SettingsManager.TemperatureFilter)
+            {
+                if (_temperatureBlendVolume != null) _temperatureBlendVolume.weight = 0f;
+                return;
+            }
             // Always apply temperature effect if we have a profile
             if (profile == null || !profile.enableTemperatureFilter) return;
             if (_temperatureBlendVolume == null || _temperatureColorProfile == null) return;

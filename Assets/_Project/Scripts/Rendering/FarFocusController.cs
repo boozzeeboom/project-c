@@ -196,5 +196,18 @@ namespace ProjectC.Rendering
             if (along <= 0f) return float.MaxValue;
             return (toPoint - dir * along).magnitude;
         }
+
+        private void OnDisable()
+        {
+            // Тумблер графики (Esc → Эффекты): не замораживаем последний блюр —
+            // сбрасываем глобалы и Gaussian-полосу в покой.
+            Shader.SetGlobalFloat(LockId, 0f);
+            Shader.SetGlobalFloat(CenterId, 10f);
+            if (_dof != null)
+            {
+                _dof.gaussianStart.value = _restStart;
+                _dof.gaussianEnd.value = _restEnd;
+            }
+        }
     }
 }

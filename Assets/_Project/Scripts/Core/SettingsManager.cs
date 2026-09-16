@@ -23,6 +23,9 @@ namespace ProjectC.Core
         private const string KEY_ANTI_ALIASING = "Settings.AntiAliasing";
         private const string KEY_RESOLUTION = "Settings.Resolution";
         private const string KEY_LOCALE = "Settings.Locale";
+        private const string KEY_DEPTH_OF_FIELD = "Settings.DepthOfField";
+        private const string KEY_EDGE_DETECTION = "Settings.EdgeDetection";
+        private const string KEY_TEMPERATURE_FILTER = "Settings.TemperatureFilter";
 
 #pragma warning disable CS0414
         private static bool _initialized = false;
@@ -40,6 +43,9 @@ namespace ProjectC.Core
         public static bool VSync { get; private set; } = true;
         public static int AntiAliasing { get; private set; } = 0; // Off
         public static string Locale { get; private set; } = "ru";
+        public static bool DepthOfField { get; private set; } = true;
+        public static bool EdgeDetection { get; private set; } = true;
+        public static bool TemperatureFilter { get; private set; } = true;
 
         // ===== События =====
 
@@ -48,6 +54,9 @@ namespace ProjectC.Core
         public static event Action<float> OnCameraZoomSensitivityChanged;
         public static event Action<float> OnMasterVolumeChanged;
         public static event Action<bool> OnSubtitlesChanged;
+        public static event Action<bool> OnDepthOfFieldChanged;
+        public static event Action<bool> OnEdgeDetectionChanged;
+        public static event Action<bool> OnTemperatureFilterChanged;
 
         // ===== Init =====
 
@@ -172,6 +181,33 @@ namespace ProjectC.Core
             PlayerPrefs.Save();
         }
 
+        public static void SetDepthOfField(bool value)
+        {
+            if (DepthOfField == value) return;
+            DepthOfField = value;
+            PlayerPrefs.SetInt(KEY_DEPTH_OF_FIELD, value ? 1 : 0);
+            PlayerPrefs.Save();
+            OnDepthOfFieldChanged?.Invoke(value);
+        }
+
+        public static void SetEdgeDetection(bool value)
+        {
+            if (EdgeDetection == value) return;
+            EdgeDetection = value;
+            PlayerPrefs.SetInt(KEY_EDGE_DETECTION, value ? 1 : 0);
+            PlayerPrefs.Save();
+            OnEdgeDetectionChanged?.Invoke(value);
+        }
+
+        public static void SetTemperatureFilter(bool value)
+        {
+            if (TemperatureFilter == value) return;
+            TemperatureFilter = value;
+            PlayerPrefs.SetInt(KEY_TEMPERATURE_FILTER, value ? 1 : 0);
+            PlayerPrefs.Save();
+            OnTemperatureFilterChanged?.Invoke(value);
+        }
+
         // ===== Load from PlayerPrefs =====
 
         public static void Load()
@@ -186,6 +222,9 @@ namespace ProjectC.Core
             VSync = PlayerPrefs.GetInt(KEY_VSYNC, 1) == 1;
             AntiAliasing = PlayerPrefs.GetInt(KEY_ANTI_ALIASING, 0);
             Locale = PlayerPrefs.GetString(KEY_LOCALE, "ru");
+            DepthOfField = PlayerPrefs.GetInt(KEY_DEPTH_OF_FIELD, 1) == 1;
+            EdgeDetection = PlayerPrefs.GetInt(KEY_EDGE_DETECTION, 1) == 1;
+            TemperatureFilter = PlayerPrefs.GetInt(KEY_TEMPERATURE_FILTER, 1) == 1;
 
             Debug.Log($"[SettingsManager] Loaded: sens={MouseSensitivity}, invY={InvertY}, vol={MasterVolume}, " +
                       $"qual={QualityLevel}, fs={Fullscreen}, vsync={VSync}, aa={AntiAliasing}, locale={Locale}");
@@ -203,6 +242,9 @@ namespace ProjectC.Core
             PlayerPrefs.SetInt(KEY_VSYNC, VSync ? 1 : 0);
             PlayerPrefs.SetInt(KEY_ANTI_ALIASING, AntiAliasing);
             PlayerPrefs.SetString(KEY_LOCALE, Locale);
+            PlayerPrefs.SetInt(KEY_DEPTH_OF_FIELD, DepthOfField ? 1 : 0);
+            PlayerPrefs.SetInt(KEY_EDGE_DETECTION, EdgeDetection ? 1 : 0);
+            PlayerPrefs.SetInt(KEY_TEMPERATURE_FILTER, TemperatureFilter ? 1 : 0);
             PlayerPrefs.Save();
             Debug.Log("[SettingsManager] Saved");
         }

@@ -161,6 +161,7 @@ namespace ProjectC.Admin
 
             _content = new ScrollView();
             _content.style.flexGrow = 1;
+            _content.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             panel.Add(_content);
 
             _statusLabel = new Label("");
@@ -202,6 +203,7 @@ namespace ProjectC.Admin
             var b = new Button(() => { onClick?.Invoke(); RefreshStatus(); }) { text = label };
             b.style.fontSize = 14;
             b.style.color = Color.white;
+            b.style.whiteSpace = WhiteSpace.Normal;
             b.style.paddingTop = 3; b.style.paddingBottom = 3;
             b.style.marginBottom = 2;
             _content.Add(b);
@@ -239,6 +241,8 @@ namespace ProjectC.Admin
             row.Add(l);
             var f = new TextField { value = value };
             f.style.flexGrow = 1;
+            f.style.minWidth = 0;
+            f.style.fontSize = 14;
             f.RegisterValueChangedCallback(e => onChange?.Invoke(e.newValue));
             row.Add(f);
             _content.Add(row);
@@ -267,7 +271,7 @@ namespace ProjectC.Admin
             if (cheats == null) { AddLabel("Нет локального игрока."); return; }
 
             AddToggle("GOD (бессмертие)", cheats.GodMode, v => Facade().SetGod(v));
-            AddToggle("✈ ПОЛЁТ + сквозь объекты (WASD+E/Q, Shift=быстро)", cheats.Noclip, v => Facade().SetNoclip(v));
+            AddToggle("✈ ПОЛЁТ (WASD+E/Q, Shift×4)", cheats.Noclip, v => Facade().SetNoclip(v));
             AddLabel("Скорость бега:");
             var row = new VisualElement();
             row.style.flexDirection = FlexDirection.Row;

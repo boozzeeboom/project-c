@@ -97,12 +97,19 @@ namespace ProjectC.Admin
             if (cam == null) return;
 
             Vector3 move = Vector3.zero;
+            // WASD — строго в горизонте (иначе при наклонённой камере W втыкает в землю/небо).
             Vector3 fwd = cam.transform.forward;
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 0.0001f) fwd = cam.transform.forward;
+            fwd.Normalize();
             Vector3 right = cam.transform.right;
+            right.y = 0f;
+            right.Normalize();
             if (kb.wKey.isPressed) move += fwd;
             if (kb.sKey.isPressed) move -= fwd;
             if (kb.dKey.isPressed) move += right;
             if (kb.aKey.isPressed) move -= right;
+            // Вертикаль — только E/Q.
             if (kb.eKey.isPressed) move += Vector3.up;
             if (kb.qKey.isPressed) move -= Vector3.up;
             if (move.sqrMagnitude < 0.0001f) return;

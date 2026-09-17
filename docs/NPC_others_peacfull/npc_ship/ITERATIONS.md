@@ -1,5 +1,32 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-17 — T-NS-DEPART3: Departure-Chimney (уход от города вверх)
+
+**Задача (стадия 3 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P0-отстыковка):**
+подъём +5 м оставлял корабль в «чаше» порта — горизонтальный выход шёл через плотную
+геометрию. Только `NpcShipController.cs`: `TickLift` набирает `departClimbMeters`
+(дефолт 60 м) над падом, потом `Yawing → Cruising` уже сверху.
+
+**Критическая аналитика (проверено до кода):**
+- Клиренс относительный (от уровня пада `LiftStartY`), опора — замер R11: 300 м+
+  свободного неба над падами. Per-station клиренс от геометрии — стадия коридоров
+  (нужен конфиг на станциях + настройка сцен, отдельный тикет).
+- FO: нового хранимого состояния нет (`LiftStartY` предсуществующий, подъём — секунды).
+  Сейвы/схема — не тронуты. Cargo/displacement/detectCollisions — не касаемся.
+- Avoidance в `Lifting` уже работает (ship+build): длинный подъём под защитой,
+  после `ResumeFromAvoid` возврат в `Lifting` — подъём продолжается, не strandится.
+- `Cruising` сверху: `altHold` плавно снижает (≤2 м/с) к `stationY+5`. Ближние станции —
+  заход сверху (хорошо); дальние — снижение в полёте, финал правит стадия 4
+  (OverheadCruise/Descend). `HeavyII`: 60 м / 5 м/с ≈ 12 с подъёма — приемлемо.
+
+**Проверка:** `refresh_unity` (force, compile=request) → errors 0. Play Mode — долгим
+прогоном позже: отстыковка → вертикальный уход → разворот наверху → круиз.
+
+**Следующая стадия:** P1-avoidance (lateral-уход в Berthing-коридоре, таймаут Stop/BackOff
+с эскалацией, non-convex обход) — только после коридоров.
+
+---
+
 ## Итерация от 2026-09-17 — T-NS-BERTH2: Berthing watchdog + holding-точка + divert
 
 **Задача (стадия 2 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P0-Berthing):**

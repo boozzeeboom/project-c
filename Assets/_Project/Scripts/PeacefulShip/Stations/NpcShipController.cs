@@ -413,6 +413,13 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Сколько неудачных запросов пада подряд терпим в holding, прежде чем уйти. 3 с/попытка.")]
         [Min(1)] [SerializeField] private int holdingMaxRetries = 20;
 
+        // === T-NS-DEPART3: Departure-Chimney — уход от города вверх ===
+        [Header("Departure chimney (server-only)")]
+        [Tooltip("Относительный набор высоты над падом (м) перед уходом в Cruising. " +
+                 "Замена хардкода +5 м: корабль выходит из «чаши» порта вертикально, " +
+                 "где по замеру R11 300 м+ свободного неба, и только потом летит горизонтально.")]
+        [Min(5f)] [SerializeField] private float departClimbMeters = 60f;
+
         // Состояние watchdog/holding — всё относительное (дистанции, таймеры, счётчики),
         // мировых Vector3 не храним: FO-хук не нужен, F8 не роняет заход.
         private float _berthNoProgressSince;
@@ -598,7 +605,9 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         void TickLift(Rigidbody rb) {
-            float targetY = LiftStartY + 5f;
+            // T-NS-DEPART3: Departure-Chimney — набираем departClimbMeters над падом
+            // (LiftStartY = уровень пада на выходе из дока), только потом Yawing/Cruising.
+            float targetY = LiftStartY + departClimbMeters;
             float dy = targetY - rb.position.y;
             if (dy <= 0.1f) {
                 // Достигли высоты → ищем станцию назначения

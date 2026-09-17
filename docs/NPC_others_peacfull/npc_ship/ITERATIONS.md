@@ -1,5 +1,33 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-17 — T-NS-P2: снос мёртвого блока NpcShipWorld
+
+**Задача (P2-чистка):** удалить unreachable-код, дважды проверенный (§9 + §9.1
+ревью-документа: вызовов ноль, рефлексии/наследования/сериализации/тестов нет).
+
+**Удалено из `PeacefulShip/Core/NpcShipWorld.cs` (491 → 154 строки):**
+`TickNpc`, `ApplyDeparting/Transit/ApproachMovement`, `CalcBearing`, `NPC_*` константы,
+`_lastPadAttempt`, world-`_lastArrivalAtStation`, мёртвые `AdvanceScheduleIndex`,
+`TryAssignPadForNpc(state)`, `ReleaseNpcAssignment(state)` (живой однофамилец —
+`DockingWorld.ReleaseNpcAssignment(ids)` — не тронут), `ResolveStationWorldPos`,
+`TransitionTo`. Плюс правки комментов: шапка `Dispatch`, `AllNpcs`, stale-ссылки на
+`TickNpc` в `NpcShipController.ApplyMovementInput` и `NpcShipTrafficManager`.
+
+**Осознанно оставлено (резерв/живое):** реестр + события + `RestoreNpcState` +
+`FixedUpdate → NavTick`; `TrafficManager`-шелл; `ApplyMovementInput`/`ServerTeleport`/
+`StartAntiGravityBoost` (публичный API); `NpcShipStatus`/DTO/`ClientState`; вестигиальные
+поля `NpcShipState`.
+
+**Проверка:** `refresh_unity` (force, compile=request) → errors/warnings 0.
+Поведение не менялось (private/недостижимо) — Play Mode-регрессий быть не должно;
+долгий прогон позже подтвердит.
+
+**План по NPC-курсированию (§5) закрыт полностью:** PADS1 + BERTH2 + DEPART3 +
+AVOID4 + ROUTES5 + CORRIDOR6 + P2. Дальше — только твой долгий прогон и тюнинг
+дефолтов по логам.
+
+---
+
 ## Итерация от 2026-09-17 — T-NS-CORRIDOR6: Berthing-коридор (Overhead + Descend)
 
 **Задача (стадия 6, ядро плана §5):** убрать слепую прямую к паду с дистанции comm-зоны.

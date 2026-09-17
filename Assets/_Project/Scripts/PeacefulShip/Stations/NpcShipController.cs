@@ -253,7 +253,8 @@ namespace ProjectC.PeacefulShip.Stations
 
         /// <summary>
         /// Применить движение к ShipController через новый ApplyServerInput (T-NS01).
-        /// Вызывается из NpcShipWorld.TickNpc FSM.
+        /// Резерв/v2-хук (автопилот игрока): живой NavTick-путь использует прямой
+        /// Rigidbody-контроль, а не этот метод (TickNpc удалён в T-NS-P2).
         /// </summary>
         public void ApplyMovementInput(float thrust, float yaw, float pitch, float vertical)
         {

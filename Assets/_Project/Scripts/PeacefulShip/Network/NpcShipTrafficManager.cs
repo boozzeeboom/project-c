@@ -37,7 +37,8 @@ namespace ProjectC.PeacefulShip.Network
         // === Lifecycle ===
 
         /// <summary>Система не требует отдельного tick — это pure-data service.
-        /// Вызывается по необходимости из NpcShipWorld.RegisterNpc и TickNpc.</summary>
+        /// Резерв v2 (Gaussian shaping): живых вызовов ScheduleNextArrival сейчас нет
+        /// (см. T-NS-P2); lifecycle (Create/Shutdown) — из NpcShipServer.</summary>
         public static void CreateAndInitialize()
         {
             if (Instance != null) return;

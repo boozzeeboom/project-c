@@ -318,10 +318,17 @@ namespace ProjectC.UI.Chart
                 typeRow.Add(tb);
             }
 
-            _placeNameField = new TextField("Название");
+            // Подпись НАД полем: в легенде 170px подпись рядом оставляет
+            // вводу ноль пикселей (баг: поле было видно, но не жалось).
+            var nameCaption = new Label { text = "Название:" };
+            nameCaption.style.fontSize = 10;
+            nameCaption.style.color = new Color(0.25f, 0.18f, 0.10f, 0.6f);
+            nameCaption.style.marginTop = 4;
+            _placePanel.Add(nameCaption);
+
+            _placeNameField = new TextField();
             _placeNameField.value = "";
             _placeNameField.style.fontSize = 11;
-            _placeNameField.style.marginTop = 4;
             _placeNameField.style.minWidth = 0;
             _placeNameField.style.width = Length.Percent(100);
             _placePanel.Add(_placeNameField);

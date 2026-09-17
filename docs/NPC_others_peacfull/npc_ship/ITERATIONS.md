@@ -1,5 +1,45 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-17 — T-NS-AVOID4: разрыв петли avoidance + эскалация набором
+
+**Задача (стадия 4 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P1-avoidance):**
+«включаем уход — тупят»: вечная петля `Avoiding ↔ Cruising` (нет cooldown после resume,
+clear-порог ×1.5 для гигантов — 300 м, в городе недостижим), манёвр строго горизонтальный.
+`Berthing` осознанно оставлен без avoidance — там сторожит watchdog (T-NS-BERTH2).
+
+**Изменения:**
+- `PeacefulShip/Stations/NpcShipController.cs`:
+  - `avoidCooldownSec` (дефолт 2.5 с) — после `ResumeFromAvoid` новые конфликты
+    игнорируются, корабль летит прямо (дребезг убран);
+  - `ResumeFromAvoid(rb, bool cleared)` — чистый выход сбрасывает счётчик серии затора;
+  - серия входов в avoidance внутри `avoidEscalationWindowSec` (дефолт 10 с) считается;
+    с `avoidEscalateAfter` (дефолт 3) фаза `Separate` идёт не горизонтально, а вверх
+    (`LiftSpeed`) — эскалация туда, где свободно;
+  - yield-выходы тоже различают timeout/clear.
+- `PeacefulShip/Stations/NpcProximityZone.cs`:
+  - `buildClearHysteresis` (дефолт 1.2, отдельно от корабельного 1.5) +
+    `BuildClearExtent`; `IsClearOf(build)` — достижимый порог вместо ×1.5.
+  - Новое поле с дефолтом — существующие префабы получают 1.2 автоматически.
+
+**Критическая аналитика (блокеры):**
+- FO: только таймеры/счётчики — хук не нужен. Сейвы: поля транзиентные, схема не менялась.
+  Cargo/displacement/detectCollisions/authority — не касаемся, сигнатуры публичных API те же.
+- Cooldown подавляет и yield-вход до 2.5 с — окно мало, риск разъезда приемлем, зафиксировано.
+- Эскалация набором под крышей упрётся — остаточный риск, лечится коридорами (след. стадия);
+  над падами открытое небо (замер R11).
+- `IsAvoidable`/`NavMode`/Receiver-стороны не менялись — вторая сторона конфликта
+  видит тот же протокол (симметрия `Separate`/`Yield` сохранена).
+
+**Проверка:** `refresh_unity` (force, compile=request) → errors/warnings по компиляции 0
+(в консоли только служебный шум MCP-бриджа). Play Mode — долгим прогоном позже:
+считать циклы `Avoiding → Cruising → Avoiding` в логе, их больше не должно быть бесконечно.
+
+**Следующая стадия:** P1-расписание (мульти-маршруты, cap dwell HeavyII 6000, судьба
+мёртвых `TrafficManager`/`TickNpc`) или Berthing-коридор (OverheadCruise/Descend) —
+на выбор.
+
+---
+
 ## Итерация от 2026-09-17 — T-NS-DEPART3: Departure-Chimney (уход от города вверх)
 
 **Задача (стадия 3 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P0-отстыковка):**

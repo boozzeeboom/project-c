@@ -38,6 +38,12 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Гистерезис выхода: clear-зона = avoidance-зона * этот множитель.")]
         [Range(1f, 3f)] [SerializeField] private float clearHysteresis = 1.5f;
 
+        [Header("Buildings clear")]
+        [Tooltip("T-NS-AVOID4: гистерезис выхода из building-конфликта (× avoidance extent). " +
+                 "Отдельно от корабельного: clear-порог ×1.5 для гигантов (300 м) в городе недостижим " +
+                 "и даёт вечную петлю Avoiding↔Cruising.")]
+        [Range(1f, 2f)] [SerializeField] private float buildClearHysteresis = 1.2f;
+
         [Header("Buildings")]
         [Tooltip("Учитывать NpcProximityZoneBuilds (здания/препятствия) при поиске конфликтов.")]
         [SerializeField] private bool considerBuildings = true;
@@ -56,6 +62,9 @@ namespace ProjectC.PeacefulShip.Stations
 
         /// <summary>Effective clear extent — avoidance extent × hysteresis.</summary>
         public float ClearExtent => AvoidanceExtent * clearHysteresis;
+
+        /// <summary>T-NS-AVOID4: достижимый clear extent для зданий (× buildClearHysteresis).</summary>
+        public float BuildClearExtent => AvoidanceExtent * buildClearHysteresis;
 
         // Legacy accessor (kept for backward compat in NpcShipController.IsClearOfConflict path)
         public float AvoidanceRadius => avoidanceRadius;
@@ -304,7 +313,7 @@ namespace ProjectC.PeacefulShip.Stations
         /// <summary>True если clear-зона больше не пересекается с building-зоной.</summary>
         public bool IsClearOf(NpcProximityZoneBuilds build)
         {
-            return !build.IsIntruding(transform.position, ClearExtent);
+            return !build.IsIntruding(transform.position, BuildClearExtent);
         }
 
         // ══════════════════════════════════════════════════════════

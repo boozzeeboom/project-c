@@ -373,6 +373,19 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Предохранитель: максимум времени в манёвре (с).")]
         [SerializeField] private float avoidTimeout = 8f;
 
+        // T-NS-AVOID4: разрыв петли Avoiding↔Cruising + эскалация
+        [Header("Avoidance loop-breaker (server-only)")]
+        [Tooltip("Пауза после выхода из манёвра (с): новые конфликты игнорируются, корабль летит прямо.")]
+        [Min(0f)] [SerializeField] private float avoidCooldownSec = 2.5f;
+        [Tooltip("Сколько входов в avoidance подряд (внутри окна ниже) терпим, прежде чем уйти вверх.")]
+        [Min(2)] [SerializeField] private int avoidEscalateAfter = 3;
+        [Tooltip("Окно (с): входы в avoidance чаще этого считаются одной серией затора.")]
+        [Min(1f)] [SerializeField] private float avoidEscalationWindowSec = 10f;
+
+        private float _avoidCooldownUntil;
+        private int _avoidCycles;
+        private float _lastAvoidResumeAt = -1000f;
+
         // T-NS-BZ07: raycast escape corridor — поиск выхода из Π-доков
         [Header("Escape corridor (raycast)")]
         [Tooltip("Количество лучей для поиска выхода из тесного пространства.")]
@@ -523,7 +536,9 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-AV02: расхождение NPC-кораблей (только в круизе) и зданий (во всех свободных режимах).
             // Berthing/Docked исключены: корабль на финальном заходе игнорирует билд-коллайдеры
             // (позже переосмыслим подход к заходу в док).
-            if (CurrentMode == NavMode.Lifting || CurrentMode == NavMode.Yawing || CurrentMode == NavMode.Cruising)
+            // T-NS-AVOID4: cooldown после манёвра — летим прямо, не дребезжим Avoiding↔Cruising.
+            if ((CurrentMode == NavMode.Lifting || CurrentMode == NavMode.Yawing || CurrentMode == NavMode.Cruising)
+                && Time.time >= _avoidCooldownUntil)
             {
                 var pz = ProximityZone;
                 if (pz != null)
@@ -1082,6 +1097,7 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidPhase = AvoidPhase.Separate;
             _avoidPhaseEnteredAt = Time.time;
             _avoidStartedAt = Time.time;
+            CountAvoidCycle();
             SetMode(NavMode.Avoiding);
         }
 
@@ -1096,20 +1112,29 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidPhase = AvoidPhase.Separate;
             _avoidPhaseEnteredAt = Time.time;
             _avoidStartedAt = Time.time;
+            CountAvoidCycle();
             SetMode(NavMode.Avoiding);
+        }
+
+        /// <summary>
+        /// T-NS-AVOID4: входы в avoidance внутри окна — одна серия затора (счётчик для эскалации).
+        /// </summary>
+        void CountAvoidCycle() {
+            if (Time.time - _lastAvoidResumeAt < avoidEscalationWindowSec) _avoidCycles++;
+            else _avoidCycles = 1;
         }
 
         /// <summary>Yield: низкий приоритет — стоим и ждём пока high-priority корабль уедет.</summary>
         void TickAvoidYield(Rigidbody rb) {
-            if (Time.time - _avoidStartedAt > avoidTimeout) { ResumeFromAvoid(rb); return; }
+            if (Time.time - _avoidStartedAt > avoidTimeout) { ResumeFromAvoid(rb, false); return; }
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-            if (IsClearOfConflict()) ResumeFromAvoid(rb);
+            if (IsClearOfConflict()) ResumeFromAvoid(rb, true);
         }
 
         void TickAvoid(Rigidbody rb) {
             // Предохранитель — не зависаем в манёвре
-            if (Time.time - _avoidStartedAt > avoidTimeout) { ResumeFromAvoid(rb); return; }
+            if (Time.time - _avoidStartedAt > avoidTimeout) { ResumeFromAvoid(rb, false); return; }
 
             // Горизонтальный вектор "от препятствия"
             Vector3 away = rb.position - _avoidFromPos;
@@ -1125,7 +1150,13 @@ namespace ProjectC.PeacefulShip.Stations
             float t = Time.time - _avoidPhaseEnteredAt;
             switch (_avoidPhase) {
                 case AvoidPhase.Separate:
-                    rb.linearVelocity = new Vector3(moveDir.x * avoidSeparateSpeed, 0f, moveDir.z * avoidSeparateSpeed);
+                    // T-NS-AVOID4: эскалация — горизонтально не разошлись за серию
+                    // входов → уходим вверх, где свободно (замер R11: 300 м+ над падами).
+                    if (_avoidCycles >= avoidEscalateAfter) {
+                        rb.linearVelocity = new Vector3(0f, LiftSpeed, 0f);
+                    } else {
+                        rb.linearVelocity = new Vector3(moveDir.x * avoidSeparateSpeed, 0f, moveDir.z * avoidSeparateSpeed);
+                    }
                     rb.angularVelocity = Vector3.zero;
                     if (t >= avoidSeparateTime) { _avoidPhase = AvoidPhase.Stop; _avoidPhaseEnteredAt = Time.time; }
                     break;
@@ -1138,7 +1169,7 @@ namespace ProjectC.PeacefulShip.Stations
                     rb.linearVelocity = new Vector3(moveDir.x * avoidBackOffSpeed, 0f, moveDir.z * avoidBackOffSpeed);
                     rb.angularVelocity = Vector3.zero;
                     if (t >= avoidBackOffTime) {
-                        if (IsClearOfConflict()) ResumeFromAvoid(rb);
+                        if (IsClearOfConflict()) ResumeFromAvoid(rb, true);
                         else { _avoidPhase = AvoidPhase.Separate; _avoidPhaseEnteredAt = Time.time; }
                     }
                     break;
@@ -1160,11 +1191,18 @@ namespace ProjectC.PeacefulShip.Stations
             return true;
         }
 
-        void ResumeFromAvoid(Rigidbody rb) {
+        /// <summary>
+        /// T-NS-AVOID4: выход из манёвра с разрывом петли: cooldown на новые конфликты,
+        /// при чистом выходе — сброс счётчика серии затора.
+        /// </summary>
+        void ResumeFromAvoid(Rigidbody rb, bool cleared) {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             _avoidOther = null;
             _avoidBuild = null;
+            _lastAvoidResumeAt = Time.time;
+            _avoidCooldownUntil = Time.time + avoidCooldownSec;
+            if (cleared) _avoidCycles = 0;
             // Возврат на прошлый маршрут: прежний режим + прежняя CruiseTargetPos (не менялась)
             SetMode(_resumeMode == NavMode.Avoiding || _resumeMode == NavMode.AvoidYield ? NavMode.Cruising : _resumeMode);
         }

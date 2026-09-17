@@ -56,6 +56,20 @@ namespace ProjectC.UI.Chart
         private VisualElement _tracksDot;
         private Label _tracksLabel;
 
+        // WORLD-MAP-MARKS: легенда меток + режим постановки + выбор
+        private VisualElement _marksDot;
+        private Label _marksLabel;
+        private Button _placeButton;
+        private VisualElement _placePanel;
+        private Button[] _placeTypeButtons;
+        private TextField _placeNameField;
+        private Button _deleteButton;
+        private bool _placeMode;
+        private ProjectC.World.ChartMarkType _placeType = ProjectC.World.ChartMarkType.Landmark;
+        private readonly System.Collections.Generic.List<Label> _markLabels =
+            new System.Collections.Generic.List<Label>();
+        private const int MaxMarkLabels = 24;
+
         // Циркуль: мировая XZ-точка под кликом (сессионная, не сейвится)
         private bool _hasDivider;
         private Vector3 _dividerWorld;
@@ -75,6 +89,7 @@ namespace ProjectC.UI.Chart
 
             // Журнал треков пишется всегда (даже с закрытой картой).
             ProjectC.World.ChartTrackRecorder.EnsureExists();
+            ProjectC.World.ChartMarkManager.EnsureExists();
 
             if (_doc == null) _doc = GetComponent<UIDocument>();
             if (_doc != null && _doc.panelSettings == null)
@@ -248,8 +263,62 @@ namespace ProjectC.UI.Chart
             _tracksDot = tracksRow.childCount > 0 ? tracksRow[0] : null;
             _tracksLabel = tracksRow.childCount > 1 ? tracksRow[1] as Label : null;
             legend.Add(tracksRow);
-            legend.Add(MakeLayerRow("✕ Метки (скоро)", false, true));
+            var marksRow = MakeLayerRow("✕ Метки", false, true);
+            _marksDot = marksRow.childCount > 0 ? marksRow[0] : null;
+            _marksLabel = marksRow.childCount > 1 ? marksRow[1] as Label : null;
+            legend.Add(marksRow);
             legend.Add(MakeLayerRow("⇴ Ветра (скоро)", false, true));
+
+            // --- Постановка метки ---
+            _placeButton = new Button(() => SetPlaceMode(!_placeMode)) { text = "＋ Метка" };
+            _placeButton.style.fontSize = 12;
+            _placeButton.style.marginTop = 8;
+            legend.Add(_placeButton);
+
+            _placePanel = new VisualElement();
+            _placePanel.style.flexDirection = FlexDirection.Column;
+            _placePanel.style.display = DisplayStyle.None;
+            _placePanel.style.marginTop = 4;
+            legend.Add(_placePanel);
+
+            var typeRow = new VisualElement();
+            typeRow.style.flexDirection = FlexDirection.Row;
+            _placePanel.Add(typeRow);
+            string[] typeNames = { "Ориент.", "Опасн.", "Замет.", "Цель" };
+            _placeTypeButtons = new Button[4];
+            for (int i = 0; i < 4; i++)
+            {
+                int idx = i;
+                var tb = new Button(() =>
+                {
+                    _placeType = (ProjectC.World.ChartMarkType)idx;
+                    RefreshPlaceTypeButtons();
+                })
+                { text = typeNames[i] };
+                tb.style.fontSize = 10;
+                tb.style.flexGrow = 1;
+                tb.style.minWidth = 0;
+                _placeTypeButtons[i] = tb;
+                typeRow.Add(tb);
+            }
+
+            _placeNameField = new TextField("Название");
+            _placeNameField.value = "";
+            _placeNameField.style.fontSize = 11;
+            _placeNameField.style.marginTop = 4;
+            _placePanel.Add(_placeNameField);
+
+            var placeHint = new Label { text = "Клик по карте поставит метку." };
+            placeHint.style.fontSize = 10;
+            placeHint.style.color = new Color(0.25f, 0.18f, 0.10f, 0.6f);
+            placeHint.style.whiteSpace = WhiteSpace.Normal;
+            _placePanel.Add(placeHint);
+
+            _deleteButton = new Button(DeleteSelectedMark) { text = "Удалить выбранную" };
+            _deleteButton.style.fontSize = 11;
+            _deleteButton.style.marginTop = 4;
+            _deleteButton.style.display = DisplayStyle.None;
+            _placePanel.Add(_deleteButton);
 
             var zoomHdr = new Label { text = "МАСШТАБ" };
             zoomHdr.style.fontSize = 12;
@@ -306,6 +375,22 @@ namespace ProjectC.UI.Chart
             footer.Add(_statusLabel);
 
             _doc.rootVisualElement.Add(_overlay);
+
+            // Пул подписей меток (дети canvas, поверх painter-слоя, клики пропускают)
+            for (int i = 0; i < MaxMarkLabels; i++)
+            {
+                var ml = new Label { text = "" };
+                ml.style.position = Position.Absolute;
+                ml.style.fontSize = 10;
+                ml.style.color = Ink;
+                ml.style.backgroundColor = new Color(0.93f, 0.87f, 0.72f, 0.85f);
+                ml.style.paddingLeft = 3; ml.style.paddingRight = 3;
+                ml.style.display = DisplayStyle.None;
+                ml.pickingMode = PickingMode.Ignore;
+                _canvas.Add(ml);
+                _markLabels.Add(ml);
+            }
+
             _built = true;
         }
 
@@ -338,19 +423,102 @@ namespace ProjectC.UI.Chart
             _canvas?.MarkDirtyRepaint();
         }
 
+        // ==================== MARKS: PLACE / SELECT / DELETE ====================
+
+        private void SetPlaceMode(bool on)
+        {
+            _placeMode = on;
+            if (_placePanel != null)
+                _placePanel.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_placeButton != null)
+                _placeButton.text = on ? "Отмена" : "＋ Метка";
+            if (on) RefreshPlaceTypeButtons();
+        }
+
+        private void RefreshPlaceTypeButtons()
+        {
+            if (_placeTypeButtons == null) return;
+            for (int i = 0; i < _placeTypeButtons.Length; i++)
+            {
+                var tb = _placeTypeButtons[i];
+                if (tb == null) continue;
+                bool sel = (int)_placeType == i;
+                tb.style.color = sel ? Accent : new Color(0.25f, 0.18f, 0.10f, 0.6f);
+                tb.style.unityFontStyleAndWeight = sel ? FontStyle.Bold : FontStyle.Normal;
+            }
+        }
+
+        private void DeleteSelectedMark()
+        {
+            var marks = ProjectC.World.ChartMarkManager.Instance;
+            if (marks == null || marks.SelectedId < 0) return;
+            marks.RemoveMark(marks.SelectedId);
+            _hasDivider = false;
+            UpdateReadout();
+            _canvas?.MarkDirtyRepaint();
+        }
+
         // ==================== INTERACTION ====================
 
         private void OnCanvasPointerDown(PointerDownEvent evt)
         {
             if (_canvas == null || evt.button != 0) return;
             Vector2 local = evt.localPosition;
-            if (MapToWorld(local.x, local.y, out float wx, out float wz))
+
+            // Режим постановки: клик = новая метка
+            if (_placeMode)
             {
-                _dividerWorld = new Vector3(wx, 0f, wz);
-                _hasDivider = true;
-                UpdateReadout();
-                _canvas.MarkDirtyRepaint();
+                if (MapToWorld(local.x, local.y, out float mwx, out float mwz))
+                {
+                    var marks = ProjectC.World.ChartMarkManager.Instance;
+                    if (marks != null)
+                        marks.AddMark(new Vector3(mwx, 0f, mwz), _placeType,
+                            _placeNameField != null ? _placeNameField.value : "");
+                    if (_placeNameField != null) _placeNameField.value = "";
+                    SetPlaceMode(false);
+                    UpdateReadout();
+                    _canvas.MarkDirtyRepaint();
+                }
+                return;
             }
+
+            // Иначе: клик по метке = выбрать, мимо = циркуль + снять выбор
+            if (TryPickMark(local.x, local.y, out int pickedId))
+            {
+                var marks = ProjectC.World.ChartMarkManager.Instance;
+                marks?.Select(pickedId);
+            }
+            else
+            {
+                ProjectC.World.ChartMarkManager.Instance?.Deselect();
+                if (MapToWorld(local.x, local.y, out float wx, out float wz))
+                {
+                    _dividerWorld = new Vector3(wx, 0f, wz);
+                    _hasDivider = true;
+                }
+            }
+            UpdateReadout();
+            _canvas.MarkDirtyRepaint();
+        }
+
+        /// <summary>Метка под курсором (экранный порог 14px), ближайшая.</summary>
+        private bool TryPickMark(float px, float py, out int pickedId)
+        {
+            pickedId = -1;
+            var marks = ProjectC.World.ChartMarkManager.Instance;
+            if (marks == null || marks.Count == 0 || _canvas == null) return false;
+            if (!GetOwnXZ(out float cx, out float cz)) return false;
+            Vector3 north = ProjectC.World.WorldNorth.NorthDirection;
+            float k = 1f / _metersPerPixel;
+            float w = _canvas.contentRect.width, h = _canvas.contentRect.height;
+            float best = 14f * 14f;
+            foreach (var m in marks.Marks)
+            {
+                WorldToMap(m.worldPos.x, m.worldPos.z, cx, cz, north, k, w, h, out float mx, out float my);
+                float d2 = (mx - px) * (mx - px) + (my - py) * (my - py);
+                if (d2 < best) { best = d2; pickedId = m.id; }
+            }
+            return pickedId >= 0;
         }
 
         private void EnsureLocalPlayer()
@@ -412,7 +580,18 @@ namespace ProjectC.UI.Chart
         private void UpdateReadout()
         {
             if (_readoutLabel == null) return;
-            if (_hasDivider && GetOwnXZ(out float ox, out float oz))
+
+            var markManager = ProjectC.World.ChartMarkManager.Instance;
+            bool hasSelection = markManager != null && markManager.SelectedId >= 0
+                && markManager.TryGetMark(markManager.SelectedId, out _);
+
+            if (hasSelection)
+            {
+                // Выбранная метка важнее циркуля (якорь будущего пеленга в HUD)
+                markManager.TryGetMark(markManager.SelectedId, out var sel);
+                _readoutLabel.text = $"✕ {ProjectC.World.ChartMarkManager.TypeName(sel.type)}: {sel.text}";
+            }
+            else if (_hasDivider && GetOwnXZ(out float ox, out float oz))
             {
                 Vector3 dir = _dividerWorld - new Vector3(ox, 0f, oz);
                 dir.y = 0f;
@@ -457,6 +636,55 @@ namespace ProjectC.UI.Chart
                     ? Accent
                     : new Color(0.25f, 0.18f, 0.10f, 0.25f);
             }
+
+            // Кнопка удаления видна только при выборе метки
+            if (_deleteButton != null)
+                _deleteButton.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Легенда меток: счётчик
+            int markCount = markManager != null ? markManager.Count : 0;
+            if (_marksLabel != null)
+                _marksLabel.text = markCount > 0 ? $"✕ Метки ({markCount})" : "✕ Метки (кнопка ＋)";
+            if (_marksDot != null)
+            {
+                bool marksLive = markCount > 0;
+                _marksDot.style.backgroundColor = marksLive
+                    ? Accent
+                    : new Color(0.25f, 0.18f, 0.10f, 0.25f);
+            }
+
+            // Подписи меток из пула (проекция каждый кадр, карта живая)
+            UpdateMarkLabels();
+        }
+
+        private void UpdateMarkLabels()
+        {
+            if (_markLabels == null || _markLabels.Count == 0 || _canvas == null) return;
+            var marks = ProjectC.World.ChartMarkManager.Instance;
+            int shown = 0;
+            if (marks != null && marks.Count > 0 && GetOwnXZ(out float cx, out float cz))
+            {
+                Vector3 north = ProjectC.World.WorldNorth.NorthDirection;
+                float k = 1f / _metersPerPixel;
+                float w = _canvas.contentRect.width, h = _canvas.contentRect.height;
+                if (w > 1f && h > 1f)
+                {
+                    foreach (var m in marks.Marks)
+                    {
+                        if (shown >= _markLabels.Count) break;
+                        WorldToMap(m.worldPos.x, m.worldPos.z, cx, cz, north, k, w, h,
+                            out float mx, out float my);
+                        if (mx < -80 || my < -80 || mx > w + 80 || my > h + 80) continue;
+                        var lb = _markLabels[shown++];
+                        lb.text = m.text;
+                        lb.style.left = mx + 10f;
+                        lb.style.top = my - 9f;
+                        lb.style.display = DisplayStyle.Flex;
+                    }
+                }
+            }
+            for (int i = shown; i < _markLabels.Count; i++)
+                _markLabels[i].style.display = DisplayStyle.None;
         }
 
         // ==================== PAINT ====================
@@ -559,6 +787,72 @@ namespace ProjectC.UI.Chart
                     }
                     ppx = tx; ppy = ty;
                     hasPrev = true;
+                }
+            }
+
+            // --- Метки: иконки по типам + кольцо выбора ---
+            var markManager = ProjectC.World.ChartMarkManager.Instance;
+            if (markManager != null && markManager.Count > 0 && hasOwn)
+            {
+                foreach (var mk in markManager.Marks)
+                {
+                    WorldToMap(mk.worldPos.x, mk.worldPos.z, cx, cz, north, k, w, h, out float mx, out float my);
+                    if (mx < -40 || my < -40 || mx > w + 40 || my > h + 40) continue;
+                    Vector2 c = new Vector2(mx, my);
+                    switch (mk.type)
+                    {
+                        case ProjectC.World.ChartMarkType.Danger:
+                            // Красный треугольник
+                            painter.strokeColor = Accent;
+                            painter.lineWidth = 2.5f;
+                            painter.BeginPath();
+                            painter.MoveTo(new Vector2(mx, my - 8f));
+                            painter.LineTo(new Vector2(mx + 7f, my + 5f));
+                            painter.LineTo(new Vector2(mx - 7f, my + 5f));
+                            painter.ClosePath();
+                            painter.Stroke();
+                            break;
+                        case ProjectC.World.ChartMarkType.Note:
+                            // Чернильный квадрат
+                            painter.strokeColor = Ink;
+                            painter.lineWidth = 2f;
+                            painter.BeginPath();
+                            painter.MoveTo(new Vector2(mx - 5f, my - 5f));
+                            painter.LineTo(new Vector2(mx + 5f, my - 5f));
+                            painter.LineTo(new Vector2(mx + 5f, my + 5f));
+                            painter.LineTo(new Vector2(mx - 5f, my + 5f));
+                            painter.ClosePath();
+                            painter.Stroke();
+                            break;
+                        case ProjectC.World.ChartMarkType.Destination:
+                            // Двойное кольцо цели
+                            painter.strokeColor = Accent;
+                            painter.lineWidth = 2f;
+                            painter.BeginPath();
+                            painter.Arc(c, 5f, 0, 360);
+                            painter.Stroke();
+                            painter.lineWidth = 1f;
+                            painter.BeginPath();
+                            painter.Arc(c, 9f, 0, 360);
+                            painter.Stroke();
+                            break;
+                        default:
+                            // Ориентир: чернильное кольцо
+                            painter.strokeColor = Ink;
+                            painter.lineWidth = 2f;
+                            painter.BeginPath();
+                            painter.Arc(c, 6f, 0, 360);
+                            painter.Stroke();
+                            break;
+                    }
+                    if (mk.id == markManager.SelectedId)
+                    {
+                        painter.strokeColor = Accent;
+                        painter.lineWidth = 1.5f;
+                        painter.BeginPath();
+                        painter.Arc(c, 13f, 0, 360);
+                        painter.Stroke();
+                    }
                 }
             }
 

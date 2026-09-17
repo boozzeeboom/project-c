@@ -371,9 +371,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO09M: сдвинуть коридоры высот (иначе перманентная турбулентность).
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
                 "cells=" + ShiftAltitudeCorridors(plan.LocalTranslation));
-            // WORLD-MAP-TRACKS: сдвинуть журнал треков карты вместе с миром.
+            // WORLD-MAP-TRACKS: сдвинуть журнал карты (треки + метки) вместе с миром.
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ChartTracksShifted",
-                "points=" + ShiftChartTracks(plan.LocalTranslation));
+                "entries=" + ShiftChartJournal(plan.LocalTranslation));
             // T-FO09O: блок локального состояния применён полностью — rollback
             // вправе вернуть его назад. До этой точки отказ = сдвигов не было.
             _localStateShifted = true;
@@ -494,9 +494,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                 // T-FO09M: вернуть коридоры высот назад (иначе турбулентность).
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
                     "cells=" + ShiftAltitudeCorridors(-request.Plan.LocalTranslation));
-                // WORLD-MAP-TRACKS: вернуть журнал треков назад.
+                // WORLD-MAP-TRACKS: вернуть журнал карты назад.
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ChartTracksShifted",
-                    "points=" + ShiftChartTracks(-request.Plan.LocalTranslation));
+                    "entries=" + ShiftChartJournal(-request.Plan.LocalTranslation));
                 _localStateShifted = false;
             }
             else
@@ -683,7 +683,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                     "runtimeRebase", "ClientShiftApplied",
-                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups + ";storms=" + ShiftStormCells(translation) + ";corridors=" + ShiftAltitudeCorridors(translation) + ";tracks=" + ShiftChartTracks(translation));
+                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups + ";storms=" + ShiftStormCells(translation) + ";corridors=" + ShiftAltitudeCorridors(translation) + ";journal=" + ShiftChartJournal(translation));
             }
             catch (Exception e)
             {
@@ -913,16 +913,26 @@ namespace ProjectC.World.FloatingOrigin.Network
         }
 
         /// <summary>
-        /// WORLD-MAP-TRACKS: сдвиг журнала треков карты вместе с миром.
-        /// Синглтон (DontDestroyOnLoad, создаётся ChartWindow) — резолв напрямую.
+        /// WORLD-MAP-TRACKS: сдвиг журнала карты вместе с миром (треки + метки).
+        /// Синглтоны (DontDestroyOnLoad, создаются ChartWindow) — резолв напрямую.
         /// Best-effort, число в маркере. Вызывать на всех путях (success/rollback/broadcast).
         /// </summary>
-        private int ShiftChartTracks(Vector3 translation)
+        private int ShiftChartJournal(Vector3 translation)
         {
+            int shifted = 0;
             var recorder = ProjectC.World.ChartTrackRecorder.Instance;
-            if (recorder == null) return 0;
-            try { return recorder.ApplyRebaseTranslation(translation); }
-            catch (Exception) { return 0; }
+            if (recorder != null)
+            {
+                try { shifted += recorder.ApplyRebaseTranslation(translation); }
+                catch (Exception) { }
+            }
+            var marks = ProjectC.World.ChartMarkManager.Instance;
+            if (marks != null)
+            {
+                try { shifted += marks.ApplyRebaseTranslation(translation); }
+                catch (Exception) { }
+            }
+            return shifted;
         }
 
         private void ShiftCarryCaches(Vector3 translation)

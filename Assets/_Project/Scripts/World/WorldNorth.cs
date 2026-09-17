@@ -30,11 +30,16 @@ namespace ProjectC.World
         public static Vector3 DefaultNorth => Vector3.forward;
 
         /// <summary>Есть ли в загруженных сценах хотя бы одна роза.</summary>
-        public static bool HasRose => _roses.Count > 0;
+        public static bool HasRose
+        {
+            get { EnsureResolved(); return _roses.Count > 0; }
+        }
 
         /// <summary>Имя объекта активной розы (для HUD-диагностики), null если нет.</summary>
-        public static string RoseObjectName =>
-            HasRose && _roses[0] != null ? _roses[0].name : null;
+        public static string RoseObjectName
+        {
+            get { EnsureResolved(); return HasRoseDirect && _roses[0] != null ? _roses[0].name : null; }
+        }
 
         /// <summary>
         /// Мировое направление на север (XZ, нормировано).
@@ -44,7 +49,8 @@ namespace ProjectC.World
         {
             get
             {
-                if (HasRose && _roses[0] != null)
+                EnsureResolved();
+                if (HasRoseDirect && _roses[0] != null)
                 {
                     Vector3 n = _roses[0].NorthDirection;
                     if (n.sqrMagnitude > 0.0001f) return n.normalized;
@@ -97,6 +103,47 @@ namespace ProjectC.World
         internal static void Unregister(CompassRose rose)
         {
             _roses.Remove(rose);
+        }
+
+        // Прямая проверка без ленивого поиска (чтобы геттеры не рекурсили).
+        private static bool HasRoseDirect => _roses.Count > 0;
+
+        private static double _lastScanTime = -100.0;
+
+        /// <summary>
+        /// Ленивый fallback: если список пуст (сообщения OnEnable/OnDisable в этом
+        /// контексте не стрельнули, роза подгрузилась со сценой позже и т.п.) —
+        /// находим активную розу сами. Скан троттлится (раз в 2 с), кэш живёт
+        /// пока роза не уйдёт через Unregister.
+        /// </summary>
+        private static void EnsureResolved()
+        {
+            // Чистим мёртвые ссылки (сцена выгружена, объект удалён).
+            for (int i = _roses.Count - 1; i >= 0; i--)
+                if (_roses[i] == null) _roses.RemoveAt(i);
+
+            if (_roses.Count > 0) return;
+
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (now - _lastScanTime < 2.0) return;
+            _lastScanTime = now;
+
+            var found = Object.FindObjectsByType<CompassRose>(FindObjectsSortMode.None);
+            CompassRose first = null;
+            int activeCount = 0;
+            foreach (var r in found)
+            {
+                if (r == null || !r.isActiveAndEnabled) continue;
+                activeCount++;
+                if (first == null) first = r;
+            }
+            if (first != null)
+            {
+                _roses.Add(first);
+                if (activeCount > 1)
+                    Debug.LogWarning($"[WorldNorth] Найдено активных роз: {activeCount} — " +
+                                     $"север задаёт '{first.name}', остальные игнорируются.");
+            }
         }
     }
 }

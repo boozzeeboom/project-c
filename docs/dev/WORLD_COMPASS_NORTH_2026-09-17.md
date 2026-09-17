@@ -66,5 +66,11 @@ bool hasRose = ProjectC.World.WorldNorth.HasRose;               // роза на
 
 - [x] Compile: refresh + Console → 0 errors (только старые CS0618 warnings)
 - [x] Мат. тест через execute_code: N=0 E=90 S=180 W=270, 45°=NE, HasRose=False
+- [x] Роза поставлена в сцену: `CompassRose_North` под `WorldRoot_0_0`,
+  (40480, 2560, 39750) над CaptainSpawn, rotY=0 (север=+Z), сцена сохранена,
+  `WorldNorth.HasRose=True` в редакторе
+- [x] Ленивый резолв в `WorldNorth.EnsureResolved()`: если OnEnable-сообщения
+  в каком-то контексте не стрельнули — провайдер находит активную розу сам
+  (скан троттлится, раз в 2 с); мёртвые ссылки чистятся
 - [ ] Manual (пользователь): роза в 0_0 → Play → HDG на города → F8 → HDG тот же → F9 → тот же
 - [ ] Пеший HUD — отдельным тикетом, API готов

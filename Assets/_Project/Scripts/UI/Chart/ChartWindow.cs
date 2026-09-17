@@ -246,6 +246,7 @@ namespace ProjectC.UI.Chart
             _canvas.style.flexGrow = 1;
             _canvas.style.minWidth = 0;
             _canvas.style.backgroundColor = Parchment;
+            _canvas.style.overflow = Overflow.Hidden; // подписи меток не вылезают на легенду
             _canvas.generateVisualContent += OnChartPaint;
             _canvas.RegisterCallback<PointerDownEvent>(OnCanvasPointerDown);
             _canvas.RegisterCallback<PointerMoveEvent>(OnCanvasPointerMove);
@@ -292,17 +293,22 @@ namespace ProjectC.UI.Chart
             _placePanel.style.flexDirection = FlexDirection.Column;
             _placePanel.style.display = DisplayStyle.None;
             _placePanel.style.marginTop = 4;
+            _placePanel.style.width = 150;
             legend.Add(_placePanel);
 
-            // Два явных ряда 2×2: wrap в узкой легенде с темой ведёт себя
-            // непредсказуемо (поле ввода наезжало на кнопки).
+            // Два явных ряда 2×2 с фиксированными пикселями: легенда 170px −
+            // паддинги 10+10 = 150px контента, две кнопки по 73 + отступы.
+            // Флекс-догадки (grow/percent/wrap) в узкой колонке с темой дают
+            // схлопывание в ноль и наезды — фиксируем жёстко.
             string[] typeNames = { "Ориент.", "Опасн.", "Замет.", "Цель" };
             _placeTypeButtons = new Button[4];
             for (int row = 0; row < 2; row++)
             {
                 var typeRow = new VisualElement();
                 typeRow.style.flexDirection = FlexDirection.Row;
-                typeRow.style.width = Length.Percent(100);
+                typeRow.style.width = 150;
+                typeRow.style.height = 26;
+                typeRow.style.marginTop = 2;
                 _placePanel.Add(typeRow);
                 for (int col = 0; col < 2; col++)
                 {
@@ -314,10 +320,13 @@ namespace ProjectC.UI.Chart
                     })
                     { text = typeNames[idx] };
                     tb.style.fontSize = 10;
-                    tb.style.flexGrow = 1;
-                    tb.style.minWidth = 0;
-                    tb.style.height = 24;
+                    tb.style.width = 73;
+                    tb.style.height = 26;
+                    tb.style.minWidth = 73;
+                    tb.style.flexGrow = 0;
+                    tb.style.flexShrink = 0;
                     tb.style.marginLeft = 1; tb.style.marginRight = 1;
+                    tb.style.paddingLeft = 0; tb.style.paddingRight = 0;
                     _placeTypeButtons[idx] = tb;
                     typeRow.Add(tb);
                 }
@@ -335,7 +344,8 @@ namespace ProjectC.UI.Chart
             _placeNameField.value = "";
             _placeNameField.style.fontSize = 11;
             _placeNameField.style.minWidth = 0;
-            _placeNameField.style.width = Length.Percent(100);
+            _placeNameField.style.width = 150;
+            _placeNameField.style.flexShrink = 0;
             _placeNameField.style.height = 24;
             _placePanel.Add(_placeNameField);
 
@@ -343,6 +353,7 @@ namespace ProjectC.UI.Chart
             placeHint.style.fontSize = 10;
             placeHint.style.color = new Color(0.25f, 0.18f, 0.10f, 0.6f);
             placeHint.style.whiteSpace = WhiteSpace.Normal;
+            placeHint.style.width = 150;
             _placePanel.Add(placeHint);
 
             _deleteButton = new Button(DeleteSelectedMark) { text = "Удалить выбранную" };

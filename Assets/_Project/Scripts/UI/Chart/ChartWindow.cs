@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 namespace ProjectC.UI.Chart
 {
     /// <summary>
-    /// Морская карта неба (клавиша M). v1 — каркас интерфейса:
+    /// Карта неба (клавиша M). v1 — каркас интерфейса:
     /// пергамент, север вверх (WorldNorth), своё место (слежение), порты
     /// из AltitudeCorridorSystem, циркуль (клик = пеленг+дистанция), зум.
     ///
@@ -220,13 +220,13 @@ namespace ProjectC.UI.Chart
             header.style.borderBottomColor = InkFaint;
             panel.Add(header);
 
-            var title = new Label { name = "chart-title", text = "МОРСКАЯ КАРТА" };
+            var title = new Label { name = "chart-title", text = "КАРТА" };
             title.style.fontSize = 20;
             title.style.unityFontStyleAndWeight = FontStyle.Bold;
             title.style.color = Ink;
             header.Add(title);
 
-            var subtitle = new Label { name = "chart-sub", text = "журнал плаваний • v1: своё место, порты, циркуль" };
+            var subtitle = new Label { name = "chart-sub", text = "журнал полётов • v1: своё место, порты, циркуль" };
             subtitle.style.fontSize = 11;
             subtitle.style.color = new Color(0.25f, 0.18f, 0.10f, 0.6f);
             header.Add(subtitle);

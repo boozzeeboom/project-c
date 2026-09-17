@@ -398,6 +398,28 @@ namespace ProjectC.PeacefulShip.Stations
         // T-NS-PADS1: последняя дистанция до пада в Berthing (для progress-refresh окна посадки)
         private float _lastBerthDist = float.MaxValue;
 
+        // === T-NS-BERTH2: Berthing watchdog + holding-точка (без новых NavMode) ===
+        [Header("Berthing watchdog (server-only)")]
+        [Tooltip("Сколько секунд без сближения с падом терпим, прежде чем прервать заход.")]
+        [Min(1f)] [SerializeField] private float berthWatchdogSec = 20f;
+        [Tooltip("Минимальное сближение (м), которое считается прогрессом захода.")]
+        [Min(0.1f)] [SerializeField] private float berthMinProgressMeters = 2f;
+        [Tooltip("Сколько прерванных заходов подряд терпим, прежде чем уйти на другую станцию.")]
+        [Min(1)] [SerializeField] private int berthMaxAttempts = 3;
+        [Tooltip("Относительный набор высоты (м) при прерывании захода перед повторной попыткой.")]
+        [Min(5f)] [SerializeField] private float abortClimbMeters = 60f;
+        [Tooltip("Высота holding-зависания над станцией (м над station.position.y), пока нет пада.")]
+        [Min(10f)] [SerializeField] private float holdClearanceMeters = 60f;
+        [Tooltip("Сколько неудачных запросов пада подряд терпим в holding, прежде чем уйти. 3 с/попытка.")]
+        [Min(1)] [SerializeField] private int holdingMaxRetries = 20;
+
+        // Состояние watchdog/holding — всё относительное (дистанции, таймеры, счётчики),
+        // мировых Vector3 не храним: FO-хук не нужен, F8 не роняет заход.
+        private float _berthNoProgressSince;
+        private int _berthAttempts;
+        private int _holdingRetries;
+        private float _abortClimbRemaining; // м, >0 = идёт аварийный набор высоты
+
         /// <summary>
         /// Приоритет расхождения: выше → делает полный манёвр, ниже → yield (ждёт).
         /// Авто-назначается из NpcInstanceId (детерминированно, без сетевой коммуникации).
@@ -536,6 +558,10 @@ namespace ProjectC.PeacefulShip.Stations
             CurrentMode = m;
             if (m == NavMode.Docked) {
                 DockedSinceTime = Time.time;
+                // T-NS-BERTH2: успешный док — сбрасываем счётчики захода/holding.
+                _berthAttempts = 0;
+                _holdingRetries = 0;
+                _abortClimbRemaining = 0f;
                 // T-CARGO-NPC-01: сбрасываем _cargoTradeDone в false при КАЖДОМ входе в Docked.
                 _cargoTradeDone = false;
                 if (old == NavMode.Berthing) {
@@ -548,6 +574,10 @@ namespace ProjectC.PeacefulShip.Stations
                 ResolveDwellTime();
             }
             if (m == NavMode.Lifting) {
+                // T-NS-BERTH2: новый leg — сбрасываем счётчики захода/holding.
+                _berthAttempts = 0;
+                _holdingRetries = 0;
+                _abortClimbRemaining = 0f;
                 // M3.2.14: освободить старый пад (если был) перед взлётом
                 if (Docking.Core.DockingWorld.Instance != null) {
                     var ship = GetComponent<ShipController>();
@@ -647,28 +677,68 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         void TickBerth(Rigidbody rb) {
+            // T-NS-BERTH2: аварийный набор высоты после прерывания захода.
+            // Запросы пада подавлены, пока не наберём высоту: повторный заход
+            // начинается сверху (почти вертикальный спуск), а не в стену.
+            if (_abortClimbRemaining > 0f) {
+                float step = LiftSpeed * Time.fixedDeltaTime;
+                rb.linearVelocity = new Vector3(0f, LiftSpeed, 0f);
+                rb.angularVelocity = Vector3.zero;
+                _abortClimbRemaining -= step;
+                if (_abortClimbRemaining <= 0f) {
+                    _abortClimbRemaining = 0f;
+                    _lastBerthDist = float.MaxValue;
+                    _berthNoProgressSince = Time.time;
+                    rb.linearVelocity = Vector3.zero;
+                    if (_berthAttempts >= berthMaxAttempts) {
+                        DivertToNextStation(rb);
+                    } else if (debugMode) {
+                        Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Berthing go-around #{_berthAttempts} done — re-requesting pad");
+                    }
+                }
+                return;
+            }
+
             // Если пад не назначен — запросить у диспетчера (с троттлингом)
             if (string.IsNullOrEmpty(AssignedPadId)) {
                 if (Time.time - _lastPadAssignAttemptTime < PAD_ASSIGN_RETRY_SEC) {
-                    rb.linearVelocity = Vector3.zero;
+                    // T-NS-BERTH2: holding — ждём пад не на месте, а на высоте
+                    // station.y + holdClearance (точка считается вживую каждый тик).
+                    HoverAtHoldingAltitude(rb);
                     return;
                 }
                 _lastPadAssignAttemptTime = Time.time;
                 var padId = TryAssignPadFromDispatcher();
                 if (!string.IsNullOrEmpty(padId)) {
                     AssignedPadId = padId;
+                    _holdingRetries = 0;
                     _lastBerthDist = float.MaxValue;
+                    _berthNoProgressSince = Time.time;
                     Vector3 padPos = ResolvePadPos();
                     if (padPos != Vector3.zero) {
                         CruiseTargetPos = padPos;
                     }
                 } else {
-                    rb.linearVelocity = Vector3.zero;
+                    // T-NS-BERTH2: пад не дали — считаем holding-попытки, после лимита уходим
+                    // на другую станцию вместо вечного зависания.
+                    _holdingRetries++;
+                    if (_holdingRetries >= holdingMaxRetries) {
+                        _holdingRetries = 0;
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Berthing holding gave up — diverting");
+                        DivertToNextStation(rb);
+                        return;
+                    }
+                    HoverAtHoldingAltitude(rb);
                     return;
                 }
             }
 
             if (CruiseTargetPos == Vector3.zero) {
+                // T-NS-BERTH2: пад назначен, но его позиции нет (конфиг сцены) —
+                // считаем назначение битым и перезапрашиваем, а не висим вечно.
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Berthing pad '{AssignedPadId}' has no position — re-requesting");
+                AssignedPadId = null;
+                _lastBerthDist = float.MaxValue;
                 rb.linearVelocity = Vector3.zero;
                 return;
             }
@@ -690,11 +760,16 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
-            // T-NS-PADS1: progress refresh — дистанция уменьшается → продлеваем окно посадки,
-            // чтобы медленные корабли не теряли пад в полёте. Гистерезис 1 м против дребезга.
-            if (dist < _lastBerthDist - 1f) {
+            // T-NS-BERTH2: watchdog — сближение есть → прогресс (и продление окна посадки
+            // из T-NS-PADS1); сближения нет дольше berthWatchdogSec → прерываем заход.
+            if (dist < _lastBerthDist - berthMinProgressMeters) {
                 _lastBerthDist = dist;
+                _berthNoProgressSince = Time.time;
                 dwInstance.RefreshNpcAssignment(npcInstanceId, shipForPad.NetworkObjectId);
+            } else if (Time.time - _berthNoProgressSince > berthWatchdogSec) {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Berthing watchdog: no progress for {berthWatchdogSec:F0}s at dist {dist:F1}m — aborting");
+                AbortBerthApproach(rb);
+                return;
             }
 
             // M3.2.12: проверять дистанцию только до ПАДА (если пад назначен),
@@ -719,6 +794,70 @@ namespace ProjectC.PeacefulShip.Stations
             Vector3 dir = toTarget.normalized;
             float speed = Mathf.Min(ApproachSpeed, dist * 2f);
             rb.linearVelocity = new Vector3(dir.x * speed, dir.y * speed, dir.z * speed);
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        // === T-NS-BERTH2: helpers — прерывание захода, divert, holding ===
+
+        /// <summary>
+        /// Прервать заход: освободить пад, начать относительный набор высоты.
+        /// ReleaseAssignment напрямую (не ReleaseNpcAssignment): корабль в полёте,
+        /// ExitDocked-паттерн с _lastUndockTime здесь не нужен.
+        /// </summary>
+        void AbortBerthApproach(Rigidbody rb) {
+            _berthAttempts++;
+            var dw = Docking.Core.DockingWorld.Instance;
+            var ship = GetComponent<ShipController>();
+            if (dw != null && ship != null) dw.ReleaseAssignment(npcInstanceId, ship.NetworkObjectId);
+            AssignedPadId = null;
+            _lastBerthDist = float.MaxValue;
+            _abortClimbRemaining = abortClimbMeters;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        /// <summary>
+        /// Уйти на другую станцию после исчерпания попыток: следующий leg расписания
+        /// (пинг-понг routes[0]) + Cruising с набранной высоты. Станции нет — висеть
+        /// на месте, режим не менять (не strandим корабль).
+        /// </summary>
+        void DivertToNextStation(Rigidbody rb) {
+            _berthAttempts = 0;
+            _holdingRetries = 0;
+            _abortClimbRemaining = 0f;
+            _lastBerthDist = float.MaxValue;
+            _berthNoProgressSince = Time.time;
+            AdvanceScheduleForCurrentNpc();
+            var station = ResolveTargetStation();
+            if (station.HasValue) {
+                CruiseTargetPos = station.Value;
+                SetMode(NavMode.Cruising);
+                if (debugMode) {
+                    var st = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+                    Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Diverting to {(st != null ? st.CurrentRoute.toLocationId : "?")}");
+                }
+            } else {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Divert failed: no station — holding");
+            }
+        }
+
+        /// <summary>
+        /// Holding-зависание: вертикальная «труба» к station.y + holdClearance.
+        /// Точка считается вживую каждый тик — мировых Vector3 не храним (F8-безопасно).
+        /// </summary>
+        void HoverAtHoldingAltitude(Rigidbody rb) {
+            var station = ResolveTargetStation();
+            if (!station.HasValue) {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                return;
+            }
+            float targetY = station.Value.y + holdClearanceMeters;
+            float dy = targetY - rb.position.y;
+            float vy = dy > 2f ? LiftSpeed : dy < -2f ? -2f : 0f;
+            rb.linearVelocity = new Vector3(0f, vy, 0f);
             rb.angularVelocity = Vector3.zero;
         }
 

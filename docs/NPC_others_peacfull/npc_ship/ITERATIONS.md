@@ -1,5 +1,48 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-17 — T-NS-BERTH2: Berthing watchdog + holding-точка + divert
+
+**Задача (стадия 2 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P0-Berthing):**
+убрать «вечное тупление» — заход по прямой без прогресса и зависание в ожидании пада.
+Без новых `NavMode`, только `NpcShipController.cs` (плюс сбросы в `SetMode`).
+
+**Механика:**
+- Watchdog: нет сближения с падом дольше `berthWatchdogSec` (дефолт 20 с,
+  гистерезис `berthMinProgressMeters` 2 м) → `AbortBerthApproach`: освободить пад,
+  относительный набор высоты `abortClimbMeters` (дефолт 60 м). После набора —
+  повторный запрос пада (заход сверху) либо divert после `berthMaxAttempts` (дефолт 3).
+- Holding: пад не дали — висеть не на месте, а в вертикальной «трубе» к
+  `station.y + holdClearanceMeters` (дефолт 60 м, считается вживую каждый тик).
+  После `holdingMaxRetries` (дефолт 20 ≈ 60 с) — divert: следующий leg + `Cruising`
+  с набранной высоты. Станции нет — висеть на месте, режим не менять.
+- Битый пад (назначен, но позиции нет в сцене) — сброс и перезапрос вместо вечного hover.
+
+**Критическая аналитика (проверено до кода, чтобы не было блокеров):**
+- FO: новых хранимых мировых `Vector3` нет (высота holding — вживую от transform
+  станции; abort-набор — относительные метры; watchdog — дельты дистанции + `Time.time`,
+  попытки — счётчики). `ApplyRebaseTranslation` для стадии не нужен; протухание
+  `CruiseTargetPos` при F8 — предсуществующее, чинится коридорами (стадия 3).
+  Пады в сцене — локальный Y≈0 от корня станции, т.е. `station.y + 60` ≈ 60 м над палубой.
+- T-PERSIST: новые поля транзиентные (счётчики/таймеры), схему сейва не меняем;
+  после загрузки — как свежий заход. `RestoreFromSave` не трогали.
+- Cargo: только `Docked`-ветка, заход её не касается.
+- Displacement (T-NS08): abort/divert освобождают пад через `ReleaseAssignment`
+  напрямую (не `ReleaseNpcAssignment` — у летящего корабля нет нужды в `ExitDocked`
+  с побочным сбросом `_lastUndockTime` hull-grace).
+- Stage-1 связка: stale-guard идёт первым, watchdog — после; progress-refresh
+  перенесён в progress-ветку watchdog (один порог `berthMinProgressMeters`) — борьбы нет.
+- Authority: `NavTick` сверху уступает игроку; watchdog пишет velocity только в `Berthing`.
+  `detectCollisions` не трогали (всегда true, регрессия T-NS11).
+- Остаточный риск: abort-набор 60 м из глубины «чаши» может не выйти выше всех крыш;
+  лечится Departure-Chimney с per-station клиренсом (стадия 3).
+
+**Проверка:** `refresh_unity` (force, compile=request) → errors 0 (только служебные
+MCP-client notices). Play Mode — за пользователем (долгий прогон позже).
+
+**Следующая стадия:** P0-Departure-Chimney (подъём до клиренса перед Cruising).
+
+---
+
 ## Итерация от 2026-09-17 — T-NS-PADS1: учёт падов для NPC (used + progress-refresh + stale-guard)
 
 **Задача (стадия 1 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P0-пады):**

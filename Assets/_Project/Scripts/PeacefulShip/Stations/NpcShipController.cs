@@ -929,24 +929,64 @@ namespace ProjectC.PeacefulShip.Stations
             if (state == null) return;
             var schedule = NpcShipWorld.Instance?.GetSchedule(npcInstanceId);
             if (schedule == null || schedule.routes == null || schedule.routes.Length == 0) return;
-            var route = schedule.routes[0];
-            state.ScheduleIndex++;
-            if (state.ScheduleIndex % 2 == 1) {
-                state.CurrentRoute = new ProjectC.PeacefulShip.Core.NpcShipRoute {
-                    fromLocationId = route.toLocationId,
-                    toLocationId = route.fromLocationId,
-                    dwellTimeSec = route.dwellTimeSec,
-                    dwellRandomAddMinSec = route.dwellRandomAddMinSec,
-                    dwellRandomAddMaxSec = route.dwellRandomAddMaxSec,
-                    flightDurationSec = route.flightDurationSec,
-                    preferredShipClass = route.preferredShipClass,
-                    demandCategory = route.demandCategory
-                };
-            } else {
-                state.CurrentRoute = route;
+            int len = schedule.routes.Length;
+
+            // T-NS-ROUTES5: один leg (классика M3.2) — пинг-понг туда-обратно, бит-в-бит как раньше.
+            if (len == 1) {
+                var route = schedule.routes[0];
+                state.ScheduleIndex++;
+                ProjectC.PeacefulShip.Core.NpcShipRoute next;
+                if (state.ScheduleIndex % 2 == 1) {
+                    next = new ProjectC.PeacefulShip.Core.NpcShipRoute {
+                        fromLocationId = route.toLocationId,
+                        toLocationId = route.fromLocationId,
+                        dwellTimeSec = route.dwellTimeSec,
+                        dwellRandomAddMinSec = route.dwellRandomAddMinSec,
+                        dwellRandomAddMaxSec = route.dwellRandomAddMaxSec,
+                        flightDurationSec = route.flightDurationSec,
+                        preferredShipClass = route.preferredShipClass,
+                        demandCategory = route.demandCategory
+                    };
+                } else {
+                    next = route;
+                }
+                // Guard: цели нет в реестре — остаёмся на текущем leg, не strandим в hover.
+                if (!HasStation(next.toLocationId)) {
+                    state.ScheduleIndex--;
+                    if (debugMode) Debug.LogWarning($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advance blocked: no station '{next.toLocationId}' — staying");
+                    _scheduleAdvancedAfterDock = true;  // M3.2.11: не дать Docked handlerу advance снова
+                    return;
+                }
+                state.CurrentRoute = next;
+                _scheduleAdvancedAfterDock = true;  // M3.2.11: не дать Docked handlerу advance снова
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId}");
+                return;
             }
+
+            // T-NS-ROUTES5: мульти-leg — последовательный обход (Loop; RoundTrip с >1 leg —
+            // замкнутая цепочка как у Courier) или случайный вход (RandomFromPool).
+            // Legs в неизвестные станции пропускаем; если битые все — остаёмся, не strandим.
+            bool random = schedule.scheduleType == NpcShipSchedule.ScheduleType.RandomFromPool;
+            int start = random ? Random.Range(0, len) : (state.ScheduleIndex + 1) % len;
+            for (int attempt = 0; attempt < len; attempt++) {
+                int idx = (start + attempt) % len;
+                var candidate = schedule.routes[idx];
+                if (HasStation(candidate.toLocationId)) {
+                    state.ScheduleIndex = idx;
+                    state.CurrentRoute = candidate;
+                    _scheduleAdvancedAfterDock = true;  // M3.2.11: не дать Docked handlerу advance снова
+                    if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId} (leg {idx})");
+                    return;
+                }
+            }
+            if (debugMode) Debug.LogWarning($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advance blocked: no known stations in {len} legs — staying");
             _scheduleAdvancedAfterDock = true;  // M3.2.11: не дать Docked handlerу advance снова
-            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId}");
+        }
+
+        /// <summary>T-NS-ROUTES5: есть ли станция с таким locationId в реестре (защита от strand).</summary>
+        bool HasStation(string locationId) {
+            if (string.IsNullOrEmpty(locationId)) return false;
+            return Docking.Network.DockingZoneRegistry.GetByLocation(locationId) != null;
         }
 
         // === M3.2.15: resolve DwellTime from schedule + random ===

@@ -21,7 +21,7 @@ MonoBehaviour:
     toLocationId: PRIMIUM_FARM_0_2
     dwellTimeSec: 60
     dwellRandomAddMinSec: 60
-    dwellRandomAddMaxSec: 6000
+    dwellRandomAddMaxSec: 540
     flightDurationSec: 0
     preferredShipClass: 0
     demandCategory: 0
@@ -29,7 +29,7 @@ MonoBehaviour:
   arrivalIntervalStdDev: 90
   minArrivalSpacingSec: 60
   minDwellTimeSec: 60
-  maxDwellTimeSec: 6000
+  maxDwellTimeSec: 600
   cargoTrade:
     useUnlimitedCredits: 1
     sellAllOnArrival: 1

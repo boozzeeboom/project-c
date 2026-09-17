@@ -1,5 +1,41 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-17 — T-NS-ROUTES5: настоящие мульти-маршруты + cap dwell
+
+**Задача (стадия 5 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P1-расписание):**
+`AdvanceScheduleForCurrentNpc` ходил только по `routes[0]` (пинг-понг) — Courier с
+цепочкой из 6 legs летал только первый; `HeavyII` сидел на паде до ~100 мин.
+
+**Изменения:**
+- `PeacefulShip/Stations/NpcShipController.cs` — `AdvanceScheduleForCurrentNpc`:
+  1 leg — пинг-понг бит-в-бит как раньше; >1 leg — последовательный обход
+  (Loop; RoundTrip с замкнутой цепочкой как у Courier) или случайный вход
+  (`RandomFromPool`); семантика — как у спроектированного, но мёртвого
+  `NpcShipWorld.AdvanceScheduleIndex` (его не трогаем — снос мёртвого кода в P2).
+- Guard от strand: leg в неизвестную станцию (`DockingZoneRegistry` пуст) пропускается;
+  если битые все — остаёмся на текущем leg + warning в лог (раньше был вечный hover).
+- `Resources/PeacefulShip/NpcShipSchedule_HeavyII_Default.asset`: cap dwell
+  `6000 → 600` с (`maxDwellTimeSec` и `dwellRandomAddMaxSec`; база 60+60..540,
+  итог ≤600 с ≈ 10 мин). Остальные расписания уже в норме (60–90/120 с; Courier
+  60+20..1000 режется клампом `maxDwell 90`).
+
+**Критическая аналитика (блокеры):**
+- Цепочка Courier замкнута (`... → PRIMIUM_FARM_0_4 → PRIMIUM → leg 0`), обход сходится.
+- Divert теперь идёт вперёд по цепочке, а не назад — из перегруженного порта уходит
+  по маршруту, это штатно.
+- Пустые расписания (`Heavy/Light/Medium_Default` без routes) — guard на входе как раньше.
+- FO/сейвы/cargo/authority/pads — не касаемся. Мёртвые `TickNpc`/`TrafficManager` живы
+  до P2 (осознанно, одним диффом).
+
+**Проверка:** `refresh_unity` → errors/warnings 0. Play Mode (долгий прогон):
+Courier-корабли должны идти по цепочке ферм (`Schedule advanced to ... (leg N)` в логе
+с `debugMode`), варнинги `no station` покажут битые legs.
+
+**Следующая стадия:** Berthing-коридор (OverheadCruise/Descend) или P2-чистка мёртвого
+кода — на выбор.
+
+---
+
 ## Итерация от 2026-09-17 — T-NS-AVOID4: разрыв петли avoidance + эскалация набором
 
 **Задача (стадия 4 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P1-avoidance):**

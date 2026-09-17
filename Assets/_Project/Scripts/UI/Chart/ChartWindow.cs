@@ -861,6 +861,7 @@ namespace ProjectC.UI.Chart
                 var pts = trackRecorder.Points;
                 bool hasPrev = false;
                 float ppx = 0f, ppy = 0f;
+                double prevUtc = 0;
                 painter.lineWidth = 2f;
                 for (int i = 0; i < pts.Count; i++)
                 {
@@ -871,16 +872,22 @@ namespace ProjectC.UI.Chart
                     if (!onScreen) { hasPrev = false; continue; }
                     if (hasPrev)
                     {
-                        // Свежий — яркий, старый — выцветает (концепт §4)
-                        float ageMin = (float)((nowUtc - tp.utcSeconds) / 60.0);
-                        float alpha = ageMin < 10f ? 0.85f : Mathf.Max(0.15f, 0.85f - (ageMin - 10f) / 170f * 0.7f);
-                        painter.strokeColor = new Color(Ink.r, Ink.g, Ink.b, alpha);
-                        painter.BeginPath();
-                        painter.MoveTo(new Vector2(ppx, ppy));
-                        painter.LineTo(new Vector2(tx, ty));
-                        painter.Stroke();
+                        // Разрыв телепорта: респаун/вход не тянут линию через карту
+                        float segMeters = Vector2.Distance(new Vector2(ppx, ppy), new Vector2(tx, ty)) * _metersPerPixel;
+                        double gapSec = tp.utcSeconds - prevUtc;
+                        if (segMeters < 5000f && gapSec < 1800.0)
+                        {
+                            // Свежий — яркий, старый — выцветает (концепт §4)
+                            float ageMin = (float)((nowUtc - tp.utcSeconds) / 60.0);
+                            float alpha = ageMin < 10f ? 0.85f : Mathf.Max(0.15f, 0.85f - (ageMin - 10f) / 170f * 0.7f);
+                            painter.strokeColor = new Color(Ink.r, Ink.g, Ink.b, alpha);
+                            painter.BeginPath();
+                            painter.MoveTo(new Vector2(ppx, ppy));
+                            painter.LineTo(new Vector2(tx, ty));
+                            painter.Stroke();
+                        }
                     }
-                    ppx = tx; ppy = ty;
+                    ppx = tx; ppy = ty; prevUtc = tp.utcSeconds;
                     hasPrev = true;
                 }
             }

@@ -68,6 +68,13 @@ namespace ProjectC.World
         private float _lastTime;
         private ProjectC.Player.NetworkPlayer _localPlayer;
 
+        // WORLD-MAP-PERSIST: ленивая загрузка + грязный автосейв
+        private bool _loaded;
+        private ulong _clientId;
+        private bool _dirty;
+        private float _lastSaveTime;
+        private const float SaveIntervalSeconds = 30f;
+
         /// <summary>Все точки (только чтение, для отрисовки карты).</summary>
         public IReadOnlyList<ChartTrackPoint> Points => _points;
 
@@ -96,6 +103,7 @@ namespace ProjectC.World
 
         private void Update()
         {
+            EnsureLoaded();
             if (_localPlayer == null)
             {
                 var nm = Unity.Netcode.NetworkManager.Singleton;
@@ -123,6 +131,89 @@ namespace ProjectC.World
             {
                 Append(p);
             }
+
+            // Грязный автосейв журнала (треки + метки разом)
+            if (_dirty && now - _lastSaveTime >= SaveIntervalSeconds)
+                SaveJournal();
+        }
+
+        private void OnApplicationQuit()
+        {
+            if (_dirty) SaveJournal();
+        }
+
+        /// <summary>
+        /// Ленивая загрузка журнала (нужен слушающий NGO ради clientId).
+        /// Один раз за сессию; дальше точки дописываются живьём.
+        /// </summary>
+        private void EnsureLoaded()
+        {
+            if (_loaded) return;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) return;
+            _clientId = nm.LocalClientId;
+            _loaded = true;
+            _lastSaveTime = Time.unscaledTime;
+            if (ChartJournalStore.TryLoad(_clientId, out var data))
+            {
+                RestoreFromDtos(data.tracks);
+                ChartMarkManager.Instance?.RestoreFromDtos(data.marks, data.nextMarkId);
+                Debug.Log($"[ChartJournal] Loaded: {Count} точек, " +
+                          $"{(ChartMarkManager.Instance != null ? ChartMarkManager.Instance.Count : 0)} меток.");
+            }
+        }
+
+        private void RestoreFromDtos(System.Collections.Generic.List<ChartTrackDto> dtos)
+        {
+            _points.Clear();
+            _hasLast = false;
+            if (dtos == null) return;
+            int skip = Mathf.Max(0, dtos.Count - _maxPoints);
+            for (int i = skip; i < dtos.Count; i++)
+            {
+                var d = dtos[i];
+                if (d == null) continue;
+                _points.Add(new ChartTrackPoint
+                {
+                    worldPos = new Vector3(d.x, d.y, d.z),
+                    utcSeconds = d.utc,
+                    source = (ChartTrackSource)Mathf.Clamp(d.source, 0, 2),
+                });
+            }
+        }
+
+        private void ExportToDtos(System.Collections.Generic.List<ChartTrackDto> outDtos)
+        {
+            outDtos.Clear();
+            foreach (var p in _points)
+            {
+                outDtos.Add(new ChartTrackDto
+                {
+                    x = p.worldPos.x, y = p.worldPos.y, z = p.worldPos.z,
+                    utc = p.utcSeconds,
+                    source = (int)p.source,
+                });
+            }
+        }
+
+        /// <summary>
+        /// Сохранить журнал целиком (треки + метки + живой кумулятив сдвига).
+        /// Метки зовут сразу при add/remove, треки — по таймеру и на выходе.
+        /// </summary>
+        public void SaveJournal()
+        {
+            if (!_loaded) return;
+            var data = new ChartJournalData();
+            ExportToDtos(data.tracks);
+            var marks = ChartMarkManager.Instance;
+            if (marks != null)
+            {
+                marks.ExportToDtos(data.marks);
+                data.nextMarkId = marks.ExportNextId();
+            }
+            ChartJournalStore.Save(_clientId, data);
+            _dirty = false;
+            _lastSaveTime = Time.unscaledTime;
         }
 
         private void Append(Vector3 worldPos)
@@ -138,6 +229,7 @@ namespace ProjectC.World
             _lastRecorded = worldPos;
             _lastTime = Time.unscaledTime;
             _hasLast = true;
+            _dirty = true;
         }
 
         /// <summary>

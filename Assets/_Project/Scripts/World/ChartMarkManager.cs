@@ -85,6 +85,7 @@ namespace ProjectC.World
             };
             _marks.Add(mark);
             SelectedId = mark.id;
+            ChartTrackRecorder.Instance?.SaveJournal(); // метки сейвим сразу (их мало)
             return mark.id;
         }
 
@@ -95,6 +96,7 @@ namespace ProjectC.World
                 if (_marks[i].id != id) continue;
                 _marks.RemoveAt(i);
                 if (SelectedId == id) SelectedId = -1;
+                ChartTrackRecorder.Instance?.SaveJournal();
                 return true;
             }
             return false;
@@ -114,6 +116,57 @@ namespace ProjectC.World
 
         public void Select(int id) => SelectedId = id;
         public void Deselect() => SelectedId = -1;
+
+        /// <summary>Восстановить из файла (зовёт рекордер при загрузке).</summary>
+        public void RestoreFromDtos(System.Collections.Generic.List<ChartMarkDto> dtos, int nextId)
+        {
+            _marks.Clear();
+            SelectedId = -1;
+            if (dtos != null)
+            {
+                foreach (var d in dtos)
+                {
+                    if (d == null) continue;
+                    _marks.Add(new ChartMark
+                    {
+                        id = d.id,
+                        worldPos = new Vector3(d.x, d.y, d.z),
+                        type = (ChartMarkType)Mathf.Clamp(d.type, 0, 3),
+                        text = string.IsNullOrEmpty(d.text) ? DefaultName(ChartMarkType.Note) : d.text,
+                        utcSeconds = d.utc,
+                        source = (ChartTrackSource)Mathf.Clamp(d.source, 0, 2),
+                    });
+                }
+            }
+            _nextId = Mathf.Max(nextId, MaxId() + 1);
+        }
+
+        /// <summary>Выгрузить в DTO для сейва.</summary>
+        public void ExportToDtos(System.Collections.Generic.List<ChartMarkDto> outDtos)
+        {
+            outDtos.Clear();
+            foreach (var m in _marks)
+            {
+                outDtos.Add(new ChartMarkDto
+                {
+                    id = m.id,
+                    x = m.worldPos.x, y = m.worldPos.y, z = m.worldPos.z,
+                    type = (int)m.type,
+                    text = m.text,
+                    utc = m.utcSeconds,
+                    source = (int)m.source,
+                });
+            }
+        }
+
+        public int ExportNextId() => _nextId;
+
+        private int MaxId()
+        {
+            int max = 0;
+            foreach (var m in _marks) if (m.id > max) max = m.id;
+            return max;
+        }
 
         public static string DefaultName(ChartMarkType type)
         {

@@ -135,3 +135,28 @@ Compile: Console → 0 errors. Manual: NPC кругосветка M3.2.15-сце
   `CanSimulateInCurrentCoordinates` (`:428`). При F8 цель круиза протухает —
   это отдельный от «тупняка в доки» фактор, чинить вместе с коридорами (§6).
 - Код не менялся, только этот документ.
+
+## 9. Инвентаризация «мёртвого» кода (проверка по вызовам, 2026-09-17)
+
+Вопрос: что из подозреваемого — мёртвое, что — резерв, что — живое.
+Метод: grep вызовов по `Assets/` (определение vs вызовы).
+
+| # | Элемент | Вызовы | Вердикт |
+|---|---------|--------|---------|
+| 1 | `NpcShipWorld.TickNpc` + `ApplyDeparting/Transit/ApproachMovement` + `CalcBearing` + `NPC_*` константы + `_lastPadAttempt` + `_lastArrivalAtStation` (world) | Внешнего вызова нет: `FixedUpdate` идёт в `controller.NavTick` напрямую; вызовы только внутри себя | **МЁРТВ** — кандидат на снос (P2) |
+| 2 | `NpcShipWorld.AdvanceScheduleIndex` / `TryAssignPadForNpc(state)` / `ReleaseNpcAssignment(state)` / `ResolveStationWorldPos` / `TransitionTo` | Только из `TickNpc` (не путать с живым `DockingWorld.ReleaseNpcAssignment(ids)`) | **МЁРТВ** — но логика `Advance` уже портирована в контроллер (T-NS-ROUTES5); сносить вместе с п.1 |
+| 3 | `NpcShipTrafficManager.ScheduleNextArrival` / `Clear` / словарь | Вызовов ноль; lifecycle (`Create/Shutdown` из `NpcShipServer`) живой | Мёртвая фича в живом шелле — **РЕЗЕРВ** (v2 shaping), не сносить |
+| 4 | `ApplyMovementInput` / `ServerTeleport` / `StartAntiGravityBoost` | Вызовов ноль (были только из `TickNpc`); boost фактически не нужен — `ShipController:611` скипает всю физику при `_hasNpcPilot` | **РЕЗЕРВ**: публичный API (Q1-хук автопилота), не сносить; поправить вводящие в заблуждение комменты |
+| 5 | `NpcShipStatus` enum + DTO + `NpcShipClientState.HandleNpcSpawn/Status` | `Handle*` никто не зовёт (RPC не слались никогда); `ClientState` читает только `AdminRuntimeWindow` | Каркас проекции, не запитан — **РЕЗЕРВ**; побочка: UI вечно покажет `Idle` (статус всегда начальный) |
+| 6 | `NpcShipState.Status` / `StateEnteredAt` / `LastKnownPosition` | Пишут ctor/`RestoreNpcState`/мёртвый `TransitionTo`; читает только мёртвый код | Вестигиальные поля — **оставить** (мелочь, persist-смежно, риск > пользы) |
+| 7 | События `OnNpcShipArrived/Departed` | Объявлены, `pragma 0067`, нет вызовов и подписчиков | **РЕЗЕРВ** v2 — оставить |
+| 8 | Реестр `NpcShipWorld` (`Register/Unregister/Get/GetSchedule/AllNpcCount/RestoreNpcState`) + `NpcShipServer` + `NpcShipZoneRegistry` | Живые вызовы из контроллера/сервера/`ShipPositionServer` | **ЖИВОЕ** — не трогать |
+| 9 | `AllNpcs` | Внешних читателей нет | Публичное, для дебага — оставить |
+
+**Вывод для P2-чистки:** сносить ТОЛЬКО unreachable private-блок `NpcShipWorld`
+(`TickNpc`, 3×`Apply*`, `CalcBearing`, мёртвый `AdvanceScheduleIndex`,
+мёртвые `TryAssign/Release(state)/Resolve/TransitionTo`, `_lastPadAttempt`,
+world-`_lastArrivalAtStation`, `NPC_*` константы) + поправить 3 вводящих в заблуждение
+коммента (`NpcShipController:12`, `:256`, `NpcShipTrafficManager:40` — ссылаются на
+`TickNpc`, которого нет в пути выполнения). Всё остальное — резерв или живое.
+Снос behavior-neutral (private/недостижимо), после — `refresh_unity` + 0 errors.

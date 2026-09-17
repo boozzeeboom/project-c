@@ -294,28 +294,33 @@ namespace ProjectC.UI.Chart
             _placePanel.style.marginTop = 4;
             legend.Add(_placePanel);
 
-            var typeRow = new VisualElement();
-            typeRow.style.flexDirection = FlexDirection.Row;
-            typeRow.style.flexWrap = Wrap.Wrap; // 2×2: иначе кнопки рвут легенду 170px
-            _placePanel.Add(typeRow);
+            // Два явных ряда 2×2: wrap в узкой легенде с темой ведёт себя
+            // непредсказуемо (поле ввода наезжало на кнопки).
             string[] typeNames = { "Ориент.", "Опасн.", "Замет.", "Цель" };
             _placeTypeButtons = new Button[4];
-            for (int i = 0; i < 4; i++)
+            for (int row = 0; row < 2; row++)
             {
-                int idx = i;
-                var tb = new Button(() =>
+                var typeRow = new VisualElement();
+                typeRow.style.flexDirection = FlexDirection.Row;
+                typeRow.style.width = Length.Percent(100);
+                _placePanel.Add(typeRow);
+                for (int col = 0; col < 2; col++)
                 {
-                    _placeType = (ProjectC.World.ChartMarkType)idx;
-                    RefreshPlaceTypeButtons();
-                })
-                { text = typeNames[i] };
-                tb.style.fontSize = 10;
-                tb.style.width = Length.Percent(48);
-                tb.style.minWidth = 0;
-                tb.style.flexShrink = 1;
-                tb.style.marginLeft = 1; tb.style.marginRight = 1;
-                _placeTypeButtons[i] = tb;
-                typeRow.Add(tb);
+                    int idx = row * 2 + col;
+                    var tb = new Button(() =>
+                    {
+                        _placeType = (ProjectC.World.ChartMarkType)idx;
+                        RefreshPlaceTypeButtons();
+                    })
+                    { text = typeNames[idx] };
+                    tb.style.fontSize = 10;
+                    tb.style.flexGrow = 1;
+                    tb.style.minWidth = 0;
+                    tb.style.height = 24;
+                    tb.style.marginLeft = 1; tb.style.marginRight = 1;
+                    _placeTypeButtons[idx] = tb;
+                    typeRow.Add(tb);
+                }
             }
 
             // Подпись НАД полем: в легенде 170px подпись рядом оставляет
@@ -331,6 +336,7 @@ namespace ProjectC.UI.Chart
             _placeNameField.style.fontSize = 11;
             _placeNameField.style.minWidth = 0;
             _placeNameField.style.width = Length.Percent(100);
+            _placeNameField.style.height = 24;
             _placePanel.Add(_placeNameField);
 
             var placeHint = new Label { text = "Клик по карте поставит метку." };

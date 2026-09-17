@@ -242,6 +242,14 @@ namespace ProjectC.UI
             }
             catch { }
 
+            // ChartWindow (морская карта, M)
+            try
+            {
+                var chart = ProjectC.UI.Chart.ChartWindow.Instance;
+                if (chart != null && chart.IsOpen) return true;
+            }
+            catch { }
+
             // RepairManagerWindow (ремонтный менеджер в доке)
             try
             {

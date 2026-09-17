@@ -129,6 +129,9 @@ namespace ProjectC.Input
 
             // Admin (продолжение — новые действия добавлять ТОЛЬКО в конец, не ломать сериализацию!)
             AdminPanel,       // F12 — админ-панель (T-ADM-01)
+
+            // World (продолжение)
+            OpenChart,        // M — морская карта (пешком и в корабле)
         }
 
         /// <summary>
@@ -199,6 +202,9 @@ namespace ProjectC.Input
 
             // ---- Admin (продолжение — новые действия в конец, не ломать сериализацию!) ----
             new ActionBinding { action = GameAction.AdminPanel,     category = ActionCategory.Debug,        key = Key.F12,      mouseButtonRaw = 0, displayName = "F12" },
+
+            // ---- World (морская карта) ----
+            new ActionBinding { action = GameAction.OpenChart,      category = ActionCategory.UI,           key = Key.M,        mouseButtonRaw = 0, displayName = "M" },
         };
 
         // ==================== Helper Lookup ====================

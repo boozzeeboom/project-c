@@ -982,6 +982,15 @@ namespace ProjectC.Player
                 if (cw != null) cw.Toggle();
             }
 
+            // WORLD-MAP: M — морская карта (и пешком, и в корабле, без условий).
+            if (IsActionJustPressed(InputBindingsConfig.GameAction.OpenChart)
+                && NetworkManager.Singleton != null
+                && IsSpawned)
+            {
+                var chart = ProjectC.UI.Chart.ChartWindow.Instance;
+                if (chart != null) chart.ToggleOpen();
+            }
+
             // T-DOCK-08: T — CommPanel (Dispatch). Q10: только если пилотирует.
             if (IsActionJustPressed(InputBindingsConfig.GameAction.CommPanel)
                 && NetworkManager.Singleton != null

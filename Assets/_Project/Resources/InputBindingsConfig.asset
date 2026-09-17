@@ -167,3 +167,8 @@ MonoBehaviour:
     mouseButtonRaw: 0
     key: 20
     displayName: F
+  - action: 26
+    category: 5
+    mouseButtonRaw: 0
+    key: 27
+    displayName: M

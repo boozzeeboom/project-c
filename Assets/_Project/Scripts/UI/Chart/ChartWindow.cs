@@ -245,6 +245,7 @@ namespace ProjectC.UI.Chart
             legend.style.width = 170;
             legend.style.minWidth = 170;
             legend.style.flexShrink = 0;
+            legend.style.overflow = Overflow.Hidden; // страховка: контент не рвёт панель
             legend.style.paddingLeft = 10; legend.style.paddingRight = 10;
             legend.style.paddingTop = 10;
             legend.style.borderLeftWidth = 1;
@@ -283,6 +284,7 @@ namespace ProjectC.UI.Chart
 
             var typeRow = new VisualElement();
             typeRow.style.flexDirection = FlexDirection.Row;
+            typeRow.style.flexWrap = Wrap.Wrap; // 2×2: иначе кнопки рвут легенду 170px
             _placePanel.Add(typeRow);
             string[] typeNames = { "Ориент.", "Опасн.", "Замет.", "Цель" };
             _placeTypeButtons = new Button[4];
@@ -296,8 +298,10 @@ namespace ProjectC.UI.Chart
                 })
                 { text = typeNames[i] };
                 tb.style.fontSize = 10;
-                tb.style.flexGrow = 1;
+                tb.style.width = Length.Percent(48);
                 tb.style.minWidth = 0;
+                tb.style.flexShrink = 1;
+                tb.style.marginLeft = 1; tb.style.marginRight = 1;
                 _placeTypeButtons[i] = tb;
                 typeRow.Add(tb);
             }
@@ -306,6 +310,8 @@ namespace ProjectC.UI.Chart
             _placeNameField.value = "";
             _placeNameField.style.fontSize = 11;
             _placeNameField.style.marginTop = 4;
+            _placeNameField.style.minWidth = 0;
+            _placeNameField.style.width = Length.Percent(100);
             _placePanel.Add(_placeNameField);
 
             var placeHint = new Label { text = "Клик по карте поставит метку." };
@@ -318,7 +324,9 @@ namespace ProjectC.UI.Chart
             _deleteButton.style.fontSize = 11;
             _deleteButton.style.marginTop = 4;
             _deleteButton.style.display = DisplayStyle.None;
-            _placePanel.Add(_deleteButton);
+            // В легенде, НЕ в _placePanel: панель постановки скрыта в обычном
+            // режиме, а удаление нужно именно тогда (баг: кнопка была невидима).
+            legend.Add(_deleteButton);
 
             var zoomHdr = new Label { text = "МАСШТАБ" };
             zoomHdr.style.fontSize = 12;

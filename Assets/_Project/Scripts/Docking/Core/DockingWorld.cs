@@ -591,5 +591,21 @@ namespace ProjectC.Docking.Core
             var ship = no.GetComponent<ShipController>();
             if (ship != null && ship.IsServer) ship.ExitDocked();
         }
+
+        /// <summary>
+        /// T-NS-PADS1: продлить окно посадки NPC, пока он реально сближается с падом.
+        /// Обновляет assignedAt только если assignment жив и ещё не used.
+        /// Без этого медленные корабли (ApproachSpeed 2-3 м/с) не укладываются в
+        /// landingWindowSec, пад освобождается mid-flight и его забирает другой NPC.
+        /// </summary>
+        public void RefreshNpcAssignment(ulong npcInstanceId, ulong shipNetId)
+        {
+            if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return;
+            if (!_assignmentsByClient.TryGetValue(npcInstanceId, out var a)) return;
+            if (a.shipNetId != shipNetId || a.used) return;
+            a.assignedAt = Time.time;
+            _assignmentsByClient[npcInstanceId] = a;
+            _assignmentsByShip[shipNetId] = a;
+        }
     }
 }

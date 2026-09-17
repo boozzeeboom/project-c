@@ -1,5 +1,30 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-17 — T-NS-PADS1: учёт падов для NPC (used + progress-refresh + stale-guard)
+
+**Задача (стадия 1 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P0-пады):**
+окно посадки 90 с истекало для NPC всегда (`used` выставлялся только из игрокового
+RPC-пути), пад освобождался mid-flight и его забирал другой NPC → два корабля на одном
+паде; отжатый игроком пад (T-NS08 displacement) NPC не замечал и докился поверх.
+
+**Изменения (только код, без сцен):**
+- `Docking/Core/DockingWorld.cs` — новый `RefreshNpcAssignment(npcInstanceId, shipNetId)`:
+  продлевает `assignedAt` живого не-`used` assignment. Сигнатуры не менялись.
+- `PeacefulShip/Stations/NpcShipController.cs` (`TickBerth`):
+  - stale-pad guard — перед полётом к паду проверка `GetAssignment(...)`; нет assignment
+    (истёк/отжат) → сброс `AssignedPadId` и перезапрос, вместо слепого дока поверх;
+  - progress refresh — дистанция до пада уменьшается → `RefreshNpcAssignment`;
+  - при доке — `ConfirmTouchdown(npcInstanceId, ...)` → `used=true` (раньше вызывался
+    только из `DockingServer`, NPC-ветка его не звала никогда).
+
+**Проверка:** `refresh_unity` (force, compile=request) → Console errors по
+`PeacefulShip,DockingWorld,NpcShip` — 0; общих errors — 0 (только служебные
+MCP-client notices). Play Mode — за пользователем (см. §7 ревью-документа).
+
+**Следующая стадия:** P0-Berthing watchdog + holding-точка, затем Departure-Chimney.
+
+---
+
 ## Итерация от 2026-09-08 — T-CREW-15: имена капитанов в Text (TMP)
 
 **Задача:** заменить базовую надпись `MIRA` внутри всех созданных captain NPC prefabs на имя соответствующего персонажа.

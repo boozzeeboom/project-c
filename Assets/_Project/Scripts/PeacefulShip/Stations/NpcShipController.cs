@@ -395,6 +395,8 @@ namespace ProjectC.PeacefulShip.Stations
         // PAD-ASSIGN-THROTTLE: не долбим диспетчер каждый FixedUpdate
         private float _lastPadAssignAttemptTime = float.MinValue;
         private const float PAD_ASSIGN_RETRY_SEC = 3f;
+        // T-NS-PADS1: последняя дистанция до пада в Berthing (для progress-refresh окна посадки)
+        private float _lastBerthDist = float.MaxValue;
 
         /// <summary>
         /// Приоритет расхождения: выше → делает полный манёвр, ниже → yield (ждёт).
@@ -655,6 +657,7 @@ namespace ProjectC.PeacefulShip.Stations
                 var padId = TryAssignPadFromDispatcher();
                 if (!string.IsNullOrEmpty(padId)) {
                     AssignedPadId = padId;
+                    _lastBerthDist = float.MaxValue;
                     Vector3 padPos = ResolvePadPos();
                     if (padPos != Vector3.zero) {
                         CruiseTargetPos = padPos;
@@ -673,6 +676,27 @@ namespace ProjectC.PeacefulShip.Stations
             Vector3 toTarget = CruiseTargetPos - rb.position;
             float dist = toTarget.magnitude;
 
+            // T-NS-PADS1: stale-pad guard — окно посадки могло истечь (Update в DockingWorld
+            // сметает !used по landingWindowSec) или пад отжал игрок (T-NS08 displacement).
+            // Без проверки корабль вслепую летит на чужой пад и докится поверх (dist < 1.5).
+            var dwInstance = Docking.Core.DockingWorld.Instance;
+            var shipForPad = GetComponent<ShipController>();
+            if (dwInstance == null || shipForPad == null ||
+                !dwInstance.GetAssignment(npcInstanceId, shipForPad.NetworkObjectId).HasValue) {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Berthing pad stale (expired/displaced) — re-requesting");
+                AssignedPadId = null;
+                _lastBerthDist = float.MaxValue;
+                rb.linearVelocity = Vector3.zero;
+                return;
+            }
+
+            // T-NS-PADS1: progress refresh — дистанция уменьшается → продлеваем окно посадки,
+            // чтобы медленные корабли не теряли пад в полёте. Гистерезис 1 м против дребезга.
+            if (dist < _lastBerthDist - 1f) {
+                _lastBerthDist = dist;
+                dwInstance.RefreshNpcAssignment(npcInstanceId, shipForPad.NetworkObjectId);
+            }
+
             // M3.2.12: проверять дистанцию только до ПАДА (если пад назначен),
             // или до станции (если пада нет). Док только при dist < 1.5f.
             bool canDock = !string.IsNullOrEmpty(AssignedPadId) ? dist < 1.5f : dist < 3f;
@@ -680,6 +704,13 @@ namespace ProjectC.PeacefulShip.Stations
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
                 var ship = GetComponent<ShipController>();
+                // T-NS-PADS1: NPC-подтверждение касания — выставить used=true.
+                // ConfirmTouchdown раньше вызывался только из игрокового RPC-пути
+                // (DockingServer), поэтому окно NPC всегда истекало задним числом.
+                // stationId для used-флага не критичен (поиск идёт по shipNetId+padId).
+                var berthState = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+                string berthStationId = berthState != null ? berthState.CurrentRoute.toLocationId : string.Empty;
+                dwInstance.ConfirmTouchdown(npcInstanceId, ship.NetworkObjectId, AssignedPadId, berthStationId ?? string.Empty);
                 ship.EnterDocked();
                 SetMode(NavMode.Docked);
                 return;

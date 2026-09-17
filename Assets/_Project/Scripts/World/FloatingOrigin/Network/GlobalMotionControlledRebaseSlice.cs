@@ -371,6 +371,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO09M: сдвинуть коридоры высот (иначе перманентная турбулентность).
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
                 "cells=" + ShiftAltitudeCorridors(plan.LocalTranslation));
+            // WORLD-MAP-TRACKS: сдвинуть журнал треков карты вместе с миром.
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ChartTracksShifted",
+                "points=" + ShiftChartTracks(plan.LocalTranslation));
             // T-FO09O: блок локального состояния применён полностью — rollback
             // вправе вернуть его назад. До этой точки отказ = сдвигов не было.
             _localStateShifted = true;
@@ -491,6 +494,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                 // T-FO09M: вернуть коридоры высот назад (иначе турбулентность).
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
                     "cells=" + ShiftAltitudeCorridors(-request.Plan.LocalTranslation));
+                // WORLD-MAP-TRACKS: вернуть журнал треков назад.
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ChartTracksShifted",
+                    "points=" + ShiftChartTracks(-request.Plan.LocalTranslation));
                 _localStateShifted = false;
             }
             else
@@ -677,7 +683,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                     "runtimeRebase", "ClientShiftApplied",
-                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups + ";storms=" + ShiftStormCells(translation) + ";corridors=" + ShiftAltitudeCorridors(translation));
+                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups + ";storms=" + ShiftStormCells(translation) + ";corridors=" + ShiftAltitudeCorridors(translation) + ";tracks=" + ShiftChartTracks(translation));
             }
             catch (Exception e)
             {
@@ -903,6 +909,19 @@ namespace ProjectC.World.FloatingOrigin.Network
             var system = ProjectC.Ship.AltitudeCorridorSystem.Instance;
             if (system == null) return 0;
             try { return system.ApplyRebaseTranslation(translation); }
+            catch (Exception) { return 0; }
+        }
+
+        /// <summary>
+        /// WORLD-MAP-TRACKS: сдвиг журнала треков карты вместе с миром.
+        /// Синглтон (DontDestroyOnLoad, создаётся ChartWindow) — резолв напрямую.
+        /// Best-effort, число в маркере. Вызывать на всех путях (success/rollback/broadcast).
+        /// </summary>
+        private int ShiftChartTracks(Vector3 translation)
+        {
+            var recorder = ProjectC.World.ChartTrackRecorder.Instance;
+            if (recorder == null) return 0;
+            try { return recorder.ApplyRebaseTranslation(translation); }
             catch (Exception) { return 0; }
         }
 

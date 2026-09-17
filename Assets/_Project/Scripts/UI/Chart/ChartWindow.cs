@@ -52,6 +52,10 @@ namespace ProjectC.UI.Chart
         private Label _statusLabel;
         private Label _zoomLabel;
 
+        // Легенда треков (оживает, когда журнал пишет)
+        private VisualElement _tracksDot;
+        private Label _tracksLabel;
+
         // Циркуль: мировая XZ-точка под кликом (сессионная, не сейвится)
         private bool _hasDivider;
         private Vector3 _dividerWorld;
@@ -68,6 +72,9 @@ namespace ProjectC.UI.Chart
                 return;
             }
             Instance = this;
+
+            // Журнал треков пишется всегда (даже с закрытой картой).
+            ProjectC.World.ChartTrackRecorder.EnsureExists();
 
             if (_doc == null) _doc = GetComponent<UIDocument>();
             if (_doc != null && _doc.panelSettings == null)
@@ -237,7 +244,10 @@ namespace ProjectC.UI.Chart
             legend.Add(layersHdr);
 
             legend.Add(MakeLayerRow("● Порты", true, false));
-            legend.Add(MakeLayerRow("— Треки (скоро)", false, true));
+            var tracksRow = MakeLayerRow("— Треки", false, true);
+            _tracksDot = tracksRow.childCount > 0 ? tracksRow[0] : null;
+            _tracksLabel = tracksRow.childCount > 1 ? tracksRow[1] as Label : null;
+            legend.Add(tracksRow);
             legend.Add(MakeLayerRow("✕ Метки (скоро)", false, true));
             legend.Add(MakeLayerRow("⇴ Ветра (скоро)", false, true));
 
@@ -434,6 +444,19 @@ namespace ProjectC.UI.Chart
                 _statusLabel.text = $"{hdg} • {_metersPerPixel:F1} м/пкс";
             }
             if (_zoomLabel != null) _zoomLabel.text = $"{_metersPerPixel:F1} м/пкс";
+
+            // Легенда треков: оживает с первыми точками журнала
+            var recorder = ProjectC.World.ChartTrackRecorder.Instance;
+            int trackCount = recorder != null ? recorder.Count : 0;
+            if (_tracksLabel != null)
+                _tracksLabel.text = trackCount > 0 ? $"— Треки ({trackCount})" : "— Треки (лети — запишу)";
+            if (_tracksDot != null)
+            {
+                bool live = trackCount > 0;
+                _tracksDot.style.backgroundColor = live
+                    ? Accent
+                    : new Color(0.25f, 0.18f, 0.10f, 0.25f);
+            }
         }
 
         // ==================== PAINT ====================
@@ -504,6 +527,38 @@ namespace ProjectC.UI.Chart
                     painter.BeginPath();
                     painter.Arc(new Vector2(px, py), 3.5f, 0, 360);
                     painter.Fill();
+                }
+            }
+
+            // --- Треки: свой пройденный путь (давность = прозрачность) ---
+            var trackRecorder = ProjectC.World.ChartTrackRecorder.Instance;
+            if (trackRecorder != null && trackRecorder.Count > 1 && hasOwn)
+            {
+                double nowUtc = ProjectC.World.ChartTrackRecorder.NowUtcSeconds();
+                var pts = trackRecorder.Points;
+                bool hasPrev = false;
+                float ppx = 0f, ppy = 0f;
+                painter.lineWidth = 2f;
+                for (int i = 0; i < pts.Count; i++)
+                {
+                    var tp = pts[i];
+                    if (tp.source != ProjectC.World.ChartTrackSource.Self) continue; // чужие слои — позже
+                    WorldToMap(tp.worldPos.x, tp.worldPos.z, cx, cz, north, k, w, h, out float tx, out float ty);
+                    bool onScreen = tx > -100f && ty > -100f && tx < w + 100f && ty < h + 100f;
+                    if (!onScreen) { hasPrev = false; continue; }
+                    if (hasPrev)
+                    {
+                        // Свежий — яркий, старый — выцветает (концепт §4)
+                        float ageMin = (float)((nowUtc - tp.utcSeconds) / 60.0);
+                        float alpha = ageMin < 10f ? 0.85f : Mathf.Max(0.15f, 0.85f - (ageMin - 10f) / 170f * 0.7f);
+                        painter.strokeColor = new Color(Ink.r, Ink.g, Ink.b, alpha);
+                        painter.BeginPath();
+                        painter.MoveTo(new Vector2(ppx, ppy));
+                        painter.LineTo(new Vector2(tx, ty));
+                        painter.Stroke();
+                    }
+                    ppx = tx; ppy = ty;
+                    hasPrev = true;
                 }
             }
 

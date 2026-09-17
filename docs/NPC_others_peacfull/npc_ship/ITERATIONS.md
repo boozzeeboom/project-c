@@ -1,5 +1,34 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-17 — T-NS-CORRIDOR6: Berthing-коридор (Overhead + Descend)
+
+**Задача (стадия 6, ядро плана §5):** убрать слепую прямую к паду с дистанции comm-зоны.
+Внутри `Berthing` две подфазы (приватный enum, `NavMode` не тронут):
+`Overhead` — подлёт к воротам `pad + overheadClearanceMeters` (дефолт 60 м, то же
+семейство что holding/departure), `Descend` — строго вертикальный спуск в «трубе»
+`corridorRadiusMeters` (дефолт 25 м) с capped lateral-коррекцией (`descendLateralCap`
+2 м/с). Выпал из трубы — возврат в `Overhead`, а не диагональ через геометрию.
+
+**Критическая аналитика (блокеры):**
+- Без новых `NavMode`: `IsAvoidable`/`RestoreFromSave`/switch — не тронуты; после загрузки
+  сейва фаза всегда `Overhead` (сверху безопасно). Новых мировых `Vector3` нет (только enum).
+- Watchdog/stale-guard/`ConfirmTouchdown`/`canDock 1.5 м` — работают по 3D-дистанции
+  без изменений; застой в коридоре ловит watchdog → go-around → заход снова сверху.
+- Avoidance в `Berthing` по-прежнему ВЫКЛ (осознанно): коридор + watchdog вместо него;
+  lateral-уход внутри трубы — стадия после прогона, не сейчас.
+- Скоростная формула ворот — та же, что была у прямой (`min(Approach, d*2)`) — без сюрпризов.
+- Остаточный риск: диагональ к воротам издалека/снизу идёт без avoidance (как раньше);
+  но старт теперь обычно сверху (holding +60 / departure +60), а не с comm-зоны в лоб.
+
+**Проверка:** `refresh_unity` → errors/warnings 0. Play Mode (долгий прогон): в логе
+`Overhead → Descend` перед каждым доком; `dist Berthing → Docked` должен стать короче
+и без упираний; go-around из трубы — тоже штатно.
+
+**Следующая стадия:** P2-чистка мёртвого кода (`TickNpc`, `AdvanceScheduleIndex`,
+`TrafficManager`) — на выбор.
+
+---
+
 ## Итерация от 2026-09-17 — T-NS-ROUTES5: настоящие мульти-маршруты + cap dwell
 
 **Задача (стадия 5 плана `docs/dev/NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md` §5, P1-расписание):**

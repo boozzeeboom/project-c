@@ -426,6 +426,24 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Сколько неудачных запросов пада подряд терпим в holding, прежде чем уйти. 3 с/попытка.")]
         [Min(1)] [SerializeField] private int holdingMaxRetries = 20;
 
+        // === T-NS-CORRIDOR6: Berthing-коридор (заход сверху, без новых NavMode) ===
+        [Header("Berthing corridor (server-only)")]
+        [Tooltip("Высота overhead-ворот над падом (м). Подход идёт к точке pad + clearance, " +
+                 "спуск — строго вертикально. Одно семейство с holding/departure (60 м).")]
+        [Min(10f)] [SerializeField] private float overheadClearanceMeters = 60f;
+        [Tooltip("Радиус «трубы» (м): внутри него по горизонтали — вертикальный спуск на пад.")]
+        [Min(5f)] [SerializeField] private float corridorRadiusMeters = 25f;
+        [Tooltip("Допуск ворот (м): считаем что на высоте overhead, если |dy| меньше.")]
+        [Min(1f)] [SerializeField] private float corridorGateToleranceMeters = 5f;
+        [Tooltip("Макс. горизонтальная коррекция (м/с) при вертикальном спуске — держит «трубу».")]
+        [Min(0.5f)] [SerializeField] private float descendLateralCap = 2f;
+
+        // Подфаза захода — приватная, наружу виден только NavMode.Berthing:
+        // IsAvoidable/RestoreFromSave/переключатель режимов не трогаем.
+        // После загрузки сейва — всегда Overhead (сверху безопасно). F8-безопасно (enum).
+        private enum BerthPhase : byte { Overhead, Descend }
+        private BerthPhase _berthPhase = BerthPhase.Overhead;
+
         // === T-NS-DEPART3: Departure-Chimney — уход от города вверх ===
         [Header("Departure chimney (server-only)")]
         [Tooltip("Относительный набор высоты над падом (м) перед уходом в Cruising. " +
@@ -735,6 +753,7 @@ namespace ProjectC.PeacefulShip.Stations
                 var padId = TryAssignPadFromDispatcher();
                 if (!string.IsNullOrEmpty(padId)) {
                     AssignedPadId = padId;
+                    _berthPhase = BerthPhase.Overhead; // T-NS-CORRIDOR6: новый заход — всегда сверху
                     _holdingRetries = 0;
                     _lastBerthDist = float.MaxValue;
                     _berthNoProgressSince = Time.time;
@@ -815,9 +834,48 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
-            Vector3 dir = toTarget.normalized;
-            float speed = Mathf.Min(ApproachSpeed, dist * 2f);
-            rb.linearVelocity = new Vector3(dir.x * speed, dir.y * speed, dir.z * speed);
+            // T-NS-CORRIDOR6: заход через overhead-ворота (pad + clearance) + вертикальный
+            // спуск в «трубе». Вместо слепой прямой через геометрию — горизонтальный подлёт
+            // наверху (где свободно) и строго вертикальный финал. Watchdog/stale-guard выше
+            // работают по 3D-дистанции до пада без изменений.
+            Vector3 padPosCorridor = CruiseTargetPos; // = позиция пада (ставится при назначении)
+            Vector3 gatePos = new Vector3(padPosCorridor.x, padPosCorridor.y + overheadClearanceMeters, padPosCorridor.z);
+            Vector3 toPadFlat = new Vector3(padPosCorridor.x - rb.position.x, 0f, padPosCorridor.z - rb.position.z);
+            float flatDist = toPadFlat.magnitude;
+
+            if (_berthPhase == BerthPhase.Overhead) {
+                if (flatDist < corridorRadiusMeters
+                    && Mathf.Abs(rb.position.y - gatePos.y) < corridorGateToleranceMeters) {
+                    _berthPhase = BerthPhase.Descend;
+                    if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Berthing corridor: Overhead → Descend");
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                    return;
+                }
+                // К воротам — та же скоростная формула, что была у прямой (без сюрпризов).
+                Vector3 toGate = gatePos - rb.position;
+                float gateDist = toGate.magnitude;
+                if (gateDist < 0.01f) {
+                    rb.linearVelocity = Vector3.zero;
+                    return;
+                }
+                float gateSpeed = Mathf.Min(ApproachSpeed, gateDist * 2f);
+                rb.linearVelocity = toGate.normalized * gateSpeed;
+                rb.angularVelocity = Vector3.zero;
+                return;
+            }
+
+            // Descend: строго вертикальный спуск + capped lateral-коррекция (держит «трубу»).
+            // Выпали из трубы (сдвинули корпусом) — вернуться в Overhead, а не тянуть диагональ.
+            if (flatDist > corridorRadiusMeters * 1.5f) {
+                _berthPhase = BerthPhase.Overhead;
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Berthing corridor: out of pipe — back to Overhead");
+                return;
+            }
+            float dyAbovePad = rb.position.y - padPosCorridor.y;
+            float descendSpeed = dyAbovePad > 0f ? -Mathf.Min(ApproachSpeed, Mathf.Max(1f, dyAbovePad * 0.5f)) : 0f;
+            Vector3 lateral = flatDist > 0.01f ? toPadFlat.normalized * Mathf.Min(descendLateralCap, flatDist * 0.5f) : Vector3.zero;
+            rb.linearVelocity = new Vector3(lateral.x, descendSpeed, lateral.z);
             rb.angularVelocity = Vector3.zero;
         }
 

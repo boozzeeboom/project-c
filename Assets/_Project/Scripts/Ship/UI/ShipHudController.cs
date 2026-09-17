@@ -19,7 +19,7 @@ namespace ProjectC.Ship.UI
     ///         ├─ _colModules      (240px)   K1: модули
     ///         ├─ _colFlight       (200px)   K2: полёт (LIFT/TURN/PITCH/BANK)
     ///         ├─ _colSpeed        (180px)   K3: скорость (центр)
-    ///         ├─ _colEnv          (220px)   K4: WIND + ALTITUDE
+    ///         ├─ _colEnv       (220px)   K4: WIND + HDG + ALTITUDE
     ///         └─ _colDispatch     (200px)   K5: DISPATCHER/REGION/CORRIDOR (заглушки)
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
@@ -79,10 +79,18 @@ namespace ProjectC.Ship.UI
         // S-HUD-03d: Modules column (K1) — контейнер для строк модулей
         private VisualElement _modulesContainer;
 
-        // S-HUD-03e: Environment column (K4) — WIND + ALTITUDE
+        // S-HUD-03e: Environment column (K4) — WIND + HDG + ALTITUDE
         private Label _windSpeedLabel;
         private VisualElement _windCompass;
         private float _lastCompassAngle = -999f;
+        // WORLD-COMPASS fix: в штиль направления ветра нет — стрелку не рисуем
+        private bool _windCalm = true;
+        private bool _lastWindCalm = true;
+
+        // WORLD-COMPASS: курс относительно мирового севера (K4, HDG row)
+        private Label _headingLabel;
+        private VisualElement _headingRose;
+        private float _lastHeading = -999f;
         private Label _altValueLabel;
         private Label _altCorridorLabel;
         private VisualElement _altBarFill; // сюда добавляются/удаляются строки
@@ -874,6 +882,49 @@ namespace ProjectC.Ship.UI
 
             _colEnv.Add(windRow);
 
+            // ── HDG row (WORLD-COMPASS: курс относительно мирового севера) ──
+            var hdgRow = new VisualElement { name = "env-hdg" };
+            hdgRow.style.flexDirection = FlexDirection.Row;
+            hdgRow.style.height = 24;
+            hdgRow.style.minHeight = 24;
+            hdgRow.style.flexShrink = 0;
+            hdgRow.style.alignItems = Align.Center;
+            hdgRow.style.marginLeft = 2;
+            hdgRow.style.marginRight = 2;
+
+            var hdgLeft = new VisualElement { name = "env-hdg-left" };
+            hdgLeft.style.flexDirection = FlexDirection.Column;
+            hdgLeft.style.flexGrow = 1;
+            hdgLeft.style.justifyContent = Justify.Center;
+
+            _headingLabel = new Label { name = "hdg-value" };
+            _headingLabel.text = "—° —";
+            _headingLabel.style.fontSize = 12;
+            _headingLabel.style.color = Color.white;
+            _headingLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            hdgLeft.Add(_headingLabel);
+
+            var hdgSub = new Label { name = "hdg-sub" };
+            hdgSub.text = "HDG";
+            hdgSub.style.fontSize = 9;
+            hdgSub.style.color = new Color(1, 1, 1, 0.5f);
+            hdgSub.style.unityTextAlign = TextAnchor.MiddleLeft;
+            hdgSub.style.marginTop = -1;
+            hdgLeft.Add(hdgSub);
+            hdgRow.Add(hdgLeft);
+
+            _headingRose = new VisualElement { name = "heading-rose" };
+            _headingRose.style.width = 28;
+            _headingRose.style.minWidth = 28;
+            _headingRose.style.height = 28;
+            _headingRose.style.minHeight = 28;
+            _headingRose.style.flexShrink = 0;
+            _headingRose.style.marginLeft = 4;
+            _headingRose.generateVisualContent += OnHeadingGenerateContent;
+            hdgRow.Add(_headingRose);
+
+            _colEnv.Add(hdgRow);
+
             // ── WIND CORRIDOR row (SplineWindZone) ──
             _windCorridorLabel = new Label { name = "wind-corridor" };
             _windCorridorLabel.text = "";
@@ -959,10 +1010,13 @@ namespace ProjectC.Ship.UI
             }
             _windSpeedLabel.text = $"{speed:F1} м/с";
 
-            // Компас: угол ветра относительно носа корабля
+            // Компас: угол ветра относительно носа корабля.
+            // WORLD-COMPASS fix: в штиль (<0.5 м/с) направления нет — стрелку не рисуем (○).
             float compassAngle = 0f;
+            _windCalm = true;
             if (wm != null && speed > 0.5f)
             {
+                _windCalm = false;
                 Vector3 shipForward = ship.transform.forward;
                 shipForward.y = 0; // проекция на горизонталь
                 if (shipForward.sqrMagnitude > 0.001f)
@@ -984,16 +1038,28 @@ namespace ProjectC.Ship.UI
             else if (absAng < 112.5f) arrow = compassAngle > 0 ? "→" : "←";
             else if (absAng < 157.5f) arrow = compassAngle > 0 ? "↘" : "↙";
             else arrow = "↓";
+            if (_windCalm) arrow = "○"; // штиль — не врём стрелкой «вперёд»
             // Находим label направления (первый child windLeft)
             var windRow = _colEnv?.Q("env-wind");
             var windDirLabel = windRow?.Q("wind-dir-label") as Label;
             if (windDirLabel != null) windDirLabel.text = arrow;
 
-            // Компас repaint только при изменении угла > 1°
-            if (Mathf.Abs(compassAngle - _lastCompassAngle) > 1f)
+            // Компас repaint: угол > 1° или смена штиля
+            if (Mathf.Abs(compassAngle - _lastCompassAngle) > 1f || _windCalm != _lastWindCalm)
             {
                 _lastCompassAngle = compassAngle;
+                _lastWindCalm = _windCalm;
                 _windCompass?.MarkDirtyRepaint();
+            }
+
+            // === HEADING (WORLD-COMPASS: курс относительно мирового севера) ===
+            float heading = ProjectC.World.WorldNorth.GetHeadingDegrees(ship.transform.forward);
+            if (_headingLabel != null)
+                _headingLabel.text = $"{heading:F0}° {ProjectC.World.WorldNorth.GetCardinalLabel(heading)}";
+            if (Mathf.Abs(heading - _lastHeading) > 0.5f)
+            {
+                _lastHeading = heading;
+                _headingRose?.MarkDirtyRepaint();
             }
 
             // === ALTITUDE ===
@@ -1176,24 +1242,91 @@ namespace ProjectC.Ship.UI
             painter.Arc(new Vector2(rect.width / 2, rect.height / 2), rect.width / 2 - 1, 0, 360);
             painter.Stroke();
 
-            // Стрелка ветра
-            float angleRad = _lastCompassAngle * Mathf.Deg2Rad;
+            // Стрелка ветра (в штиль не рисуем — направления нет)
             float cx = rect.width / 2;
             float cy = rect.height / 2;
-            float radius = rect.width / 2 - 4;
 
-            float ex = cx + Mathf.Sin(angleRad) * radius;
-            float ey = cy - Mathf.Cos(angleRad) * radius;
+            if (!_windCalm)
+            {
+                float angleRad = _lastCompassAngle * Mathf.Deg2Rad;
+                float radius = rect.width / 2 - 4;
 
-            painter.strokeColor = new Color(0.86f, 0.31f, 0.31f, 0.9f);
-            painter.lineWidth = 2f;
-            painter.BeginPath();
-            painter.MoveTo(new Vector2(cx, cy));
-            painter.LineTo(new Vector2(ex, ey));
-            painter.Stroke();
+                float ex = cx + Mathf.Sin(angleRad) * radius;
+                float ey = cy - Mathf.Cos(angleRad) * radius;
+
+                painter.strokeColor = new Color(0.86f, 0.31f, 0.31f, 0.9f);
+                painter.lineWidth = 2f;
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(cx, cy));
+                painter.LineTo(new Vector2(ex, ey));
+                painter.Stroke();
+            }
 
             // Маленький кружок в центре
             painter.fillColor = new Color(0.86f, 0.31f, 0.31f, 0.6f);
+            painter.BeginPath();
+            painter.Arc(new Vector2(cx, cy), 1.5f, 0, 360);
+            painter.Fill();
+        }
+
+        /// <summary>
+        /// WORLD-COMPASS: роза курса. Карта румбов вращается на −heading,
+        /// метка носа (белая риска) всегда сверху. Painter2D не умеет в текст,
+        /// поэтому буквы заменены рисками: N — длинная красная, E/S/W — серые,
+        /// промежуточные — короткие тусклые. Цифры и румб — в _headingLabel.
+        /// </summary>
+        private void OnHeadingGenerateContent(MeshGenerationContext ctx)
+        {
+            var rect = _headingRose?.contentRect ?? new Rect(0, 0, 28, 28);
+            var painter = ctx.painter2D;
+            float cx = rect.width / 2f;
+            float cy = rect.height / 2f;
+            float outer = rect.width / 2f - 1f;
+
+            // Фон круга
+            painter.fillColor = new Color(0.06f, 0.08f, 0.12f, 0.9f);
+            painter.BeginPath();
+            painter.Arc(new Vector2(cx, cy), outer, 0, 360);
+            painter.Fill();
+
+            // Обводка
+            painter.strokeColor = new Color(0.4f, 0.4f, 0.5f, 0.6f);
+            painter.lineWidth = 1f;
+            painter.BeginPath();
+            painter.Arc(new Vector2(cx, cy), outer, 0, 360);
+            painter.Stroke();
+
+            // Риски румбов: экранный угол = мировой румб − курс (0 = сверху)
+            for (int i = 0; i < 8; i++)
+            {
+                float screenRad = (i * 45f - _lastHeading) * Mathf.Deg2Rad;
+                float sx = Mathf.Sin(screenRad);
+                float sy = -Mathf.Cos(screenRad);
+                bool isNorth = i == 0;
+                bool isCardinal = i % 2 == 0;
+                float inner = isNorth ? 5f : (isCardinal ? 8f : 10f);
+                painter.strokeColor = isNorth
+                    ? new Color(0.86f, 0.31f, 0.31f, 0.95f)
+                    : (isCardinal
+                        ? new Color(0.75f, 0.75f, 0.8f, 0.8f)
+                        : new Color(0.5f, 0.5f, 0.55f, 0.5f));
+                painter.lineWidth = isNorth ? 2f : 1f;
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(cx + sx * inner, cy + sy * inner));
+                painter.LineTo(new Vector2(cx + sx * (outer - 1f), cy + sy * (outer - 1f)));
+                painter.Stroke();
+            }
+
+            // Метка носа — белая риска сверху (не вращается)
+            painter.strokeColor = new Color(1f, 1f, 1f, 0.95f);
+            painter.lineWidth = 2f;
+            painter.BeginPath();
+            painter.MoveTo(new Vector2(cx, 1f));
+            painter.LineTo(new Vector2(cx, 5f));
+            painter.Stroke();
+
+            // Центр — точка корабля
+            painter.fillColor = new Color(1f, 1f, 1f, 0.8f);
             painter.BeginPath();
             painter.Arc(new Vector2(cx, cy), 1.5f, 0, 360);
             painter.Fill();

@@ -141,8 +141,13 @@ FUEL 45/100    ← font 8
 **Заголовок:** `ENV` (8px, opacity 0.6)
 
 **WIND** (24px row):
-- Левая: `12.4 м/с` (font 12) + стрелка направления (↑↗→↘↓)
-- Правая: мини-компас 28×28px (Painter2D `generateVisualContent`): тёмный круг, красная стрелка от центра к краю по углу `SignedAngle(ship.forward, windDir, up)`
+- Левая: `12.4 м/с` (font 12) + стрелка направления (↑↗→↘↓, `○` в штиль <0.5 м/с)
+- Правая: мини-компас 28×28px (Painter2D `generateVisualContent`): тёмный круг, красная стрелка от центра к краю по углу `SignedAngle(ship.forward, windDir, up)`; в штиль стрелка не рисуется
+
+**HDG** (24px row, WORLD-COMPASS):
+- Левая: `042° NE` (font 12) + подпись `HDG` (font 9)
+- Правая: роза курса 28×28px: карта румбов вращается на −heading (`WorldNorth.GetHeadingDegrees(ship.forward)`, 0=N), белая риска сверху = нос; N — длинная красная риска, E/S/W — серые, промежуточные — короткие; repaint при ∆ > 0.5°
+- Север задаётся объектом `CompassRose` в `WorldScene_0_0` (см. `docs/dev/WORLD_COMPASS_NORTH_2026-09-17.md`); без розы fallback +Z
 
 **ALT** (24px row):
 - Левая: `2 538 м` (font 12) + имя коридора (font 9, `ActiveCorridor.displayName -> "---"`)
@@ -192,7 +197,7 @@ _windCompass.generateVisualContent += OnCompassGenerateContent;
 ctx.painter2D → Arc (круг) → MoveTo/LineTo (стрелка) → Arc (центр)
 ```
 
-Перерисовка (`MarkDirtyRepaint()`) только при изменении `_lastCompassAngle > 1°`.
+Перерисовка (`MarkDirtyRepaint()`) только при изменении `_lastCompassAngle > 1°` (ветер) / `_lastHeading > 0.5°` (курс) или смене штиля.
 
 ### 4.4 Center-zero bar (Flight)
 
@@ -269,7 +274,7 @@ Assets/_Project/Scenes/BootstrapScene.unity
 - К1 (Modules) не тестировалась — в сцене нет настроенных модулей
 - К5 (Dispatch) — заглушка, ждёт подсистем
 - Fuel bar показывает общий запас без разбивки по типам (на будущее)
-- Compass перерисовывается только при `∆ > 1°` — на неподвижном корабле не обновляется (но ветер не меняется на месте)
+- Compass перерисовывается только при `∆ > 1°` (ветер) / `∆ > 0.5°` (курс) — на неподвижном корабле не обновляется (но ветер/курс на месте и не меняются)
 - HUD не масштабируется под разрешения экрана кроме авто-shrink (flex-shrink)
 - Нет анимации появления/исчезновения (мгновенный toggle display)
 - Нет поддержки multi-crew (все колонки показываются любому игроку в любом кресле)

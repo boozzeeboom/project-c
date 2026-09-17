@@ -287,6 +287,7 @@ namespace ProjectC.UI.Chart
             _placeButton = new Button(() => SetPlaceMode(!_placeMode)) { text = "＋ Метка" };
             _placeButton.style.fontSize = 12;
             _placeButton.style.marginTop = 8;
+            _placeButton.style.flexShrink = 0; // легенда-колонка не должна их схлопывать
             legend.Add(_placeButton);
 
             _placePanel = new VisualElement();
@@ -308,6 +309,8 @@ namespace ProjectC.UI.Chart
                 typeRow.style.flexDirection = FlexDirection.Row;
                 typeRow.style.width = 150;
                 typeRow.style.height = 26;
+                typeRow.style.minHeight = 26;
+                typeRow.style.flexShrink = 0; // см. шапку блока: иначе Yoga давит ряды в 2px
                 typeRow.style.marginTop = 2;
                 _placePanel.Add(typeRow);
                 for (int col = 0; col < 2; col++)
@@ -338,6 +341,7 @@ namespace ProjectC.UI.Chart
             nameCaption.style.fontSize = 10;
             nameCaption.style.color = new Color(0.25f, 0.18f, 0.10f, 0.6f);
             nameCaption.style.marginTop = 4;
+            nameCaption.style.flexShrink = 0;
             _placePanel.Add(nameCaption);
 
             _placeNameField = new TextField();
@@ -354,11 +358,13 @@ namespace ProjectC.UI.Chart
             placeHint.style.color = new Color(0.25f, 0.18f, 0.10f, 0.6f);
             placeHint.style.whiteSpace = WhiteSpace.Normal;
             placeHint.style.width = 150;
+            placeHint.style.flexShrink = 0;
             _placePanel.Add(placeHint);
 
             _deleteButton = new Button(DeleteSelectedMark) { text = "Удалить выбранную" };
             _deleteButton.style.fontSize = 11;
             _deleteButton.style.marginTop = 4;
+            _deleteButton.style.flexShrink = 0;
             _deleteButton.style.display = DisplayStyle.None;
             // В легенде, НЕ в _placePanel: панель постановки скрыта в обычном
             // режиме, а удаление нужно именно тогда (баг: кнопка была невидима).
@@ -375,6 +381,7 @@ namespace ProjectC.UI.Chart
             var zoomRow = new VisualElement();
             zoomRow.style.flexDirection = FlexDirection.Row;
             zoomRow.style.alignItems = Align.Center;
+            zoomRow.style.flexShrink = 0; // та же защита от схлопывания, что у рядов меток
             legend.Add(zoomRow);
 
             var zoomOut = new Button(() => ChangeZoom(2f)) { text = "−" };

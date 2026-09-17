@@ -147,7 +147,7 @@ FUEL 45/100    ← font 8
 **HDG** (24px row, WORLD-COMPASS):
 - Левая: `042° NE` (font 12) + подпись `HDG` (font 9)
 - Правая: роза курса 28×28px: карта румбов вращается на −heading (`WorldNorth.GetHeadingDegrees(ship.forward)`, 0=N), белая риска сверху = нос; N — длинная красная риска, E/S/W — серые, промежуточные — короткие; repaint при ∆ > 0.5°
-- Север задаётся объектом `CompassRose` в `WorldScene_0_0` (см. `docs/dev/WORLD_COMPASS_NORTH_2026-09-17.md`); без розы fallback +Z
+- Север задаётся объектом `CompassRose` в `WorldScene_0_0` (см. `docs/world/compas/WORLD_COMPASS_NORTH_2026-09-17.md`); без розы fallback +Z
 
 **ALT** (24px row):
 - Левая: `2 538 м` (font 12) + имя коридора (font 9, `ActiveCorridor.displayName -> "---"`)

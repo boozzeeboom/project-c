@@ -91,6 +91,11 @@ namespace ProjectC.Ship.UI
         private Label _headingLabel;
         private VisualElement _headingRose;
         private float _lastHeading = -999f;
+
+        // WORLD-MAP-BEARING: пеленг на выбранную метку карты (K4, TGT row)
+        private VisualElement _tgtRow;
+        private Label _tgtLabel;
+        private ProjectC.World.ChartMarkManager _markManager;
         private Label _altValueLabel;
         private Label _altCorridorLabel;
         private VisualElement _altBarFill; // сюда добавляются/удаляются строки
@@ -925,6 +930,28 @@ namespace ProjectC.Ship.UI
 
             _colEnv.Add(hdgRow);
 
+            // ── TGT row (WORLD-MAP-BEARING: пеленг на выбранную метку карты) ──
+            // Скрыта, пока нет выбора (display None — места не занимает).
+            _tgtRow = new VisualElement { name = "env-tgt" };
+            _tgtRow.style.flexDirection = FlexDirection.Row;
+            _tgtRow.style.height = 14;
+            _tgtRow.style.minHeight = 14;
+            _tgtRow.style.flexShrink = 0;
+            _tgtRow.style.alignItems = Align.Center;
+            _tgtRow.style.marginLeft = 2;
+            _tgtRow.style.marginRight = 2;
+            _tgtRow.style.display = DisplayStyle.None;
+
+            _tgtLabel = new Label { name = "tgt-value" };
+            _tgtLabel.text = "";
+            _tgtLabel.style.fontSize = 9;
+            _tgtLabel.style.color = new Color(0.94f, 0.78f, 0.31f); // янтарный — цель
+            _tgtLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            _tgtLabel.style.flexGrow = 1;
+            _tgtRow.Add(_tgtLabel);
+
+            _colEnv.Add(_tgtRow);
+
             // ── WIND CORRIDOR row (SplineWindZone) ──
             _windCorridorLabel = new Label { name = "wind-corridor" };
             _windCorridorLabel.text = "";
@@ -1061,6 +1088,31 @@ namespace ProjectC.Ship.UI
                 _lastHeading = heading;
                 _headingRose?.MarkDirtyRepaint();
             }
+
+            // === TARGET (WORLD-MAP-BEARING: пеленг на выбранную метку карты) ===
+            // Честно: только своя выбранная метка, на неизведанное не ведём.
+            if (_markManager == null)
+                _markManager = FindAnyObjectByType<ProjectC.World.ChartMarkManager>();
+            bool hasTarget = false;
+            if (_tgtRow != null && _markManager != null && _markManager.SelectedId >= 0
+                && _markManager.TryGetMark(_markManager.SelectedId, out var target))
+            {
+                Vector3 toTgt = target.worldPos - ship.transform.position;
+                toTgt.y = 0f;
+                float dist = toTgt.magnitude;
+                if (dist > 1f)
+                {
+                    float bearing = ProjectC.World.WorldNorth.GetHeadingDegrees(toTgt);
+                    string rumba = ProjectC.World.WorldNorth.GetCardinalLabel(bearing);
+                    string distStr = dist < 1000f ? $"{dist:F0} м" : $"{dist / 1000f:F1} км";
+                    string name = target.text.Length > 14 ? target.text.Substring(0, 14) + "…" : target.text;
+                    if (_tgtLabel != null)
+                        _tgtLabel.text = $"→ {name} {bearing:F0}° {rumba} • {distStr}";
+                    hasTarget = true;
+                }
+            }
+            if (_tgtRow != null)
+                _tgtRow.style.display = hasTarget ? DisplayStyle.Flex : DisplayStyle.None;
 
             // === ALTITUDE ===
             float alt = ship.transform.position.y;

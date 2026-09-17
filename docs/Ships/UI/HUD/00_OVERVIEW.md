@@ -149,6 +149,9 @@ FUEL 45/100    ← font 8
 - Правая: роза курса 28×28px: карта румбов вращается на −heading (`WorldNorth.GetHeadingDegrees(ship.forward)`, 0=N), белая риска сверху = нос; N — длинная красная риска, E/S/W — серые, промежуточные — короткие; repaint при ∆ > 0.5°
 - Север задаётся объектом `CompassRose` в `WorldScene_0_0` (см. `docs/world/compas/WORLD_COMPASS_NORTH_2026-09-17.md`); без розы fallback +Z
 
+**TGT** (14px row, WORLD-MAP-BEARING, скрыта без выбора):
+- `→ Имя 042° NE • 1.2 км` (font 9, янтарный) — пеленг через `WorldNorth` и дистанция до выбранной метки карты (`ChartMarkManager.SelectedId`); имя до 14 символов
+
 **ALT** (24px row):
 - Левая: `2 538 м` (font 12) + имя коридора (font 9, `ActiveCorridor.displayName -> "---"`)
 - Правая: вертикальный progress bar 6×22px: заполнение от `corridor.minAltitude` (дно) до `corridor.maxAltitude` (верх). Цвет по `CurrentAltitudeStatus`: Safe→зелёный, Warning→жёлтый, Danger→красный.

@@ -418,6 +418,7 @@ namespace ProjectC.UI.Chart
             legendScroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             legendScroll.style.flexGrow = 1;
             legendScroll.style.minHeight = 0;
+            StyleChartScroller(legendScroll);
             var legendContent = new VisualElement { name = "chart-legend-content" };
             legendContent.style.flexDirection = FlexDirection.Column;
             legendContent.style.flexShrink = 0;
@@ -488,6 +489,66 @@ namespace ProjectC.UI.Chart
             b.style.paddingTop = 2; b.style.paddingBottom = 2;
             b.style.paddingLeft = 4; b.style.paddingRight = 4;
             return b;
+        }
+
+                /// <summary>
+        /// Тонкий прозрачный скроллер в чернильных тонах карты.
+        /// Те же классы, что в docs/UI/SCROLLBAR_STYLING.md (Unity 6:
+        /// unity-scroller__*, unity-base-slider__*), но инлайном — у карты
+        /// нет USS, всё runtime-constructed. Кнопки +/− скрыты.
+        /// </summary>
+        private void StyleChartScroller(ScrollView scroll)
+        {
+            var scroller = scroll?.verticalScroller;
+            if (scroller == null) return;
+
+            scroller.style.width = 6;
+            scroller.style.minWidth = 6;
+            scroller.style.maxWidth = 6;
+            scroller.style.backgroundColor = new Color(0f, 0f, 0f, 0f);
+            scroller.style.paddingLeft = 0; scroller.style.paddingRight = 0;
+            scroller.style.paddingTop = 0; scroller.style.paddingBottom = 0;
+            scroller.style.marginLeft = 0; scroller.style.marginRight = 0;
+            scroller.style.marginTop = 0; scroller.style.marginBottom = 0;
+
+            // Кнопки +/− — скрыть
+            scroller.Query<VisualElement>(className: "unity-scroller__low-button")
+                .ForEach(e => e.style.display = DisplayStyle.None);
+            scroller.Query<VisualElement>(className: "unity-scroller__high-button")
+                .ForEach(e => e.style.display = DisplayStyle.None);
+
+            // Трек и внутренности — прозрачные
+            var transparent = new Color(0f, 0f, 0f, 0f);
+            foreach (string cls in new[]
+            {
+                "unity-scroller__slider",
+                "unity-slider__input",
+                "unity-base-slider__drag-container",
+                "unity-base-slider__tracker",
+            })
+            {
+                scroller.Query<VisualElement>(className: cls)
+                    .ForEach(e => e.style.backgroundColor = transparent);
+            }
+
+            // Бордер ползунка — скрыть
+            scroller.Query<VisualElement>(className: "unity-base-slider__dragger-border")
+                .ForEach(e => e.style.display = DisplayStyle.None);
+
+            // Ползунок — тонкий чернильный
+            scroller.Query<VisualElement>(className: "unity-base-slider__dragger")
+                .ForEach(e =>
+                {
+                    e.style.backgroundColor = new Color(0.25f, 0.18f, 0.10f, 0.45f);
+                    e.style.borderTopLeftRadius = 3; e.style.borderTopRightRadius = 3;
+                    e.style.borderBottomLeftRadius = 3; e.style.borderBottomRightRadius = 3;
+                    e.style.width = 4;
+                    e.style.minWidth = 4;
+                    e.style.maxWidth = 4;
+                    e.style.minHeight = 24;
+                    e.style.borderTopWidth = 0; e.style.borderBottomWidth = 0;
+                    e.style.borderLeftWidth = 0; e.style.borderRightWidth = 0;
+                });
         }
 
         private VisualElement MakeLayerRow(string text, bool on, bool dimmed)        {

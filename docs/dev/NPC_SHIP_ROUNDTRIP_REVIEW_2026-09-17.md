@@ -160,3 +160,30 @@ world-`_lastArrivalAtStation`, `NPC_*` константы) + поправить 
 коммента (`NpcShipController:12`, `:256`, `NpcShipTrafficManager:40` — ссылаются на
 `TickNpc`, которого нет в пути выполнения). Всё остальное — резерв или живое.
 Снос behavior-neutral (private/недостижимо), после — `refresh_unity` + 0 errors.
+
+### 9.1. Перепроверка перед сносом (2026-09-17, второй взгляд)
+
+Страх понятен: «мёртвый» код, который потом вылазит боком. Проверены скрытые
+зависимости по всему репо — их нет:
+
+- **Рефлексия/строки:** `nameof`/`SendMessage`/`Invoke(`/`GetMethod` со `TickNpc` —
+  ноль; строка `TickNpc` в коде — только 2 `///`-комментария
+  (`NpcShipController:256`, `NpcShipTrafficManager:40`) + определение. Остальные
+  30+ упоминаний — исторические доки (`CHANGELOG`, `RETROSPECTIVE`, `M2_FSM_DIAGNOSIS`),
+  на компиляцию не влияют.
+- **Наследование/partial:** `NpcShipWorld` — один не-partial класс, наследников нет.
+- **Сериализация:** удаляемое — `private` методы/константы/`readonly Dictionary`
+  (Unity такое не сериализует); имя/неймспейс/файл класса и `.meta` не меняются —
+  сцены и префабы не заметят.
+- **Тесты:** `Assets/_Project/Tests` пуст, ссылок на `PeacefulShip` нет.
+- **Фантомы из доков:** `controller.BeginNewLeg()` из `CHANGELOG:353,383` в коде
+  отсутствует вообще (ноль совпадений) — доки врут, код — нет.
+- **`useNewNavTick`:** только объявление + чтение в гарде, в `false` не ставит никто —
+  всегда `true`; гард вестигиальный, но безвредный (оставляем вне P2).
+- **Что именно уйдёт:** `TickNpc`, 3×`Apply*`, `CalcBearing`, `NPC_*` константы,
+  `_lastPadAttempt`, world-`_lastArrivalAtStation`, мёртвые `AdvanceScheduleIndex`,
+  `TryAssignPadForNpc(state)`, `ReleaseNpcAssignment(state)` (не путать с живым
+  `DockingWorld.ReleaseNpcAssignment(ids)`), `ResolveStationWorldPos`, `TransitionTo`.
+  Останутся: реестр, события, `RestoreNpcState`, `AllNpcs`, `FixedUpdate → NavTick`.
+- **Парадокс:** боком вылазит не снос, а хранение — 330 строк теневой FSM уже вводили
+  в заблуждение прошлые анализы. Снос после `refresh_unity` + 0 errors безопасен.

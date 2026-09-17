@@ -295,6 +295,7 @@ namespace ProjectC.UI.Chart
             _placePanel.style.display = DisplayStyle.None;
             _placePanel.style.marginTop = 4;
             _placePanel.style.width = 150;
+            _placePanel.style.flexShrink = 0; // измерено живьём: 76px вместо 122 — давилась вся панель
             legend.Add(_placePanel);
 
             // Два явных ряда 2×2 с фиксированными пикселями: легенда 170px −

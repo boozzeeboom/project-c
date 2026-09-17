@@ -41,6 +41,7 @@ namespace ProjectC.UI.Chart
         [SerializeField] private float _maxMetersPerPixel = 64f;
 
         private static readonly Color Parchment = new Color(0.93f, 0.87f, 0.72f);
+        private static readonly Color ParchmentDark = new Color(0.84f, 0.77f, 0.61f);
         private static readonly Color Ink = new Color(0.25f, 0.18f, 0.10f);
         private static readonly Color InkFaint = new Color(0.25f, 0.18f, 0.10f, 0.25f);
         private static readonly Color Accent = new Color(0.55f, 0.12f, 0.12f);
@@ -230,9 +231,7 @@ namespace ProjectC.UI.Chart
             subtitle.style.color = new Color(0.25f, 0.18f, 0.10f, 0.6f);
             header.Add(subtitle);
 
-            var closeBtn = new Button(() => SetOpen(false)) { text = "✕  (M / Esc)" };
-            closeBtn.style.fontSize = 12;
-            closeBtn.style.color = Ink;
+            var closeBtn = MakeChartButton("✕  (M / Esc)", () => SetOpen(false), 12);
             header.Add(closeBtn);
 
             // --- Тело: canvas + легенда ---
@@ -284,8 +283,7 @@ namespace ProjectC.UI.Chart
             legend.Add(MakeLayerRow("⇴ Ветра (скоро)", false, true));
 
             // --- Постановка метки ---
-            _placeButton = new Button(() => SetPlaceMode(!_placeMode)) { text = "＋ Метка" };
-            _placeButton.style.fontSize = 12;
+            _placeButton = MakeChartButton("＋ Метка", () => SetPlaceMode(!_placeMode), 12);
             _placeButton.style.marginTop = 8;
             _placeButton.style.flexShrink = 0; // легенда-колонка не должна их схлопывать
             legend.Add(_placeButton);
@@ -294,21 +292,21 @@ namespace ProjectC.UI.Chart
             _placePanel.style.flexDirection = FlexDirection.Column;
             _placePanel.style.display = DisplayStyle.None;
             _placePanel.style.marginTop = 4;
-            _placePanel.style.width = 150;
+            _placePanel.style.width = Length.Percent(100);
             _placePanel.style.flexShrink = 0; // измерено живьём: 76px вместо 122 — давилась вся панель
             legend.Add(_placePanel);
 
-            // Два явных ряда 2×2 с фиксированными пикселями: легенда 170px −
-            // паддинги 10+10 = 150px контента, две кнопки по 73 + отступы.
-            // Флекс-догадки (grow/percent/wrap) в узкой колонке с темой дают
-            // схлопывание в ноль и наезды — фиксируем жёстко.
+            // Два явных ряда 2×2: кнопки делят ширину поровну
+            // (grow + basis 0 по гайду docs/UI/UI_TOOLKIT_GUIDE.md §4.2).
+            // Фиксированные px убраны: внутри скролла ширина вьюпорта гуляет
+            // из-за полосы прокрутки, проценты адаптируются сами.
             string[] typeNames = { "Ориент.", "Опасн.", "Замет.", "Цель" };
             _placeTypeButtons = new Button[4];
             for (int row = 0; row < 2; row++)
             {
                 var typeRow = new VisualElement();
                 typeRow.style.flexDirection = FlexDirection.Row;
-                typeRow.style.width = 150;
+                typeRow.style.width = Length.Percent(100);
                 typeRow.style.height = 26;
                 typeRow.style.minHeight = 26;
                 typeRow.style.flexShrink = 0; // см. шапку блока: иначе Yoga давит ряды в 2px
@@ -317,20 +315,17 @@ namespace ProjectC.UI.Chart
                 for (int col = 0; col < 2; col++)
                 {
                     int idx = row * 2 + col;
-                    var tb = new Button(() =>
+                    var tb = MakeChartButton(typeNames[idx], () =>
                     {
                         _placeType = (ProjectC.World.ChartMarkType)idx;
                         RefreshPlaceTypeButtons();
-                    })
-                    { text = typeNames[idx] };
-                    tb.style.fontSize = 10;
-                    tb.style.width = 73;
+                    }, 10);
+                    tb.style.flexGrow = 1;
+                    tb.style.flexBasis = 0;
+                    tb.style.minWidth = 0;
                     tb.style.height = 26;
-                    tb.style.minWidth = 73;
-                    tb.style.flexGrow = 0;
                     tb.style.flexShrink = 0;
                     tb.style.marginLeft = 1; tb.style.marginRight = 1;
-                    tb.style.paddingLeft = 0; tb.style.paddingRight = 0;
                     _placeTypeButtons[idx] = tb;
                     typeRow.Add(tb);
                 }
@@ -349,7 +344,7 @@ namespace ProjectC.UI.Chart
             _placeNameField.value = "";
             _placeNameField.style.fontSize = 11;
             _placeNameField.style.minWidth = 0;
-            _placeNameField.style.width = 150;
+            _placeNameField.style.width = Length.Percent(100);
             _placeNameField.style.flexShrink = 0;
             _placeNameField.style.height = 24;
             _placePanel.Add(_placeNameField);
@@ -358,12 +353,11 @@ namespace ProjectC.UI.Chart
             placeHint.style.fontSize = 10;
             placeHint.style.color = new Color(0.25f, 0.18f, 0.10f, 0.6f);
             placeHint.style.whiteSpace = WhiteSpace.Normal;
-            placeHint.style.width = 150;
+            placeHint.style.width = Length.Percent(100);
             placeHint.style.flexShrink = 0;
             _placePanel.Add(placeHint);
 
-            _deleteButton = new Button(DeleteSelectedMark) { text = "Удалить выбранную" };
-            _deleteButton.style.fontSize = 11;
+            _deleteButton = MakeChartButton("Удалить выбранную", DeleteSelectedMark);
             _deleteButton.style.marginTop = 4;
             _deleteButton.style.flexShrink = 0;
             _deleteButton.style.display = DisplayStyle.None;
@@ -385,11 +379,15 @@ namespace ProjectC.UI.Chart
             zoomRow.style.flexShrink = 0; // та же защита от схлопывания, что у рядов меток
             legend.Add(zoomRow);
 
-            var zoomOut = new Button(() => ChangeZoom(2f)) { text = "−" };
+            var zoomOut = MakeChartButton("−", () => ChangeZoom(2f));
             zoomOut.style.width = 34;
+            zoomOut.style.height = 26;
+            zoomOut.style.flexShrink = 0;
             zoomRow.Add(zoomOut);
-            var zoomIn = new Button(() => ChangeZoom(0.5f)) { text = "+" };
+            var zoomIn = MakeChartButton("+", () => ChangeZoom(0.5f));
             zoomIn.style.width = 34;
+            zoomIn.style.height = 26;
+            zoomIn.style.flexShrink = 0;
             zoomRow.Add(zoomIn);
 
             _zoomLabel = new Label { text = "" };
@@ -398,9 +396,9 @@ namespace ProjectC.UI.Chart
             _zoomLabel.style.marginLeft = 6;
             zoomRow.Add(_zoomLabel);
 
-            _followButton = new Button(ToggleFollow) { text = "◎ Слежение: вкл" };
-            _followButton.style.fontSize = 11;
+            _followButton = MakeChartButton("◎ Слежение: вкл", ToggleFollow);
             _followButton.style.marginTop = 8;
+            _followButton.style.flexShrink = 0;
             legend.Add(_followButton);
 
             var followNote = new Label { text = "Таскание — свободный осмотр, ◎ — вернуться. Колесо — зум." };
@@ -409,6 +407,25 @@ namespace ProjectC.UI.Chart
             followNote.style.marginTop = 12;
             followNote.style.whiteSpace = WhiteSpace.Normal;
             legend.Add(followNote);
+
+            // --- Адаптивность всего правого блока: контент легенды в скролл ---
+            // Корень бед (мерялось живьём: ряды в 2px, панель в 76px): при
+            // нехватке высоты Yoga давит shrinkable-элементы колонки, и чинить
+            // каждый уровень flexShrink-ами — чинить следствие. В скролле у
+            // контента свободная высота: давить нечего, лишнее скроллится.
+            // (Паттерн из docs/UI/UI_TOOLKIT_GUIDE.md §4.5.)
+            var legendScroll = new ScrollView(ScrollViewMode.Vertical);
+            legendScroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            legendScroll.style.flexGrow = 1;
+            legendScroll.style.minHeight = 0;
+            var legendContent = new VisualElement { name = "chart-legend-content" };
+            legendContent.style.flexDirection = FlexDirection.Column;
+            legendContent.style.flexShrink = 0;
+            var moving = new System.Collections.Generic.List<VisualElement>();
+            foreach (var ch in legend.Children()) moving.Add(ch);
+            foreach (var ch in moving) legendContent.Add(ch);
+            legendScroll.Add(legendContent);
+            legend.Add(legendScroll);
 
             // --- Подвал: циркуль + статус ---
             var footer = new VisualElement { name = "chart-footer" };
@@ -451,8 +468,29 @@ namespace ProjectC.UI.Chart
             _built = true;
         }
 
-        private VisualElement MakeLayerRow(string text, bool on, bool dimmed)
+        /// <summary>
+        /// Кнопка в стиле пергамента (свои цвета/рамка/паддинги).
+        /// Дефолтная тема рисует большие серые кнопки — для карты не годится.
+        /// </summary>
+        private Button MakeChartButton(string text, System.Action onClick, int fontSize = 11)
         {
+            var b = new Button(onClick) { text = text };
+            b.style.fontSize = fontSize;
+            b.style.color = Ink;
+            b.style.backgroundColor = ParchmentDark;
+            b.style.borderTopWidth = 1; b.style.borderBottomWidth = 1;
+            b.style.borderLeftWidth = 1; b.style.borderRightWidth = 1;
+            var bc = new Color(0.25f, 0.18f, 0.10f, 0.55f);
+            b.style.borderTopColor = bc; b.style.borderBottomColor = bc;
+            b.style.borderLeftColor = bc; b.style.borderRightColor = bc;
+            b.style.borderTopLeftRadius = 3; b.style.borderTopRightRadius = 3;
+            b.style.borderBottomLeftRadius = 3; b.style.borderBottomRightRadius = 3;
+            b.style.paddingTop = 2; b.style.paddingBottom = 2;
+            b.style.paddingLeft = 4; b.style.paddingRight = 4;
+            return b;
+        }
+
+        private VisualElement MakeLayerRow(string text, bool on, bool dimmed)        {
             var row = new VisualElement();
             row.style.flexDirection = FlexDirection.Row;
             row.style.alignItems = Align.Center;
@@ -500,7 +538,8 @@ namespace ProjectC.UI.Chart
                 var tb = _placeTypeButtons[i];
                 if (tb == null) continue;
                 bool sel = (int)_placeType == i;
-                tb.style.color = sel ? Accent : new Color(0.25f, 0.18f, 0.10f, 0.6f);
+                tb.style.backgroundColor = sel ? Accent : ParchmentDark;
+                tb.style.color = sel ? Color.white : Ink;
                 tb.style.unityFontStyleAndWeight = sel ? FontStyle.Bold : FontStyle.Normal;
             }
         }

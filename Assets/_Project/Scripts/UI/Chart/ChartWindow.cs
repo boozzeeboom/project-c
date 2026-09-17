@@ -70,6 +70,15 @@ namespace ProjectC.UI.Chart
             new System.Collections.Generic.List<Label>();
         private const int MaxMarkLabels = 24;
 
+        // WORLD-MAP-PAN: свободный осмотр (иначе только слежение)
+        private bool _follow = true;
+        private float _freeX, _freeZ;
+        private bool _hasFree;
+        private bool _dragging;
+        private Vector2 _downPos;
+        private bool _downMoved;
+        private Button _followButton;
+
         // Циркуль: мировая XZ-точка под кликом (сессионная, не сейвится)
         private bool _hasDivider;
         private Vector3 _dividerWorld;
@@ -239,6 +248,9 @@ namespace ProjectC.UI.Chart
             _canvas.style.backgroundColor = Parchment;
             _canvas.generateVisualContent += OnChartPaint;
             _canvas.RegisterCallback<PointerDownEvent>(OnCanvasPointerDown);
+            _canvas.RegisterCallback<PointerMoveEvent>(OnCanvasPointerMove);
+            _canvas.RegisterCallback<PointerUpEvent>(OnCanvasPointerUp);
+            _canvas.RegisterCallback<WheelEvent>(OnCanvasWheel);
             body.Add(_canvas);
 
             var legend = new VisualElement { name = "chart-legend" };
@@ -354,7 +366,12 @@ namespace ProjectC.UI.Chart
             _zoomLabel.style.marginLeft = 6;
             zoomRow.Add(_zoomLabel);
 
-            var followNote = new Label { text = "Слежение: своё место в центре, север вверху." };
+            _followButton = new Button(ToggleFollow) { text = "◎ Слежение: вкл" };
+            _followButton.style.fontSize = 11;
+            _followButton.style.marginTop = 8;
+            legend.Add(_followButton);
+
+            var followNote = new Label { text = "Таскание — свободный осмотр, ◎ — вернуться. Колесо — зум." };
             followNote.style.fontSize = 10;
             followNote.style.color = new Color(0.25f, 0.18f, 0.10f, 0.6f);
             followNote.style.marginTop = 12;
@@ -471,8 +488,76 @@ namespace ProjectC.UI.Chart
         private void OnCanvasPointerDown(PointerDownEvent evt)
         {
             if (_canvas == null || evt.button != 0) return;
-            Vector2 local = evt.localPosition;
+            // Таскание vs клик различаем по движению (см. Move/Up)
+            _dragging = true;
+            _downPos = evt.localPosition;
+            _downMoved = false;
+        }
 
+        private void OnCanvasPointerMove(PointerMoveEvent evt)
+        {
+            if (!_dragging || _canvas == null || _placeMode) return;
+            Vector2 cur = evt.localPosition;
+            Vector2 d = cur - _downPos;
+            if (!_downMoved && d.magnitude < 3f) return;
+            _downMoved = true;
+            PanByPixels(d.x, d.y);
+            _downPos = cur;
+        }
+
+        private void OnCanvasPointerUp(PointerUpEvent evt)
+        {
+            if (!_dragging) return;
+            _dragging = false;
+            if (_downMoved || evt.button != 0) return;
+            HandleCanvasClick(evt.localPosition);
+        }
+
+        private void OnCanvasWheel(WheelEvent evt)
+        {
+            ChangeZoom(evt.delta.y > 0f ? 1.2f : 1f / 1.2f);
+            evt.StopPropagation();
+        }
+
+        private void ToggleFollow()
+        {
+            _follow = true;
+            if (_followButton != null) _followButton.text = "◎ Слежение: вкл";
+            UpdateReadout();
+            _canvas?.MarkDirtyRepaint();
+        }
+
+        /// <summary>Центр карты: слежение за собой или запомненная свободная точка.</summary>
+        private bool GetCenter(out float cx, out float cz)
+        {
+            if (_follow && GetOwnXZ(out cx, out cz)) return true;
+            if (_hasFree) { cx = _freeX; cz = _freeZ; return true; }
+            cx = 0f; cz = 0f;
+            return false;
+        }
+
+        private void PanByPixels(float dxPx, float dyPx)
+        {
+            if (!GetCenter(out float cx, out float cz)) return;
+            Vector3 north = ProjectC.World.WorldNorth.NorthDirection;
+            float k = 1f / _metersPerPixel;
+            if (k <= 0f) return;
+            // Обратная проекция экранной дельты в мировую (поворот ортонормален)
+            float lx = dxPx / k, up = -dyPx / k;
+            _freeX = cx - (lx * north.z + up * north.x);
+            _freeZ = cz - (-lx * north.x + up * north.z);
+            _hasFree = true;
+            if (_follow)
+            {
+                _follow = false;
+                if (_followButton != null) _followButton.text = "◎ Слежение: выкл";
+            }
+            UpdateReadout();
+            _canvas?.MarkDirtyRepaint();
+        }
+
+        private void HandleCanvasClick(Vector2 local)
+        {
             // Режим постановки: клик = новая метка
             if (_placeMode)
             {
@@ -515,7 +600,7 @@ namespace ProjectC.UI.Chart
             pickedId = -1;
             var marks = ProjectC.World.ChartMarkManager.Instance;
             if (marks == null || marks.Count == 0 || _canvas == null) return false;
-            if (!GetOwnXZ(out float cx, out float cz)) return false;
+            if (!GetCenter(out float cx, out float cz)) return false;
             Vector3 north = ProjectC.World.WorldNorth.NorthDirection;
             float k = 1f / _metersPerPixel;
             float w = _canvas.contentRect.width, h = _canvas.contentRect.height;
@@ -572,7 +657,7 @@ namespace ProjectC.UI.Chart
         {
             wx = 0f; wz = 0f;
             if (_canvas == null) return false;
-            if (!GetOwnXZ(out float cx, out float cz)) return false;
+            if (!GetCenter(out float cx, out float cz)) return false;
             Vector3 north = ProjectC.World.WorldNorth.NorthDirection;
             float k = 1f / _metersPerPixel;
             float w = _canvas.contentRect.width, h = _canvas.contentRect.height;
@@ -628,7 +713,7 @@ namespace ProjectC.UI.Chart
                     float h = ProjectC.World.WorldNorth.GetHeadingDegrees(fwd);
                     hdg = $"HDG {h:F0}° {ProjectC.World.WorldNorth.GetCardinalLabel(h)}";
                 }
-                _statusLabel.text = $"{hdg} • {_metersPerPixel:F1} м/пкс";
+                _statusLabel.text = $"{hdg} • {_metersPerPixel:F1} м/пкс • {(_follow ? "СЛЕДОМ" : "СВОБОДНО")}";
             }
             if (_zoomLabel != null) _zoomLabel.text = $"{_metersPerPixel:F1} м/пкс";
 
@@ -670,7 +755,7 @@ namespace ProjectC.UI.Chart
             if (_markLabels == null || _markLabels.Count == 0 || _canvas == null) return;
             var marks = ProjectC.World.ChartMarkManager.Instance;
             int shown = 0;
-            if (marks != null && marks.Count > 0 && GetOwnXZ(out float cx, out float cz))
+            if (marks != null && marks.Count > 0 && GetCenter(out float cx, out float cz))
             {
                 Vector3 north = ProjectC.World.WorldNorth.NorthDirection;
                 float k = 1f / _metersPerPixel;
@@ -706,7 +791,9 @@ namespace ProjectC.UI.Chart
 
             Vector3 north = ProjectC.World.WorldNorth.NorthDirection;
             float k = 1f / _metersPerPixel;
-            bool hasOwn = GetOwnXZ(out float cx, out float cz);
+            bool hasCenter = GetCenter(out float cx, out float cz);
+            bool hasOwn = GetOwnXZ(out float ownWX, out float ownWZ);
+            if (!hasCenter) return; // не за кем следить и свободной точки нет — пустой пергамент
 
             // --- Сетка (шаг подбираем под зум, привязка к мировым осям) ---
             float targetPx = 90f;
@@ -714,7 +801,7 @@ namespace ProjectC.UI.Chart
             float step = NiceStep(rawStep);
             painter.strokeColor = InkFaint;
             painter.lineWidth = 1f;
-            if (hasOwn && step > 0f)
+            if (step > 0f)
             {
                 // Вертикальные: мировые x = m*step
                 float xMin = cx - (w * 0.5f) / k, xMax = cx + (w * 0.5f) / k;
@@ -768,7 +855,7 @@ namespace ProjectC.UI.Chart
 
             // --- Треки: свой пройденный путь (давность = прозрачность) ---
             var trackRecorder = ProjectC.World.ChartTrackRecorder.Instance;
-            if (trackRecorder != null && trackRecorder.Count > 1 && hasOwn)
+            if (trackRecorder != null && trackRecorder.Count > 1)
             {
                 double nowUtc = ProjectC.World.ChartTrackRecorder.NowUtcSeconds();
                 var pts = trackRecorder.Points;
@@ -800,7 +887,7 @@ namespace ProjectC.UI.Chart
 
             // --- Метки: иконки по типам + кольцо выбора ---
             var markManager = ProjectC.World.ChartMarkManager.Instance;
-            if (markManager != null && markManager.Count > 0 && hasOwn)
+            if (markManager != null && markManager.Count > 0)
             {
                 foreach (var mk in markManager.Marks)
                 {
@@ -880,9 +967,10 @@ namespace ProjectC.UI.Chart
             }
 
             // --- Своё место: белая точка с тёмной обводкой + риска курса ---
+            // В свободном осмотре точка едет по карте (проекция, не центр).
             if (hasOwn)
             {
-                float ox = w * 0.5f, oy = h * 0.5f;
+                WorldToMap(ownWX, ownWZ, cx, cz, north, k, w, h, out float ox, out float oy);
                 painter.fillColor = Color.white;
                 painter.BeginPath();
                 painter.Arc(new Vector2(ox, oy), 6f, 0, 360);
@@ -914,11 +1002,11 @@ namespace ProjectC.UI.Chart
                 }
             }
 
-            // --- Циркуль: линия + крестик ---
+            // --- Циркуль: линия от себя + крестик ---
             if (_hasDivider && hasOwn)
             {
                 WorldToMap(_dividerWorld.x, _dividerWorld.z, cx, cz, north, k, w, h, out float dx, out float dy);
-                float ox = w * 0.5f, oy = h * 0.5f;
+                WorldToMap(ownWX, ownWZ, cx, cz, north, k, w, h, out float ox, out float oy);
                 painter.strokeColor = Accent;
                 painter.lineWidth = 1.5f;
                 painter.BeginPath();

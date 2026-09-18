@@ -326,3 +326,25 @@ DAMAGE 00 §4/§4.1 (Broken: двигатель работает, ×0.1) — к�
 - `SHIP_REFACTOR_PLAN_2026-07-21.md` P3-таблица — строки 168–170 зачёркнуты (архив T-DOCS01).
 - Фаза A (T-SHIP-DOC01..10) — **ЗАКРЫТА**. Дальше фаза B (FIX01..07) — строго по одному с репродом,
   каждый требует отдельного твоего «давай».
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX03)
+
+**Задача:** P0 — серверный прайс в `ShipModuleServer` (фарм через client-цены). Статус: ИСПРАВЛЕНО (код).
+
+**Перепроверка (до фикса, чтением — ПОДТВЕРЖДЕНО):** `RequestSellModuleRpc:227` кредитовал
+` sellCredits` клиента; `RequestRepaintShipRpc:388` / `RequestRepairHullRpc:464` списывали `cost`
+клиента (`cost=0` бесплатно, `cost<0` = начисление). Источники клиентских цен:
+`RepairManagerWindow.ComputeSellPrice:750` (`max(1,cost/2)`), `RepairManager._repaintCost=500`,
+`_hullRepairCost=300`. Попутно: install кредитов не списывает вообще (цена в UI есть) — НЕ этот
+тикет. `ModuleShopEntry` (`[Obsolete]`): grep — 0 использований, `ShopEntry_*.asset` — 0 файлов,
+редактор уже на `ShipModule` → точно мёртв, снос в T-SHIP-FIX13 (нужен `.meta`-аккуратный подход).
+
+**Изменения (`ShipModuleServer.cs`, +63/-13, сигнатуры RPC не тронуты):**
+- `+ _serverRepaintCost=500 / _serverHullRepairCost=300` (SerializeField, дефолты = `RepairManager`);
+- `+ ComputeServerSellPrice()` (паритет формулы с клиентом, источник — серверный каталог; unknown → 0);
+- sell/repaint/hull RPC — серверные цены + mismatch-`Warning` (чит-сигнал); клиентский `cost<=0` не влияет.
+
+**Проверка:** Console → 0 CS-ошибок (MCP; refresh_unity по таймауту транспорта, ошибок скриптов нет).
+Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP-FIX03_server-prices.md`).

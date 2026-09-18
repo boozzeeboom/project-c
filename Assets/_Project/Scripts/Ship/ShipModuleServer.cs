@@ -15,6 +15,9 @@ namespace ProjectC.Ship
     ///   2. Корабль пристыкован (ShipController.IsDocked)
     ///   3. Совместимость + энергия (ShipModuleManager)
     ///
+    /// Цены — сервер-авторитетны (T-SHIP-FIX03): клиентские sellCredits/cost
+    /// игнорируются, сервер считает по своим данным (каталог / поля ниже).
+    ///
     /// После установки/снятия — ClientRpc синхронизирует изменение всем клиентам.
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
@@ -24,6 +27,13 @@ namespace ProjectC.Ship
         private ProjectC.Player.ShipController _shipController;
         private ShipModuleManager _moduleManager;
         private NetworkObject _netObj;
+
+        [Header("Серверные цены (авторитет, T-SHIP-FIX03)")]
+        [Tooltip("Стоимость покраски. Клиентский cost из RPC игнорируется.")]
+        [SerializeField] private int _serverRepaintCost = 500;
+
+        [Tooltip("Стоимость ремонта корпуса. Клиентский cost из RPC игнорируется.")]
+        [SerializeField] private int _serverHullRepairCost = 300;
 
         // Событие для UI (вызывается на клиенте после синхронизации)
         public static event Action<ulong /*shipNetId*/> OnModuleChanged;
@@ -216,7 +226,8 @@ namespace ProjectC.Ship
             OnModuleChangedClientRpc(slotName, string.Empty, isInstall: false);
         }
 
-        /// <summary>Клиент отправляет запрос на продажу модуля (снятие + кредиты).</summary>
+        /// <summary>Клиент отправляет запрос на продажу модуля (снятие + кредиты).
+        /// T-SHIP-FIX03: sellCredits — display-hint для UI, сервер начисляет свою цену.</summary>
         public void RequestSellModule(int keyInstanceId, string slotName, int sellCredits)
         {
             if (!IsClient) return;
@@ -279,17 +290,26 @@ namespace ProjectC.Ship
             }
 
             string removedModuleId = targetSlot.installedModuleId;
+            ShipModule removedModule = FindModuleById(removedModuleId);
             _moduleManager.RemoveModule(targetSlot);
 
+            // --- T-SHIP-FIX03: цена продажи — серверная, клиентский sellCredits игнорируется ---
+            int serverSellPrice = ComputeServerSellPrice(removedModule, removedModuleId);
+            if (sellCredits != serverSellPrice)
+            {
+                Debug.LogWarning($"[ShipModuleServer] Sell price mismatch: client={sellCredits}, " +
+                    $"server={serverSellPrice} (client value ignored, ship={_netObj.NetworkObjectId})");
+            }
+
             // --- Give credits ---
-            if (sellCredits > 0)
+            if (serverSellPrice > 0)
             {
                 var trade = ProjectC.Trade.Core.TradeWorld.Instance;
                 if (trade?.Repository != null)
                 {
-                    if (trade.Repository.TryModifyCredits(clientId, sellCredits, out float newCredits, out _))
+                    if (trade.Repository.TryModifyCredits(clientId, serverSellPrice, out float newCredits, out _))
                     {
-                        Debug.Log($"[ShipModuleServer] Player {clientId} sold '{removedModuleId}' for {sellCredits} CR (new={newCredits:F0})");
+                        Debug.Log($"[ShipModuleServer] Player {clientId} sold '{removedModuleId}' for {serverSellPrice} CR (new={newCredits:F0})");
                     }
                 }
             }
@@ -380,6 +400,7 @@ namespace ProjectC.Ship
 
         public void RequestRepaintShip(int keyInstanceId, Color color, int cost)
         {
+            // T-SHIP-FIX03: cost — display-hint для UI, сервер списывает _serverRepaintCost.
             if (!IsClient) return;
             RequestRepaintShipRpc(keyInstanceId, (byte)(color.r * 255), (byte)(color.g * 255), (byte)(color.b * 255), cost);
         }
@@ -416,18 +437,24 @@ namespace ProjectC.Ship
                 return;
             }
 
-            // --- Списание кредитов ---
-            if (cost > 0)
+            // --- Списание кредитов (T-SHIP-FIX03: серверная цена, клиентский cost игнорируется) ---
+            int serverRepaintCost = Mathf.Max(0, _serverRepaintCost);
+            if (cost != serverRepaintCost)
+            {
+                Debug.LogWarning($"[ShipModuleServer] Repaint cost mismatch: client={cost}, " +
+                    $"server={serverRepaintCost} (client value ignored, ship={_netObj.NetworkObjectId})");
+            }
+            if (serverRepaintCost > 0)
             {
                 var trade = ProjectC.Trade.Core.TradeWorld.Instance;
                 if (trade?.Repository != null)
                 {
-                    if (!trade.Repository.TryModifyCredits(clientId, -cost, out float newCredits, out string failReason))
+                    if (!trade.Repository.TryModifyCredits(clientId, -serverRepaintCost, out float newCredits, out string failReason))
                     {
                         NotifyClientError(clientId, $"Недостаточно кредитов: {failReason}");
                         return;
                     }
-                    Debug.Log($"[ShipModuleServer] Player {clientId} paid {cost} CR for repaint (new={newCredits:F0})");
+                    Debug.Log($"[ShipModuleServer] Player {clientId} paid {serverRepaintCost} CR for repaint (new={newCredits:F0})");
                 }
             }
 
@@ -453,7 +480,8 @@ namespace ProjectC.Ship
         // Hull Repair (T-HULL)
         // ============================================================
 
-        /// <summary>Клиент отправляет запрос на ремонт корпуса.</summary>
+        /// <summary>Клиент отправляет запрос на ремонт корпуса.
+        /// T-SHIP-FIX03: cost — display-hint для UI, сервер списывает _serverHullRepairCost.</summary>
         public void RequestRepairHull(int keyInstanceId, int cost)
         {
             if (!IsClient) return;
@@ -506,18 +534,24 @@ namespace ProjectC.Ship
                 return;
             }
 
-            // --- Списание кредитов (цена передана NPC RepairManager) ---
-            if (cost > 0)
+            // --- Списание кредитов (T-SHIP-FIX03: серверная цена, клиентский cost игнорируется) ---
+            int serverRepairCost = Mathf.Max(0, _serverHullRepairCost);
+            if (cost != serverRepairCost)
+            {
+                Debug.LogWarning($"[ShipModuleServer] Hull repair cost mismatch: client={cost}, " +
+                    $"server={serverRepairCost} (client value ignored, ship={_netObj.NetworkObjectId})");
+            }
+            if (serverRepairCost > 0)
             {
                 var trade = ProjectC.Trade.Core.TradeWorld.Instance;
                 if (trade?.Repository != null)
                 {
-                    if (!trade.Repository.TryModifyCredits(clientId, -cost, out float newCredits, out string failReason))
+                    if (!trade.Repository.TryModifyCredits(clientId, -serverRepairCost, out float newCredits, out string failReason))
                     {
                         NotifyClientError(clientId, $"Недостаточно кредитов: {failReason}");
                         return;
                     }
-                    Debug.Log($"[ShipModuleServer] Player {clientId} paid {cost} CR for hull repair (new={newCredits:F0})");
+                    Debug.Log($"[ShipModuleServer] Player {clientId} paid {serverRepairCost} CR for hull repair (new={newCredits:F0})");
                 }
             }
 
@@ -541,6 +575,22 @@ namespace ProjectC.Ship
         private ShipModule FindModuleById(string moduleId)
         {
             return ShipModuleCatalog.Find(moduleId);
+        }
+
+        /// <summary>
+        /// T-SHIP-FIX03: серверная цена продажи модуля.
+        /// Формула побайтово равна клиентской (RepairManagerWindow.ComputeSellPrice),
+        /// но источник — серверный каталог. Неизвестный модуль → 0 (без начислений).
+        /// </summary>
+        private int ComputeServerSellPrice(ShipModule module, string moduleId)
+        {
+            if (module == null)
+            {
+                Debug.LogWarning($"[ShipModuleServer] Sell: module '{moduleId}' not in server catalog — credit 0 " +
+                    $"(ship={_netObj.NetworkObjectId})");
+                return 0;
+            }
+            return Mathf.Max(1, module.costCredits / 2);
         }
     }
 }

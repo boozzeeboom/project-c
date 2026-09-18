@@ -165,9 +165,9 @@ ShipKeyServer (NetworkBehaviour)
 
 | Документ | Что обновить |
 |----------|-------------|
-| `docs/Ships/00_COMPOSITE_SHIP_SUMMARY.md` | Строка 67: «CargoSystem → ❌ Не существует» → «CargoSystem → ✅ Trade v2 (CargoData + TradeWorld + ShipCargoRegistry)» |
-| `docs/Ships/analysis-composite-ship.md` | Строка 30: «CargoSystem → ❌ Отсутствует» → актуальный статус |
-| `docs/Ships/roadmap-integration.md` | Строка 200: «Не делаем CargoSystem» → «CargoSystem → ✅ Готово (T-CARGO-01..06, июль 2026)» |
+| ~~`docs/Ships/00_COMPOSITE_SHIP_SUMMARY.md`~~ | ❌ Строка закрыта (T-SHIP-DOC10): файл в архиве с `T-DOCS01 a86247a7` |
+| ~~`docs/Ships/analysis-composite-ship.md`~~ | ❌ Строка закрыта (T-SHIP-DOC10): файл в архиве с `T-DOCS01 a86247a7` |
+| ~~`docs/Ships/roadmap-integration.md`~~ | ❌ Строка закрыта (T-SHIP-DOC10): файл в архиве с `T-DOCS01 a86247a7` |
 | `docs/Ships/legacy/AGENTS_SHIP_SYSTEM_SUMMARY.md` | Добавить ссылку на этот план рефакторинга |
 | `docs/Ships/Key-subsystem/00_OVERVIEW.md` | Обновить статус: «Миграция на MetaRequirement — ЗАВЕРШЕНА», «Рефакторинг по 29_KEY_REFACTOR_PLAN.md — см. SHIP_REFACTOR_PLAN_2026-07-21.md P1» |
 

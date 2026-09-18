@@ -40,7 +40,7 @@ namespace ProjectC.Ship
 
         [Header("Debug")]
         [Tooltip("Подробные логи при каждом столкновении")]
-        public bool verboseLogging = true;
+        public bool verboseLogging = false; // T-SHIP-FIX12: дефолт false (было true — спам в проде)
 
         // ========================================================
         // Default loader (паттерн v2-so-config-default-fallback)

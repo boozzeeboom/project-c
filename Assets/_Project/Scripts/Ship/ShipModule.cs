@@ -113,14 +113,11 @@ namespace ProjectC.Ship
         [Tooltip("Сила мезиевого толчка")]
         public float meziyForce = 0f;
 
-        [Tooltip("Длительность мезиевого эффекта (сек)")]
-        public float meziyDuration = 0f;
-
-        [Tooltip("Кулдаун между активациями (сек)")]
-        public float meziyCooldown = 0f;
-
         [Tooltip("Стоимость топлива за активацию")]
         public float meziyFuelCost = 0f;
+
+        // T-SHIP-FIX12: meziyDuration/meziyCooldown удалены (0 использований —
+        // активатор живёт на своих overheatThreshold/cooldownDuration).
 
         [Header("Visual (L1 — module visualPrefab)")]
         [Tooltip("Префаб меша модуля. При install — спавнится как child слота; при remove — уничтожается. Если null — модуль без визуала.")]

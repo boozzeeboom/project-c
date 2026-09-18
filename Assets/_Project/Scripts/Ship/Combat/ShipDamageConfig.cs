@@ -61,12 +61,12 @@ namespace ProjectC.Ship.Combat
         [Range(0f, 1f)] public float brokenSpeedMultiplier = 0.1f;
 
         [Header("Ремонт")]
-        [Tooltip("❌ УСТАРЕЛО: стоимость теперь задаётся на NPC RepairManager (_hullRepairCost). Оставлено для обратной совместимости.")]
-        [Min(0)] [HideInInspector] public int repairCostCredits = 300;
+        // T-SHIP-FIX12: repairCostCredits удалён (был deprecated+hidden, 0 использований).
+        // Цена теперь на NPC RepairManager (_hullRepairCost).
 
         [Header("Debug")]
         [Tooltip("Подробные логи в консоль при каждом изменении HP")]
-        public bool verboseLogging = true;
+        public bool verboseLogging = false; // T-SHIP-FIX12: дефолт false (было true — спам в проде)
 
         // ========================================================
         // Default loader (паттерн v2-so-config-default-fallback)
@@ -93,6 +93,7 @@ namespace ProjectC.Ship.Combat
 
         /// <summary>
         /// Получить maxHull для указанного класса корабля.
+        /// Неизвестный класс — Warning + Medium (не молча).
         /// </summary>
         public int GetMaxHull(ShipFlightClass flightClass)
         {
@@ -102,7 +103,9 @@ namespace ProjectC.Ship.Combat
                 case ShipFlightClass.Medium:  return maxHullMedium;
                 case ShipFlightClass.Heavy:   return maxHullHeavy;
                 case ShipFlightClass.HeavyII: return maxHullHeavyII;
-                default: return maxHullMedium;
+                default:
+                    Debug.LogWarning($"[ShipDamageConfig] Unknown ShipFlightClass '{flightClass}' — fallback Medium.");
+                    return maxHullMedium;
             }
         }
     }

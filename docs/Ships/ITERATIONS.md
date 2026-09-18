@@ -554,3 +554,29 @@ effective (base + модули). Retrieve (`TryRemove`) лимитов не ка
 
 **Проверка:** Console → 0 errors/warnings (MCP). Manual — за пользователем
 (кейсы в `docs/Ships/fix/T-SHIP-FIX11_cargo-limits.md` + реестр `SHIP_TESTS.md`).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX12)
+
+**Задача:** P1 — мелочи визуалов/контроллера/конфигов, только безопасное. Статус: ЧАСТИЧНО (код).
+
+**Перепроверка:** каждый подпункт читался в коде. Чинено 9: snap позы PartShake/Thruster при OFF,
+`_rpmSmoothTime` (то же 0.3), yaw-фолбэк по локальной оси, чистый `ShipPersistentId`-геттер,
+`verboseLogging` дефолт false (×2 конфига), `GetMaxHull` Warning, удалён `repairCostCredits`
+(0 использований), триггер RepairManager + `OnDisable` (паритет с консолью, регистрация
+duplicate-safe), `InstanceId` `IsSpawned`-гард, удалены `meziyDuration/meziyCooldown` (0 использований).
+Отложено 6 (физика вкуса, асимметрия коридора, персист ключей, математика ящиков, thrust-источник,
+плата за install). Опровергнуто 2 (curve-guard, timestamps-лик).
+
+**⚠️ Самокоррекция:** `IsGrounded` сначала удалил (grep показал 0) — неверно:
+`PlayerStateMachine.Disembark:113` использует как гейт выхода (CS1061 пойман консолью).
+Строка возвращена как была; правильный фикс гейта — геймдизайн-тикет. Урок: удаления проверять
+поиском по диску (bash), не grep-инструментом.
+
+**Изменения (7 файлов):** PartShake, ThrusterVisual, ShipController (геттер),
+ShipDamageConfig, ShipCollisionDamageConfig, RepairManager, ShipCargoConsole, ShipModule.
+Фаза C (FIX08..12) — **ЗАКРЫТА**. Дальше фаза D (FIX13..15, батч-чистки) и E (архитектура, отдельно).
+
+**Проверка:** Console → 0 errors/warnings после reload (MCP). Manual — за пользователем
+(кейсы в `docs/Ships/fix/T-SHIP-FIX12_small-fixes.md` + реестр `SHIP_TESTS.md`).

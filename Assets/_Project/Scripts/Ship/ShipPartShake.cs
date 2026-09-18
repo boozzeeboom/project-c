@@ -97,7 +97,11 @@ namespace ProjectC.Ship
                 return;
 
             if (!_shipController.IsEngineRunning)
+            {
+                // T-SHIP-FIX12: заглушен — вернуться в базовую позу, не застывать со смещением.
+                ResetToBasePose();
                 return;
+            }
 
             // Источник thrust: пилот за штурвалом → клавиатурный ввод,
             // нет пилота (NPC-автопилот) → вывод из Rigidbody.velocity.
@@ -120,7 +124,11 @@ namespace ProjectC.Ship
             _smoothThrust = Mathf.SmoothDamp(_smoothThrust, targetThrust, ref _smoothVelocity, _smoothTime);
 
             if (_smoothThrust < _thrustThreshold)
+            {
+                // T-SHIP-FIX12: ниже порога — тоже базовая поза (не микро-смещение навсегда).
+                ResetToBasePose();
                 return;
+            }
 
             // Накапливаем фазу
             _phase += Time.deltaTime * _frequency;
@@ -149,6 +157,18 @@ namespace ProjectC.Ship
                 transform.localPosition = _baseLocalPos;
                 transform.localRotation = _baseLocalRot;
             }
+        }
+
+        /// <summary>
+        /// T-SHIP-FIX12: вернуть базовую позу и обнулить сглаживание.
+        /// Инвариант «нет тяги = базовая поза».
+        /// </summary>
+        private void ResetToBasePose()
+        {
+            transform.localPosition = _baseLocalPos;
+            transform.localRotation = _baseLocalRot;
+            _smoothThrust = 0f;
+            _smoothVelocity = 0f;
         }
 
         /// <summary>

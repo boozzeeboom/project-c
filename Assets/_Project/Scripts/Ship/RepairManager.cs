@@ -51,13 +51,21 @@ namespace ProjectC.Ship
 
         private void OnTriggerEnter(Collider other)
         {
-            if (!other.CompareTag("Player")) return;
+            // T-SHIP-FIX12: паритет с ShipCargoConsole (tag + CharacterController),
+            // регистрация duplicate-safe (Contains внутри).
+            if (!other.CompareTag("Player") && other.GetComponent<CharacterController>() == null) return;
             InteractableManager.RegisterRepairManager(this);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (!other.CompareTag("Player")) return;
+            if (!other.CompareTag("Player") && other.GetComponent<CharacterController>() == null) return;
+            InteractableManager.UnregisterRepairManager(this);
+        }
+
+        private void OnDisable()
+        {
+            // T-SHIP-FIX12: отключённый NPC не висит зарегистрированным (как у консоли).
             InteractableManager.UnregisterRepairManager(this);
         }
 

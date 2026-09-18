@@ -82,6 +82,7 @@ namespace ProjectC.Player
         /// <summary>
         /// Стабильный идентификатор корабля для persistence (T-PERSIST).
         /// Если не задан в инспекторе — авто-генерация: sceneName/gameObject.name.
+        /// T-SHIP-FIX12: чистый геттер без сайд-эффектов (поле больше не мутирует при чтении).
         /// </summary>
         public string ShipPersistentId
         {
@@ -90,8 +91,7 @@ namespace ProjectC.Player
                 if (!string.IsNullOrEmpty(_shipPersistentId))
                     return _shipPersistentId!;
                 var scene = gameObject.scene;
-                _shipPersistentId = $"{scene.name}/{gameObject.name}";
-                return _shipPersistentId;
+                return $"{scene.name}/{gameObject.name}";
             }
         }
 

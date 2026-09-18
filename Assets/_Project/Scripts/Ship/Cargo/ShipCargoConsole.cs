@@ -34,8 +34,10 @@ namespace ProjectC.Ship.Cargo
         // ============================================================
         // IInteractable
         // ============================================================
+        // T-SHIP-FIX12: до спавна NetworkObjectId = 0 у всех — требуем IsSpawned,
+        // иначе fallback на уникальное имя объекта (регистрация только в рантайме).
         public string InstanceId =>
-            _ship != null ? $"{_ship.NetworkObjectId}_cargo" : gameObject.name + "_cargo";
+            _ship != null && _ship.IsSpawned ? $"{_ship.NetworkObjectId}_cargo" : gameObject.name + "_cargo";
 
         public string DisplayName => _displayName;
         public float InteractionRadius => _interactionRadius;

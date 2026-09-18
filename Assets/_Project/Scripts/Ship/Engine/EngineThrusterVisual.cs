@@ -29,6 +29,9 @@ namespace ProjectC.Ship.Engine
         [Tooltip("Скорость вращения на полной тяге (об/сек). Отрицательное = обратное вращение.")]
         [SerializeField] private float _maxRpm = 10f;
 
+        [Tooltip("Плавность следования оборотов (сек).")]
+        [SerializeField] private float _rpmSmoothTime = 0.3f;
+
         [Tooltip("Ось вращения лопастей в локальном пространстве propeller-объекта.")]
         [SerializeField] private Vector3 _rotationAxis = Vector3.forward;
 
@@ -127,13 +130,17 @@ namespace ProjectC.Ship.Engine
             if (_shipController == null || !_shipController.enabled)
                 return;
 
-            if (!_shipController.IsEngineRunning)
-                return;
-
             // Источник thrust/yaw: пилот за штурвалом → клавиатурный ввод,
             // нет пилота (NPC-автопилот) → вывод из Rigidbody.
+            // T-SHIP-FIX12: двигатель заглушен — нулевые входы (угол/обороты плавно гаснут,
+            // поза не застывает в отклонённой).
             float thrustNorm, yawNorm;
-            if (_inputReader != null && _inputReader.isActiveAndEnabled)
+            if (!_shipController.IsEngineRunning)
+            {
+                thrustNorm = 0f;
+                yawNorm = 0f;
+            }
+            else if (_inputReader != null && _inputReader.isActiveAndEnabled)
             {
                 thrustNorm = Mathf.Abs(_inputReader.CurrentThrust);
                 yawNorm = _inputReader.CurrentYaw;
@@ -145,7 +152,10 @@ namespace ProjectC.Ship.Engine
                     ? Mathf.Clamp01(speed / _maxReferenceSpeed)
                     : 0f;
 
-                float yawRateRad = _rbody.angularVelocity.y;
+                // T-SHIP-FIX12: yaw — по локальной оси корабля, не мировой Y
+                // (при крене/тангаже мировая Y врёт).
+                Vector3 localAngVel = _shipController.transform.InverseTransformDirection(_rbody.angularVelocity);
+                float yawRateRad = localAngVel.y;
                 float maxYawRad = _maxRefYawRate * Mathf.Deg2Rad;
                 yawNorm = maxYawRad > 0.001f
                     ? Mathf.Clamp(yawRateRad / maxYawRad, -1f, 1f)
@@ -161,7 +171,7 @@ namespace ProjectC.Ship.Engine
             if (_propeller != null)
             {
                 float targetRpm = _maxRpm != 0f ? thrustNorm * _maxRpm : 0f;
-                _currentRpm = Mathf.SmoothDamp(_currentRpm, targetRpm, ref _rpmVelocity, 0.3f);
+                _currentRpm = Mathf.SmoothDamp(_currentRpm, targetRpm, ref _rpmVelocity, _rpmSmoothTime);
                 _propellerSpinAngle += _currentRpm * 360f * Time.deltaTime;
             }
 

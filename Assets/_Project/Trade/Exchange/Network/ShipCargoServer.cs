@@ -175,6 +175,14 @@ namespace ProjectC.Trade.Network
 
                 // --- Шаг 2: положить в трюм (warehouseItemId — id ящика) ---
                 var cargo = tradeWorld.GetOrLoadCargo(shipNetId, shipClass);
+                // T-SHIP-FIX11: pre-check effective-лимитов (per-instance + модули),
+                // как в TradeWorld.TryLoadToShipCore. Без него — статистка вместо бонусов.
+                if (tradeWorld.TryCheckEffectiveCargoLimits(shipNetId, cargo, r.warehouseItemId, boxesToAdd, out var effFail))
+                {
+                    RollbackReturnItems(invWorld, clientId, inventoryItemId, itemData.itemType, count);
+                    SendResult(clientId, CreateFailResult($"Трюм полон: {effFail}", 0));
+                    return;
+                }
                 if (!cargo.TryAdd(r.warehouseItemId, boxesToAdd, tradeWorld.Resolver, out var cargoFail))
                 {
                     // ROLLBACK: вернуть предметы в инвентарь (AddItemDirect, НЕ RemoveItems)

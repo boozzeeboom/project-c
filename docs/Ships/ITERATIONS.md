@@ -537,3 +537,20 @@ Retrieve O(n) и IsDocked-гейт — сознательно не трогае�
 
 **Проверка:** Console → 0 errors/warnings (MCP). Manual — за пользователем
 (кейсы в `docs/Ships/fix/T-SHIP-FIX10_cargo-console.md` + реестр `SHIP_TESTS.md`).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX11)
+
+**Задача:** P1 — store-путь в обход effective-лимитов (бонусы модулей). Статус: ИСПРАВЛЕНО (код).
+
+**Перепроверка (до фикса — ПОДТВЕРЖДЕНО, настоящий баг):** `RequestStoreToCargoRpc:177`
+делал `cargo.TryAdd` напрямую → статистка (`_limitsOverride ?? static`), а HUD/рынок —
+effective (base + модули). Retrieve (`TryRemove`) лимитов не касается.
+
+**Изменения (2 файла, +13/−1):** `TradeWorld.TryCheckEffectiveCargoLimits` — `private` → `public`
+(+коммент); store-шаг 2 — тот же pre-check + rollback в инвентарь при непроходе
+(зеркало `TryLoadToShipCore`). `TryAddContractOwned` — вне скоупа (отдельный тикет).
+
+**Проверка:** Console → 0 errors/warnings (MCP). Manual — за пользователем
+(кейсы в `docs/Ships/fix/T-SHIP-FIX11_cargo-limits.md` + реестр `SHIP_TESTS.md`).

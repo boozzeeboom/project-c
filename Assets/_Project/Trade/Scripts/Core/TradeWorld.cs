@@ -799,8 +799,12 @@ namespace ProjectC.Trade.Core
         /// может вызвать TryLoadToShip RPC раньше, чем у сервера отработает
         /// ShipController.OnNetworkSpawn (race). Поэтому перед использованием
         /// registry — пробуем force-register через NetworkManager.SpawnManager.
+        ///
+        /// T-SHIP-FIX11: public — та же проверка нужна серверным вызывающим вне
+        /// TryLoadToShip (ShipCargoServer.RequestStoreToCargoRpc). При непроходе
+        /// возвращает true + failReason; попутно ставит limitsOverride на cargo.
         /// </summary>
-        private bool TryCheckEffectiveCargoLimits(ulong shipNetworkObjectId, CargoData cargo, string itemId, int quantity, out string failReason)
+        public bool TryCheckEffectiveCargoLimits(ulong shipNetworkObjectId, CargoData cargo, string itemId, int quantity, out string failReason)
         {
             failReason = null;
             // Force-register корабля если он заспавнен, но ещё не в реестре

@@ -158,3 +158,19 @@ REPLACE
 - T-ENG02c: EngineThrusterVisual компонент
 - T-ENG02d: ShipTelemetryState.thrustNormalized (опционально)
 - T-ENG02e: Настройка в сцене (WorldScene_0_0)
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-REVIEW)
+
+**Задача:** Полноценное код-ревью кораблей (ядро + модули/карго/ключи/телеметрия) + план исправления.
+Вердикт: CHANGES REQUIRED (P0 — читы/десинхрон, не вкусовщина).
+
+**Файлы (docs only, кода нет):**
+- `docs/Ships/SHIP_CODE_REVIEW_2026-09-18.md` (новый) — Standards 4/9, Unity/Arch/SOLID issues,
+  7×P0 (серверная клавиатура `:1324,1352-1396`; `SubmitShipInputRpc:1553` без Clamp; client-цены
+  `ShipModuleServer:227,388,464` + `-cost` фарм; `Recall:2381` без владения; двойной dt `:2033`;
+  топливо plain float; телеметрия 5 Гц full-snapshot), P1 баги, 10 несостыковок в доках.
+- `docs/Ships/SHIP_FIX_PLAN_2026-09-18.md` (новый) — конвейер шага
+  (перепроверка → утверждение → фикс → дока + коммит), фазы A (DOC01-10) / B (FIX01-07) /
+  C (FIX08-12) / D (FIX13-15) / E (ARCH01), ~20 коммитов. Без аппрува код не трогаем.

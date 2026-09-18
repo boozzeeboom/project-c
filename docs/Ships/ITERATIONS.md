@@ -477,3 +477,24 @@ Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP
 CS1022 (лишняя `}`) и CS1912 (дубль `shipColorR`) из моих же правок — зафиксировано честно).
 Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP-FIX07_cargo-split.md` + реестр).
 Фаза B (FIX01..07) — **ЗАКРЫТА**. Дальше фаза C (FIX08..12) — по одному, каждый с «давай».
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX08)
+
+**Задача:** P1 — ClientRpc модулей в обход Manager + broadcast-ошибки. Статус: ИСПРАВЛЕНО (код).
+
+**Перепроверка (до фикса — ПОДТВЕРЖДЕНО + настоящее расхождение):** клиентский путь шёл через
+`slot.*` напрямую → `currentPowerUsage` на клиентах stale после каждого изменения (слот не
+пересчитывает энергию, в отличие от Manager); двойная работа + двойной `OnModuleChanged` на хосте;
+`Notify*` — Everyone + фильтр (заголовок секции врал про TargetRpc, `TODO` висел);
+`NotifySuccess` — пустое тело. Подписчик события один — клиентский `ShipModuleVisualApplier:45`.
+
+**Изменения (только `ShipModuleServer.cs`, +31/−23):** `OnModuleChangedClientRpc` — `if (IsServer) return`
++ install через `_moduleManager.ReplaceModule` (атомарно/rollback/энергия), remove через
+`_moduleManager.RemoveModule`, каталог-miss/отказ → Warning; `Notify*` → SpecifiedInParams +
+`RpcTarget.Single(Temp)`, фильтр убран, Success — лог, TODO закрыт. Бонус: сервер больше не
+спавнит module-визуалы (некому — подписчик клиентский).
+
+**Проверка:** Console → 0 errors/warnings (MCP). Manual — за пользователем
+(кейсы в `docs/Ships/fix/T-SHIP-FIX08_module-clientrpc.md` + реестр `SHIP_TESTS.md`).

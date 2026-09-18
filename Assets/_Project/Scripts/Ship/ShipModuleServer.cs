@@ -320,11 +320,18 @@ namespace ProjectC.Ship
 
         // ============================================================
         // Client RPC (синхронизация всем клиентам)
+        // T-SHIP-FIX08: сервер уже применил изменение авторитетно — здесь только клиенты,
+        // через ShipModuleManager (валидация + пересчёт энергии, как на сервере).
         // ============================================================
 
         [Rpc(SendTo.Everyone)]
         private void OnModuleChangedClientRpc(string slotName, string moduleId, bool isInstall)
         {
+            // Сервер уже применил (Install/Remove через Manager) — пропуск убивает двойную
+            // работу на хосте + двойной OnModuleChanged + спавн визуалов на сервере
+            // (единственный подписчик события — клиентский ShipModuleVisualApplier).
+            if (IsServer) return;
+
             Debug.Log($"[ShipModuleServer] ClientRpc: slot='{slotName}', module='{moduleId}', install={isInstall}");
 
             if (_moduleManager == null) return;
@@ -343,55 +350,56 @@ namespace ProjectC.Ship
             if (isInstall)
             {
                 ShipModule module = FindModuleById(moduleId);
-                if (module != null)
+                if (module == null)
                 {
-                    // Если слот занят — сначала снять
-                    if (targetSlot.isOccupied)
-                        targetSlot.RemoveModule();
-                    targetSlot.InstallModule(module);
+                    Debug.LogWarning($"[ShipModuleServer] ClientRpc: module '{moduleId}' not in client catalog — skipped " +
+                        $"(ship={_netObj.NetworkObjectId}, slot='{slotName}')");
+                    return;
+                }
+                // Атомарная замена через Manager (валидация + rollback + пересчёт энергии).
+                if (!_moduleManager.ReplaceModule(targetSlot, module))
+                {
+                    Debug.LogWarning($"[ShipModuleServer] ClientRpc: ReplaceModule rejected on client " +
+                        $"(ship={_netObj.NetworkObjectId}, slot='{slotName}', module='{moduleId}') — desync signal");
                 }
             }
             else
             {
-                if (targetSlot.isOccupied)
-                    targetSlot.RemoveModule();
+                _moduleManager.RemoveModule(targetSlot);
             }
 
             OnModuleChanged?.Invoke(_netObj != null ? _netObj.NetworkObjectId : 0);
         }
 
         // ============================================================
-        // Notifications (TargetRpc)
+        // Notifications (TargetRpc, T-SHIP-FIX08)
         // ============================================================
 
         private void NotifyClientError(ulong targetClientId, string message)
         {
             Debug.LogWarning($"[ShipModuleServer] Denied client {targetClientId}: {message}");
-            // TODO: TargetRpc для показа toast/уведомления клиенту.
-            // Пока используем ClientRpc с проверкой localClientId.
-            NotifyErrorClientRpc(targetClientId, message);
+            var rpcParams = new RpcParams { Send = new RpcSendParams { Target = RpcTarget.Single(targetClientId, RpcTargetUse.Temp) } };
+            NotifyErrorClientRpc(targetClientId, message, rpcParams);
         }
 
         private void NotifyClientSuccess(ulong targetClientId, string slotName, string moduleId, bool isInstall)
         {
-            NotifySuccessClientRpc(targetClientId, slotName, moduleId, isInstall);
+            var rpcParams = new RpcParams { Send = new RpcSendParams { Target = RpcTarget.Single(targetClientId, RpcTargetUse.Temp) } };
+            NotifySuccessClientRpc(targetClientId, slotName, moduleId, isInstall, rpcParams);
         }
 
-        [Rpc(SendTo.Everyone)]
-        private void NotifyErrorClientRpc(ulong targetClientId, string message)
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void NotifyErrorClientRpc(ulong targetClientId, string message, RpcParams rpcParams = default)
         {
-            if (NetworkManager.Singleton != null &&
-                NetworkManager.Singleton.LocalClientId == targetClientId)
-            {
-                Debug.LogWarning($"[ShipModuleServer] ERROR: {message}");
-                // UI toast будет добавлен в RepairManagerWindow
-            }
+            Debug.LogWarning($"[ShipModuleServer] ERROR: {message}");
+            // UI toast будет добавлен в RepairManagerWindow
         }
 
-        [Rpc(SendTo.Everyone)]
-        private void NotifySuccessClientRpc(ulong targetClientId, string slotName, string moduleId, bool isInstall)
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void NotifySuccessClientRpc(ulong targetClientId, string slotName, string moduleId, bool isInstall, RpcParams rpcParams = default)
         {
-            // Клиент, отправивший запрос, увидит toast
+            // T-SHIP-FIX08: подтверждение для запросившего (точка расширения под toast).
+            Debug.Log($"[ShipModuleServer] SUCCESS: slot='{slotName}', module='{moduleId}', install={isInstall}");
         }
 
         // ============================================================

@@ -252,3 +252,17 @@ REPLACE
 - `docs/Ships/fix/T-SHIP-DOC05_cargo-guard-scope.md` (новый) — протокол перепроверки.
 - `docs/Ships/cargo_system/CARGO_OWNERSHIP_DESIGN.md §2` + `SHIP_REFACTOR_PLAN_2026-07-21.md` шаг 5.2 —
   баннеры (RPC-слой закрыт, TradeWorld-уровень — разрыв, кандидат в T-SHIP-FIX11).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-DOC06)
+
+**Задача:** Перепроверка несостыковки №7 (Engine vs Broken). Статус: ПОДТВЕРЖДЕНО.
+
+**Перепроверка (чтение доков):** ENGINE §2.5 (`fuel==0` → авто-OFF, расход всегда) vs
+DAMAGE 00 §4/§4.1 (Broken: двигатель работает, ×0.1) — кросс-эффект (~x10 топлива
+на дистанцию → авто-OFF → падение) нигде не зафиксирован, ссылок нет. Баланс не трогаем.
+
+**Изменения (docs only):**
+- `docs/Ships/fix/T-SHIP-DOC06_engine-vs-broken.md` (новый) — протокол перепроверки.
+- Кросс-баннеры: `ENGINE_POWER_STATE.md §2.5` ↔ `damage_subsystem/00_DESIGN.md §4.1`.

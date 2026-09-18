@@ -281,3 +281,18 @@ DAMAGE 00 §4/§4.1 (Broken: двигатель работает, ×0.1) — к�
 **Изменения (docs only):**
 - `docs/Ships/fix/T-SHIP-DOC07_l1-visual-status.md` (новый) — протокол перепроверки.
 - `docs/Ships/customisation/00_SUMMARY.md` — шапка-баннер (L1-строки = предистория).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-DOC08)
+
+**Задача:** Перепроверка несостыковки №9 (Bootstrap: гайд vs запрет). Статус: ПОДТВЕРЖДЕНО ЧАСТИЧНО.
+
+**Перепроверка:** гайд `02 §1.3` даёт альтернативу («BootstrapScene **или** DontDestroyOnLoad»);
+`RepairManagerWindow.cs:30,96-99` — синглтон без `DontDestroyOnLoad` в коде; запрет T-ENG02 в силе.
+Противоречие снимается выбором второго варианта, но приоритет не задан.
+
+**Изменения (docs only):**
+- `docs/Ships/fix/T-SHIP-DOC08_bootstrap-rule.md` (новый) — протокол перепроверки.
+- `docs/Ships/Modul_system/02_REPAIR_MANAGER.md §1.3` — приоритет (DDOL/WorldScene по умолчанию,
+  Bootstrap — с аппрува). `DontDestroyOnLoad` в коде — кандидат в T-SHIP-FIX15.

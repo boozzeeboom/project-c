@@ -25,6 +25,10 @@
 
 ### 1.3 Создать RepairManagerWindow GameObject
 
+> ⚠️ ПРИОРИТЕТ (T-SHIP-DOC08 2026-09-18): BootstrapScene залочена (`ITERATIONS.md` T-ENG02) —
+> выбирать **второй вариант** (runtime-создание с `DontDestroyOnLoad` / размещение в WorldScene).
+> Правка BootstrapScene — только с отдельного аппрува. Перепроверка: `docs/Ships/fix/T-SHIP-DOC08_bootstrap-rule.md`.
+
 В BootstrapScene или DontDestroyOnLoad:
 1. Создать пустой GameObject → назвать `[RepairManagerWindow]`
 2. Add Component → `UIDocument`

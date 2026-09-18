@@ -266,3 +266,18 @@ DAMAGE 00 §4/§4.1 (Broken: двигатель работает, ×0.1) — к�
 **Изменения (docs only):**
 - `docs/Ships/fix/T-SHIP-DOC06_engine-vs-broken.md` (новый) — протокол перепроверки.
 - Кросс-баннеры: `ENGINE_POWER_STATE.md §2.5` ↔ `damage_subsystem/00_DESIGN.md §4.1`.
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-DOC07)
+
+**Задача:** Перепроверка несостыковки №8 (L1 visual done/не начат). Статус: ПОДТВЕРЖДЕНО (дока устарела, код готов).
+
+**Перепроверка (grep кода):** L1 реализован (P4 21.07) — `ShipModule.cs:125-127` (`visualPrefab`),
+`ShipModuleVisualApplier.cs` (`:81,108` runtime спавн), `ModuleSlotEditor.cs` (Preview);
+`02_ENGINE_VISUAL_ANALYSIS §2.4` — «✅ Полностью готов». Устарел `customisation/00_SUMMARY.md`
+(04.07, до P4): строки 17/36/51-52. Остаток (пул, client-guard) — кандидат в T-SHIP-FIX14.
+
+**Изменения (docs only):**
+- `docs/Ships/fix/T-SHIP-DOC07_l1-visual-status.md` (новый) — протокол перепроверки.
+- `docs/Ships/customisation/00_SUMMARY.md` — шапка-баннер (L1-строки = предистория).

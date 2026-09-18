@@ -1,6 +1,10 @@
 # Ship Customisation — Сводная Аналитика
 
 > **Дата:** 2026-07-04
+> ⚠️ ЧАСТИЧНО УСТАРЕЛО (P4 2026-07-21): L1-статусы ниже (`D ❌`, `§1.1` «Нет visualPrefab»,
+> `§1.2` gap «applier Critical») закрыты — `ShipModule.visualPrefab` + `ShipModuleVisualApplier`
+> + Editor-preview реализованы (см. `SHIP_REFACTOR_PLAN_2026-07-21.md` P4).
+> Читать L1-строки как предисторию. Перепроверка: `docs/Ships/fix/T-SHIP-DOC07_l1-visual-status.md`.
 > **Тип документа:** аналитика + сводка, **БЕЗ детального плана реализации**
 > **Назначение:** каталог подходов к кастомизации кораблей, от простого к сложному, применительно к нашему стеку
 > **Читать вместе с:** `../CUSTOMIZATION_ANALYSIS.md` (2026-06-29, Equipment Visual focus), `../../Character/Customisation/03_LEVELS_OF_CUSTOMISATION.md` (L1-L5 для персонажа), `../Modul_system/01_ARCHITECTURE.md` (текущая модульная система)

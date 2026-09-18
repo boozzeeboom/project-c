@@ -82,6 +82,10 @@ namespace ProjectC.Ship.Network
         public ulong  ownerClientId;          // ← кто владеет ключом (для фильтрации)
         public double lastUpdateServerTime;   // для отладки stale-данных
 
+        // T-SHIP-FIX06: флаги состояния (bit0 = идёт атмосферная дозаправка).
+        public const byte FlagRefueling = 1 << 0;
+        public byte flags;
+
         // T-CARGO-UI-01: детальный список items. null/empty = трюм пуст.
         // Server резолвит displayName/unitWeight/dangerous/fragile на сервере.
         // Cap = 32 items (Light=4 / Medium=10 / Heavy=20 / HeavyII=30 + ~6-12 module-bonus slots).
@@ -111,6 +115,7 @@ namespace ProjectC.Ship.Network
             serializer.SerializeValue(ref state);
             serializer.SerializeValue(ref ownerClientId);
             serializer.SerializeValue(ref lastUpdateServerTime);
+            serializer.SerializeValue(ref flags); // T-SHIP-FIX06
             serializer.SerializeValue(ref shipColorR);
             serializer.SerializeValue(ref shipColorG);
             serializer.SerializeValue(ref shipColorB);
@@ -146,6 +151,7 @@ namespace ProjectC.Ship.Network
             if (moduleCount != other.moduleCount) return false;
             if (state != other.state) return false;
             if (ownerClientId != other.ownerClientId) return false;
+            if (flags != other.flags) return false; // T-SHIP-FIX06: иначе дельта refuel не уйдёт
             if (shipColorR != other.shipColorR) return false;
             if (shipColorG != other.shipColorG) return false;
             if (shipColorB != other.shipColorB) return false;
@@ -184,6 +190,7 @@ namespace ProjectC.Ship.Network
                 hash = hash * 31 + moduleCount;
                 hash = hash * 31 + state;
                 hash = hash * 31 + ownerClientId.GetHashCode();
+                hash = hash * 31 + flags;
                 hash = hash * 31 + shipColorR;
                 hash = hash * 31 + shipColorG;
                 hash = hash * 31 + shipColorB;

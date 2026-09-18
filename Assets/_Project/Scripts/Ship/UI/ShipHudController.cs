@@ -479,10 +479,34 @@ namespace ProjectC.Ship.UI
             }
 
             // ── FUEL: bar + label + refuel indicator ──
+            // T-SHIP-FIX06: telemetry-first — локальная копия FuelSystem на клиенте stale
+            // (сервер мутирует только свою). Fallback на локальную — host-edge / телеметрия не пришла.
             var fs = ship.FuelSystem;
-            if (fs != null)
+            var teleClient = ProjectC.Ship.Client.ShipTelemetryClientState.Instance;
+            var tstate = teleClient != null
+                ? teleClient.GetShipState(ship.NetworkObjectId)
+                : (ProjectC.Ship.Network.ShipTelemetryState?)null;
+            if (tstate.HasValue || fs != null)
             {
-                float fuelPct = fs.FuelPercent;
+                float fuelPct, fuelCur, fuelMaxV, refuelRate;
+                bool isRefuel;
+                if (tstate.HasValue)
+                {
+                    fuelPct = Mathf.Clamp01(tstate.Value.fuelNormalized);
+                    fuelMaxV = tstate.Value.fuelMax;
+                    fuelCur = fuelPct * fuelMaxV;
+                    isRefuel = (tstate.Value.flags & ProjectC.Ship.Network.ShipTelemetryState.FlagRefueling) != 0;
+                    refuelRate = fs != null ? fs.AtmosphericRefuelRate : 0f;
+                }
+                else
+                {
+                    fuelPct = fs.FuelPercent;
+                    fuelCur = fs.CurrentFuel;
+                    fuelMaxV = fs.MaxFuel;
+                    isRefuel = fs.isRefueling;
+                    refuelRate = fs.AtmosphericRefuelRate;
+                }
+
                 _fuelBarFill.style.width = Length.Percent(fuelPct * 100f);
 
                 // Цвет fuel bar: зелёный > 0.4, жёлтый > 0.2, красный
@@ -492,17 +516,16 @@ namespace ProjectC.Ship.UI
                 else fuelColor = new Color(0.86f, 0.31f, 0.31f);
                 _fuelBarFill.style.backgroundColor = fuelColor;
 
-                _fuelLabel.text = $"FUEL {fs.CurrentFuel:F0}/{fs.MaxFuel:F0}";
+                _fuelLabel.text = $"FUEL {fuelCur:F0}/{fuelMaxV:F0}";
 
                 // REFUEL indicator
                 var refuelRow = _colSpeed?.Q("refuel-row");
                 if (refuelRow != null)
                 {
-                    bool isRefueling = fs.isRefueling;
-                    refuelRow.style.display = isRefueling ? DisplayStyle.Flex : DisplayStyle.None;
-                    if (isRefueling && _refuelLabel != null)
+                    refuelRow.style.display = isRefuel ? DisplayStyle.Flex : DisplayStyle.None;
+                    if (isRefuel && _refuelLabel != null)
                     {
-                        _refuelLabel.text = $"REFUEL +{fs.AtmosphericRefuelRate:F1}/s";
+                        _refuelLabel.text = $"REFUEL +{refuelRate:F1}/s";
                     }
                 }
             }

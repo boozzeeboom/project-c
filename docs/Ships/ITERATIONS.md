@@ -432,3 +432,22 @@ Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP
 
 **Проверка:** Console → 0 errors/warnings по файлу (MCP). Manual — за пользователем
 (кейсы в `docs/Ships/fix/T-SHIP-FIX05_meziy-dt.md` + реестр `SHIP_TESTS.md`).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX06)
+
+**Задача:** P0 — топливо в HUD из телеметрии (локальная копия stale). Статус: ИСПРАВЛЕНО (код).
+
+**Перепроверка (до фикса — ПОДТВЕРЖДЕНО с уточнением скоупа):** отдельный `NetworkVariable`
+НЕ нужен — сервер уже пишет `fuelNormalized/fuelMax` в телеметрию (5 Гц). Баг был в потребителе:
+`ShipHudController` читал локальный `FuelSystem` (на хосте верно, на удалённом клиенте stale —
+бар и REFUEL-индикатор). Серверные чтения (`ShipController`, `MeziyModuleActivator`) корректны.
+
+**Изменения (3 файла):** `ShipTelemetryState` — `+ const FlagRefueling` + `byte flags`
+(сериализация + `Equals` включён + `GetHashCode`); `ShipController.UpdateTelemetryState` —
+1 строка (flags из `isRefueling`); `ShipHudController` FUEL-блок — telemetry-first
+(`GetShipState(netId)`, fallback на локальный при отсутствии телеметрии).
+
+**Проверка:** Console → 0 errors/warnings (MCP; Unity делал reload — изменения подхвачены).
+Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP-FIX06_fuel-telemetry.md` + реестр).

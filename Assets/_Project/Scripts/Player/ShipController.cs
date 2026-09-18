@@ -1149,6 +1149,8 @@ namespace ProjectC.Player
                 shipColorR            = (byte)(_shipColor.r * 255),
                 shipColorG            = (byte)(_shipColor.g * 255),
                 shipColorB            = (byte)(_shipColor.b * 255),
+                flags                 = (fuelSystem != null && fuelSystem.isRefueling)
+                    ? ShipTelemetryState.FlagRefueling : (byte)0, // T-SHIP-FIX06
 
             };
         }

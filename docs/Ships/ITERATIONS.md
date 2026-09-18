@@ -220,3 +220,17 @@ REPLACE
 - `docs/Ships/fix/T-SHIP-DOC03_key-28-vs-p1.md` (новый) — протокол перепроверки.
 - `docs/Ships/Key-subsystem/28_KEY_ARCHITECTURE_REVIEW.md` — шапка + баннеры на `§§5/6/7/9/10`
   («не реализовано / невалидно после P1»), текст сохранён как история.
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-DOC04)
+
+**Задача:** Перепроверка несостыковки №5 (карго «без ключа» vs P5). Статус: ПОДТВЕРЖДЕНО.
+
+**Перепроверка (grep):** guard на месте — `ShipCargoServer.cs:115,242` (отказ «Вы не владелец»),
+`MarketServer.cs:183,211` (`TradeResultCode.NotOwner=36`, `TradeResultCode.cs:41`);
+бонус: `ContractServer.cs:252,304,323`. Строка `Key 00 §1.3` «не требуют ключа» ложна.
+
+**Изменения (docs only):**
+- `docs/Ships/fix/T-SHIP-DOC04_cargo-key-table.md` (новый) — протокол перепроверки.
+- `docs/Ships/Key-subsystem/00_OVERVIEW.md §1.3` — строка карго исправлена на P5-статус.

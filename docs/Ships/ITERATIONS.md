@@ -204,3 +204,19 @@ REPLACE
 - `docs/Ships/fix/T-SHIP-DOC02_key-creation.md` (новый) — протокол перепроверки.
 - `docs/Ships/Key-subsystem/21_SHIP_OWNERSHIP_MODEL.md` — шапка + баннеры на `§§2.1/2.5/3/4`,
   текст сохранён как история.
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-DOC03)
+
+**Задача:** Перепроверка несостыковки №3 (`28` vs P1: выкинуть World?). Статус: ПОДТВЕРЖДЕНО.
+
+**Перепроверка:** `28` (2026-06-19) предлагает `KeyRegistry/KeyInstance`, Phase D — удалить
+`KeyRodInstanceWorld/Instance/Repository` + `ShipOwnershipRequirement`; P1 (2026-07-21) сделал
+наоборот (World = SSOT, удалены только обёртки); файлов `KeyRegistry.cs`/`KeyInstance.cs` нет;
+метрики `§6` невалидны после P1.
+
+**Изменения (docs only):**
+- `docs/Ships/fix/T-SHIP-DOC03_key-28-vs-p1.md` (новый) — протокол перепроверки.
+- `docs/Ships/Key-subsystem/28_KEY_ARCHITECTURE_REVIEW.md` — шапка + баннеры на `§§5/6/7/9/10`
+  («не реализовано / невалидно после P1»), текст сохранён как история.

@@ -1,6 +1,12 @@
 # 28_KEY_ARCHITECTURE_REVIEW — Глубокий архитектурный анализ
 
 **Дата:** 2026-06-19 | **Автор:** Агент Mavis | **Статус:** 📋 Architectural Review
+> ⚠️ ИСТОРИЧЕСКИЙ (P1 2026-07-21 пошёл противоположным путём): предложение `§§5/7`
+> (выкинуть `KeyRodInstanceWorld` → `KeyRegistry`, удалить `ShipOwnershipRequirement`)
+> **не реализовано** — World оставлен SSOT, удалены только обёртки
+> (см. `ITERATIONS.md` P1: `-1139/+651`). Метрики `§6` невалидны после P1.
+> Читать `§§5–7/9–10` как историю, не как план.
+> Перепроверка: `docs/Ships/fix/T-SHIP-DOC03_key-28-vs-p1.md`.
 
 ---
 
@@ -142,6 +148,8 @@ bool CanBoardShip(clientId, shipId) {
 
 ## §5. Предлагаемая упрощённая архитектура
 
+> ⚠️ НЕ РЕАЛИЗОВАНО (P1 2026-07-21): World оставлен SSOT, `KeyRegistry` не создан. История.
+
 ### 5.1 Одна структура — `KeyInstance`
 
 ```csharp
@@ -280,6 +288,8 @@ bool allowed = KeyRegistry.CanPlayerUseShip(myClientId, shipNetId);
 
 ## §6. Сравнение
 
+> ⚠️ НЕВАЛИДНО после P1: метрики «11 файлов / 5 правд» относятся к до-P1 срезу.
+
 | Метрика | Текущая | Предлагаемая |
 |---|---|---|
 | Файлов | 11 (.cs) | 4 (.cs) |
@@ -296,6 +306,8 @@ bool allowed = KeyRegistry.CanPlayerUseShip(myClientId, shipNetId);
 ---
 
 ## §7. План миграции (если пользователь хочет)
+
+> ⚠️ НЕ РЕАЛИЗОВАН: Phase D (удалить World/Requirement) противоречит P1-решению. История.
 
 ### Phase A — подготовить
 1. Создать `KeyRegistry.cs` (server-side)
@@ -355,6 +367,8 @@ bool allowed = KeyRegistry.CanPlayerUseShip(myClientId, shipNetId);
 
 ## §9. Рекомендация
 
+> ⚠️ ИСТОРИЯ (до P1): рекомендация «полный рефакторинг 13ч» не пошла в работу; P1 закрыл иначе.
+
 **Шаг 1 (сейчас):** исправить drop bug минимальным фиксом (T-KEY-09 План §3 — Шаг 1). 30 минут.
 
 **Шаг 2 (потом):** если хочется стабильности — провести рефакторинг по плану §7. ~13 часов.
@@ -364,6 +378,8 @@ bool allowed = KeyRegistry.CanPlayerUseShip(myClientId, shipNetId);
 ---
 
 ## §10. Что выбрать?
+
+> ⚠️ ИСТОРИЯ (до P1): таблица вариантов неактуальна после P1.
 
 | Вариант | Effort | Reliability | Документация |
 |---|---|---|---|

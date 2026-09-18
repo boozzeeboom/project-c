@@ -370,3 +370,29 @@ Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP
 **Проверка:** Console → 0 errors/warnings по файлу (MCP). Тесты — за пользователем:
 реестр `docs/dev/global_needtotest/SHIP_TESTS.md` заведён (бэкфилл FIX03 + кейсы FIX04),
 долгосрочные проверки вердикта — там же.
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX01)
+
+**Задача:** P0 — ввод мезии/ролла/дозаправки через RPC владельца (сервер читал клавиатуру хоста).
+Статус: ИСПРАВЛЕНО (код).
+
+**Перепроверка (до фикса — ПОДТВЕРЖДЕНО + находки):** серверный опрос (`IsKeyDown`,
+дозаправка L, мезия, ролл Z/C) двигал чужие корабли с хоста. Meziy-events `ShipInputReader` —
+0 подписчиков (оставлены, снос в FIX13). `GetCurrentPitch/YawInput` — 0 вызовов (удалены).
+В `InputBindingsConfig` нет actions для Roll/Meziy/Refuel → упаковка читает те же 9 клавиш
+(паритет 1:1, ребиндинг — отдельный тикет). Перекрытия клавиш (C/Z/Shift+) сохранены как дизайн.
+
+**Изменения (`ShipController.cs` ~−140/+100, `NetworkPlayer.cs` +31/−1):**
+- `NetworkPlayer.Update`: упаковка 6 интентов → расширенный `SendShipInput` (единственный вызывающий);
+- `SubmitShipInputRpc`/`ApplyServerInput` (опционально для NPC): новые суммы/средние, reset-сайты ×4,
+  isIdle/engineStalled-обнуления; все 10 float clamp `[-1,1]` (часть FIX02 сделана здесь, в FIX02 — AddPilot);
+- сервер: refuel/meziy/roll на средних; удалены `IsKeyDown/KeyCodeToKey/GetCurrent*Input`
+  (проверено поиском по диску; `:2033` double-dt не тронут — FIX05).
+
+**Проверка:** Console → 0 errors/warnings (MCP). Manual — за пользователем
+(кейсы в `docs/Ships/fix/T-SHIP-FIX01_server-input.md` + реестр `SHIP_TESTS.md`).
+⚠️ Инцидент инструментов: первая серия правок тикета молча не попала на диск
+(«success» без изменений); выявлено сверкой `git diff` по диску, все правки внесены повторно
+и проверены поиском по диску до коммита. Правило: после каждого тикета — `git diff --stat` с диска.

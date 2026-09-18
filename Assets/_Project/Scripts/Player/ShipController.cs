@@ -230,8 +230,10 @@ namespace ProjectC.Player
                 /// Минует _pilots HashSet gate. Используется NPC-pilot и (v2) player autopilot.
                 /// Идентично SubmitShipInputRpc (line 1024) но без guard `_pilots.Contains`.
                 /// Q8 defense: если Docked — no-op. Если engine stalled — no-op.
+                /// T-SHIP-FIX01: новые каналы опциональны (=0/false) — старые вызовы NPC не тронуты.
                 /// </summary>
-                public void ApplyServerInput(float thrust, float yaw, float pitch, float vertical, bool boost = false)
+                public void ApplyServerInput(float thrust, float yaw, float pitch, float vertical, bool boost = false,
+                    float roll = 0f, float meziyPitch = 0f, float meziyRoll = 0f, float meziyYaw = 0f, float meziyThrust = 0f, bool refuel = false)
                 {
                     if (!IsServer || !CanSimulateInCurrentCoordinates) return;
                     if (_netIsDocked.Value) return;   // T-DOCK-09: docked-blocks
@@ -242,7 +244,13 @@ namespace ProjectC.Player
                     _sumYaw += yaw;
                     _sumPitch += pitch;
                     _sumVertical += vertical;
+                    _sumRoll += Mathf.Clamp(roll, -1f, 1f);
+                    _sumMeziyPitch += Mathf.Clamp(meziyPitch, -1f, 1f);
+                    _sumMeziyRoll += Mathf.Clamp(meziyRoll, -1f, 1f);
+                    _sumMeziyYaw += Mathf.Clamp(meziyYaw, -1f, 1f);
+                    _sumMeziyThrust += Mathf.Clamp(meziyThrust, -1f, 1f);
                     if (boost) _boostCount++;
+                    if (refuel) _refuelCount++;
                     _inputCount++;
                 }
 
@@ -461,7 +469,8 @@ namespace ProjectC.Player
         private void ClearCoordinateInput()
         {
             _sumThrust = 0f; _sumYaw = 0f; _sumPitch = 0f; _sumVertical = 0f;
-            _boostCount = 0; _inputCount = 0;
+            _sumRoll = 0f; _sumMeziyPitch = 0f; _sumMeziyRoll = 0f; _sumMeziyYaw = 0f; _sumMeziyThrust = 0f;
+            _boostCount = 0; _refuelCount = 0; _inputCount = 0;
         }
 
         // Rigidbody
@@ -474,8 +483,10 @@ namespace ProjectC.Player
         private bool _frozenByNoPilot = false;
 
         // Накопленный ввод от всех пилотов (сервер)
+        // T-SHIP-FIX01: roll/meziy/refuel — тоже от пилотов через RPC, не с клавиатуры хоста.
         private float _sumThrust, _sumYaw, _sumPitch, _sumVertical;
-        private int _boostCount, _inputCount;
+        private float _sumRoll, _sumMeziyPitch, _sumMeziyRoll, _sumMeziyYaw, _sumMeziyThrust;
+        private int _boostCount, _refuelCount, _inputCount;
 
         // Smooth state — текущие сглаженные значения (сохраняются между кадрами)
         private float _currentYawRate;
@@ -1264,17 +1275,26 @@ namespace ProjectC.Player
             float dt = Time.fixedDeltaTime;
 
             // 1. Усредняем ввод от всех пилотов
+            // T-SHIP-FIX01: roll/meziy/refuel — тоже средние от пилотов, не клавиатура хоста.
             int n = Mathf.Max(1, _inputCount);
             float avgThrust = isIdle ? 0f : _sumThrust / n;
             float avgYaw = isIdle ? 0f : _sumYaw / n;
             float avgPitch = isIdle ? 0f : _sumPitch / n;
             float avgVertical = isIdle ? 0f : _sumVertical / n;
+            float avgRoll = isIdle ? 0f : _sumRoll / n;
+            float avgMeziyPitch = isIdle ? 0f : _sumMeziyPitch / n;
+            float avgMeziyRoll = isIdle ? 0f : _sumMeziyRoll / n;
+            float avgMeziyYaw = isIdle ? 0f : _sumMeziyYaw / n;
+            float avgMeziyThrust = isIdle ? 0f : _sumMeziyThrust / n;
             bool anyBoost = isIdle ? false : _boostCount > 0;
+            bool anyRefuel = isIdle ? false : _refuelCount > 0;
 
             // Если двигатель выключен — обнуляем ввод принудительно
             if (!_engineRunning && !_hasNpcPilot)
             {
                 avgThrust = 0f; avgYaw = 0f; avgPitch = 0f; avgVertical = 0f; anyBoost = false;
+                avgRoll = 0f; avgMeziyPitch = 0f; avgMeziyRoll = 0f; avgMeziyYaw = 0f; avgMeziyThrust = 0f;
+                anyRefuel = false;
             }
 
             // 1.5. Применяем модификаторы модулей (Сессия 4)
@@ -1296,6 +1316,8 @@ namespace ProjectC.Player
                 avgPitch = 0f;
                 avgVertical = 0f;
                 anyBoost = false;
+                avgRoll = 0f; avgMeziyPitch = 0f; avgMeziyRoll = 0f; avgMeziyYaw = 0f; avgMeziyThrust = 0f;
+                anyRefuel = false;
 
                 // ENGINE-STATE: авто-выключение при пустом топливе
                 if (_engineRunning && fuelSystem.IsEmpty)
@@ -1312,7 +1334,7 @@ namespace ProjectC.Player
                 fuelSystem.ConsumeFuel(fuelSystem.IdleConsumptionRate * dt);
             }
 
-            // 1.8. Атмосферная дозаправка (клавиша L, Сессия 5)
+            // 1.8. Атмосферная дозаправка (T-SHIP-FIX01: интент L от пилотов, не клавиатура хоста).
             // РАБОТАЕТ ТОЛЬКО когда корабль неподвижен (velocity ~ 0, thrust ~ 0)
             bool isRefueling = false;
             if (fuelSystem != null && !engineStalled)
@@ -1321,7 +1343,7 @@ namespace ProjectC.Player
 
                 if (isStationary)
                 {
-                    if (IsKeyDown(KeyCode.L))
+                    if (anyRefuel)
                     {
                         fuelSystem.RefuelAtmospheric(dt);
                         isRefueling = true;
@@ -1342,21 +1364,21 @@ namespace ProjectC.Player
             // Клавиша направления зажата = активный выхлоп (расход топлива, частицы, torque)
             // Перегрев после 10 сек непрерывного активного использования → кулдаун 15 сек
             //
-            // Управление (зажатие):
+            // Интенты (T-SHIP-FIX01: средние от пилотов, маппинг как был с клавиатуры):
             //   MODULE_MEZIY_PITCH:  C (нос вверх, dir=-1), V (нос вниз, dir=+1)
             //   MODULE_MEZIY_ROLL:   Z (крен влево, dir=-1), X (крен вправо, dir=+1)
             //   MODULE_MEZIY_YAW:    Shift+A (влево), Shift+D (вправо)
             //   MODULE_MEZIY_THRUST: Shift+W (ускорение), Shift+S (торможение) — если будет добавлен
             if (meziyActivator != null && !engineStalled && fuelSystem != null && fuelSystem.CurrentFuel >= 5f)
             {
-                bool shiftHeld = IsKeyDown(KeyCode.LeftShift) || IsKeyDown(KeyCode.RightShift);
+                // T-SHIP-FIX01: интенты — средние от пилотов (был опрос клавиатуры хоста).
 
                 // MODULE_MEZIY_PITCH: C/V
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_PITCH"))
                 {
-                    if (IsKeyDown(KeyCode.C))
+                    if (avgMeziyPitch < -0.01f)
                         meziyActivator.TryActivate("MODULE_MEZIY_PITCH", -1f);
-                    else if (IsKeyDown(KeyCode.V))
+                    else if (avgMeziyPitch > 0.01f)
                         meziyActivator.TryActivate("MODULE_MEZIY_PITCH", +1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_PITCH");
@@ -1365,9 +1387,9 @@ namespace ProjectC.Player
                 // MODULE_MEZIY_ROLL: Z/X
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_ROLL"))
                 {
-                    if (IsKeyDown(KeyCode.Z))
+                    if (avgMeziyRoll < -0.01f)
                         meziyActivator.TryActivate("MODULE_MEZIY_ROLL", -1f);
-                    else if (IsKeyDown(KeyCode.X))
+                    else if (avgMeziyRoll > 0.01f)
                         meziyActivator.TryActivate("MODULE_MEZIY_ROLL", +1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_ROLL");
@@ -1376,9 +1398,9 @@ namespace ProjectC.Player
                 // MODULE_MEZIY_YAW: Shift+A / Shift+D
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_YAW"))
                 {
-                    if (shiftHeld && IsKeyDown(KeyCode.A))
+                    if (avgMeziyYaw < -0.01f)
                         meziyActivator.TryActivate("MODULE_MEZIY_YAW", -1f);
-                    else if (shiftHeld && IsKeyDown(KeyCode.D))
+                    else if (avgMeziyYaw > 0.01f)
                         meziyActivator.TryActivate("MODULE_MEZIY_YAW", +1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_YAW");
@@ -1387,9 +1409,9 @@ namespace ProjectC.Player
                 // MODULE_MEZIY_THRUST: Shift+W (ускорение) / Shift+S (торможение)
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_THRUST"))
                 {
-                    if (shiftHeld && IsKeyDown(KeyCode.W))
+                    if (avgMeziyThrust > 0.01f)
                         meziyActivator.TryActivate("MODULE_MEZIY_THRUST", +1f);
-                    else if (shiftHeld && IsKeyDown(KeyCode.S))
+                    else if (avgMeziyThrust < -0.01f)
                         meziyActivator.TryActivate("MODULE_MEZIY_THRUST", -1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_THRUST");
@@ -1410,8 +1432,7 @@ namespace ProjectC.Player
             bool hasRollInputCheck = false;
             if (_rollUnlocked && !engineStalled)
             {
-                float rollInput = GetCurrentRollInput();
-                hasRollInputCheck = Mathf.Abs(rollInput) > 0.01f;
+                hasRollInputCheck = Mathf.Abs(avgRoll) > 0.01f;
             }
 
             // Расход/регенерация топлива (Сессия 5)
@@ -1470,14 +1491,13 @@ namespace ProjectC.Player
             float maxLiftForce = maxLiftSpeed * _rb.mass * Mathf.Abs(Physics.gravity.y);
             _currentLiftForce = Mathf.Clamp(_currentLiftForce, -maxLiftForce, maxLiftForce);
 
-            // 5.5. Roll (Z/C клавиши) -- непрерывный крен
+            // 5.5. Roll (T-SHIP-FIX01: интент Z/C от пилотов) -- непрерывный крен
             float rollForce = _rb.mass * 0.2f * _moduleRollMult;  // 200 для Medium * roll modifier
             bool hasRollInput = false;
             if (!engineStalled)
             {
-                float rollInput = GetCurrentRollInput();
-                hasRollInput = Mathf.Abs(rollInput) > 0.01f;
-                float targetRollRate = rollInput * rollForce;
+                hasRollInput = Mathf.Abs(avgRoll) > 0.01f;
+                float targetRollRate = avgRoll * rollForce;
                 _currentRollRate = hasRollInput
                     ? Mathf.SmoothDamp(_currentRollRate, targetRollRate, ref _rollVelocitySmooth, 0.4f)
                     : Mathf.SmoothDamp(_currentRollRate, 0f, ref _rollVelocitySmooth, 0.8f);
@@ -1543,14 +1563,18 @@ namespace ProjectC.Player
 
             // 12. Сброс буфера ввода
             _sumThrust = 0; _sumYaw = 0; _sumPitch = 0; _sumVertical = 0;
-            _boostCount = 0; _inputCount = 0;
+            _sumRoll = 0; _sumMeziyPitch = 0; _sumMeziyRoll = 0; _sumMeziyYaw = 0; _sumMeziyThrust = 0;
+            _boostCount = 0; _refuelCount = 0; _inputCount = 0;
         }
 
         /// <summary>
-        /// Пилот шлёт ввод на сервер
+        /// Пилот шлёт ввод на сервер.
+        /// T-SHIP-FIX01: roll/meziy/refuel — от пилота; все float clamp [-1,1] (заход на FIX02).
         /// </summary>
         [Rpc(SendTo.Server)]
-                private void SubmitShipInputRpc(float thrust, float yaw, float pitch, float vertical, bool boost, RpcParams rpcParams = default)
+                private void SubmitShipInputRpc(float thrust, float yaw, float pitch, float vertical, bool boost,
+                    float roll, float meziyPitch, float meziyRoll, float meziyYaw, float meziyThrust, bool refuel,
+                    RpcParams rpcParams = default)
                 {
                     if (!CanSimulateInCurrentCoordinates) return;
                     if (!_pilots.Contains(rpcParams.Receive.SenderClientId)) return;
@@ -1559,15 +1583,22 @@ namespace ProjectC.Player
                     // дёрнуть RPC напрямую через модифицированный клиент.
                     if (_netIsDocked.Value) return;
 
-                    _sumThrust += thrust;
-                    _sumYaw += yaw;
-                    _sumPitch += pitch;
-                    _sumVertical += vertical;
+                    _sumThrust += Mathf.Clamp(thrust, -1f, 1f);
+                    _sumYaw += Mathf.Clamp(yaw, -1f, 1f);
+                    _sumPitch += Mathf.Clamp(pitch, -1f, 1f);
+                    _sumVertical += Mathf.Clamp(vertical, -1f, 1f);
+                    _sumRoll += Mathf.Clamp(roll, -1f, 1f);
+                    _sumMeziyPitch += Mathf.Clamp(meziyPitch, -1f, 1f);
+                    _sumMeziyRoll += Mathf.Clamp(meziyRoll, -1f, 1f);
+                    _sumMeziyYaw += Mathf.Clamp(meziyYaw, -1f, 1f);
+                    _sumMeziyThrust += Mathf.Clamp(meziyThrust, -1f, 1f);
                     if (boost) _boostCount++;
+                    if (refuel) _refuelCount++;
                     _inputCount++;
                 }
 
-                public void SendShipInput(float thrust, float yaw, float pitch, float vertical, bool boost)
+                public void SendShipInput(float thrust, float yaw, float pitch, float vertical, bool boost,
+                    float roll, float meziyPitch, float meziyRoll, float meziyYaw, float meziyThrust, bool refuel)
                 {
                     // Clients observe a server-authoritative ship; they must not require local authority to submit pilot input.
                     if (!CanObserveInCurrentCoordinates) return;
@@ -1578,7 +1609,8 @@ namespace ProjectC.Player
                     // Игрок должен сначала через T → CommPanel → "Отстыковка" → одобрение,
                     // чтобы снять флаг IsDocked (см. AUDIT_AND_REFACTOR.md §1.3).
                     if (_netIsDocked.Value) return;
-                    SubmitShipInputRpc(thrust, yaw, pitch, vertical, boost);
+                    SubmitShipInputRpc(thrust, yaw, pitch, vertical, boost,
+                        roll, meziyPitch, meziyRoll, meziyYaw, meziyThrust, refuel);
                 }
 
         private void ApplyThrustForce(float currentThrust)
@@ -1933,7 +1965,8 @@ namespace ProjectC.Player
 
                 // Сбросить накопленный ввод
                 _sumThrust = 0; _sumYaw = 0; _sumPitch = 0; _sumVertical = 0;
-                _boostCount = 0; _inputCount = 0;
+                _sumRoll = 0; _sumMeziyPitch = 0; _sumMeziyRoll = 0; _sumMeziyYaw = 0; _sumMeziyThrust = 0;
+                _boostCount = 0; _refuelCount = 0; _inputCount = 0;
 
                 if (_debugLog)
                     Debug.Log($"[ShipController:{name}] Frozen by no pilot. Engine ON, fuel/wind suspended.");
@@ -1951,7 +1984,8 @@ namespace ProjectC.Player
 
             _frozenByNoPilot = true;
             _sumThrust = 0; _sumYaw = 0; _sumPitch = 0; _sumVertical = 0;
-            _boostCount = 0; _inputCount = 0;
+            _sumRoll = 0; _sumMeziyPitch = 0; _sumMeziyRoll = 0; _sumMeziyYaw = 0; _sumMeziyThrust = 0;
+            _boostCount = 0; _refuelCount = 0; _inputCount = 0;
 
             if (_rb != null && !_rb.isKinematic)
             {
@@ -1994,7 +2028,7 @@ namespace ProjectC.Player
                 _meziyActive = true;
                 ShipModule module = state.module;
 
-                // Применить torque по направлению из состояния (без повторного IsKeyDown)
+                // Применить torque по направлению из состояния пилота
                 float dir = state.activeDirection;
                 if (Mathf.Abs(dir) < 0.01f) continue;
 
@@ -2043,114 +2077,8 @@ namespace ProjectC.Player
             }
         }
 
-        /// <summary>
-        /// Безопасная проверка клавиш (Input Manager vs Input System).
-        /// Возвращает false если Input недоступен.
-        /// </summary>
-        private bool IsKeyDown(KeyCode key)
-        {
-#if ENABLE_INPUT_SYSTEM
-            // Input System пакет
-            try
-            {
-                var keyboard = UnityEngine.InputSystem.Keyboard.current;
-                if (keyboard == null) return false;
-                var keyControl = KeyCodeToKey(key);
-                return keyboard[keyControl].isPressed;
-            }
-            catch
-            {
-                return false;
-            }
-#else
-            // Old Input Manager
-            try
-            {
-                return Input.GetKey(key);
-            }
-            catch (System.InvalidOperationException)
-            {
-                return false;
-            }
-#endif
-        }
-
-#if ENABLE_INPUT_SYSTEM
-        /// <summary>
-        /// Конвертировать KeyCode в Key (Input System).
-        /// </summary>
-        private UnityEngine.InputSystem.Key KeyCodeToKey(KeyCode code)
-        {
-            // Маппинг для используемых клавиш
-            switch (code)
-            {
-                case KeyCode.A: return UnityEngine.InputSystem.Key.A;
-                case KeyCode.B: return UnityEngine.InputSystem.Key.B;
-                case KeyCode.C: return UnityEngine.InputSystem.Key.C;
-                case KeyCode.D: return UnityEngine.InputSystem.Key.D;
-                case KeyCode.E: return UnityEngine.InputSystem.Key.E;
-                case KeyCode.F: return UnityEngine.InputSystem.Key.F;
-                case KeyCode.G: return UnityEngine.InputSystem.Key.G;
-                case KeyCode.H: return UnityEngine.InputSystem.Key.H;
-                case KeyCode.I: return UnityEngine.InputSystem.Key.I;
-                case KeyCode.J: return UnityEngine.InputSystem.Key.J;
-                case KeyCode.K: return UnityEngine.InputSystem.Key.K;
-                case KeyCode.L: return UnityEngine.InputSystem.Key.L;
-                case KeyCode.M: return UnityEngine.InputSystem.Key.M;
-                case KeyCode.N: return UnityEngine.InputSystem.Key.N;
-                case KeyCode.O: return UnityEngine.InputSystem.Key.O;
-                case KeyCode.P: return UnityEngine.InputSystem.Key.P;
-                case KeyCode.Q: return UnityEngine.InputSystem.Key.Q;
-                case KeyCode.R: return UnityEngine.InputSystem.Key.R;
-                case KeyCode.S: return UnityEngine.InputSystem.Key.S;
-                case KeyCode.T: return UnityEngine.InputSystem.Key.T;
-                case KeyCode.U: return UnityEngine.InputSystem.Key.U;
-                case KeyCode.V: return UnityEngine.InputSystem.Key.V;
-                case KeyCode.W: return UnityEngine.InputSystem.Key.W;
-                case KeyCode.X: return UnityEngine.InputSystem.Key.X;
-                case KeyCode.Y: return UnityEngine.InputSystem.Key.Y;
-                case KeyCode.Z: return UnityEngine.InputSystem.Key.Z;
-                case KeyCode.Alpha1: return UnityEngine.InputSystem.Key.Digit1;
-                case KeyCode.Alpha2: return UnityEngine.InputSystem.Key.Digit2;
-                case KeyCode.Alpha3: return UnityEngine.InputSystem.Key.Digit3;
-                case KeyCode.LeftShift: return UnityEngine.InputSystem.Key.LeftShift;
-                case KeyCode.RightShift: return UnityEngine.InputSystem.Key.RightShift;
-                case KeyCode.Space: return UnityEngine.InputSystem.Key.Space;
-                default: return UnityEngine.InputSystem.Key.None;
-            }
-        }
-#endif
-
-        /// <summary>
-        /// Получить текущий ввод крена (Z = влево, C = вправо).
-        /// Возвращает -1 (влево), 0 (нет), 1 (вправо).
-        /// </summary>
-        private float GetCurrentRollInput()
-        {
-            float z = IsKeyDown(KeyCode.Z) ? -1f : 0f;
-            float c = IsKeyDown(KeyCode.C) ? 1f : 0f;
-            return z + c;
-        }
-
-        /// <summary>
-        /// Получить текущий ввод тангажа для мезиевого модуля.
-        /// </summary>
-        private float GetCurrentPitchInput()
-        {
-            float w = IsKeyDown(KeyCode.W) ? -1f : 0f;  // W = нос вверх
-            float s = IsKeyDown(KeyCode.S) ? 1f : 0f;   // S = нос вниз
-            return w + s;
-        }
-
-        /// <summary>
-        /// Получить текущий ввод рыскания для мезиевого модуля.
-        /// </summary>
-        private float GetCurrentYawInput()
-        {
-            float a = IsKeyDown(KeyCode.A) ? -1f : 0f;
-            float d = IsKeyDown(KeyCode.D) ? 1f : 0f;
-            return a + d;
-        }
+        // T-SHIP-FIX01: IsKeyDown/KeyCodeToKey/GetCurrentRollInput/GetCurrentPitchInput/GetCurrentYawInput
+        // удалены — сервер клавиатуру не читает, весь ввод идёт от пилотов через SubmitShipInputRpc.
 
         /// <summary>
         /// Сессия 5: Инициализация системы топлива.

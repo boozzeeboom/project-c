@@ -1027,6 +1027,34 @@ namespace ProjectC.Player
 
                 bool boost = IsActionHeld(InputBindingsConfig.GameAction.ShipBoost);
 
+                // T-SHIP-FIX01: roll/meziy/refuel — интенты пилота на сервер.
+                // Маппинг 1:1 как был в серверном опросе (те же клавиши, те же знаки).
+                // Отдельных GameAction для них нет — перенос на actions/ребиндинг отдельным тикетом.
+                float roll = 0f, meziyPitch = 0f, meziyRoll = 0f, meziyYaw = 0f, meziyThrust = 0f;
+                bool refuel = false;
+                if (Keyboard.current != null)
+                {
+                    var kb = Keyboard.current;
+                    bool shiftHeld = kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
+
+                    if (kb.zKey.isPressed) roll -= 1f;
+                    if (kb.cKey.isPressed) roll += 1f;
+
+                    if (kb.cKey.isPressed) meziyPitch -= 1f;
+                    else if (kb.vKey.isPressed) meziyPitch += 1f;
+
+                    if (kb.zKey.isPressed) meziyRoll -= 1f;
+                    else if (kb.xKey.isPressed) meziyRoll += 1f;
+
+                    if (shiftHeld && kb.aKey.isPressed) meziyYaw -= 1f;
+                    else if (shiftHeld && kb.dKey.isPressed) meziyYaw += 1f;
+
+                    if (shiftHeld && kb.wKey.isPressed) meziyThrust += 1f;
+                    else if (shiftHeld && kb.sKey.isPressed) meziyThrust -= 1f;
+
+                    refuel = kb.lKey.isPressed;
+                }
+
                 // Guard: пропускаем ship input если NGO/корабль не готовы
                 // (защита от NRE в __endSendRpc при scene transition / shutdown)
                 if (_currentShip != null
@@ -1034,7 +1062,8 @@ namespace ProjectC.Player
                     && NetworkManager.Singleton != null
                     && NetworkManager.Singleton.IsListening)
                 {
-                    _currentShip.SendShipInput(thrust, yaw, pitch, vertical, boost);
+                    _currentShip.SendShipInput(thrust, yaw, pitch, vertical, boost,
+                        roll, meziyPitch, meziyRoll, meziyYaw, meziyThrust, refuel);
                 }
 
                 // ENGINE-STATE: Enter — запуск/остановка двигателя (только в кресле пилота)

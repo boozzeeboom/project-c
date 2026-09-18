@@ -189,3 +189,18 @@ REPLACE
 - `docs/Ships/fix/T-SHIP-DOC01_key-overview.md` (новый) — протокол перепроверки.
 - `docs/Ships/Key-subsystem/00_OVERVIEW.md` — баннеры `⚠️ УСТАРЕЛО (P1 2026-07-21)` на 7 параграфах,
   текст сохранён как история. Stale комменты в коде — НЕ этот тикет (уйдут в T-SHIP-FIX13).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-DOC02)
+
+**Задача:** Перепроверка несостыковки №2 (где создаётся instance: `21 §§2–3` vs P1). Статус: ПОДТВЕРЖДЕНО ЧАСТИЧНО.
+
+**Перепроверка:** `21_` — предизайн 2026-06-18 («код НЕ написан»); точка создания
+`KeyRodInstanceBinding.OnNetworkSpawn` + legacy `ShipKeyServer/ClientState/Registry` устарели;
+модель владения/трансфер (`§§3.3–3.4`, `§5`) актуальна как дизайн; P1-факт — `ShipController.cs:812,855,876`.
+
+**Изменения (docs only):**
+- `docs/Ships/fix/T-SHIP-DOC02_key-creation.md` (новый) — протокол перепроверки.
+- `docs/Ships/Key-subsystem/21_SHIP_OWNERSHIP_MODEL.md` — шапка + баннеры на `§§2.1/2.5/3/4`,
+  текст сохранён как история.

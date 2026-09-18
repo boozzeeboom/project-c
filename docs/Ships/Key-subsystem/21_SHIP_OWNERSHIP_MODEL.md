@@ -3,6 +3,11 @@
 **Подсистема:** Корабли — кто каким кораблём ВЛАДЕЕТ (по уникальному ключу)
 **Тег:** `ship-ownership`, `ownership-world`, `ship-requirement`
 **Статус:** 📋 Дизайн готов, код НЕ написан
+> ⚠️ ЧАСТИЧНО УСТАРЕЛО (P1 2026-07-21): точка создания instance переехала —
+> `KeyRodInstanceBinding.OnNetworkSpawn` удалён, актуально `ShipController.OnNetworkSpawn`
+> → `CreateKeyInstanceWhenReady()` (см. `00_OVERVIEW.md §2.1`). Legacy-API (`ShipKeyServer`,
+> `ShipKeyClientState`, `ShipOwnershipRegistry`) ниже оставлено как история.
+> Перепроверка: `docs/Ships/fix/T-SHIP-DOC02_key-creation.md`.
 **Дата:** 2026-06-18
 **Связанные документы:**
 - `20_UNIQUE_KEY_INSTANCE.md` — концепция KeyRodInstance
@@ -32,6 +37,9 @@
 ## 2. Архитектура
 
 ### 2.1 KeyRodInstanceWorld (server POCO singleton)
+
+> ⚠️ УСТАРЕЛО (P1): «Создаётся в `KeyRodInstanceBinding.OnNetworkSpawn`» — Binding удалён.
+> Актуально: создаётся в `ShipController.OnNetworkSpawn` (см. шапку).
 
 ```csharp
 namespace ProjectC.Ship.Key
@@ -191,6 +199,8 @@ if (!_inShip)
 
 ### 2.5 F-key pre-check (client side)
 
+> ⚠️ УСТАРЕЛО (P1): `ShipKeyClientState` удалён (заменён `MetaRequirementClientState`, см. `00_OVERVIEW.md §2.1`).
+
 ```csharp
 // В NetworkPlayer.cs Update (client side, owner)
 if (Keyboard.current.fKey.wasPressedThisFrame && !_inShip)
@@ -214,6 +224,9 @@ if (Keyboard.current.fKey.wasPressedThisFrame && !_inShip)
 ---
 
 ## 3. Сценарии
+
+> ⚠️ ЧАСТИЧНО УСТАРЕЛО (P1): `§§3.1–3.2` используют удалённые `KeyRodInstanceBinding.OnNetworkSpawn`,
+> `ShipKeyClientState`, `ShipKeyServer`. Флоу владения/трансфера (`§§3.3–3.4`) актуален.
 
 ### 3.1 Игрок A подбирает ключ
 
@@ -275,6 +288,9 @@ if (Keyboard.current.fKey.wasPressedThisFrame && !_inShip)
 ---
 
 ## 4. Edge-cases
+
+> ⚠️ ЧАСТИЧНО УСТАРЕЛО (P1): `[KeyRodInstanceBinding]`-строка и `ShipOwnershipRegistry`-синхронизация
+> относятся к удалённым классам. Смысл кейсов (уничтожение, restart, валидация, auto-disembark фаза 2) актуален.
 
 | Кейс | Решение |
 |---|---|

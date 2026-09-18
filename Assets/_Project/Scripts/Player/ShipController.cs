@@ -2374,28 +2374,57 @@ namespace ProjectC.Player
         // T-PLAYER-PERSIST: Ship Recall — вызвать корабль на пад
         // ═══════════════════════════════════════════════════════════
 
+        [Header("Ship Recall (серверный авторитет, T-SHIP-FIX04)")]
+        [Tooltip("Стоимость вызова корабля на пад. Клиентский cost из RPC игнорируется.")]
+        [SerializeField] private int _serverRecallCost = 500;
+
         /// <summary>
         /// Вызвать корабль на указанную позицию пада. Вызывается из RepairManagerWindow.
-        /// Сервер: телепортирует корабль, списывает кредиты, снимает freeze.
+        /// Сервер: проверяет владение, списывает СВОЮ цену, сверяет пад со свободными, телепортирует.
+        /// T-SHIP-FIX04: padPosition/cost от клиента — display-hint, не авторитет.
         /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RecallShipToPadServerRpc(Vector3 padPosition, int cost, RpcParams rpcParams = default)
         {
             if (!IsServer) return;
-
-            // Списать кредиты с отправителя (клиент = владелец корабля)
             ulong clientId = rpcParams.Receive.SenderClientId;
-            if (cost > 0)
+
+            // T-SHIP-FIX04: владение — сервер знает shipNetId сам, ключ от клиента не нужен.
+            if (!KeyRodInstanceWorld.IsInitialized ||
+                !KeyRodInstanceWorld.IsOwnerOfShip(clientId, NetworkObjectId))
+            {
+                Debug.LogWarning($"[ShipController:{name}] Recall denied: client={clientId} is not owner (ship={NetworkObjectId})");
+                return;
+            }
+
+            // T-SHIP-FIX04: цена — серверная, клиентский cost игнорируется.
+            int serverCost = Mathf.Max(0, _serverRecallCost);
+            if (cost != serverCost)
+            {
+                Debug.LogWarning($"[ShipController:{name}] Recall cost mismatch: client={cost}, " +
+                    $"server={serverCost} (client value ignored)");
+            }
+
+            // T-SHIP-FIX04: пад — сверяем с серверными свободными падами, телепорт на серверную позицию.
+            Vector3 serverPadPosition;
+            if (!TryResolveFreePad(padPosition, out serverPadPosition))
+            {
+                Debug.LogWarning($"[ShipController:{name}] Recall denied: no free pad near {padPosition} (client={clientId})");
+                return;
+            }
+
+            // Списать кредиты с отправителя (до телепорта)
+            if (serverCost > 0)
             {
                 var trade = ProjectC.Trade.Core.TradeWorld.Instance;
                 if (trade?.Repository != null)
                 {
-                    if (!trade.Repository.TryModifyCredits(clientId, -cost, out float newCredits, out string failReason))
+                    if (!trade.Repository.TryModifyCredits(clientId, -serverCost, out float newCredits, out string failReason))
                     {
                         Debug.LogWarning($"[ShipController:{name}] Recall denied: client={clientId}, reason={failReason}");
                         return;
                     }
-                    Debug.Log($"[ShipController:{name}] Player {clientId} paid {cost} CR for ship recall (new={newCredits:F0})");
+                    Debug.Log($"[ShipController:{name}] Player {clientId} paid {serverCost} CR for ship recall (new={newCredits:F0})");
                 }
             }
 
@@ -2403,10 +2432,10 @@ namespace ProjectC.Player
             if (_netIsDocked.Value)
                 ExitDocked();
 
-            // Телепорт на пад
+            // Телепорт на серверную позицию свободного пада
             if (_rb != null)
             {
-                _rb.position = padPosition;
+                _rb.position = serverPadPosition;
                 if (!_rb.isKinematic)
                 {
                     _rb.linearVelocity = Vector3.zero;
@@ -2418,7 +2447,38 @@ namespace ProjectC.Player
             _frozenByNoPilot = false;
 
             if (_debugLog)
-                Debug.Log($"[ShipController:{name}] Recalled to pad at {padPosition}, cost={cost}");
+                Debug.Log($"[ShipController:{name}] Recalled to pad at {serverPadPosition}, cost={serverCost}");
+        }
+
+        /// <summary>
+        /// T-SHIP-FIX04: найти свободный пад рядом с клиентской точкой.
+        /// Возвращает серверную позицию пада (телепорт только на неё).
+        /// Редкая операция (только по RPC), FindObjectsByType здесь допустим.
+        /// </summary>
+        private bool TryResolveFreePad(Vector3 clientPadPosition, out Vector3 serverPadPosition)
+        {
+            serverPadPosition = Vector3.zero;
+            const float kRecallPadTolerance = 15f;
+            float bestDistSq = kRecallPadTolerance * kRecallPadTolerance;
+            ProjectC.Docking.Stations.DockingPadTriggerBox best = null;
+
+            var pads = FindObjectsByType<ProjectC.Docking.Stations.DockingPadTriggerBox>(
+                FindObjectsInactive.Exclude);
+            foreach (var pad in pads)
+            {
+                if (pad == null || pad.IsShipInside) continue;
+                float dSq = (pad.transform.position - clientPadPosition).sqrMagnitude;
+                if (dSq <= bestDistSq)
+                {
+                    bestDistSq = dSq;
+                    best = pad;
+                }
+            }
+
+            if (best == null) return false;
+            if (best.IsShipInside) return false; // перепроверка флага перед телепортом
+            serverPadPosition = best.transform.position;
+            return true;
         }
     }
 }

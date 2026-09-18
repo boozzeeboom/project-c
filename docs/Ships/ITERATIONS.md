@@ -348,3 +348,25 @@ DAMAGE 00 §4/§4.1 (Broken: двигатель работает, ×0.1) — к�
 
 **Проверка:** Console → 0 CS-ошибок (MCP; refresh_unity по таймауту транспорта, ошибок скриптов нет).
 Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP-FIX03_server-prices.md`).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX04)
+
+**Задача:** P0 — серверный авторитет Recall. Статус: ИСПРАВЛЕНО (код).
+
+**Перепроверка (до фикса — ПОДТВЕРЖДЕНО):** `RecallShipToPadServerRpc:2381` принимал
+`padPosition/cost` без проверок (чужой корабль в любую точку за 0). Grace покрыт
+(`ExitDocked:162` ставит `_lastUndockTime`), Persist подхватывает автосейв
+(`ShipPositionServer.Update` каждые 5 сек; риск — рестарт <5 сек после recall).
+
+**Изменения (только `ShipController.cs`, сигнатура RPC и клиент не тронуты):**
+- ownership-guard (`IsOwnerOfShip(clientId, NetworkObjectId)`, ключ от клиента не нужен);
+- `+ _serverRecallCost=500` (дефолт = `RepairManager`), клиентский cost игнорируется;
+- `+ TryResolveFreePad()` — сверка с серверными свободными `DockingPadTriggerBox`
+  (толерантность 15 м), телепорт на серверную позицию; занят/нет рядом → отказ;
+- по пути: `FindObjectsSortMode`-overload obsolete в Unity 6 → убран (CS0618).
+
+**Проверка:** Console → 0 errors/warnings по файлу (MCP). Тесты — за пользователем:
+реестр `docs/dev/global_needtotest/SHIP_TESTS.md` заведён (бэкфилл FIX03 + кейсы FIX04),
+долгосрочные проверки вердикта — там же.

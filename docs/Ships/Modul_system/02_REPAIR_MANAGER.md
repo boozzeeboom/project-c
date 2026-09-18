@@ -169,6 +169,11 @@ RepairManagerWindow (UIDocument)
 
 ## 6. Ship Recall — вызов корабля на пад (2026-07-22)
 
+> ⚠️ РАЗРЫВЫ (T-SHIP-DOC09 2026-09-18): сервер доверяет клиентским `padPosition/cost`
+> (`ShipController.cs:2381-2422`), владения и валидации пада нет; связи с
+> `ShipPositionServer` persistence и `postUndockGrace` (Damage) не описаны.
+> Кодовый фикс — кандидат в `T-SHIP-FIX04`. Перепроверка: `docs/Ships/fix/T-SHIP-DOC09_recall-links.md`.
+
 ### 6.1 Описание
 
 Игрок может вызвать свой корабль на ближайший свободный посадочный пад через RepairManagerWindow.

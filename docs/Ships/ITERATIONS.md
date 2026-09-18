@@ -296,3 +296,17 @@ DAMAGE 00 §4/§4.1 (Broken: двигатель работает, ×0.1) — к�
 - `docs/Ships/fix/T-SHIP-DOC08_bootstrap-rule.md` (новый) — протокол перепроверки.
 - `docs/Ships/Modul_system/02_REPAIR_MANAGER.md §1.3` — приоритет (DDOL/WorldScene по умолчанию,
   Bootstrap — с аппрува). `DontDestroyOnLoad` в коде — кандидат в T-SHIP-FIX15.
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-DOC09)
+
+**Задача:** Перепроверка несостыковки №10 (Recall vs Persist/Dock/Ownership). Статус: ПОДТВЕРЖДЕНО.
+
+**Перепроверка (код + док):** `RecallShipToPadServerRpc:2381-2422` — `padPosition/cost` от клиента,
+владения/валидации пада нет; `02 §6.2-6.3` описывают доверие клиенту; связи с
+`ShipPositionServer`, `postUndockGrace` отсутствуют (дропдаун — клиентский фильтр).
+
+**Изменения (docs only):**
+- `docs/Ships/fix/T-SHIP-DOC09_recall-links.md` (новый) — протокол перепроверки.
+- `docs/Ships/Modul_system/02_REPAIR_MANAGER.md §6.1` — баннер (кандидат в T-SHIP-FIX04).

@@ -2081,9 +2081,11 @@ namespace ProjectC.Player
             }
 
             // Применить meziy thrust boost (MODULE_MEZIY_THRUST)
+            // T-SHIP-FIX05: без * dt — ForceMode.Force уже интегрирует за fixedDeltaTime
+            // (как все остальные AddForce в файле). Было dt^2 — тяга слабее в ~50 раз.
             if (Mathf.Abs(meziyThrustForce) > 0.01f)
             {
-                _rb.AddForce(transform.forward * meziyThrustForce * dt, ForceMode.Force);
+                _rb.AddForce(transform.forward * meziyThrustForce, ForceMode.Force);
             }
 
             // Обновить визуал (только при активной тяге, НЕ при перегреве)

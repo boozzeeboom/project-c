@@ -20869,7 +20869,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.UI.MainMenu.MainMenuWindow
   mainUxml: {fileID: 0}
   mainUss: {fileID: 0}
-  versionText: 0.1.70
+  versionText: 0.1.75
   changelogUrl: https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/UI/MainMenu/changelogs.md
   changelogTimeoutSeconds: 8
 --- !u!114 &1567705307

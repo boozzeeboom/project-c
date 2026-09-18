@@ -20,6 +20,11 @@
 
 ## 2. Точки входа (4 метода, 2 файла)
 
+> ⚠️ УТОЧНЕНИЕ (T-SHIP-DOC05 2026-09-18): guard закрывает RPC-слой
+> (`ShipCargoServer` + `MarketServer`). `TradeWorld.TryLoadToShip/TryUnloadFromShip`
+> guard'а НЕ имеют — прямой доменный вызов обходит владение (известный разрыв,
+> кандидат в `T-SHIP-FIX11`). Перепроверка: `docs/Ships/fix/T-SHIP-DOC05_cargo-guard-scope.md`.
+
 ### Точка А: ShipCargoServer (инвентарь ↔ трюм)
 
 Файл: `Assets/_Project/Trade/Exchange/Network/ShipCargoServer.cs`

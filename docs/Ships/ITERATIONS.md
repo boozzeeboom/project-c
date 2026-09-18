@@ -234,3 +234,21 @@ REPLACE
 **Изменения (docs only):**
 - `docs/Ships/fix/T-SHIP-DOC04_cargo-key-table.md` (новый) — протокол перепроверки.
 - `docs/Ships/Key-subsystem/00_OVERVIEW.md §1.3` — строка карго исправлена на P5-статус.
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-DOC05)
+
+**Задача:** Перепроверка несостыковки №6 (scope guard: план TradeWorld vs факт MarketServer).
+Статус: ПОДТВЕРЖДЕНО (разрыв план/факт).
+
+**Перепроверка (чтение кода):** guard на RPC-слое (`ShipCargoServer.cs:115,242`,
+`MarketServer.cs:183,211`); `TradeWorld.TryLoadToShipCore (:753-790)` /
+`TryUnloadFromShipCore (:881+)` — только `InvalidArgs`/`NotInZone`, `IsOwnerOfShip` нет
+(прямой доменный вызов обходит владение). Попутно: P1-check из ревью закрыт —
+сервер использует effective лимиты (`TryCheckEffectiveCargoLimits:803-849` + `SetLimitsOverride`).
+
+**Изменения (docs only):**
+- `docs/Ships/fix/T-SHIP-DOC05_cargo-guard-scope.md` (новый) — протокол перепроверки.
+- `docs/Ships/cargo_system/CARGO_OWNERSHIP_DESIGN.md §2` + `SHIP_REFACTOR_PLAN_2026-07-21.md` шаг 5.2 —
+  баннеры (RPC-слой закрыт, TradeWorld-уровень — разрыв, кандидат в T-SHIP-FIX11).

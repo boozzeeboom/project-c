@@ -223,6 +223,11 @@ ShipKeyServer (NetworkBehaviour)
 
 #### Шаг 5.2 — TradeWorld: добавить ownership guard [2h]
 
+> ⚠️ ФАКТ (T-SHIP-DOC05 2026-09-18): выполнено иначе — guard встал в
+> `MarketServer.RequestLoad/UnloadRpc` (`NotOwner=36`), а не в `TradeWorld.Try*`.
+> `TradeWorld.TryLoadToShip/TryUnloadFromShip` guard'а не имеют (разрыв, кандидат в `T-SHIP-FIX11`).
+> Перепроверка: `docs/Ships/fix/T-SHIP-DOC05_cargo-guard-scope.md`.
+
 | Файл | Что менять |
 |------|-----------|
 | `Trade/Scripts/Core/TradeWorld.cs` | `TryLoadToShip` / `TryUnloadFromShip` → pre-check ownership (тот же вызов `KeyRodInstanceWorld.IsOwnerOfShip`) |

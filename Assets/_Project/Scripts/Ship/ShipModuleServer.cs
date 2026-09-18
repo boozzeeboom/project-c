@@ -153,6 +153,9 @@ namespace ProjectC.Ship
             Debug.Log($"[ShipModuleServer] Module '{moduleId}' installed in slot '{slotName}' " +
                       $"on ship {_netObj.NetworkObjectId}");
 
+            // T-SHIP-FIX09: мезий-состояния пережить рантайм-установку
+            if (_shipController != null) _shipController.RefreshMeziyModules();
+
             NotifyClientSuccess(clientId, slotName, moduleId, isInstall: true);
             OnModuleChangedClientRpc(slotName, moduleId, isInstall: true);
         }
@@ -221,6 +224,9 @@ namespace ProjectC.Ship
             _moduleManager.RemoveModule(targetSlot);
 
             Debug.Log($"[ShipModuleServer] Module removed from slot '{slotName}' on ship {_netObj.NetworkObjectId}");
+
+            // T-SHIP-FIX09: мезий-состояния пережить рантайм-снятие
+            if (_shipController != null) _shipController.RefreshMeziyModules();
 
             NotifyClientSuccess(clientId, slotName, removedModuleId, isInstall: false);
             OnModuleChangedClientRpc(slotName, string.Empty, isInstall: false);
@@ -293,6 +299,9 @@ namespace ProjectC.Ship
             ShipModule removedModule = FindModuleById(removedModuleId);
             _moduleManager.RemoveModule(targetSlot);
 
+            // T-SHIP-FIX09: мезий-состояния пережить рантайм-продажу
+            if (_shipController != null) _shipController.RefreshMeziyModules();
+
             // --- T-SHIP-FIX03: цена продажи — серверная, клиентский sellCredits игнорируется ---
             int serverSellPrice = ComputeServerSellPrice(removedModule, removedModuleId);
             if (sellCredits != serverSellPrice)
@@ -362,10 +371,14 @@ namespace ProjectC.Ship
                     Debug.LogWarning($"[ShipModuleServer] ClientRpc: ReplaceModule rejected on client " +
                         $"(ship={_netObj.NetworkObjectId}, slot='{slotName}', module='{moduleId}') — desync signal");
                 }
+                // T-SHIP-FIX09: мезий-состояния пережить рантайм-установку (клиент)
+                if (_shipController != null) _shipController.RefreshMeziyModules();
             }
             else
             {
                 _moduleManager.RemoveModule(targetSlot);
+                // T-SHIP-FIX09: мезий-состояния пережить рантайм-снятие (клиент)
+                if (_shipController != null) _shipController.RefreshMeziyModules();
             }
 
             OnModuleChanged?.Invoke(_netObj != null ? _netObj.NetworkObjectId : 0);

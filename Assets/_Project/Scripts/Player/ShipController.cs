@@ -221,6 +221,16 @@ namespace ProjectC.Player
             _hullBroken = false;
         }
 
+        /// <summary>
+        /// T-SHIP-FIX09: пересверить мезий-состояния после смены модулей.
+        /// Вызывается из ShipModuleServer (сервер + клиент). Паттерн ClearHullBroken.
+        /// </summary>
+        public void RefreshMeziyModules()
+        {
+            if (meziyActivator != null)
+                meziyActivator.RefreshInstalledModules();
+        }
+
                 // === T-NS01 (Q1, Q2): NPC-pilot API ===
                 // Server-only методы для мирных NPC-кораблей (ProjectC.PeacefulShip).
                 // Generic API — может быть использован v2 player autopilot (см. docs/NPC_others_peacfull/pc_ship/03_V2_ARCHITECTURE.md §5).

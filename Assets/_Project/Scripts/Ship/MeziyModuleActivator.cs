@@ -41,10 +41,11 @@ namespace ProjectC.Ship
     /// - Клавиша направления зажата → активный выхлоп (расход топлива, частицы, сильный torque)
     /// - Перегрев после 10 сек непрерывного активного использования → кулдаун 15 сек
     ///
-    /// Управление (зажатие клавиш):
-    /// - MODULE_MEZIY_PITCH: W (нос вверх, dir=-1), S (нос вниз, dir=+1)
-    /// - MODULE_MEZIY_ROLL:  Z (крен влево, dir=-1), C (крен вправо, dir=+1)
-    /// - MODULE_MEZIY_YAW:   A (влево, dir=-1), D (вправо, dir=+1)
+    /// Управление (интенты от пилотов, T-SHIP-FIX01; маппинг):
+    /// - MODULE_MEZIY_PITCH: C (нос вверх, dir=-1), V (нос вниз, dir=+1)
+    /// - MODULE_MEZIY_ROLL:  Z (крен влево, dir=-1), X (крен вправо, dir=+1)
+    /// - MODULE_MEZIY_YAW:   Shift+A (влево, dir=-1), Shift+D (вправо, dir=+1)
+    /// - MODULE_MEZIY_THRUST: Shift+W (вперёд, dir=+1), Shift+S (назад, dir=-1)
     ///
     /// Расход топлива:
     /// - Пассивный: 0 fuel/s
@@ -134,8 +135,68 @@ namespace ProjectC.Ship
         }
 
         /// <summary>
+        /// T-SHIP-FIX09: пересверить словарь состояний с установленными слотами.
+        /// Добавляет вновь установленные мезий-модули, обновляет ссылки на SO,
+        /// удаляет снятые (включая залипший active). Идемпотентен.
+        /// Вызывается из ShipModuleServer после install/remove/sell (сервер + клиент).
+        /// </summary>
+        public void RefreshInstalledModules()
+        {
+            if (moduleManager == null || moduleManager.slots == null) return;
+
+            var present = new HashSet<string>();
+            foreach (var slot in moduleManager.slots)
+            {
+                if (slot == null || !slot.isOccupied || slot.installedModule == null) continue;
+                if (!slot.installedModule.isMeziyModule) continue;
+
+                string moduleId = slot.installedModule.moduleId;
+                present.Add(moduleId);
+
+                if (!meziyStates.TryGetValue(moduleId, out var state))
+                {
+                    meziyStates[moduleId] = new MeziyContinuousState
+                    {
+                        module = slot.installedModule,
+                        isPassive = true,
+                        isActive = false,
+                        isOverheated = false,
+                        continuousActiveTime = 0f,
+                        cooldownRemaining = 0f,
+                        activeDirection = 0f,
+                        overheatThreshold = overheatThreshold
+                    };
+                    Debug.Log($"[MeziyModuleActivator] Refresh: registered meziy module '{moduleId}' (runtime install).");
+                }
+                else
+                {
+                    // Освежить ссылку на SO (замена модуля тем же id).
+                    state.module = slot.installedModule;
+                }
+            }
+
+            // Убрать снятые (второй проход — не мутируем словарь при итерации).
+            List<string> gone = null;
+            foreach (var moduleId in meziyStates.Keys)
+            {
+                if (!present.Contains(moduleId))
+                    (gone ??= new List<string>()).Add(moduleId);
+            }
+            if (gone != null)
+            {
+                foreach (var moduleId in gone)
+                {
+                    meziyStates.Remove(moduleId);
+                    Debug.Log($"[MeziyModuleActivator] Refresh: unregistered meziy module '{moduleId}' (runtime remove).");
+                }
+            }
+        }
+
+        /// <summary>
         /// Активировать между модуль с направлением (клавиша зажата).
         /// Возвращает true если модуль активен (не на кулдауне, достаточно топлива).
+        /// T-SHIP-FIX09: гейт топлива — разовый порог meziyFuelCost (не секундная ставка
+        /// meziyFuelCost*2 из ConsumeFuelForActiveModules). Грубо, но безвредно; доводка — баланс.
         /// </summary>
         /// <param name="moduleId">ID модуля</param>
         /// <param name="direction">Направление выхлопа: -1 или +1</param>

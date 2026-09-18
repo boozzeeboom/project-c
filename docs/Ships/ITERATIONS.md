@@ -498,3 +498,24 @@ Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP
 
 **Проверка:** Console → 0 errors/warnings (MCP). Manual — за пользователем
 (кейсы в `docs/Ships/fix/T-SHIP-FIX08_module-clientrpc.md` + реестр `SHIP_TESTS.md`).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX09)
+
+**Задача:** P1 — мезия-активатор stale после рантайм-смены модулей. Статус: ИСПРАВЛЕНО (код).
+
+**Перепроверка (до фикса — ПОДТВЕРЖДЕНО):** словарь строился раз в `Initialize`, уведомлений
+о install/remove не было нигде → новый мезий мёртв до рестарта, снятый — фантом.
+Ключ `moduleId` оставлен сознательно (весь публичный API на нём; дубли одного модуля —
+зафиксированное ограничение). Гейт топлива (разовый порог vs секундная ставка) — груб, но
+безвреден: поведение не меняем, единицы зафиксированы комментом (доводка — баланс).
+Шапка файла врала про клавиши (W/S → реально C/V) — чинена.
+
+**Изменения (3 файла, +88/−4):** `MeziyModuleActivator.RefreshInstalledModules()`
+(добавить/освежить/удалить, идемпотентен) + шапка + коммент гейта; `ShipController.RefreshMeziyModules()`
+(форвардер, паттерн `ClearHullBroken`); `ShipModuleServer` — 5 вызовов (install/remove/sell сервер +
+2 ветки ClientRpc). `GetActiveStates`-итерация безопасна (Refresh только из RPC-контекста).
+
+**Проверка:** Console → 0 errors (MCP; reload пережили). Manual — за пользователем
+(кейсы в `docs/Ships/fix/T-SHIP-FIX09_meziy-refresh.md` + реестр `SHIP_TESTS.md`).

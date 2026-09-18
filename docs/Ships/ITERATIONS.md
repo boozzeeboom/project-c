@@ -174,3 +174,18 @@ REPLACE
 - `docs/Ships/SHIP_FIX_PLAN_2026-09-18.md` (новый) — конвейер шага
   (перепроверка → утверждение → фикс → дока + коммит), фазы A (DOC01-10) / B (FIX01-07) /
   C (FIX08-12) / D (FIX13-15) / E (ARCH01), ~20 коммитов. Без аппрува код не трогаем.
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-DOC01)
+
+**Задача:** Перепроверка несостыковки №1 (Key OVERVIEW vs P1-факт). Статус: ПОДТВЕРЖДЕНО.
+
+**Перепроверка:** файлов `ShipKeyBinding/Server/ClientState/Toast`, `ShipOwnershipRegistry`,
+`KeyRodInstanceBinding` в `Assets/` нет (только комменты); создание — `ShipController.cs:812,855,876`
+(`CreateKeyInstanceWhenReady`); `§§1.1a/1.1b/6.1/6.2/6.4/7/8` описывают удалённый API.
+
+**Изменения (docs only):**
+- `docs/Ships/fix/T-SHIP-DOC01_key-overview.md` (новый) — протокол перепроверки.
+- `docs/Ships/Key-subsystem/00_OVERVIEW.md` — баннеры `⚠️ УСТАРЕЛО (P1 2026-07-21)` на 7 параграфах,
+  текст сохранён как история. Stale комменты в коде — НЕ этот тикет (уйдут в T-SHIP-FIX13).

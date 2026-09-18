@@ -24,6 +24,11 @@
 
 ### 1.1a Рецепт: добавить новый корабль + ключ
 
+> ⚠️ УСТАРЕЛО (P1 2026-07-21): `ShipKeyBinding` / `ShipKeyServer` удалены (см. §2.1, §2.4, §12).
+> Рецепт ниже — до-P1 история, по нему сейчас не собрать. Актуальный путь:
+> `ShipController._keyItemData` + `CreateKeyInstanceWhenReady()` → `KeyRodInstanceWorld`.
+> См. перепроверку: `docs/Ships/fix/T-SHIP-DOC01_key-overview.md`.
+
 **Цель:** создать `Ship_Fast` с уникальным ключом, чтобы игрок мог им управлять.
 
 1. **Создать ItemData ключа** (через Project window → Create → Project C → Item Data):
@@ -55,6 +60,9 @@
 **Никаких ручных ID** — `itemId` вычисляется автоматически через `GetOrRegisterItemId` (см. §4 "Идентификация кораблей").
 
 ### 1.1b Troubleshooting
+
+> ⚠️ УСТАРЕЛО (P1 2026-07-21): таблица ссылается на удалённые `ShipKeyBinding` /
+> `ShipKeyClientState` / `ShipKeyServer` (см. §2.4). Оставлена как история.
 
 | Симптом | Причина | Фикс |
 |---|---|---|
@@ -193,6 +201,9 @@
 
 ### 6.1 Гонка `RequestCanBoardRpc` ↔ `SubmitSwitchModeRpc`
 
+> ⚠️ УСТАРЕЛО (P1 2026-07-21): код ниже использует удалённый `ShipKeyClientState`
+> (заменён `MetaRequirementClientState` + `MetaRequirementRegistry`, см. §2.1–§3). Оставлен как история.
+
 Сценарий: игрок быстро жмёт F дважды. Без защиты — два `RequestCanBoardRpc` и сразу `SubmitSwitchModeRpc` могут уйти до ответа сервера.
 
 **Защита (в `NetworkPlayer.Update`):**
@@ -218,6 +229,8 @@ if (Keyboard.current.fKey.wasPressedThisFrame) {
 
 ### 6.2 Scene transition (стриминг 24 сцен)
 
+> ⚠️ УСТАРЕЛО (P1 2026-07-21): `ShipKeyServer` удалён (см. §2.4). Актуально см. §2.1.
+
 `ShipKeyServer` собирает биндинги на `OnNetworkSpawn` (вызывается на сервере при StartHost), плюс подписывается на `SceneManager.sceneLoaded` → пополняет реестр при загрузке новых стриминговых сцен. Идемпотентно: повторный `Register(shipId, keyItemId)` с тем же значением — no-op, с другим — warning в editor.
 
 ### 6.3 Хот-сварка scene-placed NetworkObject (известный footgun)
@@ -225,6 +238,8 @@ if (Keyboard.current.fKey.wasPressedThisFrame) {
 В `docs/dev/INTEGRATION_SHIPS_TO_WORLD_0_0.md` задокументировано: scene-placed `NetworkObject` в scene НЕ спавнится NGO, его спавнит `ScenePlacedObjectSpawner` в BootstrapScene. **Это значит:** `NetworkObject.NetworkObjectId` у кораблей стабилен после `ScenePlacedObjectSpawner` отработал — но **между запусками Editor / билдами** может отличаться. ✅ **РЕШЕНО (T-KEY-PERSIST-FIX, 2026-07-14):** `persistentShipId` (стабильный `{sceneName}/{gameObject.name}`) с rebind-логикой в `KeyRodInstanceWorld.CreateInstance`. При старте сессии существующий instance перепривязывается к новому netId.
 
 ### 6.4 Disconnect / Reconnect
+
+> ⚠️ УСТАРЕЛО (P1 2026-07-21): `PushBindingsRpc` удалён вместе с `ShipKeyServer` (см. §2.4).
 
 `PushBindingsRpc` отправляется на `OnClientConnected`. Клиент очищает `_pendingCanBoardShipId` и показывает дисконнект-сообщение (если `InventoryClientState` уже отслеживает).
 
@@ -235,6 +250,9 @@ if (Keyboard.current.fKey.wasPressedThisFrame) {
 ---
 
 ## 7. Двойной guard (defense in depth)
+
+> ⚠️ УСТАРЕЛО (P1 2026-07-21): код ниже использует удалённый `ShipKeyServer.Instance.CanPlayerBoard`.
+> Актуальный guard: `ShipOwnershipRequirement` → `MetaRequirementRegistry` (см. §2.1, §3). Оставлен как история.
 
 **F-блок на клиенте** — UX-фича (тост «нет ключа»). Можно обойти через прямой RPC.
 
@@ -258,6 +276,9 @@ if (!_inShip) {  // посадка
 ---
 
 ## 8. Тестовая расстановка в `WorldScene_0_0`
+
+> ⚠️ УСТАРЕЛО (P1 2026-07-21): `[Ship_KeyServer]` в Bootstrap и `ShipKeyBinding` на кораблях удалены
+> (см. §2.4). Расстановка ниже — до-P1 история.
 
 | Объект | Где | Зачем |
 |---|---|---|

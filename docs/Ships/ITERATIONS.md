@@ -519,3 +519,21 @@ Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP
 
 **Проверка:** Console → 0 errors (MCP; reload пережили). Manual — за пользователем
 (кейсы в `docs/Ships/fix/T-SHIP-FIX09_meziy-refresh.md` + реестр `SHIP_TESTS.md`).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX10)
+
+**Задача:** P1 — консоль груза: стаки + мигание refresh. Статус: ИСПРАВЛЕНО (код, точечно).
+
+**Перепроверка (до фикса — по пунктам):** стаки ПОДТВЕРЖДЕНО (`grouped++` считал записи,
+`quantity` стака игнорировался → хроническое «Недостаточно»); мигание ПОДТВЕРЖДЕНО
+(`RefreshData` сразу, телеметрия отстаёт); курс клиент/сервер ОПРОВЕРГНУТО (один SO,
+GUID совпал — код не тронут); утечка `_opTimestamps` ОПРОВЕРГНУТО (чистка `RemoveAll` на месте);
+Retrieve O(n) и IsDocked-гейт — сознательно не трогаем (корректность есть, поведение не меняем).
+
+**Изменения (только `ShipCargoConsoleWindow.cs`, +10/−1):** группировка по `quantity`;
+`HandleResult` → статус сразу + `DelayedRefreshData(0.5s)`.
+
+**Проверка:** Console → 0 errors/warnings (MCP). Manual — за пользователем
+(кейсы в `docs/Ships/fix/T-SHIP-FIX10_cargo-console.md` + реестр `SHIP_TESTS.md`).

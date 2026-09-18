@@ -415,7 +415,8 @@ namespace ProjectC.Trade.Client
                 }
 
                 if (!grouped.ContainsKey(inv.itemId)) grouped[inv.itemId] = 0;
-                grouped[inv.itemId]++;
+                // T-SHIP-FIX10: суммируем quantity стака, а не записи (1 запись != 1 шт).
+                grouped[inv.itemId] += Mathf.Max(1, inv.quantity);
             }
 
 #if UNITY_EDITOR
@@ -632,6 +633,14 @@ namespace ProjectC.Trade.Client
                     ? new StyleColor(new Color(0.4f, 0.95f, 0.4f))
                     : new StyleColor(new Color(0.95f, 0.4f, 0.4f));
             }
+            // T-SHIP-FIX10: данные перечитываем с задержкой — телеметрия отстаёт ~200мс+,
+            // немедленный RefreshData мигает stale. Статус показываем сразу.
+            StartCoroutine(DelayedRefreshData(0.5f));
+        }
+
+        private System.Collections.IEnumerator DelayedRefreshData(float delaySeconds)
+        {
+            yield return new UnityEngine.WaitForSeconds(delaySeconds);
             RefreshData();
         }
 

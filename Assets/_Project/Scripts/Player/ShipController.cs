@@ -1919,10 +1919,13 @@ namespace ProjectC.Player
         public ShipFuelSystem FuelSystem => fuelSystem;
 
         /// <summary>
-        /// Добавить пилота (кооп — несколько могут одновременно)
+        /// Добавить пилота (кооп — несколько могут одновременно).
+        /// T-SHIP-FIX02: server-authoritative — мутирует только сервер, всем рассылает broadcast.
+        /// Посадка уже ownership-gated выше (SubmitSwitchModeRpc, T-KEY-06).
         /// </summary>
         public void AddPilot(NetworkPlayer pilot)
         {
+            if (!IsServer) return;
             // Guard: не отправляем RPC если NGO не готов или корабль не spawned
             // (защита от NRE в __endSendRpc при scene transition / shutdown)
             if (NetworkManager.Singleton == null || !IsSpawned) return;
@@ -1932,16 +1935,25 @@ namespace ProjectC.Player
         [Rpc(SendTo.Everyone)]
         private void AddPilotRpc(ulong clientId, RpcParams rpcParams = default)
         {
+            // T-SHIP-FIX02: принимать только серверный broadcast (прямые клиентские вызовы = чит).
+            if (NetworkManager.Singleton == null ||
+                rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId)
+            {
+                Debug.LogWarning($"[ShipController:{name}] AddPilotRpc denied: sender={rpcParams.Receive.SenderClientId} is not server (client={clientId})");
+                return;
+            }
             _pilots.Add(clientId);
             _frozenByNoPilot = false; // T-PLAYER-PERSIST: разморозка
             enabled = true;
         }
 
         /// <summary>
-        /// Снять пилота
+        /// Снять пилота.
+        /// T-SHIP-FIX02: server-authoritative — мутирует только сервер, всем рассылает broadcast.
         /// </summary>
         public void RemovePilot(ulong clientId)
         {
+            if (!IsServer) return;
             // Guard: не отправляем RPC если NGO не готов или корабль не spawned
             // (защита от NRE в __endSendRpc при scene transition / shutdown)
             if (NetworkManager.Singleton == null || !IsSpawned) return;
@@ -1951,6 +1963,13 @@ namespace ProjectC.Player
         [Rpc(SendTo.Everyone)]
         private void RemovePilotRpc(ulong clientId, RpcParams rpcParams = default)
         {
+            // T-SHIP-FIX02: принимать только серверный broadcast (прямые клиентские вызовы = чит).
+            if (NetworkManager.Singleton == null ||
+                rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId)
+            {
+                Debug.LogWarning($"[ShipController:{name}] RemovePilotRpc denied: sender={rpcParams.Receive.SenderClientId} is not server (client={clientId})");
+                return;
+            }
             _pilots.Remove(clientId);
 
             // T-PLAYER-PERSIST: если пилотов не осталось и двигатель включён — заморозка

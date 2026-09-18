@@ -396,3 +396,23 @@ Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP
 ⚠️ Инцидент инструментов: первая серия правок тикета молча не попала на диск
 («success» без изменений); выявлено сверкой `git diff` по диску, все правки внесены повторно
 и проверены поиском по диску до коммита. Правило: после каждого тикета — `git diff --stat` с диска.
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX02)
+
+**Задача:** P0 — server-authoritative состав пилотов (прямые клиентские Add/RemovePilotRpc).
+Статус: ИСПРАВЛЕНО (код). Clamp float уже закрыт в FIX01.
+
+**Перепроверка (до фикса — ПОДТВЕРЖДЕНО + карта вызовов):** `AddPilot` — только
+`NetworkPlayer:1574` (посадка, Everyone); `RemovePilot` — `:807` (despawn), `:1531` (выход);
+`PilotSeatController.Exit:122` — 0 вызывающих (мёртвый compat, не тронут, снос в FIX13).
+Посадка ownership-gated выше (T-KEY-06, `SubmitSwitchModeRpc:1482-1500`).
+
+**Изменения (только `ShipController.cs`, +21/−2):** `AddPilot`/`RemovePilot` — `if (!IsServer) return`
+(мутирует сервер, broadcast сходится); оба RPC — sender-guard (`ServerClientId`, чужой → Warning).
+Честный флоу не меняется (локальный `_pilots` клиента обновляется бродкастом; guard ввода серверный).
+
+**Проверка:** Console → 0 ошибок скриптов (MCP; один запрос консоли упёрся в таймаут транспорта,
+повтор без фильтра — только служебный шум MCP-клиента). Manual — за пользователем
+(кейсы в `docs/Ships/fix/T-SHIP-FIX02_pilot-membership.md` + реестр `SHIP_TESTS.md`).

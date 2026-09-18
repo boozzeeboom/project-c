@@ -86,10 +86,8 @@ namespace ProjectC.Ship.Network
         public const byte FlagRefueling = 1 << 0;
         public byte flags;
 
-        // T-CARGO-UI-01: детальный список items. null/empty = трюм пуст.
-        // Server резолвит displayName/unitWeight/dangerous/fragile на сервере.
-        // Cap = 32 items (Light=4 / Medium=10 / Heavy=20 / HeavyII=30 + ~6-12 module-bonus slots).
-        public CargoDetailDto[] cargoDetail;
+        // T-SHIP-FIX07: детальный список items ПЕРЕЕХАЛ в ShipCargoDetailState
+        // (отдельный NetworkVariable, ниже). Здесь его больше нет — быстрый снапшот лёгкий.
 
         // Ship repainting: RGB цвет корабля (0,0,0 = не задан/дефолт)
         public byte shipColorR;
@@ -119,19 +117,7 @@ namespace ProjectC.Ship.Network
             serializer.SerializeValue(ref shipColorR);
             serializer.SerializeValue(ref shipColorG);
             serializer.SerializeValue(ref shipColorB);
-
-            // T-CARGO-UI-01: cargoDetail array. NGO 2.x pattern: re-create on reader, copy on writer.
-
-            int len = cargoDetail != null ? cargoDetail.Length : 0;
-            serializer.SerializeValue(ref len);
-            if (serializer.IsReader && len > 0)
-                cargoDetail = new CargoDetailDto[len];
-            for (int i = 0; i < len; i++)
-            {
-                var entry = (cargoDetail != null && i < cargoDetail.Length) ? cargoDetail[i] : default;
-                entry.NetworkSerialize(serializer);
-                if (cargoDetail != null) cargoDetail[i] = entry;
-            }
+            // T-SHIP-FIX07: cargoDetail уехал в ShipCargoDetailState — здесь больше не сериализуем.
         }
 
         public bool Equals(ShipTelemetryState other)
@@ -155,16 +141,7 @@ namespace ProjectC.Ship.Network
             if (shipColorR != other.shipColorR) return false;
             if (shipColorG != other.shipColorG) return false;
             if (shipColorB != other.shipColorB) return false;
-            // T-CARGO-UI-01: cargoDetail включаем в Equals — иначе NetworkVariable
-            // не увидит изменение items и не пошлёт delta. Сравнение по длине + поэлементно.
-
-            int thisLen = cargoDetail != null ? cargoDetail.Length : 0;
-            int otherLen = other.cargoDetail != null ? other.cargoDetail.Length : 0;
-            if (thisLen != otherLen) return false;
-            for (int i = 0; i < thisLen; i++)
-            {
-                if (!cargoDetail[i].Equals(other.cargoDetail[i])) return false;
-            }
+            // T-SHIP-FIX07: cargoDetail уехал в ShipCargoDetailState — здесь не сравниваем.
             return true;
         }
 
@@ -201,5 +178,68 @@ namespace ProjectC.Ship.Network
 
         public static bool operator ==(ShipTelemetryState a, ShipTelemetryState b) => a.Equals(b);
         public static bool operator !=(ShipTelemetryState a, ShipTelemetryState b) => !a.Equals(b);
+    }
+
+    /// <summary>
+    /// T-SHIP-FIX07: детализированный груз корабля — отдельный NetworkVariable.
+    /// Обновляется сервером ТОЛЬКО при смене содержимого трюма (load/unload/wipe),
+    /// а не 5 Hz вместе с позицией/топливом. Лёгкие счётчики cargoUsed/cargoMax
+    /// остались в быстром ShipTelemetryState (нужны ящикам/барам каждый тик).
+    /// </summary>
+    public struct ShipCargoDetailState : INetworkSerializable, IEquatable<ShipCargoDetailState>
+    {
+        public ulong shipNetworkObjectId;
+
+        // Детальный список items. null/empty = трюм пуст.
+        // Cap = 32 items (как было в быстром снапшоте).
+        public CargoDetailDto[] cargoDetail;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref shipNetworkObjectId);
+
+            // NGO 2.x pattern: re-create on reader, copy on writer.
+            int len = cargoDetail != null ? cargoDetail.Length : 0;
+            serializer.SerializeValue(ref len);
+            if (serializer.IsReader && len > 0)
+                cargoDetail = new CargoDetailDto[len];
+            for (int i = 0; i < len; i++)
+            {
+                var entry = (cargoDetail != null && i < cargoDetail.Length) ? cargoDetail[i] : default;
+                entry.NetworkSerialize(serializer);
+                if (cargoDetail != null) cargoDetail[i] = entry;
+            }
+        }
+
+        public bool Equals(ShipCargoDetailState other)
+        {
+            if (shipNetworkObjectId != other.shipNetworkObjectId) return false;
+            int thisLen = cargoDetail != null ? cargoDetail.Length : 0;
+            int otherLen = other.cargoDetail != null ? other.cargoDetail.Length : 0;
+            if (thisLen != otherLen) return false;
+            for (int i = 0; i < thisLen; i++)
+            {
+                if (!cargoDetail[i].Equals(other.cargoDetail[i])) return false;
+            }
+            return true;
+        }
+
+        public override bool Equals(object obj) => obj is ShipCargoDetailState o && Equals(o);
+
+        public override int GetHashCode()
+        {
+            // Массив поэлементно не хешируем (дорого + мутабелен) — только id + длина.
+            // Контракт с Equals: равные объекты дают равный хеш (длина входит в Equals).
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + shipNetworkObjectId.GetHashCode();
+                hash = hash * 31 + (cargoDetail != null ? cargoDetail.Length : 0);
+                return hash;
+            }
+        }
+
+        public static bool operator ==(ShipCargoDetailState a, ShipCargoDetailState b) => a.Equals(b);
+        public static bool operator !=(ShipCargoDetailState a, ShipCargoDetailState b) => !a.Equals(b);
     }
 }

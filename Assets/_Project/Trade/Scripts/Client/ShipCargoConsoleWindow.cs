@@ -470,11 +470,14 @@ namespace ProjectC.Trade.Client
                 return;
             }
 
+            // T-SHIP-FIX07: детали — из отдельного NV (по событиям), счётчики — из быстрого.
+            var cargoState = telemetry.GetShipCargoDetail(_shipNetId);
+            var cargoDetail = cargoState.HasValue ? cargoState.Value.cargoDetail : null;
+
 #if UNITY_EDITOR
-            Debug.Log($"[ShipCargoConsoleWindow] RefreshCargo: ship {_shipNetId} telemetry: cargoUsed={state.Value.cargoUsed}/{state.Value.cargoMax}, cargoDetail.Length={(state.Value.cargoDetail != null ? state.Value.cargoDetail.Length : -1)}");
+            Debug.Log($"[ShipCargoConsoleWindow] RefreshCargo: ship {_shipNetId} telemetry: cargoUsed={state.Value.cargoUsed}/{state.Value.cargoMax}, cargoDetail.Length={(cargoDetail != null ? cargoDetail.Length : -1)}");
 #endif
 
-            var cargoDetail = state.Value.cargoDetail;
             if (cargoDetail == null || cargoDetail.Length == 0)
             {
 #if UNITY_EDITOR

@@ -451,3 +451,29 @@ Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP
 
 **Проверка:** Console → 0 errors/warnings (MCP; Unity делал reload — изменения подхвачены).
 Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP-FIX06_fuel-telemetry.md` + реестр).
+
+---
+
+## Итерация от 2026-09-18 (T-SHIP-FIX07)
+
+**Задача:** P0 — cargoDetail-шторм (32 записи со строками в 5-Гц снапшоте). Статус: ИСПРАВЛЕНО (код).
+
+**Перепроверка (до фикса — ПОДТВЕРЖДЕНО):** NV шлёт весь struct при любом отличии; летящий корабль
+тащил детали 5/сек. Потребители деталей — только 2 (`MyShipsTab:393`, консоль `:474-487`);
+позиция — только подпись `:400` (F1); `cargoUsed/cargoMax` нужны ящикам/барам каждый тик — остались.
+
+**Изменения (6 файлов):** `ShipTelemetryState.cs` — `cargoDetail` убран из быстрого struct,
+новый `ShipCargoDetailState` (сериализация + Equals + Hash по id+длине);
+`ShipController.cs` — `+ _telemetryCargoState` NV + геттер/событие + `BuildCargoDetailDto()`
+(вынесено из 5-Гц) + `PublishCargoDetail()` (конец `RegisterCargoWhenReady` + `RecalculateCargoPenalty`,
+т.е. все мутации через `OnCargoChanged`); агрегатор — `+ _cargoByShip` + `GetShipCargoDetail()`
++ подписка/seed/чистка, на апдейте поднимается существующий `OnShipStateChanged`;
+`MyShipsTab` — детали из `sc.TelemetryCargoState`, сравнение разделено (`CargoDetailEquals` + кеш);
+консоль — детали из агрегатора, счётчики из быстрого. Позиция/топливо/HP — без изменений
+(квантование сознательно не делаем: выигрыша в движении нет, точность показа тронули бы).
+Попутно: `GetHashCode` быстрого покрывает все поля; `lastUpdateServerTime` вне Equals/Hash (debug).
+
+**Проверка:** Console → 0 errors/warnings после reload (MCP; по пути пойманы и чинены
+CS1022 (лишняя `}`) и CS1912 (дубль `shipColorR`) из моих же правок — зафиксировано честно).
+Manual — за пользователем (кейсы в `docs/Ships/fix/T-SHIP-FIX07_cargo-split.md` + реестр).
+Фаза B (FIX01..07) — **ЗАКРЫТА**. Дальше фаза C (FIX08..12) — по одному, каждый с «давай».

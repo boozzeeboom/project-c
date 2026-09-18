@@ -62,6 +62,9 @@ namespace ProjectC.UI.Client
         private ProjectC.Ship.Network.ShipTelemetryState _lastDisplayed;
         private bool _hasLastDisplayed;
 
+        // T-SHIP-FIX07: кэш деталей груза (отдельный NetworkVariable, свой throttle).
+        private ProjectC.Ship.Network.CargoDetailDto[] _lastCargoDetail;
+
         // ===== Lifecycle =====
 
         /// <summary>Привязывает UI элементы. Вызывается из CharacterWindow.EnsureBuilt().</summary>
@@ -320,6 +323,7 @@ private void UpdateVisibility()
             // ShipController.TelemetryState getter returns NetworkVariable.Value
             var telemetry = sc.TelemetryState;
             _lastDisplayed = telemetry;
+            _lastCargoDetail = sc.TelemetryCargoState.cargoDetail; // T-SHIP-FIX07: детали — отдельный NV
             _hasLastDisplayed = true;
 
             // T-CARGO-UI-01-3: имя только в селекторе, дублирующийся header удалён.
@@ -389,8 +393,8 @@ private void UpdateVisibility()
                     : Loc.Get("ui.ship.cargo_empty");
             }
 
-            // T-CARGO-UI-01: детальный список items
-            RenderCargoDetail(telemetry.cargoDetail);
+            // T-CARGO-UI-01: детальный список items (T-SHIP-FIX07: из отдельного NV, не 5 Hz)
+            RenderCargoDetail(sc.TelemetryCargoState.cargoDetail);
 
             // Modules
             RenderModules(sc);
@@ -414,7 +418,7 @@ private void UpdateVisibility()
 
         /// <summary>
         /// T-CARGO-UI-01: рендер детального списка items в трюме.
-        /// Источник — telemetry.cargoDetail (сервер-pushed, обновление 5 Hz).
+        /// Источник — ShipCargoDetailState (сервер-pushed по событиям смены груза, T-SHIP-FIX07).
         /// </summary>
 
         private void RenderModules(ProjectC.Player.ShipController sc)
@@ -544,11 +548,15 @@ private void UpdateVisibility()
 
             // Получить текущее состояние через ShipController (NetworkVariable.Value)
             var currentState = sc.TelemetryState;
+            var currentCargo = sc.TelemetryCargoState.cargoDetail;
 
             // Throttle: если fuel/cargo изменились незначительно — пропускаем.
-            // T-CARGO-UI-01: cargoDetail тоже проверяем (qty может измениться без изменения slots).
-            if (_hasLastDisplayed && ShipTelemetryStateEqualsApprox(_lastDisplayed, currentState)) return;
+            // T-SHIP-FIX07: детали груза сравниваем отдельно (свой NetworkVariable).
+            if (_hasLastDisplayed
+                && ShipTelemetryStateEqualsApprox(_lastDisplayed, currentState)
+                && CargoDetailEquals(_lastCargoDetail, currentCargo)) return;
             _lastDisplayed = currentState;
+            _lastCargoDetail = currentCargo;
             _hasLastDisplayed = true;
 
             RenderSelectedShip();
@@ -568,14 +576,23 @@ private void UpdateVisibility()
             if (a.moduleCount != b.moduleCount) return false;
             if (a.state != b.state) return false;
             if (Vector3.Distance(a.position, b.position) >= 0.1f) return false;
+            return true;
+        }
 
-            // T-CARGO-UI-01: cargoDetail — если длина разная, кто-то добавил/убрал item.
-            int aLen = a.cargoDetail != null ? a.cargoDetail.Length : 0;
-            int bLen = b.cargoDetail != null ? b.cargoDetail.Length : 0;
+        /// <summary>
+        /// T-SHIP-FIX07: сравнение деталей груза (qty может измениться без изменения slots).
+        /// Если длина разная — кто-то добавил/убрал item.
+        /// </summary>
+        private static bool CargoDetailEquals(
+            ProjectC.Ship.Network.CargoDetailDto[] a,
+            ProjectC.Ship.Network.CargoDetailDto[] b)
+        {
+            int aLen = a != null ? a.Length : 0;
+            int bLen = b != null ? b.Length : 0;
             if (aLen != bLen) return false;
             for (int i = 0; i < aLen; i++)
             {
-                if (!a.cargoDetail[i].Equals(b.cargoDetail[i])) return false;
+                if (!a[i].Equals(b[i])) return false;
             }
             return true;
         }

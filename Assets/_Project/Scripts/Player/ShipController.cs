@@ -537,6 +537,9 @@ namespace ProjectC.Player
                 // T-KEY-07: подписка на _telemetryState.OnValueChanged — клиент получает deltas от сервера
                 _telemetryState.OnValueChanged += HandleTelemetryValueChanged;
 
+                // T-SHIP-FIX07: подписка на cargo-detail (обновляется по событиям, не 5 Hz)
+                _telemetryCargoState.OnValueChanged += HandleCargoValueChanged;
+
                 // T-CARGO-04-debug: Continuous ловит тонкие/быстрые столкновения
                 // которые Discrete пропускает (стены при скорости, ребра пиков).
                 // Небольшая perf-цена оправдана — корабль один на сцену.
@@ -914,6 +917,8 @@ namespace ProjectC.Player
                 if (_debugLog) Debug.Log($"[ShipController] OnNetworkSpawn: registered cargo shipId={NetworkObjectId} class={_resolvedCargoClass} items={cargo.Items.Count}");
                 // T-CARGO-03: сразу считаем penalty (1.0 если пусто, иначе по формуле)
                 RecalculateCargoPenalty(NetworkObjectId);
+                // T-SHIP-FIX07: первичная публикация деталей груза (дальше — по OnCargoChanged)
+                PublishCargoDetail();
             }
         }
 
@@ -948,9 +953,32 @@ namespace ProjectC.Player
         /// ShipTelemetryClientState (агрегатор всех кораблей).</summary>
         public ShipTelemetryState TelemetryState => _telemetryState.Value;
 
+        // ========================================================
+        // T-SHIP-FIX07: NetworkVariable<ShipCargoDetailState> — детали груза отдельно.
+        // Server пишет ТОЛЬКО при смене содержимого трюма (PublishCargoDetail),
+        // все клиенты читают через ShipTelemetryClientState.GetShipCargoDetail.
+        // ========================================================
+        private readonly NetworkVariable<ShipCargoDetailState> _telemetryCargoState = new NetworkVariable<ShipCargoDetailState>(
+            default,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
+        /// <summary>Server-authoritative детали груза этого корабля (обновляется по событиям).</summary>
+        public ShipCargoDetailState TelemetryCargoState => _telemetryCargoState.Value;
+
+        /// <summary>T-SHIP-FIX07: event для клиентов. Подписка из ShipTelemetryClientState.SubscribeToShip().</summary>
+        public event System.Action<ShipCargoDetailState, ShipCargoDetailState> OnTelemetryCargoChanged;
+
         /// <summary>T-KEY-07: event для клиентов. Вызывается когда NetworkVariable.Value изменилась.
         /// Подписка из ShipTelemetryClientState.SubscribeToShip().</summary>
         public event System.Action<ShipTelemetryState, ShipTelemetryState> OnTelemetryStateChanged;
+
+        /// <summary>T-SHIP-FIX07: forward cargo-detail deltas в user-facing event.</summary>
+        private void HandleCargoValueChanged(ShipCargoDetailState prev, ShipCargoDetailState next)
+        {
+            // Срабатывает на клиенте при server delta. Forward в user-facing event.
+            OnTelemetryCargoChanged?.Invoke(prev, next);
+        }
 
         // Ship repainting: локальный кеш цвета (server-authoritative)
         private Color _shipColor = Color.black;
@@ -1069,13 +1097,13 @@ namespace ProjectC.Player
                 hullMax = _hull.MaxHull;
             }
 
-            // T-CARGO-UI-01: cargo — серверный push деталей в telemetry.
+            // T-CARGO-UI-01: cargoUsed/cargoMax — лёгкие счётчики, остаются в быстром снапшоте.
+            // T-SHIP-FIX07: детали груза (cargoDetail[]) уехали в отдельный NetworkVariable
+            // (PublishCargoDetail, по событиям) — здесь их больше не строим.
             // cargoUsed = sum(qty * slots) — соответствует GDD-логике slot-ёмкости.
             // cargoMax = GetEffectiveCargoLimits().maxSlots (per-instance + модули).
-            // cargoDetail[] = список items с displayName/weight/dangerous/fragile.
             int cargoUsedSlots = 0;
             int cargoMaxSlots = 0;
-            ProjectC.Ship.Network.CargoDetailDto[] cargoDetail = System.Array.Empty<ProjectC.Ship.Network.CargoDetailDto>();
 
             if (TradeWorld.Instance != null)
             {
@@ -1088,40 +1116,6 @@ namespace ProjectC.Player
                     cargoMaxSlots = effLimits?.maxSlots
                                     ?? ShipClassLimits.Get(_resolvedCargoClass).maxSlots;
                     cargoUsedSlots = cargo.ComputeTotalSlots(TradeWorld.Instance.Resolver);
-
-                    // T-CARGO-UI-01: cargoDetail (cap 32, см. ShipTelemetryState doc).
-                    var items = cargo.Items;
-                    if (items != null && items.Count > 0)
-                    {
-                        const int CARGO_DETAIL_CAP = 32;
-                        int cap = System.Math.Min(items.Count, CARGO_DETAIL_CAP);
-                        cargoDetail = new ProjectC.Ship.Network.CargoDetailDto[cap];
-                        var resolver = TradeWorld.Instance.Resolver;
-                        for (int i = 0; i < cap; i++)
-                        {
-                            var e = items[i];
-                            ProjectC.Trade.TradeItemDefinition def = null;
-                            bool hasDef = resolver != null && resolver.TryGet(e.itemId, out def) && def != null;
-                            byte flags = 0;
-                            string dn = e.itemId;
-                            float uw = 0f;
-                            if (hasDef)
-                            {
-                                if (def.isDangerous) flags |= 0x01;
-                                if (def.isFragile)   flags |= 0x02;
-                                if (!string.IsNullOrEmpty(def.displayName)) dn = def.displayName;
-                                uw = def.weight;
-                            }
-                            cargoDetail[i] = new ProjectC.Ship.Network.CargoDetailDto
-                            {
-                                itemId      = e.itemId ?? string.Empty,
-                                displayName = new Unity.Collections.FixedString64Bytes(dn.Length > 60 ? dn.Substring(0, 60) : dn),
-                                quantity    = e.quantity,
-                                unitWeight  = uw,
-                                flags       = flags,
-                            };
-                        }
-                    }
                 }
             }
 
@@ -1145,7 +1139,6 @@ namespace ProjectC.Player
                 lastUpdateServerTime  = NetworkManager != null && NetworkManager.ServerTime.Time > 0
                     ? NetworkManager.ServerTime.Time
                     : Time.timeAsDouble,
-                cargoDetail           = cargoDetail, // T-CARGO-UI-01
                 shipColorR            = (byte)(_shipColor.r * 255),
                 shipColorG            = (byte)(_shipColor.g * 255),
                 shipColorB            = (byte)(_shipColor.b * 255),
@@ -1153,6 +1146,72 @@ namespace ProjectC.Player
                     ? ShipTelemetryState.FlagRefueling : (byte)0, // T-SHIP-FIX06
 
             };
+        }
+
+        /// <summary>
+        /// T-SHIP-FIX07: server-only публикация деталей груза в отдельный NetworkVariable.
+        /// Вызывается ТОЛЬКО при смене содержимого трюма (конец RegisterCargoWhenReady +
+        /// RecalculateCargoPenalty через OnCargoChanged), а не 5 Hz.
+        /// </summary>
+        private void PublishCargoDetail()
+        {
+            if (!IsServer) return;
+            if (TradeWorld.Instance == null) return;
+
+            var next = new ShipCargoDetailState
+            {
+                shipNetworkObjectId = NetworkObjectId,
+                cargoDetail = BuildCargoDetailDto(),
+            };
+            // NetworkVariable сама suppresses resend при Equals, но сравниваем явно,
+            // чтобы не дёргать сеть тем же содержимым.
+            if (!next.Equals(_telemetryCargoState.Value))
+                _telemetryCargoState.Value = next;
+        }
+
+        /// <summary>
+        /// T-SHIP-FIX07: построить детальный список items трюма (cap 32).
+        /// Вынесено из UpdateTelemetryState — теперь вызывается только по событиям груза.
+        /// </summary>
+        private ProjectC.Ship.Network.CargoDetailDto[] BuildCargoDetailDto()
+        {
+            if (TradeWorld.Instance == null) return System.Array.Empty<ProjectC.Ship.Network.CargoDetailDto>();
+            var cargo = TradeWorld.Instance.GetOrLoadCargo(NetworkObjectId, _resolvedCargoClass);
+            if (cargo == null) return System.Array.Empty<ProjectC.Ship.Network.CargoDetailDto>();
+
+            var items = cargo.Items;
+            if (items == null || items.Count == 0)
+                return System.Array.Empty<ProjectC.Ship.Network.CargoDetailDto>();
+
+            const int CARGO_DETAIL_CAP = 32;
+            int cap = System.Math.Min(items.Count, CARGO_DETAIL_CAP);
+            var cargoDetail = new ProjectC.Ship.Network.CargoDetailDto[cap];
+            var resolver = TradeWorld.Instance.Resolver;
+            for (int i = 0; i < cap; i++)
+            {
+                var e = items[i];
+                ProjectC.Trade.TradeItemDefinition def = null;
+                bool hasDef = resolver != null && resolver.TryGet(e.itemId, out def) && def != null;
+                byte flags = 0;
+                string dn = e.itemId;
+                float uw = 0f;
+                if (hasDef)
+                {
+                    if (def.isDangerous) flags |= 0x01;
+                    if (def.isFragile)   flags |= 0x02;
+                    if (!string.IsNullOrEmpty(def.displayName)) dn = def.displayName;
+                    uw = def.weight;
+                }
+                cargoDetail[i] = new ProjectC.Ship.Network.CargoDetailDto
+                {
+                    itemId      = e.itemId ?? string.Empty,
+                    displayName = new Unity.Collections.FixedString64Bytes(dn.Length > 60 ? dn.Substring(0, 60) : dn),
+                    quantity    = e.quantity,
+                    unitWeight  = uw,
+                    flags       = flags,
+                };
+            }
+            return cargoDetail;
         }
 
         /// <summary>Кастомное имя из инспектора. Если пусто — автогенерация из class + instanceId
@@ -1191,6 +1250,9 @@ namespace ProjectC.Player
                 _serverCargoPenalty.Value = newPenalty;
                 if (_debugLog) Debug.Log($"[ShipController] cargoPenalty shipId={NetworkObjectId} {oldPenalty:F3}→{newPenalty:F3} class={_resolvedCargoClass}");
             }
+
+            // T-SHIP-FIX07: груз изменился — опубликовать детали (все мутации идут через OnCargoChanged)
+            PublishCargoDetail();
         }
 
         // ========================================================

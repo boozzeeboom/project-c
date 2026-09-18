@@ -31,6 +31,10 @@ namespace ProjectC.Ship.Client
         /// подписки на NetworkVariable каждого ShipController.</summary>
         private readonly Dictionary<ulong, ShipTelemetryState> _allShips = new Dictionary<ulong, ShipTelemetryState>();
 
+        /// <summary>T-SHIP-FIX07: shipNetId → детали груза (отдельный NetworkVariable,
+        /// обновляется по событиям смены груза, не 5 Hz).</summary>
+        private readonly Dictionary<ulong, ShipCargoDetailState> _cargoByShip = new Dictionary<ulong, ShipCargoDetailState>();
+
         // ===========================================================
         // Events
         // ===========================================================
@@ -66,6 +70,13 @@ namespace ProjectC.Ship.Client
             return null;
         }
 
+        /// <summary>T-SHIP-FIX07: детали груза по netId. null если не подписаны / не синхронизированы.</summary>
+        public ShipCargoDetailState? GetShipCargoDetail(ulong shipNetId)
+        {
+            if (_cargoByShip.TryGetValue(shipNetId, out var s)) return s;
+            return null;
+        }
+
         /// <summary>True если этот клиент владеет кораблем (есть key в инвентаре).
         /// P1-refactor: читает из telemetry, не из отдельного registry.</summary>
         public bool IsMyShip(ulong shipNetId)
@@ -90,6 +101,9 @@ namespace ProjectC.Ship.Client
             ship.OnTelemetryStateChanged += (prev, next) => OnShipTelemetryUpdated(shipNetId, next);
             var initial = ship.TelemetryState;
             _allShips[shipNetId] = initial;
+            // T-SHIP-FIX07: детали груза — отдельная подписка + seed.
+            ship.OnTelemetryCargoChanged += (prev, next) => OnShipCargoUpdated(shipNetId, next);
+            _cargoByShip[shipNetId] = ship.TelemetryCargoState;
             if (Debug.isDebugBuild)
                 Debug.Log($"[ShipTelemetryClientState] SubscribeToShip: ship={shipNetId} ({initial.displayName})");
         }
@@ -99,6 +113,8 @@ namespace ProjectC.Ship.Client
         {
             if (_allShips.Remove(shipNetId))
                 Debug.Log($"[ShipTelemetryClientState] UnsubscribeFromShip: ship={shipNetId}");
+            // T-SHIP-FIX07: чистим и cargo-кэш (отписка от события корабля — FIX15, как у быстрого).
+            _cargoByShip.Remove(shipNetId);
         }
 
         // ===========================================================
@@ -139,6 +155,14 @@ namespace ProjectC.Ship.Client
             // P1-refactor: детектим ownership change из telemetry (вместо отдельного NetworkList)
             if (oldOwner != newState.ownerClientId)
                 OnOwnershipUpdated?.Invoke();
+        }
+
+        /// <summary>T-SHIP-FIX07: обновить кэш деталей груза. Поднимаем то же
+        /// OnShipStateChanged — оба UI (MyShipsTab, ShipCargoConsoleWindow) уже подписаны.</summary>
+        private void OnShipCargoUpdated(ulong shipNetId, ShipCargoDetailState newState)
+        {
+            _cargoByShip[shipNetId] = newState;
+            OnShipStateChanged?.Invoke(shipNetId);
         }
     }
 }

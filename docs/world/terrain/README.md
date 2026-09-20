@@ -11,6 +11,7 @@
 | Слои | `Assets/_Project/Materials/World/Terrain/TerrainRock.terrainlayer`, `TerrainSnow.terrainlayer` |
 | Текстуры слоёв | `Assets/_Project/Materials/World/Terrain/TerrainRock.png`, `TerrainSnow.png` (4×4 solid; лежат рядом со слоями, т.к. пути `*Textures*` в `.gitignore`) |
 | Отключённые FBX | `Himalayi_massiv_1_1 / east / west / northwest_1` — `SetActive(false)`, лежат под `Primum` / `Primum_farms`, НЕ удалены (возврат за секунду) |
+| Руины низин (T-TERR-02) | `WorldRoot_0_0/RuinsValleys` — 60 хамлетов, 496 инстансов; меши `Art/Models/RuinsGen/` (на диске, `Art/*` вне git); материалы `Materials/World/Ruins/` |
 
 Снег: alphamap 256, переход rock→snow 2200–3000 м абс. TerrainCollider включён. `drawInstanced=true`, `heightmapPixelError=200`, `basemapDistance=20000`.
 
@@ -29,9 +30,15 @@
 
 Город 300–700 (платформа «Основная часть» 688; поверхность под городом = штамп старого склона main, 1:1), маркет 180 (= оригинал 165), фермы 240–330, Средняя/пады 326, Secund 1343. Корабли/порты (Y≥2501): PLAYAREA_MAX 2715 — это оригинальный склон main (старый 2705), коридоры не тронуты.
 
+## Руины низин (T-TERR-02)
+
+Генеративные «раскуроченные» строения без моделинга: 5 мешей строятся кодом из джиттерованных боксов (стена с рваным верхом, прислонённая плита, торчащая балка, блок, щебень; наклон запечён, pivot = min.y). 60 хамлетов × 6–12 шт в низинах 650–1050 м (склон <0.35, вдали от поселений/массивов). Высота — точным семплом террейна в точке, заглубление 0.3 + 12% высоты меша.
+
+Перф: 2 материала с GPU Instancing → ~5–7 draw calls на все 496; тени выкл, коллайдеров нет, `isStatic=false` (не ломает батчинг при сдвиге мира).
+
 ## Floating Origin
 
-`Terrain_0_0` — ребёнок `WorldRoot_0_0` (🟢 едет бесплатно, heightmap в локальных координатах, хуков не надо). Проверка: F8 → `runtimeRebase.Completed` + 0 errors. Не кэшировать мировые высоты без хука; сейвы — паттерн `ShipPositionServer` (мировые + кумулятив).
+`Terrain_0_0` и `RuinsValleys` — дети `WorldRoot_0_0` (🟢 едут бесплатно; heightmap в локальных координатах, хуков не надо). Проверка: F8 → `runtimeRebase.Completed` + 0 errors. Не кэшировать мировые высоты без хука; сейвы — паттерн `ShipPositionServer` (мировые + кумулятив).
 
 ## Как перегенерить (порядок важен!)
 

@@ -31,10 +31,14 @@ MonoBehaviour:
   nightVolumeProfile: {fileID: 11400000, guid: 4733f38b0fefd3a4188ecb38a07b0db9, type: 2}
   twilightVolumeProfile: {fileID: 11400000, guid: 3ebb78acd0a0ebb4a856178f3390439b, type: 2}
   useVolumeBlending: 1
+  phaseTransitionRatio: 0.2
   temperatureConfig: {fileID: 11400000, guid: 776fafc21913afa4999bdb5d216a96db, type: 2}
+  temperatureEffectStrength: 0.3
   globalSaturationOffset: 0.041
   globalExposureOffset: 0.12
   globalContrastOffset: 0.08
+  enableDailyHueShift: 1
+  dailyHueShiftRange: {x: -10, y: 10}
   constellationController: {fileID: 0}
   moonController: {fileID: 0}
   showDebugInfo: 0

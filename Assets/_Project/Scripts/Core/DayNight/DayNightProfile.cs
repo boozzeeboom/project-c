@@ -68,6 +68,12 @@ namespace ProjectC.Core
         [Range(-1f, 1f)]
         public float globalContrastOffset = 0f;
 
+        [Header("Daily Hue Variety")]
+        [Tooltip("Вкл/выкл суточный случайный сдвиг hueShift для рантайм-копий day/twilight/night Volume-профилей.")]
+        public bool enableDailyHueShift = true;
+        [Tooltip("Диапазон суточного оффсета hueShift в градусах (прибавляется к авторскому значению из .asset). День даёт разные значения для day/twilight/night. Рекомендовано: (-10, 10).")]
+        public Vector2 dailyHueShiftRange = new Vector2(-10f, 10f);
+
         [Header("Reference Controllers")]
         [Tooltip("Reference to ConstellationController for star sync")]
         public ConstellationController constellationController;

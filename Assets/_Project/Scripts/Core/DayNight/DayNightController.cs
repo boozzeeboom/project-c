@@ -92,6 +92,21 @@ namespace ProjectC.Core
         private Volume _temperatureBlendVolume;
         private VolumeProfile _temperatureColorProfile;
 
+        // Суточный hueShift: авторские значения из .asset (читаются один раз
+        // с рантайм-копий) + детерминированный оффсет из profile.dailyHueShiftRange.
+        // Ассеты никогда не мутируем — пишем только в Instantiate-копии.
+        // Temperature-volume не трогаем (его hueShift всегда 0, см. ApplyTemperatureFilter).
+        private float _baseDayHueShift;
+        private float _baseTwilightHueShift;
+        private float _baseNightHueShift;
+        private float _appliedHueShiftDay = float.MinValue;
+        private bool _dailyHueApplied;
+
+        // Текущие применённые оффсеты (для дебага/админки).
+        public float CurrentDayHueOffset { get; private set; }
+        public float CurrentTwilightHueOffset { get; private set; }
+        public float CurrentNightHueOffset { get; private set; }
+
         // Events for other systems to subscribe
         public event System.Action<TimeOfDayPhase, float> OnPhaseChanged;
         public event System.Action<float> OnDayFactorChanged;
@@ -188,6 +203,11 @@ namespace ProjectC.Core
             _twilightVolumeProfileInstance = twilightVolumeProfile != null ? Instantiate(twilightVolumeProfile) : null;
 
             if (logInitialization) Debug.Log($"[DayNightController] Created runtime profile instances: Day={_dayVolumeProfileInstance != null}, Night={_nightVolumeProfileInstance != null}, Twilight={_twilightVolumeProfileInstance != null}");
+
+            // Запомнить авторский hueShift с рантайм-копий и сразу применить суточный оффсет.
+            CacheBaseHueShiftValues();
+            _appliedHueShiftDay = float.MinValue;
+            ApplyDailyHueShiftIfNeeded();
         }
 
         /// <summary>
@@ -379,6 +399,7 @@ namespace ProjectC.Core
             ApplyAmbientLightingSmooth();
             ApplySkybox();
             ApplyFogSmooth();
+            ApplyDailyHueShiftIfNeeded();
             ApplyVolumeBlend();
             ApplyTemperatureFilter(currentTemperature);
             UpdateExternalControllers();
@@ -899,6 +920,93 @@ namespace ProjectC.Core
         }
 
         // ========================
+        // Daily Hue Shift Variety
+        // ========================
+
+        // URP ColorAdjustments.hueShift — градусы на круге (-180..180).
+        private const float HueShiftMinLimit = -180f;
+        private const float HueShiftMaxLimit = 180f;
+
+        // Разные соли, чтобы day/twilight/night в один и тот же день получали
+        // разные оффсеты (с одним сидом без солей все три были бы одинаковыми).
+        private const float DayHueSalt = 0.13f;
+        private const float TwilightHueSalt = 0.47f;
+        private const float NightHueSalt = 0.71f;
+
+        /// <summary>
+        /// Запомнить авторский hueShift с рантайм-копий (значения из .asset).
+        /// Вызывать каждый раз после пересоздания инстансов — иначе будет дрейф.
+        /// </summary>
+        private void CacheBaseHueShiftValues()
+        {
+            _baseDayHueShift = ReadHueShift(_dayVolumeProfileInstance);
+            _baseTwilightHueShift = ReadHueShift(_twilightVolumeProfileInstance);
+            _baseNightHueShift = ReadHueShift(_nightVolumeProfileInstance);
+        }
+
+        private static float ReadHueShift(VolumeProfile profileInstance)
+        {
+            if (profileInstance != null && profileInstance.TryGet<ColorAdjustments>(out var ca))
+                return ca.hueShift.value;
+            return 0f;
+        }
+
+        /// <summary>
+        /// Дешёвая проверка смены дня (один float-compare в кадр). При смене дня —
+        /// новый детерминированный оффсет для всех клиентов одинаковый (сид — TotalGameDays).
+        /// </summary>
+        private void ApplyDailyHueShiftIfNeeded()
+        {
+            if (profile == null || !profile.enableDailyHueShift)
+            {
+                // Тумблер выключили в рантайме — вернуть авторские значения один раз.
+                if (_dailyHueApplied)
+                {
+                    WriteHueShift(_dayVolumeProfileInstance, _baseDayHueShift);
+                    WriteHueShift(_twilightVolumeProfileInstance, _baseTwilightHueShift);
+                    WriteHueShift(_nightVolumeProfileInstance, _baseNightHueShift);
+                    CurrentDayHueOffset = CurrentTwilightHueOffset = CurrentNightHueOffset = 0f;
+                    _dailyHueApplied = false;
+                }
+                return;
+            }
+
+            float daySeed = GetDaySeed();
+            if (Mathf.Approximately(daySeed, _appliedHueShiftDay) && _dailyHueApplied)
+                return;
+
+            Vector2 range = profile.dailyHueShiftRange;
+            float min = Mathf.Min(range.x, range.y);
+            float max = Mathf.Max(range.x, range.y);
+
+            CurrentDayHueOffset = seededRand(daySeed + DayHueSalt, new Vector2(min, max));
+            CurrentTwilightHueOffset = seededRand(daySeed + TwilightHueSalt, new Vector2(min, max));
+            CurrentNightHueOffset = seededRand(daySeed + NightHueSalt, new Vector2(min, max));
+
+            WriteHueShift(_dayVolumeProfileInstance, Mathf.Clamp(_baseDayHueShift + CurrentDayHueOffset, HueShiftMinLimit, HueShiftMaxLimit));
+            WriteHueShift(_twilightVolumeProfileInstance, Mathf.Clamp(_baseTwilightHueShift + CurrentTwilightHueOffset, HueShiftMinLimit, HueShiftMaxLimit));
+            WriteHueShift(_nightVolumeProfileInstance, Mathf.Clamp(_baseNightHueShift + CurrentNightHueOffset, HueShiftMinLimit, HueShiftMaxLimit));
+
+            _appliedHueShiftDay = daySeed;
+            _dailyHueApplied = true;
+        }
+
+        private static void WriteHueShift(VolumeProfile profileInstance, float hue)
+        {
+            if (profileInstance != null && profileInstance.TryGet<ColorAdjustments>(out var ca))
+                ca.hueShift.Override(hue);
+        }
+
+        /// <summary>
+        /// Принудительно пересчитать суточный оффсет (для тестов/админки после смены диапазона).
+        /// </summary>
+        public void ForceRefreshDailyHueShift()
+        {
+            _appliedHueShiftDay = float.MinValue;
+            ApplyDailyHueShiftIfNeeded();
+        }
+
+        // ========================
         // Public API
         // ========================
 
@@ -977,6 +1085,7 @@ namespace ProjectC.Core
             GUILayout.Label($"<color=yellow>Blend  Day:{dayW:F2}  Tw:{twW:F2}  Night:{nightW:F2}  Temp:{tempW:F2}</color>");
 
             GUILayout.Label($"<color=white>Stars: {_starVisibility:F2}</color>");
+            GUILayout.Label($"<color=yellow>HueShift D:{CurrentDayHueOffset:F1} T:{CurrentTwilightHueOffset:F1} N:{CurrentNightHueOffset:F1}</color>");
 
             GUILayout.EndVertical();
             GUILayout.EndArea();

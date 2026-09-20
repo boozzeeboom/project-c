@@ -13042,7 +13042,6 @@ GameObject:
   m_Component:
   - component: {fileID: 909090002}
   - component: {fileID: 909090003}
-  - component: {fileID: 909090004}
   m_Layer: 0
   m_Name: VeilController
   m_TagString: Untagged
@@ -13095,21 +13094,6 @@ MonoBehaviour:
   VeilColor: {r: 0.8018868, g: 0.8018868, b: 0.8018868, a: 1}
   LightningColor: {r: 0.5726043, g: 0.45803666, b: 0.6886792, a: 1}
   DebugLog: 0
---- !u!114 &909090004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 909090001}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
-  _sourceId: 336a190646b19bc46b22dd4e78f99800:909090001:0
-  _frameId: 0
-  _activateWhenReady: 0
 --- !u!1 &909305749
 GameObject:
   m_ObjectHideFlags: 0

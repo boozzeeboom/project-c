@@ -79,3 +79,19 @@
 - `Assets/_Project/VFX/Contrail.vfx` (NEW) — VFX Graph из шаблона Simple_Trail, частицы спавнятся за кораблём
 - `Assets/_Project/Scripts/Ship/ShipContrailVfx.cs`: `GetComponent<ShipController>` → `GetComponentInParent<ShipController>` (авторезолв на родителе)
 - `Assets/_Project/Prefabs/Ships/Ship_Light_root.prefab`: добавлен дочерний `ContrailVFX` с `VisualEffect` + `ShipContrailVfx`
+
+## 2026-09-20 (T-FO09P: veil вынесен из CloudManager + FO-адаптация)
+
+**Задача:** veil-raymarch слой сидел на выключенном CloudManager без FO-адаптации; вынести в отдельный контроллер в BootstrapScene и адаптировать под F8.
+
+**Коммиты:** `4e61650e` (вынос + FO), `8ced077c` (фикс startup gate).
+
+**Изменения:**
+- `Scripts/World/Clouds/VeilRaymarchMeshController.cs`: синглтон Instance, Awake+DDOL, `ApplyRebaseTranslation` (BaseVeilHeight += t.y + пуш uniforms + Y плейна).
+- `Scripts/World/FloatingOrigin/Network/GlobalMotionControlledRebaseSlice.cs`: `ShiftVeilPlane` + маркер `VeilShifted` (success / rollback −T / broadcast-handler).
+- `Scenes/BootstrapScene.unity`: новый активный корень `VeilController` (без NetworkObject, по образцу WindManager); veil снят с CloudManager.
+- Фикс гейта: самодельный GlobalSceneSourceMarker на новом GO ронял pilot (`extra_baked_marker...`) — маркер убран; правило: новые GO без маркера, только через bake каталога.
+
+**Семантика:** 1200 в сцене — authored-фрейм; рантайм −1300 после авторебейса — норма (мир + игрок уехали на тот же T, дельта ~1300 константа). Рантайм-высоту руками не крутить.
+
+**Детали:** `docs/world/CLOUD_system/3.0/VEIL_FO_EXTRACTION_T-FO09P.md`

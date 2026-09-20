@@ -13074,10 +13074,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0d05d9d7316bf1a46b21b8959467a9a9, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Clouds.VeilRaymarchMeshController
   VeilMaterial: {fileID: 2100000, guid: 94d1c69c14b2fb04aa8abad851a8b995, type: 2}
-  BaseVeilHeight: 1200
+  BaseVeilHeight: 2200
   GlobalAltitudeOffset: 0
   PlaneSize: 200000
   RaymarchSteps: 24
@@ -29947,3 +29947,4 @@ SceneRoots:
   - {fileID: 1567705304}
   - {fileID: 835669857}
   - {fileID: 236023831}
+  - {fileID: 909090002}

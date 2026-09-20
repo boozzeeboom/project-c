@@ -98,7 +98,7 @@ namespace ProjectC.Core
             Camera cam = GetComponent<Camera>();
             if (cam != null)
             {
-                cam.farClipPlane = 1000000f; // 1 million units - covers entire world
+                cam.farClipPlane = ProjectC.World.ViewDistanceApplier.ResolveCameraFar(); // T-LOD01: far из пресета дальности (было 1000000)
                 cam.nearClipPlane = 0.5f; // Slightly increased to reduce z-fighting
 
                 // АВТОМАТИЧЕСКИ добавляем FloatingOrigin если его нет

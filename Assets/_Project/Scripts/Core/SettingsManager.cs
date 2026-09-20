@@ -18,6 +18,7 @@ namespace ProjectC.Core
         private const string KEY_MASTER_VOLUME = "Settings.MasterVolume";
         private const string KEY_SUBTITLES = "Settings.Subtitles";
         private const string KEY_QUALITY_LEVEL = "Settings.QualityLevel";
+        private const string KEY_VIEW_DISTANCE = "Settings.ViewDistance"; // T-LOD01
         private const string KEY_FULLSCREEN = "Settings.Fullscreen";
         private const string KEY_VSYNC = "Settings.VSync";
         private const string KEY_ANTI_ALIASING = "Settings.AntiAliasing";
@@ -39,6 +40,7 @@ namespace ProjectC.Core
         public static float MasterVolume { get; private set; } = 1f;
         public static bool Subtitles { get; private set; } = false;
         public static int QualityLevel { get; private set; } = 2; // Medium by default
+        public static ViewDistance ViewDistance { get; private set; } = ViewDistance.Medium; // T-LOD01
         public static bool Fullscreen { get; private set; } = true;
         public static bool VSync { get; private set; } = true;
         public static int AntiAliasing { get; private set; } = 0; // Off
@@ -57,6 +59,8 @@ namespace ProjectC.Core
         public static event Action<bool> OnDepthOfFieldChanged;
         public static event Action<bool> OnEdgeDetectionChanged;
         public static event Action<bool> OnTemperatureFilterChanged;
+        public static event Action<ViewDistance> OnViewDistanceChanged; // T-LOD01
+        public static event Action<int> OnQualityLevelChanged; // T-LOD01: апplier возвращает lodBias/shadowDistance пресета
 
         // ===== Init =====
 
@@ -137,6 +141,17 @@ namespace ProjectC.Core
             QualitySettings.SetQualityLevel(index, applyExpensiveChanges: true);
             PlayerPrefs.SetInt(KEY_QUALITY_LEVEL, index);
             PlayerPrefs.Save();
+            OnQualityLevelChanged?.Invoke(index); // T-LOD01
+        }
+
+        /// <summary>Дальность прорисовки (T-LOD01). Применение — ViewDistanceApplier; Ultra в UI не предлагается.</summary>
+        public static void SetViewDistance(ViewDistance value)
+        {
+            if (ViewDistance == value) return;
+            ViewDistance = value;
+            PlayerPrefs.SetInt(KEY_VIEW_DISTANCE, (int)value);
+            PlayerPrefs.Save();
+            OnViewDistanceChanged?.Invoke(value);
         }
 
         public static void SetFullscreen(bool value)
@@ -218,6 +233,7 @@ namespace ProjectC.Core
             MasterVolume = PlayerPrefs.GetFloat(KEY_MASTER_VOLUME, 1f);
             Subtitles = PlayerPrefs.GetInt(KEY_SUBTITLES, 0) == 1;
             QualityLevel = PlayerPrefs.GetInt(KEY_QUALITY_LEVEL, 2);
+            ViewDistance = (ViewDistance)Mathf.Clamp(PlayerPrefs.GetInt(KEY_VIEW_DISTANCE, (int)ViewDistance.Medium), 0, 3); // T-LOD01
             Fullscreen = PlayerPrefs.GetInt(KEY_FULLSCREEN, 1) == 1;
             VSync = PlayerPrefs.GetInt(KEY_VSYNC, 1) == 1;
             AntiAliasing = PlayerPrefs.GetInt(KEY_ANTI_ALIASING, 0);
@@ -227,7 +243,7 @@ namespace ProjectC.Core
             TemperatureFilter = PlayerPrefs.GetInt(KEY_TEMPERATURE_FILTER, 1) == 1;
 
             Debug.Log($"[SettingsManager] Loaded: sens={MouseSensitivity}, invY={InvertY}, vol={MasterVolume}, " +
-                      $"qual={QualityLevel}, fs={Fullscreen}, vsync={VSync}, aa={AntiAliasing}, locale={Locale}");
+                      $"qual={QualityLevel}, viewDist={ViewDistance}, fs={Fullscreen}, vsync={VSync}, aa={AntiAliasing}, locale={Locale}");
         }
 
         public static void Save()
@@ -238,6 +254,7 @@ namespace ProjectC.Core
             PlayerPrefs.SetFloat(KEY_MASTER_VOLUME, MasterVolume);
             PlayerPrefs.SetInt(KEY_SUBTITLES, Subtitles ? 1 : 0);
             PlayerPrefs.SetInt(KEY_QUALITY_LEVEL, QualityLevel);
+            PlayerPrefs.SetInt(KEY_VIEW_DISTANCE, (int)ViewDistance); // T-LOD01
             PlayerPrefs.SetInt(KEY_FULLSCREEN, Fullscreen ? 1 : 0);
             PlayerPrefs.SetInt(KEY_VSYNC, VSync ? 1 : 0);
             PlayerPrefs.SetInt(KEY_ANTI_ALIASING, AntiAliasing);

@@ -425,7 +425,7 @@ namespace ProjectC.Core
             _camera = GetComponent<Camera>();
             if (_camera != null)
             {
-                _camera.farClipPlane = 1000000f;
+                _camera.farClipPlane = ProjectC.World.ViewDistanceApplier.ResolveCameraFar(); // T-LOD01: far из пресета дальности (было 1000000)
                 // 0.5f не позволяет физически приблизить камеру к zoomMinDistance=0.5.
                 _camera.nearClipPlane = 0.1f;
             }

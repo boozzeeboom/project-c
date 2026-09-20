@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f23017e4b897ee43b06acf14c0c7463, type: 3}
+  m_Name: ViewDistanceConfig
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.ViewDistanceConfig
+  near:
+    cameraFar: 30000
+    lodBias: 0.7
+    terrainPixelError: 300
+    terrainBasemapDistance: 12000
+    shadowDistance: 500
+    detailCullDistance: 4000
+  medium:
+    cameraFar: 60000
+    lodBias: 1
+    terrainPixelError: 200
+    terrainBasemapDistance: 20000
+    shadowDistance: 1500
+    detailCullDistance: 8000
+  far:
+    cameraFar: 120000
+    lodBias: 1.3
+    terrainPixelError: 50
+    terrainBasemapDistance: 80000
+    shadowDistance: 4000
+    detailCullDistance: 12000

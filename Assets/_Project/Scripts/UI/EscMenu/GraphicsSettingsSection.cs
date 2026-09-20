@@ -85,6 +85,29 @@ namespace ProjectC.UI.EscMenu
                     SettingsManager.SetAntiAliasing(aa);
                 }));
 
+            // --- Дальность прорисовки (T-LOD01) ---
+            // Ключи локализации ui.esc_menu.section.view_distance / label.view_distance /
+            // view_distance.near|medium|far / view_distance.ultra_hint —
+            // отдельным LOC-проходом в UI_Table; до тех пор русские литералы (RU-fallback).
+            // Choices — через Loc.Get(key, ruLiteral): подхватят перевод автоматически.
+            panel.Add(SettingsWidgets.CreateSectionHeader("Дальность прорисовки"));
+
+            var vdChoices = new List<string> {
+                ProjectC.Localization.Loc.Get("ui.esc_menu.view_distance.near", "Близкая — максимум FPS"),
+                ProjectC.Localization.Loc.Get("ui.esc_menu.view_distance.medium", "Средняя — баланс"),
+                ProjectC.Localization.Loc.Get("ui.esc_menu.view_distance.far", "Дальняя — кинематографично")
+            };
+            int vdIndex = Mathf.Clamp((int)SettingsManager.ViewDistance, 0, vdChoices.Count - 1);
+            panel.Add(SettingsWidgets.CreateDropdown("Дальность прорисовки", vdChoices, vdIndex,
+                idx => SettingsManager.SetViewDistance((ViewDistance)idx)));
+
+            // Ultra зарезервирован (межрегиональный фон, сцен 2+ нет) — в dropdown не добавляем,
+            // только хинт. Разблокировка — Phase 5 (см. docs/world/optimization).
+            var ultraHint = new Label("Ультра (межрегиональный фон) — появится с новыми сценами");
+            ultraHint.style.fontSize = 12;
+            ultraHint.style.opacity = 0.7f;
+            panel.Add(ultraHint);
+
             // --- Эффекты (постобработка) ---
             // Ключи локализации ui.esc_menu.section.effects / label.dof|edge|tempfilter —
             // отдельным LOC-проходом; до тех пор русские литералы (RU-fallback).

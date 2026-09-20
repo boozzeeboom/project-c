@@ -151,6 +151,7 @@ namespace ProjectC.Core
             ViewDistance = value;
             PlayerPrefs.SetInt(KEY_VIEW_DISTANCE, (int)value);
             PlayerPrefs.Save();
+            Debug.Log($"[SettingsManager] ViewDistance → {value}");
             OnViewDistanceChanged?.Invoke(value);
         }
 

@@ -500,7 +500,7 @@ namespace ProjectC.Core
             if (_currentPhase.fogEnabled)
             {
                 RenderSettings.fogColor = ApplyVariability(_currentPhase.fogColor);
-                RenderSettings.fogDensity = _currentPhase.fogDensity;
+                RenderSettings.fogDensity = _currentPhase.fogDensity * ProjectC.World.ViewDistanceApplier.GetFogScale(); // T-LOD01: пресет дальности масштабирует плотность (цвет — у фазы)
                 RenderSettings.fogMode = FogMode.Exponential;
             }
         }
@@ -609,7 +609,7 @@ namespace ProjectC.Core
             if (shouldEnableFog)
             {
                 Color targetFogColor = ApplyVariability(_currentPhase.fogColor);
-                float targetFogDensity = _currentPhase.fogDensity;
+                float targetFogDensity = _currentPhase.fogDensity * ProjectC.World.ViewDistanceApplier.GetFogScale(); // T-LOD01
 
                 // Smooth interpolation for fog. We use:
                 //  - HSV lerp for color (avoids the gray/white "muddy" middle when hue changes)

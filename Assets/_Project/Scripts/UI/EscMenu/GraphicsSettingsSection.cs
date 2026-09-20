@@ -99,7 +99,11 @@ namespace ProjectC.UI.EscMenu
             };
             int vdIndex = Mathf.Clamp((int)SettingsManager.ViewDistance, 0, vdChoices.Count - 1);
             panel.Add(SettingsWidgets.CreateDropdown("Дальность прорисовки", vdChoices, vdIndex,
-                idx => SettingsManager.SetViewDistance((ViewDistance)idx)));
+                idx =>
+                {
+                    SettingsManager.SetViewDistance((ViewDistance)idx);
+                    ProjectC.World.ViewDistanceApplier.ApplyAll(); // напрямую, как Эффекты: не зависим от подписок
+                }));
 
             // Ultra зарезервирован (межрегиональный фон, сцен 2+ нет) — в dropdown не добавляем,
             // только хинт. Разблокировка — Phase 5 (см. docs/world/optimization).

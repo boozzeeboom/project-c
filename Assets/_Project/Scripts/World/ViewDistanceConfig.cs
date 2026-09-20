@@ -27,6 +27,8 @@ namespace ProjectC.World
             public float shadowDistance;
             [Tooltip("Дальше этой дистанции (м) мелкие детали (руины) визуально скрываются.")]
             public float detailCullDistance;
+            [Tooltip("Множитель плотности экспоненциального тумана (DayNight). Medium=1 (текущий вид); Far<1 открывает панораму, Near>1 прячет срез far. 0 в старых ассетах = 1 (см. Get).")]
+            public float fogScale;
         }
 
         [Header("Близкая — максимум FPS")]
@@ -37,7 +39,8 @@ namespace ProjectC.World
             terrainPixelError = 300f,
             terrainBasemapDistance = 12000f,
             shadowDistance = 500f,
-            detailCullDistance = 4000f
+            detailCullDistance = 4000f,
+            fogScale = 1.3f
         };
 
         [Header("Средняя — баланс (дефолт, = текущий вид)")]
@@ -48,7 +51,8 @@ namespace ProjectC.World
             terrainPixelError = 200f,
             terrainBasemapDistance = 20000f,
             shadowDistance = 1500f,
-            detailCullDistance = 8000f
+            detailCullDistance = 8000f,
+            fogScale = 1f
         };
 
         [Header("Дальняя — кинематографично")]
@@ -59,19 +63,23 @@ namespace ProjectC.World
             terrainPixelError = 50f,
             terrainBasemapDistance = 80000f,
             shadowDistance = 4000f,
-            detailCullDistance = 12000f
+            detailCullDistance = 12000f,
+            fogScale = 0.6f
         };
 
         /// <summary>Пресет по значению (Ultra сводится к Far — резерв Phase 5).</summary>
         public Preset Get(ProjectC.Core.ViewDistance v)
         {
+            Preset p;
             switch (v)
             {
-                case ProjectC.Core.ViewDistance.Near: return near;
-                case ProjectC.Core.ViewDistance.Far: return far;
-                case ProjectC.Core.ViewDistance.Ultra: return far;
-                default: return medium;
+                case ProjectC.Core.ViewDistance.Near: p = near; break;
+                case ProjectC.Core.ViewDistance.Far: p = far; break;
+                case ProjectC.Core.ViewDistance.Ultra: p = far; break;
+                default: p = medium; break;
             }
+            if (p.fogScale <= 0f) p.fogScale = 1f; // защита старых ассетов без поля
+            return p;
         }
 
         /// <summary>Кодовые дефолты — fallback, если ассет конфига не найден. Те же числа, что выше.</summary>
@@ -80,12 +88,12 @@ namespace ProjectC.World
             switch (v)
             {
                 case ProjectC.Core.ViewDistance.Near:
-                    return new Preset { cameraFar = 30000f, lodBias = 0.7f, terrainPixelError = 300f, terrainBasemapDistance = 12000f, shadowDistance = 500f, detailCullDistance = 4000f };
+                    return new Preset { cameraFar = 30000f, lodBias = 0.7f, terrainPixelError = 300f, terrainBasemapDistance = 12000f, shadowDistance = 500f, detailCullDistance = 4000f, fogScale = 1.3f };
                 case ProjectC.Core.ViewDistance.Far:
                 case ProjectC.Core.ViewDistance.Ultra:
-                    return new Preset { cameraFar = 120000f, lodBias = 1.3f, terrainPixelError = 50f, terrainBasemapDistance = 80000f, shadowDistance = 4000f, detailCullDistance = 12000f };
+                    return new Preset { cameraFar = 120000f, lodBias = 1.3f, terrainPixelError = 50f, terrainBasemapDistance = 80000f, shadowDistance = 4000f, detailCullDistance = 12000f, fogScale = 0.6f };
                 default:
-                    return new Preset { cameraFar = 60000f, lodBias = 1.0f, terrainPixelError = 200f, terrainBasemapDistance = 20000f, shadowDistance = 1500f, detailCullDistance = 8000f };
+                    return new Preset { cameraFar = 60000f, lodBias = 1.0f, terrainPixelError = 200f, terrainBasemapDistance = 20000f, shadowDistance = 1500f, detailCullDistance = 8000f, fogScale = 1f };
             }
         }
     }

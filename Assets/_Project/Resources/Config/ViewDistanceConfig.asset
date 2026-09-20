@@ -19,6 +19,7 @@ MonoBehaviour:
     terrainBasemapDistance: 12000
     shadowDistance: 500
     detailCullDistance: 4000
+    fogScale: 1.3
   medium:
     cameraFar: 60000
     lodBias: 1
@@ -26,6 +27,7 @@ MonoBehaviour:
     terrainBasemapDistance: 20000
     shadowDistance: 1500
     detailCullDistance: 8000
+    fogScale: 1
   far:
     cameraFar: 120000
     lodBias: 1.3
@@ -33,3 +35,4 @@ MonoBehaviour:
     terrainBasemapDistance: 80000
     shadowDistance: 4000
     detailCullDistance: 12000
+    fogScale: 0.6

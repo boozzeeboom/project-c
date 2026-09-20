@@ -21,6 +21,16 @@ namespace ProjectC.World
         private static ViewDistanceConfig _config;
         private static bool _configTried;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            // Без domain reload (быстрый вход в Play) статики переживают сессию:
+            // сбрасываем флаг, иначе Init пропустит повторную подписку и тумблер меню ничего не применит.
+            _subscribed = false;
+            _configTried = false;
+            _config = null;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Init()
         {
@@ -47,6 +57,12 @@ namespace ProjectC.World
             return GetPreset(SettingsManager.ViewDistance).cameraFar;
         }
 
+        /// <summary>Множитель плотности тумана для DayNightController (владение плотностью — у фаз дня).</summary>
+        public static float GetFogScale()
+        {
+            return GetPreset(SettingsManager.ViewDistance).fogScale;
+        }
+
         /// <summary>Применить пресет ко всем живым объектам (можно вызывать после спавна камер/мира).</summary>
         public static void ApplyAll()
         {
@@ -58,11 +74,13 @@ namespace ProjectC.World
             QualitySettings.lodBias = p.lodBias;
             QualitySettings.shadowDistance = p.shadowDistance;
 
+            int camCount = 0;
             foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
             {
                 if (cam == null || !cam.isActiveAndEnabled) continue;
                 if (cam.cameraType != CameraType.Game) continue;
                 cam.farClipPlane = p.cameraFar;
+                camCount++;
             }
 
             var terrain = FindTerrain();
@@ -71,6 +89,10 @@ namespace ProjectC.World
                 terrain.heightmapPixelError = p.terrainPixelError;
                 terrain.basemapDistance = p.terrainBasemapDistance;
             }
+
+            Debug.Log($"[ViewDistance] Пресет {v}: far={p.cameraFar:F0}, lodBias={p.lodBias}, shadow={p.shadowDistance:F0}, " +
+                      $"terrainPixelError={p.terrainPixelError}, basemap={p.terrainBasemapDistance}, detailCull={p.detailCullDistance}, fogScale={p.fogScale} " +
+                      $"| камер: {camCount}, террейн: {(terrain != null ? terrain.name : "NULL")}");
         }
 
         private static void OnSceneLoaded(UnityEngine.SceneManagement.Scene s, LoadSceneMode m)

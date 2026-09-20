@@ -12,6 +12,8 @@ namespace ProjectC.World.Clouds
     /// </summary>
     public class VeilRaymarchMeshController : MonoBehaviour
     {
+        public static VeilRaymarchMeshController Instance { get; private set; }
+
         [Header("Material")]
         public Material VeilMaterial;
 
@@ -72,6 +74,17 @@ namespace ProjectC.World.Clouds
         private static readonly int Property_RimPower = Shader.PropertyToID("_RimPower");
         private static readonly int Property_RimIntensity = Shader.PropertyToID("_RimIntensity");
 
+        void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+
         void Start()
         {
             Initialize();
@@ -84,10 +97,34 @@ namespace ProjectC.World.Clouds
             CreateVeilPlane();
             SetupMaterial();
 
-            DontDestroyOnLoad(gameObject);
             _initialized = true;
 
             if (DebugLog) Debug.Log($"[VeilRaymarchMeshController] Initialized at Y={GetVeilY()}");
+        }
+
+        /// <summary>
+        /// T-FO09P: сдвиг veil-плейна вместе с миром при controlled rebase.
+        /// Плейн каждый кадр дотягивается за игроком в XZ (самолечение),
+        /// но высота слоя — абсолютная (BaseVeilHeight + uniforms _VeilBottom/_VeilTop).
+        /// Без сдвига после F8 слой остаётся в старых координатах: игрок уезжает
+        /// на T.y, а завеса висит на досдвиговой высоте (разрыв до десятков км).
+        /// Сдвигаем источник правды (BaseVeilHeight += t.y), сразу пушим
+        /// uniforms и переставляем плейн по Y. XZ не трогаем — Update дотянет.
+        /// Возвращает 1 (один слой) или 0 если не инициализирован.
+        /// Вызывается из слайса на ОБОИХ путях (success и rollback −T).
+        /// </summary>
+        public int ApplyRebaseTranslation(Vector3 translation)
+        {
+            if (!_initialized) return 0;
+            BaseVeilHeight += translation.y;
+            UpdateMaterialUniforms();
+            if (_veilPlane != null)
+            {
+                Vector3 p = _veilPlane.transform.position;
+                p.y = GetVeilY();
+                _veilPlane.transform.position = p;
+            }
+            return 1;
         }
 
         private void CreateVeilPlane()
@@ -281,6 +318,7 @@ namespace ProjectC.World.Clouds
 
         void OnDestroy()
         {
+            if (Instance == this) Instance = null;
             if (_instanceMaterial != null)
             {
                 Destroy(_instanceMaterial);

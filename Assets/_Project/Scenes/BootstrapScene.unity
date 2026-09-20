@@ -12905,7 +12905,6 @@ GameObject:
   m_Component:
   - component: {fileID: 909089446}
   - component: {fileID: 909089445}
-  - component: {fileID: 909089447}
   - component: {fileID: 909089449}
   - component: {fileID: 909089450}
   m_Layer: 0
@@ -12922,7 +12921,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 909089444}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b7dcc26ac92403d40ae4444bcfd27498, type: 3}
   m_Name: 
@@ -12992,36 +12991,6 @@ Transform:
   - {fileID: 638669568}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &909089447
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 909089444}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0d05d9d7316bf1a46b21b8959467a9a9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Clouds.VeilRaymarchMeshController
-  VeilMaterial: {fileID: 2100000, guid: 94d1c69c14b2fb04aa8abad851a8b995, type: 2}
-  BaseVeilHeight: 1200
-  GlobalAltitudeOffset: 0
-  PlaneSize: 200000
-  RaymarchSteps: 24
-  MaxDistance: 30000
-  NoiseScale: 0.0002
-  NoiseSpeed: 0.01
-  NoiseOctaves: 10
-  DensityMultiplier: 3
-  WindX: 0.01
-  WindZ: 0.003
-  DayFactor: 0.11
-  RimPower: 0.22
-  RimIntensity: 0.14
-  VeilColor: {r: 0.8018868, g: 0.8018868, b: 0.8018868, a: 1}
-  LightningColor: {r: 0.5726043, g: 0.45803666, b: 0.6886792, a: 1}
-  DebugLog: 0
 --- !u!114 &909089449
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13055,12 +13024,90 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 909089444}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
   _sourceId: 336a190646b19bc46b22dd4e78f99800:909089444:0
+  _frameId: 0
+  _activateWhenReady: 0
+--- !u!1 &909090001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 909090002}
+  - component: {fileID: 909090003}
+  - component: {fileID: 909090004}
+  m_Layer: 0
+  m_Name: VeilController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &909090002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 909090001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 22250.25, y: 0.00055, z: 18075.383}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &909090003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 909090001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d05d9d7316bf1a46b21b8959467a9a9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Clouds.VeilRaymarchMeshController
+  VeilMaterial: {fileID: 2100000, guid: 94d1c69c14b2fb04aa8abad851a8b995, type: 2}
+  BaseVeilHeight: 1200
+  GlobalAltitudeOffset: 0
+  PlaneSize: 200000
+  RaymarchSteps: 24
+  MaxDistance: 30000
+  NoiseScale: 0.0002
+  NoiseSpeed: 0.01
+  NoiseOctaves: 10
+  DensityMultiplier: 3
+  WindX: 0.01
+  WindZ: 0.003
+  DayFactor: 0.11
+  RimPower: 0.22
+  RimIntensity: 0.14
+  VeilColor: {r: 0.8018868, g: 0.8018868, b: 0.8018868, a: 1}
+  LightningColor: {r: 0.5726043, g: 0.45803666, b: 0.6886792, a: 1}
+  DebugLog: 0
+--- !u!114 &909090004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 909090001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff57e456464b2e84cb42ef64156a5710, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.FloatingOrigin.Network.GlobalSceneSourceMarker
+  _sourceId: 336a190646b19bc46b22dd4e78f99800:909090001:0
   _frameId: 0
   _activateWhenReady: 0
 --- !u!1 &909305749

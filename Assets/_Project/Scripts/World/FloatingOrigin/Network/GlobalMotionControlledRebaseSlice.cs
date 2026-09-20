@@ -371,6 +371,10 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-FO09M: сдвинуть коридоры высот (иначе перманентная турбулентность).
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
                 "cells=" + ShiftAltitudeCorridors(plan.LocalTranslation));
+            // T-FO09P: сдвинуть veil-плейн вместе с миром (иначе завеса висит
+            // на досдвиговой высоте, разрыв с игроком на T.y).
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "VeilShifted",
+                "layers=" + ShiftVeilPlane(plan.LocalTranslation));
             // WORLD-MAP-TRACKS: сдвинуть журнал карты (треки + метки) вместе с миром.
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ChartTracksShifted",
                 "entries=" + ShiftChartJournal(plan.LocalTranslation));
@@ -494,6 +498,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                 // T-FO09M: вернуть коридоры высот назад (иначе турбулентность).
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "CorridorsShifted",
                     "cells=" + ShiftAltitudeCorridors(-request.Plan.LocalTranslation));
+                // T-FO09P: вернуть veil-плейн назад.
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "VeilShifted",
+                    "layers=" + ShiftVeilPlane(-request.Plan.LocalTranslation));
                 // WORLD-MAP-TRACKS: вернуть журнал карты назад.
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ChartTracksShifted",
                     "entries=" + ShiftChartJournal(-request.Plan.LocalTranslation));
@@ -683,7 +690,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                 }
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent(
                     "runtimeRebase", "ClientShiftApplied",
-                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups + ";storms=" + ShiftStormCells(translation) + ";corridors=" + ShiftAltitudeCorridors(translation) + ";journal=" + ShiftChartJournal(translation));
+                    "ok=True;frame=" + message.FrameGeneration + ";from=" + senderClientId + ";particles=" + cleared + ";pickups=" + clientPickups + ";storms=" + ShiftStormCells(translation) + ";corridors=" + ShiftAltitudeCorridors(translation) + ";veil=" + ShiftVeilPlane(translation) + ";journal=" + ShiftChartJournal(translation));
             }
             catch (Exception e)
             {
@@ -909,6 +916,21 @@ namespace ProjectC.World.FloatingOrigin.Network
             var system = ProjectC.Ship.AltitudeCorridorSystem.Instance;
             if (system == null) return 0;
             try { return system.ApplyRebaseTranslation(translation); }
+            catch (Exception) { return 0; }
+        }
+
+        /// <summary>
+        /// T-FO09P: сдвиг veil-плейна вместе с миром (абсолютная высота слоя).
+        /// Контроллер — отдельный корень BootstrapScene (VeilController),
+        /// вне участников, резолв напрямую по синглтону.
+        /// Без этого после F8 завеса висит на досдвиговой высоте.
+        /// Best-effort, результат в маркере VeilShifted.
+        /// </summary>
+        private int ShiftVeilPlane(Vector3 translation)
+        {
+            var veil = ProjectC.World.Clouds.VeilRaymarchMeshController.Instance;
+            if (veil == null) return 0;
+            try { return veil.ApplyRebaseTranslation(translation); }
             catch (Exception) { return 0; }
         }
 

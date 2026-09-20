@@ -20869,7 +20869,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.UI.MainMenu.MainMenuWindow
   mainUxml: {fileID: 0}
   mainUss: {fileID: 0}
-  versionText: 0.1.75
+  versionText: 0.1.77
   changelogUrl: https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/UI/MainMenu/changelogs.md
   changelogTimeoutSeconds: 8
 --- !u!114 &1567705307
@@ -28389,7 +28389,7 @@ MonoBehaviour:
   _directionVariationAngle: 15
   _speedVariationPercent: 0.2
   _timeOfDay: 8
-  _dayCycleRealHours: 1
+  _dayCycleRealHours: 0.001
   _enableTimeAutoAdvance: 1
   _timeBroadcastInterval: 5
   _calendarConfig: {fileID: 11400000, guid: 5b61317691c13e14a96a392dde81f289, type: 2}
@@ -28402,6 +28402,21 @@ MonoBehaviour:
   _calendarBroadcastInterval: 10
   _temperature: 20
   _tempBroadcastInterval: 10
+  _enableSeasonalTemperature: 1
+  _monthlyMeanTemperature:
+  - -45
+  - -40
+  - -15
+  - 0
+  - 14
+  - 18
+  - 45
+  - 40
+  - 35
+  - 15
+  - -1
+  - -20
+  _diurnalSwing: 6
 --- !u!114 &2074923232
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -50,6 +50,14 @@ namespace ProjectC.Core
         [SerializeField] private float _tempBroadcastInterval = 10f;
         private float _tempTimer = 0f;
 
+        [Header("Seasonal Temperature")]
+        [Tooltip("Если вкл — температура считается от календаря (месяц + время суток), поле _temperature выше это отображение результата, а не ввод. Выкл — старое поведение (ручное значение + RPC).")]
+        [SerializeField] private bool _enableSeasonalTemperature = true;
+        [Tooltip("Среднесуточная температура месяца. Индекс 0 = месяц 1 (Зимний Свет ≈ январь), индекс 6 = месяц 7 (Жаркий Полдень ≈ июль). Климат умеренно-континентальный (Европа/Азия), глобально для всех сцен.")]
+        [SerializeField] private float[] _monthlyMeanTemperature = { -6f, -5f, 0f, 8f, 14f, 18f, 20f, 18f, 12f, 5f, -1f, -4f };
+        [Tooltip("Суточный ход: разница между дневным максимумом (~15ч) и ночным минимумом (~3ч). 0 — без суточного хода.")]
+        [SerializeField] private float _diurnalSwing = 6f;
+
         // Events for clients to subscribe
         public event System.Action<float> OnTimeOfDayChanged;
         public event System.Action<float> OnTemperatureChanged;
@@ -110,6 +118,8 @@ namespace ProjectC.Core
             _nextSaveTime = Time.time + TIME_SAVE_INTERVAL;
 
             ApplyWindToLocal(_windDirection, _windSpeed);
+            if (_enableSeasonalTemperature && _calendarConfig != null)
+                _temperature = ComputeSeasonalTemperature();
             BroadcastTimeOfDayClientRpc(_timeOfDay);
             BroadcastCalendarClientRpc(_gameTime);
             BroadcastTemperatureClientRpc(_temperature);
@@ -153,6 +163,13 @@ namespace ProjectC.Core
                     _timeOfDay -= 24f;
                     AdvanceCalendar();
                 }
+            }
+
+            // Сезонная температура — от календаря и времени суток, пересчёт каждый кадр дёшев.
+            // Рассылка клиентам — по-прежнему по таймеру ниже (10с по умолчанию).
+            if (_enableSeasonalTemperature && _calendarConfig != null)
+            {
+                _temperature = ComputeSeasonalTemperature();
             }
 
             _timeTimer += Time.deltaTime;
@@ -271,6 +288,41 @@ namespace ProjectC.Core
         }
 
         // ────────────────────────────────
+        //  Seasonal temperature
+        // ────────────────────────────────
+
+        /// <summary>
+        /// Среднесуточная температура плавно интерполируется между соседними месяцами
+        /// по доле текущего дня в месяце (без скачков на границе), плюс суточный ход
+        /// (максимум ~15ч, минимум ~3ч). Глобально для всех сцен, без учёта территорий.
+        /// </summary>
+        private float ComputeSeasonalTemperature()
+        {
+            int dpm = _calendarConfig != null ? _calendarConfig.daysPerMonth : 30;
+            int mpy = _calendarConfig != null ? _calendarConfig.monthsPerYear : 12;
+
+            float mean = MonthlyMean(_gameTime.Month);
+            float next = MonthlyMean(_gameTime.Month % Mathf.Max(1, mpy) + 1);
+            float monthT = Mathf.Clamp01((_gameTime.Day - 1 + _timeOfDay / 24f) / Mathf.Max(1, dpm));
+            float seasonal = Mathf.Lerp(mean, next, monthT);
+
+            float diurnal = 0f;
+            if (_diurnalSwing > 0f)
+                diurnal = -Mathf.Cos((_timeOfDay - 15f) / 24f * Mathf.PI * 2f) * (_diurnalSwing * 0.5f);
+
+            return seasonal + diurnal;
+        }
+
+        private float MonthlyMean(int month1Based)
+        {
+            if (_monthlyMeanTemperature == null || _monthlyMeanTemperature.Length == 0)
+                return _temperature;
+            int n = _monthlyMeanTemperature.Length;
+            int idx = ((month1Based - 1) % n + n) % n;
+            return _monthlyMeanTemperature[idx];
+        }
+
+        // ────────────────────────────────
         //  Calendar
         // ────────────────────────────────
 
@@ -343,6 +395,12 @@ namespace ProjectC.Core
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void SetTemperatureServerRpc(float temp)
         {
+            // Ручной оверрайд сильнее сезонки: отключаем её, чтобы значение не затиралось.
+            if (_enableSeasonalTemperature)
+            {
+                _enableSeasonalTemperature = false;
+                Debug.Log("[ServerWeatherController] Seasonal temperature disabled by manual override");
+            }
             _temperature = temp;
             BroadcastTemperatureClientRpc(_temperature);
         }

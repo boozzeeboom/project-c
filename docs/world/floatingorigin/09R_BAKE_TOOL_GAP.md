@@ -1,11 +1,5 @@
 # T-FO09R — Нет тулзы запекания каталога сцены (Bake): что отсутствует и зачем понадобится
 
-> ✅ Реализовано 2026-09-21 (T-FO09S): `Assets/_Project/Editor/FloatingOrigin/
-> BakePilotSceneCatalog.cs`, меню `ProjectC/World/Floating Origin/
-> Bake Pilot Catalog (Preview + Apply)`. Делает пп. 1–4 с превью diff;
-> reviewNote вписывает человек (аттестация), без него Apply заблокирован.
-> Регламент ниже остаётся в силе только для простого контента без NO (см. 09S).
-
 Date: 2026-09-14. Статус: зафиксировано, НЕ реализовано. Вопрос пользователя:
 «добавил корабль на сцену — вешать ли GlobalSceneSourceMarker, какой SourceId,
 или есть тулза?»

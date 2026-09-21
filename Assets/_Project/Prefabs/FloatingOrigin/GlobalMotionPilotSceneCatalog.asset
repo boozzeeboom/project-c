@@ -331,7 +331,7 @@ MonoBehaviour:
         layoutHash: 2577d86a4de1073611ce7031cd7ddee453eef6f90621ccd1817f5167ed964e7f
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       assetPath: Assets/_Project/Scenes/World/WorldScene_0_0.unity
-      dependencyHash: 6c398b072e1a6faa501a9565f8c1479b
+      dependencyHash: c74415145f80a4b4eb773a7a6a182ac9
       inspectedComplete: 1
       saved: 1
       observations:
@@ -379,7 +379,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 4105fb3bdf85ea92e7885168d37684038b3d36fc4285e2ed599d4903d3aaae43
+        layoutHash: b46c1ff73f74be7418735590dd4727be797ca0396cfbe8e888258a4052557fc2
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1453572262:0
         parentSourceId: 
         isRoot: 1
@@ -780,6 +780,11 @@ MonoBehaviour:
         isRoot: 1
         isNetworkObject: 1
         layoutHash: 669cabe33f33d6e712c6d8d3151a5e780403dd289cb43ee87d3d03f8a13690b4
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:834841855:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: e4136ce69d7d3b7cfe953a4d9be031cddb883a967dd6100003fd7dae3c7ab42c
     entries:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:100000:1757335980
@@ -803,9 +808,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:1010490802:0
       reviewNote: 'T-FO06L batch correction: [ShipCargoServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -840,9 +845,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:1052858226:0
       reviewNote: 'T-FO06L batch correction: [CombatServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -931,9 +936,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:121334975:0
       reviewNote: 'T-FO06L batch correction: [SkillsServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -986,9 +991,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:1286596461:0
       reviewNote: 'T-FO06L batch correction: [DockingServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -1023,9 +1028,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:1341219859:0
       reviewNote: 'T-FO06L batch correction: [ExchangeServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -1366,9 +1371,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:2047115830:0
       reviewNote: 'T-FO06L batch correction: [NpcShipServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -1402,9 +1407,10 @@ MonoBehaviour:
       parentSourceId: 336a190646b19bc46b22dd4e78f99800:639769239:0
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:2074923228:0
-      reviewNote: 'T-FO06L.2.x correction: ServerWeatherController is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; its server lifecycle is not DDOL ownership.
-        The global pilot does not restore, reparent or treat this source as scene gameplay.'
+      reviewNote: 'T-FO06L.2.x correction: ServerWeatherController is an authored
+        Bootstrap NetworkObject kept in BootstrapScene; its server lifecycle is not
+        DDOL ownership. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -1420,8 +1426,8 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:2129841567:0
-      reviewNote: T-FO06L.2.x confirmed authored Bootstrap network service; the
-        source remains in BootstrapScene and is not treated as persistent DDOL.
+      reviewNote: T-FO06L.2.x confirmed authored Bootstrap network service; the source
+        remains in BootstrapScene and is not treated as persistent DDOL.
       treatment: 5
       ownership: 2
       spatial: 0
@@ -1474,9 +1480,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:299327984:0
       reviewNote: 'T-FO06L batch correction: [StatsServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -1529,9 +1535,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:406607961:0
       reviewNote: 'T-FO06L batch correction: [GatheringServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -1584,9 +1590,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:467779776:0
       reviewNote: 'T-FO06L batch correction: [CraftingServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -1729,9 +1735,9 @@ MonoBehaviour:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:690069688:0
       reviewNote: 'T-FO06L batch correction: [EquipmentServer] is an authored Bootstrap
-        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path is
-        established. The global pilot does not restore, reparent or treat this source
-        as scene gameplay.'
+        NetworkObject kept in BootstrapScene; no source-owned DontDestroyOnLoad path
+        is established. The global pilot does not restore, reparent or treat this
+        source as scene gameplay.'
       treatment: 5
       ownership: 2
       spatial: 0
@@ -3492,3 +3498,22 @@ MonoBehaviour:
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:834841855:0
+      reviewNote: 'T-PAROM-01: parom cable-ferry route root (Unmanaged); the global
+        executor leaves this source exactly as authored and does not place, activate,
+        spawn or retire it; NGO scene spawn via ScenePlacedObjectSpawner; motion
+        is server-authoritative over NetworkVariables.'
+      treatment: 5
+      ownership: 4
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0

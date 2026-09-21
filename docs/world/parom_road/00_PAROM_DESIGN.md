@@ -103,6 +103,44 @@ Dwelling(станция i, таймер) → Moving(dir) → прибытие (s
    игрока, иначе carry не подхватит.
 5. Play: кабинка едет. F8/F9 — контроль сдвига мира.
 
+## 8. Регистрация в closed-world каталоге пилота (T-FO06L, обязательно!)
+
+Пилот (`GlobalMotionPilotRuntime` → `GlobalSceneNativeExecutor`) работает в
+fail-closed режиме: **любой scene-placed `NetworkObject` без записи в каталоге
+роняет старт хоста** (`uncontrolled_network_source_before_native_sweep`).
+Поэтому `ParomRoute_01` зарегистрирован как все корабли/станции:
+
+- `GlobalSceneSourceMarker` на корне ветки
+  (`sourceId = {guid сцены}:{targetObjectId}:0`, `frameId = 0`,
+  `activateWhenReady = false`);
+- observation + entry в `GlobalMotionPilotSceneCatalog.asset`:
+  `treatment = Unmanaged (5)`, `ownership = ShipOrRigidbodyRoot (4)`
+  (на кабинке висит кинематический `Rigidbody` — без него ownership не сойдётся),
+  `spatial = false`, `poseKind = None`, нулевая поза,
+  `parentSourceId` = sourceId `WorldRoot_0_0`;
+- `layoutHash` пересчитан тем же алгоритмом, что `AuditGlobalSceneCatalog`
+  (включая обновлённый хэш `WorldRoot_0_0` — ветка добавила потомков),
+  `dependencyHash` сцены обновлён, `SceneLayoutDigest` в
+  `GlobalMotionPilotProfile.asset` пересчитан (`TryCompile` + `TryMatchDigest`).
+
+Что можно свободно, а что требует перерегистрации:
+
+- ✅ **Двигать якоря** — они лежат сиблингами под `WorldRoot_0_0` (не дети
+  маршрута, без `NetworkObject` и маркеров): каталог их не видит, хэши не
+  меняются. Тросы перестраиваются сами.
+- ✅ Менять скорость/ожидание/провисание/материал тросов — сериализованные поля
+  в хэш не входят.
+- ⚠️ **Менять структуру ветки** (другая кабинка-FBX, добавить/убрать детей,
+  переименовать/сдвинуть сам корень): меняется `layoutHash` маршрута
+  (Host при этом НЕ падает — хэш сверяется только будущими аудитами).
+  После таких правок — пересчитать хэши и digest (повторить процедуру выше).
+- ⚠️ Новая ветка = новая запись в каталоге (маркер + observation + entry +
+  digest), иначе Host упадёт на том же гейте.
+- ℹ️ Несвязанный дрейф: в `BootstrapScene` есть 3 незакаталогизированных
+  plain-корня (`DistantFocus`, `ChartWindow`, `VeilController` — без NO
+  и маркеров): Host не блокируют, но аудит `AuditGlobalSceneCatalog`
+  помечает каталог stale. Отдельная задача, не трогать здесь.
+
 ## 7. Что НЕ входит в v1 (следующие итерации)
 
 - Посадка по кнопке E / двери / расписание-табло (игрок запрыгивает сам).

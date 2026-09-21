@@ -1,10 +1,12 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 14 сентября 2026 г. | **Текущая версия:** `v0.1.60`
+**Последнее обновление:** 21 сентября 2026 г. | **Текущая версия:** `v0.1.85`
 
-> **Что нового (08–14 сентября 2026):** **v0.1.60.** Floating Origin — большая интеграция (263 коммита, ~245 FO): controlled rebase slice — палубы кораблей, NPC, погода, камера, респаун и сохранения переживают сдвиг мировых координат; авто-сдвиг при отдалении; 19 verify-прогонов, финал f8_36 healthy. Свет — малая интеграция (T-LIGHT01–09): ночные фонари (realtime), фикс ночной экспозиции, Lighting Settings мира. Подробности: `docs/dev/RETRO_FO_LIGHT_2026-09-14.md`.
+> **Что нового (08–14 сентября 2026):** **v0.1.60.** Floating Origin — крупный интеграционный slice и набор контрактов для палуб кораблей, NPC, погоды, камеры, респауна и сохранений. Исторические verify-прогоны были положительными, но текущий аудит v0.1.85 отдельно фиксирует, что concrete adapters, runtime installation, live manifest/participant admission, controlled rebase/rollback и `runtimeRebaseReadiness` ещё не доказаны. Свет — малая интеграция (T-LIGHT01–09): ночные фонари (realtime), фикс ночной экспозиции, Lighting Settings мира. Подробности: `docs/dev/RETRO_FO_LIGHT_2026-09-14.md` и `docs/world/floatingorigin/06AP_CONSOLIDATED_INTEGRATION_STATUS.md`.
 >
-> **Что нового (5–20 августа 2026):** **v0.1.20 → v0.1.21.** Contract core refactor: разделены board offers, active contracts и terminal history; добавлен полный Receipt flow `Accept → Claim Cargo → Transport → Submit`, серверная валидация доставки и rollback при ошибках persistence. **v0.1.21** — локализационный фикс. Подробности: `docs/changelogs.md` и `docs/dev/RETROSPECTIVE_2026-08-17.md`.
+> **Что нового (14–21 сентября 2026):** **v0.1.60 → v0.1.85.** Ретроспектива группирует изменения как 41 коммит, но точечная проверка Git для диапазона `2e998329..28772325` показывает 105 коммитов и 174 изменённых файла (`+97324 / −39330`). Добавлены паромная ветка, новый content/bake pipeline, ViewDistance-пресеты, VeilController → CLOUD_system, единый террейн и генеративные руины, server-authoritative ship fixes FIX01–12, world map и compass rose, Admin F12 и PerfHUD-подготовка, DayNight/Calendar-обновления, NPC-ship route fixes, named crew и DistantFocus. Полный отчёт: `docs/dev/RETRO_v0.1.60_to_v0.1.85_2026-09-21.md`.
+>
+> **Предыдущее обновление (5–20 августа 2026):** **v0.1.20 → v0.1.21.** Contract core refactor: разделены board offers, active contracts и terminal history; добавлен полный Receipt flow `Accept → Claim Cargo → Transport → Submit`, серверная валидация доставки и rollback при ошибках persistence. **v0.1.21** — локализационный фикс. Подробности: `docs/changelogs.md` и `docs/dev/RETROSPECTIVE_2026-08-17.md`.
 >
 > **☁️ Cloud Ocean 3.0 (T-CLD01, T-CLOUD02..42):** ~75 коммитов. Объёмная система облаков — 🟢 продакшн-готово. Volumetric raymarch (4 слоя 800–7000м), цветовые рампы день/закат, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal. Интерактивность: LocalDensityBuffer (96³), корабельный след (displacement + кильватерный конус), VFX contrail, штормовые ячейки (procedural cellular-форма «цветная капуста», иммунны к displacement, runtime save/load, anti-banding). Источник правды: `docs/world/CLOUD_system/3.0/STATUS.md`.
 >
@@ -806,7 +808,7 @@
 
 ---
 
-## Этап 2.1: Масштабный мир (24 сцены) ✅ ЗАВЕРШЁН (1 мая 2026)
+## Этап 2.1: Масштабный мир (24 сцены) ✅ базовая архитектура / ⚠️ runtime completion pending
 **Цель:** Реализовать распределённый мир на основе 24 сцен для поддержки MMO-масштаба.
 
 ### Задачи:
@@ -827,13 +829,13 @@
    - ✅ Выгрузка при удалении >10,000 units
    - ✅ Максимум 4 загруженные сцены одновременно
 
-3. **Интеграция с сетевой подсистемой:** ✅
+3. **Интеграция с сетевой подсистемой:** ⚠️ базовые связи готовы; controlled rebase runtime pending
    - ✅ Синхронизация позиции через **FloatingOriginMP**
    - ✅ **PlayerSpawner** отслеживает мировую позицию
    - ✅ **NetworkPlayer** отслеживает локальную позицию
    - ✅ RPC для перехода между сценами (`LoadSceneTransitionClientRpc`)
    - ✅ Корректная работы с кораблём и персонажем
-   - ✅ **Controlled rebase slice (v0.1.60, T-FO06–09 + PERSIST01–03):** сдвиг корней сцен целиком (F8/авто/F9) — участники rebase: палубы кораблей, runtime-NPC (agent warp), погода/ветер, камера, респаун, сохранения (rebase-aware restore). Неактивные корни исключены из scope. Детали: `docs/dev/RETRO_FO_LIGHT_2026-09-14.md`
+   - ⚠️ **Floating Origin / controlled rebase (v0.1.60 → v0.1.85):** реализованы slice, ordered transaction boundary и rollback contracts; частичный runtime capture подтверждает baseline, NGO, physics, camera и deck/passenger observations. Concrete adapters, runtime installation в `BootstrapScene`, live manifest/participant admission, фактические `Apply/Rebuild/Validate/Publish`, controlled rebase и native rollback пока не доказаны; `runtimeRebaseReadiness = NOT_READY`. Детали: `docs/world/floatingorigin/06AP_CONSOLIDATED_INTEGRATION_STATUS.md`.
 
 4. **Фиксы и стабилизация:** ✅
    - ✅ Singleton для ClientSceneLoader (предотвращение дубликатов)
@@ -1247,6 +1249,18 @@
 
 ---
 
+#### 3.4.5.8 Обновление v0.1.60 → v0.1.85 — 14–21 сентября 2026
+
+- ✅ **Корабль:** server-authoritative fixes T-SHIP-FIX01…12: ввод через RPC, pilot membership, серверные цены и Recall, корректировка meziy thrust, telemetry fuel, event-driven cargo detail, module notifications, runtime refresh, cargo console и effective cargo limits.
+- ✅ **Мир:** ParomRoute_01, ViewDistanceConfig с `fogScale`, VeilController → CLOUD_system, единый terrain WorldScene_0_0 и генеративные руины низин (60 hamlets / 496 instances).
+- ✅ **Навигация и инструменты:** world map на M, ручные метки и треки с persistence/FO hooks, compass rose/HDG, AdminRuntimeWindow F12, AdminFacade/MoveCheats/LogBus и ESC Effects. `ProjectCPerfHUD` присутствует в dev/editor-контуре, но его фактическая активность требует отдельной runtime-проверки.
+- ✅ **NPC-корабли и экипаж:** berthing watchdog, holding/divert, departure chimney, avoidance cooldown/escalation, multi-leg routes, berthing corridor; crew manifests, anchors, spawner и captain configuration.
+- ✅ **Графика:** DistantFocus DF-001 rev.1…10, включая autofocus, auto-diaphragm, far-field и Volume-Gaussian path; отдельные LOD/ViewDistance и terrain documentation.
+- ⚠️ **Приёмка:** код и документация обновлены, но ручные Play Mode-проверки для T-SHIP-FIX и полного NPC roundtrip остаются отдельным шагом; для Floating Origin runtime readiness остаётся `NOT_READY`.
+- **Источники:** `docs/dev/RETRO_v0.1.60_to_v0.1.85_2026-09-21.md`, `docs/NPC_others_peacfull/npc_ship/ITERATIONS.md`, `docs/world/floatingorigin/06AP_CONSOLIDATED_INTEGRATION_STATUS.md`.
+
+---
+
 **Известные проблемы (P0-P1):**
 - [`docs/TRADE_SYSTEM_RAG.md`](TRADE_SYSTEM_RAG.md) — ⭐⭐ RAG документация (архитектура, потоки, формулы)
 - [`docs/TRADE_DEBUG_GUIDE.md`](TRADE_DEBUG_GUIDE.md) — отладка (симптомы → решения)
@@ -1312,7 +1326,7 @@
 **Цель:** Наполнить мир контентом, улучшить визуал и **интегрировать торговлю в Core Loop**.
 
 ### Задачи:
-1. **Миссии и квесты:** ✅ ЗАВЕРШЕНО (сессии 2026-06-07..09, см. `docs/NPC_quests/08_ROADMAP.md`)
+1. **Миссии и квесты:** ✅ подсистема реализована; ⚠️ авторский контент и runtime-приёмка продолжаются (см. `docs/NPC_quests/08_ROADMAP.md`)
    - ✅ **NPC + Quests v2 подсистема** (50+ тикетов, 19 milestones, ~8400 строк кода)
    - ✅ Серверная логика выполнения: `QuestServer` (NetworkBehaviour) + `QuestWorld` (POCO) + 9 RPC
    - ✅ Диалоги с NPC (ветвящиеся сюжеты): `DialogTree` SO + `DialogueNode`/`Edge`/`Condition`/`Action` + UI Toolkit `DialogWindow` (typewriter, F-skip, mouse-click skip)
@@ -1330,9 +1344,9 @@
      - ✅ T-Q19.3 `npcs.csv` — 9 колонок (services, attitudeLinks, attitudeMin/Max, greeting, voice, radius, showGreeting)
    - ✅ **DialogCsvImporter** — 15 колонок treeId/fromNodeId/fromText/fromSpeaker/edgeLabel/toNodeId/conditions/actions. Создаёт DialogTree + auto-link к NPC.
    - ✅ **NpcCsvImporter** — 9 колонок, batch-update существующих NPC.
-   - ✅ **Текущие данные после аудита:** `Assets/_Project/Quests/Data` содержит 3 NPC-ассета, 2 Quest-ассета и 4 Dialog-ассета; прежняя статистика 106 NPC / 802 квеста / 6 CSV была результатом bulk-импорта и больше не описывает текущий набор.
+   - ✅ **Текущие данные после Q001:** 6 `NpcDefinition`, 4 `QuestDefinition`, 6 `DialogTree` и 12 Q001 `ItemData` аддитивно связаны и зарегистрированы; прежняя статистика 106 NPC / 802 квеста / 6 CSV была результатом bulk-импорта и больше не описывает текущий набор.
    - ✅ Writer-документация: `docs/NPC_quests/M19_CSV_PIPELINE_v2.md` (26 KB, 7 разделов).
-   - ✅ **Контент квестов (пост-аудит):** минимальный набор onboarding + `collect_copper_ore` и базовые диалоги; расширение авторского контента через CSV/Editor — открыто.
+   - ⚠️ **Runtime-приёмка Q001:** статические проверки и локализация диалогов завершены, но ручной Play Mode RU → EN → RU, шесть NPC, успешные/провальные ветки и одноразовые награды ещё не закрыты. Источники: `docs/NPC_quests/Quests/001/001_ASH_UNDER_GLASS_DRAFT.md`, `docs/NPC_quests/Quests/001/001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_03_ADDITIVE_TRANSLATIONS.md`.
    - ⏳ **Ежедневные испытания** — не начато (post-MVP).
 
 2. **Визуальные улучшения:**
@@ -1522,7 +1536,7 @@
 
 Полный перечень визуального контента, необходимого для минимальной версии игры. Каждая «штука» требует набора компонентов: 3D-модель, материал(ы), текстура(ы), VFX, анимация.
 
-**Прогресс:** ~11% (36/332)
+**Прогресс:** прежняя оценка ~11% (36/332); после v0.1.85 полный пересчёт Visual Tasks ещё не выполнен.
 
 ---
 
@@ -1621,12 +1635,14 @@
 
 ---
 
-### 🌍 Окружение (6 задач)
+### 🌍 Окружение (8 задач)
 
 - [x] Облака (3 слоя: Upper/Middle/Lower) — cloud shader (техническое имя CloudGhibli), генерация, движение
 - [ ] Skybox (материал + шейдер, закатный градиент)
 - [ ] Террасы и фермы (модели + материалы)
 - [x] Фоновые пики (ProceduralNoiseGenerator, IslandMaterial)
+- [x] Единый terrain WorldScene_0_0 — T-TERR-01, база ~600 м, пики по FBX до ~5000 м
+- [x] Низинные руины — T-TERR-02, 60 hamlets / 496 GPU-instanced объектов
 - [ ] Дальние платформы (модели + материалы)
 - [ ] Завеса (VeilRaymarch.shader + VFX)
 
@@ -1775,15 +1791,18 @@
 
 ---
 
-### 🎛 Пост-процессинг (URP Volume, 7 задач)
+### 🎛 Пост-процессинг и графические эффекты (10 задач)
 
-- [ ] Bloom (Threshold: 0.8, Intensity: 0.5)
+- [x] Bloom (Threshold: 0.8, Intensity: 0.5)
 - [ ] Tonemapping (Mode: ACE)
-- [ ] Vignette (Intensity: 0.2)
+- [x] Vignette (Intensity: 0.2)
 - [ ] Film Grain (Intensity: 0.05)
 - [ ] Chromatic Aberration (Intensity: 0.03)
-- [ ] Color Grading (Temperature, Tint)
-- [ ] Fog (Exponential, цвет Завесы)
+- [x] Color Grading (Temperature, Tint)
+- [x] Fog (Exponential, цвет Завесы)
+- [x] DistantFocus DF-001 — Bokeh/autofocus, auto-diaphragm, far-field и Volume-Gaussian path
+- [x] Edge Detection — T-VFX01, пост-процесс с distance falloff
+- [x] ESC Effects — фокус, edge и temperature toggles (T-ESC05)
 
 ---
 

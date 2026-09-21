@@ -286,7 +286,24 @@ namespace ProjectC.World.Parom
             _serverS = Mathf.Clamp(_serverS, 0f, Mathf.Max(_totalLength, 0.001f));
         }
 
-        /// <summary>Мировая точка пути на дистанции s метров от старта.</summary>
+        /// <summary>
+        /// T-PAROM-02: точка провисшего троса между станциями (та же парабола,
+        /// что рисует BuildCable, но без бокового разноса — кабинка идёт по центру).
+        /// </summary>
+        private Vector3 SaggedPoint(Vector3 aW, Vector3 bW, float t)
+        {
+            Vector3 p = Vector3.Lerp(aW, bW, t);
+            float segLen = Vector3.Distance(aW, bW);
+            p.y -= Mathf.Sin(Mathf.PI * t) * segLen * _sagRatio;
+            return p;
+        }
+
+        /// <summary>
+        /// Мировая точка пути на дистанции s метров от старта — НА провисшей
+        /// кривой (кабинка повторяет профиль тросов, а не хорду).
+        /// Направление — касательная к кривой (конечная разность), чтобы кабина
+        /// плавно клевала носом в ложбинах и на уклонах между станциями.
+        /// </summary>
         private Vector3 EvaluatePath(float s, out Vector3 segmentDir)
         {
             s = Mathf.Clamp(s, 0f, Mathf.Max(_totalLength, 0.001f));
@@ -296,9 +313,12 @@ namespace ProjectC.World.Parom
             float t = Mathf.Clamp01((s - _cumLen[seg]) / segLen);
             Vector3 a = _stations[seg].position;
             Vector3 b = _stations[seg + 1].position;
-            segmentDir = (b - a).normalized;
+            const float eps = 0.02f;
+            Vector3 p0 = SaggedPoint(a, b, Mathf.Clamp01(t - eps));
+            Vector3 p1 = SaggedPoint(a, b, Mathf.Clamp01(t + eps));
+            segmentDir = (p1 - p0).normalized;
             if (segmentDir.sqrMagnitude < 0.0001f) segmentDir = _lastMoveDir;
-            return Vector3.Lerp(a, b, t);
+            return SaggedPoint(a, b, t);
         }
 
         // --- Кабинка ---
@@ -512,8 +532,8 @@ namespace ProjectC.World.Parom
                 for (int j = 0; j < _pointsPerSegment; j++)
                 {
                     float t = j / (float)_pointsPerSegment;
-                    Vector3 p = Vector3.Lerp(aW, bW, t);
-                    p.y -= Mathf.Sin(Mathf.PI * t) * segLen * _sagRatio; // парабола провиса
+                    // T-PAROM-02: та же провисшая кривая, по которой едет кабинка.
+                    Vector3 p = SaggedPoint(aW, bW, t);
                     p += perp * (side * _cableLateralOffset);
                     lr.SetPosition(idx++, transform.InverseTransformPoint(p));
                 }
@@ -556,9 +576,21 @@ namespace ProjectC.World.Parom
                     if (_intermediateAnchors[i] != null) pts.Add(_intermediateAnchors[i]);
             if (_endAnchor != null && _endAnchor != _startAnchor) pts.Add(_endAnchor);
             if (pts.Count < 2) return;
+            // T-PAROM-02: гизмо повторяет провисшую кривую (как тросы и кабинка).
             Gizmos.color = Color.yellow;
+            const int gizmoSteps = 12;
             for (int i = 1; i < pts.Count; i++)
-                Gizmos.DrawLine(pts[i - 1].position, pts[i].position);
+            {
+                Vector3 a = pts[i - 1].position;
+                Vector3 b = pts[i].position;
+                Vector3 prev = SaggedPoint(a, b, 0f);
+                for (int j = 1; j <= gizmoSteps; j++)
+                {
+                    Vector3 cur = SaggedPoint(a, b, j / (float)gizmoSteps);
+                    Gizmos.DrawLine(prev, cur);
+                    prev = cur;
+                }
+            }
             Gizmos.color = Color.green;
             Gizmos.DrawSphere(pts[0].position, 1f);
             Gizmos.color = Color.red;

@@ -119,12 +119,14 @@ namespace ProjectC.EditorTools.FloatingOrigin
                 if (!map.TryGetValue(o.sourceId, out var v) || o.parentSourceId != v.parentSourceId || o.layoutHash != v.layoutHash || o.isRoot != v.isRoot || o.isNetworkObject != v.isNetworkObject) return false;
             return true;
         }
-        private static string SourceId(GameObject value)
+        // T-FO09S: публичные для Bake-окна (единый источник алгоритмов; не дублировать).
+        public static string SourceId(GameObject value)
         {
             var id = GlobalObjectId.GetGlobalObjectIdSlow(value);
             return id.assetGUID.ToString() + ":" + id.targetObjectId.ToString(CultureInfo.InvariantCulture) + ":" + id.targetPrefabId.ToString(CultureInfo.InvariantCulture);
         }
-        private static string LayoutHash(GameObject root, out bool missing)
+        // T-FO09S: публичный для Bake-окна (единый источник алгоритмов; не дублировать).
+        public static string LayoutHash(GameObject root, out bool missing)
         {
             missing = false;
             using var stream = new MemoryStream(); using var writer = new BinaryWriter(stream, new UTF8Encoding(false, true), true);

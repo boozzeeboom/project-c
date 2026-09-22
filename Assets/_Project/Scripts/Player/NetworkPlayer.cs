@@ -60,9 +60,11 @@ namespace ProjectC.Player
         [Tooltip("Минимальная дельта позиции платформы за кадр (м), которая считается движением. Дельты меньше — floating-point шум, игнорируются.")]
         [SerializeField] private float _platformMinDelta = 0.0005f;
 
-        [Header("Защита от рывков (T-PAROM-14)")]
-        [Tooltip("Макс. вертикаль carry-дельты за кадр (м). Скачки больше (тики сети, хитчи, кэш-догонялки) переносятся остатком на следующие кадры вместо попа. Покрывает вертикали до ~3 м/с (паром 1.4, корабли altHold ±2). 0 = выкл (старое поведение).")]
-        [Min(0f)] [SerializeField] private float _platformMaxStepY = 0.1f;
+        [Header("Защита от рывков (T-PAROM-14/16)")]
+        [Tooltip("Макс. carry-дельта ВВЕРХ за кадр (м). Рывок вверх швыряет в воздух (контакт рвётся, Fall) — режем жёстко, остаток догоняет плавно. 0 = выкл.")]
+        [Min(0f)] [SerializeField] private float _platformMaxStepUp = 0.08f;
+        [Tooltip("Макс. carry-дельта ВНИЗ за кадр (м). Рывок вниз только прижимает (контакт держится) — режем мягко, иначе лаг остатка даёт зазор и флики isGrounded на спусках (хуже, чем поп). Покрывает спуски до ~7 м/с. 0 = выкл.")]
+        [Min(0f)] [SerializeField] private float _platformMaxStepDown = 0.25f;
 
 
         [Header("Ветер (WindManager)")]
@@ -1541,16 +1543,24 @@ namespace ProjectC.Player
             // НЕ двигаем контроллер здесь — дельта уходит в ЕДИНЫЙ Move в ProcessMovement
             // (два отдельных Move за кадр заставляли isGrounded мигать → «подпрыгивание").
             //
-            // T-PAROM-14: кэп вертикали + остаток. Замеры паром_2…8: одиночные
+            // T-PAROM-14/16: кэп вертикали + остаток. Замеры паром_2…10: одиночные
             // кадровые дельты до 190–330 мм при гладком потолке ~45–80 мм
             // (тики, хитчи, догонялки stale-кэша) — источник рывков, причина
             // статикой не изолирована. Кэп режет поп, остаток догоняет плавно
-            // за следующие кадры (лаг ≤ размера спайка, 2–3 кадра).
-            // Только Y: горизонталь не трогаем (быстрые корабли!). 0 = выкл.
-            if (_platformMaxStepY > 0f && Mathf.Abs(deltaPos.y) > _platformMaxStepY)
+            // за следующие кадры.
+            // АСИММЕТРИЯ (16): вверх режем жёстко (рывок вверх = в воздух,
+            // контакт рвётся), вниз мягко (рывок вниз только прижимает, а лаг
+            // остатка на спуске даёт зазор и флики — хуже попа). Только Y:
+            // горизонталь не трогаем (быстрые корабли!). 0 = выкл.
+            if (deltaPos.y > 0f && _platformMaxStepUp > 0f && deltaPos.y > _platformMaxStepUp)
             {
-                _platformRemainderY = deltaPos.y - Mathf.Sign(deltaPos.y) * _platformMaxStepY;
-                deltaPos.y = Mathf.Sign(deltaPos.y) * _platformMaxStepY;
+                _platformRemainderY += deltaPos.y - _platformMaxStepUp;
+                deltaPos.y = _platformMaxStepUp;
+            }
+            else if (deltaPos.y < 0f && _platformMaxStepDown > 0f && -deltaPos.y > _platformMaxStepDown)
+            {
+                _platformRemainderY += deltaPos.y + _platformMaxStepDown;
+                deltaPos.y = -_platformMaxStepDown;
             }
             _platformDelta = deltaPos;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "PlatformCarry", $"platform={platform.name} delta={deltaPos} yaw={_carryYaw}");

@@ -50,6 +50,13 @@ namespace ProjectC.World.Parom
 
         private void Update()
         {
+            // T-PAROM-16: будим тело каждый кадр. sleepThreshold=0 сон НЕ
+            // предотвращает (лог паром_10: sleep=True в движении дважды) —
+            // телепорты будят через раз. Спящее тело: IsSleeping-фильтр рубит
+            // carry + тело замирает и отстаёт от трансформа. WakeUp дешёвый,
+            // поведение не меняет (только фаза сна).
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null && rb.isKinematic && rb.IsSleeping()) rb.WakeUp();
             if (_propellers.Count == 0 || _propellerRpm <= 0f) return;
             Vector3 axis = _propellerAxis switch
             {

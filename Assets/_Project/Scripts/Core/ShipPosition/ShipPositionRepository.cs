@@ -143,7 +143,7 @@ namespace ProjectC.Core.ShipPosition
                 {
                     var json = JsonUtility.ToJson(wrapper, prettyPrint: false);
                     File.WriteAllText(path, json);
-                    Debug.Log($"[JsonShipPositionRepository] Saved {wrapper.ships?.Count ?? 0} ships + {wrapper.players?.Count ?? 0} players to {path}");
+                    Debug.Log($"[JsonShipPositionRepository] Saved {wrapper.ships?.Count ?? 0} ships + {wrapper.players?.Count ?? 0} players + {wrapper.paroms?.Count ?? 0} paroms to {path}");
                 }
                 catch (Exception ex)
                 {

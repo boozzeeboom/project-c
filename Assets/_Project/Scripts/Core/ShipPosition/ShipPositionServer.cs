@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using ProjectC.PeacefulShip.Stations;
 using ProjectC.Player;
 using ProjectC.World.FloatingOrigin.Network;
+using ProjectC.World.Parom; // T-PAROM-20: персистенция веток
 using Unity.Netcode;
 using UnityEngine;
 
@@ -176,6 +177,9 @@ namespace ProjectC.Core.ShipPosition
             if (PlayerPositionServer.Instance != null)
                 PlayerPositionServer.Instance.LoadSavedPlayers(wrapper.players);
 
+            // T-PAROM-20: restore веток раньше игроков (те читают кабинку живьём).
+            RestoreParoms(wrapper.paroms);
+
             var savedList = wrapper.ships;
             if (savedList == null || savedList.Count == 0)
             {
@@ -327,6 +331,42 @@ namespace ProjectC.Core.ShipPosition
             return false;
         }
 
+        /// <summary>
+        /// T-PAROM-20: restore паромных веток. Матчинг по routeId + sceneName
+        /// (ветка живёт в конкретной сцене). Нет записи — сцена как есть.
+        /// s — скаляр: FO-коррекция не нужна (см. ParomRouteSaveData).
+        /// Только сервер; клиенты следуют через NetworkVariable.
+        /// </summary>
+        private void RestoreParoms(List<ParomRouteSaveData> savedParoms)
+        {
+            if (savedParoms == null || savedParoms.Count == 0)
+            {
+                if (debugMode) Debug.Log("[ShipPositionServer] No saved paroms. Skip parom restore.");
+                return;
+            }
+            var routes = FindObjectsByType<ParomRoute>();
+            int restored = 0;
+            foreach (var route in routes)
+            {
+                if (route == null || !route.IsSpawned) continue;
+                var match = savedParoms.Find(p => p != null && p.routeId == route.RouteId);
+                if (match == null)
+                {
+                    if (debugMode)
+                        Debug.Log($"[ShipPositionServer] No save for parom '{route.RouteId}' — keeping scene state");
+                    continue;
+                }
+                if (match.sceneName != route.gameObject.scene.name)
+                {
+                    Debug.LogWarning($"[ShipPositionServer] Parom '{route.RouteId}' scene mismatch (save={match.sceneName}, live={route.gameObject.scene.name}) — keeping scene state");
+                    continue;
+                }
+                route.ApplyRestoredState(match.s, match.dir, match.station, match.dwelling, match.dwellRemaining);
+                restored++;
+            }
+            Debug.Log($"[ShipPositionServer] Restored {restored}/{savedParoms.Count} parom routes from save");
+        }
+
         private void ApplyRestore(ShipController ship, ShipPositionSaveData data)
         {
             var rb = ship.GetComponent<Rigidbody>();
@@ -431,7 +471,27 @@ namespace ProjectC.Core.ShipPosition
                 playerData = PlayerPositionServer.Instance.GetPendingPlayers();
             }
 
-            var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData };
+            // T-PAROM-20: снапшот веток тем же тиком (s/dir/station/dwelling).
+            var paromData = new List<ParomRouteSaveData>();
+            var routes = FindObjectsByType<ParomRoute>();
+            foreach (var route in routes)
+            {
+                if (route == null || !route.IsSpawned) continue;
+                route.GetServerState(out float s, out int dir, out int station, out bool dwelling, out float dwellRemaining);
+                paromData.Add(new ParomRouteSaveData
+                {
+                    routeId = route.RouteId,
+                    sceneName = route.gameObject.scene.name,
+                    s = s,
+                    dir = dir,
+                    station = station,
+                    dwelling = dwelling,
+                    dwellRemaining = dwellRemaining,
+                    savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                });
+            }
+
+            var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData, paroms = paromData };
             // T-FO-PERSIST01: зафиксировать фрейм сейва (суммарный сдвиг мира).
             // Свежий старт вычтет его обратно (ApplyRebaseCorrection).
             var rebaseOffset = GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset;

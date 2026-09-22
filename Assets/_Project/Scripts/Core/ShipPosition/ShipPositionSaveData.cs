@@ -64,6 +64,10 @@ namespace ProjectC.Core.ShipPosition
         public List<ShipPositionSaveData> ships = new List<ShipPositionSaveData>();
         public List<PlayerPositionSaveData> players = new List<PlayerPositionSaveData>(); // T-PLAYER-PERSIST
 
+        // T-PAROM-20: состояние паромных веток (s/dir/station/dwelling).
+        // Старые файлы без paroms читаются (null → пропуск restore).
+        public List<ParomRouteSaveData> paroms;
+
         // T-FO-PERSIST01: суммарный сдвиг мира (LocalTranslation controlled rebase),
         // применённый к сохранённым координатам. Свежий старт грузит мир в исходном
         // origin — restore вычитает этот вектор из позиций до применения.
@@ -83,6 +87,25 @@ namespace ProjectC.Core.ShipPosition
         public float px, py, pz;         // world position
         public bool inShip;              // игрок был на корабле в момент save?
         public string shipPersistentId;  // _shipPersistentId корабля (если inShip)
+        public long savedAtUnix;
+    }
+
+    /// <summary>
+    /// T-PAROM-20: данные сохранения паромной ветки.
+    /// Матчинг при restore — по routeId (+ проверка sceneName).
+    /// s — скаляр вдоль пути: FO-safe, кумулятив сдвига не нужен
+    /// (ShiftWrapperByOffset список paroms намеренно не трогает).
+    /// </summary>
+    [Serializable]
+    public class ParomRouteSaveData
+    {
+        public string routeId;           // ParomRoute.RouteId — стабильный ключ матчинга
+        public string sceneName;         // валидация (ветка должна быть в той же сцене)
+        public float s;                  // метры от старта
+        public int dir;                  // +1 к концу, -1 к старту
+        public int station;              // индекс текущей/целевой станции
+        public bool dwelling;            // стоит на станции (а не едет)
+        public float dwellRemaining;     // остаток стоянки, с (0 если едет)
         public long savedAtUnix;
     }
 }

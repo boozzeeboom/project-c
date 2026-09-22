@@ -78,6 +78,10 @@ namespace ProjectC.World.Parom
         [Tooltip("Подробные логи (прибытия/отправления).")]
         [SerializeField] private bool _debugLog = false;
 
+        [Header("Персистенция (T-PAROM-20)")]
+        [Tooltip("Стабильный ID ветки для сейвов/матчинга при restore. Пусто = авто (сцена/имя объекта). Переименование ломает старые сейвы (ветка стартует с начальной).")]
+        [SerializeField] private string _routeId = "";
+
         // === Сеть (пишет только сервер) ===
         private readonly NetworkVariable<float> _netS = new NetworkVariable<float>(
             0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -116,6 +120,40 @@ namespace ProjectC.World.Parom
 
         /// <summary>Число станций ветки (старт + промежуточные + конец, без null).</summary>
         public int StationCount => _stations.Count;
+
+        /// <summary>
+        /// T-PAROM-20: стабильный ID ветки для персистенции. Явное поле,
+        /// иначе сцена/имя (детерминировано, без работы в инспекторе).
+        /// </summary>
+        public string RouteId => string.IsNullOrEmpty(_routeId)
+            ? $"{gameObject.scene.name}/{gameObject.name}"
+            : _routeId;
+
+        /// <summary>T-PAROM-20: снапшот симуляции сервера для сейва (s/dir/station/dwelling/остаток стоянки).</summary>
+        public void GetServerState(out float s, out int dir, out int station, out bool dwelling, out float dwellRemaining)
+        {
+            s = _serverS; dir = _serverDir; station = _serverStation;
+            dwelling = _serverDwelling; dwellRemaining = _serverDwellTimer;
+        }
+
+        /// <summary>
+        /// T-PAROM-20: применить restore сейва (только сервер, до первого тика
+        /// симуляции). Клиенты подхватят через _netS. Невалидные значения
+        /// зажимаются (s в [0, длина], station в диапазон).
+        /// </summary>
+        public void ApplyRestoredState(float s, int dir, int station, bool dwelling, float dwellRemaining)
+        {
+            RebuildStationList();
+            RebuildLengthCache();
+            _serverS = Mathf.Clamp(s, 0f, Mathf.Max(_totalLength, 0.001f));
+            _serverDir = dir >= 0 ? 1 : -1;
+            _serverStation = Mathf.Clamp(station, 0, Mathf.Max(_stations.Count - 1, 0));
+            _serverDwelling = dwelling;
+            _serverDwellTimer = Mathf.Max(dwellRemaining, 0f);
+            PublishNet();
+            if (_debugLog)
+                Debug.Log($"[ParomRoute:{name}] restored: s={_serverS:F1} dir={_serverDir} station={_serverStation} dwelling={_serverDwelling}", this);
+        }
 
         /// <summary>Индекс текущей/целевой станции (0 = старт). На клиенте — из сети.</summary>
         public int CurrentStationIndex => IsSpawned && !IsServer ? _netStation.Value : _serverStation;

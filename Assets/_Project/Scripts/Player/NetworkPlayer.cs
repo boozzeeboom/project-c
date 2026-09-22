@@ -1218,7 +1218,14 @@ namespace ProjectC.Player
             // Гравитация применяется ТОЛЬКО в воздухе (!groundedForMovement) —
             // иначе gravity копился поверх -2f и создавал избыточную пенетрацию
             // → CharacterController выталкивал вверх → micro-bounce.
-            if (groundedForMovement && _velocity.y < 0) _velocity.y = -2f;
+            // T-PAROM-12: на платформе bias -2f воюет с вертикалью палубы: carry
+            // тянет на _platformDelta, а bias давит вниз на 2*dt — каждый кадр
+            // пенетрация в пол и жёсткий выталкивающий поп (хуже на низком fps:
+            // на 28 fps это ~7 см/кадр; на подъёмах парома скидывает с крыши).
+            // Вертикаль на платформе полностью ведёт _platformDelta (тот же кадр,
+            // платформы обновляются раньше по DefaultExecutionOrder) — bias
+            // обнуляем. Вне платформы всё как было.
+            if (groundedForMovement && _velocity.y < 0) _velocity.y = _onPlatform ? 0f : -2f;
 
             // R2-NONE: animator parameters
             if (_animator != null)

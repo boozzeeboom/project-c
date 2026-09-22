@@ -60,6 +60,10 @@ namespace ProjectC.Player
         [Tooltip("Минимальная дельта позиции платформы за кадр (м), которая считается движением. Дельты меньше — floating-point шум, игнорируются.")]
         [SerializeField] private float _platformMinDelta = 0.0005f;
 
+        [Header("Защита от рывков (T-PAROM-14)")]
+        [Tooltip("Макс. вертикаль carry-дельты за кадр (м). Скачки больше (тики сети, хитчи, кэш-догонялки) переносятся остатком на следующие кадры вместо попа. Покрывает вертикали до ~3 м/с (паром 1.4, корабли altHold ±2). 0 = выкл (старое поведение).")]
+        [Min(0f)] [SerializeField] private float _platformMaxStepY = 0.1f;
+
 
         [Header("Ветер (WindManager)")]
         [Tooltip("Разрешить глобальному ветру сносить персонажа в пешем режиме.")]
@@ -136,6 +140,7 @@ namespace ProjectC.Player
         private void ClearCoordinateInput()
         {
             _moveInput = Vector2.zero; _jumpPressed = false; _runPressed = false; _platformDelta = Vector3.zero;
+            _platformRemainderY = 0f; // T-PAROM-14
         }
 
         // Компоненты
@@ -152,6 +157,12 @@ namespace ProjectC.Player
         private Vector3 _platformDelta;
         private bool _onPlatform;
         private bool _platformMaskWarned;
+        // T-PAROM-14: непогашенный остаток вертикали carry (м). См. кэп ниже.
+        // Чистится везде, где сбрасывается опора (смена/detach/rebase/корабль/
+        // координаты) — иначе stale-остаток даст флинг. Откат: поле
+        // _platformMaxStepY = 0 в инспекторе (без перекомпиляции) или revert
+        // коммита T-PAROM-14 целиком (один файл + нота).
+        private float _platformRemainderY;
         // T-DIAG-FERRY (ВРЕМЕННО, удалить после замеров): счётчики диагностики езды
         // на платформе. Поведение не меняют: только считают + лог раз в секунду.
         private bool _diagPrevGrounded = true;
@@ -294,6 +305,7 @@ namespace ProjectC.Player
         {
             _platformLastPos += translation;
             _platformDelta = Vector3.zero;
+            _platformRemainderY = 0f; // T-PAROM-14
         }
         public bool DiagnosticControllerEnabled => _controller != null && _controller.enabled;
         public SpringArmCamera DiagnosticCamera => _myCamera;
@@ -1468,6 +1480,7 @@ namespace ProjectC.Player
                 {
                     Debug.Log($"[NetworkPlayer:{OwnerClientId}] left moving platform '{_currentPlatform.name}'");
                     _currentPlatform = null;
+                    _platformRemainderY = 0f; // T-PAROM-14: сошли — долг сгорает.
                 }
                 return;
             }
@@ -1482,12 +1495,16 @@ namespace ProjectC.Player
                 _currentPlatform = platform;
                 _platformLastPos = platform.position;
                 _platformLastRot = platform.rotation;
+                _platformRemainderY = 0f; // T-PAROM-14: новая опора — старый долг невезём.
                 Debug.Log($"[NetworkPlayer:{OwnerClientId}] entered moving platform '{platform.name}'");
                 return;
             }
 
             // Δ позиции палубы (включая вертикаль — держит на палубе при взлёте/снижении).
+            // T-PAROM-14: подмешиваем непогашенный остаток ДО фильтра шума.
             Vector3 deltaPos = platform.position - _platformLastPos;
+            deltaPos.y += _platformRemainderY;
+            _platformRemainderY = 0f;
 
             // Фильтр шума: дельты меньше порога — floating-point jitter,
             // не должны толкать персонажа. Кеш позиции всё равно обновляем,
@@ -1517,6 +1534,18 @@ namespace ProjectC.Player
 
             // НЕ двигаем контроллер здесь — дельта уходит в ЕДИНЫЙ Move в ProcessMovement
             // (два отдельных Move за кадр заставляли isGrounded мигать → «подпрыгивание").
+            //
+            // T-PAROM-14: кэп вертикали + остаток. Замеры паром_2…8: одиночные
+            // кадровые дельты до 190–330 мм при гладком потолке ~45–80 мм
+            // (тики, хитчи, догонялки stale-кэша) — источник рывков, причина
+            // статикой не изолирована. Кэп режет поп, остаток догоняет плавно
+            // за следующие кадры (лаг ≤ размера спайка, 2–3 кадра).
+            // Только Y: горизонталь не трогаем (быстрые корабли!). 0 = выкл.
+            if (_platformMaxStepY > 0f && Mathf.Abs(deltaPos.y) > _platformMaxStepY)
+            {
+                _platformRemainderY = deltaPos.y - Mathf.Sign(deltaPos.y) * _platformMaxStepY;
+                deltaPos.y = Mathf.Sign(deltaPos.y) * _platformMaxStepY;
+            }
             _platformDelta = deltaPos;
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "PlatformCarry", $"platform={platform.name} delta={deltaPos} yaw={_carryYaw}");
 
@@ -1652,6 +1681,7 @@ namespace ProjectC.Player
                 // не было скачка от устаревшей дельты платформы.
                 _currentPlatform = null;
                 _platformMissFrames = 0;
+                _platformRemainderY = 0f; // T-PAROM-14
 
                 // COMPOSITE SHIP (Phase 1): парентим игрока к корню корабля.
                 // worldPositionStays=true — игрок сохраняет мировую позицию (своё место в кресле).

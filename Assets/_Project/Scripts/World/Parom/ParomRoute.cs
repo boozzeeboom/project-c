@@ -126,6 +126,12 @@ namespace ProjectC.World.Parom
         // важна гладкость дельты.
         private float _clientS;
         private bool _clientSInit;
+        // T-PAROM-10: поля диагностики расхождения расчёт/факт (см. лог).
+        private float _dbgE = -1f;
+        private float _dbgSin;
+        private float _dbgSegLen;
+        private int _dbgSeg;
+        private float _dbgT;
         private readonly List<Vector3> _lastAnchorPos = new List<Vector3>();
         private float _lastSag;
         private float _lastLateral;
@@ -353,7 +359,12 @@ namespace ProjectC.World.Parom
             Vector3 p = Vector3.Lerp(aW, bW, t);
             float segLen = Vector3.Distance(aW, bW);
             float e = Mathf.SmoothStep(0f, 0.15f, t) * Mathf.SmoothStep(0f, 0.15f, 1f - t);
-            p.y -= Mathf.Sin(Mathf.PI * t) * segLen * _sagRatio * e;
+            // T-PAROM-10: диагностика расхождения расчёт/факт — пишем множители,
+            // лог раз в секунду покажет, какой из них схлопывает прогиб.
+            _dbgE = e;
+            _dbgSin = Mathf.Sin(Mathf.PI * t);
+            _dbgSegLen = segLen;
+            p.y -= _dbgSin * segLen * _sagRatio * e;
             return p;
         }
 
@@ -376,6 +387,8 @@ namespace ProjectC.World.Parom
             Vector3 p1 = EasedSaggedPoint(a, b, Mathf.Clamp01(t + eps));
             segmentDir = (p1 - p0).normalized;
             if (segmentDir.sqrMagnitude < 0.0001f) segmentDir = _lastMoveDir;
+            _dbgSeg = seg;
+            _dbgT = t;
             return EasedSaggedPoint(a, b, t);
         }
 
@@ -495,7 +508,7 @@ namespace ProjectC.World.Parom
                         ? $"sleep={trb.IsSleeping()} vel={trb.linearVelocity} rbPos={trb.position}"
                         : "no-rb";
                 }
-                Debug.Log($"[ParomRoute:{name}] s={s:F1}/{_totalLength:F0} trolley={_trolley.position} yaw={_trolley.rotation.eulerAngles.y:F0} dir={dir} rb[{rbInfo}]", this);
+                Debug.Log($"[ParomRoute:{name}] s={s:F1}/{_totalLength:F0} trolley={_trolley.position} yaw={_trolley.rotation.eulerAngles.y:F0} dir={dir} rb[{rbInfo}] sagR={_sagRatio:F4} e={_dbgE:F4} sin={_dbgSin:F3} segLen={_dbgSegLen:F1} seg={_dbgSeg} t={_dbgT:F3}", this);
             }
         }
 

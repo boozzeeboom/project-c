@@ -163,6 +163,11 @@ namespace ProjectC.Player
         private float _diagFrames;
         private float _diagFpsAccum;
         private float _diagNextLogTime;
+        // T-DIAG-FERRY Фаза 1b: ловим фризы — скачок s за кадр даёт вертикальный
+        // рывок carry (160 мм = ~0.1 с при вертикали 1.4 м/с). Считаем макс. dt
+        // и кадры с dt > 50 мс за секунду езды.
+        private float _diagMaxDt;
+        private int _diagHitchFrames;
         // Ветер: сглаженная горизонтальная скорость сноса (инерция порывов)
         private Vector3 _windVelocity = Vector3.zero;
         private Vector3 _windVelocitySmooth = Vector3.zero;
@@ -1323,6 +1328,9 @@ namespace ProjectC.Player
                 }
                 float dy = Mathf.Abs(_platformDelta.y);
                 if (dy > _diagMaxCarryY) _diagMaxCarryY = dy;
+                float dtms = Time.unscaledDeltaTime * 1000f;
+                if (dtms > _diagMaxDt) _diagMaxDt = dtms;
+                if (dtms > 50f) _diagHitchFrames++;
                 _diagFrames++;
                 _diagFpsAccum += 1f / Mathf.Max(Time.unscaledDeltaTime, 1e-4f);
             }
@@ -1330,9 +1338,9 @@ namespace ProjectC.Player
             if (Time.unscaledTime >= _diagNextLogTime)
             {
                 if (_diagFrames > 0f)
-                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0}");
+                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0} maxDt={_diagMaxDt:F0}ms hitchFrames={_diagHitchFrames}");
                 _diagGroundedFlips = 0; _diagFallEntries = 0; _diagMaxCarryY = 0f;
-                _diagFrames = 0f; _diagFpsAccum = 0f;
+                _diagFrames = 0f; _diagFpsAccum = 0f; _diagMaxDt = 0f; _diagHitchFrames = 0;
                 _diagNextLogTime = Time.unscaledTime + 1f;
             }
         }

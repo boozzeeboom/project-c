@@ -467,13 +467,22 @@ namespace ProjectC.World.Parom
                 if (flatDir.sqrMagnitude > 0.0001f)
                 {
                     Quaternion target = Quaternion.LookRotation(flatDir.normalized, Vector3.up);
-                    // T-PAROM-04: на клиентах 180-градусный разворот на конечной идёт
-                    // плавным доворотом во время стоянки (carry-yaw тоже плавный).
-                    _trolley.rotation = smoothRotation && _clientTurnSpeed > 0f
-                        ? Quaternion.RotateTowards(_trolley.rotation, target, _clientTurnSpeed * Time.deltaTime)
+                    // T-PAROM-04/09: разворот идёт доворотом, а не скачком.
+                    // На клиентах — медленно (_clientTurnSpeed) во время стоянки;
+                    // на сервере — быстро (360/с), но тоже не мгновенно: иначе
+                    // carry-yaw на хосте переносит 180 градусов одним кадром
+                    // и зеркалит райдера на другой край крыши.
+                    float turnSpeed = smoothRotation ? _clientTurnSpeed : 360f;
+                    _trolley.rotation = turnSpeed > 0f
+                        ? Quaternion.RotateTowards(_trolley.rotation, target, turnSpeed * Time.deltaTime)
                         : target;
                 }
             }
+            // T-PAROM-09: диагностика пути (включается _debugLog в инспекторе):
+            // раз в секунду пишем s, позицию и направление — по логу видно,
+            // идёт ли кабинка по прогибу и нет ли ступенек/замираний.
+            if (_debugLog && Time.frameCount % 60 == 0)
+                Debug.Log($"[ParomRoute:{name}] s={s:F1}/{_totalLength:F0} trolley={_trolley.position} yaw={_trolley.rotation.eulerAngles.y:F0} dir={dir}", this);
         }
 
         private void SetVisualsActive(bool active)

@@ -201,6 +201,10 @@ namespace ProjectC.World.Parom
             // T-DIAG-FERRY: лог пути раз в секунду (включается _debugLog).
             // Постоянный gated-диагностический лог: дважды пригождался
             // (ступенька сети, схлоп SmoothStep). Поведение не меняет.
+            // T-DIAG-FERRY Фаза 1f: ловим ВНЕШНЕЕ движение — позицию корня сцены
+            // (WorldRoot_0_0 двигают rebase/пилот) и residual = факт − расчёт:
+            // ненулевой residual при гладком s = кабинку дёрнул кто-то снаружи
+            // ( rebase-коррекции ), а не путь.
             if (_debugLog && Time.frameCount % 60 == 0)
             {
                 string rbInfo = "no-trolley";
@@ -211,7 +215,10 @@ namespace ProjectC.World.Parom
                         ? $"sleep={trb.IsSleeping()} vel={trb.linearVelocity} rbPos={trb.position}"
                         : "no-rb";
                 }
-                Debug.Log($"[ParomRoute:{name}] s={s:F1}/{_totalLength:F0} trolley={_trolley.position} yaw={_trolley.rotation.eulerAngles.y:F0} dir={dir} rb[{rbInfo}]", this);
+                Vector3 rootPos = transform.parent != null ? transform.parent.position : transform.position;
+                Vector3 expectPos = EvaluatePath(s, out _) + Vector3.down * _cabinHangDepth;
+                Vector3 resid = _trolley != null ? _trolley.position - expectPos : Vector3.zero;
+                Debug.Log($"[ParomRoute:{name}] s={s:F1}/{_totalLength:F0} trolley={_trolley.position} yaw={_trolley.rotation.eulerAngles.y:F0} dir={dir} rb[{rbInfo}] root={rootPos} residY={resid.y * 1000f:F1}mm", this);
             }
         }
 

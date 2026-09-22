@@ -26,6 +26,11 @@ namespace ProjectC.World.Parom
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
+    // T-PAROM-06: кабинка должна сдвинуться ДО того, как райдеры прочитают её
+    // позицию (NetworkPlayer.Update / NpcBrain — порядок по умолчанию 0).
+    // Иначе carry работает по вчерашней позиции: кадр-лаг → зазор/пенетрация
+    // → мигание isGrounded → видимый баунс, сильнее на вертикали.
+    [DefaultExecutionOrder(-50)]
     public class ParomRoute : NetworkBehaviour
     {
         [Header("Станции (якоря-пустышки в мире)")]
@@ -430,22 +435,16 @@ namespace ProjectC.World.Parom
             Vector3 moveDir = segDir * dir;
             if (moveDir.sqrMagnitude > 0.0001f) _lastMoveDir = moveDir.normalized;
             Vector3 worldPos = pathPoint + Vector3.down * _cabinHangDepth;
-            Quaternion targetRot = _trolley.rotation;
+            _trolley.position = worldPos;
             if (_lastMoveDir.sqrMagnitude > 0.0001f)
             {
-                Quaternion want = Quaternion.LookRotation(_lastMoveDir, Vector3.up);
+                Quaternion target = Quaternion.LookRotation(_lastMoveDir, Vector3.up);
                 // T-PAROM-04: на клиентах 180°-разворот на конечной идёт плавным
                 // доворотом во время стоянки (carry-yaw тоже плавный). Сервер — жёстко.
-                targetRot = smoothRotation && _clientTurnSpeed > 0f
-                    ? Quaternion.RotateTowards(_trolley.rotation, want, _clientTurnSpeed * Time.deltaTime)
-                    : want;
+                _trolley.rotation = smoothRotation && _clientTurnSpeed > 0f
+                    ? Quaternion.RotateTowards(_trolley.rotation, target, _clientTurnSpeed * Time.deltaTime)
+                    : target;
             }
-            // T-PAROM-05: трансформ напрямую НЕ пишем (телепорт коллайдера сквозь
-            // CharacterController райдера давал вертикальный баунс). Отдаём цель
-            // в ParomTrolley — он везёт кинематику через MovePosition/MoveRotation
-            // в FixedUpdate, физика резолвит контакт внутри шага.
-            if (_trolleyComp != null) _trolleyComp.SetKinematicTarget(worldPos, targetRot);
-            else _trolley.SetPositionAndRotation(worldPos, targetRot);
         }
 
         private void SetVisualsActive(bool active)

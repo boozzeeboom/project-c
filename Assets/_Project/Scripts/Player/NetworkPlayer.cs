@@ -168,6 +168,11 @@ namespace ProjectC.Player
         // и кадры с dt > 50 мс за секунду езды.
         private float _diagMaxDt;
         private int _diagHitchFrames;
+        // T-DIAG-FERRY Фаза 1d: длина серий промахов зонда + рантайм-значение
+        // порога. Пики 190 мм требуют stale-кэш ~4+ кадров: либо порог в рантайме
+        // больше дефолтных 3, либо detach обязан был случиться (проверяем).
+        private int _diagCurMissStreak;
+        private int _diagMaxMissStreak;
         // Ветер: сглаженная горизонтальная скорость сноса (инерция порывов)
         private Vector3 _windVelocity = Vector3.zero;
         private Vector3 _windVelocitySmooth = Vector3.zero;
@@ -1348,10 +1353,11 @@ namespace ProjectC.Player
                         Vector3 r = transform.position - _currentPlatform.position;
                         rel = $"rel=({r.x:F2},{r.y:F2},{r.z:F2})";
                     }
-                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0} maxDt={_diagMaxDt:F0}ms hitchFrames={_diagHitchFrames} {rel}");
+                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0} maxDt={_diagMaxDt:F0}ms hitchFrames={_diagHitchFrames} {rel} maxMissStreak={_diagMaxMissStreak} missClear={_platformMissFramesToClear}");
                 }
                 _diagGroundedFlips = 0; _diagFallEntries = 0; _diagMaxCarryY = 0f;
                 _diagFrames = 0f; _diagFpsAccum = 0f; _diagMaxDt = 0f; _diagHitchFrames = 0;
+                _diagMaxMissStreak = 0;
                 _diagNextLogTime = Time.unscaledTime + 1f;
             }
         }
@@ -1431,6 +1437,9 @@ namespace ProjectC.Player
             if (platform == null)
             {
                 _platformMissFrames++;
+                // T-DIAG-FERRY Фаза 1d: длина серий промахов (поведение не меняем).
+                _diagCurMissStreak++;
+                if (_diagCurMissStreak > _diagMaxMissStreak) _diagMaxMissStreak = _diagCurMissStreak;
                 if (_platformMissFrames >= _platformMissFramesToClear && _currentPlatform != null)
                 {
                     Debug.Log($"[NetworkPlayer:{OwnerClientId}] left moving platform '{_currentPlatform.name}'");
@@ -1440,6 +1449,7 @@ namespace ProjectC.Player
             }
 
             _platformMissFrames = 0;
+            _diagCurMissStreak = 0;
             _onPlatform = true;
 
             // Смена/первичная привязка платформы — инициализируем кэш без рывка.

@@ -57142,7 +57142,7 @@ MonoBehaviour:
   _pointsPerSegment: 12
   _cableWidth: 0.15
   _previewWhenOffline: 1
-  _debugLog: 0
+  _debugLog: 1
 --- !u!114 &834841859
 MonoBehaviour:
   m_ObjectHideFlags: 0

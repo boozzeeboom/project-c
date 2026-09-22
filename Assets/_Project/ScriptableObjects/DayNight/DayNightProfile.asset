@@ -38,7 +38,7 @@ MonoBehaviour:
   globalExposureOffset: 0.12
   globalContrastOffset: 0.08
   enableDailyHueShift: 1
-  dailyHueShiftRange: {x: -10, y: 10}
+  dailyHueShiftRange: {x: -5, y: 5}
   constellationController: {fileID: 0}
   moonController: {fileID: 0}
   showDebugInfo: 0

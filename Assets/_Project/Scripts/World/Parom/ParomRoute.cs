@@ -438,12 +438,24 @@ namespace ProjectC.World.Parom
             _trolley.position = worldPos;
             if (_lastMoveDir.sqrMagnitude > 0.0001f)
             {
-                Quaternion target = Quaternion.LookRotation(_lastMoveDir, Vector3.up);
-                // T-PAROM-04: на клиентах 180°-разворот на конечной идёт плавным
-                // доворотом во время стоянки (carry-yaw тоже плавный). Сервер — жёстко.
-                _trolley.rotation = smoothRotation && _clientTurnSpeed > 0f
-                    ? Quaternion.RotateTowards(_trolley.rotation, target, _clientTurnSpeed * Time.deltaTime)
-                    : target;
+                // T-PAROM-07: только yaw, БЕЗ тангажа. Касательная к провисшей кривой
+                // наклонена (+-9 градусов на сегментах ветки 01), а LookRotation
+                // от наклонного вектора кренит кабинку: на подъёме край крыши
+                // приподнимается под капсулой райдера, CharacterController делает
+                // step-up (до stepOffset) = видимые подпрыгивания. Платформа
+                // с райдерами обязана оставаться горизонтальной
+                // (дисциплина: только translation + yaw).
+                Vector3 flatDir = _lastMoveDir;
+                flatDir.y = 0f;
+                if (flatDir.sqrMagnitude > 0.0001f)
+                {
+                    Quaternion target = Quaternion.LookRotation(flatDir.normalized, Vector3.up);
+                    // T-PAROM-04: на клиентах 180-градусный разворот на конечной идёт
+                    // плавным доворотом во время стоянки (carry-yaw тоже плавный).
+                    _trolley.rotation = smoothRotation && _clientTurnSpeed > 0f
+                        ? Quaternion.RotateTowards(_trolley.rotation, target, _clientTurnSpeed * Time.deltaTime)
+                        : target;
+                }
             }
         }
 

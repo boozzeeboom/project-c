@@ -26,11 +26,6 @@ namespace ProjectC.World.Parom
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
-    // T-PAROM-06: кабинка должна сдвинуться ДО того, как райдеры прочитают её
-    // позицию (NetworkPlayer.Update / NpcBrain — порядок по умолчанию 0).
-    // Иначе carry работает по вчерашней позиции: кадр-лаг → зазор/пенетрация
-    // → мигание isGrounded → видимый баунс, сильнее на вертикали.
-    [DefaultExecutionOrder(-50)]
     public class ParomRoute : NetworkBehaviour
     {
         [Header("Станции (якоря-пустышки в мире)")]
@@ -83,16 +78,6 @@ namespace ProjectC.World.Parom
         [Tooltip("Подробные логи (прибытия/отправления).")]
         [SerializeField] private bool _debugLog = false;
 
-        [Header("Сглаживание на клиентах (T-PAROM-04, анти-джиттер райдера)")]
-        [Tooltip("Постоянная времени сглаживания сетевого прогресса s на клиентах (с). Убирает ступеньку тик-рейта NetworkVariable: carry-дельта райдера становится гладкой. Сервер/хост едут по точному s без запаздывания. 0 = выкл (прямое применение _netS, как в v1).")]
-        [Min(0f)] [SerializeField] private float _clientSmoothTime = 0.12f;
-
-        [Tooltip("Макс. скорость доворота кабинки на клиентах (град/с). Смягчает 180°-разворот на конечных — carry-yaw тоже становится плавным. Сервер ставит rotation жёстко.")]
-        [Min(1f)] [SerializeField] private float _clientTurnSpeed = 90f;
-
-        [Tooltip("Скачок прогресса больше этого (м) — снап без сглаживания (первый кадр, вход на маршрут, телепорт).")]
-        [Min(0f)] [SerializeField] private float _clientSnapDistance = 8f;
-
         // === Сеть (пишет только сервер) ===
         private readonly NetworkVariable<float> _netS = new NetworkVariable<float>(
             0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -121,17 +106,6 @@ namespace ProjectC.World.Parom
 
         // Применение на кабинку (общее для сервера и клиентов).
         private Vector3 _lastMoveDir = Vector3.forward;
-        // T-PAROM-04: клиентское сглаживание сетевого s (анти-ступенька тик-рейта).
-        // Райдер едет дельтой, поэтому абсолютное отставание на tau неважно —
-        // важна гладкость дельты.
-        private float _clientS;
-        private bool _clientSInit;
-        // T-PAROM-10: поля диагностики расхождения расчёт/факт (см. лог).
-        private float _dbgE = -1f;
-        private float _dbgSin;
-        private float _dbgSegLen;
-        private int _dbgSeg;
-        private float _dbgT;
         private readonly List<Vector3> _lastAnchorPos = new List<Vector3>();
         private float _lastSag;
         private float _lastLateral;
@@ -217,30 +191,11 @@ namespace ProjectC.World.Parom
             }
             else
             {
-                // T-PAROM-04: не ставим кабинку по сырому _netS.Value — NetworkVariable
-                // приезжает с тик-рейтом, прямое применение даёт ступеньку
-                // («0,0,0,БОЛЬШАЯ» в carry-дельте → дёрганье райдера).
-                // Экспоненциальное сглаживание делает дельту гладкой.
-                float targetS = _netS.Value;
-                if (!_clientSInit || Mathf.Abs(targetS - _clientS) > _clientSnapDistance)
-                {
-                    _clientS = targetS;
-                    _clientSInit = true;
-                }
-                else if (_clientSmoothTime > 0f)
-                {
-                    float k = 1f - Mathf.Exp(-Time.deltaTime / _clientSmoothTime);
-                    _clientS += (targetS - _clientS) * k;
-                }
-                else
-                {
-                    _clientS = targetS;
-                }
-                s = _clientS;
+                s = _netS.Value;
                 dir = _netDir.Value;
             }
 
-            ApplyTrolley(s, dir, smoothRotation: !simulate);
+            ApplyTrolley(s, dir);
             MaybeRebuildCables();
         }
 
@@ -299,12 +254,10 @@ namespace ProjectC.World.Parom
 
         private void PublishNet()
         {
-            // T-PAROM-04: пишем только изменившееся. При стоянке s/dir/dwelling/station
-            // константны — не дёргаем NetworkVariable зря (меньше сетевого шума).
-            if (!Mathf.Approximately(_netS.Value, _serverS)) _netS.Value = _serverS;
-            if (_netDir.Value != _serverDir) _netDir.Value = _serverDir;
-            if (_netDwelling.Value != _serverDwelling) _netDwelling.Value = _serverDwelling;
-            if (_netStation.Value != _serverStation) _netStation.Value = _serverStation;
+            _netS.Value = _serverS;
+            _netDir.Value = _serverDir;
+            _netDwelling.Value = _serverDwelling;
+            _netStation.Value = _serverStation;
         }
 
         // --- Путь: живые позиции якорей (FO-safe, без кэша Vector3) ---
@@ -346,49 +299,10 @@ namespace ProjectC.World.Parom
         }
 
         /// <summary>
-        /// T-PAROM-08: профиль кабинки — тот же провис, но с погашенным наклоном
-        /// у станций (smoothstep на крайних 15% сегмента). Чистый синус даёт излом
-        /// вертикальной скорости на стыке (+1.4 м/с → −1.4 м/с в один кадр на
-        /// скорости 9 м/с): carry-дельта дёргается на каждой станции. Позиция
-        /// почти не отличается от троса (у концов провис и так ~0), отличается
-        /// только наклон — крыша приходит на станцию горизонтально.
-        /// Тросы и гизмо рисуются по чистому SaggedPoint, не трогаем.
-        /// </summary>
-        private Vector3 EasedSaggedPoint(Vector3 aW, Vector3 bW, float t)
-        {
-            Vector3 p = Vector3.Lerp(aW, bW, t);
-            float segLen = Vector3.Distance(aW, bW);
-            float e = EaseEnds(t);
-            // T-PAROM-10: диагностика расхождения расчёт/факт — пишем множители,
-            // лог раз в секунду покажет, какой из них схлопывает прогиб.
-            _dbgE = e;
-            _dbgSin = Mathf.Sin(Mathf.PI * t);
-            _dbgSegLen = segLen;
-            p.y -= _dbgSin * segLen * _sagRatio * e;
-            return p;
-        }
-
-        /// <summary>
-        /// T-PAROM-11: ручной smoothstep крайних 15% сегмента (0 на концах, 1 в середине).
-        /// Mathf.SmoothStep здесь НЕ используем: в редакторе 6000.5.2f1 он НЕ делает
-        /// нормализацию по диапазону (проверено исполнением в редакторе:
-        /// SmoothStep(0, 0.15, 0.483) возвращает 0.071 вместо 1.0 — ведёт себя как
-        /// Эрмит от сырого t). Поэтому нормализуем сами и считаем Эрмита вручную.
-        /// Остальной проект вызывает SmoothStep(0, 1, t) — там quirk незаметен.
-        /// </summary>
-        private static float EaseEnds(float t)
-        {
-            float a = Mathf.Clamp01(t / 0.15f);
-            float b = Mathf.Clamp01((1f - t) / 0.15f);
-            a = a * a * (3f - 2f * a);
-            b = b * b * (3f - 2f * b);
-            return a * b;
-        }
-
-        /// <summary>
-        /// Мировая точка пути на дистанции s метров от старта — НА сглаженном
-        /// провисшем профиле (T-PAROM-08: EasedSaggedPoint, без излома вертикальной
-        /// скорости на станциях). Направление — касательная к кривой.
+        /// Мировая точка пути на дистанции s метров от старта — НА провисшей
+        /// кривой (кабинка повторяет профиль тросов, а не хорду).
+        /// Направление — касательная к кривой (конечная разность), чтобы кабина
+        /// плавно клевала носом в ложбинах и на уклонах между станциями.
         /// </summary>
         private Vector3 EvaluatePath(float s, out Vector3 segmentDir)
         {
@@ -400,13 +314,11 @@ namespace ProjectC.World.Parom
             Vector3 a = _stations[seg].position;
             Vector3 b = _stations[seg + 1].position;
             const float eps = 0.02f;
-            Vector3 p0 = EasedSaggedPoint(a, b, Mathf.Clamp01(t - eps));
-            Vector3 p1 = EasedSaggedPoint(a, b, Mathf.Clamp01(t + eps));
+            Vector3 p0 = SaggedPoint(a, b, Mathf.Clamp01(t - eps));
+            Vector3 p1 = SaggedPoint(a, b, Mathf.Clamp01(t + eps));
             segmentDir = (p1 - p0).normalized;
             if (segmentDir.sqrMagnitude < 0.0001f) segmentDir = _lastMoveDir;
-            _dbgSeg = seg;
-            _dbgT = t;
-            return EasedSaggedPoint(a, b, t);
+            return SaggedPoint(a, b, t);
         }
 
         // --- Кабинка ---
@@ -475,7 +387,7 @@ namespace ProjectC.World.Parom
             return root;
         }
 
-        private void ApplyTrolley(float s, int dir, bool smoothRotation)
+        private void ApplyTrolley(float s, int dir)
         {
             if (_trolley == null) return;
             Vector3 pathPoint = EvaluatePath(s, out Vector3 segDir);
@@ -484,49 +396,7 @@ namespace ProjectC.World.Parom
             Vector3 worldPos = pathPoint + Vector3.down * _cabinHangDepth;
             _trolley.position = worldPos;
             if (_lastMoveDir.sqrMagnitude > 0.0001f)
-            {
-                // T-PAROM-07: только yaw, БЕЗ тангажа. Касательная к провисшей кривой
-                // наклонена (+-9 градусов на сегментах ветки 01), а LookRotation
-                // от наклонного вектора кренит кабинку: на подъёме край крыши
-                // приподнимается под капсулой райдера, CharacterController делает
-                // step-up (до stepOffset) = видимые подпрыгивания. Платформа
-                // с райдерами обязана оставаться горизонтальной
-                // (дисциплина: только translation + yaw).
-                Vector3 flatDir = _lastMoveDir;
-                flatDir.y = 0f;
-                if (flatDir.sqrMagnitude > 0.0001f)
-                {
-                    Quaternion target = Quaternion.LookRotation(flatDir.normalized, Vector3.up);
-                    // T-PAROM-04/09: разворот идёт доворотом, а не скачком.
-                    // На клиентах — медленно (_clientTurnSpeed) во время стоянки;
-                    // на сервере — быстро (360/с), но тоже не мгновенно: иначе
-                    // carry-yaw на хосте переносит 180 градусов одним кадром
-                    // и зеркалит райдера на другой край крыши.
-                    float turnSpeed = smoothRotation ? _clientTurnSpeed : 360f;
-                    _trolley.rotation = turnSpeed > 0f
-                        ? Quaternion.RotateTowards(_trolley.rotation, target, turnSpeed * Time.deltaTime)
-                        : target;
-                }
-            }
-            // T-PAROM-09/10: диагностика пути (включается _debugLog в инспекторе):
-            // раз в секунду пишем s, позицию и направление — по логу видно,
-            // идёт ли кабинка по прогибу и нет ли ступенек/замираний.
-            // Плюс состояние Rigidbody: детект платформы в NetworkPlayer отбрасывает
-            // спящие тела (IsSleeping-фильтр), поэтому сон/пробуждение кинематики
-            // напрямую включает/выключает carry — циклический сон даст ровно
-            // наблюдаемый спам entered/left.
-            if (_debugLog && Time.frameCount % 60 == 0)
-            {
-                string rbInfo = "no-trolley";
-                if (_trolley != null)
-                {
-                    Rigidbody trb = _trolley.GetComponent<Rigidbody>();
-                    rbInfo = trb != null
-                        ? $"sleep={trb.IsSleeping()} vel={trb.linearVelocity} rbPos={trb.position}"
-                        : "no-rb";
-                }
-                Debug.Log($"[ParomRoute:{name}] s={s:F1}/{_totalLength:F0} trolley={_trolley.position} yaw={_trolley.rotation.eulerAngles.y:F0} dir={dir} rb[{rbInfo}] sagR={_sagRatio:F4} e={_dbgE:F4} sin={_dbgSin:F3} segLen={_dbgSegLen:F1} seg={_dbgSeg} t={_dbgT:F3}", this);
-            }
+                _trolley.rotation = Quaternion.LookRotation(_lastMoveDir, Vector3.up);
         }
 
         private void SetVisualsActive(bool active)

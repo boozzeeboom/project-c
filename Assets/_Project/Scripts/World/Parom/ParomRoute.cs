@@ -140,14 +140,29 @@ namespace ProjectC.World.Parom
         public Transform TrolleyTransform => _trolley;
 
         /// <summary>
-        /// T-PAROM-21: точка посадки на живую кабинку (верх коллайдера + запас).
+        /// T-PAROM-21: точка посадки на живую кабинку (верх + 0.3).
         /// Для телепорта при ресторре: кабинка уже на восстановленном s.
+        /// T-PAROM-21c: считаем ТОЛЬКО через трансформ (BoxCollider.size/center),
+        /// НИКОГДА через collider.bounds/rb.position — это состояние ФИЗИКИ,
+        /// а оно у телепортируемой кинематики протухает (тело спит со стоянки:
+        /// bounds показывал крышу C при кабинке в ложбине, +6.9 м — посадка
+        /// в воздух и падение мимо уходящей кабинки, лог паром_персист_2-2).
+        /// Кабинка yaw-only, поэтому Y от локального верха точен всегда.
         /// </summary>
         public Vector3 GetBoardingPoint()
         {
             if (_trolley == null) return transform.position;
-            var col = _trolley.GetComponentInChildren<Collider>();
-            float topY = col != null ? col.bounds.max.y : _trolley.position.y + 0.7f;
+            float topY = _trolley.position.y + 0.7f;
+            var box = _trolley.GetComponentInChildren<BoxCollider>();
+            if (box != null)
+            {
+                topY = _trolley.TransformPoint(box.center + new Vector3(0f, box.size.y * 0.5f, 0f)).y;
+            }
+            else
+            {
+                var rend = _trolley.GetComponentInChildren<Renderer>();
+                if (rend != null) topY = rend.bounds.max.y; // renderer bounds следуют за трансформом
+            }
             return new Vector3(_trolley.position.x, topY + 0.3f, _trolley.position.z);
         }
 

@@ -358,7 +358,7 @@ namespace ProjectC.World.Parom
         {
             Vector3 p = Vector3.Lerp(aW, bW, t);
             float segLen = Vector3.Distance(aW, bW);
-            float e = Mathf.SmoothStep(0f, 0.15f, t) * Mathf.SmoothStep(0f, 0.15f, 1f - t);
+            float e = EaseEnds(t);
             // T-PAROM-10: диагностика расхождения расчёт/факт — пишем множители,
             // лог раз в секунду покажет, какой из них схлопывает прогиб.
             _dbgE = e;
@@ -366,6 +366,23 @@ namespace ProjectC.World.Parom
             _dbgSegLen = segLen;
             p.y -= _dbgSin * segLen * _sagRatio * e;
             return p;
+        }
+
+        /// <summary>
+        /// T-PAROM-11: ручной smoothstep крайних 15% сегмента (0 на концах, 1 в середине).
+        /// Mathf.SmoothStep здесь НЕ используем: в редакторе 6000.5.2f1 он НЕ делает
+        /// нормализацию по диапазону (проверено исполнением в редакторе:
+        /// SmoothStep(0, 0.15, 0.483) возвращает 0.071 вместо 1.0 — ведёт себя как
+        /// Эрмит от сырого t). Поэтому нормализуем сами и считаем Эрмита вручную.
+        /// Остальной проект вызывает SmoothStep(0, 1, t) — там quirk незаметен.
+        /// </summary>
+        private static float EaseEnds(float t)
+        {
+            float a = Mathf.Clamp01(t / 0.15f);
+            float b = Mathf.Clamp01((1f - t) / 0.15f);
+            a = a * a * (3f - 2f * a);
+            b = b * b * (3f - 2f * b);
+            return a * b;
         }
 
         /// <summary>

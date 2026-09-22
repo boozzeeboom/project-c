@@ -1338,7 +1338,18 @@ namespace ProjectC.Player
             if (Time.unscaledTime >= _diagNextLogTime)
             {
                 if (_diagFrames > 0f)
-                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0} maxDt={_diagMaxDt:F0}ms hitchFrames={_diagHitchFrames}");
+                {
+                    // T-DIAG-FERRY Фаза 1c: смещение относительно центра платформы.
+                    // Различает реальный сполз (rel растёт) и стояние с краю
+                    // (rel константа у края + фликер зонда на границе).
+                    string rel = "noplat";
+                    if (_currentPlatform != null)
+                    {
+                        Vector3 r = transform.position - _currentPlatform.position;
+                        rel = $"rel=({r.x:F2},{r.y:F2},{r.z:F2})";
+                    }
+                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0} maxDt={_diagMaxDt:F0}ms hitchFrames={_diagHitchFrames} {rel}");
+                }
                 _diagGroundedFlips = 0; _diagFallEntries = 0; _diagMaxCarryY = 0f;
                 _diagFrames = 0f; _diagFpsAccum = 0f; _diagMaxDt = 0f; _diagHitchFrames = 0;
                 _diagNextLogTime = Time.unscaledTime + 1f;

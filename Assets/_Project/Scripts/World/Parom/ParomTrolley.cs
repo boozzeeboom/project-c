@@ -74,6 +74,13 @@ namespace ProjectC.World.Parom
             if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
             rb.isKinematic = true;
             rb.useGravity = false;
+            // T-PAROM-13: sleepThreshold=0 — кинематику, которую двигают
+            // трансформом, PhysX периодически укладывает спать ПРЯМО В ДВИЖЕНИИ
+            // (лог паром_3: sleep=True при растущем s; телепорты будят через раз).
+            // Спящее тело: IsSleeping-фильтр детекта рубит carry + тело замирает
+            // и отстаёт от трансформа на 0.3–0.8 м (лаг rbPos). Без сна тело
+            // всегда валидная платформа, зонд стабилен. Поведение не меняет.
+            rb.sleepThreshold = 0f;
 
             if (GetComponentInChildren<Collider>() != null) return;
 

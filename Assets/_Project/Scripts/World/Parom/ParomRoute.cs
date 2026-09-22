@@ -412,7 +412,17 @@ namespace ProjectC.World.Parom
             Vector3 worldPos = pathPoint + Vector3.down * _cabinHangDepth;
             _trolley.position = worldPos;
             if (_lastMoveDir.sqrMagnitude > 0.0001f)
-                _trolley.rotation = Quaternion.LookRotation(_lastMoveDir, Vector3.up);
+            {
+                // T-PAROM-13 (replay T-PAROM-07, изолированно): только yaw.
+                // Касательная наклонена (ложбина ~6 м), LookRotation от неё кренит
+                // крышу +-9 градусов: край гуляет +-0.6 м, зонд на краю мажет,
+                // CharacterController делает step-up хопы на подъёмах.
+                // В 07 хопы пропали (единственное снятие симптома в серии).
+                Vector3 flatDir = _lastMoveDir;
+                flatDir.y = 0f;
+                if (flatDir.sqrMagnitude > 0.0001f)
+                    _trolley.rotation = Quaternion.LookRotation(flatDir.normalized, Vector3.up);
+            }
         }
 
         private void SetVisualsActive(bool active)

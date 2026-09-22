@@ -30,6 +30,16 @@ Carry считается на owner-стороне — сервер про remot
 Клиентская сторона отдельно не нужна: у клиента `_currentPlatform == null`,
 первый детект — чистая привязка через существующую re-init ветку (без рывка).
 
+## 3b. T-PAROM-21b: global-путь пилота (наш случай!)
+
+Лог показал: игрок идёт через `PilotSpawnRestored` (`UsesGlobalCoordinates`),
+legacy-`RestorePlayer` у него НЕ выполняется — ветка из §3 молча не стреляет.
+Поэтому дубль в global-ветку `RestorePlayerPositionCoroutine` (рядом с
+`WaitForShipAndBoard`): `TryLoadPlayerPlatform` (только ID, без сдвига —
+как `TryLoadPlayerShip`) → `WaitForRouteAndPlace` (ждёт `RestoreCompleted`,
+телепорт на живую точку + bind + сброс fall-таймера/порога). Нет ветки —
+остаться на pilot-точке (старое поведение).
+
 ## 4. Порядок
 
 Ресторр парома (T-PAROM-20, ~3.5 с) раньше ресторра игроков (спавн + 5 с):

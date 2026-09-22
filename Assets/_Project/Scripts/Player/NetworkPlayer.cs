@@ -566,6 +566,11 @@ namespace ProjectC.Player
                 // Без inShip-записи поведение прежнее (остаться + порог).
                 if (ProjectC.Core.ShipPosition.ShipPositionServer.TryLoadPlayerShip(OwnerClientId, out string savedShipId))
                     yield return WaitForShipAndBoard(savedShipId, globalTracker);
+                // T-PAROM-21b: выход был на кабинке парома — pilot поставил по сырым
+                // координатам (кабинка уже уехала). Дождаться RestoreCompleted
+                // (ветка T-PAROM-20 уже на месте) и посадить на ЖИВУЮ кабинку.
+                else if (ProjectC.Core.ShipPosition.ShipPositionServer.TryLoadPlayerPlatform(OwnerClientId, out string savedRouteId))
+                    yield return WaitForRouteAndPlace(savedRouteId, globalTracker);
                 yield break; // G/D own the explicit initial global plan; never await legacy float persistence.
             }
             // Ждём завершения полного server restore: сначала должны быть сброшены
@@ -663,6 +668,49 @@ namespace ProjectC.Player
                 yield break;
             }
             Debug.Log($"[NetworkPlayer] T-FO09H: saved ship '{shipPersistentId}' not found — staying at pilot point", this);
+        }
+
+        /// <summary>
+        /// T-PAROM-21b: посадка global-игрока на живую кабинку после рестарта.
+        /// Зеркало WaitForShipAndBoard (без rebase-запроса — точка живьём в том же
+        /// фрейме, сдвига не надо). Ветки scene-placed: обычно уже на месте,
+        /// ожидание — страховка порядка. Нет ветки — остаться на pilot-точке.
+        /// Только сервер. После телепорта — bind carry (без догоняющего рывка).
+        /// </summary>
+        private System.Collections.IEnumerator WaitForRouteAndPlace(string routeId, PlayerRespawnTracker tracker)
+        {
+            var shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
+            float waited = 0f;
+            while (shipPositionServer == null || !shipPositionServer.RestoreCompleted)
+            {
+                if (waited > 30f) yield break;
+                yield return new WaitForSeconds(0.5f);
+                waited += 0.5f;
+                shipPositionServer = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
+            }
+            if (!IsServer) yield break;
+            ProjectC.World.Parom.ParomRoute[] routes = FindObjectsByType<ProjectC.World.Parom.ParomRoute>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            for (int i = 0; i < routes.Length; i++)
+            {
+                var route = routes[i];
+                if (route == null || !route.IsSpawned || route.RouteId != routeId) continue;
+                if (route.TrolleyTransform == null) continue;
+                Vector3 boardPos = route.GetBoardingPoint();
+                var controller = GetComponent<CharacterController>();
+                if (controller != null) controller.enabled = false;
+                transform.position = boardPos;
+                if (controller != null) controller.enabled = true;
+                Physics.SyncTransforms();
+                BindRiddenPlatform(route.TrolleyTransform);
+                if (tracker != null)
+                {
+                    tracker.ResetFallTimer();
+                    tracker.EnsureDeathBelow(transform.position.y);
+                }
+                Debug.Log($"[NetworkPlayer] T-PAROM-21b: placed on live parom '{routeId}' at {boardPos}", this);
+                yield break;
+            }
+            Debug.Log($"[NetworkPlayer] T-PAROM-21b: saved parom '{routeId}' not found — staying at pilot point", this);
         }
 
         /// <summary>

@@ -308,6 +308,27 @@ namespace ProjectC.Core.ShipPosition
         }
 
         /// <summary>
+        /// T-PAROM-21b: platformRouteId игрока из сейва (для global-пути пилота).
+        /// Зеркало TryLoadPlayerShip: сдвиг не нужен — нужен только ID ветки.
+        /// </summary>
+        public static bool TryLoadPlayerPlatform(ulong clientId, out string routeId)
+        {
+            routeId = null;
+            ShipPositionListWrapper wrapper;
+            try { wrapper = new JsonShipPositionRepository().LoadAllWrapper(); }
+            catch (Exception) { return false; }
+            if (wrapper == null || wrapper.players == null) return false;
+            foreach (var p in wrapper.players)
+            {
+                if (p == null || p.clientId != clientId) continue;
+                if (string.IsNullOrEmpty(p.platformRouteId)) return false;
+                routeId = p.platformRouteId;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// T-FO09H: inShip/shipId записи сейва для моста пилота. Pilot placement
         /// ставит игрока по сырым координатам (позиция корабля на момент сейва),
         /// но сам корабль ресторится позже (~3.5с) — игрок падает рядом с пустым

@@ -29,8 +29,20 @@ namespace ProjectC.World.Parom
         [Tooltip("Якорь под модель машиниста (необязательно; логики нет, v1 — визуал).")]
         [SerializeField] private Transform _driverAnchor;
 
+        [Header("Кинематика (T-PAROM-05, анти-баунс райдера)")]
+        [Tooltip("Интерполяция Rigidbody между физшагами — убирает ступеньку 50 Гц на рендере.")]
+        [SerializeField] private bool _interpolateRigidbody = true;
+
         // === Runtime ===
         private readonly List<Transform> _propellers = new List<Transform>();
+
+        // T-PAROM-05: цель движения от ParomRoute. Применяется в FixedUpdate через
+        // MovePosition/MoveRotation — коллайдер не телепортируется сквозь
+        // CharacterController райдера, физика резолвит контакт внутри шага.
+        private bool _hasTarget;
+        private Vector3 _targetPos;
+        private Quaternion _targetRot;
+        private bool _snapNext = true;
 
         /// <summary>Скорость винтов (об/мин). Можно крутить из менеджеров/ивентов.</summary>
         public float PropellerRpm
@@ -63,8 +75,42 @@ namespace ProjectC.World.Parom
         }
 
         /// <summary>
+        /// T-PAROM-05: цель движения от ParomRoute. Трансформ здесь НЕ трогаем —
+        /// движение применяется в <see cref="FixedUpdate"/> через MovePosition/MoveRotation.
+        /// Первый вызов после появления — снап (кабинка не должна «доехать» с origin).
+        /// </summary>
+        public void SetKinematicTarget(Vector3 pos, Quaternion rot)
+        {
+            _targetPos = pos;
+            _targetRot = rot;
+            _hasTarget = true;
+        }
+
+        private void FixedUpdate()
+        {
+            if (!_hasTarget) return;
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb == null || !rb.isKinematic)
+            {
+                transform.SetPositionAndRotation(_targetPos, _targetRot);
+                _snapNext = false;
+                return;
+            }
+            if (_snapNext)
+            {
+                rb.position = _targetPos;
+                rb.rotation = _targetRot;
+                _snapNext = false;
+                return;
+            }
+            rb.MovePosition(_targetPos);
+            rb.MoveRotation(_targetRot);
+        }
+
+        /// <summary>
         /// Rigidbody нужен carry-детекту (DetectPlatform идёт через attachedRigidbody
-        /// к transform платформы). Кинематика: двигает нас ParomRoute трансформом.
+        /// к transform платформы). Кинематика: ParomRoute задаёт цель через
+        /// SetKinematicTarget, едем через MovePosition/MoveRotation в FixedUpdate.
         /// Коллайдер: если в префабе ничего нет — строим пол по bounds рендеров,
         /// чтобы на кабинку можно было встать.
         /// </summary>
@@ -74,6 +120,13 @@ namespace ProjectC.World.Parom
             if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
             rb.isKinematic = true;
             rb.useGravity = false;
+            // T-PAROM-05: интерполяция сглаживает рендер между физшагами;
+            // sleepThreshold=0 — стоящая на станции кабинка не засыпает и остаётся
+            // валидной платформой для DetectGroundPlatform (IsSleeping-фильтр).
+            rb.interpolation = _interpolateRigidbody
+                ? RigidbodyInterpolation.Interpolate
+                : RigidbodyInterpolation.None;
+            rb.sleepThreshold = 0f;
 
             if (GetComponentInChildren<Collider>() != null) return;
 

@@ -50,13 +50,10 @@ namespace ProjectC.World.Parom
 
         private void Update()
         {
-            // T-PAROM-16: будим тело каждый кадр. sleepThreshold=0 сон НЕ
-            // предотвращает (лог паром_10: sleep=True в движении дважды) —
-            // телепорты будят через раз. Спящее тело: IsSleeping-фильтр рубит
-            // carry + тело замирает и отстаёт от трансформа. WakeUp дешёвый,
-            // поведение не меняет (только фаза сна).
-            Rigidbody rb = GetComponent<Rigidbody>();
-            if (rb != null && rb.isKinematic && rb.IsSleeping()) rb.WakeUp();
+            // T-PAROM-17: WakeUp каждый кадр УБРАН (был в T-PAROM-16, не работает —
+            // сон в движении остался в логе паром_10). Сон больше не проблема:
+            // IsSleeping-гейт снят в DetectGroundPlatform, спящая платформа
+            // везёт нулевой дельтой (безвредно).
             if (_propellers.Count == 0 || _propellerRpm <= 0f) return;
             Vector3 axis = _propellerAxis switch
             {
@@ -81,13 +78,9 @@ namespace ProjectC.World.Parom
             if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
             rb.isKinematic = true;
             rb.useGravity = false;
-            // T-PAROM-13: sleepThreshold=0 — кинематику, которую двигают
-            // трансформом, PhysX периодически укладывает спать ПРЯМО В ДВИЖЕНИИ
-            // (лог паром_3: sleep=True при растущем s; телепорты будят через раз).
-            // Спящее тело: IsSleeping-фильтр детекта рубит carry + тело замирает
-            // и отстаёт от трансформа на 0.3–0.8 м (лаг rbPos). Без сна тело
-            // всегда валидная платформа, зонд стабилен. Поведение не меняет.
-            rb.sleepThreshold = 0f;
+            // T-PAROM-17: sleepThreshold УБРАН (был в T-PAROM-13, сон не держал —
+            // лог паром_10: sleep=True в движении). Не нужен: детект больше
+            // не смотрит IsSleeping.
 
             if (GetComponentInChildren<Collider>() != null) return;
 

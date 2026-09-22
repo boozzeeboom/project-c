@@ -1403,10 +1403,14 @@ namespace ProjectC.Player
         //   См. INVESTIGATION_CHARACTER_MICRO_JITTER.md (этот же коммит).
 
         /// <summary>
-        /// Probe вниз по _platformMask. Возвращает Transform платформы, только если
-        /// она реально движется (Rigidbody не спит и имеет ненулевую скорость).
-        /// Статичная геометрия и спящие Rigidbody игнорируются — это предотвращает
-        /// микротряску от floating-point шума / interpolation jitter.
+        /// Probe вниз по _platformMask. Возвращает Transform платформы, если под
+        /// ногами коллайдер с Rigidbody. Спящие НЕ отфильтровываем (T-PAROM-17):
+        /// телепортируемая кинематика (паром) спит прямо в движении, и сон не
+        /// лечится ни sleepThreshold=0, ни WakeUp каждый кадр (доказано логами
+        /// паром_3/10/11) — гейт по сну рвал carry фликером. Худший случай без
+        /// гейта: статичный объект с RB станет «платформой» с нулевой дельтой
+        /// (carry прибавит ноль — безвредно). Статичная геометрия БЕЗ Rigidbody
+        /// по-прежнему не платформа (T-JITTER01 в силе).
         /// </summary>
         private Transform DetectGroundPlatform()
         {
@@ -1423,14 +1427,8 @@ namespace ProjectC.Player
                 if (rb == null)
                     return null; // Статичная геометрия без Rigidbody — не платформа.
 
-                // Спящий Rigidbody = объект стоит на месте, перенос не нужен.
-                if (rb.IsSleeping())
-                    return null;
-
-                // Rigidbody awake — потенциальная платформа (корабль, лифт).
-                // Даже если скорость ~0 сейчас (парящий корабль), он может начать
-                // движение в любой момент. Шум фильтруется в ApplyPlatformCarry()
-                // через _platformMinDelta.
+                // T-PAROM-17: IsSleeping-гейт УБРАН (см. summary). Шум гасится
+                // ниже через _platformMinDelta + кэп T-PAROM-14/16.
                 return rb.transform;
             }
             return null;

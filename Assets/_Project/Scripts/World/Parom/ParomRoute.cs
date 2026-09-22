@@ -78,6 +78,16 @@ namespace ProjectC.World.Parom
         [Tooltip("Подробные логи (прибытия/отправления).")]
         [SerializeField] private bool _debugLog = false;
 
+        [Header("Сглаживание на клиентах (T-PAROM-04, анти-джиттер райдера)")]
+        [Tooltip("Постоянная времени сглаживания сетевого прогресса s на клиентах (с). Убирает ступеньку тик-рейта NetworkVariable: carry-дельта райдера становится гладкой. Сервер/хост едут по точному s без запаздывания. 0 = выкл (прямое применение _netS, как в v1).")]
+        [Min(0f)] [SerializeField] private float _clientSmoothTime = 0.12f;
+
+        [Tooltip("Макс. скорость доворота кабинки на клиентах (град/с). Смягчает 180°-разворот на конечных — carry-yaw тоже становится плавным. Сервер ставит rotation жёстко.")]
+        [Min(1f)] [SerializeField] private float _clientTurnSpeed = 90f;
+
+        [Tooltip("Скачок прогресса больше этого (м) — снап без сглаживания (первый кадр, вход на маршрут, телепорт).")]
+        [Min(0f)] [SerializeField] private float _clientSnapDistance = 8f;
+
         // === Сеть (пишет только сервер) ===
         private readonly NetworkVariable<float> _netS = new NetworkVariable<float>(
             0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -106,6 +116,11 @@ namespace ProjectC.World.Parom
 
         // Применение на кабинку (общее для сервера и клиентов).
         private Vector3 _lastMoveDir = Vector3.forward;
+        // T-PAROM-04: клиентское сглаживание сетевого s (анти-ступенька тик-рейта).
+        // Райдер едет дельтой, поэтому абсолютное отставание на tau неважно —
+        // важна гладкость дельты.
+        private float _clientS;
+        private bool _clientSInit;
         private readonly List<Vector3> _lastAnchorPos = new List<Vector3>();
         private float _lastSag;
         private float _lastLateral;
@@ -191,11 +206,30 @@ namespace ProjectC.World.Parom
             }
             else
             {
-                s = _netS.Value;
+                // T-PAROM-04: не ставим кабинку по сырому _netS.Value — NetworkVariable
+                // приезжает с тик-рейтом, прямое применение даёт ступеньку
+                // («0,0,0,БОЛЬШАЯ» в carry-дельте → дёрганье райдера).
+                // Экспоненциальное сглаживание делает дельту гладкой.
+                float targetS = _netS.Value;
+                if (!_clientSInit || Mathf.Abs(targetS - _clientS) > _clientSnapDistance)
+                {
+                    _clientS = targetS;
+                    _clientSInit = true;
+                }
+                else if (_clientSmoothTime > 0f)
+                {
+                    float k = 1f - Mathf.Exp(-Time.deltaTime / _clientSmoothTime);
+                    _clientS += (targetS - _clientS) * k;
+                }
+                else
+                {
+                    _clientS = targetS;
+                }
+                s = _clientS;
                 dir = _netDir.Value;
             }
 
-            ApplyTrolley(s, dir);
+            ApplyTrolley(s, dir, smoothRotation: !simulate);
             MaybeRebuildCables();
         }
 
@@ -254,10 +288,12 @@ namespace ProjectC.World.Parom
 
         private void PublishNet()
         {
-            _netS.Value = _serverS;
-            _netDir.Value = _serverDir;
-            _netDwelling.Value = _serverDwelling;
-            _netStation.Value = _serverStation;
+            // T-PAROM-04: пишем только изменившееся. При стоянке s/dir/dwelling/station
+            // константны — не дёргаем NetworkVariable зря (меньше сетевого шума).
+            if (!Mathf.Approximately(_netS.Value, _serverS)) _netS.Value = _serverS;
+            if (_netDir.Value != _serverDir) _netDir.Value = _serverDir;
+            if (_netDwelling.Value != _serverDwelling) _netDwelling.Value = _serverDwelling;
+            if (_netStation.Value != _serverStation) _netStation.Value = _serverStation;
         }
 
         // --- Путь: живые позиции якорей (FO-safe, без кэша Vector3) ---
@@ -387,7 +423,7 @@ namespace ProjectC.World.Parom
             return root;
         }
 
-        private void ApplyTrolley(float s, int dir)
+        private void ApplyTrolley(float s, int dir, bool smoothRotation)
         {
             if (_trolley == null) return;
             Vector3 pathPoint = EvaluatePath(s, out Vector3 segDir);
@@ -396,7 +432,14 @@ namespace ProjectC.World.Parom
             Vector3 worldPos = pathPoint + Vector3.down * _cabinHangDepth;
             _trolley.position = worldPos;
             if (_lastMoveDir.sqrMagnitude > 0.0001f)
-                _trolley.rotation = Quaternion.LookRotation(_lastMoveDir, Vector3.up);
+            {
+                Quaternion target = Quaternion.LookRotation(_lastMoveDir, Vector3.up);
+                // T-PAROM-04: на клиентах 180°-разворот на конечной идёт плавным
+                // доворотом во время стоянки (carry-yaw тоже плавный). Сервер — жёстко.
+                _trolley.rotation = smoothRotation && _clientTurnSpeed > 0f
+                    ? Quaternion.RotateTowards(_trolley.rotation, target, _clientTurnSpeed * Time.deltaTime)
+                    : target;
+            }
         }
 
         private void SetVisualsActive(bool active)

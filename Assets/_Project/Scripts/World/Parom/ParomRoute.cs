@@ -197,6 +197,22 @@ namespace ProjectC.World.Parom
 
             ApplyTrolley(s, dir);
             MaybeRebuildCables();
+
+            // T-DIAG-FERRY: лог пути раз в секунду (включается _debugLog).
+            // Постоянный gated-диагностический лог: дважды пригождался
+            // (ступенька сети, схлоп SmoothStep). Поведение не меняет.
+            if (_debugLog && Time.frameCount % 60 == 0)
+            {
+                string rbInfo = "no-trolley";
+                if (_trolley != null)
+                {
+                    Rigidbody trb = _trolley.GetComponent<Rigidbody>();
+                    rbInfo = trb != null
+                        ? $"sleep={trb.IsSleeping()} vel={trb.linearVelocity} rbPos={trb.position}"
+                        : "no-rb";
+                }
+                Debug.Log($"[ParomRoute:{name}] s={s:F1}/{_totalLength:F0} trolley={_trolley.position} yaw={_trolley.rotation.eulerAngles.y:F0} dir={dir} rb[{rbInfo}]", this);
+            }
         }
 
         // --- Симуляция (пинг-понг с остановками, только сервер/превью) ---

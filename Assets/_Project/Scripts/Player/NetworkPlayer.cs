@@ -152,6 +152,17 @@ namespace ProjectC.Player
         private Vector3 _platformDelta;
         private bool _onPlatform;
         private bool _platformMaskWarned;
+        // T-DIAG-FERRY (ВРЕМЕННО, удалить после замеров): счётчики диагностики езды
+        // на платформе. Поведение не меняют: только считают + лог раз в секунду.
+        private bool _diagPrevGrounded = true;
+        private int _diagGroundedFlips;
+        private int _diagFallEntries;
+        private int _diagPrevAnimHash;
+        private int _diagFallHash;
+        private float _diagMaxCarryY;
+        private float _diagFrames;
+        private float _diagFpsAccum;
+        private float _diagNextLogTime;
         // Ветер: сглаженная горизонтальная скорость сноса (инерция порывов)
         private Vector3 _windVelocity = Vector3.zero;
         private Vector3 _windVelocitySmooth = Vector3.zero;
@@ -1294,6 +1305,36 @@ namespace ProjectC.Player
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.before", $"motion={controllerMotion} grounded={_controller.isGrounded} onPlatform={_onPlatform} platformDelta={_platformDelta}");
             _controller.Move(controllerMotion);
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.after", $"pos={transform.position} grounded={_controller.isGrounded} velocity={_velocity}");
+
+            // T-DIAG-FERRY (ВРЕМЕННО, удалить после замеров): диагностика езды.
+            // Считаем, пока стоим на платформе; лог раз в секунду, только если
+            // хоть кадр были на платформе. Поведение не меняет.
+            if (_onPlatform)
+            {
+                bool g = _controller.isGrounded;
+                if (g != _diagPrevGrounded) _diagGroundedFlips++;
+                _diagPrevGrounded = g;
+                if (_animator != null)
+                {
+                    if (_diagFallHash == 0) _diagFallHash = Animator.StringToHash("Fall");
+                    int h = _animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+                    if (h != _diagPrevAnimHash && h == _diagFallHash) _diagFallEntries++;
+                    _diagPrevAnimHash = h;
+                }
+                float dy = Mathf.Abs(_platformDelta.y);
+                if (dy > _diagMaxCarryY) _diagMaxCarryY = dy;
+                _diagFrames++;
+                _diagFpsAccum += 1f / Mathf.Max(Time.unscaledDeltaTime, 1e-4f);
+            }
+            if (_diagNextLogTime <= 0f) _diagNextLogTime = Time.unscaledTime + 1f;
+            if (Time.unscaledTime >= _diagNextLogTime)
+            {
+                if (_diagFrames > 0f)
+                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0}");
+                _diagGroundedFlips = 0; _diagFallEntries = 0; _diagMaxCarryY = 0f;
+                _diagFrames = 0f; _diagFpsAccum = 0f;
+                _diagNextLogTime = Time.unscaledTime + 1f;
+            }
         }
 
         // ==================== MOVING-PLATFORM CARRY ====================

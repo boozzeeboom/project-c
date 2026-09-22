@@ -173,6 +173,13 @@ namespace ProjectC.Player
         // больше дефолтных 3, либо detach обязан был случиться (проверяем).
         private int _diagCurMissStreak;
         private int _diagMaxMissStreak;
+        // T-DIAG-FERRY Фаза 1e: ловим многократные вызовы carry за кадр
+        // (maxMissStreak=366 при ~30 fps иначе необъясним). Первый повторный
+        // вход за кадр — стектрейс с ID объекта: кто вызывает.
+        private int _diagLastFrame = -1;
+        private int _diagCallsThisFrame;
+        private int _diagMaxCallsPerFrame;
+        private bool _diagMultiLogged;
         // Ветер: сглаженная горизонтальная скорость сноса (инерция порывов)
         private Vector3 _windVelocity = Vector3.zero;
         private Vector3 _windVelocitySmooth = Vector3.zero;
@@ -1353,11 +1360,11 @@ namespace ProjectC.Player
                         Vector3 r = transform.position - _currentPlatform.position;
                         rel = $"rel=({r.x:F2},{r.y:F2},{r.z:F2})";
                     }
-                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0} maxDt={_diagMaxDt:F0}ms hitchFrames={_diagHitchFrames} {rel} maxMissStreak={_diagMaxMissStreak} missClear={_platformMissFramesToClear}");
+                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0} maxDt={_diagMaxDt:F0}ms hitchFrames={_diagHitchFrames} {rel} maxMissStreak={_diagMaxMissStreak} missClear={_platformMissFramesToClear} maxCallsPerFrame={_diagMaxCallsPerFrame} objh={GetHashCode()}");
                 }
                 _diagGroundedFlips = 0; _diagFallEntries = 0; _diagMaxCarryY = 0f;
                 _diagFrames = 0f; _diagFpsAccum = 0f; _diagMaxDt = 0f; _diagHitchFrames = 0;
-                _diagMaxMissStreak = 0;
+                _diagMaxMissStreak = 0; _diagMaxCallsPerFrame = 0;
                 _diagNextLogTime = Time.unscaledTime + 1f;
             }
         }
@@ -1416,6 +1423,23 @@ namespace ProjectC.Player
         /// </summary>
         private void ApplyPlatformCarry()
         {
+            // T-DIAG-FERRY Фаза 1e: счётчик вызовов за кадр (временно).
+            if (_diagLastFrame == Time.frameCount)
+            {
+                _diagCallsThisFrame++;
+                if (_diagCallsThisFrame > _diagMaxCallsPerFrame) _diagMaxCallsPerFrame = _diagCallsThisFrame;
+                if (_diagCallsThisFrame == 2 && !_diagMultiLogged)
+                {
+                    _diagMultiLogged = true;
+                    Debug.LogWarning($"[DIAG-FERRY] MULTI-CALL frame={Time.frameCount} obj={name} h={GetHashCode()} owner={OwnerClientId} spawned={IsSpawned}\n{System.Environment.StackTrace}");
+                }
+            }
+            else
+            {
+                _diagLastFrame = Time.frameCount;
+                _diagCallsThisFrame = 1;
+            }
+
             _platformDelta = Vector3.zero;
             _onPlatform = false;
 

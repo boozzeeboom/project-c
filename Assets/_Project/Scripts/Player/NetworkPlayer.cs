@@ -171,6 +171,9 @@ namespace ProjectC.Player
         private int _diagPrevAnimHash;
         private int _diagFallHash;
         private float _diagMaxCarryY;
+        // T-DIAG-FERRY: макс. горизонталь carry-дельты (корабли: там вертикали
+        // нет, рывки горизонтальные — были слепы). Имя платформы в лог.
+        private float _diagMaxCarryXZ;
         private float _diagFrames;
         private float _diagFpsAccum;
         private float _diagNextLogTime;
@@ -1352,6 +1355,8 @@ namespace ProjectC.Player
                 }
                 float dy = Mathf.Abs(_platformDelta.y);
                 if (dy > _diagMaxCarryY) _diagMaxCarryY = dy;
+                float dxz = Mathf.Sqrt(_platformDelta.x * _platformDelta.x + _platformDelta.z * _platformDelta.z);
+                if (dxz > _diagMaxCarryXZ) _diagMaxCarryXZ = dxz;
                 float dtms = Time.unscaledDeltaTime * 1000f;
                 if (dtms > _diagMaxDt) _diagMaxDt = dtms;
                 if (dtms > 50f) _diagHitchFrames++;
@@ -1372,9 +1377,10 @@ namespace ProjectC.Player
                         Vector3 r = transform.position - _currentPlatform.position;
                         rel = $"rel=({r.x:F2},{r.y:F2},{r.z:F2})";
                     }
-                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm fps={_diagFpsAccum / _diagFrames:F0} maxDt={_diagMaxDt:F0}ms hitchFrames={_diagHitchFrames} {rel} maxMissStreak={_diagMaxMissStreak} missClear={_platformMissFramesToClear} maxCallsPerFrame={_diagMaxCallsPerFrame} objh={GetHashCode()}");
+                    string pn = _currentPlatform != null ? _currentPlatform.name : "noplat";
+                    Debug.Log($"[DIAG-FERRY] onPlatform flips={_diagGroundedFlips}/s fallEntries={_diagFallEntries}/s maxCarryY={_diagMaxCarryY * 1000f:F1}mm maxCarryXZ={_diagMaxCarryXZ * 1000f:F0}mm plat={pn} fps={_diagFpsAccum / _diagFrames:F0} maxDt={_diagMaxDt:F0}ms hitchFrames={_diagHitchFrames} {rel} maxMissStreak={_diagMaxMissStreak} missClear={_platformMissFramesToClear} maxCallsPerFrame={_diagMaxCallsPerFrame} objh={GetHashCode()}");
                 }
-                _diagGroundedFlips = 0; _diagFallEntries = 0; _diagMaxCarryY = 0f;
+                _diagGroundedFlips = 0; _diagFallEntries = 0; _diagMaxCarryY = 0f; _diagMaxCarryXZ = 0f;
                 _diagFrames = 0f; _diagFpsAccum = 0f; _diagMaxDt = 0f; _diagHitchFrames = 0;
                 _diagMaxMissStreak = 0; _diagMaxCallsPerFrame = 0;
                 _diagNextLogTime = Time.unscaledTime + 1f;

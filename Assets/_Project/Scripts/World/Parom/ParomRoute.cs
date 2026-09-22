@@ -322,10 +322,38 @@ namespace ProjectC.World.Parom
         }
 
         /// <summary>
-        /// Мировая точка пути на дистанции s метров от старта — НА провисшей
-        /// кривой (кабинка повторяет профиль тросов, а не хорду).
-        /// Направление — касательная к кривой (конечная разность), чтобы кабина
-        /// плавно клевала носом в ложбинах и на уклонах между станциями.
+        /// T-PAROM-15 (redo 08): профиль кабинки — тот же провис, но наклон
+        /// гаснет у станций. Чистый синус даёт излом вертикальной скорости
+        /// на стыке (+1.4 м/с → −1.4 м/с в один кадр): рывок на каждой станции.
+        /// Первая попытка (08) использовала Mathf.SmoothStep — в редакторе
+        /// 6000.5.2f1 он не нормализует диапазон (T-PAROM-11) и схлопнул прогиб;
+        /// здесь ручной Эрмит (EaseEnds). Тросы и гизмо — по чистому SaggedPoint.
+        /// </summary>
+        private Vector3 EasedSaggedPoint(Vector3 aW, Vector3 bW, float t)
+        {
+            Vector3 p = Vector3.Lerp(aW, bW, t);
+            float segLen = Vector3.Distance(aW, bW);
+            p.y -= Mathf.Sin(Mathf.PI * t) * segLen * _sagRatio * EaseEnds(t);
+            return p;
+        }
+
+        /// <summary>
+        /// Ручной smoothstep крайних 15% сегмента. Mathf.SmoothStep не используем
+        /// (см. T-PAROM-11: движковый не нормализует диапазон в 6000.5.2f1).
+        /// </summary>
+        private static float EaseEnds(float t)
+        {
+            float a = Mathf.Clamp01(t / 0.15f);
+            float b = Mathf.Clamp01((1f - t) / 0.15f);
+            a = a * a * (3f - 2f * a);
+            b = b * b * (3f - 2f * b);
+            return a * b;
+        }
+
+        /// <summary>
+        /// Мировая точка пути на дистанции s метров от старта — НА сглаженном
+        /// провисшем профиле (EasedSaggedPoint: без излома вертикальной скорости
+        /// на станциях). Направление — касательная к кривой.
         /// </summary>
         private Vector3 EvaluatePath(float s, out Vector3 segmentDir)
         {
@@ -337,11 +365,11 @@ namespace ProjectC.World.Parom
             Vector3 a = _stations[seg].position;
             Vector3 b = _stations[seg + 1].position;
             const float eps = 0.02f;
-            Vector3 p0 = SaggedPoint(a, b, Mathf.Clamp01(t - eps));
-            Vector3 p1 = SaggedPoint(a, b, Mathf.Clamp01(t + eps));
+            Vector3 p0 = EasedSaggedPoint(a, b, Mathf.Clamp01(t - eps));
+            Vector3 p1 = EasedSaggedPoint(a, b, Mathf.Clamp01(t + eps));
             segmentDir = (p1 - p0).normalized;
             if (segmentDir.sqrMagnitude < 0.0001f) segmentDir = _lastMoveDir;
-            return SaggedPoint(a, b, t);
+            return EasedSaggedPoint(a, b, t);
         }
 
         // --- Кабинка ---

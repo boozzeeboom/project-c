@@ -448,15 +448,19 @@ namespace ProjectC.World.Parom
             _trolley.position = worldPos;
             if (_lastMoveDir.sqrMagnitude > 0.0001f)
             {
-                // T-PAROM-13 (replay T-PAROM-07, изолированно): только yaw.
-                // Касательная наклонена (ложбина ~6 м), LookRotation от неё кренит
-                // крышу +-9 градусов: край гуляет +-0.6 м, зонд на краю мажет,
-                // CharacterController делает step-up хопы на подъёмах.
-                // В 07 хопы пропали (единственное снятие симптома в серии).
+                // T-PAROM-13 (replay T-PAROM-07): только yaw, БЕЗ тангажа.
+                // T-PAROM-18: доворот 360°/с вместо скачка. Разворот на терминале
+                // 90→270 мгновенным LookRotation зеркалил пассажира на другой край
+                // крыши одним кадром (carry-yaw 180°: всплеск фликов/falls на
+                // прибытии — лог паром_12: 8346 flips=9/s). 0.5 с доворота во
+                // время 6-с стоянки; в пути таргет почти неподвижен — отставания нет.
                 Vector3 flatDir = _lastMoveDir;
                 flatDir.y = 0f;
                 if (flatDir.sqrMagnitude > 0.0001f)
-                    _trolley.rotation = Quaternion.LookRotation(flatDir.normalized, Vector3.up);
+                {
+                    Quaternion target = Quaternion.LookRotation(flatDir.normalized, Vector3.up);
+                    _trolley.rotation = Quaternion.RotateTowards(_trolley.rotation, target, 360f * Time.deltaTime);
+                }
             }
         }
 

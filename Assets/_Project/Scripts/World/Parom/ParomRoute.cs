@@ -478,11 +478,25 @@ namespace ProjectC.World.Parom
                         : target;
                 }
             }
-            // T-PAROM-09: диагностика пути (включается _debugLog в инспекторе):
+            // T-PAROM-09/10: диагностика пути (включается _debugLog в инспекторе):
             // раз в секунду пишем s, позицию и направление — по логу видно,
             // идёт ли кабинка по прогибу и нет ли ступенек/замираний.
+            // Плюс состояние Rigidbody: детект платформы в NetworkPlayer отбрасывает
+            // спящие тела (IsSleeping-фильтр), поэтому сон/пробуждение кинематики
+            // напрямую включает/выключает carry — циклический сон даст ровно
+            // наблюдаемый спам entered/left.
             if (_debugLog && Time.frameCount % 60 == 0)
-                Debug.Log($"[ParomRoute:{name}] s={s:F1}/{_totalLength:F0} trolley={_trolley.position} yaw={_trolley.rotation.eulerAngles.y:F0} dir={dir}", this);
+            {
+                string rbInfo = "no-trolley";
+                if (_trolley != null)
+                {
+                    Rigidbody trb = _trolley.GetComponent<Rigidbody>();
+                    rbInfo = trb != null
+                        ? $"sleep={trb.IsSleeping()} vel={trb.linearVelocity} rbPos={trb.position}"
+                        : "no-rb";
+                }
+                Debug.Log($"[ParomRoute:{name}] s={s:F1}/{_totalLength:F0} trolley={_trolley.position} yaw={_trolley.rotation.eulerAngles.y:F0} dir={dir} rb[{rbInfo}]", this);
+            }
         }
 
         private void SetVisualsActive(bool active)

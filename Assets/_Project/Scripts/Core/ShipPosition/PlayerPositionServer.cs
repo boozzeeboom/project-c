@@ -78,6 +78,13 @@ namespace ProjectC.Core.ShipPosition
 
                 Vector3 pos = np.GetEffectivePosition();
 
+                // T-PAROM-21: стоял на кабинке парома — ссылка на ветку.
+                // Carry owner-side, сервер опору remote-клиентов не знает:
+                // определяем сами probe-ом (дешево, раз в 5 с).
+                string routeId = "";
+                if (!inShip)
+                    ProjectC.World.Parom.ParomRoute.TryResolveRouteId(pos, out routeId);
+
                 // T-FO-SAVE-GUARD: пеший игрок в активном падении — пишем последнюю
                 // хорошую точку вместо точки в пустоте, хорошую обновляем только
                 // валидными сэмплами. Приземлился/телепортировался на твёрдое —
@@ -106,6 +113,7 @@ namespace ProjectC.Core.ShipPosition
                     px = pos.x, py = pos.y, pz = pos.z,
                     inShip = inShip,
                     shipPersistentId = shipId,
+                    platformRouteId = routeId,
                     savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                 });
             }
@@ -207,6 +215,27 @@ namespace ProjectC.Core.ShipPosition
 
                 if (_debugMode)
                     Debug.Log($"[PlayerPositionServer] Player {clientId} was in ship '{match.shipPersistentId}' but ship not found — fallback to saved pos");
+            }
+
+            // T-PAROM-21: стоял на кабинке — на ЖИВУЮ позицию (s уже восстановлен
+            // T-PAROM-20; при живом сервере сейв вообще не читается). Кэш carry
+            // переинициализируем — иначе догоняющий рывок. Нет ветки — фолбэк ниже.
+            if (!string.IsNullOrEmpty(match.platformRouteId))
+            {
+                var allRoutes = FindObjectsByType<ProjectC.World.Parom.ParomRoute>();
+                var route = Array.Find(allRoutes, r => r.IsSpawned && r.RouteId == match.platformRouteId);
+                if (route != null && route.TrolleyTransform != null)
+                {
+                    Vector3 boardPos = route.GetBoardingPoint();
+                    TeleportPlayer(np, boardPos);
+                    np.BindRiddenPlatform(route.TrolleyTransform);
+                    if (_debugMode)
+                        Debug.Log($"[PlayerPositionServer] Player {clientId} restored to parom '{match.platformRouteId}' at {boardPos}");
+                    return true;
+                }
+
+                if (_debugMode)
+                    Debug.Log($"[PlayerPositionServer] Player {clientId} was on parom '{match.platformRouteId}' but route not found — fallback to saved pos");
             }
 
             // Fallback: сохранённая позиция

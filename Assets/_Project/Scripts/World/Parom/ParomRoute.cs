@@ -136,6 +136,47 @@ namespace ProjectC.World.Parom
             dwelling = _serverDwelling; dwellRemaining = _serverDwellTimer;
         }
 
+        /// <summary>Корень кабинки (может быть null до EnsureTrolley).</summary>
+        public Transform TrolleyTransform => _trolley;
+
+        /// <summary>
+        /// T-PAROM-21: точка посадки на живую кабинку (верх коллайдера + запас).
+        /// Для телепорта при ресторре: кабинка уже на восстановленном s.
+        /// </summary>
+        public Vector3 GetBoardingPoint()
+        {
+            if (_trolley == null) return transform.position;
+            var col = _trolley.GetComponentInChildren<Collider>();
+            float topY = col != null ? col.bounds.max.y : _trolley.position.y + 0.7f;
+            return new Vector3(_trolley.position.x, topY + 0.3f, _trolley.position.z);
+        }
+
+        /// <summary>
+        /// T-PAROM-21: server-side определение ветки под ногами. Carry считается
+        /// на owner-стороне, сервер про чужую опору не знает — probe сам.
+        /// Только ParomTrolley (палубы кораблей не трогаем — у них inShip-путь).
+        /// </summary>
+        public static bool TryResolveRouteId(Vector3 feetPos, out string routeId)
+        {
+            routeId = "";
+            if (!Physics.SphereCast(feetPos + Vector3.up * 1f, 0.35f, Vector3.down,
+                    out RaycastHit hit, 2.5f, ~0, QueryTriggerInteraction.Ignore))
+                return false;
+            if (hit.collider == null || hit.collider.attachedRigidbody == null)
+                return false;
+            Transform t = hit.collider.attachedRigidbody.transform;
+            var routes = FindObjectsByType<ParomRoute>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            for (int i = 0; i < routes.Length; i++)
+            {
+                if (routes[i] != null && routes[i]._trolley == t)
+                {
+                    routeId = routes[i].RouteId;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>
         /// T-PAROM-20: применить restore сейва (только сервер, до первого тика
         /// симуляции). Клиенты подхватят через _netS. Невалидные значения

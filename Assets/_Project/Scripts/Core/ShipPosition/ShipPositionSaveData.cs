@@ -87,6 +87,10 @@ namespace ProjectC.Core.ShipPosition
         public float px, py, pz;         // world position
         public bool inShip;              // игрок был на корабле в момент save?
         public string shipPersistentId;  // _shipPersistentId корабля (если inShip)
+        // T-PAROM-21: игрок стоял на кабинке парома — ссылка на ветку.
+        // Ресторр — на ЖИВУЮ позицию кабинки (s уже восстановлен T-PAROM-20),
+        // мировая позиция игнорируется. Пусто = обычное поведение.
+        public string platformRouteId;
         public long savedAtUnix;
     }
 

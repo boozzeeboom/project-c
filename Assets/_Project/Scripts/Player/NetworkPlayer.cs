@@ -1435,6 +1435,25 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// T-PAROM-21: привязать carry к платформе после внешнего телепорта
+        /// (restore на кабинку). Кэш на текущую позицию — иначе первый кадр
+        /// даст догоняющую дельту (рывок). Зеркалит re-init ветку carry.
+        /// </summary>
+        public void BindRiddenPlatform(Transform platform)
+        {
+            _currentPlatform = platform;
+            if (platform != null)
+            {
+                _platformLastPos = platform.position;
+                _platformLastRot = platform.rotation;
+            }
+            _platformMissFrames = 0;
+            _platformDelta = Vector3.zero;
+            _platformRemainderY = 0f;
+            _onPlatform = platform != null;
+        }
+
+        /// <summary>
         /// Переносит персонажа вместе с движущейся платформой под ногами: позиция + yaw
         /// (курсовой поворот вокруг мировой оси Y). Pitch/roll платформы игнорируются.
         /// Owner-only, пеший режим. Вызывается в начале ProcessMovement.

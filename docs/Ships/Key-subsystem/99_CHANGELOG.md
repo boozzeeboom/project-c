@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-09-23 — T-CARGO-UI-03 Phase 1 (приватность деталей трюма)
+
+**Проблема**: детали чужого трюма рассылались всем через broadcast-NV (`_telemetryCargoState`,
+`ReadPermission.Everyone`) и лежали в памяти каждого клиента. Дизайн:
+`docs/Ships/cargo_system/T-CARGO-UI-03_CARGO_DETAIL_PRIVACY.md`.
+
+**Фикс**: детали — только по приватному запросу (`ShipCargoServer.RequestCargoDetailRpc` →
+`IsOwnerOfShip` → `NetworkPlayer.ReceiveShipCargoDetailTargetRpc` → приватный кэш
+`ShipCargoClientState`). Окно мигрировано на новый кэш (запрос в `Show` и после мутаций,
+deny → `Hide`); broadcast-seed и кэширование broadcast-дельт в `ShipTelemetryClientState`
+отключены (`GetShipCargoDetail` — `[Obsolete]`). Быстрые счётчики `cargoUsed/cargoMax`
+остались broadcast осознанно. Удаление самой NV — Phase 2.
+
+**Файлы**: `ShipController.cs` (`BuildCargoDetailSnapshot`), `ShipCargoServer.cs`,
+`NetworkPlayer.cs`, `ShipCargoClientState.cs`, `ShipCargoConsoleWindow.cs`,
+`ShipTelemetryClientState.cs`.
+
+**Verify**:
+- ✅ Compile: 0 CS-ошибок, 0 варнингов по ShipCargo (Unity console, после refresh+compile)
+- Ручная проверка (пользователь): §7 дизайн-дока (6 пунктов).
+
+---
+
 ## 2026-09-23 — T-KEY-11 (грузовая консоль открывалась без ключа)
 
 **Симптом**: `ShipCargoConsole` (эксченджер на корабле) открывался по F без ключа —

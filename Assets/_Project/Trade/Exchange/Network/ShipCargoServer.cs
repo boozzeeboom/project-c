@@ -349,6 +349,44 @@ namespace ProjectC.Trade.Network
             }
         }
 
+        /// <summary>
+        /// T-CARGO-UI-03: приватные детали трюма — только владельцу корабля.
+        /// Замена чтению broadcast-NV (`_telemetryCargoState` виден всем клиентам).
+        /// Клиент: ShipCargoClientState.RequestDetail → ответ targeted-ответом.
+        /// Гард тот же, что у store/retrieve (IsOwnerOfShip).</summary>
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void RequestCargoDetailRpc(
+            ulong shipNetId,
+            RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            var target = FindNetworkPlayer(clientId);
+            if (target == null) return;
+
+            if (shipNetId == 0)
+            {
+                target.ReceiveShipCargoDetailTargetRpc(shipNetId, default, false, "Неверные параметры");
+                return;
+            }
+
+            var ship = FindShipController(shipNetId);
+            if (ship == null)
+            {
+                target.ReceiveShipCargoDetailTargetRpc(shipNetId, default, false, "Корабль не найден");
+                return;
+            }
+
+            // Ownership guard — детали трюма только владельцу (как store/retrieve).
+            if (!KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetId))
+            {
+                target.ReceiveShipCargoDetailTargetRpc(shipNetId, default, false, "Вы не владелец этого корабля");
+                return;
+            }
+
+            var snapshot = ship.BuildCargoDetailSnapshot();
+            target.ReceiveShipCargoDetailTargetRpc(shipNetId, snapshot, true, "");
+        }
+
         // ========================================================
         // HELPERS
         // ========================================================

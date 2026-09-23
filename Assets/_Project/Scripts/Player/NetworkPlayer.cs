@@ -2746,6 +2746,13 @@ namespace ProjectC.Player
             ProjectC.Trade.Client.ShipCargoClientState.Instance?.OnShipCargoResultReceived(result);
         }
 
+        // T-CARGO-UI-03: приватные детали трюма (targeted, только владельцу).
+        [Rpc(SendTo.Owner)]
+        public void ReceiveShipCargoDetailTargetRpc(ulong shipNetId, ProjectC.Ship.Network.ShipCargoDetailState detail, bool success, string reason, RpcParams rpcParams = default)
+        {
+            ProjectC.Trade.Client.ShipCargoClientState.Instance?.OnCargoDetailReceived(shipNetId, detail, success, reason ?? "");
+        }
+
         // ==================== DIALOG V2 RPC TARGETS ====================
         // T-Q10: QuestServer (server-only singleton) шлёт dialog steps конкретному клиенту.
         // Клиентский handler: T-Q11 UI binding (DialogWindow.OnStepReceived).

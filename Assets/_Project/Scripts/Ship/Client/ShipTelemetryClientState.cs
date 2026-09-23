@@ -71,6 +71,7 @@ namespace ProjectC.Ship.Client
         }
 
         /// <summary>T-SHIP-FIX07: детали груза по netId. null если не подписаны / не синхронизированы.</summary>
+        [System.Obsolete("T-CARGO-UI-03: используйте ShipCargoClientState.GetCargoDetail (приватный канал, только владелец). Broadcast-кэш больше не заполняется.")]
         public ShipCargoDetailState? GetShipCargoDetail(ulong shipNetId)
         {
             if (_cargoByShip.TryGetValue(shipNetId, out var s)) return s;
@@ -101,9 +102,10 @@ namespace ProjectC.Ship.Client
             ship.OnTelemetryStateChanged += (prev, next) => OnShipTelemetryUpdated(shipNetId, next);
             var initial = ship.TelemetryState;
             _allShips[shipNetId] = initial;
-            // T-SHIP-FIX07: детали груза — отдельная подписка + seed.
+            // T-CARGO-UI-03: broadcast-детали больше НЕ сидируем в кэш (утечка содержимого
+            // чужих трюмов). Подписку держим для совместимости события; payload отбрасывается.
+            // Детали — через приватный канал ShipCargoClientState (только владелец).
             ship.OnTelemetryCargoChanged += (prev, next) => OnShipCargoUpdated(shipNetId, next);
-            _cargoByShip[shipNetId] = ship.TelemetryCargoState;
             if (Debug.isDebugBuild)
                 Debug.Log($"[ShipTelemetryClientState] SubscribeToShip: ship={shipNetId} ({initial.displayName})");
         }
@@ -157,11 +159,12 @@ namespace ProjectC.Ship.Client
                 OnOwnershipUpdated?.Invoke();
         }
 
-        /// <summary>T-SHIP-FIX07: обновить кэш деталей груза. Поднимаем то же
-        /// OnShipStateChanged — оба UI (MyShipsTab, ShipCargoConsoleWindow) уже подписаны.</summary>
+        /// <summary>T-CARGO-UI-03: broadcast-дельту деталей груза отбрасываем
+        /// (приватность: содержимое чужих трюмов не храним в памяти клиента).
+        /// Событие поднимаем для совместимости; детали — только через
+        /// приватный канал ShipCargoClientState.</summary>
         private void OnShipCargoUpdated(ulong shipNetId, ShipCargoDetailState newState)
         {
-            _cargoByShip[shipNetId] = newState;
             OnShipStateChanged?.Invoke(shipNetId);
         }
     }

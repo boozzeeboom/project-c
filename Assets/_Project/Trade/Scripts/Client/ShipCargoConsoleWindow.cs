@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using ProjectC.Items.Client;
-using ProjectC.Ship.Client;
 using ProjectC.Trade.Config;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
@@ -284,6 +283,8 @@ namespace ProjectC.Trade.Client
 
             SetVisible(true);
             TrySubscribe();
+            // T-CARGO-UI-03: детали трюма запрашиваем приватно (ответ только владельцу).
+            ShipCargoClientState.Instance?.RequestDetail(_shipNetId);
             RefreshData();
         }
 
@@ -293,6 +294,8 @@ namespace ProjectC.Trade.Client
             SetVisible(false);
             _invCache.Clear();
             _cargoCache.Clear();
+            if (_shipNetId != 0)
+                ShipCargoClientState.Instance?.ClearCargoDetail(_shipNetId);
             _shipNetId = 0;
 
             var nm = Unity.Netcode.NetworkManager.Singleton;
@@ -323,12 +326,13 @@ namespace ProjectC.Trade.Client
             if (invState != null) invState.OnSnapshotUpdated += RefreshData;
 
             var cargoState = ShipCargoClientState.Instance;
-            if (cargoState != null) cargoState.OnResultReceived += HandleResult;
-
-            // Телеметрия корабля: NetworkVariable sync ~100-200ms, но OnShipStateChanged
-            // срабатывает сразу при получении обновления — обновляем трюм без задержки.
-            var telemetry = ShipTelemetryClientState.Instance;
-            if (telemetry != null) telemetry.OnShipStateChanged += OnTelemetryUpdated;
+            if (cargoState != null)
+            {
+                cargoState.OnResultReceived += HandleResult;
+                // T-CARGO-UI-03: детали трюма — из приватного канала (только владелец),
+                // больше не из broadcast-телеметрии.
+                cargoState.OnCargoDetailUpdated += OnCargoDetailUpdated;
+            }
         }
 
         private void TryUnsubscribe()
@@ -340,16 +344,24 @@ namespace ProjectC.Trade.Client
             if (invState != null) invState.OnSnapshotUpdated -= RefreshData;
 
             var cargoState = ShipCargoClientState.Instance;
-            if (cargoState != null) cargoState.OnResultReceived -= HandleResult;
-
-            var telemetry = ShipTelemetryClientState.Instance;
-            if (telemetry != null) telemetry.OnShipStateChanged -= OnTelemetryUpdated;
+            if (cargoState != null)
+            {
+                cargoState.OnResultReceived -= HandleResult;
+                cargoState.OnCargoDetailUpdated -= OnCargoDetailUpdated;
+            }
         }
 
-        private void OnTelemetryUpdated(ulong shipNetId)
+        private void OnCargoDetailUpdated(ulong shipNetId, bool success, string reason)
         {
-            if (shipNetId == _shipNetId)
-                RefreshCargo();
+            if (shipNetId != _shipNetId) return;
+            if (!success)
+            {
+                // T-CARGO-UI-03: владение потеряно пока окно открыто — закрываем.
+                Debug.LogWarning($"[ShipCargoConsoleWindow] Cargo detail denied for ship {shipNetId}: {reason}");
+                Hide();
+                return;
+            }
+            RefreshCargo();
         }
 
         // ============================================================
@@ -457,26 +469,20 @@ namespace ProjectC.Trade.Client
                 return;
             }
 
-            var telemetry = ShipTelemetryClientState.Instance;
-            if (telemetry == null)
+            // T-CARGO-UI-03: детали — из приватного кэша (targeted snapshot, только владелец).
+            // null = ответ ещё в пути (запрошен в Show) — список заполнится по OnCargoDetailUpdated.
+            var cargoState = ShipCargoClientState.Instance;
+            if (cargoState == null)
             {
-                Debug.LogWarning("[ShipCargoConsoleWindow] RefreshCargo: telemetry == null");
+                Debug.LogWarning("[ShipCargoConsoleWindow] RefreshCargo: cargoState == null");
                 return;
             }
 
-            var state = telemetry.GetShipState(_shipNetId);
-            if (state == null)
-            {
-                Debug.LogWarning($"[ShipCargoConsoleWindow] RefreshCargo: ship {_shipNetId} NOT in telemetry (tracked={telemetry.TrackedShipCount})");
-                return;
-            }
-
-            // T-SHIP-FIX07: детали — из отдельного NV (по событиям), счётчики — из быстрого.
-            var cargoState = telemetry.GetShipCargoDetail(_shipNetId);
-            var cargoDetail = cargoState.HasValue ? cargoState.Value.cargoDetail : null;
+            var detailOpt = cargoState.GetCargoDetail(_shipNetId);
+            var cargoDetail = detailOpt.HasValue ? detailOpt.Value.cargoDetail : null;
 
 #if UNITY_EDITOR
-            Debug.Log($"[ShipCargoConsoleWindow] RefreshCargo: ship {_shipNetId} telemetry: cargoUsed={state.Value.cargoUsed}/{state.Value.cargoMax}, cargoDetail.Length={(cargoDetail != null ? cargoDetail.Length : -1)}");
+            Debug.Log($"[ShipCargoConsoleWindow] RefreshCargo: ship {_shipNetId} private detail: cargoDetail.Length={(cargoDetail != null ? cargoDetail.Length : -1)}");
 #endif
 
             if (cargoDetail == null || cargoDetail.Length == 0)
@@ -633,15 +639,9 @@ namespace ProjectC.Trade.Client
                     ? new StyleColor(new Color(0.4f, 0.95f, 0.4f))
                     : new StyleColor(new Color(0.95f, 0.4f, 0.4f));
             }
-            // T-SHIP-FIX10: данные перечитываем с задержкой — телеметрия отстаёт ~200мс+,
-            // немедленный RefreshData мигает stale. Статус показываем сразу.
-            StartCoroutine(DelayedRefreshData(0.5f));
-        }
-
-        private System.Collections.IEnumerator DelayedRefreshData(float delaySeconds)
-        {
-            yield return new UnityEngine.WaitForSeconds(delaySeconds);
-            RefreshData();
+            // T-CARGO-UI-03: данные запрашиваем приватно — ответ придёт через
+            // OnCargoDetailUpdated и сам перерисует список. Статус показываем сразу.
+            ShipCargoClientState.Instance?.RequestDetail(_shipNetId);
         }
 
         private void SetStatus(string text, bool ok)

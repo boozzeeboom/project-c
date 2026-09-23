@@ -965,8 +965,10 @@ namespace ProjectC.Player
 
         // ========================================================
         // T-SHIP-FIX07: NetworkVariable<ShipCargoDetailState> — детали груза отдельно.
-        // Server пишет ТОЛЬКО при смене содержимого трюма (PublishCargoDetail),
-        // все клиенты читают через ShipTelemetryClientState.GetShipCargoDetail.
+        // Server пишет ТОЛЬКО при смене содержимого трюма (PublishCargoDetail).
+        // T-CARGO-UI-03: клиенты broadcast-детали больше НЕ читают/не кэшируют
+        // (приватность) — окно берёт их через приватный канал ShipCargoClientState.
+        // Удаление самой NV — Phase 2 (отдельный тикет).
         // ========================================================
         private readonly NetworkVariable<ShipCargoDetailState> _telemetryCargoState = new NetworkVariable<ShipCargoDetailState>(
             default,
@@ -1177,6 +1179,20 @@ namespace ProjectC.Player
             // чтобы не дёргать сеть тем же содержимым.
             if (!next.Equals(_telemetryCargoState.Value))
                 _telemetryCargoState.Value = next;
+        }
+
+        /// <summary>
+        /// T-CARGO-UI-03: server-only снапшот деталей трюма для приватного канала
+        /// (targeted snapshot только владельцу — вместо чтения broadcast-NV).
+        /// Тонкая обёртка над BuildCargoDetailDto.</summary>
+        public ProjectC.Ship.Network.ShipCargoDetailState BuildCargoDetailSnapshot()
+        {
+            if (!IsServer) return default;
+            return new ProjectC.Ship.Network.ShipCargoDetailState
+            {
+                shipNetworkObjectId = NetworkObjectId,
+                cargoDetail = BuildCargoDetailDto(),
+            };
         }
 
         /// <summary>

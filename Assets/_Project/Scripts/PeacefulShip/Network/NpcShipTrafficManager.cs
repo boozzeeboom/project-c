@@ -105,7 +105,55 @@ namespace ProjectC.PeacefulShip.Network
         public void Clear()
         {
             _lastArrivalAtStation.Clear();
+            _wallSlots.Clear();
             if (debugMode) Debug.Log("[NpcShipTrafficManager] Clear — all arrival tracking reset");
+        }
+
+        // === T-NS-WF10: слоты теснин — только один обход в радиусе ===
+        // Воронка (один проход у скалы, все маршруты через него): локальный steering
+        // сходится в танец всей кучи (лог 000528: шестёрка синхронно 23.1→31.1→40.1).
+        // Слот сериализует проход: держатель летит, остальные висят в hover-wait.
+        private readonly Dictionary<ulong, (Vector3 pos, float at)> _wallSlots
+            = new Dictionary<ulong, (Vector3 pos, float at)>();
+        private const float WallSlotExpireSec = 180f;
+
+        /// <summary>
+        /// Занять/обновить слот обхода. false = рядом чужой слот (ждать).
+        /// Server-only. Протухшие (>180 с) чистятся по ходу.
+        /// </summary>
+        public bool TryAcquireWallSlot(ulong npcId, Vector3 pos, float radius)
+        {
+            float now = Time.time;
+            ulong staleId = 0;
+            bool hasStale = false;
+            foreach (var kv in _wallSlots)
+            {
+                if (kv.Key == npcId) continue;
+                if (now - kv.Value.at > WallSlotExpireSec) { staleId = kv.Key; hasStale = true; continue; }
+                if (Vector3.Distance(kv.Value.pos, pos) <= radius) return false;
+            }
+            if (hasStale) _wallSlots.Remove(staleId);
+            _wallSlots[npcId] = (pos, now);
+            return true;
+        }
+
+        /// <summary>Освободить слот (выход из обхода / divert / despawn).</summary>
+        public void ReleaseWallSlot(ulong npcId)
+        {
+            _wallSlots.Remove(npcId);
+        }
+
+        /// <summary>T-NS-WF10: сдвиг позиций слотов вместе с миром (F8/F9).</summary>
+        public int ApplyRebaseTranslation(Vector3 translation)
+        {
+            if (_wallSlots.Count == 0) return 0;
+            var keys = new List<ulong>(_wallSlots.Keys);
+            for (int i = 0; i < keys.Count; i++)
+            {
+                var v = _wallSlots[keys[i]];
+                _wallSlots[keys[i]] = (v.pos + translation, v.at);
+            }
+            return _wallSlots.Count;
         }
 
         /// <summary>

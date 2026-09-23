@@ -381,6 +381,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-NS-WF03: сдвинуть мировые Nav-кэши NPC-кораблей (CruiseTargetPos и др.).
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "NpcShipNavShifted",
                 "ships=" + ShiftNpcShipNav(plan.LocalTranslation));
+            // T-NS-WF10: сдвинуть позиции слотов теснин (иначе мьютекс врёт после F8).
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "TrafficSlotsShifted",
+                "slots=" + ShiftTrafficSlots(plan.LocalTranslation));
             // T-FO09O: блок локального состояния применён полностью — rollback
             // вправе вернуть его назад. До этой точки отказ = сдвигов не было.
             _localStateShifted = true;
@@ -510,6 +513,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                 // T-NS-WF03: вернуть Nav-кэши NPC-кораблей назад.
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "NpcShipNavShifted",
                     "ships=" + ShiftNpcShipNav(-request.Plan.LocalTranslation));
+                // T-NS-WF10: вернуть позиции слотов теснин назад.
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "TrafficSlotsShifted",
+                    "slots=" + ShiftTrafficSlots(-request.Plan.LocalTranslation));
                 _localStateShifted = false;
             }
             else
@@ -960,6 +966,18 @@ namespace ProjectC.World.FloatingOrigin.Network
                 catch (Exception) { }
             }
             return shifted;
+        }
+
+        /// <summary>
+        /// T-NS-WF10: сдвиг позиций wall-слотов TrafficManager вместе с миром.
+        /// Синглтон в BootstrapScene — резолв напрямую. Best-effort.
+        /// </summary>
+        private int ShiftTrafficSlots(Vector3 translation)
+        {
+            var tm = ProjectC.PeacefulShip.Network.NpcShipTrafficManager.Instance;
+            if (tm == null) return 0;
+            try { return tm.ApplyRebaseTranslation(translation); }
+            catch (Exception) { return 0; }
         }
 
         /// <summary>

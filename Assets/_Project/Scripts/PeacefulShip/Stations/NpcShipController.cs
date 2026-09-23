@@ -239,6 +239,10 @@ namespace ProjectC.PeacefulShip.Stations
 
                 NpcShipZoneRegistry.Unregister(this);
 
+                // T-NS-WF10: не оставлять висячий слот теснины (экспайри 180 с есть,
+                // но чистим сразу).
+                NpcShipTrafficManager.Instance?.ReleaseWallSlot(npcInstanceId);
+
                 if (NpcShipWorld.Instance != null)
                 {
                     NpcShipWorld.Instance.UnregisterNpc(npcInstanceId);
@@ -540,7 +544,14 @@ namespace ProjectC.PeacefulShip.Stations
         // Входов 44/76с: центр цепляет дальние скалы на краю lookahead → эпизоды
         // ровно min-dwell. Вход по центру — только внутренняя половина.
         [Tooltip("Доля lookahead: центр считается забитым только внутри неё (0..1).")]
-        [Range(0.1f, 1f)] [SerializeField] private float lidarCenterFraction = 0.5f;
+        [Range(0.1f, 1f)] [SerializeField] private float lidarCenterFraction = 0.35f;
+        // === T-NS-WF10: слот теснины — только один обход в радиусе (server-only) ===
+        [Header("Wall slot (server-only)")]
+        [Tooltip("Радиус слота: чужой обход ближе — висим в hover-wait, не лезем в кучу.")]
+        [Min(50f)] [SerializeField] private float wallSlotRadius = 300f;
+        [Tooltip("Сколько ждём слот в hover (с), потом divert.")]
+        [Min(10f)] [SerializeField] private float wallWaitTimeoutSec = 60f;
+        private float _wallWaitStartedAt; // 0 = не ждём
         // Жук 42 с / Летучий 59 с в обходе без LOS: displacement-watchdog их не ловит
         // (ёрзают ±5 м). Ловит прогресс к ЦЕЛИ с момента входа.
         [Tooltip("Сколько секунд в обходе ждём приближения к цели → divert.")]
@@ -960,11 +971,47 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-GATE04: ворота городов (одна точка входа, только при useCityGates).
             if (useCityGates && TryEnterGateApproach(rb, dist)) return;
 
-            // T-NS-WF08: вход одним веером лидара (stagger по кораблям — задел на 200+).
+            // T-NS-WF08 + WF10: вход одним веером лидара (stagger — задел на 200+).
             // Вблизи цели не зондируем — там разбирается Berthing.
-            if (dist > 100f && Time.time >= _wallCooldownUntil && Time.time >= _wallProbeNextAt) {
-                _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
-                if (CheckWallEntry(rb, toTarget, dist)) return;
+            // Слот занят → защёлка hover-wait (висим до слота/таймаута, не ползём).
+            if (dist > 100f && Time.time >= _wallCooldownUntil) {
+                if (_wallWaitStartedAt > 0f) {
+                    if (Time.time - _wallWaitStartedAt > wallWaitTimeoutSec) {
+                        _wallWaitStartedAt = 0f;
+                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                            "wall-slot-divert", "");
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Wall slot wait timeout — diverting");
+                        DivertToNextStation(rb);
+                        return;
+                    }
+                    if (Time.time >= _wallProbeNextAt) {
+                        _wallProbeNextAt = Time.time + wallProbeIntervalSec;
+                        int retry = CheckWallEntry(rb, toTarget, dist);
+                        if (retry == 1) { _wallWaitStartedAt = 0f; return; }
+                        if (retry == 0) _wallWaitStartedAt = 0f; // препятствие ушло — летим
+                        // retry == 2 → висим дальше
+                    }
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                    return;
+                }
+                if (Time.time >= _wallProbeNextAt) {
+                    _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
+                    int entry = CheckWallEntry(rb, toTarget, dist);
+                    if (entry == 1) return;
+                    if (entry == 2) {
+                        _wallWaitStartedAt = Time.time;
+                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                            "wall-slot-wait", "");
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Wall slot busy — hovering");
+                        rb.linearVelocity = Vector3.zero;
+                        rb.angularVelocity = Vector3.zero;
+                        return;
+                    }
+                }
+            } else if (_wallWaitStartedAt > 0f) {
+                // Кулдаун после манёвра — ожидание сбрасываем (начнём заново).
+                _wallWaitStartedAt = 0f;
             }
 
             Vector3 dir = toTarget.normalized;
@@ -1173,6 +1220,9 @@ namespace ProjectC.PeacefulShip.Stations
             _berthAttempts = 0;
             _holdingRetries = 0;
             _abortClimbRemaining = 0f;
+            // T-NS-WF10: уходим на другую станцию — слот не держим (страховка,
+            // ResetWallState уже отпустил, но divert зовётся и из Berthing).
+            NpcShipTrafficManager.Instance?.ReleaseWallSlot(npcInstanceId);
             _lastBerthDist = float.MaxValue;
             _berthNoProgressSince = Time.time;
             AdvanceScheduleForCurrentNpc();
@@ -1649,27 +1699,36 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         /// <summary>
-        /// T-NS-WF08: проверка входа в обход одним веером (Cruising + CorridorLeg).
+        /// T-NS-WF08 + WF10: проверка входа в обход одним веером (Cruising + CorridorLeg).
         /// Центр забит → серия; бок вплотную → сразу (зацеп кромки).
+        /// Возврат: 0 = чисто, 1 = вошли, 2 = ждать слот (теснина занята).
         /// </summary>
-        bool CheckWallEntry(Rigidbody rb, Vector3 toTarget, float dist) {
+        int CheckWallEntry(Rigidbody rb, Vector3 toTarget, float dist) {
             Vector3 dirN = toTarget / dist;
             Vector3 fwdN = new Vector3(dirN.x, 0f, dirN.z);
-            if (fwdN.sqrMagnitude < 0.001f) { _wallBlockStrikes = 0; return false; }
+            if (fwdN.sqrMagnitude < 0.001f) { _wallBlockStrikes = 0; return 0; }
             fwdN.Normalize();
             float lookN = Mathf.Min(WallLookAhead(), dist);
             LidarScan(rb.position, fwdN, lookN, fwdN, out _, out float centerN, out float minN);
             bool enter = minN < lidarSideTrigger;
             if (!enter) {
-                // T-NS-WF09: центр — только внутренняя половина lookahead (дальние
+                // T-NS-WF09: центр — только внутренняя доля lookahead (дальние
                 // скалы на краю не дёргают в обход каждые 8 с).
                 if (centerN < lookN * lidarCenterFraction) enter = (++_wallBlockStrikes >= wallEnterStrikes);
                 else _wallBlockStrikes = 0;
             }
-            if (!enter) return false;
+            if (!enter) return 0;
             _wallBlockStrikes = 0;
-            return TryEnterWallFollow(rb, toTarget, dist);
+            // T-NS-WF10: слот теснины — в воронке только один (иначе танец кучи).
+            var tm = NpcShipTrafficManager.Instance;
+            if (tm != null && !tm.TryAcquireWallSlot(npcInstanceId, rb.position, wallSlotRadius))
+                return 2;
+            _wallWaitStartedAt = 0f;
+            return TryEnterWallFollow(rb, toTarget, dist) ? 1 : 0;
         }
+
+        // T-NS-WF10: ожидание слота инлайнится в TickCruise/TickCorridorLeg
+        // (защёлка _wallWaitStartedAt) — отдельный метод не нужен, нового NavMode нет.
 
         /// <summary>
         /// Вход в обход из Cruising/CorridorLeg. Возврат — в тот же режим (_wallReturnMode).
@@ -1860,6 +1919,8 @@ namespace ProjectC.PeacefulShip.Stations
         void ResumeWallFollow(Rigidbody rb) {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+            // T-NS-WF10: вышли из обхода — слот свободен для ждущих.
+            NpcShipTrafficManager.Instance?.ReleaseWallSlot(npcInstanceId);
             NavMode back = (_wallReturnMode == NavMode.CorridorLeg) ? NavMode.CorridorLeg : NavMode.Cruising;
             // T-NS-WF01b: длинная пауза зонда — корабль уходит прямо, не клюёт кромку.
             _wallCooldownUntil = Time.time + wallResumeCooldownSec;
@@ -1874,6 +1935,9 @@ namespace ProjectC.PeacefulShip.Stations
             _wallReturnMode = NavMode.Cruising;
             _wallLosStrikes = 0;
             _wallBlockStrikes = 0;
+            _wallWaitStartedAt = 0f;
+            // T-NS-WF10: divert/timeout — слот свободен для ждущих.
+            NpcShipTrafficManager.Instance?.ReleaseWallSlot(npcInstanceId);
             _wallCooldownUntil = Time.time + wallResumeCooldownSec;
         }
 
@@ -1974,9 +2038,42 @@ namespace ProjectC.PeacefulShip.Stations
                 SetMode(NavMode.Berthing, "near-station");
                 return;
             }
-            if (dist > 100f && Time.time >= _wallCooldownUntil && Time.time >= _wallProbeNextAt) {
-                _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
-                if (CheckWallEntry(rb, toTarget, dist)) return;
+            if (dist > 100f && Time.time >= _wallCooldownUntil) {
+                if (_wallWaitStartedAt > 0f) {
+                    if (Time.time - _wallWaitStartedAt > wallWaitTimeoutSec) {
+                        _wallWaitStartedAt = 0f;
+                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "CorridorLeg", "CorridorLeg",
+                            "wall-slot-divert", "");
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Wall slot wait timeout — diverting");
+                        DivertToNextStation(rb);
+                        return;
+                    }
+                    if (Time.time >= _wallProbeNextAt) {
+                        _wallProbeNextAt = Time.time + wallProbeIntervalSec;
+                        int retry = CheckWallEntry(rb, toTarget, dist);
+                        if (retry == 1) { _wallWaitStartedAt = 0f; return; }
+                        if (retry == 0) _wallWaitStartedAt = 0f;
+                    }
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                    return;
+                }
+                if (Time.time >= _wallProbeNextAt) {
+                    _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
+                    int entry = CheckWallEntry(rb, toTarget, dist);
+                    if (entry == 1) return;
+                    if (entry == 2) {
+                        _wallWaitStartedAt = Time.time;
+                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "CorridorLeg", "CorridorLeg",
+                            "wall-slot-wait", "");
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Wall slot busy — hovering");
+                        rb.linearVelocity = Vector3.zero;
+                        rb.angularVelocity = Vector3.zero;
+                        return;
+                    }
+                }
+            } else if (_wallWaitStartedAt > 0f) {
+                _wallWaitStartedAt = 0f;
             }
             FlyToward(rb, toTarget, dist > 200f ? CruiseSpeed : ApproachSpeed);
         }

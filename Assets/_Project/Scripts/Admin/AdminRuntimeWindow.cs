@@ -1,5 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UIElements;
 
 namespace ProjectC.Admin
@@ -36,14 +39,14 @@ namespace ProjectC.Admin
 
         private static readonly string[] Tabs =
         {
-            "fly", "teleport", "respawn", "hud", "world", "route", "logs", "saves"
+            "fly", "teleport", "respawn", "hud", "world", "route", "tests", "logs", "saves"
         };
 
         private static readonly Dictionary<string, string> TabTitles = new Dictionary<string, string>
         {
             { "fly", "Полёт" }, { "teleport", "Телепорт" }, { "respawn", "Респавн" },
             { "hud", "HUD" }, { "world", "Мир" }, { "route", "Маршрут" },
-            { "logs", "Логи" }, { "saves", "Сейвы" }
+            { "tests", "Тесты" }, { "logs", "Логи" }, { "saves", "Сейвы" }
         };
 
         public static AdminRuntimeWindow EnsureExists()
@@ -202,6 +205,7 @@ namespace ProjectC.Admin
                 case "hud": BuildHudTab(); break;
                 case "world": BuildWorldTab(); break;
                 case "route": BuildRouteTab(); break;
+                case "tests": BuildTestsTab(); break;
                 case "logs": BuildLogsTab(); break;
                 case "saves": BuildSavesTab(); break;
             }
@@ -539,6 +543,250 @@ namespace ProjectC.Admin
             }
             result.Sort((a, b) => string.Compare(a.gameObject.name, b.gameObject.name, System.StringComparison.Ordinal));
             return result;
+        }
+
+        // ==================== Вкладка «Тесты» (T-ADM-09) ====================
+        // Читает docs/dev/global_needtotest из открытого git по сети —
+        // тот же приём что changelog в MainMenuWindow (raw.githubusercontent).
+        // Список файлов папки — через GitHub Contents API, сами файлы — по download_url.
+        // Только чтение: галочек нет, счётчики считаются из [ ]/[x] в файлах.
+        // Состояние Foldout'ов живёт в _testsOpen и переживает пересборки.
+
+        private const string TestsApiUrl =
+            "https://api.github.com/repos/boozzeeboom/project-c/contents/docs/dev/global_needtotest?ref=main";
+
+        private Coroutine _testsCoroutine;
+        private string _testsStatus = "Не загружено.";
+        private readonly Dictionary<string, NeedToTestFile> _testsParsed = new Dictionary<string, NeedToTestFile>();
+        private readonly HashSet<string> _testsOpen = new HashSet<string>();
+        private VisualElement _testsBody;
+
+        [System.Serializable]
+        private struct GitHubContentEntry
+        {
+            public string name;
+            public string type;
+            public string download_url;
+        }
+
+        [System.Serializable]
+        private class GitHubContentList
+        {
+            public GitHubContentEntry[] items;
+        }
+
+        private void BuildTestsTab()
+        {
+            AddLabel("Ручные тесты из git (docs/dev/global_needtotest). Только чтение.", 12);
+            AddLabel(_testsStatus, 12);
+            AddButton("🔄 Обновить из GitHub", () => FetchTestsTab());
+            _testsBody = new VisualElement();
+            _content.Add(_testsBody);
+            if (_testsParsed.Count == 0)
+            {
+                if (_testsCoroutine == null) FetchTestsTab();
+                else AddLabelTo(_testsBody, "Загрузка…", 12);
+            }
+            else RenderTestsTab();
+        }
+
+        private void FetchTestsTab()
+        {
+            if (_testsCoroutine != null) StopCoroutine(_testsCoroutine);
+            _testsCoroutine = StartCoroutine(TestsFetchRoutine());
+        }
+
+        private IEnumerator TestsFetchRoutine()
+        {
+            _testsStatus = "Список файлов…";
+            RebuildTestsStatus();
+            var files = new Dictionary<string, string>(); // fileName → markdown
+
+            // Шаг 1: список .md папки через GitHub Contents API (нужен User-Agent).
+            string listError = null;
+            using (var req = UnityWebRequest.Get(TestsApiUrl))
+            {
+                req.timeout = 10;
+                req.SetRequestHeader("User-Agent", "ProjectC-AdminPanel");
+                req.SetRequestHeader("Accept", "application/vnd.github+json");
+                yield return req.SendWebRequest();
+                if (req.result != UnityWebRequest.Result.Success)
+                    listError = string.IsNullOrEmpty(req.error) ? $"HTTP {req.responseCode}" : req.error;
+                else
+                    CollectTestsApiEntries(req.downloadHandler.text);
+            }
+
+            // Шаг 2: скачать каждый .md по download_url (заглушки без URL пропускаем).
+            var urls = new List<KeyValuePair<string, string>>(_testsPendingUrls);
+            urls.Sort((a, b) => string.Compare(a.Key, b.Key, System.StringComparison.Ordinal));
+            _testsPendingUrls.Clear();
+            foreach (var kv in urls)
+            {
+                string fileName = kv.Key;
+                _testsStatus = $"Загрузка {fileName}…";
+                RebuildTestsStatus();
+                using (var req = UnityWebRequest.Get(kv.Value))
+                {
+                    req.timeout = 10;
+                    req.SetRequestHeader("User-Agent", "ProjectC-AdminPanel");
+                    yield return req.SendWebRequest();
+                    if (req.result == UnityWebRequest.Result.Success)
+                        files[fileName] = req.downloadHandler.text;
+                    else
+                        Debug.LogWarning($"[AdminRuntimeWindow] Tests: {fileName} не скачан: {req.error}");
+                }
+            }
+
+            // Шаг 3: fallback — локальная рабочая копия, если сеть не отдала ничего.
+            if (files.Count == 0)
+            {
+                string localDir = Path.Combine(Application.dataPath, "..", "docs", "dev", "global_needtotest");
+                if (Directory.Exists(localDir))
+                {
+                    foreach (var path in Directory.GetFiles(localDir, "*.md"))
+                    {
+                        try { files[Path.GetFileName(path)] = File.ReadAllText(path); }
+                        catch (System.Exception e) { Debug.LogWarning($"[AdminRuntimeWindow] Tests: не прочитан {path}: {e.Message}"); }
+                    }
+                    if (files.Count > 0)
+                        _testsStatus = $"GitHub недоступен ({listError ?? "пусто"}) — показана локальная копия.";
+                }
+                if (files.Count == 0)
+                    _testsStatus = $"Не загружено: {listError ?? "файлов нет"}. Проверь сеть / GitHub.";
+            }
+            else
+            {
+                _testsStatus = $"Обновлено из GitHub ({files.Count} ф.).";
+            }
+
+            _testsParsed.Clear();
+            var names = new List<string>(files.Keys);
+            names.Sort(System.StringComparer.Ordinal);
+            foreach (var name in names)
+                _testsParsed[name] = NeedToTestParser.Parse(name, files[name]);
+
+            _testsCoroutine = null;
+            // Пересобрать вкладку только если пользователь всё ещё на ней.
+            if (IsVisible && _currentTab == "tests") SwitchTab("tests");
+            else RefreshStatus();
+        }
+
+        private readonly Dictionary<string, string> _testsPendingUrls = new Dictionary<string, string>();
+
+        private void CollectTestsApiEntries(string json)
+        {
+            _testsPendingUrls.Clear();
+            if (string.IsNullOrEmpty(json)) return;
+            GitHubContentList list = null;
+            try { list = JsonUtility.FromJson<GitHubContentList>("{\"items\":" + json + "}"); }
+            catch (System.Exception e) { Debug.LogWarning($"[AdminRuntimeWindow] Tests: API JSON не разобран: {e.Message}"); }
+            if (list?.items == null) return;
+            foreach (var e in list.items)
+            {
+                if (e.type != null && !e.type.Equals("file", System.StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(e.name) || !e.name.EndsWith(".md", System.StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(e.download_url)) continue;
+                _testsPendingUrls[e.name] = e.download_url;
+            }
+            // files заполнится на шаге 2; здесь только очередь URL.
+        }
+
+        private void RebuildTestsStatus()
+        {
+            if (IsVisible && _currentTab == "tests") SwitchTab("tests");
+        }
+
+        private void RenderTestsTab()
+        {
+            if (_testsBody == null) return;
+            _testsBody.Clear();
+            var names = new List<string>(_testsParsed.Keys);
+            names.Sort(System.StringComparer.Ordinal);
+            if (names.Count == 0) { AddLabelTo(_testsBody, "Файлов нет.", 12); return; }
+            foreach (var name in names)
+            {
+                var file = _testsParsed[name];
+                int total = 0, done = 0, red = 0, yellow = 0, green = 0;
+                foreach (var s in file.Sections)
+                    foreach (var it in s.Items)
+                    {
+                        total++;
+                        if (it.Done) done++;
+                        else if (it.Priority == "red") red++;
+                        else if (it.Priority == "yellow") yellow++;
+                        else if (it.Priority == "green") green++;
+                    }
+                string fileKey = "f:" + name;
+                var fileFold = new Foldout
+                {
+                    text = $"📄 {name} — ✅{done}/{total} (🔴{red} 🟡{yellow} 🟢{green})",
+                    value = _testsOpen.Contains(fileKey) || _testsParsed.Count <= 3
+                };
+                if (fileFold.value) _testsOpen.Add(fileKey);
+                fileFold.style.fontSize = 14;
+                fileFold.RegisterValueChangedCallback(e =>
+                {
+                    if (e.newValue) _testsOpen.Add(fileKey);
+                    else _testsOpen.Remove(fileKey);
+                });
+                _testsBody.Add(fileFold);
+                if (!string.IsNullOrEmpty(file.Title) && file.Title != name)
+                    AddLabelTo(fileFold, file.Title, 13);
+                foreach (var q in file.Preamble)
+                    AddLabelTo(fileFold, q, 11, new Color(0.65f, 0.7f, 0.75f));
+                foreach (var s in file.Sections)
+                {
+                    int st = s.Items.Count, sd = 0;
+                    foreach (var it in s.Items) if (it.Done) sd++;
+                    string secKey = fileKey + "|s:" + s.Title;
+                    var secFold = new Foldout
+                    {
+                        text = $"{s.Title} — ✅{sd}/{st}",
+                        value = _testsOpen.Contains(secKey)
+                    };
+                    secFold.style.fontSize = 13;
+                    secFold.RegisterValueChangedCallback(e =>
+                    {
+                        if (e.newValue) _testsOpen.Add(secKey);
+                        else _testsOpen.Remove(secKey);
+                    });
+                    fileFold.Add(secFold);
+                    foreach (var q in s.Preamble)
+                        AddLabelTo(secFold, q, 11, new Color(0.65f, 0.7f, 0.75f));
+                    foreach (var it in s.Items)
+                    {
+                        var l = new Label((it.Done ? "[x] " : "[ ] ") + it.Text);
+                        l.style.fontSize = 12;
+                        l.style.whiteSpace = WhiteSpace.Normal;
+                        l.style.marginBottom = 2;
+                        l.style.color = TestsItemColor(it);
+                        secFold.Add(l);
+                    }
+                }
+            }
+        }
+
+        private static Color TestsItemColor(NeedToTestItem it)
+        {
+            if (it.Done) return new Color(0.55f, 0.75f, 0.55f);
+            switch (it.Priority)
+            {
+                case "red": return new Color(1f, 0.55f, 0.55f);
+                case "yellow": return new Color(1f, 0.9f, 0.55f);
+                case "green": return new Color(0.65f, 0.95f, 0.65f);
+                default: return new Color(0.92f, 0.92f, 0.92f);
+            }
+        }
+
+        private static Label AddLabelTo(VisualElement parent, string text, int fontSize = 13, Color? color = null)
+        {
+            var l = new Label(text);
+            l.style.fontSize = fontSize;
+            l.style.color = color ?? new Color(0.92f, 0.92f, 0.92f);
+            l.style.whiteSpace = WhiteSpace.Normal;
+            l.style.marginBottom = 2;
+            parent.Add(l);
+            return l;
         }
 
         private bool _logsMuted;

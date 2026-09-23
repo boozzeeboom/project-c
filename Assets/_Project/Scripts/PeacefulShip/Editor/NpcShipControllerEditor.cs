@@ -210,6 +210,8 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("avoidBackOffSpeed");
                 DrawProp("avoidBackOffTime");
                 DrawProp("avoidTimeout");
+                DrawProp("avoidTimeoutCooldownSec");
+                DrawProp("avoidWallBlend");
                 EditorGUI.indentLevel--;
             }
 

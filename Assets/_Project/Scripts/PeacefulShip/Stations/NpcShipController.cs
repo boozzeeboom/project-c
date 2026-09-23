@@ -373,6 +373,14 @@ namespace ProjectC.PeacefulShip.Stations
         [SerializeField] private float avoidBackOffTime = 1.0f;
         [Tooltip("Предохранитель: максимум времени в манёвре (с).")]
         [SerializeField] private float avoidTimeout = 8f;
+        // T-NS-WF04: раздельный кулдаун (лог показал 20/21 выходов по таймауту —
+        // чистого расхождения в куче не бывает, короткий кулдаун даёт пинг-понг).
+        [Tooltip("Пауза после выхода по ТАЙМАУТУ (с): корабль уходит прямо из кучи. Длиннее обычного.")]
+        [Min(0f)] [SerializeField] private float avoidTimeoutCooldownSec = 9f;
+        // T-NS-WF04b: escape вдоль стены (манёвр из WallFollow сохраняет прогресс
+        // вдоль склона вместо отскока назад в кучу).
+        [Tooltip("Вес касательной стены в escape-векторе, если Avoiding вызван из WallFollow (0=только away).")]
+        [Range(0f, 1f)] [SerializeField] private float avoidWallBlend = 0.6f;
 
         // T-NS-AVOID4: разрыв петли Avoiding↔Cruising + эскалация
         [Header("Avoidance loop-breaker (server-only)")]
@@ -404,6 +412,10 @@ namespace ProjectC.PeacefulShip.Stations
         private NpcShipController _avoidOther;
         private NpcProximityZoneBuilds _avoidBuild;
         private Vector3 _avoidFromPos;
+        // T-NS-WF04b: запомненная касательная стены на входе в Avoiding из WallFollow
+        // (направление, не позиция — FO-хук не нужен).
+        private Vector3 _avoidWallDir;
+        private bool _avoidHasWallDir;
         private Vector3 _escapeDir; // T-NS-BZ07: raycast-computed escape direction
 
         // PAD-ASSIGN-THROTTLE: не долбим диспетчер каждый FixedUpdate
@@ -1314,6 +1326,9 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidBuild = null;
             _avoidFromPos = other.ProximityZone?.ClosestPoint(rb.position) ?? other.transform.position;
             _escapeDir = ComputeEscapeDir(rb.position);
+            // T-NS-WF04b: из обхода запоминаем касательную — манёвр не отбросит назад в кучу.
+            _avoidHasWallDir = (CurrentMode == NavMode.WallFollow);
+            if (_avoidHasWallDir) _avoidWallDir = _wallMoveDir;
 
             // T-NS-BZ05: приоритет — выше делает full avoidance, ниже yield'ит
             if (AvoidancePriority < other.AvoidancePriority)
@@ -1376,9 +1391,13 @@ namespace ProjectC.PeacefulShip.Stations
             if (away.sqrMagnitude < 0.01f) away = -transform.forward;
             away.Normalize();
 
-            // T-NS-BZ07: blend с escape-направлением (выход из Π-доков)
+            // T-NS-BZ07: blend с escape-направлением (выход из Π-доков).
+            // T-NS-WF04b: из WallFollow — blend с касательной стены (прогресс
+            // вдоль склона вместо отскока назад в кучу).
             Vector3 moveDir = away;
-            if (_escapeDir.sqrMagnitude > 0.001f)
+            if (_avoidHasWallDir && _avoidWallDir.sqrMagnitude > 0.001f)
+                moveDir = Vector3.Lerp(away, _avoidWallDir.normalized, avoidWallBlend).normalized;
+            else if (_escapeDir.sqrMagnitude > 0.001f)
                 moveDir = Vector3.Lerp(away, _escapeDir, avoidEscapeBlend).normalized;
 
             float t = Time.time - _avoidPhaseEnteredAt;
@@ -1434,8 +1453,11 @@ namespace ProjectC.PeacefulShip.Stations
             rb.angularVelocity = Vector3.zero;
             _avoidOther = null;
             _avoidBuild = null;
+            _avoidHasWallDir = false;
             _lastAvoidResumeAt = Time.time;
-            _avoidCooldownUntil = Time.time + avoidCooldownSec;
+            // T-NS-WF04: после таймаута — длинный кулдаун: корабль уходит прямо
+            // из кучи, а не клюёт соседей через 2.5 с (пинг-понг из лога).
+            _avoidCooldownUntil = Time.time + (cleared ? avoidCooldownSec : avoidTimeoutCooldownSec);
             if (cleared) _avoidCycles = 0;
             // Возврат на прошлый маршрут: прежний режим + прежняя CruiseTargetPos (не менялась)
             SetMode(_resumeMode == NavMode.Avoiding || _resumeMode == NavMode.AvoidYield ? NavMode.Cruising : _resumeMode,

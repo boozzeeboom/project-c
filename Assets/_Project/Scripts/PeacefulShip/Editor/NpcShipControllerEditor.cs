@@ -238,6 +238,11 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("wallExitStrikes");
                 DrawProp("wallForwardClearStrikes");
                 DrawProp("wallResumeCooldownSec");
+                DrawProp("cruiseStuckDist");
+                DrawProp("cruiseStuckSec");
+                DrawProp("cruiseRecoverSec");
+                DrawProp("cruiseRecoverSpeed");
+                DrawProp("cruiseMaxRecoveries");
                 DrawProp("wallObstacleMask");
                 EditorGUI.indentLevel--;
             }

@@ -41,6 +41,9 @@
       лево-право — корабль уверенно уходит вдоль склона в одну сторону.
       При рецидиве крутить: `wallEnterStrikes`↑, `wallExitStrikes`↑,
       `wallForwardClearStrikes`↑, `wallResumeCooldownSec`↑.
+- [ ] 🔴 Втирание в склон T-NS-WF05 (лог 201953: 0 м за 30 с в `Cruising`):
+      после 10 с без прогресса — откат назад+вбок (событие `cruise-stuck` в CSV),
+      после 3 откатов — divert (`cruise-stuck-divert`). Вечного давления в склон нет.
 
 ## T-NS-WF02 — масштаб (broadphase + stagger)
 

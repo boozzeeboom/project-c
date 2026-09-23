@@ -507,6 +507,18 @@ namespace ProjectC.PeacefulShip.Stations
         [Min(1)] [SerializeField] private int wallForwardClearStrikes = 5;
         [Tooltip("Пауза после выхода из обхода: летим прямо, зонд молчит (с).")]
         [Min(0f)] [SerializeField] private float wallResumeCooldownSec = 5f;
+        // T-NS-WF05: cruise-stuck — корабль втёрся в склон (зонд изнутри корпуса
+        // слеп: SphereCast не видит перекрывающий коллайдер) и давит в Cruising вечно.
+        [Tooltip("Мин. смещение (м), которое считается прогрессом круиза.")]
+        [Min(1f)] [SerializeField] private float cruiseStuckDist = 10f;
+        [Tooltip("Сколько секунд без прогресса терпим вдали от цели → recovery.")]
+        [Min(3f)] [SerializeField] private float cruiseStuckSec = 10f;
+        [Tooltip("Длительность recovery-отката назад+вбок (с).")]
+        [Min(1f)] [SerializeField] private float cruiseRecoverSec = 3f;
+        [Tooltip("Скорость отката (м/с).")]
+        [Min(1f)] [SerializeField] private float cruiseRecoverSpeed = 6f;
+        [Tooltip("Сколько recovery подряд терпим, прежде чем уйти на другую станцию.")]
+        [Min(1)] [SerializeField] private int cruiseMaxRecoveries = 3;
         [Tooltip("Слои препятствий для зонда (террейн, скалы, город). Триггеры игнорятся всегда.")]
         [SerializeField] private LayerMask wallObstacleMask = -1;
 
@@ -528,6 +540,12 @@ namespace ProjectC.PeacefulShip.Stations
         private int _wallFwdStrikes;
         private float _wallPreferredSide;
         private float _logBeatNextAt; // T-NS-LOG01: следующий heartbeat в глобальный лог
+        // T-NS-WF05: состояние cruise-stuck (только относительные данные — F8-безопасно).
+        private Vector3 _cruiseLastPos;
+        private float _cruiseLastProgressAt;
+        private float _cruiseRecoverUntil;
+        private Vector3 _cruiseRecoverDir;
+        private int _cruiseRecoveries;
 
         // === T-NS-GATE04: процедурные ворота городов (kill-switch useCityGates) ===
         // Выключено = старое поведение бит-в-бит. Код gates — отдельная область внизу,
@@ -740,6 +758,10 @@ namespace ProjectC.PeacefulShip.Stations
                 _wallBlockStrikes = 0;
                 _wallLosStrikes = 0;
                 _wallFwdStrikes = 0;
+                // T-NS-WF05: новый leg — сбрасываем cruise-stuck.
+                _cruiseRecoveries = 0;
+                _cruiseLastProgressAt = 0f;
+                _cruiseRecoverUntil = 0f;
                 // M3.2.14: освободить старый пад (если был) перед взлётом
                 if (Docking.Core.DockingWorld.Instance != null) {
                     var ship = GetComponent<ShipController>();
@@ -809,6 +831,55 @@ namespace ProjectC.PeacefulShip.Stations
             }
             Vector3 toTarget = CruiseTargetPos - rb.position;
             float dist = toTarget.magnitude;
+
+            // T-NS-WF05: recovery-откат (без нового NavMode — остаёмся в Cruising,
+            // в лог пишем событие вручную).
+            if (Time.time < _cruiseRecoverUntil) {
+                rb.linearVelocity = new Vector3(
+                    _cruiseRecoverDir.x * cruiseRecoverSpeed, 0f, _cruiseRecoverDir.z * cruiseRecoverSpeed);
+                rb.angularVelocity = Vector3.zero;
+                _cruiseLastPos = rb.position;
+                _cruiseLastProgressAt = Time.time;
+                return;
+            }
+
+            // T-NS-WF05: watchdog прогресса вдали от цели (там медленно — законно).
+            // Схватывает втирание в склон, когда зонд слеп (старт внутри коллайдера).
+            if (dist > 150f && Time.time >= _wallCooldownUntil) {
+                if (_cruiseLastProgressAt <= 0f) {
+                    _cruiseLastPos = rb.position;
+                    _cruiseLastProgressAt = Time.time;
+                } else if ((rb.position - _cruiseLastPos).magnitude >= cruiseStuckDist) {
+                    _cruiseLastPos = rb.position;
+                    _cruiseLastProgressAt = Time.time;
+                } else if (Time.time - _cruiseLastProgressAt > cruiseStuckSec) {
+                    _cruiseRecoveries++;
+                    if (_cruiseRecoveries > cruiseMaxRecoveries) {
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise stuck ×{_cruiseRecoveries} — diverting");
+                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                            "cruise-stuck-divert", $"recoveries={_cruiseRecoveries}");
+                        _cruiseRecoveries = 0;
+                        _cruiseLastProgressAt = Time.time;
+                        DivertToNextStation(rb);
+                        return;
+                    }
+                    // Откат: назад + вбок (вбок — по памяти стороны обхода, иначе вправо).
+                    Vector3 back = rb.rotation * Vector3.back;
+                    back.y = 0f;
+                    if (back.sqrMagnitude < 0.001f) back = -toTarget.normalized;
+                    back.Normalize();
+                    float side = _wallPreferredSide != 0f ? -_wallPreferredSide : 1f;
+                    Vector3 lat = Quaternion.AngleAxis(90f * side, Vector3.up) * back;
+                    _cruiseRecoverDir = (back + lat).normalized;
+                    _cruiseRecoverUntil = Time.time + cruiseRecoverSec;
+                    _cruiseLastPos = rb.position;
+                    _cruiseLastProgressAt = Time.time;
+                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                        "cruise-stuck", $"recovery#{_cruiseRecoveries}");
+                    if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise stuck — backing off #{_cruiseRecoveries}");
+                    return;
+                }
+            }
 
             // Проверить: вошли ли в OuterCommZone целевой станции?
             var zone = ResolveCommZone();

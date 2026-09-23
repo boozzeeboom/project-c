@@ -232,6 +232,10 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("wallMinProgressMeters");
                 DrawProp("returnVerticalCap");
                 DrawProp("wallArriveMargin");
+                DrawProp("wallEnterStrikes");
+                DrawProp("wallExitStrikes");
+                DrawProp("wallForwardClearStrikes");
+                DrawProp("wallResumeCooldownSec");
                 DrawProp("wallObstacleMask");
                 EditorGUI.indentLevel--;
             }

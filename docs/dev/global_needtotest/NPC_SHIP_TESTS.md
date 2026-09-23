@@ -23,6 +23,10 @@
       давление в склон (кандидат в тюнинг — `wallNoProgressSec`/`wallTimeoutSec`).
 - [ ] 🟢 Встречный NPC на маршруте обхода: расходятся proximity-манёвром и оба
       продолжают (лог `AVOID`/`YIELD` внутри `WallFollow`).
+- [ ] 🟡 Антидребезг T-NS-WF01b (коммит ниже): у скалы нет стояния носом
+      лево-право — корабль уверенно уходит вдоль склона в одну сторону.
+      При рецидиве крутить: `wallEnterStrikes`↑, `wallExitStrikes`↑,
+      `wallForwardClearStrikes`↑, `wallResumeCooldownSec`↑.
 
 ## T-NS-WF02 — масштаб (broadphase + stagger)
 

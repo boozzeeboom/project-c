@@ -486,6 +486,15 @@ namespace ProjectC.PeacefulShip.Stations
         [Min(0.5f)] [SerializeField] private float returnVerticalCap = 2f;
         [Tooltip("Хит ближе этого к цели (м) — геометрия станции, не стена (LOS чист).")]
         [Min(10f)] [SerializeField] private float wallArriveMargin = 100f;
+        // T-NS-WF01b: антидребезг на кромке скалы (лево-право-стояние носом).
+        [Tooltip("Подряд забитых проб для входа в обход (скользящий зацеп кромки не триггерит).")]
+        [Min(1)] [SerializeField] private int wallEnterStrikes = 2;
+        [Tooltip("Подряд чистых LOS для выхода (мерцание кромки не выпускает).")]
+        [Min(1)] [SerializeField] private int wallExitStrikes = 3;
+        [Tooltip("Подряд чистых forward-проб, чтобы внутри обхода пойти к цели, а не вдоль стены.")]
+        [Min(1)] [SerializeField] private int wallForwardClearStrikes = 5;
+        [Tooltip("Пауза после выхода из обхода: летим прямо, зонд молчит (с).")]
+        [Min(0f)] [SerializeField] private float wallResumeCooldownSec = 5f;
         [Tooltip("Слои препятствий для зонда (террейн, скалы, город). Триггеры игнорятся всегда.")]
         [SerializeField] private LayerMask wallObstacleMask = -1;
 
@@ -500,6 +509,12 @@ namespace ProjectC.PeacefulShip.Stations
         private float _wallLastProgressAt;
         private float _wallProbeNextAt;
         private float _wallCooldownUntil;
+        // T-NS-WF01b: состояние антидребезга. _wallPreferredSide живёт весь leg
+        // (сброс — новый leg/divert), чтобы повторные входы не меняли сторону.
+        private int _wallBlockStrikes;
+        private int _wallLosStrikes;
+        private int _wallFwdStrikes;
+        private float _wallPreferredSide;
 
         // === T-NS-GATE04: процедурные ворота городов (kill-switch useCityGates) ===
         // Выключено = старое поведение бит-в-бит. Код gates — отдельная область внизу,
@@ -688,6 +703,11 @@ namespace ProjectC.PeacefulShip.Stations
                 _berthAttempts = 0;
                 _holdingRetries = 0;
                 _abortClimbRemaining = 0f;
+                // T-NS-WF01b: новый leg — сбрасываем память стороны обхода и strikes.
+                _wallPreferredSide = 0f;
+                _wallBlockStrikes = 0;
+                _wallLosStrikes = 0;
+                _wallFwdStrikes = 0;
                 // M3.2.14: освободить старый пад (если был) перед взлётом
                 if (Docking.Core.DockingWorld.Instance != null) {
                     var ship = GetComponent<ShipController>();
@@ -780,9 +800,21 @@ namespace ProjectC.PeacefulShip.Stations
 
             // T-NS-WF01: forward-зонд террейна (stagger по кораблям — задел на 200+).
             // Вблизи цели не зондируем — там разбирается Berthing.
+            // T-NS-WF01b: вход только по серии забитых проб (скользящий зацеп кромки молчит).
             if (dist > 100f && Time.time >= _wallCooldownUntil && Time.time >= _wallProbeNextAt) {
                 _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
-                if (TryEnterWallFollow(rb, toTarget, dist)) return;
+                Vector3 dirN = toTarget / dist;
+                Vector3 fwdN = new Vector3(dirN.x, 0f, dirN.z);
+                bool blocked = fwdN.sqrMagnitude >= 0.001f &&
+                    ProbeHitsWall(rb.position, fwdN.normalized, Mathf.Min(WallLookAhead(), dist), out _);
+                if (blocked) {
+                    if (++_wallBlockStrikes >= wallEnterStrikes) {
+                        _wallBlockStrikes = 0;
+                        if (TryEnterWallFollow(rb, toTarget, dist)) return;
+                    }
+                } else {
+                    _wallBlockStrikes = 0;
+                }
             }
 
             Vector3 dir = toTarget.normalized;
@@ -1448,7 +1480,12 @@ namespace ProjectC.PeacefulShip.Stations
 
             float rightClear = FanClearance(rb.position, fwd, look, 1f);
             float leftClear = FanClearance(rb.position, fwd, look, -1f);
-            _wallSide = rightClear >= leftClear ? 1f : -1f; // при равенстве — держим гору справа
+            // T-NS-WF01b: память стороны на весь leg — повторные входы не флипают
+            // лево-право. Перевыбор только если запомненная сторона почти забита.
+            if (_wallPreferredSide > 0f && rightClear >= look * 0.25f) _wallSide = 1f;
+            else if (_wallPreferredSide < 0f && leftClear >= look * 0.25f) _wallSide = -1f;
+            else _wallSide = rightClear >= leftClear ? 1f : -1f; // при равенстве — держим гору справа
+            _wallPreferredSide = _wallSide;
             _wallEntryY = rb.position.y;
             _wallStartedAt = Time.time;
             _wallTurnAccum = 0f;
@@ -1456,6 +1493,8 @@ namespace ProjectC.PeacefulShip.Stations
             _wallLastPos = rb.position;
             _wallLastProgressAt = Time.time;
             _wallProbeNextAt = Time.time + wallProbeIntervalSec;
+            _wallLosStrikes = 0;
+            _wallFwdStrikes = 0;
             _wallMoveDir = fwd;
             _wallReturnMode = (CurrentMode == NavMode.CorridorLeg || CurrentMode == NavMode.GateApproach)
                 ? NavMode.CorridorLeg : NavMode.Cruising;
@@ -1504,10 +1543,31 @@ namespace ProjectC.PeacefulShip.Stations
             }
 
             // Staggered такт: LOS-выход + пересчёт steering-направления.
+            // T-NS-WF01b: выход и смена курса только сериями — мерцание кромки
+            // не дёргает нос (лево-право-стояние).
             if (Time.time >= _wallProbeNextAt) {
                 _wallProbeNextAt = Time.time + wallProbeIntervalSec;
-                if (HasLineOfSight(rb.position, toTarget, dist)) { ResumeWallFollow(rb); return; }
-                _wallMoveDir = ComputeWallMoveDir(rb.position, toTarget / dist, dist);
+                if (HasLineOfSight(rb.position, toTarget, dist)) {
+                    if (++_wallLosStrikes >= wallExitStrikes) { ResumeWallFollow(rb); return; }
+                } else {
+                    _wallLosStrikes = 0;
+                }
+                Vector3 fwd = new Vector3(toTarget.x / dist, 0f, toTarget.z / dist);
+                if (fwd.sqrMagnitude < 0.001f) fwd = transform.forward;
+                fwd.Normalize();
+                float look = Mathf.Min(WallLookAhead(), dist);
+                Vector3 wantDir;
+                if (ProbeHitsWall(rb.position, fwd, look, out _)) {
+                    _wallFwdStrikes = 0;
+                    wantDir = Quaternion.AngleAxis(90f * _wallSide, Vector3.up) * fwd;
+                } else if (++_wallFwdStrikes >= wallForwardClearStrikes) {
+                    wantDir = fwd; // чисто серией — идём к цели
+                } else {
+                    wantDir = Quaternion.AngleAxis(90f * _wallSide, Vector3.up) * fwd;
+                }
+                // Мягкое подруливание вместо жёсткого переключения команды.
+                _wallMoveDir = (_wallMoveDir + wantDir).normalized;
+                if (_wallMoveDir.sqrMagnitude < 0.001f) _wallMoveDir = wantDir;
             }
 
             // Разворот к команде (тот же MoveRotation-стиль, что в круизе).
@@ -1521,20 +1581,6 @@ namespace ProjectC.PeacefulShip.Stations
             float vy = Mathf.Clamp((_wallEntryY - rb.position.y) * 0.5f, -2f, 2f);
             rb.linearVelocity = new Vector3(_wallMoveDir.x * speed, vy, _wallMoveDir.z * speed);
             rb.angularVelocity = Vector3.zero;
-        }
-
-        /// <summary>
-        /// Команда движения: вперёд чисто — к цели; забито — вдоль стены
-        /// (перпендикуляр со stored стороны, правило одной стороны).
-        /// </summary>
-        Vector3 ComputeWallMoveDir(Vector3 pos, Vector3 dir, float dist) {
-            Vector3 fwd = new Vector3(dir.x, 0f, dir.z);
-            if (fwd.sqrMagnitude < 0.001f) fwd = transform.forward;
-            fwd.Normalize();
-            float look = Mathf.Min(WallLookAhead(), dist);
-            if (ProbeHitsWall(pos, fwd, look, out _))
-                return Quaternion.AngleAxis(90f * _wallSide, Vector3.up) * fwd;
-            return fwd;
         }
 
         /// <summary>
@@ -1555,7 +1601,11 @@ namespace ProjectC.PeacefulShip.Stations
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             NavMode back = (_wallReturnMode == NavMode.CorridorLeg) ? NavMode.CorridorLeg : NavMode.Cruising;
-            _wallCooldownUntil = Time.time + avoidCooldownSec; // против дребезга на кромке
+            // T-NS-WF01b: длинная пауза зонда — корабль уходит прямо, не клюёт кромку.
+            _wallCooldownUntil = Time.time + wallResumeCooldownSec;
+            _wallLosStrikes = 0;
+            _wallFwdStrikes = 0;
+            _wallBlockStrikes = 0;
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow → {back} (LOS clear)");
             SetMode(back);
         }
@@ -1564,7 +1614,11 @@ namespace ProjectC.PeacefulShip.Stations
             _wallSide = 0f;
             _wallTurnAccum = 0f;
             _wallReturnMode = NavMode.Cruising;
-            _wallCooldownUntil = Time.time + avoidCooldownSec;
+            _wallLosStrikes = 0;
+            _wallFwdStrikes = 0;
+            _wallBlockStrikes = 0;
+            _wallPreferredSide = 0f; // divert/смена leg — сторону выбираем заново
+            _wallCooldownUntil = Time.time + wallResumeCooldownSec;
         }
 
         // === T-NS-GATE04: процедурные ворота городов (kill-switch useCityGates) ===

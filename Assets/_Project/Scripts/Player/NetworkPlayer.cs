@@ -234,6 +234,12 @@ namespace ProjectC.Player
         private ulong _pendingCanBoardShipId = ulong.MaxValue;
         private const float CAN_BOARD_REQUEST_TIMEOUT = 1.5f;
 
+        // T-KEY-11: гейт грузовой консоли по ключу (как кресло пилота).
+        // Окно открывается только после allowed от сервера.
+        private float _lastCargoConsoleRequestTime = -10f;
+        private ulong _pendingCargoConsoleShipId = ulong.MaxValue;
+        private string _pendingCargoConsoleShipName = "";
+
         // MetaRequirement Subsystem: защита от двойного E (или F) пока ждём ответ
         // сервера. Используется для не-корабельных interactable'ов (LockBox, дверь и т.п.).
         private float _lastCanUseRequestTime = -10f;
@@ -2115,7 +2121,9 @@ namespace ProjectC.Player
             return true;
         }
 
-        // T-CARGO-UI-02: ShipCargoConsole interaction. F → открыть ShipCargoConsoleWindow.
+        // T-CARGO-UI-02: ShipCargoConsole interaction. F → запросить доступ по ключу,
+        // окно открывается только после allowed от сервера (T-KEY-11, как кресло пилота).
+        // Мутации трюма дополнительно закрыты серверным IsOwnerOfShip в ShipCargoServer.
         private bool TryInteractNearestShipCargoConsole()
         {
             if (_inShip) return false;
@@ -2131,15 +2139,25 @@ namespace ProjectC.Player
 
             Debug.Log($"[NetworkPlayer] F-cargo-console: found console on ship {ship.NetworkObjectId} '{ship.ShipDisplayName}'");
 
-            // Открыть окно
-            var wnd = ProjectC.Trade.Client.ShipCargoConsoleWindow.Instance;
-            if (wnd != null)
+            // Защита от двойного F (как бординг: ждём ответ сервера).
+            if (Time.unscaledTime - _lastCargoConsoleRequestTime < CAN_BOARD_REQUEST_TIMEOUT
+                && _pendingCargoConsoleShipId == ship.NetworkObjectId)
             {
-                wnd.Show(ship.NetworkObjectId, ship.ShipDisplayName);
+                return true;
+            }
+            _lastCargoConsoleRequestTime = Time.unscaledTime;
+            _pendingCargoConsoleShipId = ship.NetworkObjectId;
+            _pendingCargoConsoleShipName = ship.ShipDisplayName;
+
+            // T-KEY-11: доступ по ключу через общий MetaRequirement-путь.
+            // Deny → тост из MetaRequirementClientState, окно не открывается.
+            if (ProjectC.MetaRequirement.MetaRequirementClientState.Instance != null)
+            {
+                ProjectC.MetaRequirement.MetaRequirementClientState.Instance.RequestCanUse(ship.NetworkObjectId);
             }
             else
             {
-                Debug.LogWarning("[NetworkPlayer] ShipCargoConsoleWindow.Instance == null");
+                Debug.LogWarning("[NetworkPlayer] MetaRequirementClientState.Instance==null. F-key cargo skipped.");
             }
             return true;
         }
@@ -2550,6 +2568,27 @@ namespace ProjectC.Player
                 _lastCanBoardRequestTime = -10f;
                 Debug.Log($"[NetworkPlayer] MetaRequirement allowed for ship (netId={interactableNetworkObjectId}). Calling SubmitSwitchModeRpc.");
                 SubmitSwitchModeRpc();
+            }
+
+            // T-KEY-11: если ответ на F-key грузовой консоли (allowed) — открываем окно.
+            // Deny уже показан тостом внутри MetaRequirementClientState.OnCanUseResponse.
+            if (allowed && _pendingCargoConsoleShipId == interactableNetworkObjectId)
+            {
+                ulong shipNetId = _pendingCargoConsoleShipId;
+                string shipName = _pendingCargoConsoleShipName;
+                _pendingCargoConsoleShipId = ulong.MaxValue;
+                _lastCargoConsoleRequestTime = -10f;
+                _pendingCargoConsoleShipName = "";
+                Debug.Log($"[NetworkPlayer] MetaRequirement allowed for cargo console (netId={shipNetId}). Opening window.");
+                var wnd = ProjectC.Trade.Client.ShipCargoConsoleWindow.Instance;
+                if (wnd != null)
+                {
+                    wnd.Show(shipNetId, shipName);
+                }
+                else
+                {
+                    Debug.LogWarning("[NetworkPlayer] ShipCargoConsoleWindow.Instance == null");
+                }
             }
         }
 

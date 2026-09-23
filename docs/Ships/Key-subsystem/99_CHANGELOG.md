@@ -4,6 +4,27 @@
 
 ---
 
+## 2026-09-23 — T-KEY-11 (грузовая консоль открывалась без ключа)
+
+**Симптом**: `ShipCargoConsole` (эксченджер на корабле) открывался по F без ключа —
+`NetworkPlayer.TryInteractNearestShipCargoConsole` звал `wnd.Show(...)` напрямую.
+Мутации трюма при этом уже были закрыты серверным `IsOwnerOfShip`
+(`ShipCargoServer.RequestStoreToCargoRpc` / `RequestRetrieveFromCargoRpc`),
+но просмотр и попытка операций были доступны.
+
+**Фикс** (паттерн кресла пилота): F на консоли → `MetaRequirementClientState.RequestCanUse(shipNetId)`,
+окно открывается только после `allowed` (`_pendingCargoConsoleShipId` в
+`ReceiveMetaRequirementResponseTargetRpc`). Deny → штатный тост, окно не открывается.
+Защита от двойного F — тем же таймаутом 1.5с. Серверный гард мутаций не менялся.
+
+**Файлы**: `Assets/_Project/Scripts/Player/NetworkPlayer.cs` (поля, `TryInteractNearestShipCargoConsole`, ответный RPC).
+
+**Verify**:
+- ✅ Compile: 0 CS-ошибок (Unity console, после refresh+compile)
+- Ручная проверка (пользователь): F на консоли без ключа → тост, окно не открылось; с ключом → окно + операции работают.
+
+---
+
 ## 2026-09-23 — T-KEY-10 (гонка регистрации замка → свободная посадка без ключа)
 
 **Симптом**: без ключа в инвентаре можно сесть на любой корабль и управлять им.

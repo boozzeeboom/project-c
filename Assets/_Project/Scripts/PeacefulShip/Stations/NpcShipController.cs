@@ -533,8 +533,11 @@ namespace ProjectC.PeacefulShip.Stations
         [Header("Cruise echelons (server-only)")]
         [Tooltip("ВКЛ: эшелон высоты круиза по NpcInstanceId внутри активного коридора.")]
         [SerializeField] private bool useEchelons = false;
-        [Tooltip("Шаг эшелона (м).")]
-        [Min(1f)] [SerializeField] private float echelonStep = 15f;
+        // T-NS-WF07: шаг 150 м (было 15): лог показал max разнос 45 м при радиусах
+        // avoidance 90–180 м — эшелоны не развязывали (3 корабля на ech=45 в шаре 200 м).
+        // Коридор 1200–4450 — места хватает (4 × 150 = 600 м).
+        [Tooltip("Шаг эшелона (м): должен превышать типичный avoidanceRadius (90-180).")]
+        [Min(1f)] [SerializeField] private float echelonStep = 150f;
         [Tooltip("Число эшелонов (id % N).")]
         [Min(1)] [SerializeField] private int echelonCount = 4;
         [Tooltip("Запас эшелона от границ коридора (м).")]
@@ -765,12 +768,12 @@ namespace ProjectC.PeacefulShip.Stations
         /// T-NS-LOG01: reason пишется в глобальный Nav-лог (файл сессии).
         /// По счётчикам переходов видно дребезг (WallFollow↔Cruising, Avoiding-петли).
         /// </summary>
-        public void SetMode(NavMode m, string reason = null) {
+        public void SetMode(NavMode m, string reason = null, string detail = "") {
             if (CurrentMode == m) return;
             var old = CurrentMode;
             CurrentMode = m;
             NpcShipNavLog.Transition(gameObject.name, npcInstanceId, old.ToString(), m.ToString(),
-                reason ?? "", "");
+                reason ?? "", detail ?? "");
             if (m == NavMode.Docked) {
                 DockedSinceTime = Time.time;
                 // T-NS-BERTH2: успешный док — сбрасываем счётчики захода/holding.
@@ -1455,7 +1458,7 @@ namespace ProjectC.PeacefulShip.Stations
                     $"(myPrio={AvoidancePriority} otherPrio={other.AvoidancePriority})");
                 _avoidPhaseEnteredAt = Time.time;
                 _avoidStartedAt = Time.time;
-                SetMode(NavMode.AvoidYield, "yield-ship");
+                SetMode(NavMode.AvoidYield, "yield-ship", $"vs={other.gameObject.name}:{other.NpcInstanceId:X}");
                 return;
             }
 
@@ -1465,7 +1468,8 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidPhaseEnteredAt = Time.time;
             _avoidStartedAt = Time.time;
             CountAvoidCycle();
-            SetMode(NavMode.Avoiding, "avoid-ship");
+            // T-NS-WF07: второй участник в detail — видно пары (кто кого держит).
+            SetMode(NavMode.Avoiding, "avoid-ship", $"vs={other.gameObject.name}:{other.NpcInstanceId:X}");
         }
 
         void EnterAvoid(Rigidbody rb, NpcProximityZoneBuilds build) {
@@ -1681,6 +1685,9 @@ namespace ProjectC.PeacefulShip.Stations
             // Предохранитель времени → divert на другую станцию.
             if (Time.time - _wallStartedAt > wallTimeoutSec) {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow timeout — diverting");
+                // T-NS-WF07: причина divert в логе (timeout/loop/stuck).
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
+                    "wall-divert-timeout", $"t={Time.time - _wallStartedAt:F0}s");
                 ResetWallState();
                 DivertToNextStation(rb);
                 return;
@@ -1691,6 +1698,8 @@ namespace ProjectC.PeacefulShip.Stations
             _wallLastBearing = bearing;
             if (_wallTurnAccum >= 360f) {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow loop (360°) — diverting");
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
+                    "wall-divert-loop", "");
                 ResetWallState();
                 DivertToNextStation(rb);
                 return;
@@ -1701,6 +1710,8 @@ namespace ProjectC.PeacefulShip.Stations
                 _wallLastProgressAt = Time.time;
             } else if (Time.time - _wallLastProgressAt > wallNoProgressSec) {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow stuck — diverting");
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
+                    "wall-divert-stuck", "");
                 ResetWallState();
                 DivertToNextStation(rb);
                 return;
@@ -1735,6 +1746,7 @@ namespace ProjectC.PeacefulShip.Stations
                     _wallFwdStrikes = 0;
                     wantDir = Quaternion.AngleAxis(90f * _wallSide, Vector3.up) * fwd;
                 } else if (++_wallFwdStrikes >= wallForwardClearStrikes) {
+                    _wallFwdStrikes = wallForwardClearStrikes; // пин (лог показывал 276)
                     wantDir = fwd; // чисто серией — идём к цели
                 } else {
                     wantDir = Quaternion.AngleAxis(90f * _wallSide, Vector3.up) * fwd;

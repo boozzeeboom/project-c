@@ -219,6 +219,21 @@ namespace ProjectC.Admin
             return m.GetSummary();
         }
 
+        // ==================== NPC-корабли (вкладка «Маршрут», T-ADM-08) ====================
+
+        /// <summary>
+        /// Телепорт игрока к NPC-кораблю: над кораблём +20м и вбок, чтобы видеть его дела с маршрутом.
+        /// Мировых Vector3 между кадрами не хранит (FO-безопасно).
+        /// </summary>
+        public bool TeleportPlayerToNpcShip(Vector3 shipPos, string shipName = null)
+        {
+            // Точка обзора: выше и в стороне — корабль в поле зрения, не внутри коллайдера.
+            Vector3 viewPos = shipPos + Vector3.up * 20f + new Vector3(10f, 0f, 10f);
+            if (!TeleportLocalPlayer(viewPos)) return false;
+            Debug.Log($"[AdminFacade] Player teleported to NPC ship '{shipName ?? "?"}' (ship={shipPos}, view={viewPos})");
+            return true;
+        }
+
         // ==================== Сдвиг мира / стриминг ====================
 
         public void RequestRebase(bool withRollback)

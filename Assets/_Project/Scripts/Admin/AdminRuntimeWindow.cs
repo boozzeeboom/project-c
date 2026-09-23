@@ -25,6 +25,7 @@ namespace ProjectC.Admin
         private Label _statusLabel;
         private string _currentTab = "fly";
         private float _slowTimer;
+        private float _routeTimer;
 
         // Поля телепорта (пересоздаются с вкладкой — значения держим здесь).
         private string _tpX = "0";
@@ -83,6 +84,18 @@ namespace ProjectC.Admin
             {
                 _slowTimer = 0f;
                 RefreshStatus();
+            }
+            // T-ADM-08: живой список маршрутов — пересборка раз в 2с со сохранением скролла.
+            if (_currentTab == "route")
+            {
+                _routeTimer += Time.unscaledDeltaTime;
+                if (_routeTimer >= 2f)
+                {
+                    _routeTimer = 0f;
+                    Vector2 scroll = _content != null ? _content.scrollOffset : Vector2.zero;
+                    SwitchTab("route");
+                    if (_content != null) _content.scrollOffset = scroll;
+                }
             }
         }
 
@@ -179,6 +192,7 @@ namespace ProjectC.Admin
         private void SwitchTab(string id)
         {
             _currentTab = id;
+            _routeTimer = 0f;
             _content.Clear();
             switch (id)
             {
@@ -405,14 +419,126 @@ namespace ProjectC.Admin
                 AddLabel($"Шторм глобально: {storm.GlobalStormIntensity:F2}", 12);
         }
 
+        // T-ADM-08: вкладка «Маршрут» — все NPC-корабли + стадия + телепорт 📌.
+        // Источники (по приоритету, дедуп по NpcInstanceId):
+        //  1) NpcShipZoneRegistry.All — сервер/host, живой реестр контроллеров;
+        //  2) FindObjectsByType<NpcShipController> — страховка если реестр пуст;
+        //  3) NpcShipClientState.VisibleNpcs — чистый клиент (без transform, только текст).
+        // Стадия = NavMode (куда летит прямо сейчас) + NpcShipStatus (FSM) + leg from→to.
         private void BuildRouteTab()
         {
-            var state = ProjectC.PeacefulShip.Client.NpcShipClientState.Instance;
-            if (state == null) { AddLabel("NpcShipClientState не найден."); return; }
-            if (state.VisibleNpcs.Count == 0) AddLabel("NPC-кораблей в поле зрения нет.");
-            foreach (var npc in state.VisibleNpcs)
-                AddLabel($"{npc.displayName} — {npc.statusDisplay} @ {npc.currentStationId}", 12);
-            AddLabel("Рантайм-оверлей линий маршрута — T-ADM-08.", 12);
+            var controllers = CollectRouteControllers();
+            var world = ProjectC.PeacefulShip.Core.NpcShipWorld.Instance;
+            var clientState = ProjectC.PeacefulShip.Client.NpcShipClientState.Instance;
+            var player = Facade().LocalPlayer();
+            Vector3 playerPos = player != null ? player.transform.position : Vector3.zero;
+            bool hasPlayer = player != null;
+
+            int worldCount = world != null ? world.AllNpcCount : 0;
+            AddLabel($"NPC-кораблей: {controllers.Count} (world={worldCount}, клиент-видимых={clientState?.VisibleNpcs.Count ?? 0})", 13);
+            AddButton("🔄 Обновить", () => SwitchTab("route"));
+
+            if (controllers.Count == 0 && (clientState == null || clientState.VisibleNpcs.Count == 0))
+            {
+                AddLabel("NPC-кораблей не найдено: ни контроллеров на сцене, ни записей клиента.");
+                AddLabel("Host/сервер: проверь NpcShipServer (BootstrapScene) и schedule у NpcShipController.", 12);
+                return;
+            }
+
+            foreach (var c in controllers)
+            {
+                if (c == null) continue;
+                ulong id = c.NpcInstanceId;
+                var st = world != null ? world.GetNpc(id) : null;
+                var sched = world != null ? world.GetSchedule(id) : null;
+                int legCount = sched?.routes?.Length ?? 0;
+
+                string fsm = st != null ? st.Status.ToString() : "—";
+                string leg = st != null ? $"{st.CurrentRoute.fromLocationId}→{st.CurrentRoute.toLocationId}" : "—";
+                string legIdx = st != null && legCount > 0 ? $"leg {st.ScheduleIndex}/{legCount}" : (st != null ? $"leg {st.ScheduleIndex}" : "");
+                string mode = c.CurrentMode.ToString();
+                if (c.IsPlayerControlled) mode += " (пилот-игрок!)";
+                string pad = string.IsNullOrEmpty(c.AssignedPadId) ? "—" : c.AssignedPadId;
+                Vector3 pos = c.transform.position;
+                float dist = hasPlayer ? Vector3.Distance(playerPos, pos) : -1f;
+                string distStr = hasPlayer ? $"{dist:F0}м" : "—";
+                string dwell = c.CurrentMode == ProjectC.PeacefulShip.Stations.NpcShipController.NavMode.Docked
+                    ? $"dwell={c.DwellTime:F0}с" : "";
+
+                var row = new VisualElement();
+                row.style.flexDirection = FlexDirection.Row;
+                row.style.marginBottom = 3;
+                row.style.borderBottomWidth = 1;
+                row.style.borderBottomColor = new Color(0.25f, 0.25f, 0.3f, 1f);
+                row.style.paddingBottom = 3;
+
+                var info = new Label(
+                    $"🚢 {c.gameObject.name} (id={id:X})\n" +
+                    $"[{mode}] {fsm} | {leg} {legIdx}\n" +
+                    $"@({pos.x:F0},{pos.y:F0},{pos.z:F0}) дист={distStr} пад={pad} {dwell}");
+                info.style.fontSize = 12;
+                info.style.color = new Color(0.92f, 0.92f, 0.92f);
+                info.style.whiteSpace = WhiteSpace.Normal;
+                info.style.flexGrow = 1;
+                info.style.minWidth = 0;
+                row.Add(info);
+
+                var pin = new Button(() =>
+                {
+                    Facade().TeleportPlayerToNpcShip(c.transform.position, c.gameObject.name);
+                    RefreshStatus();
+                })
+                { text = "📌" };
+                pin.style.width = 44;
+                pin.style.fontSize = 16;
+                pin.tooltip = $"Телепорт к {c.gameObject.name}";
+                row.Add(pin);
+                _content.Add(row);
+            }
+
+            // Чистый клиент: записи без контроллеров (transform нет — телепорт невозможен).
+            if (clientState != null)
+            {
+                foreach (var v in clientState.VisibleNpcs)
+                {
+                    bool dup = false;
+                    foreach (var c in controllers)
+                        if (c != null && c.NpcInstanceId == v.npcInstanceId) { dup = true; break; }
+                    if (dup) continue;
+                    AddLabel($"🚢 {v.displayName} — {v.statusDisplay} @ {v.currentStationId} (только клиент-запись, transform нет)", 12);
+                }
+            }
+
+            AddLabel("📌 = телепорт игрока к кораблю (+20м вверх, +10м вбок — корабль в поле зрения).", 12);
+        }
+
+        /// <summary>Собрать все NpcShipController сцены, дедуп по NpcInstanceId (0 = без id — по ссылке).</summary>
+        private System.Collections.Generic.List<ProjectC.PeacefulShip.Stations.NpcShipController> CollectRouteControllers()
+        {
+            var result = new System.Collections.Generic.List<ProjectC.PeacefulShip.Stations.NpcShipController>();
+            var seen = new System.Collections.Generic.HashSet<ulong>();
+            foreach (var kv in ProjectC.PeacefulShip.Network.NpcShipZoneRegistry.All)
+            {
+                var c = kv.Value;
+                if (c == null) continue;
+                ulong id = c.NpcInstanceId;
+                if (id != 0 && !seen.Add(id)) continue;
+                result.Add(c);
+            }
+            var scene = FindObjectsByType<ProjectC.PeacefulShip.Stations.NpcShipController>();
+            foreach (var c in scene)
+            {
+                if (c == null) continue;
+                ulong id = c.NpcInstanceId;
+                if (id != 0)
+                {
+                    if (!seen.Add(id)) continue;
+                }
+                else if (result.Contains(c)) continue;
+                result.Add(c);
+            }
+            result.Sort((a, b) => string.Compare(a.gameObject.name, b.gameObject.name, System.StringComparison.Ordinal));
+            return result;
         }
 
         private bool _logsMuted;

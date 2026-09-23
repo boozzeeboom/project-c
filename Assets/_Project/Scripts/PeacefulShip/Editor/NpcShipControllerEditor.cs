@@ -23,6 +23,7 @@ namespace ProjectC.PeacefulShip.EditorTools
         private bool _foldAvoidance = false;
         private bool _foldWallFollow = false;
         private bool _foldEchelons = false;
+        private bool _foldScatter = false;
         private bool _foldDepart = false;
         private bool _foldGates = false;
         private bool _foldDebug = false;
@@ -271,6 +272,19 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("echelonStep");
                 DrawProp("echelonCount");
                 DrawProp("echelonCorridorMargin");
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space(4);
+
+            // ── Scatter jailbreak (T-NS-NAV12a) ──
+            _foldScatter = EditorGUILayout.Foldout(_foldScatter,
+                "💥 Scatter Jailbreak (T-NS-NAV12a)", true, EditorStyles.foldoutHeader);
+            if (_foldScatter)
+            {
+                EditorGUI.indentLevel++;
+                DrawProp("scatterSpeed");
+                DrawProp("scatterSec");
                 EditorGUI.indentLevel--;
             }
 

@@ -1,5 +1,17 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-24 — T-NS-NAV12a: scatter-jailbreak (победа = выбраться + не входить)
+
+**Шаг 1 победы:** `StuckDivert` — первый stuck-диагноз за leg (wall-noprogress,
+wall-stuck, cruise-exceed) = scatter (разлёт 12 с × 10 м/с от соседей + в просвет
+лидара, зонд/watchdog молчат, без нового NavMode), второй = divert. Счётчик
+`_legStuckCount` живёт leg (сброс в Lifting). `ComputeScatterDir` — от ближайшего
+соседа через spatial index + проверка лидаром (не в соседнюю скалу); $одиночный
+клин — чистый просвет. В CSV: `scatter` / `stuck-divert` с cause. Следом: 12b
+(hotspot-карта) + 11 (навигатор-lite с репланом после scatter).
+
+---
+
 ## Итерация от 2026-09-24 — T-NS-WF10: слот теснины (лог 000528, синхронный танец)
 
 **Диагностика:** шестёрка (Жук/Ветроворот/Река/Цитадель/Торренс+Странник) танцует

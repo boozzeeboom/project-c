@@ -552,6 +552,17 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Сколько ждём слот в hover (с), потом divert.")]
         [Min(10f)] [SerializeField] private float wallWaitTimeoutSec = 60f;
         private float _wallWaitStartedAt; // 0 = не ждём
+        // === T-NS-NAV12a: scatter-jailbreak — выход из кучу (server-only) ===
+        // Первый stuck-диагноз за leg (клин/гриндер) — не divert, а радиальный
+        // разлёт с чистого места; второй — divert. Счётчик живёт один leg.
+        [Header("Scatter jailbreak (server-only)")]
+        [Tooltip("Скорость разлёта (м/с).")]
+        [Min(1f)] [SerializeField] private float scatterSpeed = 10f;
+        [Tooltip("Длительность разлёта (с): дистанция ≈ speed × sec.")]
+        [Min(3f)] [SerializeField] private float scatterSec = 12f;
+        private float _scatterUntil; // 0 = не разлетаемся
+        private Vector3 _scatterDir;
+        private int _legStuckCount; // stuck-диагнозов за текущий leg
         // Жук 42 с / Летучий 59 с в обходе без LOS: displacement-watchdog их не ловит
         // (ёрзают ±5 м). Ловит прогресс к ЦЕЛИ с момента входа.
         [Tooltip("Сколько секунд в обходе ждём приближения к цели → divert.")]
@@ -837,6 +848,9 @@ namespace ProjectC.PeacefulShip.Stations
                 _cruiseRecoveries = 0;
                 _cruiseLastProgressAt = 0f;
                 _cruiseRecoverUntil = 0f;
+                // T-NS-NAV12a: новый leg — сбрасываем счётчик затора и scatter.
+                _legStuckCount = 0;
+                _scatterUntil = 0f;
                 // M3.2.14: освободить старый пад (если был) перед взлётом
                 if (Docking.Core.DockingWorld.Instance != null) {
                     var ship = GetComponent<ShipController>();
@@ -904,6 +918,20 @@ namespace ProjectC.PeacefulShip.Stations
                 rb.linearVelocity = Vector3.zero;
                 return;
             }
+            // T-NS-NAV12a: scatter-разлёт (jailbreak): летим прямо по курсу разлёта,
+            // носом по курсу; зонд и watchdog молчат (база прогресса обновляется).
+            if (Time.time < _scatterUntil) {
+                float sYaw = Mathf.Atan2(_scatterDir.x, _scatterDir.z) * Mathf.Rad2Deg;
+                float sCur = rb.rotation.eulerAngles.y;
+                float sDelta = Mathf.DeltaAngle(sCur, sYaw);
+                float sStep = Mathf.Sign(sDelta) * Mathf.Min(Mathf.Abs(sDelta), MaxYawRate * Time.fixedDeltaTime);
+                rb.MoveRotation(Quaternion.AngleAxis(sCur + sStep, Vector3.up));
+                rb.linearVelocity = new Vector3(_scatterDir.x * scatterSpeed, 0f, _scatterDir.z * scatterSpeed);
+                rb.angularVelocity = Vector3.zero;
+                _cruiseLastPos = rb.position;
+                _cruiseLastProgressAt = Time.time;
+                return;
+            }
             Vector3 toTarget = CruiseTargetPos - rb.position;
             float dist = toTarget.magnitude;
 
@@ -930,12 +958,8 @@ namespace ProjectC.PeacefulShip.Stations
                 } else if (Time.time - _cruiseLastProgressAt > cruiseStuckSec) {
                     _cruiseRecoveries++;
                     if (_cruiseRecoveries > cruiseMaxRecoveries) {
-                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise stuck ×{_cruiseRecoveries} — diverting");
-                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
-                            "cruise-stuck-divert", $"recoveries={_cruiseRecoveries}");
-                        _cruiseRecoveries = 0;
-                        _cruiseLastProgressAt = Time.time;
-                        DivertToNextStation(rb);
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise stuck ×{_cruiseRecoveries} — scatter/divert");
+                        StuckDivert(rb, "cruise");
                         return;
                     }
                     // T-NS-WF06a: откат веером — первое чистое (сначала строго назад),
@@ -1209,6 +1233,68 @@ namespace ProjectC.PeacefulShip.Stations
             _abortClimbRemaining = abortClimbMeters;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+        }
+
+        /// <summary>
+        /// T-NS-NAV12a: stuck-диагноз затора. Первый за leg — scatter (радиальный
+        /// разлёт с чистого места, leg продолжается); второй — divert (разлёт не помог).
+        /// </summary>
+        void StuckDivert(Rigidbody rb, string cause) {
+            _legStuckCount++;
+            _cruiseRecoveries = 0;
+            ResetWallState(); // слот отпустить в любом случае
+            if (_legStuckCount >= 2) {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Stuck ×{_legStuckCount} ({cause}) — diverting");
+                _legStuckCount = 0;
+                if (CurrentMode == NavMode.Cruising)
+                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                        "stuck-divert", cause);
+                else SetMode(NavMode.Cruising, "stuck-divert", cause);
+                DivertToNextStation(rb);
+                return;
+            }
+            // Jailbreak: разлёт от соседей + в просвет лидара, зонд и watchdog молчат.
+            _scatterDir = ComputeScatterDir(rb);
+            _scatterUntil = Time.time + scatterSec;
+            _wallCooldownUntil = _scatterUntil + 5f;
+            _cruiseLastPos = rb.position;
+            _cruiseLastProgressAt = Time.time;
+            if (CurrentMode == NavMode.Cruising)
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                    "scatter", cause);
+            else SetMode(NavMode.Cruising, "scatter", cause);
+            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Stuck ({cause}) — scattering");
+        }
+
+        /// <summary>
+        /// T-NS-NAV12a: направление разлёта — от ближайшего соседа, проверенное
+        /// лидаром (чтобы не разлететься в соседнюю скалу). Никого рядом —
+        /// чистый просвет лидара. Горизонталь (лор: без набора высоты).
+        /// </summary>
+        Vector3 ComputeScatterDir(Rigidbody rb) {
+            Vector3 away = Vector3.zero;
+            float bestD = float.MaxValue;
+            var near = NpcShipZoneRegistry.QueryNearby(rb.position, 500f);
+            for (int i = 0; i < near.Count; i++) {
+                var o = near[i];
+                if (o == null || o == this) continue;
+                float d = Vector3.Distance(rb.position, o.transform.position);
+                if (d < bestD) { bestD = d; away = rb.position - o.transform.position; }
+            }
+            away.y = 0f;
+            Vector3 fwd = transform.forward;
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 0.001f) fwd = Vector3.forward;
+            else fwd.Normalize();
+            if (away.sqrMagnitude < 0.001f) {
+                LidarScan(rb.position, fwd, scatterSpeed * scatterSec + wallClearance,
+                    fwd, out Vector3 open, out _, out _);
+                return open;
+            }
+            away.Normalize();
+            float look = scatterSpeed * scatterSec + wallClearance;
+            LidarScan(rb.position, away, look, away, out Vector3 best, out _, out _);
+            return best;
         }
 
         /// <summary>
@@ -1793,11 +1879,8 @@ namespace ProjectC.PeacefulShip.Stations
             // Жук 42 с / Летучий 59 с) → divert. Displacement-watchdog ниже остаётся.
             if (Time.time - _wallStartedAt > wallProgressSec
                 && _wallEntryDist - dist < wallProgressMin) {
-                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow no target progress — diverting");
-                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
-                    "wall-divert-noprogress", $"d={_wallEntryDist - dist:F0}m");
-                ResetWallState();
-                DivertToNextStation(rb);
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow no target progress — scatter/divert");
+                StuckDivert(rb, "wall-noprogress");
                 return;
             }
             // Притирание к склону: нет смещения дольше wallNoProgressSec → divert.
@@ -1805,11 +1888,8 @@ namespace ProjectC.PeacefulShip.Stations
                 _wallLastPos = rb.position;
                 _wallLastProgressAt = Time.time;
             } else if (Time.time - _wallLastProgressAt > wallNoProgressSec) {
-                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow stuck — diverting");
-                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
-                    "wall-divert-stuck", "");
-                ResetWallState();
-                DivertToNextStation(rb);
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow stuck — scatter/divert");
+                StuckDivert(rb, "wall-stuck");
                 return;
             }
 

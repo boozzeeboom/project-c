@@ -4,6 +4,27 @@
 
 ---
 
+## 2026-09-23 — T-NS-WF06 (A+B1+B2 по `13_NAV_COORDINATOR_RESEARCH.md`) ✅ COMPILE-CLEAN
+
+**A-гигиена:** `wallMinDwellSec` (2.5 с) + согласие forward-зонда с LOS на выходе
+(фликер Гиганта вход-выход 0.6 с); recovery-веер `ComputeRecoverDir`
+(0/±40/±80°, первое чистое) вместо слепого отката; `cruiseMaxRecoveries` 3→2
+(внимание: у scene-инстансов в сцене осталось 3 — выставить руками или Reset).
+
+**B1 эшелоны:** `useEchelons=false` (default), `echelonStep=15`, `echelonCount=4`,
+`echelonCorridorMargin=50`. `SetCruiseTarget` + `ProfileY()` (круиз/ворота/плечо);
+эшелон зажат в активный коридор, стабилен весь leg, в логе `ech=` в heartbeat.
+
+**B2 разнос вылетов:** `useDepartureSpacing=false` (default),
+`departureMutexRadius=300`. `NpcShipTrafficManager.IsDepartureClear` (через
+spatial index: чужой `Lifting`/`Yawing` рядом = ждать, `depart-wait` в логе,
+проверка раз в 3 с). `ResolveCurrentStation` — вживую из реестра (F8-безопасно).
+
+**Замер (пользователь, лог):** прерывания шип-эвойдом < 5/мин, LOS-выходы > 70%
+входов, `cruise-stuck` → recovery-веер вместо вечного стояния.
+
+---
+
 ## 2026-09-23 — T-NS-WF01..WF03 + T-NS-GATE04: облёт гор (WallFollow) + ворота городов ✅ COMPILE-CLEAN
 
 **Дизайн:** `12_TERRAIN_WALLFOLLOW_NAV.md`. Лор: пики ОБЛЕТАЮТ вокруг, не перелетают; высота — геймплей, не трогаем.

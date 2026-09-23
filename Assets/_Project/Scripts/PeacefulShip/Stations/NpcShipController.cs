@@ -518,9 +518,28 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Скорость отката (м/с).")]
         [Min(1f)] [SerializeField] private float cruiseRecoverSpeed = 6f;
         [Tooltip("Сколько recovery подряд терпим, прежде чем уйти на другую станцию.")]
-        [Min(1)] [SerializeField] private int cruiseMaxRecoveries = 3;
+        [Min(1)] [SerializeField] private int cruiseMaxRecoveries = 2;
+        // T-NS-WF06a: min-dwell обхода (фликер Гиганта: вход-выход за 0.6 с ×10/мин —
+        // толстый SphereCast цепляет кромку, тонкий LOS-луч чист).
+        [Tooltip("Мин. время в обходе (с): LOS-выход раньше игнорируется.")]
+        [Min(0f)] [SerializeField] private float wallMinDwellSec = 2.5f;
         [Tooltip("Слои препятствий для зонда (террейн, скалы, город). Триггеры игнорятся всегда.")]
         [SerializeField] private LayerMask wallObstacleMask = -1;
+
+        // === T-NS-WF06b: эшелоны круиза — вертикальная развязка стаи (server-only) ===
+        // Высота круиза = профиль + (id % N) × step, зажато в активный коридор.
+        // Коридор святой: эшелон внутри min/max, не над ними. F8-безопасно (offset).
+        // См. docs/NPC_others_peacfull/npc_ship/13_NAV_COORDINATOR_RESEARCH.md §3B.
+        [Header("Cruise echelons (server-only)")]
+        [Tooltip("ВКЛ: эшелон высоты круиза по NpcInstanceId внутри активного коридора.")]
+        [SerializeField] private bool useEchelons = false;
+        [Tooltip("Шаг эшелона (м).")]
+        [Min(1f)] [SerializeField] private float echelonStep = 15f;
+        [Tooltip("Число эшелонов (id % N).")]
+        [Min(1)] [SerializeField] private int echelonCount = 4;
+        [Tooltip("Запас эшелона от границ коридора (м).")]
+        [Min(0f)] [SerializeField] private float echelonCorridorMargin = 50f;
+        private float _echelonOffset;
 
         // Состояние обхода — F8-безопасно: сторона/таймеры/азимут, мировых Vector3 нет.
         // Высота входа (_wallEntryY) и CruiseTargetPos сдвигаются через ApplyRebaseTranslation.
@@ -550,6 +569,14 @@ namespace ProjectC.PeacefulShip.Stations
         // === T-NS-GATE04: процедурные ворота городов (kill-switch useCityGates) ===
         // Выключено = старое поведение бит-в-бит. Код gates — отдельная область внизу,
         // одна точка входа из TickCruise. Удаление тикета = удалить область + 1 if.
+        // === T-NS-WF06c: departure spacing — разнос вылетов пачкой (server-only) ===
+        [Header("Departure spacing (server-only)")]
+        [Tooltip("ВКЛ: ждать свободного взлёта у своей станции (не более одного Lifting рядом).")]
+        [SerializeField] private bool useDepartureSpacing = false;
+        [Tooltip("Радиус мьютекса взлёта от станции (м).")]
+        [Min(50f)] [SerializeField] private float departureMutexRadius = 300f;
+        private float _departWaitNextAt;
+
         [Header("City gates (procedural, server-only)")]
         [Tooltip("ВКЛ: заход через ворота на границе cityRadius. ВЫКЛ: старый прямой заход.")]
         [SerializeField] private bool useCityGates = false;
@@ -619,7 +646,7 @@ namespace ProjectC.PeacefulShip.Stations
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player released control — NPC autopilot resuming");
                 if (CurrentMode == NavMode.Docked && !ship.IsDocked) SetMode(NavMode.Cruising, "player-release");
                 var resumeStation = ResolveTargetStation();
-                if (resumeStation.HasValue) CruiseTargetPos = resumeStation.Value;
+                if (resumeStation.HasValue) SetCruiseTarget(resumeStation.Value);
                 _avoidOther = null;
             }
 
@@ -650,6 +677,19 @@ namespace ProjectC.PeacefulShip.Stations
                     _cargoTradeDone = true;
                 }
                 if (Time.time - DockedSinceTime > DwellTime) {
+                    // T-NS-WF06c: departure mutex — не взлетать пачкой (проверка раз в 3 с,
+                    // dwell молча продлевается, событие depart-wait видно в Nav-логе).
+                    if (useDepartureSpacing && Time.time >= _departWaitNextAt) {
+                        _departWaitNextAt = Time.time + 3f;
+                        var home = ResolveCurrentStation();
+                        var tm = NpcShipTrafficManager.Instance;
+                        if (home.HasValue && tm != null
+                            && !tm.IsDepartureClear(home.Value, departureMutexRadius, npcInstanceId)) {
+                            NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Docked", "Docked",
+                                "depart-wait", "");
+                            return;
+                        }
+                    }
                     LiftStartY = ship.transform.position.y;
                     rb.isKinematic = false;
                     ship.ExitDocked();
@@ -701,9 +741,9 @@ namespace ProjectC.PeacefulShip.Stations
                 _logBeatNextAt = Time.time + 5f + ProbePhaseOffset();
                 float distBT = CruiseTargetPos == Vector3.zero
                     ? -1f : Vector3.Distance(rb.position, CruiseTargetPos);
-                string beatDetail = CurrentMode == NavMode.WallFollow
-                    ? $"side={_wallSide};losStrikes={_wallLosStrikes};fwdStrikes={_wallFwdStrikes};turn={_wallTurnAccum:F0}"
-                    : "";
+                string beatDetail = $"ech={_echelonOffset:F0}" + (CurrentMode == NavMode.WallFollow
+                    ? $";side={_wallSide};losStrikes={_wallLosStrikes};fwdStrikes={_wallFwdStrikes};turn={_wallTurnAccum:F0}"
+                    : "");
                 NpcShipNavLog.Heartbeat(gameObject.name, npcInstanceId, CurrentMode.ToString(),
                     rb.linearVelocity.magnitude, distBT, rb.position, beatDetail);
             }
@@ -790,7 +830,7 @@ namespace ProjectC.PeacefulShip.Stations
                 // Достигли высоты → ищем станцию назначения
                 var station = ResolveTargetStation();
                 if (station.HasValue) {
-                    CruiseTargetPos = station.Value;
+                    SetCruiseTarget(station.Value);
                     SetMode(NavMode.Yawing, "lift-done");
                 } else {
                     // Не нашли станцию — fallback hover
@@ -863,14 +903,9 @@ namespace ProjectC.PeacefulShip.Stations
                         DivertToNextStation(rb);
                         return;
                     }
-                    // Откат: назад + вбок (вбок — по памяти стороны обхода, иначе вправо).
-                    Vector3 back = rb.rotation * Vector3.back;
-                    back.y = 0f;
-                    if (back.sqrMagnitude < 0.001f) back = -toTarget.normalized;
-                    back.Normalize();
-                    float side = _wallPreferredSide != 0f ? -_wallPreferredSide : 1f;
-                    Vector3 lat = Quaternion.AngleAxis(90f * side, Vector3.up) * back;
-                    _cruiseRecoverDir = (back + lat).normalized;
+                    // T-NS-WF06a: откат веером — первое чистое (сначала строго назад),
+                    // иначе max клиренс. Слепой откат упирался в тот же склон (Сильфида).
+                    _cruiseRecoverDir = ComputeRecoverDir(rb, toTarget);
                     _cruiseRecoverUntil = Time.time + cruiseRecoverSec;
                     _cruiseLastPos = rb.position;
                     _cruiseLastProgressAt = Time.time;
@@ -929,7 +964,7 @@ namespace ProjectC.PeacefulShip.Stations
             rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
 
             float speed = (dist > 200f) ? CruiseSpeed : ApproachSpeed;
-            float altHold = (CruiseTargetPos.y + 5f - rb.position.y) * 0.5f;
+            float altHold = (ProfileY() + 5f - rb.position.y) * 0.5f;
             // T-NS-WF01 (D3): возврат к профилю — тем же капом, что после LOS-выхода.
             rb.linearVelocity = new Vector3(dir.x * speed, Mathf.Clamp(altHold, -returnVerticalCap, returnVerticalCap), dir.z * speed);
         }
@@ -1131,7 +1166,7 @@ namespace ProjectC.PeacefulShip.Stations
             AdvanceScheduleForCurrentNpc();
             var station = ResolveTargetStation();
             if (station.HasValue) {
-                CruiseTargetPos = station.Value;
+                SetCruiseTarget(station.Value);
                 SetMode(NavMode.Cruising, "divert");
                 if (debugMode) {
                     var st = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
@@ -1166,6 +1201,18 @@ namespace ProjectC.PeacefulShip.Stations
             var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
             if (state == null || string.IsNullOrEmpty(state.CurrentRoute.toLocationId)) return null;
             var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
+            if (station == null) return null;
+            return station.transform.position;
+        }
+
+        /// <summary>
+        /// T-NS-WF06c: станция, где стоим (fromLocationId после advance = текущий leg).
+        /// Позиция резолвится вживую из реестра — мировых кэшей нет (F8-безопасно).
+        /// </summary>
+        Vector3? ResolveCurrentStation() {
+            var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+            if (state == null || string.IsNullOrEmpty(state.CurrentRoute.fromLocationId)) return null;
+            var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.fromLocationId);
             if (station == null) return null;
             return station.transform.position;
         }
@@ -1662,9 +1709,19 @@ namespace ProjectC.PeacefulShip.Stations
             // Staggered такт: LOS-выход + пересчёт steering-направления.
             // T-NS-WF01b: выход и смена курса только сериями — мерцание кромки
             // не дёргает нос (лево-право-стояние).
+            // T-NS-WF06a: согласие зонда с LOS + min-dwell — фликер Гиганта
+            // (сфера цепляет кромку, луч чист) больше не выпускает за 0.6 с.
             if (Time.time >= _wallProbeNextAt) {
                 _wallProbeNextAt = Time.time + wallProbeIntervalSec;
-                if (HasLineOfSight(rb.position, toTarget, dist)) {
+                bool dwellDone = Time.time - _wallStartedAt >= wallMinDwellSec;
+                bool exitOk = false;
+                if (dwellDone && HasLineOfSight(rb.position, toTarget, dist)) {
+                    Vector3 fwdAgree = new Vector3(toTarget.x / dist, 0f, toTarget.z / dist);
+                    if (fwdAgree.sqrMagnitude < 0.001f) fwdAgree = transform.forward;
+                    fwdAgree.Normalize();
+                    exitOk = !ProbeHitsWall(rb.position, fwdAgree, Mathf.Min(WallLookAhead(), dist), out _);
+                }
+                if (exitOk) {
                     if (++_wallLosStrikes >= wallExitStrikes) { ResumeWallFollow(rb); return; }
                 } else {
                     _wallLosStrikes = 0;
@@ -1698,6 +1755,60 @@ namespace ProjectC.PeacefulShip.Stations
             float vy = Mathf.Clamp((_wallEntryY - rb.position.y) * 0.5f, -2f, 2f);
             rb.linearVelocity = new Vector3(_wallMoveDir.x * speed, vy, _wallMoveDir.z * speed);
             rb.angularVelocity = Vector3.zero;
+        }
+
+        /// <summary>Профильная высота круиза с эшелоном (0 без флага).</summary>
+        float ProfileY() => CruiseTargetPos.y + _echelonOffset;
+
+        /// <summary>
+        /// Задать цель круиза + пересчитать эшелон (стабилен весь leg).
+        /// Коридор — рамка: эшелон зажимается внутрь min/max активного коридора.
+        /// </summary>
+        void SetCruiseTarget(Vector3 stationPos) {
+            CruiseTargetPos = stationPos;
+            _echelonOffset = 0f;
+            if (!useEchelons) return;
+            float raw = (npcInstanceId % (ulong)Mathf.Max(1, echelonCount)) * echelonStep;
+            var sys = ProjectC.Ship.AltitudeCorridorSystem.Instance;
+            if (sys == null) { _echelonOffset = raw; return; }
+            var corridor = sys.GetActiveCorridor(transform.position);
+            if (corridor == null) { _echelonOffset = raw; return; }
+            float lo = corridor.minAltitude + echelonCorridorMargin;
+            float hi = corridor.maxAltitude - echelonCorridorMargin;
+            if (hi <= lo) return; // коридор уже margins — без эшелона
+            _echelonOffset = Mathf.Clamp(stationPos.y + raw, lo, hi) - stationPos.y;
+        }
+
+        /// <summary>
+        /// T-NS-WF06a: веер направлений отката из клина. Порядок — строго назад,
+        /// затем ±40°/±80°: первое полностью чистое берём сразу, иначе max клиренс.
+        /// </summary>
+        Vector3 ComputeRecoverDir(Rigidbody rb, Vector3 toTarget) {
+            Vector3 back = rb.rotation * Vector3.back;
+            back.y = 0f;
+            if (back.sqrMagnitude < 0.001f) {
+                back = toTarget.sqrMagnitude > 0.001f ? -toTarget.normalized : -transform.forward;
+                back.y = 0f;
+                if (back.sqrMagnitude < 0.001f) back = Vector3.back;
+                back.Normalize();
+            } else {
+                back.Normalize();
+            }
+            float need = cruiseRecoverSpeed * cruiseRecoverSec + wallProbeRadius + 10f;
+            Vector3 origin = rb.position + Vector3.up * 2f;
+            float[] fan = { 0f, 40f, -40f, 80f, -80f };
+            Vector3 best = back;
+            float bestClear = -1f;
+            for (int i = 0; i < fan.Length; i++) {
+                Vector3 d = Quaternion.AngleAxis(fan[i], Vector3.up) * back;
+                float clear = need;
+                if (Physics.Raycast(origin, d, out var hit, need,
+                        wallObstacleMask, QueryTriggerInteraction.Ignore) && IsWallHit(hit))
+                    clear = hit.distance;
+                if (clear > bestClear) { bestClear = clear; best = d; }
+                if (clear >= need) break; // полностью чисто — берём не глядя дальше
+            }
+            return best;
         }
 
         /// <summary>
@@ -1771,7 +1882,7 @@ namespace ProjectC.PeacefulShip.Stations
             Vector3 dir = Quaternion.AngleAxis(ang, Vector3.up) * flat;
             Vector3 gate = new Vector3(corridor.cityCenter.x, 0f, corridor.cityCenter.z)
                 - dir * (corridor.cityRadius + gateMargin);
-            gate.y = Mathf.Clamp(CruiseTargetPos.y, corridor.minAltitude, corridor.maxAltitude);
+            gate.y = Mathf.Clamp(ProfileY(), corridor.minAltitude, corridor.maxAltitude);
             return gate;
         }
 
@@ -1817,7 +1928,7 @@ namespace ProjectC.PeacefulShip.Stations
             var station = ResolveTargetStation();
             if (!station.HasValue) { rb.linearVelocity = Vector3.zero; return; }
             Vector3 target = new Vector3(station.Value.x,
-                Mathf.Clamp(CruiseTargetPos.y, corridor.minAltitude, corridor.maxAltitude),
+                Mathf.Clamp(ProfileY(), corridor.minAltitude, corridor.maxAltitude),
                 station.Value.z);
             Vector3 toTarget = target - rb.position;
             float dist = toTarget.magnitude;
@@ -1894,6 +2005,7 @@ namespace ProjectC.PeacefulShip.Stations
             _cargoTradeDone = data.cargoTradeDone;
             AssignedPadId = string.IsNullOrEmpty(data.assignedPadId) ? null : data.assignedPadId;
             CruiseTargetPos = new Vector3(data.pxCruise, data.pyCruise, data.pzCruise);
+            if (useEchelons) SetCruiseTarget(CruiseTargetPos); // пересчитать эшелон под текущий коридор
             LiftStartY = data.liftStartY;
 
             var ship = GetComponent<ShipController>();

@@ -22,6 +22,8 @@ namespace ProjectC.PeacefulShip.EditorTools
         private bool _foldAntiGrav = true;
         private bool _foldAvoidance = false;
         private bool _foldWallFollow = false;
+        private bool _foldEchelons = false;
+        private bool _foldDepart = false;
         private bool _foldGates = false;
         private bool _foldDebug = false;
 
@@ -238,12 +240,41 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("wallExitStrikes");
                 DrawProp("wallForwardClearStrikes");
                 DrawProp("wallResumeCooldownSec");
+                DrawProp("wallMinDwellSec");
                 DrawProp("cruiseStuckDist");
                 DrawProp("cruiseStuckSec");
                 DrawProp("cruiseRecoverSec");
                 DrawProp("cruiseRecoverSpeed");
                 DrawProp("cruiseMaxRecoveries");
                 DrawProp("wallObstacleMask");
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space(4);
+
+            // ── Echelons (T-NS-WF06b) ──
+            _foldEchelons = EditorGUILayout.Foldout(_foldEchelons,
+                "🛫 Cruise Echelons (T-NS-WF06b, OFF=профиль)", true, EditorStyles.foldoutHeader);
+            if (_foldEchelons)
+            {
+                EditorGUI.indentLevel++;
+                DrawProp("useEchelons");
+                DrawProp("echelonStep");
+                DrawProp("echelonCount");
+                DrawProp("echelonCorridorMargin");
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space(4);
+
+            // ── Departure spacing (T-NS-WF06c) ──
+            _foldDepart = EditorGUILayout.Foldout(_foldDepart,
+                "🛫 Departure Spacing (T-NS-WF06c, OFF=взлёт сразу)", true, EditorStyles.foldoutHeader);
+            if (_foldDepart)
+            {
+                EditorGUI.indentLevel++;
+                DrawProp("useDepartureSpacing");
+                DrawProp("departureMutexRadius");
                 EditorGUI.indentLevel--;
             }
 

@@ -1,5 +1,18 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-23 — T-NS-WF06: слои координатора (A+B1+B2 из ресёрча 13)
+
+**A:** min-dwell + согласие зонда/LOS (фликер Гиганта), recovery-веер
+(клин Сильфиды), recoveries 3→2. **B1:** эшелоны `useEchelons` (default false),
+`SetCruiseTarget`/`ProfileY`, зажим в коридор, `ech=` в heartbeat.
+**B2:** departure mutex `useDepartureSpacing` (default false),
+`IsDepartureClear` в TrafficManager через spatial index, `depart-wait` в логе.
+Все три — kill-switch флагами. Критерии приёмки по логу: шип-эвойд < 5/мин,
+LOS > 70%, `cruise-stuck` отрабатывает веером. Шаг C (граф трасс) — только если
+цифры не сойдутся.
+
+---
+
 ## Итерация от 2026-09-23 — T-NS-WF04: пинг-понг WallFollow↔Avoiding по логу сессии
 
 **Диагностика по `NpcShipNavLog` (54 с, 20 кораблей, 71 переход):** входов в обход

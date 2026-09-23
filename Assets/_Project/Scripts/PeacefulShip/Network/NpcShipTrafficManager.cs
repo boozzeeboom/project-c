@@ -108,6 +108,26 @@ namespace ProjectC.PeacefulShip.Network
             if (debugMode) Debug.Log("[NpcShipTrafficManager] Clear — all arrival tracking reset");
         }
 
+        /// <summary>
+        /// T-NS-WF06c: свободен ли взлёт у станции (departure mutex): никто чужой
+        /// не в Lifting/Yawing в радиусе. Разносит вылеты пачкой — стая не стартует
+        /// одновременно через одну скалу. Server-only, запрос через spatial index.
+        /// </summary>
+        public bool IsDepartureClear(Vector3 stationPos, float radius, ulong requesterId)
+        {
+            var nearby = NpcShipZoneRegistry.QueryNearby(stationPos, radius);
+            for (int i = 0; i < nearby.Count; i++)
+            {
+                var npc = nearby[i];
+                if (npc == null || npc.NpcInstanceId == requesterId) continue;
+                var m = npc.CurrentMode;
+                if (m == Stations.NpcShipController.NavMode.Lifting
+                    || m == Stations.NpcShipController.NavMode.Yawing)
+                    return false;
+            }
+            return true;
+        }
+
         // === Internal ===
 
         private float GetLastArrivalAt(string stationId)

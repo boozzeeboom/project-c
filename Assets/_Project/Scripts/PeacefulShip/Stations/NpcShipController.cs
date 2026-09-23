@@ -515,6 +515,7 @@ namespace ProjectC.PeacefulShip.Stations
         private int _wallLosStrikes;
         private int _wallFwdStrikes;
         private float _wallPreferredSide;
+        private float _logBeatNextAt; // T-NS-LOG01: следующий heartbeat в глобальный лог
 
         // === T-NS-GATE04: процедурные ворота городов (kill-switch useCityGates) ===
         // Выключено = старое поведение бит-в-бит. Код gates — отдельная область внизу,
@@ -586,14 +587,14 @@ namespace ProjectC.PeacefulShip.Stations
                 // ENGINE-STATE: NPC всегда восстанавливает включённый двигатель
                 ship.SetEngineRunning(true);
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player released control — NPC autopilot resuming");
-                if (CurrentMode == NavMode.Docked && !ship.IsDocked) SetMode(NavMode.Cruising);
+                if (CurrentMode == NavMode.Docked && !ship.IsDocked) SetMode(NavMode.Cruising, "player-release");
                 var resumeStation = ResolveTargetStation();
                 if (resumeStation.HasValue) CruiseTargetPos = resumeStation.Value;
                 _avoidOther = null;
             }
 
             if (ship.IsDocked && CurrentMode != NavMode.Docked) {
-                SetMode(NavMode.Docked);
+                SetMode(NavMode.Docked, "isDocked-sync");
                 return;
             }
             var rb = GetComponent<Rigidbody>();
@@ -624,7 +625,7 @@ namespace ProjectC.PeacefulShip.Stations
                     ship.ExitDocked();
                     _scheduleAdvancedAfterDock = false;
                     // _cargoTradeDone сбрасывается в SetMode(Docked) — здесь не нужно.
-                    SetMode(NavMode.Lifting);
+                    SetMode(NavMode.Lifting, "dwell-done");
                     return;
                 }
                 return;
@@ -664,6 +665,19 @@ namespace ProjectC.PeacefulShip.Stations
                 }
             }
 
+            // T-NS-LOG01: heartbeat 1/5с — видно «стоит носом» (spd≈0 вне Docked)
+            // и залипание в режиме без переходов.
+            if (Time.time >= _logBeatNextAt) {
+                _logBeatNextAt = Time.time + 5f + ProbePhaseOffset();
+                float distBT = CruiseTargetPos == Vector3.zero
+                    ? -1f : Vector3.Distance(rb.position, CruiseTargetPos);
+                string beatDetail = CurrentMode == NavMode.WallFollow
+                    ? $"side={_wallSide};losStrikes={_wallLosStrikes};fwdStrikes={_wallFwdStrikes};turn={_wallTurnAccum:F0}"
+                    : "";
+                NpcShipNavLog.Heartbeat(gameObject.name, npcInstanceId, CurrentMode.ToString(),
+                    rb.linearVelocity.magnitude, distBT, rb.position, beatDetail);
+            }
+
             switch (CurrentMode) {
                 case NavMode.Lifting: TickLift(rb); break;
                 case NavMode.Yawing: TickYaw(rb); break;
@@ -677,10 +691,16 @@ namespace ProjectC.PeacefulShip.Stations
             }
         }
 
-        public void SetMode(NavMode m) {
+        /// <summary>
+        /// T-NS-LOG01: reason пишется в глобальный Nav-лог (файл сессии).
+        /// По счётчикам переходов видно дребезг (WallFollow↔Cruising, Avoiding-петли).
+        /// </summary>
+        public void SetMode(NavMode m, string reason = null) {
             if (CurrentMode == m) return;
             var old = CurrentMode;
             CurrentMode = m;
+            NpcShipNavLog.Transition(gameObject.name, npcInstanceId, old.ToString(), m.ToString(),
+                reason ?? "", "");
             if (m == NavMode.Docked) {
                 DockedSinceTime = Time.time;
                 // T-NS-BERTH2: успешный док — сбрасываем счётчики захода/holding.
@@ -737,7 +757,7 @@ namespace ProjectC.PeacefulShip.Stations
                 var station = ResolveTargetStation();
                 if (station.HasValue) {
                     CruiseTargetPos = station.Value;
-                    SetMode(NavMode.Yawing);
+                    SetMode(NavMode.Yawing, "lift-done");
                 } else {
                     // Не нашли станцию — fallback hover
                     rb.linearVelocity = Vector3.zero;
@@ -766,7 +786,7 @@ namespace ProjectC.PeacefulShip.Stations
             rb.linearVelocity = Vector3.zero;
 
             if (Mathf.Abs(deltaYaw) < 3f) {
-                SetMode(NavMode.Cruising);
+                SetMode(NavMode.Cruising, "yaw-aligned");
             }
         }
 
@@ -783,7 +803,7 @@ namespace ProjectC.PeacefulShip.Stations
             if (zone != null && Vector3.Distance(rb.position, zone.transform.position) < zone.CommRange) {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
-                SetMode(NavMode.Berthing);
+                SetMode(NavMode.Berthing, "comm-zone");
                 return;
             }
 
@@ -791,7 +811,7 @@ namespace ProjectC.PeacefulShip.Stations
             if (dist < 50f) {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
-                SetMode(NavMode.Berthing);
+                SetMode(NavMode.Berthing, "near-station");
                 return;
             }
 
@@ -943,7 +963,7 @@ namespace ProjectC.PeacefulShip.Stations
                 string berthStationId = berthState != null ? berthState.CurrentRoute.toLocationId : string.Empty;
                 dwInstance.ConfirmTouchdown(npcInstanceId, ship.NetworkObjectId, AssignedPadId, berthStationId ?? string.Empty);
                 ship.EnterDocked();
-                SetMode(NavMode.Docked);
+                SetMode(NavMode.Docked, "touchdown");
                 return;
             }
 
@@ -1000,6 +1020,9 @@ namespace ProjectC.PeacefulShip.Stations
         /// ExitDocked-паттерн с _lastUndockTime здесь не нужен.
         /// </summary>
         void AbortBerthApproach(Rigidbody rb) {
+            // T-NS-LOG01: смены режима нет — пишем событие вручную (видно в SUMMARY).
+            NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Berthing", "Berthing",
+                "berth-abort", $"attempt={_berthAttempts + 1}");
             _berthAttempts++;
             var dw = Docking.Core.DockingWorld.Instance;
             var ship = GetComponent<ShipController>();
@@ -1026,7 +1049,7 @@ namespace ProjectC.PeacefulShip.Stations
             var station = ResolveTargetStation();
             if (station.HasValue) {
                 CruiseTargetPos = station.Value;
-                SetMode(NavMode.Cruising);
+                SetMode(NavMode.Cruising, "divert");
                 if (debugMode) {
                     var st = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
                     Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Diverting to {(st != null ? st.CurrentRoute.toLocationId : "?")}");
@@ -1299,7 +1322,7 @@ namespace ProjectC.PeacefulShip.Stations
                     $"(myPrio={AvoidancePriority} otherPrio={other.AvoidancePriority})");
                 _avoidPhaseEnteredAt = Time.time;
                 _avoidStartedAt = Time.time;
-                SetMode(NavMode.AvoidYield);
+                SetMode(NavMode.AvoidYield, "yield-ship");
                 return;
             }
 
@@ -1309,7 +1332,7 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidPhaseEnteredAt = Time.time;
             _avoidStartedAt = Time.time;
             CountAvoidCycle();
-            SetMode(NavMode.Avoiding);
+            SetMode(NavMode.Avoiding, "avoid-ship");
         }
 
         void EnterAvoid(Rigidbody rb, NpcProximityZoneBuilds build) {
@@ -1324,7 +1347,7 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidPhaseEnteredAt = Time.time;
             _avoidStartedAt = Time.time;
             CountAvoidCycle();
-            SetMode(NavMode.Avoiding);
+            SetMode(NavMode.Avoiding, "avoid-build");
         }
 
         /// <summary>
@@ -1415,7 +1438,8 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidCooldownUntil = Time.time + avoidCooldownSec;
             if (cleared) _avoidCycles = 0;
             // Возврат на прошлый маршрут: прежний режим + прежняя CruiseTargetPos (не менялась)
-            SetMode(_resumeMode == NavMode.Avoiding || _resumeMode == NavMode.AvoidYield ? NavMode.Cruising : _resumeMode);
+            SetMode(_resumeMode == NavMode.Avoiding || _resumeMode == NavMode.AvoidYield ? NavMode.Cruising : _resumeMode,
+                cleared ? "avoid-clear" : "avoid-timeout");
         }
 
         // === T-NS-WF01: wall-follow — латеральный обход гор/скал ===
@@ -1500,7 +1524,7 @@ namespace ProjectC.PeacefulShip.Stations
                 ? NavMode.CorridorLeg : NavMode.Cruising;
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruising → WallFollow " +
                 $"side={(_wallSide > 0 ? "right" : "left")} R={rightClear:F0}/L={leftClear:F0}");
-            SetMode(NavMode.WallFollow);
+            SetMode(NavMode.WallFollow, "probe");
             return true;
         }
 
@@ -1607,7 +1631,7 @@ namespace ProjectC.PeacefulShip.Stations
             _wallFwdStrikes = 0;
             _wallBlockStrikes = 0;
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow → {back} (LOS clear)");
-            SetMode(back);
+            SetMode(back, "LOS");
         }
 
         void ResetWallState() {
@@ -1666,10 +1690,10 @@ namespace ProjectC.PeacefulShip.Stations
             float distToCity = Vector3.Distance(rb.position, corridor.cityCenter);
             if (distToCity <= corridor.cityRadius) {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruising → CorridorLeg ({corridor.corridorId})");
-                SetMode(NavMode.CorridorLeg);
+                SetMode(NavMode.CorridorLeg, "gate-inside");
             } else {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruising → GateApproach ({corridor.corridorId})");
-                SetMode(NavMode.GateApproach);
+                SetMode(NavMode.GateApproach, "gate");
             }
             return true;
         }
@@ -1677,17 +1701,17 @@ namespace ProjectC.PeacefulShip.Stations
         /// <summary>Полёт к воротам; прибыли — CorridorLeg. Коридор пропал — назад в Cruising.</summary>
         void TickGateApproach(Rigidbody rb) {
             var corridor = ResolveCityCorridor();
-            if (corridor == null) { SetMode(NavMode.Cruising); return; }
+            if (corridor == null) { SetMode(NavMode.Cruising, "gate-lost"); return; }
             Vector3 gate = ComputeGatePoint(rb.position, corridor);
             Vector3 toGate = gate - rb.position;
             // Ворота позади (корабль уже внутри) — сразу CorridorLeg.
             if (Vector3.Distance(rb.position, corridor.cityCenter) <= corridor.cityRadius) {
-                SetMode(NavMode.CorridorLeg);
+                SetMode(NavMode.CorridorLeg, "gate-reached");
                 return;
             }
             FlyToward(rb, toGate, CruiseSpeed);
             Vector3 flat = new Vector3(toGate.x, 0f, toGate.z);
-            if (flat.magnitude < gateArrivalTol) SetMode(NavMode.CorridorLeg);
+            if (flat.magnitude < gateArrivalTol) SetMode(NavMode.CorridorLeg, "gate-reached");
         }
 
         /// <summary>
@@ -1696,7 +1720,7 @@ namespace ProjectC.PeacefulShip.Stations
         /// </summary>
         void TickCorridorLeg(Rigidbody rb) {
             var corridor = ResolveCityCorridor();
-            if (corridor == null) { SetMode(NavMode.Cruising); return; }
+            if (corridor == null) { SetMode(NavMode.Cruising, "gate-lost"); return; }
             var station = ResolveTargetStation();
             if (!station.HasValue) { rb.linearVelocity = Vector3.zero; return; }
             Vector3 target = new Vector3(station.Value.x,
@@ -1709,13 +1733,13 @@ namespace ProjectC.PeacefulShip.Stations
             if (zone != null && Vector3.Distance(rb.position, zone.transform.position) < zone.CommRange) {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
-                SetMode(NavMode.Berthing);
+                SetMode(NavMode.Berthing, "comm-zone");
                 return;
             }
             if (dist < 50f) {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
-                SetMode(NavMode.Berthing);
+                SetMode(NavMode.Berthing, "near-station");
                 return;
             }
             if (dist > 100f && Time.time >= _wallCooldownUntil && Time.time >= _wallProbeNextAt) {

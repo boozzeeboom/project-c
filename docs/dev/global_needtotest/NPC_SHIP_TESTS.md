@@ -7,6 +7,20 @@
 > Тюнинг полей — в инспекторе `NpcShipController`: foldouts
 > «Terrain Wall-Follow» и «City Gates» (`debugMode` в «Debug» — подробный лог переходов).
 
+## T-NS-LOG01 — глобальный Nav-лог (файл сессии, коммит ниже, 2026-09-23)
+
+> Лог пишется сам (server-only, всегда включён): каждый переход режима
+> (`TRANS`), heartbeat корабля раз в 5 с (`BEAT`: режим/скорость/дистанция/позиция),
+> сводка счётчиков раз в 60 с (`SUMMARY`: `Cruising→WallFollow×N=M/мин`).
+> Путь файла — в консоли сервера по маркеру `[NpcShipNavLog] logging to ...`
+> (`%USERPROFILE%\AppData\LocalLow\<Company>\<Product>\NpcShipNavLog_*.csv`).
+> Разделитель `;` — открывается Excel RU напрямую.
+
+- [ ] 🟢 После сессии 5+ мин: файл создан, в нём `TRANS`/`BEAT`/`SUMMARY` строки.
+- [ ] 🟢 Файл отдать на анализ: по `SUMMARY` видно частоту дёрганий
+      (`WallFollow→Cruising` vs `Cruising→WallFollow` в минуту),
+      по `BEAT` со `spd≈0` вне `Docked` — кто стоит носом и где (`pos`).
+
 ## T-NS-WF01 — WallFollow: облёт гор (коммит `2e989fbc`, 2026-09-23)
 
 - [ ] 🟢 Маршрут через гору: корабль входит в обход (консоль сервера

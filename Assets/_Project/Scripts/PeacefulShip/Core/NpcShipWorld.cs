@@ -59,6 +59,7 @@ namespace ProjectC.PeacefulShip.Core
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            NpcShipNavLog.End(); // T-NS-LOG01: финализировать файл сессии
         }
 
         // === Public API (server-side) ===
@@ -132,6 +133,9 @@ namespace ProjectC.PeacefulShip.Core
         /// Старая FSM (TickNpc + movement-хелперы) удалена в T-NS-P2 (была недостижима:
         /// FixedUpdate всегда шёл в NavTick напрямую). Логика расписания — в контроллере.
         /// </summary>
+        // T-NS-LOG01: сводка счётчиков переходов раз в 60с (частота дёрганий).
+        private float _logSummaryNextAt;
+
         private void FixedUpdate()
                 {
                     if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return;
@@ -146,6 +150,12 @@ namespace ProjectC.PeacefulShip.Core
                         // M3.2: только NavTick с прямым Rigidbody control.
                         // ShipController.FixedUpdate пропускает физику если _hasNpcPilot && _pilots.Count==0.
                         controller.NavTick(dt);
+                    }
+
+                    if (Time.time >= _logSummaryNextAt)
+                    {
+                        _logSummaryNextAt = Time.time + 60f;
+                        NpcShipNavLog.WriteSummary();
                     }
                 }
 

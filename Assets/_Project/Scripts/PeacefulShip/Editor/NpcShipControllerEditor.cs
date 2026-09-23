@@ -245,6 +245,9 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("lidarClearWeight");
                 DrawProp("lidarKeepWeight");
                 DrawProp("lidarSideTrigger");
+                DrawProp("lidarCenterFraction");
+                DrawProp("wallProgressSec");
+                DrawProp("wallProgressMin");
                 DrawProp("cruiseStuckDist");
                 DrawProp("cruiseStuckSec");
                 DrawProp("cruiseRecoverSec");

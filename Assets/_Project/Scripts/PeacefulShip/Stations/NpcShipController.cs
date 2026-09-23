@@ -536,6 +536,17 @@ namespace ProjectC.PeacefulShip.Stations
         [Range(0f, 1f)] [SerializeField] private float lidarKeepWeight = 0.5f;
         [Tooltip("Бок вплотную (м): немедленный вход в обход (зацеп кромки).")]
         [Min(10f)] [SerializeField] private float lidarSideTrigger = 80f;
+        // === T-NS-WF09: жадный вход + гриндеры (лог 000043) ===
+        // Входов 44/76с: центр цепляет дальние скалы на краю lookahead → эпизоды
+        // ровно min-dwell. Вход по центру — только внутренняя половина.
+        [Tooltip("Доля lookahead: центр считается забитым только внутри неё (0..1).")]
+        [Range(0.1f, 1f)] [SerializeField] private float lidarCenterFraction = 0.5f;
+        // Жук 42 с / Летучий 59 с в обходе без LOS: displacement-watchdog их не ловит
+        // (ёрзают ±5 м). Ловит прогресс к ЦЕЛИ с момента входа.
+        [Tooltip("Сколько секунд в обходе ждём приближения к цели → divert.")]
+        [Min(10f)] [SerializeField] private float wallProgressSec = 35f;
+        [Tooltip("Мин. приближение к цели за wallProgressSec (м), иначе divert.")]
+        [Min(10f)] [SerializeField] private float wallProgressMin = 100f;
         [Tooltip("Слои препятствий для зонда (террейн, скалы, город). Триггеры игнорятся всегда.")]
         [SerializeField] private LayerMask wallObstacleMask = -1;
 
@@ -568,6 +579,8 @@ namespace ProjectC.PeacefulShip.Stations
         private float _wallLastProgressAt;
         private float _wallProbeNextAt;
         private float _wallCooldownUntil;
+        // T-NS-WF09: дистанция до цели на входе (прогресс-watchdog, относительна — F8-безопасно).
+        private float _wallEntryDist;
         // T-NS-WF01b: состояние антидребезга (сброс — новый leg/divert).
         private int _wallBlockStrikes;
         private int _wallLosStrikes;
@@ -1648,7 +1661,9 @@ namespace ProjectC.PeacefulShip.Stations
             LidarScan(rb.position, fwdN, lookN, fwdN, out _, out float centerN, out float minN);
             bool enter = minN < lidarSideTrigger;
             if (!enter) {
-                if (centerN < lookN) enter = (++_wallBlockStrikes >= wallEnterStrikes);
+                // T-NS-WF09: центр — только внутренняя половина lookahead (дальние
+                // скалы на краю не дёргают в обход каждые 8 с).
+                if (centerN < lookN * lidarCenterFraction) enter = (++_wallBlockStrikes >= wallEnterStrikes);
                 else _wallBlockStrikes = 0;
             }
             if (!enter) return false;
@@ -1667,6 +1682,7 @@ namespace ProjectC.PeacefulShip.Stations
             if (fwd.sqrMagnitude < 0.001f) return false;
             fwd.Normalize();
             _wallEntryY = rb.position.y;
+            _wallEntryDist = dist;
             _wallStartedAt = Time.time;
             _wallTurnAccum = 0f;
             _wallLastBearing = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
@@ -1710,6 +1726,17 @@ namespace ProjectC.PeacefulShip.Stations
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow loop (360°) — diverting");
                 NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
                     "wall-divert-loop", "");
+                ResetWallState();
+                DivertToNextStation(rb);
+                return;
+            }
+            // T-NS-WF09: нет приближения к цели за wallProgressSec (ёрзание на месте,
+            // Жук 42 с / Летучий 59 с) → divert. Displacement-watchdog ниже остаётся.
+            if (Time.time - _wallStartedAt > wallProgressSec
+                && _wallEntryDist - dist < wallProgressMin) {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow no target progress — diverting");
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
+                    "wall-divert-noprogress", $"d={_wallEntryDist - dist:F0}m");
                 ResetWallState();
                 DivertToNextStation(rb);
                 return;

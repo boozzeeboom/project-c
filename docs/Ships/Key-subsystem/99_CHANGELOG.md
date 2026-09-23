@@ -4,6 +4,34 @@
 
 ---
 
+## 2026-09-23 — T-KEY-10 (гонка регистрации замка → свободная посадка без ключа)
+
+**Симптом**: без ключа в инвентаре можно сесть на любой корабль и управлять им.
+В Console: `[ShipOwnershipRequirement] OnNetworkSpawn: MetaRequirementRegistry.Instance==null.
+Registration skipped for netId=3` (порядок спавна scene-placed объектов не гарантирован —
+`GlobalMotionPilotRuntime.PrepareAndStartHost` → `StartHost` → корабли спавнятся раньше реестра).
+
+**Корневая причина (fail-open)**: `MetaRequirementRegistry.CanPlayerUse` возвращал `true`,
+если для netId корабля не было записи ни в `_ownershipRequirements`, ни в `_requirements`.
+Пропущенная регистрация = навсегда открытый замок.
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `Assets/_Project/Scripts/Ship/Key/ShipOwnershipRequirement.cs` | + `PendingRegistrations` (static): замок, не заставший реестр, откладывается вместо потери; чистка в `OnNetworkDespawn`. | ✅ updated |
+| `Assets/_Project/Scripts/MetaRequirement/MetaRequirementRegistry.cs` | + перегрузка `CanPlayerUse(clientId, netId, out reason)`; `TryAttachLateOwnership` (pending → живой замок из `SpawnManager`); fail-closed: netId корабля без замка = DENY; `RequestCanUseRpc` переведён на единый путь. | ✅ updated |
+
+**Verify**:
+- ✅ Compile: 0 errors (Unity console, после refresh+compile)
+- Ручная проверка (пользователь): StartHost → в Console `Registered`/`late-attached` вместо вечного `skipped`; F без ключа → `Denied` + тост, посадки нет; F с ключом → посадка работает.
+
+**Что НЕ сделано** (намеренно):
+- ❌ Связка вайпов `WipeInventory`/`WipeKeyInstances` (второй независимый путь «доступ без предмета» через stale `KeyRodInstances.json`) — отдельным тикетом.
+- ❌ Порядок спавна реестра/кораблей не менялся (self-heal покрывает гонку без трогания `ScenePlacedObjectSpawner`/`ClientSceneLoader`).
+
+---
+
 ## 2026-07-21 — P1 Refactor Complete (ветка `refactor/key-subsystem-p1-2026-07-21`)
 
 **Контекст**: полный рефакторинг по плану `SHIP_REFACTOR_PLAN_2026-07-21.md`.

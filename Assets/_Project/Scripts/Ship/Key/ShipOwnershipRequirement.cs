@@ -20,6 +20,7 @@
 //   • OnNetworkDespawn — отписывается
 // =====================================================================================
 
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using ProjectC.Player;
@@ -43,6 +44,13 @@ namespace ProjectC.Ship.Key
         /// Может быть null на клиенте (нас это устраивает — проверка server-only).</summary>
         private ShipController _shipController;
 
+        /// <summary>T-KEY-10: замки, не заставшие реестр в OnNetworkSpawn
+        /// (MetaRequirementRegistry.Instance==null — порядок спавна scene-placed
+        /// объектов не гарантирован, см. лог "Registration skipped").
+        /// Реестр забирает их лениво при первой проверке (fail-closed + self-heal).</summary>
+        internal static readonly Dictionary<ulong, ShipOwnershipRequirement> PendingRegistrations
+            = new Dictionary<ulong, ShipOwnershipRequirement>();
+
         // ===========================================================
         // Lifecycle
         // ===========================================================
@@ -58,13 +66,17 @@ namespace ProjectC.Ship.Key
             if (registry != null)
             {
                 registry.RegisterShipOwnership(NetworkObjectId, this);
+                PendingRegistrations.Remove(NetworkObjectId);
                 Debug.Log($"[ShipOwnershipRequirement] Registered: netId={NetworkObjectId}, " +
                           $"displayName='{ResolveDisplayName()}'");
             }
             else
             {
+                // T-KEY-10: замок не теряем — кладём в pending, реестр подберёт
+                // при первой проверке доступа (иначе fail-open: без записи CanPlayerUse=true).
+                PendingRegistrations[NetworkObjectId] = this;
                 Debug.LogWarning($"[ShipOwnershipRequirement] OnNetworkSpawn: MetaRequirementRegistry.Instance==null. " +
-                                 $"Registration skipped for netId={NetworkObjectId}.");
+                                 $"Registration deferred (pending) for netId={NetworkObjectId}.");
             }
         }
 
@@ -72,6 +84,8 @@ namespace ProjectC.Ship.Key
         {
             if (IsServer)
             {
+                // T-KEY-10: чистим и pending, чтобы не копились протухшие ссылки.
+                PendingRegistrations.Remove(NetworkObjectId);
                 var registry = MetaRequirementRegistry.Instance;
                 if (registry != null)
                 {

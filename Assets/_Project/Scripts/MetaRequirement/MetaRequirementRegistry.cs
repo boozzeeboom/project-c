@@ -52,18 +52,86 @@ namespace ProjectC.MetaRequirement
         /// затем MetaRequirement (для блоков/дверей), затем allow по умолчанию.</summary>
         public bool CanPlayerUse(ulong clientId, ulong netId)
         {
-            if (!IsServer) return false;
+            return CanPlayerUse(clientId, netId, out _);
+        }
+
+        /// <summary>Server-only: авторитетная проверка доступа с причиной отказа.
+        /// T-KEY-10: fail-closed для кораблей — netId корабля без записи замка
+        /// (гонка спавна, респаун реестра) теперь DENY, а не allow.
+        /// Перед решением подхватывает опоздавшие регистрации (self-heal).</summary>
+        public bool CanPlayerUse(ulong clientId, ulong netId, out string reason)
+        {
+            reason = "";
+            if (!IsServer) { reason = "not_server"; return false; }
 
             // 1) Ship ownership (приоритет для кораблей)
             if (_ownershipRequirements.TryGetValue(netId, out var ownership))
-                return ownership.CanPlayerUse(clientId, out _);
+                return ownership.CanPlayerUse(clientId, out reason);
+
+            // T-KEY-10: late-heal — замок мог не застать реестр (pending) или запись
+            // потеряна (респаун реестра чистит словари). Подхватываем перед решением.
+            if (TryAttachLateOwnership(netId)
+                && _ownershipRequirements.TryGetValue(netId, out ownership))
+                return ownership.CanPlayerUse(clientId, out reason);
 
             // 2) MetaRequirement (для блоков/дверей)
             if (_requirements.TryGetValue(netId, out var req))
-                return req.CanPlayerUse(clientId, out _);
+                return req.CanPlayerUse(clientId, out reason);
 
-            // 3) Нет требований = доступ разрешён
+            // 3) T-KEY-10, fail-closed: netId принадлежит кораблю, но замка нет —
+            // раньше здесь был безусловный allow (свободная посадка без ключа).
+            if (IsShipNetId(netId))
+            {
+                reason = "Замок корабля не зарегистрирован (T-KEY-10)";
+                return false;
+            }
+
+            // 4) Нет требований = доступ разрешён
             return true;
+        }
+
+        /// <summary>T-KEY-10: подхватить опоздавшую регистрацию замка корабля.
+        /// a) pending (корабль заспавнился раньше реестра);
+        /// b) живой замок в сцене, запись потеряна (респаун реестра).</summary>
+        private bool TryAttachLateOwnership(ulong netId)
+        {
+            if (!IsServer) return false;
+
+            if (ShipOwnershipRequirement.PendingRegistrations.TryGetValue(netId, out var pending))
+            {
+                if (pending != null)
+                {
+                    RegisterShipOwnership(netId, pending);
+                    ShipOwnershipRequirement.PendingRegistrations.Remove(netId);
+                    Debug.Log($"[MetaRequirementRegistry] T-KEY-10: late-attached pending ownership for netId={netId}");
+                    return true;
+                }
+                // Протухшая ссылка (объект уничтожен) — чистим, дальше fail-closed.
+                ShipOwnershipRequirement.PendingRegistrations.Remove(netId);
+            }
+
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.SpawnManager.SpawnedObjects.TryGetValue(netId, out var nobj) && nobj != null)
+            {
+                var ownership = nobj.GetComponent<ShipOwnershipRequirement>();
+                if (ownership != null)
+                {
+                    RegisterShipOwnership(netId, ownership);
+                    Debug.Log($"[MetaRequirementRegistry] T-KEY-10: late-attached live ownership for netId={netId}");
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>T-KEY-10: принадлежит ли netId кораблю (для fail-closed).
+        /// Проверка только на сервере, вызывается после late-heal попыток.</summary>
+        private bool IsShipNetId(ulong netId)
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return false;
+            if (!nm.SpawnManager.SpawnedObjects.TryGetValue(netId, out var nobj) || nobj == null) return false;
+            return nobj.GetComponent<ShipController>() != null;
         }
 
         // ===========================================================
@@ -139,25 +207,8 @@ namespace ProjectC.MetaRequirement
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
 
-            bool allowed;
-            string reason;
-
-            // 1) Ship ownership (приоритет)
-            if (_ownershipRequirements.TryGetValue(interactableNetworkObjectId, out var ownership))
-            {
-                allowed = ownership.CanPlayerUse(clientId, out reason);
-            }
-            // 2) MetaRequirement (для блоков/дверей)
-            else if (_requirements.TryGetValue(interactableNetworkObjectId, out var req))
-            {
-                allowed = req.CanPlayerUse(clientId, out reason);
-            }
-            else
-            {
-                // 3) Без требований — разрешаем (default behaviour)
-                allowed = true;
-                reason = "";
-            }
+            // T-KEY-10: единый путь с CanPlayerUse (late-heal + fail-closed для кораблей).
+            bool allowed = CanPlayerUse(clientId, interactableNetworkObjectId, out string reason);
 
             // Доставка ответа владельцу через NetworkPlayer.
             var nm = NetworkManager.Singleton;

@@ -378,6 +378,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // WORLD-MAP-TRACKS: сдвинуть журнал карты (треки + метки) вместе с миром.
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ChartTracksShifted",
                 "entries=" + ShiftChartJournal(plan.LocalTranslation));
+            // T-NS-WF03: сдвинуть мировые Nav-кэши NPC-кораблей (CruiseTargetPos и др.).
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "NpcShipNavShifted",
+                "ships=" + ShiftNpcShipNav(plan.LocalTranslation));
             // T-FO09O: блок локального состояния применён полностью — rollback
             // вправе вернуть его назад. До этой точки отказ = сдвигов не было.
             _localStateShifted = true;
@@ -504,6 +507,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                 // WORLD-MAP-TRACKS: вернуть журнал карты назад.
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ChartTracksShifted",
                     "entries=" + ShiftChartJournal(-request.Plan.LocalTranslation));
+                // T-NS-WF03: вернуть Nav-кэши NPC-кораблей назад.
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "NpcShipNavShifted",
+                    "ships=" + ShiftNpcShipNav(-request.Plan.LocalTranslation));
                 _localStateShifted = false;
             }
             else
@@ -932,6 +938,28 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (veil == null) return 0;
             try { return veil.ApplyRebaseTranslation(translation); }
             catch (Exception) { return 0; }
+        }
+
+        /// <summary>
+        /// T-NS-WF03: сдвиг мировых Nav-кэшей NPC-кораблей вместе с миром
+        /// (CruiseTargetPos, _avoidFromPos, _wallEntryY, LiftStartY).
+        /// Состояние WallFollow (сторона/таймеры) — не мировые данные, хука не требует.
+        /// Контроллеры scene-placed (едут с корнями), резолв — один FindObjectsByType
+        /// на путь (урок T-FO09G-fix). Клиентам не рассылается: NavTick server-only,
+        /// на клиентах контроллер выключен. Best-effort, число в маркере.
+        /// </summary>
+        private int ShiftNpcShipNav(Vector3 translation)
+        {
+            int shifted = 0;
+            var ships = UnityEngine.Object.FindObjectsByType<ProjectC.PeacefulShip.Stations.NpcShipController>(
+                UnityEngine.FindObjectsSortMode.None);
+            for (int i = 0; i < ships.Length; i++)
+            {
+                if (ships[i] == null) continue;
+                try { shifted += ships[i].ApplyRebaseTranslation(translation); }
+                catch (Exception) { }
+            }
+            return shifted;
         }
 
         /// <summary>

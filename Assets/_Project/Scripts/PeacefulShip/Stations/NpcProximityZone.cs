@@ -219,6 +219,7 @@ namespace ProjectC.PeacefulShip.Stations
         /// <summary>
         /// Server-only: ближайший NPC-корабль, чья avoidance-зона пересекается с нашей.
         /// Awareness — всегда по сфере (центр-центр). Avoidance — shape-aware.
+        /// T-NS-WF02: кандидаты — через spatial hash (broadphase), не полный перебор All.
         /// </summary>
         public NpcShipController FindClosestConflict(out float dist)
         {
@@ -226,9 +227,10 @@ namespace ProjectC.PeacefulShip.Stations
             NpcShipController closest = null;
             Vector3 myPos = transform.position;
 
-            foreach (var kv in NpcShipZoneRegistry.All)
+            var candidates = NpcShipZoneRegistry.QueryNearby(myPos, awarenessRadius);
+            for (int i = 0; i < candidates.Count; i++)
             {
-                var other = kv.Value;
+                var other = candidates[i];
                 if (other == null || other == _self) continue;
                 if (!IsAvoidable(other)) continue;
 
@@ -260,7 +262,9 @@ namespace ProjectC.PeacefulShip.Stations
                 || m == NpcShipController.NavMode.Yawing
                 || m == NpcShipController.NavMode.Cruising
                 || m == NpcShipController.NavMode.Avoiding
-                || m == NpcShipController.NavMode.AvoidYield;
+                || m == NpcShipController.NavMode.AvoidYield
+                // T-NS-WF02: застывший в обходе корабль — тоже препятствие (расход за хребтом).
+                || m == NpcShipController.NavMode.WallFollow;
         }
 
         /// <summary>

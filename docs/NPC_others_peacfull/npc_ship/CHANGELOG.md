@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-09-23 — T-NS-WF01..WF03 + T-NS-GATE04: облёт гор (WallFollow) + ворота городов ✅ COMPILE-CLEAN
+
+**Дизайн:** `12_TERRAIN_WALLFOLLOW_NAV.md`. Лор: пики ОБЛЕТАЮТ вокруг, не перелетают; высота — геймплей, не трогаем.
+
+**Что добавлено:**
+
+| Тикет | Суть | Файлы |
+|---|---|---|
+| T-NS-WF01 | `NavMode.WallFollow`: forward-SphereCast → правило стены (сторона фиксируется при входе) → выход по LOS → возврат к профилю глиссадой (`returnVerticalCap`). Предохранители: timeout / круг 360° / застревание → `DivertToNextStation` | `NpcShipController.cs` |
+| T-NS-WF02 | Spatial hash broadphase в реестре (ячейка 500 м, ребилд ≤0.2 с) + stagger проб по `NpcInstanceId` + proximity-проверка в `WallFollow` (корабль важнее горы) | `NpcShipZoneRegistry.cs`, `NpcProximityZone.cs` |
+| T-NS-WF03 | `ApplyRebaseTranslation` (CruiseTargetPos/_avoidFromPos/_wallEntryY/LiftStartY) + `ShiftNpcShipNav` в слайсе (success + rollback, маркер `NpcShipNavShifted`) | `NpcShipController.cs`, `GlobalMotionControlledRebaseSlice.cs` |
+| T-NS-GATE04 | `NavMode.GateApproach/CorridorLeg` + процедурные ворота на `cityRadius` + kill-switch `useCityGates=false` (default). Удаление тикета = удалить область + 1 if | `NpcShipController.cs` |
+
+**Проверка (пользователь, Play Mode):** см. `12_TERRAIN_WALLFOLLOW_NAV.md` §10 (маршрут через гору, цель за массивом, F8 в обходе, ворота вкл/выкл, 0 errors).
+
+---
+
 ## 2026-07-24 — T-DOCK15: retry-cooldown в TickBerth
 
 **Сессия:** фикс спама консоли — `[DockingWorld] Pad physically occupied`.

@@ -459,6 +459,65 @@ namespace ProjectC.PeacefulShip.Stations
         private int _holdingRetries;
         private float _abortClimbRemaining; // м, >0 = идёт аварийный набор высоты
 
+        // === T-NS-WF01: Terrain wall-follow — латеральный обход гор/скал (server-only) ===
+        // Лор: пики ОБЛЕТАЮТ вокруг, не перелетают. Вертикаль в обходе заморожена
+        // на высоте входа; возврат к профилю — пологой глиссадой (returnVerticalCap).
+        // См. docs/NPC_others_peacfull/npc_ship/12_TERRAIN_WALLFOLLOW_NAV.md.
+        [Header("Wall-follow terrain avoidance (server-only)")]
+        [Tooltip("Радиус forward-SphereCast (м) — примерно полугабарит корпуса.")]
+        [Min(1f)] [SerializeField] private float wallProbeRadius = 12f;
+        [Tooltip("Дальность зонда: CruiseSpeed × это время (с).")]
+        [Min(1f)] [SerializeField] private float wallLookAheadSec = 8f;
+        [Tooltip("Мин. дальность зонда (м).")]
+        [Min(10f)] [SerializeField] private float wallLookAheadMin = 150f;
+        [Tooltip("Макс. дальность зонда (м).")]
+        [Min(50f)] [SerializeField] private float wallLookAheadMax = 600f;
+        [Tooltip("Держать склон на этом боковом отступе (м).")]
+        [Min(5f)] [SerializeField] private float wallClearance = 40f;
+        [Tooltip("Интервал проб зонда/LOS (с). Stagger по NpcInstanceId — задел на 200+.")]
+        [Min(0.05f)] [SerializeField] private float wallProbeIntervalSec = 0.2f;
+        [Tooltip("Предохранитель: максимум времени в обходе (с) → divert.")]
+        [Min(10f)] [SerializeField] private float wallTimeoutSec = 120f;
+        [Tooltip("Сколько секунд без смещения терпим (притирание к склону) → divert.")]
+        [Min(3f)] [SerializeField] private float wallNoProgressSec = 15f;
+        [Tooltip("Мин. смещение (м), которое считается прогрессом обхода.")]
+        [Min(1f)] [SerializeField] private float wallMinProgressMeters = 5f;
+        [Tooltip("Макс. вертикальная скорость возврата к профилю после LOS (м/с).")]
+        [Min(0.5f)] [SerializeField] private float returnVerticalCap = 2f;
+        [Tooltip("Хит ближе этого к цели (м) — геометрия станции, не стена (LOS чист).")]
+        [Min(10f)] [SerializeField] private float wallArriveMargin = 100f;
+        [Tooltip("Слои препятствий для зонда (террейн, скалы, город). Триггеры игнорятся всегда.")]
+        [SerializeField] private LayerMask wallObstacleMask = -1;
+
+        // Состояние обхода — F8-безопасно: сторона/таймеры/азимут, мировых Vector3 нет.
+        // Высота входа (_wallEntryY) и CruiseTargetPos сдвигаются через ApplyRebaseTranslation.
+        private float _wallSide; // +1 = гора справа (обходим слева), -1 = наоборот
+        private float _wallEntryY;
+        private float _wallStartedAt;
+        private float _wallTurnAccum; // накопленный разворот азимута на цель (петля 360° → divert)
+        private float _wallLastBearing;
+        private Vector3 _wallLastPos;
+        private float _wallLastProgressAt;
+        private float _wallProbeNextAt;
+        private float _wallCooldownUntil;
+
+        // === T-NS-GATE04: процедурные ворота городов (kill-switch useCityGates) ===
+        // Выключено = старое поведение бит-в-бит. Код gates — отдельная область внизу,
+        // одна точка входа из TickCruise. Удаление тикета = удалить область + 1 if.
+        [Header("City gates (procedural, server-only)")]
+        [Tooltip("ВКЛ: заход через ворота на границе cityRadius. ВЫКЛ: старый прямой заход.")]
+        [SerializeField] private bool useCityGates = false;
+        [Tooltip("Дистанция до станции (м), ближе которой ищем ворота.")]
+        [Min(100f)] [SerializeField] private float gateTriggerDist = 1500f;
+        [Tooltip("Запас за границей города для точки ворот (м).")]
+        [Min(0f)] [SerializeField] private float gateMargin = 100f;
+        [Tooltip("Допуск прибытия в ворота (м).")]
+        [Min(5f)] [SerializeField] private float gateArrivalTol = 60f;
+        [Tooltip("Сколько азимутальных вариантов ворот (разнос трафика по NpcInstanceId).")]
+        [Min(1)] [SerializeField] private int gateVariants = 4;
+        [Tooltip("Угловой шаг варианта ворот (град).")]
+        [Min(1f)] [SerializeField] private float gateVariantStepDeg = 20f;
+
         /// <summary>
         /// Приоритет расхождения: выше → делает полный манёвр, ниже → yield (ждёт).
         /// Авто-назначается из NpcInstanceId (детерминированно, без сетевой коммуникации).
@@ -482,7 +541,11 @@ namespace ProjectC.PeacefulShip.Stations
             }
         }
 
-        public enum NavMode : byte { Docked, Lifting, Yawing, Cruising, Berthing, Avoiding, AvoidYield }
+        // T-NS-WF01: WallFollow — латеральный обход гор/скал (правило стены, выход по LOS).
+        // T-NS-GATE04: GateApproach/CorridorLeg — процедурные ворота городов (useCityGates).
+        // Значения добавлены в конец: CurrentMode не сериализуется напрямую, порядок безопасен.
+        // Transient для сейвов — RestoreFromSave маппит их в Cruising.
+        public enum NavMode : byte { Docked, Lifting, Yawing, Cruising, Berthing, Avoiding, AvoidYield, WallFollow, GateApproach, CorridorLeg }
 
         /// <summary>Вызывается из NpcShipWorld.Update каждый FixedUpdate.</summary>
         public void NavTick(float dt) {
@@ -556,16 +619,19 @@ namespace ProjectC.PeacefulShip.Stations
             // Berthing/Docked исключены: корабль на финальном заходе игнорирует билд-коллайдеры
             // (позже переосмыслим подход к заходу в док).
             // T-NS-AVOID4: cooldown после манёвра — летим прямо, не дребезжим Avoiding↔Cruising.
-            if ((CurrentMode == NavMode.Lifting || CurrentMode == NavMode.Yawing || CurrentMode == NavMode.Cruising)
+            // T-NS-WF02: ship-to-ship проверка расширена на WallFollow (расход за хребтом).
+            // Корабль важнее горы: EnterAvoid из WallFollow, _resumeMode помнит WallFollow.
+            if ((CurrentMode == NavMode.Lifting || CurrentMode == NavMode.Yawing || CurrentMode == NavMode.Cruising
+                    || CurrentMode == NavMode.WallFollow)
                 && Time.time >= _avoidCooldownUntil)
             {
                 var pz = ProximityZone;
                 if (pz != null)
                 {
-                    // Ship-to-ship: только в Cruising
+                    // Ship-to-ship: в Cruising и WallFollow
                     NpcShipController intruder = null;
                     float shipDist = float.MaxValue;
-                    if (CurrentMode == NavMode.Cruising)
+                    if (CurrentMode == NavMode.Cruising || CurrentMode == NavMode.WallFollow)
                         intruder = pz.FindClosestConflict(out shipDist);
 
                     // Ship-to-build: во всех свободных режимах
@@ -590,6 +656,9 @@ namespace ProjectC.PeacefulShip.Stations
                 case NavMode.Berthing: TickBerth(rb); break;
                 case NavMode.Avoiding: TickAvoid(rb); break;
                 case NavMode.AvoidYield: TickAvoidYield(rb); break;
+                case NavMode.WallFollow: TickWallFollow(rb); break;
+                case NavMode.GateApproach: TickGateApproach(rb); break;
+                case NavMode.CorridorLeg: TickCorridorLeg(rb); break;
             }
         }
 
@@ -706,6 +775,16 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
+            // T-NS-GATE04: ворота городов (одна точка входа, только при useCityGates).
+            if (useCityGates && TryEnterGateApproach(rb, dist)) return;
+
+            // T-NS-WF01: forward-зонд террейна (stagger по кораблям — задел на 200+).
+            // Вблизи цели не зондируем — там разбирается Berthing.
+            if (dist > 100f && Time.time >= _wallCooldownUntil && Time.time >= _wallProbeNextAt) {
+                _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
+                if (TryEnterWallFollow(rb, toTarget, dist)) return;
+            }
+
             Vector3 dir = toTarget.normalized;
             float targetYaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
             float currentYaw = rb.rotation.eulerAngles.y;
@@ -716,7 +795,8 @@ namespace ProjectC.PeacefulShip.Stations
 
             float speed = (dist > 200f) ? CruiseSpeed : ApproachSpeed;
             float altHold = (CruiseTargetPos.y + 5f - rb.position.y) * 0.5f;
-            rb.linearVelocity = new Vector3(dir.x * speed, Mathf.Clamp(altHold, -2f, 2f), dir.z * speed);
+            // T-NS-WF01 (D3): возврат к профилю — тем же капом, что после LOS-выхода.
+            rb.linearVelocity = new Vector3(dir.x * speed, Mathf.Clamp(altHold, -returnVerticalCap, returnVerticalCap), dir.z * speed);
         }
 
         void TickBerth(Rigidbody rb) {
@@ -1306,6 +1386,321 @@ namespace ProjectC.PeacefulShip.Stations
             SetMode(_resumeMode == NavMode.Avoiding || _resumeMode == NavMode.AvoidYield ? NavMode.Cruising : _resumeMode);
         }
 
+        // === T-NS-WF01: wall-follow — латеральный обход гор/скал ===
+
+        /// <summary>Сдвиг фазы проб по кораблям (stagger): не все зондируют в один тик.</summary>
+        float ProbePhaseOffset() => (float)(npcInstanceId % 10UL) * 0.02f;
+
+        /// <summary>Дальность зонда от скорости (с клампом).</summary>
+        float WallLookAhead() => Mathf.Clamp(CruiseSpeed * wallLookAheadSec, wallLookAheadMin, wallLookAheadMax);
+
+        /// <summary>
+        /// Фильтр попаданий зонда: корабли (свой/чужой) — не стены, их ведёт proximity.
+        /// Триггеры уже отсечены QueryTriggerInteraction.Ignore. Террейн и non-convex
+        /// меши бьются лучом без ограничений (в отличие от Collider.ClosestPoint).
+        /// </summary>
+        bool IsWallHit(RaycastHit hit) {
+            if (hit.collider == null) return false;
+            if (hit.collider.GetComponentInParent<ShipController>() != null) return false;
+            if (hit.collider.GetComponentInParent<NpcShipController>() != null) return false;
+            return true;
+        }
+
+        bool ProbeHitsWall(Vector3 pos, Vector3 dir, float look, out RaycastHit hit) {
+            Vector3 origin = pos + Vector3.up * 2f;
+            if (Physics.SphereCast(origin, wallProbeRadius, dir, out hit, look,
+                    wallObstacleMask, QueryTriggerInteraction.Ignore))
+                return IsWallHit(hit);
+            hit = default;
+            return false;
+        }
+
+        /// <summary>Клиренс стороны веером ±30°/±60° (горизонталь, на высоте полёта).</summary>
+        float FanClearance(Vector3 pos, Vector3 dir, float look, float side) {
+            float best = 0f;
+            float[] angles = { 30f, 60f };
+            Vector3 origin = pos + Vector3.up * 2f;
+            for (int i = 0; i < angles.Length; i++) {
+                Vector3 d = Quaternion.AngleAxis(angles[i] * side, Vector3.up) * dir;
+                d.y = 0f;
+                if (d.sqrMagnitude < 0.001f) continue;
+                d.Normalize();
+                float clear = look;
+                if (Physics.Raycast(origin, d, out var hit, look,
+                        wallObstacleMask, QueryTriggerInteraction.Ignore) && IsWallHit(hit))
+                    clear = hit.distance;
+                if (clear > best) best = clear;
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// Вход в обход из Cruising/CorridorLeg. Возврат — в тот же режим (_wallReturnMode).
+        /// Вертикаль замораживается на высоте входа (лор: облетаем, не перелетаем).
+        /// </summary>
+        bool TryEnterWallFollow(Rigidbody rb, Vector3 toTarget, float dist) {
+            float look = Mathf.Min(WallLookAhead(), dist);
+            Vector3 dir = toTarget / dist;
+            Vector3 fwd = new Vector3(dir.x, 0f, dir.z);
+            if (fwd.sqrMagnitude < 0.001f) return false;
+            fwd.Normalize();
+            if (!ProbeHitsWall(rb.position, fwd, look, out _)) return false;
+
+            float rightClear = FanClearance(rb.position, fwd, look, 1f);
+            float leftClear = FanClearance(rb.position, fwd, look, -1f);
+            _wallSide = rightClear >= leftClear ? 1f : -1f; // при равенстве — держим гору справа
+            _wallEntryY = rb.position.y;
+            _wallStartedAt = Time.time;
+            _wallTurnAccum = 0f;
+            _wallLastBearing = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
+            _wallLastPos = rb.position;
+            _wallLastProgressAt = Time.time;
+            _wallProbeNextAt = Time.time + wallProbeIntervalSec;
+            _wallMoveDir = fwd;
+            _wallReturnMode = (CurrentMode == NavMode.CorridorLeg || CurrentMode == NavMode.GateApproach)
+                ? NavMode.CorridorLeg : NavMode.Cruising;
+            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruising → WallFollow " +
+                $"side={(_wallSide > 0 ? "right" : "left")} R={rightClear:F0}/L={leftClear:F0}");
+            SetMode(NavMode.WallFollow);
+            return true;
+        }
+
+        private Vector3 _wallMoveDir = Vector3.forward;
+        private NavMode _wallReturnMode = NavMode.Cruising; // enum — F8-безопасно
+
+        void TickWallFollow(Rigidbody rb) {
+            if (CruiseTargetPos == Vector3.zero) { ResumeWallFollow(rb); return; }
+            Vector3 toTarget = CruiseTargetPos - rb.position;
+            float dist = toTarget.magnitude;
+            // Вблизи цели выходим — дальше Berthing (fallback как в TickCruise).
+            if (dist < 50f) { ResumeWallFollow(rb); return; }
+
+            // Предохранитель времени → divert на другую станцию.
+            if (Time.time - _wallStartedAt > wallTimeoutSec) {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow timeout — diverting");
+                ResetWallState();
+                DivertToNextStation(rb);
+                return;
+            }
+            // Накопленный разворот азимута: полный круг без LOS = кольцевая гора → divert.
+            float bearing = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
+            _wallTurnAccum += Mathf.Abs(Mathf.DeltaAngle(_wallLastBearing, bearing));
+            _wallLastBearing = bearing;
+            if (_wallTurnAccum >= 360f) {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow loop (360°) — diverting");
+                ResetWallState();
+                DivertToNextStation(rb);
+                return;
+            }
+            // Притирание к склону: нет смещения дольше wallNoProgressSec → divert.
+            if ((rb.position - _wallLastPos).magnitude >= wallMinProgressMeters) {
+                _wallLastPos = rb.position;
+                _wallLastProgressAt = Time.time;
+            } else if (Time.time - _wallLastProgressAt > wallNoProgressSec) {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow stuck — diverting");
+                ResetWallState();
+                DivertToNextStation(rb);
+                return;
+            }
+
+            // Staggered такт: LOS-выход + пересчёт steering-направления.
+            if (Time.time >= _wallProbeNextAt) {
+                _wallProbeNextAt = Time.time + wallProbeIntervalSec;
+                if (HasLineOfSight(rb.position, toTarget, dist)) { ResumeWallFollow(rb); return; }
+                _wallMoveDir = ComputeWallMoveDir(rb.position, toTarget / dist, dist);
+            }
+
+            // Разворот к команде (тот же MoveRotation-стиль, что в круизе).
+            float targetYaw = Mathf.Atan2(_wallMoveDir.x, _wallMoveDir.z) * Mathf.Rad2Deg;
+            float currentYaw = rb.rotation.eulerAngles.y;
+            float deltaYaw = Mathf.DeltaAngle(currentYaw, targetYaw);
+            float yawStep = Mathf.Sign(deltaYaw) * Mathf.Min(Mathf.Abs(deltaYaw), MaxYawRate * Time.fixedDeltaTime);
+            rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
+
+            float speed = dist > 200f ? CruiseSpeed : ApproachSpeed;
+            float vy = Mathf.Clamp((_wallEntryY - rb.position.y) * 0.5f, -2f, 2f);
+            rb.linearVelocity = new Vector3(_wallMoveDir.x * speed, vy, _wallMoveDir.z * speed);
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        /// <summary>
+        /// Команда движения: вперёд чисто — к цели; забито — вдоль стены
+        /// (перпендикуляр со stored стороны, правило одной стороны).
+        /// </summary>
+        Vector3 ComputeWallMoveDir(Vector3 pos, Vector3 dir, float dist) {
+            Vector3 fwd = new Vector3(dir.x, 0f, dir.z);
+            if (fwd.sqrMagnitude < 0.001f) fwd = transform.forward;
+            fwd.Normalize();
+            float look = Mathf.Min(WallLookAhead(), dist);
+            if (ProbeHitsWall(pos, fwd, look, out _))
+                return Quaternion.AngleAxis(90f * _wallSide, Vector3.up) * fwd;
+            return fwd;
+        }
+
+        /// <summary>
+        /// LOS до цели тем же фильтром, что зонд. Хит у самой цели (margin) —
+        /// это геометрия станции, не стена: считаем чисто (дальше Berthing).
+        /// </summary>
+        bool HasLineOfSight(Vector3 pos, Vector3 toTarget, float dist) {
+            Vector3 dir = toTarget / dist;
+            if (Physics.Raycast(pos + Vector3.up * 2f, dir, out var hit, dist,
+                    wallObstacleMask, QueryTriggerInteraction.Ignore)) {
+                if (!IsWallHit(hit)) return true;
+                return hit.distance >= dist - wallArriveMargin;
+            }
+            return true;
+        }
+
+        void ResumeWallFollow(Rigidbody rb) {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            NavMode back = (_wallReturnMode == NavMode.CorridorLeg) ? NavMode.CorridorLeg : NavMode.Cruising;
+            _wallCooldownUntil = Time.time + avoidCooldownSec; // против дребезга на кромке
+            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow → {back} (LOS clear)");
+            SetMode(back);
+        }
+
+        void ResetWallState() {
+            _wallSide = 0f;
+            _wallTurnAccum = 0f;
+            _wallReturnMode = NavMode.Cruising;
+            _wallCooldownUntil = Time.time + avoidCooldownSec;
+        }
+
+        // === T-NS-GATE04: процедурные ворота городов (kill-switch useCityGates) ===
+        // Удаление тикета = удалить эту область + один if в TickCruise + 2 значения enum.
+
+        /// <summary>Городской коридор станции назначения (по дистанции, ворота — его граница).</summary>
+        ProjectC.Ship.AltitudeCorridorData ResolveCityCorridor() {
+            var sys = ProjectC.Ship.AltitudeCorridorSystem.Instance;
+            if (sys == null) return null;
+            var station = ResolveTargetStation();
+            if (!station.HasValue) return null;
+            var cities = sys.GetCityCorridors();
+            for (int i = 0; i < cities.Count; i++) {
+                var c = cities[i];
+                if (c == null) continue;
+                if (Vector3.Distance(station.Value, c.cityCenter) <= c.cityRadius + gateMargin)
+                    return c;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Точка ворот: окружность cityRadius со стороны корабля + азимутальный разнос
+        /// трафика по NpcInstanceId. Считается вживую каждый тик — мировых точек не храним.
+        /// Высота — профиль, зажатый в коридор (коридор главнее профиля).
+        /// </summary>
+        Vector3 ComputeGatePoint(Vector3 shipPos, ProjectC.Ship.AltitudeCorridorData corridor) {
+            Vector3 flat = new Vector3(corridor.cityCenter.x - shipPos.x, 0f, corridor.cityCenter.z - shipPos.z);
+            if (flat.sqrMagnitude < 1f) flat = Vector3.forward;
+            flat.Normalize();
+            int variant = (int)(npcInstanceId % (ulong)Mathf.Max(1, gateVariants));
+            float ang = (variant - (gateVariants - 1) * 0.5f) * gateVariantStepDeg;
+            Vector3 dir = Quaternion.AngleAxis(ang, Vector3.up) * flat;
+            Vector3 gate = new Vector3(corridor.cityCenter.x, 0f, corridor.cityCenter.z)
+                - dir * (corridor.cityRadius + gateMargin);
+            gate.y = Mathf.Clamp(CruiseTargetPos.y, corridor.minAltitude, corridor.maxAltitude);
+            return gate;
+        }
+
+        /// <summary>Одна точка входа из TickCruise. Нет коридора / далеко — false (старый путь).</summary>
+        bool TryEnterGateApproach(Rigidbody rb, float distToTarget) {
+            if (distToTarget > gateTriggerDist) return false;
+            var corridor = ResolveCityCorridor();
+            if (corridor == null) return false; // нет городского коридора — обычный заход
+            float distToCity = Vector3.Distance(rb.position, corridor.cityCenter);
+            if (distToCity <= corridor.cityRadius) {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruising → CorridorLeg ({corridor.corridorId})");
+                SetMode(NavMode.CorridorLeg);
+            } else {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruising → GateApproach ({corridor.corridorId})");
+                SetMode(NavMode.GateApproach);
+            }
+            return true;
+        }
+
+        /// <summary>Полёт к воротам; прибыли — CorridorLeg. Коридор пропал — назад в Cruising.</summary>
+        void TickGateApproach(Rigidbody rb) {
+            var corridor = ResolveCityCorridor();
+            if (corridor == null) { SetMode(NavMode.Cruising); return; }
+            Vector3 gate = ComputeGatePoint(rb.position, corridor);
+            Vector3 toGate = gate - rb.position;
+            // Ворота позади (корабль уже внутри) — сразу CorridorLeg.
+            if (Vector3.Distance(rb.position, corridor.cityCenter) <= corridor.cityRadius) {
+                SetMode(NavMode.CorridorLeg);
+                return;
+            }
+            FlyToward(rb, toGate, CruiseSpeed);
+            Vector3 flat = new Vector3(toGate.x, 0f, toGate.z);
+            if (flat.magnitude < gateArrivalTol) SetMode(NavMode.CorridorLeg);
+        }
+
+        /// <summary>
+        /// Плечо ворота→станция на профильной высоте. Вход в CommZone — Berthing (штатно).
+        /// Стены на плече — через тот же WallFollow (возврат — сюда, _wallReturnMode).
+        /// </summary>
+        void TickCorridorLeg(Rigidbody rb) {
+            var corridor = ResolveCityCorridor();
+            if (corridor == null) { SetMode(NavMode.Cruising); return; }
+            var station = ResolveTargetStation();
+            if (!station.HasValue) { rb.linearVelocity = Vector3.zero; return; }
+            Vector3 target = new Vector3(station.Value.x,
+                Mathf.Clamp(CruiseTargetPos.y, corridor.minAltitude, corridor.maxAltitude),
+                station.Value.z);
+            Vector3 toTarget = target - rb.position;
+            float dist = toTarget.magnitude;
+
+            var zone = ResolveCommZone();
+            if (zone != null && Vector3.Distance(rb.position, zone.transform.position) < zone.CommRange) {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                SetMode(NavMode.Berthing);
+                return;
+            }
+            if (dist < 50f) {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                SetMode(NavMode.Berthing);
+                return;
+            }
+            if (dist > 100f && Time.time >= _wallCooldownUntil && Time.time >= _wallProbeNextAt) {
+                _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
+                if (TryEnterWallFollow(rb, toTarget, dist)) return;
+            }
+            FlyToward(rb, toTarget, dist > 200f ? CruiseSpeed : ApproachSpeed);
+        }
+
+        /// <summary>Общий крейсерский стиль: доворот + скорость к точке (без смены высоты рывком).</summary>
+        void FlyToward(Rigidbody rb, Vector3 toTarget, float speed) {
+            if (toTarget.sqrMagnitude < 0.01f) { rb.linearVelocity = Vector3.zero; return; }
+            Vector3 dir = toTarget.normalized;
+            float targetYaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+            float currentYaw = rb.rotation.eulerAngles.y;
+            float deltaYaw = Mathf.DeltaAngle(currentYaw, targetYaw);
+            float yawStep = Mathf.Sign(deltaYaw) * Mathf.Min(Mathf.Abs(deltaYaw), MaxYawRate * Time.fixedDeltaTime);
+            rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
+            float vy = Mathf.Clamp(toTarget.y * 0.5f, -returnVerticalCap, returnVerticalCap);
+            rb.linearVelocity = new Vector3(dir.x * speed, vy, dir.z * speed);
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        // === T-NS-WF03: Floating Origin hook ===
+
+        /// <summary>
+        /// T-NS-WF03: сдвиг мировых Nav-кэшей вместе с миром (F8/F9).
+        /// Состояние WallFollow (сторона/таймеры/азимут) — не мировые данные, хука не требуют.
+        /// Вызывается из GlobalMotionControlledRebaseSlice (success + rollback), server-only.
+        /// </summary>
+        public int ApplyRebaseTranslation(Vector3 translation) {
+            if (!IsServer) return 0;
+            CruiseTargetPos += translation;
+            _avoidFromPos += translation;
+            _wallEntryY += translation.y;
+            LiftStartY += translation.y;
+            return 1; // один корабль сдвинут (для маркера NpcShipNavShifted)
+        }
+
         // === T-PERSIST: RestoreFromSave ===
 
         /// <summary>Восстановление NavTick-состояния после перезапуска сервера. Server-only.</summary>
@@ -1316,8 +1711,11 @@ namespace ProjectC.PeacefulShip.Stations
             // ── NavMode (критично: EnterDocked ставит kinematic) ──
             NavMode savedMode = (NavMode)data.navMode;
 
-            // avoiding/avoidYield → transient → fallback to cruising
-            if (savedMode == NavMode.Avoiding || savedMode == NavMode.AvoidYield)
+            // avoiding/avoidYield/wallFollow/gates → transient → fallback to cruising.
+            // T-NS-WF01/T-NS-GATE04: обход и ворота не переживают рестарт — resume чистым круизом.
+            if (savedMode == NavMode.Avoiding || savedMode == NavMode.AvoidYield
+                || savedMode == NavMode.WallFollow || savedMode == NavMode.GateApproach
+                || savedMode == NavMode.CorridorLeg)
                 savedMode = NavMode.Cruising;
 
             DwellTime = data.dwellTime > 0 ? data.dwellTime : 60f;

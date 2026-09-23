@@ -196,6 +196,11 @@ namespace ProjectC.Admin
         {
             _currentTab = id;
             _routeTimer = 0f;
+            // T-ADM-08: строки кораблей широкие — на «Маршруте» разрешаем
+            // горизонтальный скролл, на остальных вкладках как было (скрыт).
+            _content.horizontalScrollerVisibility = id == "route"
+                ? ScrollerVisibility.Auto
+                : ScrollerVisibility.Hidden;
             _content.Clear();
             switch (id)
             {

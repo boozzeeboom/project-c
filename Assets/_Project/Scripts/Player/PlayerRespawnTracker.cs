@@ -28,6 +28,18 @@ namespace ProjectC.Player
         [Tooltip("Максимальная дистанция до owned корабля для респавна на нём.")]
         [SerializeField] private float _ownedShipRespawnRadius = 200f; // T-PLAYER-PERSIST D5
 
+        [Header("Platform Rescue (T-PAROM-22)")]
+        [Tooltip("Кабинка должна быть выше игрока минимум на столько (м). Меньше — хопы/прыжки, не трогаем.")]
+        [SerializeField] private float _rescueDropMin = 4f;
+        [Tooltip("Кабинка выше игрока максимум на столько (м). Дальше — обычный death-путь.")]
+        [SerializeField] private float _rescueDropMax = 60f;
+        [Tooltip("Горизонтальный радиус от кабинки (м).")]
+        [SerializeField] private float _rescueRadius = 12f;
+        [Tooltip("Минимальная скорость падения для спасения (м/с). Стоит/идёт — не трогаем.")]
+        [SerializeField] private float _rescueFallSpeed = 2.5f;
+        [Tooltip("Кулдаун спасения (с).")]
+        [SerializeField] private float _rescueCooldownSec = 20f;
+
         [Header("Debug")]
         [Tooltip("Логировать события респавна.")]
         [SerializeField] private bool _debugLog = false;
@@ -38,6 +50,12 @@ namespace ProjectC.Player
         private int _currentRespawnIndex = -1;
         private float _fallStartTime = float.MaxValue;
         private bool _isRespawning;
+        // T-PAROM-22: история высоты для скорости падения (server-side, работает
+        // и для remote-клиентов: позиции реплицированы, счётчики owner-side нет).
+        private float _rescuePrevY;
+        private float _rescuePrevTime;
+        private bool _rescueHasPrev;
+        private float _lastRescueTime = float.NegativeInfinity;
 
         private void Awake()
         {
@@ -70,6 +88,11 @@ namespace ProjectC.Player
                          && Unity.Netcode.NetworkManager.Singleton.IsServer;
             if (!isServer) return;
             if (_isRespawning) return;
+
+            // T-PAROM-22: подхват с парома раньше всего (менеджер не нужен).
+            if (TryPlatformRescue(transform.position.y))
+                return;
+
             if (_respawnManager == null) return;
 
             float y = transform.position.y;
@@ -93,6 +116,47 @@ namespace ProjectC.Player
                 // Сброс таймера если игрок выше порога
                 _fallStartTime = float.MaxValue;
             }
+        }
+
+        /// <summary>
+        /// T-PAROM-22: подхват падающего с кабинки парома. Чисто геометрический,
+        /// server-side: работает и для remote-клиентов (позиции реплицированы,
+        /// owner-состояние carry не нужно). Условия: cooldown истёк, падает
+        /// (скорость по истории Y, не по _velocity), кабинка выше на
+        /// [_rescueDropMin, _rescueDropMax] и в радиусе. Иначе false (дальше —
+        /// обычный death-путь). Намеренный спрыг в радиусе вернёт (v1).
+        /// </summary>
+        private bool TryPlatformRescue(float y)
+        {
+            float now = Time.time;
+            float dt = _rescueHasPrev ? Mathf.Max(now - _rescuePrevTime, 1e-4f) : 0f;
+            float fallSpeed = (_rescueHasPrev && dt > 0f) ? (_rescuePrevY - y) / dt : 0f;
+            _rescuePrevY = y;
+            _rescuePrevTime = now;
+            _rescueHasPrev = true;
+
+            if (fallSpeed < _rescueFallSpeed) return false;
+            if (now - _lastRescueTime < _rescueCooldownSec) return false;
+
+            var routes = FindObjectsByType<ProjectC.World.Parom.ParomRoute>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            for (int i = 0; i < routes.Length; i++)
+            {
+                var route = routes[i];
+                if (route == null || !route.IsSpawned || route.TrolleyTransform == null) continue;
+                Vector3 tp = route.TrolleyTransform.position;
+                float dy = tp.y - y;
+                if (dy < _rescueDropMin || dy > _rescueDropMax) continue;
+                float dx = transform.position.x - tp.x;
+                float dz = transform.position.z - tp.z;
+                if (dx * dx + dz * dz > _rescueRadius * _rescueRadius) continue;
+                TeleportToClientRpc(route.GetBoardingPoint());
+                _fallStartTime = float.MaxValue;
+                _lastRescueTime = now;
+                _rescueHasPrev = false;
+                Debug.Log($"[PlayerRespawnTracker] T-PAROM-22: rescued client={OwnerClientId} onto '{route.RouteId}' (fell {dy:F1}m)");
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

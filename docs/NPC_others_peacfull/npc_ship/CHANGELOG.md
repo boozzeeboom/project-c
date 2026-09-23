@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-09-23 — T-NS-WF08: лидар-веер + VFH-скоринг (лог 215325, 0 LOS-выходов)
+
+Веер ±60°/15° (9 лучей, bulk-margin `wallClearance`), скоринг
+`clear − dev + keep`. Один скан на такт: steering + вход (центр серией,
+бок < `lidarSideTrigger` сразу) + согласие на LOS-выход. Удалены бампер
+(`ProbeHitsWall`), `FanClearance`/`ChooseWallSide`/`wallForwardClearStrikes`.
+⚠️ Compile в редакторе в этот ход не проверен (MCP недоступен) — подтвердить
+0 errors перед Play Mode. Замер: LOS-выходы > 0, тычки одиночек ушли.
+
+---
+
 ## 2026-09-23 — T-NS-WF06 (A+B1+B2 по `13_NAV_COORDINATOR_RESEARCH.md`) ✅ COMPILE-CLEAN
 
 **A-гигиена:** `wallMinDwellSec` (2.5 с) + согласие forward-зонда с LOS на выходе

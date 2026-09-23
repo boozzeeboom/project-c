@@ -238,9 +238,13 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("wallArriveMargin");
                 DrawProp("wallEnterStrikes");
                 DrawProp("wallExitStrikes");
-                DrawProp("wallForwardClearStrikes");
                 DrawProp("wallResumeCooldownSec");
                 DrawProp("wallMinDwellSec");
+                DrawProp("lidarHalfAngle");
+                DrawProp("lidarStepDeg");
+                DrawProp("lidarClearWeight");
+                DrawProp("lidarKeepWeight");
+                DrawProp("lidarSideTrigger");
                 DrawProp("cruiseStuckDist");
                 DrawProp("cruiseStuckSec");
                 DrawProp("cruiseRecoverSec");

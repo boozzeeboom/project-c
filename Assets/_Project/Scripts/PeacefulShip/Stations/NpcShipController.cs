@@ -503,8 +503,7 @@ namespace ProjectC.PeacefulShip.Stations
         [Min(1)] [SerializeField] private int wallEnterStrikes = 2;
         [Tooltip("Подряд чистых LOS для выхода (мерцание кромки не выпускает).")]
         [Min(1)] [SerializeField] private int wallExitStrikes = 3;
-        [Tooltip("Подряд чистых forward-проб, чтобы внутри обхода пойти к цели, а не вдоль стены.")]
-        [Min(1)] [SerializeField] private int wallForwardClearStrikes = 5;
+        // T-NS-WF08: wallForwardClearStrikes удалён — курсом рулит скоринг лидара.
         [Tooltip("Пауза после выхода из обхода: летим прямо, зонд молчит (с).")]
         [Min(0f)] [SerializeField] private float wallResumeCooldownSec = 5f;
         // T-NS-WF05: cruise-stuck — корабль втёрся в склон (зонд изнутри корпуса
@@ -523,6 +522,20 @@ namespace ProjectC.PeacefulShip.Stations
         // толстый SphereCast цепляет кромку, тонкий LOS-луч чист).
         [Tooltip("Мин. время в обходе (с): LOS-выход раньше игнорируется.")]
         [Min(0f)] [SerializeField] private float wallMinDwellSec = 2.5f;
+        // === T-NS-WF08: «лидар» вместо бампера — веер лучей + VFH-скоринг ===
+        // Один forward-луч = робот-пылесос без лидара: тыкается в кромку и дёргается.
+        // Веер видит склон заранее и ведёт через просветы, а не бьётся в лоб.
+        [Header("Lidar terrain sensing (server-only)")]
+        [Tooltip("Полуширина веера (град): лучи 0, ±step … ±half.")]
+        [Range(15f, 90f)] [SerializeField] private float lidarHalfAngle = 60f;
+        [Tooltip("Шаг веера (град).")]
+        [Range(5f, 30f)] [SerializeField] private float lidarStepDeg = 15f;
+        [Tooltip("Вес клиренса в скоринге (0..1), остальное — держание курса к цели.")]
+        [Range(0f, 1f)] [SerializeField] private float lidarClearWeight = 0.7f;
+        [Tooltip("Вес инерции курса (0..1): держит сторону обхода, анти-флип.")]
+        [Range(0f, 1f)] [SerializeField] private float lidarKeepWeight = 0.5f;
+        [Tooltip("Бок вплотную (м): немедленный вход в обход (зацеп кромки).")]
+        [Min(10f)] [SerializeField] private float lidarSideTrigger = 80f;
         [Tooltip("Слои препятствий для зонда (террейн, скалы, город). Триггеры игнорятся всегда.")]
         [SerializeField] private LayerMask wallObstacleMask = -1;
 
@@ -544,9 +557,9 @@ namespace ProjectC.PeacefulShip.Stations
         [Min(0f)] [SerializeField] private float echelonCorridorMargin = 50f;
         private float _echelonOffset;
 
-        // Состояние обхода — F8-безопасно: сторона/таймеры/азимут, мировых Vector3 нет.
+        // Состояние обхода — F8-безопасно: таймеры/азимут, мировых Vector3 нет.
         // Высота входа (_wallEntryY) и CruiseTargetPos сдвигаются через ApplyRebaseTranslation.
-        private float _wallSide; // +1 = гора справа (обходим слева), -1 = наоборот
+        // T-NS-WF08: сторону держит keep-член скоринга лидара (rule-of-side удалён).
         private float _wallEntryY;
         private float _wallStartedAt;
         private float _wallTurnAccum; // накопленный разворот азимута на цель (петля 360° → divert)
@@ -555,12 +568,9 @@ namespace ProjectC.PeacefulShip.Stations
         private float _wallLastProgressAt;
         private float _wallProbeNextAt;
         private float _wallCooldownUntil;
-        // T-NS-WF01b: состояние антидребезга. _wallPreferredSide живёт весь leg
-        // (сброс — новый leg/divert), чтобы повторные входы не меняли сторону.
+        // T-NS-WF01b: состояние антидребезга (сброс — новый leg/divert).
         private int _wallBlockStrikes;
         private int _wallLosStrikes;
-        private int _wallFwdStrikes;
-        private float _wallPreferredSide;
         private float _logBeatNextAt; // T-NS-LOG01: следующий heartbeat в глобальный лог
         // T-NS-WF05: состояние cruise-stuck (только относительные данные — F8-безопасно).
         private Vector3 _cruiseLastPos;
@@ -745,7 +755,7 @@ namespace ProjectC.PeacefulShip.Stations
                 float distBT = CruiseTargetPos == Vector3.zero
                     ? -1f : Vector3.Distance(rb.position, CruiseTargetPos);
                 string beatDetail = $"ech={_echelonOffset:F0}" + (CurrentMode == NavMode.WallFollow
-                    ? $";side={_wallSide};losStrikes={_wallLosStrikes};fwdStrikes={_wallFwdStrikes};turn={_wallTurnAccum:F0}"
+                    ? $";losStrikes={_wallLosStrikes};turn={_wallTurnAccum:F0}"
                     : "");
                 NpcShipNavLog.Heartbeat(gameObject.name, npcInstanceId, CurrentMode.ToString(),
                     rb.linearVelocity.magnitude, distBT, rb.position, beatDetail);
@@ -796,11 +806,9 @@ namespace ProjectC.PeacefulShip.Stations
                 _berthAttempts = 0;
                 _holdingRetries = 0;
                 _abortClimbRemaining = 0f;
-                // T-NS-WF01b: новый leg — сбрасываем память стороны обхода и strikes.
-                _wallPreferredSide = 0f;
+                // T-NS-WF01b: новый leg — сбрасываем strikes обхода.
                 _wallBlockStrikes = 0;
                 _wallLosStrikes = 0;
-                _wallFwdStrikes = 0;
                 // T-NS-WF05: новый leg — сбрасываем cruise-stuck.
                 _cruiseRecoveries = 0;
                 _cruiseLastProgressAt = 0f;
@@ -939,23 +947,11 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-GATE04: ворота городов (одна точка входа, только при useCityGates).
             if (useCityGates && TryEnterGateApproach(rb, dist)) return;
 
-            // T-NS-WF01: forward-зонд террейна (stagger по кораблям — задел на 200+).
+            // T-NS-WF08: вход одним веером лидара (stagger по кораблям — задел на 200+).
             // Вблизи цели не зондируем — там разбирается Berthing.
-            // T-NS-WF01b: вход только по серии забитых проб (скользящий зацеп кромки молчит).
             if (dist > 100f && Time.time >= _wallCooldownUntil && Time.time >= _wallProbeNextAt) {
                 _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
-                Vector3 dirN = toTarget / dist;
-                Vector3 fwdN = new Vector3(dirN.x, 0f, dirN.z);
-                bool blocked = fwdN.sqrMagnitude >= 0.001f &&
-                    ProbeHitsWall(rb.position, fwdN.normalized, Mathf.Min(WallLookAhead(), dist), out _);
-                if (blocked) {
-                    if (++_wallBlockStrikes >= wallEnterStrikes) {
-                        _wallBlockStrikes = 0;
-                        if (TryEnterWallFollow(rb, toTarget, dist)) return;
-                    }
-                } else {
-                    _wallBlockStrikes = 0;
-                }
+                if (CheckWallEntry(rb, toTarget, dist)) return;
             }
 
             Vector3 dir = toTarget.normalized;
@@ -1606,54 +1602,70 @@ namespace ProjectC.PeacefulShip.Stations
             return true;
         }
 
-        bool ProbeHitsWall(Vector3 pos, Vector3 dir, float look, out RaycastHit hit) {
+        /// <summary>
+        /// T-NS-WF08: «лидар» — веер тонких лучей вокруг курса к цели (горизонталь).
+        /// Возвращает лучшее направление (VFH-lite): клиренс − отклонение от цели
+        /// + инерция прошлого курса (держит сторону обхода без rule-of-side).
+        /// centerClear/minClear — эффективные (минус wallClearance на габарит корпуса).
+        /// Корабли в веере — не стены (их ведёт proximity): считаются чистыми.
+        /// </summary>
+        void LidarScan(Vector3 pos, Vector3 goalDir, float look, Vector3 keepDir,
+            out Vector3 bestDir, out float centerClear, out float minClear) {
             Vector3 origin = pos + Vector3.up * 2f;
-            if (Physics.SphereCast(origin, wallProbeRadius, dir, out hit, look,
-                    wallObstacleMask, QueryTriggerInteraction.Ignore))
-                return IsWallHit(hit);
-            hit = default;
-            return false;
-        }
-
-        /// <summary>Клиренс стороны веером ±30°/±60° (горизонталь, на высоте полёта).</summary>
-        float FanClearance(Vector3 pos, Vector3 dir, float look, float side) {
-            float best = 0f;
-            float[] angles = { 30f, 60f };
-            Vector3 origin = pos + Vector3.up * 2f;
-            for (int i = 0; i < angles.Length; i++) {
-                Vector3 d = Quaternion.AngleAxis(angles[i] * side, Vector3.up) * dir;
-                d.y = 0f;
-                if (d.sqrMagnitude < 0.001f) continue;
-                d.Normalize();
-                float clear = look;
+            bestDir = goalDir;
+            centerClear = look;
+            minClear = look;
+            float bestScore = float.MinValue;
+            float devW = 1f - lidarClearWeight;
+            float half = Mathf.Max(1f, lidarHalfAngle);
+            Vector3 kn = keepDir.sqrMagnitude > 0.001f ? keepDir.normalized : goalDir;
+            for (float a = -lidarHalfAngle; a <= lidarHalfAngle + 0.01f; a += lidarStepDeg) {
+                Vector3 d = Quaternion.AngleAxis(a, Vector3.up) * goalDir;
+                float raw = look;
                 if (Physics.Raycast(origin, d, out var hit, look,
                         wallObstacleMask, QueryTriggerInteraction.Ignore) && IsWallHit(hit))
-                    clear = hit.distance;
-                if (clear > best) best = clear;
+                    raw = hit.distance;
+                float eff = Mathf.Max(0f, raw - wallClearance); // габарит корпуса
+                if (Mathf.Abs(a) < 0.01f) centerClear = eff;
+                if (eff < minClear) minClear = eff;
+                float score = lidarClearWeight * (eff / look)
+                    - devW * (Mathf.Abs(a) / half)
+                    + lidarKeepWeight * Vector3.Dot(d, kn);
+                if (score > bestScore) { bestScore = score; bestDir = d; }
             }
-            return best;
+        }
+
+        /// <summary>
+        /// T-NS-WF08: проверка входа в обход одним веером (Cruising + CorridorLeg).
+        /// Центр забит → серия; бок вплотную → сразу (зацеп кромки).
+        /// </summary>
+        bool CheckWallEntry(Rigidbody rb, Vector3 toTarget, float dist) {
+            Vector3 dirN = toTarget / dist;
+            Vector3 fwdN = new Vector3(dirN.x, 0f, dirN.z);
+            if (fwdN.sqrMagnitude < 0.001f) { _wallBlockStrikes = 0; return false; }
+            fwdN.Normalize();
+            float lookN = Mathf.Min(WallLookAhead(), dist);
+            LidarScan(rb.position, fwdN, lookN, fwdN, out _, out float centerN, out float minN);
+            bool enter = minN < lidarSideTrigger;
+            if (!enter) {
+                if (centerN < lookN) enter = (++_wallBlockStrikes >= wallEnterStrikes);
+                else _wallBlockStrikes = 0;
+            }
+            if (!enter) return false;
+            _wallBlockStrikes = 0;
+            return TryEnterWallFollow(rb, toTarget, dist);
         }
 
         /// <summary>
         /// Вход в обход из Cruising/CorridorLeg. Возврат — в тот же режим (_wallReturnMode).
         /// Вертикаль замораживается на высоте входа (лор: облетаем, не перелетаем).
+        /// Сторону держит keep-член скоринга лидара (rule-of-side больше не нужен).
         /// </summary>
         bool TryEnterWallFollow(Rigidbody rb, Vector3 toTarget, float dist) {
-            float look = Mathf.Min(WallLookAhead(), dist);
             Vector3 dir = toTarget / dist;
             Vector3 fwd = new Vector3(dir.x, 0f, dir.z);
             if (fwd.sqrMagnitude < 0.001f) return false;
             fwd.Normalize();
-            if (!ProbeHitsWall(rb.position, fwd, look, out _)) return false;
-
-            float rightClear = FanClearance(rb.position, fwd, look, 1f);
-            float leftClear = FanClearance(rb.position, fwd, look, -1f);
-            // T-NS-WF01b: память стороны на весь leg — повторные входы не флипают
-            // лево-право. Перевыбор только если запомненная сторона почти забита.
-            if (_wallPreferredSide > 0f && rightClear >= look * 0.25f) _wallSide = 1f;
-            else if (_wallPreferredSide < 0f && leftClear >= look * 0.25f) _wallSide = -1f;
-            else _wallSide = rightClear >= leftClear ? 1f : -1f; // при равенстве — держим гору справа
-            _wallPreferredSide = _wallSide;
             _wallEntryY = rb.position.y;
             _wallStartedAt = Time.time;
             _wallTurnAccum = 0f;
@@ -1662,12 +1674,10 @@ namespace ProjectC.PeacefulShip.Stations
             _wallLastProgressAt = Time.time;
             _wallProbeNextAt = Time.time + wallProbeIntervalSec;
             _wallLosStrikes = 0;
-            _wallFwdStrikes = 0;
             _wallMoveDir = fwd;
             _wallReturnMode = (CurrentMode == NavMode.CorridorLeg || CurrentMode == NavMode.GateApproach)
                 ? NavMode.CorridorLeg : NavMode.Cruising;
-            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruising → WallFollow " +
-                $"side={(_wallSide > 0 ? "right" : "left")} R={rightClear:F0}/L={leftClear:F0}");
+            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruising → WallFollow (lidar)");
             SetMode(NavMode.WallFollow, "probe");
             return true;
         }
@@ -1717,43 +1727,26 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
-            // Staggered такт: LOS-выход + пересчёт steering-направления.
-            // T-NS-WF01b: выход и смена курса только сериями — мерцание кромки
-            // не дёргает нос (лево-право-стояние).
-            // T-NS-WF06a: согласие зонда с LOS + min-dwell — фликер Гиганта
-            // (сфера цепляет кромку, луч чист) больше не выпускает за 0.6 с.
+            // Staggered такт лидара: один веер → steering + согласие на выход.
+            // T-NS-WF08: курс выбирает скоринг (просвет > лоб), а не фиксированный
+            // перпендикуляр; сторону держит keep-член (rule-of-side удалён).
             if (Time.time >= _wallProbeNextAt) {
                 _wallProbeNextAt = Time.time + wallProbeIntervalSec;
-                bool dwellDone = Time.time - _wallStartedAt >= wallMinDwellSec;
-                bool exitOk = false;
-                if (dwellDone && HasLineOfSight(rb.position, toTarget, dist)) {
-                    Vector3 fwdAgree = new Vector3(toTarget.x / dist, 0f, toTarget.z / dist);
-                    if (fwdAgree.sqrMagnitude < 0.001f) fwdAgree = transform.forward;
-                    fwdAgree.Normalize();
-                    exitOk = !ProbeHitsWall(rb.position, fwdAgree, Mathf.Min(WallLookAhead(), dist), out _);
-                }
+                Vector3 fwd = new Vector3(toTarget.x / dist, 0f, toTarget.z / dist);
+                if (fwd.sqrMagnitude < 0.001f) fwd = transform.forward;
+                fwd.Normalize();
+                float look = Mathf.Min(WallLookAhead(), dist);
+                LidarScan(rb.position, fwd, look, _wallMoveDir,
+                    out Vector3 best, out float centerW, out _);
+                _wallMoveDir = best;
+                // Выход: dwell + LOS + нос свободен по лидару (согласие).
+                bool exitOk = (Time.time - _wallStartedAt >= wallMinDwellSec)
+                    && centerW > 0f && HasLineOfSight(rb.position, toTarget, dist);
                 if (exitOk) {
                     if (++_wallLosStrikes >= wallExitStrikes) { ResumeWallFollow(rb); return; }
                 } else {
                     _wallLosStrikes = 0;
                 }
-                Vector3 fwd = new Vector3(toTarget.x / dist, 0f, toTarget.z / dist);
-                if (fwd.sqrMagnitude < 0.001f) fwd = transform.forward;
-                fwd.Normalize();
-                float look = Mathf.Min(WallLookAhead(), dist);
-                Vector3 wantDir;
-                if (ProbeHitsWall(rb.position, fwd, look, out _)) {
-                    _wallFwdStrikes = 0;
-                    wantDir = Quaternion.AngleAxis(90f * _wallSide, Vector3.up) * fwd;
-                } else if (++_wallFwdStrikes >= wallForwardClearStrikes) {
-                    _wallFwdStrikes = wallForwardClearStrikes; // пин (лог показывал 276)
-                    wantDir = fwd; // чисто серией — идём к цели
-                } else {
-                    wantDir = Quaternion.AngleAxis(90f * _wallSide, Vector3.up) * fwd;
-                }
-                // Мягкое подруливание вместо жёсткого переключения команды.
-                _wallMoveDir = (_wallMoveDir + wantDir).normalized;
-                if (_wallMoveDir.sqrMagnitude < 0.001f) _wallMoveDir = wantDir;
             }
 
             // Разворот к команде (тот же MoveRotation-стиль, что в круизе).
@@ -1844,20 +1837,16 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-WF01b: длинная пауза зонда — корабль уходит прямо, не клюёт кромку.
             _wallCooldownUntil = Time.time + wallResumeCooldownSec;
             _wallLosStrikes = 0;
-            _wallFwdStrikes = 0;
             _wallBlockStrikes = 0;
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow → {back} (LOS clear)");
             SetMode(back, "LOS");
         }
 
         void ResetWallState() {
-            _wallSide = 0f;
             _wallTurnAccum = 0f;
             _wallReturnMode = NavMode.Cruising;
             _wallLosStrikes = 0;
-            _wallFwdStrikes = 0;
             _wallBlockStrikes = 0;
-            _wallPreferredSide = 0f; // divert/смена leg — сторону выбираем заново
             _wallCooldownUntil = Time.time + wallResumeCooldownSec;
         }
 
@@ -1960,7 +1949,7 @@ namespace ProjectC.PeacefulShip.Stations
             }
             if (dist > 100f && Time.time >= _wallCooldownUntil && Time.time >= _wallProbeNextAt) {
                 _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
-                if (TryEnterWallFollow(rb, toTarget, dist)) return;
+                if (CheckWallEntry(rb, toTarget, dist)) return;
             }
             FlyToward(rb, toTarget, dist > 200f ? CruiseSpeed : ApproachSpeed);
         }

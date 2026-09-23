@@ -21,6 +21,8 @@ namespace ProjectC.PeacefulShip.EditorTools
         private bool _foldMovement = true;
         private bool _foldAntiGrav = true;
         private bool _foldAvoidance = false;
+        private bool _foldWallFollow = false;
+        private bool _foldGates = false;
         private bool _foldDebug = false;
 
         private SerializedObject _schedSo;
@@ -208,6 +210,46 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("avoidBackOffSpeed");
                 DrawProp("avoidBackOffTime");
                 DrawProp("avoidTimeout");
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space(4);
+
+            // ── Wall-Follow (T-NS-WF01) ──
+            _foldWallFollow = EditorGUILayout.Foldout(_foldWallFollow,
+                "🏔 Terrain Wall-Follow (T-NS-WF01)", true, EditorStyles.foldoutHeader);
+            if (_foldWallFollow)
+            {
+                EditorGUI.indentLevel++;
+                DrawProp("wallProbeRadius");
+                DrawProp("wallLookAheadSec");
+                DrawProp("wallLookAheadMin");
+                DrawProp("wallLookAheadMax");
+                DrawProp("wallClearance");
+                DrawProp("wallProbeIntervalSec");
+                DrawProp("wallTimeoutSec");
+                DrawProp("wallNoProgressSec");
+                DrawProp("wallMinProgressMeters");
+                DrawProp("returnVerticalCap");
+                DrawProp("wallArriveMargin");
+                DrawProp("wallObstacleMask");
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space(4);
+
+            // ── City Gates (T-NS-GATE04, kill-switch) ──
+            _foldGates = EditorGUILayout.Foldout(_foldGates,
+                "🏙 City Gates (T-NS-GATE04, OFF=старый путь)", true, EditorStyles.foldoutHeader);
+            if (_foldGates)
+            {
+                EditorGUI.indentLevel++;
+                DrawProp("useCityGates");
+                DrawProp("gateTriggerDist");
+                DrawProp("gateMargin");
+                DrawProp("gateArrivalTol");
+                DrawProp("gateVariants");
+                DrawProp("gateVariantStepDeg");
                 EditorGUI.indentLevel--;
             }
 

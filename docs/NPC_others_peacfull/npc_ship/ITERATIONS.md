@@ -1,5 +1,34 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-23 — T-NS-WF01..WF03 + T-NS-GATE04: облёт гор и ворота городов
+
+**Задача:** корабли упираются в горы/городскую геометрию (см. `11_DOCK_NAV_RESEARCH.md`
+P0-1/P2-6). Старый build-avoidance мёртв (0 валидных коллайдеров, `ClosestPoint`
+не работает с non-convex/террейном). Решение — упреждающий зонд + правило стены.
+Лор: пики облетают вокруг, высота — геймплей, не трогаем. Дизайн:
+`12_TERRAIN_WALLFOLLOW_NAV.md`.
+
+**Добавлено в `NpcShipController.cs`:**
+`NavMode.WallFollow/GateApproach/CorridorLeg` (в конец enum); forward-SphereCast
++ веер выбора стороны + LOS-выход + глиссада к профилю (`returnVerticalCap`);
+предохранители timeout / круг 360° / застревание → `DivertToNextStation`;
+процедурные ворота на `cityRadius` за флагом `useCityGates=false`;
+`ApplyRebaseTranslation` (CruiseTargetPos/_avoidFromPos/_wallEntryY/LiftStartY).
+`RestoreFromSave`: transient-режимы → `Cruising`.
+
+**`NpcShipZoneRegistry.cs`:** spatial hash broadphase (ячейка 500 м, ребилд ≤0.2 с),
+`QueryNearby` вместо полного перебора. **`NpcProximityZone.cs`:** конфликт через
+индекс + `WallFollow` в `IsAvoidable`. **`GlobalMotionControlledRebaseSlice.cs`:**
+`ShiftNpcShipNav` в success + rollback (маркер `NpcShipNavShifted`).
+
+**Осознанно не тронуто:** старый `Avoiding`-манёвр, `NpcProximityZoneBuilds`,
+`ShipController`, доки, коридоры SO (только чтение), `Core/NavMode.cs`.
+
+**Проверка:** `refresh_unity` → errors 0 (только старые CS0618). Play Mode —
+по тест-плану `docs/dev/global_needtotest/NPC_SHIP_TESTS.md` (пользователь).
+
+---
+
 ## Итерация от 2026-09-17 — T-NS-P2: снос мёртвого блока NpcShipWorld
 
 **Задача (P2-чистка):** удалить unreachable-код, дважды проверенный (§9 + §9.1

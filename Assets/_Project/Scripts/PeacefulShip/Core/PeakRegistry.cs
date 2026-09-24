@@ -47,7 +47,7 @@ namespace ProjectC.PeacefulShip.Core
             if (_built) return;
             _built = true;
             _terrains.Clear();
-            _terrains.AddRange(Object.FindObjectsByType<Terrain>(FindObjectsInactive.Exclude, FindObjectsSortMode.None));
+            _terrains.AddRange(Object.FindObjectsByType<Terrain>(FindObjectsInactive.Exclude));
             for (int i = 0; i < _terrains.Count; i++)
             {
                 var t = _terrains[i];
@@ -88,6 +88,58 @@ namespace ProjectC.PeacefulShip.Core
                 }
             }
             return found;
+        }
+
+        /// <summary>
+        /// T-NS-DOCK01: цель внутри диска (станция в горе) — пики там не обходим,
+        /// заход ведёт Berthing напрямую. Возврат — world-центр/радиус диска-дома.
+        /// </summary>
+        public static bool IsInsideDisc(Vector3 pos, float margin,
+            out Vector3 center, out float radius)
+        {
+            Build();
+            center = Vector3.zero;
+            radius = 0f;
+            for (int j = 0; j < _peaks.Count; j++)
+            {
+                var p = _peaks[j];
+                if (p.terrainIdx < 0 || p.terrainIdx >= _terrains.Count) continue;
+                var t = _terrains[p.terrainIdx];
+                if (t == null || t.terrainData == null) continue;
+                Vector3 org = t.transform.position;
+                Vector3 size = t.terrainData.size;
+                Vector3 c = new Vector3(org.x + p.nx * size.x, org.y + p.localY, org.z + p.nz * size.z);
+                float r = p.radius + margin;
+                Vector2 d = new Vector2(pos.x - c.x, pos.z - c.z);
+                if (d.magnitude < r) { center = c; radius = r; return true; }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// T-NS-GRAPH01: все диски, пересекающие отрезок (для графа трасс).
+        /// Порядок не гарантирован (граф сортирует по t). Пик ниже профиля —
+        /// не препятствие (как в FindBlockingDisc). Мир — резолвом вживую.
+        /// </summary>
+        public static void CollectBlockingDiscs(Vector3 a, Vector3 b, float profileY, float margin,
+            List<(Vector3 c, float r, float t)> results, int maxCount)
+        {
+            Build();
+            results.Clear();
+            for (int j = 0; j < _peaks.Count && results.Count < maxCount; j++)
+            {
+                var p = _peaks[j];
+                if (p.terrainIdx < 0 || p.terrainIdx >= _terrains.Count) continue;
+                var t = _terrains[p.terrainIdx];
+                if (t == null || t.terrainData == null) continue;
+                Vector3 org = t.transform.position;
+                Vector3 size = t.terrainData.size;
+                Vector3 c = new Vector3(org.x + p.nx * size.x, org.y + p.localY, org.z + p.nz * size.z);
+                if (c.y < profileY - margin) continue; // пик ниже профиля — летим прямо
+                float r = p.radius + margin;
+                if (SegmentDist(a, b, c) < r)
+                    results.Add((c, r, SegmentParam(a, b, c)));
+            }
         }
 
         // === Извлечение ===

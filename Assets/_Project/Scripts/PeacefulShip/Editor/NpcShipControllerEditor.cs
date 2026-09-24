@@ -282,9 +282,9 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             EditorGUILayout.Space(4);
 
-            // ── Echelons (T-NS-WF06b) ──
+            // ── Echelons (T-NS-WF06b + COORD01) ──
             _foldEchelons = EditorGUILayout.Foldout(_foldEchelons,
-                "🛫 Cruise Echelons (T-NS-WF06b, OFF=профиль)", true, EditorStyles.foldoutHeader);
+                "🛫 Cruise Echelons (T-NS-WF06b/COORD01, ON=развязка стаи)", true, EditorStyles.foldoutHeader);
             if (_foldEchelons)
             {
                 EditorGUI.indentLevel++;
@@ -299,7 +299,7 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             // ── Replan on evidence (T-NS-NAV15) ──
             _foldNav = EditorGUILayout.Foldout(_foldNav,
-                "🧭 Navigator + Replan (T-NS-NAV11/15)", true, EditorStyles.foldoutHeader);
+                "🧭 Navigator + Replan + Graph (T-NS-NAV11/15/GRAPH01)", true, EditorStyles.foldoutHeader);
             if (_foldNav)
             {
                 EditorGUI.indentLevel++;
@@ -307,6 +307,11 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("navBypassDist");
                 DrawProp("navMaxBypass");
                 DrawProp("navWpTol");
+                DrawProp("navFinishGuardDist");
+                DrawProp("useRouteGraph");
+                DrawProp("routeGraphMaxWp");
+                DrawProp("berthOverheadProbe");
+                DrawProp("berthOverheadProbeDist");
                 DrawProp("wallSameSpotRadius");
                 DrawProp("wallSameSpotEntries");
                 EditorGUI.indentLevel--;
@@ -327,9 +332,9 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             EditorGUILayout.Space(4);
 
-            // ── Departure spacing (T-NS-WF06c) ──
+            // ── Departure spacing (T-NS-WF06c + COORD01) ──
             _foldDepart = EditorGUILayout.Foldout(_foldDepart,
-                "🛫 Departure Spacing (T-NS-WF06c, OFF=взлёт сразу)", true, EditorStyles.foldoutHeader);
+                "🛫 Departure Spacing (T-NS-WF06c/COORD01, ON=разнос вылетов)", true, EditorStyles.foldoutHeader);
             if (_foldDepart)
             {
                 EditorGUI.indentLevel++;

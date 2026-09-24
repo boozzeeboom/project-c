@@ -236,7 +236,7 @@ namespace ProjectC.PeacefulShip.Crew
         private Dictionary<string, NetworkObject> FindExistingCrewByNpcId()
         {
             var result = new Dictionary<string, NetworkObject>();
-            var controllers = FindObjectsOfType<NpcController>(true);
+            var controllers = FindObjectsByType<NpcController>(FindObjectsInactive.Include);
             foreach (var controller in controllers)
             {
                 if (controller == null || controller.transform.parent != transform || string.IsNullOrEmpty(controller.NpcId))

@@ -1,5 +1,45 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-24 — T-NS-COORD01+DOCK01+GRAPH01: координатор ON + щель доков + граф трасс
+
+**Контекст:** всецелый ресерч причин отсутствия нормального курсирования
+(прямая + 2 точки + реакция; знание только heightmap; финал слепой 100–500 м;
+координатор — шелл с дефолтами OFF). Дизайн графа: `14_ROUTE_GRAPH_DESIGN.md`.
+
+**Слайс 1 — T-NS-COORD01 (координатор по данным лога):** `useEchelons` и
+`useDepartureSpacing` default `false → true` (стая — доминанта 2/3 прерываний,
+`13_`). Внимание: у 20 scene-инстансов сериализовано старое `false` —
+выставить руками или Reset (коммент в коде). Эшелон стабилен весь leg,
+зажат в коридор; departure-mutex `R300`, проверка раз в 3 с (`depart-wait`).
+
+**Слайс 2 — T-NS-DOCK01 (щель 100–500 м):** `PeakRegistry.IsInsideDisc`
+(цель внутри диска = станция в горе) — пики там не обходим, `how=mountain-home`,
+ведёт `Berthing` напрямую. Финишный guard вынесен в поле `navFinishGuardDist`
+(дефолт 500, было `navBypassDist*2` захардкожено). Зонд в `Overhead`
+(`berthOverheadProbe=true`, `120 м`, stagger): стена на пути к воротам —
+сразу `berth-overhead-blocked` + go-around, не 20 с watchdog'а. В `Descend`
+лидара нет (труба вертикальна).
+
+**Слайс 3 — CS0618 (PeacefulShip):** `PeakRegistry` + `ShipCrewSpawner` переведены
+на `FindObjectsByType` без `SortMode` — по PeacefulShip 0 warnings. Остальной
+проект (Player/World/Ship/Parom/FO — ~30 мест) — отдельным тикетом, не здесь.
+
+**Слайс 4 — T-NS-GRAPH01 (граф трасс):** новый `Core/RouteGraph.cs` (static,
+server-only): кольца по 8 гейтов вокруг блокирующих дисков (макс 8 дисков),
+Дейкстра «старт → гейты → цель» по чистым прямым, вес рёбер + hotspot-штраф +
+чёт/нечет развод встречных. `PlanRoute`: сначала граф (`how=graphN`,
+fallback — legacy peak/bypass), kill-switch `useRouteGraph=true`,
+`routeGraphMaxWp=6` (длиннее — legacy). `_navPlan` capacity `4 → 8`.
+F8-безопасно (гейты вживую, кэша нет); вертикаль — `ProfileY` (лор);
+`_graphWps` — транзитный буфер (сдвиг не нужен, `_navPlan` едет в слайсе).
+
+**Проверка:** `refresh_unity` (force) → errors по PeacefulShip 0, warnings 0
+(остальные CS0618 — вне скоупа). Play Mode — за пользователем (NOT RUN):
+граф через хребет (`how=graphN`), `useRouteGraph=false` = legacy бит-в-бит,
+`mountain-home` без карусели, F8 в leg'е с графом.
+
+---
+
 ## Итерация от 2026-09-24 — T-NS-WF18: скорость по просвету + dead-stop (Шмель 0.1 м/с)
 
 **Диагностика (лог 193955):** Шмель 15 с на месте (spd 0.1) без divert — цепочка

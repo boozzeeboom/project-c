@@ -99,6 +99,20 @@
       глубоко внутри большого диска и вылеты кривые — зафиксировать факт
       (кандидат на whitelist станции, не баг).
 
+## T-NS-COORD01/DOCK01/GRAPH01 — координатор + щель доков + граф (2026-09-24, NOT RUN)
+
+- [ ] 🟢 Дефолты ON: у всех 20 кораблей `useEchelons=true`, `useDepartureSpacing=true`
+      (у старых инстансов сериализовано `false` — выставить руками; heartbeat `ech=`
+      различается; `depart-wait` у ждущих; прерываний шип-эвойдом < 5/мин по SUMMARY).
+- [ ] 🟡 Граф через хребет из 3+ пиков: `nav-plan` с `how=graphN`, пролёт по гейтам
+      без входов в `WallFollow`; `nav-wp` по точкам.
+- [ ] 🔴 Регресс флага: `useRouteGraph=false` = поведение NAV11/NAV16 бит-в-бит.
+- [ ] 🟡 Станция в горе: план `how=mountain-home`, заход напрямую в `Berthing`,
+      нет вечных `nav-plan → возврат`; стена к воротам — сразу `berth-overhead-blocked`
+      + go-around (не 20 с гринда).
+- [ ] 🟢 F8 в leg'е с графом: цели не протухли, Console → 0 errors.
+- [ ] 🟢 PeacefulShip: Console → 0 errors + 0 warnings (CS0618 по PeacefulShip — 0).
+
 ## Регресс общий (после каждого тикета)
 
 - [ ] 🔴 Compile: Console → 0 errors.

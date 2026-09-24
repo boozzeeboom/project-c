@@ -459,6 +459,13 @@ namespace ProjectC.PeacefulShip.Stations
         [Min(1f)] [SerializeField] private float corridorGateToleranceMeters = 5f;
         [Tooltip("Макс. горизонтальная коррекция (м/с) при вертикальном спуске — держит «трубу».")]
         [Min(0.5f)] [SerializeField] private float descendLateralCap = 2f;
+        // T-NS-DOCK01: зонд в Overhead — ранний go-around вместо 20 с гринда в стену.
+        // Лидар в Descend выключен (труба вертикальна), в Overhead — только детект.
+        [Tooltip("ВКЛ: в Overhead проверять прямую до ворот зондом и уходить на go-around сразу.")]
+        [SerializeField] private bool berthOverheadProbe = true;
+        [Tooltip("Дистанция зонда в Overhead (м): стена ближе — прерываем заход сразу.")]
+        [Min(20f)] [SerializeField] private float berthOverheadProbeDist = 120f;
+        private float _berthProbeNextAt;
 
         // Подфаза захода — приватная, наружу виден только NavMode.Berthing:
         // IsAvoidable/RestoreFromSave/переключатель режимов не трогаем.
@@ -595,9 +602,11 @@ namespace ProjectC.PeacefulShip.Stations
         // Высота круиза = профиль + (id % N) × step, зажато в активный коридор.
         // Коридор святой: эшелон внутри min/max, не над ними. F8-безопасно (offset).
         // См. docs/NPC_others_peacfull/npc_ship/13_NAV_COORDINATOR_RESEARCH.md §3B.
+        // T-NS-COORD01: дефолты ВКЛ по данным лога (стая — доминанта 2/3 прерываний).
+        // Внимание: у scene-инстансов сериализовано старое false — выставить руками или Reset.
         [Header("Cruise echelons (server-only)")]
         [Tooltip("ВКЛ: эшелон высоты круиза по NpcInstanceId внутри активного коридора.")]
-        [SerializeField] private bool useEchelons = false;
+        [SerializeField] private bool useEchelons = true;
         // T-NS-WF07: шаг 150 м (было 15): лог показал max разнос 45 м при радиусах
         // avoidance 90–180 м — эшелоны не развязывали (3 корабля на ech=45 в шаре 200 м).
         // Коридор 1200–4450 — места хватает (4 × 150 = 600 м).
@@ -651,7 +660,7 @@ namespace ProjectC.PeacefulShip.Stations
         // === T-NS-WF06c: departure spacing — разнос вылетов пачкой (server-only) ===
         [Header("Departure spacing (server-only)")]
         [Tooltip("ВКЛ: ждать свободного взлёта у своей станции (не более одного Lifting рядом).")]
-        [SerializeField] private bool useDepartureSpacing = false;
+        [SerializeField] private bool useDepartureSpacing = true;
         [Tooltip("Радиус мьютекса взлёта от станции (м).")]
         [Min(50f)] [SerializeField] private float departureMutexRadius = 300f;
         private float _departWaitNextAt;
@@ -1256,6 +1265,20 @@ namespace ProjectC.PeacefulShip.Stations
             float flatDist = toPadFlat.magnitude;
 
             if (_berthPhase == BerthPhase.Overhead) {
+                // T-NS-DOCK01: зонд в Overhead — стена на пути к воротам видна сразу,
+                // уходим на go-around, не ждём 20 с watchdog'а. Stagger по кораблям.
+                if (berthOverheadProbe && Time.time >= _berthProbeNextAt) {
+                    _berthProbeNextAt = Time.time + 0.5f + ProbePhaseOffset();
+                    float gateDist0 = Vector3.Distance(rb.position, gatePos);
+                    float gateClear = RayClear(rb.position, gatePos);
+                    if (gateClear < Mathf.Min(berthOverheadProbeDist, Mathf.Max(0f, gateDist0 - 1f))) {
+                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Berthing", "Berthing",
+                            "berth-overhead-blocked", $"clear={gateClear:F0}m");
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Berthing overhead blocked (clear {gateClear:F0}m) — aborting");
+                        AbortBerthApproach(rb);
+                        return;
+                    }
+                }
                 if (flatDist < corridorRadiusMeters
                     && Mathf.Abs(rb.position.y - gatePos.y) < corridorGateToleranceMeters) {
                     _berthPhase = BerthPhase.Descend;
@@ -2183,7 +2206,18 @@ namespace ProjectC.PeacefulShip.Stations
         [Range(1, 3)] [SerializeField] private int navMaxBypass = 2;
         [Tooltip("Допуск прибытия в точку обхода (м).")]
         [Min(10f)] [SerializeField] private float navWpTol = 80f;
-        private readonly List<Vector3> _navPlan = new List<Vector3>(4);
+        // T-NS-DOCK01: финишный guard вынесен в поле (было navBypassDist*2 захардкожено).
+        // Близко к цели — там разберутся Berthing/коридор, обход не вставляем.
+        [Tooltip("Финишный guard (м): хит ближе к цели — обход не вставляем, ведёт Berthing.")]
+        [Min(100f)] [SerializeField] private float navFinishGuardDist = 500f;
+        // T-NS-GRAPH01: граф трасс — кольца гейтов вокруг дисков + Дейкстра.
+        // Kill-switch: useRouteGraph=false = legacy-цепочка peak/bypass бит-в-бит.
+        [Tooltip("ВКЛ: маршрут по графу гейтов (хребты из N пиков), fallback — legacy.")]
+        [SerializeField] private bool useRouteGraph = true;
+        [Tooltip("Макс. точек графа (больше — идём legacy).")]
+        [Range(1, 8)] [SerializeField] private int routeGraphMaxWp = 6;
+        private readonly List<Vector3> _graphWps = new List<Vector3>(8); // буфер графа — F8-безопасно (пересчёт)
+        private readonly List<Vector3> _navPlan = new List<Vector3>(8);
         private int _navIdx; // мировые точки — сдвиг в ApplyRebaseTranslation
 
         /// <summary>
@@ -2236,9 +2270,33 @@ namespace ProjectC.PeacefulShip.Stations
                 a.y = y;
             }
             string how = "direct";
+            // T-NS-DOCK01: цель внутри диска (станция в горе) — пики не обходим,
+            // заход ведёт Berthing напрямую; зонд потом доберёт меши-скалы.
+            bool mountainHome = PeakRegistry.IsInsideDisc(b, navBypassDist, out _, out _);
+            if (mountainHome) how = "mountain-home";
+            // T-NS-GRAPH01: сначала граф (структурно, N пиков), fallback — legacy ниже.
+            if (!mountainHome && useRouteGraph)
+            {
+                var tmGraph = NpcShipTrafficManager.Instance;
+                float parity = (npcInstanceId % 2UL == 0UL) ? 1f : -1f;
+                if (RouteGraph.TryBuild(a, b, y, navBypassDist, routeGraphMaxWp,
+                        LegClear, c => tmGraph != null ? tmGraph.HotspotPenalty(c, 500f) : 0f,
+                        parity, _graphWps, out int graphDiscs) && _graphWps.Count > 0)
+                {
+                    for (int i = 0; i < _graphWps.Count; i++) _navPlan.Add(_graphWps[i]);
+                    how = "graph" + _graphWps.Count;
+                    _navPlan.Add(b);
+                    string wpPosG = "";
+                    for (int i = 0; i < _graphWps.Count && i < 3; i++)
+                        wpPosG += $"W{i + 1}=({_graphWps[i].x:F0},{_graphWps[i].y:F0},{_graphWps[i].z:F0})";
+                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                        "nav-plan", $"wp={_navPlan.Count}:{how}{wpPosG}");
+                    return;
+                }
+            }
             // T-NS-NAV16: сначала известные пики — точно, по касательным.
             // Зонд потом доберёт меши-скалы, которых в дисках нет.
-            for (int it = 0; it < 2; it++) {
+            for (int it = 0; it < 2 && !mountainHome; it++) {
                 if (!PeakRegistry.FindBlockingDisc(a, b, y, navBypassDist, out Vector3 pc, out float pr)) break;
                 Vector3 twp = TangentBypass(a, b, pc, pr);
                 if (twp.sqrMagnitude < 0.001f) break;
@@ -2251,7 +2309,7 @@ namespace ProjectC.PeacefulShip.Stations
                 if (LegClear(a, b)) break;
                 Vector3 hit = LegHit(a, b);
                 // Близко к цели — там разберутся Berthing/коридор, обход не вставляем.
-                if (Vector3.Distance(hit, b) < navBypassDist * 2f) break;
+                if (Vector3.Distance(hit, b) < navFinishGuardDist) break;
                 Vector3 wp = PickBypass(a, b, hit);
                 if (wp.sqrMagnitude < 0.001f) break; // не нашли — летим прямо, страховка разберётся
                 _navPlan.Add(wp);

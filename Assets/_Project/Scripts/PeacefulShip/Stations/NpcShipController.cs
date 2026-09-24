@@ -15,6 +15,7 @@
 // Q8: anti-gravity boost на 5 сек после ExitDocked (см. docs/.../04_LIVING_BEHAVIOR.md §2.3)
 
 using System.Collections;
+using System.Collections.Generic; // T-NS-NAV11: цепочка точек маршрута
 using ProjectC.Core.ShipPosition; // T-PERSIST: ShipPositionSaveData
 using ProjectC.Docking.Stations;
 using ProjectC.Docking.Zones;
@@ -552,6 +553,9 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Сколько ждём слот в hover (с), потом divert.")]
         [Min(10f)] [SerializeField] private float wallWaitTimeoutSec = 60f;
         private float _wallWaitStartedAt; // 0 = не ждём
+        // T-NS-WF10b: анти-фликер ожидания (спам wall-slot-wait): «чисто» засчитываем
+        // только серией, иначе дребезг 0/2 на границе слота.
+        private int _wallWaitClearStrikes;
         // === T-NS-NAV12a: scatter-jailbreak — выход из кучу (server-only) ===
         // Первый stuck-диагноз за leg (клин/гриндер) — не divert, а радиальный
         // разлёт с чистого места; второй — divert. Счётчик живёт один leg.
@@ -932,8 +936,18 @@ namespace ProjectC.PeacefulShip.Stations
                 _cruiseLastProgressAt = Time.time;
                 return;
             }
-            Vector3 toTarget = CruiseTargetPos - rb.position;
+            // T-NS-NAV11: advance по точкам плана (комм-зона/пад/watchdog — по станции).
+            if (_navIdx < _navPlan.Count
+                && Vector3.Distance(rb.position, _navPlan[_navIdx]) < navWpTol) {
+                _navIdx++;
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                    "nav-wp", $"idx={_navIdx}/{_navPlan.Count}");
+            }
+            Vector3 goal = NavGoal();
+            Vector3 toTarget = goal - rb.position;
             float dist = toTarget.magnitude;
+            Vector3 stToTarget = CruiseTargetPos - rb.position;
+            float stDist = stToTarget.magnitude;
 
             // T-NS-WF05: recovery-откат (без нового NavMode — остаёмся в Cruising,
             // в лог пишем событие вручную).
@@ -946,9 +960,9 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
-            // T-NS-WF05: watchdog прогресса вдали от цели (там медленно — законно).
+            // T-NS-WF05: watchdog прогресса вдали от СТАНЦИИ (там медленно — законно).
             // Схватывает втирание в склон, когда зонд слеп (старт внутри коллайдера).
-            if (dist > 150f && Time.time >= _wallCooldownUntil) {
+            if (stDist > 150f && Time.time >= _wallCooldownUntil) {
                 if (_cruiseLastProgressAt <= 0f) {
                     _cruiseLastPos = rb.position;
                     _cruiseLastProgressAt = Time.time;
@@ -964,7 +978,7 @@ namespace ProjectC.PeacefulShip.Stations
                     }
                     // T-NS-WF06a: откат веером — первое чистое (сначала строго назад),
                     // иначе max клиренс. Слепой откат упирался в тот же склон (Сильфида).
-                    _cruiseRecoverDir = ComputeRecoverDir(rb, toTarget);
+                    _cruiseRecoverDir = ComputeRecoverDir(rb, stToTarget);
                     _cruiseRecoverUntil = Time.time + cruiseRecoverSec;
                     _cruiseLastPos = rb.position;
                     _cruiseLastProgressAt = Time.time;
@@ -984,16 +998,18 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
-            // Если уже очень близко к станции — Berthing (fallback без зоны)
+            // Если уже очень близко к станции — Berthing (fallback без зоны).
+            // T-NS-NAV11: пока план не пройден — страховочная сетка advance.
             if (dist < 50f) {
+                if (_navIdx < _navPlan.Count) { _navIdx++; return; }
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
                 SetMode(NavMode.Berthing, "near-station");
                 return;
             }
 
-            // T-NS-GATE04: ворота городов (одна точка входа, только при useCityGates).
-            if (useCityGates && TryEnterGateApproach(rb, dist)) return;
+            // T-NS-GATE04: ворота городов (триггер — дистанция до СТАНЦИИ, не точки).
+            if (useCityGates && TryEnterGateApproach(rb, stDist)) return;
 
             // T-NS-WF08 + WF10: вход одним веером лидара (stagger — задел на 200+).
             // Вблизи цели не зондируем — там разбирается Berthing.
@@ -1002,6 +1018,7 @@ namespace ProjectC.PeacefulShip.Stations
                 if (_wallWaitStartedAt > 0f) {
                     if (Time.time - _wallWaitStartedAt > wallWaitTimeoutSec) {
                         _wallWaitStartedAt = 0f;
+                        NpcShipTrafficManager.Instance?.RecordHotspot(rb.position);
                         NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                             "wall-slot-divert", "");
                         if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Wall slot wait timeout — diverting");
@@ -1011,9 +1028,15 @@ namespace ProjectC.PeacefulShip.Stations
                     if (Time.time >= _wallProbeNextAt) {
                         _wallProbeNextAt = Time.time + wallProbeIntervalSec;
                         int retry = CheckWallEntry(rb, toTarget, dist);
-                        if (retry == 1) { _wallWaitStartedAt = 0f; return; }
-                        if (retry == 0) _wallWaitStartedAt = 0f; // препятствие ушло — летим
-                        // retry == 2 → висим дальше
+                        if (retry == 1) { _wallWaitStartedAt = 0f; _wallWaitClearStrikes = 0; return; }
+                        // T-NS-WF10b: «чисто» только серией ×3 (фликер границы слота),
+                        // иначе висим дальше.
+                        if (retry == 0 && ++_wallWaitClearStrikes >= 3) {
+                            _wallWaitStartedAt = 0f;
+                            _wallWaitClearStrikes = 0;
+                        } else if (retry == 2) {
+                            _wallWaitClearStrikes = 0;
+                        }
                     }
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
@@ -1094,6 +1117,9 @@ namespace ProjectC.PeacefulShip.Stations
                     Vector3 padPos = ResolvePadPos();
                     if (padPos != Vector3.zero) {
                         CruiseTargetPos = padPos;
+                        // T-NS-NAV11: план исполнен (долетели) — чистим, дальше ведёт Berthing.
+                        _navPlan.Clear();
+                        _navIdx = 0;
                     }
                 } else {
                     // T-NS-BERTH2: пад не дали — считаем holding-попытки, после лимита уходим
@@ -1149,8 +1175,8 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
-            // M3.2.12: проверять дистанцию только до ПАДА (если пад назначен),
-            // или до станции (если пада нет). Док только при dist < 1.5f.
+            // M3.2.12 + T-NS-NAV11: dist<50 — финиш только если план пройден
+            // (иначе страховочная сетка advance — точки обычно берёт navWpTol выше).
             bool canDock = !string.IsNullOrEmpty(AssignedPadId) ? dist < 1.5f : dist < 3f;
             if (canDock) {
                 rb.linearVelocity = Vector3.zero;
@@ -1242,6 +1268,8 @@ namespace ProjectC.PeacefulShip.Stations
         void StuckDivert(Rigidbody rb, string cause) {
             _legStuckCount++;
             _cruiseRecoveries = 0;
+            // T-NS-NAV12b: точка затора — в hotspot-память (навигатор обойдёт впредь).
+            NpcShipTrafficManager.Instance?.RecordHotspot(rb.position);
             ResetWallState(); // слот отпустить в любом случае
             if (_legStuckCount >= 2) {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Stuck ×{_legStuckCount} ({cause}) — diverting");
@@ -1848,7 +1876,9 @@ namespace ProjectC.PeacefulShip.Stations
 
         void TickWallFollow(Rigidbody rb) {
             if (CruiseTargetPos == Vector3.zero) { ResumeWallFollow(rb); return; }
-            Vector3 toTarget = CruiseTargetPos - rb.position;
+            // T-NS-NAV11: в обходе цель — точка плана (станция, если план пройден).
+            Vector3 wgoal = NavGoal();
+            Vector3 toTarget = wgoal - rb.position;
             float dist = toTarget.magnitude;
             // Вблизи цели выходим — дальше Berthing (fallback как в TickCruise).
             if (dist < 50f) { ResumeWallFollow(rb); return; }
@@ -1931,6 +1961,22 @@ namespace ProjectC.PeacefulShip.Stations
         /// <summary>Профильная высота круиза с эшелоном (0 без флага).</summary>
         float ProfileY() => CruiseTargetPos.y + _echelonOffset;
 
+        // === T-NS-NAV11: навигатор — план обходов на старте leg'а (server-only) ===
+        // Прямая A→B сквозь скалы = корень всех заторов. План: 1–2 точки обхода
+        // сразу (тот же лидар, масштаб leg'а) + чёт/нечет id разводят встречных.
+        // Эвойд/стена/слоты остаются страховкой. Kill-switch: useNavigator=false.
+        [Header("Navigator (server-only)")]
+        [Tooltip("ВКЛ: план обходов на старте leg'а вместо прямой сквозь скалы.")]
+        [SerializeField] private bool useNavigator = true;
+        [Tooltip("Боковое смещение точки обхода от точки попадания (м).")]
+        [Min(50f)] [SerializeField] private float navBypassDist = 250f;
+        [Tooltip("Макс. точек обхода (цель — всегда последняя).")]
+        [Range(1, 3)] [SerializeField] private int navMaxBypass = 2;
+        [Tooltip("Допуск прибытия в точку обхода (м).")]
+        [Min(10f)] [SerializeField] private float navWpTol = 80f;
+        private readonly List<Vector3> _navPlan = new List<Vector3>(4);
+        private int _navIdx; // мировые точки — сдвиг в ApplyRebaseTranslation
+
         /// <summary>
         /// Задать цель круиза + пересчитать эшелон (стабилен весь leg).
         /// Коридор — рамка: эшелон зажимается внутрь min/max активного коридора.
@@ -1938,16 +1984,128 @@ namespace ProjectC.PeacefulShip.Stations
         void SetCruiseTarget(Vector3 stationPos) {
             CruiseTargetPos = stationPos;
             _echelonOffset = 0f;
-            if (!useEchelons) return;
-            float raw = (npcInstanceId % (ulong)Mathf.Max(1, echelonCount)) * echelonStep;
-            var sys = ProjectC.Ship.AltitudeCorridorSystem.Instance;
-            if (sys == null) { _echelonOffset = raw; return; }
-            var corridor = sys.GetActiveCorridor(transform.position);
-            if (corridor == null) { _echelonOffset = raw; return; }
-            float lo = corridor.minAltitude + echelonCorridorMargin;
-            float hi = corridor.maxAltitude - echelonCorridorMargin;
-            if (hi <= lo) return; // коридор уже margins — без эшелона
-            _echelonOffset = Mathf.Clamp(stationPos.y + raw, lo, hi) - stationPos.y;
+            if (useEchelons) {
+                float raw = (npcInstanceId % (ulong)Mathf.Max(1, echelonCount)) * echelonStep;
+                var sys = ProjectC.Ship.AltitudeCorridorSystem.Instance;
+                var corridor = sys != null ? sys.GetActiveCorridor(transform.position) : null;
+                if (sys == null || corridor == null) {
+                    _echelonOffset = raw;
+                } else {
+                    float lo = corridor.minAltitude + echelonCorridorMargin;
+                    float hi = corridor.maxAltitude - echelonCorridorMargin;
+                    // Коридор уже margins — без эшелона (offset 0).
+                    if (hi > lo) _echelonOffset = Mathf.Clamp(stationPos.y + raw, lo, hi) - stationPos.y;
+                }
+            }
+            // T-NS-NAV11: цель задана — планируем обходы (точки на ProfileY).
+            // Всегда (не только с эшелонами): план не зависит от флага useEchelons.
+            PlanRoute(stationPos);
+        }
+
+        /// <summary>Активная цель: точка плана или станция (план пуст/пройден).</summary>
+        Vector3 NavGoal() => (_navIdx < _navPlan.Count) ? _navPlan[_navIdx] : CruiseTargetPos;
+
+        /// <summary>
+        /// T-NS-NAV11: план leg'а — пока прямая забита, вставляем точки обхода
+        /// (макс navMaxBypass). Чистая прямая = одна точка-цель (как раньше).
+        /// </summary>
+        void PlanRoute(Vector3 target) {
+            _navPlan.Clear();
+            _navIdx = 0;
+            if (!useNavigator) return;
+            float y = ProfileY();
+            Vector3 from = transform.position;
+            Vector3 a = new Vector3(from.x, y, from.z);
+            Vector3 b = new Vector3(target.x, y, target.z);
+            if ((b - a).sqrMagnitude < 1f) { _navPlan.Add(b); return; }
+            // Стартовый завал (порт отправления) пропускаем: шагаем вперёд, план — дальше.
+            for (int s = 0; s < 3 && !LegClear(a, b); s++) {
+                Vector3 step = b - a;
+                step.y = 0f;
+                if (step.sqrMagnitude < 1f) break;
+                a += step.normalized * navBypassDist;
+                a.y = y;
+            }
+            string how = "direct";
+            for (int it = 0; it < navMaxBypass + 1 && _navPlan.Count <= navMaxBypass; it++) {
+                if (LegClear(a, b)) break;
+                Vector3 hit = LegHit(a, b);
+                // Близко к цели — там разберутся Berthing/коридор, обход не вставляем.
+                if (Vector3.Distance(hit, b) < navBypassDist * 2f) break;
+                Vector3 wp = PickBypass(a, b, hit);
+                if (wp.sqrMagnitude < 0.001f) break; // не нашли — летим прямо, страховка разберётся
+                _navPlan.Add(wp);
+                a = wp;
+                how = "bypass" + _navPlan.Count;
+            }
+            _navPlan.Add(b);
+            NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                "nav-plan", $"wp={_navPlan.Count}:{how}");
+        }
+
+        /// <summary>Чиста ли прямая (фильтр стен как у лидара).</summary>
+        bool LegClear(Vector3 a, Vector3 b) {
+            Vector3 d = b - a;
+            float len = d.magnitude;
+            if (len < 1f) return true;
+            if (Physics.Raycast(a, d / len, out var hit, len,
+                    wallObstacleMask, QueryTriggerInteraction.Ignore))
+                return !IsWallHit(hit);
+            return true;
+        }
+
+        /// <summary>Ближайшая точка препятствия на прямой (для обхода).</summary>
+        Vector3 LegHit(Vector3 a, Vector3 b) {
+            Vector3 d = b - a;
+            float len = d.magnitude;
+            if (len < 1f) return a;
+            if (Physics.Raycast(a, d / len, out var hit, len,
+                    wallObstacleMask, QueryTriggerInteraction.Ignore) && IsWallHit(hit))
+                return hit.point;
+            return (a + b) * 0.5f;
+        }
+
+        /// <summary>
+        /// T-NS-NAV11 + 12b: точка обхода — hit ± перпендикуляр × navBypassDist.
+        /// Скоринг: просвет вперёд − крюк − штраф hotspot'ов; ничья — чёт/нечет id
+        /// (встречные расходятся по разным сторонам ещё на старте).
+        /// </summary>
+        Vector3 PickBypass(Vector3 a, Vector3 b, Vector3 hit) {
+            Vector3 dir = b - a;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 1f) return Vector3.zero;
+            dir.Normalize();
+            Vector3 perp = new Vector3(-dir.z, 0f, dir.x);
+            float y = ProfileY();
+            var tm = NpcShipTrafficManager.Instance;
+            float[] scores = new float[2];
+            Vector3[] cands = new Vector3[2];
+            for (int s = 0; s < 2; s++) {
+                float side = s == 0 ? 1f : -1f;
+                Vector3 c = new Vector3(hit.x, y, hit.z) + perp * (side * navBypassDist);
+                cands[s] = c;
+                float clear = RayClear(c, b);
+                float score = Mathf.Min(clear, 2000f) - Vector3.Distance(a, c) * 0.2f;
+                if (tm != null) score -= tm.HotspotPenalty(c, 500f);
+                scores[s] = score;
+            }
+            // Ничья (±5%) — чётные налево, нечётные направо.
+            int pick = 0;
+            if (scores[1] > scores[0] * 1.05f) pick = 1;
+            else if (scores[0] > scores[1] * 1.05f) pick = 0;
+            else pick = (npcInstanceId % 2UL == 0UL) ? 0 : 1;
+            return cands[pick];
+        }
+
+        /// <summary>Просвет от точки к цели (во всю длину leg'а, фильтр стен).</summary>
+        float RayClear(Vector3 from, Vector3 to) {
+            Vector3 d = to - from;
+            float len = d.magnitude;
+            if (len < 1f) return 0f;
+            if (Physics.Raycast(from, d / len, out var hit, len,
+                    wallObstacleMask, QueryTriggerInteraction.Ignore) && IsWallHit(hit))
+                return hit.distance;
+            return len;
         }
 
         /// <summary>
@@ -2016,6 +2174,7 @@ namespace ProjectC.PeacefulShip.Stations
             _wallLosStrikes = 0;
             _wallBlockStrikes = 0;
             _wallWaitStartedAt = 0f;
+            _wallWaitClearStrikes = 0;
             // T-NS-WF10: divert/timeout — слот свободен для ждущих.
             NpcShipTrafficManager.Instance?.ReleaseWallSlot(npcInstanceId);
             _wallCooldownUntil = Time.time + wallResumeCooldownSec;
@@ -2122,6 +2281,7 @@ namespace ProjectC.PeacefulShip.Stations
                 if (_wallWaitStartedAt > 0f) {
                     if (Time.time - _wallWaitStartedAt > wallWaitTimeoutSec) {
                         _wallWaitStartedAt = 0f;
+                        NpcShipTrafficManager.Instance?.RecordHotspot(rb.position);
                         NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "CorridorLeg", "CorridorLeg",
                             "wall-slot-divert", "");
                         if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Wall slot wait timeout — diverting");
@@ -2131,8 +2291,13 @@ namespace ProjectC.PeacefulShip.Stations
                     if (Time.time >= _wallProbeNextAt) {
                         _wallProbeNextAt = Time.time + wallProbeIntervalSec;
                         int retry = CheckWallEntry(rb, toTarget, dist);
-                        if (retry == 1) { _wallWaitStartedAt = 0f; return; }
-                        if (retry == 0) _wallWaitStartedAt = 0f;
+                        if (retry == 1) { _wallWaitStartedAt = 0f; _wallWaitClearStrikes = 0; return; }
+                        if (retry == 0 && ++_wallWaitClearStrikes >= 3) {
+                            _wallWaitStartedAt = 0f;
+                            _wallWaitClearStrikes = 0;
+                        } else if (retry == 2) {
+                            _wallWaitClearStrikes = 0;
+                        }
                     }
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
@@ -2185,6 +2350,8 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidFromPos += translation;
             _wallEntryY += translation.y;
             LiftStartY += translation.y;
+            // T-NS-NAV11: точки плана — тоже мировые.
+            for (int i = 0; i < _navPlan.Count; i++) _navPlan[i] += translation;
             return 1; // один корабль сдвинут (для маркера NpcShipNavShifted)
         }
 

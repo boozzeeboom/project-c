@@ -23,6 +23,7 @@ namespace ProjectC.PeacefulShip.EditorTools
         private bool _foldAvoidance = false;
         private bool _foldWallFollow = false;
         private bool _foldEchelons = false;
+        private bool _foldNav = false;
         private bool _foldScatter = false;
         private bool _foldDepart = false;
         private bool _foldGates = false;
@@ -272,6 +273,21 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("echelonStep");
                 DrawProp("echelonCount");
                 DrawProp("echelonCorridorMargin");
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space(4);
+
+            // ── Navigator (T-NS-NAV11) ──
+            _foldNav = EditorGUILayout.Foldout(_foldNav,
+                "🧭 Navigator (T-NS-NAV11, OFF=прямая)", true, EditorStyles.foldoutHeader);
+            if (_foldNav)
+            {
+                EditorGUI.indentLevel++;
+                DrawProp("useNavigator");
+                DrawProp("navBypassDist");
+                DrawProp("navMaxBypass");
+                DrawProp("navWpTol");
                 EditorGUI.indentLevel--;
             }
 

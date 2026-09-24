@@ -146,14 +146,68 @@ namespace ProjectC.PeacefulShip.Network
         /// <summary>T-NS-WF10: сдвиг позиций слотов вместе с миром (F8/F9).</summary>
         public int ApplyRebaseTranslation(Vector3 translation)
         {
-            if (_wallSlots.Count == 0) return 0;
-            var keys = new List<ulong>(_wallSlots.Keys);
-            for (int i = 0; i < keys.Count; i++)
+            int n = 0;
+            if (_wallSlots.Count > 0)
             {
-                var v = _wallSlots[keys[i]];
-                _wallSlots[keys[i]] = (v.pos + translation, v.at);
+                var keys = new List<ulong>(_wallSlots.Keys);
+                for (int i = 0; i < keys.Count; i++)
+                {
+                    var v = _wallSlots[keys[i]];
+                    _wallSlots[keys[i]] = (v.pos + translation, v.at);
+                }
+                n = _wallSlots.Count;
             }
-            return _wallSlots.Count;
+            // T-NS-NAV12b: hotspot-карта едет вместе с миром.
+            for (int i = 0; i < _hotspots.Count; i++)
+            {
+                var h = _hotspots[i];
+                _hotspots[i] = (h.pos + translation, h.at, h.hits);
+                n++;
+            }
+            return n;
+        }
+
+        // === T-NS-NAV12b: hotspot-карта — обучение на заторах (server-only) ===
+        // Точки wall-divert-noprogress/stuck, cruise-stuck-divert, wall-slot-divert:
+        // места, где leg'и регулярно умирают. Навигатор проверяет прямую через карту
+        // и вставляет обход заранее. Список ограничен, с expiry — не архив, а память.
+        private readonly List<(Vector3 pos, float at, int hits)> _hotspots
+            = new List<(Vector3 pos, float at, int hits)>();
+        private const int HotspotMax = 20;
+        private const float HotspotExpireSec = 600f;
+        private const float HotspotMergeR = 400f;
+
+        /// <summary>Записать точку затора (схлопывание в радиусе, счётчик hits).</summary>
+        public void RecordHotspot(Vector3 pos)
+        {
+            float now = Time.time;
+            _hotspots.RemoveAll(h => now - h.at > HotspotExpireSec);
+            for (int i = 0; i < _hotspots.Count; i++)
+            {
+                if (Vector3.Distance(_hotspots[i].pos, pos) <= HotspotMergeR)
+                {
+                    var h = _hotspots[i];
+                    _hotspots[i] = (h.pos, now, h.hits + 1);
+                    return;
+                }
+            }
+            if (_hotspots.Count >= HotspotMax) _hotspots.RemoveAt(0);
+            _hotspots.Add((pos, now, 1));
+        }
+
+        /// <summary>Штраф позиции: рядом с частыми заторами — огромный (маршрут обойдёт).</summary>
+        public float HotspotPenalty(Vector3 pos, float radius)
+        {
+            float now = Time.time;
+            float pen = 0f;
+            for (int i = 0; i < _hotspots.Count; i++)
+            {
+                var h = _hotspots[i];
+                if (now - h.at > HotspotExpireSec) continue;
+                float d = Vector3.Distance(h.pos, pos);
+                if (d < radius) pen += (1f - d / radius) * 10000f * h.hits;
+            }
+            return pen;
         }
 
         /// <summary>

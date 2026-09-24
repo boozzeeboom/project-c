@@ -2027,7 +2027,8 @@ namespace ProjectC.PeacefulShip.Stations
                 a.y = y;
             }
             string how = "direct";
-            for (int it = 0; it < navMaxBypass + 1 && _navPlan.Count <= navMaxBypass; it++) {
+            // T-NS-NAV11b: строго не больше navMaxBypass обходов (было off-by-one: 3 вместо 2).
+            for (int it = 0; it < navMaxBypass + 1 && _navPlan.Count < navMaxBypass; it++) {
                 if (LegClear(a, b)) break;
                 Vector3 hit = LegHit(a, b);
                 // Близко к цели — там разберутся Berthing/коридор, обход не вставляем.
@@ -2039,8 +2040,12 @@ namespace ProjectC.PeacefulShip.Stations
                 how = "bypass" + _navPlan.Count;
             }
             _navPlan.Add(b);
+            // T-NS-NAV11b: координаты точек в логе — видно, куда повели обходы.
+            string wpPos = "";
+            for (int i = 0; i < _navPlan.Count - 1 && i < 2; i++)
+                wpPos += $"W{i + 1}=({_navPlan[i].x:F0},{_navPlan[i].y:F0},{_navPlan[i].z:F0})";
             NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
-                "nav-plan", $"wp={_navPlan.Count}:{how}");
+                "nav-plan", $"wp={_navPlan.Count}:{how}{wpPos}");
         }
 
         /// <summary>Чиста ли прямая (фильтр стен как у лидара).</summary>

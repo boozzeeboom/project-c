@@ -2135,6 +2135,16 @@ namespace ProjectC.PeacefulShip.Stations
                 a.y = y;
             }
             string how = "direct";
+            // T-NS-NAV16: сначала известные пики — точно, по касательным.
+            // Зонд потом доберёт меши-скалы, которых в дисках нет.
+            for (int it = 0; it < 2; it++) {
+                if (!PeakRegistry.FindBlockingDisc(a, b, y, navBypassDist, out Vector3 pc, out float pr)) break;
+                Vector3 twp = TangentBypass(a, b, pc, pr);
+                if (twp.sqrMagnitude < 0.001f) break;
+                _navPlan.Add(twp);
+                a = twp;
+                how = "peak" + _navPlan.Count;
+            }
             // T-NS-NAV11b: строго не больше navMaxBypass обходов (было off-by-one: 3 вместо 2).
             for (int it = 0; it < navMaxBypass + 1 && _navPlan.Count < navMaxBypass; it++) {
                 if (LegClear(a, b)) break;
@@ -2154,6 +2164,51 @@ namespace ProjectC.PeacefulShip.Stations
                 wpPos += $"W{i + 1}=({_navPlan[i].x:F0},{_navPlan[i].y:F0},{_navPlan[i].z:F0})";
             NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                 "nav-plan", $"wp={_navPlan.Count}:{how}{wpPos}");
+        }
+
+        /// <summary>
+        /// T-NS-NAV16: касательный обход диска (вид сверху, XZ).
+        /// Внутри диска (втёрты у пика) — радиальный выход с margin.
+        /// Снаружи — две касательные: короче путь, ничья — чёт/нечет id.
+        /// Y всегда ProfileY (латерально, по лору).
+        /// </summary>
+        Vector3 TangentBypass(Vector3 a, Vector3 b, Vector3 center, float radius) {
+            Vector2 A = new Vector2(a.x, a.z);
+            Vector2 B = new Vector2(b.x, b.z);
+            Vector2 C = new Vector2(center.x, center.z);
+            float y = ProfileY();
+            Vector2 d = C - A;
+            float L = d.magnitude;
+            if (L < 0.001f) return new Vector3(C.x + radius + navBypassDist, y, C.y);
+            Vector2 dn = d / L;
+            if (L <= radius) {
+                Vector2 o = A - C;
+                if (o.sqrMagnitude < 0.001f) o = new Vector2(dn.y, -dn.x);
+                o.Normalize();
+                float rr = radius + navBypassDist;
+                return new Vector3(C.x + o.x * rr, y, C.y + o.y * rr);
+            }
+            float alpha = Mathf.Asin(Mathf.Clamp(radius / L, 0f, 1f));
+            float baseA = Mathf.Atan2(dn.y, dn.x);
+            float T = Mathf.Sqrt(Mathf.Max(0f, L * L - radius * radius));
+            float[] lens = new float[2];
+            Vector2[] pts = new Vector2[2];
+            for (int s = 0; s < 2; s++) {
+                float ang = baseA + (s == 0 ? alpha : -alpha);
+                Vector2 tdir = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
+                Vector2 Tpt = A + tdir * T;
+                Vector2 nout = Tpt - C;
+                if (nout.sqrMagnitude < 0.001f) nout = tdir;
+                else nout.Normalize();
+                Tpt += nout * navBypassDist * 0.5f;
+                pts[s] = Tpt;
+                lens[s] = T + Vector2.Distance(Tpt, B);
+            }
+            int pick;
+            if (lens[0] < lens[1] * 0.95f) pick = 0;
+            else if (lens[1] < lens[0] * 0.95f) pick = 1;
+            else pick = (npcInstanceId % 2UL == 0UL) ? 0 : 1;
+            return new Vector3(pts[pick].x, y, pts[pick].y);
         }
 
         /// <summary>Чиста ли прямая (фильтр стен как у лидара).</summary>

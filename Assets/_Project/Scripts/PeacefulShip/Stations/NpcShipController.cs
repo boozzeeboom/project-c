@@ -192,8 +192,11 @@ namespace ProjectC.PeacefulShip.Stations
             ResolveClassSpeeds();
 
             // T-NS-ALT01: рантайм-копии границ (сдвигаются при F8, см. ApplyRebaseTranslation).
-            _altFloor = altFloorY;
-            _altCeil = altCeilY;
+            // T-NS-LOG02: спавн ПОСЛЕ ребейса (персистентная загрузка!) — инициализируем
+            // сразу со сдвинутым базисом, иначе ProfileY clamp висит в редакторном кадре
+            // до следующего сдвига. Базис: сериализованные значения + кумулятив сессии.
+            _altFloor = altFloorY + ProjectC.World.FloatingOrigin.Network.GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset.y;
+            _altCeil = altCeilY + ProjectC.World.FloatingOrigin.Network.GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset.y;
 
             // FIX: гарантируем что detectCollisions включён — иначе платформа не работает
             var rb = GetComponent<Rigidbody>();
@@ -1060,7 +1063,6 @@ namespace ProjectC.PeacefulShip.Stations
                     if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise stuck — backing off #{_cruiseRecoveries}");
                     return;
                 }
-            }
 
             // Проверить: вошли ли в OuterCommZone целевой станции?
             var zone = ResolveCommZone();
@@ -2324,7 +2326,6 @@ namespace ProjectC.PeacefulShip.Stations
                 if (!graphOk && graphFail != "ok-direct")
                     NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                         "graph-fail", $"{graphFail} discs={graphDiscs}");
-            }
             }
             // T-NS-NAV16: сначала известные пики — точно, по касательным.
             // Зонд потом доберёт меши-скалы, которых в дисках нет.

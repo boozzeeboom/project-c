@@ -1126,6 +1126,12 @@ namespace ProjectC.PeacefulShip.Stations
                         if (_navIdx < _navPlan.Count) tmSlow?.RecordHotspot(_navPlan[_navIdx]);
                         else if (tmSlow != null) tmSlow.RecordHotspot(rb.position);
                         PlanRoute(CruiseTargetPos); // replan с ближней позиции
+                        // T-NS-LOG02e: свежий замер к НОВОЙ цели (базовая линия от старой
+                        // цели давала фантомный отрицательный closing — лог 235552, 0031).
+                        // Счётчик медленных replan НЕ сбрасываем (петля всё равно закончится).
+                        _goalProgDist = Vector3.Distance(rb.position, NavGoal());
+                        _goalProgAt = Time.time;
+                        _goalProgIdx = _navIdx;
                         return;
                     }
                 }
@@ -1344,7 +1350,12 @@ namespace ProjectC.PeacefulShip.Stations
             // наверху (где свободно) и строго вертикальный финал. Watchdog/stale-guard выше
             // работают по 3D-дистанции до пада без изменений.
             Vector3 padPosCorridor = CruiseTargetPos; // = позиция пада (ставится при назначении)
-            Vector3 gatePos = new Vector3(padPosCorridor.x, padPosCorridor.y + overheadClearanceMeters, padPosCorridor.z);
+            // T-NS-LOG02e: эскалация ворот — пад под козырьком/в кармане (лог 235552:
+            // 0020/0012/0032 трижды clear=const + abort): каждая попытка заходит выше
+            // на abortClimbMeters, вместо identical-retry в ту же стену. Вертикаль над
+            // падом, не над пиком — лор цел. После berthMaxAttempts — divert как раньше.
+            float gateExtra = abortClimbMeters * _berthAttempts;
+            Vector3 gatePos = new Vector3(padPosCorridor.x, padPosCorridor.y + overheadClearanceMeters + gateExtra, padPosCorridor.z);
             Vector3 toPadFlat = new Vector3(padPosCorridor.x - rb.position.x, 0f, padPosCorridor.z - rb.position.z);
             float flatDist = toPadFlat.magnitude;
 
@@ -2394,7 +2405,7 @@ namespace ProjectC.PeacefulShip.Stations
                     for (int i = 0; i < _graphWps.Count && i < 3; i++)
                         wpPosG += $"W{i + 1}=({_graphWps[i].x:F0},{_graphWps[i].y:F0},{_graphWps[i].z:F0})";
                     NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
-                        "nav-plan", $"wp={_navPlan.Count}:{how}{wpPosG}");
+                        "nav-plan", $"wp={_navPlan.Count}:{how}{wpPosG} tgt=({b.x:F0},{b.y:F0},{b.z:F0})");
                     return;
                 }
                 if (!graphOk && graphFail != "ok-direct")
@@ -2433,7 +2444,7 @@ namespace ProjectC.PeacefulShip.Stations
             for (int i = 0; i < _navPlan.Count - 1 && i < 2; i++)
                 wpPos += $"W{i + 1}=({_navPlan[i].x:F0},{_navPlan[i].y:F0},{_navPlan[i].z:F0})";
             NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
-                "nav-plan", $"wp={_navPlan.Count}:{how}{wpPos}");
+                "nav-plan", $"wp={_navPlan.Count}:{how}{wpPos} tgt=({b.x:F0},{b.y:F0},{b.z:F0})");
         }
 
         /// <summary>

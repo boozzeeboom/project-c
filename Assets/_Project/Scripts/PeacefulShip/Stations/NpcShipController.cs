@@ -620,6 +620,14 @@ namespace ProjectC.PeacefulShip.Stations
         private float _wallLastProgressAt;
         private float _wallProbeNextAt;
         private float _wallCooldownUntil;
+        // T-NS-WF17: retreat из вогнутой ловушки (server-only, относительное — F8-safe).
+        [Tooltip("Разворот азимута в обходе (град), при котором без приближения — ловушка, идём назад.")]
+        [Min(90f)] [SerializeField] private float wallRetreatTurnDeg = 180f;
+        [Tooltip("Длительность retreat-полёта назад по входу (с).")]
+        [Min(3f)] [SerializeField] private float wallRetreatSec = 8f;
+        private Vector3 _wallEntryDir;
+        private Vector3 _retreatDir;
+        private float _retreatUntil; // 0 = не отходим
         // T-NS-WF09: дистанция до цели на входе (прогресс-watchdog, относительна — F8-безопасно).
         private float _wallEntryDist;
         // T-NS-WF01b: состояние антидребезга (сброс — новый leg/divert).
@@ -1945,6 +1953,9 @@ namespace ProjectC.PeacefulShip.Stations
             _wallProbeNextAt = Time.time + wallProbeIntervalSec;
             _wallLosStrikes = 0;
             _downClear = float.MaxValue;
+            _wallEntryDir = fwd; // T-NS-WF17: помним вход — из ловушки выходим назад по нему
+            _retreatUntil = 0f; // сброс просрочки (иначе новый эпизод сразу «закончит» retreat)
+            _retreatDir = Vector3.zero;
             _wallMoveDir = fwd;
             _wallReturnMode = (CurrentMode == NavMode.CorridorLeg || CurrentMode == NavMode.GateApproach)
                 ? NavMode.CorridorLeg : NavMode.Cruising;
@@ -1975,10 +1986,16 @@ namespace ProjectC.PeacefulShip.Stations
                 DivertToNextStation(rb);
                 return;
             }
-            // Накопленный разворот азимута: полный круг без LOS = кольцевая гора → divert.
-            float bearing = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
-            _wallTurnAccum += Mathf.Abs(Mathf.DeltaAngle(_wallLastBearing, bearing));
-            _wallLastBearing = bearing;
+            // T-NS-WF17: retreat идёт — азимут не копим (разворот назад законный).
+            bool retreating = Time.time < _retreatUntil;
+            if (retreating) {
+                _wallMoveDir = _retreatDir;
+            } else {
+                // Накопленный разворот азимута: полный круг без LOS = кольцевая гора → divert.
+                float bearing = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
+                _wallTurnAccum += Mathf.Abs(Mathf.DeltaAngle(_wallLastBearing, bearing));
+                _wallLastBearing = bearing;
+            }
             if (_wallTurnAccum >= 360f) {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow loop (360°) — diverting");
                 NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
@@ -1995,20 +2012,47 @@ namespace ProjectC.PeacefulShip.Stations
                 StuckDivert(rb, "wall-noprogress");
                 return;
             }
-            // Притирание к склону: нет смещения дольше wallNoProgressSec → divert.
-            if ((rb.position - _wallLastPos).magnitude >= wallMinProgressMeters) {
+            // T-NS-WF17: вогнутая ловушка — крутимся без приближения к цели:
+            // назад по входу (оттуда прилетели — там чисто), потом replan.
+            // Подъём по стене больше не маскирует стояние (см. horizontal ниже).
+            if (!retreating && _wallTurnAccum >= wallRetreatTurnDeg
+                && Time.time - _wallStartedAt > 15f && _wallEntryDist - dist < 50f) {
+                Vector3 back = -_wallEntryDir;
+                back.y = 0f;
+                if (back.sqrMagnitude < 0.001f) back = -fwd;
+                back.Normalize();
+                _retreatDir = back;
+                _retreatUntil = Time.time + wallRetreatSec;
+                retreating = true;
+                _wallMoveDir = _retreatDir;
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
+                    "wall-retreat", "");
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Concave trap — retreating along entry");
+            }
+            // Притирание к склону: нет ГОРИЗОНТАЛЬНОГО смещения дольше wallNoProgressSec → divert.
+            Vector3 flatPos = new Vector3(rb.position.x, 0f, rb.position.z);
+            Vector3 flatLast = new Vector3(_wallLastPos.x, 0f, _wallLastPos.z);
+            if ((flatPos - flatLast).magnitude >= wallMinProgressMeters) {
                 _wallLastPos = rb.position;
                 _wallLastProgressAt = Time.time;
-            } else if (Time.time - _wallLastProgressAt > wallNoProgressSec) {
+            } else if (!retreating && Time.time - _wallLastProgressAt > wallNoProgressSec) {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow stuck — scatter/divert");
                 StuckDivert(rb, "wall-stuck");
                 return;
             }
 
+            // T-NS-WF17: конец retreat — переплан с чистого места и выход в круиз.
+            if (_retreatUntil > 0f && Time.time >= _retreatUntil) {
+                _retreatUntil = 0f;
+                PlanRoute(CruiseTargetPos);
+                ResumeWallFollow(rb);
+                return;
+            }
             // Staggered такт лидара: один веер → steering + согласие на выход.
             // T-NS-WF08: курс выбирает скоринг (просвет > лоб), а не фиксированный
             // перпендикуляр; сторону держит keep-член (rule-of-side удалён).
-            if (Time.time >= _wallProbeNextAt) {
+            // T-NS-WF17: в retreat скан и выходы пропускаем — летим назад по входу.
+            if (!retreating && Time.time >= _wallProbeNextAt) {
                 _wallProbeNextAt = Time.time + wallProbeIntervalSec;
                 Vector3 fwd = new Vector3(toTarget.x / dist, 0f, toTarget.z / dist);
                 if (fwd.sqrMagnitude < 0.001f) fwd = transform.forward;

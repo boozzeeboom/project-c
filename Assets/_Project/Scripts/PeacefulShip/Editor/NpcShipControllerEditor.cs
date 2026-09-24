@@ -254,6 +254,8 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("downCriticalDist");
                 DrawProp("wallProgressSec");
                 DrawProp("wallProgressMin");
+                DrawProp("wallRetreatTurnDeg");
+                DrawProp("wallRetreatSec");
                 DrawProp("wallSlotRadius");
                 DrawProp("wallWaitTimeoutSec");
                 DrawProp("cruiseStuckDist");

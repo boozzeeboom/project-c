@@ -23,6 +23,7 @@ namespace ProjectC.PeacefulShip.EditorTools
         private bool _foldAvoidance = false;
         private bool _foldWallFollow = false;
         private bool _foldEchelons = false;
+        private bool _foldAltLimits = false;
         private bool _foldNav = false;
         private bool _foldScatter = false;
         private bool _foldDepart = false;
@@ -261,6 +262,19 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("cruiseRecoverSpeed");
                 DrawProp("cruiseMaxRecoveries");
                 DrawProp("wallObstacleMask");
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space(4);
+
+            // ── Altitude limits (T-NS-ALT01) ──
+            _foldAltLimits = EditorGUILayout.Foldout(_foldAltLimits,
+                "⛰ Altitude Limits 1100/4500 (T-NS-ALT01)", true, EditorStyles.foldoutHeader);
+            if (_foldAltLimits)
+            {
+                EditorGUI.indentLevel++;
+                DrawProp("altFloorY");
+                DrawProp("altCeilY");
                 EditorGUI.indentLevel--;
             }
 

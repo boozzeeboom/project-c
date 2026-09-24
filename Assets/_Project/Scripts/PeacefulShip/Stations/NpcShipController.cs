@@ -191,6 +191,10 @@ namespace ProjectC.PeacefulShip.Stations
             // M3.2.N: resolve class-based speeds (LiftSpeed, CruiseSpeed, etc.)
             ResolveClassSpeeds();
 
+            // T-NS-ALT01: рантайм-копии границ (сдвигаются при F8, см. ApplyRebaseTranslation).
+            _altFloor = altFloorY;
+            _altCeil = altCeilY;
+
             // FIX: гарантируем что detectCollisions включён — иначе платформа не работает
             var rb = GetComponent<Rigidbody>();
             if (rb != null)
@@ -946,7 +950,9 @@ namespace ProjectC.PeacefulShip.Stations
                 float sDelta = Mathf.DeltaAngle(sCur, sYaw);
                 float sStep = Mathf.Sign(sDelta) * Mathf.Min(Mathf.Abs(sDelta), MaxYawRate * Time.fixedDeltaTime);
                 rb.MoveRotation(Quaternion.AngleAxis(sCur + sStep, Vector3.up));
-                rb.linearVelocity = new Vector3(_scatterDir.x * scatterSpeed, 0f, _scatterDir.z * scatterSpeed);
+                // T-NS-ALT01: разлёт — тоже с возвратом в границы.
+                float vyScat = ClampVyToLimits(0f, rb.position.y);
+                rb.linearVelocity = new Vector3(_scatterDir.x * scatterSpeed, vyScat, _scatterDir.z * scatterSpeed);
                 rb.angularVelocity = Vector3.zero;
                 _cruiseLastPos = rb.position;
                 _cruiseLastProgressAt = Time.time;
@@ -968,8 +974,10 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-WF05: recovery-откат (без нового NavMode — остаёмся в Cruising,
             // в лог пишем событие вручную).
             if (Time.time < _cruiseRecoverUntil) {
+                // T-NS-ALT01: откат — тоже с возвратом в границы.
+                float vyRec = ClampVyToLimits(0f, rb.position.y);
                 rb.linearVelocity = new Vector3(
-                    _cruiseRecoverDir.x * cruiseRecoverSpeed, 0f, _cruiseRecoverDir.z * cruiseRecoverSpeed);
+                    _cruiseRecoverDir.x * cruiseRecoverSpeed, vyRec, _cruiseRecoverDir.z * cruiseRecoverSpeed);
                 rb.angularVelocity = Vector3.zero;
                 _cruiseLastPos = rb.position;
                 _cruiseLastProgressAt = Time.time;
@@ -1103,7 +1111,10 @@ namespace ProjectC.PeacefulShip.Stations
             float speed = (dist > 200f) ? CruiseSpeed : ApproachSpeed;
             float altHold = (ProfileY() + 5f - rb.position.y) * 0.5f;
             // T-NS-WF01 (D3): возврат к профилю — тем же капом, что после LOS-выхода.
-            rb.linearVelocity = new Vector3(dir.x * speed, Mathf.Clamp(altHold, -returnVerticalCap, returnVerticalCap), dir.z * speed);
+            // T-NS-ALT01: поверх — возврат в глобальные границы.
+            float vyCruise = ClampVyToLimits(
+                Mathf.Clamp(altHold, -returnVerticalCap, returnVerticalCap), rb.position.y);
+            rb.linearVelocity = new Vector3(dir.x * speed, vyCruise, dir.z * speed);
         }
 
         void TickBerth(Rigidbody rb) {
@@ -1399,7 +1410,8 @@ namespace ProjectC.PeacefulShip.Stations
             }
             float targetY = station.Value.y + holdClearanceMeters;
             float dy = targetY - rb.position.y;
-            float vy = dy > 2f ? LiftSpeed : dy < -2f ? -2f : 0f;
+            // T-NS-ALT01: holding — тоже внутри границ.
+            float vy = ClampVyToLimits(dy > 2f ? LiftSpeed : dy < -2f ? -2f : 0f, rb.position.y);
             rb.linearVelocity = new Vector3(0f, vy, 0f);
             rb.angularVelocity = Vector3.zero;
         }
@@ -2028,6 +2040,8 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-WF12: земля критически близко снизу-впереди — аварийный набор
             // (в скалу нельзя; заморозка высоты отменяется только вверх).
             if (_downClear < downCriticalDist) vy = LiftSpeed * 0.5f;
+            // T-NS-ALT01: поверх — глобальные границы (потолок важнее down-набора).
+            vy = ClampVyToLimits(vy, rb.position.y);
             // T-NS-WF11: анти-strafe — боковая составляющая гасится рассинхроном носа.
             // Strafe (velocity по команде мгновенно) втирал борт в склон, пока нос
             // доворачивал 1–3 с: змейка вдоль скалы. В синхроне — полная команда,
@@ -2053,8 +2067,32 @@ namespace ProjectC.PeacefulShip.Stations
             rb.angularVelocity = Vector3.zero;
         }
 
-        /// <summary>Профильная высота круиза с эшелоном (0 без флага).</summary>
-        float ProfileY() => CruiseTargetPos.y + _echelonOffset;
+        // === T-NS-ALT01: жёсткие границы высоты NPC (server-only) ===
+        // Ниже/выше — не летаем вообще; выпавших тянем назад. Lifting/Berthing/
+        // Avoiding не трогаем (взлёт/посадка/манёвр должны быть свободны).
+        // Позже заменить глобальной системой коридоров высот (см. AltitudeCorridorSystem).
+        [Header("Altitude limits (server-only)")]
+        [Tooltip("Ниже — не летаем (м). Выпавших тянем вверх.")]
+        [SerializeField] private float altFloorY = 1100f;
+        [Tooltip("Выше — не летаем (м). Выпавших тянем вниз.")]
+        [SerializeField] private float altCeilY = 4500f;
+        // Рантайм-копии (сериализованные не портим): сдвигаются в ApplyRebaseTranslation,
+        // иначе после F8 границы протухнут вместе с миром.
+        private float _altFloor = 1100f;
+        private float _altCeil = 4500f;
+
+        /// <summary>Профильная высота круиза с эшелоном, зажатая в глобальные границы.</summary>
+        float ProfileY() => Mathf.Clamp(CruiseTargetPos.y + _echelonOffset, _altFloor, _altCeil);
+
+        /// <summary>
+        /// T-NS-ALT01: возврат в коридор — перекрывает любую вертикальную команду
+        /// в круизных режимах. Вне границ всегда тянем внутрь.
+        /// </summary>
+        float ClampVyToLimits(float vy, float y) {
+            if (y < _altFloor) return Mathf.Max(vy, LiftSpeed * 0.5f);
+            if (y > _altCeil) return Mathf.Min(vy, -LiftSpeed * 0.5f);
+            return vy;
+        }
 
         // === T-NS-NAV15: replan-on-evidence — повторные входы в одной точке ===
         // Странник: 3-с входы-выходы в одной вмятине + медленный подъём по стене
@@ -2501,6 +2539,8 @@ namespace ProjectC.PeacefulShip.Stations
             float yawStep = Mathf.Sign(deltaYaw) * Mathf.Min(Mathf.Abs(deltaYaw), MaxYawRate * Time.fixedDeltaTime);
             rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
             float vy = Mathf.Clamp(toTarget.y * 0.5f, -returnVerticalCap, returnVerticalCap);
+            // T-NS-ALT01: ворота/плечо — тоже внутри глобальных границ.
+            vy = ClampVyToLimits(vy, rb.position.y);
             rb.linearVelocity = new Vector3(dir.x * speed, vy, dir.z * speed);
             rb.angularVelocity = Vector3.zero;
         }
@@ -2518,6 +2558,9 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidFromPos += translation;
             _wallEntryY += translation.y;
             LiftStartY += translation.y;
+            // T-NS-ALT01: границы едут вместе с миром.
+            _altFloor += translation.y;
+            _altCeil += translation.y;
             // T-NS-NAV11: точки плана — тоже мировые.
             for (int i = 0; i < _navPlan.Count; i++) _navPlan[i] += translation;
             return 1; // один корабль сдвинут (для маркера NpcShipNavShifted)

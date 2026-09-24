@@ -2019,7 +2019,10 @@ namespace ProjectC.PeacefulShip.Stations
                 && Time.time - _wallStartedAt > 15f && _wallEntryDist - dist < 50f) {
                 Vector3 back = -_wallEntryDir;
                 back.y = 0f;
-                if (back.sqrMagnitude < 0.001f) back = -fwd;
+                // T-NS-WF17b: fallback — текущий курс (fwd тут вне скоупа).
+                if (back.sqrMagnitude < 0.001f) back = transform.forward;
+                back.y = 0f;
+                if (back.sqrMagnitude < 0.001f) back = Vector3.back;
                 back.Normalize();
                 _retreatDir = back;
                 _retreatUntil = Time.time + wallRetreatSec;

@@ -112,6 +112,9 @@
       + go-around (не 20 с гринда).
 - [ ] 🟢 F8 в leg'е с графом: цели не протухли, Console → 0 errors.
 - [ ] 🟢 PeacefulShip: Console → 0 errors + 0 warnings (CS0618 по PeacefulShip — 0).
+- [ ] 🟡 Contour-grind (T-NS-LOG02c): корабль, ползущий к точке без сближения
+      (< 1 м/с дольше 45 с) — `nav-replan-slow` в CSV (×2 max), потом
+      `stuck-divert cruise-goal`; вечного контурного гринда нет.
 
 ## Регресс общий (после каждого тикета)
 

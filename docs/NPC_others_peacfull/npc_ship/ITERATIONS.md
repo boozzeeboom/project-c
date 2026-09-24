@@ -1,5 +1,38 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-24 — T-NS-LOG02c: разбор NpcShipNavLog_20260924_233351 (137 с)
+
+**Факты:** `graph-fail` ×14 (диагностика работает): 13× `no-path discs=2-3`
++ 2× `no-discs`, `layer-empty` — 0 (гейты валидны, рвутся РЁБРА о меши/рельеф
+между дисками). `how=graphN` — 0. `probe` 23 / `LOS` 16 (обходы входят и выходят),
+`cruise-near-stuck` ×1 (0020, dist=93 м → Berthing — фикс LOG02 работает),
+`berth-abort` ×3 → divert (0031, цепочка сходится), `nav-wp` всего 4.
+Сессия короткая (2.3 мин), 12/20 кораблей летят (avg 5–10).
+
+**Поимённо:** 002B весь прогон карабкается (spd ~2) к tangent-точке (+51 м
+к станции за 130 с — движется, сближения нет); 0010 дрейфует контуром склона
+(+182 м, y const, точка на 434 м ниже через скалу — 3D-advance не сходится);
+000A цепочка recovery работает (×2 → scatter). Mid-сессии y-прыжки +245..264 м
+у двух кораблей в одном окне — похоже на авто-ребейс (квант 256): корабли
+проехали без strand'а (подтвердить F8/авто по Editor.log).
+
+**Корень:** contour-grind — displacement-watchdog слеп (движение есть),
+target-watchdog только в WallFollow. В Cruising такого замера не было.
+
+**Фикс — cruise goal-progress watchdog:** скорость сближения с NavGoal
+`< cruiseGoalCloseMin (1 м/с)` дольше `cruiseGoalStuckSec (45 с)` →
+`nav-replan-slow` (replan с ближней позиции, счётчик; после
+`cruiseGoalMaxReplans (2)` → `StuckDivert cruise-goal`). Не работает: в ожидании
+слота, в окнах recovery/scatter/retreat, у самой цели. Часы сбрасываются:
+новый leg/цель, nav-wp, recovery/scatter/divert, вход в Cruising.
+Поля в инспекторе (Wall-Follow foldout).
+
+**Проверка:** `refresh_unity` → `error CS` 0, touched-файлы 0/0.
+Play Mode — за пользователем (NOT RUN). Нужен прогон 5+ мин:
+`nav-replan-slow` у 0010/002B-типа, `graph-fail` распределение.
+
+---
+
 ## Итерация от 2026-09-24 — T-NS-LOG02b: фикс компиляции + спавн-базис границ
 
 **Компиляция:** правки T-NS-LOG02 оставили две лишние `}` (разворот `if (stDist)`

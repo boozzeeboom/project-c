@@ -263,6 +263,9 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("cruiseRecoverSec");
                 DrawProp("cruiseRecoverSpeed");
                 DrawProp("cruiseMaxRecoveries");
+                DrawProp("cruiseGoalCloseMin");
+                DrawProp("cruiseGoalStuckSec");
+                DrawProp("cruiseGoalMaxReplans");
                 DrawProp("wallObstacleMask");
                 EditorGUI.indentLevel--;
             }

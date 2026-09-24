@@ -537,6 +537,15 @@ namespace ProjectC.PeacefulShip.Stations
         [Min(1f)] [SerializeField] private float cruiseRecoverSpeed = 6f;
         [Tooltip("Сколько recovery подряд терпим, прежде чем уйти на другую станцию.")]
         [Min(1)] [SerializeField] private int cruiseMaxRecoveries = 2;
+        // T-NS-LOG02: contour-grind — корабль ДВИЖЕТСЯ (displacement-watchdog молчит),
+        // но к цели не приближается (лог 233351: 0010 +182 м за 130 с, 002B +51 м —
+        // огибают склон по горизонтали к слепой точке, advance по 3D не сходится).
+        [Tooltip("Мин. скорость сближения с целью (м/с): ползём медленнее — контурный гринд.")]
+        [Min(0.1f)] [SerializeField] private float cruiseGoalCloseMin = 1f;
+        [Tooltip("Сколько секунд гринда терпим → replan с места, потом scatter/divert.")]
+        [Min(10f)] [SerializeField] private float cruiseGoalStuckSec = 45f;
+        [Tooltip("Сколько медленных replan подряд терпим за leg, потом scatter/divert.")]
+        [Min(1)] [SerializeField] private int cruiseGoalMaxReplans = 2;
         // T-NS-WF06a: min-dwell обхода (фликер Гиганта: вход-выход за 0.6 с ×10/мин —
         // толстый SphereCast цепляет кромку, тонкий LOS-луч чист).
         [Tooltip("Мин. время в обходе (с): LOS-выход раньше игнорируется.")]
@@ -656,6 +665,11 @@ namespace ProjectC.PeacefulShip.Stations
         private float _cruiseRecoverUntil;
         private Vector3 _cruiseRecoverDir;
         private int _cruiseRecoveries;
+        // T-NS-LOG02: окно замера сближения с NavGoal (contour-grind).
+        private float _goalProgDist;
+        private float _goalProgAt; // 0 = не armed
+        private int _goalProgIdx = -1;
+        private int _goalSlowReplans;
 
         // === T-NS-GATE04: процедурные ворота городов (kill-switch useCityGates) ===
         // Выключено = старое поведение бит-в-бит. Код gates — отдельная область внизу,
@@ -894,6 +908,9 @@ namespace ProjectC.PeacefulShip.Stations
                 _cruiseRecoveries = 0;
                 _cruiseLastProgressAt = 0f;
                 _cruiseRecoverUntil = 0f;
+                // T-NS-LOG02: новый leg — сбрасываем goal-watchdog.
+                _goalProgAt = 0f;
+                _goalSlowReplans = 0;
                 // T-NS-NAV12a: новый leg — сбрасываем счётчик затора и scatter.
                 _legStuckCount = 0;
                 _scatterUntil = 0f;
@@ -913,6 +930,8 @@ namespace ProjectC.PeacefulShip.Stations
                     rb.MoveRotation(Quaternion.Euler(0, rb.rotation.eulerAngles.y, 0));
                 }
             }
+            // T-NS-LOG02: вход в Cruising — свежий замер сближения (манёвр кончился).
+            if (m == NavMode.Cruising) _goalProgAt = 0f;
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] NavMode {old} → {m}");
         }
 
@@ -984,6 +1003,9 @@ namespace ProjectC.PeacefulShip.Stations
             if (_navIdx < _navPlan.Count
                 && Vector3.Distance(rb.position, _navPlan[_navIdx]) < navWpTol) {
                 _navIdx++;
+                // T-NS-LOG02: точку взяли — свежий замер и сброс медленных replan.
+                _goalProgAt = 0f;
+                _goalSlowReplans = 0;
                 NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                     "nav-wp", $"idx={_navIdx}/{_navPlan.Count}");
             }
@@ -1058,11 +1080,46 @@ namespace ProjectC.PeacefulShip.Stations
                     _recoverArmed = true;
                     _cruiseLastPos = rb.position;
                     _cruiseLastProgressAt = Time.time;
+                    _goalProgAt = 0f; // T-NS-LOG02: после отката — свежий замер
                     NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                         "cruise-stuck", $"recovery#{_cruiseRecoveries}");
                     if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise stuck — backing off #{_cruiseRecoveries}");
                     return;
                 }
+
+            // T-NS-LOG02: contour-grind — движемся, но к цели не приближаемся
+            // (лог 233351: 0010 +182 м за 130 с, 002B +51 м — огибают склон
+            // по горизонтали к слепой точке, displacement-watchdog их не видит).
+            // Не работает: в ожидании слота (свой таймаут), в окнах recovery/
+            // scatter/retreat (часы сброшены их стартом), у самой цели (добирает advance).
+            if (_wallWaitStartedAt <= 0f && Time.time >= _cruiseRecoverUntil
+                && Time.time >= _scatterUntil && (_retreatUntil <= 0f || Time.time >= _retreatUntil)) {
+                if (_goalProgAt <= 0f || _navIdx != _goalProgIdx) {
+                    _goalProgDist = dist;
+                    _goalProgAt = Time.time;
+                    _goalProgIdx = _navIdx;
+                } else if (dist > navWpTol) {
+                    float closing = (_goalProgDist - dist) / Mathf.Max(1f, Time.time - _goalProgAt);
+                    if (closing >= cruiseGoalCloseMin) {
+                        _goalProgDist = dist;
+                        _goalProgAt = Time.time;
+                    } else if (Time.time - _goalProgAt > cruiseGoalStuckSec) {
+                        _goalProgDist = dist;
+                        _goalProgAt = Time.time;
+                        if (_goalSlowReplans >= cruiseGoalMaxReplans) {
+                            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise goal grind (close {closing:F1} m/s) — scatter/divert");
+                            StuckDivert(rb, "cruise-goal");
+                            return;
+                        }
+                        _goalSlowReplans++;
+                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                            "nav-replan-slow", $"close={closing:F1}m/s#{_goalSlowReplans}");
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise goal grind (close {closing:F1} m/s) — replanning route");
+                        PlanRoute(CruiseTargetPos); // replan с ближней позиции
+                        return;
+                    }
+                }
+            }
 
             // Проверить: вошли ли в OuterCommZone целевой станции?
             var zone = ResolveCommZone();
@@ -1360,6 +1417,7 @@ namespace ProjectC.PeacefulShip.Stations
         void StuckDivert(Rigidbody rb, string cause) {
             _legStuckCount++;
             _cruiseRecoveries = 0;
+            _goalProgAt = 0f; // T-NS-LOG02: после scatter/divert — свежий замер
             // T-NS-NAV12b: точка затора — в hotspot-память (навигатор обойдёт впредь).
             NpcShipTrafficManager.Instance?.RecordHotspot(rb.position);
             ResetWallState(); // слот отпустить в любом случае
@@ -2249,6 +2307,9 @@ namespace ProjectC.PeacefulShip.Stations
         void SetCruiseTarget(Vector3 stationPos) {
             CruiseTargetPos = stationPos;
             _echelonOffset = 0f;
+            // T-NS-LOG02: новая цель — свежий замер сближения и сброс медленных replan.
+            _goalProgAt = 0f;
+            _goalSlowReplans = 0;
             if (useEchelons) {
                 float raw = (npcInstanceId % (ulong)Mathf.Max(1, echelonCount)) * echelonStep;
                 var sys = ProjectC.Ship.AltitudeCorridorSystem.Instance;

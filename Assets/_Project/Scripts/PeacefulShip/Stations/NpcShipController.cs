@@ -541,6 +541,13 @@ namespace ProjectC.PeacefulShip.Stations
         [Range(0f, 1f)] [SerializeField] private float lidarKeepWeight = 0.5f;
         [Tooltip("Бок вплотную (м): немедленный вход в обход (зацеп кромки).")]
         [Min(10f)] [SerializeField] private float lidarSideTrigger = 80f;
+        // T-NS-WF12: слепота вниз — горизонтальные лучи идут по касательной над
+        // восходящим склоном, корпус скребёт ниже линии лучей (Берег: Y→0, dist стоит).
+        [Tooltip("Наклон нижнего луча (град вниз): видит склон/землю впереди-снизу.")]
+        [Range(5f, 60f)] [SerializeField] private float lidarDownPitchDeg = 25f;
+        [Tooltip("Крит. дистанция нижнего луча (м): ниже — аварийный набор (не в скалу же).")]
+        [Min(10f)] [SerializeField] private float downCriticalDist = 60f;
+        private float _downClear = float.MaxValue; // между тактами скана
         // === T-NS-WF09: жадный вход + гриндеры (лог 000043) ===
         // Входов 44/76с: центр цепляет дальние скалы на краю lookahead → эпизоды
         // ровно min-dwell. Вход по центру — только внутренняя половина.
@@ -1331,12 +1338,12 @@ namespace ProjectC.PeacefulShip.Stations
             else fwd.Normalize();
             if (away.sqrMagnitude < 0.001f) {
                 LidarScan(rb.position, fwd, scatterSpeed * scatterSec + wallClearance,
-                    fwd, out Vector3 open, out _, out _);
+                    fwd, out Vector3 open, out _, out _, out _);
                 return open;
             }
             away.Normalize();
             float look = scatterSpeed * scatterSec + wallClearance;
-            LidarScan(rb.position, away, look, away, out Vector3 best, out _, out _);
+            LidarScan(rb.position, away, look, away, out Vector3 best, out _, out _, out _);
             return best;
         }
 
@@ -1802,7 +1809,7 @@ namespace ProjectC.PeacefulShip.Stations
         /// Корабли в веере — не стены (их ведёт proximity): считаются чистыми.
         /// </summary>
         void LidarScan(Vector3 pos, Vector3 goalDir, float look, Vector3 keepDir,
-            out Vector3 bestDir, out float centerClear, out float minClear) {
+            out Vector3 bestDir, out float centerClear, out float minClear, out float downClear) {
             Vector3 origin = pos + Vector3.up * 2f;
             bestDir = goalDir;
             centerClear = look;
@@ -1825,6 +1832,24 @@ namespace ProjectC.PeacefulShip.Stations
                     + lidarKeepWeight * Vector3.Dot(d, kn);
                 if (score > bestScore) { bestScore = score; bestDir = d; }
             }
+            // T-NS-WF12: нижний луч (детекция only, в steering не участвует):
+            // склон/земля впереди-снизу. Идёт в minClear (триггер входа).
+            // Знак плюс: вокруг оси (up × goal) положительный угол кладёт луч вниз.
+            Vector3 crossAxis = Vector3.Cross(Vector3.up, goalDir);
+            Vector3 downDir = crossAxis.sqrMagnitude > 0.000001f
+                ? Quaternion.AngleAxis(lidarDownPitchDeg, crossAxis.normalized) * goalDir
+                : Vector3.zero;
+            // Вырожденный случай (goalDir вертикален) — луча нет.
+            downClear = look;
+            if (downDir.sqrMagnitude > 0.001f) {
+                downDir.Normalize();
+                float draw = look;
+                if (Physics.Raycast(origin, downDir, out var dhit, look,
+                        wallObstacleMask, QueryTriggerInteraction.Ignore) && IsWallHit(dhit))
+                    draw = dhit.distance;
+                downClear = Mathf.Max(0f, draw - wallClearance);
+                if (downClear < minClear) minClear = downClear;
+            }
         }
 
         /// <summary>
@@ -1838,7 +1863,7 @@ namespace ProjectC.PeacefulShip.Stations
             if (fwdN.sqrMagnitude < 0.001f) { _wallBlockStrikes = 0; return 0; }
             fwdN.Normalize();
             float lookN = Mathf.Min(WallLookAhead(), dist);
-            LidarScan(rb.position, fwdN, lookN, fwdN, out _, out float centerN, out float minN);
+            LidarScan(rb.position, fwdN, lookN, fwdN, out _, out float centerN, out float minN, out _);
             bool enter = minN < lidarSideTrigger;
             if (!enter) {
                 // T-NS-WF09: центр — только внутренняя доля lookahead (дальние
@@ -1878,6 +1903,7 @@ namespace ProjectC.PeacefulShip.Stations
             _wallLastProgressAt = Time.time;
             _wallProbeNextAt = Time.time + wallProbeIntervalSec;
             _wallLosStrikes = 0;
+            _downClear = float.MaxValue;
             _wallMoveDir = fwd;
             _wallReturnMode = (CurrentMode == NavMode.CorridorLeg || CurrentMode == NavMode.GateApproach)
                 ? NavMode.CorridorLeg : NavMode.Cruising;
@@ -1948,8 +1974,9 @@ namespace ProjectC.PeacefulShip.Stations
                 fwd.Normalize();
                 float look = Mathf.Min(WallLookAhead(), dist);
                 LidarScan(rb.position, fwd, look, _wallMoveDir,
-                    out Vector3 best, out float centerW, out _);
+                    out Vector3 best, out float centerW, out _, out float downW);
                 _wallMoveDir = best;
+                _downClear = downW;
                 // Выход: dwell + LOS + нос свободен по лидару (согласие).
                 bool exitOk = (Time.time - _wallStartedAt >= wallMinDwellSec)
                     && centerW > 0f && HasLineOfSight(rb.position, toTarget, dist);
@@ -1969,6 +1996,9 @@ namespace ProjectC.PeacefulShip.Stations
 
             float speed = dist > 200f ? CruiseSpeed : ApproachSpeed;
             float vy = Mathf.Clamp((_wallEntryY - rb.position.y) * 0.5f, -2f, 2f);
+            // T-NS-WF12: земля критически близко снизу-впереди — аварийный набор
+            // (в скалу нельзя; заморозка высоты отменяется только вверх).
+            if (_downClear < downCriticalDist) vy = LiftSpeed * 0.5f;
             // T-NS-WF11: анти-strafe — боковая составляющая гасится рассинхроном носа.
             // Strafe (velocity по команде мгновенно) втирал борт в склон, пока нос
             // доворачивал 1–3 с: змейка вдоль скалы. В синхроне — полная команда,

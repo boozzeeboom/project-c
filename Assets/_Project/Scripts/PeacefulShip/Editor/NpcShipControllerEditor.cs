@@ -248,6 +248,8 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("lidarKeepWeight");
                 DrawProp("lidarSideTrigger");
                 DrawProp("lidarCenterFraction");
+                DrawProp("lidarDownPitchDeg");
+                DrawProp("downCriticalDist");
                 DrawProp("wallProgressSec");
                 DrawProp("wallProgressMin");
                 DrawProp("wallSlotRadius");

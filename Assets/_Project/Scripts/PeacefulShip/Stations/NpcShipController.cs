@@ -613,6 +613,8 @@ namespace ProjectC.PeacefulShip.Stations
         private float _logBeatNextAt; // T-NS-LOG01: следующий heartbeat в глобальный лог
         // T-NS-WF05: состояние cruise-stuck (только относительные данные — F8-безопасно).
         private Vector3 _cruiseLastPos;
+        private Vector3 _recoverStartPos; // T-NS-WF11: откуда начался recovery
+        private bool _recoverArmed; // T-NS-WF11: ждём конца recovery для зачёта
         private float _cruiseLastProgressAt;
         private float _cruiseRecoverUntil;
         private Vector3 _cruiseRecoverDir;
@@ -960,6 +962,17 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
+            // T-NS-WF11: recovery кончился без смещения (вклинён намертво, Вавилон
+            // 46 с на точке) — засчитываем провал сразу, не ждём новый watchdog.
+            if (_recoverArmed && Time.time >= _cruiseRecoverUntil) {
+                _recoverArmed = false;
+                if ((_cruiseLastPos - _recoverStartPos).magnitude < cruiseStuckDist) {
+                    _cruiseRecoveries++;
+                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                        "recovery-failed", $"#{_cruiseRecoveries}");
+                }
+            }
+
             // T-NS-WF05: watchdog прогресса вдали от СТАНЦИИ (там медленно — законно).
             // Схватывает втирание в склон, когда зонд слеп (старт внутри коллайдера).
             if (stDist > 150f && Time.time >= _wallCooldownUntil) {
@@ -980,6 +993,8 @@ namespace ProjectC.PeacefulShip.Stations
                     // иначе max клиренс. Слепой откат упирался в тот же склон (Сильфида).
                     _cruiseRecoverDir = ComputeRecoverDir(rb, stToTarget);
                     _cruiseRecoverUntil = Time.time + cruiseRecoverSec;
+                    _recoverStartPos = rb.position;
+                    _recoverArmed = true;
                     _cruiseLastPos = rb.position;
                     _cruiseLastProgressAt = Time.time;
                     NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
@@ -1954,7 +1969,24 @@ namespace ProjectC.PeacefulShip.Stations
 
             float speed = dist > 200f ? CruiseSpeed : ApproachSpeed;
             float vy = Mathf.Clamp((_wallEntryY - rb.position.y) * 0.5f, -2f, 2f);
-            rb.linearVelocity = new Vector3(_wallMoveDir.x * speed, vy, _wallMoveDir.z * speed);
+            // T-NS-WF11: анти-strafe — боковая составляющая гасится рассинхроном носа.
+            // Strafe (velocity по команде мгновенно) втирал борт в склон, пока нос
+            // доворачивал 1–3 с: змейка вдоль скалы. В синхроне — полная команда,
+            // в противоходе — чистый носовой полёт с доворотом.
+            Vector3 nose = rb.rotation * Vector3.forward;
+            nose.y = 0f;
+            if (nose.sqrMagnitude < 0.001f) nose = _wallMoveDir;
+            nose.Normalize();
+            float align = Vector3.Dot(nose, _wallMoveDir);
+            Vector3 velDir;
+            if (align <= 0.05f) {
+                velDir = nose;
+            } else {
+                Vector3 side = _wallMoveDir - nose * align;
+                velDir = (nose * align + side * align).normalized;
+                if (velDir.sqrMagnitude < 0.001f) velDir = nose;
+            }
+            rb.linearVelocity = new Vector3(velDir.x * speed, vy, velDir.z * speed);
             rb.angularVelocity = Vector3.zero;
         }
 

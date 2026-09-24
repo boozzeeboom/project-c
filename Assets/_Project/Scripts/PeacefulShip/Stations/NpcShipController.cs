@@ -547,6 +547,10 @@ namespace ProjectC.PeacefulShip.Stations
         [Range(5f, 60f)] [SerializeField] private float lidarDownPitchDeg = 25f;
         [Tooltip("Крит. дистанция нижнего луча (м): ниже — аварийный набор (не в скалу же).")]
         [Min(10f)] [SerializeField] private float downCriticalDist = 60f;
+        // T-NS-WF14: нижний луч входит отдельно (ближе, чем боковой): земля далеко
+        // внизу — не повод для обхода (фликер Странника), земля вплотную — повод.
+        [Tooltip("Триггер входа нижнего луча (м): должен быть < lidarSideTrigger.")]
+        [Min(5f)] [SerializeField] private float lidarDownTrigger = 40f;
         private float _downClear = float.MaxValue; // между тактами скана
         // === T-NS-WF09: жадный вход + гриндеры (лог 000043) ===
         // Входов 44/76с: центр цепляет дальние скалы на краю lookahead → эпизоды
@@ -980,9 +984,11 @@ namespace ProjectC.PeacefulShip.Stations
                 }
             }
 
-            // T-NS-WF05: watchdog прогресса вдали от СТАНЦИИ (там медленно — законно).
+            // T-NS-WF05 + WF14: watchdog прогресса вдали от СТАНЦИИ (там медленно — законно).
             // Схватывает втирание в склон, когда зонд слеп (старт внутри коллайдера).
-            if (stDist > 150f && Time.time >= _wallCooldownUntil) {
+            // T-NS-WF14: БЕЗ врат _wallCooldownUntil (Странник 40 с на точке с одним
+            // stuck: пост-обходный кулдаун душил watchdog вместе с зондом).
+            if (stDist > 150f) {
                 if (_cruiseLastProgressAt <= 0f) {
                     _cruiseLastPos = rb.position;
                     _cruiseLastProgressAt = Time.time;
@@ -1338,12 +1344,12 @@ namespace ProjectC.PeacefulShip.Stations
             else fwd.Normalize();
             if (away.sqrMagnitude < 0.001f) {
                 LidarScan(rb.position, fwd, scatterSpeed * scatterSec + wallClearance,
-                    fwd, out Vector3 open, out _, out _, out _);
+                    fwd, out Vector3 open, out _, out _, out _, out _);
                 return open;
             }
             away.Normalize();
             float look = scatterSpeed * scatterSec + wallClearance;
-            LidarScan(rb.position, away, look, away, out Vector3 best, out _, out _, out _);
+            LidarScan(rb.position, away, look, away, out Vector3 best, out _, out _, out _, out _);
             return best;
         }
 
@@ -1809,11 +1815,13 @@ namespace ProjectC.PeacefulShip.Stations
         /// Корабли в веере — не стены (их ведёт proximity): считаются чистыми.
         /// </summary>
         void LidarScan(Vector3 pos, Vector3 goalDir, float look, Vector3 keepDir,
-            out Vector3 bestDir, out float centerClear, out float minClear, out float downClear) {
+            out Vector3 bestDir, out float centerClear, out float minClear, out float downClear,
+            out float flatMin) {
             Vector3 origin = pos + Vector3.up * 2f;
             bestDir = goalDir;
             centerClear = look;
             minClear = look;
+            flatMin = look;
             float bestScore = float.MinValue;
             float devW = 1f - lidarClearWeight;
             float half = Mathf.Max(1f, lidarHalfAngle);
@@ -1827,6 +1835,7 @@ namespace ProjectC.PeacefulShip.Stations
                 float eff = Mathf.Max(0f, raw - wallClearance); // габарит корпуса
                 if (Mathf.Abs(a) < 0.01f) centerClear = eff;
                 if (eff < minClear) minClear = eff;
+                if (eff < flatMin) flatMin = eff;
                 float score = lidarClearWeight * (eff / look)
                     - devW * (Mathf.Abs(a) / half)
                     + lidarKeepWeight * Vector3.Dot(d, kn);
@@ -1863,8 +1872,11 @@ namespace ProjectC.PeacefulShip.Stations
             if (fwdN.sqrMagnitude < 0.001f) { _wallBlockStrikes = 0; return 0; }
             fwdN.Normalize();
             float lookN = Mathf.Min(WallLookAhead(), dist);
-            LidarScan(rb.position, fwdN, lookN, fwdN, out _, out float centerN, out float minN, out _);
-            bool enter = minN < lidarSideTrigger;
+            LidarScan(rb.position, fwdN, lookN, fwdN,
+                out _, out float centerN, out _, out float downN, out float flatN);
+            // T-NS-WF14: бок — горизонталь; низ — отдельным ближним порогом
+            // (далёкая земля не повод для обхода).
+            bool enter = flatN < lidarSideTrigger || downN < lidarDownTrigger;
             if (!enter) {
                 // T-NS-WF09: центр — только внутренняя доля lookahead (дальние
                 // скалы на краю не дёргают в обход каждые 8 с).
@@ -1974,7 +1986,7 @@ namespace ProjectC.PeacefulShip.Stations
                 fwd.Normalize();
                 float look = Mathf.Min(WallLookAhead(), dist);
                 LidarScan(rb.position, fwd, look, _wallMoveDir,
-                    out Vector3 best, out float centerW, out _, out float downW);
+                    out Vector3 best, out float centerW, out _, out float downW, out _);
                 _wallMoveDir = best;
                 _downClear = downW;
                 // Выход: dwell + LOS + нос свободен по лидару (согласие).
@@ -2016,9 +2028,10 @@ namespace ProjectC.PeacefulShip.Stations
                 velDir = (nose * align + side * align).normalized;
                 if (velDir.sqrMagnitude < 0.001f) velDir = nose;
             }
-            // T-NS-WF13: скорость масштабируется выравниванием — на входе нос смотрит
-            // В скалу (команда уже вбок): таран заменяется hover-доворотом.
-            float alignScale = Mathf.Clamp01((align + 0.2f) / 1.2f);
+            // T-NS-WF13 + WF14: скорость масштабируется выравниванием, но не в ноль:
+            // рассинхрон = медленный доворот (0.33×), противоход = hover-доворот.
+            // WF13 гасил до нуля и парализовал эпизоды (топтание Странника).
+            float alignScale = Mathf.Clamp01((align + 0.5f) / 1.5f);
             rb.linearVelocity = new Vector3(velDir.x * speed * alignScale, vy, velDir.z * speed * alignScale);
             rb.angularVelocity = Vector3.zero;
         }

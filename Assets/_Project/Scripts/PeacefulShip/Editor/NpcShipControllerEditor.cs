@@ -249,6 +249,7 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("lidarSideTrigger");
                 DrawProp("lidarCenterFraction");
                 DrawProp("lidarDownPitchDeg");
+                DrawProp("lidarDownTrigger");
                 DrawProp("downCriticalDist");
                 DrawProp("wallProgressSec");
                 DrawProp("wallProgressMin");

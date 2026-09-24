@@ -861,6 +861,9 @@ namespace ProjectC.PeacefulShip.Stations
                 // T-NS-WF01b: новый leg — сбрасываем strikes обхода.
                 _wallBlockStrikes = 0;
                 _wallLosStrikes = 0;
+                // T-NS-NAV15: новый leg — сбрасываем счётчик одной точки.
+                _wallSameSpotCount = 0;
+                _lastWallEntryPos = Vector3.zero;
                 // T-NS-WF05: новый leg — сбрасываем cruise-stuck.
                 _cruiseRecoveries = 0;
                 _cruiseLastProgressAt = 0f;
@@ -1906,6 +1909,20 @@ namespace ProjectC.PeacefulShip.Stations
             Vector3 fwd = new Vector3(dir.x, 0f, dir.z);
             if (fwd.sqrMagnitude < 0.001f) return false;
             fwd.Normalize();
+            // T-NS-NAV15: та же вмятина в N-й раз — не эпизод, а переплан с места.
+            if (_lastWallEntryPos.sqrMagnitude > 0.001f
+                && Vector3.Distance(rb.position, _lastWallEntryPos) < wallSameSpotRadius)
+                _wallSameSpotCount++;
+            else _wallSameSpotCount = 1;
+            _lastWallEntryPos = rb.position;
+            if (_wallSameSpotCount >= wallSameSpotEntries) {
+                _wallSameSpotCount = 0;
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId,
+                    CurrentMode.ToString(), CurrentMode.ToString(), "nav-replan", "");
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Same dent ×{wallSameSpotEntries} — replanning route");
+                PlanRoute(CruiseTargetPos);
+                return false;
+            }
             _wallEntryY = rb.position.y;
             _wallEntryDist = dist;
             _wallStartedAt = Time.time;
@@ -2038,6 +2055,19 @@ namespace ProjectC.PeacefulShip.Stations
 
         /// <summary>Профильная высота круиза с эшелоном (0 без флага).</summary>
         float ProfileY() => CruiseTargetPos.y + _echelonOffset;
+
+        // === T-NS-NAV15: replan-on-evidence — повторные входы в одной точке ===
+        // Странник: 3-с входы-выходы в одной вмятине + медленный подъём по стене
+        // (Y −19 → +35 за 100 с, dist стоит). LOS чист через верх рима, корпус ниже
+        // кромки — фликер вместо облёта. 3-й вход в радиусе = переплан с места
+        // (ближний скан видит скалу лучше стартового), а не очередной эпизод.
+        [Header("Replan on evidence (server-only)")]
+        [Tooltip("Радиус «той же точки» для входов в обход (м).")]
+        [Min(20f)] [SerializeField] private float wallSameSpotRadius = 150f;
+        [Tooltip("Сколько входов в одной точке терпим, потом replan.")]
+        [Min(2)] [SerializeField] private int wallSameSpotEntries = 3;
+        private int _wallSameSpotCount;
+        private Vector3 _lastWallEntryPos; // только сравнение (сброс, не навигация) — F8-безопасно
 
         // === T-NS-NAV11: навигатор — план обходов на старте leg'а (server-only) ===
         // Прямая A→B сквозь скалы = корень всех заторов. План: 1–2 точки обхода

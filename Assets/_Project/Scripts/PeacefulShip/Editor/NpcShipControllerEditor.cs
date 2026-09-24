@@ -281,9 +281,9 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             EditorGUILayout.Space(4);
 
-            // ── Navigator (T-NS-NAV11) ──
+            // ── Replan on evidence (T-NS-NAV15) ──
             _foldNav = EditorGUILayout.Foldout(_foldNav,
-                "🧭 Navigator (T-NS-NAV11, OFF=прямая)", true, EditorStyles.foldoutHeader);
+                "🧭 Navigator + Replan (T-NS-NAV11/15)", true, EditorStyles.foldoutHeader);
             if (_foldNav)
             {
                 EditorGUI.indentLevel++;
@@ -291,6 +291,8 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("navBypassDist");
                 DrawProp("navMaxBypass");
                 DrawProp("navWpTol");
+                DrawProp("wallSameSpotRadius");
+                DrawProp("wallSameSpotEntries");
                 EditorGUI.indentLevel--;
             }
 

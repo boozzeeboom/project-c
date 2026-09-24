@@ -1018,15 +1018,30 @@ namespace ProjectC.PeacefulShip.Stations
             // Схватывает втирание в склон, когда зонд слеп (старт внутри коллайдера).
             // T-NS-WF14: БЕЗ врат _wallCooldownUntil (Странник 40 с на точке с одним
             // stuck: пост-обходный кулдаун душил watchdog вместе с зондом).
-            if (stDist > 150f) {
-                if (_cruiseLastProgressAt <= 0f) {
+            // T-NS-LOG02: дыра stDist<=150 — корабль в 140 м от станции давил в скалу
+            // 112 с без единого перехода (лог 205734, NPC ...001F): comm-зона не
+            // резолвится, watchdog слеп. Вблизи — не recovery, а форсированный
+            // Berthing (там holding/пад/watchdog доведут или уведут в divert).
+            if (_cruiseLastProgressAt <= 0f) {
+                _cruiseLastPos = rb.position;
+                _cruiseLastProgressAt = Time.time;
+            } else if ((rb.position - _cruiseLastPos).magnitude >= cruiseStuckDist) {
+                _cruiseLastPos = rb.position;
+                _cruiseLastProgressAt = Time.time;
+            } else if (Time.time - _cruiseLastProgressAt > cruiseStuckSec) {
+                // Ждём слот теснины — не срываем (у ожидания свой таймаут 60 с).
+                if (stDist <= 150f && _wallWaitStartedAt <= 0f) {
                     _cruiseLastPos = rb.position;
                     _cruiseLastProgressAt = Time.time;
-                } else if ((rb.position - _cruiseLastPos).magnitude >= cruiseStuckDist) {
-                    _cruiseLastPos = rb.position;
-                    _cruiseLastProgressAt = Time.time;
-                } else if (Time.time - _cruiseLastProgressAt > cruiseStuckSec) {
-                    _cruiseRecoveries++;
+                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Berthing",
+                        "cruise-near-stuck", $"dist={stDist:F0}m");
+                    if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise near-station stuck (dist {stDist:F0}m) — forcing Berthing");
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                    SetMode(NavMode.Berthing, "near-stuck");
+                    return;
+                }
+                _cruiseRecoveries++;
                     if (_cruiseRecoveries > cruiseMaxRecoveries) {
                         if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise stuck ×{_cruiseRecoveries} — scatter/divert");
                         StuckDivert(rb, "cruise");
@@ -1849,9 +1864,14 @@ namespace ProjectC.PeacefulShip.Stations
         /// меши бьются лучом без ограничений (в отличие от Collider.ClosestPoint).
         /// </summary>
         bool IsWallHit(RaycastHit hit) {
-            if (hit.collider == null) return false;
-            if (hit.collider.GetComponentInParent<ShipController>() != null) return false;
-            if (hit.collider.GetComponentInParent<NpcShipController>() != null) return false;
+            return IsWallCollider(hit.collider);
+        }
+
+        /// <summary>Тот же фильтр стен, но по коллайдеру (для Overlap-проверок).</summary>
+        bool IsWallCollider(Collider c) {
+            if (c == null) return false;
+            if (c.GetComponentInParent<ShipController>() != null) return false;
+            if (c.GetComponentInParent<NpcShipController>() != null) return false;
             return true;
         }
 
@@ -2270,18 +2290,26 @@ namespace ProjectC.PeacefulShip.Stations
                 a.y = y;
             }
             string how = "direct";
-            // T-NS-DOCK01: цель внутри диска (станция в горе) — пики не обходим,
+            // T-NS-DOCK01: цель внутри диска (станция в горе) — пики там не обходим,
             // заход ведёт Berthing напрямую; зонд потом доберёт меши-скалы.
-            bool mountainHome = PeakRegistry.IsInsideDisc(b, navBypassDist, out _, out _);
+            // T-NS-LOG02: только вблизи (иначе дальний leg 3+ км летел бы прямо
+            // сквозь хребет — лог 205734, NPC ...0026). Вдали — граф/legacy.
+            float homeDist = Vector3.Distance(a, b);
+            bool mountainHome = homeDist < navFinishGuardDist
+                && PeakRegistry.IsInsideDisc(b, navBypassDist, out _, out _);
             if (mountainHome) how = "mountain-home";
             // T-NS-GRAPH01: сначала граф (структурно, N пиков), fallback — legacy ниже.
+            // T-NS-LOG02: молчаливый fallback — в лог (иначе 22/22 падений графа
+            // не видно, лог 205734).
             if (!mountainHome && useRouteGraph)
             {
                 var tmGraph = NpcShipTrafficManager.Instance;
                 float parity = (npcInstanceId % 2UL == 0UL) ? 1f : -1f;
-                if (RouteGraph.TryBuild(a, b, y, navBypassDist, routeGraphMaxWp,
-                        LegClear, c => tmGraph != null ? tmGraph.HotspotPenalty(c, 500f) : 0f,
-                        parity, _graphWps, out int graphDiscs) && _graphWps.Count > 0)
+                bool graphOk = RouteGraph.TryBuild(a, b, y, navBypassDist, routeGraphMaxWp,
+                        LegClear, LegClearGoal, IsGateValid,
+                        c => tmGraph != null ? tmGraph.HotspotPenalty(c, 500f) : 0f,
+                        parity, _graphWps, out int graphDiscs, out string graphFail);
+                if (graphOk && _graphWps.Count > 0)
                 {
                     for (int i = 0; i < _graphWps.Count; i++) _navPlan.Add(_graphWps[i]);
                     how = "graph" + _graphWps.Count;
@@ -2293,6 +2321,10 @@ namespace ProjectC.PeacefulShip.Stations
                         "nav-plan", $"wp={_navPlan.Count}:{how}{wpPosG}");
                     return;
                 }
+                if (!graphOk && graphFail != "ok-direct")
+                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                        "graph-fail", $"{graphFail} discs={graphDiscs}");
+            }
             }
             // T-NS-NAV16: сначала известные пики — точно, по касательным.
             // Зонд потом доберёт меши-скалы, которых в дисках нет.
@@ -2433,6 +2465,29 @@ namespace ProjectC.PeacefulShip.Stations
                     wallObstacleMask, QueryTriggerInteraction.Ignore) && IsWallHit(hit))
                 return hit.distance;
             return len;
+        }
+
+        /// <summary>
+        /// T-NS-LOG02: lenient-проверка финального прыжка графа — хит у самой цели
+        /// (геометрия станции, как в HasLineOfSight) — не стена: граф дотягивается
+        /// до порога горы-дома вместо молчаливого fallback в legacy.
+        /// </summary>
+        bool LegClearGoal(Vector3 from, Vector3 to) {
+            float len = Vector3.Distance(from, to);
+            if (len < 1f) return true;
+            return RayClear(from, to) >= len - wallArriveMargin;
+        }
+
+        /// <summary>
+        /// T-NS-LOG02: гейт валиден, если сам стоит в открытом месте (не зарыт
+        /// в склон/меш): иначе Дейкстра честно не находит пути через гору,
+        /// а legacy коммитит слепые точки. Корабли — не стены (как в лидаре).
+        /// </summary>
+        bool IsGateValid(Vector3 gate) {
+            foreach (var c in Physics.OverlapSphere(gate, wallProbeRadius,
+                         wallObstacleMask, QueryTriggerInteraction.Ignore))
+                if (IsWallCollider(c)) return false;
+            return true;
         }
 
         /// <summary>

@@ -1,5 +1,48 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-24 — T-NS-LOG02: разбор NpcShipNavLog_20260924_205734 (112 с)
+
+**Факты из лога (89 TRANS):** планов 23 — `peak/bypass/direct/mountain-home`,
+`how=graphN` — **0/23** (граф молча падал в legacy все 22 раза); `probe` 17,
+`wall-slot-wait` 10, `LOS` 9, `cruise-stuck` 7, `scatter` 5, `berth-abort` 4
+(+3 `berth-overhead-blocked` — зонд DOCK01 работает: clear 1→59→118 м,
+3 go-around → divert, всё по дизайну); `nav-wp` всего 6 — точки не достигаются.
+
+**Поимённо:** 000F 80 с гриндит к слепой tangent-точке (331→153 м, spd 2–6);
+0026 пинг-понг на месте (dead→scatter→stuck-divert→replan) — цель
+mountain-home в 3.6 км; 001F 112 с в Cruising spd=0 на dist=139.7 без единого
+перехода (тройная дыра: comm-зона не резолвится + watchdog слеп при stDist<150
++ физический упор); 0031 весь прогон в Berthing spd~2 (медленно, но идёт).
+
+**Корни:** (1) граф ВЕРИФИЦИРУЕТ рёбра, legacy коммитит вслепую — в низком мире
+гейты зарыты в склоны → системный no-path без единой строчки в логе;
+(2) mountain-home скипал граф на ВСЁМ leg'е, а не только у дома;
+(3) watchdog не покрывал stDist≤150; (4) финал графа требовал стерильной
+прямой до цели (геометрия станции = стена).
+
+**Фиксы:**
+- `cruise-near-stuck`: нет прогресса дольше `cruiseStuckSec` в `Cruising`
+  вблизи станции (stDist≤150, кроме ожидания слота) → форсированный `Berthing`
+  (там holding/пад/watchdog доведут или уведут в divert), вместо вечного упора.
+- `graph-fail` в лог (`nopath/layer-empty/too-many-discs/no-discs/too-long` +
+  число дисков) — слепых fallback больше нет.
+- Фильтр зарытых гейтов (`IsGateValid`: OverlapSphere + фильтр кораблей) —
+  Дейкстра ходит только по открытым гейтам.
+- mountain-home только ближе `navFinishGuardDist` (500 м); вдали — граф/legacy.
+- Lenient-финал графа (`LegClearGoal`: хит ближе `wallArriveMargin` к цели —
+  геометрия станции, как в `HasLineOfSight`) — граф дотягивается до порога дома.
+- `IsWallHit` → общий `IsWallCollider` (переиспользован в гейтах).
+
+**Открытые вопросы к прогону:** (1) планы на y≈−163..753 при clamp 1100 —
+был ли F8 со сдвигом вниз (рантайм-копии границ едут) или сцена со старыми
+значениями; (2) 001F — сидел ли игрок на борту (silent yield пилота)?
+Нужен прогон 5+ мин по тест-плану COORD01/DOCK01/GRAPH01.
+
+**Проверка:** `refresh_unity` → errors/warnings по touched-файлам 0.
+Play Mode — за пользователем (NOT RUN).
+
+---
+
 ## Итерация от 2026-09-24 — T-NS-COORD01+DOCK01+GRAPH01: координатор ON + щель доков + граф трасс
 
 **Контекст:** всецелый ресерч причин отсутствия нормального курсирования

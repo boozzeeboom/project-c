@@ -31,44 +31,58 @@ namespace ProjectC.PeacefulShip.Core
         /// Построить точки обхода. true = граф дал путь (может быть пустым:
         /// прямая чиста — летим прямо). false = граф неприменим, идти legacy.
         /// legClear — та же проверка прямой, что LegClear контроллера.
+        /// legClearGoal — lenient-проверка финального прыжка (геометрия станции
+        /// у цели — не стена); null = как legClear.
+        /// gateValid — гейт стоит в открытом месте (не зарыт в склон); null = все ок.
         /// hotspot — штраф HotspotPenalty (память заторов) или null.
         /// paritySide: +1 (чётный id) / −1 (нечётный) — развод встречных.
+        /// failReason: ok-direct / ok / no-discs / too-many-discs /
+        /// layer-empty / no-path / too-long (для Nav-лога).
         /// </summary>
         public static bool TryBuild(Vector3 a, Vector3 b, float y,
             float gateMargin, int maxWp,
-            Func<Vector3, Vector3, bool> legClear, Func<Vector3, float> hotspot,
-            float paritySide, List<Vector3> outWaypoints, out int discCount)
+            Func<Vector3, Vector3, bool> legClear, Func<Vector3, Vector3, bool> legClearGoal,
+            Func<Vector3, bool> gateValid, Func<Vector3, float> hotspot,
+            float paritySide, List<Vector3> outWaypoints, out int discCount, out string failReason)
         {
             outWaypoints.Clear();
             discCount = 0;
+            failReason = "no-discs";
             if (legClear == null) return false;
-            if ((b - a).sqrMagnitude < 1f) return true; // точка — лететь прямо
-            if (legClear(a, b)) return true;           // прямая чиста — граф не нужен
+            if ((b - a).sqrMagnitude < 1f) { failReason = "ok-direct"; return true; }
+            if (legClear(a, b)) { failReason = "ok-direct"; return true; }
 
             // Диски, пересекающие отрезок (по порядку от старта).
             var discs = new List<(Vector3 c, float r, float t)>(MaxDiscs + 1);
             PeakRegistry.CollectBlockingDiscs(a, b, y, gateMargin, discs, MaxDiscs + 1);
             if (discs.Count == 0) return false;  // мешает меш, не диск — legacy-зонд
-            if (discs.Count > MaxDiscs) return false;
             discCount = discs.Count;
+            if (discs.Count > MaxDiscs) { failReason = "too-many-discs"; return false; }
             discs.Sort((x, y2) => x.t.CompareTo(y2.t));
+            var HopClear = legClearGoal ?? legClear;
 
             // Слои гейтов: слой i — кольцо вокруг discs[i].
+            // T-NS-LOG02: зарытые гейты (внутри склона/меша) отбрасываем сразу —
+            // иначе Дейкстра честно не находит пути, а legacy коммитит вслепую.
             Vector2 perp = PerpDir(a, b);
             var layers = new List<Vector3>(discs.Count * GatesPerDisc);
             var layerOf = new List<int>(discs.Count * GatesPerDisc);
             for (int i = 0; i < discs.Count; i++)
             {
                 float rr = discs[i].r + gateMargin;
+                int added = 0;
                 for (int g = 0; g < GatesPerDisc; g++)
                 {
                     float ang = g * Mathf.PI * 2f / GatesPerDisc;
                     Vector3 gate = new Vector3(
                         discs[i].c.x + Mathf.Cos(ang) * rr, y,
                         discs[i].c.z + Mathf.Sin(ang) * rr);
+                    if (gateValid != null && !gateValid(gate)) continue;
                     layers.Add(gate);
                     layerOf.Add(i);
+                    added++;
                 }
+                if (added == 0) { failReason = "layer-empty"; return false; }
             }
 
             int n = layers.Count;
@@ -113,9 +127,11 @@ namespace ProjectC.PeacefulShip.Core
                     }
                 }
                 // Цель достижима с последних двух слоёв (и со старта — проверено выше чистотой прямой).
+                // T-NS-LOG02: lenient-финал — хит у самой цели (геометрия станции,
+                // как в HasLineOfSight) — не стена: граф дотягивается до порога горы-дома.
                 if (ul >= discs.Count - 2)
                 {
-                    if (!closed[goal] && legClear(up, b))
+                    if (!closed[goal] && HopClear(up, b))
                     {
                         float w = Vector3.Distance(up, b);
                         if (dist[u] + w < dist[goal]) { dist[goal] = dist[u] + w; prev[goal] = u; }
@@ -124,13 +140,14 @@ namespace ProjectC.PeacefulShip.Core
                 }
             }
 
-            if (prev[goal] < 0) return false; // пути нет — legacy
+            if (prev[goal] < 0) { failReason = "no-path"; return false; } // пути нет — legacy
             // Восстановить цепочку гейтов (без старта/цели), в порядке полёта.
             var chain = new List<int>(8);
             for (int v = prev[goal]; v > start; v = prev[v]) chain.Add(v);
             chain.Reverse();
-            if (chain.Count > Math.Max(1, maxWp)) return false; // слишком длинно — legacy
+            if (chain.Count > Math.Max(1, maxWp)) { failReason = "too-long"; return false; }
             for (int i = 0; i < chain.Count; i++) outWaypoints.Add(layers[chain[i] - 1]);
+            failReason = "ok";
             return true;
         }
 

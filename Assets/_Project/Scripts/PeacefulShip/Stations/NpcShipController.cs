@@ -670,6 +670,7 @@ namespace ProjectC.PeacefulShip.Stations
         private float _goalProgAt; // 0 = не armed
         private int _goalProgIdx = -1;
         private int _goalSlowReplans;
+        private bool _graphParityFlip; // T-NS-LOG02d: зеркало развода графа после slow-replan
 
         // === T-NS-GATE04: процедурные ворота городов (kill-switch useCityGates) ===
         // Выключено = старое поведение бит-в-бит. Код gates — отдельная область внизу,
@@ -911,6 +912,7 @@ namespace ProjectC.PeacefulShip.Stations
                 // T-NS-LOG02: новый leg — сбрасываем goal-watchdog.
                 _goalProgAt = 0f;
                 _goalSlowReplans = 0;
+                _graphParityFlip = false;
                 // T-NS-NAV12a: новый leg — сбрасываем счётчик затора и scatter.
                 _legStuckCount = 0;
                 _scatterUntil = 0f;
@@ -1080,7 +1082,8 @@ namespace ProjectC.PeacefulShip.Stations
                     _recoverArmed = true;
                     _cruiseLastPos = rb.position;
                     _cruiseLastProgressAt = Time.time;
-                    _goalProgAt = 0f; // T-NS-LOG02: после отката — свежий замер
+                    // T-NS-LOG02: часы goal-watchdog НЕ сбрасываем (3 с отката назад
+                    // тонут в 45-с окне; сброс голодал slow-триггер — лог 234308, 000A).
                     NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                         "cruise-stuck", $"recovery#{_cruiseRecoveries}");
                     if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise stuck — backing off #{_cruiseRecoveries}");
@@ -1115,6 +1118,13 @@ namespace ProjectC.PeacefulShip.Stations
                         NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                             "nav-replan-slow", $"close={closing:F1}m/s#{_goalSlowReplans}");
                         if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise goal grind (close {closing:F1} m/s) — replanning route");
+                        // T-NS-LOG02d: петля на той же точке (лог 234308, 0031: дважды
+                        // один W1) — зеркалим чёт/нечет развод графа + штрафуем
+                        // провалившуюся цель в hotspot-память (legacy-скоринг тоже видит).
+                        _graphParityFlip = !_graphParityFlip;
+                        var tmSlow = NpcShipTrafficManager.Instance;
+                        if (_navIdx < _navPlan.Count) tmSlow?.RecordHotspot(_navPlan[_navIdx]);
+                        else if (tmSlow != null) tmSlow.RecordHotspot(rb.position);
                         PlanRoute(CruiseTargetPos); // replan с ближней позиции
                         return;
                     }
@@ -2310,6 +2320,7 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-LOG02: новая цель — свежий замер сближения и сброс медленных replan.
             _goalProgAt = 0f;
             _goalSlowReplans = 0;
+            _graphParityFlip = false;
             if (useEchelons) {
                 float raw = (npcInstanceId % (ulong)Mathf.Max(1, echelonCount)) * echelonStep;
                 var sys = ProjectC.Ship.AltitudeCorridorSystem.Instance;
@@ -2367,7 +2378,9 @@ namespace ProjectC.PeacefulShip.Stations
             if (!mountainHome && useRouteGraph)
             {
                 var tmGraph = NpcShipTrafficManager.Instance;
-                float parity = (npcInstanceId % 2UL == 0UL) ? 1f : -1f;
+                float parityBase = (npcInstanceId % 2UL == 0UL) ? 1f : -1f;
+                // T-NS-LOG02d: после slow-replan идём зеркально (петля на той же точке).
+                float parity = _graphParityFlip ? -parityBase : parityBase;
                 bool graphOk = RouteGraph.TryBuild(a, b, y, navBypassDist, routeGraphMaxWp,
                         LegClear, LegClearGoal, IsGateValid,
                         c => tmGraph != null ? tmGraph.HotspotPenalty(c, 500f) : 0f,
@@ -2393,7 +2406,11 @@ namespace ProjectC.PeacefulShip.Stations
             for (int it = 0; it < 2 && !mountainHome; it++) {
                 if (!PeakRegistry.FindBlockingDisc(a, b, y, navBypassDist, out Vector3 pc, out float pr)) break;
                 Vector3 twp = TangentBypass(a, b, pc, pr);
-                if (twp.sqrMagnitude < 0.001f) break;
+                if (twp.sqrMagnitude < 0.001f) break; // не нашли — летим прямо, страховка разберётся
+                // T-NS-LOG02d: слепую точку в склон не коммитим (лог 234308:
+                // tangent-точки внутри рельефа → вечный контурный гринд).
+                // Дальше — probe-петля (со штрафами hotspot) или прямая со страховкой.
+                if (!IsGateValid(twp)) break;
                 _navPlan.Add(twp);
                 a = twp;
                 how = "peak" + _navPlan.Count;
@@ -2510,6 +2527,13 @@ namespace ProjectC.PeacefulShip.Stations
                 if (tm != null) score -= tm.HotspotPenalty(c, 500f);
                 scores[s] = score;
             }
+            // T-NS-LOG02d: зарытые кандидаты отбрасываем (как гейты графа):
+            // commit в склон = вечный гринд. Оба зарыты — летим прямо со страховкой.
+            bool ok0 = IsGateValid(cands[0]);
+            bool ok1 = IsGateValid(cands[1]);
+            if (!ok0 && !ok1) return Vector3.zero;
+            if (!ok0) return cands[1];
+            if (!ok1) return cands[0];
             // Ничья (±5%) — чётные налево, нечётные направо.
             int pick = 0;
             if (scores[1] > scores[0] * 1.05f) pick = 1;

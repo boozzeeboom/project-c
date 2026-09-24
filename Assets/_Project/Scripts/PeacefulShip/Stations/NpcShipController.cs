@@ -2016,7 +2016,10 @@ namespace ProjectC.PeacefulShip.Stations
                 velDir = (nose * align + side * align).normalized;
                 if (velDir.sqrMagnitude < 0.001f) velDir = nose;
             }
-            rb.linearVelocity = new Vector3(velDir.x * speed, vy, velDir.z * speed);
+            // T-NS-WF13: скорость масштабируется выравниванием — на входе нос смотрит
+            // В скалу (команда уже вбок): таран заменяется hover-доворотом.
+            float alignScale = Mathf.Clamp01((align + 0.2f) / 1.2f);
+            rb.linearVelocity = new Vector3(velDir.x * speed * alignScale, vy, velDir.z * speed * alignScale);
             rb.angularVelocity = Vector3.zero;
         }
 

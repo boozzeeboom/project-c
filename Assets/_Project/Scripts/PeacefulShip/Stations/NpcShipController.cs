@@ -739,6 +739,10 @@ namespace ProjectC.PeacefulShip.Stations
                 if (!_playerControlled)
                 {
                     _playerControlled = true;
+                    // T-NS-LOG02e: yield виден в Nav-логе (молчание стоило 3 сессии
+                    // гаданий, лог 000914: корабль «не слушается», а им рулит игрок).
+                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId,
+                        CurrentMode.ToString(), CurrentMode.ToString(), "player-yield", "");
                     if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player took control — NPC autopilot yielding");
                 }
                 return; // ничего не пишем в Rigidbody — рулит игрок
@@ -749,6 +753,8 @@ namespace ProjectC.PeacefulShip.Stations
                 _playerControlled = false;
                 // ENGINE-STATE: NPC всегда восстанавливает включённый двигатель
                 ship.SetEngineRunning(true);
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId,
+                    CurrentMode.ToString(), CurrentMode.ToString(), "player-release", "");
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player released control — NPC autopilot resuming");
                 if (CurrentMode == NavMode.Docked && !ship.IsDocked) SetMode(NavMode.Cruising, "player-release");
                 var resumeStation = ResolveTargetStation();
@@ -1010,6 +1016,24 @@ namespace ProjectC.PeacefulShip.Stations
                 _goalSlowReplans = 0;
                 NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                     "nav-wp", $"idx={_navIdx}/{_navPlan.Count}");
+            }
+            // T-NS-LOG02e: blocked-point skip — точка в упор за стеной (лог 000914:
+            // подлёт на полном ходу в лицо склона к слепой tangent-точке).
+            // Пропускаем, ТОЛЬКО если шорткат к следующей цели чист (проверено лучом):
+            // иначе стену всё равно разбирает WallFollow. Финал (станция) не скипаем.
+            if (_navIdx < _navPlan.Count - 1) {
+                Vector3 wpSkip = _navPlan[_navIdx];
+                float dwSkip = Vector3.Distance(rb.position, wpSkip);
+                if (dwSkip > navWpTol && dwSkip < navWpTol * 3f) {
+                    Vector3 nxtSkip = _navPlan[_navIdx + 1];
+                    if (RayClear(rb.position, wpSkip) < dwSkip - wallProbeRadius
+                        && LegClear(rb.position, nxtSkip)) {
+                        _navIdx++;
+                        _goalProgAt = 0f;
+                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                            "nav-wp-skip", $"idx={_navIdx}/{_navPlan.Count}");
+                    }
+                }
             }
             Vector3 goal = NavGoal();
             Vector3 toTarget = goal - rb.position;

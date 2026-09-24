@@ -620,6 +620,8 @@ namespace ProjectC.PeacefulShip.Stations
         private float _wallLastProgressAt;
         private float _wallProbeNextAt;
         private float _wallCooldownUntil;
+        // T-NS-WF18: мин. клиренс с прошлого скана (для скорости по просвету).
+        private float _wallMinClear = float.MaxValue;
         // T-NS-WF17: retreat из вогнутой ловушки (server-only, относительное — F8-safe).
         [Tooltip("Разворот азимута в обходе (град), при котором без приближения — ловушка, идём назад.")]
         [Min(90f)] [SerializeField] private float wallRetreatTurnDeg = 180f;
@@ -1954,6 +1956,7 @@ namespace ProjectC.PeacefulShip.Stations
             _wallLosStrikes = 0;
             _downClear = float.MaxValue;
             _wallEntryDir = fwd; // T-NS-WF17: помним вход — из ловушки выходим назад по нему
+            _wallMinClear = float.MaxValue; // T-NS-WF18: до первого скана — открытое небо, полный ход
             _retreatUntil = 0f; // сброс просрочки (иначе новый эпизод сразу «закончит» retreat)
             _retreatDir = Vector3.zero;
             _wallMoveDir = fwd;
@@ -2035,9 +2038,18 @@ namespace ProjectC.PeacefulShip.Stations
             // Притирание к склону: нет ГОРИЗОНТАЛЬНОГО смещения дольше wallNoProgressSec → divert.
             Vector3 flatPos = new Vector3(rb.position.x, 0f, rb.position.z);
             Vector3 flatLast = new Vector3(_wallLastPos.x, 0f, _wallLastPos.z);
-            if ((flatPos - flatLast).magnitude >= wallMinProgressMeters) {
+            float flatMoved = (flatPos - flatLast).magnitude;
+            if (flatMoved >= wallMinProgressMeters) {
                 _wallLastPos = rb.position;
                 _wallLastProgressAt = Time.time;
+            } else if (Time.time - _wallLastProgressAt > 5f && flatMoved < 1f) {
+                // T-NS-WF18: мёртвое стояние (Шмель 0.1 м/с 15 с) — fast path,
+                // не ждём полный wallNoProgressSec. Работает и в retreat.
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow dead stop — scatter/divert");
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "WallFollow", "WallFollow",
+                    "wall-divert-dead", "");
+                StuckDivert(rb, "wall-dead");
+                return;
             } else if (!retreating && Time.time - _wallLastProgressAt > wallNoProgressSec) {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow stuck — scatter/divert");
                 StuckDivert(rb, "wall-stuck");
@@ -2062,9 +2074,10 @@ namespace ProjectC.PeacefulShip.Stations
                 fwd.Normalize();
                 float look = Mathf.Min(WallLookAhead(), dist);
                 LidarScan(rb.position, fwd, look, _wallMoveDir,
-                    out Vector3 best, out float centerW, out _, out float downW, out _);
+                    out Vector3 best, out float centerW, out float minW, out float downW, out _);
                 _wallMoveDir = best;
                 _downClear = downW;
+                _wallMinClear = minW;
                 // Выход: dwell + LOS + нос свободен по лидару (согласие).
                 bool exitOk = (Time.time - _wallStartedAt >= wallMinDwellSec)
                     && centerW > 0f && HasLineOfSight(rb.position, toTarget, dist);
@@ -2106,10 +2119,13 @@ namespace ProjectC.PeacefulShip.Stations
                 velDir = (nose * align + side * align).normalized;
                 if (velDir.sqrMagnitude < 0.001f) velDir = nose;
             }
-            // T-NS-WF13 + WF14: скорость масштабируется выравниванием, но не в ноль:
-            // рассинхрон = медленный доворот (0.33×), противоход = hover-доворот.
-            // WF13 гасил до нуля и парализовал эпизоды (топтание Странника).
+            // T-NS-WF13 + WF14 + WF18: скорость — max(выравнивание, просвет).
+            // Рассинхрон в чистом небе = быстрый доворот (незачем ползти);
+            // у скалы = осторожно. WF13 один давал creep-lock: медленно → дольше
+            // у скалы → ещё медленнее (гринд Жука/Ската 2–5 м/с минутами).
             float alignScale = Mathf.Clamp01((align + 0.5f) / 1.5f);
+            float openScale = Mathf.Clamp01(_wallMinClear / 150f);
+            alignScale = Mathf.Max(alignScale, openScale);
             rb.linearVelocity = new Vector3(velDir.x * speed * alignScale, vy, velDir.z * speed * alignScale);
             rb.angularVelocity = Vector3.zero;
         }

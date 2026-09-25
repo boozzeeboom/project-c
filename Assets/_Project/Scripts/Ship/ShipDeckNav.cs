@@ -104,6 +104,15 @@ namespace ProjectC.Ship
         public static string DumpStats() =>
             $"[ShipDeckNav] AddNavMeshData: spawn={s_addSpawn} drift={s_addDrift} " +
             $"fo-rebuild={s_addFoRebuild} fo-restore={s_addFoRestore} rebase-resets={s_rebaseNotifies}";
+        /// <summary>
+        /// T-PERF02: сброс счётчиков на старт host-сессии (при выключенном Domain Reload
+        /// статики живут между сессиями — без сброса DumpStats врёт накоплением).
+        /// Вызывает ShipPositionServer.PrepareForServerStart.
+        /// </summary>
+        public static void ResetStats()
+        {
+            s_addSpawn = s_addDrift = s_addFoRebuild = s_addFoRestore = s_rebaseNotifies = 0;
+        }
         // T-PERF02: ожидание конца restore перед первой регистрацией (см. 04_SPAWN_VS_RESTORE_ORDER.md).
         private bool _awaitRestore;
         private float _spawnTime;

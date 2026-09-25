@@ -135,6 +135,8 @@ namespace ProjectC.Core.ShipPosition
         {
             _restoreCompleted = false;
             _nextSaveTime = float.PositiveInfinity;
+            // T-PERF02: счётчики палуб — новая сессия, старые цифры недействительны.
+            ProjectC.Ship.ShipDeckNav.ResetStats();
             // T-FO-RESET: мир свежий (origin-0), а статика кумулятива могла пережить
             // rehost в том же процессе. Сбросить до любых restore/save, иначе
             // restore/save посчитаются от чужого сдвига. Старое значение в лог —

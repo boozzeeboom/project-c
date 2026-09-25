@@ -53,6 +53,9 @@ namespace ProjectC.Docking.Zones
         private readonly HashSet<ulong> _shipsInRange = new HashSet<ulong>();
         // Debounce для PollPlayersInRange (как MarketZone)
         private readonly Dictionary<ulong, int> _missingTicks = new Dictionary<ulong, int>();
+        // T-PERF02: переиспользуемые буферы полла — без new HashSet/List каждый тик.
+        private readonly HashSet<ulong> _pollFound = new HashSet<ulong>();
+        private readonly List<ulong> _pollToRemove = new List<ulong>();
 
         public IReadOnlyCollection<ulong> PlayersInRange => _playersInRange;
         public IReadOnlyCollection<ulong> ShipsInRange => _shipsInRange;
@@ -74,6 +77,8 @@ namespace ProjectC.Docking.Zones
 
         private void OnEnable()
         {
+            // T-PERF02: случайный сдвиг полла — 22 зоны не сканируют в один кадр (пилы f131/f225).
+            _pollTimer = Random.value * pollInterval;
             // Регистрируем станцию в DockingZoneRegistry (идетемпотентно)
             if (_stationController != null)
                 DockingZoneRegistry.Register(_stationController);
@@ -220,14 +225,14 @@ namespace ProjectC.Docking.Zones
         private void PollPlayersInRange()
         {
             var hits = Physics.OverlapSphere(transform.position, commRange, pollLayerMask, QueryTriggerInteraction.Ignore);
-            var found = new HashSet<ulong>();
+            _pollFound.Clear();
             for (int i = 0; i < hits.Length; i++)
             {
                 var np = hits[i].GetComponentInParent<NetworkPlayer>();
                 if (np == null || !np.IsSpawned) continue;
-                found.Add(np.OwnerClientId);
+                _pollFound.Add(np.OwnerClientId);
             }
-            foreach (var id in found)
+            foreach (var id in _pollFound)
             {
                 if (_playersInRange.Add(id))
                 {
@@ -235,22 +240,22 @@ namespace ProjectC.Docking.Zones
 
                 }
             }
-            var toRemove = new List<ulong>();
+            _pollToRemove.Clear();
             foreach (var id in _playersInRange)
             {
-                if (!found.Contains(id))
+                if (!_pollFound.Contains(id))
                 {
                     _missingTicks.TryGetValue(id, out var n);
                     n++;
                     _missingTicks[id] = n;
-                    if (n >= MISS_THRESHOLD) toRemove.Add(id);
+                    if (n >= MISS_THRESHOLD) _pollToRemove.Add(id);
                 }
                 else
                 {
                     _missingTicks[id] = 0;
                 }
             }
-            foreach (var id in toRemove)
+            foreach (var id in _pollToRemove)
             {
                 _playersInRange.Remove(id);
                 _missingTicks.Remove(id);
@@ -260,22 +265,22 @@ namespace ProjectC.Docking.Zones
         private void PollShipsInRange()
         {
             var hits = Physics.OverlapSphere(transform.position, commRange, pollLayerMask, QueryTriggerInteraction.Ignore);
-            var found = new HashSet<ulong>();
+            _pollFound.Clear();
             for (int i = 0; i < hits.Length; i++)
             {
                 var ship = hits[i].GetComponentInParent<ShipController>();
                 if (ship == null || !ship.IsSpawned) continue;
-                found.Add(ship.NetworkObject.NetworkObjectId);
+                _pollFound.Add(ship.NetworkObject.NetworkObjectId);
             }
-            foreach (var id in found)
+            foreach (var id in _pollFound)
             {
                 _shipsInRange.Add(id);
 
             }
-            var toRemove = new List<ulong>();
+            _pollToRemove.Clear();
             foreach (var id in _shipsInRange)
-                if (!found.Contains(id)) toRemove.Add(id);
-            foreach (var id in toRemove)
+                if (!_pollFound.Contains(id)) _pollToRemove.Add(id);
+            foreach (var id in _pollToRemove)
                 _shipsInRange.Remove(id);
         }
 

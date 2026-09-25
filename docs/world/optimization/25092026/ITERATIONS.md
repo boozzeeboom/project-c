@@ -110,6 +110,27 @@
 (b) null-GetComponent 38.8 MB (Фаза 3, кодовая, можно начинать) +
 `ShipDeckNav`/перерегистрации (нужен разбор) + хроники `ParomRoute`/`ShipPositionServer`.
 
+## Пункт (а): null-GetComponent — поиск источника (2026-09-25, в работе)
+
+Проверено через MCP-профайлер (все кадры Замера 3, Default view):
+- Прямые родители ошибок: `GlobalMotionWorld.FixedUpdate` (×4–5/кадр),
+  `NetworkPlayer.FixedUpdate` (×1–2), `SkillAnimationPlayer.LateUpdate`,
+  `GlobalMotionPoseAdapter.LateUpdate`, `NetworkTickSystem.Tick`, разово `PickupItem.Start`.
+  Промежуточных C#-маркеров нет (вызовы инлайновые), callstack'и в захвате не писались,
+  метаданных у сэмплов нет (metaCount=0).
+- Исключено: missing-скрипты в BootstrapScene (скан: 0), `GetComponent("string")`
+  (нет в коде), `SkillAnimationPlayer.Update/LateUpdate` (чисто),
+  `SkillInputService.Update` (`TryGetComponent`, кэши; остальные GetComponent —
+  event-путь `TryActivate`), `NetworkPlayer.FixedUpdate` (нет GetComponent в теле —
+  ошибка из инлайновых `Coordinates.*`/`RecordEvent`), `GlobalMotionWorld` (делегирует
+  в `PoseAdapter.ApplyFixedPose/PrepareBaseline`), Editor.log чист.
+- Подозрение: внутри `GlobalMotionPoseAdapter` (`TryPlanHierarchy`/`SupportedStructure`/
+  `ResolveRole`) или NGO-внутренности тика; либо missing-скрипты в WorldScene_0_0
+  (не загружена в редакторе — не проверена).
+- Стоп-условие: без текста ошибки из консоли Play-сессии или deep-профиля дальше гадание.
+  Нужно от пользователя: открыть Console → Clear → Play 10 с → прислать первый красный
+  текст (или скрин). Альтернатива: deep-профиль одного прогона.
+
 ## Реприоритизация (по данным Замера 2)
 
 Логи (бывшая Фаза 5) и null-GetComponent (бывшая Фаза 3) подняты вверх: это 30% мусора

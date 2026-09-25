@@ -95,7 +95,14 @@ namespace ProjectC.Ship
 
         // === Round-robin очередь регистрации ===
         // PERF: гарантирует ≤1 AddNavMeshData за кадр (вместо random stagger'а, который кластеризуется).
+        // T-PERF02: счётчики Add по причинам (диагностика лавины 636 Add/сессия, лог 19-54).
+        // Только счёт, без логов. Читать через DumpStats() (консоль/MCP по запросу).
         private static readonly Queue<ShipDeckNav> s_pendingRegistrations = new Queue<ShipDeckNav>();
+        private static long s_addSpawn, s_addDrift, s_addFoRebuild, s_addFoRestore;
+        private string _pendingReason = "spawn";
+        public static string DumpStats() =>
+            $"[ShipDeckNav] AddNavMeshData: spawn={s_addSpawn} drift={s_addDrift} " +
+            $"fo-rebuild={s_addFoRebuild} fo-restore={s_addFoRestore}";
         private static int s_registrationsThisFrame;
         private const int MAX_REGISTRATIONS_PER_FRAME = 1;
 
@@ -167,6 +174,7 @@ namespace ProjectC.Ship
 
             Unregister();
             _registrationFailed = false;
+            _pendingReason = "fo-rebuild"; // T-PERF02: учёт причины Add.
             if (!RegisterAt(navFrameOrigin))
                 return Reject("ship_deck_nav_synchronous_rebuild_failed", out error);
 
@@ -184,6 +192,7 @@ namespace ProjectC.Ship
                 return Reject("ship_deck_nav_server_authority_required", out error);
 
             Unregister();
+            _pendingReason = "fo-restore"; // T-PERF02: учёт причины Add.
             _registrationFailed = snapshot.RegistrationFailed;
             if (!snapshot.WasRegistered)
             {
@@ -222,6 +231,7 @@ namespace ProjectC.Ship
         {
             base.OnNetworkSpawn();
             if (_registerServerOnly && !IsServer) return;
+            _pendingReason = "spawn"; // T-PERF02: учёт причины Add.
             s_pendingRegistrations.Enqueue(this);
         }
 
@@ -248,6 +258,7 @@ namespace ProjectC.Ship
                     return;
 
                 Unregister();
+                _pendingReason = "drift"; // T-PERF02: учёт причины Add.
                 s_pendingRegistrations.Enqueue(this);
                 _nextReregistrationTime = Time.time + 30f;
             }
@@ -290,6 +301,14 @@ namespace ProjectC.Ship
             _navFrameOrigin = origin;
             _lastRegisteredShipPos = transform.position;
 
+            // T-PERF02: счётчик Add по причине (без логов).
+            switch (_pendingReason)
+            {
+                case "drift": s_addDrift++; break;
+                case "fo-rebuild": s_addFoRebuild++; break;
+                case "fo-restore": s_addFoRestore++; break;
+                default: s_addSpawn++; break;
+            }
             var prevFilter = Debug.unityLogger.filterLogType;
             Debug.unityLogger.filterLogType = LogType.Exception;
             try

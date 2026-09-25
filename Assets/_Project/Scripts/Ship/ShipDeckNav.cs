@@ -103,6 +103,17 @@ namespace ProjectC.Ship
         public static string DumpStats() =>
             $"[ShipDeckNav] AddNavMeshData: spawn={s_addSpawn} drift={s_addDrift} " +
             $"fo-rebuild={s_addFoRebuild} fo-restore={s_addFoRestore}";
+        // T-PERF02: ожидание конца restore перед первой регистрацией (см. 04_SPAWN_VS_RESTORE_ORDER.md).
+        private bool _awaitRestore;
+        private float _spawnTime;
+        private const float RESTORE_WAIT_TIMEOUT = 60f;
+        // T-PERF02: restore ещё не оттелепортировал корабли — регистрироваться рано
+        // (следом прилетит drift-Add). Ждём RestoreCompleted, с таймаутом-страховкой.
+        private static bool RestoreDone()
+        {
+            var srv = ProjectC.Core.ShipPosition.ShipPositionServer.Instance;
+            return srv == null || srv.RestoreCompleted;
+        }
         private static int s_registrationsThisFrame;
         private const int MAX_REGISTRATIONS_PER_FRAME = 1;
 
@@ -232,7 +243,11 @@ namespace ProjectC.Ship
             base.OnNetworkSpawn();
             if (_registerServerOnly && !IsServer) return;
             _pendingReason = "spawn"; // T-PERF02: учёт причины Add.
-            s_pendingRegistrations.Enqueue(this);
+            _spawnTime = Time.time;
+            // T-PERF02: персистенция телепортирует корабли через ~3.5 с — регистрация
+            // сейчас даст парный drift-Add. Ждём RestoreCompleted (см. LateUpdate).
+            if (RestoreDone()) s_pendingRegistrations.Enqueue(this);
+            else _awaitRestore = true;
         }
 
         public override void OnNetworkDespawn()
@@ -246,6 +261,15 @@ namespace ProjectC.Ship
         private void LateUpdate()
         {
             if (!IsServer) return;
+            // T-PERF02: отложенная первая регистрация — restore завершён или таймаут.
+            if (_awaitRestore && !_registered)
+            {
+                if (RestoreDone() || Time.time - _spawnTime > RESTORE_WAIT_TIMEOUT)
+                {
+                    _awaitRestore = false;
+                    s_pendingRegistrations.Enqueue(this);
+                }
+            }
             ProcessPendingRegistrations();
             if (!_registered || !_registerUnderShip) return;
 

@@ -352,6 +352,9 @@ namespace ProjectC.AI
             if (_deckNav == null || !_deckNav.IsReady)
             {
                 _deckNavActive = false;
+                // T-PERF02: парковать прокси при снятом меше — висящий off-mesh агент
+                // реасессится каждым чужим AddNavMeshData с варнингом (~24 шт./Add).
+                if (_proxyAgent != null && _proxyAgent.enabled) _proxyAgent.enabled = false;
                 return;
             }
 
@@ -846,7 +849,13 @@ namespace ProjectC.AI
             // NavMeshAgent.AddComponent при отсутствии навмеша спамит "no valid NavMesh".
             if (_deckNav == null || !_deckNav.IsReady) return;
 
-            if (_proxyGo != null) { _proxyGo.SetActive(true); return; }
+            if (_proxyGo != null)
+            {
+                _proxyGo.SetActive(true);
+                // T-PERF02: распарковать (сюда входим только при готовом меше — см. guard выше).
+                if (_proxyAgent != null && !_proxyAgent.enabled) _proxyAgent.enabled = true;
+                return;
+            }
             _proxyGo = new GameObject($"NpcDeckNavProxy_{name}");
             _proxyGo.hideFlags = HideFlags.HideAndDontSave;
             // T-PERF02: ставим прокси в нав-кадр ДО AddComponent — иначе агент создаётся
@@ -911,6 +920,8 @@ namespace ProjectC.AI
         private void DriveDeckNav()
         {
             if (_proxyAgent == null || _deckNav == null) return;
+            // T-PERF02: припаркован (меш снят) — не дёргать Warp каждый кадр.
+            if (!_proxyAgent.enabled) return;
             if (!_proxyAgent.isOnNavMesh) { WarpProxyToNpc(); return; }
 
             if (_state == BrainState.Chase && _aggroTarget != null)

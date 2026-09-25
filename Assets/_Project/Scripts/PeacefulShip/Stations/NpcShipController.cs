@@ -482,6 +482,15 @@ namespace ProjectC.PeacefulShip.Stations
                  "Замена хардкода +5 м: корабль выходит из «чаши» порта вертикально, " +
                  "где по замеру R11 300 м+ свободного неба, и только потом летит горизонтально.")]
         [Min(5f)] [SerializeField] private float departClimbMeters = 60f;
+        // T-NS-LOG02g: chimney без watchdog — пад под козырьком = вечный набор
+        // в потолок (лог 172716, 0009: 5 мин в Lifting, y const). Набора нет дольше
+        // окна → прерываем chimney и уходим divert (низом разберутся probe/стена).
+        [Tooltip("Сколько секунд без набора высоты терпим в chimney → divert.")]
+        [Min(10f)] [SerializeField] private float liftStuckSec = 40f;
+        [Tooltip("Мин. набор высоты (м), который считается прогрессом chimney.")]
+        [Min(2f)] [SerializeField] private float liftStuckMin = 10f;
+        private float _liftProgY;
+        private float _liftProgAt; // 0 = не armed
 
         // Состояние watchdog/holding — всё относительное (дистанции, таймеры, счётчики),
         // мировых Vector3 не храним: FO-хук не нужен, F8 не роняет заход.
@@ -919,6 +928,8 @@ namespace ProjectC.PeacefulShip.Stations
                 _goalProgAt = 0f;
                 _goalSlowReplans = 0;
                 _graphParityFlip = false;
+                // T-NS-LOG02g: новый leg — сбрасываем chimney-watchdog.
+                _liftProgAt = 0f;
                 // T-NS-NAV12a: новый leg — сбрасываем счётчик затора и scatter.
                 _legStuckCount = 0;
                 _scatterUntil = 0f;
@@ -949,7 +960,6 @@ namespace ProjectC.PeacefulShip.Stations
             float targetY = LiftStartY + departClimbMeters;
             float dy = targetY - rb.position.y;
             if (dy <= 0.1f) {
-                // Достигли высоты → ищем станцию назначения
                 var station = ResolveTargetStation();
                 if (station.HasValue) {
                     SetCruiseTarget(station.Value);
@@ -959,6 +969,23 @@ namespace ProjectC.PeacefulShip.Stations
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
                 }
+                return;
+            }
+            // T-NS-LOG02g: chimney-watchdog — набора нет дольше окна (потолок/
+            // козырёк над падом) → прерываем chimney и уходим divert: низом
+            // разберутся probe/стена/вотчдоги круиза. Часы: вход в Lifting,
+            // сброс при F8 (см. ApplyRebaseTranslation) — сдвиг не врёт замер.
+            if (_liftProgAt <= 0f) {
+                _liftProgY = rb.position.y;
+                _liftProgAt = Time.time;
+            } else if (rb.position.y - _liftProgY >= liftStuckMin) {
+                _liftProgY = rb.position.y;
+                _liftProgAt = Time.time;
+            } else if (Time.time - _liftProgAt > liftStuckSec) {
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Lifting", "Lifting",
+                    "lift-chimney-blocked", $"gain={(rb.position.y - _liftProgY):F0}m");
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Lift chimney blocked (no climb for {liftStuckSec:F0}s) — diverting");
+                DivertToNextStation(rb);
                 return;
             }
             // Прямая velocity вверх
@@ -2890,6 +2917,9 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-ALT01: границы едут вместе с миром.
             _altFloor += translation.y;
             _altCeil += translation.y;
+            // T-NS-LOG02g: якорь chimney-замера не мировой — сбрасываем,
+            // иначе сдвиг соврёт прогресс набора.
+            _liftProgAt = 0f;
             // T-NS-NAV11: точки плана — тоже мировые.
             for (int i = 0; i < _navPlan.Count; i++) _navPlan[i] += translation;
             return 1; // один корабль сдвинут (для маркера NpcShipNavShifted)

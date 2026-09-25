@@ -2092,6 +2092,7 @@ namespace ProjectC.PeacefulShip.Stations
             _wallEntryY = rb.position.y;
             _wallEntryDist = dist;
             _wallStartedAt = Time.time;
+            _goalProgAt = 0f; // T-NS-LOG02f: свежий замер сближения на эпизод обхода
             _wallTurnAccum = 0f;
             _wallLastBearing = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
             _wallLastPos = rb.position;
@@ -2158,6 +2159,27 @@ namespace ProjectC.PeacefulShip.Stations
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow no target progress — scatter/divert");
                 StuckDivert(rb, "wall-noprogress");
                 return;
+            }
+            // T-NS-LOG02f: rolling-замер сближения в обходе (лог 150147, 0032:
+            // one-shot выше промахнулся на метр — и 90 с контурного гринда мимо всех
+            // вотчдогов). Ползём к точке медленнее минимума дольше окна (не в retreat) →
+            // сразу StuckDivert (цепочка scatter/divert; replan в стене бессмыслен).
+            // Часы: вход в обход (см. TryEnterWallFollow), выходы — через SetMode.
+            if (!retreating) {
+                if (_goalProgAt <= 0f) {
+                    _goalProgDist = dist;
+                    _goalProgAt = Time.time;
+                } else if (dist > navWpTol) {
+                    float wclosing = (_goalProgDist - dist) / Mathf.Max(1f, Time.time - _goalProgAt);
+                    if (wclosing >= cruiseGoalCloseMin) {
+                        _goalProgDist = dist;
+                        _goalProgAt = Time.time;
+                    } else if (Time.time - _goalProgAt > cruiseGoalStuckSec) {
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] WallFollow goal grind (close {wclosing:F1} m/s) — scatter/divert");
+                        StuckDivert(rb, "wall-goal");
+                        return;
+                    }
+                }
             }
             // T-NS-WF17: вогнутая ловушка — крутимся без приближения к цели:
             // назад по входу (оттуда прилетели — там чисто), потом replan.

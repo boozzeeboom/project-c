@@ -72,6 +72,44 @@
 2. Вернуть при нужде: флаги в инспекторе BootstrapScene (StormCellDirector, LocalDensityBuffer,
    GlobalSceneNativeExecutor → _debugLog).
 
+## Замер 3 — `ProjectC_client_2026-09-25_19-19-06.data` (1723 кадра, разбор MCP)
+
+Метод: `ProfilerDriver.LoadProfile` + `GetHierarchyFrameDataView`, топ по всем кадрам
+(merged view). Точные итоги по всем 1723 кадрам:
+
+| Метрика | Замер 2 (1279) | Замер 3 (1723) | Вывод |
+|---|---|---|---|
+| Зоны CPU (OC+MZ) | 8.33 ms/кадр | 6.9 ms/кадр | −17%, но всё ещё #1 |
+| Зоны GC | 27.3 KB/кадр | 38.9 KB/кадр (65.5 MB) | хуже (больше объектов в радиусах?) |
+| `LogStringToConsole` | 19.1 KB/кадр (24.5 MB) | 17.1 KB/кадр (28.7 MB) | −10% на кадр |
+| `CallLogCallback` | 21.4 MB / 732 ms | 24.6 MB / 727 ms | flat |
+| `GetComponentNullErrorMessage` | 23.2 KB/кадр (29.7 MB) | 23.1 KB/кадр (38.8 MB) | flat, всё ещё огромно |
+| `StormCellDirector` | 69 кадров с логами | 0.00 MB GC / 2.1 ms self | ✅ Фаза 5a сработала |
+| `LocalDensityBuffer` | 31 кадр | 0.00 MB GC | ✅ Фаза 5a сработала |
+| `GlobalSceneNativeExecutor` | 66 кадров | 0.22 MB (остаток — реальная работа, не логи) | ✅ guard работает |
+
+Родители логов Замера 3 (точные, через предков сэмплов):
+`ShipDeckNav.LateUpdate` 18.4 MB × 10 (!), `PrepareAndStartHost` 4.1 MB × 1,
+`ShipCrewSpawner.SpawnWhenReady` 1.9 MB × 3, `GlobalMotionControlledRebaseSlice.Update`
+1.5 MB × 5, `NavMesh.Internal_CallPreUpdateListeners` 0.9 MB × 3,
+`ShipController.CreateKeyInstanceWhenReady` 0.8 MB × 1, `ShipPositionServer.Update`
+0.56 MB × 15 (хроника), `ParomRoute.Update` 0.5 MB × 38 (хроника, самое частое),
+`NpcBrain.Update` 0.22 MB × 6. `NetworkPlayer.Update` упал до 87 KB × 2.
+
+Важно: собственные логи `ShipDeckNav` уже под `#if UNITY_EDITOR` (прошлая работа T-PERF) —
+18.4 MB идут изнутри `NavMesh.AddNavMeshData` при перерегистрации палуб
+(эпизодически, при движении кораблей/сдвигах). Чинить вслепую нельзя: рядом контракт
+`T-FO06DF` (кулдаун 30 с + сброс при сдвиге). Нужен отдельный разбор.
+
+Новые сигналы: `OuterCommZone.OnTriggerEnter` 85 ms + `DockingPadTriggerBox.OnTriggerEnter`
+52 ms за захват (триггерный шторм при спавне/телепортах); `PrepareAndStartHost` 302 ms self
+(спайк старта хоста жив, Фаза 7 в силе).
+
+Вердикт: Фаза 5a подтверждена (3 источника → 0). Дальше два рычага:
+(a) зоны — только Фаза 2 (маска), кодом больше не выжать;
+(b) null-GetComponent 38.8 MB (Фаза 3, кодовая, можно начинать) +
+`ShipDeckNav`/перерегистрации (нужен разбор) + хроники `ParomRoute`/`ShipPositionServer`.
+
 ## Реприоритизация (по данным Замера 2)
 
 Логи (бывшая Фаза 5) и null-GetComponent (бывшая Фаза 3) подняты вверх: это 30% мусора

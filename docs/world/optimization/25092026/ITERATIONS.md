@@ -128,6 +128,26 @@
   `ResolveRole`) или NGO-внутренности тика; либо missing-скрипты в WorldScene_0_0
   (не загружена в редакторе — не проверена).
 - Стоп-условие: без текста ошибки из консоли Play-сессии или deep-профиля дальше гадание.
+
+## Пункт (а), продолжение: варнинги из `Q:\Project-c_logs\оптим_сент_1.txt` (3107 строк, 67 типов)
+
+Разблокировано логом пользователя (ошибок в консоли нет, только варнинги).
+Доминанта: **692× «Failed to create agent because it is not close enough to the NavMesh»**
+со стеком через `NavMesh.AddNavMeshData ← ShipDeckNav.cs:283`. Нативный варнинг агента,
+приписанный стеку шедшего в тот момент C# — реальный виновник не Add, а создание
+агентов вдали от меша. Единственное место создания агентов в проекте —
+`NpcBrain.EnsureProxy:852` (`AddComponent<NavMeshAgent>`), и прокси-GO там создавался
+в origin (0,0,0, км от палубного меша), а варпался на меш только потом
+(`WarpProxyToNpc`). Сопутствующие находки (не чинили): `ShipCargoVisual` пустой
+`_boxPrefabs` ×22, `ShipHull`/`ShipOwnershipRequirement`/`ResourceNode`/`MetaRequirement`
+spawn-гонки ×19+, `Animator` без параметров `Work`/`WorkVariant`, `PlayerTarget`
+«HP init FAILED after 20 retries», `NavMeshAgent.Warp` в `RebaseSlice:363` ×12.
+
+Фикс (коммит ниже): `NpcBrain.EnsureProxy` — позиция прокси в нав-кадре
+(`DeckLocalToNav`, та же математика, что в `WarpProxyToNpc`) ДО `AddComponent`.
+Поведение сохранено (следом всё равно Warp), убран только спам создания.
+Проверка: Console 0 errors; пользователь смотрит счётчик «Failed to create agent»
+в следующем захвате (ожидание → ~0) + `LogStringToConsole`/`CallLogCallback` вниз.
   Нужно от пользователя: открыть Console → Clear → Play 10 с → прислать первый красный
   текст (или скрин). Альтернатива: deep-профиль одного прогона.
 

@@ -849,6 +849,11 @@ namespace ProjectC.AI
             if (_proxyGo != null) { _proxyGo.SetActive(true); return; }
             _proxyGo = new GameObject($"NpcDeckNavProxy_{name}");
             _proxyGo.hideFlags = HideFlags.HideAndDontSave;
+            // T-PERF02: ставим прокси в нав-кадр ДО AddComponent — иначе агент создаётся
+            // в origin (км от палубного меша) и Unity спамит "Failed to create agent"
+            // (692 шт. в захвате 19-19). Та же математика, что в WarpProxyToNpc.
+            Vector3 deckLocal = _parentedToShip ? transform.localPosition : _deckNav.WorldToDeckLocal(transform.position);
+            _proxyGo.transform.position = _deckNav.DeckLocalToNav(deckLocal);
             _proxyAgent = _proxyGo.AddComponent<NavMeshAgent>();
             if (_agent != null)
             {

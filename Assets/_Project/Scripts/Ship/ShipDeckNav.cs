@@ -99,10 +99,11 @@ namespace ProjectC.Ship
         // Только счёт, без логов. Читать через DumpStats() (консоль/MCP по запросу).
         private static readonly Queue<ShipDeckNav> s_pendingRegistrations = new Queue<ShipDeckNav>();
         private static long s_addSpawn, s_addDrift, s_addFoRebuild, s_addFoRestore;
+        private static long s_rebaseNotifies; // T-PERF02: сколько раз сбрасывали кулдауны.
         private string _pendingReason = "spawn";
         public static string DumpStats() =>
             $"[ShipDeckNav] AddNavMeshData: spawn={s_addSpawn} drift={s_addDrift} " +
-            $"fo-rebuild={s_addFoRebuild} fo-restore={s_addFoRestore}";
+            $"fo-rebuild={s_addFoRebuild} fo-restore={s_addFoRestore} rebase-resets={s_rebaseNotifies}";
         // T-PERF02: ожидание конца restore перед первой регистрацией (см. 04_SPAWN_VS_RESTORE_ORDER.md).
         private bool _awaitRestore;
         private float _spawnTime;
@@ -384,6 +385,7 @@ namespace ProjectC.Ship
         /// </summary>
         public static int NotifyWorldRebased()
         {
+            s_rebaseNotifies++; // T-PERF02: учёт сбросов кулдаунов.
             int notified = 0;
             ShipDeckNav[] decks = FindObjectsByType<ShipDeckNav>(FindObjectsSortMode.None);
             for (int i = 0; i < decks.Length; i++)

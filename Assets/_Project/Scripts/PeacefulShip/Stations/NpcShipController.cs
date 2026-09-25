@@ -1017,23 +1017,19 @@ namespace ProjectC.PeacefulShip.Stations
                 NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                     "nav-wp", $"idx={_navIdx}/{_navPlan.Count}");
             }
-            // T-NS-LOG02e: blocked-point skip — точка в упор за стеной (лог 000914:
-            // подлёт на полном ходу в лицо склона к слепой tangent-точке).
-            // Пропускаем, ТОЛЬКО если шорткат к следующей цели чист (проверено лучом):
-            // иначе стену всё равно разбирает WallFollow. Финал (станция) не скипаем.
+            // T-NS-LOG02e3: мягкий подлёт к промежуточной точке (лог 140332, 0021):
+            // полный ход в лицо склона до срабатывания зонда выглядит тараном.
+            // Точка в окне + прямая к ней забита → идём осторожно (Approach),
+            // зонд входит раньше и мельче. Только промежуточные точки, финал не трогаем.
+            // (nav-wp-skip удалён: условие «шорткат чист» невыполнимо по построению —
+            // следующий хоп цепочки обхода забит дизайном, 0 срабатываний за сессию.)
+            bool wpBlockedAhead = false;
             if (_navIdx < _navPlan.Count - 1) {
-                Vector3 wpSkip = _navPlan[_navIdx];
-                float dwSkip = Vector3.Distance(rb.position, wpSkip);
-                if (dwSkip > navWpTol && dwSkip < navWpTol * 3f) {
-                    Vector3 nxtSkip = _navPlan[_navIdx + 1];
-                    if (RayClear(rb.position, wpSkip) < dwSkip - wallProbeRadius
-                        && LegClear(rb.position, nxtSkip)) {
-                        _navIdx++;
-                        _goalProgAt = 0f;
-                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
-                            "nav-wp-skip", $"idx={_navIdx}/{_navPlan.Count}");
-                    }
-                }
+                Vector3 wpSlow = _navPlan[_navIdx];
+                float dwSlow = Vector3.Distance(rb.position, wpSlow);
+                if (dwSlow > navWpTol && dwSlow < lidarSideTrigger * 2f
+                    && RayClear(rb.position, wpSlow) < dwSlow - wallProbeRadius)
+                    wpBlockedAhead = true;
             }
             Vector3 goal = NavGoal();
             Vector3 toTarget = goal - rb.position;
@@ -1241,7 +1237,7 @@ namespace ProjectC.PeacefulShip.Stations
             float yawStep = Mathf.Sign(deltaYaw) * Mathf.Min(Mathf.Abs(deltaYaw), MaxYawRate * Time.fixedDeltaTime);
             rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
 
-            float speed = (dist > 200f) ? CruiseSpeed : ApproachSpeed;
+            float speed = (dist > 200f && !wpBlockedAhead) ? CruiseSpeed : ApproachSpeed;
             float altHold = (ProfileY() + 5f - rb.position.y) * 0.5f;
             // T-NS-WF01 (D3): возврат к профилю — тем же капом, что после LOS-выхода.
             // T-NS-ALT01: поверх — возврат в глобальные границы.

@@ -100,6 +100,9 @@ namespace ProjectC.ResourceNode
 
         private bool _subscribedToMetaReq = false;
 
+        // T-PERF02: гонка старта спамит варнингом N раз — достаточно 1 раза за домен.
+        private static bool s_warnedServerNull;
+
         // ==========================================================
         // Client-side: animation (T-G06)
         // ==========================================================
@@ -175,8 +178,13 @@ namespace ProjectC.ResourceNode
                 }
                 else
                 {
-                    Debug.LogWarning("[ResourceNode] OnNetworkSpawn: GatheringServer.Instance==null. " +
-                                     "Сбор работать не будет. Убедитесь, что [GatheringServer] GO в BootstrapScene.");
+                    // T-PERF02: гонка старта; recovery не подтверждён — варнинг 1 раз за домен, не N раз.
+                    if (!s_warnedServerNull)
+                    {
+                        s_warnedServerNull = true;
+                        Debug.LogWarning("[ResourceNode] OnNetworkSpawn: GatheringServer.Instance==null. " +
+                                         "Сбор работать не будет. Убедитесь, что [GatheringServer] GO в BootstrapScene.");
+                    }
                 }
 
                 // Инициализируем счётчик на максимум (1-й сбор сразу доступен)

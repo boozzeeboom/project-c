@@ -60,6 +60,9 @@ namespace ProjectC.MetaRequirement
         // через InventoryWorld.GetOrRegisterItemId(_requiredItems[i]).
         private int[] _serverItemIds = new int[0];
 
+        // T-PERF02: гонка старта спамит варнингом N раз — достаточно 1 раза за домен.
+        private static bool s_warnedRegistryNull;
+
         // Cache lazy-resolved ids; после первого вызова — immutable до OnNetworkDespawn
         public int[] ServerItemIds
         {
@@ -184,8 +187,13 @@ namespace ProjectC.MetaRequirement
             }
             else
             {
-                Debug.LogWarning($"[MetaRequirement] OnNetworkSpawn for interactable={NetworkObjectId} " +
-                                 "но MetaRequirementRegistry.Instance==null. Регистрация пропущена.");
+                // T-PERF02: гонка старта; retry не подтверждён — варнинг 1 раз за домен, не N раз.
+                if (!s_warnedRegistryNull)
+                {
+                    s_warnedRegistryNull = true;
+                    Debug.LogWarning($"[MetaRequirement] OnNetworkSpawn for interactable={NetworkObjectId} " +
+                                     "но MetaRequirementRegistry.Instance==null. Регистрация пропущена.");
+                }
             }
         }
 

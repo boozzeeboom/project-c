@@ -51,6 +51,9 @@ namespace ProjectC.Ship.Key
         internal static readonly Dictionary<ulong, ShipOwnershipRequirement> PendingRegistrations
             = new Dictionary<ulong, ShipOwnershipRequirement>();
 
+        // T-PERF02: гонка старта ожидаема (добор через PendingRegistrations, T-KEY-10) — варнинг только под флагом.
+        [SerializeField] private bool _debugLog = false;
+
         // ===========================================================
         // Lifecycle
         // ===========================================================
@@ -75,7 +78,7 @@ namespace ProjectC.Ship.Key
                 // T-KEY-10: замок не теряем — кладём в pending, реестр подберёт
                 // при первой проверке доступа (иначе fail-open: без записи CanPlayerUse=true).
                 PendingRegistrations[NetworkObjectId] = this;
-                Debug.LogWarning($"[ShipOwnershipRequirement] OnNetworkSpawn: MetaRequirementRegistry.Instance==null. " +
+                if (_debugLog) Debug.LogWarning($"[ShipOwnershipRequirement] OnNetworkSpawn: MetaRequirementRegistry.Instance==null. " +
                                  $"Registration deferred (pending) for netId={NetworkObjectId}.");
             }
         }

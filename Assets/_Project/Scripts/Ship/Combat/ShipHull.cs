@@ -222,7 +222,8 @@ namespace ProjectC.Ship.Combat
             }
             else
             {
-                Debug.LogWarning($"[ShipHull] CombatServer.Instance is null — ship {NetworkObjectId} not registered as damage target.");
+                // T-PERF02: ожидаемая гонка старта (добирает CombatServer.RecoverExistingEntities) — только под флагом.
+                if (_debugLog) Debug.LogWarning($"[ShipHull] CombatServer.Instance is null — ship {NetworkObjectId} not registered as damage target (подберёт RecoverExistingEntities).");
             }
         }
 

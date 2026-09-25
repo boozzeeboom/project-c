@@ -219,6 +219,29 @@
 - Методология дальше: **Clear консоли + fresh Play + `DumpStats()` в конце**.
   Без Clear все экспорты — одна и та же история, сравнивать нечего.
 
+## Фаза 5b — downgrade спавн-варнингов (выполнена, замер — за пользователем)
+
+Файлы: `Ship/Combat/ShipHull.cs`, `Ship/Key/ShipOwnershipRequirement.cs`,
+`ResourceNode/ResourceNode.cs`, `MetaRequirement/MetaRequirement.cs`,
+`Crafting/CraftingStation.cs`. Все пять — паттерн «сервера нет на спавне»,
+все ожидаемы (`PendingRegistrations` T-KEY-10, `RecoverExistingEntities` у Combat —
+recovery подтверждены; у остальных — нет, поэтому сигнал сохранён частично).
+- `ShipHull:225` → под существующий `_debugLog=false` (+ пометка про recovery).
+- `ShipOwnershipRequirement:78` → новый `[SerializeField] _debugLog=false`.
+- `ResourceNode:178`, `MetaRequirement:187`, `CraftingStation:78` → static once-only
+  (1 варнинг за домен вместо N; retry не подтверждён — молчать полностью нельзя).
+- Конфиг-варнинги (`_boxPrefabs`, `_resultItem`, параметры аниматора) НЕ трогали —
+  это реальные misconfig, не гонки.
+Проверка: Console 0 errors. Ожидание: −60 варнингов/сессию с колбэками.
+Протокол: чистая сессия → счётчик спавн-варнингов.
+
+## Следующее: (а) парковка агентов при снятом меше
+
+Статус: не начато, идёт сразу после замера Фазы 5b. Точка — `NpcBrain`
+(`_deckNav` известен): proxy/агент, чья палуба `!IsReady`, — disable компонента
+вместо висения off-mesh, чтобы чужой `AddNavMeshData` не реасессил и не варнил.
+Риск средний (навигация экипажа) — ручная проверка пользователя обязательна.
+
 ## Пункт (а), продолжение: варнинги из `Q:\Project-c_logs\оптим_сент_1.txt` (3107 строк, 67 типов)
 
 Разблокировано логом пользователя (ошибок в консоли нет, только варнинги).

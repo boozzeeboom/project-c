@@ -30,6 +30,9 @@ namespace ProjectC.Crafting
         private readonly NetworkVariable<FixedString64Bytes> _activeRecipeId = new NetworkVariable<FixedString64Bytes>(
             default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+        // T-PERF02: гонка старта спамит варнингом N раз — достаточно 1 раза за домен.
+        private static bool s_warnedServerNull;
+
         public CraftingStationConfig Config => _config;
         public CraftingJobState CurrentState => _replicatedState.Value;
         public ulong CurrentOwner => _jobOwnerClientId.Value;
@@ -75,7 +78,12 @@ namespace ProjectC.Crafting
             {
                 if (CraftingServer.Instance == null)
                 {
-                    Debug.LogWarning($"[CraftingStation {NetworkObjectId}] OnNetworkSpawn: CraftingServer.Instance==null. Регистрация не произойдёт.", this);
+                    // T-PERF02: гонка старта; recovery не подтверждён — варнинг 1 раз за домен, не N раз.
+                    if (!s_warnedServerNull)
+                    {
+                        s_warnedServerNull = true;
+                        Debug.LogWarning($"[CraftingStation {NetworkObjectId}] OnNetworkSpawn: CraftingServer.Instance==null. Регистрация не произойдёт.", this);
+                    }
                 }
                 else
                 {

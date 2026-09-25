@@ -331,6 +331,11 @@ namespace ProjectC.Ship
             _registered = true;
             _registrationFailed = false;
             _registrationGeneration++;
+            // T-PERF02: кулдаун от момента регистрации — давит парный drift-Add после
+            // спавна/телепорта (счётчики: spawn=20 + drift=20 за сессию, второй — мусор).
+            // Легитимный дрейф не страдает: 2500 м на крейсерской — дольше 40 с.
+            // FO-сдвиги по-прежнему сбрасывают кулдаун явно (T-FO06DF).
+            _nextReregistrationTime = Time.time + 30f;
 #if UNITY_EDITOR
             Debug.Log($"[ShipDeckNav:{name}] Registered at {_navFrameOrigin}", this);
 #endif

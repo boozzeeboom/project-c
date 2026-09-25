@@ -2509,6 +2509,20 @@ namespace ProjectC.PeacefulShip.Stations
             if (lens[0] < lens[1] * 0.95f) pick = 0;
             else if (lens[1] < lens[0] * 0.95f) pick = 1;
             else pick = (npcInstanceId % 2UL == 0UL) ? 0 : 1;
+            // T-NS-LOG02f (B1): память заторов в выборе стороны. Leg туда уже
+            // гриндовал здесь (hotspot) — пробуем другую сторону кольца, а не ту же.
+            // Без hotspot'ов — бит-в-бит как раньше (штрафы нулевые).
+            var tmTan = NpcShipTrafficManager.Instance;
+            if (tmTan != null) {
+                float pen0 = tmTan.HotspotPenalty(new Vector3(pts[0].x, y, pts[0].y), 500f);
+                float pen1 = tmTan.HotspotPenalty(new Vector3(pts[1].x, y, pts[1].y), 500f);
+                // Штраф в единицах длины: 500 ед. штрафа ≈ +25 м (память сильнее ничьи,
+                // слабее явного кратчайшего — веса как в PickBypass по духу).
+                float eff0 = lens[0] + pen0 * 0.05f;
+                float eff1 = lens[1] + pen1 * 0.05f;
+                if (eff0 < eff1 * 0.95f) pick = 0;
+                else if (eff1 < eff0 * 0.95f) pick = 1;
+            }
             return new Vector3(pts[pick].x, y, pts[pick].y);
         }
 

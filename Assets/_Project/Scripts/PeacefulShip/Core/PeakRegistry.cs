@@ -34,9 +34,23 @@ namespace ProjectC.PeacefulShip.Core
         private const float MinSeparation = 1500f;   // мин. дистанция между пиками (м)
         private const float RadiusMin = 300f;        // мин. радиус диска (м)
         private const float RadiusMax = 2000f;       // макс. радиус диска (м)
+        // T-NS-MESH01: меши-скалы — только крупные (мелочь добирает лидар).
+        private const float MeshMinSpan = 200f;      // мин. XZ-диагональ меша (м)
+        private const float MeshRadiusPad = 1.2f;    // запас радиуса от габарита
 
         private static readonly List<PeakDisc> _peaks = new List<PeakDisc>(64);
         private static readonly List<Terrain> _terrains = new List<Terrain>(4);
+        // T-NS-MESH01: меш-диски — Transform + локальные данные (FO-safe: мир едет,
+        // трансформы едут вместе с корнями сцен; мир резолвится вживую).
+        private struct MeshDisc
+        {
+            public Transform t;          // null = меш удалён (чистим при резолве)
+            public Vector3 localCenter;  // центр bounds в локале трансформа (на момент бейка)
+            public float radius;         // метры (предположение: скейл ~1, как у скал сцены)
+            public float heightAboveCenter; // верх bounds над центром, мировые метры (бейк)
+        }
+        private static readonly List<MeshDisc> _meshes = new List<MeshDisc>(64);
+        private static bool _meshCacheValid;
         private static bool _built;
 
         public static int Count => _peaks.Count;
@@ -54,7 +68,67 @@ namespace ProjectC.PeacefulShip.Core
                 if (t == null || t.terrainData == null) continue;
                 ExtractPeaks(i, t);
             }
-            Debug.Log($"[PeakRegistry] T-NS-NAV16 built: {_peaks.Count} peaks over {_terrains.Count} terrain(s)");
+            BuildMeshes(); // T-NS-MESH01: меши-скалы тем же заходом
+            Debug.Log($"[PeakRegistry] T-NS-NAV16/MESH01 built: {_peaks.Count} peaks + {_meshes.Count} meshes over {_terrains.Count} terrain(s)");
+        }
+
+        /// <summary>
+        /// T-NS-MESH01: скан мешей-препятствий в диски. Триггеры (пады!) и мелочь —
+        /// мимо; корабли — не стены (как в лидаре). Server-only, вызывается из Build
+        /// и повторно после F8 (см. InvalidateMeshCache).
+        /// </summary>
+        public static void BuildMeshes()
+        {
+            _meshes.Clear();
+            var colliders = Object.FindObjectsByType<MeshCollider>(FindObjectsInactive.Exclude);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                var c = colliders[i];
+                if (c == null || !c.enabled || c.isTrigger) continue;
+                if (c.GetComponentInParent<Player.ShipController>() != null) continue;
+                if (c.GetComponentInParent<Stations.NpcShipController>() != null) continue;
+                var b = c.bounds; // мировые (на момент бейка)
+                float span = Mathf.Sqrt(b.size.x * b.size.x + b.size.z * b.size.z);
+                if (span < MeshMinSpan) continue;
+                var tr = c.transform;
+                _meshes.Add(new MeshDisc
+                {
+                    t = tr,
+                    localCenter = tr.InverseTransformPoint(b.center),
+                    radius = Mathf.Min(span * 0.5f * MeshRadiusPad, RadiusMax),
+                    heightAboveCenter = b.max.y - b.center.y
+                });
+            }
+            _meshCacheValid = true;
+        }
+
+        /// <summary>
+        /// T-NS-MESH01: инвалидация меш-кэша после сдвига мира. Вызывается один раз
+        /// за сдвиг из NpcShipTrafficManager.ApplyRebaseTranslation (центрально,
+        /// не per-ship). Следующий запрос перестроит кэш резолвом живых трансформов.
+        /// </summary>
+        public static void InvalidateMeshCache()
+        {
+            _meshCacheValid = false;
+        }
+
+        /// <summary>Резолв меш-диска в мир (false = меш удалён, дропнуть).</summary>
+        private static bool ResolveMeshDisc(MeshDisc m, out Vector3 center, out float radius, out float topY)
+        {
+            center = Vector3.zero;
+            radius = 0f;
+            topY = 0f;
+            if (m.t == null) return false;
+            center = m.t.TransformPoint(m.localCenter);
+            radius = m.radius;
+            topY = center.y + m.heightAboveCenter;
+            return true;
+        }
+
+        private static void EnsureMeshCache()
+        {
+            if (_meshCacheValid) return;
+            BuildMeshes();
         }
 
         /// <summary>
@@ -65,6 +139,7 @@ namespace ProjectC.PeacefulShip.Core
             out Vector3 center, out float radius)
         {
             Build();
+            EnsureMeshCache(); // T-NS-MESH01: кэш мог протухнуть при F8
             center = Vector3.zero;
             radius = 0f;
             float bestT = float.MaxValue;
@@ -87,6 +162,22 @@ namespace ProjectC.PeacefulShip.Core
                     if (tt < bestT) { bestT = tt; center = c; radius = r; found = true; }
                 }
             }
+            // T-NS-MESH01: меши тем же предикатом (верх вместо вершины).
+            for (int j = _meshes.Count - 1; j >= 0; j--)
+            {
+                if (!ResolveMeshDisc(_meshes[j], out Vector3 c, out float mr, out float topY))
+                {
+                    _meshes.RemoveAt(j);
+                    continue;
+                }
+                if (topY < profileY - margin) continue; // козырёк ниже профиля — летим прямо
+                float r = mr + margin;
+                if (SegmentDist(a, b, c) < r)
+                {
+                    float tt = SegmentParam(a, b, c);
+                    if (tt < bestT) { bestT = tt; center = c; radius = r; found = true; }
+                }
+            }
             return found;
         }
 
@@ -98,6 +189,7 @@ namespace ProjectC.PeacefulShip.Core
             out Vector3 center, out float radius)
         {
             Build();
+            EnsureMeshCache(); // T-NS-MESH01
             center = Vector3.zero;
             radius = 0f;
             for (int j = 0; j < _peaks.Count; j++)
@@ -113,6 +205,18 @@ namespace ProjectC.PeacefulShip.Core
                 Vector2 d = new Vector2(pos.x - c.x, pos.z - c.z);
                 if (d.magnitude < r) { center = c; radius = r; return true; }
             }
+            // T-NS-MESH01: станция внутри городской геометрии — тоже «дом».
+            for (int j = _meshes.Count - 1; j >= 0; j--)
+            {
+                if (!ResolveMeshDisc(_meshes[j], out Vector3 c, out float mr, out _))
+                {
+                    _meshes.RemoveAt(j);
+                    continue;
+                }
+                float r = mr + margin;
+                Vector2 d = new Vector2(pos.x - c.x, pos.z - c.z);
+                if (d.magnitude < r) { center = c; radius = r; return true; }
+            }
             return false;
         }
 
@@ -125,6 +229,7 @@ namespace ProjectC.PeacefulShip.Core
             List<(Vector3 c, float r, float t)> results, int maxCount)
         {
             Build();
+            EnsureMeshCache(); // T-NS-MESH01
             results.Clear();
             for (int j = 0; j < _peaks.Count && results.Count < maxCount; j++)
             {
@@ -137,6 +242,19 @@ namespace ProjectC.PeacefulShip.Core
                 Vector3 c = new Vector3(org.x + p.nx * size.x, org.y + p.localY, org.z + p.nz * size.z);
                 if (c.y < profileY - margin) continue; // пик ниже профиля — летим прямо
                 float r = p.radius + margin;
+                if (SegmentDist(a, b, c) < r)
+                    results.Add((c, r, SegmentParam(a, b, c)));
+            }
+            // T-NS-MESH01: меши тем же предикатом (верх вместо вершины).
+            for (int j = _meshes.Count - 1; j >= 0 && results.Count < maxCount; j--)
+            {
+                if (!ResolveMeshDisc(_meshes[j], out Vector3 c, out float mr, out float topY))
+                {
+                    _meshes.RemoveAt(j);
+                    continue;
+                }
+                if (topY < profileY - margin) continue;
+                float r = mr + margin;
                 if (SegmentDist(a, b, c) < r)
                     results.Add((c, r, SegmentParam(a, b, c)));
             }

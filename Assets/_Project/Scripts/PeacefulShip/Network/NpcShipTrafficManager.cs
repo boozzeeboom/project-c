@@ -147,6 +147,9 @@ namespace ProjectC.PeacefulShip.Network
         public int ApplyRebaseTranslation(Vector3 translation)
         {
             int n = 0;
+            // T-NS-MESH01: один раз за сдвиг (не per-ship): меш-кэш протух,
+            // следующий запрос перестроит резолвом живых трансформов.
+            Core.PeakRegistry.InvalidateMeshCache();
             if (_wallSlots.Count > 0)
             {
                 var keys = new List<ulong>(_wallSlots.Keys);

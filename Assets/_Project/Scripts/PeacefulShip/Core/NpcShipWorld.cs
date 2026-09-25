@@ -24,6 +24,9 @@ namespace ProjectC.PeacefulShip.Core
 
         // === State ===
 
+        // T-NS-PERF01: тишина для перф-замеров (создание/регистрация/рестор ×20 за сессию).
+        [SerializeField] private bool debugMode = false;
+
         // NpcInstanceId → NpcShipState (server-only SOT)
         private readonly Dictionary<ulong, NpcShipState> _npcByInstanceId = new Dictionary<ulong, NpcShipState>();
 
@@ -48,7 +51,8 @@ namespace ProjectC.PeacefulShip.Core
             var go = new GameObject("[NpcShipWorld]");
             Object.DontDestroyOnLoad(go);
             Instance = go.AddComponent<NpcShipWorld>();
-            Debug.Log("[NpcShipWorld] Created");
+            if (Instance.debugMode)
+                Debug.Log("[NpcShipWorld] Created");
         }
 
         public static void Shutdown()
@@ -79,7 +83,8 @@ namespace ProjectC.PeacefulShip.Core
                     }
                     _npcByInstanceId[id] = state;
                     _scheduleByNpcInstanceId[id] = schedule;
-                    Debug.Log($"[NpcShipWorld] RegisterNpc id={id:X}");
+                    if (debugMode)
+                        Debug.Log($"[NpcShipWorld] RegisterNpc id={id:X}");
                 }
 
         public void UnregisterNpc(ulong id)
@@ -87,7 +92,8 @@ namespace ProjectC.PeacefulShip.Core
             if (_npcByInstanceId.Remove(id))
             {
                 _scheduleByNpcInstanceId.Remove(id);
-                Debug.Log($"[NpcShipWorld] UnregisterNpc id={id:X}");
+                if (debugMode)
+                    Debug.Log($"[NpcShipWorld] UnregisterNpc id={id:X}");
             }
         }
 
@@ -118,7 +124,7 @@ namespace ProjectC.PeacefulShip.Core
                 state.CurrentRoute = schedule.routes[data.scheduleIndex];
             }
 
-            if (Debug.isDebugBuild)
+            if (debugMode)
                 Debug.Log($"[NpcShipWorld] RestoreNpcState id={npcInstanceId:X} idx={state.ScheduleIndex} " +
                       $"route={state.CurrentRoute.fromLocationId}→{state.CurrentRoute.toLocationId}");
         }

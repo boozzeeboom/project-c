@@ -29,7 +29,7 @@ namespace ProjectC.PeacefulShip.Network
         [SerializeField] private float defaultMinSpacingSec = 8f;
 
         [Header("Debug")]
-        [SerializeField] private bool debugMode = true;
+        [SerializeField] private bool debugMode = false;
 
         // StationId → last arrival timestamp (для min-spacing enforcement)
         private readonly Dictionary<string, float> _lastArrivalAtStation = new Dictionary<string, float>();

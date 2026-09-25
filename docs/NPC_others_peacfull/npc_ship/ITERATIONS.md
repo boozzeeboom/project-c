@@ -1,5 +1,33 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-09-25 — T-NS-PERF01: тишина для перф-замеров
+
+**Выключено:**
+- `NpcShipNavLog.Enabled = false` (мастер-свитч: CSV не создаётся, summary
+  в консоль не пишется; возврат — одна строка `Enabled = true`).
+- Дефолты `debugMode true → false`: `NpcShipServer`, `NpcShipTrafficManager`,
+  `NpcShipClientState`, `NpcCargoService` (все runtime-создаваемые берут из кода).
+- `NpcShipWorld`: добавлен `debugMode=false` + заглушены Created/Register ×20/
+  Unregister/Restore ×20.
+- Сцена: кораблей нет ни в `WorldScene_0_0.unity`, ни в `BootstrapScene.unity`
+  (только персистентный спавн из префабов, где `debugMode=false` из кода;
+  сейвы флага не хранят) — перебирать нечего. Единственный сериализованный
+  `true` — `[NpcShipServer]` в Bootstrap: выключен через MCP + сцена сохранена.
+- Чужие флаги (`GatheringServer`, `Player/ShipPositionServer`, `QuestServer`)
+  не тронуты — не навигация.
+
+**Остаточный шум (сознательно):** разовые строки за сессию (`PeakRegistry built`,
+`TrafficManager Created`, `NpcShipWorld Created` при debug) + варнинги о
+проблемах (нет расписания/пада) — это сигналы, не шум. Интерполяция аргументов
+на местах вызовов NavLog осталась (пренебрежимо против физики).
+
+**Тест-план:** T-NS-LOG01 требует `Enabled = true` — вернуть перед
+отладочными прогонами.
+
+**Проверка:** `refresh_unity` → `error CS` 0. Play Mode — за пользователем (NOT RUN).
+
+---
+
 ## Итерация от 2026-09-25 — T-NS-VERDICT: разбор NpcShipNavLog_20260925_174201 (5.6 мин)
 
 **Факты (258 TRANS):** `probe` 49 / `LOS` 45 (**92%**); режимы: Cruising 85%,

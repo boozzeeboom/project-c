@@ -28053,7 +28053,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Network.NpcShipServer
   ShowTopMostFoldoutHeaderGroup: 1
   allSchedules: []
-  debugMode: 1
+  debugMode: 0
 --- !u!114 &2047115834
 MonoBehaviour:
   m_ObjectHideFlags: 0

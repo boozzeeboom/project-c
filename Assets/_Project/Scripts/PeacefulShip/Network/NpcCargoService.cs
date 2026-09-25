@@ -26,7 +26,7 @@ namespace ProjectC.PeacefulShip.Network
         public static NpcCargoService Instance { get; private set; }
 
         [Header("Debug")]
-        [SerializeField] private bool debugMode = true;
+        [SerializeField] private bool debugMode = false;
 
         // ============================================================
         // LIFECYCLE

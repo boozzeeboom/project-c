@@ -19,7 +19,7 @@ namespace ProjectC.PeacefulShip.Client
         public static NpcShipClientState Instance { get; private set; }
 
         [Header("Debug")]
-        [SerializeField] private bool debugMode = true;
+        [SerializeField] private bool debugMode = false;
 
         // === Public UI projection ===
 

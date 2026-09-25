@@ -25,7 +25,7 @@ namespace ProjectC.PeacefulShip.Network
         [SerializeField] private NpcShipSchedule[] allSchedules;
 
         [Header("Debug")]
-        [SerializeField] private bool debugMode = true;
+        [SerializeField] private bool debugMode = false;
 
         // ============================================================
         // LIFECYCLE

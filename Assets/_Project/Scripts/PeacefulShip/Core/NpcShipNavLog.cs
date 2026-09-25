@@ -16,6 +16,12 @@ namespace ProjectC.PeacefulShip.Core
 {
     public static class NpcShipNavLog
     {
+        // T-NS-PERF01: мастер-выключатель логирования (CSV + summary в консоль).
+        // false = тихо для перф-замеров (файл не создаётся, строки не форматируются
+        // в файл; интерполяция аргументов на местах вызовов остаётся — пренебрежимо).
+        // Включить для отладки: Enabled = true (одна строка, напр. из читов/F12).
+        public static bool Enabled = false;
+
         private static StreamWriter _writer;
         private static string _path;
         private static float _startTime;
@@ -31,7 +37,7 @@ namespace ProjectC.PeacefulShip.Core
         /// <summary>Ленивый старт: первый вызов из server-only кода.</summary>
         public static void Begin()
         {
-            if (_writer != null || _failed) return;
+            if (!Enabled || _writer != null || _failed) return;
             try
             {
                 string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -72,6 +78,7 @@ namespace ProjectC.PeacefulShip.Core
         /// <summary>Переход режима. reason — коротко: LOS/timeout/stuck/loop/probe/gate/avoid/pad/leg/fo…</summary>
         public static void Transition(string shipName, ulong npcId, string from, string to, string reason, string detail = "")
         {
+            if (!Enabled) return;
             Begin();
             if (_writer == null) return;
             try
@@ -86,8 +93,9 @@ namespace ProjectC.PeacefulShip.Core
 
         /// <summary>Снапшот корабля раз в N секунд: видно «стоит носом» (spd≈0 вне Docked).</summary>
         public static void Heartbeat(string shipName, ulong npcId, string mode, float speed,
-            float distToTarget, Vector3 pos, string detail = "")
+            float distToTarget, Vector3 pos,             string detail = "")
         {
+            if (!Enabled) return;
             Begin();
             if (_writer == null) return;
             try

@@ -49,6 +49,9 @@ namespace ProjectC.World.FloatingOrigin.Network
         private int _lastLoggedRecordedCount = -1;
         private int _lastLoggedPendingCount = -1;
         private double _lastReadinessLogAt = double.NegativeInfinity;
+        // T-PERF02: readiness-лог раз в секунду (~13 KB/вызов) — только по запросу.
+        [Header("Debug")]
+        [SerializeField] private bool _debugLog = false;
 
         private double _startedAt;
         /// <summary>
@@ -611,6 +614,8 @@ namespace ProjectC.World.FloatingOrigin.Network
         }
         private void LogReadiness(bool ready, int recordedCount, int pendingCount, int unspawnedCount, int retiredCount)
         {
+            // T-PERF02: молчим по умолчанию (см. _debugLog).
+            if (!_debugLog) return;
             double now = Time.realtimeSinceStartupAsDouble;
             bool changed = ready != _lastLoggedCanAccept || recordedCount != _lastLoggedRecordedCount || pendingCount != _lastLoggedPendingCount;
             if (!changed && now - _lastReadinessLogAt < 1d) return;

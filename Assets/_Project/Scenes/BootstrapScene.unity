@@ -947,7 +947,7 @@ MonoBehaviour:
   ShowDebugMarkers: 0
   ShowDebugColumns: 0
   ShowDebugGizmos: 0
-  _logDebug: 1
+  _logDebug: 0
   MarkerWidth: 500
   MarkerHeight: 0
   MarkerSizeVariation: 0.1
@@ -22669,7 +22669,7 @@ MonoBehaviour:
   DisplacementRelaxationRate: 1.5
   MaxSplatRadius: 1000
   FollowTarget: {fileID: 0}
-  _verboseLogging: 1
+  _verboseLogging: 0
   _compute: {fileID: 7200000, guid: 1e911b3517e91034da325c33c715f934, type: 3}
 --- !u!1 &1693881391
 GameObject:

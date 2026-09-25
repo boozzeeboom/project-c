@@ -45,7 +45,8 @@ namespace ProjectC.World.Clouds
         public bool ShowDebugMarkers = true;
         public bool ShowDebugColumns = true;
         public bool ShowDebugGizmos = true;
-        [SerializeField] private bool _logDebug = true;
+        // T-PERF02: выключено по умолчанию (лог Shader push раз в секунду давал ~13 KB/вызов).
+        [SerializeField] private bool _logDebug = false;
 
         [Header("Debug Markers")]
         [Range(50f, 5000f)] public float MarkerWidth = 500f;

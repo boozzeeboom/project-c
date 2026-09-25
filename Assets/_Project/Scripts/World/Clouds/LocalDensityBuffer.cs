@@ -47,7 +47,8 @@ namespace ProjectC.World.Clouds
         public Transform FollowTarget;
 
         [Header("Debug")]
-        [SerializeField] private bool _verboseLogging = true;
+        // T-PERF02: выключено по умолчанию (спам раз в секунду + варнинги очереди).
+        [SerializeField] private bool _verboseLogging = false;
 
         /// <summary>T-ADM-03: сеттер для AdminLogBus (мастер-mute). Поле и if'ы не трогаем.</summary>
         public void SetVerboseLogging(bool v) => _verboseLogging = v;
@@ -346,7 +347,8 @@ namespace ProjectC.World.Clouds
         {
             if (_splatQueueCount >= _splatQueue.Length)
             {
-                Debug.LogWarning("[LocalDensityBuffer] Splat queue full, dropping splat.");
+                // T-PERF02: варнинг только в verbose (при переполнении спамил каждый кадр).
+                if (_verboseLogging) Debug.LogWarning("[LocalDensityBuffer] Splat queue full, dropping splat.");
                 return;
             }
 

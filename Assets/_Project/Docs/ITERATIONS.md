@@ -3184,3 +3184,27 @@ Files: Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionRigidbod
 
 ---
 
+## Итерация от 2026-09-27 (T-CHUNK01 — ресёрч chunk-system: нужен ли клиентский чанк-лоадер)
+
+**Задача:** Ответить нужен ли клиентский чанк-лоадер, поможет ли он в оптимизации, как сделать видимые
+города вдали и террейн/горы, как ляжет на host-client / server-client среди N клиентов и на FO-архитектуру.
+Ранние прототипы чанков (`WorldStreamingManager`, `ChunkLoader`, `ProceduralChunkGenerator`,
+`PlayerChunkTracker`, `ChunkNetworkSpawner`, `FloatingOriginMP`) — считать deprecated, в сценах отсутствуют
+(0 ссылок в `*.unity`).
+
+**Результат:** Вердикт — legacy 2K-чанк-стриминг НЕ нужен (конфликт с authored `Terrain_0_0`, гейтом B FO,
+NGO 2.13, бродкаст-RPC шторм); нужны импосторы городов (L1-HLOD/L2-билборд), калибровка T-LOD01,
+серверный scene-interest + ACK вместо чанк-RPC. Полный ресёрч (7 файлов): `docs/world/chunk_system/`
+(`README`, `01_CURRENT_STATE`, `02_DO_WE_NEED_CLIENT_CHUNK_LOADER`, `03_DISTANT_CITIES_TERRAIN`,
+`04_NETWORK_TOPOLOGIES`, `05_FO_INTEGRATION`, `06_OPTIONS_AND_ROADMAP`).
+
+**Проверки:** Compile не требуется (только `.md`); `git diff --check` — чисто. Play Mode, скриншоты,
+профайлер — за пользователем (чек-листы в `06_OPTIONS_AND_ROADMAP.md` §5, NOT RUN).
+
+**Граница:** Рекомендована опция B (калибровка → импосторы → hardening interest); L3 Ultra — при 2-й сцене;
+полноценные чанки — только по 5 критериям профайлера; воскрешение legacy запрещено (E — никогда).
+
+**Следующий шаг:** B0-калибровка ViewDistance пользователем; B1-бейк импосторов; B2-ACK-цикл interest.
+
+---
+

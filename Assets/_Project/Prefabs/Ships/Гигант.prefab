@@ -1355,6 +1355,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.Engine.EngineThrusterVisual
   _propeller: {fileID: 8528742266328391319}
   _maxRpm: 10
+  _rpmSmoothTime: 0.3
   _rotationAxis: {x: 0, y: 0, z: 1}
   _maxDeflectionAngle: 40
   _deflectionSmoothTime: 0.3
@@ -1735,7 +1736,7 @@ MonoBehaviour:
   meziyActivator: {fileID: 5002758293734979357}
   fuelSystem: {fileID: 3601604129738982453}
   meziyVisual: {fileID: 0}
-  _showLegacyMeziyHud: 0
+  _serverRecallCost: 500
 --- !u!114 &6709519894985952302
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1877,6 +1878,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.Key.ShipOwnershipRequirement
   ShowTopMostFoldoutHeaderGroup: 1
+  _debugLog: 0
 --- !u!114 &8565051679500457799
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1929,9 +1931,95 @@ MonoBehaviour:
   avoidBackOffSpeed: 5
   avoidBackOffTime: 1
   avoidTimeout: 8
+  avoidTimeoutCooldownSec: 9
+  avoidWallBlend: 0.6
+  avoidCooldownSec: 2.5
+  avoidEscalateAfter: 3
+  avoidEscalationWindowSec: 10
   avoidEscapeRays: 16
   avoidEscapeMaxDist: 200
   avoidEscapeBlend: 0.6
+  berthWatchdogSec: 20
+  berthMinProgressMeters: 2
+  berthMaxAttempts: 3
+  abortClimbMeters: 60
+  holdClearanceMeters: 60
+  holdingMaxRetries: 20
+  overheadClearanceMeters: 60
+  corridorRadiusMeters: 25
+  corridorGateToleranceMeters: 5
+  descendLateralCap: 2
+  berthOverheadProbe: 1
+  berthOverheadProbeDist: 120
+  departClimbMeters: 60
+  liftStuckSec: 40
+  liftStuckMin: 10
+  wallProbeRadius: 12
+  wallLookAheadSec: 8
+  wallLookAheadMin: 150
+  wallLookAheadMax: 600
+  wallClearance: 40
+  wallProbeIntervalSec: 0.2
+  wallTimeoutSec: 120
+  wallNoProgressSec: 15
+  wallMinProgressMeters: 5
+  returnVerticalCap: 2
+  wallArriveMargin: 100
+  wallEnterStrikes: 2
+  wallExitStrikes: 3
+  wallResumeCooldownSec: 5
+  cruiseStuckDist: 10
+  cruiseStuckSec: 10
+  cruiseRecoverSec: 3
+  cruiseRecoverSpeed: 6
+  cruiseMaxRecoveries: 2
+  cruiseGoalCloseMin: 1
+  cruiseGoalStuckSec: 45
+  cruiseGoalMaxReplans: 2
+  wallMinDwellSec: 2.5
+  lidarHalfAngle: 60
+  lidarStepDeg: 15
+  lidarClearWeight: 0.7
+  lidarKeepWeight: 0.5
+  lidarSideTrigger: 80
+  lidarDownPitchDeg: 25
+  downCriticalDist: 60
+  lidarDownTrigger: 40
+  lidarCenterFraction: 0.35
+  wallSlotRadius: 300
+  wallWaitTimeoutSec: 60
+  scatterSpeed: 10
+  scatterSec: 12
+  wallProgressSec: 35
+  wallProgressMin: 100
+  wallObstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  useEchelons: 1
+  echelonStep: 150
+  echelonCount: 4
+  echelonCorridorMargin: 50
+  wallRetreatTurnDeg: 180
+  wallRetreatSec: 8
+  useDepartureSpacing: 1
+  departureMutexRadius: 300
+  useCityGates: 0
+  gateTriggerDist: 1500
+  gateMargin: 100
+  gateArrivalTol: 60
+  gateVariants: 4
+  gateVariantStepDeg: 20
+  altFloorY: 1100
+  altCeilY: 4500
+  wallSameSpotRadius: 150
+  wallSameSpotEntries: 3
+  useNavigator: 1
+  navBypassDist: 250
+  navMaxBypass: 2
+  navWpTol: 80
+  navFinishGuardDist: 500
+  useRouteGraph: 1
+  routeGraphMaxWp: 6
 --- !u!114 &7231128035964814721
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1949,6 +2037,7 @@ MonoBehaviour:
   avoidanceRadius: 180
   avoidancePadding: 4.9
   clearHysteresis: 1.5
+  buildClearHysteresis: 1.2
   considerBuildings: 1
   drawGizmos: 0
   verboseBuildLogging: 0
@@ -2024,6 +2113,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleServer
   ShowTopMostFoldoutHeaderGroup: 1
+  _serverRepaintCost: 500
+  _serverHullRepairCost: 300
 --- !u!114 &4115670893274326784
 MonoBehaviour:
   m_ObjectHideFlags: 0

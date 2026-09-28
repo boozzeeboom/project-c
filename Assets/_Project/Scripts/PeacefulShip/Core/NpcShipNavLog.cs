@@ -23,6 +23,11 @@ namespace ProjectC.PeacefulShip.Core
         // T-NS-AIR01: включён для отладки магистралей (замер после — вернуть false).
         public static bool Enabled = true;
 
+        // T-NS-AIR02c: метка версии нав-кода — в шапке CSV и консоли.
+        // Обновлять при КАЖДОМ изменении навигации: по логу сразу видно, каким
+        // кодом летали (лог 122929: air-тишина при свежих tgt = старый билд).
+        public const string NavCodeTag = "AIR02c-latch+stations";
+
         private static StreamWriter _writer;
         private static string _path;
         private static float _startTime;
@@ -46,7 +51,8 @@ namespace ProjectC.PeacefulShip.Core
                 _writer = new StreamWriter(_path, false, Encoding.UTF8) { AutoFlush = true };
                 _startTime = Time.time;
                 _writer.WriteLine("t;event;npc;ship;from;to;reason;detail");
-                Debug.Log($"[NpcShipNavLog] T-NS-LOG01 logging to {_path}");
+                _writer.WriteLine($"0.0;CODE;;;;;;{NavCodeTag}");
+                Debug.Log($"[NpcShipNavLog] T-NS-LOG01 logging to {_path} code={NavCodeTag}");
             }
             catch (Exception e)
             {

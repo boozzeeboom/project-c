@@ -3169,7 +3169,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &52261662
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17075,6 +17075,135 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0061999997, y: 0.0061999997, z: 0.27674904}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &288720459
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 288720460}
+  - component: {fileID: 288720464}
+  - component: {fileID: 288720463}
+  - component: {fileID: 288720462}
+  - component: {fileID: 288720461}
+  m_Layer: 0
+  m_Name: Airway_primum-farm-00 (2)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &288720460
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288720459}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 44791, y: 2504, z: 41226}
+  m_LocalScale: {x: 2558.176, y: 350, z: 350}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1847299462}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &288720461
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288720459}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &288720462
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288720459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca9501bf600583242bc2e148e9a9a5c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.AirwaySegment
+  lineId: PRIMUM_FARM_0-0
+  displayName: Primum-farm_0-0
+  links: []
+  stations: []
+--- !u!65 &288720463
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288720459}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!33 &288720464
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288720459}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &288826990
 GameObject:
   m_ObjectHideFlags: 0
@@ -20566,6 +20695,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1579503420913665616, guid: 7a9c517d79f5dad478d743dd2652cf1d, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1579503420913665616, guid: 7a9c517d79f5dad478d743dd2652cf1d, type: 3}
       propertyPath: echelonStep
       value: 150
@@ -25658,6 +25791,10 @@ PrefabInstance:
       value: "\u0422\u043E\u0440\u0440\u0435\u043D\u0441"
       objectReference: {fileID: 0}
     - target: {fileID: 4974740583177786663, guid: 5661f1364cf80b642905e7a79fcb5dfd, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4974740583177786663, guid: 5661f1364cf80b642905e7a79fcb5dfd, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -27294,6 +27431,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8024395407565753292, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
       propertyPath: considerBuildings
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8105657416107836128, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
+      propertyPath: useAirways
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8105657416107836128, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
@@ -32708,6 +32849,10 @@ PrefabInstance:
     - target: {fileID: 342614841363264742, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2721391123
+      objectReference: {fileID: 0}
+    - target: {fileID: 2511665399292046560, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
+      propertyPath: useAirways
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2511665399292046560, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
       propertyPath: echelonStep
@@ -38625,85 +38770,6 @@ MonoBehaviour:
   _sourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
   _frameId: 0
   _activateWhenReady: 0
---- !u!1 &656593132
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 656593133}
-  - component: {fileID: 656593136}
-  - component: {fileID: 656593135}
-  - component: {fileID: 656593134}
-  m_Layer: 0
-  m_Name: Airway_primum-farm-00 (1)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &656593133
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 656593132}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 42304, y: 2504, z: 39967}
-  m_LocalScale: {x: 3198, y: 350, z: 350}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1857834064}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &656593134
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 656593132}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca9501bf600583242bc2e148e9a9a5c8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.AirwaySegment
-  lineId: TRUNK
-  displayName: Primum-farm_0-0
-  links:
-  - {fileID: 0}
---- !u!65 &656593135
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 656593132}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!33 &656593136
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 656593132}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &657121077
 GameObject:
   m_ObjectHideFlags: 0
@@ -50265,6 +50331,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3640615674953370576, guid: c4d2b5ad8c8b04a458e2285699f4aea0, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3640615674953370576, guid: c4d2b5ad8c8b04a458e2285699f4aea0, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -59138,6 +59208,137 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 865006031}
   m_Mesh: {fileID: 4300000, guid: d27e4db79fb3def42a4b9ee27c2703e6, type: 2}
+--- !u!1 &869066812
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 869066813}
+  - component: {fileID: 869066817}
+  - component: {fileID: 869066816}
+  - component: {fileID: 869066815}
+  - component: {fileID: 869066814}
+  m_Layer: 0
+  m_Name: Airway_primum-farm-00 (6)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &869066813
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869066812}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 45767, y: 2504, z: 38450}
+  m_LocalScale: {x: 634.6831, y: 350, z: 533.9522}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1847299462}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &869066814
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869066812}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &869066815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869066812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca9501bf600583242bc2e148e9a9a5c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.AirwaySegment
+  lineId: PRIMUM_FARM_0-0
+  displayName: Primum-farm_0-0
+  links: []
+  stations:
+  - {fileID: 1266341966}
+  - {fileID: 1177720402}
+--- !u!65 &869066816
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869066812}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!33 &869066817
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869066812}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &871986660
 GameObject:
   m_ObjectHideFlags: 0
@@ -65376,6 +65577,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1060584439670597940, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
       propertyPath: considerBuildings
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1361390738332372932, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
+      propertyPath: useAirways
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1361390738332372932, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
@@ -79915,6 +80120,137 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 8.477353, y: 2.170726, z: 0.0034999996}
   m_Center: {x: 1.745191, y: -1.2257973, z: 0.0328}
+--- !u!1 &1202087491
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1202087492}
+  - component: {fileID: 1202087496}
+  - component: {fileID: 1202087495}
+  - component: {fileID: 1202087494}
+  - component: {fileID: 1202087493}
+  m_Layer: 0
+  m_Name: Airway_primum-farm-00 (5)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1202087492
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202087491}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 47384, y: 2504, z: 36018}
+  m_LocalScale: {x: 399.75, y: 350, z: 3833.6602}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1847299462}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &1202087493
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202087491}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1202087494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202087491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca9501bf600583242bc2e148e9a9a5c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.AirwaySegment
+  lineId: PRIMUM_FARM_0-0
+  displayName: Primum-farm_0-0
+  links: []
+  stations:
+  - {fileID: 1656927030}
+  - {fileID: 182231085}
+--- !u!65 &1202087495
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202087491}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!33 &1202087496
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202087491}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &1202333742
 GameObject:
   m_ObjectHideFlags: 0
@@ -81336,6 +81672,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3633044138342341483, guid: f1dfd7bb0a4c6ba479d7d5d88814691a, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3633044138342341483, guid: f1dfd7bb0a4c6ba479d7d5d88814691a, type: 3}
       propertyPath: echelonStep
       value: 150
@@ -85552,6 +85892,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 809047976757698962, guid: 5126f1674446bb742996bb08fd308bf9, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 809047976757698962, guid: 5126f1674446bb742996bb08fd308bf9, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -85733,6 +86077,135 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1299743351}
   m_Mesh: {fileID: 4300000, guid: 24248af50f01d064ba92c75e494157ca, type: 2}
+--- !u!1 &1302812423
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1302812424}
+  - component: {fileID: 1302812428}
+  - component: {fileID: 1302812427}
+  - component: {fileID: 1302812426}
+  - component: {fileID: 1302812425}
+  m_Layer: 0
+  m_Name: Airway_primum-farm-00 (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1302812424
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1302812423}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 43705, y: 2504, z: 40584}
+  m_LocalScale: {x: 399.75, y: 350, z: 1577.485}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1847299462}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &1302812425
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1302812423}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1302812426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1302812423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca9501bf600583242bc2e148e9a9a5c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.AirwaySegment
+  lineId: PRIMUM_FARM_0-0
+  displayName: Primum-farm_0-0
+  links: []
+  stations: []
+--- !u!65 &1302812427
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1302812423}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!33 &1302812428
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1302812423}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &1303401453
 GameObject:
   m_ObjectHideFlags: 0
@@ -93743,6 +94216,10 @@ PrefabInstance:
       value: 2869002360
       objectReference: {fileID: 0}
     - target: {fileID: 3183530557052405950, guid: 17d138159a0aa7c48a38261299bb3280, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3183530557052405950, guid: 17d138159a0aa7c48a38261299bb3280, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -98157,6 +98634,10 @@ PrefabInstance:
       value: 2317759439
       objectReference: {fileID: 0}
     - target: {fileID: 4148041641968703888, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4148041641968703888, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -101888,6 +102369,10 @@ PrefabInstance:
       value: "\u0421\u043A\u0430\u0442"
       objectReference: {fileID: 0}
     - target: {fileID: 8406191252343656577, guid: f88cc8ec7bdd02a4c95b6ef9806a9296, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8406191252343656577, guid: f88cc8ec7bdd02a4c95b6ef9806a9296, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -104201,6 +104686,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5847918044451758556, guid: 822e0bd9fb98bfc4ea7f82954ec00ab3, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5847918044451758556, guid: 822e0bd9fb98bfc4ea7f82954ec00ab3, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -104340,6 +104829,10 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1820502806711753235, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
       propertyPath: considerBuildings
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2121146988457984794, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
+      propertyPath: useAirways
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2121146988457984794, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
@@ -107099,6 +107592,10 @@ PrefabInstance:
     - target: {fileID: 6716019714239139776, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
       propertyPath: m_Name
       value: "\u0412\u0430\u0432\u0438\u043B\u043E\u043D"
+      objectReference: {fileID: 0}
+    - target: {fileID: 6987870215618825956, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
+      propertyPath: useAirways
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6987870215618825956, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
       propertyPath: echelonStep
@@ -112914,6 +113411,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1772461212604325638, guid: cd50dee177b57174cb2645e50b31b70c, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1772461212604325638, guid: cd50dee177b57174cb2645e50b31b70c, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -114775,6 +115276,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 139896100244724121, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 139896100244724121, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -114866,6 +115371,135 @@ MonoBehaviour:
   _sourceId: 837a3910185f2b9478ce71df025ccc7c:2356130661414943933:1707764219
   _frameId: 0
   _activateWhenReady: 0
+--- !u!1 &1708482764
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1708482765}
+  - component: {fileID: 1708482769}
+  - component: {fileID: 1708482768}
+  - component: {fileID: 1708482767}
+  - component: {fileID: 1708482766}
+  m_Layer: 0
+  m_Name: Airway_primum-farm-00 (4)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1708482765
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708482764}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 46604, y: 2504, z: 37766}
+  m_LocalScale: {x: 1761.074, y: 350, z: 350}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1847299462}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &1708482766
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708482764}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1708482767
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708482764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca9501bf600583242bc2e148e9a9a5c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.AirwaySegment
+  lineId: PRIMUM_FARM_0-0
+  displayName: Primum-farm_0-0
+  links: []
+  stations: []
+--- !u!65 &1708482768
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708482764}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!33 &1708482769
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708482764}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &1709472077
 GameObject:
   m_ObjectHideFlags: 0
@@ -117254,6 +117888,7 @@ GameObject:
   - component: {fileID: 1756698639}
   - component: {fileID: 1756698638}
   - component: {fileID: 1756698637}
+  - component: {fileID: 1756698640}
   m_Layer: 0
   m_Name: Airway_primum-farm-00
   m_TagString: Untagged
@@ -117269,12 +117904,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1756698635}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 42304, y: 2504, z: 39967}
   m_LocalScale: {x: 3198, y: 350, z: 350}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1857834064}
+  m_Father: {fileID: 1847299462}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1756698637
 MonoBehaviour:
@@ -117288,10 +117923,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca9501bf600583242bc2e148e9a9a5c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.AirwaySegment
-  lineId: TRUNK
+  lineId: PRIMUM_FARM_0-0
   displayName: Primum-farm_0-0
-  links:
-  - {fileID: 656593134}
+  links: []
+  stations:
+  - {fileID: 2099880788}
 --- !u!65 &1756698638
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -117321,6 +117957,55 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1756698635}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &1756698640
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1756698635}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &1757569165
 GameObject:
   m_ObjectHideFlags: 0
@@ -121486,6 +122171,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5006660475228269667, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5006660475228269667, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -122447,6 +123136,44 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1846716417}
   m_Mesh: {fileID: 4300000, guid: d27e4db79fb3def42a4b9ee27c2703e6, type: 2}
+--- !u!1 &1847299461
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1847299462}
+  m_Layer: 0
+  m_Name: Primum-primumfarms-00
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1847299462
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1847299461}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1756698636}
+  - {fileID: 1302812424}
+  - {fileID: 288720460}
+  - {fileID: 2098223153}
+  - {fileID: 869066813}
+  - {fileID: 1708482765}
+  - {fileID: 1202087492}
+  m_Father: {fileID: 1857834064}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1853456401
 GameObject:
   m_ObjectHideFlags: 0
@@ -123118,8 +123845,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1756698636}
-  - {fileID: 656593133}
+  - {fileID: 1847299462}
   m_Father: {fileID: 14177345}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1859958125
@@ -128594,6 +129320,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1041909967116100879, guid: f029b503c412a1f43a43ef1fcadbf0d7, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1041909967116100879, guid: f029b503c412a1f43a43ef1fcadbf0d7, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -128693,6 +129423,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1113529280571494622, guid: 8724ae8f508dbc94f882c0450956dc78, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1113529280571494622, guid: 8724ae8f508dbc94f882c0450956dc78, type: 3}
       propertyPath: echelonStep
       value: 150
@@ -135119,6 +135853,10 @@ PrefabInstance:
       value: "\u0413\u043E\u0440\u0433\u043E\u043D\u0430"
       objectReference: {fileID: 0}
     - target: {fileID: 2853706407853473955, guid: b81f079e28f223d4b9fa06564918bc4c, type: 3}
+      propertyPath: useAirways
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2853706407853473955, guid: b81f079e28f223d4b9fa06564918bc4c, type: 3}
       propertyPath: echelonStep
       value: 150
       objectReference: {fileID: 0}
@@ -137322,6 +138060,135 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.5999999, y: 0.07, z: 0.0011999999}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &2098223152
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2098223153}
+  - component: {fileID: 2098223157}
+  - component: {fileID: 2098223156}
+  - component: {fileID: 2098223155}
+  - component: {fileID: 2098223154}
+  m_Layer: 0
+  m_Name: Airway_primum-farm-00 (3)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2098223153
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098223152}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 45897, y: 2504, z: 39498}
+  m_LocalScale: {x: 399.75, y: 350, z: 3833.6602}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1847299462}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &2098223154
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098223152}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2098223155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098223152}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca9501bf600583242bc2e148e9a9a5c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.AirwaySegment
+  lineId: PRIMUM_FARM_0-0
+  displayName: Primum-farm_0-0
+  links: []
+  stations: []
+--- !u!65 &2098223156
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098223152}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!33 &2098223157
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098223152}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &2098600349
 GameObject:
   m_ObjectHideFlags: 0

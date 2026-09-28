@@ -85,6 +85,8 @@ namespace ProjectC.Core
         [SerializeField] private float shrinkDelay = 0.2f;
         [Tooltip("Устойчивый просвет перед recovery (сек)")]
         [SerializeField] private float recoverDelay = 0.3f;
+        [Tooltip("T-CAM18: перед recovery проверять лучом на полной дистанции — иначе «мячик»")]
+        [SerializeField] private bool adaptiveProbeEnabled = true;
         [Tooltip("Скорость уменьшения дистанции")]
         [SerializeField] private float adaptiveSpeed = 3f;
         [Tooltip("Скорость восстановления дистанции")]
@@ -746,9 +748,10 @@ namespace ProjectC.Core
         /// SHRINK — дистанция не влезает (упираемся): стягивать после устойчивой коллизии.
         /// REST — у стены, но дистанция влезает: ТОЧКА ПОКОЯ, держать (таймеры в ноль).
         /// RECOVER — свободно: восстанавливать к зуму после устойчивого просвета.
-        /// Переключение на условии влезания (с дедбендом), а не на ratio — поэтому
-        /// реле-цикл «сжался ниже стены → чисто → отъехал → снова в стену» невозможен:
-        /// fixed point REST лежит на той же стороне поверхности переключения, где стоим.
+        /// Переключение на условии влезания (с дедбендом), а не на ratio.
+        /// T-CAM18: recovery дополнительно gated пробным лучом на _userDistance —
+        /// иначе при крутом pitch/дальней стене короткий луч очищается сам и цикл
+        /// «мячик» возвращается. С probe у статической геометрии есть fixed point.
         /// </summary>
         private void UpdateAdaptiveDistance()
         {
@@ -780,13 +783,24 @@ namespace ProjectC.Core
             {
                 // RECOVER: свободно — но только после устойчивого просвета, иначе
                 // дребезг на тонких препятствиях (столбы, листва) качает камеру.
+                // T-CAM18: плюс probe на полной дистанции. При крутом pitch вниз луч
+                // сам очищается на малой C (высота перевешивает), и вырастание C снова
+                // втыкается в пол — цикл «мячик». То же для дальней стены. Поэтому
+                // recovery — только если и на _userDistance препятствий нет.
                 _shrinkTimer = 0f;
-                _recoverTimer += Time.deltaTime;
-                if (_recoverTimer >= recoverDelay)
+                if (adaptiveProbeEnabled && IsUserDistanceBlocked())
                 {
-                    _targetDistance = Mathf.Lerp(
-                        _targetDistance, _userDistance,
-                        adaptiveRecoverySpeed * Time.deltaTime);
+                    _recoverTimer = 0f;
+                }
+                else
+                {
+                    _recoverTimer += Time.deltaTime;
+                    if (_recoverTimer >= recoverDelay)
+                    {
+                        _targetDistance = Mathf.Lerp(
+                            _targetDistance, _userDistance,
+                            adaptiveRecoverySpeed * Time.deltaTime);
+                    }
                 }
             }
             else
@@ -795,6 +809,28 @@ namespace ProjectC.Core
                 _shrinkTimer = 0f;
                 _recoverTimer = 0f;
             }
+        }
+
+        /// <summary>
+        /// T-CAM18: пробный луч на полной пользовательской дистанции вдоль текущей орбиты.
+        /// Текущий короткий луч мог очиститься сам (пол при крутом pitch, дальняя стена),
+        /// а на _userDistance препятствие всё ещё там — вырастать нельзя, держим T.
+        /// Один SphereCast/кадр, персонажи игнорятся как в основном резолве.
+        /// </summary>
+        private bool IsUserDistanceBlocked()
+        {
+            if (target == null) return false;
+            Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
+            float yr = _yaw * Mathf.Deg2Rad;
+            float pr = _pitch * Mathf.Deg2Rad;
+            Vector3 dirAngles = new Vector3(-Mathf.Sin(yr) * Mathf.Cos(pr), Mathf.Sin(pr), -Mathf.Cos(yr) * Mathf.Cos(pr));
+            Vector3 fullDesired = _lagTargetPos + dirAngles * _userDistance + Vector3.up * _currentHeight;
+            Vector3 ray = fullDesired - lookTarget;
+            float len = ray.magnitude;
+            if (len < 0.05f) return false;
+            if (Physics.SphereCast(lookTarget, sphereCastRadius, ray / len, out RaycastHit hit, len, collisionMask, QueryTriggerInteraction.Ignore))
+                return !ShouldIgnoreCollision(hit.collider);
+            return false;
         }
 
         private void SmoothPosition(Vector3 cameraTargetPos)

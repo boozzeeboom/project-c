@@ -23,6 +23,20 @@ namespace ProjectC.PeacefulShip.Core
 
         public static int Count => _segs.Count;
 
+        private static bool _subscribed;
+
+        /// <summary>
+        /// T-NS-AIR02b: залипание пустого справочника — первый PlanRoute мог пройти
+        /// до догрузки WorldScene (лог 110704: 0 air-строк при 6 боксах в файле).
+        /// Любая загрузка сцены сбрасывает флаг — следующий запрос перестроит.
+        /// </summary>
+        private static void EnsureSubscribed()
+        {
+            if (_subscribed) return;
+            _subscribed = true;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += (s, m) => _built = false;
+        }
+
         /// <summary>Перестроить из сцены (первый вызов — автоматически).</summary>
         public static void Rebuild()
         {
@@ -62,11 +76,13 @@ namespace ProjectC.PeacefulShip.Core
                     }
                 }
             }
-            Debug.Log($"[AirwayDirectory] T-NS-AIR01 built: {_segs.Count} segments");
+            Debug.Log($"[AirwayDirectory] T-NS-AIR01 built: {_segs.Count} segments" +
+                (_segs.Count == 0 ? " (сцена с боксами ещё не загружена? см. T-NS-AIR02b)" : ""));
         }
 
         private static void EnsureBuilt()
         {
+            EnsureSubscribed();
             if (!_built) Rebuild();
         }
 

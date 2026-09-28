@@ -24,6 +24,13 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Явные связи (развязки через разрыв). Авто-связи по перекрытию — всегда.")]
         public List<AirwaySegment> links = new List<AirwaySegment>();
 
+        [Header("Подсказки (AIR03-маршрутизация + лор)")]
+        [Tooltip("LocationId станций/поселений, которые обслуживает ЭТОТ бокс " +
+                 "(обычно заполняют только крайние боксы линии: точки входа/выхода). " +
+                 "Серединные боксы — пусто. Сейчас только данные для будущего роутинга; " +
+                 "на полёт не влияет.")]
+        public string[] stationIds = new string[0];
+
         /// <summary>Мировой центр объёма (живём — едет со сценой, F8-безопасно).</summary>
         public Vector3 LiveCenter()
         {

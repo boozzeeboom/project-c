@@ -94,7 +94,11 @@ namespace ProjectC.PeacefulShip.Core
             {
                 var s = _segs[i];
                 if (s == null) continue;
-                float d = Vector3.Distance(p, s.LiveCenter());
+                // T-NS-AIR03b: дистанция до ОБЪЁМА, не до центра (лог 140210:
+                // старт в 640 м от края 3-км бокса давал 2237 м до центра > entry
+                // и молчаливый пас всех плеч). Внутри бокса — 0.
+                Vector3 q = s.LiveBounds().ClosestPoint(p);
+                float d = Vector3.Distance(p, q);
                 if (d < bestD) { bestD = d; best = i; }
             }
             return best;
@@ -104,6 +108,13 @@ namespace ProjectC.PeacefulShip.Core
         {
             if (a < 0 || b < 0 || a >= _adj.Count || b >= _adj.Count) return false;
             return _adj[a].Contains(b);
+        }
+
+        /// <summary>Дистанция от точки до объёма бокса (внутри — 0).</summary>
+        private static float VolDist(Vector3 p, AirwaySegment s)
+        {
+            if (s == null) return float.MaxValue;
+            return Vector3.Distance(p, s.LiveBounds().ClosestPoint(p));
         }
 
         /// <summary>
@@ -189,16 +200,8 @@ namespace ProjectC.PeacefulShip.Core
             if (chain.Count == 0) { failReason = "no-path"; return false; }
             if (chain.Count > Mathf.Max(1, maxWp)) { failReason = "too-long"; return false; }
             // Стоимость: детур должен окупаться (магистраль в сторону — не тащит).
-            float ride = 0f;
-            Vector3 at = a;
-            for (int i = 0; i < chain.Count; i++)
-            {
-                var s = _segs[chain[i]];
-                if (s == null) { failReason = "no-path"; return false; }
-                ride += Vector3.Distance(at, s.LiveCenter());
-                at = s.LiveCenter();
-            }
-            ride += Vector3.Distance(at, b);
+            // Краевые хопы — до объёма (бокс покрывает старт/финиш), внутри — по центрам.
+            float ride = VolDist(a, _segs[entry]) + dist[exit] + VolDist(b, _segs[exit]);
             if (ride > direct * Mathf.Max(1.1f, maxDetour)) { failReason = "detour"; return false; }
             // T-NS-AIR02: точки — XZ центров боксов, Y — высота профиля вызывателя.
             // Магистраль задаёт ЛАТЕРАЛЬНУЮ топологию; вертикаль остаётся профилю

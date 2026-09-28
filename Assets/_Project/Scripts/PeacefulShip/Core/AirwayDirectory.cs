@@ -86,24 +86,6 @@ namespace ProjectC.PeacefulShip.Core
             if (!_built) Rebuild();
         }
 
-        private static int Nearest(Vector3 p, float maxDist)
-        {
-            int best = -1;
-            float bestD = maxDist;
-            for (int i = 0; i < _segs.Count; i++)
-            {
-                var s = _segs[i];
-                if (s == null) continue;
-                // T-NS-AIR03b: дистанция до ОБЪЁМА, не до центра (лог 140210:
-                // старт в 640 м от края 3-км бокса давал 2237 м до центра > entry
-                // и молчаливый пас всех плеч). Внутри бокса — 0.
-                Vector3 q = s.LiveBounds().ClosestPoint(p);
-                float d = Vector3.Distance(p, q);
-                if (d < bestD) { bestD = d; best = i; }
-            }
-            return best;
-        }
-
         private static bool Linked(int a, int b)
         {
             if (a < 0 || b < 0 || a >= _adj.Count || b >= _adj.Count) return false;
@@ -137,11 +119,14 @@ namespace ProjectC.PeacefulShip.Core
         }
 
         /// <summary>
-        /// Маршрут по магистрали: точки-центры боксов (без цели).
-        /// true = взять магистраль; false = legacy (причина в failReason).
-        /// Короткие плечи и чистая прямая — не магистраль (см. дизайн 17 §2).
+        /// T-NS-AIR03: маршрут по магистрали (дизайн 17 + модель пользователя).
+        /// Влететь можно с любой стороны (вливание), выйти — съездом напротив цели;
+        /// пересадки между несвязанными линиями — через links (развязки).
+        /// true = взять магистраль (точки без цели); false = legacy (failReason).
+        /// goalLocationId: hints выходов (stationIds крайних боксов); null/пусто —
+        /// чистые дистанции (как раньше).
         /// </summary>
-        public static bool TryBuildRoute(Vector3 a, Vector3 b,
+        public static bool TryBuildRoute(Vector3 a, Vector3 b, string goalLocationId,
             float minUseDist, float entryRadius, float maxDetour, int maxWp,
             List<Vector3> outWaypoints, out string failReason)
         {
@@ -150,15 +135,106 @@ namespace ProjectC.PeacefulShip.Core
             EnsureBuilt();
             if (_segs.Count == 0) return false;
             float direct = Vector3.Distance(a, b);
-            if (direct < 1f) { failReason = "short-hop"; return false; }
-            if (direct < minUseDist) { failReason = "short-hop"; return false; }
-            int entry = Nearest(a, entryRadius);
-            int exit = Nearest(b, entryRadius);
-            if (entry < 0 || exit < 0) { failReason = "no-entry"; return false; }
-            if (entry == exit) { failReason = "same-box"; return false; }
-            if (Linked(entry, exit)) { failReason = "near-box"; return false; }
-            // Дейкстра по смежности (вес — дистанция центров, резолв вживую).
+            if (direct < 1f || direct < minUseDist) { failReason = "short-hop"; return false; }
+            // Кандидаты: до 3 ближайших входов; выходы — сначала обслуживающие цель.
+            var entries = NearestK(a, entryRadius, 3);
+            var exits = ExitsFor(b, entryRadius, goalLocationId, 3);
+            if (entries.Count == 0 || exits.Count == 0) { failReason = "no-entry"; return false; }
+            float bestRide = float.MaxValue;
+            List<int> bestChain = null;
+            int bestEntry = -1;
+            bool anyEligible = false;
+            foreach (int en in entries)
+            {
+                foreach (int ex in exits)
+                {
+                    if (en == ex || Linked(en, ex)) continue; // свой/соседний — не магистраль
+                    anyEligible = true;
+                    if (!Dijkstra(en, ex, out List<int> chain, out float plen)) continue;
+                    float ride = VolDist(a, _segs[en]) + plen + VolDist(b, _segs[ex]);
+                    if (ride < bestRide) { bestRide = ride; bestChain = chain; bestEntry = en; }
+                }
+            }
+            if (!anyEligible) { failReason = "near-box"; return false; }
+            if (bestChain == null) { failReason = "no-path"; return false; }
+            if (bestChain.Count > Mathf.Max(1, maxWp)) { failReason = "too-long"; return false; }
+            if (bestRide > direct * Mathf.Max(1.1f, maxDetour)) { failReason = "detour"; return false; }
+            // Точки: вливание (ближайшая точка входного бокса), середина — центры,
+            // съезд (ближайшая точка выходного к цели). Y — профиль вызывателя.
+            Vector3 merge = _segs[bestEntry].LiveBounds().ClosestPoint(a);
+            outWaypoints.Add(new Vector3(merge.x, a.y, merge.z));
+            for (int i = 0; i < bestChain.Count; i++)
+            {
+                int idx = bestChain[i];
+                if (idx == bestEntry) continue;
+                // Последний узел — съезд к цели, а не центр.
+                Vector3 wp = (i == bestChain.Count - 1)
+                    ? _segs[idx].LiveBounds().ClosestPoint(b)
+                    : _segs[idx].LiveCenter();
+                outWaypoints.Add(new Vector3(wp.x, a.y, wp.z));
+            }
+            failReason = "ok";
+            return true;
+        }
+
+        /// <summary>До K ближайших сегментов (по объёму) в радиусе.</summary>
+        private static List<int> NearestK(Vector3 p, float maxDist, int k)
+        {
+            var scored = new List<(int idx, float d)>(8);
+            for (int i = 0; i < _segs.Count; i++)
+            {
+                if (_segs[i] == null) continue;
+                float d = VolDist(p, _segs[i]);
+                if (d <= maxDist) scored.Add((i, d));
+            }
+            scored.Sort((x, y) => x.d.CompareTo(y.d));
+            var res = new List<int>(k);
+            for (int i = 0; i < scored.Count && res.Count < k; i++) res.Add(scored[i].idx);
+            return res;
+        }
+
+        /// <summary>
+        /// Кандидаты выходов: сначала боксы, обслуживающие цель (stationIds),
+        /// потом ближайшие. Съезд — напротив фермы, а не мимо неё.
+        /// </summary>
+        private static List<int> ExitsFor(Vector3 b, float maxDist, string goalLocationId, int k)
+        {
+            var serving = new List<(int idx, float d)>(8);
+            var other = new List<(int idx, float d)>(8);
+            bool wantHint = !string.IsNullOrEmpty(goalLocationId);
+            for (int i = 0; i < _segs.Count; i++)
+            {
+                var s = _segs[i];
+                if (s == null) continue;
+                float d = VolDist(b, s);
+                if (d > maxDist) continue;
+                bool serves = false;
+                if (wantHint)
+                {
+                    foreach (var loc in ServedLocationIds(s))
+                        if (string.Equals(loc, goalLocationId, System.StringComparison.OrdinalIgnoreCase))
+                        {
+                            serves = true;
+                            break;
+                        }
+                }
+                (serves ? serving : other).Add((i, d));
+            }
+            serving.Sort((x, y) => x.d.CompareTo(y.d));
+            other.Sort((x, y) => x.d.CompareTo(y.d));
+            var res = new List<int>(k);
+            foreach (var e in serving) { if (res.Count >= k) break; res.Add(e.idx); }
+            foreach (var e in other) { if (res.Count >= k) break; res.Add(e.idx); }
+            return res;
+        }
+
+        /// <summary>Дейкстра entry→exit по смежности (вес — дистанция центров вживую).</summary>
+        private static bool Dijkstra(int entry, int exit, out List<int> chain, out float pathLen)
+        {
+            chain = null;
+            pathLen = float.MaxValue;
             int n = _segs.Count;
+            if (entry < 0 || exit < 0 || entry >= n || exit >= n) return false;
             float[] dist = new float[n];
             int[] prev = new int[n];
             bool[] closed = new bool[n];
@@ -193,25 +269,12 @@ namespace ProjectC.PeacefulShip.Core
                     }
                 }
             }
-            if (prev[exit] < 0 && exit != entry) { failReason = "no-path"; return false; }
-            var chain = new List<int>(8);
+            if (prev[exit] < 0) return false;
+            chain = new List<int>(8);
             for (int v = exit; v != entry && v >= 0; v = prev[v]) chain.Add(v);
             chain.Reverse();
-            if (chain.Count == 0) { failReason = "no-path"; return false; }
-            if (chain.Count > Mathf.Max(1, maxWp)) { failReason = "too-long"; return false; }
-            // Стоимость: детур должен окупаться (магистраль в сторону — не тащит).
-            // Краевые хопы — до объёма (бокс покрывает старт/финиш), внутри — по центрам.
-            float ride = VolDist(a, _segs[entry]) + dist[exit] + VolDist(b, _segs[exit]);
-            if (ride > direct * Mathf.Max(1.1f, maxDetour)) { failReason = "detour"; return false; }
-            // T-NS-AIR02: точки — XZ центров боксов, Y — высота профиля вызывателя.
-            // Магистраль задаёт ЛАТЕРАЛЬНУЮ топологию; вертикаль остаётся профилю
-            // (эшелоны/лор): иначе бокс тянул бы всех на свою высоту и ломал эшелоны.
-            for (int i = 0; i < chain.Count; i++)
-            {
-                Vector3 c = _segs[chain[i]].LiveCenter();
-                outWaypoints.Add(new Vector3(c.x, a.y, c.z));
-            }
-            failReason = "ok";
+            if (chain.Count == 0) return false;
+            pathLen = dist[exit];
             return true;
         }
     }

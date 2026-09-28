@@ -2469,10 +2469,13 @@ namespace ProjectC.PeacefulShip.Stations
             if (mountainHome) how = "mountain-home";
             // T-NS-AIR01: стратегический слой — магистрали (до графа). Короткие плечи,
             // дом и отсутствие боксов — мимо молча; несходство цены/длины — в лог.
+            // T-NS-AIR03: цель-locationId для выходов-подсказок (stationIds крайних
+            // боксов) и перебора линий: не та линия у старта — пробуем следующую.
             if (!mountainHome && useAirways)
             {
                 _graphWps.Clear(); // транзитный буфер (общий с графом, пересчёт)
-                if (AirwayDirectory.TryBuildRoute(a, b, airwayMinUseDist, airwayEntryRadius,
+                string goalLoc = NpcShipWorld.Instance?.GetNpc(npcInstanceId)?.CurrentRoute.toLocationId;
+                if (AirwayDirectory.TryBuildRoute(a, b, goalLoc, airwayMinUseDist, airwayEntryRadius,
                         airwayMaxDetour, airwayMaxWp, _graphWps, out string airFail)
                     && _graphWps.Count > 0)
                 {

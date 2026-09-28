@@ -858,7 +858,9 @@ namespace ProjectC.PeacefulShip.Stations
 
             // T-NS-LOG01: heartbeat 1/5с — видно «стоит носом» (spd≈0 вне Docked)
             // и залипание в режиме без переходов.
-            if (Time.time >= _logBeatNextAt) {
+            // T-NS-PERF02: при выключенном NavLog пропускаем целиком (иначе
+            // интерполяция строк/дистанции считается впустую каждый тик).
+            if (NpcShipNavLog.Enabled && Time.time >= _logBeatNextAt) {
                 _logBeatNextAt = Time.time + 5f + ProbePhaseOffset();
                 float distBT = CruiseTargetPos == Vector3.zero
                     ? -1f : Vector3.Distance(rb.position, CruiseTargetPos);

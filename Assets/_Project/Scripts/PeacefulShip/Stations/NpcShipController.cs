@@ -2113,6 +2113,10 @@ namespace ProjectC.PeacefulShip.Stations
                 NpcShipNavLog.Transition(gameObject.name, npcInstanceId,
                     CurrentMode.ToString(), CurrentMode.ToString(), "nav-replan", "");
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Same dent ×{wallSameSpotEntries} — replanning route");
+                // T-NS-AIR03d: бесплодные replan считаем затором (лог 144319: 0017/002C
+                // по 5+ replan без прогресса): следующий stuck-диагноз уйдёт в divert,
+                // а не в третий круг той же вмятины.
+                _legStuckCount++;
                 PlanRoute(CruiseTargetPos);
                 return false;
             }

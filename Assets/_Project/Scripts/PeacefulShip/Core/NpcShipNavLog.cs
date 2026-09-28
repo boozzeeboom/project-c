@@ -26,7 +26,7 @@ namespace ProjectC.PeacefulShip.Core
         // T-NS-AIR02c: метка версии нав-кода — в шапке CSV и консоли.
         // Обновлять при КАЖДОМ изменении навигации: по логу сразу видно, каким
         // кодом летали (лог 122929: air-тишина при свежих tgt = старый билд).
-        public const string NavCodeTag = "AIR02c-latch+stations";
+        public const string NavCodeTag = "AIR03d-gaplinks+replancap";
 
         private static StreamWriter _writer;
         private static string _path;

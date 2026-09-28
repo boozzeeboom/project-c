@@ -17,7 +17,12 @@ namespace ProjectC.PeacefulShip.Core
     /// </summary>
     public static class AirwayDirectory
     {
-        private static readonly List<AirwaySegment> _segs = new List<AirwaySegment>(32);
+        // T-NS-AIR03d: допуск стыковки боксов (зазор между объёмами, м).
+        // 20% перекрытия физически неудобно держать (вопрос пользователя):
+        // связываем и через разрыв до LinkGap — разрыв летит прямо под лидаром
+        // (lookahead 150–600 м покрывает), тактика Downgrade'ит сюрпризы.
+        // Большие разрывы — только явными links.
+        private const float LinkGap = 600f;        private static readonly List<AirwaySegment> _segs = new List<AirwaySegment>(32);
         private static readonly List<List<int>> _adj = new List<List<int>>(32);
         private static bool _built;
 
@@ -50,15 +55,19 @@ namespace ProjectC.PeacefulShip.Core
                 _segs.Add(all[i]);
                 _adj.Add(new List<int>());
             }
-            // Авто-связи по перекрытию объёмов + явные links.
+            // Авто-связи: перекрытие ИЛИ зазор до LinkGap (расширенные AABB) + явные links.
+            // Expand растёт в обе стороны: делим пополам, чтобы допуск был ровно LinkGap.
             for (int i = 0; i < _segs.Count; i++)
             {
                 if (_segs[i] == null) continue;
                 Bounds bi = _segs[i].LiveBounds();
+                bi.Expand(LinkGap * 0.5f);
                 for (int j = i + 1; j < _segs.Count; j++)
                 {
                     if (_segs[j] == null) continue;
-                    if (bi.Intersects(_segs[j].LiveBounds()))
+                    Bounds bj = _segs[j].LiveBounds();
+                    bj.Expand(LinkGap * 0.5f);
+                    if (bi.Intersects(bj))
                     {
                         _adj[i].Add(j);
                         _adj[j].Add(i);

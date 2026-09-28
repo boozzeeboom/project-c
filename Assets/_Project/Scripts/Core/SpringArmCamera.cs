@@ -14,10 +14,13 @@ namespace ProjectC.Core
     /// Архитектура: независимый корневой объект (НЕ дочерний игроку — FloatingOriginMP).
     /// Pipeline: ReadInput → ModeTransition → CameraLag → ComputeDesired
     ///        → ResolveCollision(chain-cast+AntiPop+nearClip) → AdaptiveDistance
-    ///        → SmoothPosition(dead-zone+Recovery) → LookAt
+    ///        → SmoothPosition(dead-zone+Recovery) → LookAt(сглаженный)
     /// Lag = инерция (walk 0.15s, ship откл). SmoothDamp = anti-jitter (0.04s).
-    /// При падении — вертикальный lag ускоряется в 2.5x.
+    /// При падении — вертикальный lag ускоряется в 2.5x (гистерезис вкл/выкл).
     /// Dead-zone 3mm — убивает микро-осцилляции.
+    /// T-CAM17: Adaptive — 3 состояния SHRINK/REST/RECOVER. REST (у стены, но дистанция
+    /// влезает) — точка покоя: ничего не делает. Переключение больше не на ratio,
+    /// а на условие влезания + устойчивые таймеры — реле-цикл T-CAM16 устранён.
     /// T-CAM14: near-clip constraint вынесен в ResolveCollision (единый источник),
     /// AdaptiveDistance работает поверх отдельной пользовательской zoom-дистанции,
     /// positionSmoothTime 0.08→0.04 (возврат к задумке T-CAM10: Lag/Smooth 3.75×).
@@ -50,6 +53,8 @@ namespace ProjectC.Core
         [Header("Anti-Pop")]
         [Tooltip("Гистерезис при выходе из коллизии (сек)")]
         [SerializeField] private float antiPopTime = 0.2f;
+        [Tooltip("T-CAM17: не держать замороженную точку, если цель ушла дальше этого (м) — stale-guard")]
+        [SerializeField] private float antiPopStaleDistance = 0.35f;
 
         [Header("Wall Recovery")]
         [Tooltip("Максимальная скорость восстановления позиции (m/s)")]
@@ -66,14 +71,20 @@ namespace ProjectC.Core
         [SerializeField] private float lagVerticalTime = 0.05f;
         [Tooltip("Меньше отставания при беге + быстрее Vertical при падении")]
         [SerializeField] private bool dynamicLagEnabled = true;
+        [Tooltip("T-CAM17: порог входа в быстрый вертикальный режим (м/с)")]
+        [SerializeField] private float vertBoostEnterSpeed = 6.5f;
+        [Tooltip("T-CAM17: порог выхода из быстрого вертикального режима (м/с)")]
+        [SerializeField] private float vertBoostExitSpeed = 3.5f;
 
         [Header("Adaptive Distance")]
-        [Tooltip("Авто-уменьшение дистанции в узких пространствах")]
+        [Tooltip("T-CAM17: SHRINK (не влезает) / REST (точка покоя у стены) / RECOVER (свободно)")]
         [SerializeField] private bool adaptiveDistanceEnabled = true;
-        [Tooltip("Порог срабатывания: отношение actualDist/desiredDist")]
-        [SerializeField] private float adaptiveThreshold = 0.7f;
-        [Tooltip("Задержка перед уменьшением (гистерезис, сек)")]
-        [SerializeField] private float adaptiveDelay = 0.5f;
+        [Tooltip("Дедбенд покоя: shrink только если цель больше фактической дистанции на это (м)")]
+        [SerializeField] private float adaptiveFitDeadband = 0.3f;
+        [Tooltip("Устойчивая коллизия перед shrink (сек)")]
+        [SerializeField] private float shrinkDelay = 0.2f;
+        [Tooltip("Устойчивый просвет перед recovery (сек)")]
+        [SerializeField] private float recoverDelay = 0.3f;
         [Tooltip("Скорость уменьшения дистанции")]
         [SerializeField] private float adaptiveSpeed = 3f;
         [Tooltip("Скорость восстановления дистанции")]
@@ -83,6 +94,12 @@ namespace ProjectC.Core
         [Tooltip("Anti-jitter сглаживание позиции камеры (быстрое — инерция в Lag)")]
         [SerializeField] private float positionSmoothTime = 0.04f;
         [SerializeField] private float modeSwitchSmoothTime = 0.5f;
+        [Tooltip("T-CAM17: окно медленного следования дистанции после смены режима (сек)")]
+        [SerializeField] private float modeSwitchWindow = 1f;
+        [Tooltip("T-CAM17: быстрое следование дистанции за целью/зумом (сек)")]
+        [SerializeField] private float zoomFollowTime = 0.15f;
+        [Tooltip("T-CAM17: сглаживание точки взгляда — убивает 1-кадровые щелчки горизонта (сек)")]
+        [SerializeField] private float lookSmoothTime = 0.03f;
 
         [Header("LookAt")]
         [SerializeField] private float lookAtHeightWalk = 1.5f;
@@ -90,13 +107,13 @@ namespace ProjectC.Core
 
         [Header("Zoom")]
         [Tooltip("Минимальная дистанция камеры (зум колёсиком)")]
-        [SerializeField] private float zoomMinDistance = 2f;
+        [SerializeField] private float zoomMinDistance = 0.5f;
         [Tooltip("Максимальная дистанция камеры (зум колёсиком)")]
-        [SerializeField] private float zoomMaxDistance = 12f;
+        [SerializeField] private float zoomMaxDistance = 50f;
         [Tooltip("Минимальная дистанция в режиме корабля")]
-        [SerializeField] private float zoomMinDistanceShip = 6f;
+        [SerializeField] private float zoomMinDistanceShip = 2f;
         [Tooltip("Максимальная дистанция в режиме корабля")]
-        [SerializeField] private float zoomMaxDistanceShip = 35f;
+        [SerializeField] private float zoomMaxDistanceShip = 350f;
 
         private float _yaw, _pitch;
         private float _currentDistance, _currentHeight, _currentLookAtHeight;
@@ -108,11 +125,17 @@ namespace ProjectC.Core
 
         private Vector3 _lagTargetPos;
         private float _lagSpeed;
-        private float _lastClearTime;
+        private float _shrinkTimer;
+        private float _recoverTimer;
 
         private float _collisionExitTime;
         private bool _wasColliding;
         private Vector3 _lastCollisionPos;
+        private Vector3 _collisionLagPos;
+
+        private Vector3 _smoothLookPos;
+        private bool _vertBoostActive;
+        private float _modeSwitchTimer;
 
         private InputAction _lookAction;
         private InputAction _zoomAction;
@@ -236,6 +259,9 @@ namespace ProjectC.Core
             // в evidence-лог (f8_6: collisionPos навсегда в досдвиговых координатах),
             // а потребляется значение лишь в anti-pop окне при _wasColliding.
             _lastCollisionPos += translation;
+            // T-CAM17: stale-guard и сглаженный взгляд — тоже мировые точки, едут со сдвигом.
+            _collisionLagPos += translation;
+            _smoothLookPos += translation;
             return IsFiniteGlobalMotionCameraState(out error);
         }
 
@@ -261,6 +287,10 @@ namespace ProjectC.Core
             _collisionExitTime = snapshot.CollisionExitTime;
             _isShip = snapshot.IsShipMode;
             _cameraInitialized = snapshot.CameraInitialized;
+            // T-CAM17: структура снапшота не тронута — новые точки консервативно
+            // привязываем к текущей цели (stale-guard и взгляд стартуют без рывка).
+            _collisionLagPos = _lagTargetPos;
+            _smoothLookPos = _lagTargetPos + Vector3.up * _currentLookAtHeight;
             return IsFiniteGlobalMotionCameraState(out error);
         }
 
@@ -306,6 +336,7 @@ namespace ProjectC.Core
             error = null;
             if (!IsFinite(transform.position) || !IsFinite(transform.rotation) ||
                 !IsFinite(_lagTargetPos) || !IsFinite(_lastCollisionPos) ||
+                !IsFinite(_collisionLagPos) || !IsFinite(_smoothLookPos) ||
                 !GlobalPosition.IsFiniteValue(_lagSpeed) ||
                 !GlobalPosition.IsFiniteValue(_collisionExitTime))
             {
@@ -350,6 +381,7 @@ namespace ProjectC.Core
             {
                 target = newTarget;
                 _lagTargetPos = target.position;
+                _smoothLookPos = target.position + Vector3.up * _currentLookAtHeight;
             }
         }
 
@@ -376,9 +408,13 @@ namespace ProjectC.Core
             _userDistance = _targetDistance = isShip ? shipDistance : distance;
             _targetHeight = isShip ? shipHeight : height;
             _targetLookAtHeight = isShip ? lookAtHeightShip : lookAtHeightWalk;
+            _modeSwitchTimer = modeSwitchWindow;
 
             if (target != null)
+            {
                 _lagTargetPos = target.position;
+                _smoothLookPos = target.position + Vector3.up * _targetLookAtHeight;
+            }
         }
 
         public void InitializeCamera()
@@ -396,7 +432,9 @@ namespace ProjectC.Core
             _currentHeight = _targetHeight = height;
             _currentLookAtHeight = _targetLookAtHeight = lookAtHeightWalk;
             _lagTargetPos = target.position;
-            _lastClearTime = Time.time;
+            _smoothLookPos = target.position + Vector3.up * _currentLookAtHeight;
+            _shrinkTimer = 0f;
+            _recoverTimer = 0f;
 
             bool inGame = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
             Cursor.lockState = inGame ? CursorLockMode.Locked : CursorLockMode.None;
@@ -509,7 +547,12 @@ namespace ProjectC.Core
 
         private void UpdateModeTransition()
         {
-            _currentDistance = Mathf.SmoothDamp(_currentDistance, _targetDistance, ref _distanceVelocity, modeSwitchSmoothTime);
+            // T-CAM17: дистанция следует быстро (зум/адаптив отзывчивы), медленно —
+            // только в окне после смены режима walk↔ship. Высота/взгляд меняются лишь
+            // при смене режима — им оставлен медленный переход.
+            _modeSwitchTimer = Mathf.Max(0f, _modeSwitchTimer - Time.deltaTime);
+            float distTime = _modeSwitchTimer > 0f ? modeSwitchSmoothTime : zoomFollowTime;
+            _currentDistance = Mathf.SmoothDamp(_currentDistance, _targetDistance, ref _distanceVelocity, distTime);
             _currentHeight = Mathf.SmoothDamp(_currentHeight, _targetHeight, ref _heightVelocity, modeSwitchSmoothTime);
             _currentLookAtHeight = Mathf.SmoothDamp(_currentLookAtHeight, _targetLookAtHeight, ref _lookAtVelocity, modeSwitchSmoothTime);
         }
@@ -521,7 +564,9 @@ namespace ProjectC.Core
             // Dead-zone: отсекаем шум скролла
             if (Mathf.Abs(_zoomInput) < 0.001f) return;
 
-            float zoomDelta = _zoomInput * _cachedZoomSensitivity * 0.5f;
+            // T-CAM17: нормировка на нотчи (Windows: ±120/нотч). Раньше один нотч
+            // швырял дистанцию в кламп (бинарный зум). Теперь 1 нотч ≈ 1.5м при sens 3.
+            float zoomDelta = (_zoomInput / 120f) * _cachedZoomSensitivity * 0.5f;
             float newTarget = _userDistance - zoomDelta;
 
             float minDist = _isShip ? zoomMinDistanceShip : zoomMinDistance;
@@ -565,9 +610,19 @@ namespace ProjectC.Core
                 float effXZ = lagHorizontalTime * dynamicMul;
                 float effY = lagVerticalTime * dynamicMul;
 
-                // При быстром падении/взлёте (>5 m/s) — ускоряем вертикальный отклик
+                // T-CAM17: гистерезис вместо дискретного порога 5 м/с — иначе дребезг
+                // вкл/выкл ровно перед приземлением, где уже активны коллизия+adaptive.
                 float vertSpeed = Mathf.Abs(delta.y) / Mathf.Max(Time.deltaTime, 0.0001f);
-                if (vertSpeed > 5f)
+                if (_vertBoostActive)
+                {
+                    if (vertSpeed < vertBoostExitSpeed)
+                        _vertBoostActive = false;
+                }
+                else if (vertSpeed > vertBoostEnterSpeed)
+                {
+                    _vertBoostActive = true;
+                }
+                if (_vertBoostActive)
                     effY *= 0.4f;
 
                 lagXZ = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effXZ, 0.001f));
@@ -613,7 +668,7 @@ namespace ProjectC.Core
             {
                 if (!Physics.SphereCast(castOrigin, sphereCastRadius, dir, out RaycastHit hitInfo, remainingDist, collisionMask, QueryTriggerInteraction.Ignore))
                 {
-                    if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
+                    if (UseAntiPopHold(currentTime))
                         return ClampNearClip(_lastCollisionPos, lookTarget, nearClipMin);
                     _wasColliding = false;
                     return ClampNearClip(desiredPos, lookTarget, nearClipMin);
@@ -624,6 +679,7 @@ namespace ProjectC.Core
                     _wasColliding = true;
                     _collisionExitTime = currentTime;
                     _lastCollisionPos = hitInfo.point + hitInfo.normal * (sphereCastRadius + wallOffset);
+                    _collisionLagPos = _lagTargetPos;
                     return ClampNearClip(_lastCollisionPos, lookTarget, nearClipMin);
                 }
 
@@ -633,10 +689,22 @@ namespace ProjectC.Core
                 castOrigin = castOrigin + dir * (distToHit + sphereCastRadius + 0.1f);
             }
 
-            if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
+            if (UseAntiPopHold(currentTime))
                 return ClampNearClip(_lastCollisionPos, lookTarget, nearClipMin);
             _wasColliding = false;
             return ClampNearClip(desiredPos, lookTarget, nearClipMin);
+        }
+
+        /// <summary>
+        /// T-CAM17: держать замороженную точку, только если она свежая.
+        /// Если лаг-цель уехала (падение, отъезд от стены) — холд протух, иначе камера
+        /// стоит в воздухе/у стены, пока игрок уходит, и затем срывается рывком.
+        /// </summary>
+        private bool UseAntiPopHold(float currentTime)
+        {
+            if (!_wasColliding || currentTime - _collisionExitTime >= antiPopTime)
+                return false;
+            return Vector3.Distance(_lagTargetPos, _collisionLagPos) < antiPopStaleDistance;
         }
 
         private float GetMinimumCameraDistance()
@@ -654,7 +722,11 @@ namespace ProjectC.Core
 
             // NPC-префабы проекта используют NavMeshAgent + CharacterController.
             // Их тела не должны быть spring-arm препятствием в толпе.
-            return ignoreNavMeshAgents && collider.GetComponentInParent<UnityEngine.AI.NavMeshAgent>() != null;
+            if (ignoreNavMeshAgents && collider.GetComponentInParent<UnityEngine.AI.NavMeshAgent>() != null)
+                return true;
+            // T-CAM17: чужие игроки (CharacterController без NavMeshAgent) — тоже не
+            // препятствие: иначе в толпе камера упирается в соседей и дёргается за ними.
+            return collider.GetComponentInParent<CharacterController>() != null;
         }
 
         /// <summary>
@@ -669,24 +741,33 @@ namespace ProjectC.Core
             return pos;
         }
 
+        /// <summary>
+        /// T-CAM17: три состояния вместо реле T-CAM16.
+        /// SHRINK — дистанция не влезает (упираемся): стягивать после устойчивой коллизии.
+        /// REST — у стены, но дистанция влезает: ТОЧКА ПОКОЯ, держать (таймеры в ноль).
+        /// RECOVER — свободно: восстанавливать к зуму после устойчивого просвета.
+        /// Переключение на условии влезания (с дедбендом), а не на ratio — поэтому
+        /// реле-цикл «сжался ниже стены → чисто → отъехал → снова в стену» невозможен:
+        /// fixed point REST лежит на той же стороне поверхности переключения, где стоим.
+        /// </summary>
         private void UpdateAdaptiveDistance()
         {
             if (!adaptiveDistanceEnabled)
             {
                 _targetDistance = _userDistance;
+                _shrinkTimer = 0f;
+                _recoverTimer = 0f;
                 return;
             }
 
             float actualDist = Vector3.Distance(transform.position, _lagTargetPos);
-            // Адаптивная дистанция работает поверх пользовательского zoom,
-            // но не изменяет сам zoom. Поэтому ручное приближение больше не откатывается.
-            float desiredDist = _userDistance;
-            float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
-            float currentTime = Time.time;
 
-            if (ratio < adaptiveThreshold && _wasColliding)
+            if (_wasColliding && _targetDistance > actualDist + adaptiveFitDeadband)
             {
-                if (currentTime - _lastClearTime > adaptiveDelay)
+                // SHRINK: цель не влезает в доступное место.
+                _recoverTimer = 0f;
+                _shrinkTimer += Time.deltaTime;
+                if (_shrinkTimer >= shrinkDelay)
                 {
                     float minDist = Mathf.Max(GetMinimumCameraDistance(), actualDist - wallOffset - sphereCastRadius);
                     float collisionTarget = Mathf.Min(_targetDistance, minDist);
@@ -695,14 +776,24 @@ namespace ProjectC.Core
                         adaptiveSpeed * Time.deltaTime);
                 }
             }
+            else if (!_wasColliding)
+            {
+                // RECOVER: свободно — но только после устойчивого просвета, иначе
+                // дребезг на тонких препятствиях (столбы, листва) качает камеру.
+                _shrinkTimer = 0f;
+                _recoverTimer += Time.deltaTime;
+                if (_recoverTimer >= recoverDelay)
+                {
+                    _targetDistance = Mathf.Lerp(
+                        _targetDistance, _userDistance,
+                        adaptiveRecoverySpeed * Time.deltaTime);
+                }
+            }
             else
             {
-                _targetDistance = Mathf.Lerp(
-                    _targetDistance, _userDistance,
-                    adaptiveRecoverySpeed * Time.deltaTime);
-
-                if (ratio > 0.95f)
-                    _lastClearTime = currentTime;
+                // REST: упираемся, но дистанция уже влезает — стоим, это и есть покой.
+                _shrinkTimer = 0f;
+                _recoverTimer = 0f;
             }
         }
 
@@ -739,7 +830,16 @@ namespace ProjectC.Core
 
         private void UpdateLookAt()
         {
-            transform.LookAt(_lagTargetPos + Vector3.up * _currentLookAtHeight);
+            // T-CAM17: точка взгляда сглажена exp-фильтром (~2 кадра при 0.03с).
+            // Мгновенный LookAt превращал любую дрожь _lagTargetPos (ступеньки
+            // CharacterController, переключение vert-boost, стоп при приземлении)
+            // 1:1 в дрожь горизонта — отсюда «тошнота». Позиция и так фильтруется.
+            Vector3 lookPoint = _lagTargetPos + Vector3.up * _currentLookAtHeight;
+            if (_smoothLookPos == Vector3.zero)
+                _smoothLookPos = lookPoint;
+            float t = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(lookSmoothTime, 0.001f));
+            _smoothLookPos = Vector3.Lerp(_smoothLookPos, lookPoint, t);
+            transform.LookAt(_smoothLookPos);
         }
 
         private void SnapCameraToPosition()
@@ -748,8 +848,9 @@ namespace ProjectC.Core
             float pr = _pitch * Mathf.Deg2Rad;
             Vector3 dir = new Vector3(-Mathf.Sin(yr) * Mathf.Cos(pr), Mathf.Sin(pr), -Mathf.Cos(yr) * Mathf.Cos(pr));
             _lagTargetPos = target.position;
+            _smoothLookPos = target.position + Vector3.up * _currentLookAtHeight;
             transform.position = target.position + dir * _currentDistance + Vector3.up * _currentHeight;
-            transform.LookAt(target.position + Vector3.up * _currentLookAtHeight);
+            transform.LookAt(_smoothLookPos);
         }
 
         private void CreateControlHintsUI()

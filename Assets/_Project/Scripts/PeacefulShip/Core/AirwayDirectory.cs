@@ -165,7 +165,14 @@ namespace ProjectC.PeacefulShip.Core
             }
             ride += Vector3.Distance(at, b);
             if (ride > direct * Mathf.Max(1.1f, maxDetour)) { failReason = "detour"; return false; }
-            for (int i = 0; i < chain.Count; i++) outWaypoints.Add(_segs[chain[i]].LiveCenter());
+            // T-NS-AIR02: точки — XZ центров боксов, Y — высота профиля вызывателя.
+            // Магистраль задаёт ЛАТЕРАЛЬНУЮ топологию; вертикаль остаётся профилю
+            // (эшелоны/лор): иначе бокс тянул бы всех на свою высоту и ломал эшелоны.
+            for (int i = 0; i < chain.Count; i++)
+            {
+                Vector3 c = _segs[chain[i]].LiveCenter();
+                outWaypoints.Add(new Vector3(c.x, a.y, c.z));
+            }
             failReason = "ok";
             return true;
         }

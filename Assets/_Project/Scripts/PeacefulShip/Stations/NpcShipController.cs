@@ -2388,9 +2388,11 @@ namespace ProjectC.PeacefulShip.Stations
         [Range(1, 8)] [SerializeField] private int routeGraphMaxWp = 6;
         // T-NS-AIR01: глобальные магистрали (дизайн 17). Kill-switch: useAirways=false
         // (боксов нет = no-op). Стратегический слой — до графа.
+        // T-NS-AIR02: дефолт true — без боксов поведение идентично (проверено:
+        // same-box/near-box/no-entry пасы молча), с боксами флот едет сразу.
         [Header("Airways (server-only)")]
         [Tooltip("ВКЛ: дальние плечи по дизайнерским магистралям-боксам.")]
-        [SerializeField] private bool useAirways = false;
+        [SerializeField] private bool useAirways = true;
         [Tooltip("Короче — прямой полёт, магистраль не смотрим (м).")]
         [Min(500f)] [SerializeField] private float airwayMinUseDist = 2000f;
         [Tooltip("Радиус поиска входа/выхода магистрали от концов плеча (м).")]

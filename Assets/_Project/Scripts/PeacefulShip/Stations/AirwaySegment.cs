@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectC.Docking.Network;
 
 namespace ProjectC.PeacefulShip.Stations
 {
@@ -25,11 +26,13 @@ namespace ProjectC.PeacefulShip.Stations
         public List<AirwaySegment> links = new List<AirwaySegment>();
 
         [Header("Подсказки (AIR03-маршрутизация + лор)")]
-        [Tooltip("LocationId станций/поселений, которые обслуживает ЭТОТ бокс " +
-                 "(обычно заполняют только крайние боксы линии: точки входа/выхода). " +
-                 "Серединные боксы — пусто. Сейчас только данные для будущего роутинга; " +
+        [Tooltip("Станции, которые обслуживает ЭТОТ бокс: перетащить объекты " +
+                 "с DockStationController (обычно заполняют только крайние боксы " +
+                 "линии — точки входа/выхода). Серединные боксы — пусто. " +
+                 "LocationId читается вживую (переименование/правка definition " +
+                 "не ломают привязку). Сейчас только данные для будущего роутинга; " +
                  "на полёт не влияет.")]
-        public string[] stationIds = new string[0];
+        public List<DockStationController> stations = new List<DockStationController>();
 
         /// <summary>Мировой центр объёма (живём — едет со сценой, F8-безопасно).</summary>
         public Vector3 LiveCenter()

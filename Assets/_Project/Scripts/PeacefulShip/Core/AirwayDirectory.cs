@@ -107,6 +107,25 @@ namespace ProjectC.PeacefulShip.Core
         }
 
         /// <summary>
+        /// T-NS-AIR02b: живые LocationId станций бокса (для AIR03-роутинга и лора).
+        /// Читается из DockStationController вживую — переименование/правка
+        /// definition привязку не ломают. Пустые/битые ссылки пропускаются.
+        /// </summary>
+        public static List<string> ServedLocationIds(AirwaySegment seg)
+        {
+            var ids = new List<string>(2);
+            if (seg == null || seg.stations == null) return ids;
+            for (int i = 0; i < seg.stations.Count; i++)
+            {
+                var st = seg.stations[i];
+                if (st == null) continue;
+                string loc = st.LocationId;
+                if (!string.IsNullOrEmpty(loc) && !ids.Contains(loc)) ids.Add(loc);
+            }
+            return ids;
+        }
+
+        /// <summary>
         /// Маршрут по магистрали: точки-центры боксов (без цели).
         /// true = взять магистраль; false = legacy (причина в failReason).
         /// Короткие плечи и чистая прямая — не магистраль (см. дизайн 17 §2).

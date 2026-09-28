@@ -20,7 +20,8 @@ namespace ProjectC.PeacefulShip.Core
         // false = тихо для перф-замеров (файл не создаётся, строки не форматируются
         // в файл; интерполяция аргументов на местах вызовов остаётся — пренебрежимо).
         // Включить для отладки: Enabled = true (одна строка, напр. из читов/F12).
-        public static bool Enabled = false;
+        // T-NS-AIR01: включён для отладки магистралей (замер после — вернуть false).
+        public static bool Enabled = true;
 
         private static StreamWriter _writer;
         private static string _path;

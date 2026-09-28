@@ -2386,6 +2386,19 @@ namespace ProjectC.PeacefulShip.Stations
         [SerializeField] private bool useRouteGraph = true;
         [Tooltip("Макс. точек графа (больше — идём legacy).")]
         [Range(1, 8)] [SerializeField] private int routeGraphMaxWp = 6;
+        // T-NS-AIR01: глобальные магистрали (дизайн 17). Kill-switch: useAirways=false
+        // (боксов нет = no-op). Стратегический слой — до графа.
+        [Header("Airways (server-only)")]
+        [Tooltip("ВКЛ: дальние плечи по дизайнерским магистралям-боксам.")]
+        [SerializeField] private bool useAirways = false;
+        [Tooltip("Короче — прямой полёт, магистраль не смотрим (м).")]
+        [Min(500f)] [SerializeField] private float airwayMinUseDist = 2000f;
+        [Tooltip("Радиус поиска входа/выхода магистрали от концов плеча (м).")]
+        [Min(100f)] [SerializeField] private float airwayEntryRadius = 1500f;
+        [Tooltip("Макс. детур относительно прямой (×): больше — legacy.")]
+        [Range(1.1f, 3f)] [SerializeField] private float airwayMaxDetour = 1.6f;
+        [Tooltip("Макс. точек магистрали (больше — legacy).")]
+        [Range(1, 8)] [SerializeField] private int airwayMaxWp = 6;
         private readonly List<Vector3> _graphWps = new List<Vector3>(8); // буфер графа — F8-безопасно (пересчёт)
         private readonly List<Vector3> _navPlan = new List<Vector3>(8);
         private int _navIdx; // мировые точки — сдвиг в ApplyRebaseTranslation
@@ -2451,6 +2464,30 @@ namespace ProjectC.PeacefulShip.Stations
             float homeDist = Vector3.Distance(a, b);
             bool mountainHome = homeDist < navFinishGuardDist
                 && PeakRegistry.IsInsideDisc(b, navBypassDist, out _, out _);
+            if (mountainHome) how = "mountain-home";
+            // T-NS-AIR01: стратегический слой — магистрали (до графа). Короткие плечи,
+            // дом и отсутствие боксов — мимо молча; несходство цены/длины — в лог.
+            if (!mountainHome && useAirways)
+            {
+                _graphWps.Clear(); // транзитный буфер (общий с графом, пересчёт)
+                if (AirwayDirectory.TryBuildRoute(a, b, airwayMinUseDist, airwayEntryRadius,
+                        airwayMaxDetour, airwayMaxWp, _graphWps, out string airFail)
+                    && _graphWps.Count > 0)
+                {
+                    for (int i = 0; i < _graphWps.Count; i++) _navPlan.Add(_graphWps[i]);
+                    how = "air" + _graphWps.Count;
+                    _navPlan.Add(b);
+                    string wpPosA = "";
+                    for (int i = 0; i < _graphWps.Count && i < 3; i++)
+                        wpPosA += $"W{i + 1}=({_graphWps[i].x:F0},{_graphWps[i].y:F0},{_graphWps[i].z:F0})";
+                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                        "nav-plan", $"wp={_navPlan.Count}:{how}{wpPosA} tgt=({b.x:F0},{b.y:F0},{b.z:F0})");
+                    return;
+                }
+                if (airFail != "no-airways" && airFail != "short-hop" && airFail != "same-box" && airFail != "near-box")
+                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                        "air-fail", airFail);
+            }
             if (mountainHome) how = "mountain-home";
             // T-NS-GRAPH01: сначала граф (структурно, N пиков), fallback — legacy ниже.
             // T-NS-LOG02: молчаливый fallback — в лог (иначе 22/22 падений графа

@@ -313,6 +313,11 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("navFinishGuardDist");
                 DrawProp("useRouteGraph");
                 DrawProp("routeGraphMaxWp");
+                DrawProp("useAirways");
+                DrawProp("airwayMinUseDist");
+                DrawProp("airwayEntryRadius");
+                DrawProp("airwayMaxDetour");
+                DrawProp("airwayMaxWp");
                 DrawProp("berthOverheadProbe");
                 DrawProp("berthOverheadProbeDist");
                 DrawProp("wallSameSpotRadius");

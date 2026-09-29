@@ -566,9 +566,13 @@ namespace ProjectC.Core
             // Dead-zone: отсекаем шум скролла
             if (Mathf.Abs(_zoomInput) < 0.001f) return;
 
-            // T-CAM17: нормировка на нотчи (Windows: ±120/нотч). Раньше один нотч
-            // швырял дистанцию в кламп (бинарный зум). Теперь 1 нотч ≈ 1.5м при sens 3.
-            float zoomDelta = (_zoomInput / 120f) * _cachedZoomSensitivity * 0.5f;
+            // T-CAM19: шаг пропорционален текущей дистанции. Линейный шаг (~1.5м/нотч)
+            // точен пешком, но на корабле (2–350м) требует сотни нотчей. Теперь ~15%
+            // дистанции/нотч при sens 3: пешком 5м → 0.75м/нотч, корабль 100м → 15м/нотч.
+            // Минимум 0.25м — не глохнет у zoomMin. Направление: вверх — ближе.
+            float notches = _zoomInput / 120f;
+            float sensScale = _cachedZoomSensitivity / 3f;
+            float zoomDelta = notches * Mathf.Max(_userDistance * 0.15f, 0.25f) * sensScale;
             float newTarget = _userDistance - zoomDelta;
 
             float minDist = _isShip ? zoomMinDistanceShip : zoomMinDistance;

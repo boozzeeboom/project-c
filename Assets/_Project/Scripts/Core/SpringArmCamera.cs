@@ -87,6 +87,8 @@ namespace ProjectC.Core
         [SerializeField] private float recoverDelay = 0.3f;
         [Tooltip("T-CAM18: перед recovery проверять лучом на полной дистанции — иначе «мячик»")]
         [SerializeField] private bool adaptiveProbeEnabled = true;
+        [Tooltip("T-CAM20: шаг пробного луча вперёд от текущей цели (м) — расти можно, пока свободно")]
+        [SerializeField] private float adaptiveProbeStep = 1f;
         [Tooltip("Скорость уменьшения дистанции")]
         [SerializeField] private float adaptiveSpeed = 3f;
         [Tooltip("Скорость восстановления дистанции")]
@@ -116,6 +118,10 @@ namespace ProjectC.Core
         [SerializeField] private float zoomMinDistanceShip = 2f;
         [Tooltip("Максимальная дистанция в режиме корабля")]
         [SerializeField] private float zoomMaxDistanceShip = 350f;
+        [Tooltip("T-CAM21: шаг колеса (% дистанции/нотч при чувств. 3). 0.2 = ×1.2/нотч")]
+        [SerializeField] private float zoomStepPercent = 0.2f;
+        [Tooltip("T-CAM21: скорость догона камеры за колесом (exp/с). Recovery после стен — отдельно, медленнее")]
+        [SerializeField] private float zoomChaseSpeed = 8f;
 
         private float _yaw, _pitch;
         private float _currentDistance, _currentHeight, _currentLookAtHeight;
@@ -566,18 +572,27 @@ namespace ProjectC.Core
             // Dead-zone: отсекаем шум скролла
             if (Mathf.Abs(_zoomInput) < 0.001f) return;
 
-            // T-CAM19: шаг пропорционален текущей дистанции. Линейный шаг (~1.5м/нотч)
-            // точен пешком, но на корабле (2–350м) требует сотни нотчей. Теперь ~15%
-            // дистанции/нотч при sens 3: пешком 5м → 0.75м/нотч, корабль 100м → 15м/нотч.
+            // T-CAM19/21: шаг пропорционален дистанции (точен вблизи, жив на 350м).
             // Минимум 0.25м — не глохнет у zoomMin. Направление: вверх — ближе.
             float notches = _zoomInput / 120f;
             float sensScale = _cachedZoomSensitivity / 3f;
-            float zoomDelta = notches * Mathf.Max(_userDistance * 0.15f, 0.25f) * sensScale;
+            float zoomDelta = notches * Mathf.Max(_userDistance * zoomStepPercent, 0.25f) * sensScale;
             float newTarget = _userDistance - zoomDelta;
 
             float minDist = _isShip ? zoomMinDistanceShip : zoomMinDistance;
             float maxDist = _isShip ? zoomMaxDistanceShip : zoomMaxDistance;
             _userDistance = Mathf.Clamp(newTarget, minDist, maxDist);
+
+            // T-CAM21: быстрая догонялка за колесом. Медленный recovery (0.3с + 2/с)
+            // хорош для отъезда от стен, но душит ручной зум. Пока крутится колесо
+            // и впереди свободно — тянем T к U напрямую, камера догоняет за ~0.15с.
+            // В стену не влетим: probe ветирует, adaptive-shrink остаётся владельцем T.
+            if (!_wasColliding && !(adaptiveProbeEnabled && IsBlockedAtDistance(_userDistance)))
+            {
+                _targetDistance = Mathf.Lerp(
+                    _targetDistance, _userDistance,
+                    Mathf.Min(1f, zoomChaseSpeed * Time.deltaTime));
+            }
         }
 
         private void UpdateLag()
@@ -787,12 +802,17 @@ namespace ProjectC.Core
             {
                 // RECOVER: свободно — но только после устойчивого просвета, иначе
                 // дребезг на тонких препятствиях (столбы, листва) качает камеру.
-                // T-CAM18: плюс probe на полной дистанции. При крутом pitch вниз луч
+                // T-CAM18: плюс probe на дистанции роста. При крутом pitch вниз луч
                 // сам очищается на малой C (высота перевешивает), и вырастание C снова
-                // втыкается в пол — цикл «мячик». То же для дальней стены. Поэтому
-                // recovery — только если и на _userDistance препятствий нет.
+                // втыкается в пол — цикл «мячик». То же для дальней стены.
+                // T-CAM20: проверять НЕ полную _userDistance (на корабле это до 350м —
+                // сзади почти всегда террейн, и зум умирал в обе стороны), а точку
+                // роста min(U, T+step). Приближение (U<T) вето не ловит никогда:
+                // внутрь лететь безопасно, резолв всё равно клампит. Отдаление растёт,
+                // пока свободно прямо впереди, и встаёт за метр до препятствия.
                 _shrinkTimer = 0f;
-                if (adaptiveProbeEnabled && IsUserDistanceBlocked())
+                float probeDist = Mathf.Min(_userDistance, _targetDistance + adaptiveProbeStep);
+                if (adaptiveProbeEnabled && IsBlockedAtDistance(probeDist))
                 {
                     _recoverTimer = 0f;
                 }
@@ -816,20 +836,20 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// T-CAM18: пробный луч на полной пользовательской дистанции вдоль текущей орбиты.
+        /// T-CAM18/20: пробный луч вдоль текущей орбиты на заданной дистанции.
         /// Текущий короткий луч мог очиститься сам (пол при крутом pitch, дальняя стена),
-        /// а на _userDistance препятствие всё ещё там — вырастать нельзя, держим T.
+        /// а дальше препятствие всё ещё там — вырастать нельзя, держим T.
         /// Один SphereCast/кадр, персонажи игнорятся как в основном резолве.
         /// </summary>
-        private bool IsUserDistanceBlocked()
+        private bool IsBlockedAtDistance(float dist)
         {
             if (target == null) return false;
             Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
             float yr = _yaw * Mathf.Deg2Rad;
             float pr = _pitch * Mathf.Deg2Rad;
             Vector3 dirAngles = new Vector3(-Mathf.Sin(yr) * Mathf.Cos(pr), Mathf.Sin(pr), -Mathf.Cos(yr) * Mathf.Cos(pr));
-            Vector3 fullDesired = _lagTargetPos + dirAngles * _userDistance + Vector3.up * _currentHeight;
-            Vector3 ray = fullDesired - lookTarget;
+            Vector3 probeDesired = _lagTargetPos + dirAngles * dist + Vector3.up * _currentHeight;
+            Vector3 ray = probeDesired - lookTarget;
             float len = ray.magnitude;
             if (len < 0.05f) return false;
             if (Physics.SphereCast(lookTarget, sphereCastRadius, ray / len, out RaycastHit hit, len, collisionMask, QueryTriggerInteraction.Ignore))

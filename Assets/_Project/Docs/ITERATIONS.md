@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-09-29 (T-CROWD-00 — теория подключаемых мозгов толпы)
+
+**Задача:** Только анализ (без кода): как наполнить «Гигант» (~150 из 300) и города (тысячи), чтобы не лечь по сети/серверу/рендеру; механизм «пнул → бьют», «поговорил → герой»; ресёрч BDO-мобов 100+ и челленджа «2000 умных NPC».
+
+**Результат:** Новый каталог `docs/NPC_others_peacfull/crowd_brains/` (10 файлов: 00_README + 01_THEORY + 02_COMBAT_PROMOTION + 03_DIALOG_PROMOTION + 04_SERVER_ROSTER_AND_POOLS + 05_CLIENT_CROWD + 06_PROTOCOL_AND_VALIDATION + 07_FAILURES_AND_EXPLOITS + 08_ROADMAP + 09_WET_FANTASIES_2000_SMART_NPC). Теория Roster+Lease: клиент видит многих (без NetworkObject/AI), сервер хранит ростер + пулы мозгов (BrainPool 6–8, DialogPool 1+тёплые); событие игрока промоутит 1+2–7 соседей во временных героев с лизой TTL, остальные — клиентский фолбэк. Опора на существующие швы: `IDamageTarget` без GameObject (`CombatServer` — словарь), `QuestServer.RequestTalkToNpcRpc` без NetworkObject + fallback-деревья, `GrudgeTable`/attitude/якоря. BDO-ресёрч: пак+aggro-cap 8–10+лишуй+каналы; 2000-LLM вывод — существуют 2000, думают 20, говорят 5 (деньги/латентность против: 1000 активных ≈ 6–11×H100, $6–3000/час).
+
+**Проверка:** Только доки, код не тронут — компиляция не затрагивалась. Ручные проверки расписаны в `08_ROADMAP.md` (NOT RUN, за пользователем).
+
+**Файлы:** `docs/NPC_others_peacfull/crowd_brains/*.md` (10 новых), `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-14 (T-FO09Q — чистка кода FloatingOrigin)
 
 **Задача:** Убрать ненужное в `Scripts/World/FloatingOrigin` (99 файлов, 17k строк).

@@ -14,6 +14,7 @@ using ProjectC.PeacefulShip.Core;
 using ProjectC.AI;
 using Unity.AI.Navigation;
 using UnityEngine.AI;
+using System.Collections.Generic;
 using System.IO;
 
 namespace ProjectC.Editor
@@ -485,10 +486,15 @@ namespace ProjectC.Editor
             var ecube = CreateChildCube(engVisuals, "Cube",
                 Vector3.zero, Vector3.zero, Vector3.one, Color.gray);
 
-            // Wire engine visual references
-            SetPrivateField(engineVis, "_propeller", ecube.transform);
-            SetPrivateField(engineVis, "_pivotPoint", rotAnchor.transform);
-            SetPrivateField(engineVis, "_visuals", engVisuals.transform);
+            // Wire engine visual references (T-ENG02 multi-pivot: по юниту на мотор)
+            var thruster = new EngineThrusterVisual.ThrusterUnit
+            {
+                pivot = rotAnchor.transform,
+                visuals = engVisuals.transform,
+                propeller = ecube.transform
+            };
+            SetPrivateField(engineVis, "_thrusters",
+                new List<EngineThrusterVisual.ThrusterUnit> { thruster });
 
             // --- 9 ModuleSlots ---
             CreateModuleSlot(root, "Slot_MODULE_LIFT_ENH",   new Vector3(4f, 1.5f, 0),     SlotType.Propulsion);

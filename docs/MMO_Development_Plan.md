@@ -1,11 +1,12 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 21 сентября 2026 г. | **Текущая версия:** `v0.1.85`
+**Последнее обновление:** 28 сентября 2026 г. | **Текущая версия:** `v0.1.91`
 
 > **Что нового (08–14 сентября 2026):** **v0.1.60.** Floating Origin — крупный интеграционный slice и набор контрактов для палуб кораблей, NPC, погоды, камеры, респауна и сохранений. Исторические verify-прогоны были положительными, но текущий аудит v0.1.85 отдельно фиксирует, что concrete adapters, runtime installation, live manifest/participant admission, controlled rebase/rollback и `runtimeRebaseReadiness` ещё не доказаны. Свет — малая интеграция (T-LIGHT01–09): ночные фонари (realtime), фикс ночной экспозиции, Lighting Settings мира. Подробности: `docs/dev/RETRO_FO_LIGHT_2026-09-14.md` и `docs/world/floatingorigin/06AP_CONSOLIDATED_INTEGRATION_STATUS.md`.
 >
 > **Что нового (14–21 сентября 2026):** **v0.1.60 → v0.1.85.** Ретроспектива группирует изменения как 41 коммит, но точечная проверка Git для диапазона `2e998329..28772325` показывает 105 коммитов и 174 изменённых файла (`+97324 / −39330`). Добавлены паромная ветка, новый content/bake pipeline, ViewDistance-пресеты, VeilController → CLOUD_system, единый террейн и генеративные руины, server-authoritative ship fixes FIX01–12, world map и compass rose, Admin F12 и PerfHUD-подготовка, DayNight/Calendar-обновления, NPC-ship route fixes, named crew и DistantFocus. Полный отчёт: `docs/dev/RETRO_v0.1.60_to_v0.1.85_2026-09-21.md`.
 >
+> **Что нового (22–28 сентября 2026):** **v0.1.85 → v0.1.91.** 118 коммитов (`b39549b8..c7e11be9`): паром доведён до персистентности веток + carry-рестор + platform-rescue (T-PAROM-13…22, постмортем серии 04…12); NPC-навигация — лидар-веер VFH, вотчдоги сближения, граф Дейкстры, PeakRegistry-диски, воздушные магистрали AIR01…03e (LOS 92% → 97%, v0.1.90); тишина 119 точек логов; перф-расследование зон/ветра (T-PERF02, GC зон −27%); камера SHRINK/REST/RECOVER (T-CAM17/18, v0.1.91); чанк-лоадер закрыт ресёрчем (legacy 2K deprecated); ключи fail-closed (T-KEY-10/11), приватные детали трюма (T-CARGO-UI-03 Phase 1), F12 Маршрут+Тесты (T-ADM-08/09). Арт: смоделены фермерские поселения 0-0 и 0-2, мегаферма-рефайнери, корабль «Гигант» (самый большой в игре, плавучий город на 300+ человек). Полный отчёт: `docs/dev/RETRO_v0.1.85_to_v0.1.91_2026-09-28.md`.
 > **Предыдущее обновление (5–20 августа 2026):** **v0.1.20 → v0.1.21.** Contract core refactor: разделены board offers, active contracts и terminal history; добавлен полный Receipt flow `Accept → Claim Cargo → Transport → Submit`, серверная валидация доставки и rollback при ошибках persistence. **v0.1.21** — локализационный фикс. Подробности: `docs/changelogs.md` и `docs/dev/RETROSPECTIVE_2026-08-17.md`.
 >
 > **☁️ Cloud Ocean 3.0 (T-CLD01, T-CLOUD02..42):** ~75 коммитов. Объёмная система облаков — 🟢 продакшн-готово. Volumetric raymarch (4 слоя 800–7000м), цветовые рампы день/закат, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal. Интерактивность: LocalDensityBuffer (96³), корабельный след (displacement + кильватерный конус), VFX contrail, штормовые ячейки (procedural cellular-форма «цветная капуста», иммунны к displacement, runtime save/load, anti-banding). Источник правды: `docs/world/CLOUD_system/3.0/STATUS.md`.
@@ -174,7 +175,8 @@
   - ✅ Zoom колёсиком (SettingsManager + InputBindingsConfig)
   - ✅ Near-clip защита
   - ✅ Авто-снап при телепортации/загрузке сохранения (T-CAM15, 2026-07-31)
-  - ✅ Cleanup legacy ThirdPersonCamera.cs
+   - ✅ Cleanup legacy ThirdPersonCamera.cs
+   - ✅ **T-CAM17/18 (v0.1.91, 28.09.2026):** adaptive-реле → 3 состояния SHRINK/REST/RECOVER (точка покоя, shrinkDelay 0.2 с / recoverDelay 0.3 с, fitDeadband 0.3 м), stale-guard anti-pop, гистерезис vert-boost 6.5/3.5 м/с, сглаживание взгляда, нормировка зума, игнор чужих CharacterController; CAM18 — RECOVER только по чистому пробному SphereCast на полной дистанции (закрыт цикл при крутом pitch). Аудит 12 findings F1–F12: `docs/dev/T-CAM17_SPRINGARM_AUDIT.md`. Код: `Scripts/Core/SpringArmCamera.cs` (±207).
 
 ### 1.3 Контроллер персонажа (пеший режим) ✅
 - ✅ WASD — движение вперёд/назад + стрейф
@@ -210,6 +212,7 @@
 - ✅ ⭐ **Repair Manager (2026-07-04..05)** — доковый менеджер модулей: `ShipModuleServer` (RPC install/remove/sell/repaint/hull-repair), `RepairManagerWindow` (UI Toolkit), Ship Observation Camera (FlyToShip + ▲▼◀▶), Ship Repainting (цвет + кредиты), Module Visual Preview (Editor tool). См. `docs/Ships/Modul_system/`.
 - ✅ ⭐ **Ship Key subsystem (R2-SHIP-KEY-001, 2026-06-06)** — ~~физический ключ-предмет для запуска. `ShipKeyBinding` + `ShipKeyServer` + `ShipKeyClientState` + `ShipKeyToast`.~~ **Obsolete — удалено в P1 рефакторинге (2026-07-05).** Заменено на `KeyRodInstanceWorld` (static facade, 0 reflection, 1 источник правды) + `MetaRequirementRegistry`. См. `docs/Ships/Key-subsystem/` + `docs/Ships/SHIP_REFACTOR_PLAN_2026-07-21.md`.
 - ✅ Рефакторинг кода — ShipController.cs (2000+ строк), разделение на подсистемы
+- ✅ **T-SHIP-FIX13/14 (v0.1.91, 22.09.2026):** выход с корабля (exit-position) и посадка без ключа (keyless-boarding). Тикеты-доки: `docs/Ships/fix/T-SHIP-FIX13_exit-position.md`, `docs/Ships/fix/T-SHIP-FIX14_keyless-boarding.md`.
 
 ### 1.5 Переключение режимов (пеший ↔ корабль) ✅
 - ✅ F — подойти к кораблю (< 5м) → сесть/выйти
@@ -389,6 +392,8 @@
 **Преемник:** R2-SHIP-KEY-003 — уникальные экземпляры ключей (2026-06-19, v18-v20 MVP завершён). Каждый корабль имеет уникальный KeyRodInstance (server-side registry `KeyRodInstanceWorld`). Подбор/дроп с передачей instanceId. Persistence через `JsonKeyRodInstanceRepository`. Drop↔pickup реактивирует Lost instance, не создаёт дубль. UI: вкладка "КОРАБЛЬ" в CharacterWindow показывает только корабли игрока (`MyShipsTab`). TAB-колесо: сектор 1 = "ВЛАДЕНИЕ" (Equipment + Key). См. `docs/Ships/Key-subsystem/99_CHANGELOG.md` (v1–v20) + `28_KEY_ARCHITECTURE_REVIEW.md` (глубокий обзор).
 
 **Фикс T-KEY-FIX (2026-08-03):** `persistentShipId` — потеря доступа к кораблю между сессиями устранена (пост-мортем: `docs/Ships/Key-subsystem/00_OVERVIEW.md`).
+- **T-KEY-10 (v0.1.91, 23.09.2026):** fail-closed + self-heal регистрации замков кораблей — фикс свободной посадки без ключа.
+- **T-KEY-11 (v0.1.91, 23.09.2026):** доступ к грузовой консоли корабля по ключу (гейт открытия как у кресла пилота). Чейнджлог: `docs/Ships/Key-subsystem/99_CHANGELOG.md`.
 
 **Migration guide:** `docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md` (337 строк).
 **Предшественник:** `docs/Ships/Key-subsystem/00_OVERVIEW.md` (Ship Key MVP, R2-SHIP-KEY-001).
@@ -973,7 +978,8 @@
    - ✅ Штраф от столкновений **наложен на HP корпуса** (ShipHull.ApplyCollisionDamage, 2026-07-05)
    - ✅ **NPC Cargo (2026-07-03):** `NpcCargoService` + `TryNpcBuy`/`TryNpcSell` + `NpcCargoTradeListConfig`
    - ✅ **Cargo UI (2026-07-02..03):** детальный список в CharacterWindow + Cargo Manager консоль + 3D визуал
-   - ✅ **Cargo ownership guard (2026-07-06):** `IsOwnerOfShip` в ShipCargoServer + MarketServer (P5)
+    - ✅ **Cargo ownership guard (2026-07-06):** `IsOwnerOfShip` в ShipCargoServer + MarketServer (P5)
+    - ✅ **T-CARGO-UI-03 Phase 1 (v0.1.91, 23.09.2026):** детали трюма по приватному запросу владельца вместо broadcast-NV (targeted snapshot по ключу). Дизайн: `docs/Ships/T-CARGO-UI-03_CARGO_DETAIL_PRIVACY.md`. Код: `ShipCargoServer` (+38), `ShipCargoClientState` (+52), `ShipCargoConsoleWindow` (±74).
    - ❌ Legacy `CargoSystem.cs` MonoBehaviour — **удалён (P2, 2026-07-05)**
    - ❌ 3 broken-refs в `WorldScene_0_0.unity` — **убраны**
 3. **LocationMarket — рынок локации:** ✅
@@ -1259,6 +1265,19 @@
 - ⚠️ **Приёмка:** код и документация обновлены, но ручные Play Mode-проверки для T-SHIP-FIX и полного NPC roundtrip остаются отдельным шагом; для Floating Origin runtime readiness остаётся `NOT_READY`.
 - **Источники:** `docs/dev/RETRO_v0.1.60_to_v0.1.85_2026-09-21.md`, `docs/NPC_others_peacfull/npc_ship/ITERATIONS.md`, `docs/world/floatingorigin/06AP_CONSOLIDATED_INTEGRATION_STATUS.md`.
 
+#### 3.4.5.9 Обновление v0.1.85 → v0.1.91 — 22–28 сентября 2026 (118 коммитов, `b39549b8..c7e11be9`)
+
+- ✅ **Паром (T-PAROM-05…22 + T-DIAG-FERRY):** серия 05…12 откачена (`abb682f7` → `2d8c4d67`) + постмортем `docs/world/parom_road/02_PAROM_RIDE_POSTMORTEM.md` (движковый SmoothStep не нормализует диапазон; bias −2 = сигнал `isGrounded`; сон RB в движении доказан логом). DIAG Фаза 1 — инструменты без смены поведения (366 промахов/с). T-PAROM-13…22: sleepThreshold=0 + yaw-only replay, кэп carry 0.1 м, WakeUp каждый кадр, снят IsSleeping-гейт, доворот 360°/с, персистентность веток (routeId в том же JSON/тике), игрок на живую кабинку при ресторре (platformRouteId + bind carry), platform-rescue падающих. Тесты — в `global_needtotest`.
+- ✅ **NPC-навигация (T-NS-WF01…18, NAV11…16, ALT01, GATE04, COORD01/DOCK01/GRAPH01):** лидар-веер ±60°/15° + VFH-скоринг вместо бампера; слоты теснин + hover-wait; scatter/retreat; leg-план + hotspot-память; PeakRegistry (диски пиков из heightmap) + tangent-bypass; границы 1100/4500 (FO-safe); RouteGraph (Дейкстра по гейтам); эшелоны 150 м + разнос вылетов ON на 20 кораблях в WorldScene_0_0.
+- ✅ **NPC-логи и магистрали (LOG01…02g, R16, MESH01, VERDICT, AIR01…03e → v0.1.90):** CSV NavLog с CODE-версией нав-кода; вотчдоги cruise-slow / goal-progress / lift-chimney / rolling; R16 — 17 сессий, плато LOS 60–80%, 5 структурных причин; MESH01 — бейк MeshCollider ≥200 м в диски; VERDICT «не нужны» (LOS 92%) → AIR01…03e за kill-switch: `AirwaySegment` + `AirwayDirectory` (Дейкстра по боксам, FO-safe, no-op без боксов), боксы primum-farm (триггеры, stationIds-ссылки), входы до объёма, LinkGap 600 м; длинный прогон 7.6 мин — air ×21, LOS 97%, фатального ноль (`bde58d10`). Ноты 12–18 + ITERATIONS +871: `docs/NPC_others_peacfull/npc_ship/`.
+- ✅ **Тишина и перф (T-NS-PERF01/PERF02b, T-PERF02):** 119 точек логов загейчены (`NavLog.Enabled=false`); Фаза 1 — десинхрон поллов 22 зон + переиспользование буферов (зоны CPU −7%, GC −27%); Фаза 5a/5b — тишина Storm/LocalDensity/SceneExecutor + downgrade спавн-варнингов; счётчики причин AddNavMeshData и rebase-сбросов; диагноз налога авто-сдвигов. Доки `docs/world/optimization/25092026/` + ITERATIONS 301 строка. Дальше — сужение маски `OverlapSphere r=1000` (Фаза 2) + спайк старта хоста 1370 мс (Фаза 7).
+- ✅ **Камера (T-CAM17/18 → v0.1.91):** см. §1.2.
+- ✅ **Чанки (T-CHUNK01):** ресёрч `docs/world/chunk_system/` (7 файлов) — legacy 2K-чанки deprecated, клиентский чанк-лоадер не нужен (мир — один authored Terrain 80×80 км); дальше LOD/импосторы + interest-hardening.
+- ✅ **Админка (T-ADM-08/09):** F12 Маршрут — все NPC-корабли со стадией + телепорт; вкладка Тесты читает `global_needtotest` из git (`NeedToTestParser`).
+- ✅ **Арт (смоделено, сентябрь 2026, со слов автора):** фермерские поселения 0-0 и 0-2, мегаферма-рефайнери, корабль «Гигант» (самый большой в игре, плавучий город на 300+ человек) — см. 🎨 Визуальные задачи (Окружение, Корабли NPC).
+- ⚠️ **Приёмка:** Play Mode-проверки — за пользователем (`manual-playtest-only`, агент помечает NOT RUN); B2-персистентность hotspot отложена; терминальные доки NPC — следующий фокус.
+- **Источники:** `docs/dev/RETRO_v0.1.85_to_v0.1.91_2026-09-28.md`.
+
 ---
 
 **Известные проблемы (P0-P1):**
@@ -1390,7 +1409,8 @@
 2. **Оптимизация клиента:**
    - LOD-системы для кораблей и островов
    - Occlusion Culling для сложных сцен
-   - Пулинг объектов (пули, эффекты, NPC)
+    - Пулинг объектов (пули, эффекты, NPC)
+    - ✅ **T-PERF02 (v0.1.91, 22–28.09.2026):** расследование по захвату 2026-09-25 — десинхрон поллов 22 зон + переиспользование буферов (зоны CPU −7%, GC −27%), тишина Storm/LocalDensity/SceneExecutor, счётчики причин AddNavMeshData и rebase-сбросов, диагноз налога авто-сдвигов и дрейфа load-bearing. Найдено 54 МБ / 30% мусора логов. Доки: `docs/world/optimization/25092026/` + ITERATIONS (301 строка). Следующие шаги: сужение маски `OverlapSphere r=1000` (Фаза 2), спайк старта хоста 1370 мс (Фаза 7).
 
 3. **Античит:**
    - Серверная валидация всех критичных действий
@@ -1593,6 +1613,7 @@
 - [ ] 3D-модель (FBX)
 - [ ] Материалы
 - [ ] Текстуры
+- [x] **Смоделено (сентябрь 2026, со слов автора):** корабль **«Гигант»** — самый большой в игре, плавучий город на 300+ человек (в проекте: `Assets/_Project/Prefabs/Ships/Гигант.prefab` + `NpcShipSchedule_Гигант` + ключ `Key_Гигант`; материалы/VFX/анимации — следующим шагом по чек-листу выше)
 
 ---
 
@@ -1643,6 +1664,7 @@
 - [x] Фоновые пики (ProceduralNoiseGenerator, IslandMaterial)
 - [x] Единый terrain WorldScene_0_0 — T-TERR-01, база ~600 м, пики по FBX до ~5000 м
 - [x] Низинные руины — T-TERR-02, 60 hamlets / 496 GPU-instanced объектов
+- [x] **Смоделено (сентябрь 2026, со слов автора):** фермерское поселение **0-0** (в WorldScene_0_0: `Market_zone_farm_0_0`, корень `Primum_farms`, `Средняя 0_0`), фермерское поселение **0-2** (в сцене: `Market_zone_Premium_farm_0_2`), **мегаферма-рефайнери** (именованный объект в сцене поиском не найден — имя корня уточнить при следующей правке сцены)
 - [ ] Дальние платформы (модели + материалы)
 - [ ] Завеса (VeilRaymarch.shader + VFX)
 

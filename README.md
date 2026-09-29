@@ -18,9 +18,9 @@ Unity 6 · URP · Netcode for GameObjects
 
 ## Статус
 
-**v0.1.85 — текущий HEAD (21 сентября 2026)**
+**v0.1.91 — текущий HEAD (28 сентября 2026)**
 
-Сети, экономика, бой, корабли, инструменты для создания контента и визуал-заготовки. За неделю добавлены server-authoritative ship fixes, world map и compass rose, единый terrain с генеративными руинами, NPC-ship route/crew fixes, ViewDistance и DistantFocus. Floating Origin остаётся частично готовым: контракты и partial runtime evidence есть, но `runtimeRebaseReadiness = NOT_READY`.
+Сети, экономика, бой, корабли, инструменты для создания контента и визуал-заготовки. К 0.1.91: паром с персистентностью веток и спасением падающих, NPC-навигация с воздушными магистралями (LOS 97%), фикс-реле камеры, ключи fail-closed и приватные детали трюма, F12 Маршрут+Тесты, смоделены фермы 0-0/0-2 и корабль «Гигант». Floating Origin остаётся частично готовым: контракты и partial runtime evidence есть, но `runtimeRebaseReadiness = NOT_READY`.
 
 Следующая крупная веха — 0.2.0 «Наполнение мира». Полная картина состояния и планов — в [`Глобальном родмапе`](<docs/dev/global roadmap/GLOBAL_ROADMAP.md>) и [`плане разработки`](docs/MMO_Development_Plan.md).
 

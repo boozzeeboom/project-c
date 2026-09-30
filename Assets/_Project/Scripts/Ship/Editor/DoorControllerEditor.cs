@@ -195,8 +195,8 @@ namespace ProjectC.Ship
                 "ОБЯЗАТЕЛЬНО. Пустой объект на линии петель, панель — его ребёнок."));
             if (P("hingePivot").objectReferenceValue == null)
                 EditorGUILayout.HelpBox("Без пивота дверь не повернётся. Создайте кнопкой ниже.", MessageType.Error);
-            EditorGUILayout.PropertyField(P("hingePanel"), new GUIContent("Панель (для гизмо)",
-                "Необязательно. Обычно ребёнок пивота."));
+            EditorGUILayout.PropertyField(P("hingePanel"), new GUIContent("Панель (створка)",
+                "Створка двери. Сначала назначьте её — затем кнопка ниже создаст пивот на её краю."));
             EditorGUILayout.PropertyField(P("hingeSide"), new GUIContent("Петли",
                 "С какой стороны петли (вид спереди). Влияет только на знак по умолчанию."));
             EditorGUILayout.Slider(P("openAngle"), -180f, 180f, new GUIContent("Угол открытия°",
@@ -217,8 +217,8 @@ namespace ProjectC.Ship
             EditorGUILayout.LabelField("Петли двух створок", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(P("leftPivot"), new GUIContent("Левый пивот *"));
             EditorGUILayout.PropertyField(P("rightPivot"), new GUIContent("Правый пивот *"));
-            EditorGUILayout.PropertyField(P("leftHingePanel"), new GUIContent("Левая панель (гизмо)"));
-            EditorGUILayout.PropertyField(P("rightHingePanel"), new GUIContent("Правая панель (гизмо)"));
+            EditorGUILayout.PropertyField(P("leftHingePanel"), new GUIContent("Левая панель (створка)"));
+            EditorGUILayout.PropertyField(P("rightHingePanel"), new GUIContent("Правая панель (створка)"));
             EditorGUILayout.Slider(P("doubleOpenAngle"), 5f, 170f, new GUIContent("Угол каждой°"));
             EditorGUILayout.PropertyField(P("invertDoubleSwing"),
                 new GUIContent("Инвертировать обе", "Если створки открылись не туда"));
@@ -309,6 +309,17 @@ namespace ProjectC.Ship
 
         private void Preview(DoorController door, bool open)
         {
+            // Без обязательных ссылок превью молча ничего не двигало — объясняем причину.
+            _errors.Clear();
+            _warnings.Clear();
+            door.GetSetupIssues(_errors, _warnings);
+            if (_errors.Count > 0)
+            {
+                EditorUtility.DisplayDialog("Превью невозможно",
+                    "Сначала исправьте:\n• " + string.Join("\n• ", _errors.ToArray()),
+                    "Понятно");
+                return;
+            }
             // Undo для всех двигаемых трансформов
             var moved = CollectMoved(door);
             if (moved.Count > 0)
@@ -355,7 +366,16 @@ namespace ProjectC.Ship
             SerializedProperty panelProp, bool leftSide)
         {
             Transform panel = panelProp.objectReferenceValue as Transform;
-            if (panel == null) panel = door.transform;
+            if (panel == null)
+            {
+                // Без явной панели кнопка посадила бы под пивот ВЕСЬ объект двери —
+                // запрещаем и объясняем вместо молчаливой поломки иерархии.
+                EditorUtility.DisplayDialog("Сначала назначьте панель",
+                    "Перетащите створку в поле «Панель», затем нажмите кнопку снова.\n\n" +
+                    "Иначе пивот создался бы вокруг всего объекта двери.",
+                    "Понятно");
+                return;
+            }
             if (panel.parent == null)
             {
                 EditorUtility.DisplayDialog("Пивот не создан",
@@ -380,10 +400,6 @@ namespace ProjectC.Ship
 
             // Панель — ребёнок пивота, мировое положение сохраняется
             Undo.SetTransformParent(panel, go.transform, true, "Посадить панель на пивот");
-
-            // Если панель для гизмо не задана — подставить (гizmo сразу показывает дужку)
-            if (panelProp.objectReferenceValue == null)
-                panelProp.objectReferenceValue = panel;
 
             pivotProp.objectReferenceValue = go.transform;
             serializedObject.ApplyModifiedProperties();

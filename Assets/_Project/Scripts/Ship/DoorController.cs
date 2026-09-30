@@ -420,17 +420,24 @@ namespace ProjectC.Ship
             bool has = false;
             Bounds bounds = new Bounds(panel.position, Vector3.zero);
 
+            // Сначала меши: Renderer.bounds всегда свежие.
             foreach (var r in panel.GetComponentsInChildren<Renderer>(true))
             {
                 if (r == null) continue;
                 if (!has) { bounds = r.bounds; has = true; }
                 else bounds.Encapsulate(r.bounds);
             }
-            foreach (var c in panel.GetComponentsInChildren<Collider>(true))
+            // Коллайдеры — только если мешей нет: в Edit Mode Collider.bounds
+            // могут отставать от трансформов (физика не степпится) и врать на глазах
+            // у свеже-перепарентченных панелей.
+            if (!has)
             {
-                if (c == null) continue;
-                if (!has) { bounds = c.bounds; has = true; }
-                else bounds.Encapsulate(c.bounds);
+                foreach (var c in panel.GetComponentsInChildren<Collider>(true))
+                {
+                    if (c == null) continue;
+                    if (!has) { bounds = c.bounds; has = true; }
+                    else bounds.Encapsulate(c.bounds);
+                }
             }
             if (!has) return false;
 

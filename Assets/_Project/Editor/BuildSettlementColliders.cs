@@ -72,7 +72,7 @@ namespace ProjectC.EditorTools
             [Tooltip("Подстроки имён (через запятую): круглые бары (трубы, арматура) получают CapsuleCollider вдоль длинной оси вместо бокса — точное прилегание без воздуха по углам. Только вытянутые (длина >= 2 диаметров), короткие цилиндры остаются боксами. Точна при uniform-скейле (фермы: 150 uniform — ок).")]
             public string capsuleTokens = "PIPE,REBAR,TUBE";
 
-            [Tooltip("Подстроки имён (через запятую): кривые/гнутые меши (арки, гнутые листы) режутся на сегменты вдоль длинной оси, каждый кусок обтягивается своим боксом по вершинам. Пусто = не резать.")]
+            [Tooltip("Подстроки имён (через запятую): кривые/гнутые меши (арки, гнутые листы, U-трубы) режутся на сегменты вдоль длинной оси. Внутри slab'а связные части идут отдельными боксами — полость U-трубы не заливается. Пусто = не резать.")]
             public string sliceTokens = "";
 
             [Tooltip("Длина куска нарезки (м, world) вдоль длинной оси — шаг измерения. Пустые куски (дыры в геометрии) пропускаются. Нужен Read/Write Enabled у меша, иначе — обычный бокс.")]
@@ -939,7 +939,17 @@ namespace ProjectC.EditorTools
         private class SliceBox
         {
             public int bin; // индекс бина в равномерной сетке — стабилен между запусками
+            public int sub; // индекс связной компоненты внутри slab'а (0..)
+            public bool multi; // в slab'е несколько компонент — к имени добавится суффикс Cn
             public Vector3 min, max; // mesh-local AABB куска
+        }
+
+        /// <summary>Имя холдера куска: стабильно между запусками (бин + компонента).</summary>
+        private static string SliceHolderName(string baseName, SliceBox sl)
+        {
+            string n = baseName + "_S" + sl.bin.ToString("00");
+            if (sl.multi) n += "C" + sl.sub;
+            return n;
         }
 
         /// <summary>
@@ -957,12 +967,14 @@ namespace ProjectC.EditorTools
         }
 
         /// <summary>
-        /// Нарезать меш вдоль локальной оси slab'ами. Сечение каждого slab'а — AABB его
-        /// содержимого: вершины внутри + пересечения треугольников с плоскостями бинов
-        /// (как слайсер: длинные квады между станциями вершин тоже дают сечение, дыр нет).
+        /// Нарезать меш вдоль локальной оси slab'ами. Внутри slab'а содержимое делится на
+        /// связные компоненты (общие вершины треугольников): каждая — своим боксом.
+        /// U-образная труба даст 2 бокса на стойки, пустота между ними НЕ заливается;
+        /// сплошная плита — 1 бокс на slab. Источники точек: вершины внутри + клиппинг
+        /// треугольников к slab'ам (длинные квады накрываются, дыр вдоль оси нет).
         /// Вдоль оси кусок растягивается на весь slab — куски стыкуются без щелей.
-        /// Slab'ы без геометрии (проёмы, дыры) пропускаются. Null, если резать нечего.
-        /// Бины детерминированы (равномерная сетка от bounds.min) — имена кусков стабильны.
+        /// Slab'ы без геометрии (проёмы) пропускаются. Null, если резать нечего.
+        /// Бины и порядок компонент детерминированы — имена кусков стабильны.
         /// </summary>
         private static List<SliceBox> SlicePlan(Mesh mesh, int axis, float stepLocal, float tolWorld, Vector3 worldPerLocal)
         {
@@ -981,19 +993,19 @@ namespace ProjectC.EditorTools
             try { verts = mesh.vertices; tris = mesh.triangles; }
             catch { return null; } // нет Read/Write — резать нечем
 
-            var has = new bool[k];
-            var mins = new Vector3[k];
-            var maxs = new Vector3[k];
             float minA = b.min[axis];
+            float qeps = Mathf.Max(len, Epsilon) * 1e-4f; // квант сварки вершин (UV-швы и т.п.)
+            var frags = new SlabFrag[k];
+            for (int i = 0; i < k; i++) frags[i] = new SlabFrag();
 
-            // 1) Вершины по бинам.
+            // 1) Вершины по бинам (одиночные элементы; совпадающие сварются по ключу).
             foreach (var v in verts)
             {
                 int idx = Mathf.Clamp((int)((v[axis] - minA) / step), 0, k - 1);
-                GrowBin(has, mins, maxs, idx, v);
+                frags[idx].Add(Quant(v, qeps), v);
             }
 
-            // 2) Треугольники через несколько бинов: точки пересечения рёбер с границами slab'ов.
+            // 2) Треугольники: клиппинг к каждому накрываемому slab'у, кольцо — в union-find.
             for (int t = 0; t + 2 < tris.Length; t += 3)
             {
                 int ia = tris[t], ib = tris[t + 1], ic = tris[t + 2];
@@ -1004,20 +1016,46 @@ namespace ProjectC.EditorTools
                 float tmax = Mathf.Max(a[axis], Mathf.Max(d[axis], e[axis]));
                 int b0 = Mathf.Clamp((int)((tmin - minA) / step), 0, k - 1);
                 int b1 = Mathf.Clamp((int)((tmax - minA) / step), 0, k - 1);
-                if (b1 <= b0) continue; // целиком в одном бине — вершины уже учтены
-                ClipEdge(has, mins, maxs, minA, step, k, b0, b1, axis, a, d);
-                ClipEdge(has, mins, maxs, minA, step, k, b0, b1, axis, d, e);
-                ClipEdge(has, mins, maxs, minA, step, k, b0, b1, axis, e, a);
+                for (int i = b0; i <= b1; i++)
+                {
+                    float lo = minA + i * step;
+                    float hi = (i == k - 1) ? b.max[axis] : minA + (i + 1) * step;
+                    var poly = ClipTriToSlab(a, d, e, axis, lo, hi);
+                    if (poly.Count == 0) continue;
+                    int prev = -1, first = -1;
+                    foreach (var p in poly)
+                    {
+                        int id = frags[i].Add(Quant(p, qeps), p);
+                        if (first < 0) first = id;
+                        if (prev >= 0) frags[i].Union(prev, id);
+                        prev = id;
+                    }
+                    if (poly.Count > 1 && prev >= 0 && first >= 0) frags[i].Union(prev, first); // замкнуть кольцо
+                }
             }
 
+            // 3) Компоненты slab'ов → куски (сортировка корней = стабильный порядок sub).
             var res = new List<SliceBox>();
             for (int i = 0; i < k; i++)
             {
-                if (!has[i]) continue; // дыра в геометрии — куска нет, и это правильно
-                Vector3 mn = mins[i], mx = maxs[i];
-                mn[axis] = minA + i * step; // растянуть на весь slab: стыки без щелей
-                mx[axis] = (i == k - 1) ? b.max[axis] : minA + (i + 1) * step;
-                res.Add(new SliceBox { bin = i, min = mn, max = mx });
+                var boxes = frags[i].ExtractBoxes();
+                if (boxes.Count == 0) continue; // дыра в геометрии — куска нет, и это правильно
+                bool multi = boxes.Count > 1;
+                boxes.Sort((x, y) =>
+                {
+                    int c = x.min.x.CompareTo(y.min.x);
+                    if (c != 0) return c;
+                    c = x.min.y.CompareTo(y.min.y);
+                    if (c != 0) return c;
+                    return x.min.z.CompareTo(y.min.z);
+                });
+                for (int sgi = 0; sgi < boxes.Count; sgi++)
+                {
+                    Vector3 mn = boxes[sgi].min, mx = boxes[sgi].max;
+                    mn[axis] = minA + i * step; // растянуть на весь slab: стыки без щелей
+                    mx[axis] = (i == k - 1) ? b.max[axis] : minA + (i + 1) * step;
+                    res.Add(new SliceBox { bin = i, sub = sgi, multi = multi, min = mn, max = mx });
+                }
             }
             if (res.Count <= 1) return null;
             // Адаптив: склеить подряд идущие куски с одинаковым сечением (прямые участки —
@@ -1029,65 +1067,163 @@ namespace ProjectC.EditorTools
             return res;
         }
 
+        /// <summary>
+        /// Адаптив: склеить куски с одинаковым сечением в серии. Каждый кусок ищет СВОЮ
+        /// открытую серию (совпадение сечения с эталоном + строго следующий бин), а не соседа
+        /// по списку: ножки U-трубы лежат вперемешку [L,R,L,R...] и соседним сравнением
+        /// никогда не склеились бы. Пустые бины разбивают серии (дыры не мостим).
+        /// Эталон сечения — первый кусок серии: суммарный дрейф ограничен допуском.
+        /// </summary>
         private static List<SliceBox> CoalesceSlices(List<SliceBox> bins, int axis, float tolWorld, Vector3 worldPerLocal)
         {
             int c1 = (axis + 1) % 3, c2 = (axis + 2) % 3;
             float t1 = worldPerLocal[c1] < Epsilon ? 1f : tolWorld / worldPerLocal[c1];
             float t2 = worldPerLocal[c2] < Epsilon ? 1f : tolWorld / worldPerLocal[c2];
-            var out_ = new List<SliceBox>(bins.Count);
-            SliceBox cur = bins[0];
-            int curLastBin = cur.bin;
-            Vector3 refMin = cur.min, refMax = cur.max;
-            for (int i = 1; i < bins.Count; i++)
+            var out_ = new List<SliceBox>();
+            var open = new List<SliceBox>();
+            var openLastBin = new List<int>();
+            var openRefMin = new List<Vector3>();
+            var openRefMax = new List<Vector3>();
+            foreach (var box in bins) // bins идут по возрастанию bin (построение послабово)
             {
-                SliceBox nxt = bins[i];
-                bool sameRun = nxt.bin == curLastBin + 1
-                    && Mathf.Abs(nxt.min[c1] - refMin[c1]) <= t1
-                    && Mathf.Abs(nxt.max[c1] - refMax[c1]) <= t1
-                    && Mathf.Abs(nxt.min[c2] - refMin[c2]) <= t2
-                    && Mathf.Abs(nxt.max[c2] - refMax[c2]) <= t2;
-                if (sameRun)
+                bool extended = false;
+                for (int r = 0; r < open.Count; r++)
                 {
-                    // Серия: объединить сечения, вдоль оси — до конца нового slab'а.
-                    cur.min = Vector3.Min(cur.min, nxt.min);
-                    cur.max = Vector3.Max(cur.max, nxt.max);
-                    curLastBin = nxt.bin;
+                    if (openLastBin[r] != box.bin - 1) continue; // только строго следующий бин
+                    if (!CrossMatch(box, openRefMin[r], openRefMax[r], c1, c2, t1, t2)) continue;
+                    SliceBox run = open[r];
+                    run.min = Vector3.Min(run.min, box.min);
+                    run.max = Vector3.Max(run.max, box.max);
+                    openLastBin[r] = box.bin;
+                    extended = true;
+                    break;
                 }
-                else
+                if (!extended)
                 {
-                    out_.Add(cur);
-                    cur = nxt;
-                    curLastBin = nxt.bin;
-                    refMin = cur.min;
-                    refMax = cur.max;
+                    // Серии, которым уже не продлиться (разрыв бинов), — в вывод.
+                    for (int r = open.Count - 1; r >= 0; r--)
+                    {
+                        if (openLastBin[r] >= box.bin - 1) continue;
+                        out_.Add(open[r]);
+                        open.RemoveAt(r);
+                        openLastBin.RemoveAt(r);
+                        openRefMin.RemoveAt(r);
+                        openRefMax.RemoveAt(r);
+                    }
+                    open.Add(box);
+                    openLastBin.Add(box.bin);
+                    openRefMin.Add(box.min);
+                    openRefMax.Add(box.max);
                 }
             }
-            out_.Add(cur);
+            foreach (var run in open) out_.Add(run);
             return out_;
         }
 
-        private static void GrowBin(bool[] has, Vector3[] mins, Vector3[] maxs, int idx, Vector3 p)
+        private static bool CrossMatch(SliceBox box, Vector3 refMin, Vector3 refMax,
+            int c1, int c2, float t1, float t2)
         {
-            if (!has[idx]) { has[idx] = true; mins[idx] = p; maxs[idx] = p; }
-            else { mins[idx] = Vector3.Min(mins[idx], p); maxs[idx] = Vector3.Max(maxs[idx], p); }
+            return Mathf.Abs(box.min[c1] - refMin[c1]) <= t1
+                && Mathf.Abs(box.max[c1] - refMax[c1]) <= t1
+                && Mathf.Abs(box.min[c2] - refMin[c2]) <= t2
+                && Mathf.Abs(box.max[c2] - refMax[c2]) <= t2;
         }
 
-        /// <summary>
-        /// Пересечения ребра P-Q с внутренними границами slab'ов (b0+1..b1): точки уходят
-        /// в правый от границы бин.
-        /// </summary>
-        private static void ClipEdge(bool[] has, Vector3[] mins, Vector3[] maxs,
-            float minA, float step, int k, int b0, int b1, int axis, Vector3 p, Vector3 q)
+        private static Vector3 Quant(Vector3 p, float q)
+        {
+            return new Vector3(Mathf.Round(p.x / q), Mathf.Round(p.y / q), Mathf.Round(p.z / q));
+        }
+
+        /// <summary>Фрагменты связности одного slab'а: union-find по квантованным точкам.</summary>
+        private class SlabFrag
+        {
+            private readonly Dictionary<Vector3, int> index = new Dictionary<Vector3, int>();
+            private readonly List<int> parent = new List<int>();
+            private readonly List<Vector3> pts = new List<Vector3>();
+
+            public int Add(Vector3 key, Vector3 p)
+            {
+                int id;
+                if (!index.TryGetValue(key, out id))
+                {
+                    id = parent.Count;
+                    index[key] = id;
+                    parent.Add(id);
+                    pts.Add(p);
+                }
+                return id;
+            }
+
+            public int Find(int a)
+            {
+                while (parent[a] != a) { parent[a] = parent[parent[a]]; a = parent[a]; }
+                return a;
+            }
+
+            public void Union(int a, int b)
+            {
+                a = Find(a); b = Find(b);
+                if (a == b) return;
+                if (a > b) { int t = a; a = b; b = t; } // детерминированный корень
+                parent[b] = a;
+            }
+
+            public struct BoxMinMax { public Vector3 min, max; }
+
+            public List<BoxMinMax> ExtractBoxes()
+            {
+                var acc = new Dictionary<int, BoxMinMax>();
+                for (int i = 0; i < pts.Count; i++)
+                {
+                    int r = Find(i);
+                    BoxMinMax bm;
+                    if (!acc.TryGetValue(r, out bm)) acc[r] = new BoxMinMax { min = pts[i], max = pts[i] };
+                    else
+                    {
+                        bm.min = Vector3.Min(bm.min, pts[i]);
+                        bm.max = Vector3.Max(bm.max, pts[i]);
+                        acc[r] = bm;
+                    }
+                }
+                return new List<BoxMinMax>(acc.Values);
+            }
+        }
+
+        /// <summary>Клиппинг треугольника к slab'у [lo,hi] вдоль оси (Сазерленд-Ходжман, 2 прохода).</summary>
+        private static List<Vector3> ClipTriToSlab(Vector3 a, Vector3 b, Vector3 c, int axis, float lo, float hi)
+        {
+            var poly = new List<Vector3>(5);
+            poly.Add(a); poly.Add(b); poly.Add(c);
+            poly = ClipPolyAxis(poly, axis, hi, true);
+            if (poly.Count == 0) return poly;
+            poly = ClipPolyAxis(poly, axis, lo, false);
+            return poly;
+        }
+
+        private static List<Vector3> ClipPolyAxis(List<Vector3> poly, int axis, float edge, bool keepLess)
+        {
+            var out_ = new List<Vector3>(poly.Count + 1);
+            int n = poly.Count;
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 cur = poly[i], prev = poly[(i + n - 1) % n];
+                bool curIn = keepLess ? cur[axis] <= edge : cur[axis] >= edge;
+                bool prevIn = keepLess ? prev[axis] <= edge : prev[axis] >= edge;
+                if (curIn)
+                {
+                    if (!prevIn) out_.Add(IntersectAxis(prev, cur, axis, edge));
+                    out_.Add(cur);
+                }
+                else if (prevIn) out_.Add(IntersectAxis(prev, cur, axis, edge));
+            }
+            return out_;
+        }
+
+        private static Vector3 IntersectAxis(Vector3 p, Vector3 q, int axis, float x)
         {
             float cp = p[axis], cq = q[axis];
-            if (Mathf.Abs(cq - cp) < Epsilon) return;
-            for (int i = b0 + 1; i <= b1 && i < k; i++)
-            {
-                float x = minA + i * step;
-                if ((cp < x) == (cq < x)) continue;
-                float t = (x - cp) / (cq - cp);
-                GrowBin(has, mins, maxs, i, Vector3.Lerp(p, q, t));
-            }
+            float t = Mathf.Abs(cq - cp) < Epsilon ? 0f : (x - cp) / (cq - cp);
+            return Vector3.Lerp(p, q, Mathf.Clamp01(t));
         }
 
         private static void Collect(
@@ -1242,7 +1378,7 @@ namespace ProjectC.EditorTools
                     string prefix = sliceBase + "_S";
                     var wanted = new HashSet<string>(StringComparer.Ordinal);
                     foreach (var sl in slices)
-                        wanted.Add(sliceBase + "_S" + sl.bin.ToString("00"));
+                        wanted.Add(SliceHolderName(sliceBase, sl));
                     bool same = wanted.Count > 0;
                     if (same)
                     {
@@ -1319,7 +1455,7 @@ namespace ProjectC.EditorTools
                     foreach (var sl in it.slices)
                     {
                         // Старые куски этого меша уже снесены выше (purge); чужие префиксы не пересекаются.
-                        string sliceName = baseName + "_S" + sl.bin.ToString("00");
+                        string sliceName = SliceHolderName(baseName, sl);
                         var sb = new Bounds();
                         sb.SetMinMax(sl.min, sl.max);
                         AddFittedBox(root, parent, sliceName, it, sb, s.minThickness, !s.shipMode);

@@ -59,11 +59,19 @@ namespace ProjectC.Ship
             Z_Depth,        // Створки едут вперёд-назад
         }
 
-        /// <summary>С какой стороны петли у распашной двери (вид спереди).</summary>
+        /// <summary>С какой стороны петли (вид спереди). Top/Bottom — люк вверх/вниз.</summary>
         public enum HingeSide
         {
             Left,
             Right,
+            Top,    // Петли сверху — створка распахивается наверх (люк)
+            Bottom, // Петли снизу — створка откидывается вниз (трап/люк)
+        }
+
+        /// <summary>Знак угла для стороны петель: Right/Top → +, Left/Bottom → −.</summary>
+        public static float HingeSideSign(HingeSide side)
+        {
+            return (side == HingeSide.Right || side == HingeSide.Top) ? 1f : -1f;
         }
 
         /// <summary>Как задаётся дистанция открытия.</summary>
@@ -155,6 +163,12 @@ namespace ProjectC.Ship
         [SerializeField] private Transform rightPivot;
         [SerializeField] private Transform leftHingePanel;
         [SerializeField] private Transform rightHingePanel;
+
+        [Tooltip("С какой стороны петли левой створки (Top — люк наверх)")]
+        [SerializeField] private HingeSide leftHingeSide = HingeSide.Left;
+
+        [Tooltip("С какой стороны петли правой створки (Bottom — откинуть вниз)")]
+        [SerializeField] private HingeSide rightHingeSide = HingeSide.Right;
 
         [Tooltip("Угол КАЖДОЙ створки. Направления зеркалятся автоматически.")]
         [Range(5f, 170f)]
@@ -514,7 +528,7 @@ namespace ProjectC.Ship
         /// Перевести направление из пространства РАМКИ (объекта двери)
         /// в локальные оси родителя панели. Скейлы игнорируются (только поворот).
         /// </summary>
-        private Vector3 FrameDirToPanelLocal(Transform panel, Vector3 frameDir)
+        public Vector3 FrameDirToPanelLocal(Transform panel, Vector3 frameDir)
         {
             if (frameDir.sqrMagnitude < 1e-8f) return frameDir;
             Vector3 w = transform.TransformDirection(frameDir.normalized);
@@ -564,14 +578,20 @@ namespace ProjectC.Ship
             _leftOpen = _leftClosed - FrameDirToPanelLocal(leftPanel, axisF) * dl;
             _rightOpen = _rightClosed + FrameDirToPanelLocal(rightPanel, axisF) * dr;
 
-            // Распашная одна: петли слева → −угол, справа → +угол (вокруг локального Y пивота)
-            float signed = (hingeSide == HingeSide.Left ? -1f : 1f) * openAngle;
-            _pivotOpen = _pivotClosed * Quaternion.Euler(0f, signed, 0f);
+            // Распашная одна: ось из мирового габарита (вертикаль для боковых,
+            // горизонталь по ширине для люков), в пространстве родителя пивота.
+            float signedAngle = HingeSideSign(hingeSide) * openAngle;
+            _pivotOpen = HingeOpenRotation(hingePivot,
+                hingePanel != null ? hingePanel : hingePivot, hingeSide, signedAngle);
 
-            // Распашная двойная: зеркально
+            // Распашная двойная: стороны независимые (Left/Right — ворота, Top/Bottom — люки).
             float swing = invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle;
-            _leftPivotOpen = _leftPivotClosed * Quaternion.Euler(0f, -swing, 0f);
-            _rightPivotOpen = _rightPivotClosed * Quaternion.Euler(0f, swing, 0f);
+            _leftPivotOpen = HingeOpenRotation(leftPivot,
+                leftHingePanel != null ? leftHingePanel : leftPivot,
+                leftHingeSide, HingeSideSign(leftHingeSide) * swing);
+            _rightPivotOpen = HingeOpenRotation(rightPivot,
+                rightHingePanel != null ? rightHingePanel : rightPivot,
+                rightHingeSide, HingeSideSign(rightHingeSide) * swing);
 
             // Подъёмная шторка (закрытая поза закэширована — читаем только её).
             // Едет строго по +Y РАМКИ: если рамка не выровнена по миру — сначала кнопка «🧭 Y рамки вверх».
@@ -595,8 +615,7 @@ namespace ProjectC.Ship
                 }
                 else
                 {
-                    float sideSign = hingeSide == HingeSide.Left ? -1f : 1f;
-                    _impSingle = BuildImplicitHinge(HingePanelOrSelf, sideSign, sideSign * openAngle);
+                    _impSingle = BuildImplicitHinge(HingePanelOrSelf, hingeSide, HingeSideSign(hingeSide) * openAngle);
                 }
             }
             else if (doorType == DoorType.HingedDouble)
@@ -605,40 +624,128 @@ namespace ProjectC.Ship
                 if (UseExplicitPivot(leftPivot, leftHingePanel))
                     _useLeftPivot = true;
                 else if (leftHingePanel != null)
-                    _impLeft = BuildImplicitHinge(leftHingePanel, -1f, -swing);
+                    _impLeft = BuildImplicitHinge(leftHingePanel, leftHingeSide, HingeSideSign(leftHingeSide) * swing);
                 if (UseExplicitPivot(rightPivot, rightHingePanel))
                     _useRightPivot = true;
                 else if (rightHingePanel != null)
-                    _impRight = BuildImplicitHinge(rightHingePanel, 1f, swing);
+                    _impRight = BuildImplicitHinge(rightHingePanel, rightHingeSide, HingeSideSign(rightHingeSide) * swing);
             }
         }
 
         /// <summary>
-        /// Построить неявный пивот для панели: край по доминантной ширине (X/Z рамки),
-        /// ось — мировая вертикаль на текущий момент (в пространстве родителя панели).
+        /// Мировой габарит объекта: меши в приоритете, коллайдеры — если мешей нет.
+        /// (Та же приоритетность, что в TryMeasurePanelSize: Collider.bounds в Edit Mode отстают.)
         /// </summary>
-        private ImplicitHinge BuildImplicitHinge(Transform panel, float edgeSide, float angle)
+        private static bool TryGetWorldBounds(Transform t, out Bounds b)
+        {
+            b = default;
+            if (t == null) return false;
+            bool has = false;
+            Bounds acc = new Bounds(t.position, Vector3.zero);
+            foreach (var r in t.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r == null) continue;
+                if (!has) { acc = r.bounds; has = true; }
+                else acc.Encapsulate(r.bounds);
+            }
+            if (!has)
+            {
+                foreach (var c in t.GetComponentsInChildren<Collider>(true))
+                {
+                    if (c == null) continue;
+                    if (!has) { acc = c.bounds; has = true; }
+                    else acc.Encapsulate(c.bounds);
+                }
+            }
+            if (!has) return false;
+            b = acc;
+            return true;
+        }
+
+        /// <summary>
+        /// Открытое вращение явного пивота: угол берётся из настроек, а ось и центр —
+        /// из мирового габарита створки (вертикаль для боковых петель,
+        /// горизонталь по ширине для верхних/нижних). Центр — сам пивот (его позиция
+        /// и есть линия петель), поэтому ориентация пивота не важна.
+        /// </summary>
+        private static Quaternion HingeOpenRotation(Transform pivot, Transform measurePanel, HingeSide side, float angle)
+        {
+            if (pivot == null) return Quaternion.identity;
+            if (!TryGetWorldBounds(measurePanel, out Bounds b)) return pivot.localRotation;
+            Vector3 dirW = (side == HingeSide.Left || side == HingeSide.Right)
+                ? Vector3.up
+                : (b.size.x >= b.size.z ? Vector3.right : Vector3.forward);
+            Transform ps = pivot.parent;
+            Vector3 a = ps != null ? ps.InverseTransformDirection(dirW) : dirW;
+            if (a.sqrMagnitude < 1e-8f) return pivot.localRotation;
+            return Quaternion.AngleAxis(angle, a.normalized) * pivot.localRotation;
+        }
+
+        /// <summary>
+        /// Чистый расчёт неявного пивота (без записи в поля): край и ось
+        /// в пространстве родителя панели, из мирового габарита створки.
+        /// Единая математика для рантайма, превью и гизмо.
+        /// Left/Right: край по ширине, ось — мировая вертикаль.
+        /// Top/Bottom: край по высоте, ось — мировая горизонталь по ширине (люк).
+        /// </summary>
+        private static bool ComputeImplicitHinge(Transform panel, HingeSide side,
+            out Vector3 edgeLocal, out Vector3 axisLocal)
+        {
+            edgeLocal = Vector3.zero;
+            axisLocal = Vector3.up;
+            if (panel == null) return false;
+            if (!TryGetWorldBounds(panel, out Bounds b)) return false;
+            Transform ps = panel.parent;
+
+            if (side == HingeSide.Left || side == HingeSide.Right)
+            {
+                float w = Mathf.Max(b.size.x, b.size.z);
+                if (w < 1e-4f) return false;
+                Vector3 dirW = (b.size.x >= b.size.z ? Vector3.right : Vector3.forward) * HingeSideSign(side);
+                Vector3 edgeW = b.center + dirW * (w * 0.5f);
+                Vector3 axisW = Vector3.up;
+                edgeLocal = ps != null ? ps.InverseTransformPoint(edgeW) : edgeW;
+                Vector3 a = ps != null ? ps.InverseTransformDirection(axisW) : axisW;
+                if (a.sqrMagnitude < 1e-8f) return false;
+                axisLocal = a.normalized;
+                return true;
+            }
+            else
+            {
+                float h = b.size.y;
+                if (h < 1e-4f) return false;
+                Vector3 edgeW = b.center + Vector3.up * (HingeSideSign(side) * h * 0.5f);
+                float w = Mathf.Max(b.size.x, b.size.z);
+                if (w < 1e-4f) return false;
+                Vector3 axisW = b.size.x >= b.size.z ? Vector3.right : Vector3.forward;
+                edgeLocal = ps != null ? ps.InverseTransformPoint(edgeW) : edgeW;
+                Vector3 a = ps != null ? ps.InverseTransformDirection(axisW) : axisW;
+                if (a.sqrMagnitude < 1e-8f) return false;
+                axisLocal = a.normalized;
+                return true;
+            }
+        }
+
+        /// <summary>Край петель в пространстве родителя панели (для кнопки создания пивота).</summary>
+        public static bool TryComputeHingeEdge(Transform panel, HingeSide side, out Vector3 edgeLocal)
+        {
+            edgeLocal = Vector3.zero;
+            if (panel == null) return false;
+            if (!ComputeImplicitHinge(panel, side, out edgeLocal, out _)) return false;
+            return true;
+        }
+
+        private ImplicitHinge BuildImplicitHinge(Transform panel, HingeSide side, float angle)
         {
             var h = new ImplicitHinge();
             if (panel == null) return h;
-
-            bool hx = TryMeasurePanelSize(panel, transform, Vector3.right, out float sx);
-            bool hz = TryMeasurePanelSize(panel, transform, Vector3.forward, out float sz);
-            Vector3 widthAxisF = (hx && (!hz || sx >= sz)) ? Vector3.right : Vector3.forward;
-            float w = Mathf.Max(hx ? sx : 0f, hz ? sz : 0f);
-            if (w < 1e-4f) return h; // габарит не измерился — не вокруг чего строить край
-
-            Vector3 edgeDirP = FrameDirToPanelLocal(panel, widthAxisF * edgeSide);
-            Vector3 p0 = panel.localPosition;
-            Transform ps = panel.parent;
-            Vector3 a = ps != null ? ps.InverseTransformDirection(Vector3.up) : Vector3.up;
-            if (a.sqrMagnitude < 1e-8f) return h;
+            if (!ComputeImplicitHinge(panel, side, out Vector3 edge, out Vector3 axis)) return h;
 
             h.valid = true;
             h.panel = panel;
-            h.edgeLocal = p0 + edgeDirP * (w * 0.5f);
-            h.axisLocal = a.normalized;
-            h.closedPos = p0;
+            h.edgeLocal = edge;
+            h.axisLocal = axis;
+            h.closedPos = panel.localPosition;
             h.closedRot = panel.localRotation;
             h.angle = angle;
             return h;
@@ -722,26 +829,22 @@ namespace ProjectC.Ship
                     {
                         CheckHingePivot(hingePivot, hingePanel, "Пивот петель", errors, warnings);
                     }
-                    else if (hingePivot != null)
-                    {
-                        warnings.Add($"Пивот «{hingePivot.name}» не ведёт створку — используется край створки. " +
-                                     "Посадите панель под пивот (🔗) или очистите поле пивота.");
-                        CheckImplicitPanel(HingePanelOrSelf, hingeSide == HingeSide.Left ? -1f : 1f,
-                            (hingeSide == HingeSide.Left ? -1f : 1f) * openAngle, warnings);
-                    }
                     else
                     {
+                        if (hingePivot != null)
+                            warnings.Add($"Пивот «{hingePivot.name}» не ведёт створку — используется край створки. " +
+                                         "Посадите панель под пивот (🔗) или очистите поле пивота.");
                         // Неявный пивот: превью и игра работают сразу, без настройки.
-                        CheckImplicitPanel(HingePanelOrSelf, hingeSide == HingeSide.Left ? -1f : 1f,
-                            (hingeSide == HingeSide.Left ? -1f : 1f) * openAngle, warnings);
+                        CheckImplicitPanel(HingePanelOrSelf, hingeSide,
+                            HingeSideSign(hingeSide) * openAngle, warnings);
                     }
                     if (Mathf.Approximately(openAngle, 0f))
                         warnings.Add("Угол открытия = 0 — дверь не будет двигаться.");
                     break;
 
                 case DoorType.HingedDouble:
-                    CheckDoubleHingeSide(leftPivot, leftHingePanel, -1f, "Левый", "Левая створка", errors, warnings);
-                    CheckDoubleHingeSide(rightPivot, rightHingePanel, 1f, "Правый", "Правая створка", errors, warnings);
+                    CheckDoubleHingeSide(leftPivot, leftHingePanel, leftHingeSide, "Левый", "Левая створка", errors, warnings);
+                    CheckDoubleHingeSide(rightPivot, rightHingePanel, rightHingeSide, "Правый", "Правая створка", errors, warnings);
                     break;
 
                 case DoorType.LiftUp:
@@ -803,7 +906,7 @@ namespace ProjectC.Ship
         /// как обычно; чужой/пустой пивот → предупреждение + край створки;
         /// без пивота → край створки; без створки → ошибка.
         /// </summary>
-        private void CheckDoubleHingeSide(Transform pivot, Transform panel, float edgeSide,
+        private void CheckDoubleHingeSide(Transform pivot, Transform panel, HingeSide side,
             string pivotAdj, string panelNoun, List<string> errors, List<string> warnings)
         {
             if (panel == null)
@@ -819,14 +922,12 @@ namespace ProjectC.Ship
             if (pivot != null)
                 warnings.Add($"{pivotAdj} пивот «{pivot.name}» не ведёт створку — используется край створки. " +
                              "Посадите панель под пивот (🔗) или очистите поле пивота.");
-            CheckImplicitPanel(panel, edgeSide,
-                edgeSide < 0f ? -(invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle)
-                              : (invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle),
-                warnings, panelNoun);
+            float swing = invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle;
+            CheckImplicitPanel(panel, side, HingeSideSign(side) * swing, warnings, panelNoun);
         }
 
         /// <summary>Проверка панели на неявном краю: есть геометрия и измеримый габарит.</summary>
-        private void CheckImplicitPanel(Transform panel, float edgeSide, float angle,
+        private void CheckImplicitPanel(Transform panel, HingeSide side, float angle,
             List<string> warnings, string label = "Створка")
         {
             if (!HasGeometry(panel))
@@ -834,7 +935,7 @@ namespace ProjectC.Ship
                 warnings.Add($"{label}: под объектом нет геометрии — в превью будет видна только дужка поворота.");
                 return;
             }
-            if (!BuildImplicitHinge(panel, edgeSide, angle).valid)
+            if (!BuildImplicitHinge(panel, side, angle).valid)
                 warnings.Add($"{label}: габарит не измерился — не вокруг чего строить край. " +
                              "Задайте меш/коллайдер.");
         }
@@ -983,14 +1084,13 @@ namespace ProjectC.Ship
                 case DoorType.HingedSingle:
                     if (UseExplicitPivot(hingePivot, HingePanelOrSelf))
                     {
-                        float signed = (hingeSide == HingeSide.Left ? -1f : 1f) * openAngle;
                         DrawHingeGizmo(hingePivot, hingePivot.localRotation,
-                            hingePivot.localRotation * Quaternion.Euler(0f, signed, 0f), hingePanel);
+                            HingeOpenRotation(hingePivot, HingePanelOrSelf, hingeSide,
+                                HingeSideSign(hingeSide) * openAngle), hingePanel);
                     }
                     else
                     {
-                        float sideSign = hingeSide == HingeSide.Left ? -1f : 1f;
-                        DrawImplicitHingeGizmo(HingePanelOrSelf, sideSign, sideSign * openAngle);
+                        DrawImplicitHingeGizmo(HingePanelOrSelf, hingeSide, HingeSideSign(hingeSide) * openAngle);
                     }
                     break;
                 case DoorType.HingedDouble:
@@ -998,12 +1098,14 @@ namespace ProjectC.Ship
                         float swing = invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle;
                         if (UseExplicitPivot(leftPivot, leftHingePanel))
                             DrawHingeGizmo(leftPivot, leftPivot.localRotation,
-                                leftPivot.localRotation * Quaternion.Euler(0f, -swing, 0f), leftHingePanel);
-                        else DrawImplicitHingeGizmo(leftHingePanel, -1f, -swing);
+                                HingeOpenRotation(leftPivot, leftHingePanel, leftHingeSide,
+                                    HingeSideSign(leftHingeSide) * swing), leftHingePanel);
+                        else DrawImplicitHingeGizmo(leftHingePanel, leftHingeSide, HingeSideSign(leftHingeSide) * swing);
                         if (UseExplicitPivot(rightPivot, rightHingePanel))
                             DrawHingeGizmo(rightPivot, rightPivot.localRotation,
-                                rightPivot.localRotation * Quaternion.Euler(0f, swing, 0f), rightHingePanel);
-                        else DrawImplicitHingeGizmo(rightHingePanel, 1f, swing);
+                                HingeOpenRotation(rightPivot, rightHingePanel, rightHingeSide,
+                                    HingeSideSign(rightHingeSide) * swing), rightHingePanel);
+                        else DrawImplicitHingeGizmo(rightHingePanel, rightHingeSide, HingeSideSign(rightHingeSide) * swing);
                     }
                     break;
                 case DoorType.LiftUp:
@@ -1079,28 +1181,19 @@ namespace ProjectC.Ship
         /// Дужка + призрак для НЕЯВНОГО пивота: край и ось считаются той же
         /// математикой, что в BuildImplicitHinge (поля не трогаем).
         /// </summary>
-        private void DrawImplicitHingeGizmo(Transform panel, float edgeSide, float angle)
+        private void DrawImplicitHingeGizmo(Transform panel, HingeSide side, float angle)
         {
-            if (panel == null || panel.parent == null) return;
+            if (panel == null) return;
             if (Mathf.Approximately(angle, 0f)) return;
-
-            bool hx = TryMeasurePanelSize(panel, transform, Vector3.right, out float sx);
-            bool hz = TryMeasurePanelSize(panel, transform, Vector3.forward, out float sz);
-            Vector3 widthAxisF = (hx && (!hz || sx >= sz)) ? Vector3.right : Vector3.forward;
-            float w = Mathf.Max(hx ? sx : 0f, hz ? sz : 0f);
-            if (w < 1e-4f) return;
+            if (!ComputeImplicitHinge(panel, side, out Vector3 edge, out Vector3 a)) return;
 
             Transform space = panel.parent;
-            Vector3 edgeDirP = FrameDirToPanelLocal(panel, widthAxisF * edgeSide);
-            Vector3 edge = panel.localPosition + edgeDirP * (w * 0.5f);
-            Vector3 a = space.InverseTransformDirection(Vector3.up);
-            if (a.sqrMagnitude < 1e-8f) return;
-            a.Normalize();
-
-            Vector3 center = space.TransformPoint(edge);
+            Vector3 center = space != null ? space.TransformPoint(edge) : edge;
             // Поворот из parent-пространства в мировое (только поворот, без скейла)
             Quaternion rFull = Quaternion.AngleAxis(angle, a);
-            Quaternion rFullW = space.rotation * rFull * Quaternion.Inverse(space.rotation);
+            Quaternion rFullW = space != null
+                ? space.rotation * rFull * Quaternion.Inverse(space.rotation)
+                : rFull;
 
             Vector3 fromDir = panel.rotation * Vector3.forward;
             Vector3 toDir = rFullW * fromDir;

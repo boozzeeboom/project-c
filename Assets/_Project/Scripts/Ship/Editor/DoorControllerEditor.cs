@@ -201,11 +201,26 @@ namespace ProjectC.Ship
                     MaxMeasured(door, P("leftPanel"), P("rightPanel"), dblAxis));
         }
 
+        private static readonly GUIContent[] HingeSideLabels =
+        {
+            new GUIContent("Петли слева"),
+            new GUIContent("Петли справа"),
+            new GUIContent("Петли сверху (люк наверх)"),
+            new GUIContent("Петли снизу (откинуть вниз)"),
+        };
+
+        private void DrawHingeSide(SerializedProperty sideProp)
+        {
+            sideProp.enumValueIndex = EditorGUILayout.Popup(
+                new GUIContent("Петли", "С какой стороны петли. Сверху/снизу — люк вверх/вниз"),
+                sideProp.enumValueIndex, HingeSideLabels);
+        }
+
         private void DrawHingedSingle(DoorController door)
         {
             EditorGUILayout.LabelField("Петли", EditorStyles.boldLabel);
             if (GUILayout.Button("⚙ Сделать распашной из ЭТОГО объекта", GUILayout.Height(28)))
-                ConvertSelfToHinged(door, P("hingeSide").enumValueIndex == 0);
+                ConvertSelfToHinged(door, (DoorController.HingeSide)P("hingeSide").enumValueIndex);
             EditorGUILayout.HelpBox(
                 "Один клик: пивот на краю объекта + объект ребёнком + вертикаль оси. " +
                 "Сторона края — из поля «Петли» ниже. Дальше жмите превью.",
@@ -220,47 +235,58 @@ namespace ProjectC.Ship
                 MessageType.None);
             EditorGUILayout.PropertyField(P("hingePanel"), new GUIContent("Панель (створка)",
                 "Створка двери. Пусто = сам объект двери. Без пивота крутится вокруг своего края."));
-            EditorGUILayout.PropertyField(P("hingeSide"), new GUIContent("Петли",
-                "С какой стороны петли (вид спереди). Влияет только на знак по умолчанию."));
+            DrawHingeSide(P("hingeSide"));
             EditorGUILayout.Slider(P("openAngle"), -180f, 180f, new GUIContent("Угол открытия°",
                 "Знак разворачивает сторону. Открылась не туда — поменяйте знак."));
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("⚙ Пивот слева")) CreatePivot(door, P("hingePivot"), P("hingePanel"), true);
-            if (GUILayout.Button("⚙ Пивот справа")) CreatePivot(door, P("hingePivot"), P("hingePanel"), false);
+            if (GUILayout.Button("⚙ Слева")) CreatePivot(door, P("hingePivot"), P("hingePanel"), DoorController.HingeSide.Left);
+            if (GUILayout.Button("⚙ Справа")) CreatePivot(door, P("hingePivot"), P("hingePanel"), DoorController.HingeSide.Right);
+            if (GUILayout.Button("⚙ Сверху")) CreatePivot(door, P("hingePivot"), P("hingePanel"), DoorController.HingeSide.Top);
+            if (GUILayout.Button("⚙ Снизу")) CreatePivot(door, P("hingePivot"), P("hingePanel"), DoorController.HingeSide.Bottom);
             EditorGUILayout.EndHorizontal();
             if (GUILayout.Button("🎯 Ось пивота вертикально (Y вверх)"))
                 AlignPivotVertical(door, P("hingePivot"));
             DrawAttachButton(door, P("hingePivot"), P("hingePanel"));
             EditorGUILayout.HelpBox(
-                "Кнопка ⚙ ставит пивот на край панели по её габариту и сажает панель его ребёнком " +
-                "(мировое положение панели сохраняется). Предполагается, что ширина двери — вдоль X рамки.\n" +
+                "Кнопка ⚙ ставит пивот на край панели по её мировому габариту и сажает панель его ребёнком " +
+                "(мировое положение панели сохраняется).\n" +
                 "Кнопка 🎯 доворачивает пивот так, чтобы его Y смотрел строго вверх, " +
-                "а створка при этом ОСТАЛАСЬ на месте (дверь распахивается вертикально, а не как форточка).",
+                "а створка при этом ОСТАЛАСЬ на месте.",
                 MessageType.None);
+        }
+
+        private void DrawHingedDoubleSide(DoorController door,
+            SerializedProperty pivotProp, SerializedProperty panelProp, SerializedProperty sideProp,
+            string title)
+        {
+            EditorGUILayout.LabelField(title, EditorStyles.miniBoldLabel);
+            EditorGUILayout.PropertyField(pivotProp, new GUIContent("Пивот (необязательно)"));
+            EditorGUILayout.PropertyField(panelProp, new GUIContent("Панель (створка)"));
+            DrawHingeSide(sideProp);
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("⚙ Пивот"))
+                CreatePivot(door, pivotProp, panelProp,
+                    (DoorController.HingeSide)sideProp.enumValueIndex);
+            if (GUILayout.Button("🎯 Вертикально"))
+                AlignPivotVertical(door, pivotProp);
+            EditorGUILayout.EndHorizontal();
+            DrawAttachButton(door, pivotProp, panelProp);
         }
 
         private void DrawHingedDouble(DoorController door)
         {
             EditorGUILayout.LabelField("Петли двух створок", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(P("leftPivot"), new GUIContent("Левый пивот (необязательно)"));
-            EditorGUILayout.PropertyField(P("rightPivot"), new GUIContent("Правый пивот (необязательно)"));
-            EditorGUILayout.PropertyField(P("leftHingePanel"), new GUIContent("Левая панель (створка)"));
-            EditorGUILayout.PropertyField(P("rightHingePanel"), new GUIContent("Правая панель (створка)"));
+            EditorGUILayout.HelpBox(
+                "Каждая створка независима: стороны петель можно комбинировать — " +
+                "влево+вправо (ворота), вверх+вниз (люк парой), обе вверх (две форточки). " +
+                "Без пивотов створки крутятся вокруг своих краёв, превью работает сразу.",
+                MessageType.Info);
+            DrawHingedDoubleSide(door, P("leftPivot"), P("leftHingePanel"), P("leftHingeSide"), "Левая створка");
+            DrawHingedDoubleSide(door, P("rightPivot"), P("rightHingePanel"), P("rightHingeSide"), "Правая створка");
             EditorGUILayout.Slider(P("doubleOpenAngle"), 5f, 170f, new GUIContent("Угол каждой°"));
             EditorGUILayout.PropertyField(P("invertDoubleSwing"),
                 new GUIContent("Инвертировать обе", "Если створки открылись не туда"));
-            if (GUILayout.Button("⚙ Создать оба пивота по краям"))
-            {
-                CreatePivot(door, P("leftPivot"), P("leftHingePanel"), true);
-                CreatePivot(door, P("rightPivot"), P("rightHingePanel"), false);
-            }
-            EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("🎯 Левый вертикально")) AlignPivotVertical(door, P("leftPivot"));
-            if (GUILayout.Button("🎯 Правый вертикально")) AlignPivotVertical(door, P("rightPivot"));
-            EditorGUILayout.EndHorizontal();
-            DrawAttachButton(door, P("leftPivot"), P("leftHingePanel"));
-            DrawAttachButton(door, P("rightPivot"), P("rightHingePanel"));
         }
 
         private void DrawLiftUp(DoorController door)
@@ -397,21 +423,19 @@ namespace ProjectC.Ship
             return list;
         }
 
-        /// <summary>
-        /// Ширина панели для постановки пивота: максимальный габарит по X/Z рамки
-        /// (дверь может быть развёрнута — ширина не обязана лежать вдоль X).
-        /// </summary>
-        private static float PanelWidth(DoorController door, Transform panel)
+        private static string HingeSuffix(DoorController.HingeSide side)
         {
-            bool hx = DoorController.TryMeasurePanelSize(panel, door.transform, Vector3.right, out float sx);
-            bool hz = DoorController.TryMeasurePanelSize(panel, door.transform, Vector3.forward, out float sz);
-            if (hx && (!hz || sx >= sz)) return Mathf.Max(sx, 0.01f);
-            if (hz) return Mathf.Max(sz, 0.01f);
-            return 1f;
+            switch (side)
+            {
+                case DoorController.HingeSide.Left: return "_HingeL";
+                case DoorController.HingeSide.Right: return "_HingeR";
+                case DoorController.HingeSide.Top: return "_HingeT";
+                default: return "_HingeB";
+            }
         }
 
         private void CreatePivot(DoorController door, SerializedProperty pivotProp,
-            SerializedProperty panelProp, bool leftSide)
+            SerializedProperty panelProp, DoorController.HingeSide side)
         {
             Transform panel = panelProp.objectReferenceValue as Transform;
             if (panel == null)
@@ -432,13 +456,16 @@ namespace ProjectC.Ship
                     "Понятно");
                 return;
             }
-
-            float w = PanelWidth(door, panel);
+            if (!DoorController.TryComputeHingeEdge(panel, side, out Vector3 edgeLocal))
+            {
+                EditorUtility.DisplayDialog("Пивот не создан",
+                    "Габарит створки не измерился (нет меша/коллайдера).", "Понятно");
+                return;
+            }
 
             Transform parent = panel.parent;
-            Vector3 edgeLocal = panel.localPosition + new Vector3(leftSide ? -w * 0.5f : w * 0.5f, 0f, 0f);
 
-            var go = new GameObject(panel.name + (leftSide ? "_HingeL" : "_HingeR"));
+            var go = new GameObject(panel.name + HingeSuffix(side));
             Undo.RegisterCreatedObjectUndo(go, "Создать пивот петли");
             go.transform.SetParent(parent, false);
             go.transform.localPosition = edgeLocal;
@@ -459,7 +486,7 @@ namespace ProjectC.Ship
         /// + вертикаль оси + назначение полей. Ноль ручной возни — как у слайдера.
         /// Работает и в префабе. Требует меш/коллайдер на объекте.
         /// </summary>
-        private void ConvertSelfToHinged(DoorController door, bool leftSide)
+        private void ConvertSelfToHinged(DoorController door, DoorController.HingeSide side)
         {
             Transform panel = door.transform;
             if (panel.parent == null)
@@ -477,12 +504,16 @@ namespace ProjectC.Ship
                     "Понятно");
                 return;
             }
+            if (!DoorController.TryComputeHingeEdge(panel, side, out Vector3 edgeLocal))
+            {
+                EditorUtility.DisplayDialog("Нельзя",
+                    "Габарит створки не измерился (нет меша/коллайдера).", "Понятно");
+                return;
+            }
 
-            float w = PanelWidth(door, panel);
             Transform parent = panel.parent;
-            Vector3 edgeLocal = panel.localPosition + new Vector3(leftSide ? -w * 0.5f : w * 0.5f, 0f, 0f);
 
-            var go = new GameObject(panel.name + (leftSide ? "_HingeL" : "_HingeR"));
+            var go = new GameObject(panel.name + HingeSuffix(side));
             Undo.RegisterCreatedObjectUndo(go, "Пивот для распашной двери");
             go.transform.SetParent(parent, false);
             go.transform.localPosition = edgeLocal;

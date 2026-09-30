@@ -102,7 +102,7 @@ namespace ProjectC.Ship
         [Tooltip("Панель двери. Пусто = двигается сам объект (так в старых префабах кораблей)")]
         [SerializeField] private Transform doorModel;
 
-        [Tooltip("Куда отъезжает створка (локальные оси родителя)")]
+        [Tooltip("Куда отъезжает створка (оси РАМКИ — объекта двери, его стрелки видно в Scene View)")]
         [SerializeField] private SlideSide slideSide = SlideSide.Right;
 
         [Tooltip("По габариту створки — отъедет ровно на свою ширину. Вручную — дистанция ниже.")]
@@ -299,7 +299,7 @@ namespace ProjectC.Ship
             return bestSide;
         }
 
-        /// <summary>Направление SlideSide → локальный вектор (в пространстве родителя).</summary>
+        /// <summary>Направление SlideSide → локальный вектор В ПРОСТРАНСТВЕ РАМКИ (объекта двери).</summary>
         public static Vector3 SlideSideToLocal(SlideSide side)
         {
             switch (side)
@@ -402,20 +402,24 @@ namespace ProjectC.Ship
         // ============================== Позы ==============================
 
         /// <summary>
-        /// Замерить габарит панели вдоль локальной оси (в единицах родителя).
-        /// Учитывает Renderer и Collider потомков. false — мерить нечего.
+        /// Замерить габарит панели вдоль оси, заданной в пространстве space
+        /// (обычно рамка двери — transform этого компонента).
+        /// Учитывает Renderer потомков; Collider — только если мешей нет
+        /// (в Edit Mode Collider.bounds отстают от трансформов).
+        /// Возвращает размер в единицах РОДИТЕЛЯ ПАНЕЛИ. false — мерить нечего.
         /// </summary>
-        public static bool TryMeasurePanelSize(Transform panel, Vector3 localAxis, out float localSize)
+        public static bool TryMeasurePanelSize(Transform panel, Transform space, Vector3 localAxis, out float localSize)
         {
             localSize = 0f;
             if (panel == null || localAxis.sqrMagnitude < 1e-8f) return false;
 
-            Transform space = panel.parent;
             Vector3 worldDir = space != null
                 ? space.TransformDirection(localAxis.normalized)
                 : localAxis.normalized;
             if (worldDir.sqrMagnitude < 1e-8f) return false;
             worldDir.Normalize();
+
+            Transform parent = panel.parent;
 
             bool has = false;
             Bounds bounds = new Bounds(panel.position, Vector3.zero);
@@ -444,11 +448,11 @@ namespace ProjectC.Ship
             float worldSize = Mathf.Abs(Vector3.Dot(bounds.size, worldDir));
             if (worldSize < 1e-4f) return false;
 
-            // Перевод в локальные единицы родителя (при scale=1 — 1:1).
+            // Перевод в локальные единицы РОДИТЕЛЯ ПАНЕЛИ (при scale=1 — 1:1).
             float scaleAlong = 1f;
-            if (space != null)
+            if (parent != null)
             {
-                Vector3 s = space.lossyScale;
+                Vector3 s = parent.lossyScale;
                 scaleAlong = Mathf.Abs(s.x * worldDir.x) + Mathf.Abs(s.y * worldDir.y) + Mathf.Abs(s.z * worldDir.z);
                 scaleAlong = Mathf.Max(scaleAlong, 1e-4f);
             }
@@ -456,18 +460,38 @@ namespace ProjectC.Ship
             return localSize >= 1e-4f;
         }
 
-        /// <summary>Дистанция сдвига панели: габарит × фактор либо ручная.</summary>
-        public static float ResolveSlideDistance(Transform panel, Vector3 localAxis,
+        /// <summary>
+        /// Дистанция сдвига панели: габарит × фактор либо ручная.
+        /// Ось задана в пространстве рамки (space = transform двери).
+        /// Возвращает дистанцию в единицах родителя панели.
+        /// </summary>
+        public static float ResolveSlideDistance(Transform panel, Transform space, Vector3 localAxis,
             OpenDistanceMode mode, float factor, float manual)
         {
             if (mode == OpenDistanceMode.AutoBySize)
             {
-                if (TryMeasurePanelSize(panel, localAxis, out float size))
+                if (TryMeasurePanelSize(panel, space, localAxis, out float size))
                     return Mathf.Max(size * Mathf.Max(factor, 0.01f), 0f);
                 // Мерить нечего — безопасный фолбэк вместо «улёта».
                 return Mathf.Min(Mathf.Max(manual, 0f), 3f);
             }
             return Mathf.Max(manual, 0f);
+        }
+
+        /// <summary>
+        /// Перевести направление из пространства РАМКИ (объекта двери)
+        /// в локальные оси родителя панели. Скейлы игнорируются (только поворот).
+        /// </summary>
+        private Vector3 FrameDirToPanelLocal(Transform panel, Vector3 frameDir)
+        {
+            if (frameDir.sqrMagnitude < 1e-8f) return frameDir;
+            Vector3 w = transform.TransformDirection(frameDir.normalized);
+            if (w.sqrMagnitude < 1e-8f) return frameDir;
+            w.Normalize();
+            Transform ps = panel != null ? panel.parent : null;
+            Vector3 l = ps != null ? ps.InverseTransformDirection(w) : w;
+            if (l.sqrMagnitude < 1e-8f) return frameDir;
+            return l.normalized;
         }
 
         private void CacheClosedPoses()
@@ -491,18 +515,21 @@ namespace ProjectC.Ship
         /// <summary>Посчитать открытые позы из закэшированных закрытых. Чистая функция от полей.</summary>
         private void ComputeOpenFromCachedClosed()
         {
-            Vector3 dir = SlideSideToLocal(slideSide);
-            float d = ResolveSlideDistance(SinglePanel, dir, distanceMode, sizeFactor, manualDistance);
-            _singleOpen = _singleClosed + dir.normalized * d;
+            // Все направления заданы В ОСЯХ РАМКИ (объекта двери):
+            // дизайнер видит стрелки рамки в Scene View и выбирает по ним.
+            // В локальные оси каждой панели переводим через мир (повороты скелета/префаба учитываются).
+            Vector3 dirF = SlideSideToLocal(slideSide);
+            float d = ResolveSlideDistance(SinglePanel, transform, dirF, distanceMode, sizeFactor, manualDistance);
+            _singleOpen = _singleClosed + FrameDirToPanelLocal(SinglePanel, dirF) * d;
 
             // Двустворчатая сдвижная
-            Vector3 axis = doubleAxis == DoubleSlideAxis.X_Horizontal ? Vector3.right : Vector3.forward;
+            Vector3 axisF = doubleAxis == DoubleSlideAxis.X_Horizontal ? Vector3.right : Vector3.forward;
             float dl = leftPanel != null
-                ? ResolveSlideDistance(leftPanel, axis, doubleDistanceMode, doubleSizeFactor, doubleManualDistance) : 0f;
+                ? ResolveSlideDistance(leftPanel, transform, axisF, doubleDistanceMode, doubleSizeFactor, doubleManualDistance) : 0f;
             float dr = rightPanel != null
-                ? ResolveSlideDistance(rightPanel, axis, doubleDistanceMode, doubleSizeFactor, doubleManualDistance) : 0f;
-            _leftOpen = _leftClosed - axis * dl;
-            _rightOpen = _rightClosed + axis * dr;
+                ? ResolveSlideDistance(rightPanel, transform, axisF, doubleDistanceMode, doubleSizeFactor, doubleManualDistance) : 0f;
+            _leftOpen = _leftClosed - FrameDirToPanelLocal(leftPanel, axisF) * dl;
+            _rightOpen = _rightClosed + FrameDirToPanelLocal(rightPanel, axisF) * dr;
 
             // Распашная одна: петли слева → −угол, справа → +угол (вокруг локального Y пивота)
             float signed = (hingeSide == HingeSide.Left ? -1f : 1f) * openAngle;
@@ -513,9 +540,10 @@ namespace ProjectC.Ship
             _leftPivotOpen = _leftPivotClosed * Quaternion.Euler(0f, -swing, 0f);
             _rightPivotOpen = _rightPivotClosed * Quaternion.Euler(0f, swing, 0f);
 
-            // Подъёмная шторка (закрытая поза закэширована — читаем только её)
-            float h = ResolveSlideDistance(LiftPanel, Vector3.up, liftDistanceMode, liftSizeFactor, liftManualHeight);
-            _liftOpen = _liftClosed + Vector3.up * h;
+            // Подъёмная шторка (закрытая поза закэширована — читаем только её).
+            // Едет строго по +Y РАМКИ: если рамка не выровнена по миру — сначала кнопка «🧭 Y рамки вверх».
+            float h = ResolveSlideDistance(LiftPanel, transform, Vector3.up, liftDistanceMode, liftSizeFactor, liftManualHeight);
+            _liftOpen = _liftClosed + FrameDirToPanelLocal(LiftPanel, Vector3.up) * h;
         }
 
         private void ApplyPose(float e)
@@ -567,13 +595,15 @@ namespace ProjectC.Ship
                     if (leftPanel == null) errors.Add("Не задана левая створка (Left Panel).");
                     if (rightPanel == null) errors.Add("Не задана правая створка (Right Panel).");
                     {
-                        Vector3 axis = doubleAxis == DoubleSlideAxis.X_Horizontal ? Vector3.right : Vector3.forward;
+                        Vector3 axisF = doubleAxis == DoubleSlideAxis.X_Horizontal ? Vector3.right : Vector3.forward;
                         if (leftPanel != null)
-                            CheckSlidePanel(leftPanel, axis, doubleDistanceMode,
+                            CheckSlidePanel(leftPanel, axisF, doubleDistanceMode,
                                 doubleSizeFactor, doubleManualDistance, "Левая створка", errors, warnings);
                         if (rightPanel != null)
-                            CheckSlidePanel(rightPanel, axis, doubleDistanceMode,
+                            CheckSlidePanel(rightPanel, axisF, doubleDistanceMode,
                                 doubleSizeFactor, doubleManualDistance, "Правая створка", errors, warnings);
+                        if (leftPanel != null && rightPanel != null)
+                            CheckDoubleArrangement(axisF, errors, warnings);
                     }
                     break;
 
@@ -600,7 +630,7 @@ namespace ProjectC.Ship
                 warnings.Add("Очень быстрое открытие (< 0.15 c) — будет выглядеть как телепорт.");
         }
 
-        private static void CheckSlidePanel(Transform panel, Vector3 localAxis,
+        private void CheckSlidePanel(Transform panel, Vector3 frameAxis,
             OpenDistanceMode mode, float factor, float manual, string label,
             List<string> errors, List<string> warnings)
         {
@@ -611,13 +641,23 @@ namespace ProjectC.Ship
             }
             if (mode == OpenDistanceMode.AutoBySize)
             {
-                if (!TryMeasurePanelSize(panel, localAxis, out _))
+                if (!TryMeasurePanelSize(panel, transform, frameAxis, out float size))
+                {
                     warnings.Add($"{label}: габарит не измерился (нет Renderer/Collider) — " +
                                  "будет использован ограниченный фолбэк 3 м. Задайте панели меш/коллайдер.");
+                    return;
+                }
+                // Ловушка повёрнутых корней: ось смотрит в тонкую сторону панели
+                // (как шторка ангара, поехавшая на 0.001) — дистанция исчезающе мала.
+                float maxDim = MaxPanelDimension(panel);
+                if (maxDim > 1e-4f && size < maxDim * 0.05f)
+                    warnings.Add($"{label}: отъезд {size:F3} м — крохи на фоне габарита {maxDim:F2} м. " +
+                                 "Направление смотрит в ТОНКУЮ сторону панели. " +
+                                 "Проверьте направление или выровняйте рамку (кнопка 🧭).");
             }
             else
             {
-                if (TryMeasurePanelSize(panel, localAxis, out float size) && size > 1e-4f)
+                if (TryMeasurePanelSize(panel, transform, frameAxis, out float size) && size > 1e-4f)
                 {
                     if (manual > size * 3f)
                         warnings.Add($"{label}: ручная дистанция {manual:F2} м намного больше габарита " +
@@ -626,6 +666,39 @@ namespace ProjectC.Ship
                         warnings.Add($"{label}: дистанция = 0 — дверь не будет двигаться.");
                 }
             }
+        }
+
+        /// <summary>Максимальный габарит панели по трём осям рамки (в единицах родителя панели).</summary>
+        private float MaxPanelDimension(Transform panel)
+        {
+            float best = 0f;
+            foreach (var ax in new[] { Vector3.right, Vector3.up, Vector3.forward })
+            {
+                if (TryMeasurePanelSize(panel, transform, ax, out float s))
+                    best = Mathf.Max(best, s);
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// Проверка расстановки створок разъезда: центры должны быть разнесены
+        /// ВДОЛЬ оси разъезда. Иначе створки поедут поперёк друг друга.
+        /// </summary>
+        private void CheckDoubleArrangement(Vector3 frameAxis, List<string> errors, List<string> warnings)
+        {
+            Vector3 cl = transform.InverseTransformPoint(leftPanel.position);
+            Vector3 cr = transform.InverseTransformPoint(rightPanel.position);
+            Vector3 delta = cr - cl;
+            float total = delta.magnitude;
+            if (total < 1e-4f)
+            {
+                warnings.Add("Створки стоят в одной точке — разъезжаться некуда. Разнесите панели по проёму.");
+                return;
+            }
+            float along = Mathf.Abs(Vector3.Dot(delta.normalized, frameAxis.normalized));
+            if (along < 0.5f)
+                warnings.Add("Створки разнесены ПОПЕРЁК оси разъезда — поедут не врозь, а друг за другом. " +
+                             "Смените ось или нажмите «📏 Ось по створкам».");
         }
 
         // ============================== Editor-preview ==============================
@@ -675,23 +748,26 @@ namespace ProjectC.Ship
                 case DoorType.SlidingSingle:
                     if (SinglePanel != null)
                     {
-                        Vector3 dir = SlideSideToLocal(slideSide);
-                        float d = ResolveSlideDistance(SinglePanel, dir, distanceMode, sizeFactor, manualDistance);
-                        DrawSlideGizmo(SinglePanel, SinglePanel.localPosition, SinglePanel.localPosition + dir.normalized * d);
+                        Vector3 dirF = SlideSideToLocal(slideSide);
+                        float d = ResolveSlideDistance(SinglePanel, transform, dirF, distanceMode, sizeFactor, manualDistance);
+                        Vector3 off = FrameDirToPanelLocal(SinglePanel, dirF) * d;
+                        DrawSlideGizmo(SinglePanel, SinglePanel.localPosition, SinglePanel.localPosition + off);
                     }
                     break;
                 case DoorType.SlidingDouble:
                     {
-                        Vector3 axis = doubleAxis == DoubleSlideAxis.X_Horizontal ? Vector3.right : Vector3.forward;
+                        Vector3 axisF = doubleAxis == DoubleSlideAxis.X_Horizontal ? Vector3.right : Vector3.forward;
                         if (leftPanel != null)
                         {
-                            float dl = ResolveSlideDistance(leftPanel, axis, doubleDistanceMode, doubleSizeFactor, doubleManualDistance);
-                            DrawSlideGizmo(leftPanel, leftPanel.localPosition, leftPanel.localPosition - axis * dl);
+                            float dl = ResolveSlideDistance(leftPanel, transform, axisF, doubleDistanceMode, doubleSizeFactor, doubleManualDistance);
+                            Vector3 off = FrameDirToPanelLocal(leftPanel, axisF) * dl;
+                            DrawSlideGizmo(leftPanel, leftPanel.localPosition, leftPanel.localPosition - off);
                         }
                         if (rightPanel != null)
                         {
-                            float dr = ResolveSlideDistance(rightPanel, axis, doubleDistanceMode, doubleSizeFactor, doubleManualDistance);
-                            DrawSlideGizmo(rightPanel, rightPanel.localPosition, rightPanel.localPosition + axis * dr);
+                            float dr = ResolveSlideDistance(rightPanel, transform, axisF, doubleDistanceMode, doubleSizeFactor, doubleManualDistance);
+                            Vector3 off = FrameDirToPanelLocal(rightPanel, axisF) * dr;
+                            DrawSlideGizmo(rightPanel, rightPanel.localPosition, rightPanel.localPosition + off);
                         }
                     }
                     break;
@@ -717,8 +793,9 @@ namespace ProjectC.Ship
                 case DoorType.LiftUp:
                     if (LiftPanel != null)
                     {
-                        float h = ResolveSlideDistance(LiftPanel, Vector3.up, liftDistanceMode, liftSizeFactor, liftManualHeight);
-                        DrawSlideGizmo(LiftPanel, LiftPanel.localPosition, LiftPanel.localPosition + Vector3.up * h);
+                        float h = ResolveSlideDistance(LiftPanel, transform, Vector3.up, liftDistanceMode, liftSizeFactor, liftManualHeight);
+                        Vector3 off = FrameDirToPanelLocal(LiftPanel, Vector3.up) * h;
+                        DrawSlideGizmo(LiftPanel, LiftPanel.localPosition, LiftPanel.localPosition + off);
                     }
                     break;
             }

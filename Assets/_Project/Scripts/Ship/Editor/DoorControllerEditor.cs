@@ -75,6 +75,16 @@ namespace ProjectC.Ship
             EditorGUILayout.PropertyField(P("onOpened"));
             EditorGUILayout.PropertyField(P("onClosed"));
 
+            EditorGUILayout.Space(2);
+            if (GUILayout.Button("🧭 Оси рамки = мировые (Y вверх)", GUILayout.Height(24)))
+                AlignFrameToWorld(door);
+            EditorGUILayout.HelpBox(
+                "Все направления задаются В ОСЯХ РАМКИ (этого объекта). " +
+                "Если корень корабля повёрнут (как heavyII: 270/90) — стрелки рамки не совпадают " +
+                "с верхом/бортами корабля: нажмите кнопку, стрелки встанут по миру, " +
+                "и «Вверх/Вправо» будут значить то, что видно. Корабль увозит оси с собой.",
+                MessageType.None);
+
             EditorGUILayout.Space(4);
 
             // ---------- Секция типа ----------
@@ -169,6 +179,8 @@ namespace ProjectC.Ship
             EditorGUILayout.PropertyField(P("doubleAxis"), new GUIContent("Ось разъезда",
                 "X — влево-вправо, Z — вперёд-назад"));
             Vector3 dblAxis = P("doubleAxis").enumValueIndex == 0 ? Vector3.right : Vector3.forward;
+            if (GUILayout.Button("📏 Ось по створкам"))
+                DetectDoubleAxis(door);
             EditorGUILayout.PropertyField(P("doubleDistanceMode"), new GUIContent("Дистанция",
                 "По габариту — каждая створка отъедет на свою ширину"));
             var mode = (DoorController.OpenDistanceMode)P("doubleDistanceMode").enumValueIndex;
@@ -195,6 +207,10 @@ namespace ProjectC.Ship
                 "ОБЯЗАТЕЛЬНО. Пустой объект на линии петель, панель — его ребёнок."));
             if (P("hingePivot").objectReferenceValue == null)
                 EditorGUILayout.HelpBox("Без пивота дверь не повернётся. Создайте кнопкой ниже.", MessageType.Error);
+            EditorGUILayout.HelpBox(
+                "Пивотом может быть сам объект двери (перетащите его в поле) — " +
+                "удобно, если иерархия петель уже приехала из импорта.",
+                MessageType.None);
             EditorGUILayout.PropertyField(P("hingePanel"), new GUIContent("Панель (створка)",
                 "Створка двери. Сначала назначьте её — затем кнопка ниже создаст пивот на её краю."));
             EditorGUILayout.PropertyField(P("hingeSide"), new GUIContent("Петли",
@@ -206,9 +222,13 @@ namespace ProjectC.Ship
             if (GUILayout.Button("⚙ Пивот слева")) CreatePivot(door, P("hingePivot"), P("hingePanel"), true);
             if (GUILayout.Button("⚙ Пивот справа")) CreatePivot(door, P("hingePivot"), P("hingePanel"), false);
             EditorGUILayout.EndHorizontal();
+            if (GUILayout.Button("🎯 Ось пивота вертикально (Y вверх)"))
+                AlignPivotVertical(door, P("hingePivot"));
             EditorGUILayout.HelpBox(
-                "Кнопка ставит пивот на край панели по её габариту и сажает панель его ребёнком " +
-                "(мировое положение панели сохраняется). Предполагается, что ширина двери — вдоль X.",
+                "Кнопка ⚙ ставит пивот на край панели по её габариту и сажает панель его ребёнком " +
+                "(мировое положение панели сохраняется). Предполагается, что ширина двери — вдоль X рамки.\n" +
+                "Кнопка 🎯 доворачивает пивот так, чтобы его Y смотрел строго вверх, " +
+                "а створка при этом ОСТАЛАСЬ на месте (дверь распахивается вертикально, а не как форточка).",
                 MessageType.None);
         }
 
@@ -227,6 +247,10 @@ namespace ProjectC.Ship
                 CreatePivot(door, P("leftPivot"), P("leftHingePanel"), true);
                 CreatePivot(door, P("rightPivot"), P("rightHingePanel"), false);
             }
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("🎯 Левый вертикально")) AlignPivotVertical(door, P("leftPivot"));
+            if (GUILayout.Button("🎯 Правый вертикально")) AlignPivotVertical(door, P("rightPivot"));
+            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawLiftUp(DoorController door)
@@ -243,7 +267,7 @@ namespace ProjectC.Ship
         private void DrawSlideDirection(SerializedProperty sideProp)
         {
             sideProp.enumValueIndex = EditorGUILayout.Popup(
-                new GUIContent("Куда отъезжает", "В локальных осях родителя двери"),
+                new GUIContent("Куда отъезжает", "В осях РАМКИ (объекта двери) — её стрелки видно в Scene View"),
                 sideProp.enumValueIndex, SlideSideLabels);
         }
 
@@ -265,7 +289,7 @@ namespace ProjectC.Ship
                 EditorGUILayout.PropertyField(manualProp, new GUIContent("Дистанция (м)"));
                 DrawMeasuredInfo(door, panel, "Створка", localAxis);
                 if (panel != null && GUILayout.Button("📐 Подставить габарит"))
-                    ApplyMeasured(manualProp, MeasureOf(panel, localAxis));
+                    ApplyMeasured(manualProp, MeasureOf(door, panel, localAxis));
             }
         }
 
@@ -284,7 +308,7 @@ namespace ProjectC.Ship
                 EditorGUILayout.LabelField($"{label}: панель не задана", EditorStyles.miniLabel);
                 return;
             }
-            if (DoorController.TryMeasurePanelSize(panel, axis, out float size))
+            if (DoorController.TryMeasurePanelSize(panel, door.transform, axis, out float size))
                 EditorGUILayout.LabelField($"{label}: габарит вдоль оси — {size:F2} м", EditorStyles.miniLabel);
             else
                 EditorGUILayout.LabelField($"{label}: габарит не измерился (нет меша/коллайдера)",
@@ -385,7 +409,7 @@ namespace ProjectC.Ship
             }
 
             float w = 1f;
-            if (DoorController.TryMeasurePanelSize(panel, Vector3.right, out float measured) && measured > 1e-4f)
+            if (DoorController.TryMeasurePanelSize(panel, door.transform, Vector3.right, out float measured) && measured > 1e-4f)
                 w = measured;
 
             Transform parent = panel.parent;
@@ -405,6 +429,106 @@ namespace ProjectC.Ship
             serializedObject.ApplyModifiedProperties();
             door.EndPreview();
             EditorGUIUtility.PingObject(go);
+        }
+
+        // ============================ Ориентация ============================
+
+        /// <summary>
+        /// Повернуть рамку (объект двери) так, чтобы её оси совпали с мировыми.
+        /// После этого «Вверх/Вправо/Вперёд» значат то, что видит дизайнер.
+        /// Дети рамки повернутся вместе с ней (Ctrl+Z отменяет).
+        /// </summary>
+        private void AlignFrameToWorld(DoorController door)
+        {
+            Undo.RecordObject(door.transform, "Выровнять рамку двери");
+            door.transform.rotation = Quaternion.identity;
+            door.EndPreview();
+            EditorUtility.SetDirty(door);
+            SceneView.RepaintAll();
+        }
+
+        /// <summary>Выбрать ось разъезда по фактическому расположению створок (в осях рамки).</summary>
+        private void DetectDoubleAxis(DoorController door)
+        {
+            var l = P("leftPanel").objectReferenceValue as Transform;
+            var r = P("rightPanel").objectReferenceValue as Transform;
+            if (l == null || r == null)
+            {
+                EditorUtility.DisplayDialog("Ось не определена",
+                    "Сначала назначьте обе створки.", "Понятно");
+                return;
+            }
+            Vector3 d = door.transform.InverseTransformDirection(r.position - l.position);
+            if (d.sqrMagnitude < 1e-8f)
+            {
+                EditorUtility.DisplayDialog("Ось не определена",
+                    "Створки стоят в одной точке — разнесите их по проёму.", "Понятно");
+                return;
+            }
+            d.Normalize();
+            float ax = Mathf.Abs(d.x), ay = Mathf.Abs(d.y), az = Mathf.Abs(d.z);
+            if (ay > ax && ay > az)
+            {
+                EditorUtility.DisplayDialog("Ось не подошла",
+                    "Створки разнесены ПО ВЕРТИКАЛИ — разъезд влево-вправо/вперёд-назад не подойдёт. " +
+                    "Используйте две шторки LiftUp или переставьте створки.",
+                    "Понятно");
+                return;
+            }
+            P("doubleAxis").enumValueIndex = ax >= az ? 0 : 1;
+            serializedObject.ApplyModifiedProperties();
+            door.EndPreview();
+        }
+
+        /// <summary>
+        /// Довернуть пивот минимальным поворотом так, чтобы его Y смотрел строго вверх.
+        /// Вся ветка потомков сохраняет МИРОВЫЕ позы (закрытый вид не меняется),
+        /// а hinge-вращение становится вертикальным вместо «форточки».
+        /// </summary>
+        private void AlignPivotVertical(DoorController door, SerializedProperty pivotProp)
+        {
+            var piv = pivotProp.objectReferenceValue as Transform;
+            if (piv == null)
+            {
+                EditorUtility.DisplayDialog("Пивот не задан",
+                    "Сначала задайте или создайте пивот.", "Понятно");
+                return;
+            }
+
+            var subtree = piv.GetComponentsInChildren<Transform>(true);
+            var rec = new List<Object> { piv };
+            foreach (var c in subtree)
+                if (c != piv) rec.Add(c);
+            Undo.RecordObjects(rec.ToArray(), "Вертикаль пивота");
+
+            Vector3 curY = piv.rotation * Vector3.up;
+            Quaternion q1;
+            if (Vector3.Dot(curY, Vector3.up) < -0.9999f)
+                q1 = Quaternion.AngleAxis(180f, piv.rotation * Vector3.forward) * piv.rotation;
+            else
+                q1 = Quaternion.FromToRotation(curY, Vector3.up) * piv.rotation;
+
+            var pos = new List<Vector3>();
+            var rot = new List<Quaternion>();
+            foreach (var c in subtree)
+            {
+                if (c == piv) continue;
+                pos.Add(c.position);
+                rot.Add(c.rotation);
+            }
+            piv.rotation = q1;
+            int i = 0;
+            foreach (var c in subtree)
+            {
+                if (c == piv) continue;
+                c.position = pos[i];
+                c.rotation = rot[i];
+                i++;
+            }
+
+            door.EndPreview();
+            EditorUtility.SetDirty(door);
+            SceneView.RepaintAll();
         }
 
         // ============================ Хелперы ============================
@@ -427,9 +551,9 @@ namespace ProjectC.Ship
             return DoorController.SlideSideToLocal((DoorController.SlideSide)sideProp.enumValueIndex);
         }
 
-        private static float MeasureOf(Transform panel, Vector3 axis)
+        private static float MeasureOf(DoorController door, Transform panel, Vector3 axis)
         {
-            if (panel != null && DoorController.TryMeasurePanelSize(panel, axis, out float s) && s > 1e-4f)
+            if (panel != null && DoorController.TryMeasurePanelSize(panel, door.transform, axis, out float s) && s > 1e-4f)
                 return s;
             return 1.5f;
         }
@@ -441,7 +565,7 @@ namespace ProjectC.Ship
             foreach (var p in new[] { a, b })
             {
                 var t = p.objectReferenceValue as Transform;
-                if (t != null && DoorController.TryMeasurePanelSize(t, axis, out float s))
+                if (t != null && DoorController.TryMeasurePanelSize(t, door.transform, axis, out float s))
                     best = Mathf.Max(best, s);
             }
             return best > 1e-4f ? best : 1.5f;

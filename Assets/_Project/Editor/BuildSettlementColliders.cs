@@ -23,6 +23,14 @@ namespace ProjectC.EditorTools
     ///     (класс ошибки MD2_Deck_Blockout);
     ///   - коллайдеры живут в отдельной иерархии "<Root>_Colliders/<Группа>/..." в сцене,
     ///     а не на самих FBX-узлах: переживает переимпорт FBX, перезапуск идемпотентен;
+    ///   - некоробочные формы: круглые бары (токены capsuleTokens: PIPE/REBAR/TUBE) получают
+    ///     CapsuleCollider вдоль длинной оси; кривые меши (токены sliceTokens) режутся slab'ами
+    ///     с шагом sliceStep (сечения — по вершинам и треугольникам, дыр нет), соседние куски
+    ///     с одинаковым сечением склеиваются в пределах sliceAdaptTol (прямые участки — 1 бокс,
+    ///     сужения — детально, напр. нос Deck_Main_Bow); наклонные плоские покрываются
+    ///     повёрнутыми боксами 1-в-1;
+    ///   - режим корабля (shipMode): без флага static — '<Root>_Colliders' едет с Rigidbody
+    ///     как compound-коллайдер (для поселений static дешевле, не включать);
     ///   - Dry Run: посчитать created/skipped без создания объектов (подбор порогов для 2к мешей).
     ///   - include-режим (наоборот от исключений): поле includeTokens + отдельные кнопки
     ///     «только совпадения» — боксы только там, где имя содержит токен (напр. TABLE).
@@ -61,6 +69,21 @@ namespace ProjectC.EditorTools
             [Tooltip("Если не пусто — боксы строятся ТОЛЬКО для мешей, в имени которых есть один из токенов (через запятую, регистр не важен). Работает только через отдельные кнопки 'только совпадения'; обычный Build его игнорирует. Исключения excludeTokens внутри выборки тоже действуют.")]
             public string includeTokens = "";
 
+            [Tooltip("Подстроки имён (через запятую): круглые бары (трубы, арматура) получают CapsuleCollider вдоль длинной оси вместо бокса — точное прилегание без воздуха по углам. Только вытянутые (длина >= 2 диаметров), короткие цилиндры остаются боксами. Точна при uniform-скейле (фермы: 150 uniform — ок).")]
+            public string capsuleTokens = "PIPE,REBAR,TUBE";
+
+            [Tooltip("Подстроки имён (через запятую): кривые/гнутые меши (арки, гнутые листы) режутся на сегменты вдоль длинной оси, каждый кусок обтягивается своим боксом по вершинам. Пусто = не резать.")]
+            public string sliceTokens = "";
+
+            [Tooltip("Длина куска нарезки (м, world) вдоль длинной оси — шаг измерения. Пустые куски (дыры в геометрии) пропускаются. Нужен Read/Write Enabled у меша, иначе — обычный бокс.")]
+            public float sliceStep = 1.0f;
+
+            [Tooltip("Адаптив нарезки (м, world): соседние куски с сечением, совпадающим в пределах допуска, склеиваются в один (прямая корма — 1 бокс, сужение — детально). 0 — не склеивать, каждый непустой slab своим боксом.")]
+            public float sliceAdaptTol = 0.05f;
+
+            [Tooltip("Режим корабля / движущегося объекта: холдеры, группы и корень генерации НЕ помечаются static, иерархия '<Root>_Colliders' едет вместе с Rigidbody как compound-коллайдер. Для поселений (неподвижных) оставить выключенным — static дешевле для PhysX.")]
+            public bool shipMode = false;
+
             [Tooltip("Группировать боксы по прямому ребёнку корня (обычно отдельное здание).")]
             public bool groupByTopLevel = true;
 
@@ -74,6 +97,9 @@ namespace ProjectC.EditorTools
         public class Report
         {
             public int created;
+            public int capsules;
+            public int slicedMeshes;
+            public int unreadSlices;
             public int skippedNoMesh;
             public int skippedDisabled;
             public int skippedName;
@@ -126,6 +152,8 @@ namespace ProjectC.EditorTools
                 Undo.DestroyObjectImmediate(old.gameObject);
 
             // 2) Корень генерации: identity-локально под корнем сцены/FBX.
+            // В режиме корабля — не static: едет с Rigidbody как compound.
+            bool markStatic = !s.shipMode;
             var genRoot = new GameObject(genName);
             Undo.RegisterCreatedObjectUndo(genRoot, "Build settlement colliders");
             genRoot.transform.SetParent(root.transform, false);
@@ -133,7 +161,7 @@ namespace ProjectC.EditorTools
             genRoot.transform.localRotation = Quaternion.identity;
             genRoot.transform.localScale = Vector3.one;
             genRoot.layer = root.layer;
-            genRoot.isStatic = true;
+            genRoot.isStatic = markStatic;
 
             var groups = new Dictionary<string, Transform>(StringComparer.Ordinal);
 
@@ -149,7 +177,8 @@ namespace ProjectC.EditorTools
             Undo.CollapseUndoOperations(undoGroup);
             Selection.activeGameObject = genRoot;
 
-            Debug.Log($"[SettlementColliders] '{root.name}': created={report.created}, " +
+            Debug.Log($"[SettlementColliders] '{root.name}': created={report.created}, capsules={report.capsules}, " +
+                      $"slicedMeshes={report.slicedMeshes} (unread={report.unreadSlices}), " +
                       $"skipped(noMesh={report.skippedNoMesh}, disabled={report.skippedDisabled}, " +
                       $"name={report.skippedName}, notIncluded={report.skippedInclude}, tiny={report.skippedTiny}), repaired={report.repaired}. " +
                       $"Иерархия: {genName}");
@@ -170,7 +199,7 @@ namespace ProjectC.EditorTools
             var report = new Report();
             if (root == null || s == null) return report;
             Transform existing = root.transform.Find(GeneratedSuffixRootName(root));
-            Collect(root, s, null, report, true, null, existing, true);
+            Collect(root, s, null, report, true, null, existing, true, true);
             if (s.repairThinBoxes)
                 report.repaired = CountThinBoxes(root, s, GeneratedSuffixRootName(root));
             return report;
@@ -200,6 +229,8 @@ namespace ProjectC.EditorTools
             Undo.SetCurrentGroupName($"Append settlement colliders: {root.name}");
 
             // Корень генерации: переиспользовать существующий, а не сносить.
+            // Флаг static подтягиваем под текущий режим (могли переключить в/из shipMode).
+            bool markStatic = !s.shipMode;
             Transform genRoot = root.transform.Find(genName);
             if (genRoot == null)
             {
@@ -210,16 +241,28 @@ namespace ProjectC.EditorTools
                 go.transform.localRotation = Quaternion.identity;
                 go.transform.localScale = Vector3.one;
                 go.layer = root.layer;
-                go.isStatic = true;
+                go.isStatic = markStatic;
                 genRoot = go.transform;
+            }
+            else if (genRoot.gameObject.isStatic != markStatic)
+            {
+                Undo.RecordObject(genRoot.gameObject, "Append settlement colliders");
+                genRoot.gameObject.isStatic = markStatic;
             }
 
             // Переиспользовать уже созданные группы (иначе задвоятся одноимённые).
             var groups = new Dictionary<string, Transform>(StringComparer.Ordinal);
             if (s.groupByTopLevel)
                 foreach (Transform child in genRoot)
-                    if (child != null && !groups.ContainsKey(child.name))
-                        groups[child.name] = child;
+                {
+                    if (child == null || groups.ContainsKey(child.name)) continue;
+                    groups[child.name] = child;
+                    if (child.gameObject.isStatic != markStatic)
+                    {
+                        Undo.RecordObject(child.gameObject, "Append settlement colliders");
+                        child.gameObject.isStatic = markStatic;
+                    }
+                }
 
             Collect(root, s, genRoot, report, false, groups, genRoot, true, true);
 
@@ -231,7 +274,8 @@ namespace ProjectC.EditorTools
             Undo.CollapseUndoOperations(undoGroup);
             Selection.activeGameObject = genRoot.gameObject;
 
-            Debug.Log($"[SettlementColliders] APPEND '{root.name}': added={report.created}, " +
+            Debug.Log($"[SettlementColliders] APPEND '{root.name}': added={report.created}, capsules={report.capsules}, " +
+                      $"slicedMeshes={report.slicedMeshes}, " +
                       $"alreadyExists={report.skippedExists}, " +
                       $"skipped(noMesh={report.skippedNoMesh}, disabled={report.skippedDisabled}, " +
                       $"name={report.skippedName}, notIncluded={report.skippedInclude}, tiny={report.skippedTiny}), " +
@@ -248,6 +292,10 @@ namespace ProjectC.EditorTools
             public Vector3 obbCenter;
             public Vector3 obbAxis0, obbAxis1, obbAxis2;
             public Vector3 obbHalf;
+            // Капсульные холдеры: отрезок цилиндр. части + мировой радиус.
+            public bool isCapsule;
+            public Vector3 capA, capB;
+            public float capR;
         }
 
         private static List<ExistingHolder> CollectExistingHolders(Transform genRoot)
@@ -258,25 +306,78 @@ namespace ProjectC.EditorTools
             {
                 if (t == null || t == genRoot) continue;
                 var bc = t.GetComponent<BoxCollider>();
-                if (bc == null) continue; // группы без боксов — не холдеры
+                var cc = t.GetComponent<CapsuleCollider>();
+                if (bc == null && cc == null) continue; // группы без коллайдеров — не холдеры
                 Quaternion r = t.rotation;
                 Vector3 per = AbsVec(t.lossyScale);
-                var e = new ExistingHolder
+                var e = new ExistingHolder { name = t.name, pos = t.position };
+                if (cc != null)
                 {
-                    name = t.name,
-                    pos = t.position,
-                    obbCenter = t.localToWorldMatrix.MultiplyPoint(bc.center),
-                    obbAxis0 = r * Vector3.right,
-                    obbAxis1 = r * Vector3.up,
-                    obbAxis2 = r * Vector3.forward,
-                    obbHalf = new Vector3(
+                    Vector3 dir = r * DirVector(cc.direction);
+                    float sDir = DirScale(per, cc.direction);
+                    float sPerp = Mathf.Max(PerpScaleA(per, cc.direction), PerpScaleB(per, cc.direction));
+                    if (sDir < Epsilon) sDir = 1f;
+                    if (sPerp < Epsilon) sPerp = 1f;
+                    Vector3 c = t.localToWorldMatrix.MultiplyPoint(cc.center);
+                    float halfCyl = Mathf.Max(0f, cc.height * 0.5f - cc.radius) * sDir;
+                    e.isCapsule = true;
+                    e.capA = c - dir * halfCyl;
+                    e.capB = c + dir * halfCyl;
+                    e.capR = cc.radius * sPerp;
+                }
+                else
+                {
+                    e.obbCenter = t.localToWorldMatrix.MultiplyPoint(bc.center);
+                    e.obbAxis0 = r * Vector3.right;
+                    e.obbAxis1 = r * Vector3.up;
+                    e.obbAxis2 = r * Vector3.forward;
+                    e.obbHalf = new Vector3(
                         Mathf.Abs(bc.size.x) * 0.5f * (Mathf.Abs(per.x) < Epsilon ? 1f : per.x),
                         Mathf.Abs(bc.size.y) * 0.5f * (Mathf.Abs(per.y) < Epsilon ? 1f : per.y),
-                        Mathf.Abs(bc.size.z) * 0.5f * (Mathf.Abs(per.z) < Epsilon ? 1f : per.z))
-                };
+                        Mathf.Abs(bc.size.z) * 0.5f * (Mathf.Abs(per.z) < Epsilon ? 1f : per.z));
+                }
                 list.Add(e);
             }
             return list;
+        }
+
+        private static Vector3 DirVector(int dir)
+        {
+            if (dir == 0) return Vector3.right;
+            if (dir == 1) return Vector3.up;
+            return Vector3.forward;
+        }
+
+        private static float DirScale(Vector3 per, int dir)
+        {
+            if (dir == 0) return per.x;
+            if (dir == 1) return per.y;
+            return per.z;
+        }
+
+        private static float PerpScaleA(Vector3 per, int dir)
+        {
+            if (dir == 0) return per.y;
+            return per.x;
+        }
+
+        private static float PerpScaleB(Vector3 per, int dir)
+        {
+            if (dir == 2) return per.y;
+            return per.z;
+        }
+
+        /// <summary>Точка внутри капсулы (грани ужаты на 1 см, как у боксов).</summary>
+        private static bool CapsuleContains(ExistingHolder e, Vector3 p)
+        {
+            Vector3 ab = e.capB - e.capA;
+            float lenSq = ab.sqrMagnitude;
+            float t = 0f;
+            if (lenSq > Epsilon) t = Mathf.Clamp01(Vector3.Dot(p - e.capA, ab) / lenSq);
+            Vector3 closest = e.capA + ab * t;
+            float rr = e.capR - 0.01f;
+            if (rr <= 0f) return false;
+            return (p - closest).sqrMagnitude <= rr * rr;
         }
 
         /// <summary>Центр исходника внутри OBB холдера (грани ужаты на 1 см, чтобы тонкие боксы никого не «покрывали»).</summary>
@@ -288,6 +389,19 @@ namespace ProjectC.EditorTools
             if (Mathf.Abs(Vector3.Dot(d, e.obbAxis1)) > e.obbHalf.y - shrink) return false;
             if (Mathf.Abs(Vector3.Dot(d, e.obbAxis2)) > e.obbHalf.z - shrink) return false;
             return true;
+        }
+
+        /// <summary>Центр исходника внутри склеенного MG_*-бокса (грани ужаты на 1 см).</summary>
+        private static bool IsCoveredByMerged(List<ExistingHolder> existing, GameObject source)
+        {
+            Vector3 p = source.transform.position;
+            foreach (var e in existing)
+            {
+                if (e.isCapsule) continue;
+                if (!e.name.StartsWith("MG_", StringComparison.Ordinal)) continue;
+                if (ObbContains(e, p)) return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -311,7 +425,11 @@ namespace ProjectC.EditorTools
             }
             foreach (var e in existing)
             {
-                if (ObbContains(e, p)) return true;
+                if (e.isCapsule)
+                {
+                    if (CapsuleContains(e, p)) return true;
+                }
+                else if (ObbContains(e, p)) return true;
             }
             return false;
         }
@@ -781,7 +899,7 @@ namespace ProjectC.EditorTools
             Undo.RegisterCreatedObjectUndo(go, "Merge settlement colliders");
             go.transform.SetParent(c.parent, false);
             go.layer = root.layer;
-            go.isStatic = true;
+            go.isStatic = gen.gameObject.isStatic; // наследовать режим: static-поселение или корабль
             go.transform.position = worldCenter;
             go.transform.rotation = c.rot;
             go.transform.localScale = Vector3.one;
@@ -814,6 +932,162 @@ namespace ProjectC.EditorTools
             public Mesh mesh;
             public MeshRenderer renderer;
             public Vector3 worldSize;
+            public int kind; // 0 = бокс, 1 = капсула, 2 = нарезанный на сегменты
+            public List<SliceBox> slices; // только для kind == 2
+        }
+
+        private class SliceBox
+        {
+            public int bin; // индекс бина в равномерной сетке — стабилен между запусками
+            public Vector3 min, max; // mesh-local AABB куска
+        }
+
+        /// <summary>
+        /// Круглый бар под капсулу? Только вытянутые вдоль одной оси (длина >= 2 диаметров
+        /// в мире) — короткие цилиндры/диски точнее сидят в боксе.
+        /// </summary>
+        private static bool ShouldCapsule(Mesh mesh, Vector3 worldPerLocal, string[] capsuleToks, string upperName)
+        {
+            if (capsuleToks.Length == 0 || !MatchesAny(upperName, capsuleToks)) return false;
+            Vector3 local = mesh.bounds.size;
+            Vector3 world = new Vector3(local.x * worldPerLocal.x, local.y * worldPerLocal.y, local.z * worldPerLocal.z);
+            float longest = Mathf.Max(world.x, Mathf.Max(world.y, world.z));
+            float cross = Mathf.Min(world.x, Mathf.Min(world.y, world.z));
+            return longest >= 2f * cross && cross > Epsilon;
+        }
+
+        /// <summary>
+        /// Нарезать меш вдоль локальной оси slab'ами. Сечение каждого slab'а — AABB его
+        /// содержимого: вершины внутри + пересечения треугольников с плоскостями бинов
+        /// (как слайсер: длинные квады между станциями вершин тоже дают сечение, дыр нет).
+        /// Вдоль оси кусок растягивается на весь slab — куски стыкуются без щелей.
+        /// Slab'ы без геометрии (проёмы, дыры) пропускаются. Null, если резать нечего.
+        /// Бины детерминированы (равномерная сетка от bounds.min) — имена кусков стабильны.
+        /// </summary>
+        private static List<SliceBox> SlicePlan(Mesh mesh, int axis, float stepLocal, float tolWorld, Vector3 worldPerLocal)
+        {
+            if (mesh == null || !mesh.isReadable || mesh.vertexCount == 0) return null;
+            if (axis < 0 || axis > 2) axis = 0;
+            Bounds b = mesh.bounds;
+            float len = b.size[axis];
+            if (len <= Epsilon || stepLocal <= Epsilon) return null;
+            int k = Mathf.CeilToInt(len / stepLocal);
+            if (k <= 1) return null;
+            if (k > 256) k = 256; // защита от миллиметрового шага на стометровке (корабли: 108 м / 0.5 = 216)
+            float step = len / k; // нормируем: ровные slab'ы ровно покрывают bounds
+
+            Vector3[] verts;
+            int[] tris;
+            try { verts = mesh.vertices; tris = mesh.triangles; }
+            catch { return null; } // нет Read/Write — резать нечем
+
+            var has = new bool[k];
+            var mins = new Vector3[k];
+            var maxs = new Vector3[k];
+            float minA = b.min[axis];
+
+            // 1) Вершины по бинам.
+            foreach (var v in verts)
+            {
+                int idx = Mathf.Clamp((int)((v[axis] - minA) / step), 0, k - 1);
+                GrowBin(has, mins, maxs, idx, v);
+            }
+
+            // 2) Треугольники через несколько бинов: точки пересечения рёбер с границами slab'ов.
+            for (int t = 0; t + 2 < tris.Length; t += 3)
+            {
+                int ia = tris[t], ib = tris[t + 1], ic = tris[t + 2];
+                if (ia < 0 || ib < 0 || ic < 0 || ia >= verts.Length || ib >= verts.Length || ic >= verts.Length)
+                    continue;
+                Vector3 a = verts[ia], d = verts[ib], e = verts[ic];
+                float tmin = Mathf.Min(a[axis], Mathf.Min(d[axis], e[axis]));
+                float tmax = Mathf.Max(a[axis], Mathf.Max(d[axis], e[axis]));
+                int b0 = Mathf.Clamp((int)((tmin - minA) / step), 0, k - 1);
+                int b1 = Mathf.Clamp((int)((tmax - minA) / step), 0, k - 1);
+                if (b1 <= b0) continue; // целиком в одном бине — вершины уже учтены
+                ClipEdge(has, mins, maxs, minA, step, k, b0, b1, axis, a, d);
+                ClipEdge(has, mins, maxs, minA, step, k, b0, b1, axis, d, e);
+                ClipEdge(has, mins, maxs, minA, step, k, b0, b1, axis, e, a);
+            }
+
+            var res = new List<SliceBox>();
+            for (int i = 0; i < k; i++)
+            {
+                if (!has[i]) continue; // дыра в геометрии — куска нет, и это правильно
+                Vector3 mn = mins[i], mx = maxs[i];
+                mn[axis] = minA + i * step; // растянуть на весь slab: стыки без щелей
+                mx[axis] = (i == k - 1) ? b.max[axis] : minA + (i + 1) * step;
+                res.Add(new SliceBox { bin = i, min = mn, max = mx });
+            }
+            if (res.Count <= 1) return null;
+            // Адаптив: склеить подряд идущие куски с одинаковым сечением (прямые участки —
+            // в 1 бокс, перегибы остаются подетально). Пустые бины разбивают серии (дыры не мостим).
+            // Опорное сечение — первый кусок серии: суммарный дрейф ограничен допуском.
+            if (tolWorld > 0f)
+                res = CoalesceSlices(res, axis, tolWorld, worldPerLocal);
+            if (res.Count <= 1) return null;
+            return res;
+        }
+
+        private static List<SliceBox> CoalesceSlices(List<SliceBox> bins, int axis, float tolWorld, Vector3 worldPerLocal)
+        {
+            int c1 = (axis + 1) % 3, c2 = (axis + 2) % 3;
+            float t1 = worldPerLocal[c1] < Epsilon ? 1f : tolWorld / worldPerLocal[c1];
+            float t2 = worldPerLocal[c2] < Epsilon ? 1f : tolWorld / worldPerLocal[c2];
+            var out_ = new List<SliceBox>(bins.Count);
+            SliceBox cur = bins[0];
+            int curLastBin = cur.bin;
+            Vector3 refMin = cur.min, refMax = cur.max;
+            for (int i = 1; i < bins.Count; i++)
+            {
+                SliceBox nxt = bins[i];
+                bool sameRun = nxt.bin == curLastBin + 1
+                    && Mathf.Abs(nxt.min[c1] - refMin[c1]) <= t1
+                    && Mathf.Abs(nxt.max[c1] - refMax[c1]) <= t1
+                    && Mathf.Abs(nxt.min[c2] - refMin[c2]) <= t2
+                    && Mathf.Abs(nxt.max[c2] - refMax[c2]) <= t2;
+                if (sameRun)
+                {
+                    // Серия: объединить сечения, вдоль оси — до конца нового slab'а.
+                    cur.min = Vector3.Min(cur.min, nxt.min);
+                    cur.max = Vector3.Max(cur.max, nxt.max);
+                    curLastBin = nxt.bin;
+                }
+                else
+                {
+                    out_.Add(cur);
+                    cur = nxt;
+                    curLastBin = nxt.bin;
+                    refMin = cur.min;
+                    refMax = cur.max;
+                }
+            }
+            out_.Add(cur);
+            return out_;
+        }
+
+        private static void GrowBin(bool[] has, Vector3[] mins, Vector3[] maxs, int idx, Vector3 p)
+        {
+            if (!has[idx]) { has[idx] = true; mins[idx] = p; maxs[idx] = p; }
+            else { mins[idx] = Vector3.Min(mins[idx], p); maxs[idx] = Vector3.Max(maxs[idx], p); }
+        }
+
+        /// <summary>
+        /// Пересечения ребра P-Q с внутренними границами slab'ов (b0+1..b1): точки уходят
+        /// в правый от границы бин.
+        /// </summary>
+        private static void ClipEdge(bool[] has, Vector3[] mins, Vector3[] maxs,
+            float minA, float step, int k, int b0, int b1, int axis, Vector3 p, Vector3 q)
+        {
+            float cp = p[axis], cq = q[axis];
+            if (Mathf.Abs(cq - cp) < Epsilon) return;
+            for (int i = b0 + 1; i <= b1 && i < k; i++)
+            {
+                float x = minA + i * step;
+                if ((cp < x) == (cq < x)) continue;
+                float t = (x - cp) / (cq - cp);
+                GrowBin(has, mins, maxs, i, Vector3.Lerp(p, q, t));
+            }
         }
 
         private static void Collect(
@@ -830,10 +1104,19 @@ namespace ProjectC.EditorTools
             string[] tokens = SplitTokens(s.excludeTokens);
             string[] include = SplitTokens(s.includeTokens);
             bool useInclude = include.Length > 0;
+            string[] capsuleToks = SplitTokens(s.capsuleTokens);
+            string[] sliceToks = SplitTokens(s.sliceTokens);
 
             List<ExistingHolder> existing = null;
+            HashSet<string> existingNames = null;
             if (skipExisting && existingRoot != null)
+            {
                 existing = CollectExistingHolders(existingRoot);
+                existingNames = new HashSet<string>(StringComparer.Ordinal);
+                var allT = existingRoot.GetComponentsInChildren<Transform>(includeInactive: true);
+                foreach (var t in allT)
+                    if (t != null && t != existingRoot) existingNames.Add(t.name);
+            }
 
             var filters = root.GetComponentsInChildren<MeshFilter>(includeInactive: true);
             var items = new List<Item>(filters.Length);
@@ -893,20 +1176,106 @@ namespace ProjectC.EditorTools
                     continue;
                 }
 
-                // Append-режим: уже закрытые меши не дублируем.
-                if (skipExisting && existing != null && ExistsHolder(existing, go))
+                // Вид коллайдера: бокс / капсула (круглые бары) / нарезка (кривые меши).
+                Vector3 worldPerLocal = AbsVec(go.transform.lossyScale);
+                int kind = 0;
+                List<SliceBox> slices = null;
+                if (ShouldCapsule(f.sharedMesh, worldPerLocal, capsuleToks, upper))
                 {
-                    report.skippedExists++;
-                    continue;
+                    kind = 1;
+                }
+                else if (sliceToks.Length > 0 && MatchesAny(upper, sliceToks))
+                {
+                    if (!f.sharedMesh.isReadable)
+                    {
+                        report.unreadSlices++; // нет Read/Write — падаем на обычный бокс ниже
+                    }
+                    else
+                    {
+                        // Ось — длиннейшая в ЛОКАЛЬНЫХ bounds (там же лежат вершины).
+                        // Брать ось из мировых размеров нельзя: рамка повёрнута (deck: rot 270,90,0),
+                        // индексы переставлены, и нарезка пойдёт поперёк сужения.
+                        int longAxis = LongestAxis(f.sharedMesh.bounds.size);
+                        float per = worldPerLocal[longAxis] < Epsilon ? 1f : worldPerLocal[longAxis];
+                        slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per, Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal);
+                        if (slices != null) kind = 2;
+                    }
+                }
+
+                // Append-режим: уже закрытые меши не дублируем.
+                // Для капсул/нарезки generic-проверка по объёму не годится: старый одиночный
+                // бокс покрывает меш целиком и навсегда блокировал бы смену вида. Поэтому:
+                // точная сверка по детерминированным именам, предшественник сносится при создании,
+                // а склеенные MG_*-боксы уважаем (не дублируем поверх мержа).
+                if (skipExisting && existing != null)
+                {
+                    bool preciseNames = stableNames && existingNames != null && (kind == 1 || kind == 2);
+                    if (preciseNames)
+                    {
+                        if (IsCoveredByMerged(existing, go))
+                        {
+                            report.skippedExists++;
+                            continue;
+                        }
+                        if (kind == 1 && existingNames.Contains(HolderNameFor(root.transform, go.transform)))
+                        {
+                            report.skippedExists++;
+                            continue;
+                        }
+                        // kind == 2: точная сверка по именам кусков — ниже.
+                    }
+                    else if (ExistsHolder(existing, go))
+                    {
+                        report.skippedExists++;
+                        continue;
+                    }
+                }
+
+                // Нарезанные куски имеют детерминированные имена — сверяем множества целиком:
+                // пропуск только если набор кусков совпал 1-в-1 (смена шага/допуска даёт другое
+                // множество — тогда purge + пересборка при создании).
+                // (Обычные боксы/капсулы покрыты суффиксом+позицией и объёмом в ExistsHolder.)
+                string sliceBase = null;
+                if (kind == 2 && stableNames && existingNames != null)
+                {
+                    sliceBase = HolderNameFor(root.transform, go.transform);
+                    string prefix = sliceBase + "_S";
+                    var wanted = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (var sl in slices)
+                        wanted.Add(sliceBase + "_S" + sl.bin.ToString("00"));
+                    bool same = wanted.Count > 0;
+                    if (same)
+                    {
+                        foreach (var w in wanted)
+                            if (!existingNames.Contains(w)) { same = false; break; }
+                    }
+                    if (same)
+                    {
+                        foreach (var n in existingNames)
+                        {
+                            if (n.StartsWith(prefix, StringComparison.Ordinal) && !wanted.Contains(n))
+                            {
+                                same = false; // остались лишние старые куски — пересобрать
+                                break;
+                            }
+                        }
+                    }
+                    if (same)
+                    {
+                        report.skippedExists++;
+                        continue;
+                    }
                 }
 
                 if (dryOnly)
                 {
-                    report.created++; // в dry-режиме created = "было бы создано"
+                    if (kind == 1) report.capsules++; // в dry-режиме capsules = "было бы создано капсул"
+                    else if (kind == 2) { report.created += slices.Count; report.slicedMeshes++; }
+                    else report.created++; // в dry-режиме created = "было бы создано"
                     continue;
                 }
 
-                items.Add(new Item { source = go, mesh = f.sharedMesh, renderer = r, worldSize = worldSize });
+                items.Add(new Item { source = go, mesh = f.sharedMesh, renderer = r, worldSize = worldSize, kind = kind, slices = slices });
             }
 
             if (dryOnly) return;
@@ -927,37 +1296,128 @@ namespace ProjectC.EditorTools
                         g.transform.localRotation = Quaternion.identity;
                         g.transform.localScale = Vector3.one;
                         g.layer = root.layer;
-                        g.isStatic = true;
+                        g.isStatic = !s.shipMode;
                         parent = g.transform;
                         groups[groupName] = parent;
                     }
                 }
 
-                var holder = new GameObject(stableNames
+                string baseName = stableNames
                     ? HolderNameFor(root.transform, it.source.transform)
-                    : $"BC_{index:0000}_{SanitizeName(it.source.name)}");
-                Undo.RegisterCreatedObjectUndo(holder, "Create settlement box collider");
-                holder.layer = root.layer;
-                holder.isStatic = true;
-                holder.transform.SetParent(parent, true);
-                // Рамка холдера = мировая рамка исходника: оффсет box.center не удваивается.
-                holder.transform.SetPositionAndRotation(
-                    it.source.transform.position,
-                    it.source.transform.rotation);
-                holder.transform.localScale = Divide(it.source.transform.lossyScale, parent.lossyScale);
+                    : $"BC_{index:0000}_{SanitizeName(it.source.name)}";
 
-                var box = holder.AddComponent<BoxCollider>();
-                Vector3 center;
-                Vector3 size;
-                FitBox(it.mesh.bounds, AbsVec(it.source.transform.lossyScale),
-                    holder.transform, s.minThickness, out center, out size);
-                box.center = center;
-                box.size = size;
-                box.isTrigger = false;
-
-                index++;
-                report.created++;
+                if (it.kind == 1)
+                {
+                    DestroyPredecessorHolders(genRoot, it.source, null);
+                    AddCapsule(root, parent, baseName, it, !s.shipMode);
+                    index++;
+                    report.capsules++;
+                }
+                else if (it.kind == 2)
+                {
+                    DestroyPredecessorHolders(genRoot, it.source, stableNames ? baseName : null);
+                    foreach (var sl in it.slices)
+                    {
+                        // Старые куски этого меша уже снесены выше (purge); чужие префиксы не пересекаются.
+                        string sliceName = baseName + "_S" + sl.bin.ToString("00");
+                        var sb = new Bounds();
+                        sb.SetMinMax(sl.min, sl.max);
+                        AddFittedBox(root, parent, sliceName, it, sb, s.minThickness, !s.shipMode);
+                        index++;
+                        report.created++;
+                    }
+                    report.slicedMeshes++;
+                }
+                else
+                {
+                    AddFittedBox(root, parent, baseName, it, it.mesh.bounds, s.minThickness, !s.shipMode);
+                    index++;
+                    report.created++;
+                }
             }
+        }
+
+        /// <summary>
+        /// Снести прямого предшественника исходника — одиночный бокс/капсулу с тем же суффиксом
+        /// имени ('_'+имя) на той же позиции (2 см), чтобы смена вида (бокс→капсула/нарезка)
+        /// не дублировала, а заменяла. Плюс снести старые куски 'База_S##' этого же меша
+        /// (допуск/шаг могли смениться — имена бинов другие). Куски чужих мешей (другой хэш
+        /// в имени) и склеенные MG_*-боксы не трогаем.
+        /// </summary>
+        private static void DestroyPredecessorHolders(Transform genRoot, GameObject source, string sliceBase)
+        {
+            if (genRoot == null || source == null) return;
+            string suffix = "_" + SanitizeName(source.name);
+            string slicePrefix = string.IsNullOrEmpty(sliceBase) ? null : sliceBase + "_S";
+            Vector3 p = source.transform.position;
+            const float tolSq = 0.0004f; // (2 см)^2
+            var colliders = genRoot.GetComponentsInChildren<Collider>(includeInactive: true);
+            foreach (var c in colliders)
+            {
+                if (c == null) continue;
+                if (!(c is BoxCollider) && !(c is CapsuleCollider)) continue;
+                Transform t = c.transform;
+                if (t == genRoot) continue;
+                if (slicePrefix != null && t.name.StartsWith(slicePrefix, StringComparison.Ordinal))
+                {
+                    Undo.DestroyObjectImmediate(t.gameObject);
+                    continue;
+                }
+                if (!t.name.EndsWith(suffix, StringComparison.Ordinal)) continue;
+                if ((t.position - p).sqrMagnitude > tolSq) continue;
+                Undo.DestroyObjectImmediate(t.gameObject);
+            }
+        }
+
+        /// <summary>Индекс самой длинной оси вектора (0/1/2).</summary>
+        private static int LongestAxis(Vector3 v)
+        {
+            if (v.x >= v.y && v.x >= v.z) return 0;
+            if (v.y >= v.z) return 1;
+            return 2;
+        }
+
+        /// <summary>Рамка холдера = мировая рамка исходника (оффсет коллайдера не удваивается).</summary>
+        private static Transform CreateHolderFrame(GameObject root, Transform parent, string name, GameObject source, bool markStatic)
+        {
+            var holder = new GameObject(name);
+            Undo.RegisterCreatedObjectUndo(holder, "Create settlement collider");
+            holder.layer = root.layer;
+            holder.isStatic = markStatic;
+            holder.transform.SetParent(parent, true);
+            holder.transform.SetPositionAndRotation(
+                source.transform.position,
+                source.transform.rotation);
+            holder.transform.localScale = Divide(source.transform.lossyScale, parent.lossyScale);
+            return holder.transform;
+        }
+
+        private static void AddFittedBox(GameObject root, Transform parent, string name, Item it, Bounds localBounds, float minThickness, bool markStatic)
+        {
+            Transform hf = CreateHolderFrame(root, parent, name, it.source, markStatic);
+            var box = hf.gameObject.AddComponent<BoxCollider>();
+            Vector3 center;
+            Vector3 size;
+            FitBox(localBounds, AbsVec(it.source.transform.lossyScale),
+                hf, minThickness, out center, out size);
+            box.center = center;
+            box.size = size;
+            box.isTrigger = false;
+        }
+
+        private static void AddCapsule(GameObject root, Transform parent, string name, Item it, bool markStatic)
+        {
+            Transform hf = CreateHolderFrame(root, parent, name, it.source, markStatic);
+            Bounds b = it.mesh.bounds;
+            int dir = LongestAxis(b.size);
+            float cross = dir == 0 ? Mathf.Min(b.size.y, b.size.z)
+                : dir == 1 ? Mathf.Min(b.size.x, b.size.z) : Mathf.Min(b.size.x, b.size.y);
+            var cap = hf.gameObject.AddComponent<CapsuleCollider>();
+            cap.direction = dir;
+            cap.center = b.center;
+            cap.radius = cross * 0.5f;
+            cap.height = Mathf.Max(b.size[dir], cross); // высота обязана быть >= 2r; ShouldCapsule это почти гарантирует
+            cap.isTrigger = false;
         }
 
         /// <summary>
@@ -1144,6 +1604,7 @@ namespace ProjectC.EditorTools
         private float mergeAlign = 0.02f;
         private string mergeTokens = "";
         private int mergeScopeIdx = 0;
+        private Vector2 scroll;
         private static readonly string[] MergeScopeLabels =
         {
             "Плиты и стены (раздельно)",
@@ -1169,6 +1630,11 @@ namespace ProjectC.EditorTools
                 minThickness = s.minThickness,
                 excludeTokens = s.excludeTokens,
                 includeTokens = "",
+                capsuleTokens = s.capsuleTokens,
+                sliceTokens = s.sliceTokens,
+                sliceStep = s.sliceStep,
+                sliceAdaptTol = s.sliceAdaptTol,
+                shipMode = s.shipMode,
                 groupByTopLevel = s.groupByTopLevel,
                 skipInactive = s.skipInactive,
                 repairThinBoxes = s.repairThinBoxes
@@ -1178,6 +1644,8 @@ namespace ProjectC.EditorTools
         private void OnGUI()
         {
             GameObject root = Selection.activeGameObject;
+
+            scroll = EditorGUILayout.BeginScrollView(scroll);
 
             EditorGUILayout.LabelField("Корень FBX в Hierarchy", EditorStyles.boldLabel);
             if (root == null)
@@ -1198,6 +1666,15 @@ namespace ProjectC.EditorTools
             settings.groupByTopLevel = EditorGUILayout.Toggle("Группировать по зданиям", settings.groupByTopLevel);
             settings.skipInactive = EditorGUILayout.Toggle("Пропускать выключенные", settings.skipInactive);
             settings.repairThinBoxes = EditorGUILayout.Toggle("Чинить тонкие боксы", settings.repairThinBoxes);
+            settings.shipMode = EditorGUILayout.Toggle("Режим корабля (не static)", settings.shipMode);
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Некоробочные формы", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Капсулы — круглые бары (трубы, арматура) вдоль длинной оси. Нарезка — кривые меши кусками по вершинам.", EditorStyles.miniLabel);
+            settings.capsuleTokens = EditorGUILayout.TextField("Капсулы по именам", settings.capsuleTokens ?? "");
+            settings.sliceTokens = EditorGUILayout.TextField("Нарезать по именам", settings.sliceTokens ?? "");
+            settings.sliceStep = EditorGUILayout.FloatField("Шаг нарезки (м)", settings.sliceStep);
+            settings.sliceAdaptTol = EditorGUILayout.FloatField("Допуск слияния кусков (м)", settings.sliceAdaptTol);
 
             EditorGUILayout.Space();
             EditorGUI.BeginDisabledGroup(root == null);
@@ -1205,7 +1682,8 @@ namespace ProjectC.EditorTools
             {
                 // Обычный режим: include-фильтр игнорируется, считаются все значимые меши.
                 var r = BuildSettlementColliders.DryRun(root, WithoutInclude(settings));
-                Debug.Log($"[SettlementColliders] DRY '{root.name}': created={r.created}, " +
+                Debug.Log($"[SettlementColliders] DRY '{root.name}': created={r.created}, capsules={r.capsules}, " +
+                          $"slicedMeshes={r.slicedMeshes} (unread={r.unreadSlices}), " +
                           $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
                           $"name={r.skippedName}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
             }
@@ -1225,6 +1703,7 @@ namespace ProjectC.EditorTools
             {
                 var r = BuildSettlementColliders.DryRunAppend(root, settings);
                 Debug.Log($"[SettlementColliders] DRY-APPEND '{root.name}' [{settings.includeTokens}]: toAdd={r.created}, " +
+                          $"capsules={r.capsules}, slicedMeshes={r.slicedMeshes}, " +
                           $"alreadyExists={r.skippedExists}, " +
                           $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
                           $"name={r.skippedName}, notIncluded={r.skippedInclude}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
@@ -1269,11 +1748,16 @@ namespace ProjectC.EditorTools
             EditorGUILayout.HelpBox(
                 "Бокс на каждый значимый меш. Мелочь (болты) режется размером и именами. " +
                 "Тонкие палубы утолщаются вниз до мин. толщины — топ заподлицо, корабли не проваливаются. " +
+                "Наклонные плоские (скаты, рампы) покрываются повёрнутыми боксами 1-в-1 — рамка копирует поворот. " +
+                "Круглые бары (PIPE, REBAR) — капсулы вдоль длинной оси. Кривые меши — нарезка кусками по вершинам. " +
+                "Сужающийся нос (Deck_Main_Bow) — нарезкой вдоль оси + режим корабля (не static), иначе углы бокса будут цеплять. " +
                 "Повторный Build пересобирает '<Root>_Colliders' с нуля. " +
                 "Режим 'только совпадения': в поле ниже укажи TABLE (или TABLE, CHAIR) — отдельный старт " +
                 "ДОБАВИТ боксы только там, где имя содержит токен, существующие не трогает и не дублирует " +
                 "(повторный запуск пропускает уже закрытые: alreadyExists); исключения сверху при этом тоже действуют.",
                 MessageType.None);
+
+            EditorGUILayout.EndScrollView();
         }
     }
 }

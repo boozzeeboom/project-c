@@ -602,14 +602,14 @@ namespace ProjectC.Ship
             else if (doorType == DoorType.HingedDouble)
             {
                 float swing = invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle;
-                if (UseExplicitPivot(leftPivot, leftPanel))
+                if (UseExplicitPivot(leftPivot, leftHingePanel))
                     _useLeftPivot = true;
-                else if (leftPanel != null)
-                    _impLeft = BuildImplicitHinge(leftPanel, -1f, -swing);
-                if (UseExplicitPivot(rightPivot, rightPanel))
+                else if (leftHingePanel != null)
+                    _impLeft = BuildImplicitHinge(leftHingePanel, -1f, -swing);
+                if (UseExplicitPivot(rightPivot, rightHingePanel))
                     _useRightPivot = true;
-                else if (rightPanel != null)
-                    _impRight = BuildImplicitHinge(rightPanel, 1f, swing);
+                else if (rightHingePanel != null)
+                    _impRight = BuildImplicitHinge(rightHingePanel, 1f, swing);
             }
         }
 
@@ -740,8 +740,8 @@ namespace ProjectC.Ship
                     break;
 
                 case DoorType.HingedDouble:
-                    CheckDoubleHingeSide(leftPivot, leftPanel, -1f, "Левый", "Левая створка", errors, warnings);
-                    CheckDoubleHingeSide(rightPivot, rightPanel, 1f, "Правый", "Правая створка", errors, warnings);
+                    CheckDoubleHingeSide(leftPivot, leftHingePanel, -1f, "Левый", "Левая створка", errors, warnings);
+                    CheckDoubleHingeSide(rightPivot, rightHingePanel, 1f, "Правый", "Правая створка", errors, warnings);
                     break;
 
                 case DoorType.LiftUp:
@@ -981,7 +981,7 @@ namespace ProjectC.Ship
                     }
                     break;
                 case DoorType.HingedSingle:
-                    if (hingePivot != null)
+                    if (UseExplicitPivot(hingePivot, HingePanelOrSelf))
                     {
                         float signed = (hingeSide == HingeSide.Left ? -1f : 1f) * openAngle;
                         DrawHingeGizmo(hingePivot, hingePivot.localRotation,
@@ -996,14 +996,14 @@ namespace ProjectC.Ship
                 case DoorType.HingedDouble:
                     {
                         float swing = invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle;
-                        if (leftPivot != null)
+                        if (UseExplicitPivot(leftPivot, leftHingePanel))
                             DrawHingeGizmo(leftPivot, leftPivot.localRotation,
                                 leftPivot.localRotation * Quaternion.Euler(0f, -swing, 0f), leftHingePanel);
-                        else DrawImplicitHingeGizmo(leftPanel, -1f, -swing);
-                        if (rightPivot != null)
+                        else DrawImplicitHingeGizmo(leftHingePanel, -1f, -swing);
+                        if (UseExplicitPivot(rightPivot, rightHingePanel))
                             DrawHingeGizmo(rightPivot, rightPivot.localRotation,
                                 rightPivot.localRotation * Quaternion.Euler(0f, swing, 0f), rightHingePanel);
-                        else DrawImplicitHingeGizmo(rightPanel, 1f, swing);
+                        else DrawImplicitHingeGizmo(rightHingePanel, 1f, swing);
                     }
                     break;
                 case DoorType.LiftUp:

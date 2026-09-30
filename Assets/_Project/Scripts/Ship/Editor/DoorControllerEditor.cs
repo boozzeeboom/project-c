@@ -383,10 +383,11 @@ namespace ProjectC.Ship
                     Add("leftPanel"); Add("rightPanel");
                     break;
                 case DoorController.DoorType.HingedSingle:
-                    Add("hingePivot");
+                    Add("hingePivot"); Add("hingePanel"); Add("doorModel");
                     break;
                 case DoorController.DoorType.HingedDouble:
                     Add("leftPivot"); Add("rightPivot");
+                    Add("leftHingePanel"); Add("rightHingePanel");
                     break;
                 case DoorController.DoorType.LiftUp:
                     Add("liftPanel");

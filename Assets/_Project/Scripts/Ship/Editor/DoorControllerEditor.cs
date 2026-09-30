@@ -203,6 +203,12 @@ namespace ProjectC.Ship
         private void DrawHingedSingle(DoorController door)
         {
             EditorGUILayout.LabelField("Петли", EditorStyles.boldLabel);
+            if (GUILayout.Button("⚙ Сделать распашной из ЭТОГО объекта", GUILayout.Height(28)))
+                ConvertSelfToHinged(door, P("hingeSide").enumValueIndex == 0);
+            EditorGUILayout.HelpBox(
+                "Один клик: пивот на краю объекта + объект ребёнком + вертикаль оси. " +
+                "Сторона края — из поля «Петли» ниже. Дальше жмите превью.",
+                MessageType.None);
             EditorGUILayout.PropertyField(P("hingePivot"), new GUIContent("Пивот петель *",
                 "ОБЯЗАТЕЛЬНО. Пустой объект на линии петель, панель — его ребёнок."));
             if (P("hingePivot").objectReferenceValue == null)
@@ -389,6 +395,19 @@ namespace ProjectC.Ship
             return list;
         }
 
+        /// <summary>
+        /// Ширина панели для постановки пивота: максимальный габарит по X/Z рамки
+        /// (дверь может быть развёрнута — ширина не обязана лежать вдоль X).
+        /// </summary>
+        private static float PanelWidth(DoorController door, Transform panel)
+        {
+            bool hx = DoorController.TryMeasurePanelSize(panel, door.transform, Vector3.right, out float sx);
+            bool hz = DoorController.TryMeasurePanelSize(panel, door.transform, Vector3.forward, out float sz);
+            if (hx && (!hz || sx >= sz)) return Mathf.Max(sx, 0.01f);
+            if (hz) return Mathf.Max(sz, 0.01f);
+            return 1f;
+        }
+
         private void CreatePivot(DoorController door, SerializedProperty pivotProp,
             SerializedProperty panelProp, bool leftSide)
         {
@@ -399,7 +418,8 @@ namespace ProjectC.Ship
                 // запрещаем и объясняем вместо молчаливой поломки иерархии.
                 EditorUtility.DisplayDialog("Сначала назначьте панель",
                     "Перетащите створку в поле «Панель», затем нажмите кнопку снова.\n\n" +
-                    "Иначе пивот создался бы вокруг всего объекта двери.",
+                    "Если меша створки нет вообще (только маркеры петель) — " +
+                    "продублируйте меш (например, стену проёма) и назначьте дубликат.",
                     "Понятно");
                 return;
             }
@@ -411,9 +431,7 @@ namespace ProjectC.Ship
                 return;
             }
 
-            float w = 1f;
-            if (DoorController.TryMeasurePanelSize(panel, door.transform, Vector3.right, out float measured) && measured > 1e-4f)
-                w = measured;
+            float w = PanelWidth(door, panel);
 
             Transform parent = panel.parent;
             Vector3 edgeLocal = panel.localPosition + new Vector3(leftSide ? -w * 0.5f : w * 0.5f, 0f, 0f);
@@ -431,6 +449,55 @@ namespace ProjectC.Ship
             pivotProp.objectReferenceValue = go.transform;
             serializedObject.ApplyModifiedProperties();
             door.EndPreview();
+            EditorGUIUtility.PingObject(go);
+        }
+
+        /// <summary>
+        /// One-click распашная из объекта двери: пивот на краю + объект ребёнком
+        /// + вертикаль оси + назначение полей. Ноль ручной возни — как у слайдера.
+        /// Работает и в префабе. Требует меш/коллайдер на объекте.
+        /// </summary>
+        private void ConvertSelfToHinged(DoorController door, bool leftSide)
+        {
+            Transform panel = door.transform;
+            if (panel.parent == null)
+            {
+                EditorUtility.DisplayDialog("Нельзя",
+                    "Объект двери — корень иерархии (без родителя). Положите дверь под родителя и повторите.",
+                    "Понятно");
+                return;
+            }
+            if (!DoorController.HasGeometry(panel))
+            {
+                EditorUtility.DisplayDialog("Некого вешать на петли",
+                    $"У «{panel.name}» нет ни меша, ни коллайдера — это маркер, а не створка.\n\n" +
+                    "Продублируйте меш створки (например, стену проёма), назовите и повторите на нём.",
+                    "Понятно");
+                return;
+            }
+
+            float w = PanelWidth(door, panel);
+            Transform parent = panel.parent;
+            Vector3 edgeLocal = panel.localPosition + new Vector3(leftSide ? -w * 0.5f : w * 0.5f, 0f, 0f);
+
+            var go = new GameObject(panel.name + (leftSide ? "_HingeL" : "_HingeR"));
+            Undo.RegisterCreatedObjectUndo(go, "Пивот для распашной двери");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = edgeLocal;
+            go.transform.localRotation = panel.localRotation;
+            go.transform.localScale = Vector3.one;
+
+            Undo.SetTransformParent(panel, go.transform, true, "Дверь на петли");
+
+            P("hingePivot").objectReferenceValue = go.transform;
+            P("hingePanel").objectReferenceValue = panel;
+            serializedObject.ApplyModifiedProperties();
+
+            VerticalizePivot(go.transform);
+
+            door.EndPreview();
+            EditorUtility.SetDirty(door);
+            SceneView.RepaintAll();
             EditorGUIUtility.PingObject(go);
         }
 
@@ -497,7 +564,18 @@ namespace ProjectC.Ship
                     "Сначала задайте или создайте пивот.", "Понятно");
                 return;
             }
+            VerticalizePivot(piv);
+            door.EndPreview();
+            EditorUtility.SetDirty(door);
+            SceneView.RepaintAll();
+        }
 
+        /// <summary>
+        /// Довернуть пивот минимальным поворотом так, чтобы его Y смотрел строго вверх.
+        /// Вся ветка потомков сохраняет МИРОВЫЕ позы (закрытый вид не меняется).
+        /// </summary>
+        private static void VerticalizePivot(Transform piv)
+        {
             var subtree = piv.GetComponentsInChildren<Transform>(true);
             var rec = new List<Object> { piv };
             foreach (var c in subtree)
@@ -528,10 +606,6 @@ namespace ProjectC.Ship
                 c.rotation = rot[i];
                 i++;
             }
-
-            door.EndPreview();
-            EditorUtility.SetDirty(door);
-            SceneView.RepaintAll();
         }
 
         /// <summary>

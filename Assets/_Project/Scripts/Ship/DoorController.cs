@@ -653,7 +653,8 @@ namespace ProjectC.Ship
                            "Посадите панель ребёнком пивота (кнопка 🔗 в инспекторе).");
         }
 
-        private static bool HasGeometry(Transform t)
+        /// <summary>Есть ли под объектом геометрия (меш или коллайдер, включая детей).</summary>
+        public static bool HasGeometry(Transform t)
         {
             if (t == null) return false;
             foreach (var r in t.GetComponentsInChildren<Renderer>(true))

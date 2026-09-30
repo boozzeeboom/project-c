@@ -145,11 +145,12 @@ namespace ProjectC.Ship
                     hint = "Две панели разъезжаются от центра. Для широких проёмов и АНГАРНЫХ ворот.";
                     break;
                 case DoorController.DoorType.HingedSingle:
-                    hint = "Панель висит на пивоте-петле и поворачивается. " +
-                           "Пивот создаётся кнопкой ниже (панель станет его ребёнком).";
+                    hint = "Панель крутится вокруг своего края СРАЗУ — пивот не нужен. " +
+                           "Для точной линии петель: кнопка ниже или перетащите пивот в поле.";
                     break;
                 case DoorController.DoorType.HingedDouble:
-                    hint = "Две панели на двух пивотах открываются зеркально. Для ворот и больших дверей.";
+                    hint = "Каждая створка крутится вокруг своего внешнего края СРАЗУ. " +
+                           "Пивоты нужны только для точной линии петель.";
                     break;
                 case DoorController.DoorType.LiftUp:
                     hint = "Панель уезжает строго вверх. Для АНГАРНЫХ шторок и гаражей.";
@@ -209,16 +210,16 @@ namespace ProjectC.Ship
                 "Один клик: пивот на краю объекта + объект ребёнком + вертикаль оси. " +
                 "Сторона края — из поля «Петли» ниже. Дальше жмите превью.",
                 MessageType.None);
-            EditorGUILayout.PropertyField(P("hingePivot"), new GUIContent("Пивот петель *",
-                "ОБЯЗАТЕЛЬНО. Пустой объект на линии петель, панель — его ребёнок."));
+            EditorGUILayout.PropertyField(P("hingePivot"), new GUIContent("Пивот петель (необязательно)",
+                "Точная линия петель. Пусто = створка крутится вокруг собственного края (превью работает сразу)."));
             if (P("hingePivot").objectReferenceValue == null)
-                EditorGUILayout.HelpBox("Без пивота дверь не повернётся. Создайте кнопкой ниже.", MessageType.Error);
+                EditorGUILayout.HelpBox("Пивота нет — используется край створки. Превью работает.", MessageType.Info);
             EditorGUILayout.HelpBox(
                 "Пивотом может быть сам объект двери (перетащите его в поле) — " +
                 "удобно, если иерархия петель уже приехала из импорта.",
                 MessageType.None);
             EditorGUILayout.PropertyField(P("hingePanel"), new GUIContent("Панель (створка)",
-                "Створка двери. Сначала назначьте её — затем кнопка ниже создаст пивот на её краю."));
+                "Створка двери. Пусто = сам объект двери. Без пивота крутится вокруг своего края."));
             EditorGUILayout.PropertyField(P("hingeSide"), new GUIContent("Петли",
                 "С какой стороны петли (вид спереди). Влияет только на знак по умолчанию."));
             EditorGUILayout.Slider(P("openAngle"), -180f, 180f, new GUIContent("Угол открытия°",

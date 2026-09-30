@@ -1643,19 +1643,32 @@ namespace ProjectC.EditorTools
 
         private void OnGUI()
         {
-            GameObject root = Selection.activeGameObject;
+            // Shift-выделение: прогоняем каждый корень по очереди (логи в Console — по каждому).
+            GameObject[] roots = Selection.gameObjects;
+            if (roots == null) roots = new GameObject[0];
 
             scroll = EditorGUILayout.BeginScrollView(scroll);
 
-            EditorGUILayout.LabelField("Корень FBX в Hierarchy", EditorStyles.boldLabel);
-            if (root == null)
+            EditorGUILayout.LabelField("Корни в Hierarchy (можно несколько через Shift)", EditorStyles.boldLabel);
+            if (roots.Length == 0)
             {
-                EditorGUILayout.HelpBox("Выдели корневой GameObject поселения (например Project-C_primum_farm_x_1_2_GameReady), затем вернись сюда.", MessageType.Info);
+                EditorGUILayout.HelpBox("Выдели корневой GameObject поселения (например Project-C_primum_farm_x_1_2_GameReady), затем вернись сюда. Через Shift можно выбрать несколько — тулза прогонит каждый по очереди.", MessageType.Info);
+            }
+            else if (roots.Length == 1 && roots[0] != null)
+            {
+                int meshCount = roots[0].GetComponentsInChildren<MeshFilter>(true).Length;
+                EditorGUILayout.LabelField($"Корень: {roots[0].name} (MeshFilter: {meshCount})");
             }
             else
             {
-                int meshCount = root.GetComponentsInChildren<MeshFilter>(true).Length;
-                EditorGUILayout.LabelField($"Корень: {root.name} (MeshFilter: {meshCount})");
+                int total = 0;
+                foreach (var r in roots)
+                    if (r != null) total += r.GetComponentsInChildren<MeshFilter>(true).Length;
+                int show = Mathf.Min(5, roots.Length);
+                var names = new List<string>(show);
+                for (int i = 0; i < show; i++) names.Add(roots[i] != null ? roots[i].name : "?");
+                string more = roots.Length > show ? $" +{roots.Length - show}…" : "";
+                EditorGUILayout.LabelField($"Корней: {roots.Length} ({string.Join(", ", names.ToArray())}{more}), MeshFilter всего: {total}");
             }
 
             EditorGUILayout.Space();
@@ -1677,19 +1690,27 @@ namespace ProjectC.EditorTools
             settings.sliceAdaptTol = EditorGUILayout.FloatField("Допуск слияния кусков (м)", settings.sliceAdaptTol);
 
             EditorGUILayout.Space();
-            EditorGUI.BeginDisabledGroup(root == null);
+            EditorGUI.BeginDisabledGroup(roots.Length == 0);
             if (GUILayout.Button("Dry Run (только посчитать)", GUILayout.Height(30f)))
             {
                 // Обычный режим: include-фильтр игнорируется, считаются все значимые меши.
-                var r = BuildSettlementColliders.DryRun(root, WithoutInclude(settings));
-                Debug.Log($"[SettlementColliders] DRY '{root.name}': created={r.created}, capsules={r.capsules}, " +
-                          $"slicedMeshes={r.slicedMeshes} (unread={r.unreadSlices}), " +
-                          $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
-                          $"name={r.skippedName}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
+                foreach (var root in roots)
+                {
+                    if (root == null) continue;
+                    var r = BuildSettlementColliders.DryRun(root, WithoutInclude(settings));
+                    Debug.Log($"[SettlementColliders] DRY '{root.name}': created={r.created}, capsules={r.capsules}, " +
+                              $"slicedMeshes={r.slicedMeshes} (unread={r.unreadSlices}), " +
+                              $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
+                              $"name={r.skippedName}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
+                }
             }
             if (GUILayout.Button("Build (построить коллайдеры)", GUILayout.Height(34f)))
             {
-                BuildSettlementColliders.BuildFor(root, WithoutInclude(settings));
+                foreach (var root in roots)
+                {
+                    if (root == null) continue;
+                    BuildSettlementColliders.BuildFor(root, WithoutInclude(settings));
+                }
             }
             EditorGUI.EndDisabledGroup();
 
@@ -1698,19 +1719,27 @@ namespace ProjectC.EditorTools
             EditorGUILayout.LabelField("Пусто = обычный режим выше. Напр.: TABLE, CHAIR — боксы только там, где имя содержит токен.", EditorStyles.miniLabel);
             settings.includeTokens = EditorGUILayout.TextArea(settings.includeTokens ?? "", GUILayout.MinHeight(36f));
 
-            EditorGUI.BeginDisabledGroup(root == null || string.IsNullOrWhiteSpace(settings.includeTokens));
+            EditorGUI.BeginDisabledGroup(roots.Length == 0 || string.IsNullOrWhiteSpace(settings.includeTokens));
             if (GUILayout.Button("Dry Run (только совпадения)", GUILayout.Height(30f)))
             {
-                var r = BuildSettlementColliders.DryRunAppend(root, settings);
-                Debug.Log($"[SettlementColliders] DRY-APPEND '{root.name}' [{settings.includeTokens}]: toAdd={r.created}, " +
-                          $"capsules={r.capsules}, slicedMeshes={r.slicedMeshes}, " +
-                          $"alreadyExists={r.skippedExists}, " +
-                          $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
-                          $"name={r.skippedName}, notIncluded={r.skippedInclude}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
+                foreach (var root in roots)
+                {
+                    if (root == null) continue;
+                    var r = BuildSettlementColliders.DryRunAppend(root, settings);
+                    Debug.Log($"[SettlementColliders] DRY-APPEND '{root.name}' [{settings.includeTokens}]: toAdd={r.created}, " +
+                              $"capsules={r.capsules}, slicedMeshes={r.slicedMeshes}, " +
+                              $"alreadyExists={r.skippedExists}, " +
+                              $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
+                              $"name={r.skippedName}, notIncluded={r.skippedInclude}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
+                }
             }
             if (GUILayout.Button("Build (только совпадения, добавить)", GUILayout.Height(34f)))
             {
-                BuildSettlementColliders.BuildAppend(root, settings);
+                foreach (var root in roots)
+                {
+                    if (root == null) continue;
+                    BuildSettlementColliders.BuildAppend(root, settings);
+                }
             }
             EditorGUI.EndDisabledGroup();
 
@@ -1723,24 +1752,32 @@ namespace ProjectC.EditorTools
             EditorGUILayout.LabelField("Только эти имена (пусто = все сгенерированные)");
             mergeTokens = EditorGUILayout.TextArea(mergeTokens ?? "", GUILayout.MinHeight(28f));
 
-            EditorGUI.BeginDisabledGroup(root == null);
+            EditorGUI.BeginDisabledGroup(roots.Length == 0);
             if (GUILayout.Button("Dry Run (слияние)", GUILayout.Height(30f)))
             {
                 var scope = (BuildSettlementColliders.MergeScope)mergeScopeIdx;
-                var r = BuildSettlementColliders.DryRunMerge(root, mergeGap, mergeAlign, mergeTokens, scope);
-                Debug.Log($"[SettlementColliders] DRY-MERGE '{root.name}': {r.before} → {r.after} " +
-                          $"(clusters={r.clusters}, phantom={r.phantomM3:F2} м³, " +
-                          $"gap={Mathf.Max(0f, mergeGap):F2} м, align={Mathf.Max(0f, mergeAlign):F3} м, " +
-                          $"mode={MergeScopeLabels[mergeScopeIdx]}" +
-                          (r.skippedAxis > 0 ? $", offAxis={r.skippedAxis}" : "") + "). " +
-                          $"Группы: parents={r.parents}, oriGroups={r.oriGroups}, " +
-                          $"largest={r.largestGroup}, lonely={r.lonely}."
-                          + (string.IsNullOrEmpty(r.sample) ? "" : " Пример: " + r.sample));
+                foreach (var root in roots)
+                {
+                    if (root == null) continue;
+                    var r = BuildSettlementColliders.DryRunMerge(root, mergeGap, mergeAlign, mergeTokens, scope);
+                    Debug.Log($"[SettlementColliders] DRY-MERGE '{root.name}': {r.before} → {r.after} " +
+                              $"(clusters={r.clusters}, phantom={r.phantomM3:F2} м³, " +
+                              $"gap={Mathf.Max(0f, mergeGap):F2} м, align={Mathf.Max(0f, mergeAlign):F3} м, " +
+                              $"mode={MergeScopeLabels[mergeScopeIdx]}" +
+                              (r.skippedAxis > 0 ? $", offAxis={r.skippedAxis}" : "") + "). " +
+                              $"Группы: parents={r.parents}, oriGroups={r.oriGroups}, " +
+                              $"largest={r.largestGroup}, lonely={r.lonely}."
+                              + (string.IsNullOrEmpty(r.sample) ? "" : " Пример: " + r.sample));
+                }
             }
             if (GUILayout.Button("Merge (склеить соседние)", GUILayout.Height(34f)))
             {
                 var scope = (BuildSettlementColliders.MergeScope)mergeScopeIdx;
-                BuildSettlementColliders.MergeBoxes(root, mergeGap, mergeAlign, mergeTokens, scope);
+                foreach (var root in roots)
+                {
+                    if (root == null) continue;
+                    BuildSettlementColliders.MergeBoxes(root, mergeGap, mergeAlign, mergeTokens, scope);
+                }
             }
             EditorGUI.EndDisabledGroup();
 

@@ -31,6 +31,8 @@ namespace ProjectC.EditorTools
     ///     повёрнутыми боксами 1-в-1;
     ///   - режим корабля (shipMode): без флага static — '<Root>_Colliders' едет с Rigidbody
     ///     как compound-коллайдер (для поселений static дешевле, не включать);
+    ///   - точечная нарезка (BuildSlicesDirect): режет всё выделенное с шагом sliceStep,
+    ///     имена копировать не надо — фильтры имён/размера игнорируются;
     ///   - Dry Run: посчитать created/skipped без создания объектов (подбор порогов для 2к мешей).
     ///   - include-режим (наоборот от исключений): поле includeTokens + отдельные кнопки
     ///     «только совпадения» — боксы только там, где имя содержит токен (напр. TABLE).
@@ -953,6 +955,241 @@ namespace ProjectC.EditorTools
         }
 
         /// <summary>
+        /// Набор имён кусков совпал 1-в-1 с существующими? (смена шага/допуска даёт другое
+        /// множество — тогда purge + пересборка при создании).
+        /// </summary>
+        private static bool SliceSetMatches(HashSet<string> existingNames, string sliceBase, List<SliceBox> slices)
+        {
+            if (existingNames == null || slices == null || slices.Count == 0) return false;
+            string prefix = sliceBase + "_S";
+            var wanted = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var sl in slices)
+                wanted.Add(SliceHolderName(sliceBase, sl));
+            foreach (var w in wanted)
+                if (!existingNames.Contains(w)) return false;
+            foreach (var n in existingNames)
+                if (n.StartsWith(prefix, StringComparison.Ordinal) && !wanted.Contains(n))
+                    return false; // остались лишние старые куски — пересобрать
+            return true;
+        }
+
+        /// <summary>
+        /// Точечная нарезка: только посчитать для корня (без создания). Имена не нужны —
+        /// режется всё выделенное (фильтры имён/размера игнорируются, это явный выбор).
+        /// </summary>
+        public static Report DryRunSlicesDirect(GameObject root, Settings s)
+        {
+            var report = new Report();
+            if (root == null || s == null) return report;
+            if (s.sliceStep <= 0f) return report;
+            Transform existing = root.transform.Find(GeneratedSuffixRootName(root));
+            List<ExistingHolder> holders = null;
+            HashSet<string> existingNames = null;
+            if (existing != null)
+            {
+                holders = CollectExistingHolders(existing);
+                existingNames = new HashSet<string>(StringComparer.Ordinal);
+                var allT = existing.GetComponentsInChildren<Transform>(includeInactive: true);
+                foreach (var t in allT)
+                    if (t != null && t != existing) existingNames.Add(t.name);
+            }
+            CollectSlicesDirect(root, s, null, report, true, holders, existingNames);
+            return report;
+        }
+
+        /// <summary>
+        /// Точечная нарезка выделенного: каждый меш под корнем режется slab'ами с шагом
+        /// sliceStep (fallback — одиночный бокс). Добавляет к генерации, существующие куски
+        /// не дублирует, старые сносит (purge). Фильтры имён/размера игнорируются.
+        /// </summary>
+        public static Report BuildSlicesDirect(GameObject root, Settings s)
+        {
+            var report = new Report();
+            if (root == null)
+            {
+                Debug.LogError("[SettlementColliders] Корень не задан.");
+                return report;
+            }
+            if (s == null) s = DefaultSettings();
+            if (s.sliceStep <= 0f)
+            {
+                Debug.LogError("[SettlementColliders] Шаг нарезки должен быть > 0.");
+                return report;
+            }
+
+            string genName = GeneratedSuffixRootName(root);
+            bool markStatic = !s.shipMode;
+
+            Undo.IncrementCurrentGroup();
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName($"Slice settlement: {root.name}");
+
+            Transform genRoot = root.transform.Find(genName);
+            if (genRoot == null)
+            {
+                var go = new GameObject(genName);
+                Undo.RegisterCreatedObjectUndo(go, "Slice settlement");
+                go.transform.SetParent(root.transform, false);
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localRotation = Quaternion.identity;
+                go.transform.localScale = Vector3.one;
+                go.layer = root.layer;
+                go.isStatic = markStatic;
+                genRoot = go.transform;
+            }
+            else if (genRoot.gameObject.isStatic != markStatic)
+            {
+                Undo.RecordObject(genRoot.gameObject, "Slice settlement");
+                genRoot.gameObject.isStatic = markStatic;
+            }
+
+            var groups = new Dictionary<string, Transform>(StringComparer.Ordinal);
+            if (s.groupByTopLevel)
+                foreach (Transform child in genRoot)
+                {
+                    if (child == null || groups.ContainsKey(child.name)) continue;
+                    groups[child.name] = child;
+                    if (child.gameObject.isStatic != markStatic)
+                    {
+                        Undo.RecordObject(child.gameObject, "Slice settlement");
+                        child.gameObject.isStatic = markStatic;
+                    }
+                }
+
+            List<ExistingHolder> holders = CollectExistingHolders(genRoot);
+            var existingNames = new HashSet<string>(StringComparer.Ordinal);
+            var allT = genRoot.GetComponentsInChildren<Transform>(includeInactive: true);
+            foreach (var t in allT)
+                if (t != null && t != genRoot) existingNames.Add(t.name);
+
+            CollectSlicesDirect(root, s, genRoot, report, false, holders, existingNames, groups);
+
+            EditorUtility.SetDirty(genRoot);
+            EditorSceneManager.MarkSceneDirty(root.scene);
+            Undo.CollapseUndoOperations(undoGroup);
+            Selection.activeGameObject = genRoot.gameObject;
+
+            Debug.Log($"[SettlementColliders] SLICE '{root.name}': boxes={report.created}, " +
+                      $"slicedMeshes={report.slicedMeshes} (unread={report.unreadSlices}), " +
+                      $"alreadyExists={report.skippedExists}, " +
+                      $"skipped(noMesh={report.skippedNoMesh}, disabled={report.skippedDisabled}).");
+            return report;
+        }
+
+        private static void CollectSlicesDirect(GameObject root, Settings s, Transform genRoot,
+            Report report, bool dryOnly, List<ExistingHolder> holders, HashSet<string> existingNames,
+            Dictionary<string, Transform> groups = null)
+        {
+            var filters = root.GetComponentsInChildren<MeshFilter>(includeInactive: true);
+            foreach (var f in filters)
+            {
+                if (f == null) continue;
+                GameObject go = f.gameObject;
+
+                // Свою генерацию не трогаем.
+                if (genRoot != null && (go == genRoot.gameObject || go.transform.IsChildOf(genRoot)))
+                    continue;
+
+                if (f.sharedMesh == null)
+                {
+                    report.skippedNoMesh++;
+                    continue;
+                }
+
+                if (s.skipInactive && !go.activeInHierarchy)
+                {
+                    report.skippedDisabled++;
+                    continue;
+                }
+
+                var r = go.GetComponent<MeshRenderer>();
+                if (r != null && !r.enabled)
+                {
+                    report.skippedDisabled++;
+                    continue;
+                }
+
+                Vector3 worldPerLocal = AbsVec(go.transform.lossyScale);
+                int longAxis = LongestAxis(f.sharedMesh.bounds.size);
+                float per = worldPerLocal[longAxis] < Epsilon ? 1f : worldPerLocal[longAxis];
+                List<SliceBox> slices = null;
+                if (f.sharedMesh.isReadable)
+                    slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per, Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal);
+                else
+                    report.unreadSlices++;
+
+                string baseName = HolderNameFor(root.transform, go.transform);
+                var it = new Item { source = go, mesh = f.sharedMesh, renderer = r };
+
+                if (slices != null)
+                {
+                    if (holders != null && existingNames != null && SliceSetMatches(existingNames, baseName, slices))
+                    {
+                        report.skippedExists++;
+                        continue;
+                    }
+                    if (dryOnly)
+                    {
+                        report.created += slices.Count;
+                        report.slicedMeshes++;
+                        continue;
+                    }
+                    Transform parent = ResolveGroup(root, genRoot, groups, s, go);
+                    DestroyPredecessorHolders(genRoot, go, baseName);
+                    foreach (var sl in slices)
+                    {
+                        var sb = new Bounds();
+                        sb.SetMinMax(sl.min, sl.max);
+                        AddFittedBox(root, parent, SliceHolderName(baseName, sl), it, sb, s.minThickness, !s.shipMode);
+                        report.created++;
+                    }
+                    report.slicedMeshes++;
+                }
+                else
+                {
+                    if (holders != null && ExistsHolder(holders, go))
+                    {
+                        report.skippedExists++;
+                        continue;
+                    }
+                    if (dryOnly)
+                    {
+                        report.created++;
+                        continue;
+                    }
+                    Transform parent = ResolveGroup(root, genRoot, groups, s, go);
+                    AddFittedBox(root, parent, baseName, it, f.sharedMesh.bounds, s.minThickness, !s.shipMode);
+                    report.created++;
+                }
+            }
+        }
+
+        /// <summary>Группа для холдера (переиспользовать/создать), либо сам genRoot.</summary>
+        private static Transform ResolveGroup(GameObject root, Transform genRoot,
+            Dictionary<string, Transform> groups, Settings s, GameObject source)
+        {
+            Transform parent = genRoot;
+            if (s.groupByTopLevel && groups != null)
+            {
+                string groupName = SanitizeName(TopLevelChildName(root.transform, source.transform));
+                if (!groups.TryGetValue(groupName, out parent))
+                {
+                    var g = new GameObject(groupName);
+                    Undo.RegisterCreatedObjectUndo(g, "Slice settlement group");
+                    g.transform.SetParent(genRoot, false);
+                    g.transform.localPosition = Vector3.zero;
+                    g.transform.localRotation = Quaternion.identity;
+                    g.transform.localScale = Vector3.one;
+                    g.layer = root.layer;
+                    g.isStatic = !s.shipMode;
+                    parent = g.transform;
+                    groups[groupName] = parent;
+                }
+            }
+            return parent;
+        }
+
+        /// <summary>
         /// Круглый бар под капсулу? Только вытянутые вдоль одной оси (длина >= 2 диаметров
         /// в мире) — короткие цилиндры/диски точнее сидят в боксе.
         /// </summary>
@@ -1375,28 +1612,7 @@ namespace ProjectC.EditorTools
                 if (kind == 2 && stableNames && existingNames != null)
                 {
                     sliceBase = HolderNameFor(root.transform, go.transform);
-                    string prefix = sliceBase + "_S";
-                    var wanted = new HashSet<string>(StringComparer.Ordinal);
-                    foreach (var sl in slices)
-                        wanted.Add(SliceHolderName(sliceBase, sl));
-                    bool same = wanted.Count > 0;
-                    if (same)
-                    {
-                        foreach (var w in wanted)
-                            if (!existingNames.Contains(w)) { same = false; break; }
-                    }
-                    if (same)
-                    {
-                        foreach (var n in existingNames)
-                        {
-                            if (n.StartsWith(prefix, StringComparison.Ordinal) && !wanted.Contains(n))
-                            {
-                                same = false; // остались лишние старые куски — пересобрать
-                                break;
-                            }
-                        }
-                    }
-                    if (same)
+                    if (SliceSetMatches(existingNames, sliceBase, slices))
                     {
                         report.skippedExists++;
                         continue;
@@ -1875,6 +2091,42 @@ namespace ProjectC.EditorTools
                 {
                     if (root == null) continue;
                     BuildSettlementColliders.BuildAppend(root, settings);
+                }
+            }
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Точечная нарезка", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Режет всё выделенное с шагом выше. Имена копировать не надо — фильтры игнорируются.", EditorStyles.miniLabel);
+            EditorGUI.BeginDisabledGroup(roots.Length == 0);
+            if (GUILayout.Button("Dry Run (нарезка)", GUILayout.Height(30f)))
+            {
+                foreach (var root in roots)
+                {
+                    if (root == null) continue;
+                    if (root.name.EndsWith(BuildSettlementColliders.GeneratedSuffix))
+                    {
+                        Debug.LogWarning($"[SettlementColliders] '{root.name}' — корень генерации, выбери исходник.");
+                        continue;
+                    }
+                    var r = BuildSettlementColliders.DryRunSlicesDirect(root, settings);
+                    Debug.Log($"[SettlementColliders] DRY-SLICE '{root.name}': boxes={r.created}, " +
+                              $"slicedMeshes={r.slicedMeshes} (unread={r.unreadSlices}), " +
+                              $"alreadyExists={r.skippedExists}, " +
+                              $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}.");
+                }
+            }
+            if (GUILayout.Button("НАРЕЗАТЬ С ШАГОМ", GUILayout.Height(34f)))
+            {
+                foreach (var root in roots)
+                {
+                    if (root == null) continue;
+                    if (root.name.EndsWith(BuildSettlementColliders.GeneratedSuffix))
+                    {
+                        Debug.LogWarning($"[SettlementColliders] '{root.name}' — корень генерации, выбери исходник.");
+                        continue;
+                    }
+                    BuildSettlementColliders.BuildSlicesDirect(root, settings);
                 }
             }
             EditorGUI.EndDisabledGroup();

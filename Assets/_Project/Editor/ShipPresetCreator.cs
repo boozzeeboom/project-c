@@ -380,9 +380,12 @@ namespace ProjectC.Editor
             // в отличие от PilotSeatController (который принудительно ставит isTrigger=true).
             doorCol.isTrigger = false;
             var doorCtrl = door.AddComponent<DoorController>();
-            SetPrivateField(doorCtrl, "slideDirection", new Vector3(0, 0, -1));
-            SetPrivateField(doorCtrl, "slideDistance", 0.2f);
-            SetPrivateField(doorCtrl, "slideSpeed", 1.5f);
+            // DoorController v2: сдвижная одностворчатая, отъезд назад на 0.2 м за 0.8 с.
+            SetPrivateField(doorCtrl, "doorType", DoorController.DoorType.SlidingSingle);
+            SetPrivateField(doorCtrl, "slideSide", DoorController.SlideSide.Back);
+            SetPrivateField(doorCtrl, "distanceMode", DoorController.OpenDistanceMode.Manual);
+            SetPrivateField(doorCtrl, "manualDistance", 0.2f);
+            SetPrivateField(doorCtrl, "openDuration", 0.8f);
             SetPrivateField(doorCtrl, "startOpen", true);
             door.AddComponent<ShipRootReference>();
             WireShipRootReference(door, root, sc, rb, netObj);

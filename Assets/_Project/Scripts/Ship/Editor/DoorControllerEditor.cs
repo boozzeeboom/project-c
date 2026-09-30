@@ -14,7 +14,7 @@ using UnityEngine;
 namespace ProjectC.Ship
 {
     [CustomEditor(typeof(DoorController))]
-    public class DoorControllerEditor : Editor
+    public class DoorControllerEditor : UnityEditor.Editor
     {
         private static readonly GUIContent[] TypeLabels =
         {

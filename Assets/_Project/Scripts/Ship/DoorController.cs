@@ -240,6 +240,16 @@ namespace ProjectC.Ship
 
         private ImplicitHinge _impSingle, _impLeft, _impRight;
 
+        // Явный пивот крутится, только если он реально ведёт створку
+        // (панель — его потомок, включая совпадение). Иначе пустой/чужой пивот
+        // молча игнорируется в пользу края створки + предупреждение (не ошибка).
+        private static bool UseExplicitPivot(Transform pivot, Transform panel)
+        {
+            return pivot != null && panel != null && IsDescendantOf(panel, pivot);
+        }
+
+        private bool _usePivot, _useLeftPivot, _useRightPivot;
+
         private void Awake()
         {
             var rootRef = GetComponentInParent<ShipRootReference>();
@@ -575,18 +585,30 @@ namespace ProjectC.Ship
             _impSingle = default;
             _impLeft = default;
             _impRight = default;
+            _usePivot = _useLeftPivot = _useRightPivot = false;
 
-            if (doorType == DoorType.HingedSingle && hingePivot == null)
+            if (doorType == DoorType.HingedSingle)
             {
-                float sideSign = hingeSide == HingeSide.Left ? -1f : 1f;
-                _impSingle = BuildImplicitHinge(HingePanelOrSelf, sideSign, sideSign * openAngle);
+                if (UseExplicitPivot(hingePivot, HingePanelOrSelf))
+                {
+                    _usePivot = true;
+                }
+                else
+                {
+                    float sideSign = hingeSide == HingeSide.Left ? -1f : 1f;
+                    _impSingle = BuildImplicitHinge(HingePanelOrSelf, sideSign, sideSign * openAngle);
+                }
             }
             else if (doorType == DoorType.HingedDouble)
             {
                 float swing = invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle;
-                if (leftPivot == null && leftPanel != null)
+                if (UseExplicitPivot(leftPivot, leftPanel))
+                    _useLeftPivot = true;
+                else if (leftPanel != null)
                     _impLeft = BuildImplicitHinge(leftPanel, -1f, -swing);
-                if (rightPivot == null && rightPanel != null)
+                if (UseExplicitPivot(rightPivot, rightPanel))
+                    _useRightPivot = true;
+                else if (rightPanel != null)
                     _impRight = BuildImplicitHinge(rightPanel, 1f, swing);
             }
         }
@@ -644,13 +666,13 @@ namespace ProjectC.Ship
                     if (rightPanel != null) rightPanel.localPosition = Vector3.Lerp(_rightClosed, _rightOpen, e);
                     break;
                 case DoorType.HingedSingle:
-                    if (hingePivot != null) hingePivot.localRotation = Quaternion.Slerp(_pivotClosed, _pivotOpen, e);
+                    if (_usePivot) hingePivot.localRotation = Quaternion.Slerp(_pivotClosed, _pivotOpen, e);
                     else ApplyImplicitHinge(_impSingle, e);
                     break;
                 case DoorType.HingedDouble:
-                    if (leftPivot != null) leftPivot.localRotation = Quaternion.Slerp(_leftPivotClosed, _leftPivotOpen, e);
+                    if (_useLeftPivot) leftPivot.localRotation = Quaternion.Slerp(_leftPivotClosed, _leftPivotOpen, e);
                     else ApplyImplicitHinge(_impLeft, e);
-                    if (rightPivot != null) rightPivot.localRotation = Quaternion.Slerp(_rightPivotClosed, _rightPivotOpen, e);
+                    if (_useRightPivot) rightPivot.localRotation = Quaternion.Slerp(_rightPivotClosed, _rightPivotOpen, e);
                     else ApplyImplicitHinge(_impRight, e);
                     break;
                 case DoorType.LiftUp:
@@ -696,33 +718,30 @@ namespace ProjectC.Ship
                     break;
 
                 case DoorType.HingedSingle:
-                    if (hingePivot != null)
+                    if (UseExplicitPivot(hingePivot, HingePanelOrSelf))
                     {
                         CheckHingePivot(hingePivot, hingePanel, "Пивот петель", errors, warnings);
+                    }
+                    else if (hingePivot != null)
+                    {
+                        warnings.Add($"Пивот «{hingePivot.name}» не ведёт створку — используется край створки. " +
+                                     "Посадите панель под пивот (🔗) или очистите поле пивота.");
+                        CheckImplicitPanel(HingePanelOrSelf, hingeSide == HingeSide.Left ? -1f : 1f,
+                            (hingeSide == HingeSide.Left ? -1f : 1f) * openAngle, warnings);
                     }
                     else
                     {
                         // Неявный пивот: превью и игра работают сразу, без настройки.
-                        Transform ip = HingePanelOrSelf;
-                        if (!HasGeometry(ip))
-                        {
-                            warnings.Add("Под объектом нет геометрии — в превью будет видна только дужка поворота.");
-                        }
-                        else
-                        {
-                            float sideSign = hingeSide == HingeSide.Left ? -1f : 1f;
-                            if (!BuildImplicitHinge(ip, sideSign, sideSign * openAngle).valid)
-                                warnings.Add("Габарит створки не измерился — не вокруг чего строить край. " +
-                                             "Задайте панели меш/коллайдер.");
-                        }
+                        CheckImplicitPanel(HingePanelOrSelf, hingeSide == HingeSide.Left ? -1f : 1f,
+                            (hingeSide == HingeSide.Left ? -1f : 1f) * openAngle, warnings);
                     }
                     if (Mathf.Approximately(openAngle, 0f))
                         warnings.Add("Угол открытия = 0 — дверь не будет двигаться.");
                     break;
 
                 case DoorType.HingedDouble:
-                    CheckDoubleHingeSide(leftPivot, leftPanel, -1f, "Левая", errors, warnings);
-                    CheckDoubleHingeSide(rightPivot, rightPanel, 1f, "Правая", errors, warnings);
+                    CheckDoubleHingeSide(leftPivot, leftPanel, -1f, "Левый", "Левая створка", errors, warnings);
+                    CheckDoubleHingeSide(rightPivot, rightPanel, 1f, "Правый", "Правая створка", errors, warnings);
                     break;
 
                 case DoorType.LiftUp:
@@ -780,31 +799,44 @@ namespace ProjectC.Ship
         }
 
         /// <summary>
-        /// Проверка одной стороны двойной распашной: явный пивот → как обычно,
-        /// иначе неявный край панели, иначе ошибка (створки нет вообще).
+        /// Проверка одной стороны двойной распашной: явный пивот (ведёт створку) →
+        /// как обычно; чужой/пустой пивот → предупреждение + край створки;
+        /// без пивота → край створки; без створки → ошибка.
         /// </summary>
         private void CheckDoubleHingeSide(Transform pivot, Transform panel, float edgeSide,
-            string label, List<string> errors, List<string> warnings)
+            string pivotAdj, string panelNoun, List<string> errors, List<string> warnings)
         {
-            if (pivot != null)
-            {
-                CheckHingePivot(pivot, panel, label + " пивот", errors, warnings);
-                return;
-            }
             if (panel == null)
             {
-                errors.Add($"{label} створка не задана — нечему открываться.");
+                errors.Add($"{panelNoun} не задана — нечему открываться.");
                 return;
             }
+            if (UseExplicitPivot(pivot, panel))
+            {
+                CheckHingePivot(pivot, panel, pivotAdj + " пивот", errors, warnings);
+                return;
+            }
+            if (pivot != null)
+                warnings.Add($"{pivotAdj} пивот «{pivot.name}» не ведёт створку — используется край створки. " +
+                             "Посадите панель под пивот (🔗) или очистите поле пивота.");
+            CheckImplicitPanel(panel, edgeSide,
+                edgeSide < 0f ? -(invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle)
+                              : (invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle),
+                warnings, panelNoun);
+        }
+
+        /// <summary>Проверка панели на неявном краю: есть геометрия и измеримый габарит.</summary>
+        private void CheckImplicitPanel(Transform panel, float edgeSide, float angle,
+            List<string> warnings, string label = "Створка")
+        {
             if (!HasGeometry(panel))
             {
-                warnings.Add($"{label} створка без геометрии — в превью будет видна только дужка.");
+                warnings.Add($"{label}: под объектом нет геометрии — в превью будет видна только дужка поворота.");
                 return;
             }
-            float swing = invertDoubleSwing ? -doubleOpenAngle : doubleOpenAngle;
-            float angle = edgeSide < 0f ? -swing : swing;
             if (!BuildImplicitHinge(panel, edgeSide, angle).valid)
-                warnings.Add($"{label} створка: габарит не измерился — не вокруг чего строить край.");
+                warnings.Add($"{label}: габарит не измерился — не вокруг чего строить край. " +
+                             "Задайте меш/коллайдер.");
         }
 
         private void CheckSlidePanel(Transform panel, Vector3 frameAxis,

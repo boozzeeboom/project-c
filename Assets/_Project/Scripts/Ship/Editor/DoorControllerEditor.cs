@@ -243,8 +243,8 @@ namespace ProjectC.Ship
         private void DrawHingedDouble(DoorController door)
         {
             EditorGUILayout.LabelField("Петли двух створок", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(P("leftPivot"), new GUIContent("Левый пивот *"));
-            EditorGUILayout.PropertyField(P("rightPivot"), new GUIContent("Правый пивот *"));
+            EditorGUILayout.PropertyField(P("leftPivot"), new GUIContent("Левый пивот (необязательно)"));
+            EditorGUILayout.PropertyField(P("rightPivot"), new GUIContent("Правый пивот (необязательно)"));
             EditorGUILayout.PropertyField(P("leftHingePanel"), new GUIContent("Левая панель (створка)"));
             EditorGUILayout.PropertyField(P("rightHingePanel"), new GUIContent("Правая панель (створка)"));
             EditorGUILayout.Slider(P("doubleOpenAngle"), 5f, 170f, new GUIContent("Угол каждой°"));

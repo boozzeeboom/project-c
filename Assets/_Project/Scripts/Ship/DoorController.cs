@@ -608,16 +608,14 @@ namespace ProjectC.Ship
                     break;
 
                 case DoorType.HingedSingle:
-                    if (hingePivot == null)
-                        errors.Add("Не задан пивот петель (Hinge Pivot) — распашной двери не вокруг чего вращаться. " +
-                                   "Создайте кнопкой в инспекторе.");
+                    CheckHingePivot(hingePivot, hingePanel, "Пивот петель", errors, warnings);
                     if (Mathf.Approximately(openAngle, 0f))
                         warnings.Add("Угол открытия = 0 — дверь не будет двигаться.");
                     break;
 
                 case DoorType.HingedDouble:
-                    if (leftPivot == null) errors.Add("Не задан левый пивот (Left Pivot).");
-                    if (rightPivot == null) errors.Add("Не задан правый пивот (Right Pivot).");
+                    CheckHingePivot(leftPivot, leftHingePanel, "Левый пивот", errors, warnings);
+                    CheckHingePivot(rightPivot, rightHingePanel, "Правый пивот", errors, warnings);
                     break;
 
                 case DoorType.LiftUp:
@@ -628,6 +626,49 @@ namespace ProjectC.Ship
 
             if (openDuration < 0.15f)
                 warnings.Add("Очень быстрое открытие (< 0.15 c) — будет выглядеть как телепорт.");
+        }
+
+        /// <summary>
+        /// Проверка петли: пивот задан, под ним есть геометрия,
+        /// а панель (если задана) — его потомок. Иначе превью крутит пустоту,
+        /// а гизмо-призрак летит без меша.
+        /// </summary>
+        private static void CheckHingePivot(Transform pivot, Transform panel, string label,
+            List<string> errors, List<string> warnings)
+        {
+            if (pivot == null)
+            {
+                errors.Add($"{label} не задан — распашной двери не вокруг чего вращаться. " +
+                           "Создайте кнопкой ⚙ в инспекторе.");
+                return;
+            }
+            if (!HasGeometry(pivot))
+            {
+                errors.Add($"{label} «{pivot.name}» пустой: под ним нет ни меша, ни коллайдера — крутить нечего. " +
+                           "Посадите створку ребёнком пивота (кнопка 🔗 в инспекторе).");
+                return;
+            }
+            if (panel != null && !IsDescendantOf(panel, pivot))
+                errors.Add($"Панель «{panel.name}» НЕ под «{pivot.name}» — пивот крутится, а створка стоит на месте. " +
+                           "Посадите панель ребёнком пивота (кнопка 🔗 в инспекторе).");
+        }
+
+        private static bool HasGeometry(Transform t)
+        {
+            if (t == null) return false;
+            foreach (var r in t.GetComponentsInChildren<Renderer>(true))
+                if (r != null) return true;
+            foreach (var c in t.GetComponentsInChildren<Collider>(true))
+                if (c != null) return true;
+            return false;
+        }
+
+        private static bool IsDescendantOf(Transform t, Transform ancestor)
+        {
+            if (t == null || ancestor == null) return false;
+            for (Transform p = t; p != null; p = p.parent)
+                if (p == ancestor) return true;
+            return false;
         }
 
         private void CheckSlidePanel(Transform panel, Vector3 frameAxis,

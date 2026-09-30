@@ -224,6 +224,7 @@ namespace ProjectC.Ship
             EditorGUILayout.EndHorizontal();
             if (GUILayout.Button("🎯 Ось пивота вертикально (Y вверх)"))
                 AlignPivotVertical(door, P("hingePivot"));
+            DrawAttachButton(door, P("hingePivot"), P("hingePanel"));
             EditorGUILayout.HelpBox(
                 "Кнопка ⚙ ставит пивот на край панели по её габариту и сажает панель его ребёнком " +
                 "(мировое положение панели сохраняется). Предполагается, что ширина двери — вдоль X рамки.\n" +
@@ -251,6 +252,8 @@ namespace ProjectC.Ship
             if (GUILayout.Button("🎯 Левый вертикально")) AlignPivotVertical(door, P("leftPivot"));
             if (GUILayout.Button("🎯 Правый вертикально")) AlignPivotVertical(door, P("rightPivot"));
             EditorGUILayout.EndHorizontal();
+            DrawAttachButton(door, P("leftPivot"), P("leftHingePanel"));
+            DrawAttachButton(door, P("rightPivot"), P("rightHingePanel"));
         }
 
         private void DrawLiftUp(DoorController door)
@@ -529,6 +532,32 @@ namespace ProjectC.Ship
             door.EndPreview();
             EditorUtility.SetDirty(door);
             SceneView.RepaintAll();
+        }
+
+        /// <summary>
+        /// Кнопка «посадить панель на пивот», если она назначена, но висит мимо.
+        /// Именно этот случай даёт «гизмо едет, меш стоит»: пивот крутит пустоту.
+        /// </summary>
+        private void DrawAttachButton(DoorController door, SerializedProperty pivotProp, SerializedProperty panelProp)
+        {
+            var piv = pivotProp.objectReferenceValue as Transform;
+            var pan = panelProp.objectReferenceValue as Transform;
+            if (piv == null || pan == null || pan == piv) return;
+            bool attached = false;
+            for (var p = pan; p != null; p = p.parent)
+                if (p == piv) { attached = true; break; }
+            if (attached) return;
+
+            EditorGUILayout.HelpBox(
+                $"Панель «{pan.name}» НЕ под пивотом «{piv.name}» — превью будет крутить пустоту, а меш стоять.",
+                MessageType.Error);
+            if (GUILayout.Button("🔗 Посадить панель на пивот (место сохранить)", GUILayout.Height(26)))
+            {
+                Undo.SetTransformParent(pan, piv, true, "Посадить панель на пивот");
+                door.EndPreview();
+                EditorUtility.SetDirty(door);
+                SceneView.RepaintAll();
+            }
         }
 
         // ============================ Хелперы ============================

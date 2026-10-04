@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Steel_v2
+  m_Shader: {fileID: -6465566751694194690, guid: fc639d56a82f4214e911610763ce6189, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Edge_Width: 0.14
+    - _Metallic: 0.95
+    - _Noise_Cell: 3.28
+    - _Noise_Detail: 4.46
+    - _Noise_Scale: 6
+    - _Noise_Seed: 3.61
+    - _Noise_Warp: 1.25
+    - _QueueControl: 1
+    - _QueueOffset: 0
+    - _Rust_Amount: 1
+    - _Rust_Smoothness: 0.12
+    - _Rust_Threshold: 0.58
+    - _Smoothness: 0.55
+    - _Transition_Threshold: 0.4
+    - _Wear_Amount: 1.6
+    - _Worn_Smoothness: 0.85
+    m_Colors:
+    - _Rust_Color: {r: 0.36, g: 0.15, b: 0.06, a: 1}
+    - _Steel_Color: {r: 0.42, g: 0.45, b: 0.48, a: 1}
+    - _Transition_Color: {r: 0.3, g: 0.16, b: 0.08, a: 1}
+    - _Worn_Color: {r: 0.62, g: 0.66, b: 0.72, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
+--- !u!114 &1826990021880106883
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10

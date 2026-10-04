@@ -1,5 +1,25 @@
 # Iterations
 
+## Материалы от 04 октября 2026
+
+**Тикет:** T-STEELV2
+**Задача:** Сделать сталь v2 нодовым Shader Graph (рядом с `Steel.shadergraph`): процедурные потёртости на гранях через шум, ржавчина через шум и переходные состояния; создать материал и назначить граф-шейдер.
+**Результат:** Создан `Steel_v2.shadergraph` (`Shader Graphs/Steel_v2`). Ядро шума — **Custom Function `ProceduralSteelNoise`** (object-space **3D** fbm 3 октавы + Voronoi 27 ячеек + domain warp) — корректный шум на всех 6 гранях (без растяжения 2D UV-нод) и с хаосом; остальное — ноды (маски worn/transition/rust, кромочная маска, цвета, металлик/гладкость). **18 параметров выведены в Blackboard** (4 цвета, Metallic/Smoothness/Rust/Worn Smoothness, Noise Scale/Detail/Cell/Warp/Seed, Rust Amount/Threshold, Transition Threshold, Wear Amount, Edge Width); граф 68 связей. Материал `M_PC_Steel_v2.mat` с дефолтами.
+**Изменённые файлы:**
+- `Assets/_Project/Materials/Steel/Steel_v2.shadergraph` (+ `.meta`)
+- `Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat` (+ `.meta`)
+- `Assets/_Project/Shaders/ProceduralSteelNoise.hlsl`
+- `docs/Materials/SteelGraphV2/README.md`
+- `docs/Materials/README.md`
+
+**Проверки:**
+- Импорт через anklebreaker MCP: шейдер `supported=True`, `ShaderHasError=false`, 0 warnings.
+- Visual и F8/F9 — NOT RUN (агент Play Mode и скриншоты не делает), за пользователем.
+- Свойства материала выведены в инспектор (18 шт.): заданы в ассете графа, Property-ноды подключены через graph-инструменты (сам Blackboard инструмент создавать не умеет).
+- Исправлен баг первой сборки: цветовые Vector4-ноды были сдвинуты на компонент (X=0) → материал отдавал зелёный; заменены на Property-ноды с корректными дефолтами.
+- Ядро шума переведено с 2D Noise-нод на Custom Function 3D (fbm+Voronoi+domain warp): устранено растяжение шума на 4 гранях куба и «ровность» паттерна; добавлены настройки шума (Scale/Detail/Cell/Warp/Seed).
+- Устранены артефакты-«сетка/тайлы»: хеш без `sin` (Hoskins) + гладкий domain warp (интерполированный, не `floor`); ядро вынесено в `Assets/_Project/Shaders/ProceduralSteelNoise.hlsl` (Custom Function в режиме File → `#include`).
+
 ## Завершение от 25 августа 2026
 
 **Тикет:** T-UI10

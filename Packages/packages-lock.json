@@ -1,5 +1,15 @@
 {
   "dependencies": {
+    "com.anklebreaker.unity-mcp": {
+      "version": "https://github.com/AnkleBreaker-Studio/unity-mcp-plugin.git#main",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.test-framework": "1.1.33"
+      },
+      "hash": "365af34d3b610f1873ec81985d5bb10fa155a2a0"
+    },
     "com.autodesk.fbx": {
       "version": "5.1.3",
       "depth": 2,

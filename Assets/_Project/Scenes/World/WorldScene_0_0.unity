@@ -137159,6 +137159,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 9210692566357376022, guid: 0ffb7a7b1738f324ab1ebc0e8c812d04, type: 3}
+    - target: {fileID: -185292000595991730, guid: 0ffb7a7b1738f324ab1ebc0e8c812d04, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: c379bbac67b2ea3458bd07a95c886aea, type: 2}
     - target: {fileID: 919132149155446097, guid: 0ffb7a7b1738f324ab1ebc0e8c812d04, type: 3}
       propertyPath: m_Name
       value: gorod port_3_3_unity_1
@@ -186466,7 +186470,7 @@ PrefabInstance:
     - target: {fileID: 5000551839260579129, guid: efa6444e986837b4caa16791d3302ff0, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 131a88215ad4b754b88da6bc8a48ffa1, type: 2}
+      objectReference: {fileID: 2100000, guid: cd60a52d8d514b24e8b30cb9f5d8c84f, type: 2}
     - target: {fileID: 7088135260766076767, guid: efa6444e986837b4caa16791d3302ff0, type: 3}
       propertyPath: m_Name
       value: Cube

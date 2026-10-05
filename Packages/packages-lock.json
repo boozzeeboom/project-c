@@ -25,7 +25,7 @@
         "com.unity.inputsystem": "1.1.1",
         "com.unity.cloud.gltfast": "6.12.1"
       },
-      "hash": "620446adff3fa0b064fdea90ee35100370006146"
+      "hash": "f7f876f5fa3bc6be0ecdc2ee2e2948dc6d1e06d8"
     },
     "com.coplaydev.unity-mcp": {
       "version": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
@@ -42,7 +42,7 @@
         "com.unity.nuget.newtonsoft-json": "3.0.2",
         "com.unity.test-framework": "1.1.31"
       },
-      "hash": "30d22075093d1d35dfb0091c1c7550e9ad948577"
+      "hash": "aa5fc638d623f56178d50329d9ad8c541a57fe66"
     },
     "com.projectc.lore-unity": {
       "version": "https://github.com/boozzeeboom/unity-lore-ui.git",
@@ -59,7 +59,7 @@
         "com.unity.inputsystem": "1.1.1",
         "com.unity.cloud.gltfast": "6.12.1"
       },
-      "hash": "558ea3c324c2cfd2803f3486bedbe9cbb740df9d"
+      "hash": "406a8d058db2ec1708d4c4087deea334f7a92aa0"
     },
     "com.unity.2d.sprite": {
       "version": "1.0.0",

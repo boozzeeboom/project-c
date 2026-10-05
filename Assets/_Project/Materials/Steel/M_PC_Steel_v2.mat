@@ -20,7 +20,7 @@ Material:
   stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
-  m_LockedProperties: 
+  m_LockedProperties: _Smoothness
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -38,25 +38,25 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Edge_Width: 0.14
-    - _Metallic: 0.95
-    - _Noise_Cell: 3.28
-    - _Noise_Detail: 4.46
+    - _Edge_Width: 0.08
+    - _Metallic: 3.94
+    - _Noise_Cell: 68.9
+    - _Noise_Detail: 1134
     - _Noise_Scale: 6
-    - _Noise_Seed: 3.61
-    - _Noise_Warp: 1.25
+    - _Noise_Seed: 4.16
+    - _Noise_Warp: 0.58
     - _QueueControl: 1
     - _QueueOffset: 0
     - _Rust_Amount: 1
-    - _Rust_Smoothness: 0.12
+    - _Rust_Smoothness: 0.51
     - _Rust_Threshold: 0.58
-    - _Smoothness: 0.55
+    - _Smoothness: 0.25
     - _Transition_Threshold: 0.4
     - _Wear_Amount: 1.6
     - _Worn_Smoothness: 0.85
     m_Colors:
     - _Rust_Color: {r: 0.36, g: 0.15, b: 0.06, a: 1}
-    - _Steel_Color: {r: 0.42, g: 0.45, b: 0.48, a: 1}
+    - _Steel_Color: {r: 0.41999996, g: 0.45, b: 0.47999996, a: 1}
     - _Transition_Color: {r: 0.3, g: 0.16, b: 0.08, a: 1}
     - _Worn_Color: {r: 0.62, g: 0.66, b: 0.72, a: 1}
   m_BuildTextureStacks: []

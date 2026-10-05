@@ -1,0 +1,43 @@
+ok   prefix map size 109 (got 109)
+sourceEdges=146 kept=146 del=0 explicit=0 dup=0 => total=165
+FAIL duplicate fb750d86f09645d798e8456d033e3883|3|d9e448f6a308464ba25058fe776580ac|0
+FAIL duplicate d9e448f6a308464ba25058fe776580ac|2|39c53baaaff84bdeaf70f9e4c0bcabc5|0
+FAIL duplicate 39c53baaaff84bdeaf70f9e4c0bcabc5|1|419b2bbd961d4e389a9163c106118168|0
+FAIL duplicate 10a4631ef15d436a96c740a03b46b671|3|419b2bbd961d4e389a9163c106118168|1
+FAIL duplicate 39c53baaaff84bdeaf70f9e4c0bcabc5|1|53fa4006bf86475cbf74b641a8348ebd|2
+FAIL duplicate da0ebae1efc64cd09adab38c670e307b|4|fb750d86f09645d798e8456d033e3883|2
+FAIL duplicate 60f0c9ff8a1b1972241eb5f29c294045|3|10a4631ef15d436a96c740a03b46b671|2
+FAIL duplicate 7fda84f93ce9df6b3e8ce06ee6f7115c|0|10a4631ef15d436a96c740a03b46b671|0
+FAIL duplicate 6e3cc9a1b2c4a78df2bdf3ef57e31587|0|da0ebae1efc64cd09adab38c670e307b|3
+FAIL duplicate de62f085696c172b6bd7e3fc6d75e516|2|28e68538026548c16963dae1e639d4cc|0
+FAIL duplicate 3c48e3eb8984c507fba09e20c0dad5de|2|28e68538026548c16963dae1e639d4cc|1
+FAIL duplicate 28e68538026548c16963dae1e639d4cc|2|f5799910129a4f8a8837529573358837|0
+FAIL duplicate c7cadc8df2dc4f7b9fa3968a1a2a7920|2|de62f085696c172b6bd7e3fc6d75e516|0
+FAIL duplicate 7060546ed6b0447db253537022c6a465|0|de62f085696c172b6bd7e3fc6d75e516|1
+FAIL duplicate 39c53baaaff84bdeaf70f9e4c0bcabc5|1|3c48e3eb8984c507fba09e20c0dad5de|0
+FAIL duplicate 7a7332a943494cc18ac2393d386e62a4|0|3c48e3eb8984c507fba09e20c0dad5de|1
+FAIL duplicate 131f1a6f0ea6462fa105a4141282c07c|0|60f0c9ff8a1b1972241eb5f29c294045|0
+FAIL duplicate dc688c5aa20732bfb530723bcb326ab0|0|60f0c9ff8a1b1972241eb5f29c294045|1
+FAIL duplicate 519310157dacae57f734d1a0229b6ecd|0|60f0c9ff8a1b1972241eb5f29c294045|2
+ok   final edge count 146 (got 146)
+ok   serialized m_Edges contains no blank line
+ok   m_Edges region located
+FAIL ShaderGraph doc split yields 475 chunks (got 442)
+FAIL every chunk is a single balanced root (bad=1 :: roots=34 depth=0 len=25675 head={|    "m_SGVersion": 0,|    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",|    "m_ObjectId": "5e162d16f88d4c13)
+ok   doc count 475 (got 475)
+ok   109 nodes / 322 slots / 41 properties (got 109/322/41)
+ok   re-parsed edges 146 (got 146)
+ok   all edge ids 32-char + resolvable (bad=0)
+ok   no input slot double-fed (conflicts=0)
+ok   HSUM -> NFH.In
+ok   _Scratch_Bump -> scratch bump, NFH.Strength free
+ok   rust bump = rustCoverSat x _Rust_Bump
+ok   scratch bump chain
+ok   RustDetail in / rust out renumbered to 4
+ok   patch CF -> patch smoothstep Edge1
+ok   DEEP lerp T = rustCoverSat (underlay)
+ok   BRIGHT lerp T = patchMask
+ok   old Edge1 edge dropped
+ok   vertical chain absent
+=== TOTAL FAILS: 21 ===
+*** NOT WRITING ***

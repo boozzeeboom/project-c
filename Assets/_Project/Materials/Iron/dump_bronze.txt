@@ -1,0 +1,191 @@
+BRONZE docs=475
+edgeDocs=1 edgeMatches=149 unique=149
+--- PROPERTY docs ---
+  0a208f78 ref=_Scratch_Scale val=9.0
+  0b70d6f0 ref=_Noise_Scale val=6.0
+  0d081b9a ref=_Scratch_Band val=0.15000000596046449
+  0defdd93 ref=_Smoothness val=0.5
+  1dcc3aba ref=_Scratch_Angle val=0.7850000262260437
+  2b5b4f0f ref=_Patina_Amount val=1.0
+  2d1d35d6 ref=_Patina_Core val=0.11999999731779099
+  353f1ddc ref=_Scratch_Mask_Scale val=2.0
+  3d12ed4d ref=_Patina_Height val=-0.05000000074505806
+  4827c626 ref=_Edge_Position val=0.5
+  485af8ff ref=_Scratch_Seed val=0.0
+  494c6b03 ref=_Scratch_Smoothness val=0.800000011920929
+  4bb47030 ref=_Tone_Base val=0.8500000238418579
+  4ce53e34 ref=_Scratch_Color val={ "r": 0.75, "g": 0.6000000238418579, "b": 0.3799999952316284, "a": 1.0 }
+  61ec8c41 ref=_Patina_Green_Color val={ "r": 0.25, "g": 0.550000011920929, "b": 0.44999998807907107, "a": 1.0 }
+  668de96d ref=_Bronze_Color val={ "r": 0.5, "g": 0.3199999928474426, "b": 0.1599999964237213, "a": 1.0 }
+  68d68c7b ref=_Patina_Threshold val=0.550000011920929
+  6ef2b5d0 ref=_Noise_Detail val=2.700000047683716
+  7dcaebfb ref=_Noise_Warp val=0.3499999940395355
+  8745f886 ref=_Scratch_Threshold val=0.75
+  89562d59 ref=_Patina_Smoothness val=0.25
+  8c711da7 ref=_Tone_Gain val=0.30000001192092898
+  8e418479 ref=_Scratch_Amount val=1.0
+  96ac529a ref=_Patina_Deep_Color val={ "r": 0.23000000417232514, "g": 0.11999999731779099, "b": 0.05999999865889549, "a": 1.0 }
+  9720a7a3 ref=_Edge_Width val=0.12999999523162843
+  a8faac6e ref=_Patina_Band val=0.18000000715255738
+  b0d67028 ref=_Scratch_Mask val=0.44999998807907107
+  b9e323f8 ref=_Patina_Scale val=1.600000023841858
+  d9d20fab ref=_Scratch_Detail val=2.200000047683716
+  da751afd ref=_Patina_Softness val=0.3499999940395355
+  e31521a0 ref=_Patina_Seed val=0.0
+  efb56893 ref=_Noise_Seed val=0.0
+  f1d3f952 ref=_Scratch_Stretch val=4.0
+  ff020614 ref=_Metallic val=0.8999999761581421
+  d5662d50 ref=_Edge_Wear val=0.35
+  8e1533dc ref=_Edge_Noise_Scale val=1
+  00201093 ref=_Edge_Noise_Seed val=0
+  42251111 ref=_Scratch_Bump val=0.25
+--- ALL EDGES ---
+  6ba84d95[Property].s0  ->  a13ed4ac[ProceduralBronzeBase (Custom Function)].s1
+  44215caf[Property].s0  ->  a13ed4ac[ProceduralBronzeBase (Custom Function)].s2
+  83579b36[Property].s0  ->  a13ed4ac[ProceduralBronzeBase (Custom Function)].s3
+  23328ac4[Property].s0  ->  a13ed4ac[ProceduralBronzeBase (Custom Function)].s4
+  a13ed4ac[ProceduralBronzeBase (Custom Function)].s5  ->  8f5cd69f[Multiply].s0
+  131f1a6f[Position].s0  ->  96c4a3c9[ProceduralBronzeScratchA (Custom Function)].s0
+  bd64202b[Property].s0  ->  96c4a3c9[ProceduralBronzeScratchA (Custom Function)].s1
+  c2b75cd8[Property].s0  ->  96c4a3c9[ProceduralBronzeScratchA (Custom Function)].s2
+  37860cf1[Property].s0  ->  96c4a3c9[ProceduralBronzeScratchA (Custom Function)].s3
+  78bc22f4[Property].s0  ->  96c4a3c9[ProceduralBronzeScratchA (Custom Function)].s4
+  96c4a3c9[ProceduralBronzeScratchA (Custom Function)].s5  ->  a3fabd6c[Smoothstep].s2
+  131f1a6f[Position].s0  ->  da0ebae1[ProceduralBronzePatina (Custom Function)].s0
+  0e8006d7[Property].s0  ->  da0ebae1[ProceduralBronzePatina (Custom Function)].s1
+  87f7cb76[Property].s0  ->  da0ebae1[ProceduralBronzePatina (Custom Function)].s2
+  da0ebae1[ProceduralBronzePatina (Custom Function)].s3  ->  fb750d86[Smoothstep].s2
+  da0ebae1[ProceduralBronzePatina (Custom Function)].s3  ->  10a4631e[Smoothstep].s2
+  131f1a6f[Position].s0  ->  8c4053dc[ProceduralBronzeScratchB (Custom Function)].s0
+  bd64202b[Property].s0  ->  8c4053dc[ProceduralBronzeScratchB (Custom Function)].s1
+  c2b75cd8[Property].s0  ->  8c4053dc[ProceduralBronzeScratchB (Custom Function)].s2
+  37860cf1[Property].s0  ->  8c4053dc[ProceduralBronzeScratchB (Custom Function)].s3
+  78bc22f4[Property].s0  ->  8c4053dc[ProceduralBronzeScratchB (Custom Function)].s4
+  8c4053dc[ProceduralBronzeScratchB (Custom Function)].s5  ->  4fe329af[Smoothstep].s2
+  131f1a6f[Position].s0  ->  03674358[ProceduralBronzeScratchC (Custom Function)].s0
+  bd64202b[Property].s0  ->  03674358[ProceduralBronzeScratchC (Custom Function)].s1
+  c2b75cd8[Property].s0  ->  03674358[ProceduralBronzeScratchC (Custom Function)].s2
+  37860cf1[Property].s0  ->  03674358[ProceduralBronzeScratchC (Custom Function)].s3
+  78bc22f4[Property].s0  ->  03674358[ProceduralBronzeScratchC (Custom Function)].s4
+  b3e71221[Property].s0  ->  03674358[ProceduralBronzeScratchC (Custom Function)].s5
+  03674358[ProceduralBronzeScratchC (Custom Function)].s6  ->  8d05ed12[Smoothstep].s2
+  131f1a6f[Position].s0  ->  3c3523d2[ProceduralBronzeScratchMask (Custom Function)].s0
+  32a02b01[Property].s0  ->  3c3523d2[ProceduralBronzeScratchMask (Custom Function)].s1
+  0bd6cac7[Property].s0  ->  3c3523d2[ProceduralBronzeScratchMask (Custom Function)].s2
+  3c3523d2[ProceduralBronzeScratchMask (Custom Function)].s3  ->  ab581bb8[Smoothstep].s2
+  131f1a6f[Position].s0  ->  3e2249f7[Split].s0
+  131f1a6f[Position].s0  ->  77e38134[Absolute].s0
+  77e38134[Absolute].s1  ->  8ce7f690[Split].s0
+  8ce7f690[Split].s1  ->  d27b1ceb[Smoothstep].s2
+  8ce7f690[Split].s2  ->  104f826a[Smoothstep].s2
+  8ce7f690[Split].s3  ->  22ac34d8[Smoothstep].s2
+  d798be5a[Subtract].s2  ->  d27b1ceb[Smoothstep].s0
+  d798be5a[Subtract].s2  ->  104f826a[Smoothstep].s0
+  d798be5a[Subtract].s2  ->  22ac34d8[Smoothstep].s0
+  24e6b1f7[Property].s0  ->  d798be5a[Subtract].s0
+  7f06297b[Property].s0  ->  d798be5a[Subtract].s1
+  24e6b1f7[Property].s0  ->  d27b1ceb[Smoothstep].s1
+  24e6b1f7[Property].s0  ->  104f826a[Smoothstep].s1
+  24e6b1f7[Property].s0  ->  22ac34d8[Smoothstep].s1
+  d27b1ceb[Smoothstep].s3  ->  d7536a91[Multiply].s0
+  104f826a[Smoothstep].s3  ->  d7536a91[Multiply].s1
+  104f826a[Smoothstep].s3  ->  f1b0307f[Multiply].s0
+  22ac34d8[Smoothstep].s3  ->  f1b0307f[Multiply].s1
+  22ac34d8[Smoothstep].s3  ->  4f95d914[Multiply].s0
+  d27b1ceb[Smoothstep].s3  ->  4f95d914[Multiply].s1
+  d7536a91[Multiply].s2  ->  0fd46200[Add].s0
+  f1b0307f[Multiply].s2  ->  0fd46200[Add].s1
+  0fd46200[Add].s2  ->  40a4f067[Add].s0
+  4f95d914[Multiply].s2  ->  40a4f067[Add].s1
+  2ebc6ecc[Property].s0  ->  a3fabd6c[Smoothstep].s0
+  2ebc6ecc[Property].s0  ->  387e3833[Add].s0
+  d3a19a47[Property].s0  ->  387e3833[Add].s1
+  387e3833[Add].s2  ->  a3fabd6c[Smoothstep].s1
+  a3fabd6c[Smoothstep].s3  ->  ab278e92[Add].s0
+  af1ace75[Property].s0  ->  c7cadc8d[Multiply].s1
+  c7cadc8d[Multiply].s2  ->  8cea08be[Add].s1
+  8cea08be[Add].s2  ->  6ff6bf81[Saturate].s0
+  3e2249f7[Split].s2  ->  a73bfc1f[Smoothstep].s2
+  23b3e2aa[Add].s2  ->  a73bfc1f[Smoothstep].s0
+  a1edd29d[Property].s0  ->  23b3e2aa[Add].s0
+  08163c0e[Property].s0  ->  23b3e2aa[Add].s1
+  a1edd29d[Property].s0  ->  a73bfc1f[Smoothstep].s1
+  2c462b5a[Property].s0  ->  fb750d86[Smoothstep].s0
+  2c462b5a[Property].s0  ->  dbb1568d[Add].s0
+  b2624cb1[Property].s0  ->  dbb1568d[Add].s1
+  dbb1568d[Add].s2  ->  fb750d86[Smoothstep].s1
+  fb750d86[Smoothstep].s3  ->  bdb3f271[Multiply].s0
+  a73bfc1f[Smoothstep].s3  ->  bdb3f271[Multiply].s1
+  bdb3f271[Multiply].s2  ->  d9e448f6[Multiply].s0
+  e21c4aea[Property].s0  ->  d9e448f6[Multiply].s1
+  dbb1568d[Add].s2  ->  10a4631e[Smoothstep].s0
+  dbb1568d[Add].s2  ->  13cb9e0e[Add].s0
+  d78f98dd[Property].s0  ->  13cb9e0e[Add].s1
+  13cb9e0e[Add].s2  ->  10a4631e[Smoothstep].s1
+  78b7a62d[Property].s0  ->  8f5cd69f[Multiply].s1
+  2ab38ff3[Property].s0  ->  58ffb7ac[Add].s1
+  8f5cd69f[Multiply].s2  ->  58ffb7ac[Add].s0
+  58ffb7ac[Add].s2  ->  a7c05f68[Multiply].s1
+  1d1a06d2[Property].s0  ->  a7c05f68[Multiply].s0
+  a7c05f68[Multiply].s2  ->  53fa4006[Lerp].s0
+  eea3fad0[Property].s0  ->  53fa4006[Lerp].s1
+  d9e448f6[Multiply].s2  ->  53fa4006[Lerp].s2
+  53fa4006[Lerp].s3  ->  83c6e24d[Lerp].s0
+  c3e27968[Property].s0  ->  83c6e24d[Lerp].s1
+  419b2bbd[Multiply].s2  ->  83c6e24d[Lerp].s2
+  83c6e24d[Lerp].s3  ->  3aa3ef8f[Lerp].s0
+  639f0dc4[Property].s0  ->  3aa3ef8f[Lerp].s1
+  6ff6bf81[Saturate].s1  ->  3aa3ef8f[Lerp].s2
+  2e4e55c0[Property].s0  ->  0a3c4a37[Lerp].s0
+  cb13fecb[Float].s0  ->  0a3c4a37[Lerp].s1
+  39c53baa[Saturate].s1  ->  0a3c4a37[Lerp].s2
+  0a3c4a37[Lerp].s3  ->  df450925[Lerp].s0
+  2e4e55c0[Property].s0  ->  df450925[Lerp].s1
+  6ff6bf81[Saturate].s1  ->  df450925[Lerp].s2
+  df450925[Lerp].s3  ->  a698307e[SurfaceDescription.Metallic].s0
+  a74842a7[Property].s0  ->  915ba90d[Lerp].s0
+  16e6d808[Property].s0  ->  915ba90d[Lerp].s1
+  39c53baa[Saturate].s1  ->  915ba90d[Lerp].s2
+  915ba90d[Lerp].s3  ->  4ccbbdf0[Lerp].s0
+  8d907619[Property].s0  ->  4ccbbdf0[Lerp].s1
+  6ff6bf81[Saturate].s1  ->  4ccbbdf0[Lerp].s2
+  4ccbbdf0[Lerp].s3  ->  0c4c0a07[SurfaceDescription.Smoothness].s0
+  2ebc6ecc[Property].s0  ->  4fe329af[Smoothstep].s0
+  387e3833[Add].s2  ->  4fe329af[Smoothstep].s1
+  2ebc6ecc[Property].s0  ->  8d05ed12[Smoothstep].s0
+  387e3833[Add].s2  ->  8d05ed12[Smoothstep].s1
+  0bd6cac7[Property].s0  ->  ab581bb8[Smoothstep].s0
+  0bd6cac7[Property].s0  ->  eb0b852f[Add].s0
+  d3a19a47[Property].s0  ->  eb0b852f[Add].s1
+  eb0b852f[Add].s2  ->  ab581bb8[Smoothstep].s1
+  4fe329af[Smoothstep].s3  ->  ab278e92[Add].s1
+  ab278e92[Add].s2  ->  3cd4fd9d[Add].s0
+  8d05ed12[Smoothstep].s3  ->  3cd4fd9d[Add].s1
+  3cd4fd9d[Add].s2  ->  47d75a86[Multiply].s0
+  ab581bb8[Smoothstep].s3  ->  47d75a86[Multiply].s1
+  47d75a86[Multiply].s2  ->  c7cadc8d[Multiply].s0
+  10a4631e[Smoothstep].s3  ->  a6649764[Multiply].s0
+  a73bfc1f[Smoothstep].s3  ->  a6649764[Multiply].s1
+  a6649764[Multiply].s2  ->  419b2bbd[Multiply].s0
+  e21c4aea[Property].s0  ->  419b2bbd[Multiply].s1
+  5bed1d3e[Property].s0  ->  157331f2[Smoothstep].s0
+  5bed1d3e[Property].s0  ->  9a16b0b1[Add].s0
+  d3a19a47[Property].s0  ->  9a16b0b1[Add].s1
+  9a16b0b1[Add].s2  ->  157331f2[Smoothstep].s1
+  a13ed4ac[ProceduralBronzeBase (Custom Function)].s5  ->  157331f2[Smoothstep].s2
+  157331f2[Smoothstep].s3  ->  d6b8e464[Multiply].s1
+  d6b8e464[Multiply].s2  ->  8cea08be[Add].s0
+  40a4f067[Add].s2  ->  916d49fe[Saturate].s0
+  916d49fe[Saturate].s1  ->  d6b8e464[Multiply].s0
+  3aa3ef8f[Lerp].s3  ->  eba17197[SurfaceDescription.BaseColor].s0
+  131f1a6f[Position].s0  ->  bd440336[Multiply].s0
+  36972820[Property].s0  ->  bd440336[Multiply].s1
+  bd440336[Multiply].s2  ->  a4885524[Add].s0
+  60be4e97[Property].s0  ->  a4885524[Add].s1
+  a4885524[Add].s2  ->  a13ed4ac[ProceduralBronzeBase (Custom Function)].s0
+  c7cadc8d[Multiply].s2  ->  f5799910[Normal From Height].s0
+  7060546e[Property].s0  ->  f5799910[Normal From Height].s2
+  f5799910[Normal From Height].s1  ->  6c0a90be[SurfaceDescription.NormalTS].s0
+  d9e448f6[Multiply].s2  ->  4f036e21[Add].s0
+  419b2bbd[Multiply].s2  ->  4f036e21[Add].s1
+  4f036e21[Add].s2  ->  39c53baa[Saturate].s0

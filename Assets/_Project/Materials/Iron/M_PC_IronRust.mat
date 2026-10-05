@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-9047160455227767506
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_IronRust
+  m_Shader: {fileID: -6465566751694194690, guid: bcfddd4239af5ab4ea6cd3dd882041b6, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Edge_Noise_Scale: 0.17
+    - _Edge_Noise_Seed: 0
+    - _Edge_Position: 0.52
+    - _Edge_Wear: 0.43
+    - _Edge_Width: 0.13
+    - _Metallic: 1.63
+    - _Noise_Detail: 0
+    - _Noise_Scale: 5.95
+    - _Noise_Seed: 1.38
+    - _Noise_Warp: 10.37
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _Rust_Amount: 1.15
+    - _Rust_Band: 0.6
+    - _Rust_Bump: 0.17
+    - _Rust_Detail: 7.76
+    - _Rust_Patch_Band: 0.46
+    - _Rust_Patch_Scale: 2.55
+    - _Rust_Patch_Seed: -0.04
+    - _Rust_Patch_Threshold: 0.66
+    - _Rust_Scale: 2.7
+    - _Rust_Seed: 6.53
+    - _Rust_Smoothness: 0.25
+    - _Rust_Threshold: 0.27
+    - _Scratch_Amount: 1
+    - _Scratch_Angle: 0.73
+    - _Scratch_Band: 0.36
+    - _Scratch_Bump: 0.02
+    - _Scratch_Detail: 4.77
+    - _Scratch_Mask: 0.25
+    - _Scratch_Mask_Scale: 2.32
+    - _Scratch_Scale: 3.94
+    - _Scratch_Seed: 0.3
+    - _Scratch_Smoothness: 0.75
+    - _Scratch_Stretch: 18.3
+    - _Scratch_Threshold: 0.92
+    - _Smoothness: 0.5
+    - _Tone_Base: 0.85
+    - _Tone_Gain: 0.3
+    m_Colors:
+    - _Iron_Color: {r: 0.42, g: 0.43, b: 0.46, a: 1}
+    - _Rust_Bright_Color: {r: 0.7, g: 0.31, b: 0.1, a: 1}
+    - _Rust_Deep_Color: {r: 0.16, g: 0.055, b: 0.025, a: 1}
+    - _Scratch_Color: {r: 0.8, g: 0.8, b: 0.83, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

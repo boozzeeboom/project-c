@@ -1,0 +1,17 @@
+ok   bronze: SG split == brace split (475 vs 475)
+FAIL v1 edge dump has 151 edges (got 0)
+FAIL v1 dump provenance confirmed (orphan Add + vertical chain present)
+v1=0 kept=0 del=0 explicit=0 dup=0 => 19 edges
+FAIL constructed edge count 146 (got 19)
+FAIL classification 127 kept / 17 deleted-node / 6 explicit / 1 dup
+ok   probe brace-split doc count 475 (got 475)
+ok   GraphData is document #1 (index 0)
+ok   prefix map 109 (got 109)
+FAIL resolved edge count 146 (got 19)
+ok   serialized m_Edges has no blank line
+ok   m_Edges region found in GraphData doc
+ok   GraphData doc has no internal blank line
+ok   SG doc split = 475 chunks (got 475)
+ok   every chunk single balanced root (bad=0)
+ok   docs/nodes/slots/props = 475/109/322/41
+=== TOTAL FAILS: 5 ===

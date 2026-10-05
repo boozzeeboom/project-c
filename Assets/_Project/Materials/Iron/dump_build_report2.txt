@@ -1,0 +1,29 @@
+prefixes=109
+diskEdges=151 kept=127 del=17 explicit=6 dup=1 added=19 => total=146
+ok   final edge count == 146 (got 146)
+ok   m_Edges region located
+ok   doc count == 475 (got 475)
+ok   node doc count == 109 (got 109)
+ok   slot doc count == 322 (got 322)
+ok   property doc count == 41 (got 41)
+ok   re-parsed edge count == 146 (got 146)
+ok   all edge ids full 32-char + resolvable (bad=0)
+ok   no input slot double-fed (conflicts=0)
+ok   HSUM -> NFH.In
+ok   _Scratch_Bump -> scratch bump (not NFH.Strength)
+ok   rust bump = rustCoverSat x _Rust_Bump
+ok   scratch bump chain
+ok   CF rust detail in / renumbered out
+ok   patch CF -> patch smoothstep Edge1
+ok   DEEP lerp T = rustCoverSat (underlay)
+ok   BRIGHT lerp T = patchMask
+ok   old Edge1 edge dropped
+ok   vertical chain gone
+da0ebae1: idx0='ObjectPos' val={"x":0.0 | idx1='RustScale' val=0.0 | idx2='RustSeed' val=0.0 | idx3='RustDetail' val=0.0 | idx4='Rust' val=0.0
+f5799910: idx0='In' val=0.0 | idx2='Strength' val=1.0 | idx1='Out' val={"x":0.0
+60f0c9ff: idx0='ObjectPos' val={"x":0.0 | idx1='PatchScale' val=0.0 | idx2='PatchSeed' val=0.0 | idx3='Patch' val=0.0
+ok   da0ebae1 RustDetail at slot index 3
+ok   _Rust_Threshold still drives rust region smoothstep
+=== TOTAL FAILS: 0 ===
+WRITTEN 393579 chars
+ImportAsset done

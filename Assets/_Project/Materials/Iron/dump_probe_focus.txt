@@ -1,0 +1,91 @@
+### PROBE PROPERTY DOCS (41 expected)
+  0a208f7875134e6e95a8b32bc7342ba8 ref=_Scratch_Scale name=Scratch Scale val=9.0
+  0b70d6f05b664daa80a4ff87032e5bb7 ref=_Noise_Scale name=Noise Scale val=6.0
+  0d081b9a42664f118f14d8b3a9cfa692 ref=_Scratch_Band name=Scratch Band val=0.15000000596046449
+  0defdd93dd064ac796d343997f636406 ref=_Smoothness name=Smoothness val=0.5
+  1dcc3aba512947acb3ece5946517df4b ref=_Scratch_Angle name=Scratch Angle val=0.7850000262260437
+  2b5b4f0f553f4ebabc5104b9e93c05bd ref=_Rust_Amount name=Rust Amount val=1.0
+  2d1d35d64539489fbfbd7f35fe9ef8e8 ref=_Rust_Patch_Band name=Rust Patch Band val=0.11999999731779099
+  353f1ddc8bbb4d3db849d24a6900c53b ref=_Scratch_Mask_Scale name=Scratch Mask Scale val=2.0
+  4827c626d4d64c70af43ca66736faa01 ref=_Edge_Position name=Edge Position val=0.5
+  485af8ff153f47c8b1207fc42ddd95ff ref=_Scratch_Seed name=Scratch Seed val=0.0
+  494c6b03c01a4328bf664965a0f3d818 ref=_Scratch_Smoothness name=Scratch Smoothness val=0.800000011920929
+  4bb470307f274aad9f9a5ccd43de0200 ref=_Tone_Base name=Tone Base val=0.8500000238418579
+  4ce53e343f80432eb3d6b0a99c3a4a0a ref=_Scratch_Color name=Scratch Color val={"r": 0.75,"g": 0.6000000238418579,"b": 0.3799999952316284,"a": 1.0}
+  61ec8c41eb844921901c091dcefd42a8 ref=_Rust_Bright_Color name=Rust Bright Color val={"r": 0.25,"g": 0.550000011920929,"b": 0.44999998807907107,"a": 1.0}
+  668de96d810a420bb38be67b033238c0 ref=_Iron_Color name=Iron Color val={"r": 0.5,"g": 0.3199999928474426,"b": 0.1599999964237213,"a": 1.0}
+  68d68c7bcf7e4b43ab1d27bef3222505 ref=_Rust_Threshold name=Rust Threshold val=0.550000011920929
+  6ef2b5d09ff548a8be5b1e46202bd908 ref=_Noise_Detail name=Noise Detail val=2.700000047683716
+  7dcaebfb66254479ae72f239ad6dc777 ref=_Noise_Warp name=Noise Warp val=0.3499999940395355
+  8745f886a1e14838a5782224f52672a3 ref=_Scratch_Threshold name=Scratch Threshold val=0.75
+  89562d599fac4a50b4f98100f4631786 ref=_Rust_Smoothness name=Rust Smoothness val=0.25
+  8c711da7606a4c8cbf189d61879b653d ref=_Tone_Gain name=Tone Gain val=0.30000001192092898
+  8e4184790aef4d14ac7ff9398e5c0029 ref=_Scratch_Amount name=Scratch Amount val=1.0
+  96ac529a4ad94610aded252b88046eec ref=_Rust_Deep_Color name=Rust Deep Color val={"r": 0.23000000417232514,"g": 0.11999999731779099,"b": 0.05999999865889549,"a": 1.0}
+  9720a7a3b1d34b77afa1afdd3805112a ref=_Edge_Width name=Edge Width val=0.12999999523162843
+  a8faac6e708d4947ae0e2580826198f2 ref=_Rust_Band name=Rust Band val=0.18000000715255738
+  b0d670287c0e440488818741d97efca5 ref=_Scratch_Mask name=Scratch Mask val=0.44999998807907107
+  b9e323f8d45544829a0b88b9c7b7465c ref=_Rust_Scale name=Rust Scale val=1.600000023841858
+  d9d20fab99a049d1b0b0b5870745c2ba ref=_Scratch_Detail name=Scratch Detail val=2.200000047683716
+  e31521a064dd43f59be04d6a2b438998 ref=_Rust_Seed name=Rust Seed val=0.0
+  efb56893a26e43738984c9bbca4b1596 ref=_Noise_Seed name=Noise Seed val=0.0
+  f1d3f952856143719f5f0a4a57d2fdc1 ref=_Scratch_Stretch name=Scratch Stretch val=4.0
+  ff0206149b1e472fb9d339e118d14140 ref=_Metallic name=Metallic val=0.8999999761581421
+  d5662d50ecd14291aefd8bf8b362d8ec ref=_Edge_Wear name=Edge Wear val=0.35
+  8e1533dcdcce433aa7e5d49b8024b6a0 ref=_Edge_Noise_Scale name=Edge Noise Scale val=1
+  00201093c31c46e8ac0532f598bf8d78 ref=_Edge_Noise_Seed name=Edge Noise Seed val=0
+  42251111f64b447681b2e45a3df5f61e ref=_Scratch_Bump name=Scratch Bump val=0.25
+  bbe5a7fe6fa196bf56bf5af15d6be31a ref=_Rust_Bump name=Rust Bump val=0.05
+  b2160fa8baf22041462894ebb75caa5e ref=_Rust_Detail name=Rust Detail val=2
+  77ccef2bcb5d46c374f48fd93bebe9cc ref=_Rust_Patch_Scale name=Rust Patch Scale val=2
+  2cf7ac0c0b6186bfff3bdf6d01594f2d ref=_Rust_Patch_Seed name=Rust Patch Seed val=0
+  50e2a26835420b194e35955704766144 ref=_Rust_Patch_Threshold name=Rust Patch Threshold val=0.5
+propertyDocCount=41
+### da0ebae1 type=CustomFunctionNode name=ProceduralIronRustD (Custom Function) fn=ProceduralIronRustD src=96d39cb97210a044f8f84a6cd489862c
+     (no m_SerializableSlots found)
+### f5799910 type=NormalFromHeightNode name=Normal From Height
+     (no m_SerializableSlots found)
+### 60f0c9ff type=CustomFunctionNode name=ProceduralIronRustPatch (Custom Function) fn=ProceduralIronRustPatch src=96d39cb97210a044f8f84a6cd489862c
+     (no m_SerializableSlots found)
+### de62f085 type=MultiplyNode name=Multiply
+     (no m_SerializableSlots found)
+### 3c48e3eb type=MultiplyNode name=Multiply
+     (no m_SerializableSlots found)
+### 28e68538 type=AddNode name=Add
+     (no m_SerializableSlots found)
+### 10a4631e type=SmoothstepNode name=Smoothstep
+     (no m_SerializableSlots found)
+### fb750d86 type=SmoothstepNode name=Smoothstep
+     (no m_SerializableSlots found)
+### 7060546e type=PropertyNode name=Property propId=42251111f64b447681b2e45a3df5f61e
+     (no m_SerializableSlots found)
+### 7fda84f9 type=PropertyNode name=Property propId=50e2a26835420b194e35955704766144
+     (no m_SerializableSlots found)
+### dc688c5a type=PropertyNode name=Property propId=77ccef2bcb5d46c374f48fd93bebe9cc
+     (no m_SerializableSlots found)
+### 51931015 type=PropertyNode name=Property propId=2cf7ac0c0b6186bfff3bdf6d01594f2d
+     (no m_SerializableSlots found)
+### 6e3cc9a1 type=PropertyNode name=Property propId=b2160fa8baf22041462894ebb75caa5e
+     (no m_SerializableSlots found)
+### 7a7332a9 type=PropertyNode name=Property propId=bbe5a7fe6fa196bf56bf5af15d6be31a
+     (no m_SerializableSlots found)
+### d78f98dd type=PropertyNode name=Property propId=2d1d35d64539489fbfbd7f35fe9ef8e8
+     (no m_SerializableSlots found)
+### 13cb9e0e type=AddNode name=Add
+     (no m_SerializableSlots found)
+### 39c53baa type=SaturateNode name=Saturate
+     (no m_SerializableSlots found)
+### 419b2bbd type=MultiplyNode name=Multiply
+     (no m_SerializableSlots found)
+### d9e448f6 type=MultiplyNode name=Multiply
+     (no m_SerializableSlots found)
+### 53fa4006 type=LerpNode name=Lerp
+     (no m_SerializableSlots found)
+### 83c6e24d type=LerpNode name=Lerp
+     (no m_SerializableSlots found)
+### dbb1568d type=AddNode name=Add
+     (no m_SerializableSlots found)
+### c7cadc8d type=MultiplyNode name=Multiply
+     (no m_SerializableSlots found)
+### 131f1a6f type=PositionNode name=Position
+     (no m_SerializableSlots found)

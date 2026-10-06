@@ -1,0 +1,103 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Bark
+  m_Shader: {fileID: -6465566751694194690, guid: 1e604e44564fc0149bcfbeb5bcd8f04b, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2000
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Break_Amount: 0.3
+    - _Break_Bump: -0.4
+    - _Break_Scale: 4.2
+    - _Break_Seed: 0
+    - _Break_Stretch: 6
+    - _Break_Width: 0.12
+    - _Flake_Amount: 0.3
+    - _Flake_Bump: 0.5
+    - _Furrow_Amount: 1
+    - _Furrow_Bump: -1.2
+    - _Furrow_Scale: 1.7
+    - _Furrow_Seed: 0
+    - _Furrow_Stretch: 9
+    - _Furrow_Warp: 0.6
+    - _Furrow_Width: 0.34
+    - _Lichen_Amount: 0.45
+    - _Lichen_Scale: 2.6
+    - _Lichen_Seed: 0
+    - _Lichen_Softness: 0.2
+    - _Lichen_Threshold: 0.56
+    - _Moss_Amount: 0.55
+    - _Moss_Scale: 3.4
+    - _Moss_Seed: 0
+    - _Moss_Softness: 0.22
+    - _Moss_Stretch: 5
+    - _Moss_Threshold: 0.5
+    - _QueueControl: 1
+    - _QueueOffset: 0
+    - _Skin_Amount: 0.35
+    - _Skin_Bump: 1.6
+    - _Skin_Detail: 2.4
+    - _Skin_Gloss: 0.1
+    - _Skin_Scale: 5.5
+    - _Skin_Seed: 0
+    - _Skin_Stretch: 2.5
+    - _Smoothness: 0.08
+    - _Wood_Amount: 0.55
+    - _Wood_Scale: 2.2
+    - _Wood_Seed: 0
+    - _Wood_Softness: 0.14
+    - _Wood_Threshold: 0.66
+    m_Colors:
+    - _Bark_Color: {r: 0.3, g: 0.24, b: 0.18, a: 1}
+    - _Furrow_Color: {r: 0.1, g: 0.075, b: 0.055, a: 1}
+    - _Lichen_Color: {r: 0.6, g: 0.62, b: 0.53, a: 1}
+    - _Moss_Color: {r: 0.19, g: 0.29, b: 0.12, a: 1}
+    - _Skin_Color: {r: 0.42, g: 0.35, b: 0.24, a: 1}
+    - _Wood_Color: {r: 0.62, g: 0.5, b: 0.34, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
+--- !u!114 &3115093010639266285
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10

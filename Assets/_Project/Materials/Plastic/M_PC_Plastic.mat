@@ -7,14 +7,14 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_PC_Wood
-  m_Shader: {fileID: -6465566751694194690, guid: ecb3836079a93e64998fc72394826ea6, type: 3}
+  m_Name: M_PC_Plastic
+  m_Shader: {fileID: -6465566751694194690, guid: 1451e3593cc961c448d1826b89ed3c70, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 2
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 2000
   stringTagMap: {}
@@ -38,53 +38,55 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Edge_Position: 0.81
-    - _Edge_Wear: 0.3
-    - _Edge_Width: 0.2
-    - _Grain_Amount: 0.52
-    - _Grain_Bump: 0
-    - _Grain_Detail: 4.14
-    - _Grain_Scale: 2.5
-    - _Grain_Seed: 0.33
-    - _Grain_Stretch: 7.09
-    - _Knots_Scale: 3.57
-    - _Knots_Seed: 0.14
-    - _Knots_Warp: 2.49
-    - _LateWood_Smoothness: 0.99
-    - _Pore_Bump: 0
-    - _Pores_Amount: 0.62
-    - _Pores_Scale: 116.8
-    - _Pores_Seed: 0
+    - _Chalk_Amount: 0.45
+    - _Chalk_Matte: 0.3
+    - _Chalk_Scale: 2.2
+    - _Chalk_Seed: 0
+    - _Edge_Amount: 0.5
+    - _Edge_Gloss: 0.3
+    - _Edge_Position: 1
+    - _Edge_Width: 0.18
+    - _Flow_Amount: 0.3
+    - _Flow_Bump: 3.62
+    - _Flow_Scale: 3.5
+    - _Flow_Seed: 0
+    - _Gloss: 0
+    - _Grain_Bump: 0.45
+    - _Grain_Detail: 2
+    - _Grain_Roughness: 0.3
+    - _Grain_Scale: 90
+    - _Grain_Seed: 0
     - _QueueControl: 1
     - _QueueOffset: 0
-    - _Ring_Amount: 1.67
-    - _Rings_Bump: 0.0065
-    - _Rings_Scale: 83.98
-    - _Rings_Seed: 1.87
-    - _Rings_Sharpness: 0.41
-    - _Rings_Warp: 0.1
-    - _Scratch_Amount: 0.64
-    - _Scratch_Angle: 0.785
-    - _Scratch_Band: 0.13
-    - _Scratch_Bump: 0.001
-    - _Scratch_Detail: 2.3
-    - _Scratch_Mask: 0.32
-    - _Scratch_Mask_Scale: 2.47
-    - _Scratch_Scale: 7.24
-    - _Scratch_Seed: 0
-    - _Scratch_Stretch: 6
-    - _Scratch_Threshold: 0.85
-    - _Smoothness: 0.54
-    - _Wear_Smoothness: 1.47
+    - _Scruff_Amount: 0.6
+    - _Scruff_Angle: 0.6
+    - _Scruff_Angle_B: 2.1
+    - _Scruff_Band: 0.21
+    - _Scruff_Bump: 0.12
+    - _Scruff_Detail: 2.5
+    - _Scruff_Matte: 0.35
+    - _Scruff_Scale: 14
+    - _Scruff_Seed: 0
+    - _Scruff_Stretch: 5
+    - _Scruff_Threshold: 0.72
+    - _Seam_Amount: 0.8
+    - _Seam_Bump: 0.8
+    - _Seam_Height: 0
+    - _Seam_Width: 0.02
+    - _Smoothness: 0.55
+    - _Smudge_Amount: 0.35
+    - _Smudge_Gloss: 0.25
+    - _Smudge_Scale: 5
+    - _Smudge_Seed: 0
     m_Colors:
-    - _Grain_Color: {r: 0.44, g: 0.28, b: 0.14, a: 1}
-    - _LateWood_Color: {r: 0.26, g: 0.14, b: 0.07, a: 1}
-    - _Pore_Color: {r: 0.16, g: 0.09, b: 0.05, a: 1}
-    - _Wear_Color: {r: 0.78, g: 0.68, b: 0.52, a: 1}
-    - _Wood_Color: {r: 0.62, g: 0.42999998, b: 0.23999995, a: 1}
+    - _Chalk_Color: {r: 0.88, g: 0.87, b: 0.85, a: 1}
+    - _Edge_Color: {r: 0.84, g: 0.83, b: 0.8, a: 1}
+    - _Grime_Color: {r: 0.34, g: 0.32, b: 0.28, a: 1}
+    - _Plastic_Color: {r: 0.72, g: 0.7, b: 0.65999997, a: 1}
+    - _Scuff_Color: {r: 0.9, g: 0.89, b: 0.88, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
---- !u!114 &1254091507139377472
+--- !u!114 &5824047553779400587
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}

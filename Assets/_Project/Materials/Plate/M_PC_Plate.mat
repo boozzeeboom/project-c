@@ -1,0 +1,112 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Plate
+  m_Shader: {fileID: -6465566751694194690, guid: 0650d1f2a2798274ca016d0d015821c2, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2000
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Bump_Strength: 1
+    - _Metal_Amount: 0.3
+    - _Metal_Bump: 0.12
+    - _Metal_Detail: 0
+    - _Metal_Scale: 6
+    - _Metal_Seed: 1.38
+    - _Metal_Warp: 1.2
+    - _Metallic: 0.9
+    - _Patina_Amount: 0.85
+    - _Patina_Bump: -0.25
+    - _Patina_Gloss: -0.35
+    - _Patina_Metallic: 0.85
+    - _Patina_Scale: 6.3
+    - _Patina_Seed: 1.59
+    - _Patina_Softness: 0.22
+    - _Patina_Spot_Threshold: 0.62
+    - _Patina_Stretch: 2.5
+    - _Patina_Threshold: 0.45
+    - _Plate_Aspect: 2
+    - _Plate_Lift: 0.12
+    - _Plate_Scale: 2.5
+    - _Plate_Seed: 0
+    - _Plate_Tone: 0.35
+    - _Plate_Vary: 0.65
+    - _QueueControl: 1
+    - _QueueOffset: 0
+    - _Rivet_Amount: 0.7
+    - _Rivet_Bump: 0.5
+    - _Rivet_Gloss: 0.22
+    - _Rivet_Inset: 0.11
+    - _Rivet_Seed: 0
+    - _Rivet_Width: 0.05
+    - _Row_Offset: 0.5
+    - _Scratch_Amount: 0.6
+    - _Scratch_Angle: 0.73
+    - _Scratch_Band: 0.2
+    - _Scratch_Detail: 3.5
+    - _Scratch_Gloss: 0.3
+    - _Scratch_Mask: 0.49
+    - _Scratch_Mask_Scale: 2
+    - _Scratch_Scale: 3.5
+    - _Scratch_Seed: 0.3
+    - _Scratch_Stretch: 12
+    - _Scratch_Threshold: 0.92
+    - _Seam_Amount: 0.9
+    - _Seam_Bump: 0.45
+    - _Seam_Gloss: -0.3
+    - _Seam_Warp: 0.05
+    - _Seam_Width_X: 0.03
+    - _Seam_Width_Y: 0.06
+    - _Smoothness: 0.5
+    m_Colors:
+    - _Bare_Color: {r: 0.75, g: 0.6, b: 0.38, a: 1}
+    - _Patina_Deep_Color: {r: 0.23, g: 0.12, b: 0.06, a: 1}
+    - _Patina_Green_Color: {r: 0.25, g: 0.55, b: 0.45, a: 1}
+    - _Plate_Color: {r: 0.5, g: 0.32, b: 0.16, a: 1}
+    - _Seam_Color: {r: 0.2, g: 0.17, b: 0.14, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
+--- !u!114 &4291523222655768165
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10

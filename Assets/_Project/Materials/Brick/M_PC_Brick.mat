@@ -51,22 +51,22 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Brick_Aspect: 2.2
+    - _Brick_Aspect: 1.15
     - _Brick_Gloss: 0.1
     - _Brick_Lift: 0.15
-    - _Brick_Scale: 6
+    - _Brick_Scale: 2.61
     - _Brick_Seed: 0
     - _Brick_Tone: 0.55
     - _Bump_Strength: 1
     - _Crack_Amount: 0.8
-    - _Crack_Bump: -0.5
-    - _Crack_Scale: 3.5
+    - _Crack_Bump: -0.014
+    - _Crack_Scale: 105.77
     - _Crack_Seed: 0
-    - _Crack_Stretch: 4
+    - _Crack_Stretch: 3.86
     - _Crack_Warp: 0.3
     - _Crack_Width: 0.05
     - _Dirt_Amount: 0.55
-    - _Dirt_Scale: 1.6
+    - _Dirt_Scale: 50.5
     - _Dirt_Seed: 0
     - _Dirt_Softness: 0.2
     - _Dirt_Stretch: 4
@@ -79,10 +79,10 @@ Material:
     - _Face_Grain_Amount: 0.35
     - _Face_Grain_Scale: 40
     - _Face_Grain_Seed: 0
-    - _Face_Grain_Stretch: 3
-    - _Joint_Amount: 0.85
+    - _Face_Grain_Stretch: 2.58
+    - _Joint_Amount: 0.51
     - _Joint_Bump: -0.9
-    - _Joint_Warp: 0.12
+    - _Joint_Warp: 0
     - _Joint_Width_X: 0.055
     - _Joint_Width_Y: 0.13
     - _Mortar_Gloss: -0.06
@@ -90,8 +90,8 @@ Material:
     - _Mortar_Grain_Scale: 55
     - _Mortar_Grain_Seed: 7
     - _Pore_Amount: 0.5
-    - _Pore_Bump: -0.35
-    - _Pore_Scale: 26
+    - _Pore_Bump: -0.05
+    - _Pore_Scale: 32.7
     - _Pore_Seed: 0
     - _Pore_Width: 0.42
     - _QueueControl: 1

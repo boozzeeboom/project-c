@@ -14,7 +14,7 @@ Material:
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 2
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 2000
   stringTagMap: {}
@@ -40,21 +40,21 @@ Material:
     m_Floats:
     - _Break_Amount: 0.3
     - _Break_Bump: -0.4
-    - _Break_Scale: 4.2
+    - _Break_Scale: 13.94
     - _Break_Seed: 0
-    - _Break_Stretch: 6
+    - _Break_Stretch: 3.03
     - _Break_Width: 0.12
-    - _Flake_Amount: 0.3
-    - _Flake_Bump: 0.5
-    - _Furrow_Amount: 1
-    - _Furrow_Bump: -1.2
-    - _Furrow_Scale: 1.7
+    - _Flake_Amount: 1.13
+    - _Flake_Bump: 57.4
+    - _Furrow_Amount: 1.13
+    - _Furrow_Bump: 0.14
+    - _Furrow_Scale: 10.49
     - _Furrow_Seed: 0
-    - _Furrow_Stretch: 9
-    - _Furrow_Warp: 0.6
-    - _Furrow_Width: 0.34
+    - _Furrow_Stretch: 5.89
+    - _Furrow_Warp: 1.4
+    - _Furrow_Width: 0.29
     - _Lichen_Amount: 0.45
-    - _Lichen_Scale: 2.6
+    - _Lichen_Scale: 2.93
     - _Lichen_Seed: 0
     - _Lichen_Softness: 0.2
     - _Lichen_Threshold: 0.56
@@ -66,12 +66,12 @@ Material:
     - _Moss_Threshold: 0.5
     - _QueueControl: 1
     - _QueueOffset: 0
-    - _Skin_Amount: 0.35
-    - _Skin_Bump: 1.6
+    - _Skin_Amount: 0.6
+    - _Skin_Bump: 1.86
     - _Skin_Detail: 2.4
     - _Skin_Gloss: 0.1
-    - _Skin_Scale: 5.5
-    - _Skin_Seed: 0
+    - _Skin_Scale: 4.9
+    - _Skin_Seed: 0.18
     - _Skin_Stretch: 2.5
     - _Smoothness: 0.08
     - _Wood_Amount: 0.55

@@ -1,0 +1,109 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-1507616187086928716
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Tiles
+  m_Shader: {fileID: -6465566751694194690, guid: f7cee86a0cca407469a8fd0e2592c2c7, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Body_Grain_Amount: 0.45
+    - _Body_Grain_Scale: 55
+    - _Body_Grain_Seed: 7
+    - _Bump_Strength: 1
+    - _Craze_Amount: 0.8
+    - _Craze_Bump: -0.5
+    - _Craze_Scale: 140
+    - _Craze_Seed: 0
+    - _Craze_Stretch: 4
+    - _Craze_Warp: 0.3
+    - _Craze_Width: 0.045
+    - _Gap_Gloss: -0.1
+    - _Joint_Amount: 0.8
+    - _Joint_Bump: -0.55
+    - _Joint_Width_X: 0.06
+    - _Joint_Width_Y: 0.1
+    - _Moss_Amount: 0.55
+    - _Moss_Scale: 3.4
+    - _Moss_Seed: 0
+    - _Moss_Softness: 0.2
+    - _Moss_Stretch: 5
+    - _Moss_Threshold: 0.6
+    - _Pore_Amount: 0.5
+    - _Pore_Bump: -0.35
+    - _Pore_Scale: 38
+    - _Pore_Seed: 0
+    - _Pore_Width: 0.42
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _Row_Offset: 0.5
+    - _Salt_Amount: 0.45
+    - _Salt_Scale: 2.2
+    - _Salt_Seed: 11
+    - _Salt_Softness: 0.18
+    - _Salt_Threshold: 0.58
+    - _Smoothness: 0.3
+    - _Tile_Aspect: 1.28
+    - _Tile_Crown: 0.18
+    - _Tile_Gloss: 0.08
+    - _Tile_Grain_Amount: 0.35
+    - _Tile_Grain_Scale: 55
+    - _Tile_Grain_Seed: 0
+    - _Tile_Grain_Stretch: 3
+    - _Tile_Scale: 3.1
+    - _Tile_Seed: 0
+    - _Tile_Tail: 0.32
+    - _Tile_Tone: 0.75
+    - _Tile_Warp: 0.08
+    m_Colors:
+    - _Gap_Color: {r: 0.09, g: 0.07, b: 0.05, a: 1}
+    - _Moss_Color: {r: 0.2, g: 0.26, b: 0.13, a: 1}
+    - _Salt_Color: {r: 0.8, g: 0.78, b: 0.72, a: 1}
+    - _Tile_Color: {r: 0.46, g: 0.2, b: 0.13, a: 1}
+    - _Tile_Light_Color: {r: 0.62, g: 0.34, b: 0.22, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -14,7 +14,7 @@ Material:
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 2
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 2000
   stringTagMap: {}
@@ -56,9 +56,9 @@ Material:
     - _Patina_Spot_Threshold: 0.62
     - _Patina_Stretch: 2.5
     - _Patina_Threshold: 0.45
-    - _Plate_Aspect: 2
+    - _Plate_Aspect: 0.86
     - _Plate_Lift: 0.12
-    - _Plate_Scale: 2.5
+    - _Plate_Scale: 2.16
     - _Plate_Seed: 0
     - _Plate_Tone: 0.35
     - _Plate_Vary: 0.65
@@ -70,7 +70,7 @@ Material:
     - _Rivet_Inset: 0.11
     - _Rivet_Seed: 0
     - _Rivet_Width: 0.05
-    - _Row_Offset: 0.5
+    - _Row_Offset: 0.49
     - _Scratch_Amount: 0.6
     - _Scratch_Angle: 0.73
     - _Scratch_Band: 0.2

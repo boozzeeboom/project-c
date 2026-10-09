@@ -14,7 +14,7 @@ Material:
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 2
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -51,15 +51,15 @@ Material:
     - _Dry_Softness: 0.22
     - _Dry_Stretch: 1.9
     - _Dry_Threshold: 0.5
-    - _Leaf_Edge: 0.45
+    - _Leaf_Edge: 0.09
     - _Leaf_Edge_Amount: 0.55
     - _Leaf_Edge_Gloss: 0.28
     - _Leaf_Flatten: 5
     - _Leaf_Gloss: 0.1
-    - _Leaf_Scale: 6.5
-    - _Leaf_Seed: 3.7
+    - _Leaf_Scale: 64.5
+    - _Leaf_Seed: 4.62
     - _Leaf_Stretch: 1.6
-    - _Leaf_Tone: 0.85
+    - _Leaf_Tone: 1.31
     - _Mass_Amount: 0.75
     - _Mass_Bump: 0.55
     - _Mass_Scale: 0.9

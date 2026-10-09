@@ -1,0 +1,68 @@
+    // ── ноды, шаблонов которых у донора нет ──────────────────────────────────
+    // TimeNode и Vector3Node в Brick не встречаются, поэтому их документы
+    // строятся из каркаса AbstractMaterialNode (шаблон MultiplyNode — из
+    // собственных полей у него только базовые) и получают собственные слоты.
+    static string MakeTimeNode(float x, float y)
+    {
+        List<string> none;
+        string nid = Copy(TmplMul, false, out none);
+        string d = SetStr(OById[nid], "m_Type", "UnityEditor.ShaderGraph.TimeNode");
+        d = SetStr(d, "m_Name", "Time");
+        d = SetEmptyArray(d, "synonyms");
+
+        // Слоты TimeNode: 5 выходов Vector1, id 0..4. id 0 = IN.TimeParameters.x
+        // (секунды с запуска), id 1/2 — синус и косинус, id 3/4 — дельта.
+        var slots = new List<string>();
+        slots.Add(CopySlot(TmplCfIn1, 0, "Time", 1));
+        slots.Add(CopySlot(TmplCfIn1, 1, "Sine Time", 1));
+        slots.Add(CopySlot(TmplCfIn1, 2, "Cosine Time", 1));
+        slots.Add(CopySlot(TmplCfIn1, 3, "Delta Time", 1));
+        slots.Add(CopySlot(TmplCfIn1, 4, "Smooth Delta", 1));
+
+        OById[nid] = SetSlotArray(d, slots);
+        OSlots[nid] = slots;
+        N(nid);
+        SetPosOn(nid, x, y);
+        return nid;
+    }
+
+    // Vector3Node: Out = id 0 (Vector3MaterialSlot), входы X/Y/Z = id 1/2/3.
+    // Код узла — precision3(X, Y, Z) из ЗНАЧЕНИЙ входных слотов, поэтому
+    // заполняются и слоты, и собственное поле m_Value: в разных версиях пакета
+    // источником истины оказывается то одно, то другое.
+    static string MakeVector3Const(float vx, float vy, float vz, float x, float y)
+    {
+        List<string> none;
+        string nid = Copy(TmplMul, false, out none);
+        string d = SetStr(OById[nid], "m_Type", "UnityEditor.ShaderGraph.Vector3Node");
+        d = SetStr(d, "m_Name", "Vector 3");
+        d = SetEmptyArray(d, "synonyms");
+
+        var slots = new List<string>();
+        slots.Add(SlotVal(CopySlot(TmplCfIn1, 1, "X", 0), vx));
+        slots.Add(SlotVal(CopySlot(TmplCfIn1, 2, "Y", 0), vy));
+        slots.Add(SlotVal(CopySlot(TmplCfIn1, 3, "Z", 0), vz));
+        slots.Add(CopySlot(TmplCfIn3, 0, "Out", 1));
+
+        d = SetSlotArray(d, slots);
+        d = Regex.Replace(d, "\\}\\s*$",
+            ",\n    \"m_Value\": {\"x\":" + F(vx) + ",\"y\":" + F(vy) + ",\"z\":" + F(vz) + "}\n}");
+
+        OById[nid] = d;
+        OSlots[nid] = slots;
+        N(nid);
+        SetPosOn(nid, x, y);
+        return nid;
+    }
+
+    static string SlotVal(string slotId, float v)
+    {
+        OById[slotId] = SetNumF(OById[slotId], "m_Value", v);
+        return slotId;
+    }
+
+    static string SetEmptyArray(string doc, string key)
+    {
+        return Regex.Replace(doc, "(\"" + key + "\"\\s*:\\s*)\\[[^\\]]*\\]", "${1}[]", RegexOptions.Singleline);
+    }
+

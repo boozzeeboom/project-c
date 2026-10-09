@@ -1,0 +1,96 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-3387853805218603993
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Lava
+  m_Shader: {fileID: -6465566751694194690, guid: 3e00b0ea2fbd3ff4595ec72d512111e2, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Bump_Strength: 1
+    - _Crust_Scale: 49.5
+    - _Crust_Seed: 5.26
+    - _Crust_Stretch: 2.34
+    - _Crust_Width: 0.09
+    - _Emission_Strength: 3
+    - _Fissure_Bump: -0.55
+    - _Flow_Amount: 0.55
+    - _Flow_Bump: 0.35
+    - _Flow_Scale: 2.6
+    - _Flow_Seed: 27.1
+    - _Flow_Stretch: 5
+    - _Flow_Width: 0.25
+    - _Glow_Amount: 2.04
+    - _Heat_Bump: 0.3
+    - _Heat_Scale: 0.85
+    - _Heat_Seed: 12.7
+    - _Heat_Softness: 0.34
+    - _Heat_Stretch: 1.5
+    - _Heat_Threshold: 0.4
+    - _Molten_Gloss: 0.55
+    - _Molten_Softness: 0.22
+    - _Molten_Threshold: 0.57
+    - _Plate_Bump: 0.18
+    - _Plate_Vary: 0.79
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _Skin_Amount: 0.4
+    - _Skin_Bump: 0.28
+    - _Skin_Detail: 2.4
+    - _Skin_Scale: 14
+    - _Skin_Seed: 8.9
+    - _Smoothness: 0.34
+    m_Colors:
+    - _Ash_Color: {r: 0.26, g: 0.25, b: 0.24, a: 1}
+    - _Core_Color: {r: 1, g: 0.94, b: 0.62, a: 1}
+    - _Crust_Color: {r: 0.09, g: 0.085, b: 0.08, a: 1}
+    - _Ember_Color: {r: 0.42, g: 0.075, b: 0.02, a: 1}
+    - _Melt_Color: {r: 1, g: 0.36, b: 0.05, a: 1}
+    - _Plate_Color: {r: 0.16, g: 0.15, b: 0.14, a: 1}
+    - _Stream_Color: {r: 1, g: 0.72, b: 0.12, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

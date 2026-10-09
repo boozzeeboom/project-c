@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Terrain
+  m_Shader: {fileID: -6465566751694194690, guid: 3ee2776f3314d564fa58a56d32994b80, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Bump_Strength: 0.5
+    - _Crack_Bump: 0.4
+    - _Dust_Amount: 0.25
+    - _Dust_Scale: 0.003
+    - _Ice_Bump: 0.3
+    - _Ice_Crack_Amount: 0.35
+    - _Ice_Crack_Scale: 0.004
+    - _Ice_High: 3400
+    - _Ice_Low: 3000
+    - _Ice_Smooth: 0.9
+    - _Ice_Tone: 0.8
+    - _Ice_Tone_Range: 0.2
+    - _Low_High: 760
+    - _Low_Low: 480
+    - _Low_Mottle_Amount: 0.35
+    - _Low_Mottle_Scale: 0.0025
+    - _Low_Patch_Amount: 0.4
+    - _Low_Patch_Scale: 0.0007
+    - _Low_Smooth: 0.15
+    - _Low_Tone: 0.82
+    - _Low_Tone_Range: 0.18
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _Rock_Block_Amount: 0.3
+    - _Rock_Block_Scale: 0.02
+    - _Rock_Bright_Amount: 0.2
+    - _Rock_Bright_Base: 0.9
+    - _Rock_Bump: 0.6
+    - _Rock_Detail_Amount: 0.25
+    - _Rock_Detail_Scale: 0.05
+    - _Rock_Joint_Amount: 0.5
+    - _Rock_Joint_Scale: 0.006
+    - _Rock_Slope_Full: 38
+    - _Rock_Slope_Start: 26
+    - _Rock_Smooth_Base: 0.12
+    - _Rock_Strata_Amount: 0.45
+    - _Rock_Strata_Scale: 0.0016
+    - _Scree_Amount: 0.45
+    - _Scree_Scale: 0.004
+    - _Seed: 0
+    - _Smooth_Vary: 0.08
+    - _Snow_Bump: 0.2
+    - _Snow_Drift_Amount: 0.35
+    - _Snow_Drift_Scale: 0.0009
+    - _Snow_Grain_Amount: 0.2
+    - _Snow_Grain_Scale: 0.02
+    - _Snow_High: 2300
+    - _Snow_Low: 1850
+    - _Snow_Smooth: 0.35
+    - _Snow_Tone: 0.86
+    - _Snow_Tone_Range: 0.14
+    - _Zone_Warp: 150
+    - _Zone_Warp_Scale: 0.0009
+    m_Colors:
+    - _Dust_Color: {r: 0.53, g: 0.4699999, b: 0.36999997, a: 1}
+    - _Ice_Color: {r: 0.7, g: 0.8399999, b: 0.92, a: 1}
+    - _Low_Color: {r: 0.27999997, g: 0.35999998, b: 0.21999997, a: 1}
+    - _Low_Patch_Color: {r: 0.43999997, g: 0.41999996, b: 0.27999997, a: 1}
+    - _Rock_Color: {r: 0.35999998, g: 0.33999997, b: 0.30999997, a: 1}
+    - _Rock_Deep_Color: {r: 0.18999997, g: 0.17999998, b: 0.16999996, a: 1}
+    - _Scree_Color: {r: 0.4699999, g: 0.43999997, b: 0.39999998, a: 1}
+    - _Snow_Color: {r: 0.92, g: 0.95, b: 0.97999996, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
+--- !u!114 &3738681002496440770
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10

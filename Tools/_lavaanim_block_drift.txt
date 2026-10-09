@@ -1,0 +1,38 @@
+        // ── 5b. анимация домена: время двигает ТОЛЬКО жар и поток ────────────
+        // Корка (Fissures/PlateTone/Skin) остаётся на месте — это твёрдая
+        // плита; движется расплав ПОД ней. Поэтому время подаётся в ObjectPos
+        // нод Heat и Flow, а не в их сид: сид — скаляр, он увёл бы домен по
+        // всем трём осям сразу. HLSL при этом не меняется вообще, ядро лавы
+        // остаётся без времени.
+        //   Смещение добавляется к object-space позиции ДО умножения на масштаб
+        //   слоя (p = ObjectPos * Scale + Seed), поэтому видимая скорость =
+        //   _Speed x Scale / Stretch: у жара 0.85/1.5, у потока 2.6/5.0 — отсюда
+        //   РАЗНЫЕ _Heat_Speed и _Flow_Speed.
+        //   Вектор дрейфа (0,1,0): по XZ домен не смещается. Положительная
+        //   скорость уводит рисунок ВНИЗ по локальной Y — туда, куда течёт лава.
+        //   Смещается только проба: VertexDescription.Position по-прежнему
+        //   получает прямой OBJP, геометрия не едет.
+        Stage = "5b drift";
+        string timeN = MakeTimeNode(-6600, 3900);
+        Port timeOut = P(timeN, 0);
+        string driftDir = MakeVector3Const(0f, 1f, 0f, -6600, 4300);
+        Port dirOut = P(driftDir, 0);
+
+        string mulHeatSpeed = Op(TmplMul, "Time x Heat Speed", -6000, 3900);
+        Link(timeOut, P(mulHeatSpeed, 0)); Link(pHeatSpeed, P(mulHeatSpeed, 1));
+        string mulHeatDrift = Op(TmplMul, "Heat Drift Y", -5400, 3900);
+        Link(P(mulHeatSpeed, 2), P(mulHeatDrift, 0)); Link(dirOut, P(mulHeatDrift, 1));
+        string addHeatPos = Op(TmplAdd, "Heat Domain Drift", -4800, 3900);
+        Link(OBJP, P(addHeatPos, 0)); Link(P(mulHeatDrift, 2), P(addHeatPos, 1));
+        Link(P(addHeatPos, 2), P(cfHeat, 0));
+
+        string mulFlowSpeed = Op(TmplMul, "Time x Flow Speed", -6000, 4500);
+        Link(timeOut, P(mulFlowSpeed, 0)); Link(pFlowSpeed, P(mulFlowSpeed, 1));
+        string mulFlowDrift = Op(TmplMul, "Flow Drift Y", -5400, 4500);
+        Link(P(mulFlowSpeed, 2), P(mulFlowDrift, 0)); Link(dirOut, P(mulFlowDrift, 1));
+        string addFlowPos = Op(TmplAdd, "Flow Domain Drift", -4800, 4500);
+        Link(OBJP, P(addFlowPos, 0)); Link(P(mulFlowDrift, 2), P(addFlowPos, 1));
+        Link(P(addFlowPos, 2), P(cfFlow, 0));
+        log.AppendLine("5b. дрейф домена: time=" + S(timeN) + " dir=" + S(driftDir)
+            + " heat=" + S(addHeatPos) + " flow=" + S(addFlowPos));
+

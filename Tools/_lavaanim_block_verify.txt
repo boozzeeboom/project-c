@@ -1,0 +1,84 @@
+        // ── АНИМАЦИЯ: то, чем Lava_animated отличается от Lava ───────────────
+        log.AppendLine("== ANIMATION ==");
+        var census = new Dictionary<string, int>();
+        foreach (var kv in typeOf)
+        {
+            string tn = kv.Value;
+            census[tn] = (census.ContainsKey(tn) ? census[tn] : 0) + 1;
+        }
+        foreach (string tn in new string[] { "TimeNode", "Vector3Node", "MultiplyNode", "AddNode" })
+            log.AppendLine("   " + tn + "=" + (census.ContainsKey(tn) ? census[tn] : 0).ToString(CultureInfo.InvariantCulture)
+                + " (ожидается 1 / 1 / 17 / 10)");
+
+        string timeId = null, vecId = null;
+        foreach (var kv in typeOf)
+        {
+            if (kv.Value == "TimeNode") timeId = kv.Key;
+            if (kv.Value == "Vector3Node") vecId = kv.Key;
+        }
+        if (timeId == null) log.AppendLine("   !! TimeNode отсутствует — анимации нет");
+        else
+        {
+            var ks = new List<string>(slotNum[timeId].Keys);
+            ks.Sort(delegate (string a, string b) { return int.Parse(a).CompareTo(int.Parse(b)); });
+            var tline = new StringBuilder("   TimeNode " + S(timeId) + ":");
+            foreach (string k in ks) tline.Append(" " + k + ":" + slotName[slotNum[timeId][k]] + "/io=" + slotIo[slotNum[timeId][k]]);
+            log.AppendLine(tline.ToString());
+        }
+        if (vecId == null) log.AppendLine("   !! Vector3Node отсутствует — вектора дрейфа нет");
+        else
+        {
+            var ks2 = new List<string>(slotNum[vecId].Keys);
+            ks2.Sort(delegate (string a, string b) { return int.Parse(a).CompareTo(int.Parse(b)); });
+            var vline = new StringBuilder("   Vector3Node " + S(vecId) + ":");
+            foreach (string k in ks2)
+            {
+                string soc = slotNum[vecId][k];
+                Match vm = Regex.Match(byId[soc], "\"m_Value\"\\s*:\\s*(\\{[^}]*\\}|-?[0-9.]+)");
+                vline.Append(" " + k + ":" + slotName[soc] + "=" + (vm.Success ? vm.Groups[1].Value : "?"));
+            }
+            log.AppendLine(vline.ToString());
+            Match mv = Regex.Match(byId[vecId], "\"m_Value\"\\s*:\\s*\\{[^}]*\\}");
+            log.AppendLine("   Vector3Node.m_Value = " + (mv.Success ? Cut(mv.Value, 80) : "нет"));
+        }
+
+        log.AppendLine("   ObjectPos (слот 0) у CF-нод:");
+        foreach (var kv in typeOf)
+        {
+            if (kv.Value != "CustomFunctionNode") continue;
+            Match fnc = Regex.Match(byId[kv.Key], "\"m_FunctionName\"\\s*:\\s*\"([^\"]+)\"");
+            string fname = fnc.Success ? fnc.Groups[1].Value : "?";
+            string srcd = "(не подключён)";
+            foreach (string[] e in edges) if (e[2] == kv.Key && e[3] == "0")
+                srcd = (typeOf.ContainsKey(e[0]) ? typeOf[e[0]] : "?") + "(" + S(e[0]) + ")#" + e[1]
+                    + (slotNum.ContainsKey(e[0]) && slotNum[e[0]].ContainsKey(e[1]) ? " " + slotName[slotNum[e[0]][e[1]]] : "");
+            log.AppendLine("      " + fname + " <= " + srcd);
+        }
+
+        int posFed = 0;
+        foreach (string[] e in edges)
+        {
+            if (e[3] != "0") continue;
+            if (!typeOf.ContainsKey(e[2]) || typeOf[e[2]] != "CustomFunctionNode") continue;
+            Match fnp = Regex.Match(byId[e[2]], "\"m_FunctionName\"\\s*:\\s*\"([^\"]+)\"");
+            if (!fnp.Success) continue;
+            string fnm = fnp.Groups[1].Value;
+            bool drift = fnm == "ProceduralLavaHeat" || fnm == "ProceduralLavaFlow";
+            if (drift && typeOf[e[0]] == "AddNode") posFed++;
+            if (!drift && typeOf[e[0]] == "PositionNode") posFed++;
+        }
+        log.AppendLine("   домены на месте (корка=PositionNode, жар/поток=AddNode) = "
+            + posFed.ToString(CultureInfo.InvariantCulture) + "/5");
+
+        if (gen != null)
+        {
+            log.AppendLine("   GENERATED: IN.TimeParameters=" + Regex.Matches(gen, "IN\\.TimeParameters").Count.ToString(CultureInfo.InvariantCulture)
+                + " float3(0, 1, 0)=" + Regex.Matches(gen, "float3\\(0, 1, 0\\)").Count.ToString(CultureInfo.InvariantCulture)
+                + " _Heat_Speed=" + Regex.Matches(gen, "_Heat_Speed").Count.ToString(CultureInfo.InvariantCulture)
+                + " _Flow_Speed=" + Regex.Matches(gen, "_Flow_Speed").Count.ToString(CultureInfo.InvariantCulture));
+            log.AppendLine("   вызовы float x float3 / float3 + float3:");
+            foreach (Match m in Regex.Matches(gen, "Unity_(Multiply|Add)_float_float3\\([^;]*;"))
+                log.AppendLine("      mul " + Cut(m.Value, 260));
+            foreach (Match m in Regex.Matches(gen, "Unity_(Multiply|Add)_float3_float3\\([^;]*;"))
+                log.AppendLine("      add " + Cut(m.Value, 300));
+        }

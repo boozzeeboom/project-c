@@ -27,7 +27,7 @@ Material:
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 2
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -56,7 +56,7 @@ Material:
     - _Body_Grain_Seed: 7
     - _Bump_Strength: 1
     - _Craze_Amount: 0.8
-    - _Craze_Bump: -0.5
+    - _Craze_Bump: 0
     - _Craze_Scale: 140
     - _Craze_Seed: 0
     - _Craze_Stretch: 4
@@ -64,7 +64,7 @@ Material:
     - _Craze_Width: 0.045
     - _Gap_Gloss: -0.1
     - _Joint_Amount: 0.8
-    - _Joint_Bump: -0.55
+    - _Joint_Bump: -0.44
     - _Joint_Width_X: 0.06
     - _Joint_Width_Y: 0.1
     - _Moss_Amount: 0.55
@@ -74,7 +74,7 @@ Material:
     - _Moss_Stretch: 5
     - _Moss_Threshold: 0.6
     - _Pore_Amount: 0.5
-    - _Pore_Bump: -0.35
+    - _Pore_Bump: -0.015
     - _Pore_Scale: 38
     - _Pore_Seed: 0
     - _Pore_Width: 0.42
@@ -94,7 +94,7 @@ Material:
     - _Tile_Grain_Scale: 55
     - _Tile_Grain_Seed: 0
     - _Tile_Grain_Stretch: 3
-    - _Tile_Scale: 3.1
+    - _Tile_Scale: 5.41
     - _Tile_Seed: 0
     - _Tile_Tail: 0.32
     - _Tile_Tone: 0.75

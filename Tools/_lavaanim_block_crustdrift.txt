@@ -1,0 +1,21 @@
+        // ── 5c. дрейф домена корки: ОДИН общий сдвиг на весь корковый домен ─
+        // Fissures и PlateTone считаются ОДНИМ и тем же Worley, поэтому обязаны
+        // ехать одним и тем же сдвигом: разные сдвиги разъехали бы тон плиты с
+        // её границами, и тон «поплыл» бы по трещинам. Skin кормится тем же
+        // сдвигом — корка едет как одно целое, рисунок и рельеф не расходятся.
+        //   Направление то же, что у жара и потока, — (0,1,0), вниз по локальной
+        //   Y. Видимая скорость в ячейках домена = _Crust_Speed x Scale / Stretch.
+        //   При _Crust_Scale 54.74 и _Crust_Stretch 2.4 отношение равно 22.8 —
+        //   поэтому _Crust_Speed на два порядка меньше _Heat_Speed: 0.004 даёт
+        //   0.09 ячейки/с против 0.34 у жара и 0.78 у потока.
+        Stage = "5c crust drift";
+        string mulCrustSpeed = Op(TmplMul, "Time x Crust Speed", -6000, 5100);
+        Link(timeOut, P(mulCrustSpeed, 0)); Link(pCrustSpeed, P(mulCrustSpeed, 1));
+        string mulCrustDrift = Op(TmplMul, "Crust Drift Y", -5400, 5100);
+        Link(P(mulCrustSpeed, 2), P(mulCrustDrift, 0)); Link(dirOut, P(mulCrustDrift, 1));
+        string addCrustPos = Op(TmplAdd, "Crust Domain Drift", -4800, 5100);
+        Link(OBJP, P(addCrustPos, 0)); Link(P(mulCrustDrift, 2), P(addCrustPos, 1));
+        Link(P(addCrustPos, 2), P(cfFiss, 0));
+        Link(P(addCrustPos, 2), P(cfPlate, 0));
+        Link(P(addCrustPos, 2), P(cfSkin, 0));
+        log.AppendLine("5c. дрейф корки: speed=" + S(pCrustSpeed.N) + " pos=" + S(addCrustPos));

@@ -1,0 +1,12 @@
+        log.AppendLine("== LAVA (база) UNTOUCHED ==");
+        string lavaG = root + "/Assets/_Project/Materials/Lava/Lava.shadergraph";
+        if (System.IO.File.Exists(lavaG))
+        {
+            string lt = System.IO.File.ReadAllText(lavaG).Replace("\r", "");
+            log.AppendLine("   Lava docs=" + Regex.Matches(lt, "\"m_ObjectId\"").Count.ToString(CultureInfo.InvariantCulture)
+                + " edges=" + Regex.Matches(lt, "\"m_OutputSlot\"").Count.ToString(CultureInfo.InvariantCulture)
+                + " TimeNode=" + Regex.Matches(lt, "ShaderGraph\\.TimeNode").Count.ToString(CultureInfo.InvariantCulture)
+                + "  (ожидается 316 / 104 / 0)");
+        }
+        else log.AppendLine("   !! " + lavaG + " отсутствует");
+        log.AppendLine("   M_PC_Lava.mat есть=" + System.IO.File.Exists(root + "/Assets/_Project/Materials/Lava/M_PC_Lava.mat"));

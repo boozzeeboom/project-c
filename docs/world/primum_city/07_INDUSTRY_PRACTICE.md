@@ -106,3 +106,38 @@
 **Как это проверить в игре (пользователь):** Window → Analysis → Rendering Statistics — смотреть
 `SetPass calls` и FPS; Frame Debugger — искать группы **Hybrid Batch Group** (это работа Drawer'а);
 Profiler → Rendering — время CPU на кадр. Результаты фиксировать в `ITERATIONS.md`.
+---
+
+## 8. ⚠️ ОТКАТ GPU-настроек (18.10.2026, вечер)
+
+Включение GPU-пути (см. §7) вызвало **ошибки компиляции шейдеров** и, как следствие, битую отрисовку:
+
+```
+Shader error in 'ProjectC/ProceduralSteel': undeclared identifier 'unity_ObjectToWorld'
+at Assets/_Project/Shaders/ProceduralSteel.shader(233) (on d3d11)
+Compiling Subshader: 0, Pass: ForwardLit, Vertex program with DOTS_INSTANCING_ON ...
+```
+
+Причина: кастомные шейдеры проекта не поддерживают путь **DOTS/BRG-инстансинга**, который включается
+вместе с GPU Resident Drawer и режимом `BatchRendererGroup Variants = Keep All`. Пока шейдеры не
+адаптированы, GPU-путь держать нельзя.
+
+**Откачено (возврат к состоянию до 17.10):**
+
+| Настройка | Вернули |
+|---|---|
+| GPU Resident Drawer | **Disabled** |
+| GPU occlusion culling в URP | **выкл** |
+| Rendering Path рендерера | **Forward** (был Forward+) |
+| BatchRendererGroup Variants | **Strip** (был Keep All) |
+| SRP Batcher | остался включён (он был включён изначально) |
+
+**Что нужно, чтобы вернуть GPU-путь позже:** привести кастомные шейдеры (минимум `ProceduralSteel`,
+далее — все шейдеры, которые попадают на объекты мира) к поддержке DOTS-инстансинга: добавить
+`#pragma multi_compile _ DOTS_INSTANCING_ON` и использовать `UNITY_DOTS_INSTANCED_PROP` /
+`unity_ObjectToWorld` из `UnityDOTSInstancing.hlsl` (в URP — через `Attributes`/`Varyings` макросы).
+После этого включение Drawer'а даст то, что обещано в §7.
+
+**Проверка состояния города после отката** (сцена `WorldScene_0_0`): `PRIMUM` — 6 466 мешей,
+**4 489 364 треугольника** (полная геометрия: в исходнике 4 491 172, разница — удалённый мусор),
+31 меш на 32-битных индексах, все материалы — `Universal Render Pipeline/Lit`, битых границ нет.

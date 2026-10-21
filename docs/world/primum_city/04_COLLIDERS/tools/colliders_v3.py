@@ -315,30 +315,6 @@ def add_stairs(chunk, stair_parts, house_boxes):
             dux, duz = -dx, -dy
             yaw = math.degrees(math.atan2(dux, duz))   # локальный +Z вдоль марша
             add(chunk, "STAIR", (ux,uy,uz), (width_b*K, STAIR_THICK, length_b*K), yaw, pitch, stair_name)
-# ---------------------------------------------------------------- платформы -> OBJ
-
-def write_platforms(objs, fh):
-    n = 0
-    for o in objs:
-        me = o.data
-        name = PLATFORM_SHORT.get(o.name, o.name.replace(" ", "_"))
-        fh.write("o %s\n" % name)
-        base = 1
-        for v in me.vertices:
-            p = o.matrix_world @ v.co
-            ux,uy,uz = ulocal((p.x, p.y, p.z))
-            fh.write("v %.4f %.4f %.4f\n" % (ux, uy, uz))
-        for poly in me.polygons:
-            idx = [i + base for i in poly.vertices]
-            # Unity: треугольники по часовой стрелке (front face). OBJ — против часовой.
-            if len(idx) == 3:
-                fh.write("f %d %d %d\n" % (idx[2], idx[1], idx[0]))
-            elif len(idx) == 4:
-                fh.write("f %d %d %d\n" % (idx[3], idx[2], idx[1]))
-                fh.write("f %d %d %d\n" % (idx[3], idx[1], idx[0]))
-        n += 1
-    return n
-
 # ---------------------------------------------------------------- чанк
 
 def _dedupe_stairs(chunk):
@@ -412,9 +388,7 @@ def process(fname, chunk, pfh):
                           min(x[2] for x in bs), max(x[3] for x in bs),
                           min(x[4] for x in bs), max(x[5] for x in bs))
 
-    if platforms:
-        cnt = write_platforms(platforms, pfh)
-        log("  платформ в OBJ: %d" % cnt)
+    # платформы сюда НЕ пишем: их экспортирует platforms_export.py (в этом файле writer был с багом индексов)
 
     add_walls(chunk, walls, house_boxes)
     add_stairs(chunk, stair_parts, house_boxes)
@@ -444,7 +418,7 @@ def main():
         chunks = [c for c in CHUNKS if any(w in c[1].upper() for w in want)]
     log("=== colliders_v3: чанков %d (фильтр: %s) ===" % (len(chunks), flt or "-"))
     t0=time.time()
-    with open(OBJ, "w", encoding="utf-8") as pfh:
+    pfh = None\n    if True:
         for fname, chunk in chunks:
             if not os.path.exists(os.path.join(RAW, fname)):
                 log("MISSING " + fname); continue

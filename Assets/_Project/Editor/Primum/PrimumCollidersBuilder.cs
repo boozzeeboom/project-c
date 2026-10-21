@@ -29,6 +29,7 @@ namespace ProjectC.EditorTools
     {
         private const string CsvRelativePath = "docs/world/primum_city/04_COLLIDERS/colliders_v3.csv";
         private const string PlatformsObjRelativePath = "docs/world/primum_city/04_COLLIDERS/platforms.obj";
+        private const string StairsObjRelativePath = "docs/world/primum_city/04_COLLIDERS/stairs.obj";
         private const string PlatformMeshDir = "Assets/_Project/Prefabs/City/Colliders";
         private const string RootName = "PRIMUM_COLLIDERS";
         private const string CityRootName = "PRIMUM";
@@ -49,6 +50,8 @@ namespace ProjectC.EditorTools
             public readonly Dictionary<string, int> ByClass = new Dictionary<string, int>();
             public readonly Dictionary<string, int> CollidersByClass = new Dictionary<string, int>();
             public int Groups;
+            public int StairHolesCarved;      // боксов, из которых вырезан проём лестницы
+            public int StairHolesPieces;      // сколько частей получилось вместо них
             public readonly List<string> Warnings = new List<string>();
         }
 
@@ -128,65 +131,72 @@ namespace ProjectC.EditorTools
             var groups = new Dictionary<string, Transform>();
             var classParent = new Dictionary<string, Transform>();
 
-            foreach (Row r in rows)
+            // габариты внутренних лестниц — из них вырезаем проёмы в боксах стен/полов/крыш
+            Dictionary<string, List<StairBox>> stairBoxes = LoadStairBoxes(rep);
+
+            foreach (Row src in rows)
             {
-                if (!wanted.Contains(r.Cls)) continue;
-                ByClassInc(rep.ByClass, r.Cls);
+                if (!wanted.Contains(src.Cls)) continue;
 
-                string chunk = string.IsNullOrEmpty(r.Chunk) ? "BASE" : r.Chunk;
-                Transform chunkT;
-                if (!classParent.TryGetValue(chunk, out chunkT))
+                foreach (Row r in CarveAgainstStairs(src, stairBoxes, rep))
                 {
-                    var chunkGo = new GameObject(chunk);
-                    chunkGo.transform.SetParent(root.transform, false);
-                    chunkGo.layer = CityLayer;
-                    GameObjectUtility.SetStaticEditorFlags(chunkGo, (StaticEditorFlags)0);
-                    chunkT = chunkGo.transform;
-                    classParent[chunk] = chunkT;
-                }
+                    ByClassInc(rep.ByClass, r.Cls);
 
-                // ориентация: если yaw кратен 90 и pitch=0 — бокс осевой (сводим к 0/90 через перестановку)
-                bool axisAligned = Mathf.Abs(r.Pitch) < 0.5f && Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 0f)) < 0.5f
-                                || Mathf.Abs(r.Pitch) < 0.5f && Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 180f)) < 0.5f;
-                bool quarter = Mathf.Abs(r.Pitch) < 0.5f &&
-                               (Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 90f)) < 0.5f || Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 270f)) < 0.5f);
+                    string chunk = string.IsNullOrEmpty(r.Chunk) ? "BASE" : r.Chunk;
+                    Transform chunkT;
+                    if (!classParent.TryGetValue(chunk, out chunkT))
+                    {
+                        var chunkGo = new GameObject(chunk);
+                        chunkGo.transform.SetParent(root.transform, false);
+                        chunkGo.layer = CityLayer;
+                        GameObjectUtility.SetStaticEditorFlags(chunkGo, (StaticEditorFlags)0);
+                        chunkT = chunkGo.transform;
+                        classParent[chunk] = chunkT;
+                    }
 
-                string groupKey;
-                Transform host;
-                Vector3 size = r.Size;
-                Vector3 center = r.Center;
+                    // ориентация: если yaw кратен 90 и pitch=0 — бокс осевой (сводим к 0/90 через перестановку)
+                    bool axisAligned = Mathf.Abs(r.Pitch) < 0.5f && Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 0f)) < 0.5f
+                                    || Mathf.Abs(r.Pitch) < 0.5f && Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 180f)) < 0.5f;
+                    bool quarter = Mathf.Abs(r.Pitch) < 0.5f &&
+                                   (Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 90f)) < 0.5f || Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 270f)) < 0.5f);
 
-                if (axisAligned)
-                {
-                    groupKey = chunk + "|" + r.Cls + "|axis";
-                    host = GetGroup(groupKey, chunkT, r.Cls, Quaternion.identity, groups);
-                }
-                else if (quarter)
-                {
-                    // yaw=90: локальная X бокса идёт вдоль мировой Z -> переставляем X/Z и делаем осевым
-                    groupKey = chunk + "|" + r.Cls + "|axis";
-                    host = GetGroup(groupKey, chunkT, r.Cls, Quaternion.identity, groups);
-                    size = new Vector3(r.Size.z, r.Size.y, r.Size.x);
-                    center = r.Center;
-                }
-                else
-                {
-                    string key = chunk + "|" + r.Cls + "|" + Mathf.Round(r.Yaw) + "|" + Mathf.Round(r.Pitch);
-                    Quaternion q = Quaternion.Euler(-r.Pitch, r.Yaw, 0f);
-                    host = GetGroup(key, chunkT, r.Cls, q, groups);
-                    center = Quaternion.Inverse(q) * r.Center;   // в локальные оси группы
-                }
+                    string groupKey;
+                    Transform host;
+                    Vector3 size = r.Size;
+                    Vector3 center = r.Center;
 
-                var col = host.gameObject.AddComponent<BoxCollider>();
-                col.isTrigger = false;
-                col.center = center;
-                col.size = size;
-                ByClassInc(rep.CollidersByClass, r.Cls);
+                    if (axisAligned)
+                    {
+                        groupKey = chunk + "|" + r.Cls + "|axis";
+                        host = GetGroup(groupKey, chunkT, r.Cls, Quaternion.identity, groups);
+                    }
+                    else if (quarter)
+                    {
+                        // yaw=90: локальная X бокса идёт вдоль мировой Z -> переставляем X/Z и делаем осевым
+                        groupKey = chunk + "|" + r.Cls + "|axis";
+                        host = GetGroup(groupKey, chunkT, r.Cls, Quaternion.identity, groups);
+                        size = new Vector3(r.Size.z, r.Size.y, r.Size.x);
+                        center = r.Center;
+                    }
+                    else
+                    {
+                        string key = chunk + "|" + r.Cls + "|" + Mathf.Round(r.Yaw) + "|" + Mathf.Round(r.Pitch);
+                        Quaternion q = Quaternion.Euler(-r.Pitch, r.Yaw, 0f);
+                        host = GetGroup(key, chunkT, r.Cls, q, groups);
+                        center = Quaternion.Inverse(q) * r.Center;   // в локальные оси группы
+                    }
+
+                    var col = host.gameObject.AddComponent<BoxCollider>();
+                    col.isTrigger = false;
+                    col.center = center;
+                    col.size = size;
+                    ByClassInc(rep.CollidersByClass, r.Cls);
+                }
             }
 
             rep.Groups = groups.Count;
-            if (wanted.Contains("WALK") || wanted.Contains("PLATFORM"))
-                BuildPlatforms(rep);
+            BuildObjColliders(PlatformsObjRelativePath, "PRIMUM_BASE_S0_CITY_P1_00H", "PLATFORM", "PM_PLATFORM", rep);
+            BuildStairsColliders(rep);
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             return rep;
         }
@@ -225,39 +235,193 @@ namespace ProjectC.EditorTools
             return n;
         }
 
-        // ---------------------------------------------------------------- платформы низа города (MeshCollider)
+        // ---------------------------------------------------------------- проёмы внутренних лестниц
+
+        /// <summary>Осевой габарит одной внутренней лестницы (в пространстве PRIMUM).</summary>
+        private class StairBox
+        {
+            public float MinX, MaxX, MinY, MaxY, MinZ, MaxZ;
+        }
+
+        /// <summary>Расширение проёма вокруг габарита лестницы (м).</summary>
+        private const float StairHoleInflate = 0.08f;
+
+        /// <summary>Минимальное вертикальное перекрытие бокса с лестницей, чтобы считать его «на пути» (м).</summary>
+        private const float StairYOverlapMin = 0.02f;
 
         /// <summary>
-        /// Платформы низа города (9 объектов из BASE/20_PLATFORMS) — точные MeshCollider'ы.
-        /// Восемь боксов не работают: в платформах есть ВЫРЕЗЫ под лестницы, бокс их перекрывает.
-        /// Геометрия выгружена Blender-скриптом в platforms.obj (локальные координаты PRIMUM).
+        /// Насколько выше верха марша ещё может начинаться перекрытие/крыша, чтобы его надо было прорезать:
+        /// верхняя ступень упирается в плиту (выход на этаж/крышу), а не просто потолок над лестницей.
         /// </summary>
-        private static void BuildPlatforms(BuildReport rep)
+        private const float StairTopTolerance = 0.60f;
+
+        /// <summary>
+        /// Габариты лестниц по чанкам из stairs.obj. Стены/полы/крыши строятся боксами по bbox объекта,
+        /// поэтому слэб с проёмом лестницы превращается в сплошной бокс и перекрывает марш (игрок не может
+        /// подняться). Габариты нужны, чтобы вырезать эти проёмы из боксов.
+        /// </summary>
+        private static Dictionary<string, List<StairBox>> LoadStairBoxes(BuildReport rep)
         {
+            var result = new Dictionary<string, List<StairBox>>();
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            string full = Path.Combine(projectRoot, PlatformsObjRelativePath.Replace('/', Path.DirectorySeparatorChar));
-            if (!File.Exists(full)) { rep.Warnings.Add("platforms.obj не найден: " + PlatformsObjRelativePath); return; }
+            string full = Path.Combine(projectRoot, StairsObjRelativePath.Replace('/', Path.DirectorySeparatorChar));
+            ObjData data = ParseObj(full, rep);
+            if (data.Objects.Count == 0) return result;
 
-            string[] lines = File.ReadAllLines(full, Encoding.UTF8);
-            var verts = new List<Vector3>();
-            var objects = new List<string>();
-            var faces = new Dictionary<string, List<int>>();
+            foreach (string name in data.Objects)
+            {
+                List<int> tris = data.Faces[name];
+                if (tris.Count < 3) continue;
 
+                string rest = name.StartsWith("STAIR_") ? name.Substring(6) : name;
+                string chunk = null;
+                foreach (var kv in ChunkCodes)
+                    if (rest.StartsWith(kv.Key + "_")) { chunk = kv.Value; break; }
+                if (chunk == null) continue;
+
+                var sb = new StairBox
+                {
+                    MinX = float.MaxValue, MaxX = float.MinValue,
+                    MinY = float.MaxValue, MaxY = float.MinValue,
+                    MinZ = float.MaxValue, MaxZ = float.MinValue
+                };
+                foreach (int gi in tris)
+                {
+                    if (gi < 0 || gi >= data.Verts.Count) continue;
+                    Vector3 v = data.Verts[gi];
+                    sb.MinX = Mathf.Min(sb.MinX, v.x); sb.MaxX = Mathf.Max(sb.MaxX, v.x);
+                    sb.MinY = Mathf.Min(sb.MinY, v.y); sb.MaxY = Mathf.Max(sb.MaxY, v.y);
+                    sb.MinZ = Mathf.Min(sb.MinZ, v.z); sb.MaxZ = Mathf.Max(sb.MaxZ, v.z);
+                }
+                if (sb.MinX > sb.MaxX) continue;
+
+                List<StairBox> lst;
+                if (!result.TryGetValue(chunk, out lst)) { lst = new List<StairBox>(); result[chunk] = lst; }
+                lst.Add(sb);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Бокс, накрывающий марши лестниц, заменяется на части вокруг их проёмов (габарит лестницы).
+        /// Один длинный бокс (слэб/крыша/стена на весь дом) может перекрывать сразу несколько лестниц —
+        /// поэтому прогоняем вырезание по ВСЕМ лестницам чанка, а не по первой попавшейся.
+        /// </summary>
+        private static List<Row> CarveAgainstStairs(Row r, Dictionary<string, List<StairBox>> stairs, BuildReport rep)
+        {
+            var single = new List<Row> { r };
+            if (r.Cls != "WALL" && r.Cls != "FLOOR" && r.Cls != "ROOF") return single;
+            if (Mathf.Abs(r.Pitch) > 0.5f) return single;
+
+            bool quarter = Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 90f)) < 0.5f || Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 270f)) < 0.5f;
+            bool axis = Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 0f)) < 0.5f || Mathf.Abs(Mathf.DeltaAngle(r.Yaw, 180f)) < 0.5f;
+            if (!quarter && !axis) return single;                      // повёрнутые боксы не режем
+
+            List<StairBox> list;
+            if (!stairs.TryGetValue(r.Chunk, out list) || list.Count == 0) return single;
+
+            Vector3 size = quarter ? new Vector3(r.Size.z, r.Size.y, r.Size.x) : r.Size;
+            var first = new Row
+            {
+                Chunk = r.Chunk, Cls = r.Cls, Name = r.Name,
+                Center = r.Center, Size = size, Yaw = 0f, Pitch = 0f
+            };
+
+            List<Row> work = new List<Row> { first };
+            bool carved = false;
+            foreach (StairBox s in list)
+            {
+                if (work.Count == 0) break;
+                var next = new List<Row>();
+                foreach (Row w in work)
+                {
+                    if (!SplitByStair(w, s, next, ref carved)) next.Add(w);
+                }
+                work = next;
+            }
+
+            if (!carved) return single;
+            rep.StairHolesCarved++;
+            rep.StairHolesPieces += Mathf.Max(0, work.Count - 1);
+            return work.Count == 0 ? new List<Row>() : work;
+        }
+
+        /// <summary>Делит бокс на 2–4 части вокруг проёма одной лестницы. false — бокс не задет.</summary>
+        private static bool SplitByStair(Row w, StairBox s, List<Row> dst, ref bool carved)
+        {
+            float bx0 = w.Center.x - w.Size.x * 0.5f, bx1 = w.Center.x + w.Size.x * 0.5f;
+            float by0 = w.Center.y - w.Size.y * 0.5f, by1 = w.Center.y + w.Size.y * 0.5f;
+            float bz0 = w.Center.z - w.Size.z * 0.5f, bz1 = w.Center.z + w.Size.z * 0.5f;
+
+            if (bx1 <= s.MinX || bx0 >= s.MaxX) return false;
+            if (bz1 <= s.MinZ || bz0 >= s.MaxZ) return false;
+            if (by1 <= s.MinY + StairYOverlapMin) return false;      // бокс под лестницей (пол/земля)
+            if (by0 >= s.MaxY + StairTopTolerance) return false;      // бокс заметно выше верха марша
+
+            float hx0 = Mathf.Max(bx0, s.MinX - StairHoleInflate);
+            float hx1 = Mathf.Min(bx1, s.MaxX + StairHoleInflate);
+            float hz0 = Mathf.Max(bz0, s.MinZ - StairHoleInflate);
+            float hz1 = Mathf.Min(bz1, s.MaxZ + StairHoleInflate);
+            if (hx1 - hx0 < 0.05f || hz1 - hz0 < 0.05f) return false;
+
+            carved = true;
+            AddCarvedPiece(dst, w, bx0, hx0, bz0, bz1, "L");   // слева от проёма
+            AddCarvedPiece(dst, w, hx1, bx1, bz0, bz1, "R");   // справа
+            AddCarvedPiece(dst, w, hx0, hx1, bz0, hz0, "D");   // перед проёмом
+            AddCarvedPiece(dst, w, hx0, hx1, hz1, bz1, "U");   // за проёмом
+            return true;
+        }
+
+        private static void AddCarvedPiece(List<Row> dst, Row src, float x0, float x1, float z0, float z1, string suffix)
+        {
+            float w = x1 - x0, d = z1 - z0;
+            if (w < 0.03f || d < 0.03f) return;
+            dst.Add(new Row
+            {
+                Chunk = src.Chunk,
+                Cls = src.Cls,
+                Name = src.Name + "#" + suffix,
+                Center = new Vector3((x0 + x1) * 0.5f, src.Center.y, (z0 + z1) * 0.5f),
+                Size = new Vector3(w, src.Size.y, d),
+                Yaw = 0f,
+                Pitch = 0f
+            });
+        }
+
+        // ---------------------------------------------------------------- MeshCollider'ы из OBJ (платформы, лестницы)
+
+        private class ObjData
+        {
+            public readonly List<Vector3> Verts = new List<Vector3>();
+            public readonly List<string> Objects = new List<string>();
+            public readonly Dictionary<string, List<int>> Faces = new Dictionary<string, List<int>>();
+            public readonly Dictionary<string, int> VertStart = new Dictionary<string, int>();
+        }
+
+        private static ObjData ParseObj(string fullPath, BuildReport rep)
+        {
+            var data = new ObjData();
+            if (!File.Exists(fullPath))
+            {
+                rep.Warnings.Add("OBJ не найден: " + fullPath);
+                return data;
+            }
             string current = null;
-            foreach (string raw in lines)
+            foreach (string raw in File.ReadAllLines(fullPath, Encoding.UTF8))
             {
                 string line = raw.Trim();
                 if (line.Length == 0 || line.StartsWith("#")) continue;
                 if (line.StartsWith("o "))
                 {
                     current = line.Substring(2).Trim();
-                    objects.Add(current);
-                    faces[current] = new List<int>();
+                    data.Objects.Add(current);
+                    data.Faces[current] = new List<int>();
+                    data.VertStart[current] = data.Verts.Count;
                 }
                 else if (line.StartsWith("v "))
                 {
                     string[] p = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    verts.Add(new Vector3(F(p[1]), F(p[2]), F(p[3])));
+                    data.Verts.Add(new Vector3(F(p[1]), F(p[2]), F(p[3])));
                 }
                 else if (line.StartsWith("f ") && current != null)
                 {
@@ -272,69 +436,97 @@ namespace ProjectC.EditorTools
                         if (int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out vi))
                             idx.Add(vi - 1);
                     }
-                    var list = faces[current];
+                    var list = data.Faces[current];
                     if (idx.Count == 3) { list.Add(idx[0]); list.Add(idx[1]); list.Add(idx[2]); }
                     else if (idx.Count >= 4)
-                    {
-                        for (int i = 1; i + 1 < idx.Count; i++)
-                        {
-                            list.Add(idx[0]); list.Add(idx[i]); list.Add(idx[i + 1]);
-                        }
-                    }
+                        for (int i = 1; i + 1 < idx.Count; i++) { list.Add(idx[0]); list.Add(idx[i]); list.Add(idx[i + 1]); }
                 }
             }
-            if (objects.Count == 0) { rep.Warnings.Add("platforms.obj пуст"); return; }
+            return data;
+        }
+
+        /// <summary>Короткие коды чанков в именах объектов OBJ (PLATFORM_DECK0, STAIR_S9TRDN_RES_TN_01).</summary>
+        private static readonly Dictionary<string, string> ChunkCodes = new Dictionary<string, string>
+        {
+            { "BASE",     "PRIMUM_BASE_S0_CITY_P1_00H" },
+            { "ADMIN",    "PRIMUM_ADMIN_S0_ADM_P1_01H" },
+            { "S2TRDP1",  "PRIMUM_HOUSES_S2_TRD_P1_28H" },
+            { "S3TRDP2",  "PRIMUM_HOUSES_S3_TRD_P2_26H" },
+            { "S3TRDESP1","PRIMUM_HOUSES_S3_TRD-ES_P1_37H" },
+            { "S4TRDP3",  "PRIMUM_HOUSES_S4_TRD_P3_26H" },
+            { "S9TRDN",   "PRIMUM_HOUSES_S9_TRD-N_P1_28H" },
+            { "S9TRDS",   "PRIMUM_HOUSES_S9_TRD-S_P1_16H" },
+        };
+
+        /// <summary>Создать MeshCollider'ы из OBJ (платформы низа города, внутренние лестницы).</summary>
+        private static void BuildObjColliders(string relativePath, string defaultChunk, string classLabel,
+                                              string meshPrefix, BuildReport rep)
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string full = Path.Combine(projectRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            ObjData data = ParseObj(full, rep);
+            if (data.Objects.Count == 0) return;
 
             GameObject city = GameObject.Find(CityRootName);
             Transform worldRoot = city != null && city.transform.parent != null ? city.transform.parent : null;
             Transform root = worldRoot != null ? worldRoot.Find(RootName) : null;
-            if (root == null) { rep.Warnings.Add("сначала создайте узел " + RootName + " (сборка CSV)"); return; }
+            if (root == null) { rep.Warnings.Add("сначала создайте узел " + RootName); return; }
 
-            string chunkName = "PRIMUM_BASE_S0_CITY_P1_00H";
-            Transform chunk = root.Find(chunkName);
-            if (chunk == null)
+            string meshDirFull = Path.Combine(projectRoot, PlatformMeshDir);
+            if (!Directory.Exists(meshDirFull)) Directory.CreateDirectory(meshDirFull);
+
+            foreach (string name in data.Objects)
             {
-                var chunkGo = new GameObject(chunkName);
-                chunkGo.transform.SetParent(root, false);
-                chunkGo.layer = CityLayer;
-                GameObjectUtility.SetStaticEditorFlags(chunkGo, (StaticEditorFlags)0);
-                chunk = chunkGo.transform;
-            }
-
-            if (!Directory.Exists(Path.Combine(projectRoot, PlatformMeshDir)))
-                Directory.CreateDirectory(Path.Combine(projectRoot, PlatformMeshDir));
-
-            foreach (string name in objects)
-            {
-                List<int> tris = faces[name];
+                List<int> tris = data.Faces[name];
                 if (tris.Count < 3) continue;
+                int vstart = data.VertStart[name];
+                int vend = data.Verts.Count;
+                bool bad = false;
+                foreach (int gi in tris) if (gi < vstart || gi >= vend) { bad = true; break; }
+                if (bad)
+                {
+                    rep.Warnings.Add(relativePath + " битый: объект '" + name + "' ссылается на чужие вершины — пропущен");
+                    Debug.LogError("[PRIMUM/Colliders] битый OBJ: " + name);
+                    continue;
+                }
 
-                // индексы вершин OBJ глобальные -> локальные для объекта
+                // чанк: по коду в имени (STAIR_S9TRDN_...), иначе defaultChunk
+                string chunk = defaultChunk;
+                if (classLabel != "PLATFORM")
+                {
+                    string rest = name.StartsWith(classLabel + "_") ? name.Substring(classLabel.Length + 1) : name;
+                    foreach (var kv in ChunkCodes)
+                        if (rest.StartsWith(kv.Key + "_")) { chunk = kv.Value; break; }
+                }
+
                 var map = new Dictionary<int, int>();
                 var vlist = new List<Vector3>();
                 var tlist = new List<int>();
                 foreach (int gi in tris)
                 {
                     int li;
-                    if (!map.TryGetValue(gi, out li))
-                    {
-                        li = vlist.Count;
-                        vlist.Add(verts[gi]);
-                        map[gi] = li;
-                    }
+                    if (!map.TryGetValue(gi, out li)) { li = vlist.Count; vlist.Add(data.Verts[gi]); map[gi] = li; }
                     tlist.Add(li);
                 }
 
-                var mesh = new Mesh { name = "PM_PLATFORM_" + name };
+                var mesh = new Mesh { name = meshPrefix + "_" + name };
                 mesh.SetVertices(vlist);
                 mesh.SetTriangles(tlist, 0);
                 mesh.RecalculateBounds();
-                string assetPath = PlatformMeshDir + "/PM_PLATFORM_" + name + ".asset";
-                AssetDatabase.CreateAsset(mesh, assetPath);
+                AssetDatabase.CreateAsset(mesh, PlatformMeshDir + "/" + meshPrefix + "_" + name + ".asset");
 
-                var go = new GameObject("PLATFORM_" + name);
+                Transform chunkT = root.Find(chunk);
+                if (chunkT == null)
+                {
+                    var chunkGo = new GameObject(chunk);
+                    chunkGo.transform.SetParent(root, false);
+                    chunkGo.layer = CityLayer;
+                    GameObjectUtility.SetStaticEditorFlags(chunkGo, (StaticEditorFlags)0);
+                    chunkT = chunkGo.transform;
+                }
+                var go = new GameObject(name);
                 go.layer = CityLayer;
-                go.transform.SetParent(chunk, false);
+                go.transform.SetParent(chunkT, false);
                 GameObjectUtility.SetStaticEditorFlags(go, (StaticEditorFlags)0);
                 var mc = go.AddComponent<MeshCollider>();
                 mc.sharedMesh = mesh;
@@ -343,7 +535,98 @@ namespace ProjectC.EditorTools
                                   | MeshColliderCookingOptions.EnableMeshCleaning
                                   | MeshColliderCookingOptions.WeldColocatedVertices
                                   | MeshColliderCookingOptions.UseFastMidphase;
-                ByClassInc(rep.CollidersByClass, "PLATFORM");
+                ByClassInc(rep.CollidersByClass, classLabel);
+            }
+        }
+
+        /// <summary>
+        /// Внутренние лестницы: точная геометрия из stairs.obj, ОДИН общий MeshCollider на чанк
+        /// (110 отдельных объектов-лестниц давали 110 меш-ассетов и тормозили сборку).
+        /// </summary>
+        private static void BuildStairsColliders(BuildReport rep)
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string full = Path.Combine(projectRoot, StairsObjRelativePath.Replace('/', Path.DirectorySeparatorChar));
+            ObjData data = ParseObj(full, rep);
+            if (data.Objects.Count == 0) return;
+
+            GameObject city = GameObject.Find(CityRootName);
+            Transform worldRoot = city != null && city.transform.parent != null ? city.transform.parent : null;
+            Transform root = worldRoot != null ? worldRoot.Find(RootName) : null;
+            if (root == null) { rep.Warnings.Add("сначала создайте узел " + RootName); return; }
+
+            string meshDirFull = Path.Combine(projectRoot, PlatformMeshDir);
+            if (!Directory.Exists(meshDirFull)) Directory.CreateDirectory(meshDirFull);
+
+            var perChunkVerts = new Dictionary<string, List<Vector3>>();
+            var perChunkTris = new Dictionary<string, List<int>>();
+
+            foreach (string name in data.Objects)
+            {
+                List<int> tris = data.Faces[name];
+                if (tris.Count < 3) continue;
+                int vstart = data.VertStart[name];
+                int vend = data.Verts.Count;
+                bool bad = false;
+                foreach (int gi in tris) if (gi < vstart || gi >= vend) { bad = true; break; }
+                if (bad)
+                {
+                    rep.Warnings.Add("stairs.obj битый: '" + name + "' — пропущен");
+                    continue;
+                }
+
+                string rest = name.StartsWith("STAIR_") ? name.Substring(6) : name;
+                string chunk = null;
+                foreach (var kv in ChunkCodes)
+                    if (rest.StartsWith(kv.Key + "_")) { chunk = kv.Value; break; }
+                if (chunk == null) chunk = "PRIMUM_HOUSES_S9_TRD-N_P1_28H";
+
+                List<Vector3> vl; if (!perChunkVerts.TryGetValue(chunk, out vl)) { vl = new List<Vector3>(); perChunkVerts[chunk] = vl; perChunkTris[chunk] = new List<int>(); }
+                List<int> tl = perChunkTris[chunk];
+                var map = new Dictionary<int, int>();
+                foreach (int gi in tris)
+                {
+                    int li;
+                    if (!map.TryGetValue(gi, out li)) { li = vl.Count; vl.Add(data.Verts[gi]); map[gi] = li; }
+                    tl.Add(li);
+                }
+            }
+
+            foreach (var kv in perChunkVerts)
+            {
+                string chunk = kv.Key;
+                var vlist = kv.Value;
+                var tlist = perChunkTris[chunk];
+                if (tlist.Count < 3) continue;
+
+                var mesh = new Mesh { name = "PM_STAIRS_" + chunk };
+                mesh.indexFormat = vlist.Count > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
+                mesh.SetVertices(vlist);
+                mesh.SetTriangles(tlist, 0);
+                mesh.RecalculateBounds();
+                AssetDatabase.CreateAsset(mesh, PlatformMeshDir + "/PM_STAIRS_" + chunk + ".asset");
+
+                Transform chunkT = root.Find(chunk);
+                if (chunkT == null)
+                {
+                    var chunkGo = new GameObject(chunk);
+                    chunkGo.transform.SetParent(root, false);
+                    chunkGo.layer = CityLayer;
+                    GameObjectUtility.SetStaticEditorFlags(chunkGo, (StaticEditorFlags)0);
+                    chunkT = chunkGo.transform;
+                }
+                var go = new GameObject("STAIRS");
+                go.layer = CityLayer;
+                go.transform.SetParent(chunkT, false);
+                GameObjectUtility.SetStaticEditorFlags(go, (StaticEditorFlags)0);
+                var mc = go.AddComponent<MeshCollider>();
+                mc.sharedMesh = mesh;
+                mc.convex = false;
+                mc.cookingOptions = MeshColliderCookingOptions.CookForFasterSimulation
+                                  | MeshColliderCookingOptions.EnableMeshCleaning
+                                  | MeshColliderCookingOptions.WeldColocatedVertices
+                                  | MeshColliderCookingOptions.UseFastMidphase;
+                ByClassInc(rep.CollidersByClass, "STAIR_MESH");
             }
         }
         // ---------------------------------------------------------------- проверка лучей
@@ -454,6 +737,9 @@ namespace ProjectC.EditorTools
         {
             var sb = new StringBuilder();
             sb.AppendLine("[PRIMUM/Colliders] строк в CSV: " + rep.Rows + ", групп: " + rep.Groups);
+            if (rep.StairHolesCarved > 0)
+                sb.AppendLine("    проёмов лестниц вырезано в боксах: " + rep.StairHolesCarved +
+                              " (добавлено частей: " + rep.StairHolesPieces + ")");
             if (rep.ByClass.Count > 0)
             {
                 sb.Append("    в CSV по классам:");

@@ -27,7 +27,9 @@ namespace ProjectC.EditorTools
     /// </summary>
     public static class PrimumCollidersBuilder
     {
-        private const string CsvRelativePath = "docs/world/primum_city/04_COLLIDERS/colliders_v2.csv";
+        private const string CsvRelativePath = "docs/world/primum_city/04_COLLIDERS/colliders_v3.csv";
+        private const string PlatformsObjRelativePath = "docs/world/primum_city/04_COLLIDERS/platforms.obj";
+        private const string PlatformMeshDir = "Assets/_Project/Prefabs/City/Colliders";
         private const string RootName = "PRIMUM_COLLIDERS";
         private const string CityRootName = "PRIMUM";
         private const string WorldRootFallback = "WorldRoot_0_0";
@@ -183,6 +185,8 @@ namespace ProjectC.EditorTools
             }
 
             rep.Groups = groups.Count;
+            if (wanted.Contains("WALK") || wanted.Contains("PLATFORM"))
+                BuildPlatforms(rep);
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             return rep;
         }
@@ -221,6 +225,127 @@ namespace ProjectC.EditorTools
             return n;
         }
 
+        // ---------------------------------------------------------------- платформы низа города (MeshCollider)
+
+        /// <summary>
+        /// Платформы низа города (9 объектов из BASE/20_PLATFORMS) — точные MeshCollider'ы.
+        /// Восемь боксов не работают: в платформах есть ВЫРЕЗЫ под лестницы, бокс их перекрывает.
+        /// Геометрия выгружена Blender-скриптом в platforms.obj (локальные координаты PRIMUM).
+        /// </summary>
+        private static void BuildPlatforms(BuildReport rep)
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string full = Path.Combine(projectRoot, PlatformsObjRelativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(full)) { rep.Warnings.Add("platforms.obj не найден: " + PlatformsObjRelativePath); return; }
+
+            string[] lines = File.ReadAllLines(full, Encoding.UTF8);
+            var verts = new List<Vector3>();
+            var objects = new List<string>();
+            var faces = new Dictionary<string, List<int>>();
+
+            string current = null;
+            foreach (string raw in lines)
+            {
+                string line = raw.Trim();
+                if (line.Length == 0 || line.StartsWith("#")) continue;
+                if (line.StartsWith("o "))
+                {
+                    current = line.Substring(2).Trim();
+                    objects.Add(current);
+                    faces[current] = new List<int>();
+                }
+                else if (line.StartsWith("v "))
+                {
+                    string[] p = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    verts.Add(new Vector3(F(p[1]), F(p[2]), F(p[3])));
+                }
+                else if (line.StartsWith("f ") && current != null)
+                {
+                    string[] p = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    var idx = new List<int>();
+                    for (int i = 1; i < p.Length; i++)
+                    {
+                        string token = p[i];
+                        int slash = token.IndexOf('/');
+                        if (slash > 0) token = token.Substring(0, slash);
+                        int vi;
+                        if (int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out vi))
+                            idx.Add(vi - 1);
+                    }
+                    var list = faces[current];
+                    if (idx.Count == 3) { list.Add(idx[0]); list.Add(idx[1]); list.Add(idx[2]); }
+                    else if (idx.Count >= 4)
+                    {
+                        for (int i = 1; i + 1 < idx.Count; i++)
+                        {
+                            list.Add(idx[0]); list.Add(idx[i]); list.Add(idx[i + 1]);
+                        }
+                    }
+                }
+            }
+            if (objects.Count == 0) { rep.Warnings.Add("platforms.obj пуст"); return; }
+
+            GameObject city = GameObject.Find(CityRootName);
+            Transform worldRoot = city != null && city.transform.parent != null ? city.transform.parent : null;
+            Transform root = worldRoot != null ? worldRoot.Find(RootName) : null;
+            if (root == null) { rep.Warnings.Add("сначала создайте узел " + RootName + " (сборка CSV)"); return; }
+
+            string chunkName = "PRIMUM_BASE_S0_CITY_P1_00H";
+            Transform chunk = root.Find(chunkName);
+            if (chunk == null)
+            {
+                var chunkGo = new GameObject(chunkName);
+                chunkGo.transform.SetParent(root, false);
+                chunkGo.layer = CityLayer;
+                GameObjectUtility.SetStaticEditorFlags(chunkGo, (StaticEditorFlags)0);
+                chunk = chunkGo.transform;
+            }
+
+            if (!Directory.Exists(Path.Combine(projectRoot, PlatformMeshDir)))
+                Directory.CreateDirectory(Path.Combine(projectRoot, PlatformMeshDir));
+
+            foreach (string name in objects)
+            {
+                List<int> tris = faces[name];
+                if (tris.Count < 3) continue;
+
+                // индексы вершин OBJ глобальные -> локальные для объекта
+                var map = new Dictionary<int, int>();
+                var vlist = new List<Vector3>();
+                var tlist = new List<int>();
+                foreach (int gi in tris)
+                {
+                    int li;
+                    if (!map.TryGetValue(gi, out li))
+                    {
+                        li = vlist.Count;
+                        vlist.Add(verts[gi]);
+                        map[gi] = li;
+                    }
+                    tlist.Add(li);
+                }
+
+                var mesh = new Mesh { name = "PM_PLATFORM_" + name };
+                mesh.SetVertices(vlist);
+                mesh.SetTriangles(tlist, 0);
+                mesh.RecalculateBounds();
+                string assetPath = PlatformMeshDir + "/PM_PLATFORM_" + name + ".asset";
+                AssetDatabase.CreateAsset(mesh, assetPath);
+
+                var go = new GameObject("PLATFORM_" + name);
+                go.layer = CityLayer;
+                go.transform.SetParent(chunk, false);
+                GameObjectUtility.SetStaticEditorFlags(go, (StaticEditorFlags)0);
+                var mc = go.AddComponent<MeshCollider>();
+                mc.sharedMesh = mesh;
+                mc.convex = false;
+                mc.cookingOptions = MeshColliderCookingOptions.CookForFasterSimulation
+                                  | MeshColliderCookingOptions.EnableMeshCleaning
+                                  | MeshColliderCookingOptions.WeldColocatedVertices
+                                  | MeshColliderCookingOptions.UseFastMidphase;
+                ByClassInc(rep.CollidersByClass, "PLATFORM");
+            }
+        }
         // ---------------------------------------------------------------- проверка лучей
 
         /// <summary>

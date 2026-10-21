@@ -85,7 +85,7 @@ def has_ancestor(o, names):
         p = p.parent
     return False
 
-RAIL = ("RAIL","GUARD","HAND","SKIRT","BALUST","_BR","KERB","KICK")
+RAIL = ("RAIL","GUARD","HAND","SKIRT","BALUST","_BR","KERB","KICK","FURN","RUG","CARPET","COVER")
 
 def is_stair(o):
     p = cpath(o); n = o.name.upper()
@@ -177,51 +177,144 @@ def add_walls(chunk, items, house_boxes):
 
 # ---------------------------------------------------------------- лестницы
 
-def add_stairs(chunk, groups, house_boxes):
-    for key, objs in groups.items():
-        pts = []
-        for o in objs:
-            for v in o.data.vertices:
-                pts.append(o.matrix_world @ v.co)
-        if len(pts) < 8: continue
-        xs=[p.x for p in pts]; ys=[p.y for p in pts]; zs=[p.z for p in pts]
-        dx=max(xs)-min(xs); dy=max(ys)-min(ys); dz=max(zs)-min(zs)
-        if dx < 0.6 or dy < 0.6: continue
+def _obb_gap(a, b):
+    """Зазор между двумя AABB (0 если пересекаются) в 3D."""
+    g = 0.0
+    for k in range(6):
+        pass
+    dx = max(a[0] - b[1], b[0] - a[1], 0.0)
+    dy = max(a[2] - b[3], b[2] - a[3], 0.0)
+    dz = max(a[4] - b[5], b[4] - a[5], 0.0)
+    return math.sqrt(dx*dx + dy*dy + dz*dz)
 
-        def grad(axis):
-            lo = min(xs) if axis==0 else min(ys)
-            hi = max(xs) if axis==0 else max(ys)
-            if hi-lo < 0.3: return 0.0
-            nb=12; acc=[0.0]*nb; cnt=[0]*nb
-            for p in pts:
-                v = p.x if axis==0 else p.y
-                b=int(min(nb-1,(v-lo)/(hi-lo)*nb)); acc[b]+=p.z; cnt[b]+=1
-            m=[acc[i]/cnt[i] for i in range(nb) if cnt[i]>0]
-            if len(m)<3: return 0.0
-            return (m[-1]-m[0])/(hi-lo)
+def _cluster_flights(parts):
+    """Кластеризация деталей лестницы в МАРШИ по касанию (зазор <= 0.45 м)."""
+    boxes = [world_bbox(o) for o in parts]
+    n = len(parts)
+    parent = list(range(n))
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    for i in range(n):
+        for j in range(i+1, n):
+            if _obb_gap(boxes[i], boxes[j]) <= 0.45:
+                ri, rj = find(i), find(j)
+                if ri != rj: parent[ri] = rj
+    groups = defaultdict(list)
+    for i in range(n):
+        groups[find(i)].append(i)
+    return [(g, [parts[i] for i in g], [boxes[i] for i in g]) for g in groups.values()]
 
-        gx, gy = grad(0), grad(1)
-        if abs(gx) >= abs(gy):
-            axis=0; run=dx; width=dy; g=gx
-        else:
-            axis=1; run=dy; width=dx; g=gy
-        cx=(min(xs)+max(xs))/2; cy=(min(ys)+max(ys))/2; cz=(min(zs)+max(zs))/2
-        if run < 1.0 or width < 0.5:
-            ux,uy,uz = ulocal((cx,cy,cz))
-            add(chunk, "STAIR", (ux,uy,uz), (dx*K, dz*K, dy*K), 0, 0, key)
-            continue
-        pitch = math.degrees(math.atan2(dz, run))
-        if pitch < 8.0 or pitch > 60.0:
-            ux,uy,uz = ulocal((cx,cy,cz))
-            add(chunk, "STAIR", (ux,uy,uz), (dx*K, dz*K, dy*K), 0, 0, key)
-            continue
-        dir_b = ((1.0 if g>0 else -1.0), 0.0) if axis==0 else (0.0, (1.0 if g>0 else -1.0))
-        dir_u = (-dir_b[0], -dir_b[1])
-        yaw = math.degrees(math.atan2(dir_u[0], dir_u[1]))
+def _fit_bbox_flight(chunk, objs, name):
+    """Фолбэк для одиночных объектов-маршей (BASE/ADMIN): наклон по габариту."""
+    pts = []
+    for o in objs:
+        for v in o.data.vertices:
+            pts.append(o.matrix_world @ v.co)
+    if len(pts) < 8:
+        return
+    xs=[p.x for p in pts]; ys=[p.y for p in pts]; zs=[p.z for p in pts]
+    dx=max(xs)-min(xs); dy=max(ys)-min(ys); dz=max(zs)-min(zs)
+    if dx < 0.6 or dy < 0.6:
+        return
+
+    def grad(axis):
+        lo = min(xs) if axis==0 else min(ys)
+        hi = max(xs) if axis==0 else max(ys)
+        if hi-lo < 0.3: return 0.0
+        nb=12; acc=[0.0]*nb; cnt=[0]*nb
+        for p in pts:
+            v = p.x if axis==0 else p.y
+            b=int(min(nb-1,(v-lo)/(hi-lo)*nb)); acc[b]+=p.z; cnt[b]+=1
+        m=[acc[i]/cnt[i] for i in range(nb) if cnt[i]>0]
+        if len(m)<3: return 0.0
+        return (m[-1]-m[0])/(hi-lo)
+
+    gx, gy = grad(0), grad(1)
+    if abs(gx) >= abs(gy):
+        axis=0; run=dx; width=dy; g=gx
+    else:
+        axis=1; run=dy; width=dx; g=gy
+    cx=(min(xs)+max(xs))/2; cy=(min(ys)+max(ys))/2; cz=(min(zs)+max(zs))/2
+    if run < 1.0 or width < 0.5:
         ux,uy,uz = ulocal((cx,cy,cz))
-        length = math.sqrt(run*run + dz*dz) * K
-        add(chunk, "STAIR", (ux,uy,uz), (width*K, STAIR_THICK, length), yaw, pitch, key)
+        add(chunk, "STAIR", (ux,uy,uz), (dx*K, dz*K, dy*K), 0, 0, name)
+        return
+    pitch = math.degrees(math.atan2(dz, run))
+    if pitch < 8.0 or pitch > 60.0:
+        ux,uy,uz = ulocal((cx,cy,cz))
+        add(chunk, "STAIR", (ux,uy,uz), (dx*K, dz*K, dy*K), 0, 0, name)
+        return
+    dir_b = ((1.0 if g>0 else -1.0), 0.0) if axis==0 else (0.0, (1.0 if g>0 else -1.0))
+    dir_u = (-dir_b[0], -dir_b[1])
+    yaw = math.degrees(math.atan2(dir_u[0], dir_u[1]))
+    ux,uy,uz = ulocal((cx,cy,cz))
+    length = math.sqrt(run*run + dz*dz) * K
+    add(chunk, "STAIR", (ux,uy,uz), (width*K, STAIR_THICK, length), yaw, pitch, name)
+def add_stairs(chunk, stair_parts, house_boxes):
+    """Один наклонный бокс НА МАРШ (не на всю лестницу): ступени кластеризуются в марши,
+    направление и уклон считаются по линии «низ -> верх», а не по габариту всей лестницы
+    (иначе на Г-образных лестницах получались наложенные друг на друга боксы)."""
+    # отбираем СТУПЕНИ (коллекция STEPS), если есть; иначе все детали
+    treads = [o for o in stair_parts if "STEPS" in cpath(o)]
+    pool = treads if treads else stair_parts
+    if not pool:
+        return
+    # группируем по лестнице (ближайший сегмент коллекции со STAIR) и внутри — по маршам
+    by_stair = defaultdict(list)
+    for o in pool:
+        key = None
+        for seg in cpath(o).split("/"):
+            if "STAIR" in seg:
+                key = seg
+                break
+        by_stair[key or o.name].append(o)
 
+    for stair_name, parts in by_stair.items():
+        for _g, objs, boxes in _cluster_flights(parts):
+            if len(objs) == 0:
+                continue
+            # центры и высоты деталей
+            items = []
+            for o, b in zip(objs, boxes):
+                cx = (b[0]+b[1])/2; cy = (b[2]+b[3])/2; cz = (b[4]+b[5])/2
+                w = max(b[1]-b[0], b[3]-b[2])
+                items.append((cz, cx, cy, w, b))
+            if len(items) < 3:
+                _fit_bbox_flight(chunk, objs, stair_name)
+                continue
+            items.sort()
+            z_lo, z_hi = items[0][0], items[-1][0]
+            rise = z_hi - z_lo
+            if rise < 0.30:          # плоская площадка
+                _fit_bbox_flight(chunk, objs, stair_name)
+                continue
+            # направление подъёма: от нижней крайней детали к верхней крайней
+            lo = items[0]; hi = items[-1]
+            dx = hi[1] - lo[1]; dy = hi[2] - lo[2]
+            horiz = math.hypot(dx, dy)
+            if horiz < 0.5:          # направление не определить — фолбэк по габариту
+                _fit_bbox_flight(chunk, objs, stair_name)
+                continue
+            pitch = math.degrees(math.atan2(rise, horiz))
+            if pitch < 8.0 or pitch > 65.0:
+                continue
+            # длина по наклону: между крайними центрами + глубина ступени
+            tread_depth = max(0.25, max(it[4][1]-it[4][0] if it[4][1]-it[4][0] < 1.5 else 0.3 for it in items))
+            length_b = math.hypot(horiz, rise) + min(0.6, tread_depth)
+            width_b = max(it[3] for it in items)
+            if width_b < 0.5:
+                continue
+            # центр бокса: середина по линии подъёма
+            cx = (lo[1] + hi[1]) / 2; cy = (lo[2] + hi[2]) / 2
+            cz = (lo[0] + hi[0]) / 2 + 0.15      # чуть выше центров ступеней
+            ux, uy, uz = ulocal((cx, cy, cz))
+            # yaw: направление подъёма в Unity (x,z) = (-dx,-dy)
+            dux, duz = -dx, -dy
+            yaw = math.degrees(math.atan2(dux, duz))   # локальный +Z вдоль марша
+            add(chunk, "STAIR", (ux,uy,uz), (width_b*K, STAIR_THICK, length_b*K), yaw, pitch, stair_name)
 # ---------------------------------------------------------------- платформы -> OBJ
 
 def write_platforms(objs, fh):
@@ -248,9 +341,40 @@ def write_platforms(objs, fh):
 
 # ---------------------------------------------------------------- чанк
 
+def _dedupe_stairs(chunk):
+    """Убрать наложенные марши (центры ближе 0.6 м): на ADMIN/лестничных сборках
+    один пролёт мог превратиться в 2-3 бокса."""
+    global rows
+    kept = []
+    for r in rows:
+        if r[0] != chunk or r[1] != "STAIR":
+            continue
+        x, y, z = float(r[2]), float(r[3]), float(r[4])
+        dup = False
+        for k in kept:
+            if (x-k[0])**2 + (y-k[1])**2 + (z-k[2])**2 < 0.36:
+                dup = True
+                break
+        if not dup:
+            kept.append((x, y, z))
+    if not kept:
+        return
+    allowed = set((round(a,3), round(b,3), round(c,3)) for a,b,c in kept)
+    out = []
+    for r in rows:
+        if r[0] == chunk and r[1] == "STAIR":
+            key = (round(float(r[2]),3), round(float(r[3]),3), round(float(r[4]),3))
+            if key not in allowed:
+                continue
+        out.append(r)
+    removed = len(rows) - len(out)
+    rows = out
+    if removed:
+        log("    дедуп маршей: убрано %d" % removed)
+
 def process(fname, chunk, pfh):
     bpy.ops.wm.open_mainfile(filepath=os.path.join(RAW, fname))
-    walls=[]; floors=[]; roofs=[]; stairs=defaultdict(list); platforms=[]
+    walls=[]; floors=[]; roofs=[]; stair_parts=[]; platforms=[]
     structural = defaultdict(list)      # house -> list of (bbox)
 
     for o in bpy.data.objects:
@@ -264,10 +388,7 @@ def process(fname, chunk, pfh):
         h = house_of(o.name)
         structural[h].append(b)
         if cls == "STAIR":
-            p = cpath(o); key = o.name
-            for seg in p.split("/"):
-                if "STAIR" in seg: key = seg; break
-            stairs[key].append(o)
+            stair_parts.append(o)
         elif cls == "FLOOR":
             floors.append((b, o.name))
         elif cls == "ROOF":
@@ -296,7 +417,8 @@ def process(fname, chunk, pfh):
         log("  платформ в OBJ: %d" % cnt)
 
     add_walls(chunk, walls, house_boxes)
-    add_stairs(chunk, stairs, house_boxes)
+    add_stairs(chunk, stair_parts, house_boxes)
+    _dedupe_stairs(chunk)
     for b,nm in floors:
         add_axis(chunk, "FLOOR", b, nm, house_boxes.get(house_of(nm)))
     by_house = defaultdict(list)

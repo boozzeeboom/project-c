@@ -57,6 +57,14 @@ namespace ProjectC.EditorTools
             new Variant { Id = "ARCH_C",  Path = PrefabDir + "/PM_DOOR_SINGLE_ARCH_C.prefab",  W = 1.20f, H = 2.36f, D = 0.22f },
         };
 
+        /// <summary>Двустворчатая (полностью распашная, две створки). Габарит = по порогу.</summary>
+        private static readonly Variant DoubleVariant =
+            new Variant { Id = "DOUBLE_A", Path = PrefabDir + "/PM_DOOR_DOUBLE_A.prefab", W = 1.36f, H = 2.50f, D = 0.22f };
+
+        /// <summary>Диапазон ширины, в который двустворчатый префаб укладывается масштабом (0.85–1.30 от базы).</summary>
+        public const float DoubleMinW = 1.15f;
+        public const float DoubleMaxW = 1.78f;
+
         // --- фильтры отбора (одиночные створки)
         public const float MinWidth = 0.60f;   // уже — нужен отдельный узкий тип (0.56 м не жмём в 0.96)
         public const float MaxWidth = 1.38f;   // ARCH_C (1.20) тянется максимум на +15 %; шире — двустворчатые/ворота
@@ -67,6 +75,16 @@ namespace ProjectC.EditorTools
         public const float LeafMinWidthRatio = 0.30f;  // ...ширина >= 0.30 W (отсекает косяки/фурнитуру)
         public const float LeafSingleWidthRatio = 0.55f; // одна створка занимает >= 0.55 W
         public const float LeafMinThicknessRatio = 0.30f; // ...и тонкий: T <= 0.30 W
+
+        // --- сопряжение створок, разделённых на ДВЕ группы (торговая аллея: _DOOR_LEAF + _DOOR_LEAF_L)
+        public const float PairMaxGap = 0.12f;        // зазор между AABB створок, м
+        public const float PairMaxOverlap = 0.30f;    // нахлёст AABB (норма ~0.09), м
+        public const float PairMaxBottomDelta = 0.10f;// разница низа, м
+        public const float PairMaxHeightDelta = 0.30f;// разница высот, м
+
+        // --- «витрина»: широкое полотно-сборка, внутри которой есть настоящая створка
+        public const float LeafIslandMinW = 0.55f;
+        public const float LeafIslandMaxW = 1.35f;
 
         /// <summary>Имена-исключения: мебель, дверцы шкафов, наличники без полотна.</summary>
         private static readonly string[] SkipNameTokens =
@@ -90,6 +108,13 @@ namespace ProjectC.EditorTools
             public string Skip;        // null = годна к расстановке
             public string VariantId;
             public Vector3 Scale;
+            public string Kind = "single";  // single | double
+            /// <summary>Для пары: имена двух исходных групп-створок.</summary>
+            public string PairWith;
+            /// <summary>Годна как «витрина»: широкое полотно-сборка, внутри которой есть створка.</summary>
+            public bool AssemblyLeaf;
+            /// <summary>Не дверь, а сборка витрины/лавки: исходная группа должна остаться ВКЛЮЧЁННОЙ (иначе дыра в фасаде).</summary>
+            public bool KeepOriginal;
         }
 
         /// <summary>Состояние: что было на входе (для сводки).</summary>
@@ -98,6 +123,10 @@ namespace ProjectC.EditorTools
             public List<DoorRecord> Records = new List<DoorRecord>();
             public int ChunksFound;
             public int ChunksMissing;
+            public int PairsMerged;
+            public int DoubleCount;
+            public int AssemblyCount;
+            public int KeepOriginalCount;
             public readonly Dictionary<string, int> SkipReasons = new Dictionary<string, int>();
             public readonly Dictionary<string, int> VariantCount = new Dictionary<string, int>();
         }
@@ -161,18 +190,29 @@ namespace ProjectC.EditorTools
                     DoorRecord rec = AnalyzeDoor(chunk.name, d.gameObject);
                     if (rec == null) continue;
                     res.Records.Add(rec);
-                    if (rec.Skip != null)
-                    {
-                        int c;
-                        res.SkipReasons.TryGetValue(rec.Skip, out c);
-                        res.SkipReasons[rec.Skip] = c + 1;
-                    }
-                    else
-                    {
-                        int c;
-                        res.VariantCount.TryGetValue(rec.VariantId, out c);
-                        res.VariantCount[rec.VariantId] = c + 1;
-                    }
+                }
+            }
+
+            // --- сопряжение пар створок (двустворчатые двери торговой аллеи) ДО подсчёта статистики
+            res.PairsMerged = MergeLeafPairs(res);
+
+            // --- статистика: сводка по вариантам и причинам пропуска
+            foreach (DoorRecord rec in res.Records)
+            {
+                if (rec.KeepOriginal) { res.KeepOriginalCount++; continue; }
+                if (rec.Skip != null)
+                {
+                    int c;
+                    res.SkipReasons.TryGetValue(rec.Skip, out c);
+                    res.SkipReasons[rec.Skip] = c + 1;
+                }
+                else
+                {
+                    int c;
+                    res.VariantCount.TryGetValue(rec.VariantId, out c);
+                    res.VariantCount[rec.VariantId] = c + 1;
+                    if (rec.Kind == "double") res.DoubleCount++;
+                    if (rec.AssemblyLeaf) res.AssemblyCount++;
                 }
             }
             return res;
@@ -193,13 +233,15 @@ namespace ProjectC.EditorTools
             }
 
             AnalysisResult res = Analyze();
-            List<DoorRecord> ready = res.Records.FindAll(r => r.Skip == null);
+            List<DoorRecord> ready = res.Records.FindAll(r => r.Skip == null && !r.KeepOriginal);
+            List<DoorRecord> keepOriginal = res.Records.FindAll(r => r.KeepOriginal);
             if (!string.IsNullOrEmpty(chunkFilter))
             {
                 string token = chunkFilter.ToUpperInvariant();
                 ready = ready.FindAll(r => r.Chunk.ToUpperInvariant().Contains(token));
+                keepOriginal = keepOriginal.FindAll(r => r.Chunk.ToUpperInvariant().Contains(token));
             }
-            int skippedByFilter = res.Records.FindAll(r => r.Skip == null).Count - ready.Count;
+            int skippedByFilter = res.Records.FindAll(r => r.Skip == null && !r.KeepOriginal).Count - ready.Count;
             if (skippedByFilter > 0)
                 Debug.Log("[PRIMUM/Doors] Фильтр чанка '" + chunkFilter + "': исключено " + skippedByFilter + " годных дверей.");
 
@@ -253,6 +295,22 @@ namespace ProjectC.EditorTools
                 if (pf == null) Debug.LogError("[PRIMUM/Doors] Не найден префаб: " + v.Path);
                 prefabs[v.Id] = pf;
             }
+            {
+                GameObject pf = AssetDatabase.LoadAssetAtPath<GameObject>(DoubleVariant.Path);
+                if (pf == null) Debug.LogError("[PRIMUM/Doors] Не найден префаб: " + DoubleVariant.Path);
+                prefabs[DoubleVariant.Id] = pf;
+            }
+
+            // --- сборки витрин/лавок: не дверь, а фасадная геометрия — возвращаем исходную группу
+            //     (иначе в фасаде остаётся дыра, ровно то, на что жаловался заказчик).
+            int revived = 0;
+            foreach (DoorRecord r in keepOriginal)
+            {
+                if (r.Source == null) continue;
+                if (!r.Source.activeSelf) { r.Source.SetActive(true); revived++; }
+            }
+            if (revived > 0)
+                Debug.Log("[PRIMUM/Doors] Возвращено включёнными исходных сборок витрин/лавок: " + revived);
 
             int placed = 0;
             try
@@ -312,7 +370,9 @@ namespace ProjectC.EditorTools
                 EditorSceneManager.SaveScene(scene);
                 Debug.Log("[PRIMUM/Doors] Сцена сохранена: " + scene.path);
             }
-            Debug.Log("[PRIMUM/Doors] Поставлено префабов: " + placed + " (чанков: " + byChunk.Count + ").");
+            Debug.Log("[PRIMUM/Doors] Поставлено префабов: " + placed + " (чанков: " + byChunk.Count +
+                      ", двустворчатых: " + ready.FindAll(x => x.Kind == "double").Count +
+                      ", возвращено исходных сборок: " + revived + ").");
             return placed;
         }
 
@@ -338,12 +398,20 @@ namespace ProjectC.EditorTools
 
             foreach (DoorRecord r in res.Records)
             {
-                if (r.Skip != null) continue;
+                if (r.Skip != null || r.KeepOriginal) continue;
                 Transform chunkNode = placeRoot.Find(r.Chunk);
                 Transform inst = chunkNode != null ? chunkNode.Find(r.Name) : null;
                 if (inst == null) { missing++; continue; }
 
                 Bounds src = r.Source.GetComponent<Renderer>().bounds;
+                if (r.Kind == "double" && !string.IsNullOrEmpty(r.PairWith))
+                {
+                    // у пары исходная «дверь» — объединение AABB обеих групп-створок
+                    Transform chunkDoors = city.transform.Find(r.Chunk + "/" + DoorsNodeName);
+                    Transform twin = chunkDoors != null ? chunkDoors.Find(r.PairWith) : null;
+                    var twinR = twin != null ? twin.GetComponent<Renderer>() : null;
+                    if (twinR != null) src.Encapsulate(twinR.bounds);
+                }
                 Renderer[] rs = inst.GetComponentsInChildren<Renderer>(true);
                 if (rs.Length == 0) { missing++; continue; }
                 Bounds got = rs[0].bounds;
@@ -438,33 +506,112 @@ namespace ProjectC.EditorTools
             rec.LeafCount = leafs;
             rec.LeafRatio = leafRatio;
 
-            // --- фильтры
+            // --- имена-исключения проверяем ДО любых геометрических решений:
+            //     мебель и наличники не должны попадать ни в двери, ни в «возврат исходных сборок».
             string upper = go.name.ToUpperInvariant();
             if (upper.Contains("GATE")) { rec.Skip = "ворота (GATE)"; return rec; }
             foreach (string tok in SkipNameTokens)
             {
                 if (upper.Contains(tok)) { rec.Skip = "мебель/наличник (" + tok + ")"; return rec; }
             }
-            if (w > MaxWidth) { rec.Skip = "широкий проём >" + MaxWidth.ToString("F2", CultureInfo.InvariantCulture) + " (двустворчатые позже)"; return rec; }
+
+            // --- широкая группа: внутри неё может быть ОДНА настоящая створка (дверь + неподвижная
+            //     панель, либо витрина/лавка). Тогда решаем не «как у группы», а по правилам ниже:
+            //       W <= DoubleMaxW      → двустворчатый префаб на весь проём (панель заменяем второй створкой);
+            //       W >  DoubleMaxW      → вернуть исходную группу (это не дверь, а сборка витрины/лавки:
+            //                              выключенная, она оставляет дыру в фасаде).
+            float worldPerLocal = Mathf.Abs(go.transform.lossyScale.x);
+            if (worldPerLocal <= 0.0001f) worldPerLocal = 1f;
+            Bounds leafIsland;                       // локальные координаты меша
+            if (leafs <= 1 && w > MaxWidth &&
+                FindLeafIsland(mf.sharedMesh, localW, localH, worldPerLocal, h, out leafIsland))
+            {
+                Vector3 cW = go.transform.TransformPoint(leafIsland.center);
+                Vector3 sW = leafIsland.size * worldPerLocal;
+                float[] d = { Mathf.Abs(sW.x), Mathf.Abs(sW.y), Mathf.Abs(sW.z) };
+                System.Array.Sort(d);                                  // d[0] толщина, d[1] ширина, d[2] высота
+                if (d[1] >= LeafIslandMinW && d[1] <= LeafIslandMaxW &&
+                    d[2] >= MinHeight && d[2] <= MaxHeight && d[0] <= 0.22f)
+                {
+                    rec.AssemblyLeaf = true;
+                    if (h <= MaxHeight && w <= DoubleMaxW && w >= DoubleMinW)
+                    {
+                        // дверь + неподвижная панель → двустворчатая на весь проём
+                        rec.Kind = "double";
+                        FinishDouble(rec);
+                        return rec;
+                    }
+                    // витрина/лавка: дверь-префаб сюда не нужна, исходная сборка остаётся видимой
+                    rec.KeepOriginal = true;
+                    rec.Skip = null;
+                    return rec;
+                }
+            }
+
+            if (w > MaxWidth)
+            {
+                // двустворчатая дверь ОДНОЙ группой (два острова-полотна): дворцовый/административный набор
+                if (IsPalaceOrAdmin(chunkName))
+                {
+                    rec.Skip = "двустворчатая единой группой — ждёт набор дворцов/администрации";
+                    return rec;
+                }
+                if (w >= DoubleMinW && w <= DoubleMaxW && h >= MinHeight && h <= MaxHeight && t / w <= MaxThicknessRatio)
+                {
+                    rec.Kind = "double";
+                    FinishDouble(rec);
+                    return rec;
+                }
+                rec.Skip = "широкий проём >" + DoubleMaxW.ToString("F2", CultureInfo.InvariantCulture) + " (нужен набор ворот/витрин)";
+                return rec;
+            }
             if (w < MinWidth) { rec.Skip = "узкий проём <" + MinWidth.ToString("F2", CultureInfo.InvariantCulture); return rec; }
             if (h > MaxHeight) { rec.Skip = "высокий >" + MaxHeight.ToString("F2", CultureInfo.InvariantCulture); return rec; }
             if (h < MinHeight) { rec.Skip = "низкий <" + MinHeight.ToString("F2", CultureInfo.InvariantCulture); return rec; }
             if (w <= 0f || t / w > MaxThicknessRatio) { rec.Skip = "не дверь (толщина/ширина)"; return rec; }
             if (leafs == 0 || leafRatio < LeafSingleWidthRatio) { rec.Skip = "не одностворчатая (створок " + leafs + ", доля " + leafRatio.ToString("F2", CultureInfo.InvariantCulture) + ")"; return rec; }
 
-            // --- выбор варианта: минимум искажений по ширине+высоте
+            return FinishSingle(rec, h);
+        }
+
+        /// <summary>Проверки одиночной двери (по уже заполненным W/H/T) + выбор префаба и масштаба.</summary>
+        private static DoorRecord FinishSingle(DoorRecord rec, float groupH)
+        {
+            if (rec.W < MinWidth) { rec.Skip = "узкая створка <" + MinWidth.ToString("F2", CultureInfo.InvariantCulture); return rec; }
+            if (rec.W > MaxWidth) { rec.Skip = "широкая створка >" + MaxWidth.ToString("F2", CultureInfo.InvariantCulture); return rec; }
+            if (rec.H > MaxHeight) { rec.Skip = "высокая >" + MaxHeight.ToString("F2", CultureInfo.InvariantCulture); return rec; }
+            if (rec.H < MinHeight) { rec.Skip = "низкая <" + MinHeight.ToString("F2", CultureInfo.InvariantCulture); return rec; }
+            if (rec.W <= 0f || rec.T / rec.W > MaxThicknessRatio) { rec.Skip = "не дверь (толщина/ширина)"; return rec; }
+
             Variant best = null;
             float bestScore = float.MaxValue;
             foreach (Variant v in Variants)
             {
-                float score = Mathf.Abs(w / v.W - 1f) + Mathf.Abs(h / v.H - 1f);
+                float score = Mathf.Abs(rec.W / v.W - 1f) + Mathf.Abs(rec.H / v.H - 1f);
                 if (score < bestScore) { bestScore = score; best = v; }
             }
+            rec.Kind = "single";
             rec.VariantId = best.Id;
-            // Глубину подгоняем под фактическую толщину исходной двери (рама в откосе), с ограничением.
-            float sz = Mathf.Clamp(t / best.D, 0.6f, 1.6f);
-            rec.Scale = new Vector3(w / best.W, h / best.H, sz);
+            rec.Scale = new Vector3(rec.W / best.W, rec.H / best.H, Mathf.Clamp(rec.T / best.D, 0.6f, 1.6f));
             return rec;
+        }
+
+        /// <summary>Заполнить запись двустворчатой двери (пара створок одной группы/соседних групп).</summary>
+        private static void FinishDouble(DoorRecord rec)
+        {
+            rec.Kind = "double";
+            rec.VariantId = DoubleVariant.Id;
+            rec.Scale = new Vector3(rec.W / DoubleVariant.W, rec.H / DoubleVariant.H,
+                                    Mathf.Clamp(rec.T / DoubleVariant.D, 0.6f, 1.6f));
+            rec.Skip = null;
+        }
+
+        /// <summary>Дворцовые/административные чанки — для них отдельные наборы дверей, generic-префабы не ставим.</summary>
+        private static bool IsPalaceOrAdmin(string chunkName)
+        {
+            if (string.IsNullOrEmpty(chunkName)) return false;
+            string u = chunkName.ToUpperInvariant();
+            return u.Contains("ADMIN") || u.Contains("GLD");
         }
 
         /// <summary>
@@ -559,6 +706,190 @@ namespace ProjectC.EditorTools
             return x;
         }
 
+        /// <summary>
+        /// Ищет в меше остров-«полотно» по АБСОЛЮТНЫМ размерам (для широких сборок-витрин, где полотно
+        /// занимает малую долю AABB группы). Критерии в мировых метрах: толщина ≤ 0.20, ширина
+        /// LeafIslandMinW…LeafIslandMaxW, высота ≥ 0.75 H группы. Возвращает самый крупный по площади.
+        /// </summary>
+        private static bool FindLeafIsland(Mesh mesh, float localW, float localH, float worldPerLocal,
+                                           float groupHWorld, out Bounds best)
+        {
+            best = default;
+            if (mesh == null || localW <= 0f || localH <= 0f) return false;
+            List<Bounds> islands = MeshIslands(mesh);
+            bool found = false;
+            float bestArea = 0f;
+            foreach (Bounds bb in islands)
+            {
+                Vector3 s = bb.size * worldPerLocal;
+                float[] d = { Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z) };
+                System.Array.Sort(d);
+                float thick = d[0], width = d[1], height = d[2];
+                if (thick > 0.20f) continue;
+                if (width < LeafIslandMinW || width > LeafIslandMaxW) continue;
+                if (height < groupHWorld * 0.75f || height > MaxHeight) continue;
+                float area = width * height;
+                if (area > bestArea) { bestArea = area; best = bb; found = true; }
+            }
+            return found;
+        }
+
+        /// <summary>Связные острова меша (сварка по квантованию 1e-6 в локальных единицах) и их AABB.</summary>
+        private static List<Bounds> MeshIslands(Mesh mesh)
+        {
+            var result = new List<Bounds>();
+            if (mesh == null) return result;
+
+            Vector3[] verts = mesh.vertices;
+            int n = verts.Length;
+            if (n == 0) return result;
+
+            var index = new Dictionary<long, int>(n);
+            int[] rep = new int[n];
+            for (int i = 0; i < n; i++)
+            {
+                long kx = (long)Mathf.Round(verts[i].x * 1000000f);
+                long ky = (long)Mathf.Round(verts[i].y * 1000000f);
+                long kz = (long)Mathf.Round(verts[i].z * 1000000f);
+                long key = ((kx + 100000000L) * 400000003L + (ky + 100000000L)) * 400000003L + (kz + 100000000L);
+                int id;
+                if (!index.TryGetValue(key, out id))
+                {
+                    id = index.Count;
+                    index[key] = id;
+                }
+                rep[i] = id;
+            }
+
+            int groups = index.Count;
+            int[] parent = new int[groups];
+            for (int i = 0; i < groups; i++) parent[i] = i;
+
+            int[] tris = mesh.triangles;
+            for (int i = 0; i + 2 < tris.Length; i += 3)
+            {
+                int a = UnionFind(parent, rep[tris[i]]);
+                int b = UnionFind(parent, rep[tris[i + 1]]);
+                int c = UnionFind(parent, rep[tris[i + 2]]);
+                if (a != b) parent[a] = b;
+                int rb = UnionFind(parent, b);
+                int rc = UnionFind(parent, c);
+                if (rb != rc) parent[rb] = rc;
+            }
+
+            var boxes = new Dictionary<int, Bounds>(groups);
+            for (int i = 0; i < n; i++)
+            {
+                int root = UnionFind(parent, rep[i]);
+                Bounds bb;
+                if (!boxes.TryGetValue(root, out bb))
+                {
+                    bb = new Bounds(verts[i], Vector3.zero);
+                    boxes[root] = bb;
+                }
+                else
+                {
+                    bb.Encapsulate(verts[i]);
+                    boxes[root] = bb;
+                }
+            }
+            result.AddRange(boxes.Values);
+            return result;
+        }
+
+        // ------------------------------------------------------------------ пары створок
+
+        /// <summary>
+        /// Торговая аллея: одна двустворчатая дверь разложена на ДВЕ группы
+        /// (<c>&lt;дом&gt;_DOOR_LEAF</c> + <c>&lt;дом&gt;_DOOR_LEAF_L</c>). Проверяем соседство по ширине,
+        /// копланарность (одна ось толщины, совпадает координата по толщине), общий низ и близкие высоты —
+        /// и превращаем пару в ОДИН проём с двустворчатым префабом. Обе группы помечаются как объединённые.
+        /// </summary>
+        private static int MergeLeafPairs(AnalysisResult res)
+        {
+            var byChunk = new Dictionary<string, List<DoorRecord>>();
+            foreach (DoorRecord r in res.Records)
+            {
+                if (r.Source == null) continue;
+                if (r.AssemblyLeaf) continue;
+                string upper = r.Name.ToUpperInvariant();
+                if (upper.Contains("GATE")) continue;
+                List<DoorRecord> list;
+                if (!byChunk.TryGetValue(r.Chunk, out list)) { list = new List<DoorRecord>(); byChunk[r.Chunk] = list; }
+                list.Add(r);
+            }
+
+            int merged = 0;
+            var newRecords = new List<DoorRecord>();
+            foreach (var kv in byChunk)
+            {
+                List<DoorRecord> list = kv.Value;
+                var used = new bool[list.Count];
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (used[i]) continue;
+                    for (int j = i + 1; j < list.Count; j++)
+                    {
+                        if (used[j]) continue;
+                        DoorRecord a = list[i], b = list[j];
+                        if (Mathf.Abs(a.RotY - b.RotY) > 1f) continue;
+                        if (a.LeafCount < 1 || b.LeafCount < 1) continue;
+                        if (Mathf.Abs(a.Pivot.y - b.Pivot.y) > PairMaxBottomDelta) continue;
+                        if (Mathf.Abs(a.H - b.H) > PairMaxHeightDelta) continue;
+
+                        bool widthAlongX = a.RotY < 45f;   // толщина по Z → ширина по X
+                        float c1 = widthAlongX ? a.Pivot.x : a.Pivot.z;
+                        float c2 = widthAlongX ? b.Pivot.x : b.Pivot.z;
+                        float t1 = widthAlongX ? a.Pivot.z : a.Pivot.x;
+                        float t2 = widthAlongX ? b.Pivot.z : b.Pivot.x;
+                        float maxThick = Mathf.Max(a.T, b.T);
+                        if (Mathf.Abs(t1 - t2) > Mathf.Max(0.15f, maxThick * 0.6f)) continue;
+
+                        float gap = Mathf.Abs(c1 - c2) - (a.W + b.W) * 0.5f;
+                        if (gap > PairMaxGap || gap < -PairMaxOverlap) continue;
+
+                        float lo = Mathf.Min(c1 - a.W * 0.5f, c2 - b.W * 0.5f);
+                        float hi = Mathf.Max(c1 + a.W * 0.5f, c2 + b.W * 0.5f);
+                        float unionW = hi - lo;
+                        if (unionW < DoubleMinW || unionW > DoubleMaxW) continue;
+                        float mid = (lo + hi) * 0.5f;
+
+                        var mergedRec = new DoorRecord
+                        {
+                            Chunk = a.Chunk,
+                            Name = a.Name + "+" + b.Name,
+                            Source = a.Source,
+                            Pivot = new Vector3(
+                                widthAlongX ? mid : (a.Pivot.x + b.Pivot.x) * 0.5f,
+                                Mathf.Min(a.Pivot.y, b.Pivot.y),
+                                widthAlongX ? (a.Pivot.z + b.Pivot.z) * 0.5f : mid),
+                            RotY = a.RotY,
+                            W = unionW,
+                            H = Mathf.Max(a.H, b.H),
+                            T = Mathf.Max(a.T, b.T),
+                            LeafCount = 2,
+                            LeafRatio = 0f,
+                            Verts = a.Verts + b.Verts,
+                            PairWith = b.Name,
+                            Kind = "double"
+                        };
+                        FinishDouble(mergedRec);
+
+                        a.Skip = string.IsNullOrEmpty(a.Skip) ? "объединена в двустворчатую пару" : a.Skip + "; пара";
+                        b.Skip = string.IsNullOrEmpty(b.Skip) ? "объединена в двустворчатую пару" : b.Skip + "; пара";
+                        a.PairWith = b.Name;
+                        b.PairWith = a.Name;
+                        used[i] = true; used[j] = true;
+                        newRecords.Add(mergedRec);
+                        merged++;
+                        break;
+                    }
+                }
+            }
+            res.Records.AddRange(newRecords);
+            return merged;
+        }
+
         // ------------------------------------------------------------------ служебное
 
         private static Transform FindWorldRoot(Transform city)
@@ -590,6 +921,10 @@ namespace ProjectC.EditorTools
             sb.AppendLine("[PRIMUM/Doors] " + stage + ": всего исходных групп " + res.Records.Count +
                           ", годно " + ready + ", чанков " + res.ChunksFound +
                           (res.ChunksMissing > 0 ? " (без узла DOORS: " + res.ChunksMissing + ")" : ""));
+            sb.AppendLine("    двустворчатых пар сопряжено: " + res.PairsMerged +
+                          ", из них двустворчатых префабов: " + res.DoubleCount +
+                          ", дверей поставлено по створке внутри витрины: " + res.AssemblyCount +
+                          ", исходных сборок витрин возвращено: " + res.KeepOriginalCount);
             foreach (var kv in res.VariantCount)
                 sb.AppendLine("    вариант " + kv.Key + ": " + kv.Value);
             foreach (var kv in res.SkipReasons)
@@ -607,13 +942,14 @@ namespace ProjectC.EditorTools
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
                 var sb = new StringBuilder();
-                sb.AppendLine("chunk,door,action,variant,x,y,z,rot_y,w,h,t,scale_x,scale_y,scale_z,leafs,leaf_ratio,verts,skip");
+                sb.AppendLine("chunk,door,action,kind,variant,x,y,z,rot_y,w,h,t,scale_x,scale_y,scale_z,leafs,leaf_ratio,verts,assembly_leaf,pair_with,skip");
                 foreach (DoorRecord r in res.Records)
                 {
                     bool ok = r.Skip == null;
                     sb.Append(r.Chunk).Append(',')
                       .Append(Csv(r.Name)).Append(',')
-                      .Append(ok ? "place" : "skip").Append(',')
+                      .Append(r.KeepOriginal ? "keep_original" : (ok ? "place" : "skip")).Append(',')
+                      .Append(r.Kind).Append(',')
                       .Append(ok ? r.VariantId : "").Append(',')
                       .Append(F(r.Pivot.x)).Append(',')
                       .Append(F(r.Pivot.y)).Append(',')
@@ -628,6 +964,8 @@ namespace ProjectC.EditorTools
                       .Append(r.LeafCount).Append(',')
                       .Append(F(r.LeafRatio)).Append(',')
                       .Append(r.Verts).Append(',')
+                      .Append(r.AssemblyLeaf ? "1" : "0").Append(',')
+                      .Append(Csv(r.PairWith)).Append(',')
                       .Append(Csv(r.Skip)).AppendLine();
                 }
                 File.WriteAllText(full, sb.ToString(), new UTF8Encoding(false));

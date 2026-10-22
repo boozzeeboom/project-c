@@ -199,3 +199,6 @@ Assets/Generated_Models/*
 Assets/TextMesh Pro/Resources/Fonts & Materials/*
 Assets/_Project/Art/*
 _analysis/*
+ 
+# Python bytecode from the Blender tooling in docs/world/primum_city
+__pycache__/

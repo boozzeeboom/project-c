@@ -6,9 +6,21 @@
 #   <ДОМ>_<слот/этаж>_<ВИД>_...
 # и выгружается в ОДИН OBJ на чанк: одна группа `o` на (класс × дом).
 #
-# Классы: WALL (стены, с настоящими проёмами), FLOOR (FLOOR + SLAB — этажные перекрытия),
-#         ROOF (крыши/парапеты), STAIR (марши, STEPS, PORCH, VER — точные ступени и площадки).
-# Не берём: окна (WIN), двери (DOOR), мебель (FURN), декор (DTL/FAC/TQ/PLANT/SIGN).
+# Классы: WALL (стены и перегородки, с настоящими проёмами), FLOOR (FLOOR + SLAB — этажные
+#         перекрытия), ROOF (крыши/парапеты), STAIR (марши, ступени, крыльца).
+# Не берём: окна (WIN), двери (DOOR), мебель (FURN), декор (DTL/FAC/PLANT/SIGN), перила.
+#
+# ПРАВКА 2 (по замечаниям после первой сборки — «много дыр» и «нет перекрытий между этажами»):
+#   1) плиты этажей в модели названы SLAB1/SLAB2, F2_*/F3_*, ATTIC — прежний словарь их не знал
+#      и выбрасывал целиком (см. houses_gaps.log: RES_NE_01_F2_W, TRD_S_17_SLAB2_01 …);
+#   2) внутренние стены/перегородки названы INT_WA_0, INT_W_SEG_L, PART2_E, BACKWALL_W, W2_* —
+#      по прежним правилам тоже уходили в NO_KIND, из-за чего межкомнатных стен не было вовсе;
+#   3) суффикс копий Blender (.001/.002) ломал разбор вида: FLOOR.001 -> не FLOOR;
+#   4) марши в S9_TRD-S2 названы ST_FLIGHT — не попадали в STAIR;
+#   5) добавлен ГЕОМЕТРИЧЕСКИЙ ЗАПАСНОЙ ВАРИАНТ: крупный объект без видового токена, но явно
+#      плоская плита (dz << min(dx,dy)) уходит в FLOOR, а явно тонкая и высокая (min(dx,dy) <<
+#      max dim) — в WALL. Двухмысленные «кубы» (памятники, тумбы) не берём: лучше пропуск, чем
+#      заваренный проход.
 #
 # Выход: docs/world/primum_city/04_COLLIDERS/houses_obj/<CHUNK>.obj
 # Координаты — локальные координаты корня PRIMUM_COLLIDERS: local = (-s.x, s.z, -s.y),
@@ -17,7 +29,7 @@
 # Запуск:
 #   "W:\...\blender.exe" -b --factory-startup --python houses_export.py
 #   EXPORT_CHUNKS="S9_TRD-S2,S6_NQ" — фильтр по подстроке имени чанка
-import bpy, os, time
+import bpy, os, time, re
 from mathutils import Vector
 from collections import defaultdict
 
@@ -28,15 +40,30 @@ OUTDIR = r"C:\Projects\ProjectC_client\docs\world\primum_city\04_COLLIDERS\house
 K = 1.07
 C = (7.5, -148.0, 18.5)
 
-# виды деталей, которые берём в физику
-STAIR_KINDS = {"STAIR", "STAIRS", "STEPS", "STEP", "PORCH", "STAIRCASE"}
-FLOOR_KINDS = {"FLOOR", "FLOORS", "SLAB", "SLABS", "VER", "VERANDA", "GALLERY"}
-ROOF_KINDS = {"ROOF", "ROOFS", "PARAPET", "CORBEL"}
-WALL_KINDS = {"WALL", "WALLS", "SHELL", "PART", "PARTITION", "COLUMN", "COL", "ARCADE", "ARCH", "BEAM"}
-# что игнорируем (мебель, окна, двери, декор)
-DENY = {"WIN", "WINDOW", "WINBOX", "WINPLANT", "DOOR", "DOORS", "FURN", "FURNITURE",
-        "DTL", "DETAIL", "DETAILS", "FAC", "FACADE", "PLANT", "SIGN", "BANNER",
-        "RUG", "CARPET", "CLOTH", "LAMP", "LANTERN", "HANG", "DECOR"}
+# ---------------------------------------------------------------- словари видов
+STAIR_NAMES = {"STAIR", "STAIRS", "STAIRCASE", "STEPS", "STEP", "PORCH", "FLIGHT", "ST"}
+FLOOR_NAMES = {"FLOOR", "FLOORS", "SLAB", "SLABS", "VER", "VERANDA", "GALLERY",
+               "ATTIC", "MEZZ", "MEZZANINE", "PLATFORM"}
+ROOF_NAMES = {"ROOF", "ROOFS", "PARAPET", "CORBEL", "GABLE", "CORNICE", "AWNING",
+              "TENT", "HIP", "HIPGABLE", "MANSARD", "DORMER"}
+WALL_NAMES = {"WALL", "WALLS", "SHELL", "PART", "PARTITION", "PARTITIONS", "COLUMN",
+              "COL", "ARCADE", "ARCH", "BEAM", "BACKWALL", "PILASTER", "PILLAR",
+              "PANEL", "PANE", "LINTEL", "JAMB"}
+# что физически не нужно и опасно (двери/окна/мебель/декор/перила/сантехника)
+HARD_DENY = {"WIN", "WINDOW", "WINBOX", "WINPLANT", "DOOR", "DOORS", "FURN", "FURNITURE",
+             "DTL", "DETAIL", "DETAILS", "SIGN", "BANNER", "RUG", "CARPET", "CLOTH",
+             "LAMP", "LANTERN", "HANG", "DECOR", "PLANT", "FAC", "FACADE",
+             "BAL", "BALS", "BALUST", "BALUSTER", "RAIL", "RAILS", "RAILING",
+             "GUARD", "HANDRAIL", "HAND", "SKIRT", "KICK", "CAP", "CAPS",
+             "WC", "BED", "ISLAND", "COUNTER", "SHELF", "SHELVES", "MIRROR",
+             "SINK", "TOILET", "TUB", "GUTTER", "PLINTH"}
+KIND_ALL = STAIR_NAMES | FLOOR_NAMES | ROOF_NAMES | WALL_NAMES | HARD_DENY
+ANCESTORS = ("DOORS", "LAMPS", "OUTLIERS", "DOOR_PARTS_UNASSIGNED")
+
+# геометрический запасной вариант
+BIG_MIN = 1.5        # м, минимальный габарит для запасного класса
+PLATE_T = 0.30       # dz <= PLATE_T * max  => плита
+WALL_T = 0.30        # min(dx,dy) <= WALL_T * max => стена (при достаточной высоте)
 
 
 def ulocal(p):
@@ -53,31 +80,85 @@ def has_ancestor(o, names):
     return False
 
 
-def klass(tokens):
-    """Класс детали по токенам имени, либо None."""
-    t = set(tokens)
-    if t & DENY:
-        return None
-    if t & STAIR_KINDS:
-        return "STAIR"
-    if t & ROOF_KINDS:
-        return "ROOF"
-    if t & FLOOR_KINDS:
-        return "FLOOR"
-    if t & WALL_KINDS:
-        return "WALL"
-    return None
+def base_tokens(name):
+    """UPPER, без суффикса копий Blender (.001) — иначе FLOOR.001 перестаёт быть FLOOR."""
+    out = []
+    for t in name.upper().split("_"):
+        t = t.split(".")[0]
+        if t:
+            out.append(t)
+    return out
+
+
+def alpha(t):
+    """Токен без хвостовых цифр: SLAB1 -> SLAB, PART2 -> PART, F2 -> F."""
+    return re.sub(r"\d+$", "", t)
+
+
+def klass_of(o, toks):
+    """(класс, правило). Правило нужно для отчёта — видно, чем именно объект попал в физику."""
+    if any(t in HARD_DENY for t in toks):
+        return None, "deny"
+    a = [alpha(t) for t in toks]
+
+    if any(t in STAIR_NAMES for t in a):
+        return "STAIR", "name"
+    if any(t in FLOOR_NAMES for t in a) or any(t.startswith("SLAB") for t in toks):
+        return "FLOOR", "name"
+    # F2_*/F3_* — плиты этажей, но только не для внутренних деталей (INT_F2_P — это стена)
+    if not any(t.startswith("INT") for t in toks) \
+            and any(re.fullmatch(r"F\d+", t) for t in toks):
+        return "FLOOR", "name"
+    if any(t in ROOF_NAMES for t in a) or any(t.startswith("RF") for t in toks):
+        return "ROOF", "name"
+    if any(t in WALL_NAMES for t in a) or any(t.startswith("INT") for t in toks) \
+            or any(t.startswith("FILL") for t in toks):
+        return "WALL", "name"
+
+    # ---- запасной вариант по габаритам: только однозначные формы ----
+    dx, dy, dz = o.dimensions
+    mx = max(dx, dy, dz)
+    if mx < BIG_MIN:
+        return None, "small"
+    mn_h = min(dx, dy)
+    if dz <= PLATE_T * mx and dz <= 0.60 * mn_h:
+        return "FLOOR", "bbox-plate"
+    if mn_h <= WALL_T * mx and dz >= 0.50 * mx:
+        return "WALL", "bbox-wall"
+    return None, "ambiguous"
 
 
 def house_of(tokens):
-    """Дом = токены до первого «этажного» (чистое число) или видового токена."""
-    kind_all = STAIR_KINDS | FLOOR_KINDS | ROOF_KINDS | WALL_KINDS | DENY
+    """Дом = токены до первого видового токена; последний чисто-цифровой токен — этаж,
+    если перед ним тоже стоит цифра (RES_S2_02_0_WALL -> RES_S2_02, но RES_NE_01_F2_W -> RES_NE_01)."""
     out = []
     for t in tokens:
-        if t in kind_all or (t.isdigit() and len(t) <= 2):
+        if t in KIND_ALL or t.startswith("INT") or t.startswith("SLAB") \
+                or t.startswith("RF") or re.fullmatch(r"F\d+", t):
             break
         out.append(t)
+    if len(out) >= 2 and out[-1].isdigit() and out[-2].isdigit():
+        out = out[:-1]
     return "_".join(out) if out else "_".join(tokens[:2])
+
+
+def add_level_audit(objs_by_house, house_floors, house_z, chunk, stats):
+    """Сколько у дома уровней перекрытий против числа этажей (по высоте коробки)."""
+    for house in sorted(house_floors):
+        levs = []
+        for z in sorted(house_floors[house]):
+            if not levs or z - levs[-1] > 0.5:
+                levs.append(z)
+        z0, z1 = house_z[house]
+        h = z1 - z0
+        storeys = max(1, int(round(h / 3.2)))
+        stats["houses"] += 1
+        if storeys >= 2:
+            stats["multi"] += 1
+            if len(levs) < 2:
+                stats["no_upper_floor"] += 1
+                if len(stats["examples"]) < 5:
+                    stats["examples"].append("%s h=%.1f m уровней=%d" % (house, h, len(levs)))
 
 
 def list_chunks():
@@ -96,21 +177,39 @@ def export_chunk(fname):
     bpy.ops.wm.open_mainfile(filepath=os.path.join(RAW, fname))
     chunk = fname.replace(".blend", "")
     groups = defaultdict(list)
+    dropped = defaultdict(lambda: [0, 0.0])      # правило -> [объектов, м3 габарита]
+    by_rule = defaultdict(int)
+    house_floors = defaultdict(list)             # дом -> z верхних граней плит
+    house_z = defaultdict(lambda: [1e9, -1e9])
+
     for o in bpy.data.objects:
         if o.type != 'MESH' or o.library is not None:
             continue
         if o.data is None or len(o.data.polygons) == 0:
             continue
-        if has_ancestor(o, ("DOORS", "LAMPS", "OUTLIERS", "DOOR_PARTS_UNASSIGNED")):
+        if has_ancestor(o, ANCESTORS):
             continue
-        toks = o.name.upper().split("_")
-        cls = klass(toks)
+        toks = base_tokens(o.name)
+        cls, rule = klass_of(o, toks)
         if cls is None:
+            d = o.dimensions
+            if max(d) >= BIG_MIN and rule == "ambiguous":
+                dropped[rule][0] += 1
+                dropped[rule][1] += d.x * d.y * d.z
             continue
         groups[(cls, house_of(toks))].append(o)
+        by_rule[rule] += 1
+        h = house_of(toks)
+        zt = (o.matrix_world @ Vector(o.bound_box[6]))[2]      # верх габарита объекта
+        if cls == "FLOOR":
+            house_floors[h].append(zt)
+        zlo = min((o.matrix_world @ Vector(b))[2] for b in o.bound_box)
+        zhi = max((o.matrix_world @ Vector(b))[2] for b in o.bound_box)
+        house_z[h][0] = min(house_z[h][0], zlo)
+        house_z[h][1] = max(house_z[h][1], zhi)
 
     if not groups:
-        return 0, 0, {}
+        return 0, 0, {}, by_rule, {}, {}
 
     os.makedirs(OUTDIR, exist_ok=True)
     out = os.path.join(OUTDIR, chunk + ".obj")
@@ -125,7 +224,6 @@ def export_chunk(fname):
             objs = groups[(cls, house)]
             name = ("%s__%s__%s" % (chunk, cls, house))[:120].replace(" ", "_")
             fh.write("o %s\n" % name)
-            base = nv + 1
             for o in objs:
                 me = o.data
                 me.calc_loop_triangles()
@@ -149,7 +247,9 @@ def export_chunk(fname):
                 per_cls[cls][0] += 1
     print("    bbox local x[%.0f..%.0f] y[%.0f..%.0f] z[%.0f..%.0f]" %
           (bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]), flush=True)
-    return nv, nt, per_cls
+    if dropped:
+        print("    отброшено неоднозначных крупных: %d" % dropped["ambiguous"][0], flush=True)
+    return nv, nt, per_cls, by_rule, house_floors, house_z
 
 
 def main():
@@ -161,19 +261,38 @@ def main():
     print("=== houses_export: чанков %d ===" % len(chunks), flush=True)
     t0 = time.time()
     tot_v = tot_t = 0
+    tot_rule = defaultdict(int)
+    tot_stats = defaultdict(int)
+    tot_stats["examples"] = []
     for f in chunks:
         try:
-            nv, nt, per = export_chunk(f)
+            nv, nt, per, by_rule, house_floors, house_z = export_chunk(f)
         except Exception as e:
             print("ERROR %s: %s" % (f, e), flush=True)
             continue
+        stats = defaultdict(int)
+        stats["examples"] = []
+        add_level_audit(None, house_floors, house_z, f, stats)
+        for k in ("houses", "multi", "no_upper_floor"):
+            tot_stats[k] += stats[k]
+        tot_stats["examples"].extend(stats["examples"][:2])
+        for k, v in by_rule.items():
+            tot_rule[k] += v
         tot_v += nv
         tot_t += nt
-        print("  %-44s verts=%8d tris=%8d  %s" % (
+        print("  %-44s verts=%8d tris=%8d  %s  [%s]" % (
             f.replace("PRIMUM_HOUSES_", "").replace(".blend", ""), nv, nt,
-            " ".join("%s=%d" % (k, v[0]) for k, v in sorted(per.items()))), flush=True)
-    print("=== ИТОГО verts=%d tris=%d  (%.1f c) ===" % (tot_v, tot_t, time.time() - t0), flush=True)
+            " ".join("%s=%d" % (k, v[0]) for k, v in sorted(per.items())),
+            " ".join("%s=%d" % kv for kv in sorted(tot_rule.items()))), flush=True)
+    print("=== ИТОГО verts=%d tris=%d  (%.1f c) ===  правила: %s" % (
+        tot_v, tot_t, time.time() - t0,
+        " ".join("%s=%d" % kv for kv in sorted(tot_rule.items()))), flush=True)
+    print("=== ЭТАЖИ: домов=%d, многоэтажных=%d, из них без верхнего перекрытия=%d ===" % (
+        tot_stats["houses"], tot_stats["multi"], tot_stats["no_upper_floor"]), flush=True)
+    for ex in tot_stats["examples"][:8]:
+        print("     пример: " + ex, flush=True)
 
 
-main()
+if __name__ == "__main__":
+    main()
 print("DONE")

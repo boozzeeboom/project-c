@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -25,10 +26,11 @@ namespace ProjectC.EditorTools
     ///     а не на самих FBX-узлах: переживает переимпорт FBX, перезапуск идемпотентен;
     ///   - некоробочные формы: круглые бары (токены capsuleTokens: PIPE/REBAR/TUBE) получают
     ///     CapsuleCollider вдоль длинной оси; кривые меши (токены sliceTokens) режутся slab'ами
-    ///     с шагом sliceStep (сечения — по вершинам и треугольникам, дыр нет), соседние куски
-    ///     с одинаковым сечением склеиваются в пределах sliceAdaptTol (прямые участки — 1 бокс,
-    ///     сужения — детально, напр. нос Deck_Main_Bow); наклонные плоские покрываются
-    ///     повёрнутыми боксами 1-в-1;
+    ///     с шагом sliceStep (сечение сканируется лучом по треугольникам, знак входа/выхода —
+    ///     поэтому проёмы и полости внутри контура остаются ПУСТЫМИ — бокс не заливает дырку),
+    ///     соседние куски с одинаковым сечением склеиваются в пределах sliceAdaptTol (прямые
+    ///     участки — 1 бокс, сужения — детально, напр. нос Deck_Main_Bow); наклонные плоские
+    ///     покрываются повёрнутыми боксами 1-в-1;
     ///   - режим корабля (shipMode): без флага static — '<Root>_Colliders' едет с Rigidbody
     ///     как compound-коллайдер (для поселений static дешевле, не включать);
     ///   - точечная нарезка (BuildSlicesDirect): режет всё выделенное с шагом sliceStep,
@@ -77,7 +79,7 @@ namespace ProjectC.EditorTools
             [Tooltip("Подстроки имён (через запятую): кривые/гнутые меши (арки, гнутые листы, U-трубы) режутся на сегменты вдоль длинной оси. Внутри slab'а связные части идут отдельными боксами — полость U-трубы не заливается. Пусто = не резать.")]
             public string sliceTokens = "";
 
-            [Tooltip("Длина куска нарезки (м, world) вдоль длинной оси — шаг измерения. Пустые куски (дыры в геометрии) пропускаются. Нужен Read/Write Enabled у меша, иначе — обычный бокс.")]
+            [Tooltip("Длина куска нарезки (м, world) вдоль длинной оси — шаг измерения. Пустые куски (дыры в геометрии) и проёмы внутри контура пропускаются: куски строятся по фактическому веществу. Read/Write у меша не требуется.")]
             public float sliceStep = 1.0f;
 
             [Tooltip("Адаптив нарезки (м, world): соседние куски с сечением, совпадающим в пределах допуска, склеиваются в один (прямая корма — 1 бокс, сужение — детально). 0 — не склеивать, каждый непустой slab своим боксом.")]
@@ -193,6 +195,38 @@ namespace ProjectC.EditorTools
         private static string GeneratedSuffixRootName(GameObject root)
         {
             return root.name + GeneratedSuffix;
+        }
+
+        /// <summary>
+        /// Фактический трансформ генерации для Merge/Dry Run. После Build выделение уходит на
+        /// сам сгенерированный корень ('<Root>_Colliders'), и если его же отдать в Merge, слепое
+        /// 'root.name + _Colliders' ищет несуществующий 'ADM_DRUM_Colliders_Colliders'.
+        /// Поэтому: сначала по имени, а если его нет и корень уже кончается на _Colliders —
+        /// работаем с ним самим.
+        /// </summary>
+        private static Transform ResolveGeneratedRoot(GameObject root, out string genName)
+        {
+            genName = null;
+            if (root == null) return null;
+            genName = GeneratedSuffixRootName(root);
+            Transform found = root.transform.Find(genName);
+            if (found != null) return found;
+            if (root.name.EndsWith(GeneratedSuffix, StringComparison.Ordinal))
+            {
+                genName = root.name;
+                return root.transform;
+            }
+            // Выделена группа ВНУТРИ генерации (напр. 'Root' от groupByTopLevel) —
+            // клеим внутри неё, а не ищем несуществующий 'Root_Colliders'.
+            for (Transform p = root.transform.parent; p != null; p = p.parent)
+            {
+                if (p.name.EndsWith(GeneratedSuffix, StringComparison.Ordinal))
+                {
+                    genName = root.name;
+                    return root.transform;
+                }
+            }
+            return null;
         }
 
         /// <summary>Только посчитать в режиме добавления (без создания объектов).</summary>
@@ -558,7 +592,8 @@ namespace ProjectC.EditorTools
         {
             var rep = new MergeReport();
             if (root == null) return rep;
-            Transform gen = root.transform.Find(GeneratedSuffixRootName(root));
+            string genName;
+            Transform gen = ResolveGeneratedRoot(root, out genName);
             if (gen == null) return rep;
             PlanMerge(gen, gapWorld, alignWorld, scopeCsv, mergeScope, rep);
             return rep;
@@ -576,11 +611,12 @@ namespace ProjectC.EditorTools
                 Debug.LogError("[SettlementColliders] Корень не задан.");
                 return rep;
             }
-            Transform gen = root.transform.Find(GeneratedSuffixRootName(root));
+            string genName;
+            Transform gen = ResolveGeneratedRoot(root, out genName);
             if (gen == null)
             {
-                Debug.LogError("[SettlementColliders] Merge: нет генерации '" +
-                    GeneratedSuffixRootName(root) + "' — сначала Build.");
+                Debug.LogError("[SettlementColliders] Merge: нет генерации '" + genName +
+                    "' — сначала Build.");
                 return rep;
             }
 
@@ -1113,10 +1149,12 @@ namespace ProjectC.EditorTools
                 int longAxis = LongestAxis(f.sharedMesh.bounds.size);
                 float per = worldPerLocal[longAxis] < Epsilon ? 1f : worldPerLocal[longAxis];
                 List<SliceBox> slices = null;
-                if (f.sharedMesh.isReadable)
-                    slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per, Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal);
-                else
-                    report.unreadSlices++;
+                // Read/Write у импортированных FBX обычно выключен — это не повод строить габаритный
+                // бокс: данные всё равно читаются через MeshDataArray. dataUnread — только полностью
+                // недоступный меш.
+                slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per,
+                    Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal, out bool unreadMesh);
+                if (unreadMesh) report.unreadSlices++;
 
                 string baseName = HolderNameFor(root.transform, go.transform);
                 var it = new Item { source = go, mesh = f.sharedMesh, renderer = r };
@@ -1204,18 +1242,103 @@ namespace ProjectC.EditorTools
         }
 
         /// <summary>
-        /// Нарезать меш вдоль локальной оси slab'ами. Внутри slab'а содержимое делится на
-        /// связные компоненты (общие вершины треугольников): каждая — своим боксом.
-        /// U-образная труба даст 2 бокса на стойки, пустота между ними НЕ заливается;
-        /// сплошная плита — 1 бокс на slab. Источники точек: вершины внутри + клиппинг
-        /// треугольников к slab'ам (длинные квады накрываются, дыр вдоль оси нет).
+        /// Данные меша для нарезки. Read/Write у импортированных FBX обычно выключен, но в редакторе
+        /// вершины и индексы всё равно доступны через MeshDataArray (нативная выборка, без копии
+        /// в Mesh.vertices), поэтому флаг isReadable больше не запрещает нарезку.
+        /// Индексы собираются по ВСЕМ треугольным сабмешам: Mesh.triangles отдаёт только нулевой.
+        /// false — данных нет совсем (тогда нарезка невозможна и остаётся габаритный бокс).
+        /// </summary>
+        private static bool TryReadMeshData(Mesh mesh, out Vector3[] verts, out int[] tris)
+        {
+            verts = null;
+            tris = null;
+            if (mesh == null || mesh.vertexCount == 0) return false;
+
+            if (mesh.isReadable)
+            {
+                try
+                {
+                    verts = mesh.vertices;
+                    tris = mesh.triangles;
+                }
+                catch { verts = null; tris = null; }
+                if (verts != null && verts.Length > 0)
+                {
+                    if (tris == null) tris = Array.Empty<int>();
+                    return true;
+                }
+                verts = null;
+                tris = null;
+            }
+
+            try
+            {
+                using (var data = Mesh.AcquireReadOnlyMeshData(mesh))
+                {
+                    if (data.Length == 0) return false;
+                    Mesh.MeshData d = data[0];
+                    int vc = d.vertexCount;
+                    if (vc == 0) return false;
+
+                    var vb = new NativeArray<Vector3>(vc, Allocator.Temp);
+                    try { d.GetVertices(vb); verts = vb.ToArray(); }
+                    finally { vb.Dispose(); }
+
+                    int total = 0;
+                    for (int s = 0; s < d.subMeshCount; s++)
+                    {
+                        var sm = d.GetSubMesh(s);
+                        if (sm.topology == MeshTopology.Triangles) total += (int)sm.indexCount;
+                    }
+
+                    tris = new int[total];
+                    int off = 0;
+                    for (int s = 0; s < d.subMeshCount; s++)
+                    {
+                        var sm = d.GetSubMesh(s);
+                        int cnt = (int)sm.indexCount;
+                        if (sm.topology != MeshTopology.Triangles || cnt <= 0) continue;
+                        var ib = new NativeArray<int>(cnt, Allocator.Temp);
+                        try
+                        {
+                            d.GetIndices(ib, s);
+                            Array.Copy(ib.ToArray(), 0, tris, off, cnt);
+                        }
+                        finally { ib.Dispose(); }
+                        off += cnt;
+                    }
+
+                    return verts.Length > 0;
+                }
+            }
+            catch
+            {
+                verts = null;
+                tris = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Нарезать меш вдоль локальной оси slab'ами. Материал внутри slab'а ищется сканированием
+        /// сечения: строки по оси c1, интервалы вещества по оси c2 (луч вдоль c2, знак пересечения
+        /// по ориентации треугольника). Поэтому ПОЛОСТИ внутри контура (квадратные проёмы, окна,
+        /// шахты, внутренние дворы) остаются пустыми — куски строятся по фактическому веществу,
+        /// а не по габариту контура (раньше замкнутый контур вокруг проёма давал один сплошной
+        /// бокс на всю деталь).
+        /// Открытые/плоские меши и битые оболочки, где вещество не определяется (луч мимо, нет
+        /// выхода из материала), падают на габарит сечения — прежнее поведение.
         /// Вдоль оси кусок растягивается на весь slab — куски стыкуются без щелей.
+        /// Границы slab'ов берутся не только по равномерной сетке, но и по реальным координатам
+        /// вершин вдоль оси: кромка проёма (её координаты есть в меше) иначе попадает ВНУТРЬ slab'а
+        /// и кусок перекрывает проём на целый шаг (или, наоборот, оставляет полосу без коллайдера).
         /// Slab'ы без геометрии (проёмы) пропускаются. Null, если резать нечего.
         /// Бины и порядок компонент детерминированы — имена кусков стабильны.
         /// </summary>
-        private static List<SliceBox> SlicePlan(Mesh mesh, int axis, float stepLocal, float tolWorld, Vector3 worldPerLocal)
+        private static List<SliceBox> SlicePlan(Mesh mesh, int axis, float stepLocal, float tolWorld, Vector3 worldPerLocal, out bool dataUnread)
         {
-            if (mesh == null || !mesh.isReadable || mesh.vertexCount == 0) return null;
+            dataUnread = false;
+            if (mesh == null || mesh.vertexCount == 0) return null;
             if (axis < 0 || axis > 2) axis = 0;
             Bounds b = mesh.bounds;
             float len = b.size[axis];
@@ -1227,58 +1350,204 @@ namespace ProjectC.EditorTools
 
             Vector3[] verts;
             int[] tris;
-            try { verts = mesh.vertices; tris = mesh.triangles; }
-            catch { return null; } // нет Read/Write — резать нечем
-
-            float minA = b.min[axis];
-            float qeps = Mathf.Max(len, Epsilon) * 1e-4f; // квант сварки вершин (UV-швы и т.п.)
-            var frags = new SlabFrag[k];
-            for (int i = 0; i < k; i++) frags[i] = new SlabFrag();
-
-            // 1) Вершины по бинам (одиночные элементы; совпадающие сварются по ключу).
-            foreach (var v in verts)
+            if (!TryReadMeshData(mesh, out verts, out tris))
             {
-                int idx = Mathf.Clamp((int)((v[axis] - minA) / step), 0, k - 1);
-                frags[idx].Add(Quant(v, qeps), v);
+                dataUnread = true; // данных нет совсем — резать нечем
+                return null;
             }
 
-            // 2) Треугольники: клиппинг к каждому накрываемому slab'у, кольцо — в union-find.
-            for (int t = 0; t + 2 < tris.Length; t += 3)
+            int c1 = (axis + 1) % 3, c2 = (axis + 2) % 3;
+            float minA = b.min[axis];
+            float qeps = Mathf.Max(len, Epsilon) * 1e-4f; // квант склейки вершин/пересечений
+
+            // Границы slab'ов: равномерная сетка + реальные координаты вершин по оси реза.
+            // Кромки проёмов и уступов в меше всегда лежат на координатах вершин, поэтому такой
+            // набор делает край проёма точным, а не «плюс-минус шаг». Если координат слишком
+            // много (кривые меши), остаётся только равномерная сетка.
+            var edges = new List<float>(Mathf.Min(k + verts.Length + 2, MaxSlabs + 2)) { minA };
+            for (int i = 1; i < k; i++) edges.Add(minA + i * step);
+            edges.Add(b.max[axis]);
+            if (k + verts.Length + 2 <= MaxSlabs + 2)
             {
-                int ia = tris[t], ib = tris[t + 1], ic = tris[t + 2];
+                for (int v = 0; v < verts.Length; v++) edges.Add(verts[v][axis]);
+                edges.Sort();
+                float gap = Mathf.Max(qeps, len * 5e-4f);
+                int w = 1;
+                for (int r = 1; r < edges.Count; r++)
+                {
+                    if (edges[r] < minA) continue;
+                    if (edges[r] - edges[w - 1] <= gap) continue;
+                    edges[w++] = edges[r];
+                }
+                edges.RemoveRange(w, edges.Count - w);
+                bool hasMax = edges.Count > 0 && edges[edges.Count - 1] >= b.max[axis] - gap;
+                if (hasMax) edges[edges.Count - 1] = b.max[axis];
+                else edges.Add(b.max[axis]);
+            }
+            if (edges.Count <= 2) return null;
+
+            // Треугольники с габаритами: по c1 — отсев строк, по оси нарезки — отсев slab'ов.
+            int triCount = tris.Length / 3;
+            var tA = new Vector3[triCount];
+            var tB = new Vector3[triCount];
+            var tC = new Vector3[triCount];
+            var tC1Lo = new float[triCount];
+            var tC1Hi = new float[triCount];
+            var tALo = new float[triCount];
+            var tAHi = new float[triCount];
+            for (int t = 0; t < triCount; t++)
+            {
+                tC1Lo[t] = 1f; tC1Hi[t] = -1f; // маркер невалидного треугольника
+                int ia = tris[t * 3], ib = tris[t * 3 + 1], ic = tris[t * 3 + 2];
                 if (ia < 0 || ib < 0 || ic < 0 || ia >= verts.Length || ib >= verts.Length || ic >= verts.Length)
                     continue;
-                Vector3 a = verts[ia], d = verts[ib], e = verts[ic];
-                float tmin = Mathf.Min(a[axis], Mathf.Min(d[axis], e[axis]));
-                float tmax = Mathf.Max(a[axis], Mathf.Max(d[axis], e[axis]));
-                int b0 = Mathf.Clamp((int)((tmin - minA) / step), 0, k - 1);
-                int b1 = Mathf.Clamp((int)((tmax - minA) / step), 0, k - 1);
-                for (int i = b0; i <= b1; i++)
-                {
-                    float lo = minA + i * step;
-                    float hi = (i == k - 1) ? b.max[axis] : minA + (i + 1) * step;
-                    var poly = ClipTriToSlab(a, d, e, axis, lo, hi);
-                    if (poly.Count == 0) continue;
-                    int prev = -1, first = -1;
-                    foreach (var p in poly)
-                    {
-                        int id = frags[i].Add(Quant(p, qeps), p);
-                        if (first < 0) first = id;
-                        if (prev >= 0) frags[i].Union(prev, id);
-                        prev = id;
-                    }
-                    if (poly.Count > 1 && prev >= 0 && first >= 0) frags[i].Union(prev, first); // замкнуть кольцо
-                }
+                Vector3 ta = verts[ia], tb = verts[ib], tc = verts[ic];
+                tA[t] = ta; tB[t] = tb; tC[t] = tc;
+                tC1Lo[t] = Mathf.Min(ta[c1], Mathf.Min(tb[c1], tc[c1]));
+                tC1Hi[t] = Mathf.Max(ta[c1], Mathf.Max(tb[c1], tc[c1]));
+                tALo[t] = Mathf.Min(ta[axis], Mathf.Min(tb[axis], tc[axis]));
+                tAHi[t] = Mathf.Max(ta[axis], Mathf.Max(tb[axis], tc[axis]));
             }
 
-            // 3) Компоненты slab'ов → куски (сортировка корней = стабильный порядок sub).
+            // Уникальные координаты c1 по вершинам: по ним ставятся строки (тонкая стенка тоньше
+            // шага иначе проскочит между строками) и подтягиваются границы кусков к реальным граням.
+            var raw = new List<float>(verts.Length);
+            for (int v = 0; v < verts.Length; v++) raw.Add(verts[v][c1]);
+            raw.Sort();
+            var coords = new List<float>(raw.Count);
+            for (int v = 0; v < raw.Count; v++)
+                if (coords.Count == 0 || raw[v] - coords[coords.Count - 1] > qeps)
+                    coords.Add(raw[v]);
+
+            float tolC2 = worldPerLocal[c2] < Epsilon ? 1f : Mathf.Max(tolWorld, qeps * 8f) / worldPerLocal[c2];
+            float rayFrom = b.min[c2] - Mathf.Max(1f, b.size[c2]); // луч начинается за габаритом
+
             var res = new List<SliceBox>();
-            for (int i = 0; i < k; i++)
+            var pts = new List<Vector3>(96);
+            var slabBoxes = new List<SliceBox>(8);
+            var rows = new List<float>(64);
+            var rowSpans = new List<List<Vector2>>(64);
+            var cross = new List<Vector2>(32);
+
+            for (int i = 0; i < edges.Count - 1; i++)
             {
-                var boxes = frags[i].ExtractBoxes();
-                if (boxes.Count == 0) continue; // дыра в геометрии — куска нет, и это правильно
-                bool multi = boxes.Count > 1;
-                boxes.Sort((x, y) =>
+                float lo = edges[i];
+                float hi = edges[i + 1];
+                float mid = (lo + hi) * 0.5f;
+
+                // 1) Сечение slab'а (клиппинг треугольников) → точный габарит по c1/c2.
+                pts.Clear();
+                for (int t = 0; t < triCount; t++)
+                {
+                    if (tC1Lo[t] > tC1Hi[t]) continue;
+                    if (tAHi[t] < lo - qeps || tALo[t] > hi + qeps) continue;
+                    var poly = ClipTriToSlab(tA[t], tB[t], tC[t], axis, lo, hi);
+                    if (poly.Count > 0) pts.AddRange(poly);
+                }
+                if (pts.Count == 0) continue; // дыра в геометрии — куска нет, и это правильно
+
+                float c1min = float.MaxValue, c1max = float.MinValue;
+                float c2min = float.MaxValue, c2max = float.MinValue;
+                foreach (var p in pts)
+                {
+                    if (p[c1] < c1min) c1min = p[c1];
+                    if (p[c1] > c1max) c1max = p[c1];
+                    if (p[c2] < c2min) c2min = p[c2];
+                    if (p[c2] > c2max) c2max = p[c2];
+                }
+
+                slabBoxes.Clear();
+                bool flat = (c1max - c1min) <= qeps || (c2max - c2min) <= qeps;
+                if (!flat)
+                {
+                    BuildRows(coords, c1min, c1max, step, qeps, rows);
+
+                    // 2) Интервалы вещества по c2 для каждой строки c1 (луч + знак входа/выхода).
+                    rowSpans.Clear();
+                    for (int r = 0; r < rows.Count; r++)
+                    {
+                        float u = rows[r];
+                        Vector3 org = Vector3.zero, dir = Vector3.zero;
+                        org[axis] = mid; org[c1] = u; org[c2] = rayFrom;
+                        dir[c2] = 1f;
+                        cross.Clear();
+                        for (int t = 0; t < triCount; t++)
+                        {
+                            if (tC1Lo[t] > tC1Hi[t]) continue;
+                            if (u < tC1Lo[t] - qeps || u > tC1Hi[t] + qeps) continue;
+                            Vector3 nrm = Vector3.Cross(tB[t] - tA[t], tC[t] - tA[t]);
+                            float nd = Vector3.Dot(nrm, dir);
+                            if (nd > -1e-9f && nd < 1e-9f) continue; // грань параллельна лучу
+                            float dist;
+                            if (!RayTriAxis(tA[t], tB[t], tC[t], org, dir, out dist)) continue;
+                            // x — координата вдоль c2, y — знак: +1 вход в материал, -1 выход.
+                            cross.Add(new Vector2(rayFrom + dist, nd < 0f ? 1f : -1f));
+                        }
+
+                        var spans = new List<Vector2>(4);
+                        if (cross.Count > 0)
+                        {
+                            cross.Sort((p, q) => p.x.CompareTo(q.x));
+                            // Совпавшие пересечения суммируем ПО ЗНАКУ: внутренняя стенка союза
+                            // боксов (выход одного + вход соседнего) взаимно гасится и не рвёт
+                            // материал, а дублированная двусторонняя грань гасится целиком
+                            // (такой меш уйдёт в габаритный фолбэк).
+                            int depth = 0;
+                            float startT = 0f;
+                            int q = 0;
+                            while (q < cross.Count)
+                            {
+                                float tv = cross[q].x;
+                                int sgn = 0;
+                                while (q < cross.Count && cross[q].x - tv <= qeps) { sgn += (int)cross[q].y; q++; }
+                                if (sgn == 0) continue; // грани погасились — границы материала нет
+                                bool wasIn = depth != 0;
+                                depth += sgn;
+                                bool isIn = depth != 0;
+                                if (!wasIn && isIn) startT = tv;
+                                else if (wasIn && !isIn && tv - startT > qeps) spans.Add(new Vector2(startT, tv));
+                            }
+                        }
+                        rowSpans.Add(spans); // пустой список = полость на этой строке
+                    }
+
+                    // 3) Подряд идущие строки с одинаковым набором интервалов → куски.
+                    int r0 = 0;
+                    while (r0 < rows.Count)
+                    {
+                        var refSpans = rowSpans[r0];
+                        int r1 = r0;
+                        for (int q = r0 + 1; q < rows.Count; q++)
+                        {
+                            if (!SpansMatch(rowSpans[q], refSpans, tolC2)) break;
+                            r1 = q;
+                        }
+                        if (refSpans.Count > 0)
+                        {
+                            float loC1 = (r0 == 0) ? c1min : RowBoundary(rows[r0 - 1], rows[r0], coords);
+                            float hiC1 = (r1 == rows.Count - 1) ? c1max : RowBoundary(rows[r1], rows[r1 + 1], coords);
+                            if (hiC1 - loC1 > qeps)
+                            {
+                                foreach (var sp in refSpans)
+                                {
+                                    if (sp.y - sp.x <= qeps) continue;
+                                    slabBoxes.Add(MakeBox(axis, lo, hi, c1, loC1, hiC1, c2, sp.x, sp.y, i));
+                                }
+                            }
+                        }
+                        r0 = r1 + 1;
+                    }
+                }
+
+                // Пустой или переусложнённый slab — габарит сечения (прежнее поведение).
+                if (slabBoxes.Count == 0 || slabBoxes.Count > MaxRectsPerSlab)
+                {
+                    slabBoxes.Clear();
+                    slabBoxes.Add(MakeBox(axis, lo, hi, c1, c1min, c1max, c2, c2min, c2max, i));
+                }
+
+                // Сортировка = стабильный порядок sub в именах кусков.
+                slabBoxes.Sort((x, y) =>
                 {
                     int c = x.min.x.CompareTo(y.min.x);
                     if (c != 0) return c;
@@ -1286,14 +1555,15 @@ namespace ProjectC.EditorTools
                     if (c != 0) return c;
                     return x.min.z.CompareTo(y.min.z);
                 });
-                for (int sgi = 0; sgi < boxes.Count; sgi++)
+                bool multi = slabBoxes.Count > 1;
+                for (int sgi = 0; sgi < slabBoxes.Count; sgi++)
                 {
-                    Vector3 mn = boxes[sgi].min, mx = boxes[sgi].max;
-                    mn[axis] = minA + i * step; // растянуть на весь slab: стыки без щелей
-                    mx[axis] = (i == k - 1) ? b.max[axis] : minA + (i + 1) * step;
-                    res.Add(new SliceBox { bin = i, sub = sgi, multi = multi, min = mn, max = mx });
+                    slabBoxes[sgi].sub = sgi;
+                    slabBoxes[sgi].multi = multi;
+                    res.Add(slabBoxes[sgi]);
                 }
             }
+
             if (res.Count <= 1) return null;
             // Адаптив: склеить подряд идущие куски с одинаковым сечением (прямые участки —
             // в 1 бокс, перегибы остаются подетально). Пустые бины разбивают серии (дыры не мостим).
@@ -1366,64 +1636,114 @@ namespace ProjectC.EditorTools
                 && Mathf.Abs(box.max[c2] - refMax[c2]) <= t2;
         }
 
-        private static Vector3 Quant(Vector3 p, float q)
+        // Предохранители сканирования сечения: кривой меш не должен плодить коллайдеры.
+        private const int MaxRectsPerSlab = 16;   // полос в slab'е больше — габаритный бокс
+        private const int MaxSlabs = 384;         // больше slab'ов (сетка + координаты вершин) — только сетка
+        private const int MaxRowsFromCoords = 16; // сколько граней c1 добавлять строками
+        private const int MaxRows = 64;           // предел строк на slab
+
+        /// <summary>Кусок: диапазон по оси нарезки + интервал по c1 + интервал по c2.</summary>
+        private static SliceBox MakeBox(int axis, float aLo, float aHi,
+            int c1, float c1Lo, float c1Hi, int c2, float c2Lo, float c2Hi, int bin)
         {
-            return new Vector3(Mathf.Round(p.x / q), Mathf.Round(p.y / q), Mathf.Round(p.z / q));
+            Vector3 mn = Vector3.zero, mx = Vector3.zero;
+            mn[axis] = aLo; mx[axis] = aHi;
+            mn[c1] = c1Lo; mx[c1] = c1Hi;
+            mn[c2] = c2Lo; mx[c2] = c2Hi;
+            return new SliceBox { bin = bin, sub = 0, multi = false, min = mn, max = mx };
         }
 
-        /// <summary>Фрагменты связности одного slab'а: union-find по квантованным точкам.</summary>
-        private class SlabFrag
+        /// <summary>
+        /// Пересечение треугольника с лучом (o, d) — Мёллер–Трумбор. t — расстояние вдоль d
+        /// (только впереди луча). Промах/параллельность плоскости → false.
+        /// </summary>
+        private static bool RayTriAxis(Vector3 a, Vector3 vb, Vector3 vc, Vector3 o, Vector3 d, out float t)
         {
-            private readonly Dictionary<Vector3, int> index = new Dictionary<Vector3, int>();
-            private readonly List<int> parent = new List<int>();
-            private readonly List<Vector3> pts = new List<Vector3>();
+            t = 0f;
+            Vector3 e1 = vb - a, e2 = vc - a;
+            Vector3 p = Vector3.Cross(d, e2);
+            float det = Vector3.Dot(e1, p);
+            if (det > -1e-9f && det < 1e-9f) return false; // луч параллелен плоскости
+            float inv = 1f / det;
+            Vector3 tv = o - a;
+            float uu = Vector3.Dot(tv, p) * inv;
+            if (uu < 0f || uu > 1f) return false;
+            Vector3 q = Vector3.Cross(tv, e1);
+            float vv = Vector3.Dot(d, q) * inv;
+            if (vv < 0f || uu + vv > 1f) return false;
+            float dist = Vector3.Dot(e2, q) * inv;
+            if (dist <= 1e-6f) return false;
+            t = dist;
+            return true;
+        }
 
-            public int Add(Vector3 key, Vector3 p)
+        /// <summary>
+        /// Строки сканирования по c1: равномерная сетка с шагом нарезки + фактические координаты
+        /// граней со сдвигом внутрь (стенка тоньше шага иначе проскочит между строками).
+        /// Переполнение (плотная сетка вершин) → остаётся только равномерная сетка.
+        /// </summary>
+        private static void BuildRows(List<float> coords, float lo, float hi, float step, float qeps, List<float> outRows)
+        {
+            outRows.Clear();
+            float span = hi - lo;
+            if (span <= qeps) return;
+            int n = Mathf.Clamp(Mathf.CeilToInt(span / step), 1, MaxRows);
+            float jitter = Mathf.Clamp(span * 1e-3f, qeps * 4f, 0.25f * step);
+
+            int added = 0;
+            for (int i = 0; i < coords.Count && added < MaxRowsFromCoords; i++)
             {
-                int id;
-                if (!index.TryGetValue(key, out id))
-                {
-                    id = parent.Count;
-                    index[key] = id;
-                    parent.Add(id);
-                    pts.Add(p);
-                }
-                return id;
+                float c = coords[i];
+                if (c <= lo + qeps || c >= hi - qeps) continue;
+                outRows.Add(c - jitter);
+                outRows.Add(c + jitter);
+                added++;
             }
+            for (int j = 0; j < n; j++)
+                outRows.Add(lo + (j + 0.5f) * span / n);
 
-            public int Find(int a)
+            if (outRows.Count > MaxRows)
             {
-                while (parent[a] != a) { parent[a] = parent[parent[a]]; a = parent[a]; }
-                return a;
+                outRows.Clear();
+                for (int j = 0; j < n; j++)
+                    outRows.Add(lo + (j + 0.5f) * span / n);
+                return;
             }
+            outRows.Sort();
+            int w = 1;
+            for (int i = 1; i < outRows.Count; i++)
+                if (outRows[i] - outRows[w - 1] > qeps) outRows[w++] = outRows[i];
+            if (w < outRows.Count) outRows.RemoveRange(w, outRows.Count - w);
+        }
 
-            public void Union(int a, int b)
+        /// <summary>
+        /// Граница между двумя строками: если между ними лежит реальная грань — она (точные
+        /// стенки проёмов), иначе середина интервала.
+        /// </summary>
+        private static float RowBoundary(float a, float b, List<float> coords)
+        {
+            float mid = (a + b) * 0.5f;
+            int i = coords.BinarySearch(mid);
+            if (i < 0) i = ~i;
+            float best = mid, bestD = float.MaxValue;
+            int from = Mathf.Max(0, i - 8), to = Mathf.Min(coords.Count, i + 8);
+            for (int q = from; q < to; q++)
             {
-                a = Find(a); b = Find(b);
-                if (a == b) return;
-                if (a > b) { int t = a; a = b; b = t; } // детерминированный корень
-                parent[b] = a;
+                float c = coords[q];
+                if (c <= a || c >= b) continue;
+                float d = Mathf.Abs(c - mid);
+                if (d < bestD) { bestD = d; best = c; }
             }
+            return best;
+        }
 
-            public struct BoxMinMax { public Vector3 min, max; }
-
-            public List<BoxMinMax> ExtractBoxes()
-            {
-                var acc = new Dictionary<int, BoxMinMax>();
-                for (int i = 0; i < pts.Count; i++)
-                {
-                    int r = Find(i);
-                    BoxMinMax bm;
-                    if (!acc.TryGetValue(r, out bm)) acc[r] = new BoxMinMax { min = pts[i], max = pts[i] };
-                    else
-                    {
-                        bm.min = Vector3.Min(bm.min, pts[i]);
-                        bm.max = Vector3.Max(bm.max, pts[i]);
-                        acc[r] = bm;
-                    }
-                }
-                return new List<BoxMinMax>(acc.Values);
-            }
+        /// <summary>Совпадают ли наборы интервалов у двух строк (в пределах допуска).</summary>
+        private static bool SpansMatch(List<Vector2> a, List<Vector2> b, float tol)
+        {
+            if (a.Count != b.Count) return false;
+            for (int i = 0; i < a.Count; i++)
+                if (Mathf.Abs(a[i].x - b[i].x) > tol || Mathf.Abs(a[i].y - b[i].y) > tol) return false;
+            return true;
         }
 
         /// <summary>Клиппинг треугольника к slab'у [lo,hi] вдоль оси (Сазерленд-Ходжман, 2 прохода).</summary>
@@ -1559,20 +1879,17 @@ namespace ProjectC.EditorTools
                 }
                 else if (sliceToks.Length > 0 && MatchesAny(upper, sliceToks))
                 {
-                    if (!f.sharedMesh.isReadable)
-                    {
-                        report.unreadSlices++; // нет Read/Write — падаем на обычный бокс ниже
-                    }
-                    else
-                    {
-                        // Ось — длиннейшая в ЛОКАЛЬНЫХ bounds (там же лежат вершины).
-                        // Брать ось из мировых размеров нельзя: рамка повёрнута (deck: rot 270,90,0),
-                        // индексы переставлены, и нарезка пойдёт поперёк сужения.
-                        int longAxis = LongestAxis(f.sharedMesh.bounds.size);
-                        float per = worldPerLocal[longAxis] < Epsilon ? 1f : worldPerLocal[longAxis];
-                        slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per, Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal);
-                        if (slices != null) kind = 2;
-                    }
+                    // Read/Write у импортированных FBX обычно выключен; редактор данные всё равно
+                    // читает (MeshDataArray), поэтому нарезка от этого флага больше не зависит.
+                    // Ось — длиннейшая в ЛОКАЛЬНЫХ bounds (там же лежат вершины).
+                    // Брать ось из мировых размеров нельзя: рамка повёрнута (deck: rot 270,90,0),
+                    // индексы переставлены, и нарезка пойдёт поперёк сужения.
+                    int longAxis = LongestAxis(f.sharedMesh.bounds.size);
+                    float per = worldPerLocal[longAxis] < Epsilon ? 1f : worldPerLocal[longAxis];
+                    slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per,
+                        Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal, out bool unreadSlice);
+                    if (unreadSlice) report.unreadSlices++; // данных нет совсем — обычный бокс ниже
+                    if (slices != null) kind = 2;
                 }
 
                 // Append-режим: уже закрытые меши не дублируем.

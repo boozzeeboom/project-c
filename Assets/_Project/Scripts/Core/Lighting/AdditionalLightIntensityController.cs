@@ -22,7 +22,10 @@ namespace ProjectC.Core
             [Tooltip("Case-insensitive substring matched against the Light GameObject name. Leave empty to match every additional light.")]
             public string nameContains = string.Empty;
 
-            [Tooltip("Multiplier evaluated over the 0-24 hour cycle. X is time of day, Y is intensity multiplier.")]
+            [Tooltip("Числовой множитель группы. К нему применяется кривая ниже: 1 = полный множитель, 0 = выключено.\nИтог = базовая интенсивность источника × множитель × значение кривой.")]
+            public float intensityMultiplier = 1f;
+
+            [Tooltip("Кривая по времени суток 0–24. По Y — доля 0…1 от числового множителя выше (1 = полный, 0 = выключено).")]
             public AnimationCurve intensityByHour = AnimationCurve.Linear(0f, 1f, 24f, 1f);
 
             public bool Matches(Light light)
@@ -32,18 +35,26 @@ namespace ProjectC.Core
                     return false;
                 }
 
-                return string.IsNullOrWhiteSpace(nameContains) ||
-                       light.name.IndexOf(nameContains, StringComparison.OrdinalIgnoreCase) >= 0;
+                if (string.IsNullOrWhiteSpace(nameContains))
+                {
+                    return true;
+                }
+
+                return light.name.IndexOf(nameContains, StringComparison.OrdinalIgnoreCase) >= 0;
             }
 
             public float Evaluate(float timeOfDay)
             {
+                float scale = Mathf.Max(0f, intensityMultiplier);
+
                 if (intensityByHour == null || intensityByHour.length == 0)
                 {
-                    return 1f;
+                    return scale;
                 }
 
-                return Mathf.Max(0f, intensityByHour.Evaluate(Mathf.Clamp(timeOfDay, 0f, 24f)));
+                // Кривая — доля 0…1 от числового множителя, а не абсолютная яркость:
+                // чтобы поднять/опустить всю группу, правится одно число, форма перепадов остаётся.
+                return Mathf.Max(0f, intensityByHour.Evaluate(Mathf.Clamp(timeOfDay, 0f, 24f))) * scale;
             }
         }
 
@@ -219,10 +230,46 @@ namespace ProjectC.Core
             }
         }
 
+        private static LightGroup CreatePrimumOutdoorGroup()
+        {
+            return new LightGroup
+            {
+                groupId = "PRIMUM_OUTLIGHT",
+                nameContains = "PRIMUM_OUTLIGHT",
+                intensityByHour = CreateCurve(
+                    new Keyframe(0f, 1f),
+                    new Keyframe(5f, 1f),
+                    new Keyframe(6f, 0f),
+                    new Keyframe(17f, 0f),
+                    new Keyframe(19f, 0.25f),
+                    new Keyframe(21f, 1f),
+                    new Keyframe(24f, 1f))
+            };
+        }
+
+        private static LightGroup CreatePrimumIndoorGroup()
+        {
+            return new LightGroup
+            {
+                groupId = "PRIMUM_INLIGHT",
+                nameContains = "PRIMUM_INLIGHT",
+                intensityByHour = CreateCurve(
+                    new Keyframe(0f, 1f),
+                    new Keyframe(5f, 1f),
+                    new Keyframe(6f, 0f),
+                    new Keyframe(17f, 0f),
+                    new Keyframe(19f, 0.25f),
+                    new Keyframe(21f, 1f),
+                    new Keyframe(24f, 1f))
+            };
+        }
+
         private static LightGroup[] CreateDefaultGroups()
         {
             return new[]
             {
+                CreatePrimumOutdoorGroup(),
+                CreatePrimumIndoorGroup(),
                 new LightGroup
                 {
                     groupId = "CityLamps",

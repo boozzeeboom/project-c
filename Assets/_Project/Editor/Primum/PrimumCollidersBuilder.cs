@@ -14,8 +14,13 @@ namespace ProjectC.EditorTools
     /// PRIMUM: применение бокс-коллайдеров из CSV (сгенерированного в Blender скриптом
     /// <c>_analysis/colliders_v2.py</c> из ИСХОДНОЙ геометрии RAW-блендов).
     ///
-    /// Классы: WALK (низ города/улицы), STAIR (наклонные боксы маршей), WALL (стены, окна не дырками),
-    /// FLOOR (полы/перекрытия), ROOF (крыша дома).
+    /// Классы: WALK (низ города/улицы), STAIR (наклонные боксы маршей — только BASE).
+    ///
+    /// ВНИМАНИЕ: классы домов WALL/FLOOR/ROOF больше НЕ строятся боксами.
+    /// Бокс по габариту не умеет дыр (заливал проёмы дверей/окон, слэб с проёмом лестницы и
+    /// крышу «по дому» заваривал марши). Дома теперь — точные меши из RAW:
+    /// см. <see cref="ProjectC.EditorTools.PrimumHouseColliders"/>. Классы WALL/FLOOR/ROOF удалены
+    /// из меню и из colliders_v3.csv-сборки, чтобы не было двух источников правды.
     ///
     /// Куда: <c>WorldRoot_0_0/PRIMUM_COLLIDERS/&lt;чанк&gt;/&lt;класс&gt;</c> — СОСЕД корня города, а НЕ ребёнок
     /// префаба PRIMUM: всё, что добавлялось внутрь префаб-инстанса, терялось при пересохранении префаба
@@ -57,10 +62,10 @@ namespace ProjectC.EditorTools
 
         // ---------------------------------------------------------------- меню
 
-        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры: собрать всё (WALK+STAIR+WALL+FLOOR+ROOF)", false, 340)]
+        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры BASE-классов: WALK+STAIR (пересобрать)", false, 340)]
         public static void MenuBuildAll()
         {
-            BuildAll("WALK,STAIR,WALL,FLOOR,ROOF", true);
+            BuildAll("WALK,STAIR", true);
         }
 
         [MenuItem("ProjectC/World/PRIMUM/Коллайдеры: только низ+лестницы (WALK+STAIR)", false, 341)]
@@ -72,7 +77,7 @@ namespace ProjectC.EditorTools
         [MenuItem("ProjectC/World/PRIMUM/Коллайдеры: отчёт (без изменений)", false, 342)]
         public static void MenuReport()
         {
-            BuildReport rep = BuildAll("WALK,STAIR,WALL,FLOOR,ROOF", false);
+            BuildReport rep = BuildAll("WALK,STAIR", false);
             Debug.Log(Describe(rep));
         }
 

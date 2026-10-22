@@ -391,8 +391,12 @@ def process(fname, chunk, pfh):
     # платформы сюда НЕ пишем: их экспортирует platforms_export.py (в этом файле writer был с багом индексов)
 
     add_walls(chunk, walls, house_boxes)
-    add_stairs(chunk, stair_parts, house_boxes)
-    _dedupe_stairs(chunk)
+    # Лестницы НЕ пишем: и внутренние, и террасные BASE теперь идут точной геометрией
+    # (tools/stairs_export.py -> stairs.obj -> MeshCollider). Наклонный бокс по маршу врал:
+    # у L-образных внутренних лестниц — 2–3 наложения, у BASE — плита 27° вместо реальных 21.8°,
+    # её верхняя часть висела над маршем и упиралась в деку (подняться нельзя).
+    # add_stairs(chunk, stair_parts, house_boxes)
+    # _dedupe_stairs(chunk)
     for b,nm in floors:
         add_axis(chunk, "FLOOR", b, nm, house_boxes.get(house_of(nm)))
     by_house = defaultdict(list)
@@ -418,7 +422,8 @@ def main():
         chunks = [c for c in CHUNKS if any(w in c[1].upper() for w in want)]
     log("=== colliders_v3: чанков %d (фильтр: %s) ===" % (len(chunks), flt or "-"))
     t0=time.time()
-    pfh = None\n    if True:
+    pfh = None
+    if True:
         for fname, chunk in chunks:
             if not os.path.exists(os.path.join(RAW, fname)):
                 log("MISSING " + fname); continue

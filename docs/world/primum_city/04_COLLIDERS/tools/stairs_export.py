@@ -1,7 +1,7 @@
-# stairs_export.py — геометрия ВНУТРЕННИХ лестниц (кроме BASE) для MeshCollider'ов.
-# Бокс по ступеням давал «плавающие» высоты (ступени кластеризуются по центрам), поэтому
-# внутренние лестницы делаем точной геометрией: один MeshCollider на лестницу.
-# Внешние террасные марши BASE остаются наклонными боксами (они работают).
+# stairs_export.py — геометрия ВСЕХ лестниц (BASE и внутренние) для MeshCollider'ов.
+# Наклонный бокс по маршу неверен: у L-образных лестниц получалось 2–3 наложенных бокса,
+# у террасных BASE — плита 27° вместо реальных 21.8°, и её верхняя часть висела над маршем
+# прямо под декой (пройти нельзя). Поэтому ВСЕ лестницы — точной геометрией: один меш на чанк.
 #
 # Выход: docs/world/primum_city/04_COLLIDERS/stairs.obj
 # Локальные координаты PRIMUM: local = (-s.x, s.z, -s.y), s = C + (p - C)*1.07.
@@ -18,6 +18,7 @@ C = (7.5, -148.0, 18.5)
 RAIL = ("RAIL", "GUARD", "HAND", "SKIRT", "BALUST", "BAL_", "_BAL", "PARAPET", "_BR", "KERB", "KICK", "FURN", "RUG", "CARPET", "COVER")
 
 CHUNKS = [
+    ("PRIMUM_BASE_S0_CITY_P1_00H.blend", "BASE"),
     ("PRIMUM_ADMIN_S0_ADM_P1_01H.blend", "ADMIN"),
     ("PRIMUM_HOUSES_S2_TRD_P1_28H.blend", "S2TRDP1"),
     ("PRIMUM_HOUSES_S3_TRD_P2_26H.blend", "S3TRDP2"),

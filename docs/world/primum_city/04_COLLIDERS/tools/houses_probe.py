@@ -26,27 +26,22 @@ OUTDIR = r"C:\Projects\ProjectC_client\docs\world\primum_city\04_COLLIDERS"
 CSV_OUT = os.path.join(OUTDIR, "houses_probe.csv")
 LOG_OUT = os.path.join(OUTDIR, "houses_probe.log")
 
-CHUNKS = [
-    "PRIMUM_HOUSES_S9_TRD-S2_P1_45H.blend",
-    "PRIMUM_HOUSES_S9_TRD-N_P1_28H.blend",
-    "PRIMUM_HOUSES_S2_TRD_P1_28H.blend",
-    "PRIMUM_HOUSES_S1_GLD_P1_25H.blend",
-    "PRIMUM_HOUSES_S3_TRD-EN_P1_37H.blend",
-    "PRIMUM_HOUSES_S4_TRD-EN_P2_34H.blend",
-    "PRIMUM_HOUSES_S5_NE_P1_20H.blend",
-    "PRIMUM_HOUSES_S6_NQ_P1_29H.blend",
-    "PRIMUM_HOUSES_S7_BIG_P1_02H.blend",
-    "PRIMUM_HOUSES_S7_SE_P1_46H.blend",
-    "PRIMUM_HOUSES_S7_SE_P2_19H.blend",
-    "PRIMUM_HOUSES_S8_GW_P1_30H.blend",
-    "PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H.blend",
-    "PRIMUM_HOUSES_S9_RING_P1_22H.blend",
-    "PRIMUM_HOUSES_S9_TRD-S_P1_16H.blend",
-    "PRIMUM_HOUSES_S10_CRESCENT_P1_26H.blend",
-    "PRIMUM_HOUSES_S10_LINK_P1_09H.blend",
-    "PRIMUM_HOUSES_S10_TER12_P1_21H.blend",
-    "PRIMUM_HOUSES_S10_TER6_P1_16H.blend",
-]
+def list_chunks():
+    """Все жилые чанки в RAW (без копий и бэкапов) — список не ведём руками."""
+    if not os.path.isdir(RAW):
+        return []
+    out = []
+    for f in sorted(os.listdir(RAW)):
+        u = f.upper()
+        if not u.startswith("PRIMUM_HOUSES_") or not u.endswith(".BLEND"):
+            continue
+        if "COPY" in u or "BAK" in u:
+            continue
+        out.append(f)
+    return out
+
+
+CHUNKS = list_chunks()
 
 # порог площади «горизонтальной грани», чтобы считать деталь полом/перекрытием, м^2
 FLOOR_AREA = 0.5
@@ -58,9 +53,10 @@ logf = None
 
 
 def log(m):
-    print(m)
+    print(m, flush=True)
     if logf is not None:
         logf.write(m + "\n")
+        logf.flush()
 
 
 def cpath(o):
@@ -239,18 +235,17 @@ def summarize(chunk, per_house, rows, detail_house):
 
 def main():
     global logf
-    logf = open(LOG_OUT, "w", encoding="utf-8")
-    for f in (CSV_OUT,):
-        if os.path.exists(f):
-            os.remove(f)
+    logf = open(LOG_OUT, "a", encoding="utf-8")
     flt = os.environ.get("PROBE_CHUNKS", "").strip()
     detail = os.environ.get("PROBE_HOUSE", "").strip().upper()
     chunks = CHUNKS
     if flt:
         want = [s.strip().upper() for s in flt.split(",") if s.strip()]
         chunks = [c for c in CHUNKS if any(w in c.upper() for w in want)]
-    log("=== houses_probe: чанков %d (фильтр: %s) ===" % (len(chunks), flt or "-"))
+    fresh = not os.path.exists(CSV_OUT)
     rows = []
+    log("")
+    log("=== houses_probe: чанков %d (фильтр: %s) ===" % (len(chunks), flt or "-"))
     for fname in chunks:
         path = os.path.join(RAW, fname)
         if not os.path.exists(path):
@@ -261,12 +256,13 @@ def main():
             summarize(chunk, per_house, rows, detail)
         except Exception as e:
             log("ERROR %s: %s" % (fname, e))
-    with open(CSV_OUT, "w", newline="", encoding="utf-8") as fh:
+    with open(CSV_OUT, "a", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
-        w.writerow(["chunk", "house", "objs", "collections", "zmin", "zmax",
-                    "walls", "walls_near_side", "sideN", "sideS", "sideE", "sideW",
-                    "floors", "floor_levels", "level_z", "interior", "interior_flat_area_m2",
-                    "interior_partitions", "stairs", "stair_z0", "stair_z1", "roofs", "coll_sample"])
+        if fresh:
+            w.writerow(["chunk", "house", "objs", "collections", "zmin", "zmax",
+                        "walls", "walls_near_side", "sideN", "sideS", "sideE", "sideW",
+                        "floors", "floor_levels", "level_z", "interior", "interior_flat_area_m2",
+                        "interior_partitions", "stairs", "stair_z0", "stair_z1", "roofs", "coll_sample"])
         w.writerows(rows)
     log("")
     log("CSV: %s строк=%d" % (CSV_OUT, len(rows)))

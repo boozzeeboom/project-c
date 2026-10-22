@@ -2273,6 +2273,7 @@ namespace ProjectC.EditorTools
         private float mergeAlign = 0.02f;
         private string mergeTokens = "";
         private int mergeScopeIdx = 0;
+        private bool exactConvex;
         private Vector2 scroll;
         private static readonly string[] MergeScopeLabels =
         {
@@ -2447,6 +2448,17 @@ namespace ProjectC.EditorTools
                 }
             }
             EditorGUI.EndDisabledGroup();
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Точный меш (MeshCollider) — не боксы", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Выделенному объекту (полусфера, арка, лестница) ставится отдельный холдер '<Имя>_MC' с MeshCollider на том же меше. Дерево не обходится, фильтры игнорируются.", EditorStyles.miniLabel);
+            exactConvex = EditorGUILayout.ToggleLeft(
+                $"Выпуклый (convex=true) — для кораблей / под Rigidbody, до {ExactMeshColliderTool.ConvexTriangleLimit} тр.",
+                exactConvex);
+            if (GUILayout.Button("ТОЧНЫЙ МЕШ (MeshCollider)", GUILayout.Height(34f)))
+                ExactMeshColliderTool.BuildForSelection(exactConvex);
+            if (GUILayout.Button("Снести точные меши (выделение)", GUILayout.Height(22f)))
+                ExactMeshColliderTool.RemoveForSelection();
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Объединить соседние боксы", EditorStyles.boldLabel);

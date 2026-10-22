@@ -785,7 +785,9 @@ def list_chunks():
     out = []
     for f in sorted(os.listdir(RAW)):
         u = f.upper()
-        if not u.startswith("PRIMUM_HOUSES_") or not u.endswith(".BLEND"):
+        if not u.endswith(".BLEND"):
+            continue
+        if not (u.startswith("PRIMUM_HOUSES_") or u.startswith("PRIMUM_ADMIN_")):
             continue
         if "COPY" in u or "BAK" in u:
             continue
@@ -801,6 +803,12 @@ def main():
         chunks = [c for c in chunks if any(w in c.upper() for w in want)]
     print("=== houses_boxes: чанков %d ===" % len(chunks), flush=True)
     t0 = time.time()
+    # Фильтрованный прогон пишет ОТДЕЛЬНЫЙ файл: иначе один чанк затрёт общий houses_boxes.json.
+    out_json = OUT_JSON
+    if flt:
+        tag = "_".join(s.strip().upper() for s in flt.split(",") if s.strip())
+        tag = "".join(ch if (ch.isalnum() or ch in "-_") else "_" for ch in tag)
+        out_json = os.path.join(os.path.dirname(OUT_JSON), "houses_boxes_%s.json" % tag)
     data = []
     tot = defaultdict(int)
     for f in chunks:
@@ -826,13 +834,13 @@ def main():
         for s in d.get("heavy_samples", [])[:4]:
             print("      тяжёлый: " + s, flush=True)
         data.append(d)
-    with open(OUT_JSON, "w", encoding="utf-8") as fh:
+    with open(out_json, "w", encoding="utf-8") as fh:
         json.dump({"chunks": data}, fh, ensure_ascii=False, separators=(",", ":"))
     print("=== ИТОГО: домов=%d стен=%d плит=%d крыш=%d маршей=%d проёмов=%d (%.1f c) ==="
           % (tot.get("houses", 0), tot.get("wall_boxes", 0), tot.get("floor_boxes", 0),
              tot.get("roof_boxes", 0), tot.get("stair_boxes", 0), tot.get("openings", 0),
              time.time() - t0), flush=True)
-    print("JSON: %s" % OUT_JSON, flush=True)
+    print("JSON: %s" % out_json, flush=True)
 
 
 if __name__ == "__main__":

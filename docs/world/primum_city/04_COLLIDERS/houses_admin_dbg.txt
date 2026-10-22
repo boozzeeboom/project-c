@@ -1,0 +1,182 @@
+=== ADMIN PRIMUM_ADMIN_S0_ADM_P1_01H.blend  mesh-объектов=2748 ===
+--- классов по правилам (houses_boxes.strict_class) ---
+  -      skip             29
+  -      veto           2541
+  -      wall-blob        44
+  ROOF   name              5
+  SLAB   bbox-slab         1
+  SLAB   name             13
+  STAIR  name             46
+  WALL   name             69
+--- семейства имён: что в каком классе ---
+  ADM_FURN_F                       {'skip': 769}
+  ADM_FURN_CORR                    {'skip': 398}
+  ADM_CORR_F                       {'WALL': 26, 'skip': 232}
+  ADM_FURN_TOWER                   {'skip': 179}
+  ADM_FURN_WING                    {'skip': 109}
+  ADM_FURN_CORE                    {'skip': 90}
+  ADM_FURN_HALL                    {'skip': 71}
+  ADM_FURN_GALLERY                 {'skip': 64}
+  ADM_FURN_WC                      {'skip': 61}
+  ADM_FURN_LIB                     {'skip': 49}
+  ADM_FURN_RING                    {'skip': 48}
+  ADM_FAC_SILL                     {'skip': 44}
+  ADM_FAC_WIN                      {'skip': 44}
+  ADM_FAC_PIL                      {'skip': 43}
+  ADM_FURN_ROT                     {'skip': 38}
+  ADM_STAIR_M                      {'STAIR': 25, 'skip': 12}
+  ADM_FURN_ROOF                    {'skip': 29}
+  ADM_WING_N                       {'skip': 15, 'STAIR': 6, 'SLAB': 3, 'WALL': 4, 'ROOF': 1}
+  ADM_WING_S                       {'skip': 15, 'STAIR': 6, 'SLAB': 3, 'WALL': 4, 'ROOF': 1}
+  ADM_WC_F                         {'skip': 27}
+  ADM_TOWER_E                      {'skip': 14, 'WALL': 12}
+  ADM_TOWER_W                      {'skip': 18, 'WALL': 8}
+  ADM_FAC_PORT                     {'skip': 19}
+  ADM_F_WALL                       {'WALL': 8, 'skip': 8}
+  ADM_F_WINDOW                     {'skip': 16}
+  ADM_FURN_VESTIB                  {'skip': 16}
+  ADM_RAIL_WC                      {'skip': 16}
+  ADM_RAIL_ATRIUM                  {'skip': 15}
+  ADM_FAC_TOWER                    {'skip': 12}
+  ADM_OFF_F                        {'WALL': 2, 'skip': 10}
+  ADM_RAIL_WELL                    {'skip': 11}
+  ADM_FURN_GRANDSTAIR              {'skip': 10}
+  ADM_CONN_N                       {'skip': 8}
+  ADM_CONN_S                       {'skip': 8}
+  ADM_HALL_PIL                     {'skip': 8}
+--- ПРОПУЩЕНО, но форма явно плита (dz<=0.45, стороны >=2.0): 33 ---
+     ADM_CUP_ENTAB                                  d=(10.10 10.10  0.40)
+     ADM_CUP_PODIUM                                 d=( 8.60  8.60  0.35)
+     ADM_DRUM_BASE                                  d=(35.00 35.00  0.40)
+     ADM_FAC_BAL_RAIL                               d=(68.94 64.94  0.20)
+     ADM_FAC_CORNICE_28                             d=(68.50 128.50  0.40)
+     ADM_FAC_CORNICE_32                             d=(68.50 64.50  0.40)
+     ADM_FAC_CORNICE_36                             d=(68.50 64.50  0.40)
+     ADM_FAC_TOWER_E_DENTIL                         d=(16.90 16.60  0.30)
+     ADM_FAC_TOWER_E_PIN_BASE                       d=(16.00 16.00  0.25)
+     ADM_FAC_TOWER_E_PIN_CAP                        d=(16.00 16.00  0.22)
+     ADM_FAC_TOWER_W_DENTIL                         d=(16.90 16.60  0.30)
+     ADM_FAC_TOWER_W_PIN_BASE                       d=(16.00 16.00  0.25)
+     ADM_FAC_TOWER_W_PIN_CAP                        d=(16.00 16.00  0.22)
+     ADM_FURN_HALL_GALNE_RUG_01                     d=( 2.00 11.40  0.03)
+     ADM_FURN_HALL_GALSW_RUG_01                     d=( 2.00  9.60  0.03)
+     ADM_FURN_HALL_MEDALLION                        d=( 3.40  3.40  0.01)
+     ADM_FURN_HALL_VEST_RUG_01                      d=( 2.40  8.00  0.02)
+     ADM_FURN_ROOF_INLAY_01                         d=(56.00 56.00  0.02)
+     ADM_FURN_ROT_MEDALLION                         d=(14.00 14.00  0.02)
+     ADM_FURN_TOWER_E1_RUG_01                       d=( 3.20  4.40  0.03)
+     ADM_FURN_TOWER_E3_RUG                          d=( 3.20  3.60  0.03)
+     ADM_FURN_TOWER_E4_RUG                          d=( 3.00  4.00  0.03)
+     ADM_FURN_TOWER_W1_RUG_01                       d=( 3.20  4.40  0.03)
+     ADM_FURN_TOWER_W3_RUG                          d=( 3.20  3.60  0.03)
+     ADM_FURN_TOWER_W4_RUG                          d=( 3.00  4.00  0.03)
+     ADM_FURN_WC_F1_A_FLOOR_01                      d=(10.85 11.00  0.02)
+     ADM_FURN_WC_F1_B_FLOOR_01                      d=(10.85 10.85  0.02)
+     ADM_FURN_WC_F2_A_FLOOR_01                      d=(10.85 11.00  0.02)
+     ADM_FURN_WC_F2_B_FLOOR_01                      d=(10.85 10.85  0.02)
+     ADM_FURN_WC_F3_A_FLOOR_01                      d=(10.85 11.00  0.02)
+     ADM_FURN_WC_F3_B_FLOOR_01                      d=(10.85 10.85  0.02)
+     ADM_FURN_WC_F4_A_FLOOR_01                      d=( 5.75 10.50  0.02)
+     ADM_FURN_WC_F4_B_FLOOR_01                      d=( 5.60 10.50  0.02)
+--- ПРОПУЩЕНО, но форма явно стена (dz>=2.0, тонкая, длинная): 40 ---
+     ADM_DOOR_PORTAL_FRAME                          d=( 0.30 12.00  4.00)
+     ADM_DOOR_PORTAL_GLASS                          d=( 0.06 11.80  3.20)
+     ADM_F1_WINDOW_E                                d=(21.00  0.30  2.50)
+     ADM_F1_WINDOW_N                                d=( 0.30 60.00  2.50)
+     ADM_F1_WINDOW_S                                d=( 0.30 36.00  2.50)
+     ADM_F1_WINDOW_W                                d=(21.00  0.30  2.50)
+     ADM_F2_WINDOW_E                                d=(21.00  0.30  2.50)
+     ADM_F2_WINDOW_N                                d=( 0.30 60.00  2.50)
+     ADM_F2_WINDOW_S                                d=( 0.30 36.00  2.50)
+     ADM_F2_WINDOW_W                                d=(21.00  0.30  2.50)
+     ADM_F3_WINDOW_E                                d=(49.00  0.30  2.50)
+     ADM_F3_WINDOW_N                                d=( 0.30 60.00  2.50)
+     ADM_F3_WINDOW_S                                d=( 0.30 36.00  2.50)
+     ADM_F3_WINDOW_W                                d=(49.00  0.30  2.50)
+     ADM_F4_WINDOW_E                                d=(49.00  0.30  2.50)
+     ADM_F4_WINDOW_N                                d=( 0.30 60.00  2.50)
+     ADM_F4_WINDOW_S                                d=( 0.30 36.00  2.50)
+     ADM_F4_WINDOW_W                                d=(49.00  0.30  2.50)
+     ADM_FAC_PIL_F1_E                               d=(12.90  0.14  3.50)
+     ADM_FAC_PIL_F1_N                               d=( 0.14 61.80  3.50)
+     ADM_FAC_PIL_F1_S                               d=( 0.14 14.40  3.50)
+     ADM_FAC_PIL_F1_W                               d=(12.90  0.14  3.50)
+     ADM_FAC_PIL_F2_E                               d=(23.15  0.14  3.50)
+     ADM_FAC_PIL_F2_N                               d=( 0.14 61.80  3.50)
+     ADM_FAC_PIL_F2_W                               d=(23.15  0.14  3.50)
+     ADM_FAC_PIL_F3_N                               d=( 0.14 61.80  3.50)
+     ADM_FAC_PIL_F4_N                               d=( 0.14 61.80  3.05)
+     ADM_FAC_PIL_TOWER_E_F1_S                       d=( 0.14 13.40  3.50)
+     ADM_FAC_PIL_TOWER_E_F2_S                       d=( 0.14 13.40  3.50)
+     ADM_FAC_PIL_TOWER_E_F3_S                       d=( 0.14 13.40  3.50)
+     ADM_FAC_PIL_TOWER_E_F4_S                       d=( 0.14 13.40  3.05)
+     ADM_FAC_PIL_TOWER_W_F1_S                       d=( 0.14 13.40  3.50)
+     ADM_FAC_PIL_TOWER_W_F2_S                       d=( 0.14 13.40  3.50)
+     ADM_FAC_PIL_TOWER_W_F3_S                       d=( 0.14 13.40  3.50)
+     ADM_FAC_PIL_TOWER_W_F4_S                       d=( 0.14 13.40  3.05)
+     ADM_FAC_PIL_WING_N_F1_E                        d=( 0.14 30.10  3.50)
+     ADM_FAC_PIL_WING_N_F1_FAR                      d=(27.50  0.14  3.50)
+     ADM_FAC_PIL_WING_N_F1_W                        d=( 0.14 30.10  3.50)
+     ADM_FAC_PIL_WING_N_F2_E                        d=( 0.14 30.10  3.50)
+     ADM_FAC_PIL_WING_N_F2_FAR                      d=(27.50  0.14  3.50)
+--- ПРОПУЩЕНО, крупное и непонятное (>=4 м по любой оси): 60 ---
+     ADM_CUP_COL                                    d=( 8.84  8.84  2.00)
+     ADM_CUP_CORE                                   d=( 7.24  7.24  2.00)
+     ADM_CUP_DOME                                   d=( 9.80  9.80  2.25)
+     ADM_CUP_DOME_RIB                               d=(10.20 10.20  2.25)
+     ADM_CUP_SKIRT_A                                d=(16.00 16.00  0.55)
+     ADM_CUP_SKIRT_B                                d=(12.70 12.70  0.65)
+     ADM_CUP_SKIRT_C                                d=(10.00 10.00  0.60)
+     ADM_CUP_WIN                                    d=( 8.10  8.10  1.50)
+     ADM_DOME                                       d=(31.61 31.61 13.50)
+     ADM_DOOR_PORTAL_TRANSOM                        d=( 0.06 11.80  0.50)
+     ADM_DRUM                                       d=(34.00 34.00  2.50)
+     ADM_FAC_BAL_POSTS                              d=(68.86 64.86  0.85)
+     ADM_FAC_CORNICE_TOP                            d=(68.60 64.60  0.50)
+     ADM_FAC_DOME_RIB                               d=(32.08 31.65 13.50)
+     ADM_FAC_DRUM_COL                               d=(35.07 35.07  1.60)
+     ADM_FAC_DRUM_WIN                               d=(34.13 34.13  1.30)
+     ADM_FAC_PORT_ENTAB                             d=( 3.65 15.20  1.00)
+     ADM_FAC_PORTAL_ARCH                            d=( 0.50 14.00  0.55)
+     ADM_FAC_PORTAL_BASE                            d=( 0.52 13.60  0.35)
+     ADM_FAC_PORTAL_CAP                             d=( 0.52 13.60  0.35)
+     ADM_FAC_SILL_F3_E                              d=(49.08  0.14  0.06)
+     ADM_FAC_SILL_F3_W                              d=(49.08  0.14  0.06)
+     ADM_FAC_SILL_F4_E                              d=(49.08  0.16  0.07)
+     ADM_FAC_SILL_F4_N                              d=( 0.16 60.08  0.07)
+     ADM_FAC_SILL_F4_S                              d=( 0.16 36.08  0.07)
+     ADM_FAC_SILL_F4_W                              d=(49.08  0.16  0.07)
+     ADM_FAC_TERR_PARAPET                           d=(15.50 65.20  0.55)
+     ADM_FAC_TOWER_E_CORNICE                        d=(16.90 16.60  0.70)
+     ADM_FAC_TOWER_E_PARAPET                        d=(16.60 16.60  0.55)
+     ADM_FAC_TOWER_E_PIN_SHAFT                      d=(15.60 15.60  0.45)
+     ADM_FAC_TOWER_W_CORNICE                        d=(16.90 16.60  0.70)
+     ADM_FAC_TOWER_W_PARAPET                        d=(16.60 16.60  0.55)
+     ADM_FAC_TOWER_W_PIN_SHAFT                      d=(15.60 15.60  0.45)
+     ADM_FURN_CORE_S_S1_RUG_01                      d=( 1.20 14.00  0.03)
+     ADM_FURN_CORE_S_S2_RUG_01                      d=( 1.20  9.00  0.03)
+     ADM_FURN_CORE_S_S2_RUG_02                      d=( 1.20  9.00  0.03)
+     ADM_FURN_CORE_S_S3_RUG_01                      d=(12.00  1.20  0.03)
+     ADM_FURN_CORE_S_S3_RUG_02                      d=( 1.20 12.00  0.03)
+     ADM_FURN_CORR_F1_RUNNER_01                     d=(42.65  1.00  0.02)
+     ADM_FURN_CORR_F1_RUNNER_02                     d=(42.65  1.00  0.02)
+     ADM_FURN_CORR_F1_RUNNER_03                     d=( 1.00 62.80  0.02)
+     ADM_FURN_CORR_F2_RUNNER_01                     d=(53.40  1.00  0.02)
+     ADM_FURN_CORR_F2_RUNNER_02                     d=(53.40  1.00  0.02)
+     ADM_FURN_CORR_F3_RUNNER_01                     d=(44.80  1.00  0.02)
+     ADM_FURN_CORR_F3_RUNNER_02                     d=(44.80  1.00  0.02)
+     ADM_FURN_CORR_F3_RUNNER_03                     d=( 1.00 50.80  0.02)
+     ADM_FURN_CORR_F3_RUNNER_04                     d=( 1.00 36.00  0.02)
+     ADM_FURN_CORR_F4_RUNNER_01                     d=(44.80  1.00  0.02)
+     ADM_FURN_CORR_F4_RUNNER_02                     d=(44.80  1.00  0.02)
+     ADM_FURN_CORR_F4_RUNNER_03                     d=( 1.00 50.80  0.02)
+     ADM_FURN_CORR_F4_RUNNER_04                     d=( 1.00 36.00  0.02)
+     ADM_FURN_F1_OFF                                d=( 7.94 48.80  1.96)
+     ADM_FURN_F2_BENCH_N                            d=(36.76  0.45  0.51)
+     ADM_FURN_F2_BENCH_S                            d=(36.76  0.45  0.51)
+     ADM_FURN_F2_N_01_B                             d=( 5.29  1.76  1.96)
+     ADM_FURN_F2_N_02_B                             d=( 6.82  3.56  1.96)
+     ADM_FURN_F2_N_03                               d=( 4.68  1.51  1.96)
+     ADM_FURN_F2_N_03_B                             d=( 7.80  3.56  1.96)
+     ADM_FURN_F2_N_04                               d=( 4.68  1.51  1.96)
+     ADM_FURN_F2_N_04_B                             d=( 7.80  3.56  1.96)

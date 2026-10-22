@@ -10,51 +10,57 @@ using UnityEngine;
 namespace ProjectC.EditorTools
 {
     /// <summary>
-    /// PRIMUM, ДОМА: точные коллайдеры из ИСХОДНОЙ (несклеенной) геометрии RAW-чанков.
+    /// PRIMUM, ДОМА: ТОЛЬКО БОКСОВЫЕ коллайдеры. Мебель, окна и декор в физику не попадают.
     ///
-    /// Почему не боксы: бокс по габариту не умеет дыр. Из-за этого в трёх предыдущих попытках
-    /// заливались дверные и оконные проёмы, слэб с проёмом лестницы и «крыша по дому» заваривали
-    /// марши, а задняя стена терялась в слиянии (см. docs/world/primum_city/04_COLLIDERS/
-    /// 04_STATUS_AND_GAPS.md, §1 и §9).
+    /// Схема (одноэтажный дом с одной дверью): 3 стены по одному боксу + крыша одним боксом,
+    /// фасад с дверью — 3 бокса (лево / право / над дверью), внутренняя стена — 1 бокс без двери
+    /// и 3 с дверью. Двухэтажный дом — то же плюс перекрытие одним боксом на уровень и лестница
+    /// одним наклонным боксом от первой ступени до последней.
     ///
-    /// Как: Blender-скрипт <c>tools/houses_export.py</c> берёт RAW-чанки, отбирает объекты по
-    /// грамматике имени (&lt;ДОМ&gt;_&lt;слот/этаж&gt;_&lt;ВИД&gt;_…) и пишет ОДИН OBJ на чанк с группами
-    /// <c>&lt;чанк&gt;__&lt;КЛАСС&gt;__&lt;дом&gt;</c> в координатах корня PRIMUM_COLLIDERS.
-    /// Здесь каждая группа (чанк × класс) склеивается в один испечённый меш-ассет и получает
-    /// non-convex <see cref="MeshCollider"/> — ровно так же, как уже работают <c>PM_STAIRS_*</c>
-    /// и <c>PM_SURFACE_*</c> для BASE.
+    /// Чем это отличается от прежней сборки. Раньше стены собирались компланарными кусками по
+    /// касанию габаритов, крыши и марши оставались точными мешами, а мебель и оконная столярка
+    /// попадали в физику через геометрическое «угадывание» — дом превращался в сотни боксов и
+    /// игрок не мог пройти. Теперь класс объекта определяется ТОЛЬКО по имени (Blender-скрипт
+    /// <c>tools/houses_boxes.py</c>), а боксов на дом — единицы.
     ///
-    /// Классы: WALL (стены с настоящими проёмами), FLOOR (полы + SLAB — этажные перекрытия),
-    /// ROOF (крыши/парапеты), STAIR (марши, ступени, крыльца).
-    ///
-    /// Куда: <c>WorldRoot_0_0/PRIMUM_COLLIDERS/&lt;чанк&gt;/HOUSE_&lt;КЛАСС&gt;</c>,
-    /// меши — <c>Assets/_Project/Prefabs/City/Colliders/Houses/</c>.
-    /// Трансформ объектов — identity: координаты в OBJ уже в пространстве корня коллайдеров
+    /// Куда: <c>WorldRoot_0_0/PRIMUM_COLLIDERS/&lt;чанк&gt;/HOUSE_WALL_BOX | HOUSE_FLOOR_BOX |
+    /// HOUSE_ROOF_BOX | HOUSE_STAIR_BOX</c>. Осевые боксы лежат на одном объекте группы (много
+    /// BoxCollider'ов на одном трансформе), повёрнутые и наклонные — дочерними объектами.
+    /// Трансформ объектов — identity: координаты уже в пространстве корня коллайдеров
     /// (он копирует трансформ PRIMUM и едет вместе с ребейзом мира). static-флаги НЕ ставим.
-    /// Идемпотентно: прежние группы <c>HOUSE_*</c> чанка сносятся перед сборкой.
+    /// Идемпотентно: группы <c>HOUSE_*</c> чанка сносятся перед сборкой.
     ///
     /// Меню: ProjectC → World → PRIMUM → Коллайдеры домов.
     /// </summary>
     public static class PrimumHouseColliders
     {
-        private const string ObjFolderRelative = "docs/world/primum_city/04_COLLIDERS/houses_obj";
-        private const string MeshAssetFolder = "Assets/_Project/Prefabs/City/Colliders/Houses";
+        private const string BoxesJsonRelative = "docs/world/primum_city/04_COLLIDERS/houses_boxes.json";
         private const string CollidersRootName = "PRIMUM_COLLIDERS";
         private const string CityRootName = "PRIMUM";
         private const string WorldRootFallback = "WorldRoot_0_0";
-        private const string GroupPrefix = "HOUSE_";
         private const int CityLayer = 8;   // PRIMUM
 
-        /// <summary>Старые боксовые группы домов (PrimumCollidersBuilder) — заменены мешами.</summary>
+        private const string WallBoxGroup = "HOUSE_WALL_BOX";
+        private const string FloorBoxGroup = "HOUSE_FLOOR_BOX";
+        private const string RoofBoxGroup = "HOUSE_ROOF_BOX";
+        private const string StairBoxGroup = "HOUSE_STAIR_BOX";
+        private const float DoorProbeRadius = 0.30f;
+
+        /// <summary>Группы прошлых схем, которых в сцене быть не должно.</summary>
+        private static readonly string[] ObsoleteGroups =
+        {
+            "HOUSE_WALL", "HOUSE_FLOOR", "HOUSE_ROOF", "HOUSE_STAIR", "HOUSE_STEP_BOX"
+        };
+
+        /// <summary>Старые боксовые группы домов (PrimumCollidersBuilder) — заменены боксами из JSON.</summary>
         private static readonly string[] LegacyBoxGroups = { "WALL", "FLOOR", "ROOF" };
 
         // ------------------------------------------------------------------ меню
 
-        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры домов: меши из RAW (пересобрать)", false, 360)]
+        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры домов: боксы из RAW (пересобрать)", false, 360)]
         public static void MenuBuild()
         {
-            Report r = Build(true);
-            Debug.Log(Describe(r));
+            Debug.Log(Describe(Build(true)));
         }
 
         [MenuItem("ProjectC/World/PRIMUM/Коллайдеры домов: отчёт (без изменений)", false, 361)]
@@ -68,13 +74,13 @@ namespace ProjectC.EditorTools
         {
             int n = RemoveLegacyBoxes();
             Debug.Log("[PRIMUM/Houses] снесено боксовых групп домов: " + n +
-                      " (WALL/FLOOR/ROOF; их заменили MeshCollider'ы)");
+                      " (WALL/FLOOR/ROOF старой схемы)");
         }
 
-        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры домов: проверить дома (лучи)", false, 363)]
+        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры домов: проверить проёмы и плиты", false, 363)]
         public static void MenuVerify()
         {
-            Debug.Log(VerifyHouses());
+            Debug.Log(VerifyBoxes());
         }
 
         // ------------------------------------------------------------------ отчёт
@@ -82,22 +88,34 @@ namespace ProjectC.EditorTools
         public class Report
         {
             public int Chunks;
-            public int Groups;
-            public int Meshes;
-            public int Colliders;
-            public int Vertices;
-            public int Triangles;
-            public readonly Dictionary<string, int> ByClass = new Dictionary<string, int>();
+            public int WallBoxes;
+            public int FloorBoxes;
+            public int RoofBoxes;
+            public int StairBoxes;
+            public int RotatedBoxes;
+            public int BoxObjects;
+            public int Doors;
             public readonly Dictionary<string, string> ChunkSummary = new Dictionary<string, string>();
             public readonly List<string> Warnings = new List<string>();
+
+            public int Total { get { return WallBoxes + FloorBoxes + RoofBoxes + StairBoxes; } }
         }
 
-        private class Group
+        // ------------------------------------------------------------------ DTO для JSON
+
+        [Serializable] private class BoxDto { public float[] c; public float[] s; public float ry; public float[] q; }
+        [Serializable] private class DoorDto { public float[] c; public float[] t; public float w; public float h; }
+        [Serializable]
+        private class ChunkDto
         {
-            public string Chunk;
-            public string Class;
-            public readonly List<int> Tris = new List<int>();   // индексы в общий массив вершин файла
+            public string chunk;
+            public BoxDto[] walls;
+            public BoxDto[] floors;
+            public BoxDto[] roofs;
+            public BoxDto[] stairs;
+            public DoorDto[] doors;
         }
+        [Serializable] private class RootDto { public ChunkDto[] chunks; }
 
         // ------------------------------------------------------------------ сборка
 
@@ -107,22 +125,6 @@ namespace ProjectC.EditorTools
 
             GameObject city = GameObject.Find(CityRootName);
             if (city == null) { rep.Warnings.Add("Не найден корень " + CityRootName); return rep; }
-
-            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            string objDir = Path.Combine(projectRoot, ObjFolderRelative.Replace('/', Path.DirectorySeparatorChar));
-            if (!Directory.Exists(objDir))
-            {
-                rep.Warnings.Add("Нет папки с OBJ: " + objDir + " — сначала прогоните tools/houses_export.py");
-                return rep;
-            }
-
-            string[] files = Directory.GetFiles(objDir, "*.obj");
-            Array.Sort(files, StringComparer.OrdinalIgnoreCase);
-            if (files.Length == 0)
-            {
-                rep.Warnings.Add("В " + objDir + " нет ни одного .obj");
-                return rep;
-            }
 
             Transform worldRoot = city.transform.parent != null ? city.transform.parent
                                 : GameObject.Find(WorldRootFallback)?.transform;
@@ -142,12 +144,46 @@ namespace ProjectC.EditorTools
                 root = rootGo.transform;
             }
 
-            string meshDirFull = Path.Combine(projectRoot, MeshAssetFolder.Replace('/', Path.DirectorySeparatorChar));
-            if (apply && !Directory.Exists(meshDirFull)) Directory.CreateDirectory(meshDirFull);
-
-            foreach (string file in files)
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string jsonPath = Path.Combine(projectRoot, BoxesJsonRelative.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(jsonPath))
             {
-                ParseObj(file, rep, apply, root, meshDirFull);
+                rep.Warnings.Add("Нет " + jsonPath + " — сначала прогоните tools/houses_boxes.py");
+                return rep;
+            }
+
+            var dto = JsonUtility.FromJson<RootDto>(File.ReadAllText(jsonPath, Encoding.UTF8));
+            if (dto == null || dto.chunks == null || dto.chunks.Length == 0)
+            {
+                rep.Warnings.Add("JSON не разобран: " + jsonPath);
+                return rep;
+            }
+
+            foreach (ChunkDto cd in dto.chunks)
+            {
+                if (cd == null || string.IsNullOrEmpty(cd.chunk)) continue;
+
+                int w = Count(cd.walls), f = Count(cd.floors), r = Count(cd.roofs), st = Count(cd.stairs);
+                rep.Chunks++;
+                rep.WallBoxes += w; rep.FloorBoxes += f; rep.RoofBoxes += r; rep.StairBoxes += st;
+                rep.Doors += cd.doors != null ? cd.doors.Length : 0;
+                rep.ChunkSummary[cd.chunk] = "стен=" + w + " плит=" + f + " крыш=" + r + " марш=" + st;
+                if (!apply) continue;
+
+                Transform chunkNode = EnsureChunkNode(root, cd.chunk);
+                foreach (string obsolete in ObsoleteGroups) DropGroup(chunkNode, obsolete);
+                DropGroup(chunkNode, WallBoxGroup);
+                DropGroup(chunkNode, FloorBoxGroup);
+                DropGroup(chunkNode, RoofBoxGroup);
+                DropGroup(chunkNode, StairBoxGroup);
+
+                int rot = 0;
+                rot += AddBoxGroup(chunkNode, WallBoxGroup, cd.walls);
+                rot += AddBoxGroup(chunkNode, FloorBoxGroup, cd.floors);
+                rot += AddBoxGroup(chunkNode, RoofBoxGroup, cd.roofs);
+                rot += AddBoxGroup(chunkNode, StairBoxGroup, cd.stairs);
+                rep.RotatedBoxes += rot;
+                rep.BoxObjects += (w > 0 ? 1 : 0) + (f > 0 ? 1 : 0) + (r > 0 ? 1 : 0) + (st > 0 ? 1 : 0);
             }
 
             if (apply)
@@ -158,131 +194,82 @@ namespace ProjectC.EditorTools
             return rep;
         }
 
-        private static void ParseObj(string path, Report rep, bool apply, Transform root, string meshDirFull)
+        private static int Count(BoxDto[] a)
         {
-            string chunk = Path.GetFileNameWithoutExtension(path);
+            return a == null ? 0 : a.Length;
+        }
 
-            var verts = new List<Vector3>();
-            var groups = new List<Group>();
-            var byClass = new Dictionary<string, Group>();
-            Group current = null;
+        private static void DropGroup(Transform chunkNode, string name)
+        {
+            Transform prev = chunkNode.Find(name);
+            if (prev != null) UnityEngine.Object.DestroyImmediate(prev.gameObject);
+        }
 
-            foreach (string raw in File.ReadLines(path, Encoding.UTF8))
+        /// <summary>
+        /// Осевые боксы — на одном объекте группы (по BoxCollider на бокс), повёрнутые и наклонные —
+        /// дочерними объектами. Возвращает число дочерних (повёрнутых) боксов.
+        /// </summary>
+        private static int AddBoxGroup(Transform chunkNode, string name, BoxDto[] boxes)
+        {
+            if (boxes == null || boxes.Length == 0) return 0;
+
+            var go = new GameObject(name);
+            go.transform.SetParent(chunkNode, false);
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
+            go.layer = CityLayer;
+            GameObjectUtility.SetStaticEditorFlags(go, (StaticEditorFlags)0);
+
+            Transform rotRoot = null;
+            int flat = 0, rot = 0;
+            foreach (BoxDto b in boxes)
             {
-                string line = raw.Trim();
-                if (line.Length == 0 || line[0] == '#') continue;
+                if (b == null || b.c == null || b.c.Length < 3 || b.s == null || b.s.Length < 3) continue;
+                Vector3 c = new Vector3(b.c[0], b.c[1], b.c[2]);
+                Vector3 s = new Vector3(Mathf.Max(b.s[0], 0.05f), Mathf.Max(b.s[1], 0.05f), Mathf.Max(b.s[2], 0.05f));
 
-                if (line.StartsWith("o ", StringComparison.Ordinal))
+                bool hasQ = b.q != null && b.q.Length >= 4;
+                Quaternion q = hasQ ? new Quaternion(b.q[0], b.q[1], b.q[2], b.q[3]) : Quaternion.Euler(0f, b.ry, 0f);
+                bool turned = hasQ
+                    ? Quaternion.Angle(q, Quaternion.identity) > 0.05f
+                    : Mathf.Abs(Mathf.DeltaAngle(0f, b.ry)) > 0.05f;
+
+                if (!turned)
                 {
-                    string name = line.Substring(2).Trim();
-                    // <чанк>__<КЛАСС>__<дом>
-                    string[] p = name.Split(new[] { "__" }, StringSplitOptions.None);
-                    string cls = p.Length >= 2 ? p[1] : "OTHER";
-                    Group g;
-                    if (!byClass.TryGetValue(cls, out g))
-                    {
-                        g = new Group { Chunk = chunk, Class = cls };
-                        byClass[cls] = g;
-                        groups.Add(g);
-                    }
-                    current = g;
+                    var bc = go.AddComponent<BoxCollider>();
+                    bc.center = c;
+                    bc.size = s;
+                    flat++;
                     continue;
                 }
 
-                if (line[0] == 'v' && (line.Length == 1 || line[1] == ' '))
+                if (rotRoot == null)
                 {
-                    string[] p = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (p.Length >= 4)
-                        verts.Add(new Vector3(F(p[1]), F(p[2]), F(p[3])));
-                    continue;
+                    var rg = new GameObject("R");
+                    rg.transform.SetParent(go.transform, false);
+                    rg.layer = CityLayer;
+                    GameObjectUtility.SetStaticEditorFlags(rg, (StaticEditorFlags)0);
+                    rotRoot = rg.transform;
                 }
-
-                if (line[0] == 'f' && current != null)
-                {
-                    string[] p = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    var idx = new List<int>(p.Length - 1);
-                    for (int i = 1; i < p.Length; i++)
-                    {
-                        string tok = p[i];
-                        int slash = tok.IndexOf('/');
-                        if (slash > 0) tok = tok.Substring(0, slash);
-                        int vi;
-                        if (int.TryParse(tok, NumberStyles.Integer, CultureInfo.InvariantCulture, out vi))
-                            idx.Add(vi - 1);
-                    }
-                    if (idx.Count == 3) { current.Tris.Add(idx[0]); current.Tris.Add(idx[1]); current.Tris.Add(idx[2]); }
-                    else if (idx.Count >= 4)
-                        for (int i = 1; i + 1 < idx.Count; i++)
-                        {
-                            current.Tris.Add(idx[0]); current.Tris.Add(idx[i]); current.Tris.Add(idx[i + 1]);
-                        }
-                }
+                var child = new GameObject("r" + rot.ToString(CultureInfo.InvariantCulture));
+                child.transform.SetParent(rotRoot, false);
+                child.transform.localPosition = c;
+                child.transform.localRotation = q;
+                child.layer = CityLayer;
+                GameObjectUtility.SetStaticEditorFlags(child, (StaticEditorFlags)0);
+                var cbc = child.AddComponent<BoxCollider>();
+                cbc.center = Vector3.zero;
+                cbc.size = s;
+                rot++;
             }
 
-            if (verts.Count == 0 || groups.Count == 0)
+            if (flat == 0 && rot == 0)
             {
-                rep.Warnings.Add(Path.GetFileName(path) + ": пусто");
-                return;
+                UnityEngine.Object.DestroyImmediate(go);
+                return 0;
             }
-
-            rep.Chunks++;
-            var summary = new StringBuilder();
-
-            foreach (Group g in groups)
-            {
-                rep.Groups++;
-                int gtri = g.Tris.Count / 3;
-                summary.Append(g.Class).Append("=").Append(gtri).Append(' ');
-                rep.Triangles += gtri;
-                int n; rep.ByClass.TryGetValue(g.Class, out n); rep.ByClass[g.Class] = n + gtri;
-
-                if (!apply) continue;
-                if (gtri < 8) continue;   // огрызки не нужны
-
-                // общий массив вершин файла → локальный массив меша этого класса
-                var map = new Dictionary<int, int>(g.Tris.Count);
-                var vl = new List<Vector3>();
-                var tl = new List<int>(g.Tris.Count);
-                for (int i = 0; i < g.Tris.Count; i++)
-                {
-                    int gi = g.Tris[i];
-                    if (gi < 0 || gi >= verts.Count) continue;
-                    int li;
-                    if (!map.TryGetValue(gi, out li)) { li = vl.Count; vl.Add(verts[gi]); map[gi] = li; }
-                    tl.Add(li);
-                }
-                if (tl.Count < 3) continue;
-
-                string shortChunk = ShortChunk(chunk);
-                string meshName = "PM_HOUSE_" + g.Class + "_" + shortChunk;
-                Mesh mesh = BakeMesh(meshName, vl, tl, meshDirFull);
-                if (mesh == null) { rep.Warnings.Add(meshName + ": меш не собран"); continue; }
-                rep.Meshes++;
-                rep.Vertices += vl.Count;
-
-                Transform chunkNode = EnsureChunkNode(root, chunk);
-                Transform prev = chunkNode.Find(GroupPrefix + g.Class);
-                if (prev != null) UnityEngine.Object.DestroyImmediate(prev.gameObject);
-
-                var go = new GameObject(GroupPrefix + g.Class);
-                go.transform.SetParent(chunkNode, false);
-                go.transform.localPosition = Vector3.zero;
-                go.transform.localRotation = Quaternion.identity;
-                go.transform.localScale = Vector3.one;
-                go.layer = CityLayer;
-                GameObjectUtility.SetStaticEditorFlags(go, (StaticEditorFlags)0);
-
-                var mc = go.AddComponent<MeshCollider>();
-                mc.sharedMesh = mesh;
-                mc.convex = false;
-                mc.cookingOptions = MeshColliderCookingOptions.CookForFasterSimulation
-                                  | MeshColliderCookingOptions.EnableMeshCleaning
-                                  | MeshColliderCookingOptions.WeldColocatedVertices
-                                  | MeshColliderCookingOptions.UseFastMidphase;
-                rep.Colliders++;
-            }
-
-            rep.ChunkSummary[chunk] = summary.ToString().TrimEnd();
+            return rot;
         }
 
         private static Transform EnsureChunkNode(Transform root, string chunk)
@@ -296,33 +283,9 @@ namespace ProjectC.EditorTools
             return go.transform;
         }
 
-        private static string ShortChunk(string chunk)
-        {
-            return chunk.StartsWith("PRIMUM_", StringComparison.Ordinal) ? chunk.Substring(7) : chunk;
-        }
+        // ------------------------------------------------------------------ снос старых боксов
 
-        private static Mesh BakeMesh(string name, List<Vector3> verts, List<int> tris, string meshDirFull)
-        {
-            if (verts.Count == 0 || tris.Count < 3) return null;
-            string assetPath = MeshAssetFolder + "/" + name + ".asset";
-            Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
-            bool created = mesh == null;
-            if (created) mesh = new Mesh(); else mesh.Clear();
-
-            mesh.name = name;
-            if (verts.Count > 65000) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            mesh.SetVertices(verts);
-            mesh.SetTriangles(tris, 0);
-            mesh.RecalculateBounds();
-
-            if (created) AssetDatabase.CreateAsset(mesh, assetPath);
-            else EditorUtility.SetDirty(mesh);
-            return mesh;
-        }
-
-        // ------------------------------------------------------------------ снос боксов
-
-        /// <summary>Удаляет старые боксовые группы домов (WALL/FLOOR/ROOF) во всех чанках узла коллайдеров.</summary>
+        /// <summary>Удаляет боксовые группы домов прошлой схемы (WALL/FLOOR/ROOF) во всех чанках.</summary>
         public static int RemoveLegacyBoxes()
         {
             GameObject rootGo = GameObject.Find(CollidersRootName);
@@ -357,87 +320,92 @@ namespace ProjectC.EditorTools
         // ------------------------------------------------------------------ проверка
 
         /// <summary>
-        /// Лучи по геометрии домов: берём реальные верхние грани мешей WALL/FLOOR/ROOF/STAIR чанка
-        /// и проверяем, что сверху есть коллайдер и что он не выше самой поверхности.
+        /// Проверка боксов: (1) каждый дверной проём из JSON должен быть свободен шаром
+        /// радиуса 0.30 м и иметь опору под ногами; (2) каждая плита должна ловиться лучом
+        /// сверху в своей же точке. Проверка НЕ входит в Play Mode.
         /// </summary>
-        public static string VerifyHouses()
+        public static string VerifyBoxes()
         {
-            GameObject city = GameObject.Find(CityRootName);
-            if (city == null) return "[PRIMUM/Houses] Не найден корень " + CityRootName;
-
             var sb = new StringBuilder();
-            sb.AppendLine("[PRIMUM/Houses] Проверка точных мешей домов (лучи вниз)");
+            sb.AppendLine("[PRIMUM/Houses] Проверка боксов (проёмы + плиты)");
 
-            int chunkCount = 0, samples = 0, hits = 0, above = 0, below = 0;
-            float worstAbove = 0f;
-            string worstName = "";
+            GameObject rootGo = GameObject.Find(CollidersRootName);
+            if (rootGo == null) return sb.AppendLine("  ! нет узла " + CollidersRootName).ToString();
+            Transform root = rootGo.transform;
 
-            foreach (Transform chunk in city.transform)
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string jsonPath = Path.Combine(projectRoot, BoxesJsonRelative.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(jsonPath)) return sb.AppendLine("  ! нет " + jsonPath).ToString();
+
+            var dto = JsonUtility.FromJson<RootDto>(File.ReadAllText(jsonPath, Encoding.UTF8));
+            if (dto == null || dto.chunks == null) return sb.AppendLine("  ! JSON не разобран").ToString();
+
+            int doors = 0, blocked = 0, noFloor = 0, plates = 0, plateMiss = 0;
+            var badDoors = new List<string>();
+            var badPlates = new List<string>();
+
+            foreach (ChunkDto cd in dto.chunks)
             {
-                if (!chunk.name.StartsWith("PRIMUM_HOUSES_", StringComparison.Ordinal)) continue;
-                chunkCount++;
+                if (cd == null || string.IsNullOrEmpty(cd.chunk)) continue;
+                Transform chunkNode = root.Find(cd.chunk);
 
-                // геометрия домов — по именам объектов (WALL/FLOOR/SLAB/ROOF/STAIR), координаты в корне
-                Matrix4x4 toRoot = city.transform.worldToLocalMatrix;
-                int chunkSamples = 0, chunkHits = 0, chunkAbove = 0, chunkBelow = 0;
-
-                foreach (MeshFilter mf in chunk.GetComponentsInChildren<MeshFilter>(true))
+                if (cd.doors != null)
                 {
-                    if (mf.sharedMesh == null) continue;
-                    string n = mf.gameObject.name.ToUpperInvariant();
-                    if (!(n.Contains("_WALL") || n.Contains("_FLOOR") || n.Contains("_SLAB")
-                          || n.Contains("_ROOF") || n.Contains("_STAIR") || n.Contains("_STEPS"))) continue;
-
-                    Vector3[] v = mf.sharedMesh.vertices;
-                    int[] tr = mf.sharedMesh.triangles;
-                    if (tr.Length < 3) continue;
-                    Matrix4x4 m = toRoot * mf.transform.localToWorldMatrix;
-
-                    // редкая выборка: каждый N-й треугольник, только горизонтальные грани
-                    int step = Mathf.Max(1, tr.Length / 3 / 12);
-                    for (int t = 0; t < tr.Length; t += 3 * step)
+                    foreach (DoorDto d in cd.doors)
                     {
-                        Vector3 a = m.MultiplyPoint3x4(v[tr[t]]);
-                        Vector3 b = m.MultiplyPoint3x4(v[tr[t + 1]]);
-                        Vector3 c = m.MultiplyPoint3x4(v[tr[t + 2]]);
-                        Vector3 cr = Vector3.Cross(b - a, c - a);
-                        if (cr.sqrMagnitude < 1e-9f) continue;
-                        if (cr.y / cr.magnitude < 0.9f) continue;
-
-                        Vector3 mid = (a + b + c) / 3f;
-                        Vector3 world = city.transform.TransformPoint(new Vector3(mid.x, mid.y + 40f, mid.z));
-                        samples++; chunkSamples++;
-
-                        RaycastHit[] hh = Physics.RaycastAll(world, Vector3.down, 120f, ~0, QueryTriggerInteraction.Ignore);
-                        bool found = false;
-                        float best = float.MinValue;
-                        foreach (RaycastHit h in hh)
+                        if (d == null || d.c == null || d.c.Length < 3) continue;
+                        doors++;
+                        Vector3 w = root.TransformPoint(new Vector3(d.c[0], d.c[1], d.c[2]));
+                        bool bad = false;
+                        foreach (Collider h in Physics.OverlapSphere(w, DoorProbeRadius, ~0, QueryTriggerInteraction.Ignore))
                         {
-                            if (!IsUnderColliders(h.collider.transform)) continue;
-                            float ly = city.transform.InverseTransformPoint(h.point).y;
-                            if (!found || ly > best) { best = ly; found = true; }
+                            if (IsUnderColliders(h.transform)) { bad = true; break; }
                         }
-                        if (!found) { below++; chunkBelow++; continue; }
-                        hits++; chunkHits++;
-                        float d = best - mid.y;
-                        if (d > 0.5f)
+                        if (bad)
                         {
-                            above++; chunkAbove++;
-                            if (d > worstAbove) { worstAbove = d; worstName = chunk.name + "/" + mf.gameObject.name; }
+                            blocked++;
+                            if (badDoors.Count < 10)
+                                badDoors.Add(cd.chunk.Replace("PRIMUM_HOUSES_", "") +
+                                             " (" + d.c[0].ToString("F1") + "," + d.c[1].ToString("F1") + "," +
+                                             d.c[2].ToString("F1") + ")");
+                            continue;
                         }
+                        bool floor = false;
+                        foreach (RaycastHit hf in Physics.RaycastAll(w + Vector3.up * 0.10f, Vector3.down, 3.0f,
+                                                                     ~0, QueryTriggerInteraction.Ignore))
+                        {
+                            if (IsUnderColliders(hf.collider.transform)) { floor = true; break; }
+                        }
+                        if (!floor) noFloor++;
                     }
                 }
 
-                if (chunkSamples > 0)
-                    sb.AppendLine("  " + chunk.name.Replace("PRIMUM_HOUSES_", "") + ": точек " + chunkSamples
-                                  + ", попало " + chunkHits + ", выше поверхности " + chunkAbove
-                                  + ", промах " + chunkBelow);
+                if (chunkNode == null) continue;
+
+                Transform fg = chunkNode.Find(FloorBoxGroup);
+                if (fg != null)
+                {
+                    foreach (BoxCollider bc in fg.GetComponentsInChildren<BoxCollider>(true))
+                    {
+                        plates++;
+                        Vector3 top = bc.transform.TransformPoint(bc.center + Vector3.up * (bc.size.y * 0.5f + 0.05f));
+                        if (!Physics.Raycast(top, Vector3.down, 2.0f, ~0, QueryTriggerInteraction.Ignore))
+                        {
+                            plateMiss++;
+                            if (badPlates.Count < 10)
+                                badPlates.Add(cd.chunk.Replace("PRIMUM_HOUSES_", "") +
+                                              " (" + top.x.ToString("F1") + "," + top.y.ToString("F1") + "," +
+                                              top.z.ToString("F1") + ")");
+                        }
+                    }
+                }
             }
 
-            sb.AppendLine("  чанков: " + chunkCount);
-            sb.AppendLine("  точек-поверхностей: " + samples + ", попало в коллайдер домов: " + hits);
-            sb.AppendLine("  коллайдер выше поверхности (>0.5 м): " + above + "  макс " + worstAbove.ToString("F2") + " м " + worstName);
-            sb.AppendLine("  промахов в пустоту: " + below);
+            sb.AppendLine("  проёмов: " + doors + ", перекрыто (шар 0.30 м): " + blocked +
+                          ", без пола под ногами: " + noFloor);
+            sb.AppendLine("  плит: " + plates + ", промах луча вниз: " + plateMiss);
+            foreach (string s in badDoors) sb.AppendLine("   ! перекрыт проём: " + s);
+            foreach (string s in badPlates) sb.AppendLine("   ! плита без попадания: " + s);
             return sb.ToString();
         }
 
@@ -452,27 +420,120 @@ namespace ProjectC.EditorTools
             return false;
         }
 
+        private static bool IsUnderNamed(Transform t, string name)
+        {
+            Transform p = t;
+            while (p != null)
+            {
+                if (p.name == name) return true;
+                p = p.parent;
+            }
+            return false;
+        }
+
+        /// <summary>Группа бокса, которая первой закрыла проход: WALL / FLOOR / ROOF / STAIR / OTHER.</summary>
+        private static string GroupOf(Transform t)
+        {
+            Transform p = t;
+            while (p != null)
+            {
+                if (p.name == WallBoxGroup) return "WALL";
+                if (p.name == FloorBoxGroup) return "FLOOR";
+                if (p.name == RoofBoxGroup) return "ROOF";
+                if (p.name == StairBoxGroup) return "STAIR";
+                p = p.parent;
+            }
+            return "OTHER";
+        }
+
+        /// <summary>
+        /// Проверка ПРОХОДИМОСТИ проёма капсулой. Порог берётся из самой записи проёма
+        /// (<c>c.y - h/2</c>), поэтому проверка не зависит от того, попал ли луч в перекрытие или
+        /// в уличную плиту. Дверные полотна (<c>PRIMUM_DOORS</c>) игнорируются: закрытая створка —
+        /// отдельная задача (см. 05_HOUSES_BOXES.md, раздел про двери), здесь проверяется стена.
+        /// </summary>
+        public static string VerifyPassages()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("[PRIMUM/Houses] Проходимость проёмов капсулой 0.30 м");
+
+            GameObject rootGo = GameObject.Find(CollidersRootName);
+            if (rootGo == null) return sb.AppendLine("  ! нет узла " + CollidersRootName).ToString();
+            Transform root = rootGo.transform;
+
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string jsonPath = Path.Combine(projectRoot, BoxesJsonRelative.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(jsonPath)) return sb.AppendLine("  ! нет " + jsonPath).ToString();
+
+            var dto = JsonUtility.FromJson<RootDto>(File.ReadAllText(jsonPath, Encoding.UTF8));
+            if (dto == null || dto.chunks == null) return sb.AppendLine("  ! JSON не разобран").ToString();
+
+            int tested = 0, pass = 0, fail = 0, wall = 0;
+            var byGroup = new Dictionary<string, int>();
+            var bad = new List<string>();
+
+            foreach (ChunkDto cd in dto.chunks)
+            {
+                if (cd == null || cd.doors == null) continue;
+                foreach (DoorDto d in cd.doors)
+                {
+                    if (d == null || d.c == null || d.c.Length < 3) continue;
+                    tested++;
+                    Vector3 c = root.TransformPoint(new Vector3(d.c[0], d.c[1], d.c[2]));
+                    float thr = c.y - d.h * 0.5f;
+                    Vector3 p0 = new Vector3(c.x, thr + 0.32f, c.z);
+                    Vector3 p1 = new Vector3(c.x, thr + 1.52f, c.z);
+
+                    bool blocked = false;
+                    string group = null;
+                    foreach (Collider h in Physics.OverlapCapsule(p0, p1, DoorProbeRadius, ~0, QueryTriggerInteraction.Ignore))
+                    {
+                        if (IsUnderNamed(h.transform, "PRIMUM_DOORS")) continue;
+                        blocked = true;
+                        group = GroupOf(h.transform);
+                        break;
+                    }
+
+                    if (!blocked) { pass++; continue; }
+                    fail++;
+                    if (group != "OTHER") wall++;
+                    int seen;
+                    byGroup.TryGetValue(group, out seen);
+                    byGroup[group] = seen + 1;
+                    if (bad.Count < 10)
+                        bad.Add(cd.chunk.Replace("PRIMUM_HOUSES_", "") + " " +
+                                (d.t == null || d.t.Length < 2 ? "?" : "") + "(" +
+                                d.c[0].ToString("F1") + "," + d.c[1].ToString("F1") + "," +
+                                d.c[2].ToString("F1") + ") w=" + d.w.ToString("F2"));
+                }
+            }
+
+            sb.AppendLine("  проходов проверено: " + tested + ", прошло: " + pass + ", занято: " + fail +
+                          " (боксами домов: " + wall + ")");
+            sb.Append("  чем занято: ");
+            foreach (var kv in byGroup) sb.Append(kv.Key + "=" + kv.Value + " ");
+            sb.AppendLine();
+            foreach (string s in bad) sb.AppendLine("   ! занят: " + s);
+            return sb.ToString();
+        }
+
         // ------------------------------------------------------------------ утилиты
 
-        private static float F(string s)
+        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры домов: проходимость проёмов капсулой", false, 364)]
+        public static void MenuVerifyPassages()
         {
-            float v;
-            return float.TryParse(s.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out v) ? v : 0f;
+            Debug.Log(VerifyPassages());
         }
 
         private static string Describe(Report r)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("[PRIMUM/Houses] Точные меши домов из RAW (WALL / FLOOR+SLAB / ROOF / STAIR)");
-            sb.AppendLine("  чанков: " + r.Chunks + ", групп (чанк×класс×дом): " + r.Groups);
-            sb.AppendLine("  мешей-ассетов: " + r.Meshes + ", MeshCollider'ов: " + r.Colliders);
-            sb.AppendLine("  вершин: " + r.Vertices + ", треугольников: " + r.Triangles);
-            if (r.ByClass.Count > 0)
-            {
-                sb.Append("  по классам (треугольников):");
-                foreach (var kv in r.ByClass) sb.Append(" " + kv.Key + "=" + kv.Value);
-                sb.AppendLine();
-            }
+            sb.AppendLine("[PRIMUM/Houses] Боксы домов из RAW (стены / перекрытия / крыши / марши)");
+            sb.AppendLine("  чанков: " + r.Chunks + ", боксов всего: " + r.Total);
+            sb.AppendLine("    стены: " + r.WallBoxes + ", плиты: " + r.FloorBoxes +
+                          ", крыши: " + r.RoofBoxes + ", марши: " + r.StairBoxes);
+            sb.AppendLine("  проёмов дверей в JSON: " + r.Doors +
+                          ", повёрнутых/наклонных боксов: " + r.RotatedBoxes);
             foreach (var kv in r.ChunkSummary) sb.AppendLine("   " + kv.Key.Replace("PRIMUM_", "") + ": " + kv.Value);
             foreach (string w in r.Warnings) sb.AppendLine("  ! " + w);
             return sb.ToString();

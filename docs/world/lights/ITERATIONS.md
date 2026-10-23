@@ -174,3 +174,32 @@
 **Зафиксировано по итогам теста шагов 1–2:** тени солнца работают, но грубые. Причина — URP Asset: `m_ShadowDistance 1000`, 2 каскада, `m_Cascade2Split 0.25`, shadowmap `2048` (≈0.12 м/тексель в каскаде 1, ≈0.37 м — в каскаде 2), `m_SoftShadowsSupported 0`. Вынесено в отдельный тикет `T-LIGHT11`.
 
 **Следующий шаг:** пользователь проверяет в Play Mode критерии §8 `T-LIGHT10`. Отдельно, когда будет воля — `T-LIGHT11` (качество теней). `T-LIGHT04` и массовый bake остаются заблокированными решением по GI.
+
+## Итерация 9 от 2026-10-23
+
+**Задача:** расширить `AdditionalLightIntensityController` с «только интенсивности» до полноценного управления группой (range, цвет, тип, углы Spot, тени, bounce) и добавить случайное мерцание каждой лампы группы со своими параметрами.
+**Тикеты:** `T-LIGHT13` (переопределения), `T-LIGHT14` (мерцание)
+**Файл:** `Assets/_Project/Scripts/Core/Lighting/AdditionalLightIntensityController.cs`
+
+**Изменения `T-LIGHT13`:**
+- Вложенный `[Serializable] LightOverrides` + `LightGroup.overrides`; каждое свойство включается своим флагом `override*`, выключенный флаг не трогает авторское значение.
+- Новый `LightState` вместо `Dictionary<Light,float>`: снимает базовые `intensity/range/color/type/spotAngle/innerSpotAngle/useColorTemperature/colorTemperature/shadows/shadowStrength/bounceIntensity`.
+- При смене группы — `RestoreBaseline` → `ApplyOverrides`; порядок применения: сначала `type`, потом `range` и углы Spot.
+
+**Изменения `T-LIGHT14`:**
+- Поля группы `flickerEnabled`, `flickerHzMin/Max`, `flickerDepthMin/Max`, `flickerDurationMin/Max`.
+- На каждый источник — свой `FlickerRandom` (xorshift от хеша имени и `EntityId`); `UnityEngine.Random` не используется.
+- Провал — треугольный импульс, частота/глубина/длительность перебрасываются на каждое событие → синхронной пульсации группы нет.
+- Множитель мерцания применяется после `Mathf.Lerp`, чтобы сглаживание не съедало короткие провалы.
+- `Update()` пересчитывает каждый кадр при `_anyFlickerEnabled` — работает и при замороженном времени суток; для ламп, выключенных пулом, события не планируются.
+- `SanitizeFlicker()` восстанавливает нулевые границы от старой сериализации сцен.
+- `GetInstanceID()` → `EntityId.ToULong(GetEntityId())`: в `6000.5.2f1` `GetInstanceID` помечен `[Obsolete(error: true)]` (CS0619).
+
+**Документация:** `T-LIGHT13-light-group-overrides.md` (новый), `T-LIGHT14-lamp-flicker.md` (новый), `implementation-log.md`, `ITERATIONS.md`.
+
+**Проверки:**
+- `check_compile_errors`: `No compile errors`.
+- Сцены не изменялись: `BootstrapScene`/`WorldScene_0_0` остались в рабочем дереве с правками пользователя (кривые `PRIMUM_INLIGHT`, дверные створки) и в коммиты не включались.
+- Play Mode и визуальная оценка мерцания — **NOT RUN**, выполняет пользователь.
+
+**Раздельные коммиты:** `1e6f99ac` — `T-LIGHT13`; второй — `T-LIGHT14`.

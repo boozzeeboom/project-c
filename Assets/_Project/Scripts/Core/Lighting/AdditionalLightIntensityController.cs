@@ -90,6 +90,28 @@ namespace ProjectC.Core
             [Tooltip("Переопределения свойств источника для всей группы: range, тип, углы Spot, цвет, температура, тени, bounce.\nПустое значение = новых настроек ещё нет, авторские значения источников сохраняются.")]
             public LightOverrides overrides = new LightOverrides();
 
+            [Header("Мерцание (неисправные лампы)")]
+            [Tooltip("Мерцание только для этой группы. Каждый источник мерцает по своему графику: общей синхронной пульсации группы нет.")]
+            public bool flickerEnabled;
+
+            [Tooltip("Нижняя граница частоты событий мерцания, Гц (событий в секунду). Для каждого источника и каждого события частота выбирается заново из диапазона [min…max].")]
+            [Min(0.01f)] public float flickerHzMin = 0.5f;
+
+            [Tooltip("Верхняя граница частоты событий мерцания, Гц.")]
+            [Min(0.01f)] public float flickerHzMax = 3f;
+
+            [Tooltip("Минимальная глубина провала яркости — доля от текущей интенсивности источника.")]
+            [Range(0f, 1f)] public float flickerDepthMin = 0.15f;
+
+            [Tooltip("Максимальная глубина провала яркости. 1 = лампа гаснет полностью.")]
+            [Range(0f, 1f)] public float flickerDepthMax = 0.6f;
+
+            [Tooltip("Минимальная длительность одного провала, с.")]
+            [Min(0.005f)] public float flickerDurationMin = 0.04f;
+
+            [Tooltip("Максимальная длительность одного провала, с.")]
+            [Min(0.005f)] public float flickerDurationMax = 0.12f;
+
             public bool Matches(Light light)
             {
                 if (light == null || light.type == LightType.Directional)
@@ -128,6 +150,32 @@ namespace ProjectC.Core
                 }
 
                 return overrides;
+            }
+
+            /// <summary>
+            /// Мерцание добавлено позже первой сериализации сцен, поэтому нулевые/перевёрнутые
+            /// границы восстанавливаются к осмысленным значениям, а не ломают расчёт частоты.
+            /// </summary>
+            public void SanitizeFlicker()
+            {
+                if (flickerHzMin <= 0f) flickerHzMin = 0.5f;
+                if (flickerHzMax <= 0f) flickerHzMax = 3f;
+
+                if (flickerHzMax < flickerHzMin)
+                {
+                    float swap = flickerHzMin;
+                    flickerHzMin = flickerHzMax;
+                    flickerHzMax = swap;
+                }
+
+                if (flickerDepthMin <= 0f && flickerDepthMax <= 0f)
+                {
+                    flickerDepthMin = 0.15f;
+                    flickerDepthMax = 0.6f;
+                }
+
+                if (flickerDurationMin <= 0f) flickerDurationMin = 0.04f;
+                if (flickerDurationMax <= 0f) flickerDurationMax = 0.12f;
             }
         }
 
@@ -168,6 +216,41 @@ namespace ProjectC.Core
 
             /// <summary>Интенсивность без мерцания — сюда идёт плавный переход.</summary>
             public float smoothedIntensity;
+
+            // Мерцание: у каждого источника свой ГПСЧ и свой график провалов.
+            public FlickerRandom flickerRandom;
+            public bool flickerScheduled;
+            public float flickerNextTime;
+            public float flickerStartTime;
+            public float flickerEndTime;
+            public float flickerDepth;
+        }
+
+        /// <summary>
+        /// Детерминированный xorshift-ГПСЧ на источник. Не трогает UnityEngine.Random
+        /// (общий поток) и не даёт группе мерцать синхронно: у каждой лампы свои числа.
+        /// </summary>
+        private struct FlickerRandom
+        {
+            private uint _state;
+
+            public FlickerRandom(uint seed)
+            {
+                _state = seed != 0u ? seed : 0x9E3779B9u;
+            }
+
+            public float Next01()
+            {
+                _state ^= _state << 13;
+                _state ^= _state >> 17;
+                _state ^= _state << 5;
+                return (_state & 0x00FFFFFFu) / 16777216f;
+            }
+
+            public float Range(float min, float max)
+            {
+                return min + (max - min) * Next01();
+            }
         }
 
         private readonly List<Light> _trackedLights = new List<Light>();
@@ -177,6 +260,7 @@ namespace ProjectC.Core
         private float _currentTimeOfDay = 12f;
         private float _nextRescanTime;
         private bool _hasAppliedTime;
+        private bool _anyFlickerEnabled;
 
         private void Reset()
         {
@@ -210,9 +294,17 @@ namespace ProjectC.Core
             }
 
             float timeOfDay = ReadTimeOfDay();
-            if (!_hasAppliedTime || !Mathf.Approximately(timeOfDay, _currentTimeOfDay))
+            bool timeChanged = !_hasAppliedTime || !Mathf.Approximately(timeOfDay, _currentTimeOfDay);
+
+            if (timeChanged)
             {
                 _currentTimeOfDay = timeOfDay;
+            }
+
+            // Мерцание живёт в собственном времени: при замороженном времени суток
+            // (paused day-night) провалы всё равно должны идти каждый кадр.
+            if (timeChanged || _anyFlickerEnabled)
+            {
                 ApplyIntensity(timeOfDay, false);
             }
         }
@@ -279,11 +371,35 @@ namespace ProjectC.Core
             {
                 Debug.Log($"[AdditionalLightIntensityController] Tracking {_trackedLights.Count} additional lights across loaded scenes.");
             }
+
+            // Флаг пересчитывается вместе с рескном: включение мерцания в инспекторе в Play Mode
+            // подхватывается не позже rescanInterval, без перезапуска.
+            RefreshFlickerFlag();
+        }
+
+        private void RefreshFlickerFlag()
+        {
+            _anyFlickerEnabled = false;
+
+            if (groups == null)
+            {
+                return;
+            }
+
+            foreach (LightGroup group in groups)
+            {
+                if (group != null && group.flickerEnabled)
+                {
+                    _anyFlickerEnabled = true;
+                    return;
+                }
+            }
         }
 
         private void ApplyIntensity(float timeOfDay, bool immediate)
         {
             float blend = immediate ? 1f : 1f - Mathf.Exp(-transitionSpeed * Time.deltaTime);
+            float now = Time.time;
 
             foreach (Light light in _trackedLights)
             {
@@ -309,7 +425,10 @@ namespace ProjectC.Core
                     ? targetIntensity
                     : Mathf.Lerp(state.smoothedIntensity, targetIntensity, blend);
 
-                light.intensity = state.smoothedIntensity;
+                // Мерцание накладывается поверх сглаженной яркости: короткий провал не должен
+                // проходить через Lerp, иначе сглаживание его съедает и лампы «не мерцают».
+                float flicker = EvaluateFlickerFactor(light, state, group, now);
+                light.intensity = state.smoothedIntensity * flicker;
             }
 
             _hasAppliedTime = true;
@@ -348,8 +467,82 @@ namespace ProjectC.Core
                 baseShadows = light.shadows,
                 baseShadowStrength = light.shadowStrength,
                 baseBounceIntensity = light.bounceIntensity,
-                smoothedIntensity = light.intensity
+                smoothedIntensity = light.intensity,
+                flickerRandom = new FlickerRandom(HashName(light.name) ^ (uint)EntityId.ToULong(light.GetEntityId()))
             };
+        }
+
+        private static uint HashName(string name)
+        {
+            uint hash = 2166136261u;
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                for (int i = 0; i < name.Length; i++)
+                {
+                    hash ^= name[i];
+                    hash *= 16777619u;
+                }
+            }
+
+            return hash;
+        }
+
+        /// <summary>
+        /// Множитель мерцания 0…1 поверх уже сглаженной яркости. Провал — короткий треугольный
+        /// импульс; частота, глубина и длительность перебрасываются заново на каждое событие,
+        /// поэтому синхронной пульсации группы не возникает.
+        /// </summary>
+        private static float EvaluateFlickerFactor(Light light, LightState state, LightGroup group, float now)
+        {
+            if (group == null || !group.flickerEnabled || !light.enabled || state.baseIntensity <= 0f)
+            {
+                // Пул источников (PrimumLightPool) выключает дальние лампы: не планируем события
+                // для невидимого света, чтобы при включении не сработал провал «из прошлого».
+                state.flickerScheduled = false;
+                return 1f;
+            }
+
+            float hzMin = Mathf.Clamp(Mathf.Min(group.flickerHzMin, group.flickerHzMax), 0.01f, 60f);
+            float hzMax = Mathf.Clamp(Mathf.Max(group.flickerHzMin, group.flickerHzMax), hzMin, 60f);
+
+            if (!state.flickerScheduled)
+            {
+                state.flickerScheduled = true;
+                state.flickerStartTime = now;
+                state.flickerEndTime = now;
+                state.flickerNextTime = now + NextFlickerInterval(ref state.flickerRandom, hzMin, hzMax);
+            }
+
+            if (now >= state.flickerNextTime)
+            {
+                float durationMin = Mathf.Min(group.flickerDurationMin, group.flickerDurationMax);
+                float durationMax = Mathf.Max(group.flickerDurationMin, group.flickerDurationMax);
+                float depthMin = Mathf.Min(group.flickerDepthMin, group.flickerDepthMax);
+                float depthMax = Mathf.Max(group.flickerDepthMin, group.flickerDepthMax);
+
+                state.flickerStartTime = now;
+                state.flickerEndTime = now + Mathf.Max(0.005f, state.flickerRandom.Range(durationMin, durationMax));
+                state.flickerDepth = Mathf.Clamp01(state.flickerRandom.Range(depthMin, depthMax));
+
+                // Пауза до следующего события тоже случайная и со своей частотой из [min…max].
+                state.flickerNextTime = state.flickerEndTime + NextFlickerInterval(ref state.flickerRandom, hzMin, hzMax);
+            }
+
+            if (now >= state.flickerEndTime)
+            {
+                return 1f;
+            }
+
+            float u = Mathf.InverseLerp(state.flickerStartTime, state.flickerEndTime, now);
+            float shape = 1f - Mathf.Abs(2f * u - 1f);
+            return 1f - state.flickerDepth * shape;
+        }
+
+        private static float NextFlickerInterval(ref FlickerRandom random, float hzMin, float hzMax)
+        {
+            float hz = random.Range(hzMin, hzMax);
+            return 1f / Mathf.Max(0.01f, hz);
         }
 
         /// <summary>Возврат к авторским значениям источника (снимаются при первом обнаружении).</summary>
@@ -456,8 +649,11 @@ namespace ProjectC.Core
                 if (group != null)
                 {
                     group.EnsureOverrides();
+                    group.SanitizeFlicker();
                 }
             }
+
+            RefreshFlickerFlag();
         }
 
         private static LightGroup CreatePrimumOutdoorGroup()

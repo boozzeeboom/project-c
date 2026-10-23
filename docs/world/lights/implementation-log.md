@@ -5,8 +5,8 @@
 - **Дата старта:** 2026-09-08
 - **Рабочий источник правды:** `docs/world/lights/lighting-plan.md`
 - **Завершённые этапы:** Stage 1 / T-LIGHT02, Stage 4 / T-LIGHT05 и Stage 7 / T-LIGHT08
-- **Текущий этап:** Stage 11 / T-LIGHT13 — расширенное управление группой света (range, цвет, тип и т.д.)
-- **Статус этапа:** переопределения свойств реализованы; Play Mode-приёмка остаётся за пользователем
+- **Текущий этап:** Stage 12 / T-LIGHT14 — случайное мерцание ламп по группе
+- **Статус этапа:** реализовано; Play Mode-приёмка остаётся за пользователем
 - **Статус Unity Editor:** подключён; изменения выполнены через Unity MCP
 
 ## Решение по плану
@@ -59,6 +59,7 @@
 | 9 | T-LIGHT10 | Освещение интерьеров днём: ключевой свет, тени солнца, перераспределение direct/ambient | ✅ Шаги 1–5 выполнены; визуальная приёмка pending |
 | 10 | T-LIGHT11 | Качество теней солнца (грубая кромка, soft shadows выключены) | ⏳ Не начат — зафиксирован по итогам T-LIGHT10 |
 | 11 | T-LIGHT13 | Расширенное управление группой: переопределения range / type / spot angles / color / color temperature / shadows / bounce | ✅ Реализован; Play Mode-приёмка pending |
+| 12 | T-LIGHT14 | Случайное мерцание каждой лампы группы (`flickerEnabled`, границы Гц, глубина и длительность провала) | ✅ Реализован; Play Mode-приёмка pending |
 
 ## Результат Stage 1 / T-LIGHT02
 
@@ -173,6 +174,20 @@
 - Play Mode и визуальная проверка переопределений — **NOT RUN**, выполняется пользователем.
 
 **Документ этапа:** `docs/world/lights/T-LIGHT13-light-group-overrides.md`.
+
+## Результат Stage 12 / T-LIGHT14
+
+- В `LightGroup` добавлены поля мерцания: `flickerEnabled`, `flickerHzMin`, `flickerHzMax`, `flickerDepthMin`, `flickerDepthMax`, `flickerDurationMin`, `flickerDurationMax`; всё по умолчанию — мерцание выключено (`flickerEnabled = false`).
+- Мерцание считается на каждый источник отдельно (`LightState` + собственный `FlickerRandom` — xorshift на хеше имени и `EntityId`). `UnityEngine.Random` не используется, поэтому глобальный поток случайности не сдвигается.
+- Провал — треугольный импульс: `factor = 1 − depth · (1 − |2u − 1|)` внутри `[start…end]`. Частота, глубина и длительность перебрасываются заново на каждое событие, поэтому синхронной пульсации группы нет.
+- Множитель мерцания накладывается **после** `Mathf.Lerp` (поверх `state.smoothedIntensity`): иначе сглаживание съедало бы короткие провалы.
+- `Update()` вызывает `ApplyIntensity` каждый кадр при `_anyFlickerEnabled` — мерцание работает и при замороженном времени суток; флаг пересчитывается в `EnsureGroupData` и в каждом рескне.
+- Для выключенных пулом источников (`light.enabled == false`) события не планируются — накопившийся провал не срабатывает в момент включения.
+- `SanitizeFlicker()` в `Awake` восстанавливает нулевые/перевёрнутые границы, оставшиеся от старой сериализации сцен.
+- Замена `GetInstanceID()` → `EntityId.ToULong(light.GetEntityId())`: в Unity `6000.5.2f1` `GetInstanceID` помечен `[Obsolete(error: true)]` (CS0619).
+- Сцены не изменялись. `check_compile_errors`: `No compile errors`. Play Mode — **NOT RUN**.
+
+**Документ этапа:** `docs/world/lights/T-LIGHT14-lamp-flicker.md`.
 
 ## Следующий шаг
 

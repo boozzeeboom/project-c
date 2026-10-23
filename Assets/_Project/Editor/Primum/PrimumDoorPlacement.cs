@@ -470,7 +470,9 @@ namespace ProjectC.EditorTools
 
                 float dCenter = new Vector2(got.center.x - src.center.x, got.center.z - src.center.z).magnitude;
                 float dBottom = got.min.y - src.min.y;
-                bool thickX = r.RotY > 45f;
+                // ориентация: 0/180 → ширина по X; 90/270 → ширина по Z
+                int quarter = Mathf.RoundToInt(r.RotY / 90f) % 2;
+                bool thickX = quarter != 0;
                 float srcW = thickX ? src.size.z : src.size.x;
                 float gotW = thickX ? got.size.z : got.size.x;
                 float dW = Mathf.Abs(gotW - srcW) / Mathf.Max(0.01f, srcW);
@@ -643,6 +645,8 @@ namespace ProjectC.EditorTools
                         rec.VariantId = best.Id;
                         rec.Scale = new Vector3(rec.W / best.W, rec.H / best.H,
                                                 Mathf.Clamp(rec.T / best.D, 0.6f, 1.6f));
+                        // дворцовые двери развёрнуты на 180° относительно стандартных
+                        rec.RotY = rec.RotY > 45f ? 270f : 180f;
                         rec.Skip = null;
                         return rec;
                     }

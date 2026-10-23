@@ -5017,78 +5017,98 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
+    overrides:
+      overrideRange: 0
+      range: 10
+      overrideType: 0
+      type: 2
+      overrideSpotAngle: 0
+      spotAngle: 30
+      overrideInnerSpotAngle: 0
+      innerSpotAngle: 21
+      overrideColor: 0
+      color: {r: 1, g: 1, b: 1, a: 1}
+      overrideUseColorTemperature: 0
+      useColorTemperature: 0
+      overrideColorTemperature: 0
+      colorTemperature: 6500
+      overrideShadows: 0
+      shadows: 0
+      overrideShadowStrength: 0
+      shadowStrength: 1
+      overrideBounceIntensity: 0
+      bounceIntensity: 1
+    flickerEnabled: 0
+    flickerHzMin: 0.5
+    flickerHzMax: 3
+    flickerDepthMin: 0.15
+    flickerDepthMax: 0.6
+    flickerDurationMin: 0.04
+    flickerDurationMax: 0.12
   - groupId: PRIMUM_INLIGHT
     nameContains: PRIMUM_INLIGHT
-    intensityMultiplier: 1
+    intensityMultiplier: 1.76
     intensityByHour:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
         time: 0
         value: 1
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
+        inSlope: -0.018621713
+        outSlope: -0.018621713
+        tangentMode: 34
         weightedMode: 0
         inWeight: 0
-        outWeight: 0
+        outWeight: 0.33333334
       - serializedVersion: 3
-        time: 5
-        value: 1
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
+        time: 13.326508
+        value: 0.7518376
+        inSlope: 0.0017894143
+        outSlope: 0.0017894143
+        tangentMode: 34
         weightedMode: 0
-        inWeight: 0
-        outWeight: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
       - serializedVersion: 3
-        time: 6
-        value: 0
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
+        time: 24.040955
+        value: 0.98970413
+        inSlope: 0.022200542
+        outSlope: 0.022200542
+        tangentMode: 34
         weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 17
-        value: 0
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 19
-        value: 0.25
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 21
-        value: 1
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 24
-        value: 1
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
+        inWeight: 0.33333334
         outWeight: 0
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
+    overrides:
+      overrideRange: 1
+      range: 48.3
+      overrideType: 1
+      type: 2
+      overrideSpotAngle: 0
+      spotAngle: 60.9
+      overrideInnerSpotAngle: 1
+      innerSpotAngle: 21
+      overrideColor: 1
+      color: {r: 0.88309896, g: 0.990566, b: 0.92267984, a: 1}
+      overrideUseColorTemperature: 0
+      useColorTemperature: 0
+      overrideColorTemperature: 0
+      colorTemperature: 6500
+      overrideShadows: 0
+      shadows: 1
+      overrideShadowStrength: 0
+      shadowStrength: 1
+      overrideBounceIntensity: 0
+      bounceIntensity: 1
+    flickerEnabled: 1
+    flickerHzMin: 0.25
+    flickerHzMax: 1
+    flickerDepthMin: 0.053
+    flickerDepthMax: 0.351
+    flickerDurationMin: 0.04
+    flickerDurationMax: 0.12
   - groupId: CityLamps
     nameContains: MD2_Lamp_
     intensityMultiplier: 1
@@ -5161,6 +5181,34 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
+    overrides:
+      overrideRange: 0
+      range: 10
+      overrideType: 0
+      type: 2
+      overrideSpotAngle: 0
+      spotAngle: 30
+      overrideInnerSpotAngle: 0
+      innerSpotAngle: 21
+      overrideColor: 0
+      color: {r: 1, g: 1, b: 1, a: 1}
+      overrideUseColorTemperature: 0
+      useColorTemperature: 0
+      overrideColorTemperature: 0
+      colorTemperature: 6500
+      overrideShadows: 0
+      shadows: 0
+      overrideShadowStrength: 0
+      shadowStrength: 1
+      overrideBounceIntensity: 0
+      bounceIntensity: 1
+    flickerEnabled: 0
+    flickerHzMin: 0.5
+    flickerHzMax: 3
+    flickerDepthMin: 0.15
+    flickerDepthMax: 0.6
+    flickerDurationMin: 0.04
+    flickerDurationMax: 0.12
   - groupId: AllAdditionalLights
     nameContains: 
     intensityMultiplier: 1
@@ -5233,6 +5281,34 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
+    overrides:
+      overrideRange: 0
+      range: 10
+      overrideType: 0
+      type: 2
+      overrideSpotAngle: 0
+      spotAngle: 30
+      overrideInnerSpotAngle: 0
+      innerSpotAngle: 21
+      overrideColor: 0
+      color: {r: 1, g: 1, b: 1, a: 1}
+      overrideUseColorTemperature: 0
+      useColorTemperature: 0
+      overrideColorTemperature: 0
+      colorTemperature: 6500
+      overrideShadows: 0
+      shadows: 0
+      overrideShadowStrength: 0
+      shadowStrength: 1
+      overrideBounceIntensity: 0
+      bounceIntensity: 1
+    flickerEnabled: 0
+    flickerHzMin: 0.5
+    flickerHzMax: 3
+    flickerDepthMin: 0.15
+    flickerDepthMax: 0.6
+    flickerDurationMin: 0.04
+    flickerDurationMax: 0.12
 --- !u!114 &302907664
 MonoBehaviour:
   m_ObjectHideFlags: 0

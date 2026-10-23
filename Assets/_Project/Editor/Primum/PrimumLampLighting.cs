@@ -25,7 +25,11 @@ namespace ProjectC.EditorTools
     /// поэтому ребейз мира везёт огни вместе с городом. static-флаги НЕ ставим (правило Floating Origin).
     ///
     /// Бюджет источников: у инстансов Light ВЫКЛЮЧЕН, включает ближайшие <see cref="PrimumLightPool"/>.
-    /// ADMIN и дворцы (S1_GLD + RES_SE_901/902/911) не трогаем — у них свои светильники.
+    ///
+    /// ADMIN идёт ОТДЕЛЬНЫМ проходом: чанк `PRIMUM_ADMIN_S0_ADM_P1_01H` склеен по материалам, а
+    /// `PRIMUM/ADMIN_FOR_COLLIDER` — тот же объём неразрезанными мешами, поэтому там каждый
+    /// светильник лежит 1:1 в своём месте и своём размере, и точки источников берутся оттуда.
+    /// Все они интерьерные → группа `PRIMUM_INLIGHT`. Дворцы (S1_GLD + RES_SE_901/902/911) по-прежнему не трогаем.
     ///
     /// Меню: ProjectC → World → PRIMUM → Свет: …
     /// </summary>
@@ -46,9 +50,15 @@ namespace ProjectC.EditorTools
         private const string ManifestRelativePath = "docs/world/primum_city/08_LIGHTING/placement_manifest.csv";
 
         private const int CityLayer = 8; // PRIMUM
-        private const float MaxClusterExtent = 6f;
+        private const float MaxClusterExtent = 7.5f;
 
-        /// <summary>Чанки, которые Э3 не трогает: администрация и дворцовый набор.</summary>
+        // ADMIN: источники берём из неразрезанного FBX, а не из склеенного чанка.
+        private const string AdminFbxNodeName = "ADMIN_FOR_COLLIDER";
+        private const string AdminChunkName = "PRIMUM_ADMIN_S0_ADM_P1_01H";
+        private const float AdminMaxExtent = 6f;
+        private const float AdminDedupeRadius = 1.0f;
+
+        /// <summary>Чанки, которые проход по узлам LAMPS не трогает: ADMIN (у него свой проход) и дворцовый набор.</summary>
         private static readonly string[] ExcludedChunks =
         {
             "PRIMUM_ADMIN_S0_ADM_P1_01H",
@@ -57,6 +67,12 @@ namespace ProjectC.EditorTools
 
         /// <summary>Дома-дворцы внутри S7_SE_P1 — тоже не трогаем.</summary>
         private static readonly string[] ExcludedNamePrefixes = { "RES_SE_901", "RES_SE_902", "RES_SE_911" };
+
+        /// <summary>Части, которые сами по себе означают светильник, даже если ключ об этом молчит.</summary>
+        private static readonly string[] FixtureParts =
+        {
+            "LAMP", "HALLLAMP", "LANTERN", "LANT", "LANT0", "FLAME", "BULB", "FEST", "PLAFOND"
+        };
 
         /// <summary>Материалы города, которые сейчас стоят на светящихся частях, но БЕЗ emission.</summary>
         private static readonly string[] GlowSourceMaterials = { "M_EMIT_LAMP", "M_TQ_LAMP" };
@@ -121,6 +137,8 @@ namespace ProjectC.EditorTools
             public readonly HashSet<string> PartNames = new HashSet<string>(StringComparer.Ordinal);
             public Bounds Bounds;
             public Vector3 LightPos;
+            /// <summary>Радиус источника. 0 — взять из префаба (улица/дома); &gt;0 — из размера прибора (ADMIN).</summary>
+            public float Range;
             public bool HasEmit;
             public Family Family = Family.None;
             public string Note = string.Empty;
@@ -406,7 +424,7 @@ namespace ProjectC.EditorTools
                 {
                     action = "skip";
                     excluded++;
-                    note = "исключено: ADMIN/дворец (свои светильники)";
+                    note = "исключено: ADMIN (свой проход) / дворец";
                     Bump(skipReasons, "исключено: ADMIN/дворец");
                 }
                 else if (c.Family == Family.None)
@@ -422,36 +440,18 @@ namespace ProjectC.EditorTools
                     placed++;
                     Bump(counts, c.Family);
 
-                    if (!chunkNodes.TryGetValue(c.Chunk, out Transform chunkT))
-                    {
-                        var chunkGo = new GameObject(c.Chunk);
-                        chunkGo.transform.SetParent(root.transform, false);
-                        chunkGo.layer = CityLayer;
-                        GameObjectUtility.SetStaticEditorFlags(chunkGo, (StaticEditorFlags)0);
-                        chunkT = chunkGo.transform;
-                        chunkNodes[c.Chunk] = chunkT;
-                    }
-
-                    LightSpec spec = SpecOf(c.Family);
-                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabDir + "/" + spec.Prefab + ".prefab");
-                    if (prefab == null)
+                    if (!PlaceCluster(c, root.transform, chunkNodes, usedPositions, note, out string placedNote, out bool duplicatePos))
                     {
                         action = "skip";
                         placed--;
                         skipped++;
-                        note = "префаб не найден: " + spec.Prefab;
+                        note = placedNote;
                         Bump(skipReasons, "префаб не найден");
                     }
-                    else
+                    else if (duplicatePos)
                     {
-                        var inst = (GameObject)PrefabUtility.InstantiatePrefab(prefab, chunkT);
-                        inst.name = NodeName(c.Family, c.Key);
-                        inst.layer = CityLayer;
-                        inst.transform.position = c.LightPos; // корень identity → мировые координаты
-
-                        // одна лампа = одна точка; совпадение позиций — повод посмотреть глазами
-                        string keyPos = F(c.LightPos.x, 2) + "|" + F(c.LightPos.y, 2) + "|" + F(c.LightPos.z, 2);
-                        if (!usedPositions.Add(keyPos)) { duplicates++; note = "совпадает позиция с другим источником"; }
+                        duplicates++;
+                        note = placedNote;
                     }
                 }
 
@@ -471,6 +471,35 @@ namespace ProjectC.EditorTools
                    .Append(Csv(note)).AppendLine();
             }
 
+            // --- ADMIN: отдельный проход по неразрезанному FBX ---
+            List<Cluster> adminClusters = CollectAdminLamps(city, out string adminNote);
+            int adminPlaced = 0;
+            foreach (Cluster c in adminClusters)
+            {
+                bool ok = PlaceCluster(c, root.transform, chunkNodes, usedPositions, c.Note, out string adminNoteLine, out bool adminDup);
+                if (ok)
+                {
+                    adminPlaced++;
+                    placed++;
+                    Bump(counts, c.Family);
+                    if (adminDup) duplicates++;
+                }
+                csv.Append(Csv(c.Chunk)).Append(',')
+                   .Append(Csv(c.Key)).Append(',')
+                   .Append(c.Family).Append(',')
+                   .Append(SpecOf(c.Family).Prefab).Append(',')
+                   .Append(ok ? "place" : "skip").Append(',')
+                   .Append('0').Append(',')
+                   .Append(Csv(c.Signature)).Append(',')
+                   .Append(F(c.LightPos.x)).Append(',')
+                   .Append(F(c.LightPos.y)).Append(',')
+                   .Append(F(c.LightPos.z)).Append(',')
+                   .Append(F(c.Bounds.size.x)).Append(',')
+                   .Append(F(c.Bounds.size.y)).Append(',')
+                   .Append(F(c.Bounds.size.z)).Append(',')
+                   .Append(Csv(ok ? (adminDup ? c.Note + "; совпадает позиция" : c.Note) : adminNoteLine)).AppendLine();
+            }
+
             WriteText(ManifestRelativePath, csv.ToString());
 
             // emissive: без него ночью светят только точки, корпуса остаются тёмными
@@ -483,6 +512,7 @@ namespace ProjectC.EditorTools
             sb.AppendLine("[PRIMUM/Lights] Расстановка световых префабов");
             sb.AppendLine("  узлов LAMPS: " + lampsNodes + ", мешей: " + renderers + ", кластеров: " + clusters.Count);
             sb.AppendLine("  поставлено источников: " + placed + ", пропущено: " + skipped + " (не светильники/крупные), исключено: " + excluded);
+            sb.AppendLine("  ADMIN по " + AdminFbxNodeName + ": " + adminNote + ", поставлено " + adminPlaced);
             if (duplicates > 0) sb.AppendLine("  ⚠ совпадают позиции: " + duplicates);
             foreach (KeyValuePair<Family, int> kv in counts) sb.AppendLine("    " + kv.Key + ": " + kv.Value);
             foreach (KeyValuePair<string, int> kv in skipReasons) sb.AppendLine("    skip: " + kv.Key + " = " + kv.Value);
@@ -531,6 +561,7 @@ namespace ProjectC.EditorTools
             int enabledNow = 0;
             var positions = new HashSet<string>(StringComparer.Ordinal);
             int duplicatePos = 0, wrongLayer = 0, staticFlags = 0, shadowed = 0, misplaced = 0;
+            int outCount = 0, inCount = 0, adminCount = 0, noGroupPrefix = 0;
             var badFamilies = new HashSet<string>(StringComparer.Ordinal);
 
             foreach (Light l in lights)
@@ -542,6 +573,10 @@ namespace ProjectC.EditorTools
                 if (chunk == null) misplaced++;
                 if (l.gameObject.layer != CityLayer) wrongLayer++;
                 if (GameObjectUtility.GetStaticEditorFlags(l.gameObject) != 0) staticFlags++;
+                if (l.name.StartsWith("PRIMUM_OUTLIGHT_", StringComparison.Ordinal)) outCount++;
+                else if (l.name.StartsWith("PRIMUM_INLIGHT_", StringComparison.Ordinal)) inCount++;
+                else noGroupPrefix++;
+                if (l.transform.parent != null && l.transform.parent.name == AdminChunkName) adminCount++;
                 string pos = F(l.transform.position.x, 2) + "|" + F(l.transform.position.y, 2) + "|" + F(l.transform.position.z, 2);
                 if (!positions.Add(pos)) duplicatePos++;
 
@@ -560,6 +595,9 @@ namespace ProjectC.EditorTools
             sb.AppendLine("  префаб не PM_LIGHT_*: " + badFamilies.Count);
             sb.AppendLine("  не на слое PRIMUM: " + wrongLayer + ", static-флаги: " + staticFlags + ", с тенями: " + shadowed);
             sb.AppendLine("  совпадающих позиций: " + duplicatePos + ", без чанк-родителя: " + misplaced);
+            sb.AppendLine("  группы: PRIMUM_OUTLIGHT=" + outCount + ", PRIMUM_INLIGHT=" + inCount +
+                          ", без префикса группы=" + noGroupPrefix);
+            sb.AppendLine("  ADMIN (" + AdminChunkName + "): " + adminCount);
             if (maxActive > 0 && lights.Length > maxActive)
                 sb.AppendLine("  ✅ бюджет: " + lights.Length + " источников, одновременно горят ≤ " + maxActive);
             else if (maxActive > 0)
@@ -598,7 +636,7 @@ namespace ProjectC.EditorTools
 
         private static List<Cluster> CollectClusters(GameObject city, out int lampsNodes, out int renderers)
         {
-            var index = new Dictionary<string, Cluster>(StringComparer.Ordinal);
+            var index = new Dictionary<string, List<MeshRenderer>>(StringComparer.Ordinal);
             var seen = new HashSet<MeshRenderer>();
             lampsNodes = 0;
             renderers = 0;
@@ -615,32 +653,172 @@ namespace ProjectC.EditorTools
                         renderers++;
                         string key = KeyOf(r.gameObject.name);
                         string id = chunk.name + "\u0001" + key;
-                        if (!index.TryGetValue(id, out Cluster c))
+                        if (!index.TryGetValue(id, out List<MeshRenderer> list))
                         {
-                            c = new Cluster { Key = key, Chunk = chunk.name };
-                            index[id] = c;
+                            list = new List<MeshRenderer>();
+                            index[id] = list;
                         }
-                        c.Parts.Add(r);
-                        c.PartNames.Add(PartOf(r.gameObject.name));
-                        if (r.sharedMaterial != null && r.sharedMaterial.name.IndexOf("EMIT", StringComparison.Ordinal) >= 0)
-                            c.HasEmit = true;
+                        list.Add(r);
                     }
                 }
             }
 
             var clusters = new List<Cluster>(index.Count);
-            foreach (KeyValuePair<string, Cluster> kv in index)
+            foreach (KeyValuePair<string, List<MeshRenderer>> kv in index)
             {
-                ComputeGeometry(kv.Value);
-                Classify(kv.Value);
-                clusters.Add(kv.Value);
+                int sep = kv.Key.IndexOf('\u0001');
+                string chunkName = kv.Key.Substring(0, sep);
+                string key = kv.Key.Substring(sep + 1);
+
+                // Семейство определяется образцом прибора (имена частей + ключ), а не количеством
+                // приборов, поэтому классификация идёт по СКЛЕЕННОЙ группе — так же, как в проходе
+                // без деления. Деление по близости меняет только число источников.
+                var merged = new Cluster { Chunk = chunkName, Key = key };
+                merged.Parts.AddRange(kv.Value);
+                foreach (MeshRenderer r in kv.Value)
+                {
+                    merged.PartNames.Add(PartOf(r.gameObject.name));
+                    if (r.sharedMaterial != null && r.sharedMaterial.name.IndexOf("EMIT", StringComparison.Ordinal) >= 0)
+                        merged.HasEmit = true;
+                }
+                ComputeGeometry(merged);
+                Classify(merged);
+
+                foreach (List<MeshRenderer> comp in SplitByProximity(kv.Value))
+                {
+                    var c = new Cluster
+                    {
+                        Chunk = chunkName,
+                        Key = key,
+                        Family = merged.Family,
+                        Note = merged.Note,
+                        HasEmit = merged.HasEmit
+                    };
+                    c.Parts.AddRange(comp);
+                    foreach (MeshRenderer r in comp) c.PartNames.Add(PartOf(r.gameObject.name));
+                    ComputeGeometry(c);
+
+                    // «крупная сборка» теперь считается по конкретному прибору, а не по всей группе
+                    float extent = MaxExtent(c.Bounds);
+                    if (c.Family != Family.None && extent > MaxClusterExtent)
+                    {
+                        c.Note = "крупная сборка (" + extent.ToString("F1", CultureInfo.InvariantCulture) + " м) — разбить вручную";
+                        c.Family = Family.None;
+                    }
+                    clusters.Add(c);
+                }
             }
+
+            // Один и тот же прибор встречается в чанке несколько раз под одним именем — после деления
+            // имена обязаны остаться уникальными, иначе узлы в сцене потеряют адресацию.
+            var byKey = new Dictionary<string, List<Cluster>>(StringComparer.Ordinal);
+            foreach (Cluster c in clusters)
+            {
+                string id = c.Chunk + "\u0001" + c.Key;
+                if (!byKey.TryGetValue(id, out List<Cluster> same))
+                {
+                    same = new List<Cluster>();
+                    byKey[id] = same;
+                }
+                same.Add(c);
+            }
+            foreach (List<Cluster> same in byKey.Values)
+            {
+                for (int i = 1; i < same.Count; i++) same[i].Key = same[i].Key + "#" + (i + 1);
+            }
+
             clusters.Sort((a, b) =>
             {
                 int cmp = string.Compare(a.Chunk, b.Chunk, StringComparison.Ordinal);
                 return cmp != 0 ? cmp : string.Compare(a.Key, b.Key, StringComparison.Ordinal);
             });
             return clusters;
+        }
+
+        /// <summary>
+        /// Группировка строго по имени склеивала РАЗНЫЕ приборы одного образца: в чанке у всех фонарей
+        /// одной модели имена частей совпадают (`LAMP_N_01_HEAD`, `LAMP_N_01_POST`, …), поэтому три
+        /// уличных фонаря через всю улицу становились одним «кластером» на 95 м и отбрасывались как
+        /// крупная сборка — источников не появлялось вообще. Делим по фактической близости: части
+        /// одного прибора (штырь/шнур/абажур) перекрываются, соседние приборы — нет.
+        /// </summary>
+        private static List<List<MeshRenderer>> SplitByProximity(List<MeshRenderer> parts)
+        {
+            int n = parts.Count;
+            if (n <= 1) return new List<List<MeshRenderer>> { parts };
+
+            var parent = new int[n];
+            for (int i = 0; i < n; i++) parent[i] = i;
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = i + 1; j < n; j++)
+                {
+                    Bounds a = parts[i].bounds;
+                    Bounds b = parts[j].bounds;
+                    float margin = 0.2f + 0.5f * Mathf.Max(MaxExtent(a), MaxExtent(b));
+                    a.Expand(margin * Vector3.one);
+                    b.Expand(margin * Vector3.one);
+                    if (!a.Intersects(b)) continue;
+
+                    int ra = FindRoot(parent, i);
+                    int rb = FindRoot(parent, j);
+                    if (ra != rb) parent[rb] = ra;
+                }
+            }
+
+            var map = new Dictionary<int, List<MeshRenderer>>();
+            var roots = new List<int>();
+            for (int i = 0; i < n; i++)
+            {
+                int root = FindRoot(parent, i);
+                if (!map.TryGetValue(root, out List<MeshRenderer> list))
+                {
+                    list = new List<MeshRenderer>();
+                    map[root] = list;
+                    roots.Add(root);
+                }
+                list.Add(parts[i]);
+            }
+
+            if (roots.Count > 1) roots.Sort((x, y) => CompareByPosition(map[x], map[y]));
+
+            var result = new List<List<MeshRenderer>>(roots.Count);
+            foreach (int root in roots) result.Add(map[root]);
+            return result;
+        }
+
+        private static int FindRoot(int[] parent, int i)
+        {
+            while (parent[i] != i)
+            {
+                parent[i] = parent[parent[i]];
+                i = parent[i];
+            }
+            return i;
+        }
+
+        private static Vector3 CenterOf(List<MeshRenderer> parts)
+        {
+            Bounds b = parts[0].bounds;
+            foreach (MeshRenderer r in parts) b.Encapsulate(r.bounds);
+            return b.center;
+        }
+
+        private static int CompareByPosition(List<MeshRenderer> a, List<MeshRenderer> b)
+        {
+            Vector3 ca = CenterOf(a);
+            Vector3 cb = CenterOf(b);
+            int cmp = ca.x.CompareTo(cb.x);
+            if (cmp != 0) return cmp;
+            cmp = ca.z.CompareTo(cb.z);
+            if (cmp != 0) return cmp;
+            return ca.y.CompareTo(cb.y);
+        }
+
+        private static float MaxExtent(Bounds b)
+        {
+            return Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
         }
 
         private static void ComputeGeometry(Cluster c)
@@ -698,16 +876,7 @@ namespace ProjectC.EditorTools
             if (c.PartNames.SetEquals(new[] { "FLIGHT" })) { c.Note = "не светильник: FLIGHT (марш)"; c.Family = Family.None; return; }
             if (c.PartNames.SetEquals(new[] { "GLASS" }) && !c.HasEmit) { c.Note = "не светильник: стекло"; c.Family = Family.None; return; }
 
-            // --- крупные сборки: один свет на 380-метровый прогон бессмыслен
-            Vector3 size = c.Bounds.size;
-            float extent = Mathf.Max(size.x, Mathf.Max(size.y, size.z));
-            if (extent > MaxClusterExtent)
-            {
-                c.Note = "крупная сборка (" + extent.ToString("F1", CultureInfo.InvariantCulture) + " м) — разбить вручную";
-                c.Family = Family.None;
-                return;
-            }
-
+            // --- крупные сборки отсекает вызывающий: теперь размер считается по конкретному прибору
             bool nameFurniture = k.Contains("FURN") || k.Contains("DESK");
             bool interiorPart = c.PartNames.Contains("STEM") || c.PartNames.Contains("CORD") || c.PartNames.Contains("PAPER");
 
@@ -738,8 +907,32 @@ namespace ProjectC.EditorTools
             if (c.PartNames.Contains("ARM")) { c.Family = Family.FacadeWall; return; }
             if (c.HasEmit) { c.Family = Family.FacadeWall; return; }
 
+            // Ключ прибора может и не содержать LAMP/LANTERN (TRD_N_01_ROOF, RES_NE_41_LIFE,
+            // TRD_EN_21_D76_LANT0, RES_TN_101_VC), но сама часть — это лампа / фонарь / пламя.
+            // Без этого правила такие приборы оставались без источника; кровельные и гирлянды —
+            // наружные, остальные — внутри домов.
+            if (IsFixturePart(c.PartNames) || k.Contains("FEST"))
+            {
+                c.Family = (k.Contains("ROOF") || k.Contains("FEST") || k.Contains("STREET") ||
+                            k.Contains("EXT") || k.Contains("OUT") || k.Contains("FAC"))
+                    ? Family.FacadeWall
+                    : Family.InteriorSconce;
+                return;
+            }
+
             c.Note = "не классифицирован";
             c.Family = Family.None;
+        }
+
+        private static bool IsFixturePart(HashSet<string> parts)
+        {
+            foreach (string p in parts)
+            {
+                if (Array.IndexOf(FixtureParts, p) >= 0) return true;
+                if (p.StartsWith("GLOW", StringComparison.Ordinal)) return true;
+                if (p.StartsWith("LANT", StringComparison.Ordinal)) return true;
+            }
+            return false;
         }
 
         private static bool IsExcluded(Cluster c)
@@ -748,6 +941,175 @@ namespace ProjectC.EditorTools
             foreach (string prefix in ExcludedNamePrefixes)
                 if (c.Key.StartsWith(prefix, StringComparison.Ordinal)) return true;
             return false;
+        }
+
+        // ------------------------------------------------------------------ ADMIN
+
+        /// <summary>
+        /// Источники внутри ADMIN. Точки берём из <c>ADMIN_FOR_COLLIDER</c> — это исходный FBX без склейки:
+        /// каждый светильник лежит отдельным мешем в своём месте и своём размере. Сам чанк ADMIN
+        /// склеен по материалам, поэтому по нему такие точки уже не восстановить.
+        /// Все они — интерьерные, то есть попадают в группу <c>PRIMUM_INLIGHT</c>.
+        /// </summary>
+        private static List<Cluster> CollectAdminLamps(GameObject city, out string note)
+        {
+            var result = new List<Cluster>();
+            note = string.Empty;
+
+            Transform fbx = city.transform.Find(AdminFbxNodeName);
+            if (fbx == null)
+            {
+                note = "узел " + AdminFbxNodeName + " не найден — источники ADMIN не расставлены";
+                return result;
+            }
+
+            Transform adminChunk = city.transform.Find(AdminChunkName);
+            Bounds building = default;
+            bool hasBuilding = false;
+            if (adminChunk != null)
+            {
+                MeshRenderer[] shell = adminChunk.GetComponentsInChildren<MeshRenderer>(true);
+                if (shell.Length > 0)
+                {
+                    building = shell[0].bounds;
+                    foreach (MeshRenderer r in shell)
+                        if (r != null) building.Encapsulate(r.bounds);
+                    hasBuilding = true;
+                }
+            }
+
+            var candidates = new List<MeshRenderer>();
+            int tooBig = 0, outside = 0;
+            foreach (MeshRenderer r in fbx.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (r == null) continue;
+                string n = r.name;
+                // FLIGHT содержит LIGHT — не путать марши со светильниками
+                if (n.IndexOf("FLIGHT", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                if (n.IndexOf("STAIR", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                if (!IsAdminLampName(n)) continue;
+
+                float ext = MaxExtent(r.bounds);
+                if (ext < 0.05f || ext > AdminMaxExtent) { tooBig++; continue; }
+                if (hasBuilding && !building.Contains(r.bounds.center)) { outside++; continue; }
+                candidates.Add(r);
+            }
+
+            // один прибор = несколько мешей (корпус + стекло), у них почти совпадают центры
+            candidates.Sort((a, b) => MaxExtent(b.bounds).CompareTo(MaxExtent(a.bounds)));
+            var kept = new List<MeshRenderer>();
+            float sqrRadius = AdminDedupeRadius * AdminDedupeRadius;
+            foreach (MeshRenderer r in candidates)
+            {
+                bool duplicate = false;
+                foreach (MeshRenderer k in kept)
+                {
+                    if ((k.bounds.center - r.bounds.center).sqrMagnitude > sqrRadius) continue;
+                    duplicate = true;
+                    break;
+                }
+                if (!duplicate) kept.Add(r);
+            }
+
+            foreach (MeshRenderer r in kept)
+            {
+                Family family = AdminFamilyOf(r.name);
+                if (family == Family.None) continue;
+
+                Bounds b = r.bounds;
+                Vector3 pos = b.center;
+                // высокий факел/торшер: огонь сверху, а не в середине стойки
+                if (b.size.y > 1.2f * Mathf.Max(b.size.x, b.size.z))
+                    pos += Vector3.up * (b.size.y * 0.3f);
+
+                result.Add(new Cluster
+                {
+                    Chunk = AdminChunkName,
+                    Key = r.name,
+                    Family = family,
+                    Bounds = b,
+                    LightPos = pos,
+                    Range = Mathf.Clamp(2.5f + 3f * MaxExtent(b), 3.5f, 8f),
+                    Note = "ADMIN: из " + AdminFbxNodeName
+                });
+            }
+
+            // уникальность имён узлов: одинаковые меши в разных крыльях дают один и тот же ключ
+            var used = new HashSet<string>(StringComparer.Ordinal);
+            foreach (Cluster c in result)
+            {
+                string baseKey = c.Key;
+                int n = 1;
+                while (!used.Add(c.Key)) c.Key = baseKey + "#" + (++n);
+            }
+
+            note = "кандидатов " + kept.Count + " из " + candidates.Count +
+                   " (слишком крупных " + tooBig + ", вне здания " + outside + ")";
+            return result;
+        }
+
+        private static bool IsAdminLampName(string n)
+        {
+            string[] keys = { "SCONCE", "CHAND", "LANT", "LANTERN", "TORCH", "BRA_", "_LAMP", "LAMP_", "LUSTRE" };
+            foreach (string k in keys)
+                if (n.IndexOf(k, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
+        }
+
+        private static Family AdminFamilyOf(string name)
+        {
+            string u = name.ToUpperInvariant();
+            if (u.Contains("CHAND") || u.Contains("LUSTRE")) return Family.InteriorPendant;
+            if (u.Contains("SCONCE") || u.Contains("TORCH") || u.Contains("BRA")) return Family.InteriorSconce;
+            if (u.Contains("LANT")) return Family.InteriorSconce;
+            if (u.Contains("LAMP")) return Family.InteriorTable;
+            return Family.None;
+        }
+
+        /// <summary>Ставит один источник кластера. Возвращает false, если префаб не найден.</summary>
+        private static bool PlaceCluster(Cluster c, Transform root, Dictionary<string, Transform> chunkNodes,
+                                         HashSet<string> usedPositions, string note, out string resultNote, out bool duplicate)
+        {
+            resultNote = note;
+            duplicate = false;
+
+            if (!chunkNodes.TryGetValue(c.Chunk, out Transform chunkT))
+            {
+                var chunkGo = new GameObject(c.Chunk);
+                chunkGo.transform.SetParent(root, false);
+                chunkGo.layer = CityLayer;
+                GameObjectUtility.SetStaticEditorFlags(chunkGo, (StaticEditorFlags)0);
+                chunkT = chunkGo.transform;
+                chunkNodes[c.Chunk] = chunkT;
+            }
+
+            LightSpec spec = SpecOf(c.Family);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabDir + "/" + spec.Prefab + ".prefab");
+            if (prefab == null)
+            {
+                resultNote = "префаб не найден: " + spec.Prefab;
+                return false;
+            }
+
+            var inst = (GameObject)PrefabUtility.InstantiatePrefab(prefab, chunkT);
+            inst.name = NodeName(c.Family, c.Key);
+            inst.layer = CityLayer;
+            inst.transform.position = c.LightPos;
+
+            // радиус из размера прибора (ADMIN); у улицы и домов остаётся значение префаба
+            if (c.Range > 0f)
+            {
+                var light = inst.GetComponent<Light>();
+                if (light != null) light.range = c.Range;
+            }
+
+            string keyPos = F(c.LightPos.x, 2) + "|" + F(c.LightPos.y, 2) + "|" + F(c.LightPos.z, 2);
+            if (!usedPositions.Add(keyPos))
+            {
+                duplicate = true;
+                resultNote = resultNote.Length > 0 ? resultNote + "; совпадает позиция" : "совпадает позиция с другим источником";
+            }
+            return true;
         }
 
         // ------------------------------------------------------------------ утилиты

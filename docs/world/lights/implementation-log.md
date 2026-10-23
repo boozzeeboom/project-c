@@ -5,8 +5,8 @@
 - **Дата старта:** 2026-09-08
 - **Рабочий источник правды:** `docs/world/lights/lighting-plan.md`
 - **Завершённые этапы:** Stage 1 / T-LIGHT02, Stage 4 / T-LIGHT05 и Stage 7 / T-LIGHT08
-- **Текущий этап:** Stage 8 / T-LIGHT09 — глобальное управление дополнительным светом
-- **Статус этапа:** контроллер реализован и добавлен в Bootstrap; Play Mode-приёмка остаётся за пользователем
+- **Текущий этап:** Stage 11 / T-LIGHT13 — расширенное управление группой света (range, цвет, тип и т.д.)
+- **Статус этапа:** переопределения свойств реализованы; Play Mode-приёмка остаётся за пользователем
 - **Статус Unity Editor:** подключён; изменения выполнены через Unity MCP
 
 ## Решение по плану
@@ -58,6 +58,7 @@
 | 8 | T-LIGHT09 | Глобальный контроль интенсивности дополнительных источников по группам и времени суток | ✅ Реализован; Play Mode-приёмка pending |
 | 9 | T-LIGHT10 | Освещение интерьеров днём: ключевой свет, тени солнца, перераспределение direct/ambient | ✅ Шаги 1–5 выполнены; визуальная приёмка pending |
 | 10 | T-LIGHT11 | Качество теней солнца (грубая кромка, soft shadows выключены) | ⏳ Не начат — зафиксирован по итогам T-LIGHT10 |
+| 11 | T-LIGHT13 | Расширенное управление группой: переопределения range / type / spot angles / color / color temperature / shadows / bounce | ✅ Реализован; Play Mode-приёмка pending |
 
 ## Результат Stage 1 / T-LIGHT02
 
@@ -158,6 +159,20 @@
 **Зафиксированное ограничение (→ `T-LIGHT11`):** тени работают, но грубые. Причина — настройки URP Asset (`m_ShadowDistance 1000`, 2 каскада, `m_Cascade2Split 0.25`, shadowmap `2048`, `m_SoftShadowsSupported 0`): ≈0.12 м/тексель в каскаде 1 и ≈0.37 м/тексель в каскаде 2, soft-фильтрация в ассете выключена. В `T-LIGHT10` не исправлялось.
 
 **Документ этапа:** `docs/world/lights/T-LIGHT10-interior-lighting.md`.
+
+## Результат Stage 11 / T-LIGHT13
+
+- В `Assets/_Project/Scripts/Core/Lighting/AdditionalLightIntensityController.cs` добавлен вложенный `[Serializable]` класс `LightOverrides` и поле `LightGroup.overrides`.
+- Переопределяемые свойства: `range`, `type`, `spotAngle`, `innerSpotAngle`, `color`, `useColorTemperature`, `colorTemperature`, `shadows`, `shadowStrength`, `bounceIntensity`. Каждое включается отдельным флагом `override*`; выключенный флаг не трогает авторское значение источника.
+- Базовые значения источника снимаются один раз при первом обнаружении в новый `LightState` (вместо прежнего словаря `_baseIntensityByLight`); при смене группы выполняется `RestoreBaseline` → `ApplyOverrides`.
+- Порядок применения: сначала `type`, затем `range` и углы Spot (проверка `LightType.Spot` идёт по уже применённому типу). Клэмпы: `range ≥ 0.01`, `spotAngle 1…179`, `innerSpotAngle ≤ spotAngle − 0.1`, `colorTemperature 1000…20000`, `shadowStrength 0…1`, `bounceIntensity ≥ 0`.
+- Плавный переход интенсивности теперь считается в `LightState.smoothedIntensity`, а не от текущего `Light.intensity`: это готовит почву для мерцания (`T-LIGHT14`), которое должно применяться поверх сглаженного значения и не попадать обратно в сглаживание.
+- `LightType.Directional` в `overrideType` игнорируется: направленные источники группами не управляются.
+- Сцены не изменялись: в `BootstrapScene.unity` массив `groups` сериализован без новых полей, все флаги `override*` = `false`, поведение существующих групп не изменилось. `WorldScene_0_0.unity` не трогалась.
+- `refresh_unity` (`scope: scripts`, `compile: request`) и `check_compile_errors`: `No compile errors`.
+- Play Mode и визуальная проверка переопределений — **NOT RUN**, выполняется пользователем.
+
+**Документ этапа:** `docs/world/lights/T-LIGHT13-light-group-overrides.md`.
 
 ## Следующий шаг
 

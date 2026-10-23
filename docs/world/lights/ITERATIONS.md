@@ -122,3 +122,31 @@
 - `check_compile_errors`: `No compile errors`.
 - Readback WorldScene: `11` источников, intensity `50–50`, range `30–30`.
 - Play Mode и screenshots не выполнялись; визуальная приёмка остаётся за пользователем.
+
+## Итерация 7 от 2026-10-23
+
+**Задача:** Сделать так, чтобы дома без источников света днём были заметно темнее открытых пространств.
+**Тикет:** `T-LIGHT10`
+**Коммит:** `main`, сообщение `T-LIGHT10: убрать временный key light и включить тени солнца`
+**Baseline для отката:** `a6710796`
+
+**Изменения (шаги 1–2):**
+- `Assets/_Project/Scenes/BootstrapScene.unity` — удалён `DemoKey_Temp` (`GameObject 2082049667`, `Light 2082049669`, `Transform 2082049670`, `UniversalAdditionalLightData 2082049668`) и его запись в `SceneRoots`.
+- `Assets/_Project/Scenes/BootstrapScene.unity` — `Sun`: `m_Shadows.m_Type 0 → 2`, `m_Shadows.m_Strength 0 → 0.9`.
+- `Assets/_Project/Scripts/Core/DayNight/DayNightController.cs` — в `Initialize()` добавлены `RenderSettings.ambientMode = AmbientMode.Skybox` и `RenderSettings.sun = sunLight`.
+- Документация: `T-LIGHT10-interior-lighting.md` (новый), `lighting-plan.md`, `implementation-log.md`, `ITERATIONS.md`.
+
+**Подтверждённые причины (до изменений):**
+- `DemoKey_Temp`: Directional, intensity `3`, белый, `shadows = None`, `activeSelf = true`, ссылок в коде нет — становился главным светом URP, поэтому тени солнца не работали вообще.
+- `Sun.shadowStrength = 0` — тень была прозрачной даже при `LightShadows.Soft`.
+- `ambientMode = Skybox` с `ambientIntensity 0.6` (`MiddayPhase`) — неокклюдированная скайбокс-заливка, одинаковая в помещении и на улице.
+- GI/AO/probes отсутствуют; `DayVolumeProfile.postExposure = +1.5` дополнительно поднимал и тени, и улицу.
+
+**Отменённое решение:** перевод ambient в `Trilight` отклонён — `RenderSettings.ambientIntensity` документирован как множитель ambient, генерируемого из скайбокса, то есть работает только в режиме `Skybox`.
+
+**Проверки:**
+- `check_compile_errors`: `No compile errors`.
+- `BootstrapScene` сохранена, `dirty = false`; `WorldScene_0_0` принудительно оставлена чистой и не изменялась.
+- `git diff`: только `BootstrapScene.unity` (−129/+2) и `DayNightController.cs` (+9).
+
+**Не сделано намеренно:** шаг 3 — понижение `ambientIntensity` по фазам, подъём `sunIntensity`, снижение `postExposure` и рост `contrast`. Ждёт визуального теста шагов 1–2 в Play Mode (gate пользователя).

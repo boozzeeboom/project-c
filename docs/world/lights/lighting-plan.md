@@ -283,3 +283,23 @@ P1.1 ──► P1.2 ──► P1.3 ──► P2.4 ──► P2.5 ──► P3.6 
 - Не переходим на Probe Volumes (избыточно для cel-shaded стиля)
 - Не включаем HDR (сломает текущий тонемаппинг и пост-эффекты)
 - Не меняем shadow resolution (2 cascades × 2048px — достаточно)
+
+---
+
+## T-LIGHT10 — освещение интерьеров днём (2026-10-23)
+
+**Проблема:** дома без источников света днём освещены как открытые пространства.
+
+**Причины (измерено):** `DemoKey_Temp` (Directional, intensity `3`, `shadows = None`) как главный свет URP; `Sun.shadowStrength = 0`; `ambientMode = Skybox` с `ambientIntensity 0.6` (неокклюдированный ambient); отсутствие GI/AO/probes; `DayVolumeProfile.postExposure = +1.5`.
+
+**Статус:** шаги 1–2 выполнены, шаг 3 ожидает визуального теста.
+
+- Шаг 1: `DemoKey_Temp` удалён из `BootstrapScene`; `Sun`: `m_Shadows.m_Type 0 → 2`, `m_Strength 0 → 0.9`.
+- Шаг 2: в `DayNightController.Initialize()` закреплены `RenderSettings.ambientMode = AmbientMode.Skybox` и `RenderSettings.sun = sunLight`.
+- Шаг 3 (не применён): понижение `ambientIntensity` по фазам, подъём `sunIntensity`, снижение `postExposure`/рост `contrast` в `DayVolumeProfile`.
+
+**Отменённое решение:** перевод ambient в `Trilight` отклонён. `RenderSettings.ambientIntensity` документирован как множитель ambient, который Unity генерирует **из скайбокса**, то есть работает только в режиме `Skybox`. В `Trilight` фазовая шкала яркости перестала бы действовать.
+
+**Важное следствие для пункта «Не трогаем Sun intensity»:** шаг 3 без правки `sunIntensity` не даёт нужного контраста, поэтому этот пункт пересмотрен в рамках T-LIGHT10.
+
+**Документ этапа:** `docs/world/lights/T-LIGHT10-interior-lighting.md`.

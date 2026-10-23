@@ -167,6 +167,15 @@ namespace ProjectC.Core
 
         private void Initialize()
         {
+            // T-LIGHT10: pin the light environment instead of inheriting it from whichever
+            // additive scene happens to win. Two points matter:
+            //   1. RenderSettings.ambientIntensity is a *skybox-only* multiplier (Unity docs), so
+            //      the ambient mode must stay Skybox or the per-phase ambient ramp stops working.
+            //   2. DemoKey_Temp (temporary key light) was removed from BootstrapScene, so the real
+            //      Sun light must be declared as the sun source for the volumetric cloud pass.
+            RenderSettings.ambientMode = AmbientMode.Skybox;
+            if (sunLight != null) RenderSettings.sun = sunLight;
+
             // Create runtime copies of volume profiles (CRITICAL: prevents external modifications!)
             InitializeVolumeProfileInstances();
 

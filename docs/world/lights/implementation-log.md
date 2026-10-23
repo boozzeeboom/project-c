@@ -56,6 +56,7 @@
 | 6 | T-LIGHT07 | Emissive материалы | ⏳ Не начат |
 | 7 | T-LIGHT08 | Day/Twilight/Night Volume tuning | ⚠️ Ночная экспозиция исправлена; полный tuning не завершён |
 | 8 | T-LIGHT09 | Глобальный контроль интенсивности дополнительных источников по группам и времени суток | ✅ Реализован; Play Mode-приёмка pending |
+| 9 | T-LIGHT10 | Освещение интерьеров днём: ключевой свет и тени солнца | ⚠️ Шаги 1–2 выполнены; шаг 3 ожидает теста |
 
 ## Результат Stage 1 / T-LIGHT02
 
@@ -127,6 +128,24 @@
 - [x] Тикет `T-LIGHT01` выбран после проверки отсутствия существующего lighting-трекера.
 - [ ] Unity-side visual verification — невозможна до запуска Unity Editor.
 - [ ] Play Mode screenshot verification — выполняется только пользователем после запуска проекта.
+
+## Результат Stage 9 / T-LIGHT10 — шаги 1–2
+
+- Baseline для отката: `a6710796`.
+- `Assets/_Project/Scenes/BootstrapScene.unity`:
+  - удалён `DemoKey_Temp` (`GameObject 2082049667`, `Light 2082049669`, `Transform 2082049670`, `UniversalAdditionalLightData 2082049668`) вместе с записью в `SceneRoots`;
+  - `Sun`: `m_Shadows.m_Type 0 → 2` (Soft), `m_Shadows.m_Strength 0 → 0.9`.
+- `Assets/_Project/Scripts/Core/DayNight/DayNightController.cs`, `Initialize()`:
+  - `RenderSettings.ambientMode = AmbientMode.Skybox;`
+  - `if (sunLight != null) RenderSettings.sun = sunLight;`
+- `WorldScene_0_0.unity` не изменялся; dirty-флаг снят, рабочее дерево по сцене чистое.
+- `check_compile_errors`: `No compile errors`.
+
+**Отменённое решение:** перевод ambient в `Trilight` отклонён — `RenderSettings.ambientIntensity` действует только в режиме `Skybox`.
+
+**Не сделано намеренно:** шаг 3 (`ambientIntensity` по фазам, `sunIntensity`, `postExposure`/`contrast` в `DayVolumeProfile`) — ждёт визуального теста шагов 1–2.
+
+**Документ этапа:** `docs/world/lights/T-LIGHT10-interior-lighting.md`.
 
 ## Следующий шаг
 

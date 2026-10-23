@@ -30,6 +30,7 @@
 import bpy, os, json, sys, math, time
 from collections import defaultdict
 from mathutils import Vector, Matrix
+from mathutils.bvhtree import BVHTree
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import houses_export as HX
@@ -44,14 +45,20 @@ SNAP_DEG = 0.5          # °, допуск «бокс по осям»
 RUN_GAP = 0.40          # м, разрыв по прогону, после которого это ДРУГАЯ стена
 PLANE_TOL = 0.28        # м, допуск одной плоскости
 LEVEL_Z = 0.35          # м, допуск одного уровня перекрытия
-PLATE_SHARE = 0.20      # плита должна занимать >= 20% площади дома
+PLATE_SHARE = 0.20      # плита должна занимать >= 20% площади дома (только для старого растра)
+PLATE_THICK_MAX = 0.90  # м, плита толще — это не перекрытие, а объём
+PLATE_MIN_AREA = 4.0    # м², мельче — мебель/полка, а не перекрытие
+PLATE_CLUSTER_GAP = 1.20  # м, плиты одного уровня в пределах разрыва = ОДИН бокс
+PLATE_FAR = 60.0        # м, плита дальше этого от медианы чанка — мусор модели
+STEP_RISE_MAX = 0.30    # м, перепад, выше которого нужна промежуточная ступень
+STEP_RISE_MIN = 0.20    # м, ниже — ступень не нужна (это шов/погрешность)
 ROOF_T_MIN = 0.25       # м, минимальная толщина бокса крыши
 
 # ---------------------------------------------------------------- словари видов
 ARCH_KIND = {"ARCH", "ARCADE", "PASSAGE", "PASS", "PORTAL"}
 STAIR_KIND = {"STAIR", "STAIRS", "STAIRCASE", "STEPS", "STAIRTREAD", "FLIGHT", "STFLIGHT", "PORCHST"}
 SLAB_KIND = {"SLAB", "FLOOR", "FLOORS", "ATTIC", "PLATE", "MEZZ", "MEZZANINE", "GALLERY",
-             "VER", "VERANDA", "PORCH", "PLATFORM", "BASEPLATE"}
+             "VER", "VERANDA", "PORCH", "PLATFORM", "BASEPLATE", "PLINTH", "PLINTHS"}
 ROOF_KIND = {"ROOF", "ROOFS", "PARAPET", "GABLE", "HIP", "HIPGABLE", "MANSARD", "TENT", "CORNICE"}
 WALL_KIND = {"WALL", "WALLS", "SHELL", "PART", "PARTITION", "PARTITIONS", "BACKWALL", "WA",
              "INTWA", "W2", "ZX", "MURO", "STENA"}
@@ -66,7 +73,9 @@ VETO = {
     # мебель
     "FURN", "FURNITURE", "BED", "CAB", "CABINET", "TABLE", "CHAIR", "STOOL", "SOFA", "DESK",
     "SHELF", "SHELVES", "WARDROBE", "DRESSER", "BENCH", "COUNTER", "ISLAND", "SINK", "BASIN",
-    "WC", "TOILET", "TUB", "BATH", "SHOWER", "LIFE", "CLT", "CLUTTER", "CUSHION", "MATTRESS",
+    # WC здесь НЕ вето: в ADMIN это имя ПОМЕЩЕНИЯ (ADM_WC_F1_WALL_DIV_X — настоящая стена),
+    # а сантехника и так отсеивается формой на геометрическом запасе.
+    "TOILET", "TUB", "BATH", "SHOWER", "LIFE", "CLT", "CLUTTER", "CUSHION", "MATTRESS",
     "PILLOW", "MIRROR", "CLOCK", "PAINT", "ART", "BOOK", "BOOKS", "PAPER", "BOARD", "TRAY",
     "DISH", "BOWL", "CUP", "BOTTLE", "BARREL", "CRATE", "SACK", "JAR", "JARL", "BUCKET", "BASKET",
     "VASE", "POT", "PLANT",
@@ -82,7 +91,8 @@ VETO = {
     "WCAP", "CAP", "CAPS", "ROD", "CHAIN", "HOOK", "ROP", "LADDER",
 }
 
-DOOR_VETO = {"FURN", "CAB", "SHUT", "SHELF", "WARDROBE", "WIN", "WINH", "DF", "DFI", "BAL", "RAIL"}
+DOOR_VETO = {"FURN", "CAB", "SHUT", "SHELF", "WARDROBE", "WIN", "WINH", "DF", "DFI", "BAL", "RAIL",
+             "FRAME", "SILL", "TRANSOM"}
 
 
 # ---------------------------------------------------------------- утилиты
@@ -243,6 +253,15 @@ def make_ramp_box(cw, slope_dir_w, width, length, thick):
 
 
 # ---------------------------------------------------------------- классификация
+# Порог «скорлупы помещения». Раньше стояло жёстко 0.60 — ровно по толщине типовой стены
+# ADMIN, и стена толщиной 0.60 м отбрасывалась из-за погрешности float при сравнении «> 0.60».
+# Замер 22.10: из 44 отброшенных `wall-blob` 26 — настоящие стены (наружные N/W всех четырёх
+# этажей, внутренние стены башен, стены крыльев), остальные 18 — реальные блоки и кольца
+# толщиной от 1.0 м (ADM_OFF_*_WALL_SEP_*, ADM_ROT_WALL, ADM_BOOTH_WALL_*), их отбрасывать верно.
+WALL_BLOB_T = 0.75      # м, толще — это уже блок/скорлупа, а не стена
+WALL_BLOB_L = 1.20      # м, и длиннее этого
+
+
 def strict_class(o, toks):
     """(класс, правило). Только конструктив; мебель/окна/декор не проходят вообще."""
     raw = set(toks)
@@ -253,6 +272,11 @@ def strict_class(o, toks):
     if any(t in ARCH_KIND for t in a):
         return "ARCH", "name"
     if any(t in STAIR_KIND for t in a):
+        # Перила и ограждения марша лежат в STAIR_KIND по имени (ADM_STAIR_M1_PARAPET_S)
+        # и при этом торчат на 2.85 м выше ступеней: в МНК они убивают уклон,
+        # а в физике это не проход. Отсеиваем их до лестничной геометрии.
+        if "PARAPET" in a:
+            return None, "stair-parapet"
         return "STAIR", "name"
     if any(t in SLAB_KIND for t in a) or any(t.startswith("SLAB") for t in toks):
         return "SLAB", "name"
@@ -262,7 +286,7 @@ def strict_class(o, toks):
         # Не пластина — значит это «скорлупа» комнаты (один объект = три стены вокруг
         # помещения). Бокс по её габариту заливает комнату целиком — такие не берём.
         dx, dy, dz = dims(aabb(obox(o)))
-        if min(dx, dy) > 0.60 and max(dx, dy) > 1.2:
+        if min(dx, dy) > WALL_BLOB_T and max(dx, dy) > WALL_BLOB_L:
             return None, "wall-blob"
         return "WALL", "name"
 
@@ -298,7 +322,7 @@ def collect(chunk_path):
         pts = obox(o)
         bb = aabb(pts)
 
-        if any(t in ("DOOR", "DOORS") for t in al):
+        if any(t in ("DOOR", "DOORS", "LEAF") for t in al):
             if (set(al) | set(toks)) & DOOR_VETO:
                 rep["doors_skipped"] += 1
                 continue
@@ -411,7 +435,13 @@ def door_windows(doors, arches, th):
         # Проход привязываем к ВЕРХУ полотна: низ дверного объекта в модели может уходить
         # в фундамент (ниже пола на метр), и проход «от низа» давал метр высоты — игрок
         # упирался в перекрытие. От верха вниз на CLEAR_H — всегда уровень пола.
-        if is_arch:
+        # Парадный портал — проём на ПОЛНУЮ высоту объекта (4.00 м), а не на CLEAR_H:
+        # ADM_DOOR_PORTAL_GLASS 11.80 x 3.20 при пороге 24.55 давал окно только от верха
+        # полотна вниз на 2.10 и оставлял 12-метровую полосу стены внизу (замер 22.10:
+        # единственный бокс 0.60 x 0.75 x 12.00 в объёме проёма).
+        if "PORTAL" in _nm.upper():
+            z0, z1 = bb[4], bb[5]
+        elif is_arch:
             z0, z1 = bb[4], bb[4] + CLEAR_H
         else:
             z1 = bb[5]
@@ -428,7 +458,8 @@ def door_windows(doors, arches, th):
     for w in raw:
         if wins:
             p = wins[-1]
-            if (p[0] == w[0] and w[3] <= p[4] + 1e-6 and w[4] >= p[3] - 1e-6
+            if (p[0] == w[0] and "PORTAL" not in p[7].upper() and "PORTAL" not in w[7].upper()
+                    and w[3] <= p[4] + 1e-6 and w[4] >= p[3] - 1e-6
                     and w[1] <= p[2] + DOOR_JOIN
                     and max(p[2], w[2]) - min(p[1], w[1]) <= DOOR_MAX):
                 wins[-1] = (p[0], p[1], max(p[2], w[2]), min(p[3], w[3]),
@@ -537,16 +568,22 @@ def build_roof(entries, rep):
 
 
 def synth_roof(walls):
-    """Крыши объектом нет — верх дома всё равно закрываем ОДНИМ боксом по габариту стен."""
+    """Крыши объектом нет — верх дома всё равно закрываем ОДНИМ боксом по габариту стен.
+
+    Замер 24.10: синтетическая крыша брала ВСЕ полосы высот облака стен, и на 4-этажный
+    ADMIN это дало по одному боксу 68x64 м на КАЖДОМ этаже (24.73 / 29.01 / 33.29 /
+    37.57 / 41.85). Бокс 29.01 попадает в проём шахты настоящей плиты F2 и обрывает
+    марш библиотеки за 0.4 м до площадки. Синтетическая крыша — это только КРЫША,
+    поэтому берётся одна, самая верхняя полоса."""
     puts = []
     for o, pts, bb in walls:
         puts.extend(pts)
     if not puts:
         return []
-    return _roof_box(puts)
+    return _roof_box(puts, top_only=True)
 
 
-def _roof_box(puts):
+def _roof_box(puts, top_only=False):
     th = principal_theta(puts)
     ca, sa = math.cos(th), math.sin(th)
     out = []
@@ -560,6 +597,8 @@ def _roof_box(puts):
             merged[-1][1].extend(bands[z])
         else:
             merged.append([z, list(bands[z])])
+    if top_only and merged:
+        merged = [merged[-1]]
     for _z, grp in merged:
         u0, u1, v0, v1 = project(grp, th)
         z0 = min(p.z for p in grp)
@@ -573,8 +612,122 @@ def _roof_box(puts):
     return out
 
 
+# ---------------------------------------------------------------- вырезание проёмов плиты
+# Замер 22.10 по ADMIN: плиты — НЕ сплошные пластины, в них есть настоящие проёмы.
+#   ADM_F2_FLOOR   — 26.8% пусто (витраж/атриум)
+#   ADM_ROOF_SLAB  — 23.0% пусто (кольцо барабна, углы террасы)
+#   ADM_LIB_GALLERY— 70.1% пусто (обход вокруг витража библиотеки в два света)
+#   ADM_F3/F4_FLOOR—  1.4% пусто (шахта лестницы, ровно там, где стоит марш)
+# Бокс по габариту заваривает все эти проёмы, и игрок упирается в перекрытие
+# на лестнице и теряет библиотеку. Поэтому одиночная плита с дырами режется по растру.
+PLATE_STEP = 0.40        # м, шаг растра по плите
+PLATE_HOLE_SHARE = 0.002 # доля пустых клеток, выше которой плита режется
+PLATE_ERODE = 0          # клеток эрозии: ошибка только в сторону меньшей плиты
+
+
+def plate_boxes(o, bb, rep):
+    """УСТАРЕЛО (25.10): растр плиты по дыркам. Оставлено только как справка.
+
+    Растр резал перекрытие на десятки боксов с щелями по краям проёмов — заказчик
+    назвал это «пол с дырками». Сейчас плита — крупный бокс (build_slabs), а дыры
+    вырезает только carve_plates_by_stairs по пятну марша. Функция не вызывается.
+    """
+    x0, x1, y0, y1 = bb[0], bb[1], bb[2], bb[3]
+    span_x, span_y = x1 - x0, y1 - y0
+    if span_x < MIN_BOX or span_y < MIN_BOX:
+        return None
+
+    nx = max(1, int(math.ceil(span_x / PLATE_STEP)))
+    ny = max(1, int(math.ceil(span_y / PLATE_STEP)))
+    cx = span_x / nx
+    cy = span_y / ny
+
+    inv = o.matrix_world.inverted()
+    dloc = (inv.to_3x3() @ Vector((0.0, 0.0, -1.0))).normalized()
+    ztop = bb[5] + 0.50
+
+    mask = [[False] * nx for _ in range(ny)]
+    for j in range(ny):
+        wy = y0 + (j + 0.5) * cy
+        for i in range(nx):
+            wx = x0 + (i + 0.5) * cx
+            mask[j][i] = o.ray_cast(inv @ Vector((wx, wy, ztop)), dloc, distance=1.5)[0]
+
+    empty = sum(1 for row in mask for v in row if not v)
+    if empty < PLATE_HOLE_SHARE * nx * ny:
+        return None
+
+    if PLATE_ERODE <= 0:
+        er = [row[:] for row in mask]
+    else:
+        er = [[False] * nx for _ in range(ny)]
+        for j in range(PLATE_ERODE, ny - PLATE_ERODE):
+            for i in range(PLATE_ERODE, nx - PLATE_ERODE):
+                if (mask[j][i] and mask[j][i - 1] and mask[j][i + 1]
+                        and mask[j - 1][i] and mask[j + 1][i]):
+                    er[j][i] = True
+
+    rects = greedy_rects(er, nx, ny)
+    if not rects:
+        rep["slab_carved_empty"] += 1
+        return []
+
+    z_lo, z_hi = bb[4], bb[5]
+    h = max(z_hi - z_lo, MIN_BOX)
+    out = []
+    for (i0, i1, j0, j1) in rects:
+        ax0, ax1 = x0 + i0 * cx, x0 + i1 * cx
+        ay0, ay1 = y0 + j0 * cy, y0 + j1 * cy
+        if ax1 - ax0 < MIN_BOX or ay1 - ay0 < MIN_BOX:
+            continue
+        # th = 0: плиты ADMIN осевые (ry = 0 у всех 14 боксов)
+        out.append(make_box((0.5 * (ax0 + ax1), 0.5 * (ay0 + ay1), 0.5 * (z_lo + z_hi)),
+                            ax1 - ax0, ay1 - ay0, h, 0.0))
+    rep["slab_carved"] += 1
+    rep["slab_carved_boxes"] += len(out)
+    return out
+
+
+def greedy_rects(mask, nx, ny):
+    """Покрыть занятые клетки максимальными прямоугольниками (строчный жадный проход)."""
+    used = [[False] * nx for _ in range(ny)]
+    out = []
+    for j in range(ny):
+        i = 0
+        while i < nx:
+            if not mask[j][i] or used[j][i]:
+                i += 1
+                continue
+            i2 = i
+            while i2 + 1 < nx and mask[j][i2 + 1] and not used[j][i2 + 1]:
+                i2 += 1
+            j2 = j
+            while j2 + 1 < ny and all(mask[j2 + 1][k] and not used[j2 + 1][k] for k in range(i, i2 + 1)):
+                j2 += 1
+            for jj in range(j, j2 + 1):
+                for k in range(i, i2 + 1):
+                    used[jj][k] = True
+            out.append((i, i2 + 1, j, j2 + 1))
+            i = i2 + 1
+    return out
+
+
 def build_slabs(name, entries, walls, rep):
-    """Перекрытие = ОДИН бокс на уровень. Плита-мебель и мелкие полки отсеиваются площадью."""
+    """Перекрытие = КРУПНЫЙ бокс на уровень и КОРПУС, а не растр по дыркам.
+
+    Замер 25.10 (жалоба заказчика): пол 2/3/4 этажа и кровля были нарезаны 10..80 боксами
+    с настоящими дырками (F3 6, F4 4, кровля 80 боксов при 71% заполнения) — игрок
+    проваливался в щели галерей и балконов. Мелкие плиты при этом отсеивались
+    ОТНОСИТЕЛЬНОЙ площадью (>20% самой крупной) — вместе с ними пропадала плита
+    входного крыльца, и в проёме 76.5..79.0 оставалась дыра до деки -0.45 м.
+
+    Новая схема (по замеру, а не по догадке):
+      1. плита — всё тоньше PLATE_THICK_MAX, площадь >= PLATE_MIN_AREA (абсолютный порог);
+      2. плиты одного уровня (LEVEL_Z) кластеризуются в плане по смыканию
+         с разрывом PLATE_CLUSTER_GAP -> ОДИН бокс на кластер (корпус / крыло);
+      3. дырки не режутся растром вообще: их вырезает только carve_plates_by_stairs
+         по пятну маршей, то есть дыра есть только там, где правда идёт лестница.
+    """
     if not entries:
         return []
     wpts = []
@@ -582,37 +735,41 @@ def build_slabs(name, entries, walls, rep):
         wpts.extend(pts)
     ref = wpts if wpts else [p for o, pts, bb in entries for p in pts]
     th = principal_theta(ref)
-    hu0, hu1, hv0, hv1 = project(ref, th)
-    house_area = max(1.0, (hu1 - hu0) * (hv1 - hv0))
 
     good = []
-    pu = []
     for o, pts, bb in entries:
-        a0, a1, b0, b1 = project(pts, th)
-        area = (a1 - a0) * (b1 - b0)
-        pu.append(area)
-        if (bb[5] - bb[4]) > 0.90:              # не плита
+        if (bb[5] - bb[4]) > PLATE_THICK_MAX:   # не плита
             rep["slab_thick"] += 1
             continue
-        good.append((o, pts, bb, area))
-    if not good:
-        return []
-    # порог по самой крупной плите дома: мебель и полочки не проходят, реальные плиты — да
-    top = max(g[3] for g in good)
-    limit = max(4.0, 0.20 * top)
-    keep = []
-    for o, pts, bb, area in good:
-        if area < limit:
+        a0, a1, b0, b1 = project(pts, th)
+        area = (a1 - a0) * (b1 - b0)
+        if area < PLATE_MIN_AREA:               # полка/мебель
             rep["slab_small"] += 1
             continue
-        keep.append((o, pts, bb))
+        good.append((o, pts, bb, (a0, a1, b0, b1)))
+    if not good:
+        return []
+    rep["slab_keep"] += len(good)
+
+    # мусор модели: плиты, брошенные далеко от самого чанка (в ADMIN — 4 шт. на y=-78..-80)
+    cs = sorted(g[3][0] + 0.5 * (g[3][1] - g[3][0]) for g in good)
+    cz = sorted(g[3][2] + 0.5 * (g[3][3] - g[3][2]) for g in good)
+    mu, mv = cs[len(cs) // 2], cz[len(cz) // 2]
+    keep = []
+    for g in good:
+        cu = g[3][0] + 0.5 * (g[3][1] - g[3][0])
+        cv = g[3][2] + 0.5 * (g[3][3] - g[3][2])
+        if math.hypot(cu - mu, cv - mv) > PLATE_FAR:
+            rep["slab_far"] += 1
+            continue
+        keep.append(g)
     good = keep
     if not good:
         return []
 
     levels = defaultdict(list)
-    for o, pts, bb in good:
-        levels[round(bb[5], 1)].append((o, pts, bb))
+    for g in good:
+        levels[round(g[2][5], 1)].append(g)
     order = sorted(levels)
     merged = []
     for z in order:
@@ -624,16 +781,40 @@ def build_slabs(name, entries, walls, rep):
     ca, sa = math.cos(th), math.sin(th)
     out = []
     for _z, grp in merged:
-        pts_all = []
-        for o, pts, bb in grp:
-            pts_all.extend(pts)
-        u0, u1, v0, v1 = project(pts_all, th)
-        z0 = min(p.z for p in pts_all)
-        z1 = max(p.z for p in pts_all)
-        if u1 - u0 < MIN_BOX or v1 - v0 < MIN_BOX:
-            continue
-        wx, wy = word((ca, sa), 0.5 * (u0 + u1), 0.5 * (v0 + v1))
-        out.append(make_box((wx, wy, 0.5 * (z0 + z1)), u1 - u0, v1 - v0, max(z1 - z0, MIN_BOX), th))
+        rects = [g[3] for g in grp]
+        n = len(grp)
+        par = list(range(n))
+
+        def find(i):
+            while par[i] != i:
+                par[i] = par[par[i]]
+                i = par[i]
+            return i
+
+        for i in range(n):
+            for j in range(i + 1, n):
+                if plan_ov(rects[i], rects[j], PLATE_CLUSTER_GAP):
+                    ri, rj = find(i), find(j)
+                    if ri != rj:
+                        par[ri] = rj
+        clusters = defaultdict(list)
+        for i in range(n):
+            clusters[find(i)].append(i)
+
+        for _root, idx in sorted(clusters.items()):
+            u0 = min(rects[i][0] for i in idx)
+            u1 = max(rects[i][1] for i in idx)
+            v0 = min(rects[i][2] for i in idx)
+            v1 = max(rects[i][3] for i in idx)
+            if u1 - u0 < MIN_BOX or v1 - v0 < MIN_BOX:
+                continue
+            z0 = min(grp[i][2][4] for i in idx)
+            z1 = max(grp[i][2][5] for i in idx)
+            um, vm = 0.5 * (u0 + u1), 0.5 * (v0 + v1)
+            wx, wy = word((ca, sa), um, vm)
+            out.append(make_box((wx, wy, 0.5 * (z0 + z1)), u1 - u0, v1 - v0,
+                                max(z1 - z0, MIN_BOX), th))
+            rep["slab_cluster"] += 1
     return out
 
 
@@ -647,12 +828,157 @@ def stair_entries_verts(entries):
     return pts
 
 
+STAIR_PROBE_STEP = 0.25     # м, шаг сетки замеров верха марша
+STAIR_PLANE_MIN = 0.10      # tan уклона верха; ниже — плоская площадка/подиум/ступень
+STAIR_PLANE_ERR = 0.25      # м, СКО невязки плоскости; больше — объект НЕ один марш
+
+
+def stair_top_cells(o, step=None):
+    """Клетки ВЕРХА объекта марша: луч сверху вниз по сетке над его габаритом.
+
+    Замер 25.10 (ADMIN, 28 объектов): марши — настоящие ступени (104 вершины), верх
+    ложится в плоскость z = A*x + B*y + C со СКО 0.036..0.047 м и уклоном 27..33°.
+    Главный марш 3.60x4.00 идёт вдоль 3.60, то есть ДЛИННАЯ сторона габарита
+    поперечная ходу — поэтому любое направление «по длинной стороне» поворачивает
+    диагональ на 90° (это и было видно как «перепутаны оси»). Здесь направление
+    измеряется по самим ступеням.
+    """
+    me = o.data
+    mw = o.matrix_world
+    vs = [mw @ v.co for v in me.vertices]
+    ps = [list(p.vertices) for p in me.polygons]
+    if not vs or not ps:
+        return []
+    bvh = BVHTree.FromPolygons(vs, ps, all_triangles=False)
+    x0 = min(v.x for v in vs)
+    x1 = max(v.x for v in vs)
+    y0 = min(v.y for v in vs)
+    y1 = max(v.y for v in vs)
+    ztop = max(v.z for v in vs)
+    if step is None:
+        step = max(STAIR_PROBE_STEP, max(x1 - x0, y1 - y0) / 64.0)
+    nx = max(1, int((x1 - x0) / step))
+    ny = max(1, int((y1 - y0) / step))
+    cells = []
+    for i in range(nx):
+        x = x0 + (i + 0.5) * (x1 - x0) / nx
+        for j in range(ny):
+            y = y0 + (j + 0.5) * (y1 - y0) / ny
+            hit = bvh.ray_cast(Vector((x, y, ztop + 1.0)), Vector((0.0, 0.0, -1.0)))
+            if hit[0] is not None:
+                cells.append((x, y, hit[0].z))
+    return cells
+
+
+def stair_plane(cells):
+    """МНК-плоскость верха z = A*x + B*y + C: (A, B, se) или None.
+
+    (A, B) — градиент верха: направление подъёма atan2(B, A), уклон hypot(A, B).
+    se — СКО невязки, признак «это один марш, а не поворот/два марша в одном объекте».
+    """
+    n = len(cells)
+    if n < 6:
+        return None
+    sx = sum(c[0] for c in cells)
+    sy = sum(c[1] for c in cells)
+    sz = sum(c[2] for c in cells)
+    mx, my, mz = sx / n, sy / n, sz / n
+    sxx = sxy = syy = sxz = syz = 0.0
+    for x, y, z in cells:
+        dx, dy, dz = x - mx, y - my, z - mz
+        sxx += dx * dx
+        sxy += dx * dy
+        syy += dy * dy
+        sxz += dx * dz
+        syz += dy * dz
+    det = sxx * syy - sxy * sxy
+    if abs(det) < 1e-9:
+        return None
+    A = (sxz * syy - syz * sxy) / det
+    B = (syz * sxx - sxz * sxy) / det
+    C = mz - A * mx - B * my
+    se = math.sqrt(sum((z - (A * x + B * y + C)) ** 2 for x, y, z in cells) / n)
+    return A, B, se
+
+
+ENV_BIN = 0.25          # м, ширина полосы верхней огибающей
+STAIR_FLIGHT_SLOPE = 0.15   # tan уклона; ниже — это площадка/подиум, а не марш
+STAIR_Z_JOIN = 0.50     # м, марши склеиваются только при перехлёсте ПО ВЫСОТЕ
+
+
+def top_line(us, zs):
+    """МНК по ВЕРХНЕЙ огибающей облака: в каждой полосе u берётся максимальный z.
+
+    Марш смоделирован СПЛОШНЫМ блоком: в облаке есть и нижняя грань, и подступенки.
+    МНК по всем точкам даёт вдвое меньший уклон (замер 22.10: 12.6° вместо 26.6°,
+    подъём 1.86 м вместо 4.00 м) — бокс обрывался посередине этажа. Верхняя
+    огибающая — это линии проступей, то есть настоящий уклон марша.
+    """
+    bins = {}
+    for u, z in zip(us, zs):
+        k = int(math.floor(u / ENV_BIN))
+        if k not in bins or z > bins[k]:
+            bins[k] = z
+    ks = sorted(bins)
+    if len(ks) < 3:
+        return 0.0, 0.5 * (max(zs) + min(zs))
+    pu = [(k + 0.5) * ENV_BIN for k in ks]
+    pz = [bins[k] for k in ks]
+    n = len(pu)
+    Su = sum(pu)
+    Sz = sum(pz)
+    Suu = sum(u * u for u in pu)
+    Suz = sum(u * z for u, z in zip(pu, pz))
+    den = n * Suu - Su * Su
+    a = 0.0 if abs(den) < 1e-6 else (n * Suz - Su * Sz) / den
+    return a, (Sz - a * Su) / n
+
+
+def run_axis(pts):
+    """(a, b, th) — ось ХОДА марша и МНК по верхней огибающей вдоль неё.
+
+    Ось берётся НЕ по главной оси облака: сплошной марш в плане шире своей длины
+    (ADM_STAIR_M1_A — 3.60 x 4.00), главная ось ложится ПОПЕРЁК хода, огибающая
+    вдоль неё плоская — и марш превращается в сплошной бокс на всю высоту (28 боксов,
+    ни одного склона). Поэтому ось = более длинная горизонтальная сторона, а при
+    квадратном плане — та, где уклон больше.
+    """
+    flat = [Vector((p.x, p.y, 0.0)) for p in pts]
+    th = principal_theta(flat)
+    zs = [p.z for p in pts]
+    span = []
+    for t in (th, th + math.pi / 2):
+        ca, sa = math.cos(t), math.sin(t)
+        us = [uv(p, ca, sa)[0] for p in pts]
+        span.append((max(us) - min(us), t, us))
+    span.sort(key=lambda s: -s[0])
+    if abs(span[0][0] - span[1][0]) > 0.30:
+        _len, t, us = span[0]
+    else:
+        best = None
+        for s in span:
+            a0, _b0 = top_line(s[2], zs)
+            if best is None or abs(a0) > abs(best[0]):
+                best = (abs(a0), s)
+        _len, t, us = best[1]
+    a, b = top_line(us, zs)
+    return a, b, t
+
+
+def stair_kind(pts):
+    """(уклон a, ось хода th) одного лестничного объекта."""
+    if len(pts) < 12:
+        return None, None
+    a, _b, th = run_axis(pts)
+    return a, th
+
+
 def ramp_from_points(pts, rep):
     """Один наклонный бокс по облаку вершин марша: МНК-прямая z = a*u + b."""
     if len(pts) < 12:
         return None
     flat = [Vector((p.x, p.y, 0.0)) for p in pts]
-    th = principal_theta(flat)
+    a, b, th = run_axis(pts)
     ca, sa = math.cos(th), math.sin(th)
     us, vs, zs = [], [], []
     for p in pts:
@@ -664,14 +990,6 @@ def ramp_from_points(pts, rep):
     v0, v1 = min(vs), max(vs)
     if u1 - u0 < 0.50 or v1 - v0 < 0.30:
         return None
-    n = len(us)
-    Su = sum(us)
-    Sz = sum(zs)
-    Suu = sum(u * u for u in us)
-    Suz = sum(u * z for u, z in zip(us, zs))
-    den = n * Suu - Su * Su
-    a = 0.0 if abs(den) < 1e-6 else (n * Suz - Su * Sz) / den
-    b = (Sz - a * Su) / n
     if abs(a) > 3.0:
         return None
 
@@ -690,39 +1008,376 @@ def ramp_from_points(pts, rep):
     return make_ramp_box(cw, slope, width, length, thick)
 
 
+def plan_ov(a, b, pad=0.0):
+    """Пересечение в ПЛАНЕ (x, y): pad > 0 расширяет, pad < 0 требует настоящего перехлёста."""
+    return not (a[1] <= b[0] - pad or a[0] >= b[1] + pad or
+                a[3] <= b[2] - pad or a[2] >= b[3] + pad)
+
+
+def ramp_between(ca, sa, vc, u_low, z_low, u_high, z_high, width, thick):
+    """Наклонный бокс от (u_low, z_low) до (u_high, z_high) шириной width."""
+    run = u_high - u_low
+    rise = z_high - z_low
+    if abs(run) < 0.20 or abs(rise) < 0.05:
+        return None
+    um = 0.5 * (u_low + u_high)
+    zm = 0.5 * (z_low + z_high)
+    length = math.hypot(run, rise) + 0.30
+    slope = Vector((ca, sa, 0.0)) * run + Vector((0.0, 0.0, rise))
+    wx, wy = word((ca, sa), um, vc)
+    return make_ramp_box(Vector((wx, wy, zm - 0.5 * thick)), slope, width, length, thick)
+
+
 def build_stairs(entries, rep):
+    """Лет — НАКЛОННЫЙ бокс от своего низа до своего верха; площадка/подиум — сплошной бокс.
+
+    Замер 25.10 по ADMIN (28 объектов): марш описывается ИЗМЕРЕННОЙ плоскостью верха
+    (уклон 27..33°, СКО 0.036..0.047 м), а не габаритом и не соседней полосой —
+    главный марш 3.60x4.00 идёт вдоль 3.60, и «длинная сторона» поворачивала
+    диагональ на 90° (игрок шёл по ней поперёк хода). Высота берётся из габарита:
+    bb[4] и bb[5] совпадают с плитой и площадкой (25.29 -> 27.43 -> ... -> 42.71).
+    """
     if not entries:
         return []
-    # кластеры по касанию габаритов -> отдельные марши
-    n = len(entries)
-    parent = list(range(n))
+    out = []
 
-    def find(a):
-        while parent[a] != a:
-            parent[a] = parent[parent[a]]
-            a = parent[a]
-        return a
+    info = []
+    for e in entries:
+        o, pts, bb = e
+        vpts = stair_entries_verts([e])
+        src = vpts if vpts else pts
+        a, th = stair_kind(vpts)                 # легаси-оценка по огибающей вершин
+        plane = stair_plane(stair_top_cells(o))  # ЗАМЕР верха ступеней
+        if plane is not None:
+            A, B, se = plane
+            g = math.hypot(A, B)
+            if g >= STAIR_PLANE_MIN and se <= STAIR_PLANE_ERR:
+                th = math.atan2(B, A)            # ось ХОДА; a > 0 в этих осях
+                a = g
+                rep["stair_measured"] += 1
+            else:
+                rep["stair_unmeasured"] += 1
+        if th is None:
+            th = principal_theta(src)
+        u0, u1, v0, v1 = project(src, th)
+        info.append({"bb": bb, "a": a, "th": th, "u0": u0, "u1": u1, "v0": v0, "v1": v1,
+                     "nv": len(vpts)})
 
-    for i in range(n):
-        for j in range(i + 1, n):
-            if overlap(entries[i][2], entries[j][2], 0.35):
-                ri, rj = find(i), find(j)
-                if ri != rj:
-                    parent[ri] = rj
-    groups = defaultdict(list)
-    for i in range(n):
-        groups[find(i)].append(entries[i])
+    def box_of(it):
+        bb = it["bb"]
+        cw = (0.5 * (bb[0] + bb[1]), 0.5 * (bb[2] + bb[3]), 0.5 * (bb[4] + bb[5]))
+        return make_box(cw, it["u1"] - it["u0"], it["v1"] - it["v0"],
+                        max(bb[5] - bb[4], MIN_BOX), it["th"])
+
+    flights = []
+    for it in info:
+        bb = it["bb"]
+        dz = bb[5] - bb[4]
+        plan_min = min(bb[1] - bb[0], bb[3] - bb[2])
+        if dz < 0.60 or plan_min <= 1.60 or it["nv"] < 12:
+            # ступень / узкая тетива / подиум-платформа / ПРОСТОЙ БОКС (у него нет
+            # вершин, по которым можно понять направление хода — гадать нечем:
+            # ADM_WING_N_STAIR_LANDING 3.4x4.6x2.0 иначе становится наклонным боксом
+            # поперёк стены 25.01..29.01)
+            out.append(box_of(it))
+            rep["stair_flat"] += 1
+            continue
+        under = False
+        for other in info:
+            ob = other["bb"]
+            if other is it or ob[5] <= bb[4] + 0.30:
+                continue
+            if ob[4] >= bb[5] - 0.30 and plan_ov(bb, ob, -0.10):
+                under = True
+                break
+        if under:
+            # масса ПОД летом: в физике это опора, а не второй марш
+            out.append(box_of(it))
+            rep["stair_flat"] += 1
+            continue
+        flights.append(it)
+
+    for it in flights:
+        bb = it["bb"]
+        ca, sa = math.cos(it["th"]), math.sin(it["th"])
+        low_u, high_u = it["u0"], it["u1"]
+        if it["a"] is not None and abs(it["a"]) >= STAIR_FLIGHT_SLOPE:
+            if it["a"] < 0:
+                low_u, high_u = it["u1"], it["u0"]
+        else:
+            up = None
+            dn = None
+            for other in flights:
+                ob = other["bb"]
+                if other is it or not plan_ov(bb, ob, 0.45):
+                    continue
+                if abs(ob[4] - bb[5]) <= 0.30:
+                    up = other
+                if abs(ob[5] - bb[4]) <= 0.30:
+                    dn = other
+            ref = up if up is not None else dn
+            if ref is not None:
+                rc = 0.5 * (ref["u0"] + ref["u1"])
+                uc = 0.5 * (it["u0"] + it["u1"])
+                far = it["u1"] if rc > uc else it["u0"]
+                near = it["u0"] if rc > uc else it["u1"]
+                if up is not None:
+                    high_u, low_u = far, near
+                else:
+                    high_u, low_u = near, far
+        vc = 0.5 * (it["v0"] + it["v1"])
+        rc = ramp_between(ca, sa, vc, low_u, bb[4], high_u, bb[5],
+                          max(it["v1"] - it["v0"], MIN_BOX), 0.30)
+        if rc is None:
+            out.append(box_of(it))
+            rep["stair_flat"] += 1
+            continue
+        out.append(rc)
+        rep["flights"] += 1
+    return out
+
+
+def _quat_mat(q):
+    x, y, z, w = q
+    return [[1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y - z * w), 2.0 * (x * z + y * w)],
+            [2.0 * (x * y + z * w), 1.0 - 2.0 * (x * x + z * z), 2.0 * (y * z - x * w)],
+            [2.0 * (x * z - y * w), 2.0 * (y * z + x * w), 1.0 - 2.0 * (x * x + y * y)]]
+
+
+def _rect_sub(b, a):
+    """Прямоугольник b минус прямоугольник a (оба x0,x1,z0,z1) -> до 4 прямоугольников."""
+    ix0, ix1 = max(b[0], a[0]), min(b[1], a[1])
+    iz0, iz1 = max(b[2], a[2]), min(b[3], a[3])
+    if ix1 <= ix0 or iz1 <= iz0:
+        return [b]
+    out = []
+    if ix0 > b[0]:
+        out.append((b[0], ix0, b[2], b[3]))
+    if ix1 < b[1]:
+        out.append((ix1, b[1], b[2], b[3]))
+    if iz0 > b[2]:
+        out.append((ix0, ix1, b[2], iz0))
+    if iz1 < b[3]:
+        out.append((ix0, ix1, iz1, b[3]))
+    return out
+
+
+STAIR_CARVE_PAD = 0.12   # м, запас вокруг пятна марша
+STAIR_CARVE_DOWN = 0.60  # м, насколько верх марша может быть НИЖЕ низа плиты
+STAIR_CARVE_UP = 1.80    # м, насколько верх марша может быть ВЫШЕ низа плиты
+
+
+def carve_plates_by_stairs(plates, stair_boxes, rep, key):
+    """Вырезать пятно марша из плиты/крыши, сквозь которую он выходит.
+
+    Замер 24.10: крыло — марш 27.40..29.55 упирается в плиту F2 (низ 29.16), а проёма в
+    плите нет: 1.3 м марша остаются под плитой и игрок встаёт за 0.4 м до площадки.
+    Главная лестница — последний марш 40.25..42.70 проходит сквозь синтетическую
+    крышу 41.73..41.98 на кровлю. Растр плиты вырезает только НАСТОЯЩИЕ дыры меша, а
+    там, где дыры нет или она смещена, плиту надо резать по пятну марша.
+    """
+    if not plates or not stair_boxes:
+        return plates
+    ramps = []
+    for b in stair_boxes:
+        if not b.get("q"):
+            continue
+        m = _quat_mat(b["q"])
+        s = b["s"]
+        hx = 0.5 * (abs(m[0][0]) * s[0] + abs(m[0][1]) * s[1] + abs(m[0][2]) * s[2])
+        hz = 0.5 * (abs(m[2][0]) * s[0] + abs(m[2][1]) * s[1] + abs(m[2][2]) * s[2])
+        cx, cy, cz = b["c"]
+        top = cy + 0.5 * s[2] * abs(m[1][2]) + 0.5 * s[1] * abs(m[1][1])
+        ramps.append((cx - hx - STAIR_CARVE_PAD, cx + hx + STAIR_CARVE_PAD,
+                      cz - hz - STAIR_CARVE_PAD, cz + hz + STAIR_CARVE_PAD, top))
+    if not ramps:
+        return plates
 
     out = []
-    for _k, grp in groups.items():
-        pts = stair_entries_verts(grp)
-        if not pts:
+    n_cut = 0
+    for b in plates:
+        if abs(b.get("ry", 0.0)) > 0.6:
+            out.append(b)
             continue
-        box = ramp_from_points(pts, rep)
-        if box is None:
+        cx, cy, cz = b["c"]
+        sx, sy, sz = b["s"]
+        bot = cy - 0.5 * sy
+        top = cy + 0.5 * sy
+        rect = (cx - 0.5 * sx, cx + 0.5 * sx, cz - 0.5 * sz, cz + 0.5 * sz)
+        cur = [rect]
+        for (rx0, rx1, rz0, rz1, rtop) in ramps:
+            if rtop < bot - STAIR_CARVE_DOWN or rtop > bot + STAIR_CARVE_UP:
+                continue
+            if rx1 <= rect[0] or rx0 >= rect[1] or rz1 <= rect[2] or rz0 >= rect[3]:
+                continue
+            nxt = []
+            for r in cur:
+                nxt.extend(_rect_sub(r, (rx0, rx1, rz0, rz1)))
+            cur = nxt
+            if not cur:
+                break
+        if len(cur) == 1 and cur[0] == rect:
+            out.append(b)
             continue
-        out.append(box)
-        rep["flights"] += 1
+        n_cut += 1
+        for r in cur:
+            if r[1] - r[0] < MIN_BOX or r[3] - r[2] < MIN_BOX:
+                continue
+            # ВАЖНО: rect и c/s плиты УЖЕ в локальных координатах чанка, а make_box ждёт
+            # мировые координаты модели и сам зовёт to_local(). Заворачивать фрагмент
+            # в make_box нельзя — получается ДВОЙНОЕ преобразование (K/C + смена осей),
+            # и порезанная плита уезжает в мусорные координаты (замер 25.10: отрезки
+            # F2/F3/F4/крыши получали верх -80.64 / -23.63 / 14.90 при верных c и s).
+            out.append({"c": [round(0.5 * (r[0] + r[1]), 4), round(cy, 4),
+                              round(0.5 * (r[2] + r[3]), 4)],
+                        "s": [round(max(r[1] - r[0], MIN_BOX), 4),
+                              round(max(sy, MIN_BOX), 4),
+                              round(max(r[3] - r[2], MIN_BOX), 4)],
+                        "ry": 0.0})
+    rep[key] = n_cut
+    return out
+
+
+# ---------------------------------------------------------------- порог перед полом
+STEP_DEPTH_MIN = 1.00   # м, глубина промежуточной ступени
+STEP_DEPTH_MAX = 1.80   # м
+STEP_SIDE_MIN = 0.80    # м, насколько нижняя плита должна выступать за верхнюю
+
+
+def _aabb(b):
+    """Габарит бокса в плане с учётом ry (боксы с q — наклонные марши, не сюда)."""
+    if "q" in b:
+        return None
+    r = math.radians(b.get("ry", 0.0))
+    ca, sa = abs(math.cos(r)), abs(math.sin(r))
+    sx, sz = b["s"][0], b["s"][2]
+    hx = 0.5 * (ca * sx + sa * sz)
+    hz = 0.5 * (sa * sx + ca * sz)
+    cx, cy, cz = b["c"]
+    return (cx - hx, cx + hx, cz - hz, cz + hz, cy + 0.5 * b["s"][1], cy - 0.5 * b["s"][1])
+
+
+def add_threshold_steps(floors, stair_boxes, rep, key="threshold_steps"):
+    """Одна промежуточная ступень там, где к полу подходят с перепадом 0.20..0.60 м.
+
+    Замер 25.10 (вход ADMIN, ось z=40021): дека 24.40 -> ступени 24.54 / 24.70 / 24.85 ->
+    подиум 24.85 -> пол F1 25.28. Последние 0.43 м — вертикальная стенка выше stepOffset
+    капсулы (0.30 м): без прыжка не пройти. Правило по замеру, а не по имени объекта:
+    если нижняя плита выступает за край верхней не меньше STEP_SIDE_MIN (то есть к верхней
+    подходят снаружи), в этой полосе ставится ОДНА ступень на половину перепада —
+    подъём делится на два по <= 0.30 м. Глубина — доля перепада, но не мельче 1.0 м.
+    """
+    boxes = [_aabb(b) for b in floors]
+    boxes = [b for b in boxes if b is not None]
+    stair_rects = [b for b in (_aabb(s) for s in stair_boxes) if b is not None]
+    out = []
+    seen = set()
+    for up in boxes:
+        for lo in boxes:
+            dt = up[4] - lo[4]
+            # 0.20..0.30 — уже проходимо (stepOffset 0.30), 0.30..0.60 — делим на две
+            # ступени ровно пополам; выше 0.60 одной промежуточной ступенью не лечится.
+            if dt < STEP_RISE_MIN or dt > 2.0 * STEP_RISE_MAX:
+                continue
+            ox0, ox1 = max(up[0], lo[0]), min(up[1], lo[1])
+            oz0, oz1 = max(up[2], lo[2]), min(up[3], lo[3])
+            if ox1 - ox0 < 1.0 or oz1 - oz0 < 1.0:
+                continue
+            depth = min(STEP_DEPTH_MAX, max(STEP_DEPTH_MIN, 3.0 * dt))
+            top = lo[4] + 0.5 * dt
+            sides = []
+            if lo[0] < up[0] - STEP_SIDE_MIN:
+                sides.append((up[0] - depth, up[0], oz0, oz1))
+            if lo[1] > up[1] + STEP_SIDE_MIN:
+                sides.append((up[1], up[1] + depth, oz0, oz1))
+            if lo[2] < up[2] - STEP_SIDE_MIN:
+                sides.append((ox0, ox1, up[2] - depth, up[2]))
+            if lo[3] > up[3] + STEP_SIDE_MIN:
+                sides.append((ox0, ox1, up[3], up[3] + depth))
+            for s in sides:
+                if s[1] - s[0] < 1.0 or s[3] - s[2] < 1.0:
+                    continue
+                if any(plan_ov(s, r, -0.05) for r in stair_rects):   # там уже есть ступени/марши
+                    continue
+                k = (round(0.5 * (s[0] + s[1]), 1), round(0.5 * (s[2] + s[3]), 1), round(top, 2))
+                if k in seen:
+                    continue
+                seen.add(k)
+                h = max(0.25, 0.5 * dt)
+                # s уже локальные (из _aabb по боксам пола) — make_box здесь дал бы
+                # двойное преобразование. Собираем бокс напрямую.
+                out.append({"c": [round(0.5 * (s[0] + s[1]), 4), round(top - 0.5 * h, 4),
+                                  round(0.5 * (s[2] + s[3]), 4)],
+                            "s": [round(max(s[1] - s[0], MIN_BOX), 4),
+                                  round(max(h, MIN_BOX), 4),
+                                  round(max(s[3] - s[2], MIN_BOX), 4)],
+                            "ry": 0.0})
+    rep[key] = len(out)
+    return out
+
+
+# ---------------------------------------------------------------- крыльцо: мост через яму
+GAP_LEVEL_TOL = 0.10    # м, ступень и плита считаются на одном уровне
+GAP_MAX = 3.00          # м, шире — это улица, а не крыльцо
+GAP_MIN = 1.00          # м, уже — полосу не мостим
+GAP_FILL_T = 0.60       # м, толщина заливки (низ уходит под деку)
+
+
+def fill_level_gaps(stair_boxes, floors, rep, key="porch_fill"):
+    """Замостить яму между ступенью и плитой, стоящими на ОДНОМ уровне.
+
+    Замер 25.10 (вход ADMIN, ось z=40021.06): дека 24.40 -> ступени 24.54 / 24.70 / 24.85
+    -> ЯМА 24.40 (x 76.5..79.0, 2.5 м) -> подиум 24.85 -> порог 25.07 -> F1 25.28.
+    Верхняя ступень и подиум стоят на одном уровне 24.85, но между ними яма: игрок
+    падает на 0.45 и опять лезет на 0.45 — выше stepOffset капсулы (0.30).
+    Правило по замеру, а не по имени: если плоская ступень/площадка и плита на одном
+    уровне, а в плане между ними разрыв не шире GAP_MAX, полоса разрыва мостится на
+    уровне верха. Мостятся только ЯМЫ у ступеней — разрывы между двумя плитами
+    (шахта лестницы, атриум) не трогаются: там вторая сторона — ступень.
+    """
+    steps = [b for b in (_aabb(s) for s in stair_boxes) if b is not None]
+    plates = [b for b in (_aabb(f) for f in floors) if b is not None]
+    allr = steps + plates
+    out = []
+    seen = set()
+    for st in steps:
+        for pl in plates:
+            if abs(st[4] - pl[4]) > GAP_LEVEL_TOL:
+                continue
+            top = 0.5 * (st[4] + pl[4])
+            bands = []
+            # полоса = (x0, x1, z0, z1, ширина РАЗРЫВА, перехлёст по другой оси)
+            if pl[0] - st[1] > 0.05:                      # разрыв по X, плита выше по X
+                bands.append((st[1], pl[0], max(st[2], pl[2]), min(st[3], pl[3]),
+                              pl[0] - st[1], min(st[3], pl[3]) - max(st[2], pl[2])))
+            elif st[0] - pl[1] > 0.05:
+                bands.append((pl[1], st[0], max(st[2], pl[2]), min(st[3], pl[3]),
+                              st[0] - pl[1], min(st[3], pl[3]) - max(st[2], pl[2])))
+            if pl[2] - st[3] > 0.05:                      # разрыв по Z
+                bands.append((max(st[0], pl[0]), min(st[1], pl[1]), st[3], pl[2],
+                              pl[2] - st[3], min(st[1], pl[1]) - max(st[0], pl[0])))
+            elif st[2] - pl[3] > 0.05:
+                bands.append((max(st[0], pl[0]), min(st[1], pl[1]), pl[3], st[2],
+                              st[2] - pl[3], min(st[1], pl[1]) - max(st[0], pl[0])))
+            for bd in bands:
+                x0, x1, z0, z1 = bd[0], bd[1], bd[2], bd[3]
+                # GAP_MAX — только про ШИРИНУ РАЗРЫВА; перехлёст по другой оси
+                # (ширина крыльца вдоль фасада) — это не разрыв и может быть любой.
+                if bd[4] > GAP_MAX or bd[5] < GAP_MIN:
+                    continue
+                r = (x0, x1, z0, z1)
+                if any(plan_ov(r, o, -0.05) for o in allr):
+                    continue
+                k = (round(0.5 * (x0 + x1), 1), round(0.5 * (z0 + z1), 1), round(top, 2))
+                if k in seen:
+                    continue
+                seen.add(k)
+                # s локальные — make_box здесь дал бы двойное преобразование
+                out.append({"c": [round(0.5 * (x0 + x1), 4), round(top - 0.5 * GAP_FILL_T, 4),
+                                  round(0.5 * (z0 + z1), 4)],
+                            "s": [round(x1 - x0, 4), round(GAP_FILL_T, 4), round(z1 - z0, 4)],
+                            "ry": 0.0})
+    rep[key] = len(out)
     return out
 
 
@@ -731,6 +1386,7 @@ def build_chunk(chunk_path, name):
     walls, slabs, roofs, stairs, doors, arches, rep = collect(chunk_path)
 
     wall_boxes, floor_boxes, roof_boxes, stair_boxes = [], [], [], []
+    synth_caps = []
     doors_out = []
     per_house = {}
 
@@ -748,6 +1404,7 @@ def build_chunk(chunk_path, name):
         if not rb and w:
             rb = synth_roof(w)
             rep["roof_synth"] += 1
+            synth_caps.extend(rb)
         roof_boxes.extend(rb)
         nr = len(rb)
         ns = 0
@@ -760,6 +1417,53 @@ def build_chunk(chunk_path, name):
             rep["houses"] += 1
             if nw > 60:
                 rep["house_heavy"] += 1
+
+    # Синтетическая крыша строится для КАЖДОЙ группы стен отдельно. Группы ADMIN разбиты
+    # по этажам (ADM_F1_WALL, ADM_CORR_F2, ADM_WC_F3 …), и верх группы — это НЕ крыша дома,
+    # а потолок этажа: замер 24.10 дал по одному боксу 68x64 на каждом этаже (28.89 / 33.17 /
+    # 37.45 / 41.73 локально), которые садились в ПРОЁМЫ настоящих плит (плита 29.16..29.56
+    # при боксе 28.89..29.14) и обрывали марши: библиотека не доезжала 0.4 м, последний
+    # марш на кровлю не выходил. Настоящая плита — уже крыша группы, и она вырезана по
+    # проёмам, поэтому синтетическая крыша тут лишняя: если сверху есть плита, садящаяся
+    # низом на её верх, бокс выбрасывается.
+    def _plan_half(b):
+        r = math.radians(b.get("ry", 0.0))
+        ca, sa = abs(math.cos(r)), abs(math.sin(r))
+        return (0.5 * (ca * b["s"][0] + sa * b["s"][2]),
+                0.5 * (sa * b["s"][0] + ca * b["s"][2]))
+
+    if synth_caps:
+        keep = []
+        for b in synth_caps:
+            cx, cy, cz = b["c"]
+            cap_top = cy + 0.5 * b["s"][1]
+            covered = False
+            for f in floor_boxes:
+                fx, fz = _plan_half(f)
+                if abs(cx - f["c"][0]) > fx or abs(cz - f["c"][2]) > fz:
+                    continue
+                f_bot = f["c"][1] - 0.5 * f["s"][1]
+                if -0.05 <= f_bot - cap_top <= 0.60:
+                    covered = True
+                    break
+            if covered:
+                rep["roof_synth_covered"] += 1
+            else:
+                keep.append(b)
+        drop = set(id(b) for b in synth_caps) - set(id(b) for b in keep)
+        if drop:
+            roof_boxes = [b for b in roof_boxes if id(b) not in drop]
+
+    # Марши выходят сквозь плиты и кровлю: режем плиту по пятну марша там, где нет дыры.
+    floor_boxes = carve_plates_by_stairs(floor_boxes, stair_boxes, rep, "floor_carved_by_stairs")
+    roof_boxes = carve_plates_by_stairs(roof_boxes, stair_boxes, rep, "roof_carved_by_stairs")
+
+    # Порог: перепад 0.20..0.60 м перед полом дробится ОДНОЙ промежуточной ступенью, иначе
+    # стенка выше stepOffset капсулы и вход/переход этажа без прыжка не пройти (замер входа).
+    floor_boxes.extend(add_threshold_steps(floor_boxes, stair_boxes, rep))
+
+    # Крыльцо: яма между верхней ступенью и подиумом мостится вровень с полом.
+    floor_boxes.extend(fill_level_gaps(stair_boxes, floor_boxes, rep))
 
     rep["wall_boxes"] = len(wall_boxes)
     rep["floor_boxes"] = len(floor_boxes)

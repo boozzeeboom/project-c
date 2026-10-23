@@ -35,6 +35,7 @@ namespace ProjectC.EditorTools
     public static class PrimumHouseColliders
     {
         private const string BoxesJsonRelative = "docs/world/primum_city/04_COLLIDERS/houses_boxes.json";
+        private const string AdminJsonRelative = "docs/world/primum_city/04_COLLIDERS/houses_boxes_ADMIN.json";
         private const string CollidersRootName = "PRIMUM_COLLIDERS";
         private const string CityRootName = "PRIMUM";
         private const string WorldRootFallback = "WorldRoot_0_0";
@@ -44,6 +45,12 @@ namespace ProjectC.EditorTools
         private const string FloorBoxGroup = "HOUSE_FLOOR_BOX";
         private const string RoofBoxGroup = "HOUSE_ROOF_BOX";
         private const string StairBoxGroup = "HOUSE_STAIR_BOX";
+
+        /// <summary>Меш-коллайдер маршей прошлой схемы (PrimumCollidersBuilder) — один
+        /// невыпуклый MeshCollider на весь чанк. На ADMIN это 2640 треугольников в габарите
+        /// y 18.4 м по всей шахте: он перекрывает новые наклонные боксы, и игрок упирается
+        /// в меш прямо на ступенях. Сносится, когда для чанка есть боксовые марши.</summary>
+        private const string LegacyStairMeshGroup = "STAIRS";
         private const float DoorProbeRadius = 0.30f;
 
         /// <summary>Группы прошлых схем, которых в сцене быть не должно.</summary>
@@ -95,6 +102,7 @@ namespace ProjectC.EditorTools
             public int RotatedBoxes;
             public int BoxObjects;
             public int Doors;
+            public int LegacyStairMeshesDropped;
             public readonly Dictionary<string, string> ChunkSummary = new Dictionary<string, string>();
             public readonly List<string> Warnings = new List<string>();
 
@@ -104,7 +112,7 @@ namespace ProjectC.EditorTools
         // ------------------------------------------------------------------ DTO для JSON
 
         [Serializable] private class BoxDto { public float[] c; public float[] s; public float ry; public float[] q; }
-        [Serializable] private class DoorDto { public float[] c; public float[] t; public float w; public float h; }
+        [Serializable] private class DoorDto { public float[] c; public float[] t; public float w; public float h; public string n; }
         [Serializable]
         private class ChunkDto
         {
@@ -119,7 +127,7 @@ namespace ProjectC.EditorTools
 
         // ------------------------------------------------------------------ сборка
 
-        public static Report Build(bool apply)
+        public static Report Build(bool apply, string relativeJson = BoxesJsonRelative)
         {
             var rep = new Report();
 
@@ -145,7 +153,7 @@ namespace ProjectC.EditorTools
             }
 
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            string jsonPath = Path.Combine(projectRoot, BoxesJsonRelative.Replace('/', Path.DirectorySeparatorChar));
+            string jsonPath = Path.Combine(projectRoot, relativeJson.Replace('/', Path.DirectorySeparatorChar));
             if (!File.Exists(jsonPath))
             {
                 rep.Warnings.Add("Нет " + jsonPath + " — сначала прогоните tools/houses_boxes.py");
@@ -176,6 +184,12 @@ namespace ProjectC.EditorTools
                 DropGroup(chunkNode, FloorBoxGroup);
                 DropGroup(chunkNode, RoofBoxGroup);
                 DropGroup(chunkNode, StairBoxGroup);
+                // Меш старых маршей сносим только если в JSON есть чем его заменить.
+                if (cd.stairs != null && cd.stairs.Length > 0)
+                {
+                    DropGroup(chunkNode, LegacyStairMeshGroup);
+                    rep.LegacyStairMeshesDropped++;
+                }
 
                 int rot = 0;
                 rot += AddBoxGroup(chunkNode, WallBoxGroup, cd.walls);
@@ -324,7 +338,7 @@ namespace ProjectC.EditorTools
         /// радиуса 0.30 м и иметь опору под ногами; (2) каждая плита должна ловиться лучом
         /// сверху в своей же точке. Проверка НЕ входит в Play Mode.
         /// </summary>
-        public static string VerifyBoxes()
+        public static string VerifyBoxes(string relativeJson = BoxesJsonRelative)
         {
             var sb = new StringBuilder();
             sb.AppendLine("[PRIMUM/Houses] Проверка боксов (проёмы + плиты)");
@@ -334,7 +348,7 @@ namespace ProjectC.EditorTools
             Transform root = rootGo.transform;
 
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            string jsonPath = Path.Combine(projectRoot, BoxesJsonRelative.Replace('/', Path.DirectorySeparatorChar));
+            string jsonPath = Path.Combine(projectRoot, relativeJson.Replace('/', Path.DirectorySeparatorChar));
             if (!File.Exists(jsonPath)) return sb.AppendLine("  ! нет " + jsonPath).ToString();
 
             var dto = JsonUtility.FromJson<RootDto>(File.ReadAllText(jsonPath, Encoding.UTF8));
@@ -370,8 +384,11 @@ namespace ProjectC.EditorTools
                                              d.c[2].ToString("F1") + ")");
                             continue;
                         }
+                        // Пол ищем под ПОРОГОМ проёма, а не в его середине: середина — это
+                        // уже внутри объёма проёма, и луч оттуда может начаться внутри плиты.
+                        Vector3 thr = new Vector3(w.x, w.y - d.h * 0.5f + 0.42f, w.z);
                         bool floor = false;
-                        foreach (RaycastHit hf in Physics.RaycastAll(w + Vector3.up * 0.10f, Vector3.down, 3.0f,
+                        foreach (RaycastHit hf in Physics.RaycastAll(thr, Vector3.down, 3.0f,
                                                                      ~0, QueryTriggerInteraction.Ignore))
                         {
                             if (IsUnderColliders(hf.collider.transform)) { floor = true; break; }
@@ -406,6 +423,39 @@ namespace ProjectC.EditorTools
             sb.AppendLine("  плит: " + plates + ", промах луча вниз: " + plateMiss);
             foreach (string s in badDoors) sb.AppendLine("   ! перекрыт проём: " + s);
             foreach (string s in badPlates) sb.AppendLine("   ! плита без попадания: " + s);
+            return sb.ToString();
+        }
+
+        /// <summary>Диагностика: какие именно проёмы остались без пола (имя + координаты + высота).</summary>
+        public static string DebugDoorFloors(string relativeJson)
+        {
+            var sb = new StringBuilder();
+            GameObject rootGo = GameObject.Find(CollidersRootName);
+            if (rootGo == null) return "нет " + CollidersRootName;
+            Transform root = rootGo.transform;
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string jsonPath = Path.Combine(projectRoot, relativeJson.Replace('/', Path.DirectorySeparatorChar));
+            var dto = JsonUtility.FromJson<RootDto>(File.ReadAllText(jsonPath, Encoding.UTF8));
+            int n = 0;
+            foreach (ChunkDto cd in dto.chunks)
+            {
+                if (cd == null || cd.doors == null) continue;
+                foreach (DoorDto d in cd.doors)
+                {
+                    Vector3 w = root.TransformPoint(new Vector3(d.c[0], d.c[1], d.c[2]));
+                    Vector3 thr = new Vector3(w.x, w.y - d.h * 0.5f + 0.42f, w.z);
+                    bool floor = false;
+                    foreach (RaycastHit hf in Physics.RaycastAll(thr, Vector3.down, 3.0f, ~0, QueryTriggerInteraction.Ignore))
+                        if (IsUnderColliders(hf.collider.transform)) { floor = true; break; }
+                    if (floor) continue;
+                    n++;
+                    if (n <= 25)
+                        sb.AppendLine("  " + (string.IsNullOrEmpty(d.n) ? "?" : d.n) +
+                                      " c=(" + d.c[0].ToString("F2") + "," + d.c[1].ToString("F2") + "," + d.c[2].ToString("F2") +
+                                      ") h=" + d.h.ToString("F2") + " thr.y=" + thr.y.ToString("F2"));
+                }
+            }
+            sb.Insert(0, "без пола: " + n + "\n");
             return sb.ToString();
         }
 
@@ -452,7 +502,7 @@ namespace ProjectC.EditorTools
         /// в уличную плиту. Дверные полотна (<c>PRIMUM_DOORS</c>) игнорируются: закрытая створка —
         /// отдельная задача (см. 05_HOUSES_BOXES.md, раздел про двери), здесь проверяется стена.
         /// </summary>
-        public static string VerifyPassages()
+        public static string VerifyPassages(string relativeJson = BoxesJsonRelative)
         {
             var sb = new StringBuilder();
             sb.AppendLine("[PRIMUM/Houses] Проходимость проёмов капсулой 0.30 м");
@@ -462,7 +512,7 @@ namespace ProjectC.EditorTools
             Transform root = rootGo.transform;
 
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            string jsonPath = Path.Combine(projectRoot, BoxesJsonRelative.Replace('/', Path.DirectorySeparatorChar));
+            string jsonPath = Path.Combine(projectRoot, relativeJson.Replace('/', Path.DirectorySeparatorChar));
             if (!File.Exists(jsonPath)) return sb.AppendLine("  ! нет " + jsonPath).ToString();
 
             var dto = JsonUtility.FromJson<RootDto>(File.ReadAllText(jsonPath, Encoding.UTF8));
@@ -523,6 +573,30 @@ namespace ProjectC.EditorTools
         public static void MenuVerifyPassages()
         {
             Debug.Log(VerifyPassages());
+        }
+
+        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры ADMIN: боксы из RAW (пересобрать)", false, 365)]
+        public static void MenuBuildAdmin()
+        {
+            Debug.Log(Describe(Build(true, AdminJsonRelative)));
+        }
+
+        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры ADMIN: отчёт (без изменений)", false, 366)]
+        public static void MenuReportAdmin()
+        {
+            Debug.Log(Describe(Build(false, AdminJsonRelative)));
+        }
+
+        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры ADMIN: проверить проёмы и плиты", false, 367)]
+        public static void MenuVerifyAdmin()
+        {
+            Debug.Log(VerifyBoxes(AdminJsonRelative));
+        }
+
+        [MenuItem("ProjectC/World/PRIMUM/Коллайдеры ADMIN: проходимость проёмов капсулой", false, 368)]
+        public static void MenuVerifyPassagesAdmin()
+        {
+            Debug.Log(VerifyPassages(AdminJsonRelative));
         }
 
         private static string Describe(Report r)

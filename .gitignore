@@ -202,3 +202,4 @@ _analysis/*
  
 # Python bytecode from the Blender tooling in docs/world/primum_city
 __pycache__/
+Assets/_Editor_Temp/*

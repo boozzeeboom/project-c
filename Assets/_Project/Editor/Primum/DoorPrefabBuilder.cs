@@ -144,6 +144,230 @@ namespace ProjectC.EditorTools
             return path;
         }
 
+        // ---------------------------------------------------------------- дворцовая двустворчатая (Э2, приоритет 1)
+
+        [MenuItem("ProjectC/World/PRIMUM/Двери: собрать дворцовую двустворчатую A (1.50x2.31)", false, 322)]
+        public static void MenuBuildPalaceA() { Debug.Log("[PRIMUM/Doors] " + BuildPalaceDouble("A", 1.50f, 2.31f)); }
+
+        [MenuItem("ProjectC/World/PRIMUM/Двери: собрать дворцовую двустворчатую B (2.14x2.82)", false, 323)]
+        public static void MenuBuildPalaceB() { Debug.Log("[PRIMUM/Doors] " + BuildPalaceDouble("B", 2.14f, 2.82f)); }
+
+        [MenuItem("ProjectC/World/PRIMUM/Двери: собрать дворцовую двустворчатую C (2.78x2.86)", false, 324)]
+        public static void MenuBuildPalaceC() { Debug.Log("[PRIMUM/Doors] " + BuildPalaceDouble("C", 2.78f, 2.86f)); }
+
+        /// <summary>Собирает PM_DOOR_PALACE_DOUBLE_*.prefab. Возвращает путь ассета.</summary>
+        public static string BuildPalaceDouble(string id, float sillW, float totalH)
+        {
+            _product = "PM_DOOR_PALACE_DOUBLE_" + id;
+            var root = new GameObject(_product);
+            root.layer = DoorLayer;
+
+            Material stone = LoadMat("PM_DOOR_STONE");
+            Material woodDark = LoadMat("PM_DOOR_WOOD_DARK");
+            Material bronze = LoadMat("PM_DOOR_BRONZE");
+            Material iron = LoadMat("PM_DOOR_IRON");
+
+            float jamb = Mathf.Max(0.09f, sillW * 0.06f);
+            float lintel = Mathf.Max(0.10f, totalH * 0.04f);
+            float frameW = sillW - 0.06f;
+            float halfFrame = frameW * 0.5f;
+            float jambH = totalH - lintel;
+
+            var frame = new Boxes();
+            frame.Add(new Vector3(-halfFrame + jamb * 0.5f, jambH * 0.5f, 0f), new Vector3(jamb, jambH, FrameDepth));
+            frame.Add(new Vector3(halfFrame - jamb * 0.5f, jambH * 0.5f, 0f), new Vector3(jamb, jambH, FrameDepth));
+            frame.Add(new Vector3(0f, totalH - lintel * 0.5f, 0f), new Vector3(frameW, lintel, FrameDepth));
+            // декоративные колонны у стоек
+            frame.Add(new Vector3(-halfFrame + jamb * 0.5f, totalH * 0.5f, FrameDepth * 0.5f + 0.02f), new Vector3(jamb * 1.4f, totalH * 0.6f, 0.04f));
+            frame.Add(new Vector3(halfFrame - jamb * 0.5f, totalH * 0.5f, FrameDepth * 0.5f + 0.02f), new Vector3(jamb * 1.4f, totalH * 0.6f, 0.04f));
+            AddMeshChild(root.transform, "Frame", frame, new[] { stone });
+
+            var sill = new Boxes();
+            sill.Add(new Vector3(0f, 0.02f, 0f), new Vector3(sillW, 0.04f, SillDepth));
+            AddMeshChild(root.transform, "Sill", sill, new[] { stone });
+
+            float leafW = (frameW - 2f * jamb) * 0.5f;
+            float leafH = totalH - lintel - LeafGap;
+            float leafPivotX = frameW * 0.5f - jamb;
+            BuildPalaceLeaf(root.transform, "LeafL", -leafPivotX, false, leafW, leafH, woodDark, bronze, iron);
+            BuildPalaceLeaf(root.transform, "LeafR", leafPivotX, true, leafW, leafH, woodDark, bronze, iron);
+
+            var trigger = root.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.center = new Vector3(0f, totalH * 0.5f, 0f);
+            trigger.size = new Vector3(frameW, totalH, 0.20f);
+
+            var dc = root.AddComponent<DoorController>();
+            var so = new SerializedObject(dc);
+            so.FindProperty("doorType").enumValueIndex = (int)DoorController.DoorType.HingedDouble;
+            so.FindProperty("startOpen").boolValue = false;
+            so.FindProperty("openDuration").floatValue = 1.2f;
+            so.FindProperty("autoCloseDelay").floatValue = 0f;
+            so.FindProperty("leftPivot").objectReferenceValue = root.transform.Find("LeafL");
+            so.FindProperty("leftHingePanel").objectReferenceValue = root.transform.Find("LeafL/LeafL_Wood");
+            so.FindProperty("leftHingeSide").enumValueIndex = (int)DoorController.HingeSide.Left;
+            so.FindProperty("rightPivot").objectReferenceValue = root.transform.Find("LeafR");
+            so.FindProperty("rightHingePanel").objectReferenceValue = root.transform.Find("LeafR/LeafR_Wood");
+            so.FindProperty("rightHingeSide").enumValueIndex = (int)DoorController.HingeSide.Right;
+            so.FindProperty("doubleOpenAngle").floatValue = 90f;
+            so.FindProperty("invertDoubleSwing").boolValue = false;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            SetNotStaticRecursive(root);
+
+            string path = PrefabDir + "/" + _product + ".prefab";
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            AssetDatabase.SaveAssets();
+            return path;
+        }
+
+        private static void BuildPalaceLeaf(Transform parent, string nodeName, float pivotX, bool mirroredRight,
+                                           float leafW, float leafH, Material wood, Material bronze, Material iron)
+        {
+            var leaf = new GameObject(nodeName);
+            leaf.layer = DoorLayer;
+            leaf.transform.SetParent(parent, false);
+            leaf.transform.localPosition = new Vector3(pivotX, LeafGap, 0f);
+
+            float x0 = mirroredRight ? -leafW : 0f;
+            float x1 = mirroredRight ? 0f : leafW;
+            float cx = (x0 + x1) * 0.5f;
+
+            var woodBoxes = new Boxes();
+            woodBoxes.Add(new Vector3(cx, leafH * 0.5f, 0f), new Vector3(leafW, leafH, LeafThick));
+            AddMeshChild(leaf.transform, nodeName + "_Wood", woodBoxes, new[] { wood });
+
+            var panels = new Boxes();
+            float panelW = leafW - 0.16f;
+            foreach (float py in new[] { 0.62f, 1.72f })
+            {
+                if (py > leafH * 0.9f) continue;
+                panels.Add(new Vector3(cx, py, LeafThick * 0.5f + 0.008f), new Vector3(panelW, 0.40f, 0.016f));
+                panels.Add(new Vector3(cx, py, -LeafThick * 0.5f - 0.008f), new Vector3(panelW, 0.40f, 0.016f));
+            }
+            AddMeshChild(leaf.transform, nodeName + "_Panels", panels, new[] { bronze });
+
+            var ir = new Boxes();
+            float hingeX = mirroredRight ? x1 - 0.03f : x0 + 0.03f;
+            foreach (float hy in new[] { 0.35f, leafH * 0.5f, leafH - 0.35f })
+                ir.Add(new Vector3(hingeX, hy, 0f), new Vector3(0.12f, 0.14f, 0.035f));
+            AddMeshChild(leaf.transform, nodeName + "_Iron", ir, new[] { iron });
+
+            var br = new Boxes();
+            float handleX = mirroredRight ? x0 + 0.06f : x1 - 0.06f;
+            float leverX = handleX + (mirroredRight ? 0.07f : -0.07f);
+            br.Add(new Vector3(handleX, leafH * 0.47f, 0.05f), new Vector3(0.05f, 0.18f, 0.02f));
+            br.Add(new Vector3(leverX, leafH * 0.47f, 0.06f), new Vector3(0.14f, 0.045f, 0.045f));
+            AddMeshChild(leaf.transform, nodeName + "_Bronze", br, new[] { bronze });
+
+            var col = leaf.AddComponent<BoxCollider>();
+            col.isTrigger = false;
+            col.center = new Vector3(cx, leafH * 0.5f, 0.012f);
+            col.size = new Vector3(leafW, leafH - 0.06f, 0.07f);
+        }
+
+        // ---------------------------------------------------------------- ворота (Э2, приоритет 3)
+
+        [MenuItem("ProjectC/World/PRIMUM/Двери: собрать ворота A (2.89x2.78)", false, 325)]
+        public static void MenuBuildGateA() { Debug.Log("[PRIMUM/Doors] " + BuildGateSingle("A", 2.89f, 2.78f)); }
+
+        [MenuItem("ProjectC/World/PRIMUM/Двери: собрать ворота B (3.53x3.57)", false, 326)]
+        public static void MenuBuildGateB() { Debug.Log("[PRIMUM/Doors] " + BuildGateSingle("B", 3.53f, 3.57f)); }
+
+        /// <summary>Собирает PM_DOOR_GATE_*.prefab (одностворчатые ворота). Возвращает путь.</summary>
+        public static string BuildGateSingle(string id, float sillW, float totalH)
+        {
+            _product = "PM_DOOR_GATE_" + id;
+            var root = new GameObject(_product);
+            root.layer = DoorLayer;
+
+            Material iron = LoadMat("PM_DOOR_IRON");
+            Material stone = LoadMat("PM_DOOR_STONE");
+            Material bronze = LoadMat("PM_DOOR_BRONZE");
+
+            float jamb = Mathf.Max(0.10f, sillW * 0.04f);
+            float lintel = Mathf.Max(0.12f, totalH * 0.05f);
+            float frameW = sillW - 0.06f;
+            float halfFrame = frameW * 0.5f;
+            float jambH = totalH - lintel;
+
+            var frame = new Boxes();
+            frame.Add(new Vector3(-halfFrame + jamb * 0.5f, jambH * 0.5f, 0f), new Vector3(jamb, jambH, FrameDepth));
+            frame.Add(new Vector3(halfFrame - jamb * 0.5f, jambH * 0.5f, 0f), new Vector3(jamb, jambH, FrameDepth));
+            frame.Add(new Vector3(0f, totalH - lintel * 0.5f, 0f), new Vector3(frameW, lintel, FrameDepth));
+            AddMeshChild(root.transform, "Frame", frame, new[] { stone });
+
+            var panel = new Boxes();
+            float leafW = frameW - 2f * jamb;
+            float leafH = totalH - lintel - LeafGap;
+            panel.Add(new Vector3(0f, leafH * 0.5f + LeafGap, 0f), new Vector3(leafW, leafH, LeafThick * 2f));
+            // рёбра жёсткости
+            for (float py = 0.4f; py < leafH; py += 0.6f)
+                panel.Add(new Vector3(0f, py + LeafGap, LeafThick), new Vector3(leafW * 0.9f, 0.06f, 0.04f));
+            AddMeshChild(root.transform, "Leaf", panel, new[] { iron });
+
+            var sill = new Boxes();
+            sill.Add(new Vector3(0f, 0.02f, 0f), new Vector3(sillW, 0.04f, SillDepth));
+            AddMeshChild(root.transform, "Sill", sill, new[] { stone });
+
+            var leaf = new GameObject("Leaf");
+            leaf.layer = DoorLayer;
+            leaf.transform.SetParent(root.transform, false);
+            leaf.transform.localPosition = new Vector3(-leafW * 0.5f, LeafGap, 0f);
+
+            // блокирующий коллайдер
+            var leafCol = leaf.AddComponent<BoxCollider>();
+            leafCol.isTrigger = false;
+            leafCol.center = new Vector3(leafW * 0.5f, leafH * 0.5f, 0.012f);
+            leafCol.size = new Vector3(leafW, leafH, 0.10f);
+
+            var trigger = root.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.center = new Vector3(0f, totalH * 0.5f, 0f);
+            trigger.size = new Vector3(frameW, totalH, 0.20f);
+
+            var dc = root.AddComponent<DoorController>();
+            var so = new SerializedObject(dc);
+            so.FindProperty("doorType").enumValueIndex = (int)DoorController.DoorType.HingedSingle;
+            so.FindProperty("startOpen").boolValue = false;
+            so.FindProperty("openDuration").floatValue = 1.5f;
+            so.FindProperty("autoCloseDelay").floatValue = 0f;
+            so.FindProperty("hingePivot").objectReferenceValue = leaf.transform;
+            so.FindProperty("hingePanel").objectReferenceValue = leaf.transform.Find("Leaf");
+            so.FindProperty("hingeSide").enumValueIndex = (int)DoorController.HingeSide.Left;
+            so.FindProperty("openAngle").floatValue = 90f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            SetNotStaticRecursive(root);
+
+            string path = PrefabDir + "/" + _product + ".prefab";
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            AssetDatabase.SaveAssets();
+            return path;
+        }
+
+        // ---------------------------------------------------------------- узкие двери (Э2, приоритет 4)
+
+        [MenuItem("ProjectC/World/PRIMUM/Двери: собрать узкую дверь (0.56x2.40)", false, 327)]
+        public static void MenuBuildNarrow() { Debug.Log("[PRIMUM/Doors] " + BuildNarrowSingle("A", 0.56f, 2.40f)); }
+
+        public static string BuildNarrowSingle(string id, float sillW, float totalH)
+        {
+            return BuildSingle("NARROW_" + id, sillW, sillW - 0.06f, totalH, "PM_DOOR_WOOD_DARK", 0.06f, 0.10f, false);
+        }
+
+        // ---------------------------------------------------------------- широкие двери (Э2, приоритет 4)
+
+        [MenuItem("ProjectC/World/PRIMUM/Двери: собрать широкую дверь (2.00x2.20)", false, 328)]
+        public static void MenuBuildWide() { Debug.Log("[PRIMUM/Doors] " + BuildWideSingle("A", 2.00f, 2.20f)); }
+
+        public static string BuildWideSingle(string id, float sillW, float totalH)
+        {
+            return BuildSingle("WIDE_" + id, sillW, sillW - 0.08f, totalH, "PM_DOOR_WOOD_DARK", 0.08f, 0.12f, true);
+        }
+
         /// <summary>Одна створка: полотно + филёнки + петли + ручка, блокирующий коллайдер.</summary>
         private static void BuildLeaf(Transform parent, string nodeName, float pivotX, bool mirroredRight,
                                       Material woodDark, Material woodMid, Material iron, Material bronze)

@@ -61,6 +61,33 @@ namespace ProjectC.EditorTools
         private static readonly Variant DoubleVariant =
             new Variant { Id = "DOUBLE_A", Path = PrefabDir + "/PM_DOOR_DOUBLE_A.prefab", W = 1.36f, H = 2.50f, D = 0.22f };
 
+        /// <summary>Дворцовая двустворчатая (Э2, приоритет 1): 3 размера под проёмы S1_GLD.</summary>
+        private static readonly Variant[] PalaceDoubleVariants =
+        {
+            new Variant { Id = "PALACE_DOUBLE_A", Path = PrefabDir + "/PM_DOOR_PALACE_DOUBLE_A.prefab", W = 1.50f, H = 2.31f, D = 0.22f },
+            new Variant { Id = "PALACE_DOUBLE_B", Path = PrefabDir + "/PM_DOOR_PALACE_DOUBLE_B.prefab", W = 2.14f, H = 2.82f, D = 0.22f },
+            new Variant { Id = "PALACE_DOUBLE_C", Path = PrefabDir + "/PM_DOOR_PALACE_DOUBLE_C.prefab", W = 2.78f, H = 2.86f, D = 0.22f },
+        };
+
+        /// <summary>Ворота (Э2, приоритет 3): 2 габарита.</summary>
+        private static readonly Variant[] GateVariants =
+        {
+            new Variant { Id = "GATE_A", Path = PrefabDir + "/PM_DOOR_GATE_A.prefab", W = 2.89f, H = 2.78f, D = 0.22f },
+            new Variant { Id = "GATE_B", Path = PrefabDir + "/PM_DOOR_GATE_B.prefab", W = 3.53f, H = 3.57f, D = 0.22f },
+        };
+
+        /// <summary>Узкие двери (Э2, приоритет 4).</summary>
+        private static readonly Variant[] NarrowVariants =
+        {
+            new Variant { Id = "NARROW_A", Path = PrefabDir + "/PM_DOOR_SINGLE_NARROW_A.prefab", W = 0.56f, H = 2.40f, D = 0.22f },
+        };
+
+        /// <summary>Широкие двери (Э2, приоритет 4).</summary>
+        private static readonly Variant[] WideVariants =
+        {
+            new Variant { Id = "WIDE_A", Path = PrefabDir + "/PM_DOOR_SINGLE_WIDE_A.prefab", W = 2.00f, H = 2.20f, D = 0.22f },
+        };
+
         /// <summary>Диапазон ширины, в который двустворчатый префаб укладывается масштабом (0.85–1.30 от базы).</summary>
         public const float DoubleMinW = 1.15f;
         public const float DoubleMaxW = 1.78f;
@@ -300,6 +327,30 @@ namespace ProjectC.EditorTools
                 if (pf == null) Debug.LogError("[PRIMUM/Doors] Не найден префаб: " + DoubleVariant.Path);
                 prefabs[DoubleVariant.Id] = pf;
             }
+            foreach (Variant v in PalaceDoubleVariants)
+            {
+                GameObject pf = AssetDatabase.LoadAssetAtPath<GameObject>(v.Path);
+                if (pf == null) Debug.LogError("[PRIMUM/Doors] Не найден префаб: " + v.Path);
+                prefabs[v.Id] = pf;
+            }
+            foreach (Variant v in GateVariants)
+            {
+                GameObject pf = AssetDatabase.LoadAssetAtPath<GameObject>(v.Path);
+                if (pf == null) Debug.LogError("[PRIMUM/Doors] Не найден префаб: " + v.Path);
+                prefabs[v.Id] = pf;
+            }
+            foreach (Variant v in NarrowVariants)
+            {
+                GameObject pf = AssetDatabase.LoadAssetAtPath<GameObject>(v.Path);
+                if (pf == null) Debug.LogError("[PRIMUM/Doors] Не найден префаб: " + v.Path);
+                prefabs[v.Id] = pf;
+            }
+            foreach (Variant v in WideVariants)
+            {
+                GameObject pf = AssetDatabase.LoadAssetAtPath<GameObject>(v.Path);
+                if (pf == null) Debug.LogError("[PRIMUM/Doors] Не найден префаб: " + v.Path);
+                prefabs[v.Id] = pf;
+            }
 
             // --- сборки витрин/лавок: не дверь, а фасадная геометрия — возвращаем исходную группу
             //     (иначе в фасаде остаётся дыра, ровно то, на что жаловался заказчик).
@@ -509,7 +560,27 @@ namespace ProjectC.EditorTools
             // --- имена-исключения проверяем ДО любых геометрических решений:
             //     мебель и наличники не должны попадать ни в двери, ни в «возврат исходных сборок».
             string upper = go.name.ToUpperInvariant();
-            if (upper.Contains("GATE")) { rec.Skip = "ворота (GATE)"; return rec; }
+            if (upper.Contains("GATE"))
+            {
+                Variant best = null;
+                float bestScore = float.MaxValue;
+                foreach (Variant v in GateVariants)
+                {
+                    float score = Mathf.Abs(rec.W / v.W - 1f) + Mathf.Abs(rec.H / v.H - 1f);
+                    if (score < bestScore) { bestScore = score; best = v; }
+                }
+                if (best != null)
+                {
+                    rec.Kind = "single";
+                    rec.VariantId = best.Id;
+                    rec.Scale = new Vector3(rec.W / best.W, rec.H / best.H,
+                                            Mathf.Clamp(rec.T / best.D, 0.6f, 1.6f));
+                    rec.Skip = null;
+                    return rec;
+                }
+                rec.Skip = "ворота (GATE)";
+                return rec;
+            }
             foreach (string tok in SkipNameTokens)
             {
                 if (upper.Contains(tok)) { rec.Skip = "мебель/наличник (" + tok + ")"; return rec; }
@@ -550,9 +621,31 @@ namespace ProjectC.EditorTools
 
             if (w > MaxWidth)
             {
-                // двустворчатая дверь ОДНОЙ группой (два острова-полотна): дворцовый/административный набор
-                if (IsPalaceOrAdmin(chunkName))
+                // ADMIN отложен до востребования (Э2): не трогаем
+                if (chunkName != null && chunkName.ToUpperInvariant().Contains("ADMIN"))
                 {
+                    rec.Skip = "двустворчатая единой группой — ждёт набор дворцов/администрации";
+                    return rec;
+                }
+                // дворцовая двустворчатая (Э2, приоритет 1): ставим новый префаб вместо skip
+                if (IsPalace(chunkName))
+                {
+                    Variant best = null;
+                    float bestScore = float.MaxValue;
+                    foreach (Variant v in PalaceDoubleVariants)
+                    {
+                        float score = Mathf.Abs(rec.W / v.W - 1f) + Mathf.Abs(rec.H / v.H - 1f);
+                        if (score < bestScore) { bestScore = score; best = v; }
+                    }
+                    if (best != null)
+                    {
+                        rec.Kind = "double";
+                        rec.VariantId = best.Id;
+                        rec.Scale = new Vector3(rec.W / best.W, rec.H / best.H,
+                                                Mathf.Clamp(rec.T / best.D, 0.6f, 1.6f));
+                        rec.Skip = null;
+                        return rec;
+                    }
                     rec.Skip = "двустворчатая единой группой — ждёт набор дворцов/администрации";
                     return rec;
                 }
@@ -562,10 +655,52 @@ namespace ProjectC.EditorTools
                     FinishDouble(rec);
                     return rec;
                 }
+                // широкая дверь (Э2): отдельный тип, не сжимаем в существующие
+                if (w <= 3.0f && h >= MinHeight && h <= MaxHeight && t / w <= MaxThicknessRatio)
+                {
+                    Variant best = null; float bestScore = float.MaxValue;
+                    foreach (Variant v in WideVariants)
+                    {
+                        float score = Mathf.Abs(rec.W / v.W - 1f) + Mathf.Abs(rec.H / v.H - 1f);
+                        if (score < bestScore) { bestScore = score; best = v; }
+                    }
+                    if (best != null)
+                    {
+                        rec.Kind = "single";
+                        rec.VariantId = best.Id;
+                        rec.Scale = new Vector3(rec.W / best.W, rec.H / best.H,
+                                                Mathf.Clamp(rec.T / best.D, 0.6f, 1.6f));
+                        rec.Skip = null;
+                        return rec;
+                    }
+                }
                 rec.Skip = "широкий проём >" + DoubleMaxW.ToString("F2", CultureInfo.InvariantCulture) + " (нужен набор ворот/витрин)";
                 return rec;
             }
-            if (w < MinWidth) { rec.Skip = "узкий проём <" + MinWidth.ToString("F2", CultureInfo.InvariantCulture); return rec; }
+            if (w < MinWidth)
+            {
+                // узкая дверь (Э2): отдельный тип, не сжимаем в существующие
+                if (w >= 0.40f && h >= MinHeight && h <= MaxHeight && t / w <= MaxThicknessRatio)
+                {
+                    Variant best = null; float bestScore = float.MaxValue;
+                    foreach (Variant v in NarrowVariants)
+                    {
+                        float score = Mathf.Abs(rec.W / v.W - 1f) + Mathf.Abs(rec.H / v.H - 1f);
+                        if (score < bestScore) { bestScore = score; best = v; }
+                    }
+                    if (best != null)
+                    {
+                        rec.Kind = "single";
+                        rec.VariantId = best.Id;
+                        rec.Scale = new Vector3(rec.W / best.W, rec.H / best.H,
+                                                Mathf.Clamp(rec.T / best.D, 0.6f, 1.6f));
+                        rec.Skip = null;
+                        return rec;
+                    }
+                }
+                rec.Skip = "узкий проём <" + MinWidth.ToString("F2", CultureInfo.InvariantCulture);
+                return rec;
+            }
             if (h > MaxHeight) { rec.Skip = "высокий >" + MaxHeight.ToString("F2", CultureInfo.InvariantCulture); return rec; }
             if (h < MinHeight) { rec.Skip = "низкий <" + MinHeight.ToString("F2", CultureInfo.InvariantCulture); return rec; }
             if (w <= 0f || t / w > MaxThicknessRatio) { rec.Skip = "не дверь (толщина/ширина)"; return rec; }
@@ -606,12 +741,12 @@ namespace ProjectC.EditorTools
             rec.Skip = null;
         }
 
-        /// <summary>Дворцовые/административные чанки — для них отдельные наборы дверей, generic-префабы не ставим.</summary>
-        private static bool IsPalaceOrAdmin(string chunkName)
+        /// <summary>Дворцовые чанки — для них отдельный набор дверей (Э2, приоритет 1). ADMIN отложен.</summary>
+        private static bool IsPalace(string chunkName)
         {
             if (string.IsNullOrEmpty(chunkName)) return false;
             string u = chunkName.ToUpperInvariant();
-            return u.Contains("ADMIN") || u.Contains("GLD");
+            return u.Contains("GLD");
         }
 
         /// <summary>
@@ -812,6 +947,7 @@ namespace ProjectC.EditorTools
             {
                 if (r.Source == null) continue;
                 if (r.AssemblyLeaf) continue;
+                if (IsPalace(r.Chunk)) continue;
                 string upper = r.Name.ToUpperInvariant();
                 if (upper.Contains("GATE")) continue;
                 List<DoorRecord> list;

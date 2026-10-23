@@ -5,8 +5,8 @@
 - **Дата старта:** 2026-09-08
 - **Рабочий источник правды:** `docs/world/lights/lighting-plan.md`
 - **Завершённые этапы:** Stage 1 / T-LIGHT02, Stage 4 / T-LIGHT05 и Stage 7 / T-LIGHT08
-- **Текущий этап:** Stage 12 / T-LIGHT14 — случайное мерцание ламп по группе
-- **Статус этапа:** реализовано; Play Mode-приёмка остаётся за пользователем
+- **Текущий этап:** Stage 13 / T-LIGHT15 — живая настройка групп в Play Mode и перенос значений в сцену
+- **Статус этапа:** реализовано; проверка сценария «правка → Stop → сохранение» за пользователем
 - **Статус Unity Editor:** подключён; изменения выполнены через Unity MCP
 
 ## Решение по плану
@@ -60,6 +60,7 @@
 | 10 | T-LIGHT11 | Качество теней солнца (грубая кромка, soft shadows выключены) | ⏳ Не начат — зафиксирован по итогам T-LIGHT10 |
 | 11 | T-LIGHT13 | Расширенное управление группой: переопределения range / type / spot angles / color / color temperature / shadows / bounce | ✅ Реализован; Play Mode-приёмка pending |
 | 12 | T-LIGHT14 | Случайное мерцание каждой лампы группы (`flickerEnabled`, границы Гц, глубина и длительность провала) | ✅ Реализован; Play Mode-приёмка pending |
+| 13 | T-LIGHT15 | Живое применение правок инспектора в Play Mode (`OnValidate` → ревизия) и перенос настроенных групп из Play Mode в редактируемую сцену | ✅ Реализован; сценарий проверяется пользователем |
 
 ## Результат Stage 1 / T-LIGHT02
 
@@ -188,6 +189,21 @@
 - Сцены не изменялись. `check_compile_errors`: `No compile errors`. Play Mode — **NOT RUN**.
 
 **Документ этапа:** `docs/world/lights/T-LIGHT14-lamp-flicker.md`.
+
+## Результат Stage 13 / T-LIGHT15
+
+- `OnValidate()` (`#if UNITY_EDITOR`) поднимает `_settingsRevision` и `_forceApply`; `ApplyIntensity` переприменяет `RestoreBaseline` → `ApplyOverrides` при изменении ревизии, `Update()` вызывает его немедленно (`immediate: true`). Раньше переопределения применялись только при смене группы, поэтому правка в Play Mode ни на что не влияла.
+- `RestoreBaseline`/`ApplyOverrides` стали идемпотентными (запись только при отличии): перетаскивание слайдера не дёргает `Light.type`/`Light.range` у ~1 900 источников каждый кадр.
+- `EnsureGroupData(bool sanitizeFlicker)`: в `OnValidate` — `false` (чтобы набираемый ноль не перебивался дефолтом), в `Awake` — `true`.
+- Новый `Assets/_Project/Editor/Lighting/LightGroupPlayModeCapture.cs` (`[InitializeOnLoad]`): на `ExitingPlayMode` снимает массив `groups` через `EditorJsonUtility` в `SessionState`, на `EnteredEditMode` сравнивает JSON с редакторским объектом и при отличии переносит значения (`Undo.RecordObject`, `SetDirty`, `MarkSceneDirty`). Переносятся только `groups`, не весь компонент.
+- В контроллере появилось editor-only свойство `EditorGroups` для доступа инструмента к приватному массиву.
+- Проверка раунд-трипа JSON через рефлексию приватных `ToJson`/`FromJson`: `groups 4 → 4`, `jsonLen = 7532`, длины кривых сохранены (7 / 3 / 7 / 7), `overrides != null`, `flickerHz 0.5 / 3`.
+- `check_compile_errors`: `No compile errors`. Play Mode-прогон сценария — **NOT RUN**.
+- Сцены не изменялись и не сохранялись (в рабочем дереве остаются правки пользователя).
+
+**Документ этапа:** `docs/world/lights/T-LIGHT15-live-tuning.md`.
+
+**Замечание по данным (не менялось):** у группы `PRIMUM_INLIGHT` кривая `intensityByHour` задана в диапазоне 0…1 по X (3 ключа), а `Evaluate()` читает 0…24 — после первого часа кривая упирается в последний ключ и отдаёт `1.0`, то есть группа горит круглосуточно с множителем 15.
 
 ## Следующий шаг
 

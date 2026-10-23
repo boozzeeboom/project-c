@@ -203,3 +203,25 @@
 - Play Mode и визуальная оценка мерцания — **NOT RUN**, выполняет пользователь.
 
 **Раздельные коммиты:** `1e6f99ac` — `T-LIGHT13`; второй — `T-LIGHT14`.
+
+## Итерация 10 от 2026-10-23
+
+**Задача:** сделать настройку групп живой — правки в инспекторе должны применяться в Play Mode сразу и сохраняться в сцене после остановки.
+**Тикет:** `T-LIGHT15`
+**Файлы:** `AdditionalLightIntensityController.cs`, новый `Assets/_Project/Editor/Lighting/LightGroupPlayModeCapture.cs`
+
+**Причина проблемы:** переопределения применялись только при смене группы (`ReferenceEquals(group, state.appliedGroup)`), а Play Mode работает на копии сцены — правки инспектора и так терялись при остановке. Нужны были оба механизма.
+
+**Изменения:**
+- `OnValidate()` (`#if UNITY_EDITOR`) → `_settingsRevision++`, `_forceApply = true`; `Update()` применяет немедленно при флаге; `LightState.appliedRevision` заставляет переприменить переопределения при любой правке.
+- `RestoreBaseline`/`ApplyOverrides` идемпотентны (пишут только при отличии) — иначе слайдер дёргал бы нативные свойства у ~1 900 источников каждый кадр.
+- `EnsureGroupData(bool sanitizeFlicker)`: `false` в `OnValidate`, `true` в `Awake`.
+- Editor-инструмент: `ExitingPlayMode` → JSON групп в `SessionState`; `EnteredEditMode` → сравнение JSON, `Undo.RecordObject`, `SetDirty`, `MarkSceneDirty`. Переносятся только `groups`; запись сцены — только штатным Ctrl+S.
+- Editor-only свойство `EditorGroups` в контроллере для доступа инструмента.
+
+**Проверки:**
+- `check_compile_errors`: `No compile errors`.
+- Раунд-трип JSON через рефлексию приватных `ToJson`/`FromJson`: 4 → 4 группы, `jsonLen = 7532`, кривые сохранены (7/3/7/7), `overrides != null`.
+- Play Mode-прогон сценария — **NOT RUN**, выполняет пользователь.
+
+**Найдено по пути (не менялось):** у `PRIMUM_INLIGHT` кривая `intensityByHour` задана в 0…1 по X (3 ключа), а `Evaluate()` читает 0…24 → после первого часа кривая отдаёт `1.0`, группа горит круглосуточно при множителе 15.

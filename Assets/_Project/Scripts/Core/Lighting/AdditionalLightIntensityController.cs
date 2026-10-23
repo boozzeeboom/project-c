@@ -192,6 +192,18 @@ namespace ProjectC.Core
         [Tooltip("Groups are evaluated from top to bottom. The first matching group controls a light. Keep the catch-all group last.")]
         [SerializeField] private LightGroup[] groups;
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// Доступ только для editor-инструментов (`LightGroupPlayModeCapture`): перенос настроек
+        /// из Play Mode в редактируемую сцену. В рантайме этого свойства нет.
+        /// </summary>
+        public LightGroup[] EditorGroups
+        {
+            get => groups;
+            set => groups = value;
+        }
+#endif
+
         /// <summary>
         /// Авторские (базовые) значения источника плюс текущее состояние применения.
         /// Базовые значения снимаются один раз при первом обнаружении, поэтому
@@ -213,6 +225,9 @@ namespace ProjectC.Core
 
             /// <summary>Группа, чьи переопределения сейчас применены (null = применены базовые значения).</summary>
             public LightGroup appliedGroup;
+
+            /// <summary>Ревизия настроек на момент применения: правка в инспекторе поднимает ревизию.</summary>
+            public int appliedRevision = -1;
 
             /// <summary>Интенсивность без мерцания — сюда идёт плавный переход.</summary>
             public float smoothedIntensity;
@@ -262,6 +277,11 @@ namespace ProjectC.Core
         private bool _hasAppliedTime;
         private bool _anyFlickerEnabled;
 
+        // Живое применение правок из инспектора. Поля не сериализуются — они отражают
+        // только текущую сессию и не попадают в сцену.
+        private int _settingsRevision;
+        private bool _forceApply;
+
         private void Reset()
         {
             groups = CreateDefaultGroups();
@@ -270,7 +290,7 @@ namespace ProjectC.Core
         private void Awake()
         {
             EnsureDefaultGroups();
-            EnsureGroupData();
+            EnsureGroupData(true);
             _dayNightController = GetComponent<DayNightController>();
         }
 
@@ -278,6 +298,23 @@ namespace ProjectC.Core
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Правка любого поля в инспекторе (в том числе в Play Mode) поднимает ревизию настроек
+        /// и ставит флаг немедленного применения: переопределения группы должны работать как
+        /// живая ручка, а не только после перезапуска Play Mode.
+        /// </summary>
+        private void OnValidate()
+        {
+            // Только EnsureGroupData(false): блок переопределений создаётся для старой сериализации,
+            // но SanitizeFlicker здесь не вызывается — он перебивал бы ноль, пока значение набирают.
+            EnsureGroupData(false);
+            RefreshFlickerFlag();
+            _settingsRevision++;
+            _forceApply = true;
+        }
+#endif
 
         private void Start()
         {
@@ -303,9 +340,13 @@ namespace ProjectC.Core
 
             // Мерцание живёт в собственном времени: при замороженном времени суток
             // (paused day-night) провалы всё равно должны идти каждый кадр.
-            if (timeChanged || _anyFlickerEnabled)
+            // Свежая правка в инспекторе даёт немедленное применение.
+            bool forceApply = _forceApply;
+            _forceApply = false;
+
+            if (forceApply || timeChanged || _anyFlickerEnabled)
             {
-                ApplyIntensity(timeOfDay, false);
+                ApplyIntensity(timeOfDay, forceApply);
             }
         }
 
@@ -410,12 +451,14 @@ namespace ProjectC.Core
 
                 LightGroup group = FindGroup(light);
 
-                if (!ReferenceEquals(group, state.appliedGroup))
+                if (!ReferenceEquals(group, state.appliedGroup) || state.appliedRevision != _settingsRevision)
                 {
-                    // Группа сменилась: сначала вернуть авторские значения, потом применить новые.
+                    // Группа сменилась или настройки правили в инспекторе (в т.ч. в Play Mode):
+                    // сначала вернуть авторские значения, потом применить актуальные переопределения.
                     RestoreBaseline(light, state);
                     ApplyOverrides(light, group);
                     state.appliedGroup = group;
+                    state.appliedRevision = _settingsRevision;
                 }
 
                 float multiplier = group != null ? group.Evaluate(timeOfDay) : 1f;
@@ -545,7 +588,12 @@ namespace ProjectC.Core
             return 1f / Mathf.Max(0.01f, hz);
         }
 
-        /// <summary>Возврат к авторским значениям источника (снимаются при первом обнаружении).</summary>
+        /// <summary>
+        /// Возврат к авторским значениям источника (снимаются при первом обнаружении).
+        /// Запись идёт только если значение реально отличается: правка в инспекторе
+        /// прогоняет этот метод по всем источникам, и лишние обращения к нативному
+        /// свойству (особенно к Light.type) дёргают рендер-пайплайн зря.
+        /// </summary>
         private static void RestoreBaseline(Light light, LightState state)
         {
             if (light == null || state == null)
@@ -553,16 +601,16 @@ namespace ProjectC.Core
                 return;
             }
 
-            light.type = state.baseType;
-            light.range = state.baseRange;
-            light.color = state.baseColor;
-            light.spotAngle = state.baseSpotAngle;
-            light.innerSpotAngle = state.baseInnerSpotAngle;
-            light.useColorTemperature = state.baseUseColorTemperature;
-            light.colorTemperature = state.baseColorTemperature;
-            light.shadows = state.baseShadows;
-            light.shadowStrength = state.baseShadowStrength;
-            light.bounceIntensity = state.baseBounceIntensity;
+            if (light.type != state.baseType) light.type = state.baseType;
+            if (!Mathf.Approximately(light.range, state.baseRange)) light.range = state.baseRange;
+            if (light.color != state.baseColor) light.color = state.baseColor;
+            if (!Mathf.Approximately(light.spotAngle, state.baseSpotAngle)) light.spotAngle = state.baseSpotAngle;
+            if (!Mathf.Approximately(light.innerSpotAngle, state.baseInnerSpotAngle)) light.innerSpotAngle = state.baseInnerSpotAngle;
+            if (light.useColorTemperature != state.baseUseColorTemperature) light.useColorTemperature = state.baseUseColorTemperature;
+            if (!Mathf.Approximately(light.colorTemperature, state.baseColorTemperature)) light.colorTemperature = state.baseColorTemperature;
+            if (light.shadows != state.baseShadows) light.shadows = state.baseShadows;
+            if (!Mathf.Approximately(light.shadowStrength, state.baseShadowStrength)) light.shadowStrength = state.baseShadowStrength;
+            if (!Mathf.Approximately(light.bounceIntensity, state.baseBounceIntensity)) light.bounceIntensity = state.baseBounceIntensity;
         }
 
         /// <summary>Применение включённых переопределений группы. Тип ставится первым: от него зависят углы Spot.</summary>
@@ -575,57 +623,64 @@ namespace ProjectC.Core
 
             LightOverrides o = group.EnsureOverrides();
 
-            if (o.overrideType && o.type != LightType.Directional)
+            if (o.overrideType && o.type != LightType.Directional && light.type != o.type)
             {
                 light.type = o.type;
             }
 
             if (o.overrideRange)
             {
-                light.range = Mathf.Max(0.01f, o.range);
+                float range = Mathf.Max(0.01f, o.range);
+                if (!Mathf.Approximately(light.range, range)) light.range = range;
             }
 
             if (light.type == LightType.Spot)
             {
                 if (o.overrideSpotAngle)
                 {
-                    light.spotAngle = Mathf.Clamp(o.spotAngle, 1f, 179f);
+                    float spotAngle = Mathf.Clamp(o.spotAngle, 1f, 179f);
+                    if (!Mathf.Approximately(light.spotAngle, spotAngle)) light.spotAngle = spotAngle;
                 }
 
                 if (o.overrideInnerSpotAngle)
                 {
-                    light.innerSpotAngle = Mathf.Clamp(o.innerSpotAngle, 0f, Mathf.Max(0f, light.spotAngle - 0.1f));
+                    float innerSpotAngle = Mathf.Clamp(o.innerSpotAngle, 0f, Mathf.Max(0f, light.spotAngle - 0.1f));
+                    if (!Mathf.Approximately(light.innerSpotAngle, innerSpotAngle)) light.innerSpotAngle = innerSpotAngle;
                 }
             }
 
             if (o.overrideColor)
             {
-                light.color = new Color(o.color.r, o.color.g, o.color.b, 1f);
+                Color color = new Color(o.color.r, o.color.g, o.color.b, 1f);
+                if (light.color != color) light.color = color;
             }
 
-            if (o.overrideUseColorTemperature)
+            if (o.overrideUseColorTemperature && light.useColorTemperature != o.useColorTemperature)
             {
                 light.useColorTemperature = o.useColorTemperature;
             }
 
             if (o.overrideColorTemperature)
             {
-                light.colorTemperature = Mathf.Clamp(o.colorTemperature, 1000f, 20000f);
+                float temperature = Mathf.Clamp(o.colorTemperature, 1000f, 20000f);
+                if (!Mathf.Approximately(light.colorTemperature, temperature)) light.colorTemperature = temperature;
             }
 
-            if (o.overrideShadows)
+            if (o.overrideShadows && light.shadows != o.shadows)
             {
                 light.shadows = o.shadows;
             }
 
             if (o.overrideShadowStrength)
             {
-                light.shadowStrength = Mathf.Clamp01(o.shadowStrength);
+                float shadowStrength = Mathf.Clamp01(o.shadowStrength);
+                if (!Mathf.Approximately(light.shadowStrength, shadowStrength)) light.shadowStrength = shadowStrength;
             }
 
             if (o.overrideBounceIntensity)
             {
-                light.bounceIntensity = Mathf.Max(0f, o.bounceIntensity);
+                float bounceIntensity = Mathf.Max(0f, o.bounceIntensity);
+                if (!Mathf.Approximately(light.bounceIntensity, bounceIntensity)) light.bounceIntensity = bounceIntensity;
             }
         }
 
@@ -637,7 +692,7 @@ namespace ProjectC.Core
             }
         }
 
-        private void EnsureGroupData()
+        private void EnsureGroupData(bool sanitizeFlicker)
         {
             if (groups == null)
             {
@@ -646,9 +701,15 @@ namespace ProjectC.Core
 
             foreach (LightGroup group in groups)
             {
-                if (group != null)
+                if (group == null)
                 {
-                    group.EnsureOverrides();
+                    continue;
+                }
+
+                group.EnsureOverrides();
+
+                if (sanitizeFlicker)
+                {
                     group.SanitizeFlicker();
                 }
             }

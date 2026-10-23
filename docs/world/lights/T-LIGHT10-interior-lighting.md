@@ -1,7 +1,7 @@
 # T-LIGHT10 — Освещение интерьеров днём
 
 > **Дата:** 2026-10-23
-> **Статус:** Шаги 1–2 выполнены. Шаг 3 не применён — ожидает визуального теста пользователя.
+> **Статус:** Шаги 1–5 применены и закоммичены. Визуальная приёмка в Play Mode — за пользователем.
 > **Baseline для отката:** коммит `a6710796` (`0.1.100 other changes primum first colliders set outline light and etc`)
 
 ## 1. Проблема
@@ -43,7 +43,7 @@
 
 Поэтому шаг 2 выполнен как **закрепление** уже рабочей схемы, а не её смена: режим `Skybox` фиксируется в коде, а `ambientIntensity` остаётся единственным регулятором заливки (это и есть рычаг шага 3).
 
-## 4. Выполненные изменения (шаги 1–2)
+## 4. Выполненные изменения — шаги 1–2
 
 ### Шаг 1 — `Assets/_Project/Scenes/BootstrapScene.unity`
 
@@ -64,52 +64,110 @@ if (sunLight != null) RenderSettings.sun = sunLight;
 
 **Компиляция:** `No compile errors`.
 
-## 5. Что ожидать после шагов 1–2
+## 5. Выполненные изменения — шаги 3–5
 
-- Появляются тени от солнца; крыши и стены перестают пропускать прямой свет.
-- Общая яркость открытых пространств **снижается** — из сцены убран белый directional `3.0`, который раньше работал вторым «солнцем».
-- Интерьеры перестают получать прямой свет, но **остаются залитыми** скайбокс-ambient (`0.6` в Midday). Контраст «улица / дом» появится частично.
-- Это ожидаемое промежуточное состояние. Полное разделение даёт шаг 3.
+Шаги 3–5 применены разово по запросу пользователя после визуального подтверждения шагов 1–2 («в принципе уже хорошо выглядит, но давай проверим результат»). Смысл — перенести яркость дня с неокклюдированной ambient-заливки на прямой свет и вернуть «сочность» цел-шейдинга через Volume, а не через подъём экспозиции.
 
-## 6. Шаг 3 — не применён, ожидает теста
+### Шаг 3 — `ambientIntensity` по фазовым ассетам
 
-Цель: сделать ambient маленькой управляемой заливкой, а яркость дня перенести на прямой свет. Экспозиция этого не даёт (она поднимает обе стороны одинаково), ambient-заливка — даёт.
+| Ассет | Было | Стало |
+|---|---|---|
+| `MiddayPhase.asset` | 0.60 | **0.20** |
+| `MorningPhase.asset` | 0.40 | **0.12** |
+| `EveningPhase.asset` | 0.45 | **0.15** |
+| `TwilightPhase.asset` | 0.25 | **0.08** |
+| `NightPhase.asset` | 0.10 | **0.05** |
 
-| Ассет | Свойство | Сейчас | Предлагается |
-|---|---|---|---|
-| `MiddayPhase.asset` | `ambientIntensity` | 0.60 | **0.20** |
-| `MorningPhase.asset` | `ambientIntensity` | 0.40 | **0.12** |
-| `EveningPhase.asset` | `ambientIntensity` | 0.45 | **0.15** |
-| `TwilightPhase.asset` | `ambientIntensity` | 0.25 | **0.08** |
-| `NightPhase.asset` | `ambientIntensity` | 0.10 | **0.05** |
-| `MiddayPhase.asset` | `sunIntensity` | 1.0 | **1.3–1.5** |
-| `MorningPhase.asset` | `sunIntensity` | 0.8 | **1.0** |
-| `EveningPhase.asset` | `sunIntensity` | 0.7 | **0.9** |
-| `DayVolumeProfile.asset` | `postExposure` | 1.5 | **0.6–0.8** |
-| `DayVolumeProfile.asset` | `contrast` | 6 | **12–15** |
+Шкала сохранена монотонной и в той же пропорции (~3× вниз). Ambient больше не является основным источником яркости, но остаётся подложкой, поэтому полностью чёрных зон днём нет.
 
-Пункты по `sunIntensity` нарушают прежний запрет `lighting-plan.md` «не трогаем Sun intensity / DayNightController»: без перераспределения direct/ambient задачу «интерьер темнее улицы» в no-bake URP решить нечем.
+### Шаг 4 — `sunIntensity` по фазовым ассетам
 
-## 7. Критерий приёмки (Play Mode, выполняет пользователь)
+| Ассет | Было | Стало |
+|---|---|---|
+| `MiddayPhase.asset` | 1.0 | **1.4** |
+| `MorningPhase.asset` | 0.8 | **1.0** |
+| `EveningPhase.asset` | 0.7 | **0.9** |
+
+`TwilightPhase.sunIntensity` (0.3) и `NightPhase.sunIntensity` (0) не менялись: там ambient уже мал, а прямой свет либо отключён (`castShadows = 0`), либо выключен в рантайме (`DayNightController` гасит `Sun` для фаз с `Night`).
+
+### Шаг 5 — `DayVolumeProfile.asset`, `ColorAdjustments`
+
+| Свойство | Было | Стало |
+|---|---|---|
+| `postExposure` | 1.5 | **0.7** |
+| `contrast` | 6 | **13** |
+| `saturation` | −10 | −10 (не менялось) |
+
+Снижение экспозиции убирает глобальный подъём, который одинаково тянул вверх и улицу, и интерьер; рост контраста возвращает це-шейдингу «сочность» без поднятия интерьеров.
+
+### Проверка применённых значений
+
+Значения прочитаны обратно из загруженных в редактор ассетов (`AssetDatabase.LoadAssetAtPath` → поля `TimeOfDayPhase` и `ColorAdjustments`), не из текста файлов:
+
+```
+MorningPhase  -> sunIntensity=1.0 ambientIntensity=0.12
+MiddayPhase   -> sunIntensity=1.4 ambientIntensity=0.20
+EveningPhase  -> sunIntensity=0.9 ambientIntensity=0.15
+TwilightPhase -> sunIntensity=0.3 ambientIntensity=0.08
+NightPhase    -> sunIntensity=0.0 ambientIntensity=0.05
+ColorAdjustments -> postExposure=0.7 contrast=13 saturation=-10
+```
+
+### Нарушенное ограничение и его причина
+
+`lighting-plan.md` §«Что НЕ делаем» запрещал трогать `Sun intensity`. Шаги 3–4 этот пункт нарушают осознанно: при `ambientMode = Skybox` ambient-заливка неокклюдирована и одинакова внутри и снаружи, поэтому без перераспределения direct/ambient задачу «интерьер темнее улицы» в no-bake URP решить нечем. Запрет пересмотрен только в объёме фазовых ассетов; логика `DayNightController` не менялась.
+
+## 6. Что ожидать после шагов 1–5
+
+- Интерьер без источников света получает только ambient `0.20` от `MiddayPhase` — он заметно темнее улицы, которую освещает прямой свет `1.4`.
+- Из открытого проёма виден световой клин: прямой свет проходит через проём, но не через стены и крыши.
+- Общая яркость открытых пространств сохраняется за счёт роста `sunIntensity` и снижения `postExposure` (−0.8 EV), то есть улица не должна «выключиться».
+- Ночь: ambient `0.05` + `NightVolumeProfile.postExposure = −0.8` ⇒ неосвещённые интерьеры практически чёрные, работает только пул ламп.
+- Контраст `13` усиливает границу «свет / тень», что для це-шейдинга желательно, но может подчеркнуть грубость теней (см. §7).
+
+## 7. Известные ограничения — грубость теней (зафиксировано)
+
+Пользователь подтвердил: **тени работают, но слишком грубые**. Это не регрессия T-LIGHT10, а следствие текущих настроек URP Asset, которые в этом этапе намеренно не менялись. Измерено в `Assets/_Project/Settings/ProjectC_URP.asset`:
+
+| Параметр | Значение | Следствие |
+|---|---|---|
+| `m_MainLightShadowmapResolution` | 2048 | Мало для такой дистанции |
+| `m_ShadowDistance` | 1000 | Огромный диапазон на 2048 px |
+| `m_ShadowCascadeCount` | 2 | Всего два каскада |
+| `m_Cascade2Split` | 0.25 | Каскад 1 ≈ 250 м, каскад 2 ≈ 750 м |
+| `m_SoftShadowsSupported` | 0 | `Soft`-фильтрация выключена в ассете |
+| `m_SoftShadowQuality` | 2 (Medium) | Игнорируется, пока `m_SoftShadowsSupported = 0` |
+| `m_ShadowCascadeBorder` | 0.2 | Широкий блендинг между каскадами |
+| `m_ShadowDepthBias` / `m_ShadowNormalBias` | 1 / 1 | Дефолт; при грубом теневом текселе даёт шаг пикселя |
+
+Плотность: каскад 1 ≈ `250 / 2048 ≈ 0.12 м` на тексель, каскад 2 ≈ `750 / 2048 ≈ 0.37 м` на тексель. При таком текселе зубчатая кромка и «ступени» на стенах неизбежны, а `m_SoftShadowsSupported = 0` не даёт их сгладить — `Sun.shadows = Soft` в сцене и в `DayNightController` фактически упирается в этот флаг.
+
+**Статус:** записано как отдельная задача `T-LIGHT11 — качество теней`, в этом этапе не исправлялось.
+
+## 8. Критерий приёмки (Play Mode, выполняет пользователь)
 
 1. Внутри дома без источников света поверхности заметно темнее улицы.
 2. Из открытого проёма виден световой клин от солнца.
 3. Ночью неосвещённые интерьеры практически чёрные.
-4. Улица днём не выглядит «выключенной» после удаления `DemoKey_Temp`.
+4. Улица днём не выглядит «выключенной» после удаления `DemoKey_Temp` и снижения ambient.
+5. Тени снова видны на открытых пространствах (не регрессировали относительно шагов 1–2).
 
-## 8. Откат
+## 9. Откат
 
-Полный откат шагов 1–2:
-
-```
-git revert <commit T-LIGHT10>
-```
-
-Точечный откат только сцены и скрипта:
+Пошаговый откат (каждый шаг независим):
 
 ```
+# шаги 1–2 (сцена + скрипт)
 git checkout a6710796 -- Assets/_Project/Scenes/BootstrapScene.unity
 git checkout a6710796 -- Assets/_Project/Scripts/Core/DayNight/DayNightController.cs
+
+# шаги 3–5 (фазовые ассеты и Volume)
+git checkout a6710796 -- Assets/_Project/ScriptableObjects/DayNight/MorningPhase.asset
+git checkout a6710796 -- Assets/_Project/ScriptableObjects/DayNight/MiddayPhase.asset
+git checkout a6710796 -- Assets/_Project/ScriptableObjects/DayNight/EveningPhase.asset
+git checkout a6710796 -- Assets/_Project/ScriptableObjects/DayNight/TwilightPhase.asset
+git checkout a6710796 -- Assets/_Project/ScriptableObjects/DayNight/NightPhase.asset
+git checkout a6710796 -- Assets/_Project/ScriptableObjects/DayNight/Volumes/DayVolumeProfile.asset
 ```
 
 `DemoKey_Temp` восстанавливается только вместе с `BootstrapScene.unity` — отдельной копии объекта нет, но его полное YAML-представление сохранено в истории Git (fileID `2082049667` / Light `2082049669` / Transform `2082049670`).

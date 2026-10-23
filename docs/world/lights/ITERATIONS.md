@@ -150,3 +150,27 @@
 - `git diff`: только `BootstrapScene.unity` (−129/+2) и `DayNightController.cs` (+9).
 
 **Не сделано намеренно:** шаг 3 — понижение `ambientIntensity` по фазам, подъём `sunIntensity`, снижение `postExposure` и рост `contrast`. Ждёт визуального теста шагов 1–2 в Play Mode (gate пользователя).
+
+## Итерация 8 от 2026-10-23
+
+**Задача:** Проверить результат шагов 3–5 из `T-LIGHT10` — перенести яркость дня с ambient-заливки на прямой свет и скомпенсировать экспозицию Volume.
+**Тикет:** `T-LIGHT10` (шаги 3–5)
+**Baseline для отката:** `a6710796`
+
+**Изменения:**
+- `MiddayPhase.asset` — `ambientIntensity 0.60 → 0.20`, `sunIntensity 1.0 → 1.4`.
+- `MorningPhase.asset` — `ambientIntensity 0.40 → 0.12`, `sunIntensity 0.8 → 1.0`.
+- `EveningPhase.asset` — `ambientIntensity 0.45 → 0.15`, `sunIntensity 0.7 → 0.9`.
+- `TwilightPhase.asset` — `ambientIntensity 0.25 → 0.08`.
+- `NightPhase.asset` — `ambientIntensity 0.10 → 0.05`.
+- `DayVolumeProfile.asset` — `ColorAdjustments.postExposure 1.5 → 0.7`, `contrast 6 → 13`.
+- Документация: `T-LIGHT10-interior-lighting.md` (переписан, §5 шаги 3–5, §7 ограничение по теням, §9 откат), `lighting-plan.md` (+ `T-LIGHT11`), `implementation-log.md`, `ITERATIONS.md`.
+
+**Проверки:**
+- Значения прочитаны обратно из загруженных ассетов (`AssetDatabase.LoadAssetAtPath` → поля `TimeOfDayPhase` / `ColorAdjustments`) — совпадают.
+- `check_compile_errors`: `No compile errors`.
+- `WorldScene_0_0.unity` не изменялась и не сохранялась.
+
+**Зафиксировано по итогам теста шагов 1–2:** тени солнца работают, но грубые. Причина — URP Asset: `m_ShadowDistance 1000`, 2 каскада, `m_Cascade2Split 0.25`, shadowmap `2048` (≈0.12 м/тексель в каскаде 1, ≈0.37 м — в каскаде 2), `m_SoftShadowsSupported 0`. Вынесено в отдельный тикет `T-LIGHT11`.
+
+**Следующий шаг:** пользователь проверяет в Play Mode критерии §8 `T-LIGHT10`. Отдельно, когда будет воля — `T-LIGHT11` (качество теней). `T-LIGHT04` и массовый bake остаются заблокированными решением по GI.

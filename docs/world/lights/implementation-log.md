@@ -56,7 +56,8 @@
 | 6 | T-LIGHT07 | Emissive материалы | ⏳ Не начат |
 | 7 | T-LIGHT08 | Day/Twilight/Night Volume tuning | ⚠️ Ночная экспозиция исправлена; полный tuning не завершён |
 | 8 | T-LIGHT09 | Глобальный контроль интенсивности дополнительных источников по группам и времени суток | ✅ Реализован; Play Mode-приёмка pending |
-| 9 | T-LIGHT10 | Освещение интерьеров днём: ключевой свет и тени солнца | ⚠️ Шаги 1–2 выполнены; шаг 3 ожидает теста |
+| 9 | T-LIGHT10 | Освещение интерьеров днём: ключевой свет, тени солнца, перераспределение direct/ambient | ✅ Шаги 1–5 выполнены; визуальная приёмка pending |
+| 10 | T-LIGHT11 | Качество теней солнца (грубая кромка, soft shadows выключены) | ⏳ Не начат — зафиксирован по итогам T-LIGHT10 |
 
 ## Результат Stage 1 / T-LIGHT02
 
@@ -129,7 +130,7 @@
 - [ ] Unity-side visual verification — невозможна до запуска Unity Editor.
 - [ ] Play Mode screenshot verification — выполняется только пользователем после запуска проекта.
 
-## Результат Stage 9 / T-LIGHT10 — шаги 1–2
+## Результат Stage 9 / T-LIGHT10 — шаги 1–5
 
 - Baseline для отката: `a6710796`.
 - `Assets/_Project/Scenes/BootstrapScene.unity`:
@@ -141,9 +142,20 @@
 - `WorldScene_0_0.unity` не изменялся; dirty-флаг снят, рабочее дерево по сцене чистое.
 - `check_compile_errors`: `No compile errors`.
 
+**Шаги 3–5 — применены разово по запросу пользователя после визуального подтверждения шагов 1–2:**
+
+- `Assets/_Project/ScriptableObjects/DayNight/MiddayPhase.asset`: `ambientIntensity 0.60 → 0.20`, `sunIntensity 1.0 → 1.4`.
+- `Assets/_Project/ScriptableObjects/DayNight/MorningPhase.asset`: `ambientIntensity 0.40 → 0.12`, `sunIntensity 0.8 → 1.0`.
+- `Assets/_Project/ScriptableObjects/DayNight/EveningPhase.asset`: `ambientIntensity 0.45 → 0.15`, `sunIntensity 0.7 → 0.9`.
+- `Assets/_Project/ScriptableObjects/DayNight/TwilightPhase.asset`: `ambientIntensity 0.25 → 0.08`.
+- `Assets/_Project/ScriptableObjects/DayNight/NightPhase.asset`: `ambientIntensity 0.10 → 0.05`.
+- `Assets/_Project/ScriptableObjects/DayNight/Volumes/DayVolumeProfile.asset`: `ColorAdjustments.postExposure 1.5 → 0.7`, `contrast 6 → 13` (`saturation −10` не менялось).
+- Значения прочитаны обратно из загруженных ассетов через `AssetDatabase.LoadAssetAtPath` — совпадают с применёнными.
+- Смысл: яркость дня перенесена с неокклюдированной скайбокс-заливки на прямой свет. `Sun intensity` тронут осознанно: запрет `lighting-plan.md` пересмотрен в объёме фазовых ассетов, логика `DayNightController` не правилась.
+
 **Отменённое решение:** перевод ambient в `Trilight` отклонён — `RenderSettings.ambientIntensity` действует только в режиме `Skybox`.
 
-**Не сделано намеренно:** шаг 3 (`ambientIntensity` по фазам, `sunIntensity`, `postExposure`/`contrast` в `DayVolumeProfile`) — ждёт визуального теста шагов 1–2.
+**Зафиксированное ограничение (→ `T-LIGHT11`):** тени работают, но грубые. Причина — настройки URP Asset (`m_ShadowDistance 1000`, 2 каскада, `m_Cascade2Split 0.25`, shadowmap `2048`, `m_SoftShadowsSupported 0`): ≈0.12 м/тексель в каскаде 1 и ≈0.37 м/тексель в каскаде 2, soft-фильтрация в ассете выключена. В `T-LIGHT10` не исправлялось.
 
 **Документ этапа:** `docs/world/lights/T-LIGHT10-interior-lighting.md`.
 

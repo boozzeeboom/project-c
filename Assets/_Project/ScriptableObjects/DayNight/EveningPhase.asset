@@ -17,14 +17,14 @@ MonoBehaviour:
   endHour: 19.5
   priority: 0
   sunColor: {r: 1, g: 0.55, b: 0.31, a: 1}
-  sunIntensity: 0.7
+  sunIntensity: 0.9
   sunTemperature: 5500
   castShadows: 1
   sunRotationOffset: {x: 0, y: 0, z: 0}
   ambientSkyColor: {r: 0.78, g: 0.51, b: 0.39, a: 1}
   ambientEquatorColor: {r: 0.78, g: 0.59, b: 0.39, a: 1}
   ambientGroundColor: {r: 0.24, g: 0.16, b: 0.12, a: 1}
-  ambientIntensity: 0.45
+  ambientIntensity: 0.15
   skyHorizonGradient:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 1}

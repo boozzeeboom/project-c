@@ -278,11 +278,11 @@ P1.1 ──► P1.2 ──► P1.3 ──► P2.4 ──► P2.5 ──► P3.6 
 
 ## Что НЕ делаем (out of scope)
 
-- Не трогаем Sun intensity / DayNightController логику
+- ~~Не трогаем Sun intensity / DayNightController логику~~ — пересмотрено в `T-LIGHT10`: `sunIntensity` фазовых ассетов изменён (логика `DayNightController` при этом не правилась).
 - Не добавляем Area Lights (URP 17.5 не поддерживает эффективно)
 - Не переходим на Probe Volumes (избыточно для cel-shaded стиля)
 - Не включаем HDR (сломает текущий тонемаппинг и пост-эффекты)
-- Не меняем shadow resolution (2 cascades × 2048px — достаточно)
+- ~~Не меняем shadow resolution (2 cascades × 2048px — достаточно)~~ — пересмотрено: при `m_ShadowDistance: 1000` и `m_Cascade2Split: 0.25` тень 2048 px даёт ≈0.12 м (каскад 1) и ≈0.37 м (каскад 2) на тексель — визуально грубо. Вынесено в `T-LIGHT11`.
 
 ---
 
@@ -292,14 +292,39 @@ P1.1 ──► P1.2 ──► P1.3 ──► P2.4 ──► P2.5 ──► P3.6 
 
 **Причины (измерено):** `DemoKey_Temp` (Directional, intensity `3`, `shadows = None`) как главный свет URP; `Sun.shadowStrength = 0`; `ambientMode = Skybox` с `ambientIntensity 0.6` (неокклюдированный ambient); отсутствие GI/AO/probes; `DayVolumeProfile.postExposure = +1.5`.
 
-**Статус:** шаги 1–2 выполнены, шаг 3 ожидает визуального теста.
+**Статус:** шаги 1–5 выполнены и закоммичены. Визуальная приёмка в Play Mode — за пользователем.
 
 - Шаг 1: `DemoKey_Temp` удалён из `BootstrapScene`; `Sun`: `m_Shadows.m_Type 0 → 2`, `m_Strength 0 → 0.9`.
 - Шаг 2: в `DayNightController.Initialize()` закреплены `RenderSettings.ambientMode = AmbientMode.Skybox` и `RenderSettings.sun = sunLight`.
-- Шаг 3 (не применён): понижение `ambientIntensity` по фазам, подъём `sunIntensity`, снижение `postExposure`/рост `contrast` в `DayVolumeProfile`.
+- Шаги 3–5: `ambientIntensity` по фазам 0.60/0.40/0.45/0.25/0.10 → 0.20/0.12/0.15/0.08/0.05; `sunIntensity` Midday 1.0 → 1.4, Morning 0.8 → 1.0, Evening 0.7 → 0.9; `DayVolumeProfile` `postExposure` 1.5 → 0.7, `contrast` 6 → 13.
 
 **Отменённое решение:** перевод ambient в `Trilight` отклонён. `RenderSettings.ambientIntensity` документирован как множитель ambient, который Unity генерирует **из скайбокса**, то есть работает только в режиме `Skybox`. В `Trilight` фазовая шкала яркости перестала бы действовать.
 
 **Важное следствие для пункта «Не трогаем Sun intensity»:** шаг 3 без правки `sunIntensity` не даёт нужного контраста, поэтому этот пункт пересмотрен в рамках T-LIGHT10.
 
 **Документ этапа:** `docs/world/lights/T-LIGHT10-interior-lighting.md`.
+
+---
+
+## T-LIGHT11 — качество теней солнца (зафиксировано 2026-10-23)
+
+**Источник задачи:** визуальный тест `T-LIGHT10` в Play Mode. Тени появились и работают, но пользователь оценил их как **слишком грубые**; договорились вернуться к этому отдельно.
+
+**Измеренные параметры** (`Assets/_Project/Settings/ProjectC_URP.asset`):
+
+| Параметр | Значение |
+|---|---|
+| `m_MainLightShadowmapResolution` | 2048 |
+| `m_ShadowDistance` | 1000 |
+| `m_ShadowCascadeCount` | 2 |
+| `m_Cascade2Split` | 0.25 |
+| `m_ShadowCascadeBorder` | 0.2 |
+| `m_ShadowDepthBias` / `m_ShadowNormalBias` | 1 / 1 |
+| `m_SoftShadowsSupported` | 0 |
+| `m_SoftShadowQuality` | 2 (Medium) — игнорируется, пока `m_SoftShadowsSupported = 0` |
+
+**Следствие:** каскад 1 покрывает ≈250 м на 2048 px (≈0.12 м/тексель), каскад 2 ≈750 м (≈0.37 м/тексель). `Sun.shadows = Soft` в сцене и в `DayNightController` упирается в `m_SoftShadowsSupported = 0`, поэтому фильтрация не работает и кромка остаётся ступенчатой. Рост `contrast` до 13 в `T-LIGHT10` эту ступенчатость дополнительно подчёркивает.
+
+**Статус:** не начато, приоритет ниже `T-LIGHT04`/`T-LIGHT06`. В `T-LIGHT10` настройки теней намеренно не менялись.
+
+**Документ задачи:** `docs/world/lights/T-LIGHT10-interior-lighting.md` §7.

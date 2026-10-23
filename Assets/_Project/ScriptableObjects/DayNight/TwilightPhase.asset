@@ -24,7 +24,7 @@ MonoBehaviour:
   ambientSkyColor: {r: 0.16, g: 0.12, b: 0.31, a: 1}
   ambientEquatorColor: {r: 0.31, g: 0.23, b: 0.39, a: 1}
   ambientGroundColor: {r: 0.08, g: 0.06, b: 0.12, a: 1}
-  ambientIntensity: 0.25
+  ambientIntensity: 0.08
   skyHorizonGradient:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 1}

@@ -18,11 +18,13 @@ namespace ProjectC.EditorTools
     ///   - <c>MeshCollider.sharedMesh = исходный меш</c>. PhysX кукает сам меш-ассет, вершины
     ///     читать не нужно, поэтому Read/Write = Off у FBX не мешает (проверено на
     ///     ADMIN_FOR_COLLIDER: 2758 мешей, все нечитаемые, кукаются);
-    ///   - холдер — СОСЕД исходника (тот же parent) с точно такими же
-    ///     localPosition/localRotation/localScale, поэтому мировая рамка совпадает 1:1 при
-    ///     любом масштабе и повороте родителя (у FBX здесь localScale = 100);
+    ///   - холдер — ДОЧЕРНИЙ объект исходника (<c>&lt;Имя&gt;_MC</c> внутри выделенного меша)
+    ///     с единичными local TRS, поэтому мировая рамка совпадает 1:1 при любом масштабе и
+    ///     повороте родителя (у FBX здесь localScale = 100), а в иерархии коллайдер лежит
+    ///     ровно под тем мешем, для которого его собрали (как боксы BuildSettlementColliders);
     ///   - сам объект не трогается: MeshCollider висит на отдельном GameObject
     ///     <c>&lt;Имя&gt;_MC</c>, чтобы коллайдер можно было снести/пересобрать не задев арт.
+    ///     Холдеры прежних сборок (сосед того же parent) находятся и пересобираются в дочерний.
     ///
     /// Ограничения PhysX, из-за которых есть выпуклый режим:
     ///   - concave (convex = false) нельзя на non-kinematic Rigidbody → для кораблей
@@ -35,7 +37,7 @@ namespace ProjectC.EditorTools
     /// </summary>
     public static class ExactMeshColliderTool
     {
-        /// <summary>Суффикс объекта-холдера рядом с исходником.</summary>
+        /// <summary>Суффикс объекта-холдера ВНУТРИ исходника.</summary>
         public const string HolderSuffix = "_MC";
 
         /// <summary>Жёсткий лимит Unity на число треугольников выпуклого MeshCollider.</summary>
@@ -140,7 +142,7 @@ namespace ProjectC.EditorTools
                 if (existed)
                 {
                     var old = holder.GetComponent<MeshCollider>();
-                    if (old != null && old.sharedMesh == mesh && old.convex == convex && SameLocal(holder, src))
+                    if (old != null && old.sharedMesh == mesh && old.convex == convex && SameWorldFrame(holder, src))
                     {
                         skipped++;
                         log.AppendLine($"  '{go.name}': точный холдер уже на месте — пропуск.");
@@ -155,10 +157,10 @@ namespace ProjectC.EditorTools
                 h.isStatic = go.isStatic;
 
                 Transform ht = h.transform;
-                ht.SetParent(src.parent, false);
-                ht.localPosition = src.localPosition;
-                ht.localRotation = src.localRotation;
-                ht.localScale = src.localScale;
+                ht.SetParent(src, false);        // под выбранный меш, а не под главный FBX
+                ht.localPosition = Vector3.zero;
+                ht.localRotation = Quaternion.identity;
+                ht.localScale = Vector3.one;
 
                 var mc = h.AddComponent<MeshCollider>();
                 mc.sharedMesh = mesh;
@@ -183,7 +185,10 @@ namespace ProjectC.EditorTools
                       $"треугольников в коллайдерах={tris}.\n" + log);
         }
 
-        /// <summary>Холдер-сосед с именем &lt;Имя&gt;_MC (для корневых объектов — поиск по корням сцены).</summary>
+        /// <summary>
+        /// Холдер по имени &lt;Имя&gt;_MC: сначала ДОЧЕРНИЙ (текущая схема), затем СОСЕД (прежние сборки),
+        /// затем корень сцены. Если выделили сам холдер — считаем, что нашли его.
+        /// </summary>
         private static Transform FindHolder(Transform src)
         {
             string name = src.name + HolderSuffix;
@@ -191,21 +196,47 @@ namespace ProjectC.EditorTools
             // Выделили сам холдер — считаем, что нашли.
             if (src.name.EndsWith(HolderSuffix)) name = src.name;
 
-            Transform parent = src.parent;
-            if (parent != null) return parent.Find(name);
+            Transform child = src.Find(name);
+            if (child != null) return child;
 
+            Transform parent = src.parent;
+            if (parent != null)
+            {
+                Transform sibling = parent.Find(name);
+                if (sibling != null) return sibling;
+            }
+
+            return FindInScene(src, name);
+        }
+
+        /// <summary>
+        /// Последний рубеж: холдер уже унесён в <c>&lt;Имя&gt;_COLLIDER</c> или в другую ветку сцены.
+        /// Ищем по имени И МИРОВОЙ ПОЗИЦИИ: по одному имени нельзя — одинаковых имён в городе много,
+        /// и инструмент снёс бы чужой холдер.
+        /// </summary>
+        private static Transform FindInScene(Transform src, string name)
+        {
             var scene = src.gameObject.scene;
             if (!scene.IsValid()) return null;
+
             foreach (GameObject root in scene.GetRootGameObjects())
-                if (root.name == name) return root.transform;
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                    if (t != src && t.name == name && (t.position - src.position).sqrMagnitude < 1e-6f)
+                        return t;
+
             return null;
         }
 
-        private static bool SameLocal(Transform a, Transform b)
+        /// <summary>Совпадение МИРОВОЙ рамки холдера и исходника (единичные local TRS холдера).</summary>
+        private static bool SameWorldFrame(Transform a, Transform b)
         {
-            return (a.localPosition - b.localPosition).sqrMagnitude < 1e-10f
-                && Quaternion.Angle(a.localRotation, b.localRotation) < 0.01f
-                && (a.localScale - b.localScale).sqrMagnitude < 1e-10f;
+            if ((a.position - b.position).sqrMagnitude > 1e-6f) return false;
+            if (Quaternion.Angle(a.rotation, b.rotation) > 0.01f) return false;
+
+            Vector3 sa = a.lossyScale, sb = b.lossyScale;
+            return Mathf.Abs(sa.x - sb.x) <= 1e-4f * Mathf.Max(1f, Mathf.Abs(sb.x))
+                && Mathf.Abs(sa.y - sb.y) <= 1e-4f * Mathf.Max(1f, Mathf.Abs(sb.y))
+                && Mathf.Abs(sa.z - sb.z) <= 1e-4f * Mathf.Max(1f, Mathf.Abs(sb.z));
         }
 
         /// <summary>Число треугольников без чтения вершин (работает и на non-readable FBX-мешах).</summary>

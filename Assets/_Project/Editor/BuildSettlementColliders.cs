@@ -1202,6 +1202,222 @@ namespace ProjectC.EditorTools
             }
         }
 
+        /// <summary>
+        /// Нарезка по фильтрам — только посчитать. В отличие от DryRunSlicesDirect режет не «всё
+        /// выделенное», а только меши, прошедшие настройки: includeTokens / excludeTokens /
+        /// minWorldSize / capsuleTokens / sliceTokens.
+        /// </summary>
+        public static Report DryRunSlicesFiltered(GameObject root, Settings s)
+        {
+            var report = new Report();
+            if (root == null || s == null) return report;
+            CollectSlicesFiltered(root, s, report, true, FindOldGeneration(root));
+            return report;
+        }
+
+        /// <summary>
+        /// Нарезка по фильтрам — построить. Каждый холдер кладётся РЕБЁНКОМ своего исходного меша
+        /// (identity local TRS), а не в '&lt;Root&gt;_Colliders'. Фильтры действуют как в обычном Build:
+        /// исключения по именам, include-выборка, минимальный размер. capsuleTokens — капсула
+        /// вместо нарезки; sliceTokens (если заданы) — режутся только совпадения, остальное
+        /// одиночным боксом. Повторный запуск идемпотентен: холдеры этого меша сносятся заново.
+        /// </summary>
+        public static Report BuildSlicesFiltered(GameObject root, Settings s)
+        {
+            var report = new Report();
+            if (root == null)
+            {
+                Debug.LogError("[SettlementColliders] Корень не задан.");
+                return report;
+            }
+            if (s == null) s = DefaultSettings();
+            if (s.sliceStep <= 0f)
+            {
+                Debug.LogError("[SettlementColliders] Шаг нарезки должен быть > 0.");
+                return report;
+            }
+            if (root.name.EndsWith(GeneratedSuffix, StringComparison.Ordinal))
+            {
+                Debug.LogWarning($"[SettlementColliders] '{root.name}' — корень генерации, выбери исходник.");
+                return report;
+            }
+
+            Undo.IncrementCurrentGroup();
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName($"Slice by filter: {root.name}");
+
+            CollectSlicesFiltered(root, s, report, false, FindOldGeneration(root));
+
+            EditorSceneManager.MarkSceneDirty(root.scene);
+            Undo.CollapseUndoOperations(undoGroup);
+
+            Debug.Log($"[SettlementColliders] SLICE-FILTER '{root.name}': boxes={report.created}, " +
+                      $"capsules={report.capsules}, slicedMeshes={report.slicedMeshes} (unread={report.unreadSlices}), " +
+                      $"skipped(noMesh={report.skippedNoMesh}, disabled={report.skippedDisabled}, " +
+                      $"name={report.skippedName}, notIncluded={report.skippedInclude}, tiny={report.skippedTiny}). " +
+                      "Холдеры — дети исходных мешей.");
+            if (report.skippedNameSample.Count > 0)
+                Debug.Log("[SettlementColliders] Примеры пропущенных по имени: " +
+                          string.Join(", ", report.skippedNameSample.ToArray()));
+            return report;
+        }
+
+        /// <summary>Старая генерация '&lt;Root&gt;_Colliders' — её меши не трогаем.</summary>
+        private static Transform FindOldGeneration(GameObject root)
+        {
+            return root == null ? null : root.transform.Find(GeneratedSuffixRootName(root));
+        }
+
+        /// <summary>
+        /// Общий проход нарезки по фильтрам: обход всего поддерева корня, применение настроек и
+        /// создание холдеров детьми исходных мешей (parent = трансформ меша).
+        /// </summary>
+        private static void CollectSlicesFiltered(GameObject root, Settings s, Report report, bool dryOnly, Transform skipSubtree)
+        {
+            string[] exclude = SplitTokens(s.excludeTokens);
+            string[] include = SplitTokens(s.includeTokens);
+            bool useInclude = include.Length > 0;
+            string[] capsuleToks = SplitTokens(s.capsuleTokens);
+            string[] sliceToks = SplitTokens(s.sliceTokens);
+            bool markStatic = !s.shipMode;
+
+            var filters = root.GetComponentsInChildren<MeshFilter>(includeInactive: true);
+            foreach (var f in filters)
+            {
+                if (f == null) continue;
+                GameObject go = f.gameObject;
+
+                // Чужая (старая) генерация — не исходник.
+                if (skipSubtree != null && (go == skipSubtree.gameObject || go.transform.IsChildOf(skipSubtree)))
+                    continue;
+
+                if (f.sharedMesh == null)
+                {
+                    report.skippedNoMesh++;
+                    continue;
+                }
+
+                if (s.skipInactive && !go.activeInHierarchy)
+                {
+                    report.skippedDisabled++;
+                    continue;
+                }
+
+                var r = go.GetComponent<MeshRenderer>();
+                if (r != null && !r.enabled)
+                {
+                    report.skippedDisabled++;
+                    continue;
+                }
+
+                string upper = go.name.ToUpperInvariant();
+
+                if (useInclude && !MatchesAny(upper, include))
+                {
+                    report.skippedInclude++;
+                    continue;
+                }
+
+                if (MatchesAny(upper, exclude))
+                {
+                    report.skippedName++;
+                    if (report.skippedNameSample.Count < 10)
+                        report.skippedNameSample.Add(go.name);
+                    continue;
+                }
+
+                Vector3 worldSize = r != null
+                    ? r.bounds.size
+                    : ScaledSize(f.sharedMesh.bounds.size, AbsVec(go.transform.lossyScale));
+
+                if (MaxComponent(worldSize) < s.minWorldSize)
+                {
+                    report.skippedTiny++;
+                    continue;
+                }
+
+                Vector3 worldPerLocal = AbsVec(go.transform.lossyScale);
+                var it = new Item { source = go, mesh = f.sharedMesh, renderer = r, worldSize = worldSize };
+                string baseName = HolderNameFor(root.transform, go.transform);
+
+                // Круглые бары — капсула вдоль длинной оси, нарезка им не нужна.
+                if (ShouldCapsule(f.sharedMesh, worldPerLocal, capsuleToks, upper))
+                {
+                    if (dryOnly)
+                    {
+                        report.capsules++;
+                        continue;
+                    }
+                    PurgeChildHolders(go.transform, baseName);
+                    AddCapsule(root, go.transform, baseName, it, markStatic);
+                    report.capsules++;
+                    continue;
+                }
+
+                // Нарезка: sliceTokens пусто = режем всё принятое фильтром, иначе только совпадения.
+                List<SliceBox> slices = null;
+                if (sliceToks.Length == 0 || MatchesAny(upper, sliceToks))
+                {
+                    int longAxis = LongestAxis(f.sharedMesh.bounds.size);
+                    float per = worldPerLocal[longAxis] < Epsilon ? 1f : worldPerLocal[longAxis];
+                    slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per,
+                        Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal, out bool unreadMesh);
+                    if (unreadMesh) report.unreadSlices++;
+                }
+
+                if (slices != null && slices.Count > 0)
+                {
+                    if (dryOnly)
+                    {
+                        report.created += slices.Count;
+                        report.slicedMeshes++;
+                        continue;
+                    }
+                    PurgeChildHolders(go.transform, baseName);
+                    foreach (var sl in slices)
+                    {
+                        var sb = new Bounds();
+                        sb.SetMinMax(sl.min, sl.max);
+                        AddFittedBox(root, go.transform, SliceHolderName(baseName, sl), it, sb, s.minThickness, markStatic);
+                        report.created++;
+                    }
+                    report.slicedMeshes++;
+                }
+                else
+                {
+                    // Меш без данных для нарезки (или не в sliceTokens) — честный одиночный бокс.
+                    if (dryOnly)
+                    {
+                        report.created++;
+                        continue;
+                    }
+                    PurgeChildHolders(go.transform, baseName);
+                    AddFittedBox(root, go.transform, baseName, it, f.sharedMesh.bounds, s.minThickness, markStatic);
+                    report.created++;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Снести холдеры-дети этого меша от прошлого запуска: одиночный бокс/капсулу по имени
+        /// и куски '&lt;base&gt;_S##'. Чужие объекты под мешем не трогаем.
+        /// </summary>
+        private static void PurgeChildHolders(Transform source, string baseName)
+        {
+            if (source == null || string.IsNullOrEmpty(baseName)) return;
+            string slicePrefix = baseName + "_S";
+            var doomed = new List<Transform>(4);
+            for (int i = 0; i < source.childCount; i++)
+            {
+                Transform c = source.GetChild(i);
+                if (c == null) continue;
+                if (c.name == baseName || c.name.StartsWith(slicePrefix, StringComparison.Ordinal))
+                    doomed.Add(c);
+            }
+            foreach (var t in doomed)
+                if (t != null) Undo.DestroyObjectImmediate(t.gameObject);
+        }
+
         /// <summary>Группа для холдера (переиспользовать/создать), либо сам genRoot.</summary>
         private static Transform ResolveGroup(GameObject root, Transform genRoot,
             Dictionary<string, Transform> groups, Settings s, GameObject source)
@@ -1248,7 +1464,8 @@ namespace ProjectC.EditorTools
         /// Индексы собираются по ВСЕМ треугольным сабмешам: Mesh.triangles отдаёт только нулевой.
         /// false — данных нет совсем (тогда нарезка невозможна и остаётся габаритный бокс).
         /// </summary>
-        private static bool TryReadMeshData(Mesh mesh, out Vector3[] verts, out int[] tris)
+        /// <summary>Данные меша общие с другими редакторскими инструментами (см. StairCollidersTool).</summary>
+        internal static bool TryReadMeshData(Mesh mesh, out Vector3[] verts, out int[] tris)
         {
             verts = null;
             tris = null;
@@ -2268,13 +2485,29 @@ namespace ProjectC.EditorTools
     /// </summary>
     public class BuildSettlementCollidersWindow : EditorWindow
     {
+        private const string PrefsKey = "ProjectC.SettlementColliders.Window";
+
         private BuildSettlementColliders.Settings settings = BuildSettlementColliders.DefaultSettings();
         private float mergeGap = 0.1f;
         private float mergeAlign = 0.02f;
         private string mergeTokens = "";
         private int mergeScopeIdx = 0;
         private bool exactConvex;
+        private float stairThickness = StairCollidersTool.DefaultThickness;
         private Vector2 scroll;
+
+        // Состояние секций (фолдауты). Переживает перекомпиляцию/закрытие окна через EditorPrefs.
+        private bool foldFilters = true;
+        private bool foldShapes;
+        private bool foldBuild = true;
+        private bool foldSlice = true;
+        private bool foldExact;
+        private bool foldStairs;
+        private bool foldCollect;
+        private bool foldMerge;
+
+        private static GUIStyle sectionStyle;
+
         private static readonly string[] MergeScopeLabels =
         {
             "Плиты и стены (раздельно)",
@@ -2283,12 +2516,175 @@ namespace ProjectC.EditorTools
             "Всё вместе"
         };
 
-        [MenuItem("Tools/ProjectC/Build Settlement Colliders...")]
+        /// <summary>Что сохраняем между сессиями. Этим же пользуются хоткеи, когда окно закрыто.</summary>
+        [Serializable]
+        private class Persisted
+        {
+            public BuildSettlementColliders.Settings settings = BuildSettlementColliders.DefaultSettings();
+            public float mergeGap = 0.1f;
+            public float mergeAlign = 0.02f;
+            public string mergeTokens = "";
+            public int mergeScopeIdx;
+            public bool exactConvex;
+            public float stairThickness = StairCollidersTool.DefaultThickness;
+            public bool foldFilters = true;
+            public bool foldShapes;
+            public bool foldBuild = true;
+            public bool foldSlice = true;
+            public bool foldExact;
+            public bool foldStairs;
+            public bool foldCollect;
+            public bool foldMerge;
+        }
+
+        private static GUIStyle SectionStyle
+        {
+            get
+            {
+                if (sectionStyle == null)
+                    sectionStyle = new GUIStyle(EditorStyles.foldout) { fontStyle = FontStyle.Bold };
+                return sectionStyle;
+            }
+        }
+
+        /// <summary>Заголовок-фолдаут секции. Возвращает «раскрыта ли» и двигает indent.</summary>
+        private static bool BeginSection(ref bool state, string title)
+        {
+            EditorGUILayout.Space(6f);
+            state = EditorGUILayout.Foldout(state, title, true, SectionStyle);
+            if (state) EditorGUI.indentLevel++;
+            return state;
+        }
+
+        private static void EndSection(bool open)
+        {
+            if (open) EditorGUI.indentLevel--;
+        }
+
+        private void OnEnable()
+        {
+            Persisted p = LoadPersisted();
+            if (p.settings != null) settings = p.settings;
+            mergeGap = p.mergeGap;
+            mergeAlign = p.mergeAlign;
+            mergeTokens = p.mergeTokens ?? "";
+            mergeScopeIdx = Mathf.Clamp(p.mergeScopeIdx, 0, MergeScopeLabels.Length - 1);
+            exactConvex = p.exactConvex;
+            stairThickness = p.stairThickness;
+            foldFilters = p.foldFilters;
+            foldShapes = p.foldShapes;
+            foldBuild = p.foldBuild;
+            foldSlice = p.foldSlice;
+            foldExact = p.foldExact;
+            foldStairs = p.foldStairs;
+            foldCollect = p.foldCollect;
+            foldMerge = p.foldMerge;
+        }
+
+        private void OnDisable()
+        {
+            SavePersisted();
+        }
+
+        private void SavePersisted()
+        {
+            var p = new Persisted
+            {
+                settings = settings,
+                mergeGap = mergeGap,
+                mergeAlign = mergeAlign,
+                mergeTokens = mergeTokens,
+                mergeScopeIdx = mergeScopeIdx,
+                exactConvex = exactConvex,
+                stairThickness = stairThickness,
+                foldFilters = foldFilters,
+                foldShapes = foldShapes,
+                foldBuild = foldBuild,
+                foldSlice = foldSlice,
+                foldExact = foldExact,
+                foldStairs = foldStairs,
+                foldCollect = foldCollect,
+                foldMerge = foldMerge
+            };
+            EditorPrefs.SetString(PrefsKey, JsonUtility.ToJson(p));
+        }
+
+        private static Persisted LoadPersisted()
+        {
+            string json = EditorPrefs.GetString(PrefsKey, string.Empty);
+            if (!string.IsNullOrEmpty(json))
+            {
+                try
+                {
+                    var p = JsonUtility.FromJson<Persisted>(json);
+                    if (p != null)
+                    {
+                        if (p.settings == null) p.settings = BuildSettlementColliders.DefaultSettings();
+                        return p;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Битый json (сменилась схема) — молча падаем на дефолты.
+                }
+            }
+            return new Persisted();
+        }
+
+        [MenuItem("Tools/ProjectC/Build Settlement Colliders...", false, 90)]
         public static void Open()
         {
             var w = GetWindow<BuildSettlementCollidersWindow>("Settlement Colliders");
             w.minSize = new Vector2(380f, 660f);
             w.Show();
+        }
+
+        /// <summary>
+        /// Хоткей: обычная сборка боксов по выделению (Ctrl/Cmd + Alt + B).
+        /// Настройки — последние сохранённые окном; include-фильтр игнорируется (обычный проход).
+        /// </summary>
+        [MenuItem("Tools/ProjectC/Build Boxes on Selection %&b", false, 100)]
+        private static void HotkeyBuildBoxes()
+        {
+            var roots = Selection.gameObjects;
+            if (roots == null || roots.Length == 0)
+            {
+                Debug.LogWarning("[SettlementColliders] Хоткей: ничего не выделено — выдели корень в Hierarchy.");
+                return;
+            }
+            Persisted p = LoadPersisted();
+            var s = WithoutInclude(p.settings);
+            foreach (var root in roots)
+            {
+                if (root == null) continue;
+                BuildSettlementColliders.BuildFor(root, s);
+            }
+        }
+
+        /// <summary>
+        /// Хоткей: нарезка выделения с шагом sliceStep (Ctrl/Cmd + Alt + S). Фильтры игнорируются —
+        /// режется всё выделенное (тот же смысл, что у кнопки «НАРЕЗАТЬ С ШАГОМ»).
+        /// </summary>
+        [MenuItem("Tools/ProjectC/Slice Selection by Step %&s", false, 101)]
+        private static void HotkeySliceSelection()
+        {
+            var roots = Selection.gameObjects;
+            if (roots == null || roots.Length == 0)
+            {
+                Debug.LogWarning("[SettlementColliders] Хоткей: ничего не выделено — выдели корень в Hierarchy.");
+                return;
+            }
+            Persisted p = LoadPersisted();
+            foreach (var root in roots)
+            {
+                if (root == null) continue;
+                if (root.name.EndsWith(BuildSettlementColliders.GeneratedSuffix))
+                {
+                    Debug.LogWarning($"[SettlementColliders] '{root.name}' — корень генерации, выбери исходник.");
+                    continue;
+                }
+                BuildSettlementColliders.BuildSlicesDirect(root, p.settings);
+            }
         }
 
         /// <summary>Копия настроек без include-фильтра — для обычного прохода по всем мешам.</summary>
@@ -2316,11 +2712,13 @@ namespace ProjectC.EditorTools
             // Shift-выделение: прогоняем каждый корень по очереди (логи в Console — по каждому).
             GameObject[] roots = Selection.gameObjects;
             if (roots == null) roots = new GameObject[0];
+            bool hasRoots = roots.Length > 0;
 
             scroll = EditorGUILayout.BeginScrollView(scroll);
 
-            EditorGUILayout.LabelField("Корни в Hierarchy (можно несколько через Shift)", EditorStyles.boldLabel);
-            if (roots.Length == 0)
+            // ── Шапка: что выделено (всегда на виду) ─────────────────────────────────
+            EditorGUILayout.LabelField("Выделение в Hierarchy (можно несколько через Shift)", EditorStyles.boldLabel);
+            if (!hasRoots)
             {
                 EditorGUILayout.HelpBox("Выдели корневой GameObject поселения (например Project-C_primum_farm_x_1_2_GameReady), затем вернись сюда. Через Shift можно выбрать несколько — тулза прогонит каждый по очереди.", MessageType.Info);
             }
@@ -2341,164 +2739,260 @@ namespace ProjectC.EditorTools
                 EditorGUILayout.LabelField($"Корней: {roots.Length} ({string.Join(", ", names.ToArray())}{more}), MeshFilter всего: {total}");
             }
 
-            EditorGUILayout.Space();
-            settings.minWorldSize = EditorGUILayout.FloatField("Мин. размер меша (м)", settings.minWorldSize);
-            settings.minThickness = EditorGUILayout.FloatField("Мин. толщина бокса (м)", settings.minThickness);
-            EditorGUILayout.LabelField("Исключить по имени (через запятую)");
-            settings.excludeTokens = EditorGUILayout.TextArea(settings.excludeTokens, GUILayout.MinHeight(54f));
-            settings.groupByTopLevel = EditorGUILayout.Toggle("Группировать по зданиям", settings.groupByTopLevel);
-            settings.skipInactive = EditorGUILayout.Toggle("Пропускать выключенные", settings.skipInactive);
-            settings.repairThinBoxes = EditorGUILayout.Toggle("Чинить тонкие боксы", settings.repairThinBoxes);
-            settings.shipMode = EditorGUILayout.Toggle("Режим корабля (не static)", settings.shipMode);
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Некоробочные формы", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Капсулы — круглые бары (трубы, арматура) вдоль длинной оси. Нарезка — кривые меши кусками по вершинам.", EditorStyles.miniLabel);
-            settings.capsuleTokens = EditorGUILayout.TextField("Капсулы по именам", settings.capsuleTokens ?? "");
-            settings.sliceTokens = EditorGUILayout.TextField("Нарезать по именам", settings.sliceTokens ?? "");
-            settings.sliceStep = EditorGUILayout.FloatField("Шаг нарезки (м)", settings.sliceStep);
-            settings.sliceAdaptTol = EditorGUILayout.FloatField("Допуск слияния кусков (м)", settings.sliceAdaptTol);
-
-            EditorGUILayout.Space();
-            EditorGUI.BeginDisabledGroup(roots.Length == 0);
-            if (GUILayout.Button("Dry Run (только посчитать)", GUILayout.Height(30f)))
+            // ── 1. Пороги и фильтры ─────────────────────────────────────────────────
+            bool openFilters = BeginSection(ref foldFilters, "1. Пороги и фильтры");
+            if (openFilters)
             {
-                // Обычный режим: include-фильтр игнорируется, считаются все значимые меши.
-                foreach (var root in roots)
-                {
-                    if (root == null) continue;
-                    var r = BuildSettlementColliders.DryRun(root, WithoutInclude(settings));
-                    Debug.Log($"[SettlementColliders] DRY '{root.name}': created={r.created}, capsules={r.capsules}, " +
-                              $"slicedMeshes={r.slicedMeshes} (unread={r.unreadSlices}), " +
-                              $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
-                              $"name={r.skippedName}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
-                }
+                settings.minWorldSize = EditorGUILayout.FloatField("Мин. размер меша (м)", settings.minWorldSize);
+                settings.minThickness = EditorGUILayout.FloatField("Мин. толщина бокса (м)", settings.minThickness);
+                settings.groupByTopLevel = EditorGUILayout.Toggle("Группировать по зданиям", settings.groupByTopLevel);
+                settings.skipInactive = EditorGUILayout.Toggle("Пропускать выключенные", settings.skipInactive);
+                settings.repairThinBoxes = EditorGUILayout.Toggle("Чинить тонкие боксы", settings.repairThinBoxes);
+                settings.shipMode = EditorGUILayout.Toggle("Режим корабля (не static)", settings.shipMode);
+
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField("Исключить по имени (через запятую)", EditorStyles.boldLabel);
+                settings.excludeTokens = EditorGUILayout.TextArea(settings.excludeTokens ?? "", GUILayout.MinHeight(54f));
+
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField("Только эти имена (через запятую)", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Пусто = фильтра по именам нет. Напр.: TABLE, CHAIR. Действует на «только совпадения» и на нарезку по фильтру.", EditorStyles.miniLabel);
+                settings.includeTokens = EditorGUILayout.TextArea(settings.includeTokens ?? "", GUILayout.MinHeight(36f));
             }
-            if (GUILayout.Button("Build (построить коллайдеры)", GUILayout.Height(34f)))
-            {
-                foreach (var root in roots)
-                {
-                    if (root == null) continue;
-                    BuildSettlementColliders.BuildFor(root, WithoutInclude(settings));
-                }
-            }
-            EditorGUI.EndDisabledGroup();
+            EndSection(openFilters);
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Только эти имена (через запятую)", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Пусто = обычный режим выше. Напр.: TABLE, CHAIR — боксы только там, где имя содержит токен.", EditorStyles.miniLabel);
-            settings.includeTokens = EditorGUILayout.TextArea(settings.includeTokens ?? "", GUILayout.MinHeight(36f));
-
-            EditorGUI.BeginDisabledGroup(roots.Length == 0 || string.IsNullOrWhiteSpace(settings.includeTokens));
-            if (GUILayout.Button("Dry Run (только совпадения)", GUILayout.Height(30f)))
+            // ── 2. Некоробочные формы ───────────────────────────────────────────────
+            bool openShapes = BeginSection(ref foldShapes, "2. Некоробочные формы (капсулы / нарезка)");
+            if (openShapes)
             {
-                foreach (var root in roots)
-                {
-                    if (root == null) continue;
-                    var r = BuildSettlementColliders.DryRunAppend(root, settings);
-                    Debug.Log($"[SettlementColliders] DRY-APPEND '{root.name}' [{settings.includeTokens}]: toAdd={r.created}, " +
-                              $"capsules={r.capsules}, slicedMeshes={r.slicedMeshes}, " +
-                              $"alreadyExists={r.skippedExists}, " +
-                              $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
-                              $"name={r.skippedName}, notIncluded={r.skippedInclude}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
-                }
+                EditorGUILayout.LabelField("Капсулы — круглые бары (трубы, арматура) вдоль длинной оси. Нарезка — кривые меши кусками по вершинам.", EditorStyles.miniLabel);
+                settings.capsuleTokens = EditorGUILayout.TextField("Капсулы по именам", settings.capsuleTokens ?? "");
+                settings.sliceTokens = EditorGUILayout.TextField("Нарезать только эти имена", settings.sliceTokens ?? "");
+                settings.sliceStep = EditorGUILayout.FloatField("Шаг нарезки (м)", settings.sliceStep);
+                settings.sliceAdaptTol = EditorGUILayout.FloatField("Допуск слияния кусков (м)", settings.sliceAdaptTol);
             }
-            if (GUILayout.Button("Build (только совпадения, добавить)", GUILayout.Height(34f)))
-            {
-                foreach (var root in roots)
-                {
-                    if (root == null) continue;
-                    BuildSettlementColliders.BuildAppend(root, settings);
-                }
-            }
-            EditorGUI.EndDisabledGroup();
+            EndSection(openShapes);
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Точечная нарезка", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Режет всё выделенное с шагом выше. Имена копировать не надо — фильтры игнорируются.", EditorStyles.miniLabel);
-            EditorGUI.BeginDisabledGroup(roots.Length == 0);
-            if (GUILayout.Button("Dry Run (нарезка)", GUILayout.Height(30f)))
+            // ── 3. Сборка боксов ────────────────────────────────────────────────────
+            bool openBuild = BeginSection(ref foldBuild, "3. Сборка боксов (<Root>_Colliders)");
+            if (openBuild)
             {
-                foreach (var root in roots)
+                EditorGUI.BeginDisabledGroup(!hasRoots);
+                if (GUILayout.Button("Dry Run (только посчитать)", GUILayout.Height(30f)))
                 {
-                    if (root == null) continue;
-                    if (root.name.EndsWith(BuildSettlementColliders.GeneratedSuffix))
+                    // Обычный режим: include-фильтр игнорируется, считаются все значимые меши.
+                    foreach (var root in roots)
                     {
-                        Debug.LogWarning($"[SettlementColliders] '{root.name}' — корень генерации, выбери исходник.");
-                        continue;
+                        if (root == null) continue;
+                        var r = BuildSettlementColliders.DryRun(root, WithoutInclude(settings));
+                        Debug.Log($"[SettlementColliders] DRY '{root.name}': created={r.created}, capsules={r.capsules}, " +
+                                  $"slicedMeshes={r.slicedMeshes} (unread={r.unreadSlices}), " +
+                                  $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
+                                  $"name={r.skippedName}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
                     }
-                    var r = BuildSettlementColliders.DryRunSlicesDirect(root, settings);
-                    Debug.Log($"[SettlementColliders] DRY-SLICE '{root.name}': boxes={r.created}, " +
-                              $"slicedMeshes={r.slicedMeshes} (unread={r.unreadSlices}), " +
-                              $"alreadyExists={r.skippedExists}, " +
-                              $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}.");
                 }
-            }
-            if (GUILayout.Button("НАРЕЗАТЬ С ШАГОМ", GUILayout.Height(34f)))
-            {
-                foreach (var root in roots)
+                if (GUILayout.Button("Build (построить коллайдеры)", GUILayout.Height(34f)))
                 {
-                    if (root == null) continue;
-                    if (root.name.EndsWith(BuildSettlementColliders.GeneratedSuffix))
+                    foreach (var root in roots)
                     {
-                        Debug.LogWarning($"[SettlementColliders] '{root.name}' — корень генерации, выбери исходник.");
-                        continue;
+                        if (root == null) continue;
+                        BuildSettlementColliders.BuildFor(root, WithoutInclude(settings));
                     }
-                    BuildSettlementColliders.BuildSlicesDirect(root, settings);
                 }
-            }
-            EditorGUI.EndDisabledGroup();
+                EditorGUI.EndDisabledGroup();
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Точный меш (MeshCollider) — не боксы", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Выделенному объекту (полусфера, арка, лестница) ставится отдельный холдер '<Имя>_MC' с MeshCollider на том же меше. Дерево не обходится, фильтры игнорируются.", EditorStyles.miniLabel);
-            exactConvex = EditorGUILayout.ToggleLeft(
-                $"Выпуклый (convex=true) — для кораблей / под Rigidbody, до {ExactMeshColliderTool.ConvexTriangleLimit} тр.",
-                exactConvex);
-            if (GUILayout.Button("ТОЧНЫЙ МЕШ (MeshCollider)", GUILayout.Height(34f)))
-                ExactMeshColliderTool.BuildForSelection(exactConvex);
-            if (GUILayout.Button("Снести точные меши (выделение)", GUILayout.Height(22f)))
-                ExactMeshColliderTool.RemoveForSelection();
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Объединить соседние боксы", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Склеивает боксы встык/внахлёст в пределах зазора — из 1000 плиток пола делает 1. Только внутри генерации.", EditorStyles.miniLabel);
-            mergeGap = EditorGUILayout.FloatField("Макс. зазор шва (м)", mergeGap);
-            mergeAlign = EditorGUILayout.FloatField("Точность совпадения граней (м)", mergeAlign);
-            mergeScopeIdx = EditorGUILayout.Popup("Что клеить", mergeScopeIdx, MergeScopeLabels);
-            EditorGUILayout.LabelField("Только эти имена (пусто = все сгенерированные)");
-            mergeTokens = EditorGUILayout.TextArea(mergeTokens ?? "", GUILayout.MinHeight(28f));
-
-            EditorGUI.BeginDisabledGroup(roots.Length == 0);
-            if (GUILayout.Button("Dry Run (слияние)", GUILayout.Height(30f)))
-            {
-                var scope = (BuildSettlementColliders.MergeScope)mergeScopeIdx;
-                foreach (var root in roots)
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField("Добавить только совпадения include-фильтра (раздел 1)", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Существующие боксы не дублируются (alreadyExists), исключения тоже действуют.", EditorStyles.miniLabel);
+                EditorGUI.BeginDisabledGroup(!hasRoots || string.IsNullOrWhiteSpace(settings.includeTokens));
+                if (GUILayout.Button("Dry Run (только совпадения)", GUILayout.Height(30f)))
                 {
-                    if (root == null) continue;
-                    var r = BuildSettlementColliders.DryRunMerge(root, mergeGap, mergeAlign, mergeTokens, scope);
-                    Debug.Log($"[SettlementColliders] DRY-MERGE '{root.name}': {r.before} → {r.after} " +
-                              $"(clusters={r.clusters}, phantom={r.phantomM3:F2} м³, " +
-                              $"gap={Mathf.Max(0f, mergeGap):F2} м, align={Mathf.Max(0f, mergeAlign):F3} м, " +
-                              $"mode={MergeScopeLabels[mergeScopeIdx]}" +
-                              (r.skippedAxis > 0 ? $", offAxis={r.skippedAxis}" : "") + "). " +
-                              $"Группы: parents={r.parents}, oriGroups={r.oriGroups}, " +
-                              $"largest={r.largestGroup}, lonely={r.lonely}."
-                              + (string.IsNullOrEmpty(r.sample) ? "" : " Пример: " + r.sample));
+                    foreach (var root in roots)
+                    {
+                        if (root == null) continue;
+                        var r = BuildSettlementColliders.DryRunAppend(root, settings);
+                        Debug.Log($"[SettlementColliders] DRY-APPEND '{root.name}' [{settings.includeTokens}]: toAdd={r.created}, " +
+                                  $"capsules={r.capsules}, slicedMeshes={r.slicedMeshes}, " +
+                                  $"alreadyExists={r.skippedExists}, " +
+                                  $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
+                                  $"name={r.skippedName}, notIncluded={r.skippedInclude}, tiny={r.skippedTiny}, thinToRepair={r.repaired}.");
+                    }
                 }
-            }
-            if (GUILayout.Button("Merge (склеить соседние)", GUILayout.Height(34f)))
-            {
-                var scope = (BuildSettlementColliders.MergeScope)mergeScopeIdx;
-                foreach (var root in roots)
+                if (GUILayout.Button("Build (только совпадения, добавить)", GUILayout.Height(34f)))
                 {
-                    if (root == null) continue;
-                    BuildSettlementColliders.MergeBoxes(root, mergeGap, mergeAlign, mergeTokens, scope);
+                    foreach (var root in roots)
+                    {
+                        if (root == null) continue;
+                        BuildSettlementColliders.BuildAppend(root, settings);
+                    }
                 }
+                EditorGUI.EndDisabledGroup();
             }
-            EditorGUI.EndDisabledGroup();
+            EndSection(openBuild);
 
-            EditorGUILayout.Space();
+            // ── 4. Нарезка по шагу ────────────────────────────────────────────────
+            bool openSlice = BeginSection(ref foldSlice, "4. Нарезка по шагу");
+            if (openSlice)
+            {
+                EditorGUILayout.LabelField($"Шаг: {settings.sliceStep:F2} м, допуск: {settings.sliceAdaptTol:F2} м (меняются в разделе 2).", EditorStyles.miniLabel);
+
+                EditorGUILayout.LabelField("Всё выделенное — фильтры игнорируются", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Режет всё выделенное с шагом выше. Имена копировать не надо.", EditorStyles.miniLabel);
+                EditorGUI.BeginDisabledGroup(!hasRoots);
+                if (GUILayout.Button("Dry Run (нарезка)", GUILayout.Height(28f)))
+                {
+                    foreach (var root in roots)
+                    {
+                        if (root == null) continue;
+                        if (root.name.EndsWith(BuildSettlementColliders.GeneratedSuffix))
+                        {
+                            Debug.LogWarning($"[SettlementColliders] '{root.name}' — корень генерации, выбери исходник.");
+                            continue;
+                        }
+                        var r = BuildSettlementColliders.DryRunSlicesDirect(root, settings);
+                        Debug.Log($"[SettlementColliders] DRY-SLICE '{root.name}': boxes={r.created}, " +
+                                  $"slicedMeshes={r.slicedMeshes} (unread={r.unreadSlices}), " +
+                                  $"alreadyExists={r.skippedExists}, " +
+                                  $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}.");
+                    }
+                }
+                if (GUILayout.Button("НАРЕЗАТЬ С ШАГОМ", GUILayout.Height(30f)))
+                {
+                    foreach (var root in roots)
+                    {
+                        if (root == null) continue;
+                        if (root.name.EndsWith(BuildSettlementColliders.GeneratedSuffix))
+                        {
+                            Debug.LogWarning($"[SettlementColliders] '{root.name}' — корень генерации, выбери исходник.");
+                            continue;
+                        }
+                        BuildSettlementColliders.BuildSlicesDirect(root, settings);
+                    }
+                }
+                EditorGUI.EndDisabledGroup();
+
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField("По фильтрам — холдеры под исходными мешами", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Обходит всё поддерево корня и применяет разделы 1–2: include / exclude / мин. размер. Круглые бары из capsuleTokens — капсула; нарезка — по sliceTokens (пусто = режем всё принятое). Каждый холдер становится ребёнком своего меша, без '<Root>_Colliders'.", EditorStyles.miniLabel);
+                EditorGUI.BeginDisabledGroup(!hasRoots);
+                if (GUILayout.Button("Dry Run (по фильтру)", GUILayout.Height(28f)))
+                {
+                    foreach (var root in roots)
+                    {
+                        if (root == null) continue;
+                        var r = BuildSettlementColliders.DryRunSlicesFiltered(root, settings);
+                        Debug.Log($"[SettlementColliders] DRY-SLICE-FILTER '{root.name}': boxes={r.created}, " +
+                                  $"capsules={r.capsules}, slicedMeshes={r.slicedMeshes} (unread={r.unreadSlices}), " +
+                                  $"noMesh={r.skippedNoMesh}, disabled={r.skippedDisabled}, " +
+                                  $"name={r.skippedName}, notIncluded={r.skippedInclude}, tiny={r.skippedTiny}.");
+                    }
+                }
+                if (GUILayout.Button("НАРЕЗАТЬ С ШАГОМ ПО ФИЛЬТРУ", GUILayout.Height(30f)))
+                {
+                    foreach (var root in roots)
+                    {
+                        if (root == null) continue;
+                        BuildSettlementColliders.BuildSlicesFiltered(root, settings);
+                    }
+                }
+                EditorGUI.EndDisabledGroup();
+            }
+            EndSection(openSlice);
+
+            // ── 5. Точный меш ────────────────────────────────────────────────────────
+            bool openExact = BeginSection(ref foldExact, "5. Точный меш (MeshCollider)");
+            if (openExact)
+            {
+                EditorGUILayout.LabelField("Выделенному объекту (полусфера, арка, лестница) ставится отдельный холдер '<Имя>_MC' с MeshCollider на том же меше. Дерево не обходится, фильтры игнорируются.", EditorStyles.miniLabel);
+                exactConvex = EditorGUILayout.ToggleLeft(
+                    $"Выпуклый (convex=true) — для кораблей / под Rigidbody, до {ExactMeshColliderTool.ConvexTriangleLimit} тр.",
+                    exactConvex);
+                if (GUILayout.Button("ТОЧНЫЙ МЕШ (MeshCollider)", GUILayout.Height(34f)))
+                    ExactMeshColliderTool.BuildForSelection(exactConvex);
+                if (GUILayout.Button("Снести точные меши (выделение)", GUILayout.Height(22f)))
+                    ExactMeshColliderTool.RemoveForSelection();
+            }
+            EndSection(openExact);
+
+            // ── 6. Лестницы ──────────────────────────────────────────────────────────
+            bool openStairs = BeginSection(ref foldStairs, "6. Лестницы (STAIR)");
+            if (openStairs)
+            {
+                EditorGUILayout.LabelField("1) один марш → один наклонный бокс. 2) две ступени → наклонный бокс между ними. 3) по ступеням → ряд блоков на каждую проступь. Дети не обходятся.", EditorStyles.miniLabel);
+                stairThickness = EditorGUILayout.FloatField("Толщина бокса марша (м)", stairThickness);
+                if (GUILayout.Button("ЛЕСТНИЦА 1 — марш → наклонный бокс", GUILayout.Height(28f)))
+                {
+                    StairCollidersTool.Thickness = stairThickness;
+                    StairCollidersTool.BuildFlightRamp();
+                }
+                if (GUILayout.Button("ЛЕСТНИЦА 2 — две ступени → наклонный бокс", GUILayout.Height(28f)))
+                {
+                    StairCollidersTool.Thickness = stairThickness;
+                    StairCollidersTool.BuildBetweenTwoSteps();
+                }
+                if (GUILayout.Button("ЛЕСТНИЦА 3 — по ступеням → ряд блоков", GUILayout.Height(28f)))
+                {
+                    StairCollidersTool.Thickness = stairThickness;
+                    StairCollidersTool.BuildPerStepBlocks();
+                }
+                if (GUILayout.Button("Снести STAIR (выделение)", GUILayout.Height(22f)))
+                    StairCollidersTool.RemoveForSelection();
+            }
+            EndSection(openStairs);
+
+            // ── 7. Собрать коллайдеры в группу ──────────────────────────────────────
+            bool openCollect = BeginSection(ref foldCollect, "7. Собрать коллайдеры в группу");
+            if (openCollect)
+            {
+                EditorGUILayout.LabelField("Выдели главный FBX: все коллайдерные ветки (холдеры _MC / _STAIR / BC_* / *_Generated) со всех дочерних объектов переезжают в '<Имя>_COLLIDER' под этот FBX. Мировые позиции сохраняются, арт не трогается.", EditorStyles.miniLabel);
+                if (GUILayout.Button($"СОБРАТЬ В <ИМЯ>{CollectCollidersTool.GroupSuffix} — по выделению", GUILayout.Height(30f)))
+                    CollectCollidersTool.CollectForSelection();
+            }
+            EndSection(openCollect);
+
+            // ── 8. Слияние соседних боксов ──────────────────────────────────────────
+            bool openMerge = BeginSection(ref foldMerge, "8. Объединить соседние боксы");
+            if (openMerge)
+            {
+                EditorGUILayout.LabelField("Склеивает боксы встык/внахлёст в пределах зазора — из 1000 плиток пола делает 1. Только внутри генерации.", EditorStyles.miniLabel);
+                mergeGap = EditorGUILayout.FloatField("Макс. зазор шва (м)", mergeGap);
+                mergeAlign = EditorGUILayout.FloatField("Точность совпадения граней (м)", mergeAlign);
+                mergeScopeIdx = EditorGUILayout.Popup("Что клеить", mergeScopeIdx, MergeScopeLabels);
+                EditorGUILayout.LabelField("Только эти имена (пусто = все сгенерированные)");
+                mergeTokens = EditorGUILayout.TextArea(mergeTokens ?? "", GUILayout.MinHeight(28f));
+
+                EditorGUI.BeginDisabledGroup(!hasRoots);
+                if (GUILayout.Button("Dry Run (слияние)", GUILayout.Height(30f)))
+                {
+                    var scope = (BuildSettlementColliders.MergeScope)mergeScopeIdx;
+                    foreach (var root in roots)
+                    {
+                        if (root == null) continue;
+                        var r = BuildSettlementColliders.DryRunMerge(root, mergeGap, mergeAlign, mergeTokens, scope);
+                        Debug.Log($"[SettlementColliders] DRY-MERGE '{root.name}': {r.before} → {r.after} " +
+                                  $"(clusters={r.clusters}, phantom={r.phantomM3:F2} м³, " +
+                                  $"gap={Mathf.Max(0f, mergeGap):F2} м, align={Mathf.Max(0f, mergeAlign):F3} м, " +
+                                  $"mode={MergeScopeLabels[mergeScopeIdx]}" +
+                                  (r.skippedAxis > 0 ? $", offAxis={r.skippedAxis}" : "") + "). " +
+                                  $"Группы: parents={r.parents}, oriGroups={r.oriGroups}, " +
+                                  $"largest={r.largestGroup}, lonely={r.lonely}."
+                                  + (string.IsNullOrEmpty(r.sample) ? "" : " Пример: " + r.sample));
+                    }
+                }
+                if (GUILayout.Button("Merge (склеить соседние)", GUILayout.Height(34f)))
+                {
+                    var scope = (BuildSettlementColliders.MergeScope)mergeScopeIdx;
+                    foreach (var root in roots)
+                    {
+                        if (root == null) continue;
+                        BuildSettlementColliders.MergeBoxes(root, mergeGap, mergeAlign, mergeTokens, scope);
+                    }
+                }
+                EditorGUI.EndDisabledGroup();
+            }
+            EndSection(openMerge);
+
+            EditorGUILayout.Space(10f);
             EditorGUILayout.HelpBox(
                 "Бокс на каждый значимый меш. Мелочь (болты) режется размером и именами. " +
                 "Тонкие палубы утолщаются вниз до мин. толщины — топ заподлицо, корабли не проваливаются. " +
@@ -2506,9 +3000,11 @@ namespace ProjectC.EditorTools
                 "Круглые бары (PIPE, REBAR) — капсулы вдоль длинной оси. Кривые меши — нарезка кусками по вершинам. " +
                 "Сужающийся нос (Deck_Main_Bow) — нарезкой вдоль оси + режим корабля (не static), иначе углы бокса будут цеплять. " +
                 "Повторный Build пересобирает '<Root>_Colliders' с нуля. " +
-                "Режим 'только совпадения': в поле ниже укажи TABLE (или TABLE, CHAIR) — отдельный старт " +
-                "ДОБАВИТ боксы только там, где имя содержит токен, существующие не трогает и не дублирует " +
-                "(повторный запуск пропускает уже закрытые: alreadyExists); исключения сверху при этом тоже действуют.",
+                "Режим 'только совпадения': в разделе 1 укажи TABLE (или TABLE, CHAIR) — отдельный старт " +
+                "ДОБАВИТ боксы только там, где имя содержит токен, существующие не трогает и не дублирует. " +
+                "Нарезка по фильтру кладёт холдеры детьми исходных мешей (без '<Root>_Colliders').\n\n" +
+                "Хоткеи: Ctrl+Alt+B — Build боксов по выделению, Ctrl+Alt+S — нарезка выделения с шагом. " +
+                "Берут последние сохранённые настройки окна.",
                 MessageType.None);
 
             EditorGUILayout.EndScrollView();

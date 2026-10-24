@@ -77,6 +77,11 @@ docs/Character/
 │   ├── Battle/                           (боевые навыки: дизайн, skill tree, VFX)
 │   └── real-time-combat/                 (real-time combat engine: MVP + NPC enemies)
 │
+├── TextureRebake/                        (T-CHAR-UVRB: переразвёртка UV + перепечка текстур AI-персонажей)
+│   ├── README.md
+│   ├── 01_ALGORITHM.md
+│   └── ITERATIONS.md
+│
 └── ThirdpersonCamera/                    (камера от 3-го лица)
     └── CHANGELOG.md
 

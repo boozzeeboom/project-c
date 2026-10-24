@@ -40,7 +40,7 @@ Material:
     m_Floats:
     - _Chalk_Amount: 0.45
     - _Chalk_Matte: 0.3
-    - _Chalk_Scale: 2.2
+    - _Chalk_Scale: 108.09
     - _Chalk_Seed: 0
     - _Edge_Amount: 0.5
     - _Edge_Gloss: 0.3
@@ -48,13 +48,13 @@ Material:
     - _Edge_Width: 0.18
     - _Flow_Amount: 0.3
     - _Flow_Bump: 3.62
-    - _Flow_Scale: 3.5
+    - _Flow_Scale: 84.33
     - _Flow_Seed: 0
     - _Gloss: 0
     - _Grain_Bump: 0.45
     - _Grain_Detail: 2
     - _Grain_Roughness: 0.3
-    - _Grain_Scale: 90
+    - _Grain_Scale: 93.1
     - _Grain_Seed: 0
     - _QueueControl: 1
     - _QueueOffset: 0
@@ -65,7 +65,7 @@ Material:
     - _Scruff_Bump: 0.12
     - _Scruff_Detail: 2.5
     - _Scruff_Matte: 0.35
-    - _Scruff_Scale: 14
+    - _Scruff_Scale: 183.4
     - _Scruff_Seed: 0
     - _Scruff_Stretch: 5
     - _Scruff_Threshold: 0.72
@@ -76,7 +76,7 @@ Material:
     - _Smoothness: 0.55
     - _Smudge_Amount: 0.35
     - _Smudge_Gloss: 0.25
-    - _Smudge_Scale: 5
+    - _Smudge_Scale: 300.46
     - _Smudge_Seed: 0
     m_Colors:
     - _Chalk_Color: {r: 0.88, g: 0.87, b: 0.85, a: 1}

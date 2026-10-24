@@ -38,7 +38,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Leaf_Scale: 20.5
+    - _Mass_Scale: 5.1
+    - _Twig_Amount: 1
+    - _Twig_Bump: 0
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

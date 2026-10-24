@@ -1,0 +1,1020 @@
+FILES: 858
+  ART_BIBLE.md                                                            16460B  Art Bible: Project C — The Clouds
+  CLOUD_VISUALISER\ALGORITHM.md                                            5143B  Cloud Generator v4.0 — Cascade with All Fixes
+  CLOUD_VISUALISER\ARCHITECTURE.md                                        12517B  Cloud Generator v5.4 — Multi-Layer Architecture
+  CLOUD_VISUALISER\DEVELOPER_GUIDE.md                                     13644B  Cloud Visualizer - Developer Guide
+  CLOUD_VISUALISER\EXPORT_SYSTEM.md                                       20396B  Cloud Generator Export System v7.0
+  CLOUD_VISUALISER\FIXES.md                                               44262B  Cascade v3.x — Problems & Fixes
+  CLOUD_VISUALISER\INTEGRATION\README.md                                   3485B  Session Startup Brief — Cloud Generator v8.x Unity Integration
+  CLOUD_VISUALISER\INTEGRATION\SESSION_START_PROMPT.md                     3679B  Cloud Generator v8.x — Unity Integration Start Prompt
+  CLOUD_VISUALISER\INTEGRATION\SUBAGENT_FIX_SPHERE_COUNT.md                1781B  Subagent Prompt: Fix sphereCountScale Bug in CloudGenerator.cs
+  CLOUD_VISUALISER\INTEGRATION\SUBAGENT_PARENT_MESH.md                     9239B  Subagent Prompt: Implement Parent Mesh System for Unity Cloud Generator
+  CLOUD_VISUALISER\README.md                                               5613B  Cloud Generator 3D Visualizer
+  CLOUD_VISUALISER\REMESH_ANALYSIS.md                                     14520B  REMESH FEATURE ANALYSIS
+  CLOUD_VISUALISER\RESEARCH.md                                            15215B  Realistic 3D Cloud Generation Research
+  CLOUD_VISUALISER\RESEARCH_CASCADE.md                                    20910B  Research: Hierarchical Sphere-Based Procedural Cloud Generation (Cascade Approach)
+  CLOUD_VISUALISER\RESEARCH_MATH.md                                       27798B  MATHEMATICS OF SPHERE-BASED PROCEDURAL CLOUD SHAPE GENERATION
+  CLOUD_VISUALISER\SESSION_STARTUP_BRIEF.md                                9866B  Cloud Generator v8.x — Unity Integration Brief
+  CLOUD_VISUALISER\UnrealPlugin\CloudGenerator\README.md                   4508B  Cloud Generator Plugin for Unreal Engine 5
+  CLOUD_VISUALISER\UnrealPlugin\CloudGenerator\README_BP.md                2544B  Cloud Generator - Blueprint Only Plugin v6.1
+  COLABORATION.md                                                          6680B  🤝 Project C: The Clouds — Collaboration Guide
+  Character\00_README.md                                                  10698B  Character Progression — каталог документации
+  Character\2026-06-26-npc-p2-visual-config-chunk-integration.md          18192B  NPC P2 — Visual Config + Chunk Integration (T-NPC-05 + T-NPC-09)
+  Character\CHANGELOG.md                                                  17334B  CHANGELOG — Character Progression
+  Character\Character-menu\CHARACTER_WINDOW_INVENTORY_TAB_REFACTOR.md     10173B  CharacterWindow — Inventory tab + full split-out refactor
+  Character\Character-menu\recon_visual_bugs.md                            2228B  CharacterWindow — Visual Bug Report (2026-06-05)
+  Character\Character-menu\recon_visual_fix_plan.md                       10760B  CharacterWindow — Visual Fix Plan (2026-06-05)
+  Character\Character-menu\sub_inventory-tab\00_OVERVIEW.md               12329B  CharacterWindow → Таб "Инвентарь" — Обзор
+  Character\Character-menu\sub_inventory-tab\10_DESIGN.md                 10948B  Inventory Sub-System — Design (UXML/USS/Classes)
+  Character\Character-menu\sub_inventory-tab\20_IMPLEMENTATION_PLAN.md    17928B  Inventory Sub-System — Implementation Plan (Phases 0-7)
+  Character\Character-menu\sub_inventory-tab\30_VERIFICATION.md            6997B  Inventory Sub-System — Verification (manual smoke checklist)
+  Character\Character-menu\sub_inventory-tab\40_CHANGES_SUMMARY.md        22048B  Inventory Sub-System — Changes Summary (diff)
+  Character\Character-menu\sub_inventory-tab\50_TESTING_GUIDE.md          11690B  Inventory Sub-System — Testing Guide
+  Character\Character-menu\sub_inventory-tab\60_KNOWN_ISSUES.md           21539B  Inventory Sub-System — Known Issues & TODO
+  Character\Character-menu\sub_inventory-tab\70_CHEST_PICKUP_TESTS.md     13249B  Chest + Pickup — Manual Test Guide (R3-005)
+  Character\Character-menu\sub_inventory-tab\80_DROP_TESTS.md              5603B  Drop в мир — Manual Test Guide (Phase 10, 2026-06-05)
+  Character\Character-menu\sub_inventory-tab\INVENTORY_V2_DROP_DESIGN.md   7840B  Inventory v2 — Drop в мир (Phase 10 Design, 2026-06-05)
+  Character\Character-menu\sub_inventory-tab\INVENTORY_V2_REFACTOR.md     37001B  Inventory v2 Refactor — единый server-authoritative инвентарь + TAB/P-таб
+  Character\Character-menu\sub_inventory-tab\ITERATIONS.md                 1455B  Итерации — sub_inventory-tab
+  Character\Character-menu\sub_inventory-tab\bugfix_null_itemname_crash.md   1627B  Bugfix: NRE при сериализации InventoryItemDto (itemName = null)
+  Character\Customisation\06_RIG_SWAP_REFACTOR_PLAN.md                     8466B  План рефакторинга: замена модели тела целиком (humanoid)
+  Character\Customisation\07_RIG_SWAP_IMPLEMENTATION.md                    7335B  Реализация: замена модели тела целиком (humanoid)
+  Character\Customisation\08_WHOLE_MODEL_SWAP.md                           4892B  08 — Whole-Model Swap (замена M/Ж модели целиком)
+  Character\Customisation\CHANGELOG.md                                    10908B  Changelog — Character Customisation
+  Character\Customisation\ITERATIONS.md                                    4821B  Iterations — Character Customisation
+  Character\EquipmentVisual\02_CHARACTER_APPLIER.md                       16951B  CharacterEquipmentVisualApplier — подробный разбор
+  Character\EquipmentVisual\EquipmentVisual_BUGS_TICKETS.md                9019B  Equipment Visual System — связанные баг-тикеты
+  Character\IMPLEMENTATION_CHARACTER_LOCAL_SKINNING_EXPERIMENT.md          9586B  T-JITTER18 — local skinning на настоящем персонаже в игровом билде
+  Character\INVESTIGATION_CHARACTER_MICRO_JITTER.md                       25140B  Investigation: Микротряска персонажа при стоянии (Character Micro-Jitter)
+  Character\INVESTIGATION_CHARACTER_MICRO_JITTER_SOLUTIONS_RESEARCH.md    27530B  Character Micro-Jitter: актуальная архитектура, готовые решения и ограниченный план
+  Character\INVESTIGATION_GHOST_PLAYER_CLONE.md                           21174B  Ghost Player Clone — Investigation, Root Cause & 4-Layer Fix
+  Character\Knowledges\01_KNOWLEDGE_SYSTEM_ANALYSIS.md                    11948B  Система Знаний (Knowledge System) — Анализ и План Интеграции
+  Character\Knowledges\02_KNOWLEDGE_SYSTEM_DEEP_ANALYSIS.md               32973B  Система Знаний (Knowledge System) — Глубокий Технический Анализ
+  Character\Knowledges\03_KNOWLEDGE_INTEGRATION_LOG.md                     2223B  Knowledge System — Integration Log
+  Character\Knowledges\04_KNOWLEDGE_SYSTEM_V2_DEEP_ANALYSIS.md            38971B  Система Знаний V2 — Глубокий Анализ Расширения на Все Подсистемы
+  Character\Knowledges\05_KNOWLEDGE_SYSTEM_V2_RESEARCH_REVIEW.md          37368B  Система Знаний v2 — Финальный ресерч-ревью (сверка с 04 + план внедрения + UI-дизайн)
+  Character\Knowledges\06_KNOWLEDGE_SYSTEM_V2_IMPLEMENTATION.md            4377B  Knowledge System v2 — Реализация (Фаза A: данные и сервер)
+  Character\Knowledges\07_KNOWLEDGE_SYSTEM_V3_INTEGRATION_PLAN.md         32628B  Knowledge System V3 — План интеграции
+  Character\Knowledges\08_KNOWLEDGE_SYSTEM_V3_INTEGRATION_LOG.md           4323B  Knowledge System V3 — Лог интеграции
+  Character\Knowledges\ITERATIONS.md                                       9867B  Knowledge System — Iterations
+  Character\Skills\Battle\00_README.md                                    14584B  Battle Skills — боевые навыки поверх существующей skill tree
+  Character\Skills\Battle\01_ANALYSIS.md                                  21940B  Analysis — что есть / чего нет / расхождения
+  Character\Skills\Battle\02_LORE.md                                      15776B  Lore — оружие, броня, антигравий, мезий
+  Character\Skills\Battle\10_DESIGN.md                                    39825B  Design — архитектура combat-навыков
+  Character\Skills\Battle\20_SKILL_TREES.md                               24042B  Skill Trees — 5 дисциплин combat-навыков
+  Character\Skills\Battle\30_PITFALLS_AND_OPEN_QUESTIONS.md               29029B  Pitfalls & Open Questions
+  Character\Skills\Battle\40_REFERENCES.md                                18579B  References — file:line index
+  Character\Skills\Battle\50_UI_DESIGN_PLAN.md                            12200B  Battle Skills UI — Design & Implementation Plan
+  Character\Skills\Battle\60_SKILL_TREE_WINDOW_DESIGN.md                  20280B  SkillTreeWindow — Design & Implementation Plan
+  Character\Skills\Battle\70_SKILL_TREE_2D_GRAPH.md                        5832B  Skill Tree 2D Graph — Implementation Plan
+  Character\Skills\Battle\80_T-INP-08_SKILL_ANIMATION.md                   6582B  T-INP-08: Skill Animation via AnimatorOverrideController
+  Character\Skills\Battle\85_VFX_DESIGN.md                                33674B  VFX Design — Визуальные эффекты скилов
+  Character\Skills\Battle\ERPR_collaboration.md                           16067B  ERPR × Project C — анализ коллаборации
+  Character\Skills\Battle\IMPLEMENTATION_PLAN_2026.md                     52552B  Battle Skills — Implementation Plan (2026-07-XX)
+  Character\Skills\CUSTOM_EDITOR_DESIGN.md                                 4746B  Custom Editor для SkillNodeConfig — Дизайн и руководство
+  Character\Skills\INP06_AOE_DEBUG_VISUALIZATION.md                        5006B  T-INP-06 — AOE Debug Visualization (Gizmos + Debug.AOE runtime toggle)
+  Character\Skills\INP08_ANIMATOR_CLIP_PIPELINE.md                         7054B  T-INP-08 — Skill Animation via AnimatorOverrideController (data-driven, designer-friendly)
+  Character\Skills\ITERATIONS.md                                           2473B  ITERATIONS — Items/Weapons Refactoring
+  Character\Skills\SKILLS_NEXT_STEPS_T-CB_LOG.md                          20444B  Skills/Battle — Next Steps Log (T-INP / T-CB series)
+  Character\Skills\real-time-combat\00_README.md                          17827B  Real-Time Combat Engine — пеший бой + extensible на ship combat
+  Character\Skills\real-time-combat\01_ANALYSIS.md                        19406B  Analysis — что есть / чего нет / Sequencing / Ship-combat extensibility
+  Character\Skills\real-time-combat\02_LORE.md                            12207B  Lore — пеший vs корабельный бой в мире Project C
+  Character\Skills\real-time-combat\100_SKILL_REFACTOR_PLAN.md            16806B  План рефакторинга: Боевые дисциплины + Инспектор навыков
+  Character\Skills\real-time-combat\100_TARGET_HIGHLIGHT_AND_SWITCHING.md  15408B  Подсвечивание цели, переключение Q/E и приоритет урона
+  Character\Skills\real-time-combat\10_DESIGN.md                          45017B  Design — архитектура Real-Time Combat Engine (anti-restrictive)
+  Character\Skills\real-time-combat\110_DAMAGE_NUMBERS.md                 12955B  Всплывающие цифры урона (Damage Numbers)
+  Character\Skills\real-time-combat\11_NPC_SPAWNER_CONFIG_EDITOR.md        3377B  NpcSpawnerConfig Custom Editor
+  Character\Skills\real-time-combat\20_TECHNICAL.md                       19374B  Technical — фактическая реализация Real-Time Combat Engine (v0.1.4, 2026-06-25)
+  Character\Skills\real-time-combat\30_PITFALLS_AND_OPEN_QUESTIONS.md     24075B  Pitfalls & Open Questions — Real-Time Combat Engine
+  Character\Skills\real-time-combat\30_SCENARIOS.md                       22181B  Scenarios — пеший MVP, ship-extensibility примеры
+  Character\Skills\real-time-combat\40_REFERENCES.md                      20897B  References — file:line index
+  Character\Skills\real-time-combat\50_IMPL_CHANGELOG.md                  18419B  Implementation Changelog — Real-Time Combat Engine
+  Character\Skills\real-time-combat\60_NEXT_STEPS_T-CB01.md               17825B  Next Steps — T-CB01..T-CB09 (навыки + skill hook)
+  Character\Skills\real-time-combat\70_NPC_ENEMIES.md                     22237B  NPC Enemies — пешие враждебные мобы (пешая фаза)
+  Character\Skills\real-time-combat\80_ANIMATION_SETUP.md                  9446B  NPC + Player Animation System (T-NPC-12/13)
+  Character\Skills\real-time-combat\90_RANGED_AND_THROWABLES.md           10148B  Ranged Combat & Throwables — Implementation
+  Character\Skills\real-time-combat\ITERATIONS.md                         21775B  Итерации реализации — Ranged & Throwables
+  Character\Skills\real-time-combat\npc-enemy\01_CREW_ON_MOVING_SHIP.md   14698B  01 — NPC на движущемся корабле (экипаж / враги): не сдувать + корректная навигация
+  Character\Skills\real-time-combat\npc-enemy\02_SOCIAL_HUMAN_BEHAVIOR.md  25054B  02 — Социальное поведение NPC: анализ и план расширения
+  Character\Skills\real-time-combat\npc-enemy\03_SOCIAL_HUMAN_BEHAVIOR_ANALYSIS.md  21925B  Анализ расширения поведенческой модели NPC: социальные паттерны «человека социального»
+  Character\Skills\real-time-combat\npc-enemy\04_UNIFIED_BEHAVIOR_ARCHITECTURE.md  28742B  0. Сверка: что общего, что разного, что берём
+  Character\Skills\real-time-combat\npc-enemy\05_CODE_REVIEW_FINDINGS.md  12205B  05 — Code Review Findings: Unified NPC Behavior Architecture
+  Character\Skills\real-time-combat\npc-enemy\06_NPC_SKILL_ASSIGNMENT_PLAN.md  16555B  План: Назначение скилов игрока на NPC с оверрайдами
+  Character\Skills\real-time-combat\npc-enemy\07_SPAWN_CYCLE_CONTROL.md   13931B  07 — Spawn Cycle Control: конечные волны и перезапуск спавна
+  Character\Skills\real-time-combat\npc-enemy\ITERATIONS.md               23777B  Итерации реализации Unified NPC Behavior Architecture
+  Character\Social-skills\01_IMPLEMENTATION.md                             2012B  SocialSkillTreeWindow — окно графа социальных навыков
+  Character\Social-skills\ITERATIONS.md                                    1119B  Итерация от 2026-07-16
+  Character\ThirdpersonCamera\CHANGELOG.md                                12588B  CHANGELOG — Third-Person Camera
+  Character\input-system\60_PHASE_1_5_SUMMARY.md                          18545B  Phase 1.5 + 2 + 2.5 — Summary
+  Character\input-system\70_PHASE_2_SUMMARY.md                             3808B  Phase 2 — Summary (сессия #7, 2026-06-28)
+  Character\input-system\80_PHASE_3_SUMMARY.md                             3340B  Phase 3 — Summary (сессия #7, 2026-06-28)
+  Character\input-system\ITERATIONS.md                                      795B  Итерации разработки Input System
+  Character\respawn\01_ARCHITECTURE.md                                     2353B  Respawn System — Архитектура
+  Character\respawn\02_USAGE.md                                            1577B  Respawn System — Использование
+  Character\respawn\04_PLAYER_SHIP_PERSISTENCE_FINAL.md                   37701B  Player-Ship Position Persistence — Финальный план (Merged)
+  Character\respawn\ITERATIONS.md                                          9537B  Итерации разработки
+  Character\respawn\PLAYER_SHIP_POSITION_PERSISTENCE.md                   17206B  Player-Ship Position Persistence — План
+  Character\respawn\T-HP01-respawn-fix.md                                  2974B  T-HP01: Death → Respawn Fix — Итерации и корневая причина
+  Crafting_system\99_CHANGELOG.md                                          6594B  Crafting System — Changelog
+  Crafting_system\AUDIT_2026-06-17.md                                     12790B  Аудит Crafting System — 2026-06-17
+  Crafting_system\AUDIT_2026-07-09.md                                     25155B  Crafting System — Deep Audit & Fix Plan (2026-07-09)
+  Crafting_system\ITERATIONS.md                                             875B  Crafting System — Итерации разработки
+  Crafting_system\ROADMAP.md                                              19307B  ROADMAP — Crafting System: тикеты, порядок, риски
+  Docking_stations\00_README.md                                           11199B  Docking Stations — Architecture & Roadmap
+  Docking_stations\08_DEPARTURE_SUBSYSTEM.md                               7329B  08 — Departure Subsystem (Q8)
+  Docking_stations\10_NPC_SHIP_EDITOR.md                                   6151B  NpcShipController & NpcShipSchedule — Custom Editors
+  Docking_stations\ARCHITECTURE.md                                         4260B  Docking System — Architecture Document
+  Docking_stations\AUDIT_AND_REFACTOR.md                                  18815B  AUDIT_AND_REFACTOR — стыковочная система
+  Docking_stations\BUG_AUDIT.md                                            7811B  Docking System — Bug Audit
+  Docking_stations\CHANGELOG.md                                           10846B  CHANGELOG — Docking Stations
+  Docking_stations\ITERATIONS.md                                           4502B  Итерации — Docking Stations
+  Docking_stations\REFACTOR_PLAN.md                                        4260B  Docking System — Refactor Plan
+  Docking_stations\SUMMARY.md                                               970B  Docking System — Сводка для старта
+  Docking_stations\T-DOCK_Editor_Inline.md                                 2413B  DockStationController — Custom Editor
+  Fun\SPEC.md                                                              7397B  SPEC.md — CloudTrader: 2D HTML Prototype
+  MMO_Development_Plan.md                                                126451B  План разработки ММО "Project C: The Clouds" на Unity
+  Markets\ARCHITECTURE.md                                                 17997B  Markets — Architecture
+  Markets\CONTRACTS_AS_MARKET_TAB_REFACTOR.md                             23245B  Contracts-as-Market-Tab — План рефакторинга
+  Markets\CONTRACT_PERSISTENCE.md                                          3919B  Contract Persistence (T-X5 persist)
+  Markets\CONTRACT_V2_MIGRATION.md                                        26976B  Contract V2 — Migration Design Note
+  Markets\CUSTOM_EDITOR.md                                                 5095B  MarketConfig Custom Editor — Документация
+  Markets\FILES_INDEX.md                                                  13703B  Markets — Files Index
+  Markets\FIXES_HISTORY.md                                                61141B  Markets — Fixes History
+  Markets\FLOW_TRADE.md                                                   18616B  Markets — Trade Flow
+  Markets\INTEGRATION.md                                                  14179B  Markets — Integration
+  Markets\ITERATIONS.md                                                   25788B  Итерации разработки Markets
+  Markets\KNOWN_ISSUES.md                                                  2452B  Known Issues — Markets & Contracts
+  Markets\MARKETS_CONTRACTS_DEEP_AUDIT_2026-08-17.md                      70519B  Markets & Contracts — глубокий архитектурный аудит и план рефакторинга
+  Markets\MARKET_ID_REFACTOR_DESIGN.md                                    13948B  MARKET ID REFACTOR — Дизайн-документ
+  Markets\MARKET_PERSISTENCE.md                                            4060B  Market State Persistence (v1)
+  Markets\QTY_ROW_REFACTOR.md                                              3265B  Qty Row Refactor — дизайн-ноут
+  Markets\README.md                                                        3910B  Markets — Documentation Index
+  Markets\Resources_exchanger\01_ANALYSIS.md                              18693B  Resources Exchanger — Анализ и архитектура
+  Markets\Resources_exchanger\02_IMPLEMENTATION.md                         9853B  Resources Exchanger — Реализация (актуальная)
+  Markets\Resources_exchanger\03_FIXES_HISTORY.md                          4054B  Resources Exchanger — История фиксов и багов
+  Markets\Resources_exchanger\README.md                                    3364B  Resources Exchanger — Индекс
+  Markets\Resources_import_export\01_ANALYSIS.md                          27394B  Resources Import/Export — Глубокий анализ систем
+  Markets\Resources_import_export\02_DESIGN.md                            37692B  Resources Import/Export — Дизайн
+  Markets\Resources_import_export\03_TICKETS.md                           14585B  Resources Import/Export — План тикетов
+  Markets\Resources_import_export\04_EXAMPLES.md                          19096B  Resources Import/Export — Примеры
+  Markets\Resources_import_export\05_USER_GUIDE.md                        15862B  Resources Import/Export — End-to-End Guide
+  Markets\Resources_import_export\06_PRUNE_DESIGN.md                      16136B  Prune Feature — T-IE08 (Pruning)
+  Markets\Resources_import_export\README.md                                4785B  Resources Import/Export — Индекс
+  Markets\SESSION_2026-06-18_QTY_MYITEMS.md                                2985B  Session Log: Qty Row Refactor + My Items Filter (2026-06-18)
+  Markets\TRADE_V2_DESIGN.md                                              27550B  Trade System V2 — Design & Refactor Plan
+  Markets\TRADE_V2_INTEGRATION.md                                         15630B  Trade System V2 — Integration Handbook
+  Materials\Bark\README.md                                                25091B  Bark — процедурная кора дерева (наружный слой ствола), v2
+  Materials\Brick\README.md                                               27047B  Brick — процедурная кирпичная стена (кладка, шов, тон кирпича, поры, трещины, высолы, грязь)
+  Materials\Cobble\README.md                                              21136B  Cobble — процедурная мостовая (каменная кладка)
+  Materials\Concrete\README.md                                            33281B  Concrete — процедурный бетон (заполнитель, раковины, трещины, высолы)
+  Materials\Fabric\README.md                                              12362B  Fabric — процедурная ткань (полотняное переплетение + пряжа + ворс)
+  Materials\Foliage\README.md                                             19228B  Листва (Foliage) — процедурная масса листьев
+  Materials\Glass\README.md                                               22309B  Glass — стекло с процедурным налётом и царапинами (нодовый Shader Graph, alpha-blend)
+  Materials\IronRust\README.md                                            24457B  IronRust — железо с процедурной ржавчиной и bump (нодовый Shader Graph)
+  Materials\Lantern\README.md                                             19059B  Lantern — процедурный фонарь (стекло с глоу и лёгкой анимацией жара)
+  Materials\Lava\README.md                                                19037B  Lava — процедурная лава (корка + расплав), без текстур
+  Materials\Lava_animated\README.md                                       12884B  Lava_animated — та же лава, но домены жара, потока и корки дрейфуют по времени
+  Materials\Marble\README.md                                              12379B  Marble — процедурный мрамор (сеть прожилок + облачность камня)
+  Materials\Parquet\README.md                                             28360B  Parquet — процедурный паркетный настил (пласты + швы)
+  Materials\Plastic\README.md                                             18168B  Plastic — процедурный литой пластик (шагрень формы, линии спая, линия разъёма)
+  Materials\Plate\README.md                                               26564B  Plate — процедурные металлические пластины (клёпаная обшивка: швы, тон листа, заклёпки, патина, царапины)
+  Materials\README.md                                                     48245B  Материалы ProjectC — генеративный подход без текстур
+  Materials\SteelGraphV2\README.md                                         5453B  SteelGraphV2 — сталь v2 (Shader Graph + 3D-шум)
+  Materials\SteelRust\POLYBRUSH_PLAN.md                                    3576B  Polybrush — анализ: НЕ ставить (решение)
+  Materials\SteelRust\README.md                                           12931B  SteelRust — сталь с процедурной ржавчиной на стыках
+  Materials\SteelRust\SCREENSPACE_COMPARISON.md                            2894B  Screen-space состаривание — сравнение 3 версий (исследование, кода нет)
+  Materials\Terrain\README.md                                             20235B  Terrain — процедурный ландшафт: высотные и склоновые зоны (низина → скалы → снег → лёд)
+  Materials\Tiles\README.md                                               39737B  Tiles — процедурная черепичная кровля (дугообразный «носок», перевязка, тон, поры, кракле, высолы, мох)
+  Materials\Wood\README.md                                                18410B  Wood — процедурное дерево (кольцевые срезы + фактура волокна)
+  MetaRequirement\99_CHANGELOG.md                                          7045B  MetaRequirement — Changelog
+  MetaRequirement\META_REQUIREMENT_IMPL_NOTES.md                           8097B  MetaRequirement — Заметки реализации (Этап 1)
+  Mining\00_OVERVIEW.md                                                   13846B  Resource Gathering System — Обзор
+  Mining\10_DESIGN.md                                                     24781B  Resource Gathering — Детальный дизайн
+  Mining\20_IMPLEMENTATION_PLAN.md                                        25012B  Resource Gathering — Implementation Plan
+  Mining\99_CHANGELOG.md                                                   2037B  Resource Gathering — Changelog
+  Mining\ROADMAP.md                                                       37364B  ROADMAP — Resource Gathering: тикеты, порядок, риски
+  NPC_others_peacfull\crowd_brains\00_README.md                            5699B  Подключаемые мозги толпы (crowd_brains) — навигация
+  NPC_others_peacfull\crowd_brains\01_THEORY.md                            9207B  01 — Ядро теории подключаемых мозгов
+  NPC_others_peacfull\crowd_brains\02_COMBAT_PROMOTION.md                 10120B  02 — Промоут на стычку: «пнул → бьют (но не все)»
+  NPC_others_peacfull\crowd_brains\03_DIALOG_PROMOTION.md                  8621B  03 — Промоут на разговор: «поговорил → герой (на день)»
+  NPC_others_peacfull\crowd_brains\04_SERVER_ROSTER_AND_POOLS.md           6559B  04 — Сервер: ростер, пулы, лизы, бюджеты
+  NPC_others_peacfull\crowd_brains\05_CLIENT_CROWD.md                      5225B  05 — Клиент: толпа, которую видит игрок
+  NPC_others_peacfull\crowd_brains\06_PROTOCOL_AND_VALIDATION.md           5308B  06 — Протокол и валидация: что летит по сети и как не дать читерить
+  NPC_others_peacfull\crowd_brains\07_FAILURES_AND_EXPLOITS.md             4382B  07 — Отказы, гриферство и честные ограничения
+  NPC_others_peacfull\crowd_brains\08_ROADMAP.md                           7280B  08 — Дорожная карта внедрения (поэтапно, с переиспользованием)
+  NPC_others_peacfull\crowd_brains\09_WET_FANTASIES_2000_SMART_NPC.md      5130B  09 — Влажные фантазии: 2000 умных NPC и толпы по 100+ (теория, не план)
+  NPC_others_peacfull\npc_ship\00_README.md                                6600B  Peaceful NPC Ships — Architecture & Roadmap
+  NPC_others_peacfull\npc_ship\01_REUSE_MAP.md                             9621B  01 — Reuse Map: существующие API для NPC-кораблей
+  NPC_others_peacfull\npc_ship\02_INDUSTRY_PATTERNS.md                    11447B  02 — Industry Patterns: мирный NPC-траффик
+  NPC_others_peacfull\npc_ship\03_V2_ARCHITECTURE.md                      19890B  03 — V2 Architecture: Peaceful NPC Ships
+  NPC_others_peacfull\npc_ship\04_LIVING_BEHAVIOR.md                      12766B  04 — Living Behavior: «живость» NPC-траффика
+  NPC_others_peacfull\npc_ship\05_ROADMAP.md                              11208B  05 — Roadmap: Peaceful NPC Ships
+  NPC_others_peacfull\npc_ship\06_OPEN_QUESTIONS.md                        5489B  06 — Open Questions → Final Decisions
+  NPC_others_peacfull\npc_ship\07_SHIP_PROXIMITY_AVOIDANCE.md              7879B  07 — Ship-to-Ship Proximity Avoidance (расхождение NPC-кораблей)
+  NPC_others_peacfull\npc_ship\08_CONTROL_AUTHORITY_AND_PHYSICS.md         4864B  08 — Control Authority & Physical Ship Model
+  NPC_others_peacfull\npc_ship\09_MOVING_PLATFORM_CHARACTER_PHYSICS.md    12086B  Moving-Platform Character Physics
+  NPC_others_peacfull\npc_ship\10_BUILD_PROXIMITY_AVOIDANCE.md             8908B  10 — Ship-to-Build Proximity Avoidance (обход зданий NPC-кораблями)
+  NPC_others_peacfull\npc_ship\10_COLLIDER_BUG_detectCollisions_false.md   5578B  10_COLLIDER_BUG_detectCollisions_false.md — Блокировка коллайдера платформы
+  NPC_others_peacfull\npc_ship\11_DOCK_NAV_RESEARCH.md                    10860B  11 — Ресерч: почему NPC-корабли «тупят» в доках
+  NPC_others_peacfull\npc_ship\12_TERRAIN_WALLFOLLOW_NAV.md                8050B  12 — Terrain WallFollow + City Gates (облёт гор и городов)
+  NPC_others_peacfull\npc_ship\13_NAV_COORDINATOR_RESEARCH.md              7008B  13 — Ресёрч: упёрлись ли в одну идею? Нужен ли глобальный координатор
+  NPC_others_peacfull\npc_ship\14_ROUTE_GRAPH_DESIGN.md                    3722B  14 — Дизайн: граф трасс вокруг пиков (структурное курсирование)
+  NPC_others_peacfull\npc_ship\15_MESH_DISCS_DESIGN.md                     3477B  15 — Дизайн: меши-скалы в модели обхода (T-NS-MESH01)
+  NPC_others_peacfull\npc_ship\16_BOUNCE_RESEARCH.md                       7861B  16 — Всецелый ресёрч: почему повторяется «отлетели — вернулись — воткнулись»
+  NPC_others_peacfull\npc_ship\17_AIRWAYS_DESIGN.md                        5721B  17 — Дизайн: глобальные магистрали (воздушные трассы)
+  NPC_others_peacfull\npc_ship\18_LOGGING_AND_PERF.md                      3497B  18 — Логирование NPC-кораблей: что выключено и как вернуть
+  NPC_others_peacfull\npc_ship\2026-06-23-npc-ship-movement-refactor.md    4808B  NPC Ship Movement Refactoring — M2
+  NPC_others_peacfull\npc_ship\98_SUMMARY_POST.md                          3833B  NPC Ships Round-Trip: Что мы сделали
+  NPC_others_peacfull\npc_ship\99_RETROSPECTIVE.md                        11230B  Retrospective: NPC Ship Navigation (M2 → M3.2)
+  NPC_others_peacfull\npc_ship\CARGO\IMPLEMENTATION_2026-07-03.md          6480B  T-CARGO-NPC-01 — Implementation Report
+  NPC_others_peacfull\npc_ship\CARGO\T_CARGO_NPC_01_DESIGN_2026-07-03.md  15605B  T-CARGO-NPC-01 — Design: Universal cargo for NPC ships
+  NPC_others_peacfull\npc_ship\CHANGELOG.md                               54451B  CHANGELOG — Peaceful NPC Ships
+  NPC_others_peacfull\npc_ship\Elite_NPC\01_SHIP_CREW_RESEARCH.md          7666B  Elite NPC — Именные экипажи на движущемся корабле (исследование)
+  NPC_others_peacfull\npc_ship\Elite_NPC\02_SHIP_CREW_RESEARCH_REVIEW_AND_PLAN_2026-09-08.md  30269B  Именная команда NPC на движущемся корабле — повторный ресерч и план
+  NPC_others_peacfull\npc_ship\Elite_NPC\09_GUIDE_ADD_NAMED_CREW_TO_EMPTY_SHIP_2026-09-08.md  27832B  Пошаговый гайд: как добавить именной NPC-экипаж на пустой корабль
+  NPC_others_peacfull\npc_ship\Elite_NPC\Iterations_archive\03_IMPLEMENTATION_STAGE_00_MVP_CONTRACT_2026-09-08.md   3868B  Именная команда NPC на движущемся корабле — Этап 0: MVP-контракт
+  NPC_others_peacfull\npc_ship\Elite_NPC\Iterations_archive\04_IMPLEMENTATION_STAGE_01_IDENTITY_AND_PREFAB_2026-09-08.md   3506B  Именная команда NPC на движущемся корабле — Этап 1: identity и named prefab
+  NPC_others_peacfull\npc_ship\Elite_NPC\Iterations_archive\05_IMPLEMENTATION_STAGE_02_CREW_MANIFEST_2026-09-08.md   3000B  Именная команда NPC на движущемся корабле — Этап 2: ShipCrewManifest
+  NPC_others_peacfull\npc_ship\Elite_NPC\Iterations_archive\06_IMPLEMENTATION_STAGE_03_SHIP_LOCAL_ANCHORS_2026-09-08.md   2683B  Именная команда NPC на движущемся корабле — Этап 3: ship-local anchors
+  NPC_others_peacfull\npc_ship\Elite_NPC\Iterations_archive\07_IMPLEMENTATION_STAGE_04_SHIP_CREW_SPAWNER_2026-09-08.md   3231B  Именная команда NPC на движущемся корабле — Этап 4: ShipCrewSpawner
+  NPC_others_peacfull\npc_ship\Elite_NPC\Iterations_archive\08_IMPLEMENTATION_STAGE_05_EXPLICIT_SHIP_ATTACHMENT_2026-09-08.md   3643B  Именная команда NPC на движущемся корабле — Этап 5: explicit ship attachment
+  NPC_others_peacfull\npc_ship\Elite_NPC\Iterations_archive\10_IMPLEMENTATION_STAGE_06_ALL_SHIP_CAPTAINS_2026-09-08.md   3039B  Именные капитаны для остальных NPC-кораблей — этап массовой настройки
+  NPC_others_peacfull\npc_ship\FAIL_m2_antigravity_pd.md                   3105B  FAIL: m2 — AntiGravity PD-controller для NPC кораблей
+  NPC_others_peacfull\npc_ship\ITERATIONS.md                              74218B  ITERATIONS — Peaceful NPC Ships (runtime fixes)
+  NPC_others_peacfull\npc_ship\M2_FSM_DIAGNOSIS.md                        25942B  M2 FSM Diagnosis & M3 Plan — NPC Barges
+  NPC_others_peacfull\npc_ship\POSTMORTEM_MOVEMENT_2026-06-23.md           7947B  Post-Mortem: NPC Movement Failure (2026-06-23)
+  NPC_quests\08_ROADMAP.md                                                71331B  08 — Roadmap: тикеты, порядок, риски
+  NPC_quests\ANALYSIS_QuestRewardItem_refactor.md                          5793B  Analysis: QuestRewardItem + QuestObjective — поля drag-and-drop для предметов
+  NPC_quests\CUSTOM_EDITOR_PLAN.md                                         6580B  План: Кастомный редактор QuestDefinition.asset
+  NPC_quests\DEEP_AUDIT_2026-07-09.md                                     18397B  🔍 Глубокий аудит системы квестов (NPC Quests v2)
+  NPC_quests\DEEP_AUDIT_2026-07-13.md                                     17147B  🔍 Комбинированный глубокий аудит системы квестов (NPC Quests v2)
+  NPC_quests\DEEP_AUDIT_2026-08-13.md                                     25894B  🔍 Глубокий аудит системы квестов (NPC Quests v2) — третий проход
+  NPC_quests\DIALOGTREE_EDITOR_v2.md                                       4324B  DialogTree Custom Editor v2
+  NPC_quests\Faction\FACTION_ID_DATA_DRIVEN_PLAN.md                       29183B  Faction ID: вывод из хардкода и переход на data-driven фракции
+  NPC_quests\ITERATIONS.md                                                32035B  Итерации разработки — NPC Quests
+  NPC_quests\M19_CSV_PIPELINE_v2.md                                       20527B  M19 — Инструкция для Content Writer'а: 3 базы CSV
+  NPC_quests\M19_T7_DIALOG_CSV.md                                          5956B  M19-T7: dialogs.csv — формат и пример
+  NPC_quests\NPC_EDITOR_v2.md                                              4368B  NPC Definition Custom Editor v2
+  NPC_quests\Quests\001\001_ASH_UNDER_GLASS_DRAFT.md                      31045B  Q001 — «Пепел под стеклом»
+  NPC_quests\Quests\001\001_DIALOGUE_LOCALIZATION_REPAIR_PLAN.md           6304B  Q001 — План проверки и исправления диалоговой локализации
+  NPC_quests\Quests\001\001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_00_BASELINE.md   2231B  Q001 — Отчёт 00: baseline локализации
+  NPC_quests\Quests\001\001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_01_AUDIT.md   2296B  Q001 — Отчёт 01: статический аудит диалогов
+  NPC_quests\Quests\001\001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_02_KEY_NORMALIZATION.md   1596B  Q001 — Отчёт 02: нормализация ключей
+  NPC_quests\Quests\001\001_DIALOGUE_LOCALIZATION_REPAIR_REPORT_03_ADDITIVE_TRANSLATIONS.md   2655B  Q001 — Отчёт 03: аддитивная диалоговая локализация
+  NPC_quests\Quests\00_UNIVERSAL_QUEST_GUIDE.md                           12746B  Universal Quest Guide — ProjectC
+  NPC_quests\T-NPC-S23_activity_anchors.md                                 2532B  T-NPC-S23: Activity Anchors для NpcSocialBrain
+  NPC_quests\T-Q22_TalkToNpc_event_fix.md                                  5906B  T-Q22 — корректная модель TalkToNpc и инициализация целей
+  NPC_quests\T-Q28_DESIGN_NOTE.md                                          6811B  T-Q28 — Prerequisite-фильтрация + Toast для locked квестов
+  NPC_quests\T-QC7_remove_dead_trigger_system.md                           6692B  T-QC7: Удаление мёртвой триггерной системы (QuestTriggerService)
+  NPC_quests\T-QS2_remove_dead_refresh_rpc.md                              9022B  T-QS2: Удаление мёртвых Refresh-RPC (RequestRefresh*)
+  NPC_quests\T-U01_model_driven_graphview.md                               1454B  T-U01: Model-driven OnGraphViewChanged
+  NPC_quests\T-U02_node_to_so_binding.md                                   1495B  T-U02: Node ↔ SO binding
+  NPC_quests\T-U03_BFS_LAYOUT_PLAN.md                                      3607B  T-U03 BFS Tree Layout — переработка
+  NPC_quests\T-U03_auto_layout.md                                          1099B  T-U03: Авто-лейаут
+  NPC_quests\T-U04_meaningful_ports.md                                      712B  T-U04: Осмысленные порты
+  NPC_quests\T-U05_U08_unified_graph.md                                    1819B  T-U05–T-U08: Unified Graph — Слой 1
+  NPC_quests\T-U08_CONDITION_NODE_ANALYSIS.md                              4496B  T-U08: ConditionNode — детальный анализ
+  NPC_quests\T-U09_U10_window_integration.md                               1625B  T-U09–T-U10: UnifiedQuestGraphWindow + Интеграция
+  NPC_quests\T_Q19_NPC_QUEST_LINKING.md                                    3908B  T-Q19: Полная база NPC + Quests + Dialogs через CSV
+  NPC_quests\UNIFIED_QUEST_GRAPH_PLAN.md                                  11158B  Unified Quest Graph — план рефакторинга и реализации
+  Ships\ENGINE_POWER_STATE.md                                              7080B  Ship Engine Power State — Дизайн и Реализация
+  Ships\ITERATIONS.md                                                     29818B  Project C — Iterations Log
+  Ships\Key-subsystem\00_OVERVIEW.md                                      19222B  Key Subsystem — Обзор
+  Ships\Key-subsystem\20_UNIQUE_KEY_INSTANCE.md                           16699B  Unique Key Instance — Концепция уникального ключа корабля
+  Ships\Key-subsystem\21_SHIP_OWNERSHIP_MODEL.md                          13584B  Ship Ownership Model — Server-Side реестр владельцев кораблей
+  Ships\Key-subsystem\22_SHIP_TELEMETRY_PLAN.md                           24133B  Ship Telemetry — UI/HUD проекция состояния корабля по ключу
+  Ships\Key-subsystem\23_ROADMAP.md                                       16392B  Ship Key — Roadmap (R2-SHIP-KEY-003)
+  Ships\Key-subsystem\24_OPEN_QUESTIONS.md                                 6806B  Ship Key Subsystem — Открытые вопросы
+  Ships\Key-subsystem\26_TKEY08_MYSHIPS_TAB_PLAN.md                       15736B  T-KEY-08: MyShipsTab UI — план реализации
+  Ships\Key-subsystem\27_TKEY09_DROP_FIX_PLAN.md                           5231B  T-KEY-09: Drop key не синхронизирует ownership — план
+  Ships\Key-subsystem\28_KEY_ARCHITECTURE_REVIEW.md                       15762B  28_KEY_ARCHITECTURE_REVIEW — Глубокий архитектурный анализ
+  Ships\Key-subsystem\29_KEY_REFACTOR_PLAN.md                              3332B  29_KEY_REFACTOR_PLAN.md — Полный рефакторинг
+  Ships\Key-subsystem\30_MYSHIPS_MODULES_FIX.md                            2213B  MyShipsTab: Fix Module Display
+  Ships\Key-subsystem\31_KEY_ANALYSIS_2026-07-21.md                        3927B  31_KEY_ANALYSIS_2026-07-21 — Фактический анализ перед P1 рефакторингом
+  Ships\Key-subsystem\99_CHANGELOG.md                                     51123B  Ship Key Subsystem — Changelog
+  Ships\Key-subsystem\KNOWN_ISSUES.md                                     10307B  Ship Key Subsystem — Известные проблемы
+  Ships\Key-subsystem\SHIP_KEY_SETUP_v11.md                                7942B  Setup & Binding: KeyRod ↔ Ship (R2-SHIP-KEY-003)
+  Ships\Key-subsystem\SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md           14038B  Ship Key → MetaRequirement — Migration Guide
+  Ships\Modul_system\01_ARCHITECTURE.md                                    5363B  Module System — Архитектура
+  Ships\Modul_system\02_REPAIR_MANAGER.md                                  8987B  Repair Manager — Гайд по настройке
+  Ships\Modul_system\03_REPAINT_PLAN.md                                    3547B  Repair Manager — Ship Repainting (Покраска корабля)
+  Ships\Modul_system\T-MOD03_REFACTOR.md                                   2276B  Module System — Refactoring T-MOD03
+  Ships\Modul_system\T-MODUL_repair_manager.md                             5544B  T-MODUL: RepairManager — доковый менеджер модулей корабля
+  Ships\SHIP_CODE_REVIEW_2026-09-18.md                                    27199B  Ship System — полноценное код-ревью (2026-09-18)
+  Ships\SHIP_FIX_PLAN_2026-09-18.md                                       10408B  Ship System — план исправления по ревью 2026-09-18
+  Ships\SHIP_REFACTOR_PLAN_2026-07-21.md                                  14363B  Ship Refactor Plan — Комплексный План Рефакторинга
+  Ships\UI\CARGO_TAB_DOCS_2026-07-02.md                                    5091B  Ship Cargo UI — CharacterWindow таб «Корабль»
+  Ships\UI\HUD\00_OVERVIEW.md                                             11537B  Ship HUD — Implementation & Design Notes
+  Ships\cargo_system\CARGO_DIAGNOSIS_2026-06-17.md                        15993B  Cargo System — диагноз (2026-06-17)
+  Ships\cargo_system\CARGO_OWNERSHIP_DESIGN.md                             3466B  Cargo Ownership Guard — Design Document
+  Ships\cargo_system\CARGO_REFACTOR_PLAN_2026-06-17.md                    28705B  Cargo System — план рефакторинга (2026-06-17)
+  Ships\cargo_system\CARGO_REMAINING_WORK_2026-07-02.md                   20031B  Cargo System — что осталось доделать (сводный план, 2026-07-02)
+  Ships\cargo_system\CARGO_UI_01_DESIGN_2026-07-02.md                     18165B  T-CARGO-UI-01: детальный список груза в MyShipsTab
+  Ships\cargo_system\CARGO_UI_02_PLAN.md                                  11686B  T-CARGO-UI-02: Cargo Manager на корабле — План реализации
+  Ships\cargo_system\CARGO_VIS_01_DESIGN_2026-07-02.md                    10839B  T-CARGO-VIS-01: 3D визуал наполнения трюма (ящики/блоки)
+  Ships\cargo_system\T-CARGO-UI-03_CARGO_DETAIL_PRIVACY.md                 6938B  T-CARGO-UI-03: Приватность деталей трюма (targeted snapshot по ключу)
+  Ships\customisation\00_SUMMARY.md                                       24737B  Ship Customisation — Сводная Аналитика
+  Ships\customisation\01_MODULE_VISUAL_WITHOUT_BONES.md                   25254B  Визуал модулей корабля — разбор крепления без костей
+  Ships\customisation\02_ENGINE_VISUAL_ANALYSIS_AND_PLAN.md               23180B  Engine Visual System — Анализ подсистем и план реализации
+  Ships\customisation\CUSTOMIZATION_ANALYSIS.md                           19465B  Ship Customization — Technical Analysis
+  Ships\customisation\ITERATIONS.md                                       14285B  Итерации реализации — Engine Visual System
+  Ships\customisation\SHIP_PART_SHAKE.md                                   5410B  ShipPartShake — Дребезг частей корабля при тяге
+  Ships\customisation\T-ENG01_ShipEngineVisual_PostMortem.md               4296B  T-ENG01: ShipEngineVisual — Post-Mortem и план переинтеграции
+  Ships\customisation\buildings\00_BUILD_SYSTEM_DEEP_ANALYSIS.md          35411B  Строительство на корабле — глубокий анализ подсистем
+  Ships\damage_subsystem\00_DESIGN.md                                      5883B  Ship Damage Subsystem — Дизайн (MVP)
+  Ships\damage_subsystem\01_ARCHITECTURE.md                                9024B  Ship Damage Subsystem — Архитектура
+  Ships\damage_subsystem\02_INTEGRATION_AND_REPAIR.md                      8874B  Ship Damage Subsystem — Интеграция и Ремонт
+  Ships\fix\T-SHIP-DOC01_key-overview.md                                   3057B  T-SHIP-DOC01 — перепроверка: Key OVERVIEW vs P1-факт
+  Ships\fix\T-SHIP-DOC02_key-creation.md                                   2019B  T-SHIP-DOC02 — перепроверка: где создаётся KeyRodInstance (21 vs P1)
+  Ships\fix\T-SHIP-DOC03_key-28-vs-p1.md                                   1839B  T-SHIP-DOC03 — перепроверка: 28 (выкинуть World) vs P1-факт
+  Ships\fix\T-SHIP-DOC04_cargo-key-table.md                                1255B  T-SHIP-DOC04 — перепроверка: карго-таблица «без ключа» vs P5 guard
+  Ships\fix\T-SHIP-DOC05_cargo-guard-scope.md                              2062B  T-SHIP-DOC05 — перепроверка: scope cargo-guard (TradeWorld-уровень закрыт?)
+  Ships\fix\T-SHIP-DOC06_engine-vs-broken.md                               1594B  T-SHIP-DOC06 — перепроверка: Engine vs Broken (топливный кросс-эффект)
+  Ships\fix\T-SHIP-DOC07_l1-visual-status.md                               1848B  T-SHIP-DOC07 — перепроверка: L1 visual done / не начат
+  Ships\fix\T-SHIP-DOC08_bootstrap-rule.md                                 1484B  T-SHIP-DOC08 — перепроверка: Bootstrap трогать / не трогать (RepairManagerWindow)
+  Ships\fix\T-SHIP-DOC09_recall-links.md                                   1741B  T-SHIP-DOC09 — перепроверка: Recall vs Persist / Dock / Ownership
+  Ships\fix\T-SHIP-DOC10_cargo-p3-stale.md                                 1464B  T-SHIP-DOC10 — перепроверка: Cargo P3 stale-доки (существуют ли?)
+  Ships\fix\T-SHIP-FIX01_server-input.md                                   3109B  T-SHIP-FIX01 — ввод мезии/ролла/дозаправки через RPC владельца
+  Ships\fix\T-SHIP-FIX02_pilot-membership.md                               2569B  T-SHIP-FIX02 — server-authoritative состав пилотов
+  Ships\fix\T-SHIP-FIX03_server-prices.md                                  3271B  T-SHIP-FIX03 — серверный прайс в ShipModuleServer (client-цены не доверяем)
+  Ships\fix\T-SHIP-FIX04_recall.md                                         2894B  T-SHIP-FIX04 — серверный авторитет Recall (владение + цена + пад)
+  Ships\fix\T-SHIP-FIX05_meziy-dt.md                                       1699B  T-SHIP-FIX05 — убрать двойной dt у мезия-тяги
+  Ships\fix\T-SHIP-FIX06_fuel-telemetry.md                                 2608B  T-SHIP-FIX06 — топливо в HUD из телеметрии (не из локальной копии)
+  Ships\fix\T-SHIP-FIX07_cargo-split.md                                    3215B  T-SHIP-FIX07 — cargoDetail в отдельный NetworkVariable (по событиям, не 5 Гц)
+  Ships\fix\T-SHIP-FIX08_module-clientrpc.md                               2920B  T-SHIP-FIX08 — ClientRpc модулей через Manager + TargetRpc-уведомления
+  Ships\fix\T-SHIP-FIX09_meziy-refresh.md                                  3041B  T-SHIP-FIX09 — мезия-активатор переживает рантайм-смену модулей
+  Ships\fix\T-SHIP-FIX10_cargo-console.md                                  2487B  T-SHIP-FIX10 — консоль груза: стаки + отложенный refresh
+  Ships\fix\T-SHIP-FIX11_cargo-limits.md                                   2378B  T-SHIP-FIX11 — store-путь на effective-лимитах (бонусы модулей)
+  Ships\fix\T-SHIP-FIX12_small-fixes.md                                    4607B  T-SHIP-FIX12 — мелочи визуалов/контроллера/конфигов (только безопасное)
+  Ships\fix\T-SHIP-FIX13_exit-position.md                                  1846B  T-SHIP-FIX13 — выход с корабля: телепорт от origin + зависание в falling
+  Ships\fix\T-SHIP-FIX14_keyless-boarding.md                               2140B  T-SHIP-FIX14 — посадка в корабли без ключа
+  Ships\ship_collision_analysis_2026-07-17.md                              2490B  Ship Collision Analysis — Ship_Light_root vs Ship_Medium
+  Ships\shipcontroller-editor.md                                           2286B  ShipController Custom Editor
+  UI\BUGS_PHASE_2.md                                                       4347B  Known UI Bugs
+  UI\CHARACTER_WINDOW_STATS.md                                             3959B  CharacterWindow — блок характеристик (STATS)
+  UI\MainMenu\01_implementation.md                                         6065B  MainMenu — Документация
+  UI\MainMenu\ITERATIONS.md                                                4229B  Итерации разработки MainMenu
+  UI\PERF_UIElementsRepaintPanels_INVESTIGATION.md                         3570B  UIElementsRepaintPanels: 3.1 MB/кадр GC Alloc от UI Toolkit — план исследования
+  UI\SCROLLBAR_STYLING.md                                                  4187B  Scrollbar Styling — тонкие скролбары для всех окон
+  UI\SHIP_WINDOW.md                                                        6239B  Ship Window — итоги вёрстки и архитектура (T-CARGO-UI-01)
+  UI\UI_TOOLKIT_GUIDE.md                                                  19591B  UI Toolkit — Universal Layout & Theme Guide (Project C)
+  UI\cloud-light-interactive-research-2026-09-29.md                       33154B  Cloud UI — «облачный» лёгкий интерактивный UI: полный ресерч
+  UI\esc-menu\01_implementation_plan.md                                   14411B  EscMenu — План реализации (Phase 1: структура и настройки)
+  UI\esc-menu\02_audit_notes.md                                            6851B  EscMenu — Аудит кода и gaps (2026-07-13)
+  UI\esc-menu\03_stage1_log.md                                             3393B  Этап 1 — Лог реализации (2026-07-13)
+  UI\esc-menu\04_stage2_log.md                                             2345B  Этап 2 — Лог реализации (2026-07-13)
+  UI\esc-menu\05_stage3_log.md                                             1639B  Этап 3 — Лог реализации (2026-07-13)
+  UI\esc-menu\06_stage4_5_log.md                                           1136B  Этапы 4-5 — Лог реализации (2026-07-13)
+  UI\esc-menu\07_stage3d_log.md                                            1041B  Этап 3d — Лог реализации (2026-07-13)
+  UI\esc-menu\08_graphics_effects_toggles_design.md                        4279B  Графика: переключатели эффектов в Esc-меню (дизайн)
+  UI\esc-menu\ITERATIONS.md                                                2845B  Итерации разработки EscMenu
+  UI\full rebuild plans\00_immersive_menu_strategy.md                     15513B  00 — Immersive Menu Strategy (вместо Vista-Style)
+  UI\hints\00_CONTEXT_INTERACTION_HINTS.md                                 8101B  T-UI10 — Контекстные подсказки взаимодействия
+  UI\hints\01_IMPLEMENTATION_PLAN.md                                       9719B  T-UI10 — План ввода контекстных подсказок взаимодействия
+  changelogs.md                                                            7403B  What Was Wrong
+  dev\DESIGN_MATERIALS_STEEL_RUST.md                                       5488B  Дизайн-нота: процедурные материалы, первый — SteelRust
+  dev\DESIGN_T-ADM-00-01.md                                                1905B  T-ADM-00/01 — дизайн-нота: удаление legacy HUD + слот AdminPanel
+  dev\DOOR_CONTROLLER_DESIGN.md                                            3832B  DoorController v2 — дизайн-нота
+  dev\NPC_SHIP_ROUNDTRIP_REVIEW_2026-09-17.md                             14048B  NPC-корабли: ревью кругосветки, парковки/отстыковки и ухода от городов
+  dev\PICKUP_BOB_INTEGRATOR_FIX.md                                         2913B  Pickup-бобаинг как интегратор: root cause и фикс
+  dev\Q001_QUEST_LOCALIZATION_DESIGN.md                                    3147B  Q001 Quest Localization — Design Note
+  dev\RETROSPECTIVE_2026-08-26.md                                          7208B  Ретроспектива: v0.1.20 → v0.1.31
+  dev\RETROSPECTIVE_v0.1.31-v0.1.45_2026-09-08.md                          8153B  Ретроспектива v0.1.31 → v0.1.45
+  dev\RETRO_FO_LIGHT_2026-09-14.md                                         5744B  Ретроспектива: FO-интеграция + свет (57572dc0 → 26f1cb75)
+  dev\RETRO_v0.1.60_to_v0.1.85_2026-09-21.md                              19875B  Ретроспектива: v0.1.60 → v0.1.85
+  dev\RETRO_v0.1.85_to_v0.1.91_2026-09-28.md                              22438B  Ретроспектива: v0.1.85 → v0.1.91
+  dev\SETTLEMENT_COLLIDERS_TOOL.md                                         6648B  Settlement Colliders Tool — дизайн-нота
+  dev\T-CAM17_SPRINGARM_AUDIT.md                                           7231B  T-CAM17 — Полный аудит SpringArmCamera
+  dev\T-ENG02_multi-pivot-design.md                                        3285B  T-ENG02: EngineThrusterVisual — по одному pivot на каждый визуал (multi-unit)
+  dev\T-PAROM-20_parom-persistence-design.md                               3112B  T-PAROM-20 — персистенция парома между сессиями (дизайн)
+  dev\T-PAROM-21_player-on-trolley-design.md                               3337B  T-PAROM-21 — игрок на тележку при ресторре (дизайн)
+  dev\T-PAROM-22_platform-rescue-design.md                                 2109B  T-PAROM-22 — защита от падений с парома (дизайн)
+  dev\T-Q22_QUEST_TRACKER_ALL_OBJECTIVES.md                                2095B  T-Q22: QuestTracker — all objectives HUD
+  dev\TESTS\first-auto-quest\README.md                                    21492B  First Auto Quest — Onboarding alfa
+  dev\global roadmap\GLOBAL_ROADMAP.md                                    12010B  Project C: The Clouds — Глобальный родмап
+  dev\global roadmap\GLOBAL_ROADMAP_EN.md                                 12063B  Project C: The Clouds — Global Roadmap
+  dev\global_needtotest\NPC_SHIP_TESTS.md                                  8014B  NPC Ships — реестр ручных тестов (долгосрочный)
+  dev\global_needtotest\SHIP_TESTS.md                                     10484B  Global Need-To-Test — реестр ручных тестов (долгосрочный)
+  dev\iterations.md                                                        8573B  Iterations
+  gdd\GDD_00_Overview.md                                                  15261B  GDD-00: Game Overview — Project C: The Clouds
+  gdd\GDD_01_Core_Gameplay.md                                             23011B  GDD-01: Core Gameplay & Controls — Project C: The Clouds
+  gdd\GDD_02_World_Environment.md                                         20506B  GDD-02: World & Environment — Project C: The Clouds
+  gdd\GDD_10_Ship_System.md                                               49786B  GDD_10: Ship System v4.1
+  gdd\GDD_11_Inventory_Items.md                                           29257B  GDD-11: Inventory & Items — Project C: The Clouds
+  gdd\GDD_12_1_Scene_World_Streaming.md                                    7907B  GDD_12.1: Scene-Based World Streaming System
+  gdd\GDD_12_Network_Multiplayer.md                                       14094B  GDD-12: Network & Multiplayer — Project C: The Clouds
+  gdd\GDD_13_UI_UX_System.md                                              21326B  GDD-13: UI/UX System — Project C: The Clouds
+  gdd\GDD_14_Visual_Art_Pipeline.md                                       20082B  GDD-14: Visual & Art Pipeline — Project C: The Clouds
+  gdd\GDD_15_Audio_System.md                                              18562B  GDD-15: Audio System — Project C: The Clouds
+  gdd\GDD_20_Progression_RPG.md                                           18735B  GDD 20: Progression & RPG System
+  gdd\GDD_21_Quest_Mission_System.md                                      18831B  GDD 21: Quest & Mission System
+  gdd\GDD_22_Economy_Trading.md                                           17101B  GDD-22: Economy & Trading — Project C: The Clouds
+  gdd\GDD_23_Faction_Reputation.md                                        12761B  GDD-23: Faction & Reputation — Project C: The Clouds
+  gdd\GDD_24_Narrative_World_Lore.md                                      14399B  GDD-24: Narrative & World Lore — Project C: The Clouds
+  gdd\GDD_25_Combat_Skills.md                                             16956B  ⚔ GDD 25: Combat & Skills System
+  gdd\GDD_25_Trade_Routes.md                                              29092B  GDD-25: Trade Routes & Logistics — Project C: The Clouds
+  gdd\GDD_26_Character_Customisation.md                                    6059B  👤 GDD 26: Character Customisation & Equipment Visual
+  gdd\GDD_INDEX.md                                                         7132B  📋 Game Design Documents (GDD) — Project C: The Clouds
+  unity6\UNITY6_URP_SETUP.md                                              10774B  Unity 6 + URP — Краткий справочник
+  unity6\Unity6_API_Reference.md                                          10212B  Unity 6 Scripting API Reference
+  unity6\Unity6_Architecture.md                                            2086B  🎮 Архитектура Unity 6 проекта
+  unity6\Unity6_BestPractices.md                                          15629B  Unity 6 C# Scripting Best Practices & Guide
+  world\CLOUD_system\1.0\ADR-Cloud-001-Rendering-Architecture.md           2489B  ADR-Cloud-001: Cloud Rendering Architecture
+  world\CLOUD_system\1.0\CLOUD_ARCHITECTURE.md                            20291B  CLOUD_system — Architecture v0.4 (HorizonVeil Added)
+  world\CLOUD_system\1.0\CLOUD_CODE_SUMMARY.md                             6590B  CLOUD_system — Code Summary v1.0
+  world\CLOUD_system\1.0\CLOUD_IMPLEMENTATION_PLAN.md                     26976B  CLOUD_system — Implementation Plan v0.4
+  world\CLOUD_system\1.0\CLOUD_ONBOARDING.md                               5207B  CLOUD_system — Onboarding Summary
+  world\CLOUD_system\1.0\CLOUD_TECHNICAL_SUMMARY.md                        5978B  CLOUD_system — Summary v0.4
+  world\CLOUD_system\1.0\CLOUD_VISUAL_DESIGN.md                            9573B  CLOUD_system — Visual Design Document
+  world\CLOUD_system\1.0\DEEP_ANALYSIS_2026-05-14.md                      14142B  CLOUD SYSTEM + GENERATOR 7.0 INTEGRATION — DEEP ANALYSIS
+  world\CLOUD_system\1.0\INTEGRATION_RESEARCH.md                          24020B  CLOUD_SYSTEM + GENERATOR7.0 INTEGRATION RESEARCH
+  world\CLOUD_system\1.0\MASTER_PROMPT_GUIDE.md                           17710B  CLOUD_system — Master Session Continuation Guide
+  world\CLOUD_system\1.0\PHASE_4A_SETUP.md                                 5321B  Phase 4a: HorizonVeil — Scene Setup Instructions
+  world\CLOUD_system\1.0\SESSION_PROMPT.md                                 8779B  CLOUD_SYSTEM + GENERATOR7.0 INTEGRATION — SESSION PROMPT
+  world\CLOUD_system\1.0\SESSION_PROMPT_RESUME.md                          6503B  SESSION PROMPT: DEEP DEBUG & FINAL RESOLUTION
+  world\CLOUD_system\1.0\SESSION_SUMMARY.md                                4617B  CLOUD_SYSTEM + GENERATOR7.0 INTEGRATION - SESSION SUMMARY
+  world\CLOUD_system\1.0\STORM_EVENT_CLOUD_INTEGRATION_GUIDE.md            9571B  STORM/EVENT CLOUD INTEGRATION — ПОЛНАЯ ДОКУМЕНТАЦИЯ
+  world\CLOUD_system\1.0\STORM_EVENT_INTEGRATION_LOG.md                   10910B  STORM/EVENT CLOUD INTEGRATION — IMPLEMENTATION LOG
+  world\CLOUD_system\1.0\STORM_SETUP_GUIDE.md                              8713B  STORM CLOUD — ПОДРОБНАЯ ИНСТРУКЦИЯ ПО НАСТРОЙКЕ И ТЕСТИРОВАНИЮ
+  world\CLOUD_system\2.0\DEEP_ANALYSIS_2026-06-02.md                      22717B  CLOUD Rendering — Deep Analysis: NEAR CLOUD Mesh Overlap
+  world\CLOUD_system\3.0\CLOUD_OCEAN_MEDIUM_DETAILED_STEPS.md             13375B  CLOUD_system 3.0 — Detailed Implementation Steps
+  world\CLOUD_system\3.0\CLOUD_OCEAN_MEDIUM_DETAILED_STEPS_PHASE2_3.md    26713B  CLOUD_system 3.0 — Detailed Implementation Steps: Фаза 2 + Фаза 3
+  world\CLOUD_system\3.0\CLOUD_OCEAN_MEDIUM_IMPLEMENTATION_PLAN.md        19911B  CLOUD_system 3.0 — «Cloud Ocean Medium» — Implementation Plan
+  world\CLOUD_system\3.0\CONTRAIL_VFX_GUIDE.md                             5607B  Contrail VFX — Гайд по настройке
+  world\CLOUD_system\3.0\DEBUG_POSITIONING_INVESTIGATION.md                3583B  Storm System 3.0 — Debug Positioning Investigation
+  world\CLOUD_system\3.0\IMPLEMENTATION_LOG.md                             5399B  CLOUD_system 3.0 — Implementation Log
+  world\CLOUD_system\3.0\ITERATIONS.md                                     1198B  Итерации Cloud System 3.0 — Changelog
+  world\CLOUD_system\3.0\PHASE_2_3_SUMMARY.md                              3518B  Phase 2.3 — VFX Contrail (Конденсационные следы)
+  world\CLOUD_system\3.0\PHASE_2_4_STORM_LIGHTNING_PLAN.md                13368B  Phase 2.4 — VFX: Молнии в грозовых ячейках (ПЛАН РЕАЛИЗАЦИИ)
+  world\CLOUD_system\3.0\STATUS.md                                         4768B  CLOUD_system 3.0 — Итоговый статус
+  world\CLOUD_system\3.0\STORM_FORM_RUNTIME_INVESTIGATION.md               7347B  Storm System 3.0 — Form & Runtime Tweaking Investigation
+  world\CLOUD_system\3.0\VEIL_FO_EXTRACTION_T-FO09P.md                     3217B  T-FO09P — Veil вынесен из CloudManager в отдельный VeilController + FO-адаптация
+  world\CLOUD_system\ITERATIONS.md                                         5915B  CLOUD_system — Iteration Log
+  world\COMBINE_MESHES_TO_COLLIDER.md                                      9554B  🧩 CombineMeshesToCollider — Пайплайн импорта Blender-схем
+  world\Calendar\Day-Night\DAILY_HUE_VARIETY.md                            3362B  Daily Hue Variety — суточный сдвиг hueShift
+  world\Calendar\Day-Night\IMPLEMENTATION_REPORT.md                        5466B  Day-Night Cycle — Implementation Report
+  world\Calendar\Day-Night\PLAN.md                                        13651B  Day-Night Cycle — Implementation Plan
+  world\Calendar\Day-Night\SESSION_SUMMARY.md                              5992B  Star Sky System - Session Summary
+  world\Calendar\ITERATIONS.md                                             1046B  Calendar / TimeManager — Итерации
+  world\Calendar\PLAN_TimeManager.md                                       8833B  TimeManager — План реализации
+  world\Calendar\SEASONAL_TEMPERATURE.md                                   2828B  Seasonal Temperature — температура от календаря
+  world\Landscape_TechnicalDesign.md                                      43391B  Landscape Technical Design — Project C: The Clouds
+  world\LargeScaleMMO\1_Iteration\01_Architecture_Plan.md                 23428B  Large-Scale MMO World Streaming Architecture
+  world\LargeScaleMMO\1_Iteration\02_Technical_Research.md                16087B  Technical Research: Large-Scale MMO Worlds in Unity 6
+  world\LargeScaleMMO\1_Iteration\ADR-0002_WorldStreaming_Architecture.md   8388B  ADR-0002: World Streaming Architecture for Large-Scale MMO
+  world\LargeScaleMMO\1_Iteration\AGENTS_PROMPTS.md                       13542B  Agent Prompts — Phase 2: World Streaming
+  world\LargeScaleMMO\1_Iteration\CURRENT_STATE.md                        11936B  Project C — Large Scale MMO: Deep Analysis & Current State
+  world\LargeScaleMMO\1_Iteration\FLOAT_PRECISION_ISSUE.md                 1081B  FLOAT PRECISION ISSUE — Подтверждено
+  world\LargeScaleMMO\1_Iteration\ITERATION_PLAN.md                        9094B  Project C — Large Scale MMO: Iteration Plan
+  world\LargeScaleMMO\1_Iteration\MAIN_SCENE_SETUP.md                      5758B  Настройка основной сцены для World Streaming Phase 2
+  world\LargeScaleMMO\1_Iteration\NEXT_SESSION_PROMPT.md                   2523B  Next Session Prompt: NetworkTransform + FloatingOriginMP — Артефакты синхронизации
+  world\LargeScaleMMO\1_Iteration\README.md                                7391B  Large Scale MMO — Streaming System
+  world\LargeScaleMMO\1_Iteration\SOLUTION_OPTIONS.md                      1815B  FloatingOrigin — Варианты решения
+  world\LargeScaleMMO\1_Iteration\combinesessions\ALL_ITERATIONS.md        7181B  All Iterations — Seamless World 650K Radius
+  world\LargeScaleMMO\1_Iteration\combinesessions\INDEX.md                 3198B  Large Scale MMO — Combined Session Prompts
+  world\LargeScaleMMO\1_Iteration\combinesessions\ITERATION_1_SESSION.md   2593B  Iteration 1 Session Prompt: Fix FloatingOriginMP Jitter & Integration
+  world\LargeScaleMMO\1_Iteration\combinesessions\ITERATION_2_SESSION.md   2529B  Iteration 2 Session Prompt: Fix WorldStreamingManager Integration
+  world\LargeScaleMMO\1_Iteration\combinesessions\ITERATION_3_SESSION.md   3095B  Iteration 3 Session Prompt: Fix PlayerChunkTracker Integration
+  world\LargeScaleMMO\1_Iteration\combinesessions\ITERATION_4_SESSION.md   4063B  ITERATION 4 — ИТОГОВЫЙ ОТЧЁТ
+  world\LargeScaleMMO\1_Iteration\combinesessions\ITERATION_5_SESSION.md   3082B  Iteration 5 Session Prompt: Multiplayer Test
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_1\COMPLETION_REPORT.md   2851B  Iteration 1: Final Completion Report
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_1\DEEP_ANALYSIS_RESULTS.md   5061B  Deep Analysis Results: FloatingOriginMP Jitter Problem
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_1\ITERATION_STATUS.md   3107B  Iteration 1: Текущий Статус
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_1\SESSION_REPORT.md   5620B  Iteration 1: Session Report
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_1\SESSION_START.md   2376B  Iteration 1: Session Start
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_1\TEST_CHECKLIST.md   2648B  Iteration 1: Тестовый чеклист
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_1\TEST_RESULTS.md   2588B  Iteration 1: Test Results
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_2\COMPLETION_REPORT.md   4848B  Iteration 2: Final Completion Report
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_2\SESSION_END.md   3022B  Iteration 2: Session End Report
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_2\SESSION_START.md   2819B  Iteration 2 Session Start
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_2\TEST_CHECKLIST.md   2102B  Iteration 2: Test Checklist
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\ANALYSIS_I38_CORRECT_FIX.md   4047B  Iteration 3.8 — ПЕРЕСМОТР ФИКСА
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\ANALYSIS_I38_ROOT_CAUSE.md   7107B  Iteration 3.8 — ROOT CAUSE ANALYSIS & FIX
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\ANALYSIS_I3_DEEP.md  22852B  Iteration 3 — Deep Analysis: Subagent Research Report
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\ARCHITECTURE_STRUCTURE.md   7527B  Iteration 3: Структурированный анализ архитектуры
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\COMPLETION_REPORT.md   5087B  Iteration 3: Completion Report
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\CRITICAL_ANALYSIS_ITERATION4.md   8017B  CRITICAL ANALYSIS: Iteration 4 — Root Cause & Solution
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\I3_14_DEBUG_LOG_ANALYSIS.md   4421B  Iteration 3.14: Анализ логов — КРИТИЧЕСКАЯ ПРОБЛЕМА
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\I3_14_INVESTIGATION.md   5485B  Iteration 3.14: Расследование проблемы с чанками
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\I3_14_TEST_RESULTS.md   5597B  Iteration 3.14: Результаты тестирования
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\I3_CHUNK_LOADING_FIX.md   2448B  FIX I3-002: Chunk Loading Around Player (Not Spawn)
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\I3_DEBUG_MASTER_PROMPT.md   5431B  🎯 Master Prompt: Iteration 3 Debug Recovery
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\I3_FIX_ATTEMPTS.md   5974B  ITERATION 3: LOG FIX ATTEMPTS
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\I4_CHUNK_LOADER_ANALYSIS.md   5769B  🎯 I4: Chunk Loader Offset Problem Analysis
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\I4_FIX_SUMMARY.md   2721B  🎯 I4: Chunk Loader Player Position Fix - COMPLETED
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\ITERATION4_FIXES.md   4827B  Iteration 4 — Applied Fixes
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\MASTER_PROMPT.md   5681B  🎯 MASTER PROMPT: Iteration 3 — Floating Origin + Chunk Streaming
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\NEW_SOLUTION_ANALYSIS.md   8914B  Iteration 3: НОВОЕ РЕШЕНИЕ — Детальный анализ
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\NEXT_SESSION_PROMPT.md   6176B  Iteration 3.1 — Session Start Prompt
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\NEXT_SESSION_PROMPT_I32.md   3724B  Iteration 3.2 — Session Start Prompt
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\NEXT_SESSION_PROMPT_I34.md   9011B  Iteration 3.4 — Session Start Prompt
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\PROBLEM_ANALYSIS_STRUCTURE.md  11289B  FloatingOriginMP — СТРУКТУРИРОВАННЫЙ АНАЛИЗ ПРОБЛЕМ (ITERATION 3)
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END.md   2660B  Iteration 3: Session End
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I31.md   4536B  Iteration 3.1 — Session End: Chunk Oscillation Fix
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I31_v2.md   5783B  Iteration 3.1 — Session End Report v2
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I32.md   3267B  Iteration 3.2 — Session End Report
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I33.md   4487B  Iteration 3.3 — Chunk Oscillation устранён (ФИНАЛЬНЫЙ ФИКС)
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I33_COMPLETE.md  10550B  Iteration 3 — Session End: Complete Summary
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I34.md   3099B  Iteration 3.4 — Session End
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I35.md   3253B  Iteration 3.5 — Session End: Oscillation Fix
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I35_COMPLETE.md   3723B  Iteration 3.5 — COMPLETE: Oscillation Fix — Финальный Отчёт
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I36.md   4988B  Iteration 3.6 — Session End: Coordinate Offset Fix
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I36_BUG.md   3835B  Iteration 3.6 — BUG FOUND: Infinite Server Shift
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I37.md   8051B  Iteration 3.7 — Session End: Offset Growth Fix Complete
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I38.md   4222B  Iteration 3.8 — SESSION END: ROOT CAUSE FOUND & FIXED
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_I39.md   3242B  Iteration 3.11 — ИСПРАВЛЕНИЕ БЕСКОНЕЧНОГО СДВИГА
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_END_v2.md   8801B  Iteration 3 — Session End Report v2
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_PROMPT_I34_FINAL.md   5694B  Iteration 3.4 — Session Prompt: Race Conditions Fix
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_PROMPT_I35.md   3968B  Iteration 3.5 — Session Prompt: Oscillation Fix
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_PROMPT_I36.md   3472B  Iteration 3.6 — Session Prompt: Deep Analysis Required
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_PROMPT_I37.md   4102B  Iteration 3.7 — Session Prompt: Тестирование Infinite Shift Fix
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_PROMPT_I38_ANALYSIS.md   4535B  Iteration 3.8 — DEEP ANALYSIS: Offset Still Growing
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SESSION_START.md   3460B  Iteration 3: Session Start — PlayerChunkTracker Integration
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\SOLUTION_ATTEMPTS_LOG.md  13138B  Iteration 3: Журнал попыток решения проблем
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\TEST_CHECKLIST.md   2861B  Iteration 3: Test Checklist
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\iteration_3_backup\CRITICAL_ANALYSIS_ITERATION4.md   8017B  CRITICAL ANALYSIS: Iteration 4 — Root Cause & Solution
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\iteration_3_backup\I3_CHUNK_LOADING_FIX.md   2448B  FIX I3-002: Chunk Loading Around Player (Not Spawn)
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\iteration_3_backup\I3_DEBUG_MASTER_PROMPT.md   5431B  🎯 Master Prompt: Iteration 3 Debug Recovery
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\iteration_3_backup\I3_FIX_ATTEMPTS.md   5974B  ITERATION 3: LOG FIX ATTEMPTS
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\iteration_3_backup\I4_CHUNK_LOADER_ANALYSIS.md   5769B  🎯 I4: Chunk Loader Offset Problem Analysis
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\iteration_3_backup\I4_FIX_SUMMARY.md   2721B  🎯 I4: Chunk Loader Player Position Fix - COMPLETED
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\iteration_3_backup\I5_CHUNK_LOADING_FIX.md   6789B  I5-001 FIX: Chunk Loading Around Player - FINAL
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_3\iteration_3_backup\ITERATION4_FIXES.md   4827B  Iteration 4 — Applied Fixes
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_4.4\MASTER_PROMPT.md  10122B  ITERATION 4.4: NPC System — Master Prompt
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_4.4\NPC_ANALYSIS.md   7169B  NPC System — Архитектурный анализ
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_4.4\SOLUTION_ATTEMPTS_LOG.md   5121B  NPC System — Solution Attempts Log
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_4\CHEST_ADAPTATION_ANALYSIS.md   5474B  Iteration 4: Анализ адаптации существующих систем
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_4\MASTER_PROMPT.md   8695B  🎯 MASTER PROMPT: Iteration 4 — Chests, Items, NPCs
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_4\REPORT.md    5299B  Iteration 4: Отчёт о выполненных работах
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_4\SOLUTION_ATTEMPTS_LOG.md   5776B  Iteration 4: Журнал попыток решения задач
+  world\LargeScaleMMO\1_Iteration\combinesessions\iteration_4\TEST_GUIDE.md   3890B  Iteration 4: Руководство по тестированию
+  world\LargeScaleMMO\2_iteration_scene-mode\COMPLETION_REPORT.md          4878B  Scene-Based World Streaming - Iteration 2 Completion Report
+  world\LargeScaleMMO\2_iteration_scene-mode\INDEX.md                      1511B  Iteration 2: Scene-Based World Streaming
+  world\LargeScaleMMO\2_iteration_scene-mode\SCENE_ARCHITECTURE_DECISION.md  13123B  Large Scale MMO Architecture: Scene-Based World
+  world\LargeScaleMMO\2_iteration_scene-mode\SYSTEM_OVERVIEW.md            6054B  24+1 Scene World System
+  world\LargeScaleMMO\2_iteration_scene-mode\doc\WORLD_STREAMING_SYSTEM.md   6249B  World Streaming System - Architecture Report
+  world\LargeScaleMMO\2_iteration_scene-mode\editor_errors\CS0136_PREVENTION.md   1655B  CS0136 Error Prevention Checklist
+  world\LargeScaleMMO\2_iteration_scene-mode\editor_errors\ERRORS_ANALYSIS_28042026.md   8393B  Editor Errors Analysis: 20-30_28042026
+  world\LargeScaleMMO\2_iteration_scene-mode\editor_errors\FIX_LOG_28042026.md   9469B  Fix Log: Editor Errors Session 20-30_28042026 + Additional Fixes
+  world\LargeScaleMMO\2_iteration_scene-mode\editor_errors\FIX_LOG_28042026_TYPE_NAMESPACE.md  10986B  Fixes Applied: Type Namespace + Ambiguous Object Errors (28.04.2026)
+  world\LargeScaleMMO\2_iteration_scene-mode\editor_errors\GRAPH_REPORT_28042026.md  11548B  Graph Report - docs/world/LargeScaleMMO/2_iteration_scene-mode  (2026-04-28)
+  world\LargeScaleMMO\2_iteration_scene-mode\editor_errors\NETWORK_CONFIG_CYCLICAL_ERRORS.md   4605B  NetworkManagerController - Cyclical Error Pattern Analysis
+  world\LargeScaleMMO\2_iteration_scene-mode\editor_errors\NETWORK_CONFIG_FIX_2026-04-30.md   2618B  NetworkManagerController Fix - 2026-04-30
+  world\Localization\00_PLAN.md                                           20188B  План внедрения системы локализации — Project C
+  world\Localization\01_AUDIT_HardcodedStrings.md                          7636B  Аудит всех хардкоженных строк
+  world\Localization\02_FINAL_DESIGN_AND_PLAN.md                          30084B  Локализация Project C: The Clouds — ФИНАЛЬНЫЙ дизайн и план реализации
+  world\Localization\03_INVESTIGATION_SharedData_RootCause_And_Fix_Plan.md  11909B  03 — Расследование: почему фазы локализации сделаны неправильно + план исправления
+  world\Localization\04_PLAN_Phase8_DeepLocalization.md                    7882B  План: Глубокая локализация — Phase 8 (LOC-11)
+  world\Localization\05_ANALYSIS_AutoRegister_SO_Keys.md                  13778B  05 — Анализ: авто-регистрация локализационных ключей для ScriptableObject
+  world\Localization\06_POSTMORTEM_T-UI09_Localization_Blast_Radius.md     6157B  T-UI09 — Postmortem: почему маленькая UI-фича повредила локализацию
+  world\Localization\ITERATIONS.md                                        11841B  Локализация — Журнал итераций
+  world\Localization\POSTMORTEM-LOC-10.md                                  2282B  Post-mortem: кастомный CSV-экспорт (LOC-10)
+  world\Materials and shaders\EdgeDetection-Borderlands-Outline.md         6673B  Edge Detection — Borderlands-style outline (post-process)
+  world\PLACEMENT_SCRIPTS\FARMS_PREFAB\ITERATIONS.md                        539B  Итерации разработки — Port Station Creator
+  world\PLACEMENT_SCRIPTS\FARMS_PREFAB\README.md                           3652B  Port Station Creator (FARMS_PREFAB)
+  world\PLACEMENT_SCRIPTS\NPC\ITERATIONS.md                                1153B  Итерации NPC World Inspector
+  world\PLACEMENT_SCRIPTS\NPC\README.md                                    3521B  NPC World Inspector — единый инспектор NPC по всем WorldScene
+  world\PLACEMENT_SCRIPTS\Schedule\ITERATIONS.md                           1926B  Итерации — NpcShipScheduleOverviewWindow
+  world\PLACEMENT_SCRIPTS\Schedule\README.md                               2164B  NPC Ship Schedule Overview
+  world\PLACEMENT_SCRIPTS\Schedule\RUNTIME_EDITING_ANALYSIS.md            11560B  Runtime Schedule Editing — анализ
+  world\PLACEMENT_SCRIPTS\Ships\ITERATIONS.md                              8997B  Итерации разработки — ShipPresetCreator
+  world\PLACEMENT_SCRIPTS\Ships\README.md                                  5232B  ShipPresetCreator — Универсальный создатель кораблей
+  world\PLACEMENT_SCRIPTS\Ships\SHIP_SUMMARY_TOOL.md                       5095B  Ship Summary Tool — сводный редактор кораблей
+  world\SETTLEMENT_COLLIDERS.md                                            2851B  📦 Settlement Colliders — коллайдеры поселений в один клик
+  world\Winds\GlobalWind_Ships.md                                          5187B  Глобальный ветер → Корабли и Персонажи (WindManager)
+  world\Winds\ITERATIONS.md                                                6390B  Итерации — Система Ветров (Winds)
+  world\Winds\SplineWindZone.md                                            6587B  Сплайновые Ветровые Коридоры (SplineWindZone)
+  world\WorldLandscape_Design.md                                          31817B  WorldLandscape Design — Project C: The Clouds
+  world\admin_tool\00_ADMIN_PANEL_SURVEY.md                               18676B  Admin-панель (система админа) — сводка «от простого к сложному»
+  world\admin_tool\01_TOGGLE_INVENTORY.md                                 10338B  Инвентарь тогглов, хоткеев и точек входа для админ-панели
+  world\admin_tool\L1_DESIGN.md                                            9653B  L1 Admin-панель — детальный дизайн-док
+  world\admin_tool\perfomance\ITERATIONS.md                                3189B  Performance Monitoring — Iterations Log
+  world\admin_tool\perfomance\PERFORMANCE_MONITORING_RESEARCH.md          30419B  Performance Monitoring & Debugging — Глубокий Анализ v2.0
+  world\buildings\00_BUILD_SYSTEM_DEEP_ANALYSIS.md                        50020B  Строительство в мире — глубокий анализ подсистем
+  world\chunk_system\01_CURRENT_STATE.md                                  14075B  01. Текущее состояние: сцены, стриминг, террейн, FO
+  world\chunk_system\02_DO_WE_NEED_CLIENT_CHUNK_LOADER.md                 10958B  02. Нужен ли клиентский чанк-лоадер и поможет ли он в оптимизации
+  world\chunk_system\03_DISTANT_CITIES_TERRAIN.md                          7372B  03. Видимые города вдали и террейн/горы без чанк-лоадера
+  world\chunk_system\04_NETWORK_TOPOLOGIES.md                              8243B  04. Как это работает на host-client / server-client среди N клиентов
+  world\chunk_system\05_FO_INTEGRATION.md                                 10101B  05. Как чанки лягут на FO-архитектуру
+  world\chunk_system\06_OPTIONS_AND_ROADMAP.md                             7706B  06. Опции, рекомендация, роадмап, чек-листы
+  world\chunk_system\README.md                                             5861B  Chunk System — ресёрч: нужен ли клиентский чанк-лоадер
+  world\compas\WORLD_COMPASS_NORTH_2026-09-17.md                           3791B  Мировой компас: север через розу ветров (WORLD-COMPASS)
+  world\distantfocus\DESIGN_farfocus.md                                    4466B  FarFocus — дизайн: фокус дальних объектов своим проходом (DF-001 rev.7)
+  world\distantfocus\README.md                                             8521B  DistantFocus — автофокус зрения (DoF по взгляду)
+  world\earth_curves\post_mortem.md                                        5541B  Earth Curvature — Post-Mortem
+  world\floatingorigin\00_ARCHITECTURE_AND_PLAN.md                       117663B  Floating origin — архитектура и поэтапное внедрение
+  world\floatingorigin\01_AUDIT_AND_SOURCES.md                             9460B  T-FO01 — baseline, границы координат и первоисточники
+  world\floatingorigin\02_FOUNDATION_IMPLEMENTATION.md                     6221B  T-FO02 — реализованное координатное ядро
+  world\floatingorigin\03_BOUNDARY_REVIEW.md                              10529B  T-FO03 — инвентаризация и первичная классификация границ
+  world\floatingorigin\04A_NETWORK_PROTOCOL_AND_BUFFER.md                 10462B  T-FO04A — протокол пространственных снимков и буфер приёма
+  world\floatingorigin\04B_NGO_TRANSPORT.md                               10992B  T-FO04B — NGO lifecycle/control/motion transport
+  world\floatingorigin\04C_FRAME_POSE_ADAPTER.md                          10954B  T-FO04C — session/frame coordinator и pose adapter
+  world\floatingorigin\04D_ACTOR_READINESS.md                             10909B  T-FO04D — dormant actor readiness и baseline cache hooks
+  world\floatingorigin\04E_NETWORK_STARTUP_CONTRACTS.md                   10281B  T-FO04E — startup/layout/spawn/parent contracts
+  world\floatingorigin\04F_CUSTOM_HIERARCHY_BASELINES.md                   8948B  T-FO04F — custom hierarchy from trusted baselines
+  world\floatingorigin\04G_PLAYER_SPAWN_BOOTSTRAP.md                      11926B  T-FO04G — player spawn bootstrap и initial placement
+  world\floatingorigin\04H_SCENE_CATALOG_AND_LIFECYCLE.md                  9993B  T-FO04H — reviewed scene catalog и lifecycle receipts
+  world\floatingorigin\04I_NATIVE_SCENE_EXECUTION.md                      10772B  T-FO04I — baked source binding и ограниченный native executor
+  world\floatingorigin\05A_PLAYER_GLOBAL_PERSISTENCE.md                   11012B  T-FO05A — глобальная запись позиции игрока и read-only legacy import
+  world\floatingorigin\05B_CHECKPOINT_TRANSACTIONS.md                     12300B  T-FO05B — транзакционный repository глобальных player checkpoints
+  world\floatingorigin\05C_AUTHORITATIVE_CAPTURE_AND_MERGE.md             12609B  T-FO05C — authoritative player capture, offline merge и publication guard
+  world\floatingorigin\05D_CHECKPOINT_SPAWN_SOURCE.md                     16616B  T-FO05D — concrete checkpoint spawn source и остаток интеграции
+  world\floatingorigin\05E_SESSION_ORCHESTRATION.md                       13141B  T-FO05E — session orchestration, checkpoint cadence и безопасный выход
+  world\floatingorigin\06AA_CLOSURE.md                                     2259B  T-FO06AA — closure report
+  world\floatingorigin\06AG_READINESS_BUNDLE.md                            2098B  T-FO06AG — aggregated rebase readiness bundle
+  world\floatingorigin\06AP_CONSOLIDATED_INTEGRATION_STATUS.md             3592B  T-FO06AP — consolidated integration status and next gate
+  world\floatingorigin\06AT_RUNTIME_TRANSACTION_EXECUTION_BOUNDARY.md      3119B  T-FO06AT — runtime transaction execution and rollback boundary
+  world\floatingorigin\06AU_CONCRETE_ADAPTER_READINESS_AUDIT.md            4232B  T-FO06AU — concrete adapter readiness audit
+  world\floatingorigin\06AV_TRANSFORM_NATIVE_ADAPTER.md                    2566B  T-FO06AV — owner-reviewed Transform native adapter
+  world\floatingorigin\06AW_RIGIDBODY_NATIVE_ADAPTER.md                    1982B  T-FO06AW — owner-reviewed Rigidbody native adapter
+  world\floatingorigin\06AX_CAMERA_HISTORY_NATIVE_ADAPTER.md               2464B  T-FO06AX — owner-reviewed CameraHistory native adapter
+  world\floatingorigin\06AY_REMAINING_ADAPTER_BLOCKERS.md                  3721B  T-FO06AY — remaining native adapter blocker review
+  world\floatingorigin\06AZ_NETWORK_BASELINE_READINESS_CONTINUITY_CONTRACT.md   4403B  T-FO06AZ — pure NetworkBaseline readiness and continuity contract
+  world\floatingorigin\06A_PILOT_SCOPE_PREFLIGHT.md                       10052B  T-FO06A — preflight конкретного пилотного scope
+  world\floatingorigin\06BC_LIVE_MANIFEST_RUNTIME_BRIDGE.md                3685B  T-FO06BC — live manifest runtime bridge
+  world\floatingorigin\06BD_RUNTIME_MANIFEST_SOURCE_COMPILE_GATE.md        2848B  T-FO06BD — runtime manifest source compile gate
+  world\floatingorigin\06BF_PROVENANCE_ADMISSION_PROVIDER_BOUNDARY.md      2544B  T-FO06BF — provenance-bearing admission provider boundary
+  world\floatingorigin\06BG_NATIVE_ADAPTER_EVIDENCE_SOURCE.md              2104B  T-FO06BG — native adapter evidence source
+  world\floatingorigin\06BH_SHIP_DECK_NAV_SYNCHRONOUS_LIFECYCLE_CONTRACT.md   2187B  T-FO06BH — ShipDeckNav synchronous lifecycle contract
+  world\floatingorigin\06BI_NETWORK_BASELINE_ADAPTER_BOUNDARY.md           1936B  T-FO06BI — NetworkBaseline adapter boundary
+  world\floatingorigin\06BK_USER_CONTROLLED_STRUCTURED_EVIDENCE_INTAKE.md   2169B  T-FO06BK — user-controlled structured evidence intake
+  world\floatingorigin\06BL_PROVIDER_SOURCE_BINDING_API.md                 2007B  T-FO06BL — provider source binding API
+  world\floatingorigin\06BM_REVIEWED_ADMISSION_EVIDENCE_INTAKE.md          1775B  T-FO06BM — reviewed admission evidence intake
+  world\floatingorigin\06BN_NETWORK_BASELINE_REVERSIBLE_CAPABILITY.md      2626B  T-FO06BN — protocol-owned NetworkBaseline reversible capability boundary
+  world\floatingorigin\06BO_NETWORK_BASELINE_NATIVE_ADAPTER_SEAM.md        2193B  T-FO06BO — protocol-owned NetworkBaseline native adapter seam
+  world\floatingorigin\06BQ_NETWORK_BASELINE_PROTOCOL_LEDGER.md            2582B  T-FO06BQ — server-owned NetworkBaseline protocol ledger boundary
+  world\floatingorigin\06BT_NETWORK_BASELINE_PROTOCOL_HOST_IMPLEMENTATION.md   2921B  T-FO06BT — concrete NetworkBaseline protocol host
+  world\floatingorigin\06BU_NETWORK_BASELINE_NATIVE_ADAPTER_SOURCE.md      2506B  T-FO06BU — NetworkBaseline native adapter source binding
+  world\floatingorigin\06BV_NATIVE_ADAPTER_EVIDENCE_SOURCE_BINDING.md      2219B  T-FO06BV — native adapter evidence source binding
+  world\floatingorigin\06BW_ADMISSION_SOURCE_HANDOFF.md                    2202B  T-FO06BW — admission source handoff preflight
+  world\floatingorigin\06BX_SHIP_DECK_NAV_NATIVE_ADAPTER_SOURCE.md         3045B  T-FO06BX — ShipDeckNav native adapter source
+  world\floatingorigin\06BY_SHIP_DECK_NAV_PASSENGER_PROVENANCE.md          2522B  T-FO06BY — ShipDeckNav passenger provenance binding
+  world\floatingorigin\06BZ_SHIP_DECK_NAV_NATIVE_SNAPSHOT_BOUNDARY.md      2661B  T-FO06BZ — ShipDeckNav native snapshot boundary
+  world\floatingorigin\06B_PILOT_PLAYER_PREFAB.md                          6193B  T-FO06B — явная регистрация NGO и изолированный пилотный префаб игрока
+  world\floatingorigin\06CA_NPC_SHIP_DECK_SNAPSHOT_CONTRACT.md             2622B  T-FO06CA — NPC ship-deck snapshot contract
+  world\floatingorigin\06CB_COMBINED_SHIP_DECK_TRANSACTION_HOST.md         2728B  T-FO06CB — combined ShipDeckNav and passenger transaction host
+  world\floatingorigin\06CC_COMBINED_SHIP_DECK_ROLLBACK_LINEAGE.md         2578B  T-FO06CC — combined ShipDeckNav rollback result and binding lineage
+  world\floatingorigin\06CE_SHIP_DECK_PASSENGER_PROTOCOL_LEDGER.md         3041B  T-FO06CE — ShipDeck passenger protocol ledger boundary
+  world\floatingorigin\06CG_SHIP_DECK_PASSENGER_LIFECYCLE_PRODUCER_CONTRACT.md   2773B  T-FO06CG — ShipDeck passenger lifecycle producer contract
+  world\floatingorigin\06CH_SHIP_DECK_PASSENGER_LIFECYCLE_SOURCE_BINDING.md   2460B  T-FO06CH — ShipDeck passenger lifecycle source binding preflight
+  world\floatingorigin\06CI_SHIP_DECK_PASSENGER_LIFECYCLE_BINDING_HANDOFF.md   2525B  T-FO06CI — ShipDeck passenger lifecycle binding handoff
+  world\floatingorigin\06CJ_COMBINED_HOST_LIFECYCLE_BINDING_PREFLIGHT.md   2225B  T-FO06CJ — Combined ShipDeck host lifecycle binding preflight
+  world\floatingorigin\06CK_COMBINED_SNAPSHOT_LIFECYCLE_BINDING_IDENTITY.md   2249B  T-FO06CK — Combined snapshot lifecycle binding identity gate
+  world\floatingorigin\06CN_SHIP_DECK_LIFECYCLE_COORDINATOR_IMPLEMENTATION.md   5026B  T-FO06CN — ShipDeck lifecycle coordinator implementation gate
+  world\floatingorigin\06CO_SHIP_DECK_LIFECYCLE_COORDINATOR_SOURCE_BINDING_HANDOFF.md   5164B  T-FO06CO — ShipDeck lifecycle coordinator source-binding / fact-handoff gate
+  world\floatingorigin\06CR_SHIP_DECK_LIFECYCLE_PRODUCER_OWNER_REVIEW_GATE.md   9846B  T-FO06CR — ShipDeck lifecycle producer owner-review gate
+  world\floatingorigin\06CS_SHIP_DECK_LIFECYCLE_PRODUCER_BRIDGE_IMPLEMENTATION.md   5818B  T-FO06CS — ShipDeck lifecycle producer/bridge implementation gate
+  world\floatingorigin\06CT_RUNTIME_CALLER_BINDING_AND_FACT_SOURCE_INGRESS.md   3706B  T-FO06CT — ShipDeck lifecycle producer binding and explicit fact-source ingress
+  world\floatingorigin\06CU_SHIPDECK_LIFECYCLE_CALLER_BINDING_DECISION_GATE.md   3629B  T-FO06CU — ShipDeck lifecycle caller binding decision gate
+  world\floatingorigin\06CV_SHIP_DECK_LIFECYCLE_STABLE_IDENTITY_AND_SERVER_BOUNDARY.md   3126B  T-FO06CV — ShipDeck lifecycle stable identity and server boundary
+  world\floatingorigin\06CW_SHIP_DECK_IDENTITY_PUBLICATION_BRIDGE.md       2550B  T-FO06CW — ShipDeck identity publication bridge
+  world\floatingorigin\06CY_CONTROLLED_REBASE_VERTICAL_SLICE.md            4586B  T-FO06CY — Controlled rebase vertical slice
+  world\floatingorigin\06CZ_REBASE_SCOPE_AND_IDENTITY_DRIFT_FIX.md         5097B  T-FO06CZ — Rebase scope (inactive roots) + native executor identity-drift survivability
+  world\floatingorigin\06C_PILOT_PREFAB_TRACKING.md                        3207B  T-FO06C — отслеживание пилотного префаба в Git
+  world\floatingorigin\06DA_NETWORK_TELEPORT_PUBLICATION.md                2524B  T-FO06DA — Публикация сети после controlled rebase (NetworkTransform.Teleport)
+  world\floatingorigin\06DB_REBASE_AWARE_RESPAWN_THRESHOLD.md              2604B  T-FO06DB — Rebase-aware порог падения (respawn deathY едет вместе с миром)
+  world\floatingorigin\06DC_RESPAWN_SHIFT_FLAG.md                          2533B  T-FO06DC — Флаг прямого сдвига deathY (двойной сдвиг в F9-потоке)
+  world\floatingorigin\06DD_CAMERA_HISTORY_SHIFT.md                        2419B  T-FO06DD — Сдвиг истории камеры вместе с миром
+  world\floatingorigin\06DF_DECK_REBASE_NOTIFICATION.md                    2277B  T-FO06DF — Уведомление палуб о сдвиге (сброс кулдауна пере-регистрации)
+  world\floatingorigin\06DG_PLATFORM_CACHE_SHIFT.md                        2369B  T-FO06DG — Сдвиг кэша платформы игрока вместе с миром
+  world\floatingorigin\06DH_HOST_AND_SECOND_CLIENT_PREP.md                 3504B  T-FO06DH — Host + второй клиент: подготовка кода без тестов
+  world\floatingorigin\06DI_GLOBAL_FRAME_ORIGIN_BLOCKER.md                 2966B  T-FO06DI — Блокер: фрейм GlobalMotionWorld не едет вместе с миром (global-идентичность пилота прыгает на translation)
+  world\floatingorigin\06D_PILOT_REGISTRY_AND_REMAINDER.md                 5519B  T-FO06D — минимальный пилотный реестр и фиксация остатка
+  world\floatingorigin\06E_SCENE_TRACKING_AND_REGISTRY_FORK.md             4701B  T-FO06E — BootstrapScene под Git и развилка применения пилотного реестра
+  world\floatingorigin\06F_GLOBAL_PATH_REGISTRY_SWAP.md                    5448B  T-FO06F — условная подмена реестра в global-пути (вариант B)
+  world\floatingorigin\06G_SCENE_REVIEW_AND_MISSING_SCRIPTS.md             5173B  T-FO06G — осмотр под каталог и опознание отсутствующих скриптов
+  world\floatingorigin\06H_DEAD_COMPONENT_CLEANUP.md                       3390B  T-FO06H — удаление мёртвых компонентов BootstrapScene
+  world\floatingorigin\06I_PILOT_CATALOG_SIZING.md                         4086B  T-FO06I — объём каталога пилота и ещё один мёртвый компонент
+  world\floatingorigin\06J_LIVE_SCENE_REVIEW.md                            5730B  T-FO06J — живой осмотр сцен пилота и блокер удаления
+  world\floatingorigin\06K_CATALOG_FEASIBILITY_LIMIT.md                    6628B  T-FO06K — ручная уборка сцены и предел применимости каталога
+  world\floatingorigin\06L_GLOBAL_STATIC_WORLD_PILOT.md                  100241B  T-FO06L — global static-world pilot: текущий этап интеграции
+  world\floatingorigin\06M_REBASE_BOUNDARY_CENSUS.md                      10580B  T-FO06M — read-only rebase boundary census
+  world\floatingorigin\06N_COORDINATOR_VALIDATION.md                       3229B  T-FO06N — pure validation coverage for the rebase coordinator
+  world\floatingorigin\06N_REBASE_TRANSACTION_CONTRACT.md                 10818B  T-FO06N — closed-world rebase participant set and atomic transaction contract
+  world\floatingorigin\06O_PARTICIPANT_IDENTITY_CENSUS.md                  3509B  T-FO06O — participant identity census
+  world\floatingorigin\06P_PARTICIPANT_IDENTITY_MAPPING.md                 4328B  T-FO06P — reviewed participant identity mapping
+  world\floatingorigin\06Q_CAMERA_NAV_NETWORK_BOUNDARY_AUDIT.md            5763B  T-FO06Q — camera, ShipDeckNav and NGO boundary audit
+  world\floatingorigin\06R_CATALOG_NETWORK_POLICY_AUDIT.md                 4143B  T-FO06R — catalog and NetworkObject policy cross-audit
+  world\floatingorigin\06S_PARTICIPANT_ADMISSION_POLICY_GATE.md            3688B  T-FO06S — participant admission policy gate
+  world\floatingorigin\06T_RUNTIME_PROOF_CONTRACT.md                       4232B  T-FO06T — dormant runtime-proof contract
+  world\floatingorigin\06V_SHIP_DECK_NAV_READINESS_GATE.md                 4007B  T-FO06V — ShipDeckNav/NavMesh readiness gate и passenger attachment contract
+  world\floatingorigin\06W_CAMERA_AND_ROLLBACK_PROOF_CONTRACTS.md          4470B  T-FO06W — camera ownership/history и Unity-state rollback proof contracts
+  world\floatingorigin\06Z_REBASE_TRANSACTION_BOUNDARY_CONTRACT.md         3058B  T-FO06Z — controlled rebase transaction boundary contract
+  world\floatingorigin\06Z_SHIP_DECK_RUNTIME_EVIDENCE_ADAPTER.md           5088B  T-FO06Z — dormant ShipDeckNav/passenger runtime evidence adapter
+  world\floatingorigin\06Z_SOURCE_AUDIT_AND_TRIGGER_ABSENCE.md             5012B  T-FO06Z — source audit: controlled-rebase trigger and runtime boundary
+  world\floatingorigin\07A_WORLD_FRAME_ORIGIN_SHIFT.md                     2701B  T-FO07A — Сдвиг origin фрейма мира вместе с контентом (первый шаг T-FO07)
+  world\floatingorigin\07B_ACTOR_REBIND_ACROSS_SHIFT.md                    3215B  T-FO07B — Перепривязка живых акторов через сдвиг фрейма (drain → shift → rebind)
+  world\floatingorigin\07C_PARTICLE_CLEAR_ON_SHIFT.md                      1572B  T-FO07C — Clear world-space частиц при сдвиге мира
+  world\floatingorigin\07E_PICKUP_NPC_CARRY_SHIFT.md                       1994B  T-FO07E — Сдвиг кэшей carry пикапов и NPC (пропажа пикапов при F8)
+  world\floatingorigin\07F_STORM_CELL_SHIFT.md                             1223B  T-FO07F — Сдвиг штормовых ячеек вместе с миром
+  world\floatingorigin\07H_SEATED_PLAYER_INPUT_GATE.md                     2192B  T-FO07H: гейт координат глушит весь ввод у посаженного игрока
+  world\floatingorigin\08A_NPC_SPAWNPOINT_SHIFT.md                         1466B  T-FO08A — Сдвиг домашней точки NPC (потеря внекорабельных NPC после F8)
+  world\floatingorigin\08B_RUNTIME_NPC_PARTICIPANTS.md                     2800B  T-FO08B — Рантайм-NPC как участники сдвига (потеря городских NPC после F8)
+  world\floatingorigin\08C_SHIP_ADAPTER_DESIGN.md                          4910B  T-FO08C — Ship adapter: проект (rebind пилота через ParentLocal-поток)
+  world\floatingorigin\08D_ROLLBACK_BROADCAST.md                           1420B  T-FO08D — Broadcast отката вторым клиентам (-T)
+  world\floatingorigin\09A_ACCEPTANCE_MATRIX.md                            4859B  T-FO09A — Матрица приёмки (§4 плана): статус по каждому критерию
+  world\floatingorigin\09B_AUTO_REBASE_IMPLEMENTATION.md                   2275B  T-FO09B — Авто-пороговый rebase: реализация
+  world\floatingorigin\09D_RESCUE_POINT_VOID.md                            2360B  T-FO09D — Спасение телепортирует, но точка (39835,2533,40003) не стоит на коллайдере
+  world\floatingorigin\09F_SPAWN_ANCHOR_FIELD.md                           1656B  T-FO09F — Явный якорь спавна из любой сцены
+  world\floatingorigin\09G_RESPAWN_MANAGER_SHIFT.md                        2178B  T-FO09G — Fallback-точки RespawnManager едут с миром
+  world\floatingorigin\09H_BOARD_AFTER_RESTART.md                          1929B  T-FO09H — Посадка на корабль выхода после рестарта (регрессия FO)
+  world\floatingorigin\09H_BOARD_FREEZE_FIX.md                             2168B  T-FO09H-fix — Мёртвое управление после посадки: recover-план вне фрейма
+  world\floatingorigin\09J_SPAWN_FRAME_EXTENT.md                           1815B  T-FO09J — Персистенция позиции: спавн вне фрейма 100000
+  world\floatingorigin\09K_ROLLBACK_BOOKS_FIX.md                           1624B  T-FO09K — Rollback возвращает книги: фантом кумулятива сейва
+  world\floatingorigin\09L_WIND_ZONE_SHIFT.md                              1466B  T-FO09L — Сдвиг AABB сплайн-зон ветра (Spline Wind Zone)
+  world\floatingorigin\09M_ALTITUDE_CORRIDOR_SHIFT.md                      2912B  T-FO09M: сдвиг высотных коридоров вместе с миром
+  world\floatingorigin\09N_RESCUE_TO_DEFAULT_SPAWN.md                      1248B  T-FO09N: Esc-«Спасение» — строго на дефолтную точку (revert T-FO09C)
+  world\floatingorigin\09O_FULL_REVIEW_AND_POLISH.md                       5547B  T-FO09O — Полный ресерч и код-ревью FO-интеграции (закрытие хост-версии)
+  world\floatingorigin\09R_BAKE_TOOL_GAP.md                                2606B  T-FO09R — Нет тулзы запекания каталога сцены (Bake): что отсутствует и зачем понадобится
+  world\floatingorigin\09S_NEW_CONTENT_PIPELINE.md                         9432B  T-FO09S — Пайплайн добавления нового контента на сцену (ретроспектива парома)
+  world\floatingorigin\PERSIST01_REBASE_AWARE_RESTORE.md                   5261B  T-FO-PERSIST: персистенция персонажа после сдвига (диагноз и план)
+  world\floatingorigin\README.md                                           3502B  Floating Origin — читаемый указатель (2026-09-14)
+  world\floatingorigin\archive_floatingoriginintegration\03_CENSUS_SUMMARY.md   2305B  T-FO03 — generated migration census
+  world\floatingorigin\archive_floatingoriginintegration\06AA_INITIAL_GLOBAL_SPAWN_GATE.md   3081B  T-FO06AA — initial global spawn gate integration
+  world\floatingorigin\archive_floatingoriginintegration\06AA_RESPAWN_WRITER_RUNTIME_INSTRUMENTATION.md   3069B  T-FO06AA — respawn writer runtime instrumentation
+  world\floatingorigin\archive_floatingoriginintegration\06AA_RESPAWN_WRITER_SOURCE_AUDIT.md   5414B  T-FO06AA — respawn writer source audit
+  world\floatingorigin\archive_floatingoriginintegration\06AA_RUNTIME_CAPTURE_01.md   4263B  T-FO06AA — runtime capture 01
+  world\floatingorigin\archive_floatingoriginintegration\06AA_RUNTIME_CAPTURE_02.md   4198B  T-FO06AA — runtime capture 02 after respawn-writer instrumentation
+  world\floatingorigin\archive_floatingoriginintegration\06AB_USER_CONTROLLED_RUNTIME_DRIVER.md   2725B  T-FO06AB — explicit user-controlled runtime driver boundary
+  world\floatingorigin\archive_floatingoriginintegration\06AC_NATIVE_ADAPTER_CONTRACT.md   2309B  T-FO06AC — native adapter contract
+  world\floatingorigin\archive_floatingoriginintegration\06AD_RUNTIME_READINESS_GATE.md   2346B  T-FO06AD — runtime readiness gate for native adapter connection
+  world\floatingorigin\archive_floatingoriginintegration\06AE_LIVE_MANIFEST_RECEIPT_SOURCE.md   2252B  T-FO06AE — live manifest receipt source
+  world\floatingorigin\archive_floatingoriginintegration\06AF_LIVE_MANIFEST_SESSION_EVIDENCE.md   2134B  T-FO06AF — live manifest session evidence gate
+  world\floatingorigin\archive_floatingoriginintegration\06AH_DRIVER_READINESS_AUTHORIZATION.md   2354B  T-FO06AH — runtime driver readiness authorization
+  world\floatingorigin\archive_floatingoriginintegration\06AI_RUNTIME_CONNECTION_EVIDENCE.md   2576B  T-FO06AI — runtime connection evidence contract
+  world\floatingorigin\archive_floatingoriginintegration\06AJ_RUNTIME_CONNECTION_AUTHORIZATION.md   2558B  T-FO06AJ — runtime connection authorization gate
+  world\floatingorigin\archive_floatingoriginintegration\06AK_RUNTIME_INSTALLATION_BOUNDARY.md   2353B  T-FO06AK — runtime installation boundary
+  world\floatingorigin\archive_floatingoriginintegration\06AL_DRIVER_INSTALLATION_AUTHORIZATION.md   2191B  T-FO06AL — driver installation authorization
+  world\floatingorigin\archive_floatingoriginintegration\06AM_DRIVER_INSTALLATION_IDENTITY_EVIDENCE.md   1894B  T-FO06AM — driver installation identity evidence
+  world\floatingorigin\archive_floatingoriginintegration\06AN_READINESS_ROLLOVER_INVALIDATION.md   1817B  T-FO06AN — readiness rollover invalidation
+  world\floatingorigin\archive_floatingoriginintegration\06AO_TERMINAL_FAILURE_INVALIDATION.md   1784B  T-FO06AO — terminal failure invalidation
+  world\floatingorigin\archive_floatingoriginintegration\06AQ_RUNTIME_CAPTURE_FOLLOWUP.md   6163B  T-FO06AQ — pointwise Play Mode evidence follow-up
+  world\floatingorigin\archive_floatingoriginintegration\06AQ_USER_CONTROLLED_EVIDENCE_REVIEW.md   2808B  T-FO06AQ — user-controlled runtime evidence review
+  world\floatingorigin\archive_floatingoriginintegration\06AR_USER_RUNTIME_CAPTURE_PROTOCOL.md   3310B  T-FO06AR — user runtime evidence package and capture protocol
+  world\floatingorigin\archive_floatingoriginintegration\06AS_RUNTIME_CAPTURE_FOLLOWUP.md   3129B  T-FO06AS — runtime capture follow-up and readiness status
+  world\floatingorigin\archive_floatingoriginintegration\06BA_NETWORK_BASELINE_OBSERVATION_AUDIT.md   3471B  T-FO06BA — NetworkBaseline observation-only audit
+  world\floatingorigin\archive_floatingoriginintegration\06BB_LIVE_MANIFEST_ADMISSION_RUNTIME_CENSUS.md   3231B  T-FO06BB — live manifest and participant admission runtime census
+  world\floatingorigin\archive_floatingoriginintegration\06BE_RUNTIME_ADMISSION_PROVIDER_BOUNDARY_AUDIT.md   4293B  T-FO06BE — runtime admission provider boundary audit
+  world\floatingorigin\archive_floatingoriginintegration\06BJ_RUNTIME_PROOF_AND_EVIDENCE_PRODUCER_BLOCKER_REVIEW.md   3124B  T-FO06BJ — runtime proof and evidence producer blocker review
+  world\floatingorigin\archive_floatingoriginintegration\06BP_NETWORK_BASELINE_HOST_READINESS_AUDIT.md   3261B  T-FO06BP — protocol-owned NetworkBaseline host readiness audit
+  world\floatingorigin\archive_floatingoriginintegration\06BR_NGO_LIFECYCLE_RECEIPT_SOURCE_AUDIT.md   3650B  T-FO06BR — NGO lifecycle receipt source audit
+  world\floatingorigin\archive_floatingoriginintegration\06BS_NGO_OWNERSHIP_LIFETIME_PRODUCER_CENSUS.md   3143B  T-FO06BS — NGO ownership/lifetime producer census
+  world\floatingorigin\archive_floatingoriginintegration\06CD_PASSENGER_GENERATION_SOURCE_GATE.md   2442B  T-FO06CD — passenger attachment and lifetime generation source gate
+  world\floatingorigin\archive_floatingoriginintegration\06CF_NPC_PASSENGER_GENERATION_SOURCE_AUDIT.md   3667B  T-FO06CF — NpcBrain passenger generation source audit
+  world\floatingorigin\archive_floatingoriginintegration\06CL_SHIP_DECK_LIFECYCLE_OWNER_AUDIT.md   3629B  T-FO06CL — ShipDeck lifecycle owner audit
+  world\floatingorigin\archive_floatingoriginintegration\06CM_SHIP_DECK_LIFECYCLE_COORDINATOR_DESIGN_GATE.md  10916B  T-FO06CM — ShipDeck lifecycle coordinator design gate
+  world\floatingorigin\archive_floatingoriginintegration\06CP_SHIP_DECK_LIFECYCLE_COORDINATOR_FACT_SOURCE_BINDING_READINESS_AUDIT.md  10965B  T-FO06CP — ShipDeck lifecycle coordinator explicit fact-source binding readiness audit
+  world\floatingorigin\archive_floatingoriginintegration\06CQ_SHIP_DECK_LIFECYCLE_FACT_SOURCE_OWNERSHIP_AND_INGRESS_DECISION_GATE.md  15453B  T-FO06CQ — ShipDeck lifecycle fact-source ownership and explicit ingress decision gate
+  world\floatingorigin\archive_floatingoriginintegration\06CX_RUNTIME_CAPTURE_REVIEW_02.md   3352B  T-FO06CX — Runtime capture review 02
+  world\floatingorigin\archive_floatingoriginintegration\06N_PARTICIPANT_MANIFEST_DESIGN.md   3537B  T-FO06N — participant-manifest design/read-only slice
+  world\floatingorigin\archive_floatingoriginintegration\06U_USER_PLAYTEST_RUNTIME_PROOF_AUDIT.md   4498B  T-FO06U — user Play Mode runtime-proof audit
+  world\floatingorigin\archive_floatingoriginintegration\06X_USER_PLAYTEST_RUNTIME_PROOF_FOLLOWUP.md   5963B  T-FO06X — user Play Mode runtime-proof follow-up
+  world\floatingorigin\archive_floatingoriginintegration\06Y_RUNTIME_CAPTURE_FOLLOWUP.md   4546B  T-FO06Y — user runtime capture follow-up
+  world\floatingorigin\archive_floatingoriginintegration\06Y_RUNTIME_CAPTURE_FOLLOWUP_02.md   3546B  T-FO06Y — second user runtime capture follow-up
+  world\floatingorigin\archive_floatingoriginintegration\06Y_RUNTIME_CAPTURE_FOLLOWUP_03.md   4390B  T-FO06Y — third user runtime capture follow-up
+  world\floatingorigin\archive_floatingoriginintegration\06Y_RUNTIME_CAPTURE_FOLLOWUP_04.md   4523B  T-FO06Y — fourth user runtime capture follow-up
+  world\floatingorigin\archive_floatingoriginintegration\06Y_RUNTIME_CAPTURE_GATE_05.md   3921B  T-FO06Y — next serial runtime evidence gate
+  world\floatingorigin\archive_floatingoriginintegration\06Y_RUNTIME_EVIDENCE_SOURCE_ANALYSIS_04.md   4730B  T-FO06Y — source analysis of runtime evidence gates
+  world\floatingorigin\archive_floatingoriginintegration\06Y_RUNTIME_INSTRUMENTATION_PROBE.md   4288B  T-FO06Y — runtime instrumentation probe for movement, camera and ordering
+  world\floatingorigin\archive_floatingoriginintegration\06Z_RUNTIME_CAPTURE_FOLLOWUP_01.md   3749B  T-FO06Z runtime capture follow-up 01 — ShipDeckNav/passenger evidence
+  world\floatingorigin\archive_floatingoriginintegration\06Z_RUNTIME_CAPTURE_FOLLOWUP_02.md   4755B  T-FO06Z runtime capture follow-up 02 — pointwise Unity MCP review
+  world\floatingorigin\archive_floatingoriginintegration\06Z_RUNTIME_CAPTURE_FOLLOWUP_03.md   5461B  T-FO06Z runtime capture follow-up 03 — post-playtest pointwise review
+  world\floatingorigin\archive_floatingoriginintegration\07D_RIGIDBODY_POOL_AUDIT.md   1606B  T-FO07D — Аудит Rigidbody и пулов при сдвиге (без кода)
+  world\floatingorigin\archive_floatingoriginintegration\07G_BOARDING_PARENTING_AUDIT.md   1201B  T-FO07G — Аудит посадки/parenting при сдвиге (без кода)
+  world\floatingorigin\archive_floatingoriginintegration\07I_PILOTED_REBIND_REFUSAL.md   1824B  T-FO07H — F8 при пилотировании: честный отказ рестарта потока (диагноз + маркер статуса)
+  world\floatingorigin\archive_floatingoriginintegration\07J_PILOTED_REFUSAL_BRANCH.md   2385B  T-FO07J — Точная ветвь отказа rebind в полёте (анализ, без кода)
+  world\floatingorigin\archive_floatingoriginintegration\09B_AUTO_REBASE_PLAN.md   3325B  T-FO09B — Точный остаток хост-клиента + план авто-порогового rebase
+  world\floatingorigin\archive_floatingoriginintegration\09C_RESCUE_TO_SHIP.md   1494B  T-FO09C — «Спасение» возвращает на корабль, а не в пустоту
+  world\floatingorigin\archive_floatingoriginintegration\09E_RESCUE_FALLBACK_POINT_GEOMETRY.md   2086B  T-FO09E — Спасение честно ведёт на RespawnManager-точку; она висит в воздухе
+  world\floatingorigin\archive_floatingoriginintegration\09I_SHIP_PERSISTENCE_MAP.md   3135B  T-FO09I — ф8_28 ничего не тестирует + карта корабельных работ плана
+  world\lights\ITERATIONS.md                                              14447B  World Lighting — Итерации
+  world\lights\T-LIGHT10-interior-lighting.md                             11497B  T-LIGHT10 — Освещение интерьеров днём
+  world\lights\T-LIGHT12-forwardplus-pilot.md                             10123B  T-LIGHT12 — Forward+ вместо лимита 4 источника на объект (пилот: ADMIN)
+  world\lights\T-LIGHT13-light-group-overrides.md                          5544B  T-LIGHT13 — расширенное управление группой света
+  world\lights\T-LIGHT14-lamp-flicker.md                                   5847B  T-LIGHT14 — случайное мерцание ламп по группе
+  world\lights\T-LIGHT15-live-tuning.md                                    7184B  T-LIGHT15 — живая настройка групп в Play Mode и перенос значений в сцену
+  world\lights\implementation-log.md                                      17189B  Lighting Implementation Log — Project C
+  world\lights\lighting-plan.md                                           17594B  Lighting Plan — Project C: World Illumination
+  world\optimization\25092026\00_CAPTURE_2026-09-25_ANALYSIS.md            6125B  Разбор захвата `ProjectC_client_2026-09-25_18-09-59.data`
+  world\optimization\25092026\01_FIX_PLAN.md                               5329B  План исправлений перфоманса (захват 2026-09-25) — `T-PERF02`
+  world\optimization\25092026\02_FARM_COLLIDERS.md                         3955B  Коллайдеры фермы и пилы зон — что / почему / как (T-PERF02, пункт «ц»)
+  world\optimization\25092026\03_SHIPDECKNAV_REREG.md                      5040B  Перерегистрации ShipDeckNav — исследование (T-PERF02, пункт «б»)
+  world\optimization\25092026\04_SPAWN_VS_RESTORE_ORDER.md                 3066B  Порядок спавна против персистенции — ресерч (T-PERF02)
+  world\optimization\25092026\ITERATIONS.md                               18442B  T-PERF02 — Iteration Log
+  world\optimization\IMPLEMENTATION_PLAN.md                                9503B  План реализации: дальность прорисовки (LOD + ESC‑Видео)
+  world\optimization\ITERATIONS.md                                         6157B  optimization — Iteration Log
+  world\optimization\LOD_VIEW_DISTANCE_DESIGN.md                           8733B  Дальность прорисовки и LOD — дизайн (4 уровня)
+  world\optimization\README.md                                             2502B  Optimization — docs/world/optimization
+  world\parom_road\00_PAROM_DESIGN.md                                      8461B  Паром — гражданский тросовый транспорт (T-PAROM-01)
+  world\parom_road\01_PAROM_V2_PLAN.md                                    12768B  Паром v2 — экипаж, оплата проезда, зайцы (план, НЕ реализовано)
+  world\parom_road\02_PAROM_RIDE_POSTMORTEM.md                            15371B  Паром — постмортем серии T-PAROM-04…12 + Фаза 1 (T-PAROM-13 внедрён)
+  world\placeble objects\00_DESIGN_CarryableObjects.md                    32853B  Переносимые физические объекты (Carryable Objects) — ресерч и пошаговый план
+  world\placeble objects\ITERATIONS.md                                      947B  Итерации: Placeble / Carryable Objects
+  world\primum_city\01_SETUP\01_INVENTORY_AND_CLEANUP.md                   5862B  01. Инвентаризация источника и чистка (фаза 1)
+  world\primum_city\01_SETUP\02_BLOCKS_AND_GEOMETRY.md                     4268B  02. Блоки и геометрия (фаза 2)
+  world\primum_city\01_SETUP\03_UNITY_ASSEMBLY.md                          6731B  03. Сборка города в Unity (фаза 3)
+  world\primum_city\01_SETUP\04_LOD_AND_DISTANCE.md                        3683B  04. Дальность: L0 / L1 / L2 (фаза 4)
+  world\primum_city\02_PIPELINE\01_SCALE_DECISION.md                       6537B  11. Масштаб города: разбор и решение
+  world\primum_city\02_PIPELINE\02_NORMALS_POSTMORTEM.md                   5147B  14. Постмортем: вывернутые нормали города — причина, фикс, профилактика
+  world\primum_city\02_PIPELINE\03_DOORS_PIPELINE_V13.md                   5525B  03. Правила группировки дверей — v13.8 (финальные)
+  world\primum_city\02_PIPELINE\04_REIMPORT_SWAP_AND_POSTPASS.md           3478B  04. Подмена FBX 1:1 и пост-проход (проверено на 23 чанках)
+  world\primum_city\02_PIPELINE\05_SCRIPTS_AND_BACKUPS.md                  3166B  05. Скрипты, данные и бэкапы (карта)
+  world\primum_city\03_DOORS\01_PREFAB_PLAN.md                             4356B  ПЛАН: префабы дверей и расстановка в проёмы (следующая фаза)
+  world\primum_city\03_DOORS\02_SINGLE_DOOR_PREFABS.md                     7627B  02. Одиночные двери — 3 префаба (готово 2026-10-21)
+  world\primum_city\03_DOORS\03_MASS_PLACEMENT.md                         12432B  03. Массовая расстановка дверей (2026-10-21, ред. 2)
+  world\primum_city\03_DOORS\04_DOUBLE_DOOR_PREFAB.md                      4866B  04. Двустворчатая дверь — префаб `PM_DOOR_DOUBLE_A` (2026-10-21)
+  world\primum_city\03_DOORS\05_HANDOFF_EP2.md                            13561B  Э2 — ДВЕРИ: ПЕРЕДАЧА СЛЕДУЮЩЕМУ АГЕНТУ
+  world\primum_city\03_DOORS\README.md                                     4409B  ДВЕРИ — состояние и что дальше
+  world\primum_city\04_COLLIDERS\01_COLLIDERS.md                           7415B  12. Коллайдеры города (фаза 3b)
+  world\primum_city\04_COLLIDERS\02_GRANULARITY_COLLIDERS_INTERIORS.md     8860B  08. Зернистость, коллайдеры, материалы и путь игрока внутрь дома
+  world\primum_city\04_COLLIDERS\03_COLLIDERS.md                          11474B  03. Коллайдеры — минимальные боксы + точные меши проёмов (2026-10-21)
+  world\primum_city\04_COLLIDERS\04_STATUS_AND_GAPS.md                    33051B  04. Коллайдеры: статус попыток, пробелы и баг ребейза (2026-10-22)
+  world\primum_city\04_COLLIDERS\05_HOUSES_BOXES.md                       31767B  05. ДОМА: боксовые коллайдеры (инструмент, история ошибок, приёмка)
+  world\primum_city\04_COLLIDERS\06_ADMIN_COLLIDERS.md                    21284B  06. ADMIN — коллайдеры единственного здания
+  world\primum_city\05_HISTORY\01_ITERATIONS.md                           30966B  ITERATIONS — PRIMUM CITY
+  world\primum_city\05_HISTORY\02_RECOVERY_RESEARCH.md                    22000B  13. Ресерч восстановления: почему «всё посыпалось» и как нормально собрать город
+  world\primum_city\05_HISTORY\03_PHASE2_RESULTS.md                        3855B  09. Результаты фазы 2 (склейка по материалам + рабочие двери)
+  world\primum_city\05_HISTORY\04_PHASE3_RESULTS.md                        3785B  10. Результаты фазы 3 (сборка города в мире)
+  world\primum_city\05_HISTORY\05_DOORS_JOURNAL.md                        27365B  15. План: реимпорт с дверными группами и последующей заменой дверей на префабы
+  world\primum_city\05_HISTORY\06_V11_WALL_REGRESSION.md                   3123B  ПОСТМОРТЕМ: регрессия v11 — «выкушенные» стены вокруг дверей
+  world\primum_city\06_REFERENCE\01_INDUSTRY_PRACTICE.md                   8185B  07. Индустриальная практика: как это делается в Unity (и что из этого берём мы)
+  world\primum_city\06_REFERENCE\02_FO_NETWORK_AND_GAMEPLAY.md             4866B  05. Floating Origin, сеть, NavMesh и геймплей (фаза 5)
+  world\primum_city\06_REFERENCE\03_ACCEPTANCE.md                          4270B  06. Приёмка, метрики и откат
+  world\primum_city\07_STATE\01_RESUME_STATE.md                            8827B  16. СОСТОЯНИЕ И ПРОДОЛЖЕНИЕ (стоп на выключение, 2026-10-20 00:05)
+  world\primum_city\08_LIGHTING\01_LIGHTING.md                            20121B  Э3. СВЕТ — световые префабы, emissive и бюджет источников
+  world\primum_city\09_MATERIALS\01_MATERIAL_UNIFICATION.md               19160B  PRIMUM — приведение города на процедурные материалы (передача этапа)
+  world\primum_city\09_MATERIALS\README.md                                 1358B  09_MATERIALS — материалы города (этап после дверей)
+  world\primum_city\15_DOORS_REIMPORT_PLAN.md                              2997B  PRIMUM: план реимпорта дверей и кровель (рабочие заметки)
+  world\primum_city\17_ADMIN_DOORS_WORK.md                                 9120B  PRIMUM: работа по дверям админки — передача другому агенту (2026-10-23)
+  world\primum_city\README.md                                             10728B  PRIMUM CITY — индекс документации
+  world\primum_city\ROADMAP.md                                            24744B  PRIMUM CITY — ДОРОЖНАЯ КАРТА (порядок работ)
+  world\terrain\ITERATIONS.md                                              5184B  terrain — Iteration Log
+  world\terrain\README.md                                                  3780B  Terrain_0_0 — единый террейн WorldScene_0_0
+  world\world_map\00_CHART_CONCEPT_2026-09-17.md                           8308B  Карта неба: концепт-аналитика
+  world\world_map\01_M_INTERFACE_2026-09-17.md                             2562B  Интерфейс карты на M (v1 — каркас)
+  world\world_map\02_TRACKS_2026-09-17.md                                  1684B  Треки: журнал полётов (v1)
+  world\world_map\03_MARKS_2026-09-17.md                                   1898B  Метки: ручные отметки (слой 2)
+  world\world_map\04_BEARING_2026-09-17.md                                 1025B  Пеленг на метку в HUD (слой 3)
+  world\world_map\05_PANZOOM_2026-09-17.md                                 1377B  Свободный осмотр: панорама и зум
+  world\world_map\06_PERSIST_2026-09-17.md                                 1419B  Персист журнала между сессиями
+
+======================================================================
+KEYWORD HITS
+
+### азиат  (0 hits)
+
+### asian  (0 hits)
+
+### стимпанк  (1 hits)
+  Character\Skills\Battle\ERPR_collaboration.md:20  - **Мастер — рассказчик + судья**. Игрок может предлагать «механическую лошадь» в стимпанк-мире → Мастер решает, существует ли это.
+
+### steampunk  (0 hits)
+
+### дизел  (0 hits)
+
+### diesel  (0 hits)
+
+### викториан  (0 hits)
+
+### victorian  (0 hits)
+
+### ар-деко  (0 hits)
+
+### art deco  (0 hits)
+
+### барокко  (0 hits)
+
+### готик  (0 hits)
+
+### bioshock  (1 hits)
+  ART_BIBLE.md:417  | **BioShock Infinite** | Города в облаках, архитектура |
+
+### ghibli  (40 hits)
+  MMO_Development_Plan.md:152  - ✅ Система облаков: 3 слоя, 890+ облаков, движение, анимация формы (legacy cloud shader; техническое имя CloudGhibli)
+  MMO_Development_Plan.md:887  - ✅ CloudGhibli.shader — кастомный URP Unlit шейдер
+  MMO_Development_Plan.md:940  - `Assets/_Project/Art/Shaders/CloudGhibli.shader` — cloud shader (техническое имя ассета)
+  MMO_Development_Plan.md:1479  - **Кастомные шейдеры:** cloud shader (техническое имя `CloudGhibli`, URP Unlit + noise + rim glow), VolumetricClouds (URP volumetric raymarch, Cloud Ocean 3.0)
+  MMO_Development_Plan.md:1661  - [x] Облака (3 слоя: Upper/Middle/Lower) — cloud shader (техническое имя CloudGhibli), генерация, движение
+  MMO_Development_Plan.md:1806  - [x] CloudGhibli.shader — облака (техническое имя; noise + rim glow + vertex displacement)
+  gdd\GDD_00_Overview.md:23  | 4 | **Sci-Fi + западные комиксы** | Промышленный дизайн + мягкие облака, градиенты, контурная обводка и упрощённые формы | CloudGhibli.shader (техническое имя), URP, цветовая палитра |
+  gdd\GDD_02_World_Environment.md:201  | Облака 3 слоя (legacy cloud shader; техническое имя CloudGhibli) | ✅ Реализовано | Upper/Middle/Lower, движение, морфинг |
+  gdd\GDD_02_World_Environment.md:312  ### Основной cloud shader (техническое имя CloudGhibli)
+  gdd\GDD_14_Visual_Art_Pipeline.md:14  - **CloudGhibli.shader** — фактическое техническое имя кастомного URP Unlit (noise + rim glow + vertex displacement) — `Assets/_Project/Art/Shaders/CloudGhibli.shader`
+  gdd\GDD_14_Visual_Art_Pipeline.md:30  | **Мягкие облака** | Объёмные, светящиеся, градиентные | CloudGhibli.shader |
+  gdd\GDD_14_Visual_Art_Pipeline.md:88  ### CloudGhibli.shader — `Assets/_Project/Art/Shaders/CloudGhibli.shader`
+
+### комикс  (26 hits)
+  ART_BIBLE.md:4  **Проект:** MMO на Unity 6, URP | **Стиль:** Sci-Fi + западные комиксы — мягкие переходы, контурная обводка, упрощённые формы
+  ART_BIBLE.md:13  1. **Sci-Fi + западные комиксы** — промышленный дизайн (сталь, ржавчина, кирпич) + мягкие формы, градиенты, читаемый outline и объёмный свет
+  ART_BIBLE.md:132  - Западные sci-fi-комиксы — мелкие корабли, ясные силуэты и контурная читаемость
+  ART_BIBLE.md:133  - Комиксные авиационные иллюстрации — винты, лопасти, промышленный дизайн
+  ART_BIBLE.md:163  - **Видимые стыки панелей** корпуса (комиксно-утилитарные механизмы — «лапти», но красивые)
+  ART_BIBLE.md:408  | **Западные sci-fi-комиксы** | Корабли, облака, атмосфера и ясные силуэты |
+  ART_BIBLE.md:409  | **Комиксные авиационные иллюстрации** | Самолёты, лопасти, промышленный дизайн |
+  ART_BIBLE.md:411  | **Европейская школа комикса** | Мягкие формы, закаты, объёмный свет |
+  ART_BIBLE.md:479  - [ ] Посмотреть референсы (западные sci-fi-комиксы и комиксные концепт-арты)
+  COLABORATION.md:53  | **UI/UX-дизайнеры** | Sci-Fi × западные комиксы: контур, мягкие переходы, упрощённые формы, HUD и окна |
+  Character\Skills\Battle\02_LORE.md:15  - **Sci-Fi + западные комиксы** — промышленный дизайн (сталь, ржавчина, кирпич) + мягкие формы, градиенты, контурная обводка и упрощённые силуэты
+  Character\Skills\real-time-combat\02_LORE.md:13  - **Sci-Fi + западные комиксы** — сталь, ржавчина, кирпич + мягкие формы, градиенты и читаемый outline.
+
+### контур  (61 hits)
+  ART_BIBLE.md:4  **Проект:** MMO на Unity 6, URP | **Стиль:** Sci-Fi + западные комиксы — мягкие переходы, контурная обводка, упрощённые формы
+  ART_BIBLE.md:132  - Западные sci-fi-комиксы — мелкие корабли, ясные силуэты и контурная читаемость
+  ART_BIBLE.md:274  | **Стиль** | Flat/minimal, с мягкими градиентами, тенью и контуром; не casual/hyper-casual |
+  CLOUD_VISUALISER\REMESH_ANALYSIS.md:19  - Создает **один объект** по внешнему контуру видимых сфер
+  COLABORATION.md:50  | **3D-моделлеры** | Корабли, города, NPC, пропсы, облака с мягкими градиентами и читаемым контуром |
+  COLABORATION.md:53  | **UI/UX-дизайнеры** | Sci-Fi × западные комиксы: контур, мягкие переходы, упрощённые формы, HUD и окна |
+  Character\Skills\Battle\02_LORE.md:15  - **Sci-Fi + западные комиксы** — промышленный дизайн (сталь, ржавчина, кирпич) + мягкие формы, градиенты, контурная обводка и упрощённые силуэты
+  MMO_Development_Plan.md:1262  - ✅ **Навигация и инструменты:** world map на M, ручные метки и треки с persistence/FO hooks, compass rose/HDG, AdminRuntimeWindow F12, AdminFacade/MoveCheats/LogBus и ESC Effects. `ProjectCPerfHUD` присутствует в dev/ed
+  Materials\Brick\README.md:454  - **Совместимость с `EdgeDetection`**: материал непрозрачный, глубину пишет, контур
+  Materials\Concrete\README.md:491  - **Совместимость с `EdgeDetection`**: бетон непрозрачный, глубину пишет, контур по
+  Materials\Glass\README.md:215  в копии цели). Значит: пост-эффект `EdgeDetection` (он строит контур по глубине+нормалям) **по
+  Materials\Glass\README.md:216  стеклу контура не даст** — по проекту контур будет только у непрозрачной рамы/деталей. Тень от
+
+### палитр  (42 hits)
+  ART_BIBLE.md:49  ## 2. Цветовая палитра
+  Character\Customisation\CHANGELOG.md:20  | 2026-06-30 | L1 implementation | **T-CUS-06 (CustomisationWindow) ✅:** Созданы CustomisationWindow.uxml (по аналогии со SkillTreeWindow — full-screen overlay с двумя карточками выбора пола), CustomisationWindow.uss (тё
+  Character\Skills\Battle\00_README.md:196  - `docs/ART_BIBLE.md` — палитра свечений (голубой=антиграв, зелёный=мезий)
+  Character\Skills\Battle\02_LORE.md:23  ### 1.2 Палитра свечений (для VFX-планирования)
+  Character\Skills\Battle\02_LORE.md:31  **Вердикт для combat:** когда combat-движок появится, VFX-эффекты оружия привязаны к палитре:
+  Character\Skills\real-time-combat\02_LORE.md:131  ### 4.2 Палитра свечений (для VFX)
+  MMO_Development_Plan.md:895  - ✅ Цветовая палитра, освещение, post-processing настройки
+  MMO_Development_Plan.md:1092  | Ship Repainting | Цвет из палитры → credit payment, `ShipTelemetryState.shipColorR/G/B` | ✅ |
+  Materials\Bark\README.md:177  (в Glass это было не так — там палитра жила только в пресете).
+  Materials\Cobble\README.md:4  > **с нуля**); при переименовании из `Bark` изменены только имена и палитра
+  Materials\Cobble\README.md:133  (в Glass это было не так — там палитра жила только в пресете).
+  Materials\Cobble\README.md:146  Палитра серая: при переименовании из `Bark` четыре литерала цвета были заменены
+
+### бедн  (2 hits)
+  world\CLOUD_system\1.0\INTEGRATION_RESEARCH.md:146  | **Паттерны** | CloudLayerConfig (бедный) | CloudPatternConfig (богатый) |
+  world\distantfocus\README.md:39  боке-блики беднее, чем в HDR-проектах).
+
+### богат  (4 hits)
+  Character\Skills\Battle\ERPR_collaboration.md:207  Если принять ERPR-пакет (damage dice + crit + hit location), то в `20_SKILL_TREES.md` можно обогатить каждую ноду **не только proficiency/StatMod**, но и **damage-механикой**:
+  world\CLOUD_system\1.0\INTEGRATION_RESEARCH.md:146  | **Паттерны** | CloudLayerConfig (бедный) | CloudPatternConfig (богатый) |
+  world\Localization\POSTMORTEM-LOC-10.md:50  Unity Localization — зрелый пакет с богатым Editor tooling.
+  world\primum_city\03_DOORS\02_SINGLE_DOOR_PREFABS.md:27  | **ARCH_C** | парадная (2 филёнки, молдинг, арка, кольцо) | **1.20 × 2.36 × 0.22** | 456 | 6 | торговые/богатые дома, входные |
+
+### роскош  (2 hits)
+  Fun\SPEC.md:97  | **Роскошь** | Ценные вещи | Антиквариат (100 CR), Золотое кольцо (150 CR), Редкий минерал (200 CR) |
+  gdd\GDD_25_Trade_Routes.md:316  | **Фестиваль** | Праздник в городе | Продовольствие ×0.5, спрос на роскошь ×2 | 2-3 тика |
+
+### элит  (3 hits)
+  Character\Skills\Battle\02_LORE.md:48  - **Пороховое** оружие — редкое, дорогое, элитное. Не «базовое» для большинства бойцов.
+  Character\Skills\Battle\02_LORE.md:243  **Нужно:** порох — отсутствует полностью или есть в мизерных количествах у элит? Это влияет на баланс Ranged-навыков: если пороховое оружие существует как «элитная ниша», нужна ли подветка `Skill_Ranged_Gunpowder` (для б
+  NPC_others_peacfull\crowd_brains\02_COMBAT_PROMOTION.md:87  - **Ответный урон — через тот же `ResolveAttack`.** Герой как `IAttacker` с `defaultSourceId=0` (как `TryAttack` в `NpcBrain.cs:1155–1180`), плюс опционально `NpcSkillSet` только у «элиты» (стража). Толпе не нужны скиллы
+
+### знат  (47 hits)
+  COLABORATION.md:154  **❓ Нужно ли знать лор вселенной?**
+  Character\IMPLEMENTATION_CHARACTER_LOCAL_SKINNING_EXPERIMENT.md:13  Это сознательно более узкая проверка, чем первоначальная идея перенести и анимационную оценку. Настоящий Animator остаётся единственным источником позы, root motion и animation events. Копируются только localPosition/loc
+  Character\Knowledges\04_KNOWLEDGE_SYSTEM_V2_DEEP_ANALYSIS.md:919  **Обоснование:** Игрок может знать о навыке, но не изучить его (не хватает XP/tier). И наоборот: изучил навык → автоматически знает о следующем в цепочке (AutoOnSkillLearned).
+  Character\Knowledges\05_KNOWLEDGE_SYSTEM_V2_RESEARCH_REVIEW.md:179  public string knowledgeUnlockDescription = ""; // подсказка «как узнать» (для UI «Неизвестно — способ: ...»)
+  Character\Knowledges\05_KNOWLEDGE_SYSTEM_V2_RESEARCH_REVIEW.md:298  - **Детали навыка**: имя + `knowledgeUnlockDescription` для неизвестных («Как узнать: ...»), статус «Известен/Изучен» — классы `.knowledge-state-known/learned/unknown`; известные-неизученные — кликабельны → открыть `Skil
+  Character\Knowledges\05_KNOWLEDGE_SYSTEM_V2_RESEARCH_REVIEW.md:385  | B4 | Фильтр знаний в `SkillTreeWindow` + `SocialSkillTreeWindow` (скрыть/показать неизвестные, «Как узнать: ...») | `Scripts/Skills/UI/*.cs` |
+  Character\Knowledges\07_KNOWLEDGE_SYSTEM_V3_INTEGRATION_PLAN.md:372  **Дизайн-вопрос (уточнить у дизайнера):** скрывать неизвестный навык полностью или показывать «заблокированный» узел с подсказкой `knowledgeUnlockDescription` («как узнать»)? Поле уже есть в конфиге, но нигде не читается
+  Character\Skills\Battle\85_VFX_DESIGN.md:126  /// Абстракция, позволяющая коду скилов не знать о том,
+  Character\Skills\real-time-combat\100_TARGET_HIGHLIGHT_AND_SWITCHING.md:370  | R6 | `TargetLockService` должен знать обо всех IDamageTarget | Использовать `CombatServer._targets` registry? Нет — он server-side. **Решение:** client-side кэш через `FindObjectsByType<NpcTarget>()` + `FindObjectsByTy
+  Character\Skills\real-time-combat\npc-enemy\07_SPAWN_CYCLE_CONTROL.md:132  - Триггеру нужно знать *когда* цикл исчерпан (чтобы начать отсчёт таймера).
+  Crafting_system\99_CHANGELOG.md:72  **Что НЕ сделано (сознательно):**
+  Crafting_system\AUDIT_2026-07-09.md:613  ### 11.2 Что НЕ сделано (сознательно)
+
+### трущоб  (0 hits)
+
+### одежд  (41 hits)
+  ART_BIBLE.md:182  | **Одежда** | Комбинезон пилота (серый/синий) |
+  ART_BIBLE.md:190  | **Гильдейцы** | Форменная одежда с цветами гильдий (5 цветов) |
+  ART_BIBLE.md:192  | **Фермеры** | Простая рабочая одежда |
+  ART_BIBLE.md:193  | **Потеряшки** | Рваная одежда, грязь, худоба |
+  ART_BIBLE.md:194  | **Торговцы** | Яркая одежда, сумки |
+  Character\00_README.md:6  > **Назначение:** одежда с характеристиками, модули с характеристиками, дерево навыков (социальные/боевые), 3 характеристики (Сила/Ловкость/Интеллект) с геометрическим ростом от действий игрока.
+  Character\00_README.md:17  2. **EquipmentServer** (`Assets/_Project/Scripts/Equipment/EquipmentServer.cs`) — TryEquip/TryUnequip RPC, валидация skill prerequisites. Stats bonus от одежды/модулей.
+  Character\00_README.md:21  6. **CharacterWindow** — расширен табом «Прогрессия» с sub-tabs (Статы/Одежда/Модули/Навыки).
+  Character\00_README.md:146  │ │ Sub-tabs: [Статы] [Одежда] [Модули] [Навыки] │ │
+  Character\2026-06-26-npc-p2-visual-config-chunk-integration.md:41  1. **Фракционное разнообразие** — Goblin (зелёная кожа), Bandit (грязная одежда), Guard (броня) — все используют один и тот же `Npc_Goblin.prefab`-like префаб, но с разными материалами/мешами.
+  Character\CHANGELOG.md:172  | **M4 — UI Integration** | T-P15..T-P18 | ✅ DONE | CharacterWindow: single-page ПЕРСОНАЖ (Характеристики+Одежда+Модули+Навыки). Effective stat bars. [СНЯТЬ] button. [НАДЕТЬ] button в инвентаре. Inventory split layout (l
+  Character\Character-menu\CHARACTER_WINDOW_INVENTORY_TAB_REFACTOR.md:64  - `Tabs/CharacterTab.cs` — ПЕРСОНАЖ (одежда, модули, характеристики, навыки)
+
+### костюм  (0 hits)
+
+### мундир  (0 hits)
+
+### фартук  (0 hits)
+
+### комбинезон  (1 hits)
+  ART_BIBLE.md:182  | **Одежда** | Комбинезон пилота (серый/синий) |
+
+### ткан  (8 hits)
+  Fun\SPEC.md:94  | **Предметы быта** | Одежда, быт | Ткань (7 CR), Форма гильдейская (25 CR), Фонарь (15 CR) |
+  Materials\Fabric\README.md:1  # Fabric — процедурная ткань (полотняное переплетение + пряжа + ворс)
+  Materials\Fabric\README.md:4  > кромок/затяжек унаследованы, все слои заменены тканевыми, пороги `Smoothstep` переведены
+  Materials\README.md:70  | Ткань — процедурное полотняное переплетение: нити основы/утка с круглым сечением и подъёмом над/под, пряжа с утолщениями, меланж/ворс, катышки, выцветшие кромки, затяжки (нодовый Shader Graph) | `Fabric/` | PROTOTYPE v
+  Materials\README.md:71  | Мрамор — процедурный белый мрамор: сеть прожилок (изолинии искажённого fbm, два масштаба), облачность камня, каверны, сколотая кромка, тонкие трещины (нодовый Shader Graph) | `Marble/` | PROTOTYPE v1 (граф — **производ
+  world\primum_city\09_MATERIALS\01_MATERIAL_UNIFICATION.md:80  | `GAP` | 12 | 920 | ткани/холст/тент + `No Name` — нет семейства (§10) |
+  world\primum_city\09_MATERIALS\01_MATERIAL_UNIFICATION.md:104  | Ткань/тент/холст (`M_FABRIC_*`, `M_TQ_FABRIC`, `M_AWNING`, `M_BANNER`, `M_CANVAS*`, `M_LINEN`) | **912** | семейства нет; в каталоге `docs/Materials/README.md` оно значится «Запланирован» |
+  world\primum_city\09_MATERIALS\01_MATERIAL_UNIFICATION.md:307  2. **Ткань** (`M_FABRIC_*` и др., 912 слотов): заводить семейство `Fabric` (в каталоге «Запланирован»)
+
+### знам  (2 hits)
+  Materials\Fabric\README.md:16  | `Assets/_Project/Materials/Fabric/M_PC_Fabric.mat` | пресет для крупных поверхностей (ковры, драпировки, тенты, знамёна) |
+  Materials\README.md:70  | Ткань — процедурное полотняное переплетение: нити основы/утка с круглым сечением и подъёмом над/под, пряжа с утолщениями, меланж/ворс, катышки, выцветшие кромки, затяжки (нодовый Shader Graph) | `Fabric/` | PROTOTYPE v
+
+### геральд  (0 hits)

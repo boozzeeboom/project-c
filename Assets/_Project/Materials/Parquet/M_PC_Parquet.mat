@@ -44,21 +44,21 @@ Material:
     - _Grain_Amount: 0.52
     - _Grain_Bump: 0
     - _Grain_Detail: 4.14
-    - _Grain_Scale: 2.5
+    - _Grain_Scale: 73.34
     - _Grain_Seed: 0.33
     - _Grain_Stretch: 7.09
-    - _Joint_Amount: 1
-    - _Joint_Bump: -0.6
+    - _Joint_Amount: 4.67
+    - _Joint_Bump: -0.01
     - _Joint_Gloss: 0.15
     - _Joint_Width_X: 0.004
     - _Joint_Width_Y: 0.05
-    - _Knots_Scale: 4.06
+    - _Knots_Scale: 108.76
     - _Knots_Seed: 0.14
     - _Knots_Warp: 2.49
     - _LateWood_Smoothness: 0.99
-    - _Plank_Aspect: 3.87
+    - _Plank_Aspect: 4
     - _Plank_Row_Offset: 0.79
-    - _Plank_Scale: 1.59
+    - _Plank_Scale: 14.97
     - _Plank_Seed: 0
     - _Plank_Stagger: 5.73
     - _Plank_Vary: 4.92
@@ -70,7 +70,7 @@ Material:
     - _QueueControl: 1
     - _QueueOffset: 0
     - _Ring_Amount: 1.67
-    - _Rings_Bump: 0.0065
+    - _Rings_Bump: 0
     - _Rings_Scale: 83.98
     - _Rings_Seed: 1.87
     - _Rings_Sharpness: 0.41
@@ -78,11 +78,11 @@ Material:
     - _Scratch_Amount: 0.64
     - _Scratch_Angle: 0.785
     - _Scratch_Band: 0.13
-    - _Scratch_Bump: 0.001
+    - _Scratch_Bump: 0
     - _Scratch_Detail: 2.3
     - _Scratch_Mask: 0.32
     - _Scratch_Mask_Scale: 2.47
-    - _Scratch_Scale: 7.24
+    - _Scratch_Scale: 28.38
     - _Scratch_Seed: 0
     - _Scratch_Stretch: 6
     - _Scratch_Threshold: 0.85

@@ -41,8 +41,8 @@ Material:
     - _Edge_Width: 0.08
     - _Metallic: 3.94
     - _Noise_Cell: 68.9
-    - _Noise_Detail: 1134
-    - _Noise_Scale: 6
+    - _Noise_Detail: 4
+    - _Noise_Scale: 6.63
     - _Noise_Seed: 4.16
     - _Noise_Warp: 0.58
     - _QueueControl: 1

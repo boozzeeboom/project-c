@@ -25,7 +25,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Chalk_Scale: 8
+    - _Grain_Scale: 8
+    - _Scruff_Scale: 4.09
+    - _Smudge_Scale: 8.02
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

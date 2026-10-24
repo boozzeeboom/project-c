@@ -54,7 +54,7 @@ Material:
     - _Brick_Aspect: 1.15
     - _Brick_Gloss: 0.1
     - _Brick_Lift: 0.15
-    - _Brick_Scale: 2.61
+    - _Brick_Scale: 51.5
     - _Brick_Seed: 0
     - _Brick_Tone: 0.55
     - _Bump_Strength: 1
@@ -72,7 +72,7 @@ Material:
     - _Dirt_Stretch: 4
     - _Dirt_Threshold: 0.6
     - _Efflo_Amount: 0.45
-    - _Efflo_Scale: 2.2
+    - _Efflo_Scale: 132.08
     - _Efflo_Seed: 11
     - _Efflo_Softness: 0.18
     - _Efflo_Threshold: 0.58
@@ -80,11 +80,11 @@ Material:
     - _Face_Grain_Scale: 40
     - _Face_Grain_Seed: 0
     - _Face_Grain_Stretch: 2.58
-    - _Joint_Amount: 0.51
+    - _Joint_Amount: 1
     - _Joint_Bump: -0.9
     - _Joint_Warp: 0
     - _Joint_Width_X: 0.055
-    - _Joint_Width_Y: 0.13
+    - _Joint_Width_Y: 0.09
     - _Mortar_Gloss: -0.06
     - _Mortar_Grain_Amount: 0.45
     - _Mortar_Grain_Scale: 55

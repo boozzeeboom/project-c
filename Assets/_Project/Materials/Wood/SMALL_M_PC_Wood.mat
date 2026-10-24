@@ -25,7 +25,10 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Rings_Bump: 0
+    - _Rings_Scale: 57.1
+    - _Scratch_Bump: 0.0001
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

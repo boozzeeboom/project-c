@@ -38,19 +38,19 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Break_Amount: 0.3
-    - _Break_Bump: -0.4
+    - _Break_Amount: 0.67
+    - _Break_Bump: -3.3
     - _Break_Scale: 13.94
     - _Break_Seed: 0
     - _Break_Stretch: 3.03
     - _Break_Width: 0.12
     - _Flake_Amount: 1.13
-    - _Flake_Bump: 57.4
+    - _Flake_Bump: 21.4
     - _Furrow_Amount: 1.13
     - _Furrow_Bump: 0.14
-    - _Furrow_Scale: 10.49
+    - _Furrow_Scale: 22.7
     - _Furrow_Seed: 0
-    - _Furrow_Stretch: 5.89
+    - _Furrow_Stretch: 5.05
     - _Furrow_Warp: 1.4
     - _Furrow_Width: 0.29
     - _Lichen_Amount: 0.45
@@ -67,10 +67,10 @@ Material:
     - _QueueControl: 1
     - _QueueOffset: 0
     - _Skin_Amount: 0.6
-    - _Skin_Bump: 1.86
+    - _Skin_Bump: 0.1
     - _Skin_Detail: 2.4
     - _Skin_Gloss: 0.1
-    - _Skin_Scale: 4.9
+    - _Skin_Scale: 17.85
     - _Skin_Seed: 0.18
     - _Skin_Stretch: 2.5
     - _Smoothness: 0.08

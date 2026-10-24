@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-6133764573980346710
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Fabric
+  m_Shader: {fileID: -6465566751694194690, guid: de3e53803753f8145afee83df0857a0b, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Edge_Position: 1
+    - _Edge_Wear: 0.35
+    - _Edge_Width: 0.15
+    - _Fuzz_Amount: 0.35
+    - _Fuzz_Bump: 0
+    - _Fuzz_Detail: 2.5
+    - _Fuzz_Scale: 44.1
+    - _Fuzz_Seed: 0
+    - _Fuzz_Stretch: 7.5
+    - _Gap_Smoothness: 0.05
+    - _Pilling_Amount: 0.3
+    - _Pilling_Bump: 0
+    - _Pilling_Scale: 40
+    - _Pilling_Seed: 0
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _Slub_Amount: 0.4
+    - _Slub_Scale: 98.34
+    - _Slub_Seed: 0
+    - _Smoothness: 0.18
+    - _Snag_Amount: 0.24
+    - _Snag_Angle: 0.785
+    - _Snag_Band: 0.06
+    - _Snag_Bump: 0
+    - _Snag_Detail: 2.2
+    - _Snag_Mask: 0.65
+    - _Snag_Mask_Scale: 10.68
+    - _Snag_Scale: 26.28
+    - _Snag_Seed: 0
+    - _Snag_Stretch: 8
+    - _Snag_Threshold: 0.82
+    - _Wear_Smoothness: 0.32
+    - _Weave_Amount: 0.82
+    - _Weave_Bump: 0
+    - _Weave_Gap: 0.59
+    - _Weave_Scale: 122.8
+    - _Weave_Seed: 0
+    - _Weave_Wobble: 1.32
+    m_Colors:
+    - _Fabric_Color: {r: 0.45, g: 0.09999997, b: 0.079999976, a: 1}
+    - _Gap_Color: {r: 0.15999997, g: 0.035, b: 0.03, a: 1}
+    - _Heather_Color: {r: 0.56, g: 0.16999996, b: 0.12999997, a: 1}
+    - _Pilling_Color: {r: 0.62, g: 0.31999996, b: 0.27999997, a: 1}
+    - _Wear_Color: {r: 0.62, g: 0.33999997, b: 0.29999998, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

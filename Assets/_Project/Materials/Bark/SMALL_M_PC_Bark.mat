@@ -38,7 +38,13 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Flake_Bump: 17.1
+    - _Furrow_Scale: 23.5
+    - _Skin_Detail: 1.89
+    - _Skin_Scale: 5.9
+    - _Skin_Stretch: 2.85
+    - _Wood_Scale: 1.96
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

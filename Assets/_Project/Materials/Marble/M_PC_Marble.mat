@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8435848598120883093
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Marble
+  m_Shader: {fileID: -6465566751694194690, guid: 57152da3ab873534d98851bd7e2440d1, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Cloud_Amount: 0.35
+    - _Cloud_Bump: 0.003
+    - _Cloud_Detail: 2.2
+    - _Cloud_Scale: 3.2
+    - _Cloud_Seed: 0
+    - _Cloud_Stretch: 1.8
+    - _Crack_Amount: 0.35
+    - _Crack_Angle: 0.785
+    - _Crack_Band: 0.05
+    - _Crack_Bump: -0.008
+    - _Crack_Detail: 2
+    - _Crack_Mask: 0.6
+    - _Crack_Mask_Scale: 1.7
+    - _Crack_Scale: 7
+    - _Crack_Seed: 0
+    - _Crack_Stretch: 12
+    - _Crack_Threshold: 0.93
+    - _Edge_Position: 1
+    - _Edge_Wear: 0.25
+    - _Edge_Width: 0.12
+    - _Mottle_Amount: 0.45
+    - _Mottle_Scale: 1.6
+    - _Mottle_Seed: 0
+    - _Pit_Amount: 0.15
+    - _Pit_Bump: -0.0015
+    - _Pit_Scale: 90
+    - _Pit_Seed: 0
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _Smoothness: 0.88
+    - _Vein_Amount: 0.9
+    - _Vein_Bump: -0.006
+    - _Vein_Scale: 4.5
+    - _Vein_Seed: 0
+    - _Vein_Smoothness: 0.6
+    - _Vein_Warp: 0.35
+    - _Vein_Width: 0.16
+    - _Wear_Smoothness: 0.35
+    m_Colors:
+    - _Cloud_Color: {r: 0.72, g: 0.72, b: 0.7, a: 1}
+    - _Marble_Color: {r: 0.86, g: 0.85, b: 0.82, a: 1}
+    - _Pit_Color: {r: 0.54999995, g: 0.54999995, b: 0.53, a: 1}
+    - _Vein_Color: {r: 0.29999998, g: 0.30999997, b: 0.32999998, a: 1}
+    - _Wear_Color: {r: 0.92, g: 0.91, b: 0.88, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

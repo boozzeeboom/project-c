@@ -39,14 +39,14 @@ Material:
     m_Ints: []
     m_Floats:
     - _Bleach_Amount: 0.45
-    - _Bleach_Scale: 0.7
+    - _Bleach_Scale: 21.21
     - _Bleach_Seed: 31.7
     - _Bleach_Softness: 0.26
     - _Bleach_Stretch: 0.8
     - _Bleach_Threshold: 0.52
     - _Bump_Strength: 1
     - _Dry_Amount: 0.6
-    - _Dry_Scale: 1.7
+    - _Dry_Scale: 6.13
     - _Dry_Seed: 13.4
     - _Dry_Softness: 0.22
     - _Dry_Stretch: 1.9
@@ -56,13 +56,13 @@ Material:
     - _Leaf_Edge_Gloss: 0.28
     - _Leaf_Flatten: 5
     - _Leaf_Gloss: 0.1
-    - _Leaf_Scale: 64.5
+    - _Leaf_Scale: 162.5
     - _Leaf_Seed: 4.62
     - _Leaf_Stretch: 1.6
     - _Leaf_Tone: 1.31
     - _Mass_Amount: 0.75
     - _Mass_Bump: 0.55
-    - _Mass_Scale: 0.9
+    - _Mass_Scale: 149.87
     - _Mass_Seed: 7.1
     - _Mass_Softness: 0.28
     - _Mass_Stretch: 1
@@ -70,9 +70,9 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _Smoothness: 0.22
-    - _Twig_Amount: 0.45
-    - _Twig_Bump: -0.35
-    - _Twig_Scale: 1.9
+    - _Twig_Amount: 16.37
+    - _Twig_Bump: -17.23
+    - _Twig_Scale: 25.9
     - _Twig_Seed: 5.3
     - _Twig_Width: 0.1
     - _Vein_Bump: -0.3

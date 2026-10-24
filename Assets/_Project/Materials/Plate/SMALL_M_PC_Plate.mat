@@ -25,7 +25,16 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Bump_Strength: 0.59
+    - _Metal_Amount: 0.12
+    - _Metal_Bump: 0
+    - _Metal_Scale: 5
+    - _Patina_Bump: -0.03
+    - _Patina_Scale: 3.86
+    - _Plate_Aspect: 0.77
+    - _Plate_Scale: 2.3
+    - _Seam_Bump: -0.8
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

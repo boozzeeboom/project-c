@@ -38,7 +38,10 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Plank_Aspect: 2.81
+    - _Plank_Scale: 1.4
+    - _Rings_Scale: 143
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

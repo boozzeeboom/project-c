@@ -51,8 +51,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Edge_Noise_Scale: 0.17
-    - _Edge_Noise_Seed: 0
+    - _Edge_Noise_Scale: -0.27
+    - _Edge_Noise_Seed: -0.05
     - _Edge_Position: 0.5
     - _Edge_Wear: 0.43
     - _Edge_Width: 0.13
@@ -72,17 +72,17 @@ Material:
     - _Patina_Threshold: 0.06
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _Scratch_Amount: 1
+    - _Scratch_Amount: 3.22
     - _Scratch_Angle: 0.73
     - _Scratch_Band: 0.2
     - _Scratch_Bump: 0.007
     - _Scratch_Detail: 4.77
     - _Scratch_Mask: 0.49
-    - _Scratch_Mask_Scale: 1.99
-    - _Scratch_Scale: 2.48
+    - _Scratch_Mask_Scale: 131.97
+    - _Scratch_Scale: 0.16
     - _Scratch_Seed: 0.3
     - _Scratch_Smoothness: 0.75
-    - _Scratch_Stretch: 20.13
+    - _Scratch_Stretch: 20.3
     - _Scratch_Threshold: 0.92
     - _Smoothness: 0.5
     - _Tone_Base: 0.71

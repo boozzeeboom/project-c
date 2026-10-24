@@ -25,7 +25,14 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Agg_Scale: 17.7
+    - _Bloom_Scale: 15.5
+    - _Crack_Bump: -0.11
+    - _Crack_Scale: 69.4
+    - _Pores_Scale: 10.9
+    - _Scratch_Scale: 7.08
+    - _Stain_Scale: 3.5
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

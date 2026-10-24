@@ -25,7 +25,13 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Crack_Scale: 9
+    - _Dirt_Scale: 3.3
+    - _Flaw_Scale: 10.4
+    - _Lichen_Scale: 7.3
+    - _Moss_Scale: 19
+    - _Stone_Scale: 8.6
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

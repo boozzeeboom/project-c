@@ -57,7 +57,7 @@ Material:
     - _Bump_Strength: 1
     - _Craze_Amount: 0.8
     - _Craze_Bump: 0
-    - _Craze_Scale: 140
+    - _Craze_Scale: 125.9
     - _Craze_Seed: 0
     - _Craze_Stretch: 4
     - _Craze_Warp: 0.3
@@ -68,7 +68,7 @@ Material:
     - _Joint_Width_X: 0.06
     - _Joint_Width_Y: 0.1
     - _Moss_Amount: 0.55
-    - _Moss_Scale: 3.4
+    - _Moss_Scale: 12.2
     - _Moss_Seed: 0
     - _Moss_Softness: 0.2
     - _Moss_Stretch: 5
@@ -82,7 +82,7 @@ Material:
     - _QueueOffset: 0
     - _Row_Offset: 0.5
     - _Salt_Amount: 0.45
-    - _Salt_Scale: 2.2
+    - _Salt_Scale: 62.1
     - _Salt_Seed: 11
     - _Salt_Softness: 0.18
     - _Salt_Threshold: 0.58
@@ -94,7 +94,7 @@ Material:
     - _Tile_Grain_Scale: 55
     - _Tile_Grain_Seed: 0
     - _Tile_Grain_Stretch: 3
-    - _Tile_Scale: 5.41
+    - _Tile_Scale: 24.21
     - _Tile_Seed: 0
     - _Tile_Tail: 0.32
     - _Tile_Tone: 0.75

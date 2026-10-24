@@ -38,7 +38,13 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Core_Scale: 5.22
+    - _Glow_Bump: 0
+    - _Glow_Scale: 5.13
+    - _Pane_Scale: 2.44
+    - _Pane_Width: 0.06
+    - _Soot_Bump: 0
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

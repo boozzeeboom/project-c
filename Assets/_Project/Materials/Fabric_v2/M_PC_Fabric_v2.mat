@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-3220133155530356672
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Fabric_v2
+  m_Shader: {fileID: -6465566751694194690, guid: c4d2e8b17a5f4c9e8d3b6a2f1e0c7d95, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords:
+  - _EMISSION
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2000
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - <noninit>: 0
+    - _Edge_Position: 0.5
+    - _Edge_Wear: 0
+    - _Edge_Width: 0.12
+    - _Fiber_Amount: 0.25
+    - _Fiber_Bump: 0
+    - _Fiber_Detail: 2
+    - _Fiber_Scale: 36
+    - _Fiber_Seed: 0.13
+    - _Fiber_Stretch: 4
+    - _Fray_Amount: 0.2
+    - _Fray_Angle: 0.65
+    - _Fray_Band: 0.08
+    - _Fray_Bump: 0
+    - _Fray_Detail: 2.2
+    - _Fray_Mask: 0.72
+    - _Fray_Mask_Scale: 2.5
+    - _Fray_Scale: 16
+    - _Fray_Seed: 0
+    - _Fray_Stretch: 3.2
+    - _Fray_Threshold: 0.86
+    - _Nep_Amount: 0.22
+    - _Nep_Bump: 0
+    - _Nep_Scale: 60
+    - _Nep_Seed: 0.08
+    - _QueueControl: 1
+    - _QueueOffset: 0
+    - _Slub_Scale: 2.6
+    - _Slub_Seed: 0.21
+    - _Slub_Warp: 0.55
+    - _Smoothness: 0.24
+    - _Wear_Smoothness: 0.3
+    - _Weave_Amount: 0.55
+    - _Weave_Bump: 0.3
+    - _Weave_Scale: 26
+    - _Weave_Seed: 0.37
+    - _Weave_Sharpness: 0.38
+    - _Weave_Smoothness: 0.34
+    - _Weave_Warp: 0.12
+    m_Colors:
+    - _Fabric_Color: {r: 0.44, g: 0.4, b: 0.335, a: 1}
+    - _Fiber_Color: {r: 0.31, g: 0.29, b: 0.24, a: 1}
+    - _Nep_Color: {r: 0.5, g: 0.47, b: 0.39, a: 1}
+    - _Wear_Color: {r: 0.62, g: 0.58, b: 0.48, a: 1}
+    - _Weave_Color: {r: 0.48, g: 0.445, b: 0.375, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

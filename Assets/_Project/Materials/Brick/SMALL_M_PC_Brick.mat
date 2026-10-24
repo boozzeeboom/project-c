@@ -38,7 +38,12 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Brick_Scale: 5.68
+    - _Efflo_Scale: 18.1
+    - _Pore_Amount: 0.1
+    - _Pore_Bump: -0.01
+    - _Pore_Scale: 66.1
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

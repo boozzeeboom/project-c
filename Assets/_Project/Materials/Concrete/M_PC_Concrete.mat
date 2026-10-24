@@ -38,23 +38,23 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Agg_Amount: 0.79
-    - _Agg_Scale: 36.6
-    - _Agg_Seed: 0.51
+    - _Agg_Amount: 1.32
+    - _Agg_Scale: 276.8
+    - _Agg_Seed: 0.87
     - _Agg_Tone: 0.73
-    - _Aggregate_Bump: 1.85
+    - _Aggregate_Bump: 0.019
     - _Bloom_Amount: 0.5
-    - _Bloom_Scale: 2.4
+    - _Bloom_Scale: 20.99
     - _Bloom_Seed: 0
     - _Bloom_Softness: 0.24
-    - _Bloom_Stretch: 9
-    - _Bloom_Threshold: 0.52
+    - _Bloom_Stretch: 8.08
+    - _Bloom_Threshold: 0.51
     - _Crack_Amount: 0.75
-    - _Crack_Bump: 0.1
-    - _Crack_Scale: 75.24
+    - _Crack_Bump: -0.2
+    - _Crack_Scale: 130.1
     - _Crack_Seed: 0
     - _Crack_Warp: 0.35
-    - _Crack_Width: 0.23
+    - _Crack_Width: 0.52
     - _Edge_Gloss: 0.16
     - _Edge_Position: 1
     - _Edge_Wear: 0.4
@@ -65,9 +65,9 @@ Material:
     - _Pores_Amount: 0.85
     - _Pores_Bump: 0.05
     - _Pores_Matte: 0.22
-    - _Pores_Scale: 105
+    - _Pores_Scale: 126.6
     - _Pores_Seed: 0
-    - _Pores_Size: 0.3
+    - _Pores_Size: 0.15
     - _QueueControl: 1
     - _QueueOffset: 0
     - _Scratch_Amount: 0.55
@@ -76,14 +76,14 @@ Material:
     - _Scratch_Detail: 2.2
     - _Scratch_Mask: 0.45
     - _Scratch_Mask_Scale: 2
-    - _Scratch_Scale: 12
+    - _Scratch_Scale: 3.8
     - _Scratch_Seed: 0
     - _Scratch_Stretch: 6
     - _Scratch_Threshold: 0.82
     - _Smoothness: 0.16
     - _Stain_Amount: 0.55
     - _Stain_Gloss: 0.2
-    - _Stain_Scale: 3.2
+    - _Stain_Scale: 32.3
     - _Stain_Seed: 0
     - _Stain_Softness: 0.22
     - _Stain_Threshold: 0.58

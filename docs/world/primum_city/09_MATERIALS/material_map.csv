@@ -27,9 +27,9 @@ P_ROSE;2;1;#D19E8C;Wood;M_PC_Wood_Red;VARIANT;пастельная покрас�
 P_DUSTYBLUE;2;1;#8CA5B7;Wood;M_PC_Wood_Blue;VARIANT;пастельная покраска — ближайший из палитры
 P_SAGE;2;1;#9EAD8C;Wood;M_PC_Wood_Green;VARIANT;пастельная покраска — ближайший из палитры
 M_BRICK_YELLOW;37;21;#9E653D;Brick;M_PC_Brick_Yellow;VARIANT;жёлтый кирпич — сейчас единственный кирпич в городе кроме 4 инстансов
-M_TQ_BRICK;2;1;#AD7F5B;Brick;M_PC_Brick;BASE;базовая (красная) кладка
-M_TQ_BRICK_RED;2;1;#8E4C3D;Brick;M_PC_Brick;BASE;базовая (красная) кладка
-M_MARBLE_WHITE;705;18;#E5E2DB;Cobble;M_PC_Cobble_Marble;DECISION;семейства Stone/Marble нет — рекомендован белый вариант Cobble с низким рельефом
+M_TQ_BRICK;2;1;#AD7F5B;Brick;M_PC_Brick;BASE;базовая (красная) кладка — кирпич разрешён на все фасады, тон по контексту (§10.3)
+M_TQ_BRICK_RED;2;1;#8E4C3D;Brick;M_PC_Brick_Red;VARIANT;красный кирпич — вариант по контексту
+M_MARBLE_WHITE;705;18;#E5E2DB;Marble;M_PC_Marble;BASE;семейство Marble сделано 24.10 — белый мрамор с прожилками (M_PC_Marble, рельеф почти нулевой)
 M_TQ_STONE;402;1;#BCB7AD;Cobble;M_PC_Cobble;BASE;светлый камень
 M_GRANITE;237;22;#6B6B72;Cobble;M_PC_Cobble_Granite;VARIANT;гранит
 M_STONE_BEIGE;231;20;#9E8C70;Cobble;M_PC_Cobble_Beige;VARIANT;песчаник/бежевый камень
@@ -48,7 +48,7 @@ M_TQ_R_GREEN;1;1;#425B4C;Tiles;M_PC_Tiles_Green;PROJECT_LIT
 M_TQ_R_SHINGLE;1;1;#563F30;Tiles;M_PC_Tiles_Shingle;PROJECT_LIT;гонт
 M_TQ_R_SLATE;1;1;#495463;Tiles;M_PC_Tiles_Slate;PROJECT_LIT
 M_TQ_R_STEEL;1;1;#656870;Tiles;M_PC_Tiles_Steel;PROJECT_LIT;фальцевая кровля
-M_TQ_R_THATCH;1;1;#A58C59;Tiles;;HOLD;семейства соломы нет — 1 инстанс, решение за заказчиком
+M_TQ_R_THATCH;1;1;#A58C59;Tiles;;HOLD;семейства соломы нет — 1 инстанс, решение за заказчиком (§10.8)
 R_BORDO;1;1;#721E23;Tiles;M_PC_Tiles_Bordeaux;VARIANT;кровля
 R_BROWN;1;1;#593826;Tiles;M_PC_Tiles_Shingle;VARIANT;кровля
 R_GREEN;1;1;#38593F;Tiles;M_PC_Tiles_Green;VARIANT;кровля
@@ -77,17 +77,17 @@ G_COOL;2;1;#A5CCE5;Lantern;M_PC_Lantern_Cool;VARIANT;холодное стекл
 G_CLEAR;2;1;#BFD1D8;Glass;M_PC_Glass;BASE;прозрачное стекло фонаря
 M_EMIT_LAMP;1404;4;#D8D88C;Emissive;PM_LAMP_GLOW_WARM;DONE;эмиссив уже есть — добить остаток меню «Свет: emissive-материал светящихся частей» (362)
 PM_LAMP_GLOW_WARM;1292;1;HDR;Emissive;PM_LAMP_GLOW_WARM;DONE;уже процедурный (URP Unlit HDR) — не трогать
-M_FABRIC_DEEP;685;2;#240B0E;Fabric;;GAP;семейства ткани нет — самый крупный непокрытый лот
-M_TQ_FABRIC;149;1;#B24C42;Fabric;;GAP;семейства ткани нет
-M_FABRIC_CREAM;43;1;#F3EEE1;Fabric;;GAP;семейства ткани нет
-M_AWNING;17;13;#5B231E;Fabric;;GAP;тент/маркиза
-M_FABRIC_GREEN;9;2;#0C301C;Fabric;;GAP;
-M_BANNER;4;3;#CCCCCC;Fabric;;GAP;полотнище
-M_FABRIC_BORDEAUX;1;1;#94454F;Fabric;;GAP;
-M_CANVAS;1;1;#AD9975;Fabric;;GAP;холст
-M_CANVAS_DARK;1;1;#6F6864;Fabric;;GAP;холст
-M_TQ_CANVAS;1;1;#DBCCA3;Fabric;;GAP;холст
-M_LINEN;1;1;#E7E7E7;Fabric;;GAP;лён
+M_FABRIC_DEEP;685;2;#240B0E;Fabric;M_PC_Fabric;BASE;крупнейший лот ткани — пресет M_PC_Fabric (тёмно-красный)
+M_TQ_FABRIC;149;1;#B24C42;Fabric;M_PC_Fabric;BASE;ткань, базовая палитра
+M_FABRIC_CREAM;43;1;#F3EEE1;Fabric;M_PC_Fabric_Cream;VARIANT;кремовая ткань
+M_AWNING;17;13;#5B231E;Fabric;M_PC_Fabric_Bordeaux;VARIANT;тент/маркиза
+M_FABRIC_GREEN;9;2;#0C301C;Fabric;M_PC_Fabric_Green;VARIANT;
+M_BANNER;4;3;#CCCCCC;Fabric;M_PC_Fabric;BASE;полотнище, цвет #CCCCCC — плейсхолдер, оттенок задать вручную
+M_FABRIC_BORDEAUX;1;1;#94454F;Fabric;M_PC_Fabric_Bordeaux;VARIANT;
+M_CANVAS;1;1;#AD9975;Fabric;M_PC_Fabric_Canvas;VARIANT;холст
+M_CANVAS_DARK;1;1;#6F6864;Fabric;M_PC_Fabric_Canvas;VARIANT;холст тёмный
+M_TQ_CANVAS;1;1;#DBCCA3;Fabric;M_PC_Fabric_Canvas;VARIANT;холст
+M_LINEN;1;1;#E7E7E7;Fabric;M_PC_Fabric_Cream;VARIANT;лён
 M_GUILD_CREATION;2;1;#235B38;Paint;;HOLD;знаки гильдий — 20 инстансов всего, отдельная мелкая задача
 M_GUILD_CREATION_EMIT;1;1;#235B38;Emissive;;HOLD;эмиссивный знак гильдии
 M_GUILD_SECRET;2;1;#471E5B;Paint;;HOLD;

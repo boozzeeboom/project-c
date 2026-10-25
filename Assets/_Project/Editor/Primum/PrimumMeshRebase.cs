@@ -117,7 +117,10 @@ namespace ProjectC.EditorTools
             var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
             if (existing != null)
             {
-                EditorUtility.CopySerialized(dst, existing);
+                // НЕ EditorUtility.CopySerialized: он переписывает сериализованные данные меша, но не
+                // перезаливает буферы в GPU — рендер остаётся со старыми вершинами (25.10: стены
+                // «пропали» — нарисованы со сдвигом пивота). Запись через Mesh API буферы обновляет.
+                CopyMeshInto(dst, existing);
                 Object.DestroyImmediate(dst);
                 dst = existing;
                 EditorUtility.SetDirty(dst);
@@ -204,6 +207,25 @@ namespace ProjectC.EditorTools
 
         // ------------------------------------------------------------------ утилиты
 
+        /// <summary>Перенос всех каналов и сабмешей в существующий меш-ассет через Mesh API (с обновлением GPU-буферов).</summary>
+        private static void CopyMeshInto(Mesh src, Mesh dst)
+        {
+            dst.Clear();
+            dst.indexFormat = src.indexFormat;
+            var v = new List<Vector3>(); src.GetVertices(v); dst.SetVertices(v);
+            var n = new List<Vector3>(); src.GetNormals(n); if (n.Count == v.Count) dst.SetNormals(n);
+            var t = new List<Vector4>(); src.GetTangents(t); if (t.Count == v.Count) dst.SetTangents(t);
+            var c = new List<Color>(); src.GetColors(c); if (c.Count == v.Count) dst.SetColors(c);
+            for (int ch = 0; ch < 8; ch++)
+            {
+                var uv = new List<Vector4>(); src.GetUVs(ch, uv);
+                if (uv.Count == v.Count) dst.SetUVs(ch, uv);
+            }
+            dst.subMeshCount = src.subMeshCount;
+            for (int s = 0; s < src.subMeshCount; s++)
+                dst.SetIndices(src.GetIndices(s), src.GetTopology(s), s, false, (int)src.GetBaseVertex(s));
+            dst.RecalculateBounds();
+        }
         private static long Indices(Mesh m)
         {
             long c = 0;

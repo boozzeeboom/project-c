@@ -10,4 +10,5 @@ object-space bounds: (2.237, 1.558, 0.100) (ед. FBX) -> (223.700, 9.951, 155.7
 max vertex delta (parent space, double): 1,67E-005 m
 max vertex delta (world, float, info)  : 5,53E-003 m (шаг float на ~40 км ≈ 3.9E-003)
 max world normal delta : 7,45E-008
+degenerate tangents (|t·n| > 0.9): 273 -> 0
 VERDICT 1:1        : PASS

@@ -333,6 +333,8 @@ Fabric · Bronze · IronRust · Plate · Steel_v2 · Foliage · Lantern (+ `PM_L
    на ~40 км шаг float ≈ 3.9 мм → попиксельная чёрная грануляция на любом bump. Лечение — Custom Function
    `PC_NormalFromHeightPrecise` (`ProceduralBumpPrecise.hlsl`) патчером `PrecisionBumpPatcher`; проба — `Cobble`
    (журнал шаг 2h), остальные 23 графа — после визуальной приёмки.
+   **Сделано 25.10:** принято на `Cobble` (вместе с DepthNormals-фиксом для EdgeDetection, шаг 2j) и раскатано
+   на 17 графов (шаг 2k); не тронуты frozen `BronzeEdgeNoise_forTEST`, архивный `BronzeEdgeNoise`, `Fabric_v2`, `Terrain`.
 
 ---
 
@@ -384,6 +386,9 @@ Fabric · Bronze · IronRust · Plate · Steel_v2 · Foliage · Lantern (+ `PM_L
 10. ~~**Двусторонние кровли**~~ — ✅ закрыто 25.10: граф `Tiles` → `Render Face = Both` (§8.12).
 11. **Проход по всем материалам и мешам (рельеф):** тангенсы всех мешей без UV (§8.14) и точный
     Normal From Height во всех 24 графах (§8.15). Запланировано заказчиком 25.10, срок — до шага 3.
+    **Статус 25.10:** графы — сделано (17 из 17 используемых, шаг 2k); меши — пилотный чанк `S9_TRD-S2`
+    целиком (шаг 2l: Y-up, метры, тангенсы, 1:1 PASS), остальные 22 чанка — после приёмки пилота.
+    Перед шагом 3 — подстройка размеров (`*_Scale`/`*_Stretch`) пресетов под метры (пользователь).
 
 ---
 

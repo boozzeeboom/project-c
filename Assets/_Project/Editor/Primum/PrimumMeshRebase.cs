@@ -45,6 +45,189 @@ namespace ProjectC.EditorTools
             Debug.Log("[PrimumMeshRebase]\n" + sb);
         }
 
+        [MenuItem("ProjectC/World/PRIMUM/Материалы: Y-up меши всего выделенного чанка (1:1)", false, 388)]
+        public static void MenuRebaseChunk()
+        {
+            var t = Selection.activeTransform;
+            var city = PrimumMaterialMap.FindCityRoot();
+            if (t == null || city == null || t.parent != city)
+            {
+                EditorUtility.DisplayDialog("PRIMUM — Y-up", "Выделите чанк (прямой ребёнок WorldRoot_0_0/PRIMUM).", "OK");
+                return;
+            }
+            Debug.Log("[PrimumMeshRebase]\n" + RebaseChunk(t));
+        }
+
+        /// <summary>
+        /// Подмена 1:1 всех мешей чанка в ОДНО object space — пространство корня чанка (Y-up, метры).
+        /// Для каждого рендерера: вершины = R·v, где R — цепочка локальных TRS от чанка до объекта
+        /// (без мировых координат — точность), нормали — обратно-транспонированной R, тангенсы из нормали;
+        /// локальный трансформ = обратный к цепочке родителей (для прямых детей — identity), иерархия не
+        /// меняется. Все меши чанка — саб-ассеты одного файла Rebased/&lt;чанк&gt;/&lt;чанк&gt;_YUP_meshes.asset.
+        /// Идемпотентно: объект уже в кадре чанка с Rebased-мешем — пропуск. Одна Undo-группа; сцена не сохраняется.
+        /// </summary>
+        public static string RebaseChunk(Transform chunk)
+        {
+            string dir = OutRoot + "/" + chunk.name;
+            EnsureFolder(dir);
+            string path = dir + "/" + chunk.name + "_YUP_meshes.asset";
+
+            var existing = new Dictionary<string, Mesh>();
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath(path))
+                if (o is Mesh em) existing[em.name] = em;
+            bool containerExists = File.Exists(path);
+
+            var filters = chunk.GetComponentsInChildren<MeshFilter>(true);
+            int done = 0, already = 0, skipped = 0, created = 0, updated = 0;
+            long verts = 0; int degBefore = 0, degAfter = 0;
+            double maxDelta = 0, maxFrame = 0;
+            var skips = new List<string>();
+            var used = new HashSet<string>();
+
+            Undo.IncrementCurrentGroup();
+            int group = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("PRIMUM: Y-up меши чанка 1:1 (" + chunk.name + ")");
+            try
+            {
+                for (int fi = 0; fi < filters.Length; fi++)
+                {
+                    var mf = filters[fi];
+                    if ((fi & 255) == 0) EditorUtility.DisplayProgressBar("PRIMUM — Y-up", chunk.name + ": " + fi + " / " + filters.Length, (float)fi / filters.Length);
+                    var t = mf.transform;
+                    var src = mf.sharedMesh;
+                    if (src == null) { skipped++; continue; }
+                    if (t.GetComponent<SkinnedMeshRenderer>() != null || t.GetComponent<MeshCollider>() != null || t.childCount > 0)
+                    { skipped++; skips.Add(t.name + ": skinned/MeshCollider/children"); continue; }
+
+                    Matrix4x4 R = ChainToChunk(t, chunk, true);
+                    Matrix4x4 P = ChainToChunk(t, chunk, false);
+                    if (IsIdentity(R) && AssetDatabase.GetAssetPath(src).StartsWith(OutRoot, System.StringComparison.Ordinal)) { already++; continue; }
+                    if (R.determinant <= 0f) { skipped++; skips.Add(t.name + ": det<=0"); continue; }
+
+                    // новый локальный трансформ = P^-1 (равномерный масштаб + поворот)
+                    Vector3 lp; Quaternion lr; Vector3 ls;
+                    if (!InverseTRS(P, out lp, out lr, out ls)) { skipped++; skips.Add(t.name + ": цепочка родителей не TRS"); continue; }
+                    var check = P * Matrix4x4.TRS(lp, lr, ls);
+                    maxFrame = System.Math.Max(maxFrame, FrameError(check));
+
+                    var v = new List<Vector3>(); src.GetVertices(v);
+                    var n = new List<Vector3>(); src.GetNormals(n);
+                    if (v.Count == 0) { skipped++; skips.Add(t.name + ": вершины недоступны"); continue; }
+                    degBefore += Degenerate(src);
+                    var N = R.inverse.transpose;
+                    var nv = new Vector3[v.Count];
+                    for (int i = 0; i < v.Count; i++) nv[i] = R.MultiplyPoint3x4(v[i]);
+                    Vector3[] nn = null; Vector4[] nt = null;
+                    if (n.Count == v.Count)
+                    {
+                        nn = new Vector3[n.Count]; nt = new Vector4[n.Count];
+                        for (int i = 0; i < n.Count; i++) { nn[i] = N.MultiplyVector(n[i]).normalized; nt[i] = TangentFromNormal(nn[i]); }
+                    }
+
+                    var dst = Object.Instantiate(src);
+                    string key = SafeName(RelPath(t, chunk)) + "_YUP";
+                    while (!used.Add(key)) key += "_";
+                    dst.name = key;
+                    dst.SetVertices(nv);
+                    if (nn != null) { dst.SetNormals(nn); dst.SetTangents(nt); }
+                    dst.RecalculateBounds();
+
+                    Mesh asset;
+                    if (existing.TryGetValue(key, out var ex)) { CopyMeshInto(dst, ex); Object.DestroyImmediate(dst); asset = ex; EditorUtility.SetDirty(ex); updated++; }
+                    else
+                    {
+                        if (!containerExists) { AssetDatabase.CreateAsset(dst, path); containerExists = true; }
+                        else AssetDatabase.AddObjectToAsset(dst, path);
+                        asset = dst; created++;
+                    }
+
+                    // проверка 1:1 в пространстве чанка: старое R·v против нового (P·L_new)·v'
+                    var av = new List<Vector3>(); asset.GetVertices(av);
+                    for (int i = 0; i < v.Count; i++)
+                    {
+                        var a = R.MultiplyPoint3x4(v[i]);
+                        var b = check.MultiplyPoint3x4(av[i]);
+                        maxDelta = System.Math.Max(maxDelta, (a - b).magnitude);
+                    }
+                    degAfter += Degenerate(asset);
+                    verts += v.Count;
+
+                    Undo.RecordObject(mf, "Y-up");
+                    Undo.RecordObject(t, "Y-up");
+                    mf.sharedMesh = asset;
+                    t.localPosition = lp; t.localRotation = lr; t.localScale = ls;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(mf);
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(t);
+                    done++;
+                }
+            }
+            finally { EditorUtility.ClearProgressBar(); }
+            Undo.CollapseUndoOperations(group);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(chunk.gameObject.scene);
+
+            var rep = new StringBuilder();
+            rep.AppendLine("PRIMUM chunk Y-up rebase 1:1 — " + HierarchyPath(chunk) + "  (" + System.DateTime.Now.ToString("yyyy-MM-dd HH:mm") + ")");
+            rep.AppendLine("mesh filters        : " + filters.Length);
+            rep.AppendLine("rebased now         : " + done + " (new sub-assets " + created + ", updated " + updated + ")");
+            rep.AppendLine("already in frame    : " + already);
+            rep.AppendLine("skipped             : " + skipped);
+            foreach (var s in skips) rep.AppendLine("    skip: " + s);
+            rep.AppendLine("vertices rebased    : " + verts);
+            rep.AppendLine("degenerate tangents : " + degBefore + " -> " + degAfter);
+            rep.AppendLine("max frame error |P·L_new − I| : " + maxFrame.ToString("E2"));
+            rep.AppendLine("max vertex delta (chunk space) : " + maxDelta.ToString("E2") + " m");
+            rep.AppendLine("asset               : " + path);
+            rep.AppendLine("VERDICT 1:1         : " + (maxDelta < 1e-3 && maxFrame < 1e-4 && degAfter == 0 ? "PASS" : "CHECK"));
+            string text = rep.ToString();
+            WriteText(ReportDirRelative + "/mesh_rebase_chunk_" + SafeName(chunk.name) + ".txt", text);
+            return text;
+        }
+
+        /// <summary>Цепочка локальных TRS от чанка до t (includeSelf) или до родителя t.</summary>
+        private static Matrix4x4 ChainToChunk(Transform t, Transform chunk, bool includeSelf)
+        {
+            var list = new List<Transform>();
+            for (var x = includeSelf ? t : t.parent; x != null && x != chunk; x = x.parent) list.Add(x);
+            var m = Matrix4x4.identity;
+            for (int i = list.Count - 1; i >= 0; i--) m = m * Matrix4x4.TRS(list[i].localPosition, list[i].localRotation, list[i].localScale);
+            return m;
+        }
+
+        private static bool InverseTRS(Matrix4x4 p, out Vector3 pos, out Quaternion rot, out Vector3 scale)
+        {
+            pos = Vector3.zero; rot = Quaternion.identity; scale = Vector3.one;
+            if (IsIdentity(p)) return true;
+            var s = p.lossyScale;
+            if (s.x <= 0 || Mathf.Abs(s.x - s.y) > 1e-4f * s.x || Mathf.Abs(s.x - s.z) > 1e-4f * s.x) return false;
+            var q = p.rotation;
+            var qi = Quaternion.Inverse(q);
+            float si = 1f / s.x;
+            Vector3 tr = p.GetColumn(3);
+            rot = qi; scale = new Vector3(si, si, si); pos = -(qi * tr) * si;
+            return true;
+        }
+
+        private static bool IsIdentity(Matrix4x4 m)
+        {
+            return FrameError(m) < 1e-6;
+        }
+
+        private static double FrameError(Matrix4x4 m)
+        {
+            double e = 0;
+            for (int r = 0; r < 4; r++) for (int c = 0; c < 4; c++) e = System.Math.Max(e, System.Math.Abs(m[r, c] - (r == c ? 1f : 0f)));
+            return e;
+        }
+
+        private static string RelPath(Transform t, Transform root)
+        {
+            var parts = new List<string>();
+            for (var x = t; x != null && x != root; x = x.parent) parts.Add(x.name);
+            parts.Reverse();
+            return string.Join("/", parts);
+        }
+
         /// <summary>
         /// Подмена 1:1 одного объекта. Возвращает строку отчёта (и пишет её в reports/mesh_rebase_&lt;имя&gt;.txt).
         /// <paramref name="sharedFrame"/> = true (по умолчанию): пивот = начало родителя (чанка) — у всех мешей

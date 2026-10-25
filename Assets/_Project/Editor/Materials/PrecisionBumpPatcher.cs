@@ -46,14 +46,22 @@ namespace ProjectC.EditorTools
             Debug.Log("[PrecisionBumpPatcher]\n" + (sb.Length > 0 ? sb.ToString() : "выделите .shadergraph"));
         }
 
-        public static string Patch(string graphPath)
+        public static string Patch(string graphPath) => Patch(graphPath, false);
+
+        /// <summary>
+        /// Патч одного графа. <paramref name="normalizeLf"/> = true: CRLF-граф перед патчем переводится в LF
+        /// (Unity импортирует оба варианта; backup — исходный CRLF-файл).
+        /// </summary>
+        public static string Patch(string graphPath, bool normalizeLf)
         {
             if (graphPath.EndsWith(FrozenGraph, StringComparison.Ordinal)) return "SKIP " + graphPath + ": замороженный эталон";
             string guid = AssetDatabase.AssetPathToGUID(HlslPath);
             if (string.IsNullOrEmpty(guid)) return "ERROR: нет " + HlslPath;
 
             string raw = File.ReadAllText(graphPath);
-            if (raw.Contains("\r\n")) return "SKIP " + graphPath + ": CRLF (нормализовать в LF перед патчем)";
+            bool wasCrlf = raw.Contains("\r\n");
+            if (wasCrlf && !normalizeLf) return "SKIP " + graphPath + ": CRLF (нормализовать в LF перед патчем)";
+            if (wasCrlf) raw = raw.Replace("\r\n", "\n");
             string[] docs = raw.Split(new[] { "}\n\n{" }, StringSplitOptions.None);
             // восстановить полные документы с фигурными скобками
             for (int i = 0; i < docs.Length; i++)
@@ -175,8 +183,58 @@ namespace ProjectC.EditorTools
             File.WriteAllText(graphPath, result, new UTF8Encoding(false));
             AssetDatabase.ImportAsset(graphPath, ImportAssetOptions.ForceUpdate);
 
-            return "PATCHED " + graphPath + ": Normal From Height → " + FunctionName + " ×" + nfhIdx.Count +
+            return "PATCHED " + graphPath + (wasCrlf ? " (CRLF→LF)" : "") + ": Normal From Height → " + FunctionName + " ×" + nfhIdx.Count +
                    ", новых узлов " + (newNodeIds.Count) + ", новых рёбер " + newEdges.Count + ", backup " + backup;
+        }
+
+        /// <summary>
+        /// Патч + проверка (импорт, ShaderHasError, сообщения, в сгенерированном коде нет штатного узла и есть
+        /// вызов PC_NormalFromHeightPrecise). При провале проверки граф восстанавливается из backup.
+        /// </summary>
+        public static string PatchAndVerify(string graphPath)
+        {
+            string r = Patch(graphPath, true);
+            if (!r.StartsWith("PATCHED")) return r;
+            string backup = r.Substring(r.LastIndexOf("backup ", StringComparison.Ordinal) + 7).Trim();
+
+            var sh = AssetDatabase.LoadAssetAtPath<Shader>(graphPath);
+            string problem = null;
+            if (sh == null) problem = "шейдер не загружен";
+            else if (ShaderUtil.ShaderHasError(sh)) problem = "ShaderHasError";
+            else
+            {
+                foreach (var m in ShaderUtil.GetShaderMessages(sh))
+                    if (m.severity == UnityEditor.Rendering.ShaderCompilerMessageSeverity.Error) { problem = "compile: " + m.message; break; }
+            }
+            if (problem == null)
+            {
+                string code = GeneratedCode(graphPath);
+                if (code == null) problem = "нет сгенерированного кода";
+                else if (code.Contains("Unity_NormalFromHeight_")) problem = "штатный узел остался в коде";
+                else if (!code.Contains(FunctionName + "_float(")) problem = "нет вызова " + FunctionName;
+            }
+            if (problem != null)
+            {
+                File.Copy(backup, graphPath, true);
+                AssetDatabase.ImportAsset(graphPath, ImportAssetOptions.ForceUpdate);
+                return "RESTORED " + graphPath + ": " + problem + " (возвращён backup " + backup + ")";
+            }
+            return r + " | verify OK";
+        }
+
+        /// <summary>Сгенерированный текст шейдера графа (через внутренний ShaderGraphImporter.GetShaderText).</summary>
+        public static string GeneratedCode(string graphPath)
+        {
+            var imp = AssetImporter.GetAtPath(graphPath);
+            if (imp == null) return null;
+            foreach (var mi in imp.GetType().GetMethods(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+            {
+                if (mi.Name != "GetShaderText" || mi.GetParameters().Length != 4) continue;
+                var ps = mi.GetParameters();
+                try { return (string)mi.Invoke(null, new object[] { graphPath, null, Activator.CreateInstance(ps[2].ParameterType), null }); }
+                catch { return null; }
+            }
+            return null;
         }
 
         // ------------------------------------------------------------------ JSON-шаблоны

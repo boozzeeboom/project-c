@@ -54,12 +54,12 @@ Material:
     - _Brick_Aspect: 1.15
     - _Brick_Gloss: 0.1
     - _Brick_Lift: 0.15
-    - _Brick_Scale: 51.5
+    - _Brick_Scale: 5.8
     - _Brick_Seed: 0
     - _Brick_Tone: 0.55
     - _Bump_Strength: 1
     - _Crack_Amount: 0.8
-    - _Crack_Bump: -0.014
+    - _Crack_Bump: 0
     - _Crack_Scale: 105.77
     - _Crack_Seed: 0
     - _Crack_Stretch: 3.86
@@ -90,8 +90,8 @@ Material:
     - _Mortar_Grain_Scale: 55
     - _Mortar_Grain_Seed: 7
     - _Pore_Amount: 0.5
-    - _Pore_Bump: -0.05
-    - _Pore_Scale: 32.7
+    - _Pore_Bump: 0
+    - _Pore_Scale: 447.1
     - _Pore_Seed: 0
     - _Pore_Width: 0.42
     - _QueueControl: 1

@@ -50,8 +50,8 @@ Material:
     - _Bloom_Stretch: 8.08
     - _Bloom_Threshold: 0.51
     - _Crack_Amount: 0.75
-    - _Crack_Bump: 0
-    - _Crack_Scale: 130.1
+    - _Crack_Bump: 1.22
+    - _Crack_Scale: 10.5
     - _Crack_Seed: 0
     - _Crack_Warp: 0.35
     - _Crack_Width: 0.52

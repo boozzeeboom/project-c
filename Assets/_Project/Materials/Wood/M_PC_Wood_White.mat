@@ -38,7 +38,15 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Grain_Amount: 0
+    - _Grain_Bump: 0
+    - _Grain_Scale: 0.5
+    - _Pore_Bump: 0
+    - _Pores_Amount: 0
+    - _Ring_Amount: 0.12
+    - _Rings_Bump: 0.16
+    - _Rings_Warp: 0.61
     m_Colors:
     - _Grain_Color: {r: 0.75656235, g: 0.7459088, b: 0.7174994, a: 1}
     - _LateWood_Color: {r: 0.5517688, g: 0.54344124, b: 0.52123433, a: 1}

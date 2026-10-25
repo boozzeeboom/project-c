@@ -46,6 +46,18 @@ namespace ProjectC.EditorTools
             Debug.Log("[PrecisionBumpPatcher]\n" + (sb.Length > 0 ? sb.ToString() : "выделите .shadergraph"));
         }
 
+        [MenuItem("ProjectC/Materials/Точная позиция: Position(Object) → PC_PositionOS в выделенном графе", false, 401)]
+        public static void MenuPreciseObjectPosSelected()
+        {
+            var sb = new StringBuilder();
+            foreach (var o in Selection.objects)
+            {
+                string p = AssetDatabase.GetAssetPath(o);
+                if (p.EndsWith(".shadergraph", StringComparison.OrdinalIgnoreCase)) sb.AppendLine(PatchPreciseObjectPos(p));
+            }
+            Debug.Log("[PrecisionBumpPatcher]\n" + (sb.Length > 0 ? sb.ToString() : "выделите .shadergraph"));
+        }
+
         public static string Patch(string graphPath) => Patch(graphPath, false);
 
         /// <summary>

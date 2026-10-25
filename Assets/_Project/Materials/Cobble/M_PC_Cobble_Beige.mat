@@ -25,7 +25,20 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Crack_Bump: -0.35
+    - _Crack_Scale: 6
+    - _Crack_Stretch: 0.5
+    - _Crack_Width: 0.03
+    - _Dirt_Scale: 0.6
+    - _Flaw_Bump: 0
+    - _Flaw_Scale: 1.5
+    - _Joint_Bump: -0.07
+    - _Joint_Width: 0.08
+    - _Lichen_Scale: 1.2
+    - _Moss_Scale: 1
+    - _Stone_Scale: 2.5
+    - _Stone_Stretch: 0.5
     m_Colors:
     - _Stone_Color: {r: 0.61960787, g: 0.54901963, b: 0.4392157, a: 1}
     - _Stone_Light_Color: {r: 0.8605665, g: 0.71939, b: 0.49978197, a: 1}

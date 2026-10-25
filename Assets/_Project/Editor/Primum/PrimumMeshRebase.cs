@@ -93,7 +93,17 @@ namespace ProjectC.EditorTools
                 for (int i = 0; i < n.Count; i++) nn[i] = N.MultiplyVector(n[i]).normalized;
             }
             Vector4[] nt = null;
-            if (tg.Count == v.Count)
+            if (nn != null)
+            {
+                // У городских FBX нет UV, поэтому импортёр ставит ВСЕМ вершинам один тангенс
+                // (1,0,0,-1). На гранях с нормалью ±X он параллелен нормали → TBN вырожден → NormalTS
+                // графа (Normal From Height) даёт чёрные мелькающие грани на одном боку всех домов.
+                // Строим ортонормальный тангенс из нормали (рисунок от UV не зависит, важна только
+                // невырожденность): стена → горизонталь вдоль стены, пол/потолок → по X.
+                nt = new Vector4[nn.Length];
+                for (int i = 0; i < nn.Length; i++) nt[i] = TangentFromNormal(nn[i]);
+            }
+            else if (tg.Count == v.Count)
             {
                 nt = new Vector4[tg.Count];
                 for (int i = 0; i < tg.Count; i++)
@@ -189,6 +199,7 @@ namespace ProjectC.EditorTools
             rep.AppendLine("max vertex delta (parent space, double): " + maxPos.ToString("E2") + " m");
             rep.AppendLine("max vertex delta (world, float, info)  : " + maxWorld.ToString("E2") + " m (шаг float на ~40 км ≈ 3.9E-003)");
             rep.AppendLine("max world normal delta : " + maxNrm.ToString("E2"));
+            rep.AppendLine("degenerate tangents (|t·n| > 0.9): " + Degenerate(src) + " -> " + Degenerate(dst));
             rep.AppendLine("VERDICT 1:1        : " + (maxPos < 1e-4 && maxNrm < 1e-4 ? "PASS" : "FAIL"));
             string text = rep.ToString();
             WriteText(ReportDirRelative + "/mesh_rebase_" + SafeName(t.name) + ".txt", text);
@@ -203,6 +214,14 @@ namespace ProjectC.EditorTools
             PrefabUtility.RevertObjectOverride(mf, InteractionMode.UserAction);
             PrefabUtility.RevertObjectOverride(t, InteractionMode.UserAction);
             return "reverted " + t.name + ": mesh=" + (mf.sharedMesh ? mf.sharedMesh.name : "null") + " rot " + V(t.localEulerAngles) + " scale " + V(t.localScale);
+        }
+
+        /// <summary>Ортонормальный тангенс для меша без UV: перпендикулярен нормали, w = +1.</summary>
+        public static Vector4 TangentFromNormal(Vector3 n)
+        {
+            var a = Mathf.Abs(n.y) < 0.99f ? Vector3.up : Vector3.forward;
+            var t = Vector3.Cross(a, n).normalized;
+            return new Vector4(t.x, t.y, t.z, 1f);
         }
 
         // ------------------------------------------------------------------ утилиты
@@ -226,6 +245,20 @@ namespace ProjectC.EditorTools
                 dst.SetIndices(src.GetIndices(s), src.GetTopology(s), s, false, (int)src.GetBaseVertex(s));
             dst.RecalculateBounds();
         }
+        private static int Degenerate(Mesh m)
+        {
+            var n = new List<Vector3>(); m.GetNormals(n);
+            var t = new List<Vector4>(); m.GetTangents(t);
+            if (n.Count == 0 || t.Count != n.Count) return -1;
+            int c = 0;
+            for (int i = 0; i < n.Count; i++)
+            {
+                var tv = new Vector3(t[i].x, t[i].y, t[i].z);
+                if (tv.sqrMagnitude < 1e-8f || Mathf.Abs(Vector3.Dot(tv.normalized, n[i].normalized)) > 0.9f) c++;
+            }
+            return c;
+        }
+
         private static long Indices(Mesh m)
         {
             long c = 0;

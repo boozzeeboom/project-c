@@ -40,14 +40,14 @@ M_PAVING_BRUSCHATKA;3;3;#7A7772;Cobble;M_PC_Cobble;BASE;мостовая — б�
 M_LIME_WASH;60;19;#CCC1A8;Concrete;M_PC_Concrete_Limewash;VARIANT;известковая побелка
 M_PLASTER_ROSE;29;17;#B28C7A;Concrete;M_PC_Concrete_Rose;VARIANT;розовая штукатурка
 M_TQ_PLASTER;1;1;#D6CCBC;Concrete;M_PC_Concrete_Limewash;VARIANT;штукатурка
-M_ROOF_BORDEAUX;67;1;#59211E;Tiles;M_PC_Tiles_Bordeaux;HOLD;двусторонний кровельный .mat (_Cull=0, 15_DOORS_REIMPORT_PLAN §16) — Tiles односторонний (Render Face Front), не мапить до решения (02_IMPLEMENTATION_LOG шаг 2a)
+M_ROOF_BORDEAUX;67;1;#59211E;Tiles;M_PC_Tiles_Bordeaux;PROJECT_LIT;двусторонний Roof .mat (_Cull=0) → Tiles: с 25.10 граф Tiles двусторонний (Render Face Both), см. 02_IMPLEMENTATION_LOG шаг 2b
 M_TILE_TERRA;50;18;#8C4C32;Tiles;M_PC_Tiles;BASE;черепица — базовая палитра
-M_TQ_R_TILE;1;1;#994230;Tiles;M_PC_Tiles;HOLD;двусторонний кровельный .mat (_Cull=0) — см. M_ROOF_BORDEAUX
-M_TQ_R_COPPER;1;1;#729989;Tiles;M_PC_Tiles_Copper;HOLD;зелёная патина меди, двусторонний кровельный .mat (_Cull=0) — см. M_ROOF_BORDEAUX
-M_TQ_R_GREEN;1;1;#425B4C;Tiles;M_PC_Tiles_Green;HOLD;двусторонний кровельный .mat (_Cull=0) — см. M_ROOF_BORDEAUX
-M_TQ_R_SHINGLE;1;1;#563F30;Tiles;M_PC_Tiles_Shingle;HOLD;гонт, двусторонний кровельный .mat (_Cull=0) — см. M_ROOF_BORDEAUX
-M_TQ_R_SLATE;1;1;#495463;Tiles;M_PC_Tiles_Slate;HOLD;двусторонний кровельный .mat (_Cull=0) — см. M_ROOF_BORDEAUX
-M_TQ_R_STEEL;1;1;#656870;Tiles;M_PC_Tiles_Steel;HOLD;фальцевая кровля, двусторонний кровельный .mat (_Cull=0) — см. M_ROOF_BORDEAUX
+M_TQ_R_TILE;1;1;#994230;Tiles;M_PC_Tiles;PROJECT_LIT;двусторонний Roof .mat → двусторонний Tiles (см. M_ROOF_BORDEAUX)
+M_TQ_R_COPPER;1;1;#729989;Tiles;M_PC_Tiles_Copper;PROJECT_LIT;зелёная патина меди, двусторонний Tiles (см. M_ROOF_BORDEAUX)
+M_TQ_R_GREEN;1;1;#425B4C;Tiles;M_PC_Tiles_Green;PROJECT_LIT;двусторонний Tiles (см. M_ROOF_BORDEAUX)
+M_TQ_R_SHINGLE;1;1;#563F30;Tiles;M_PC_Tiles_Shingle;PROJECT_LIT;гонт, двусторонний Tiles (см. M_ROOF_BORDEAUX)
+M_TQ_R_SLATE;1;1;#495463;Tiles;M_PC_Tiles_Slate;PROJECT_LIT;двусторонний Tiles (см. M_ROOF_BORDEAUX)
+M_TQ_R_STEEL;1;1;#656870;Tiles;M_PC_Tiles_Steel;PROJECT_LIT;фальцевая кровля, двусторонний Tiles (см. M_ROOF_BORDEAUX)
 M_TQ_R_THATCH;1;1;#A58C59;Tiles;;HOLD;семейства соломы нет — 1 инстанс, решение за заказчиком (§10.8)
 R_BORDO;1;1;#721E23;Tiles;M_PC_Tiles_Bordeaux;VARIANT;кровля
 R_BROWN;1;1;#593826;Tiles;M_PC_Tiles_Shingle;VARIANT;кровля

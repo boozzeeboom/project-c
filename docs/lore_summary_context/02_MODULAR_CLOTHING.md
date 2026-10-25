@@ -38,10 +38,10 @@
 | Слой | Слот `EquipSlot` (`GDD_11` §2) | Модули |
 |---|---|---|
 | L0 база | `Chest` 2, `Legs` 3 | `CL_F_CHEST_UNSUIT_01`, `CL_F_LEGS_UNSUIT_01` |
-| L1 обвязка | `Chest` 2 | `CL_F_CHEST_HARNESS_01`, `CL_F_LEGS_BELT_01` |
-| L2 пластины | `Chest` 2 | `CL_F_CHEST_PLATE_01` |
-| L2 пластины | `Accessory1/2` 7/8 | `CL_F_ACC_PAULDRON_01` (×2 — левое/правое) |
-| L2 пластины | `Hands` 6, `Legs` 3 | `CL_F_HANDS_BRACER_01`, `CL_F_LEGS_KNEE_01` |
+| L1 обвязка | `Chest` 2 | `CL_F_CHEST_HARNESS_01`, `CL_F_LEGS_BELT_01`, `CL_F_LEGS_BELT_02` |
+| L2 пластины | `Chest` 2 | `CL_F_CHEST_PLATE_01`, `CL_F_CHEST_PLATE_02` |
+| L2 пластины | `Accessory1/2` 7/8 | `CL_F_ACC_PAULDRON_01`, `CL_F_ACC_PAULDRON_02` (×2 — левое/правое) |
+| L2 пластины | `Hands` 6, `Legs` 3 | `CL_F_HANDS_BRACER_01`, `CL_F_LEGS_KNEE_01`, `CL_F_LEGS_THIGH_01`, `CL_F_LEGS_THIGH_02` (×2 — левое/правое) |
 | L3 аксессуары | `Hands` 6, `Feet` 4, `Head` 1, `Back` 5 | `CL_F_HANDS_GLOVE_01`, `CL_F_FEET_BOOT_01/02`, `CL_F_HEAD_HELMET_01`, `CL_F_BACK_RIG_01` |
 | L3 мелочь | `Accessory1/2` 7/8 | `CL_F_ACC_POUCH_01`, `CL_F_ACC_TOOLROLL_01`, `CL_F_ACC_BADGE_01`, `CL_F_LEGS_HOLSTER_01` |
 | OUT | `Chest` 2 / `Legs` 3 | `OUT_JACKET_CROP_01`, `OUT_APRON_CANVAS_01`, `OUT_COAT_WOOL_01` |
@@ -49,6 +49,10 @@
 `Module1/2/3` (20–22) — **импланты**, не одежда (см. `Battle/02_LORE.md` §3): они видимы, но в этой системе не участвуют.
 
 **Правило совместимости:** пластина надевается только на обвязку (нужны крюки), обвязка — только на базу (нужны точки под нагрузку); наруч и наколенник держатся на собственных ремнях и работают без обвязки.
+
+**Две конструктивные линии.** Пластины существуют в двух исполнениях: **сталь** (`_01` — кованые ламели, вальцованная кромка, латунные заклёпки, кожаная подкладка) и **композит** (`_02` — жёсткие оболочки на карбоновой подложке, слоистые кромки laminate, шестигранный крепёж, керамическая вставка). Это **разные меши**, а не окрасы одного меша; см. §7. Стальная линия — канон дека, композитная — дизайн-изобретение (§10 п.7). Обе линии взаимозаменяемы внутри одного слота и не надеваются друг на друга.
+
+**Набедренники** (`CL_F_LEGS_THIGH_01/02`) вынесены в `Legs` 3 парным модулем (как ботинки), а не в `Accessory1/2`: пара наплечников уже занимает оба аксессуарных слота, а независимая замена левого и правого обеспечивается внутри одного предмета.
 
 ---
 
@@ -60,14 +64,20 @@
 | `CL_F_LEGS_UNSUIT_01` | Legs | лосины той же вязки, сетчатые вставки на бёдрах | лист 02/06 |
 | `CL_F_CHEST_HARNESS_01` | Chest | «паук»: 8 строп от нагрудного кольца, крюки на концах, широкий пояс | лист 03/05/08 |
 | `CL_F_CHEST_PLATE_01` | Chest | сегментный нагрудник: 2 чашки + стерновая пластина + 5 ламелей | лист 03 |
+| `CL_F_CHEST_PLATE_02` | Chest | композитный нагрудник: 3 жёсткие оболочки на карбоновой подложке, керамическая вставка, сервисная накладка, крюки на ярме | композитная линия — **дизайн-изобретение** (§10 п.7) |
 | `CL_F_ACC_PAULDRON_01` | Accessory1/2 | наплечник из 3 ламелей с кольцом на внутренней стороне | лист 02/05/08 |
+| `CL_F_ACC_PAULDRON_02` | Accessory1/2 | композитный наплечник: 3 оболочки на карбоновой подложке, кольцо с крюком, 2 кожаных лепестка, шпилинт | композитная линия — **дизайн-изобретение** (§10 п.7) |
 | `CL_F_HANDS_BRACER_01` | Hands | наруч на 2 ламелях, шарнир, кожаная подкладка | лист 02/05 |
 | `CL_F_HANDS_GLOVE_01` | Hands | беспалый полётный перчат с сетчатым тылом | лист 02/05/07 |
 | `CL_F_LEGS_BELT_01` | Legs | широкий пояс, пряжка-пластина, люверсы, петли под инструмент | лист 03/05/08 |
+| `CL_F_LEGS_BELT_02` | Legs | композитный пояс: 3 накладки на карбоновой ленте, утопленная пряжка, D-кольцо под кобуру | композитная линия — **дизайн-изобретение** (§10 п.7) |
 | `CL_F_LEGS_HOLSTER_01` | Legs (Accessory) | набедренная кобура под инструмент, 2 стропы с пряжками | лист 07 |
 | `CL_F_LEGS_KNEE_01` | Legs | наколенник-нашлёпка на коже и 3 заклёпках | лист 08 |
+| `CL_F_LEGS_THIGH_01` | Legs (парный) | набедренник из 3 стальных ламелей, 2 стропы с пряжками, карабин на кольцо пояса | лист 08 → расширение, **дизайн-изобретение** (§10 п.8) |
+| `CL_F_LEGS_THIGH_02` | Legs (парный) | композитный набедренник: 3 оболочки на карбоновой подложке, те же 2 стропы и карабин | композитная линия — **дизайн-изобретение** (§10 п.7, п.8) |
 | `CL_F_FEET_BOOT_01` | Feet | ботинок до середины голени, стальной носок, шнуровка | лист 02 |
 | `CL_F_FEET_BOOT_02` | Feet | высокий сапог с цветной окантовкой | лист 07 |
+| `CL_F_FEET_BOOT_03` | Feet | композитный ботинок до середины голени: 3 оболочки на карбоновой подложке, керамическая вставка, сервисная накладка | композитная линия — **дизайн-изобретение** (§10 п.7) |
 | `CL_F_HEAD_HELMET_01` | Head | шлем с петлевым визором, 3 варианта визора | лист 09 |
 | `CL_F_BACK_RIG_01` | Back | спинная рама-стабилизатор: 2 кольца антигравия, манометр, картридж-гнездо | манифест §5 (антигравий = кольца/диски/рамки-контуры) — **дизайн-изобретение**, см. §10 |
 | `CL_F_ACC_POUCH_01` | Accessory1/2 | плоская сумка-планшет с клапаном | лист 03 |
@@ -206,6 +216,22 @@ buckle plate, the leather cracked along the fold line.
 MATERIAL: oiled black-brown leather, worn steel buckle, brass eyelets with greenish patina.
 ```
 
+**`CL_F_LEGS_BELT_02`** — `PRODUCT A`
+```
+SUBJECT: engineered composite utility belt, laid as one continuous band in a shallow arc with the outer face up:
+three rigid angular composite caps over a continuous dark carbon-weave band — a broad central cap with a machined
+rectangular buckle plate and hook-and-pin latch, and two narrower flanking caps. Every cap has chamfered corners,
+a low central keel ridge and a bevelled top lip, and sits proud of the weave on a shallow negative-space gap so the
+deck of each cap reads separately; the weave stays visible in the gaps and at both ends. A machined steel D-ring on
+a composite keeper for the holster, a small flush square loop, punched adjustment holes with an alloy tongue.
+DETAIL: laminated edge strata as thin stacked lines at every cap border, flush hex fasteners along the seams, a deep
+gouge through the laminate on one flanking cap, three shallow dents on the central cap, soot in the gaps, worn
+bright alloy on every high edge, rust bloom around the fasteners and along the lower rims.
+MATERIAL: matte gunmetal grey #6a6a6a caps over matte black-brown carbon weave #3a3a3a, dull brushed alloy
+fittings, aged brass #8a7444 fasteners and latch, stained dark oiled leather keeper, thin rust, faint patina
+#5a7a6a at the ends. No emissive parts.
+```
+
 ### 6.3. Пластины
 
 **`CL_F_CHEST_PLATE_01`** — `PRODUCT A`
@@ -220,6 +246,22 @@ MATERIAL: worn polished steel #6a6a6a with a cold bluish sheen, rust freckles in
 in the creases.
 ```
 
+**`CL_F_CHEST_PLATE_02`** — `PRODUCT A`
+```
+SUBJECT: engineered composite breastplate for a female torso: three rigid angular shells stacked in overlapping
+steps from a narrow shoulder yoke down to a pointed lower band; hard chamfered corners and a low central keel ridge
+on each shell; every shell sits proud of the one below on a shallow negative-space gap with a bevelled top lip; a
+dark carbon-weave panel runs continuously beneath the shells and stays visible in the gaps and along the rims; two
+flush steel hook rings with pinned latches on the yoke; a recessed ceramic insert strip in the mid band; a sunken
+rectangular access plate on the lower band. Single clip-on shell, no shoulder straps.
+DETAIL: laminated composite edge strata as thin stacked lines at every plate border, flush hex fasteners along the
+seams, a deep gouge through the laminate on the outer corner of the mid band, three shallow dents on the upper
+shell, soot in the gaps, worn bright alloy on every high edge, rust bloom around the lower fasteners.
+MATERIAL: matte gunmetal grey #6a6a6a rigid shell caps over matte black-brown carbon weave #3a3a3a, dull brushed
+alloy fittings, aged brass #8a7444 hex fasteners and latch, thin rust #8b5e3c, faint patina #5a7a6a in one seam.
+No emissive parts.
+```
+
 **`CL_F_ACC_PAULDRON_01`** — `PRODUCT A`
 ```
 SUBJECT: layered steel shoulder pauldron, three overlapping lames covering the deltoid, the top lame raised with a
@@ -227,6 +269,21 @@ rolled outer edge, a steel ring and hook on the inner face, two leather tabs and
 DETAIL: planished surface, one brass rivet per lame on the centre line, riveted leather pad inside, deep gouge on
 the outer edge, three shallow dents.
 MATERIAL: worn steel, brass rivets, oiled black-brown leather, faint rust bloom along the lowest lame.
+```
+
+**`CL_F_ACC_PAULDRON_02`** — `PRODUCT A`
+```
+SUBJECT: engineered composite shoulder pauldron: three rigid angular shells sweeping from a compact shoulder hub out
+over the deltoid, each with hard chamfered corners, a low central keel ridge and a bevelled top lip, each stepped
+proud of the one below on a shallow negative-space gap; a dark carbon-weave panel runs beneath and stays visible in
+the gaps and along the rims; a steel ring with a hooked latch and a pin at the top edge, two short oiled-leather tabs
+beneath it; laminated edge strata at every shell border, flush hex fasteners, a narrow ceramic insert strip on the
+middle shell and a recessed rectangular access plate on the lower shell.
+DETAIL: a deep gouge across the outer rim of the middle shell cutting through the laminate, three shallow dents,
+soot packed into the seams, worn bright alloy on every high edge and fastener head, rust bloom around the rivets and
+along the bottom shell.
+MATERIAL: matte gunmetal grey caps over matte black-brown carbon weave, matte alloy fittings, aged brass fasteners,
+stained dark oiled leather tabs, thin rust, faint patina in one seam. No emissive parts.
 ```
 
 **`CL_F_HANDS_BRACER_01`** — `PRODUCT A`
@@ -246,6 +303,39 @@ DETAIL: planished dome, rolled rim, one deep scrape across the crown, strap end 
 MATERIAL: worn steel, brass rivets, oiled leather, dyed webbing.
 ```
 
+**`CL_F_LEGS_THIGH_01`** — `PRODUCT A`
+```
+SUBJECT: forged-steel thigh guard hung from the belt on its own straps, worn without the chest harness: three
+overlapping steel lamellae down the front-outer thigh, the upper plate broadest with a rolled bevelled top lip, each
+lower band narrower and stepped proud of the one above; two oiled-leather strap bands wrap behind the plate and
+reappear at both side edges, the upper wide with a steel roller buckle and keeper, the lower narrower with a plain
+steel loop; a short leather tab at the top edge rises into a steel clip with a pinned hook for the belt ring, joined
+to the upper lamella by a steel hinge plate with three brass rivets.
+DETAIL: planished steel, deep gouges, three shallow dents, soot in the gaps under the plate edges, worn bright metal
+on every high edge and around the buckle roller, rust bloom around the rivets, rust along the lower band, stitching
+darkened at the keeper folds, faint patina in one seam.
+MATERIAL: worn steel #6a6a6a with a cold bluish sheen, dull brushed alloy fittings, brass rivets, oiled black-brown
+leather straps #5a4632, thin rust #8b5e3c.
+```
+
+**`CL_F_LEGS_THIGH_02`** — `PRODUCT A`
+```
+SUBJECT: engineered composite thigh guard hung from the belt on its own straps, worn without the chest harness: a
+continuous dark carbon-weave backing shell carrying three rigid angular composite caps down the front-outer thigh —
+a broad upper cap, a mid cap and a narrower lower cap. Every cap has hard chamfered corners and a low central keel
+ridge, and sits proud of the weave on a shallow negative-space gap so the deck of every layer reads separately; the
+weave stays visible in the gaps and at both side edges. Two oiled-leather strap bands wrap behind the guard and
+reappear at both side edges, the upper wide with a machined alloy roller buckle and keeper, the lower narrower with a
+plain alloy loop; a leather tab at the top edge rises into a machined alloy clip with a pinned hook for the belt ring.
+DETAIL: laminated edge strata at every cap border, flush hex fasteners along the seams, a recessed ceramic insert
+strip in the mid cap, a sunken rectangular access plate on the lower cap, a deep gouge through the laminate on the
+outer corner of the mid cap, three shallow dents on the upper cap, soot in the gaps, worn bright alloy on every high
+edge and fastener head, rust bloom along the bottom rim.
+MATERIAL: matte gunmetal grey #6a6a6a caps over matte black-brown carbon weave #3a3a3a, dull brushed alloy
+fittings, aged brass #8a7444 hex fasteners, oiled black-brown leather straps, thin rust, faint patina #5a7a6a in one
+gap. No emissive parts.
+```
+
 ### 6.4. Конечности и ступни
 
 **`CL_F_HANDS_GLOVE_01`** — `PRODUCT A`
@@ -261,8 +351,10 @@ MATERIAL: dark leather and gunmetal-grey mesh, steel snap, dyed webbing, oil dar
 **`CL_F_FEET_BOOT_01`** — `PRODUCT A`
 ```
 SUBJECT: single mid-calf flight boot, shown floating in profile with the toe pointing to the left:
-eight brass eyelets with dark laces, steel toe cap riveted on, a dyed webbing strap with a square buckle across
-the instep, stacked leather heel, thick treaded sole.
+eight brass eyelets with dark laces, three forged-steel pieces riveted on in the steel armour line — a rolled steel
+toe cap, a steel instep plate over the laces and a broad steel ankle-and-shin plate stepped above it up the outer
+face of the shaft — a dyed webbing strap with a square steel buckle across the instep, stacked leather heel, thick
+treaded sole.
 DETAIL: heavy welt stitching, scuffed toe cap, cracked leather at the ankle flex, mud crusted on the sole edge,
 lace end burned.
 MATERIAL: black-brown oiled leather, worn steel toe cap, brass eyelets, dark rubber-look sole.
@@ -275,6 +367,24 @@ a narrow contrasting trim band at the top, plain pointed toe, low stacked heel, 
 DETAIL: unmarked shaft with a soft fold above the ankle, stitched trim band, a small scuff cluster at the toe,
 subtle sheen along the shin.
 MATERIAL: dyed violet suede-like shaft (textile dye, not glowing) with darker leather foot, matte finish.
+```
+
+**`CL_F_FEET_BOOT_03`** — `PRODUCT A`
+```
+SUBJECT: engineered composite mid-calf flight boot, shown floating in profile with the toe pointing to the left: a
+continuous dark carbon-weave shaft and vamp form the base, built over a thick treaded sole and a stacked leather
+heel. Three rigid angular composite shells are clamped over it — a toe cap, an instep cover and a broad shin plate
+rising up the outer face of the shaft — each with hard chamfered corners, a low central keel ridge and a bevelled top
+lip, each stepped proud of the weave on a shallow negative-space gap. The weave stays visible in the gaps, around the
+shell rims and at the cuff. Two machined alloy strap buckles cross the instep and the calf; the front of the shaft is
+closed with woven cord through flush alloy eyelets; heavy welt cord stitches the sole.
+DETAIL: laminated edge strata at every shell border, flush hex fasteners along the seams, a recessed ceramic insert
+strip in the instep cover, a sunken rectangular access plate on the shin plate, a deep gouge through the laminate
+across the shin plate, three shallow dents on the toe cap, soot in the gaps, worn bright alloy on the edges, mud
+crusted on the sole edge, the weave frayed at one cut edge, rust bloom along the bottom rim.
+MATERIAL: matte gunmetal grey #6a6a6a shell caps over matte black-brown carbon weave #3a3a3a, machined alloy
+fittings, aged brass #8a7444 fasteners, dark oiled leather heel and collar #5a4632, thin rust #8b5e3c, faint patina
+#5a7a6a in one gap, dark rubber-look sole. No emissive parts.
 ```
 
 ### 6.5. Голова и спина
@@ -397,6 +507,10 @@ work garment, no decoration for its own sake.
 
 ---
 
+**Две конструктивные линии — не окрасы.** Сталь (`_01`) и композит (`_02`) — **разные меши**, а не два материала одного меша; правило «вариантность покраской» на них не распространяется. Внутри линии окрас по-прежнему задаётся материалом (`Plate`, `Fabric`, `IronRust`, `Bronze`). Композитная линия — дизайн-изобретение, подтверждение в §10 п.7.
+
+---
+
 ## 8. После генерации: 3D → Unity
 
 - **Имена:** `SM_CL_F_<SLOT>_<FAMILY>_<NN>` (например `SM_CL_F_CHEST_PLATE_01`); материал — `M_PC_<Family>_<Color>`.
@@ -433,3 +547,5 @@ work garment, no decoration for its own sake.
 4. Наплечники вынесены в `Accessory1/2`, а не в `Chest` — так их можно менять по одному. Подтвердить.
 5. Нужен ли отдельный форменный вариант СОЛ на тех же мешах (чёрная ткань, бронза, без наколенников) или это другой комплект.
 6. Три состояния визора: отдельные меши или один меш + 3 материала визора (предложено второе).
+7. **Композитная линия** (`CL_F_ACC_PAULDRON_02`, `CL_F_CHEST_PLATE_02`, `CL_F_LEGS_BELT_02`, `CL_F_LEGS_THIGH_02`, `CL_F_FEET_BOOT_03`) — в концепт-деке её нет, дек даёт только кованую сталь. Композит введён как вторая конструктивная линия под sci-fi-читаемость брони (карбоновая подложка, слоистые кромки, шестигранный крепёж). Требует утверждения: остаётся ли сталь единственным каноном, или композит — равноправная линия для СОЛ и Гильдии Силы.
+8. **Набедренники** (`CL_F_LEGS_THIGH_01/02`) — расширение наколенника листа 08 на бедро; в деке их нет. Вынесены в `Legs` парным модулем, а не в `Accessory1/2`, потому что пара наплечников и пара набедренников не влезают в два аксессуарных слота. Подтвердить.

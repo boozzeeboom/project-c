@@ -175,7 +175,11 @@
    мировой позиции; город в ~40 км → шаг float ≈ 3.9 мм → попиксельная чёрная грануляция на любом
    bump. Лечение — Custom Function `PC_NormalFromHeightPrecise` (`Assets/_Project/Shaders/ProceduralBumpPrecise.hlsl`),
    замена узла патчером `ProjectC/Materials/Точный bump…` (`PrecisionBumpPatcher.cs`, backup в
-   `ShaderGraphBackup/`). Проба — `Cobble` (визуал `NOT RUN`); остальные графы — после приёмки.
+   `ShaderGraphBackup/`). Проба — `Cobble`, **принято пользователем 25.10** (вместе с п.3).
+3. **EdgeDetection рисует контур по рельефу.** Пост-эффект читает `_CameraNormalsTexture`
+   (`UseNormalEdges`, порог 0.08); проход `DepthNormals` графа писал туда нормаль с рельефом → тёмные
+   точки в местах bump при любом знаке. `PC_NormalFromHeightPrecise` в DepthNormals отдаёт нормаль
+   без рельефа (контур по геометрии, свет с рельефом), плюс наклон ограничен ~27° и NaN гасятся.
 
 Новые графы с рельефом собирать сразу с `PC_NormalFromHeightPrecise`, а не со штатным узлом.
 

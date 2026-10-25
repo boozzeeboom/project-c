@@ -180,8 +180,13 @@
    (`UseNormalEdges`, порог 0.08); проход `DepthNormals` графа писал туда нормаль с рельефом → тёмные
    точки в местах bump при любом знаке. `PC_NormalFromHeightPrecise` в DepthNormals отдаёт нормаль
    без рельефа (контур по геометрии, свет с рельефом), плюс наклон ограничен ~27° и NaN гасятся.
+4. **Object-space позиция во фрагменте квантована миром.** Shader Graph считает её как
+   `TransformWorldToObject(positionWS)` — из абсолютной мировой; в ~40 км это сетка ~4 мм → шум любого
+   рельефа, которого нет в превью материала. Лечение — custom interpolator `PC_PositionOS` (точная
+   `positionOS` из вершинной стадии), все фрагментные выходы Position (Object) переведены на него:
+   `PrecisionBumpPatcher.PatchPreciseObjectPos`, 19 графов (2026-10-25, журнал шаг 2p).
 
-Новые графы с рельефом собирать сразу с `PC_NormalFromHeightPrecise`, а не со штатным узлом.
+Новые графы с рельефом собирать сразу с `PC_NormalFromHeightPrecise` и `PC_PositionOS`, а не со штатным узлом и Position (Object) напрямую.
 
 ## Проверка (для каждого материала)
 

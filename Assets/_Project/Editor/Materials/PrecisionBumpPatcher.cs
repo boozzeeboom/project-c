@@ -237,6 +237,183 @@ namespace ProjectC.EditorTools
             return null;
         }
 
+        // ------------------------------------------------------------------ точная object-space позиция (custom interpolator)
+
+        private const string PosInterpName = "PC_PositionOS";
+
+        /// <summary>
+        /// Шаг 2p: во фрагменте Shader Graph считает <c>ObjectSpacePosition = TransformWorldToObject(positionWS)</c> — из
+        /// АБСОЛЮТНОЙ мировой позиции, которая в ~40 км от начала координат квантована шагом ~4 мм. Все
+        /// процедурные узоры и их производные (рельеф) считаются на этой «сетке» → шум рельефа, которого
+        /// нет в превью (сфера в начале координат). Патч протаскивает точную <c>positionOS</c> вершины во
+        /// фрагмент через custom interpolator <c>PC_PositionOS</c> и переводит на него все выходы узлов
+        /// Position (Object). Узел Position остаётся и питает блок интерполятора в Vertex-контексте (там он равен
+        /// <c>input.positionOS</c> — точно). FO-safe: мировые координаты в узор не входят. Идемпотентно.
+        /// </summary>
+        public static string PatchPreciseObjectPos(string graphPath) => PatchPreciseObjectPos(graphPath, true);
+
+        public static string PatchPreciseObjectPos(string graphPath, bool restoreOnFail)
+        {
+            if (graphPath.EndsWith(FrozenGraph, StringComparison.Ordinal)) return "SKIP " + graphPath + ": замороженный эталон";
+            string raw = File.ReadAllText(graphPath);
+            if (raw.Contains("\"customBlockNodeName\": \"" + PosInterpName + "\"")) return "OK " + graphPath + ": уже есть " + PosInterpName;
+            bool wasCrlf = raw.Contains("\r\n");
+            if (wasCrlf) raw = raw.Replace("\r\n", "\n");
+            string[] docs = raw.Split(new[] { "}\n\n{" }, StringSplitOptions.None);
+            for (int i = 0; i < docs.Length; i++)
+            {
+                if (i > 0) docs[i] = "{" + docs[i];
+                if (i < docs.Length - 1) docs[i] = docs[i] + "}";
+            }
+            var list = new List<string>(docs);
+
+            var posIds = new List<string>();
+            foreach (var d in list)
+                if (d.Contains("\"m_Type\": \"UnityEditor.ShaderGraph.PositionNode\"") &&
+                    Regex.IsMatch(d, "\"m_Space\":\\s*0") && Regex.IsMatch(d, "\"m_PositionSource\":\\s*0"))
+                    posIds.Add(Id(d));
+            if (posIds.Count == 0) return "SKIP " + graphPath + ": нет узла Position (Object)";
+
+            Directory.CreateDirectory("ShaderGraphBackup");
+            string backup = "ShaderGraphBackup/" + Path.GetFileNameWithoutExtension(graphPath) + "_pos_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".shadergraph";
+            File.Copy(graphPath, backup, true);
+
+            string blockId = NewId(), blockSlot = NewId(), ciId = NewId(), ciSlot = NewId();
+            list.Add("{\n" +
+                     "    \"m_SGVersion\": 0,\n" +
+                     "    \"m_Type\": \"UnityEditor.ShaderGraph.BlockNode\",\n" +
+                     "    \"m_ObjectId\": \"" + blockId + "\",\n" +
+                     "    \"m_Group\": {\"m_Id\": \"\"},\n" +
+                     "    \"m_Name\": \"VertexDescription.CustomInterpolator\",\n" +
+                     "    \"m_DrawState\": {\"m_Expanded\": true,\"m_Position\": {\"serializedVersion\": \"2\",\"x\": 0.0,\"y\": 0.0,\"width\": 0.0,\"height\": 0.0}},\n" +
+                     "    \"m_Slots\": [{\"m_Id\": \"" + blockSlot + "\"}],\n" +
+                     "    \"synonyms\": [],\n" +
+                     "    \"m_Precision\": 0,\n" +
+                     "    \"m_PreviewExpanded\": true,\n" +
+                     "    \"m_DismissedVersion\": 0,\n" +
+                     "    \"m_PreviewMode\": 0,\n" +
+                     "    \"m_CustomColors\": {\"m_SerializableColors\": []},\n" +
+                     "    \"m_SerializedDescriptor\": \"VertexDescription." + PosInterpName + "#3\"\n" +
+                     "}");
+            list.Add("{\n" +
+                     "    \"m_SGVersion\": 0,\n" +
+                     "    \"m_Type\": \"UnityEditor.ShaderGraph.Vector3MaterialSlot\",\n" +
+                     "    \"m_ObjectId\": \"" + blockSlot + "\",\n" +
+                     "    \"m_Id\": 0,\n" +
+                     "    \"m_DisplayName\": \"" + PosInterpName + "\",\n" +
+                     "    \"m_SlotType\": 0,\n" +
+                     "    \"m_Hidden\": false,\n" +
+                     "    \"m_ShaderOutputName\": \"" + PosInterpName + "\",\n" +
+                     "    \"m_StageCapability\": 1,\n" +
+                     "    \"m_Value\": {\"x\": 0.0,\"y\": 0.0,\"z\": 0.0},\n" +
+                     "    \"m_DefaultValue\": {\"x\": 0.0,\"y\": 0.0,\"z\": 0.0},\n" +
+                     "    \"m_Labels\": []\n" +
+                     "}");
+            list.Add("{\n" +
+                     "    \"m_SGVersion\": 0,\n" +
+                     "    \"m_Type\": \"UnityEditor.ShaderGraph.CustomInterpolatorNode\",\n" +
+                     "    \"m_ObjectId\": \"" + ciId + "\",\n" +
+                     "    \"m_Group\": {\"m_Id\": \"\"},\n" +
+                     "    \"m_Name\": \"" + PosInterpName + " (Custom Interpolator)\",\n" +
+                     "    \"m_DrawState\": {\"m_Expanded\": true,\"m_Position\": {\"serializedVersion\": \"2\",\"x\": -4400,\"y\": -2400,\"width\": 232.0,\"height\": 94.0}},\n" +
+                     "    \"m_Slots\": [{\"m_Id\": \"" + ciSlot + "\"}],\n" +
+                     "    \"synonyms\": [],\n" +
+                     "    \"m_Precision\": 0,\n" +
+                     "    \"m_PreviewExpanded\": false,\n" +
+                     "    \"m_DismissedVersion\": 0,\n" +
+                     "    \"m_PreviewMode\": 0,\n" +
+                     "    \"m_CustomColors\": {\"m_SerializableColors\": []},\n" +
+                     "    \"customBlockNodeName\": \"" + PosInterpName + "\",\n" +
+                     "    \"serializedType\": 3\n" +
+                     "}");
+            list.Add("{\n" +
+                     "    \"m_SGVersion\": 0,\n" +
+                     "    \"m_Type\": \"UnityEditor.ShaderGraph.Vector3MaterialSlot\",\n" +
+                     "    \"m_ObjectId\": \"" + ciSlot + "\",\n" +
+                     "    \"m_Id\": 0,\n" +
+                     "    \"m_DisplayName\": \"Out\",\n" +
+                     "    \"m_SlotType\": 1,\n" +
+                     "    \"m_Hidden\": false,\n" +
+                     "    \"m_ShaderOutputName\": \"Out\",\n" +
+                     "    \"m_StageCapability\": 2,\n" +
+                     "    \"m_Value\": {\"x\": 0.0,\"y\": 0.0,\"z\": 0.0},\n" +
+                     "    \"m_DefaultValue\": {\"x\": 0.0,\"y\": 0.0,\"z\": 0.0},\n" +
+                     "    \"m_Labels\": []\n" +
+                     "}");
+
+            // корень: перенаправить выходы Position(Object) на интерполятор — КРОМЕ рёбер в цепочки Vertex-контекста
+            // (например, ветер/смещение вершин у Foliage): интерполятор существует только во фрагменте.
+            string root = list[0];
+            var edgeRx = new Regex("\"m_OutputSlot\":\\s*\\{\\s*\"m_Node\":\\s*\\{\\s*\"m_Id\":\\s*\"(\\w+)\"\\s*\\},\\s*\"m_SlotId\":\\s*(-?\\d+)\\s*\\},\\s*\"m_InputSlot\":\\s*\\{\\s*\"m_Node\":\\s*\\{\\s*\"m_Id\":\\s*\"(\\w+)\"");
+            var allEdges = new List<string[]>();
+            foreach (Match m in edgeRx.Matches(root)) allEdges.Add(new[] { m.Groups[1].Value, m.Groups[2].Value, m.Groups[3].Value });
+            var vertexNodes = new HashSet<string>();
+            {
+                int vc0 = root.IndexOf("\"m_VertexContext\"", StringComparison.Ordinal);
+                int fc0 = root.IndexOf("\"m_FragmentContext\"", StringComparison.Ordinal);
+                if (vc0 >= 0 && fc0 > vc0)
+                    foreach (Match m in Regex.Matches(root.Substring(vc0, fc0 - vc0), "\"m_Id\":\\s*\"(\\w{32})\"")) vertexNodes.Add(m.Groups[1].Value);
+                bool grew = true;
+                while (grew)
+                {
+                    grew = false;
+                    foreach (var e in allEdges) if (vertexNodes.Contains(e[2]) && vertexNodes.Add(e[0])) grew = true;
+                }
+            }
+            int redirected = 0, keptVertex = 0;
+            foreach (var pid in posIds)
+            {
+                var rx = new Regex("(\"m_OutputSlot\":\\s*\\{\\s*\"m_Node\":\\s*\\{\\s*\"m_Id\":\\s*\")" + pid + "(\"\\s*\\},\\s*\"m_SlotId\":\\s*0\\s*\\},\\s*\"m_InputSlot\":\\s*\\{\\s*\"m_Node\":\\s*\\{\\s*\"m_Id\":\\s*\")(\\w+)");
+                root = rx.Replace(root, m =>
+                {
+                    if (vertexNodes.Contains(m.Groups[3].Value)) { keptVertex++; return m.Value; }
+                    redirected++;
+                    return m.Groups[1].Value + ciId + m.Groups[2].Value + m.Groups[3].Value;
+                });
+            }
+            root = InsertIntoList(root, "\"m_Nodes\": [", "\n        {\n            \"m_Id\": \"" + ciId + "\"\n        },\n        {\n            \"m_Id\": \"" + blockId + "\"\n        },");
+            root = InsertIntoList(root, "\"m_Edges\": [",
+                "\n        {\n            \"m_OutputSlot\": {\n                \"m_Node\": {\n                    \"m_Id\": \"" + posIds[0] + "\"\n                },\n                \"m_SlotId\": 0" +
+                "\n            },\n            \"m_InputSlot\": {\n                \"m_Node\": {\n                    \"m_Id\": \"" + blockId + "\"\n                },\n                \"m_SlotId\": 0\n            }\n        },");
+            int vctx = root.IndexOf("\"m_VertexContext\"", StringComparison.Ordinal);
+            if (vctx < 0) { File.Copy(backup, graphPath, true); return "ERROR " + graphPath + ": нет m_VertexContext"; }
+            int blocks = root.IndexOf("\"m_Blocks\": [", vctx, StringComparison.Ordinal);
+            root = root.Substring(0, blocks) + InsertIntoList(root.Substring(blocks), "\"m_Blocks\": [", "\n            {\n                \"m_Id\": \"" + blockId + "\"\n            },");
+            list[0] = root;
+
+            var outSb = new StringBuilder();
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (i > 0) outSb.Append("\n\n");
+                outSb.Append(Regex.Replace(list[i], "\n[ \t]*\n", "\n"));
+            }
+            string result = outSb.ToString();
+            if (!result.EndsWith("\n")) result += "\n";
+            File.WriteAllText(graphPath, result, new UTF8Encoding(false));
+            AssetDatabase.ImportAsset(graphPath, ImportAssetOptions.ForceUpdate);
+
+            // проверка + авто-откат
+            var sh = AssetDatabase.LoadAssetAtPath<Shader>(graphPath);
+            string problem = null;
+            if (sh == null) problem = "шейдер не загружен";
+            else if (ShaderUtil.ShaderHasError(sh)) problem = "ShaderHasError";
+            if (problem == null)
+            {
+                string code = GeneratedCode(graphPath);
+                if (code == null) problem = "нет сгенерированного кода";
+                else if (!code.Contains(PosInterpName)) problem = "интерполятор не попал в код";
+            }
+            if (problem != null)
+            {
+                if (!restoreOnFail) return "FAILED (не откачено) " + graphPath + ": " + problem + ", backup " + backup;
+                File.Copy(backup, graphPath, true);
+                AssetDatabase.ImportAsset(graphPath, ImportAssetOptions.ForceUpdate);
+                return "RESTORED " + graphPath + ": " + problem;
+            }
+            return "PATCHED " + graphPath + (wasCrlf ? " (CRLF→LF)" : "") + ": Position(Object) ×" + posIds.Count + " → " + PosInterpName +
+                   ", перенаправлено рёбер " + redirected + (keptVertex > 0 ? " (в Vertex-цепочке оставлено " + keptVertex + ")" : "") + ", backup " + backup + " | verify OK";
+        }
+
         // ------------------------------------------------------------------ JSON-шаблоны
 
         private static string GeometryNode(string type, string id, string name, int space, string slot, bool isPosition)

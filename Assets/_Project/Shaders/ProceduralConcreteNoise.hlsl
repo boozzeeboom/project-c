@@ -34,6 +34,23 @@ float PCConc_Hash13(float3 p)
     return frac((p.x + p.y) * p.z);
 }
 
+// ── Полоса пропускания (25.10, по образцу Wood/Glass, журнал Шаги 2n–2q) ────────────────────
+// Размер пикселя в периодах уже масштабированной координаты узора. Пресет бетона в метрах:
+// заполнитель 304.7/м (зерно ~3 мм), раковины 126.6/м, трещины 130/м — мельче пикселя уже с метра,
+// в рельефе это случайный наклон в каждом пикселе. Слой с периодом ≤ ~4 пикс сводится к среднему,
+// ≥ ~12 пикс — целиком. Сигнатуры CF не меняются.
+float PCConc_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCCONC_BAND_LO 0.08
+#define PCCONC_BAND_HI 0.25
+float PCConc_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCCONC_BAND_LO, PCCONC_BAND_HI, PCConc_Footprint(p));
+}
+
 float PCConc_ValueNoise3(float3 p)
 {
     float3 i = floor(p);
@@ -60,13 +77,16 @@ float PCConc_ValueNoise3(float3 p)
 
 float PCConc_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCConc_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCConc_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCCONC_BAND_LO, PCCONC_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCConc_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -74,9 +94,13 @@ float PCConc_Fbm3(float3 p, float detail)
 }
 
 // Ridged: 1 на «линии» (там, где fbm проходит через 0.5), 0 в стороне от неё.
+// Скруглённый гребень (25.10): излом |x| даёт мерцающую линию в рельефе; sqrt(x²+k) — тот же штрих.
 float PCConc_Ridge(float s)
 {
-    return 1.0 - abs(s * 2.0 - 1.0);
+    const float k = 0.0025;
+    float x = s * 2.0 - 1.0;
+    float a = sqrt(x * x + k) - sqrt(k);
+    return 1.0 - a / (sqrt(1.0 + k) - sqrt(k));
 }
 
 // Worley F1 (3x3x3). Дополнительно отдаёт хеш выигравшей ячейки — это «тон зерна»:
@@ -126,7 +150,9 @@ float PCConc_Aggregate(float3 ObjectPos, float AggScale, float AggTone, float Ag
     float d = PCConc_WorleyF1(p, cellTone);
     float shape = saturate(1.0 - smoothstep(0.20, 0.58, d));
     float tone = lerp(0.85, lerp(0.25, 1.0, cellTone), saturate(AggTone));
-    return saturate(shape * tone);
+    // зерно мельче пикселя → среднее по площади (плато ~30 % ячейки × средний тон)
+    float mean = 0.3 * lerp(0.85, 0.625, saturate(AggTone));
+    return lerp(mean, saturate(shape * tone), PCConc_Band(p));
 }
 
 // ── Воздушные раковины ───────────────────────────────────────────────────────
@@ -139,7 +165,9 @@ float PCConc_Pores(float3 ObjectPos, float PoresScale, float PoresSize, float Po
     float cellTone;
     float d = PCConc_WorleyF1(p, cellTone);
     float r = clamp(PoresSize, 0.04, 0.90);
-    return saturate(1.0 - smoothstep(r * 0.40, r, d));
+    // раковина мельче пикселя → среднее покрытие (1 − exp(−4.19 r³), мягкий край ≈ ×0.6)
+    float mean = (1.0 - exp(-4.19 * r * r * r)) * 0.6;
+    return lerp(mean, saturate(1.0 - smoothstep(r * 0.40, r, d)), PCConc_Band(p));
 }
 
 // ── Трещины ──────────────────────────────────────────────────────────────────
@@ -163,7 +191,8 @@ float PCConc_Cracks(float3 ObjectPos, float CrackScale, float CrackWidth, float 
     float w = max(0.004, CrackWidth);
     float crack = saturate(1.0 - smoothstep(0.0, w, 1.0 - ridge));
     float patch = smoothstep(0.30, 0.72, PCConc_Fbm3(p * 0.35 + 13.9, 2.0));
-    return crack * patch;
+    // трещина уже пикселя исчезает (тонкая линия в среднем ≈ 0)
+    return crack * patch * PCConc_Band(p);
 }
 
 // ── Крупное пятно (общий примитив) ───────────────────────────────────────────
@@ -185,7 +214,7 @@ float PCConc_ScratchDir(float3 ObjectPos, float ScratchScale, float SX, float SY
     sp.x *= max(0.05, SX);
     sp.y *= max(0.05, SY);
     sp.z *= max(0.05, SZ);
-    return PCConc_Ridge(PCConc_Fbm3(sp, ScratchDetail));
+    return lerp(0.5, PCConc_Ridge(PCConc_Fbm3(sp, ScratchDetail)), PCConc_Band(sp));
 }
 
 void ProceduralConcreteAggregate_float(
@@ -307,7 +336,7 @@ void ProceduralConcreteScratchC_float(
     float3 sc = ObjectPos * max(0.001, ScratchScale) + ScratchSeed + 41.1;
     sc.xy = float2(sc.x * ca - sc.y * sn, sc.x * sn + sc.y * ca);
     sc.x *= max(0.05, ScratchStretch);
-    ScratchC = PCConc_Ridge(PCConc_Fbm3(sc, ScratchDetail));
+    ScratchC = lerp(0.5, PCConc_Ridge(PCConc_Fbm3(sc, ScratchDetail)), PCConc_Band(sc));
 }
 
 void ProceduralConcreteScratchC_half(

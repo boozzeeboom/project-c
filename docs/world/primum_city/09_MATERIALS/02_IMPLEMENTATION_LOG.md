@@ -814,3 +814,26 @@ Editor.log — 0 ошибок. Визуал — `NOT RUN`.
 > Волосяная царапина 1.4 мм целиком видна лишь с десятков сантиметров. Если царапины нужны и на
 > обычной дистанции — уменьшить `_Scratch_Scale`/`_Scratch_Stretch` (крупнее царапина) и `_Scratch_Detail` (≤ 2).
 
+**Коммит:** `b644671f`.
+
+---
+
+## Шаг 2r — `Concrete` шумит при бампе: полоса пропускания в `ProceduralConcreteNoise.hlsl` · 2026-10-25
+
+Проверено по коду: все 10 CF-узоров и рельеф читают `IN.PC_PositionOS`, рельеф — `PC_NormalFromHeightPrecise`
+(`Strength` 0.01). Причина — узор мельче пикселя: `_Agg_Scale` 304.7 (зерно ~3 мм), `_Pores_Scale` 126.6,
+`_Crack_Scale` 130.1 на метр; в файле фильтрации не было. Сделано по образцу Wood/Glass:
+
+* `PCConc_Footprint` / `PCConc_Band` (0.08/0.25 периода на пиксель), затухание октав в `PCConc_Fbm3` (пятна, потёки,
+  маска царапин), гладкий `PCConc_Ridge`;
+* заполнитель → среднее по площади `0.3 × средний тон`; раковины → среднее покрытие
+  `(1 − exp(−4.19 r³)) × 0.6`; трещины → 0 (тонкая линия); царапины A/B/C → 0.5.
+
+Сигнатуры CF не менялись. `Concrete` — `ShaderHasError = false`, `GetShaderMessages = 0`, Editor.log чистый.
+Визуал — `NOT RUN`.
+
+**Осталось без полосы пропускания** (тот же шум вероятен при бампе и метровых масштабах):
+`Brick`, `Tiles`, `Fabric` (`FabricWeave`), `Plate`, `IronRust`, `Bronze`, `Steel`, `Foliage`, `Lantern`, `Plastic`, `Bark`,
+`Parquet` (свой файл; дерево в нём — из Wood, уже с полосой), `Lava`. Уже с полосой: `Cobble`
+(пользователь), `Marble` (своя), `Wood`, `Glass`, `Concrete`.
+

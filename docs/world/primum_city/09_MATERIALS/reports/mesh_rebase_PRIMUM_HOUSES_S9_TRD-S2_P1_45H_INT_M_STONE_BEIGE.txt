@@ -1,0 +1,13 @@
+PRIMUM mesh rebase 1:1 — WorldRoot_0_0/PRIMUM/PRIMUM_HOUSES_S9_TRD-S2_P1_45H/PRIMUM_HOUSES_S9_TRD-S2_P1_45H_INT_M_STONE_BEIGE
+source mesh        : Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_HOUSES_S9_TRD-S2_P1_45H.fbx :: PRIMUM_HOUSES_S9_TRD-S2_P1_45H_INT_M_STONE_BEIGE
+new mesh           : Assets/_Project/Art/Models/Primum/Rebased/PRIMUM_HOUSES_S9_TRD-S2_P1_45H/PRIMUM_HOUSES_S9_TRD-S2_P1_45H_INT_M_STONE_BEIGE_YUP.asset
+vertices / submeshes / indices : 905 / 1 / 1572  ->  905 / 1 / 1572
+uv channels        : 0 -> 0; colors False -> False
+pivot              : начало чанка (общее object space)
+transform before   : pos (-287,059, 21,3, 58,674) rot (270,02, 0, 0) scale (100, 100, 100)
+transform after    : pos (0, 0, 0) rot (0, 0, 0) scale (1, 1, 1)
+object-space bounds: (2.237, 1.558, 0.100) (ед. FBX) -> (223.700, 9.951, 155.792) (м)
+max vertex delta (parent space, double): 1,67E-005 m
+max vertex delta (world, float, info)  : 5,53E-003 m (шаг float на ~40 км ≈ 3.9E-003)
+max world normal delta : 7,45E-008
+VERDICT 1:1        : PASS

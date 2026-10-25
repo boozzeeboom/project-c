@@ -1,0 +1,43 @@
+Coplanar SAME-FACING overlaps with ..._M_M_STONE_BEIGE (z-fight), chunk space, tol 1 cm / 0.05 normal; area = m2 of overlapping triangles
+SELF (тот же меш) |  | +X : tris 108, area 99,54 m2
+SELF (тот же меш) |  | +Y : tris 136, area 22,92 m2
+SELF (тот же меш) |  | +Z : tris 116, area 109,96 m2
+SELF (тот же меш) |  | -X : tris 114, area 108,61 m2
+SELF (тот же меш) |  | -Y : tris 136, area 22,92 m2
+SELF (тот же меш) |  | -Z : tris 116, area 110,12 m2
+другой материал (ВИДНО) | M_M_TQ_BRASS [M_PC_Bronze_Brass] | +X : tris 2, area 0,07 m2
+другой материал (ВИДНО) | M_M_TQ_BRASS [M_PC_Bronze_Brass] | -Z : tris 2, area 0,07 m2
+другой материал (ВИДНО) | M_M_TQ_IRON [M_PC_IronRust] | +X : tris 4, area 0,01 m2
+другой материал (ВИДНО) | M_M_TQ_IRON [M_PC_IronRust] | -X : tris 2, area 0,00 m2
+другой материал (ВИДНО) | M_M_TQ_STONE [M_PC_Cobble] | +X : tris 22, area 0,42 m2
+другой материал (ВИДНО) | M_M_TQ_STONE [M_PC_Cobble] | +Y : tris 36, area 7,67 m2
+другой материал (ВИДНО) | M_M_TQ_STONE [M_PC_Cobble] | +Z : tris 4, area 0,04 m2
+другой материал (ВИДНО) | M_M_TQ_STONE [M_PC_Cobble] | -X : tris 6, area 0,06 m2
+другой материал (ВИДНО) | M_M_TQ_STONE [M_PC_Cobble] | -Z : tris 14, area 0,34 m2
+другой материал (ВИДНО) | M_M_TQ_TRIM_W [M_PC_Wood_White] | +X : tris 4, area 0,18 m2
+другой материал (ВИДНО) | M_M_TQ_TRIM_Y [M_PC_Wood_Ochre] | +Z : tris 4, area 0,18 m2
+другой материал (ВИДНО) | M_M_WINDOW_FRAME [M_PC_Wood_Dark] | +X : tris 32, area 2,01 m2
+другой материал (ВИДНО) | M_M_WINDOW_FRAME [M_PC_Wood_Dark] | +Y : tris 376, area 82,52 m2
+другой материал (ВИДНО) | M_M_WINDOW_FRAME [M_PC_Wood_Dark] | +Z : tris 98, area 6,17 m2
+другой материал (ВИДНО) | M_M_WINDOW_FRAME [M_PC_Wood_Dark] | -X : tris 32, area 2,01 m2
+другой материал (ВИДНО) | M_M_WINDOW_FRAME [M_PC_Wood_Dark] | -Y : tris 132, area 6,80 m2
+другой материал (ВИДНО) | M_M_WINDOW_FRAME [M_PC_Wood_Dark] | -Z : tris 94, area 5,92 m2
+другой материал (ВИДНО) | RES_S2_111_TQ_DTL_ESPAG_BRASS_isl005 [M_PC_Bronze_Brass] | +X : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_111_TQ_DTL_ESPAG_BRASS_isl007 [M_PC_Bronze_Brass] | +X : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_204_TQ_DOOR_isl003_2.56x2.26_X [M_PC_Wood] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_204_TQ_DTL_ESPAG_BRASS_isl001 [M_PC_Bronze_Brass] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_204_TQ_DTL_ESPAG_BRASS_isl003 [M_PC_Bronze_Brass] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_204_TQ_DTL_ESPAG_BRASS_isl009 [M_PC_Bronze_Brass] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_205_TQ_DOOR_isl003_2.13x2.26_X [M_PC_Wood] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_205_TQ_DTL_ESPAG_BRASS_isl001 [M_PC_Bronze_Brass] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_205_TQ_DTL_ESPAG_BRASS_isl003 [M_PC_Bronze_Brass] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_205_TQ_DTL_ESPAG_BRASS_isl009 [M_PC_Bronze_Brass] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_305_TQ_DOOR_isl003_2.56x2.26_X [M_PC_Wood] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_305_TQ_DTL_ESPAG_BRASS_isl001 [M_PC_Bronze_Brass] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_305_TQ_DTL_ESPAG_BRASS_isl003 [M_PC_Bronze_Brass] | +Z : tris 2, area 0,00 m2
+другой материал (ВИДНО) | RES_S2_305_TQ_DTL_ESPAG_BRASS_isl009 [M_PC_Bronze_Brass] | +Z : tris 2, area 0,00 m2
+тот же материал+то же object space (невидимо) | INT_M_STONE_BEIGE [M_PC_Cobble_Beige] | +X : tris 14, area 9,31 m2
+тот же материал+то же object space (невидимо) | INT_M_STONE_BEIGE [M_PC_Cobble_Beige] | +Z : tris 2, area 7,56 m2
+тот же материал+то же object space (невидимо) | INT_M_STONE_BEIGE [M_PC_Cobble_Beige] | -X : tris 6, area 4,81 m2
+тот же материал+то же object space (невидимо) | INT_M_STONE_BEIGE [M_PC_Cobble_Beige] | -Y : tris 3, area 15,57 m2
+тот же материал+то же object space (невидимо) | INT_M_STONE_BEIGE [M_PC_Cobble_Beige] | -Z : tris 2, area 7,56 m2

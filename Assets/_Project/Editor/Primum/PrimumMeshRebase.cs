@@ -45,8 +45,13 @@ namespace ProjectC.EditorTools
             Debug.Log("[PrimumMeshRebase]\n" + sb);
         }
 
-        /// <summary>Подмена 1:1 одного объекта. Возвращает строку отчёта (и пишет её в reports/mesh_rebase_&lt;имя&gt;.txt).</summary>
-        public static string Rebase(Transform t)
+        /// <summary>
+        /// Подмена 1:1 одного объекта. Возвращает строку отчёта (и пишет её в reports/mesh_rebase_&lt;имя&gt;.txt).
+        /// <paramref name="sharedFrame"/> = true (по умолчанию): пивот = начало родителя (чанка) — у всех мешей
+        /// чанка одно object space, совпадающие грани одного материала дают одинаковый рисунок и z-fight
+        /// не виден. false: пивот в центре габарита меша.
+        /// </summary>
+        public static string Rebase(Transform t, bool sharedFrame = true)
         {
             if (t == null) return "ERROR: null";
             var mf = t.GetComponent<MeshFilter>();
@@ -77,7 +82,7 @@ namespace ProjectC.EditorTools
                 min = Vector3.Min(min, pv[i]);
                 max = Vector3.Max(max, pv[i]);
             }
-            var center = (min + max) * 0.5f;
+            var center = sharedFrame ? Vector3.zero : (min + max) * 0.5f;
 
             var nv = new Vector3[v.Count];
             for (int i = 0; i < v.Count; i++) nv[i] = pv[i] - center;
@@ -174,6 +179,7 @@ namespace ProjectC.EditorTools
             rep.AppendLine("new mesh           : " + path);
             rep.AppendLine("vertices / submeshes / indices : " + v.Count + " / " + src.subMeshCount + " / " + Indices(src) + "  ->  " + dv.Count + " / " + dst.subMeshCount + " / " + Indices(dst));
             rep.AppendLine("uv channels        : " + UvChannels(src) + " -> " + UvChannels(dst) + "; colors " + src.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Color) + " -> " + dst.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Color));
+            rep.AppendLine("pivot              : " + (sharedFrame ? "начало чанка (общее object space)" : "центр габарита меша"));
             rep.AppendLine("transform before   : pos " + V(L.GetColumn(3)) + " rot " + V(L.rotation.eulerAngles) + " scale " + V(L.lossyScale));
             rep.AppendLine("transform after    : pos " + V(t.localPosition) + " rot " + V(t.localEulerAngles) + " scale " + V(t.localScale));
             rep.AppendLine("object-space bounds: " + src.bounds.size.ToString("F3") + " (ед. FBX) -> " + dst.bounds.size.ToString("F3") + " (м)");

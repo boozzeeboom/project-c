@@ -15,6 +15,23 @@ float PCGlass_Hash13(float3 p)
     return frac((p.x + p.y) * p.z);
 }
 
+// ── Полоса пропускания (25.10, по образцу Wood шаги 2n–2o) ─────────────────────────────
+// Размер пикселя в периодах уже масштабированной координаты узора (Scale × Stretch учтены). Царапины
+// стекла при пресете `_Scratch_Scale` 35.6 × `_Scratch_Stretch` 20 ≈ 700 периодов/м поперёк, а с `_Scratch_Detail` ~4
+// верхняя октава ещё ×16 — всё это мельче пикселя и на глянцевом стекле (Smoothness 0.96) искрит и
+// мерцает в цвете, блике и рельефе. Слой, чей период ≤ ~4 пикс, сводится к среднему, ≥ ~12 — целиком.
+float PCGlass_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCGLASS_BAND_LO 0.08
+#define PCGLASS_BAND_HI 0.25
+float PCGlass_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCGLASS_BAND_LO, PCGLASS_BAND_HI, PCGlass_Footprint(p));
+}
+
 float PCGlass_ValueNoise3(float3 p)
 {
     float3 i = floor(p);
@@ -41,13 +58,16 @@ float PCGlass_ValueNoise3(float3 p)
 
 float PCGlass_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCGlass_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCGlass_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCGLASS_BAND_LO, PCGLASS_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCGlass_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -80,9 +100,14 @@ float PCGlass_Voronoi3(float3 p)
 }
 
 // Ridged-преобразование: тонкие линии там, где fbm пересекает 0.5.
+// Скруглённый гребень (25.10): |x| даёт излом наклона на гребне — в рельефе и блике мерцающая
+// линия; sqrt(x²+k) визуально тот же штрих, но гладкий.
 float PCGlass_Ridge(float s)
 {
-    return 1.0 - abs(s * 2.0 - 1.0);
+    const float k = 0.0025;
+    float x = s * 2.0 - 1.0;
+    float a = sqrt(x * x + k) - sqrt(k);
+    return 1.0 - a / (sqrt(1.0 + k) - sqrt(k));
 }
 
 // Тон: fbm + Worley из object-координат (FO-safe).
@@ -96,7 +121,8 @@ float PCGlass_Base(float3 ObjectPos, float Scale, float Detail, float Warp, floa
     p += w * Warp;
     float f = PCGlass_Fbm3(p, Detail);
     float v = PCGlass_Voronoi3(p);
-    return saturate(lerp(f, v, 0.30));
+    // Worley-ячейки и сильный warp: при неразрешённом узоре свести к среднему (≈ 0.5)
+    return lerp(0.5, saturate(lerp(f, v, 0.30)), PCGlass_Band(p));
 }
 
 // Царапины A: растяжка X/Z -> полосы вдоль Y (вертикальные).
@@ -106,7 +132,8 @@ float PCGlass_ScratchDir(float3 ObjectPos, float ScratchScale, float SX, float S
     sp.x *= max(0.05, SX);
     sp.y *= max(0.05, SY);
     sp.z *= max(0.05, SZ);
-    return PCGlass_Ridge(PCGlass_Fbm3(sp, ScratchDetail));
+    // царапина уже пикселя → среднее 0.5 (ниже порога царапин в графе — линия плавно исчезает)
+    return lerp(0.5, PCGlass_Ridge(PCGlass_Fbm3(sp, ScratchDetail)), PCGlass_Band(sp));
 }
 
 // Пятна: крупные низкочастотные области (патина и маска царапин).
@@ -200,7 +227,7 @@ void ProceduralGlassScratchC_float(
     float3 sc = ObjectPos * max(0.001, ScratchScale) + ScratchSeed + 41.1;
     sc.xy = float2(sc.x * ca - sc.y * sn, sc.x * sn + sc.y * ca);
     sc.x *= max(0.05, ScratchStretch);
-    ScratchC = PCGlass_Ridge(PCGlass_Fbm3(sc, ScratchDetail));
+    ScratchC = lerp(0.5, PCGlass_Ridge(PCGlass_Fbm3(sc, ScratchDetail)), PCGlass_Band(sc));
 }
 
 void ProceduralGlassScratchC_half(

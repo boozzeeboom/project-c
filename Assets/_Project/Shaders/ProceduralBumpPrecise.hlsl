@@ -36,10 +36,24 @@ void PC_NormalFromHeightPrecise_float(
     float dHdx = ddx(In);
     float dHdy = ddy(In);
     float3 surfGrad = surface * (dHdx * crossY + dHdy * crossX);
-    float3 nWS = SafeNormalize(n - Strength * surfGrad);
 
-    float3x3 tbn = float3x3(TangentWS, BitangentWS, NormalWS);
-    Out = TransformWorldToTangent(nWS, tbn);
+    // Ограничение наклона (25.10, «отдельные чёрные пиксели в местах bump»): градиент по экрану
+    // на крутых/мелких переходах высоты (шов, трещина, треугольник растра 2×2) выбрасывается
+    // в десятки раз → нормаль ложится почти в плоскость грани → пиксель чёрный при любом знаке
+    // рельефа. Наклон ограничен tan ≈ 0.5 (~27°): мягкий рельеф не меняется, выбросы срезаются.
+    // surfGrad касателен к грани, поэтому нормаль всегда остаётся в передней полусфере.
+    const float maxTilt = 0.5;
+    float3 g = Strength * surfGrad;
+    g -= n * dot(n, g);
+    float gl = length(g);
+    g *= (gl > maxTilt) ? (maxTilt / gl) : 1.0;
+    if (any(isnan(g)) || any(isinf(g))) g = 0;
+    float3 nWS = SafeNormalize(n - g);
+
+    // В tangent space — транспонированием (скалярные произведения), а не обратной матрицей: без деления
+    // на детерминант TBN, поэтому на вырожденных тангенсах результат конечен (рельеф теряется, NaN нет).
+    float3 ts = float3(dot(nWS, TangentWS), dot(nWS, BitangentWS), dot(nWS, NormalWS));
+    Out = (any(isnan(ts)) || dot(ts, ts) < 1e-12) ? float3(0, 0, 1) : ts;
 }
 
 void PC_NormalFromHeightPrecise_half(

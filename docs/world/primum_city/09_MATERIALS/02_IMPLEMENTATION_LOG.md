@@ -519,3 +519,30 @@ CRLF-графы сначала нормализовать в LF). Остаточ
 Проверка: `ShaderHasError = false`, `isSupported = true`, `GetShaderMessages = 0`, Editor.log — 0 ошибок. Визуал — `NOT RUN`.
 Потолок наклона — константа `maxTilt = 0.5` в HLSL; если рельеф станет слишком плоским, поднять до 0.7–1.0.
 
+**Коммит:** `2ec8b09e`. **Результат (пользователь):** чёрные точки в местах bump остались.
+
+---
+
+## Шаг 2j — чёрные точки рисует EdgeDetection по нормалям с рельефом · 2026-10-25
+
+**Причина — не освещение, а пост-эффект контура.** В `ProjectC_URP_Renderer` активен
+`EdgeDetectionRenderFeature` (Borderlands-контур): `UseNormalEdges = true`, `NormalThreshold = 0.08`,
+`NormalSensitivity = 1.5`, цвет линии (0.11, 0.11, 0.14). Он читает `_CameraNormalsTexture` (вход
+`ScriptableRenderPassInput.Normal`) и ставит тёмный пиксель везде, где нормали соседних пикселей
+расходятся сильнее порога (`SobelNormal`: `1 − |dot(c, s)|`). Проход `DepthNormals` Shader Graph пишет в эту
+текстуру нормаль **с рельефом** → каждый шов/трещина для контура выглядит как ребро →
+тёмные точки ровно там, где bump, и при любом знаке. `URP/Lit` без normal map пишет геометрическую нормаль
+— поэтому на нём точек нет. Шаги 2h–2i правили освещение и контур не затрагивали.
+
+**Исправлено в `PC_NormalFromHeightPrecise`:** в проходах `SHADERPASS_DEPTHNORMALS` (21) и
+`SHADERPASS_DEPTHNORMALSONLY` (11) функция возвращает нормаль без рельефа `(0, 0, 1)`: контур идёт
+по геометрии, освещение (`ForwardLit`) рельеф сохраняет. Граф не менялся, значения макросов сверены по
+`com.unity.render-pipelines.universal/Editor/ShaderGraph/Includes/ShaderPass.hlsl`. Проверка: `ShaderHasError = false`,
+`GetShaderMessages = 0`, Editor.log — 0 ошибок/предупреждений. Визуал — `NOT RUN`.
+
+**Быстрая проверка диагноза (для пользователя):** в `ProjectC_URP_Renderer` → `EdgeDetectionRenderFeature`
+снять `Use Normal Edges` — если точки на старом шейдере пропадают, диагноз верен (вернуть флаг после).
+
+**Для всех материалов:** то же будет на любом графе с рельефом под EdgeDetection — ещё одна причина
+перевести все 24 графа на `PC_NormalFromHeightPrecise` (§8.15).
+

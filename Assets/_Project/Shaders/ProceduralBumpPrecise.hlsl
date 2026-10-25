@@ -22,6 +22,16 @@ void PC_NormalFromHeightPrecise_float(
     float3 NormalWS, float3 TangentWS, float3 BitangentWS,
     out float3 Out)
 {
+    // Проход DepthNormals пишет _CameraNormalsTexture, по которой EdgeDetection (UseNormalEdges,
+    // NormalThreshold 0.08) рисует тёмный контур. Попиксельный рельеф там = «рёбра» на каждом
+    // шве/трещине → чёрные точки в местах bump при любом знаке (25.10). Контур должен
+    // следовать геометрии, поэтому в этом проходе нормаль без рельефа; освещение (ForwardLit) его сохраняет.
+#if defined(SHADERPASS) && defined(SHADERPASS_DEPTHNORMALS) && defined(SHADERPASS_DEPTHNORMALSONLY)
+#if (SHADERPASS == SHADERPASS_DEPTHNORMALS) || (SHADERPASS == SHADERPASS_DEPTHNORMALSONLY)
+    Out = float3(0, 0, 1);
+    return;
+#endif
+#endif
     float3x3 m = (float3x3)GetObjectToWorldMatrix();
     float3 dpdx = mul(m, ddx(PositionOS));
     float3 dpdy = mul(m, ddy(PositionOS));

@@ -39,13 +39,16 @@ float PCConc_Hash13(float3 p)
 // заполнитель 304.7/м (зерно ~3 мм), раковины 126.6/м, трещины 130/м — мельче пикселя уже с метра,
 // в рельефе это случайный наклон в каждом пикселе. Слой с периодом ≤ ~4 пикс сводится к среднему,
 // ≥ ~12 пикс — целиком. Сигнатуры CF не меняются.
+// 25.10 (шаг 2s): пороги ослаблены до значений PCCobble_Band пользователя (0.22/0.55: целиком при периоде
+// ≥ ~4.5 пикс, ноль — при ≤ ~1.8). Строгие 0.08/0.25 выставлялись, пока настоящей причиной шума считался
+// алиасинг; после PC_PositionOS (шаг 2p) они лишь гасили весь рельеф бетона уже с полуметра.
 float PCConc_Footprint(float3 p)
 {
     return max(length(ddx(p)), length(ddy(p)));
 }
 
-#define PCCONC_BAND_LO 0.08
-#define PCCONC_BAND_HI 0.25
+#define PCCONC_BAND_LO 0.22
+#define PCCONC_BAND_HI 0.55
 float PCConc_Band(float3 p)
 {
     return 1.0 - smoothstep(PCCONC_BAND_LO, PCCONC_BAND_HI, PCConc_Footprint(p));

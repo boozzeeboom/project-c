@@ -1,0 +1,8 @@
+source;kind;target;action;slots;renderers
+M_BRONZE;VARIANT_BASE;M_PC_Bronze;would_change;1;1
+M_GRANITE;VARIANT;M_PC_Cobble_Granite;would_change;1;1
+M_MARBLE_WHITE;BASE;M_PC_Marble;would_change;1;1
+M_PAVING_BRUSCHATKA;BASE;M_PC_Cobble;would_change;1;1
+M_ROCK_DARK;VARIANT;M_PC_Cobble_Rock;would_change;1;1
+NorthAmerica_Rockies_SunlitRock;;;unmapped;1;1
+# [PRIMUM_BASE_S0_CITY_P1_00H] DRY-RUN: changed 5 / already 0 / unmapped 1 / total 6  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 6, изменено рендереров 0)

@@ -1,0 +1,19 @@
+source;kind;target;action;slots;renderers
+M_BRONZE;VARIANT_BASE;M_PC_Bronze;would_change;198;198
+M_WOOD_DARK;VARIANT;M_PC_Wood_Dark;would_change;171;171
+M_WINDOW_GLASS;VARIANT;M_PC_Glass_Dark;would_change;69;69
+M_TIMBER_FRAME;VARIANT;M_PC_Wood_Pine;would_change;36;36
+M_AWNING;VARIANT;M_PC_Fabric_Bordeaux;would_change;2;2
+M_BRICK_YELLOW;VARIANT;M_PC_Brick_Yellow;would_change;2;2
+M_LIME_WASH;VARIANT;M_PC_Concrete_Limewash;would_change;2;2
+M_PLASTER_ROSE;VARIANT;M_PC_Concrete_Rose;would_change;2;2
+M_STONE_BEIGE;OBJECT_RULE_INT_M_STONE_BEIGE;M_PC_Concrete;would_change;2;2
+M_TILE_TERRA;BASE;M_PC_Tiles;would_change;2;2
+M_DECK_STEEL;BASE;M_PC_Plate;would_change;1;1
+M_GRANITE;VARIANT;M_PC_Cobble_Granite;would_change;1;1
+M_LEAD;VARIANT;M_PC_IronRust_Lead;would_change;1;1
+M_ROOF_BORDEAUX;PROJECT_LIT;M_PC_Tiles_Bordeaux;would_change;1;1
+M_SIGN;VARIANT;M_PC_Wood_Dark;would_change;1;1
+M_SLATE;BASE;M_PC_Cobble;would_change;1;1
+M_WINDOW_FRAME;VARIANT;M_PC_Wood_Dark;would_change;1;1
+# [PRIMUM_HOUSES_S4_TRD-ES_P2_34H] DRY-RUN: changed 493 / already 0 / unmapped 0 / total 493  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 399, изменено рендереров 0)

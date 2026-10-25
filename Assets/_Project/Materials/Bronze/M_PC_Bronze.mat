@@ -1,0 +1,92 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-9009115705316181906
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Bronze
+  m_Shader: {fileID: -6465566751694194690, guid: 5f79d51461c4aad4a91c5e0d433c8b4e, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Edge_Position: 0.5
+    - _Edge_Width: 0.05
+    - _Metallic: 0.9
+    - _Noise_Detail: 0
+    - _Noise_Scale: 6
+    - _Noise_Seed: 1.38
+    - _Noise_Warp: 10.37
+    - _Patina_Amount: 0.9
+    - _Patina_Band: 0.65
+    - _Patina_Core: 0.05
+    - _Patina_Height: -0.84
+    - _Patina_Scale: 1.95
+    - _Patina_Seed: 1.15
+    - _Patina_Smoothness: 0.25
+    - _Patina_Softness: 1.05
+    - _Patina_Threshold: -0.18
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _Scratch_Amount: 1
+    - _Scratch_Angle: 0.785
+    - _Scratch_Band: 0.15
+    - _Scratch_Detail: 4.77
+    - _Scratch_Mask: 0.45
+    - _Scratch_Mask_Scale: 2
+    - _Scratch_Scale: 2.48
+    - _Scratch_Seed: 0.3
+    - _Scratch_Smoothness: 0.75
+    - _Scratch_Stretch: 20.13
+    - _Scratch_Threshold: 0.92
+    - _Smoothness: 0.5
+    - _Tone_Base: 0.71
+    - _Tone_Gain: 0.3
+    m_Colors:
+    - _Bronze_Color: {r: 0.5, g: 0.32, b: 0.16, a: 1}
+    - _Patina_Deep_Color: {r: 0.23, g: 0.12, b: 0.06, a: 1}
+    - _Patina_Green_Color: {r: 0.24999994, g: 0.5499999, b: 0.45, a: 1}
+    - _Scratch_Color: {r: 0.75, g: 0.6, b: 0.38, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

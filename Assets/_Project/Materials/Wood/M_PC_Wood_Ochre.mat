@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7773798457693860215
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_PC_Wood_Ochre
+  m_Shader: {fileID: -6465566751694194690, guid: ecb3836079a93e64998fc72394826ea6, type: 3}
+  m_Parent: {fileID: 2100000, guid: 42cd9aae5ff564041bc109a640a4c605, type: 2}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats: []
+    m_Colors:
+    - _Grain_Color: {r: 0.63206476, g: 0.52552927, b: 0.18106458, a: 1}
+    - _LateWood_Color: {r: 0.4609714, g: 0.37769568, b: 0.10843758, a: 1}
+    - _Pore_Color: {r: 0.34447834, g: 0.28593212, b: 0.096632764, a: 1}
+    - _Wear_Color: {r: 0.89114165, g: 0.81770897, b: 0.5802765, a: 1}
+    - _Wood_Color: {r: 0.7764706, g: 0.65882355, b: 0.27843142, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

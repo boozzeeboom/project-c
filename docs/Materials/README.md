@@ -163,6 +163,22 @@
   проставить дефолт слота `1.0`, как в Wood/IronRust, но тогда все `*_Bump`
   надо пересчитать: они подбирались под эффективный множитель 0.01.
 
+## Известные дефекты рельефа на городских мешах (2026-10-25, касается ВСЕХ графов)
+
+Подробно — `docs/world/primum_city/09_MATERIALS/02_IMPLEMENTATION_LOG.md`, шаги 2g–2h.
+
+1. **Вырожденные тангенсы.** У мешей без UV импортёр ставит всем вершинам tangent
+   (1,0,0,−1). Все графы отдают `NormalTS` → на гранях ±X базис вырожден, чёрные мелькающие
+   треугольники («как меш в меше»). `URP/Lit` без normal map этого не видит. Лечение — тангенс
+   из нормали в меше (`PrimumMeshRebase.TangentFromNormal`). Проверено пользователем на `Cobble`.
+2. **Неточный `Normal From Height` далеко от начала координат.** Штатный узел берёт `ddx/ddy`
+   мировой позиции; город в ~40 км → шаг float ≈ 3.9 мм → попиксельная чёрная грануляция на любом
+   bump. Лечение — Custom Function `PC_NormalFromHeightPrecise` (`Assets/_Project/Shaders/ProceduralBumpPrecise.hlsl`),
+   замена узла патчером `ProjectC/Materials/Точный bump…` (`PrecisionBumpPatcher.cs`, backup в
+   `ShaderGraphBackup/`). Проба — `Cobble` (визуал `NOT RUN`); остальные графы — после приёмки.
+
+Новые графы с рельефом собирать сразу с `PC_NormalFromHeightPrecise`, а не со штатным узлом.
+
 ## Проверка (для каждого материала)
 
 - Compile: Console → 0 errors после любых правок шейдера.

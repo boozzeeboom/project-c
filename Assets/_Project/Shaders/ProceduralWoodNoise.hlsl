@@ -31,9 +31,15 @@ float PCWood_Footprint(float3 p)
 }
 
 // 1 — узор разрешён экраном, 0 — период мельче пикселя (слой надо свести к среднему).
+// Пороги строже, чем для цвета: эти же слои идут в высоту рельефа, а Normal From Height берёт ddx/ddy
+// высоты по блоку 2×2 — узор с периодом 2–8 пикселей цветом ещё читается, а в наклоне даёт
+// случайный знак на каждом блоке → «шум при любом бампе» (25.10). Полностью — при периоде ≥ ~12 пикс,
+// ноль — при ≤ ~4 пикс.
+#define PCWOOD_BAND_LO 0.08
+#define PCWOOD_BAND_HI 0.25
 float PCWood_Band(float3 p)
 {
-    return 1.0 - smoothstep(0.22, 0.55, PCWood_Footprint(p));
+    return 1.0 - smoothstep(PCWOOD_BAND_LO, PCWOOD_BAND_HI, PCWood_Footprint(p));
 }
 
 float PCWood_ValueNoise3(float3 p)
@@ -72,7 +78,7 @@ float PCWood_Fbm3(float3 p, float detail)
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        float w = 1.0 - smoothstep(0.25, 0.6, px * freq);
+        float w = 1.0 - smoothstep(PCWOOD_BAND_LO, PCWOOD_BAND_HI, px * freq);
         sum += amp * lerp(0.5, PCWood_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
@@ -81,9 +87,14 @@ float PCWood_Fbm3(float3 p, float detail)
 }
 
 // Ridged-преобразование: тонкие линии там, где fbm пересекает 0.5.
+// Скруглённый гребень (25.10): |x| даёт излом наклона на гребне — в рельефе это смена знака
+// нормали в одном пикселе и мерцающая линия; sqrt(x²+k) визуально тот же, но гладкий.
 float PCWood_Ridge(float s)
 {
-    return 1.0 - abs(s * 2.0 - 1.0);
+    const float k = 0.0025;
+    float x = s * 2.0 - 1.0;
+    float a = sqrt(x * x + k) - sqrt(k);
+    return 1.0 - a / (sqrt(1.0 + k) - sqrt(k));
 }
 
 // Worley F1 (3x3x3) — ячейки для сучков и пор.
@@ -137,10 +148,13 @@ float PCWood_Rings(float3 ObjectPos, float RingScale, float RingSharpness, float
     float t = frac(r);
     float sharp = clamp(RingSharpness, 0.01, 1.0);
     float late = saturate(smoothstep(1.0 - sharp, 1.0, t));
+    // frac(r) даёт обрыв 1→0 на границе кольца — в рельефе это утёс с бесконечным наклоном
+    // (мерцающая линия). Короткий спад в последних 15% полосы делает профиль непрерывным.
+    late *= 1.0 - smoothstep(1.0 - 0.15 * sharp, 1.0, t);
     // Полоса поздней древесины шириной sharp (в периодах кольца): когда пиксель соизмерим с ней,
     // кольца сводятся к среднему тону (≈ sharp/2) — без мерцания тонких линий.
     float pr = max(abs(ddx(r)), abs(ddy(r)));
-    float w = 1.0 - smoothstep(0.3, 0.8, pr / sharp);
+    float w = 1.0 - smoothstep(0.1, 0.35, pr / sharp);
     return lerp(sharp * 0.5, late, w);
 }
 

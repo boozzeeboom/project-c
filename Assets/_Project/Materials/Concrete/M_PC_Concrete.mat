@@ -39,10 +39,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _Agg_Amount: 1.32
-    - _Agg_Scale: 276.8
+    - _Agg_Scale: 304.7
     - _Agg_Seed: 0.87
     - _Agg_Tone: 0.73
-    - _Aggregate_Bump: 0.019
+    - _Aggregate_Bump: 0
     - _Bloom_Amount: 0.5
     - _Bloom_Scale: 20.99
     - _Bloom_Seed: 0
@@ -50,7 +50,7 @@ Material:
     - _Bloom_Stretch: 8.08
     - _Bloom_Threshold: 0.51
     - _Crack_Amount: 0.75
-    - _Crack_Bump: -0.2
+    - _Crack_Bump: 0
     - _Crack_Scale: 130.1
     - _Crack_Seed: 0
     - _Crack_Warp: 0.35
@@ -63,7 +63,7 @@ Material:
     - _Mottle_Scale: 26
     - _Mottle_Seed: 0
     - _Pores_Amount: 0.85
-    - _Pores_Bump: 0.05
+    - _Pores_Bump: 0
     - _Pores_Matte: 0.22
     - _Pores_Scale: 126.6
     - _Pores_Seed: 0

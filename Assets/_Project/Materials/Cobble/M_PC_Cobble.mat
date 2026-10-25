@@ -52,33 +52,33 @@ Material:
     m_Ints: []
     m_Floats:
     - _Crack_Amount: 0.72
-    - _Crack_Bump: -0.85
-    - _Crack_Scale: 270.5
+    - _Crack_Bump: -0.1
+    - _Crack_Scale: 6
     - _Crack_Seed: 0
-    - _Crack_Stretch: 3.93
+    - _Crack_Stretch: 0.5
     - _Crack_Warp: 0.35
-    - _Crack_Width: 0.22
+    - _Crack_Width: 0
     - _Dirt_Amount: 0.7
-    - _Dirt_Scale: 12.31
+    - _Dirt_Scale: 0.6
     - _Dirt_Seed: 0
     - _Dirt_Softness: 0.16
     - _Dirt_Threshold: 0.62
-    - _Flaw_Amount: 0.5
-    - _Flaw_Bump: -0.25
-    - _Flaw_Scale: 70.22
+    - _Flaw_Amount: -2.48
+    - _Flaw_Bump: -0.5
+    - _Flaw_Scale: 13.16
     - _Flaw_Seed: 0
-    - _Flaw_Stretch: 4.8
+    - _Flaw_Stretch: 1.24
     - _Flaw_Width: 0.1
     - _Joint_Amount: 1.26
-    - _Joint_Bump: -0.35
-    - _Joint_Width: 0.18
+    - _Joint_Bump: -3.46
+    - _Joint_Width: 0.08
     - _Lichen_Amount: 0.5
-    - _Lichen_Scale: 88.06
+    - _Lichen_Scale: 1.2
     - _Lichen_Seed: 0
     - _Lichen_Softness: 0.2
     - _Lichen_Threshold: 0.56
     - _Moss_Amount: 0.6
-    - _Moss_Scale: 95.21
+    - _Moss_Scale: 1
     - _Moss_Seed: 0
     - _Moss_Softness: 0.22
     - _Moss_Stretch: 5
@@ -87,9 +87,9 @@ Material:
     - _QueueOffset: 0
     - _Smoothness: 0.1
     - _Stone_Gloss: 0.12
-    - _Stone_Scale: 108.76
+    - _Stone_Scale: 2.5
     - _Stone_Seed: 0
-    - _Stone_Stretch: 3
+    - _Stone_Stretch: 0.5
     - _Stone_Tone: 0.55
     m_Colors:
     - _Dirt_Color: {r: 0.34, g: 0.28, b: 0.21, a: 1}

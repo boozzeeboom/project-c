@@ -51,50 +51,50 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Body_Grain_Amount: 0.45
-    - _Body_Grain_Scale: 55
+    - _Body_Grain_Amount: 0.27
+    - _Body_Grain_Scale: 114.3
     - _Body_Grain_Seed: 7
-    - _Bump_Strength: 1
-    - _Craze_Amount: 0.8
+    - _Bump_Strength: 1.32
+    - _Craze_Amount: 0.22
     - _Craze_Bump: 0
-    - _Craze_Scale: 125.9
+    - _Craze_Scale: 122.2
     - _Craze_Seed: 0
     - _Craze_Stretch: 4
     - _Craze_Warp: 0.3
     - _Craze_Width: 0.045
-    - _Gap_Gloss: -0.1
+    - _Gap_Gloss: 0
     - _Joint_Amount: 0.8
     - _Joint_Bump: -0.44
     - _Joint_Width_X: 0.06
     - _Joint_Width_Y: 0.1
-    - _Moss_Amount: 0.55
-    - _Moss_Scale: 12.2
+    - _Moss_Amount: 2.56
+    - _Moss_Scale: 0.68
     - _Moss_Seed: 0
-    - _Moss_Softness: 0.2
+    - _Moss_Softness: 0.07
     - _Moss_Stretch: 5
     - _Moss_Threshold: 0.6
-    - _Pore_Amount: 0.5
-    - _Pore_Bump: -0.015
-    - _Pore_Scale: 38
+    - _Pore_Amount: 0
+    - _Pore_Bump: 0
+    - _Pore_Scale: 173.7
     - _Pore_Seed: 0
     - _Pore_Width: 0.42
     - _QueueControl: 0
     - _QueueOffset: 0
     - _Row_Offset: 0.5
-    - _Salt_Amount: 0.45
-    - _Salt_Scale: 62.1
+    - _Salt_Amount: 0.27
+    - _Salt_Scale: 73.3
     - _Salt_Seed: 11
     - _Salt_Softness: 0.18
     - _Salt_Threshold: 0.58
     - _Smoothness: 0.3
     - _Tile_Aspect: 1.28
     - _Tile_Crown: 0.18
-    - _Tile_Gloss: 0.08
+    - _Tile_Gloss: 0.26
     - _Tile_Grain_Amount: 0.35
     - _Tile_Grain_Scale: 55
     - _Tile_Grain_Seed: 0
     - _Tile_Grain_Stretch: 3
-    - _Tile_Scale: 24.21
+    - _Tile_Scale: 3.4
     - _Tile_Seed: 0
     - _Tile_Tail: 0.32
     - _Tile_Tone: 0.75

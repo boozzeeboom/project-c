@@ -83,6 +83,23 @@ float PCCobble_Groove(float s)
     return abs(s * 2.0 - 1.0);
 }
 
+// ── Полоса пропускания (аналог mip-перехода) ─────────────────────────────────
+// Normal From Height считает нормаль из ddx/ddy высоты, то есть из РАЗНОСТИ
+// соседних пикселей, а не из наклона поверхности. Как только шаг узора
+// становится меньше пикселя, эта разность перестаёт быть наклоном и становится
+// случайным числом: крошка на поверхности и мельтешение при движении камеры.
+// Поэтому каждый слой, который попадает в высоту (Cracks/Joints/Flaws), обязан
+// сходиться к своему среднему, когда перестаёт разрешаться экраном.
+// p — координата УЖЕ умноженная на Scale и растянутая Stretch, поэтому размер
+// пикселя в шагах узора (px) учитывает анизотропию автоматически:
+//   px = 1    — на пиксель приходится целый период узора (алиасинг)
+//   px << 1   — узор разрешён, слой отдаётся полностью
+float PCCobble_Band(float3 p)
+{
+    float px = max(length(ddx(p)), length(ddy(p)));
+    return 1.0 - smoothstep(0.22, 0.55, px);
+}
+
 // Worley (3x3x3): F1 — до ближайшего центра ячейки, F2 — до второго.
 // Возвращает F2 − F1, то есть расстояние ДО ГРАНИЦЫ ячейки: 0 на шве кладки
 // и растёт внутрь камня. cellTone — хеш выигравшей ячейки: величина,
@@ -143,11 +160,12 @@ float PCCobble_Cracks(float3 ObjectPos, float CrackScale, float CrackStretch, fl
             PCCobble_ValueNoise3(p * 0.5 + 41.7)) - 0.5;
         p += w * CrackWarp;
     }
+    float band = PCCobble_Band(p);
     float d = PCCobble_Groove(PCCobble_Fbm3(p, 2.0));
     float w = max(0.004, CrackWidth);
     float crack = saturate(1.0 - smoothstep(0.0, w, d));
     float opened = smoothstep(0.28, 0.78, PCCobble_Fbm3(p * 0.30 + 7.7, 2.0));
-    return saturate(crack * lerp(0.40, 1.0, opened));
+    return saturate(crack * lerp(0.40, 1.0, opened)) * band;
 }
 
 // ── Швы кладки ───────────────────────────────────────────────────────────────
@@ -160,7 +178,7 @@ float PCCobble_Joints(float3 ObjectPos, float StoneScale, float StoneStretch, fl
     float cellTone;
     float border = PCCobble_WorleyF2F1(p, cellTone);
     float w = max(0.004, JointWidth);
-    return saturate(1.0 - smoothstep(0.0, w, border));
+    return saturate(1.0 - smoothstep(0.0, w, border)) * PCCobble_Band(p);
 }
 
 // ── Тон камня ────────────────────────────────────────────────────────────────
@@ -173,7 +191,7 @@ float PCCobble_StoneTone(float3 ObjectPos, float StoneScale, float StoneStretch,
     p.y /= max(0.05, StoneStretch);
     float cellTone;
     PCCobble_WorleyF2F1(p, cellTone);
-    return saturate(cellTone);
+    return lerp(0.5, saturate(cellTone), PCCobble_Band(p));
 }
 
 // ── Сколы и поперечные трещины ───────────────────────────────────────────────
@@ -189,7 +207,7 @@ float PCCobble_Flaws(float3 ObjectPos, float FlawScale, float FlawStretch, float
     float w = max(0.004, FlawWidth);
     float crack = saturate(1.0 - smoothstep(0.0, w, d));
     float patch = smoothstep(0.34, 0.80, PCCobble_Fbm3(p * 0.5 + 4.3, 2.0));
-    return crack * patch;
+    return crack * patch * PCCobble_Band(p);
 }
 
 // ── Пятно (общий примитив) ───────────────────────────────────────────────────
@@ -201,7 +219,7 @@ float PCCobble_Patch(float3 ObjectPos, float PatchScale, float PatchStretch, flo
 {
     float3 p = ObjectPos * max(0.001, PatchScale) + PatchSeed;
     p.y /= max(0.05, PatchStretch);
-    return saturate(PCCobble_Fbm3(p, 2.0));
+    return lerp(0.5, saturate(PCCobble_Fbm3(p, 2.0)), PCCobble_Band(p));
 }
 
 void ProceduralCobbleCracks_float(

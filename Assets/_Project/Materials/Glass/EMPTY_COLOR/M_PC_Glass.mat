@@ -51,7 +51,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Edge_Noise_Scale: 0.17
+    - _Edge_Noise_Scale: 0.1
     - _Edge_Noise_Seed: 0
     - _Edge_Position: 0.5
     - _Edge_Wear: 0.43

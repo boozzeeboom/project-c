@@ -23,6 +23,19 @@ float PCWood_Hash13(float3 p)
     return frac((p.x + p.y) * p.z);
 }
 
+// Размер пикселя в единицах уже масштабированной координаты узора (сколько периодов на пиксель).
+// Анизотропия (Stretch) учитывается автоматически. Только фрагментная стадия (ddx/ddy).
+float PCWood_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+// 1 — узор разрешён экраном, 0 — период мельче пикселя (слой надо свести к среднему).
+float PCWood_Band(float3 p)
+{
+    return 1.0 - smoothstep(0.22, 0.55, PCWood_Footprint(p));
+}
+
 float PCWood_ValueNoise3(float3 p)
 {
     float3 i = floor(p);
@@ -49,13 +62,18 @@ float PCWood_ValueNoise3(float3 p)
 
 float PCWood_Fbm3(float3 p, float detail)
 {
+    // Полоса пропускания (25.10, «мелкий шум, сильно меняющийся при движении камеры»): октава, чей
+    // период стал мельче пикселя, плавно уходит в своё среднее (0.5) — иначе она алиасится и мерцает.
+    // При GrainDetail ~4 третья октава в ~17 раз чаще первой. px — размер пикселя в периодах узора.
+    float px = PCWood_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCWood_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(0.25, 0.6, px * freq);
+        sum += amp * lerp(0.5, PCWood_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -118,7 +136,12 @@ float PCWood_Rings(float3 ObjectPos, float RingScale, float RingSharpness, float
     r += Knots;
     float t = frac(r);
     float sharp = clamp(RingSharpness, 0.01, 1.0);
-    return saturate(smoothstep(1.0 - sharp, 1.0, t));
+    float late = saturate(smoothstep(1.0 - sharp, 1.0, t));
+    // Полоса поздней древесины шириной sharp (в периодах кольца): когда пиксель соизмерим с ней,
+    // кольца сводятся к среднему тону (≈ sharp/2) — без мерцания тонких линий.
+    float pr = max(abs(ddx(r)), abs(ddy(r)));
+    float w = 1.0 - smoothstep(0.3, 0.8, pr / sharp);
+    return lerp(sharp * 0.5, late, w);
 }
 
 // ── Волокно ──────────────────────────────────────────────────────────────────
@@ -127,7 +150,8 @@ float PCWood_Grain(float3 ObjectPos, float GrainScale, float GrainStretch, float
 {
     float3 p = ObjectPos * max(0.001, GrainScale) + GrainSeed;
     float3 g = float3(p.x * max(0.05, GrainStretch), p.y * 0.12, p.z * max(0.05, GrainStretch));
-    return saturate(PCWood_Ridge(PCWood_Fbm3(g, max(1.1, GrainDetail))));
+    // Среднее ridged-волокна ≈ 0.5: если даже первая октава не разрешена — волокно исчезает плавно.
+    return lerp(0.5, saturate(PCWood_Ridge(PCWood_Fbm3(g, max(1.1, GrainDetail)))), PCWood_Band(g));
 }
 
 // ── Поры ─────────────────────────────────────────────────────────────────────
@@ -136,7 +160,8 @@ float PCWood_Pores(float3 ObjectPos, float PoresScale, float PoresSeed)
 {
     float3 p = ObjectPos * max(0.001, PoresScale) + PoresSeed;
     float d = PCWood_Worley(p);
-    return saturate(1.0 - smoothstep(0.18, 0.42, d));
+    // Пора — точка ~⅕ ячейки; мельче пикселя она и даёт «искрящийся» шум → свести к среднему (≈ 0.1).
+    return lerp(0.1, saturate(1.0 - smoothstep(0.18, 0.42, d)), PCWood_Band(p));
 }
 
 void ProceduralWoodKnots_float(
@@ -213,7 +238,7 @@ float PCWood_ScratchDir(float3 ObjectPos, float ScratchScale, float SX, float SY
     sp.x *= max(0.05, SX);
     sp.y *= max(0.05, SY);
     sp.z *= max(0.05, SZ);
-    return PCWood_Ridge(PCWood_Fbm3(sp, ScratchDetail));
+    return lerp(0.5, PCWood_Ridge(PCWood_Fbm3(sp, ScratchDetail)), PCWood_Band(sp));
 }
 
 float PCWood_Blotch(float3 ObjectPos, float BlotchScale, float BlotchSeed)
@@ -273,7 +298,7 @@ void ProceduralWoodScratchC_float(
     float3 sc = ObjectPos * max(0.001, ScratchScale) + ScratchSeed + 41.1;
     sc.xy = float2(sc.x * ca - sc.y * sn, sc.x * sn + sc.y * ca);
     sc.x *= max(0.05, ScratchStretch);
-    ScratchC = PCWood_Ridge(PCWood_Fbm3(sc, ScratchDetail));
+    ScratchC = lerp(0.5, PCWood_Ridge(PCWood_Fbm3(sc, ScratchDetail)), PCWood_Band(sc));
 }
 
 void ProceduralWoodScratchC_half(

@@ -277,6 +277,41 @@ namespace ProjectC.EditorTools
             return targets;
         }
 
+        // ------------------------------------------------------------------ правила по имени объекта
+
+        /// <summary>
+        /// Решения пользователя на пилотном чанке (25.10, журнал шаг 2m) для слитых мешей чанка: источник один
+        /// и тот же (например <c>M_STONE_BEIGE</c>), но снаружи и внутри нужен разный материал — по имени материала
+        /// это не различить. Правило: суффикс имени объекта → цель; только рендереры с одним слотом, не двери.
+        /// </summary>
+        private static readonly string[,] ObjectRules =
+        {
+            { "_INT_M_STONE_BEIGE", "M_PC_Concrete" },
+            { "_M_M_WINDOW_GLASS", "M_PC_Glass_Green" },
+            { "_M_M_TQ_STONE", "M_PC_Wood_Dark" },
+            { "_M_M_TQ_BRICK_RED", "SMALL_M_PC_Brick" },
+        };
+
+        private static Dictionary<string, Material> ResolveObjectRules(List<string> errors)
+        {
+            var index = IndexProjectMaterials(out _);
+            var res = new Dictionary<string, Material>(StringComparer.Ordinal);
+            for (int i = 0; i < ObjectRules.GetLength(0); i++)
+            {
+                if (index.TryGetValue(ObjectRules[i, 1], out var m)) res[ObjectRules[i, 0]] = m;
+                else errors.Add("правило " + ObjectRules[i, 0] + ": нет материала " + ObjectRules[i, 1]);
+            }
+            return res;
+        }
+
+        private static bool TryObjectRule(string objectName, Dictionary<string, Material> ruleMats, out Material mat, out string suffix)
+        {
+            foreach (var kv in ruleMats)
+                if (objectName.EndsWith(kv.Key, StringComparison.Ordinal)) { mat = kv.Value; suffix = kv.Key; return true; }
+            mat = null; suffix = null;
+            return false;
+        }
+
         // ------------------------------------------------------------------ отчёт / применение
 
         /// <summary>
@@ -300,6 +335,8 @@ namespace ProjectC.EditorTools
 
             var buckets = new Dictionary<string, Bucket>(StringComparer.Ordinal);
             var doorCache = new Dictionary<GameObject, bool>();
+            var ruleMats = ResolveObjectRules(stats.Errors);
+            foreach (var rm in ruleMats.Values) targetSet.Add(rm);
             var renderers = scope.GetComponentsInChildren<Renderer>(true);
             stats.Renderers = renderers.Length;
 
@@ -337,6 +374,19 @@ namespace ProjectC.EditorTools
                         {
                             action = "null";
                             stats.Null++;
+                        }
+                        else if (mats.Length == 1 && !isDoor && TryObjectRule(r.name, ruleMats, out var ruleMat, out var ruleSuffix))
+                        {
+                            // правило по имени объекта (решение пользователя на пилоте, шаг 2m): сильнее таблицы по имени материала
+                            kind = "OBJECT_RULE" + ruleSuffix;
+                            targetName = ruleMat.name;
+                            if (m == ruleMat) { action = "already"; stats.Already++; }
+                            else
+                            {
+                                action = apply ? "changed" : "would_change";
+                                stats.Changed++;
+                                if (apply) { mats[i] = ruleMat; changedHere = true; }
+                            }
                         }
                         else if (targetSet.Contains(m))
                         {
@@ -460,6 +510,7 @@ namespace ProjectC.EditorTools
             var map = LoadMap(errors);
             var targets = ResolveTargets(map, errors);
             var targetSet = new HashSet<Material>(targets.Values);
+            foreach (var rm in ResolveObjectRules(errors).Values) targetSet.Add(rm);
 
             int slots = 0, nullSlots = 0, fbxSlots = 0, instanceSlots = 0, outsideSlots = 0, urpLitSlots = 0, nonGraphSlots = 0;
             var distinct = new HashSet<Material>();

@@ -1,6 +1,8 @@
 # T-CHAR-UVRB — итерации
 
-Все прогоны: `PC_Char_City_LowerCraftsman_APOSE_v02` (643 657 tri), Blender 5.2.3 LTS headless, CPU.
+## Исторические прогоны v1
+
+Прогоны этой секции: `PC_Char_City_LowerCraftsman_APOSE_v02` (643 657 tri), Blender 5.2.3 LTS headless, CPU.
 
 | # | изменение | острова | CV плотн. | перевёрн. | покрытие | вывод |
 |---|---|---|---|---|---|---|
@@ -15,4 +17,82 @@
 Итоговый прогон (#5) выполнен через `rebake_all.bat` → результат в
 `Assets/Generated_Models/PC_Char_City_LowerCraftsman_APOSE_v02/Rebaked/`, ~200 с.
 
-Открыто: визуальная проверка и импорт в Unity (NOT RUN); прогон остальных персонажей; `.glb`-путь с ригом не прогонялся.
+Открыто для v1: визуальная проверка и импорт в Unity (NOT RUN); прогон остальных персонажей; `.glb`-путь с ригом не прогонялся.
+
+## v2 — обобщение и повторный ресерч, 2026-10-26
+
+Переход на пообъектную обработку, сохранение исходных UV/геометрии/структуры, channel-aware PBR,
+новый tangent basis для Normal, автоматический поиск кандидатов и строгий QA. Описание и первоисточники:
+`01_ALGORITHM.md`; дизайн: `docs/dev/T-CHAR-UVRB_v2.md`.
+
+### Исправления, обнаруженные при тестировании
+
+- В Blender 5.2 UV-selection читается через `BMLoop.uv_select_vert`; старое `BMLoopUV.select` отсутствует.
+- Alpha<1 в Principled способен дать нулевой Normal pass. Для перепечки Normal используется opaque Diffuse
+  с той же source-normal веткой; Alpha сохраняется в собственном канале/константе.
+- Packed images после открытия .blend загружаются лениво. `has_data=False` до обращения к pixels не означает потерянную текстуру.
+- Строгое требование 2px для каждого микроскопического острова делало реальные модели практически необрабатываемыми.
+  Введён явный area-weighted бюджет `subpixel-area`, default 0.1%; строгий режим 0 остаётся доступен.
+- Точные разрывы boundary edges можно соединять в аналитической копии с corner-ID mapping, не меняя оригинальный mesh.
+  На трёх реальных исходниках эта эвристика соединила 0 вершин; её работа отдельно подтверждена fixture.
+- При overlap/flips изолируются проблемные faces с повторной проверкой дисковости. Строгий порог zero overlap/zero flips не ослаблялся.
+
+### Проверки кода
+
+- Python compile: **12 файлов, PASS** (Blender Python, без C#/Unity compilation).
+- `test_uvrb_v2.py`: **10/10 PASS**; итоговый отчёт `_reports/v2_test_summary.json`.
+- `test_batch_v2.py`: **3/3 PASS**; `_reports/v2_batch_summary.json`.
+
+| Fixture | Что проверено | Результат |
+|---|---|---|
+| hard_pbr | 2 slots, 3 UV layers, Base/Alpha/Emission/Metallic/Normal/Roughness; HDR >1; неизменные константы; cache hit | PASS |
+| no_uv | UV создаётся для меша с постоянным материалом; оригинальные вершины не меняются | PASS |
+| hierarchy_rig | 2 meshes, root/socket, неоднородный scale, Armature/weights, shape key animation, object animation | native QA PASS |
+| organic | органическая поверхность, нулевые flips/degenerate/overlap | PASS |
+| thin | автоматическое повышение 128 → 256 для тонкой детали | PASS |
+| topology | тор → 14 disk charts; настройки не меняются при uniform scale ×1000 | PASS |
+| negative | Mix Shader отвергнут до публикации; Windows paths с пробелом не повреждаются | PASS |
+| image_tangent | перенос gradient, наклонённая normal, поворот source UV | normal dot=0.9999999994; ошибка цвета=0.00427 |
+| ngon_overlap | 7-угольник; намеренный overlap всех 6 faces cube обнаружен | PASS |
+| split_connectivity | 2 дубликата соединены только в аналитической копии; в результате осталось 6 исходных verts | PASS |
+| batch first/cache/stale | реальный worker, cache hit; намеренная ошибка `--res -1` не принимает старый success | exit 0 / 0 / 1, как ожидалось |
+
+Численные fixtures проверяют оговорённые данные, не художественное качество и не все возможные риги.
+Повторные прогоны organic могут давать различные равнозначные packing layouts; детерминизм v1 не переносится на v2 автоматически.
+
+### Три реальные модели — полный native прогон
+
+Запуск `test_project_models_v2.py -- --bake` выполнен **вне Assets**.
+Каталог результатов:
+`Tools/Blender/CharacterRebake/_work/project_v2_1793026156495419900/<Name>/output/`.
+Сводка: `_reports/v2_project_summary.json`; подробные отчёты — рядом с каждой output-папкой.
+
+| Модель | Исходные острова | Итог | UV flips / overlaps | CV до → после | Разрешение | Время |
+|---|---:|---:|---|---|---|---:|
+| CL_F_WPN_KNIFE_01_STEEL | 1761 | **930**, rebaked | **0 / 0** | 0.03007 → 0.03611 | 2048 → 4096 | 76.67 s |
+| CL_F_GADGET_MEZIMETER_01 | 1006 | **732**, rebaked | **0 / 0** | 0.03300 → 0.02496 | 2048 → 4096 | 77.45 s |
+| PC_Char_City_LowerCraftsman_APOSE_v02 | 211 | **unchanged** | кандидат отклонён | исходный сохранён | 2048 сохранено | 775.98 s |
+
+Для ножа изолированы 93 проблемные faces, для мезиметра — 100. Оба результата содержат Base Color и Normal;
+полные `invariants.ok`, `native_roundtrip.ok`, `materials_ok` — true. SHA256 каждого из трёх исходных FBX
+до/после совпадает. Старый `Rebaked/` персонажа не изменён.
+
+**Компромиссы, не скрывать:** сумма UV-площадей ножа 0.59526 → 0.09562, мезиметра 0.72515 → 0.13727;
+source UV имеют overlap, поэтому эти суммы не равны площади занятого атласа. У ножа CV немного ухудшился.
+4096² не доказывает сохранение каждой текстурной детали; результаты остаются кандидатами для пользовательской визуальной приёмки.
+
+**Персонаж не переразвёрнут новой версией.** Несглаженный кандидат при refinement распался до граней и провалил упаковку.
+Кандидат с 50 итерациями после двух refinements получил 2373 острова, zero flips/overlap, но при 4096²
+subpixel surface fraction=0.003174 (0.3174%) превысил лимит 0.1%; UV-площадь упала до 0.02654.
+Он отклонён. Общий `success` здесь означает сохранение исходника и успешный native roundtrip, а не успешный rebake.
+Это реальное ограничение v2 на плотном генераторном персонаже; подменять его «универсальной готовностью» нельзя.
+
+### NOT RUN / остаётся ограничением
+
+- Unity import, выбор UV-канала целевым шейдером, визуальная приёмка, Play Mode и скриншоты.
+- Interchange QA FBX/GLB, исходные ригованные GLB проекта; полная animation-equivalence проверка.
+- Сквозные прогоны OBJ/PLY/STL и всей библиотеки Generated_Models.
+- Автоматическое сохранение PBR в произвольных Unity shaders; сложные неподдерживаемые Blender shader graphs.
+- Оптимизация плотного LowerCraftsman v2 до приемлемого числа островов/площади.
+
+Никакие generated outputs, `_reports`, `_work`, CSV и исходные Assets не включаются в тематический коммит.

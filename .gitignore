@@ -204,3 +204,4 @@ _analysis/*
 __pycache__/
 Assets/_Editor_Temp/*
 Tools/Blender/CharacterRebake/_reports/*
+Tools/Blender/CharacterRebake/_work/*

@@ -1,87 +1,102 @@
 # -*- coding: utf-8 -*-
+"""T-CHAR-UVRB v2: один процесс Blender на модель, строгие exit codes и версия отчёта.
+Кэш проверяет worker после импорта (включая внешние текстуры), не наличие старого JSON.
 """
-T-CHAR-UVRB: пакетный прогон rebake_character.py по папкам персонажей.
+import argparse
+import csv
+import fnmatch
+import json
+import os
+from pathlib import Path
+import shlex
+import subprocess
+import sys
+import time
 
-  blender.exe -b --factory-startup -P batch_rebake.py -- ^
-      --root C:\\Projects\\ProjectC_client\\Assets\\Generated_Models --pattern "PC_Char_*" [--force] ^
-      [--exclude "Female_Pilot_Rigged,PadRing"] ^
-      [--extra "--res 2048 --gpu"]
+HERE = Path(__file__).resolve().parent
 
-Каждый персонаж обрабатывается ОТДЕЛЬНЫМ процессом Blender (изоляция памяти/сбоев).
-Модель папки: <папка>/<папка>.fbx|.glb (иначе первый .fbx/.glb в папке).
-Результат: <папка>/Rebaked/<имя>_Rebaked.{fbx|glb} + _BaseColor.png;
-отчёт и лог — Tools/Blender/CharacterRebake/_reports/<папка>/ (вне Assets).
-Сводка: Tools/Blender/CharacterRebake/_uvrb_summary.csv (вне Assets, чтобы Unity её не импортировал).
-"""
-import sys, os, glob, fnmatch, argparse, subprocess, json, time, shlex, csv
 
-argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-p = argparse.ArgumentParser()
-p.add_argument("--root", required=True)
-p.add_argument("--pattern", default="*", help="glob по имени папки персонажа")
-p.add_argument("--exclude", default="", help="через запятую: glob имён папок, которые пропустить")
-p.add_argument("--force", action="store_true", help="перепечь, даже если Rebaked уже есть")
-p.add_argument("--extra", default="", help="доп. аргументы для rebake_character.py")
-p.add_argument("--summary", default="", help="путь к CSV-сводке (по умолчанию <root>/_uvrb_summary.csv)")
-A = p.parse_args(argv)
+def split_extra(text):
+    # posix=False сохраняет Windows backslashes, но оставляет внешние кавычки.
+    return [v[1:-1] if len(v) >= 2 and v[0] == v[-1] and v[0] in '\"\'' else v
+            for v in shlex.split(text, posix=False)]
 
-try:
-    import bpy
-    blender = bpy.app.binary_path
-except ImportError:
-    blender = os.environ.get("BLENDER_EXE", "blender")
-script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rebake_character.py")
-excl = [e.strip() for e in A.exclude.split(",") if e.strip()]
 
-jobs = []
-for d in sorted(glob.glob(os.path.join(os.path.abspath(A.root), "*"))):
-    base = os.path.basename(d)
-    if not os.path.isdir(d) or not fnmatch.fnmatch(base, A.pattern) or any(fnmatch.fnmatch(base, e) for e in excl):
-        continue
-    model = next((os.path.join(d, base + e) for e in (".fbx", ".glb") if os.path.isfile(os.path.join(d, base + e))), None)
-    if model is None:
-        c = sorted(glob.glob(os.path.join(d, "*.fbx")) + glob.glob(os.path.join(d, "*.glb")))
-        model = c[0] if c else None
-    if model is None:
-        print(f"[BATCH] skip {base}: no .fbx/.glb")
-        continue
-    jobs.append((base, model))
+def main(argv=None):
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--root', required=True)
+    p.add_argument('--pattern', required=True, help='Явный glob; нет неявного запуска всей библиотеки')
+    p.add_argument('--exclude', default='')
+    p.add_argument('--force', action='store_true')
+    p.add_argument('--extra', default='')
+    p.add_argument('--summary', default=str(HERE/'_uvrb_summary_v2.csv'))
+    a = p.parse_args(argv)
+    extra = split_extra(a.extra)
+    # Batch владеет маршрутизацией: не разрешаем extra перезаписать src/out/report/suffix.
+    reserved = {'--src','--out-dir','--report-dir','--suffix','--audit-only','--no-export'}
+    if any(v.split('=')[0] in reserved for v in extra):
+        p.error('extra содержит маршрутизацию/diagnostic-флаги; используйте rebake_model.py напрямую')
+    summary = Path(a.summary).resolve()
+    assets = HERE.parents[2]/'Assets'
+    if summary == assets or assets in summary.parents:
+        p.error('CSV не должен находиться в Assets')
+    try:
+        import bpy
+        blender = bpy.app.binary_path
+    except ImportError:
+        blender = os.environ.get('BLENDER_EXE', 'blender')
+    excludes = [v.strip() for v in a.exclude.split(',') if v.strip()]
+    rows = []
+    for folder in sorted(Path(a.root).resolve().iterdir()):
+        if not folder.is_dir() or not fnmatch.fnmatch(folder.name, a.pattern) or any(fnmatch.fnmatch(folder.name, e) for e in excludes):
+            continue
+        extensions = ('.fbx','.glb','.gltf','.blend','.obj','.ply','.stl')
+        model = next((folder/(folder.name+e) for e in extensions if (folder/(folder.name+e)).is_file()), None)
+        if model is None:
+            choices = sorted(p for p in folder.iterdir() if p.suffix.lower() in extensions)
+            if len(choices) == 1:
+                model = choices[0]
+            elif choices:
+                rows.append({'model': str(folder), 'ok': False, 'error': 'Неоднозначно: несколько исходных моделей'})
+                continue
+            else:
+                continue
+        rep_dir = HERE/'_reports'/folder.name
+        rep_dir.mkdir(parents=True, exist_ok=True)
+        rep_path = rep_dir/(model.stem+'_Rebaked_v2_report.json')
+        cmd = [blender,'-b','--factory-startup','--python-exit-code','1','-P',str(HERE/'rebake_model.py'),'--',
+               '--src',str(model),'--out-dir',str(folder/'Rebaked_v2'),'--report-dir',str(rep_dir)] + extra
+        if a.force:
+            cmd.append('--force')
+        start = time.time_ns()
+        with open(rep_dir/(model.stem+'_Rebaked_v2_log.txt'), 'w', encoding='utf8') as log:
+            rc = subprocess.call(cmd, stdout=log, stderr=subprocess.STDOUT)
+        row = {'model':str(model), 'returncode':rc, 'ok':False}
+        try:
+            report = json.loads(rep_path.read_text(encoding='utf8'))
+            fresh = rep_path.stat().st_mtime_ns >= start
+            row['ok'] = bool(rc == 0 and fresh and report.get('pipeline_version') == '2.0.0'
+                             and report.get('status') == 'success' and report.get('native_roundtrip',{}).get('ok')
+                             and report.get('outputs') and all(Path(v).is_file() for v in report['outputs']))
+            row.update(status=report.get('status'), rebaked=sum(o.get('status')=='rebaked' for o in report.get('objects',[])),
+                       unchanged=sum(o.get('status')=='unchanged' for o in report.get('objects',[])),
+                       seconds=report.get('total_sec'), error=report.get('error',''))
+        except (OSError, ValueError) as exc:
+            row['error'] = str(exc)
+        rows.append(row)
+        print('[BATCH]', model.name, row['ok'], flush=True)
+    summary.parent.mkdir(parents=True, exist_ok=True)
+    fields = sorted({k for r in rows for k in r}) or ['model','ok']
+    with summary.open('w', encoding='utf8', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=fields)
+        w.writeheader()
+        w.writerows(rows)
+    if not rows:
+        raise RuntimeError('Нет моделей по заданному pattern')
+    if not all(r['ok'] for r in rows):
+        raise RuntimeError('Batch содержит ошибки; см. CSV и per-model report')
 
-rows = []
-rep_root = os.path.join(os.path.dirname(script), "_reports")
-for i, (base, model) in enumerate(jobs, 1):
-    out_dir = os.path.join(os.path.dirname(model), "Rebaked")
-    name = os.path.splitext(os.path.basename(model))[0]
-    rep_dir = os.path.join(rep_root, base)
-    rep = os.path.join(rep_dir, name + "_Rebaked_report.json")
-    if os.path.isfile(rep) and not A.force:
-        print(f"[BATCH] {i}/{len(jobs)} {base}: already rebaked (use --force)")
-    else:
-        os.makedirs(out_dir, exist_ok=True)
-        os.makedirs(rep_dir, exist_ok=True)
-        cmd = [blender, "-b", "--factory-startup", "--python-exit-code", "1", "-P", script, "--",
-               "--src", model, "--out-dir", out_dir, "--report-dir", rep_dir] + shlex.split(A.extra, posix=False)
-        print(f"[BATCH] {i}/{len(jobs)} {base} ...", flush=True)
-        t = time.time()
-        with open(os.path.join(rep_dir, name + "_Rebaked_log.txt"), "w", encoding="utf-8", errors="replace") as lf:
-            rc = subprocess.call(cmd, stdout=lf, stderr=subprocess.STDOUT)
-        print(f"[BATCH]   rc={rc} {time.time() - t:.0f}s", flush=True)
-    row = {"character": base, "model": model, "ok": os.path.isfile(rep)}
-    if row["ok"]:
-        r = json.load(open(rep, encoding="utf-8"))
-        for k in ("islands", "seam_length", "uv_coverage", "texel_density_cv", "flipped_faces"):
-            row["src_" + k] = r["uv_src"][k]
-            row["new_" + k] = r["uv_new"][k]
-        row["faces"] = r["mesh"]["faces"]
-        row["roundtrip_ok"] = r.get("roundtrip", {}).get("ok")
-        row["non_disk_charts_left"] = r.get("non_disk_charts_left")
-        row["total_sec"] = r["total_sec"]
-    rows.append(row)
 
-summary = A.summary or os.path.join(os.path.dirname(script), "_uvrb_summary.csv")
-keys = sorted({k for r in rows for k in r}, key=lambda k: (k not in ("character", "ok"), k))
-with open(summary, "w", newline="", encoding="utf-8") as f:
-    w = csv.DictWriter(f, fieldnames=keys)
-    w.writeheader()
-    w.writerows(rows)
-print(f"[BATCH] done: {sum(r['ok'] for r in rows)}/{len(rows)} ok -> {summary}")
+if __name__ == '__main__':
+    argv = sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else sys.argv[1:]
+    main(argv)

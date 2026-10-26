@@ -1,0 +1,6 @@
+source;kind;target;action;slots;renderers
+M_BRONZE;VARIANT_BASE;M_PC_Bronze;skip_doors;5;5
+M_GLASS_GREEN;VARIANT;M_PC_Glass_Green;skip_doors;4;4
+M_WOOD_DARK;VARIANT;M_PC_Wood_Dark;skip_doors;2;2
+M_GRANITE;VARIANT;M_PC_Cobble_Granite;skip_doors;1;1
+# [ADMIN_ENTRANCE_PORTAL] DRY-RUN: changed 0 / already 0 / unmapped 0 / total 12  (skip_doors 12, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 8, изменено рендереров 0)

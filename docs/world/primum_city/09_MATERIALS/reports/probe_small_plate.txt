@@ -1,0 +1,4 @@
+SMALL_M_PC_Plate slots:
+  slot 0  PRIMUM_HOUSES_S1_GLD_P1_25H/PRIMUM_HOUSES_S1_GLD_P1_25H_M_M_DECK_STEEL   asset=Assets/_Project/Materials/Plate/SMALL_M_PC_Plate.mat
+  slot 0  PRIMUM_HOUSES_S8_GW_P1_30H/PRIMUM_HOUSES_S8_GW_P1_30H_M_M_DECK_STEEL   asset=Assets/_Project/Materials/Plate/SMALL_M_PC_Plate.mat
+  slot 0  PRIMUM_HOUSES_S9_RING_P1_22H/PRIMUM_HOUSES_S9_RING_P1_22H_M_M_DECK_STEEL   asset=Assets/_Project/Materials/Plate/SMALL_M_PC_Plate.mat

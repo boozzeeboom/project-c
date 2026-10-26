@@ -1,0 +1,12 @@
+source;kind;target;action;slots;renderers
+M_BRONZE;VARIANT_BASE;M_PC_Bronze;changed;733;733
+M_EMIT_LAMP;DONE_REMAINDER;PM_LAMP_GLOW_WARM;changed;567;567
+M_GLASS_GREEN;VARIANT;M_PC_Glass_Green;changed;315;315
+M_WOOD_DARK;VARIANT;M_PC_Wood_Dark;changed;174;174
+M_GRANITE;VARIANT;M_PC_Cobble_Granite;changed;52;52
+M_MARBLE_WHITE;BASE;M_PC_Marble;changed;30;30
+M_FABRIC_DEEP;BASE;M_PC_Fabric;changed;22;22
+M_FABRIC_GREEN;VARIANT;M_PC_Fabric_Green;changed;3;3
+M_GLASS_CASE;BASE;M_PC_Glass;changed;1;1
+No Name;GAP;;skip_GAP;1;1
+# [PRIMUM_ADMIN_S0_ADM_P1_01H] APPLY: changed 1897 / already 0 / unmapped 0 / total 1898  (skip_doors 0, skip_DONE/HOLD/GAP 1, null 0, target_missing 0; renderers 769, изменено рендереров 768)

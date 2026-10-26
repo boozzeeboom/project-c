@@ -1,0 +1,35 @@
+
+=== RES-ALLEY rerun queued 17:33:50 ===
+### REBASE (54 s)
+PRIMUM chunk Y-up rebase 1:1 — WorldRoot_0_0/PRIMUM/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H  (2026-10-26 17:34)
+mesh filters        : 201
+rebased now         : 173 (new sub-assets 173, updated 0)
+already in frame    : 28
+mesh colliders      : 0 (меш коллайдера пересобран в том же кадре)
+skipped             : 0
+vertices rebased    : 7128
+degenerate tangents : 1496 -> 0
+max frame error |P·L_new − I| : 0,00E+000
+max vertex delta (chunk space) : 0,00E+000 m
+asset               : Assets/_Project/Art/Models/Primum/Rebased/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H_YUP_meshes.asset
+VERDICT 1:1         : PASS
+
+### APPLY (25 s)
+[PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H] APPLY: changed 173 / already 28 / unmapped 0 / total 201  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 201, изменено рендереров 173)
+### AFTER DRY
+[PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H] DRY-RUN: changed 0 / already 201 / unmapped 0 / total 201  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 201, изменено рендереров 0)
+### VERIFY
+PRIMUM materials verify — scope: WorldRoot_0_0/PRIMUM/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H  (2026-10-26 17:35)
+renderers                          : 201
+slots                              : 201
+null slots                         : 0
+slots from model sub-materials     : 0   (DoD: 0)
+slots on runtime instances (.material): 0   (норма: 0)
+slots outside Assets/_Project/Materials: 0   (DoD: 0)
+slots on URP/Lit                   : 0   (DoD: 0)
+slots on non-ShaderGraph (кроме PM_LAMP_GLOW_WARM): 0
+distinct Material objects          : 15   (DoD: <= 60)
+names without row in table         : 0   (DoD: 0)
+remaining non-target names         : 0 / slots 0
+
+=== RES-ALLEY DONE 17:35:14 ===

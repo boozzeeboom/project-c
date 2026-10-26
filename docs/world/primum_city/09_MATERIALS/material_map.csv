@@ -69,6 +69,7 @@ M_BANNER_GOLD;9;4;#9E751E;Bronze;M_PC_Bronze_Brass;VARIANT;золотая выв
 M_LEAD;468;13;#1C1E23;IronRust;M_PC_IronRust_Lead;VARIANT;свинец — тёмный металл без ржавчины (Rust_Amount = 0)
 M_TQ_IRON;2;1;#2B2D30;IronRust;M_PC_IronRust;BASE;
 M_DECK_STEEL;187;22;#4C4F56;Plate;M_PC_Plate;BASE;настил из листов
+SMALL_M_PC_Plate;3;3;#4C4F56;Plate;SMALL_M_PC_Plate;DONE;уже процедурный мелкий вариант Plate; стоит на 3 объектах `*_M_M_DECK_STEEL` (S1_GLD, S8_GW, S9_RING) — строка добавлена в шаге 3а, чтобы таблица была полной
 M_TQ_STEEL;129;1;#8C9199;Steel_v2;M_PC_Steel_v2;BASE;конструкционная сталь
 M_LEAF_GREEN;181;1;#3F7232;Foliage;M_PC_Foliage;BASE;листва
 M_TQ_PLANT;85;1;#446B38;Foliage;M_PC_Foliage;BASE;растение

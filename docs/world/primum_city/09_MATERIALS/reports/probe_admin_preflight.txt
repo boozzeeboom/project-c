@@ -1,0 +1,3 @@
+ADMIN chunk preflight
+meshFilters=769  plain=769  withChildren(skip)=0  skinned=0  nullMesh=0
+slots lost if skipped = 0

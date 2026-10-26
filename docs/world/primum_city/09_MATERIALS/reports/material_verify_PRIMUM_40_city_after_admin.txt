@@ -1,0 +1,45 @@
+PRIMUM materials verify — scope: WorldRoot_0_0/PRIMUM  (2026-10-26 17:35)
+renderers                          : 19772
+slots                              : 26236
+null slots                         : 0
+slots from model sub-materials     : 5184   (DoD: 0)
+slots on runtime instances (.material): 0   (норма: 0)
+slots outside Assets/_Project/Materials: 5184   (DoD: 0)
+slots on URP/Lit                   : 5896   (DoD: 0)
+slots on non-ShaderGraph (кроме PM_LAMP_GLOW_WARM): 5896
+distinct Material objects          : 83   (DoD: <= 60)
+names without row in table         : 1   (DoD: 0)
+    unmapped: SMALL_M_PC_Plate = 3
+remaining non-target names         : 31 / slots 5899
+    left: M_BRONZE = 1493   [VARIANT_BASE -> M_PC_Bronze]
+    left: M_WOOD_DARK = 1270   [VARIANT -> M_PC_Wood_Dark]
+    left: M_FABRIC_DEEP = 663   [BASE -> M_PC_Fabric]
+    left: M_MARBLE_WHITE = 591   [BASE -> M_PC_Marble]
+    left: M_EMIT_LAMP = 568   [DONE_REMAINDER -> PM_LAMP_GLOW_WARM]
+    left: M_GLASS_GREEN = 442   [VARIANT -> M_PC_Glass_Green]
+    left: PM_DOOR_STONE = 227   [PROJECT_LIT -> M_PC_Cobble]
+    left: PM_DOOR_WOOD_DARK = 172   [PROJECT_LIT -> M_PC_Wood_Dark]
+    left: PM_DOOR_IRON = 133   [PROJECT_LIT -> M_PC_IronRust]
+    left: PM_DOOR_BRONZE = 133   [PROJECT_LIT -> M_PC_Bronze]
+    left: M_GRANITE = 113   [VARIANT -> M_PC_Cobble_Granite]
+    left: PM_DOOR_WOOD_MID = 47   [PROJECT_LIT -> M_PC_Wood]
+    left: M_GLASS_CASE = 10   [BASE -> M_PC_Glass]
+    left: No Name = 8   [GAP -> -]
+    left: M_FABRIC_GREEN = 6   [VARIANT -> M_PC_Fabric_Green]
+    left: SMALL_M_PC_Plate = 3   [NO ROW]
+    left: M_GUILD_CREATION = 2   [HOLD -> -]
+    left: M_GUILD_SECRET = 2   [HOLD -> -]
+    left: M_GUILD_STRENGTH = 2   [HOLD -> -]
+    left: M_GUILD_SUCCESS = 2   [HOLD -> -]
+    left: M_GUILD_THOUGHT = 2   [HOLD -> -]
+    left: M_GUILD_CREATION_EMIT = 1   [HOLD -> -]
+    left: M_GUILD_SECRET_EMIT = 1   [HOLD -> -]
+    left: M_GUILD_STRENGTH_EMIT = 1   [HOLD -> -]
+    left: M_GUILD_SUCCESS_EMIT = 1   [HOLD -> -]
+    left: M_GUILD_THOUGHT_EMIT = 1   [HOLD -> -]
+    left: M_DECK_STEEL = 1   [BASE -> M_PC_Plate]
+    left: M_PAVING_BRUSCHATKA = 1   [BASE -> M_PC_Cobble]
+    left: M_ROCK_DARK = 1   [VARIANT -> M_PC_Cobble_Rock]
+    left: M_SLATE = 1   [BASE -> M_PC_Cobble]
+    left: M_TIMBER_FRAME = 1   [VARIANT -> M_PC_Wood_Pine]
+URP/Lit names: M_BRONZE, M_DECK_STEEL, M_EMIT_LAMP, M_FABRIC_DEEP, M_FABRIC_GREEN, M_GLASS_CASE, M_GLASS_GREEN, M_GRANITE, M_GUILD_CREATION, M_GUILD_CREATION_EMIT, M_GUILD_SECRET, M_GUILD_SECRET_EMIT, M_GUILD_STRENGTH, M_GUILD_STRENGTH_EMIT, M_GUILD_SUCCESS, M_GUILD_SUCCESS_EMIT, M_GUILD_THOUGHT, M_GUILD_THOUGHT_EMIT, M_MARBLE_WHITE, M_PAVING_BRUSCHATKA, M_ROCK_DARK, M_SLATE, M_TIMBER_FRAME, M_WOOD_DARK, No Name, PM_DOOR_BRONZE, PM_DOOR_IRON, PM_DOOR_STONE, PM_DOOR_WOOD_DARK, PM_DOOR_WOOD_MID

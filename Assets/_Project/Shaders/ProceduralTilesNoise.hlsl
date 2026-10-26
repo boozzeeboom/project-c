@@ -204,6 +204,19 @@ void PCTile_ProjAxes(float3 ObjectPos, out float3 T, out float3 B)
     // зависит ВСЯ раскладка.
     n = (nl > 1e-6) ? n / nl : float3(0.0, 0.0, 1.0);
 
+    // СНАП НОРМАЛИ (шаг 2ae) — корень шума на строго вертикальных гранях после шага 2aa.
+    // ObjectPos интерполируется с ошибкой ~1 ULP, а шаг пикселя — миллиметры: нормаль из
+    // cross(ddx, ddy) дрожит на 1e-3…1e-2 от квада к кваду, а сетка dot(ObjectPos·Scale, T) умножает
+    // эту дрожь на абсолютную координату (сотни ячеек). Замер и обоснование порога —
+    // см. PCBrick_ProjAxes и журнал, шаг 2ae. Компонента меньше порога дрожи — РОВНО 0.
+    float pMag = max(abs(ObjectPos.x), max(abs(ObjectPos.y), abs(ObjectPos.z)));
+    float dMin = max(min(length(ddx(ObjectPos)), length(ddy(ObjectPos))), 1e-9);
+    float snapEps = clamp(16.0 * 1.1920929e-7 * pMag / dMin, 0.02, 0.15);
+    n.x = (abs(n.x) < snapEps) ? 0.0 : n.x;
+    n.y = (abs(n.y) < snapEps) ? 0.0 : n.y;
+    n.z = (abs(n.z) < snapEps) ? 0.0 : n.z;
+    n = normalize(n);   // старшая компонента >= 0.577 > 0.15 — нулевой вектор невозможен
+
     // Опорная ось — почти ПЕРПЕНДИКУЛЯРНАЯ грани. Прежний вариант брал
     // cross(n, up)/|cross(n, up)|: у почти горизонтальной грани эта длина равна sin(угла к
     // вертикали) и жмётся к нулю, поэтому ошибка нормали усиливалась в 1/sin раз (порог

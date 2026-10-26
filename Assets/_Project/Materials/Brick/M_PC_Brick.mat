@@ -53,7 +53,7 @@ Material:
     m_Floats:
     - _Brick_Aspect: 1.15
     - _Brick_Gloss: 0.1
-    - _Brick_Lift: 0.15
+    - _Brick_Lift: 0.0002
     - _Brick_Scale: 5.8
     - _Brick_Seed: 0
     - _Brick_Tone: 0.55
@@ -81,7 +81,7 @@ Material:
     - _Face_Grain_Seed: 0
     - _Face_Grain_Stretch: 2.58
     - _Joint_Amount: 1
-    - _Joint_Bump: -0.9
+    - _Joint_Bump: -0.0012
     - _Joint_Warp: 0
     - _Joint_Width_X: 0.055
     - _Joint_Width_Y: 0.09

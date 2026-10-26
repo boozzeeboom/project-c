@@ -78,7 +78,7 @@ namespace ProjectC.EditorTools
             bool containerExists = File.Exists(path);
 
             var filters = chunk.GetComponentsInChildren<MeshFilter>(true);
-            int done = 0, already = 0, skipped = 0, created = 0, updated = 0;
+            int done = 0, already = 0, skipped = 0, created = 0, updated = 0, colliders = 0;
             long verts = 0; int degBefore = 0, degAfter = 0;
             double maxDelta = 0, maxFrame = 0;
             var skips = new List<string>();
@@ -96,8 +96,9 @@ namespace ProjectC.EditorTools
                     var t = mf.transform;
                     var src = mf.sharedMesh;
                     if (src == null) { skipped++; continue; }
-                    if (t.GetComponent<SkinnedMeshRenderer>() != null || t.GetComponent<MeshCollider>() != null || t.childCount > 0)
-                    { skipped++; skips.Add(t.name + ": skinned/MeshCollider/children"); continue; }
+                    var mc = t.GetComponent<MeshCollider>();
+                    if (t.GetComponent<SkinnedMeshRenderer>() != null || t.childCount > 0)
+                    { skipped++; skips.Add(t.name + ": skinned/children"); continue; }
 
                     Matrix4x4 R = ChainToChunk(t, chunk, true);
                     Matrix4x4 P = ChainToChunk(t, chunk, false);
@@ -149,6 +150,40 @@ namespace ProjectC.EditorTools
                         var b = check.MultiplyPoint3x4(av[i]);
                         maxDelta = System.Math.Max(maxDelta, (a - b).magnitude);
                     }
+                    // Коллайдер на том же объекте (в городе это один объект — мостовая
+                    // PRIMUM_BASE_..._M_M_PAVING_BRUSCHATKA): его меш-ассет нигде больше не используется,
+                    // поэтому пересобираем его в том же кадре чанка тем же R — мировая геометрия 1:1.
+                    Mesh mcAsset = null;
+                    if (mc != null && mc.sharedMesh != null)
+                    {
+                        var cv = new List<Vector3>(); mc.sharedMesh.GetVertices(cv);
+                        if (cv.Count > 0)
+                        {
+                            var cdst = Object.Instantiate(mc.sharedMesh);
+                            string ckey = key + "_MC_YUP";
+                            while (!used.Add(ckey)) ckey += "_";
+                            cdst.name = ckey;
+                            var cnv = new Vector3[cv.Count];
+                            for (int i = 0; i < cv.Count; i++) cnv[i] = R.MultiplyPoint3x4(cv[i]);
+                            cdst.SetVertices(cnv);
+                            cdst.RecalculateBounds();
+                            if (existing.TryGetValue(ckey, out var cex)) { CopyMeshInto(cdst, cex); Object.DestroyImmediate(cdst); mcAsset = cex; EditorUtility.SetDirty(cex); updated++; }
+                            else
+                            {
+                                if (!containerExists) { AssetDatabase.CreateAsset(cdst, path); containerExists = true; }
+                                else AssetDatabase.AddObjectToAsset(cdst, path);
+                                mcAsset = cdst; created++;
+                            }
+                            var cav = new List<Vector3>(); mcAsset.GetVertices(cav);
+                            for (int i = 0; i < cv.Count; i++)
+                            {
+                                var a = R.MultiplyPoint3x4(cv[i]);
+                                var b = check.MultiplyPoint3x4(cav[i]);
+                                maxDelta = System.Math.Max(maxDelta, (a - b).magnitude);
+                            }
+                        }
+                    }
+
                     degAfter += Degenerate(asset);
                     verts += v.Count;
 
@@ -158,6 +193,13 @@ namespace ProjectC.EditorTools
                     t.localPosition = lp; t.localRotation = lr; t.localScale = ls;
                     PrefabUtility.RecordPrefabInstancePropertyModifications(mf);
                     PrefabUtility.RecordPrefabInstancePropertyModifications(t);
+                    if (mcAsset != null)
+                    {
+                        Undo.RecordObject(mc, "Y-up collider");
+                        mc.sharedMesh = mcAsset;
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(mc);
+                        colliders++;
+                    }
                     done++;
                 }
             }
@@ -171,6 +213,7 @@ namespace ProjectC.EditorTools
             rep.AppendLine("mesh filters        : " + filters.Length);
             rep.AppendLine("rebased now         : " + done + " (new sub-assets " + created + ", updated " + updated + ")");
             rep.AppendLine("already in frame    : " + already);
+            rep.AppendLine("mesh colliders      : " + colliders + " (меш коллайдера пересобран в том же кадре)");
             rep.AppendLine("skipped             : " + skipped);
             foreach (var s in skips) rep.AppendLine("    skip: " + s);
             rep.AppendLine("vertices rebased    : " + verts);

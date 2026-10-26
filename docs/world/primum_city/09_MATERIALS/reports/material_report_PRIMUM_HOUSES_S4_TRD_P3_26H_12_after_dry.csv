@@ -1,0 +1,24 @@
+source;kind;target;action;slots;renderers
+M_PC_Bronze;TARGET;M_PC_Bronze;already;193;193
+M_PC_Wood_Dark;TARGET;M_PC_Wood_Dark;already;120;120
+M_PC_Wood_Pine;TARGET;M_PC_Wood_Pine;already;119;119
+PM_LAMP_GLOW_WARM;TARGET;PM_LAMP_GLOW_WARM;already;116;116
+M_PC_IronRust_Lead;TARGET;M_PC_IronRust_Lead;already;81;81
+M_PC_Cobble_Granite;TARGET;M_PC_Cobble_Granite;already;16;16
+M_PC_Glass_Green;TARGET;M_PC_Glass_Green;already;3;3
+M_PC_Brick_Yellow;TARGET;M_PC_Brick_Yellow;already;1;1
+M_PC_Bronze_Brass;TARGET;M_PC_Bronze_Brass;already;1;1
+M_PC_Cobble;TARGET;M_PC_Cobble;already;1;1
+M_PC_Cobble_Beige;TARGET;M_PC_Cobble_Beige;already;1;1
+M_PC_Concrete_Limewash;TARGET;M_PC_Concrete_Limewash;already;1;1
+M_PC_Concrete_Rose;TARGET;M_PC_Concrete_Rose;already;1;1
+M_PC_Fabric;TARGET;M_PC_Fabric;already;1;1
+M_PC_Fabric_Bordeaux;TARGET;M_PC_Fabric_Bordeaux;already;1;1
+M_PC_Fabric_Cream;TARGET;M_PC_Fabric_Cream;already;1;1
+M_PC_Glass_Amber;TARGET;M_PC_Glass_Amber;already;1;1
+M_PC_Glass_Blue;TARGET;M_PC_Glass_Blue;already;1;1
+M_PC_Marble;TARGET;M_PC_Marble;already;1;1
+M_PC_Plate;OBJECT_RULE_M_M_DECK_STEEL;M_PC_Plate;already;1;1
+M_PC_Tiles;TARGET;M_PC_Tiles;already;1;1
+M_PC_Tiles_Bordeaux;TARGET;M_PC_Tiles_Bordeaux;already;1;1
+# [PRIMUM_HOUSES_S4_TRD_P3_26H] DRY-RUN: changed 0 / already 663 / unmapped 0 / total 663  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 416, изменено рендереров 0)

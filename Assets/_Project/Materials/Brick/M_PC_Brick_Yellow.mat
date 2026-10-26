@@ -38,7 +38,9 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Brick_Aspect: 2.77
+    - _Brick_Scale: 1.95
     m_Colors:
     - _Brick_Color: {r: 0.61960787, g: 0.3960784, b: 0.23921567, a: 1}
     - _Brick_Light_Color: {r: 0.78642535, g: 0.52277523, b: 0.33775762, a: 1}

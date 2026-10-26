@@ -1,0 +1,12 @@
+PRIMUM chunk Y-up rebase 1:1 — WorldRoot_0_0/PRIMUM/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H  (2026-10-25 20:26)
+mesh filters        : 373
+rebased now         : 373 (new sub-assets 373, updated 0)
+already in frame    : 0
+mesh colliders      : 0 (меш коллайдера пересобран в том же кадре)
+skipped             : 0
+vertices rebased    : 317990
+degenerate tangents : 90486 -> 0
+max frame error |P·L_new − I| : 1,79E-007
+max vertex delta (chunk space) : 3,10E-005 m
+asset               : Assets/_Project/Art/Models/Primum/Rebased/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H_YUP_meshes.asset
+VERDICT 1:1         : PASS

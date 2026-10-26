@@ -1,0 +1,66 @@
+PRIMUM per-chunk inventory (v2, no name-keyed cache)
+chunk;meshFilters;renderers;slots;fbxSlots;urpLitSlots;distinctMats
+ADMIN_DOOR_PREFABS;712;712;712;0;712;5
+ADMIN_ENTRANCE_PORTAL;8;8;12;12;12;4
+ADMIN_FOR_COLLIDER;2758;2758;5150;5150;5150;15
+PRIMUM_ADMIN_S0_ADM_P1_01H;769;769;1898;1898;1898;11
+PRIMUM_BASE_S0_CITY_P1_00H;6;6;6;0;0;6
+PRIMUM_HOUSES_S1_GLD_P1_25H;673;673;852;15;15;30
+PRIMUM_HOUSES_S2_TRD_P1_28H;412;412;630;0;0;22
+PRIMUM_HOUSES_S3_TRD-EN_P1_37H;107;107;107;0;0;15
+PRIMUM_HOUSES_S3_TRD-ES_P1_37H;581;581;610;1;1;19
+PRIMUM_HOUSES_S3_TRD_P2_26H;599;599;812;0;0;21
+PRIMUM_HOUSES_S4_TRD-EN_P2_34H;138;138;210;0;0;17
+PRIMUM_HOUSES_S4_TRD-ES_P2_34H;399;399;493;0;0;17
+PRIMUM_HOUSES_S4_TRD_P3_26H;416;416;663;0;0;22
+PRIMUM_HOUSES_S5_NE_P1_20H;231;231;295;0;0;19
+PRIMUM_HOUSES_S5_NE_P2_32H;686;686;864;0;0;19
+PRIMUM_HOUSES_S5_NE_P3_22H;224;224;424;0;0;17
+PRIMUM_HOUSES_S6_NQ_P1_29H;770;770;1056;0;0;17
+PRIMUM_HOUSES_S7_BIG_P1_02H;77;77;102;1;1;14
+PRIMUM_HOUSES_S7_SE_P1_46H;1437;1437;1803;0;0;18
+PRIMUM_HOUSES_S7_SE_P2_19H;285;285;377;0;0;14
+PRIMUM_HOUSES_S8_GW_P1_30H;192;192;226;0;0;19
+PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H;201;201;201;173;173;19
+PRIMUM_HOUSES_S9_RING_P1_22H;1122;1122;1342;0;0;27
+PRIMUM_HOUSES_S9_TRD-N_P1_28H;357;357;482;2;2;19
+PRIMUM_HOUSES_S9_TRD-S2_P1_45H;6388;6388;6600;0;0;33
+PRIMUM_HOUSES_S9_TRD-S_P1_16H;224;224;309;2;2;17
+
+--- PRIMUM_ADMIN_S0_ADM_P1_01H : renderers 769, slots 1898, urpLit 1898 ---
+material;slots;urpLitSlots;assetPath
+M_BRONZE;733;733;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+M_EMIT_LAMP;567;567;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+M_GLASS_GREEN;315;315;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+M_WOOD_DARK;174;174;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+M_GRANITE;52;52;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+M_MARBLE_WHITE;30;30;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+M_FABRIC_DEEP;22;22;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+M_FABRIC_GREEN;3;3;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+M_GLASS_CASE;1;1;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+No Name;1;1;Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_ADMIN_S0_ADM_P1_01H.fbx
+
+--- ADMIN_FOR_COLLIDER : renderers 2758, slots 5150, urpLit 5150 ---
+material;slots;urpLitSlots;assetPath
+M_BRONZE;1488;1488;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_WOOD_DARK;1268;1268;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_FABRIC_DEEP;663;663;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_MARBLE_WHITE;591;591;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_EMIT_LAMP;568;568;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_GLASS_GREEN;438;438;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_GRANITE;112;112;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_GLASS_CASE;10;10;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_FABRIC_GREEN;6;6;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+No Name;1;1;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_DECK_STEEL;1;1;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_PAVING_BRUSCHATKA;1;1;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_ROCK_DARK;1;1;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_SLATE;1;1;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_TIMBER_FRAME;1;1;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+
+--- ADMIN_ENTRANCE_PORTAL : renderers 8, slots 12, urpLit 12 ---
+material;slots;urpLitSlots;assetPath
+M_BRONZE;5;5;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_GLASS_GREEN;4;4;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_WOOD_DARK;2;2;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx
+M_GRANITE;1;1;Assets/_Project/Art/Models/Primum/TempCollider/ADMIN_FOR_COLLIDER.fbx

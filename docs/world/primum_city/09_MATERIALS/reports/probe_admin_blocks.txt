@@ -1,0 +1,24 @@
+--- ADMIN_FOR_COLLIDER ---
+  activeSelf=False activeInHierarchy=False layer=PRIMUM children=2783
+  meshRenderers=2758 enabled=2758 disabled=0 inactiveInHierarchy=2758 shadowOff=0
+  colliders=0 (mesh=0, box=0, other=0)
+  distinct materials=15
+  children names: ADM_BOOTH_BENCH ... ADMIN_FOR_COLLIDER_COLLIDER
+--- ADMIN_ENTRANCE_PORTAL ---
+  activeSelf=True activeInHierarchy=True layer=Default children=6
+  meshRenderers=8 enabled=8 disabled=0 inactiveInHierarchy=0 shadowOff=0
+  colliders=3 (mesh=2, box=1, other=0)
+  distinct materials=4
+  children names: ADM_DOOR_L ... ADM_DOOR_PORTAL_TRANSOM
+--- ADMIN_DOOR_PREFABS ---
+  activeSelf=True activeInHierarchy=True layer=Default children=133
+  meshRenderers=712 enabled=712 disabled=0 inactiveInHierarchy=0 shadowOff=0
+  colliders=266 (mesh=0, box=266, other=0)
+  distinct materials=5
+  children names: ADM_CONN_N_F1_A_LEAF_1.41x2.17_X ... ADM_WING_S_ENTRY_LEAF_1.95x2.17_X
+--- PRIMUM_ADMIN_S0_ADM_P1_01H ---
+  activeSelf=True activeInHierarchy=True layer=PRIMUM children=57
+  meshRenderers=769 enabled=769 disabled=0 inactiveInHierarchy=172 shadowOff=0
+  colliders=0 (mesh=0, box=0, other=0)
+  distinct materials=10
+  children names: DOOR_PARTS_UNASSIGNED ... ADM_WING_S_ENTRY_STEPS

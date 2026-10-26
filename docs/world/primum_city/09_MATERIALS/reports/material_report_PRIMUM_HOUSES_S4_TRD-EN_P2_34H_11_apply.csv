@@ -1,0 +1,20 @@
+source;kind;target;action;slots;renderers
+M_WOOD_DARK;VARIANT;M_PC_Wood_Dark;changed;79;79
+M_BRONZE;VARIANT_BASE;M_PC_Bronze;changed;74;74
+M_AWNING;VARIANT;M_PC_Fabric_Bordeaux;changed;2;2
+M_BRICK_YELLOW;VARIANT;M_PC_Brick_Yellow;changed;2;2
+M_LEAD;VARIANT;M_PC_IronRust_Lead;changed;2;2
+M_LIME_WASH;VARIANT;M_PC_Concrete_Limewash;changed;2;2
+M_PLASTER_ROSE;VARIANT;M_PC_Concrete_Rose;changed;2;2
+M_STONE_BEIGE;OBJECT_RULE_INT_M_STONE_BEIGE;M_PC_Concrete;changed;2;2
+M_TILE_TERRA;BASE;M_PC_Tiles;changed;2;2
+M_TIMBER_FRAME;VARIANT;M_PC_Wood_Pine;changed;2;2
+M_DECK_STEEL;BASE;M_PC_Plate;changed;1;1
+M_GRANITE;VARIANT;M_PC_Cobble_Granite;changed;1;1
+M_ROOF_BORDEAUX;PROJECT_LIT;M_PC_Tiles_Bordeaux;changed;1;1
+M_SIGN;VARIANT;M_PC_Wood_Dark;changed;1;1
+M_SLATE;BASE;M_PC_Cobble;changed;1;1
+M_WINDOW_FRAME;VARIANT;M_PC_Wood_Dark;changed;1;1
+M_WINDOW_GLASS;OBJECT_RULE_M_M_WINDOW_GLASS;M_PC_Glass_Green;changed;1;1
+PM_LAMP_GLOW_WARM;TARGET;PM_LAMP_GLOW_WARM;already;34;34
+# [PRIMUM_HOUSES_S4_TRD-EN_P2_34H] APPLY: changed 176 / already 34 / unmapped 0 / total 210  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 138, изменено рендереров 104)

@@ -1,0 +1,12 @@
+PRIMUM chunk Y-up rebase 1:1 — WorldRoot_0_0/PRIMUM/PRIMUM_BASE_S0_CITY_P1_00H  (2026-10-25 20:20)
+mesh filters        : 6
+rebased now         : 1 (new sub-assets 2, updated 0)
+already in frame    : 5
+mesh colliders      : 1 (меш коллайдера пересобран в том же кадре)
+skipped             : 0
+vertices rebased    : 13258
+degenerate tangents : 4280 -> 0
+max frame error |P·L_new − I| : 0,00E+000
+max vertex delta (chunk space) : 0,00E+000 m
+asset               : Assets/_Project/Art/Models/Primum/Rebased/PRIMUM_BASE_S0_CITY_P1_00H/PRIMUM_BASE_S0_CITY_P1_00H_YUP_meshes.asset
+VERDICT 1:1         : PASS

@@ -1,0 +1,17 @@
+source;kind;target;action;slots;renderers
+M_PC_Bronze;TARGET;M_PC_Bronze;already;128;128
+M_PC_Wood_Dark;TARGET;M_PC_Wood_Dark;already;128;128
+M_PC_Plate;TARGET;M_PC_Plate;already;56;56
+PM_LAMP_GLOW_WARM;TARGET;PM_LAMP_GLOW_WARM;already;48;48
+M_PC_Wood_Pine;TARGET;M_PC_Wood_Pine;already;24;24
+M_PC_Glass_Dark;TARGET;M_PC_Glass_Dark;already;19;19
+M_PC_Cobble;TARGET;M_PC_Cobble;already;3;3
+M_PC_Glass_Green;TARGET;M_PC_Glass_Green;already;3;3
+M_PC_Brick_Yellow;TARGET;M_PC_Brick_Yellow;already;2;2
+M_PC_Cobble_Granite;TARGET;M_PC_Cobble_Granite;already;2;2
+M_PC_Marble;TARGET;M_PC_Marble;already;2;2
+M_PC_Tiles;TARGET;M_PC_Tiles;already;2;2
+M_PC_Tiles_Bordeaux;TARGET;M_PC_Tiles_Bordeaux;already;2;2
+M_PC_Cobble_Beige;TARGET;M_PC_Cobble_Beige;already;1;1
+M_PC_Concrete;OBJECT_RULE_INT_M_STONE_BEIGE;M_PC_Concrete;already;1;1
+# [PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H] DRY-RUN: changed 0 / already 421 / unmapped 0 / total 421  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 373, изменено рендереров 0)

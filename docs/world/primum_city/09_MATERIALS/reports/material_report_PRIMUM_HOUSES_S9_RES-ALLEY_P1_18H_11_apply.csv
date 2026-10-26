@@ -1,0 +1,18 @@
+source;kind;target;action;slots;renderers
+M_BRONZE;VARIANT_BASE;M_PC_Bronze;changed;128;128
+M_WOOD_DARK;VARIANT;M_PC_Wood_Dark;changed;127;127
+M_DECK_STEEL;BASE;M_PC_Plate;changed;56;56
+M_TIMBER_FRAME;VARIANT;M_PC_Wood_Pine;changed;24;24
+M_WINDOW_GLASS;VARIANT;M_PC_Glass_Dark;changed;20;20
+M_BRICK_YELLOW;VARIANT;M_PC_Brick_Yellow;changed;2;2
+M_GLASS_GREEN;VARIANT;M_PC_Glass_Green;changed;2;2
+M_GRANITE;VARIANT;M_PC_Cobble_Granite;changed;2;2
+M_MARBLE_WHITE;BASE;M_PC_Marble;changed;2;2
+M_ROOF_BORDEAUX;PROJECT_LIT;M_PC_Tiles_Bordeaux;changed;2;2
+M_SLATE;BASE;M_PC_Cobble;changed;2;2
+M_STONE_BEIGE;OBJECT_RULE_INT_M_STONE_BEIGE;M_PC_Concrete;changed;2;2
+M_TILE_TERRA;BASE;M_PC_Tiles;changed;2;2
+M_PAVING_BRUSCHATKA;BASE;M_PC_Cobble;changed;1;1
+M_WINDOW_FRAME;VARIANT;M_PC_Wood_Dark;changed;1;1
+PM_LAMP_GLOW_WARM;TARGET;PM_LAMP_GLOW_WARM;already;48;48
+# [PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H] APPLY: changed 373 / already 48 / unmapped 0 / total 421  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 373, изменено рендереров 325)

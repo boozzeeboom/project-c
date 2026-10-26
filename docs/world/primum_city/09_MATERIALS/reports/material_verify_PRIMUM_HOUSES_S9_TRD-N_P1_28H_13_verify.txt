@@ -1,0 +1,14 @@
+PRIMUM materials verify — scope: WorldRoot_0_0/PRIMUM/PRIMUM_HOUSES_S9_TRD-N_P1_28H  (2026-10-25 20:25)
+renderers                          : 357
+slots                              : 482
+null slots                         : 0
+slots from model sub-materials     : 2   (DoD: 0)
+slots on runtime instances (.material): 0   (норма: 0)
+slots outside Assets/_Project/Materials: 2   (DoD: 0)
+slots on URP/Lit                   : 2   (DoD: 0)
+slots on non-ShaderGraph (кроме PM_LAMP_GLOW_WARM): 2
+distinct Material objects          : 19   (DoD: <= 60)
+names without row in table         : 0   (DoD: 0)
+remaining non-target names         : 1 / slots 2
+    left: No Name = 2   [GAP -> -]
+URP/Lit names: No Name

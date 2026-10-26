@@ -1,0 +1,8 @@
+source;kind;target;action;slots;renderers
+NorthAmerica_Rockies_SunlitRock;OBJECT_RULE_M_M_DECK_STEEL;M_PC_Plate;changed;1;1
+M_PC_Bronze;TARGET;M_PC_Bronze;already;1;1
+M_PC_Cobble;TARGET;M_PC_Cobble;already;1;1
+M_PC_Cobble_Granite;TARGET;M_PC_Cobble_Granite;already;1;1
+M_PC_Cobble_Rock;TARGET;M_PC_Cobble_Rock;already;1;1
+M_PC_Marble;TARGET;M_PC_Marble;already;1;1
+# [PRIMUM_BASE_S0_CITY_P1_00H] APPLY: changed 1 / already 5 / unmapped 0 / total 6  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 6, изменено рендереров 1)

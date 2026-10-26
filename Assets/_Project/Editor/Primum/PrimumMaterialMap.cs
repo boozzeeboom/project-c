@@ -48,7 +48,9 @@ namespace ProjectC.EditorTools
 
         private static readonly HashSet<string> ApplyKinds = new HashSet<string>
         {
-            "BASE", "VARIANT", "VARIANT_BASE", "PROJECT_LIT"
+            // DONE_REMAINDER — эмиссив: проход «Свет: emissive-материал» (362) ставит PM_LAMP_GLOW_WARM
+            // только частям узлов LAMPS; остальные слоты M_EMIT_LAMP в чанках добираются этим мапингом.
+            "BASE", "VARIANT", "VARIANT_BASE", "PROJECT_LIT", "DONE_REMAINDER"
         };
 
         private static readonly HashSet<string> ModelExtensions = new HashSet<string>
@@ -290,6 +292,11 @@ namespace ProjectC.EditorTools
             { "_M_M_WINDOW_GLASS", "M_PC_Glass_Green" },
             { "_M_M_TQ_STONE", "M_PC_Wood_Dark" },
             { "_M_M_TQ_BRICK_RED", "SMALL_M_PC_Brick" },
+            // Слот объекта DECK_STEEL в базовом чанке пришёл из FBX с чужим именем плейсхолдера
+            // (NorthAmerica_Rockies_SunlitRock — материал теppейна, строки в таблице нет).
+            // По имени объекта и строке таблицы M_DECK_STEEL -> M_PC_Plate. Добавлено агентом, требует
+            // подтверждения заказчиком (единственный слот в городе).
+            { "_M_M_DECK_STEEL", "M_PC_Plate" },
         };
 
         private static Dictionary<string, Material> ResolveObjectRules(List<string> errors)

@@ -1086,4 +1086,123 @@ Steel_v2 3 · Bark 3 · Lava 3 · Lava_animated 2 · Lantern 4 · Foliage 3 · F
 
 **Визуал, Play Mode, F8/F9 — `NOT RUN`** (за пользователем).
 
+---
+
+## Шаг 3. Раскатка Y-up + мапинга на все не-ADMIN чанки · 2026-10-25
+
+Шаг 3 §7.2 «весь город». Выполнено по стандарту пилота (шаги 2a–2s): на каждом чанке
+**`RebaseChunk` (388) → `Run(apply)` → `Run(dry)` = 0 изменений → `Verify`**, всё в одной сессии редактора,
+сцена не сохранялась (правило проекта: сохраняет только пользователь).
+
+### 3.1 Меши (меню 388)
+
+| | |
+|---|---|
+| чанков переведено в Y-up | **22** (20 домовых FBX + `PRIMUM_BASE_S0_CITY_P1_00H` + пилот `S9_TRD-S2`) |
+| mesh filters в этих чанках | 15 525 |
+| реально подменено | **15 352** (не подменено 173 — см. §3.5) |
+| вырожденные тангенсы → 0 (только 14 чанков батча 2) | **1 662 820** |
+| max vertex delta | ≤ **6.13·10⁻⁵ м** (`S6_NQ`, худший чанк); у 8 чанков ≤ 1·10⁻⁵ м |
+| VERDICT 1:1 | **PASS у всех 22**, `skipped 0` |
+| время на чанк | от 11.7 с (`S7_BIG`, 77 мешей) до **598 с** (`S7_SE_P1`, 1 437 мешей) |
+
+Меши — саб-ассеты `Assets/_Project/Art/Models/Primum/Rebased/<чанк>/<чанк>_YUP_meshes.asset`
+(`Art/*` в `.gitignore`; ссылки сцены на них живут только локально).
+
+Правка инструмента: `PrimumMeshRebase.RebaseChunk` — skip-условие сузилось до `skinned/children`
+(раньше пропускал всё, где есть `MeshCollider`); если на объекте есть `MeshCollider`, его меш
+пересобирается тем же преобразованием `R` в тот же контейнер как саб-ассет `<key>_MC_YUP` через `CopyMeshInto`
+(+`Undo.RecordObject(mc)`), в отчёт добавлена строка `mesh colliders : N`. Сработало один раз — на
+`PRIMUM_BASE_S0_CITY_P1_00H_M_M_PAVING_BRUSCHATKA` (MeshCollider с `Generated/PAVING_BRUSCHATKA_FIXED.asset`,
+единственный пользователь этого меша в сцене): `mesh colliders 1`, `rebased now 1 (new sub-assets 2)`,
+`already in frame 5`, **PASS**, Δ 0.
+
+### 3.2 Материалы (меню 384 / API `Run(chunk, apply, …)`)
+
+Ключ — **имя** текущего материала слота; цель ищется по имени в `Assets/_Project/Materials/**`
+(`archive*` исключены). Каждый чанк: `APPLY` → `DRY-RUN changed 0` → `Verify`.
+
+* `changed` по чанкам: от 295 (`S5_NE_P1`) до 1 428 (`S7_SE_P1`); `unmapped 0`, `target_missing 0`, `null 0` — везде.
+* `skip_DONE/HOLD/GAP`: 15 (`S1_GLD`, знаки гильдий `HOLD`), 228 (`S7_SE_P1`), 41 (`S9_RING`), 2 (`S9_TRD-N`),
+  1 (`S3_TRD-ES`), 8×`No Name` по городу.
+* В `ObjectRules` добавлена пятая строка (правило по имени объекта, только 1-слотовые рендереры, не двери):
+  `*_M_M_DECK_STEEL` → `M_PC_Plate`. Выведено агентом из фактического разбора слитых мешей;
+  **требует подтверждения заказчика** (§10.2).
+* Новый вид строки таблицы — `DONE_REMAINDER` (`ApplyKinds`): материал уже процедурный в кластерах
+  `LAMPS`, но вне их остаётся на `URP/Lit`; мапинг добирает остаток, не создавая цикла.
+
+### 3.3 Emissive: почему меню 362 не закрывает `M_EMIT_LAMP` целиком
+
+`PrimumLampLighting.ApplyGlowPass(true)` (меню 362): `назначено 0`, `уже стоял 1292`,
+`пропущено (ADMIN/дворцы) 1339`. Проход работает по узлам `LAMPS` и исключает
+`PRIMUM_ADMIN_S0_ADM_P1_01H`, `PRIMUM_HOUSES_S1_GLD_P1_25H` и `RES_SE_901/902/911`, поэтому
+слоты `M_EMIT_LAMP` вне lamp-кластеров остаются на `URP/Lit`. Решение — строка
+`M_EMIT_LAMP;…;PM_LAMP_GLOW_WARM;DONE_REMAINDER` в `material_map.csv` и прогон мапинга по чанкам,
+где такие слоты остались (`15_emit_apply` → `16_emit_after_dry`).
+
+| Чанк | `M_EMIT_LAMP` было | стало | отчёт |
+|---|---|---|---|
+| `PRIMUM_HOUSES_S7_SE_P1_46H` | 228 | **0** | `…_15_emit_apply.csv`, `…_16_emit_after_dry.csv` (changed 0) |
+| `PRIMUM_HOUSES_S9_RING_P1_22H` | 41 | **0** | там же |
+| `PRIMUM_HOUSES_S9_TRD-S_P1_16H` | 2 | 2 | прогон прерван таймаутом клиента |
+| `PRIMUM_HOUSES_S9_TRD-N_P1_28H` | 2 | 2 | там же |
+| `PRIMUM_HOUSES_S3_TRD-ES_P1_37H` | 1 | 1 | там же |
+
+### 3.4 Замер города (весь `WorldRoot_0_0/PRIMUM`)
+
+| Метрика | старт Э3.1 | `14_city_after_chunks` (21:09) | `17_city_final` (21:13) | DoD |
+|---|---|---|---|---|
+| рендереров / слотов | 19 944 / 26 456 | 19 944 / 26 456 | 19 944 / 26 456 | — |
+| слотов из саб-материалов FBX | 24 378 | **7 350** | **7 081** | 0 |
+| слотов на `URP/Lit` | 25 164 | **8 062** | **7 793** | 0 |
+| различных `Material` | 444 | **92** | **90** | ≤ 60 |
+| имён без строки в таблице | 1 | **0** | **0** | 0 |
+| слотов на runtime `.material` | 0 | 0 | 0 | 0 |
+
+Остаток целиком объясним и сосредоточен в ADMIN (см. `reports/primum_per_chunk_inventory.txt`):
+`ADMIN_FOR_COLLIDER` 5 150, `PRIMUM_ADMIN_S0_ADM_P1_01H` 1 898, `ADMIN_DOOR_PREFABS` 712 (двери,
+этап 5), `ADMIN_ENTRANCE_PORTAL` 12; плюс `S1_GLD` 15 (`HOLD`-знаки гильдий), `No Name` 8,
+`S3_TRD-ES` 1, `S7_BIG` 1, `S9_TRD-N` 2, `S9_TRD-S` 2. Итого вне ADMIN — 29 слотов из `GAP`/`HOLD`.
+
+### 3.5 Регресс `S9_RES-ALLEY`: чанк откатился после 21:13
+
+По отчёту `material_verify_PRIMUM_14_city_after_chunks` (21:09) город был на 7 350 слотах FBX.
+Замер 26.10 показывает **173 слота FBX вне ADMIN** — все в `PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H`:
+
+```
+chunk mesh state: PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H
+  meshFilters = 201   rebased/ = 28   fbx = 173   (renderers 201, inactive 0)
+  материалы: M_WOOD_DARK 112, M_TIMBER_FRAME 44, M_STONE_BEIGE 12, M_BRONZE 3, M_EMIT_LAMP 2
+```
+
+Собственный отчёт чанка (`mesh_rebase_chunk_…_RES-ALLEY….txt`, 20:26) записал **373** mesh filters,
+373 подмены и VERDICT PASS, а `…_13_verify.txt` — 0 слотов FBX. Сейчас в чанке 201 объект:
+**173 из них вернулись на FBX-меши и FBX-материалы, ещё 172 объекта в чанке отсутствуют** (373 → 201).
+Причина не установлена; единственный правдоподобный механизм — Undo, откативший часть группы
+после 21:13 (сцена не сохранялась ни разу, диск не при чём).
+
+**Следствие: чанк нужно провести заново** (388 → 384 → dry → 385) и сверить число mesh filters с
+373 из старого отчёта, чтобы понять, потеряны объекты или старое число было завышено.
+
+### 3.6 Что зафиксировано в инструментах
+
+| Файл | Правка |
+|---|---|
+| `Editor/Primum/PrimumMaterialMap.cs` | `ApplyKinds` += `DONE_REMAINDER`; `ObjectRules` += `_M_M_DECK_STEEL` → `M_PC_Plate` |
+| `Editor/Primum/PrimumMeshRebase.cs` | пересборка `MeshCollider`-мешей в кадре чанка (саб-ассет `<key>_MC_YUP`), строка `mesh colliders` в отчёте |
+| `material_map.csv` | `M_EMIT_LAMP`: `DONE` → `DONE_REMAINDER` + пояснение |
+| пресеты | `M_PC_Brick_Yellow` (`_Brick_Aspect` 2.77, `_Brick_Scale` 1.95), `M_PC_Plate` (`_Plate_Scale` 11.16 → 1.9) — приведены к метрам |
+
+### 3.7 Ограничения прогона
+
+* `execute_code` обрывает клиентский ответ (~40–60 с), сама работа в редакторе продолжается;
+  после таймаута результат читается **только по отчётам на диске**. `execute_command` ограничен 120 с.
+* `EditorApplication.delayedCall` в этой сборке нет → очередь чанков ставилась через
+  `EditorApplication.update += tick`, один чанк за тик, журнал `reports/pipeline_batch2_log.txt`.
+* Время чанка растёт почти линейно от числа мешей и пересборки мешей; на крупных чанках держать в
+  голове лимит таймаута и не ставить больше одного чанка в один вызов.
+
+**Визуал раскатанных чанков, рельеф в метрах, Play Mode, F8/F9 — `NOT RUN`** (за пользователем).
+**Сцена не сохранялась.**
+
 

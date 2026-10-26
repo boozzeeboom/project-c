@@ -1,0 +1,11 @@
+PRIMUM chunk Y-up rebase 1:1 — WorldRoot_0_0/PRIMUM/PRIMUM_HOUSES_S7_BIG_P1_02H  (2026-10-25 20:14)
+mesh filters        : 77
+rebased now         : 77 (new sub-assets 77, updated 0)
+already in frame    : 0
+skipped             : 0
+vertices rebased    : 53166
+degenerate tangents : 16536 -> 0
+max frame error |P·L_new − I| : 1,79E-007
+max vertex delta (chunk space) : 3,15E-005 m
+asset               : Assets/_Project/Art/Models/Primum/Rebased/PRIMUM_HOUSES_S7_BIG_P1_02H/PRIMUM_HOUSES_S7_BIG_P1_02H_YUP_meshes.asset
+VERDICT 1:1         : PASS

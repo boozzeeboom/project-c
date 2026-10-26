@@ -1,0 +1,18 @@
+source;kind;target;action;slots;renderers
+M_WOOD_DARK;VARIANT;M_PC_Wood_Dark;changed;86;86
+M_AWNING;VARIANT;M_PC_Fabric_Bordeaux;changed;2;2
+M_BRICK_YELLOW;VARIANT;M_PC_Brick_Yellow;changed;2;2
+M_LIME_WASH;VARIANT;M_PC_Concrete_Limewash;changed;2;2
+M_PLASTER_ROSE;VARIANT;M_PC_Concrete_Rose;changed;2;2
+M_STONE_BEIGE;OBJECT_RULE_INT_M_STONE_BEIGE;M_PC_Concrete;changed;2;2
+M_TIMBER_FRAME;VARIANT;M_PC_Wood_Pine;changed;2;2
+M_BRONZE;VARIANT_BASE;M_PC_Bronze;changed;1;1
+M_DECK_STEEL;BASE;M_PC_Plate;changed;1;1
+M_LEAD;VARIANT;M_PC_IronRust_Lead;changed;1;1
+M_ROOF_BORDEAUX;PROJECT_LIT;M_PC_Tiles_Bordeaux;changed;1;1
+M_SIGN;VARIANT;M_PC_Wood_Dark;changed;1;1
+M_SLATE;BASE;M_PC_Cobble;changed;1;1
+M_TILE_TERRA;BASE;M_PC_Tiles;changed;1;1
+M_WINDOW_FRAME;VARIANT;M_PC_Wood_Dark;changed;1;1
+M_WINDOW_GLASS;OBJECT_RULE_M_M_WINDOW_GLASS;M_PC_Glass_Green;changed;1;1
+# [PRIMUM_HOUSES_S3_TRD-EN_P1_37H] APPLY: changed 107 / already 0 / unmapped 0 / total 107  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 107, изменено рендереров 107)

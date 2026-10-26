@@ -75,7 +75,7 @@ M_TQ_PLANT;85;1;#446B38;Foliage;M_PC_Foliage;BASE;растение
 G_WARM;2;1;#F2CC8C;Lantern;M_PC_Lantern;BASE;тёплое стекло фонаря (эмиссив)
 G_COOL;2;1;#A5CCE5;Lantern;M_PC_Lantern_Cool;VARIANT;холодное стекло фонаря
 G_CLEAR;2;1;#BFD1D8;Glass;M_PC_Glass;BASE;прозрачное стекло фонаря
-M_EMIT_LAMP;1404;4;#D8D88C;Emissive;PM_LAMP_GLOW_WARM;DONE;эмиссив уже есть — добить остаток меню «Свет: emissive-материал светящихся частей» (362)
+M_EMIT_LAMP;1404;4;#D8D88C;Emissive;PM_LAMP_GLOW_WARM;DONE_REMAINDER;эмиссив: проход 362 ставит материал только частям узлов LAMPS (уже 1292); остаток вне кластеров добирается этим мапингом
 PM_LAMP_GLOW_WARM;1292;1;HDR;Emissive;PM_LAMP_GLOW_WARM;DONE;уже процедурный (URP Unlit HDR) — не трогать
 M_FABRIC_DEEP;685;2;#240B0E;Fabric;M_PC_Fabric;BASE;крупнейший лот ткани — пресет M_PC_Fabric (тёмно-красный)
 M_TQ_FABRIC;149;1;#B24C42;Fabric;M_PC_Fabric;BASE;ткань, базовая палитра

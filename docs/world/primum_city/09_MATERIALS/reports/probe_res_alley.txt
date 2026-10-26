@@ -1,0 +1,24 @@
+chunk object: PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H  activeSelf=True
+MeshFilter(all)=201  MeshRenderer(all)=201
+children count=219
+MeshFilter without Renderer = 0
+material hist:
+  M_WOOD_DARK = 112   [Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H.fbx]
+  M_TIMBER_FRAME = 44   [Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H.fbx]
+  M_STONE_BEIGE = 12   [Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H.fbx]
+  M_BRONZE = 3   [Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H.fbx]
+  M_PC_Wood_Dark = 3   [Assets/_Project/Materials/Wood/M_PC_Wood_Dark.mat]
+  M_PC_Glass_Green = 3   [Assets/_Project/Materials/Glass/EMPTY_COLOR/M_PC_Glass_Green.mat]
+  M_PC_Cobble = 3   [Assets/_Project/Materials/Cobble/M_PC_Cobble.mat]
+  M_PC_Wood_Pine = 2   [Assets/_Project/Materials/Wood/M_PC_Wood_Pine.mat]
+  M_PC_Tiles = 2   [Assets/_Project/Materials/Tiles/M_PC_Tiles.mat]
+  M_PC_Brick_Yellow = 2   [Assets/_Project/Materials/Brick/M_PC_Brick_Yellow.mat]
+  M_PC_Marble = 2   [Assets/_Project/Materials/Marble/M_PC_Marble.mat]
+  M_PC_Cobble_Granite = 2   [Assets/_Project/Materials/Cobble/M_PC_Cobble_Granite.mat]
+  M_EMIT_LAMP = 2   [Assets/_Project/Art/Models/Primum/Chunks/PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H.fbx]
+  M_PC_Plate = 2   [Assets/_Project/Materials/Plate/M_PC_Plate.mat]
+  M_PC_Bronze = 2   [Assets/_Project/Materials/Bronze/M_PC_Bronze.mat]
+  M_PC_Tiles_Bordeaux = 2   [Assets/_Project/Materials/Tiles/M_PC_Tiles_Bordeaux.mat]
+  M_PC_Glass_Dark = 1   [Assets/_Project/Materials/Glass/EMPTY_COLOR/M_PC_Glass_Dark.mat]
+  M_PC_Cobble_Beige = 1   [Assets/_Project/Materials/Cobble/M_PC_Cobble_Beige.mat]
+  M_PC_Concrete = 1   [Assets/_Project/Materials/Concrete/M_PC_Concrete.mat]

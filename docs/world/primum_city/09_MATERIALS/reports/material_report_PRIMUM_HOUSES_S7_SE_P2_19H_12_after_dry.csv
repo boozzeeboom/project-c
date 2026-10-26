@@ -1,0 +1,16 @@
+source;kind;target;action;slots;renderers
+M_PC_Bronze;TARGET;M_PC_Bronze;already;192;192
+M_PC_Wood_Dark;TARGET;M_PC_Wood_Dark;already;103;103
+M_PC_Glass_Dark;TARGET;M_PC_Glass_Dark;already;35;35
+M_PC_IronRust_Lead;TARGET;M_PC_IronRust_Lead;already;30;30
+M_PC_Glass_Green;TARGET;M_PC_Glass_Green;already;4;4
+M_PC_Brick_Yellow;TARGET;M_PC_Brick_Yellow;already;2;2
+M_PC_Cobble_Granite;TARGET;M_PC_Cobble_Granite;already;2;2
+M_PC_Concrete_Limewash;TARGET;M_PC_Concrete_Limewash;already;2;2
+M_PC_Plate;TARGET;M_PC_Plate;already;2;2
+M_PC_Cobble;TARGET;M_PC_Cobble;already;1;1
+M_PC_Cobble_Beige;TARGET;M_PC_Cobble_Beige;already;1;1
+M_PC_Concrete;OBJECT_RULE_INT_M_STONE_BEIGE;M_PC_Concrete;already;1;1
+M_PC_Tiles;TARGET;M_PC_Tiles;already;1;1
+M_PC_Tiles_Bordeaux;TARGET;M_PC_Tiles_Bordeaux;already;1;1
+# [PRIMUM_HOUSES_S7_SE_P2_19H] DRY-RUN: changed 0 / already 377 / unmapped 0 / total 377  (skip_doors 0, skip_DONE/HOLD/GAP 0, null 0, target_missing 0; renderers 285, изменено рендереров 0)

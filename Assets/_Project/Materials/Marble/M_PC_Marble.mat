@@ -81,9 +81,9 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _Smoothness: 0.88
-    - _Vein_Amount: 0.9
-    - _Vein_Bump: -0.006
-    - _Vein_Scale: 30.83
+    - _Vein_Amount: 0.64
+    - _Vein_Bump: -0.001
+    - _Vein_Scale: 3.4
     - _Vein_Seed: 0
     - _Vein_Smoothness: 0.6
     - _Vein_Warp: 0.35

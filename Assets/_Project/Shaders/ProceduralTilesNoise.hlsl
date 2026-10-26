@@ -101,6 +101,28 @@ float PCTile_Band(float3 p)
     return 1.0 - smoothstep(PCTILE_BAND_LO, PCTILE_BAND_HI, PCTile_Footprint(p));
 }
 
+// ── Полоса для ДИСКРЕТНЫХ слоёв раскладки (26.10, шаг 2ab) ────────────────────
+// Тон и арка — не шум, а СТУПЕНЬ: величина постоянна внутри тайла и скачком меняется
+// на его границе (у арки на кромке ещё и бесконечный наклон sqrt). Гасить ступень по
+// общим порогам 0.22/0.55 нельзя: для ступени «не разрешается» наступает гораздо
+// раньше, чем для полосатого шума — уже при 5–6 пикселях на тайл мозаика читается как
+// мелкое зерно, мерцающее при движении камеры и усиливающееся при отдалении.
+// Замер (02_IMPLEMENTATION_LOG, шаг 2ab): при тайле 294x230 мм разброс тона между
+// соседними пикселями растёт до максимума на 30–40 м (std 0.19–0.22 при полосе 1.0),
+// то есть ровно там, где старая полоса ещё ничего не гасила. Своё окно: гашение
+// начинается, когда тайл занимает ~10 пикселей (0.10 по сетке = 16.8 м), и
+// заканчивается на ~4 (0.24 = 40.3 м). Арка в рельефе живёт ровно там же: дальше
+// её кромка занимает меньше пикселя и даёт в Normal From Height насыщенный по
+// maxTilt перепад в случайном пикселе каждого тайла.
+// Органические слои (зерно, поры, кракле, пятна) остаются на PCTile_Band — они и так
+// гаснут каждая на своём масштабе.
+#define PCTILE_CELL_BAND_LO 0.10
+#define PCTILE_CELL_BAND_HI 0.24
+float PCTile_CellBand(float3 gridSpace)
+{
+    return 1.0 - smoothstep(PCTILE_CELL_BAND_LO, PCTILE_CELL_BAND_HI, length(gridSpace));
+}
+
 float PCTile_Fbm3(float3 p, float detail)
 {
     // октава мельче пикселя плавно уходит в своё среднее (0.5)
@@ -305,9 +327,10 @@ void ProceduralTilesTone_float(
     float2 cell = floor(q);
     if (PCTile_Covered(f, RowOffset, TileTail) > 0.5)
         cell = floor(float2(q.x + max(0.0, RowOffset), q.y + 1.0));
-    // тон постоянен внутри тайла и скачет на его границе: мельче пикселя → среднее 0.5
+    // тон постоянен внутри тайла и скачет на его границе. Порог — по РАЗРЕШЕНИЮ тайла
+    // (PCTile_CellBand), а не общий: ступень гаснет в среднее 0.5 раньше полосатого шума.
     TileTone = lerp(0.5, saturate(PCTile_Hash13(float3(cell, TileSeed + 11.0))),
-                    PCTile_Band(PCTile_GridSpace(ObjectPos, TileScale, TileAspect)));
+                    PCTile_CellBand(PCTile_GridSpace(ObjectPos, TileScale, TileAspect)));
 }
 
 // ── Поперечная арка тайла ────────────────────────────────────────────────────
@@ -326,8 +349,10 @@ void ProceduralTilesCrown_float(
     float cov = PCTile_Covered(f, RowOffset, TileTail);
     float fx = lerp(f.x, PCTile_UpperX(f, RowOffset), cov);
     // среднее арки по тайлу = π/4 ≈ 0.7854: мельче пикселя арка даёт средний подъём,
-    // а не случайный наклон в каждом пикселе
-    TileCrown = lerp(0.7854, PCTile_Arc(fx), PCTile_Band(PCTile_GridSpace(ObjectPos, TileScale, TileAspect)));
+    // а не случайный наклон в каждом пикселе. Порог — по разрешению тайла: у кромки
+    // наклон sqrt бесконечен, поэтому при 5 и менее пикселях на тайл кромка всё равно
+    // выбирает maxTilt и даёт «зерно» в рельефе — гасить надо раньше общего порога.
+    TileCrown = lerp(0.7854, PCTile_Arc(fx), PCTile_CellBand(PCTile_GridSpace(ObjectPos, TileScale, TileAspect)));
 }
 
 // ── Зерно ────────────────────────────────────────────────────────────────────

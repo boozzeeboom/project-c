@@ -36,15 +36,34 @@ float PCSteel_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass/Iron) ─────────────
+// Ячейки Worley и верхние октавы fbm на дистанции мельче пикселя — в рельефе это случайный
+// наклон в каждом блоке 2×2 («шум при любом бампе»). Слой с периодом ≤ ~1.8 пикс сводится
+// к среднему, ≥ ~4.5 пикс — отдаётся целиком. Пороги = PCCobble_Band (эталон).
+float PCSteel_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCSTEEL_BAND_LO 0.22
+#define PCSTEEL_BAND_HI 0.55
+float PCSteel_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCSTEEL_BAND_LO, PCSTEEL_BAND_HI, PCSteel_Footprint(p));
+}
+
 float PCSteel_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCSteel_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCSteel_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCSTEEL_BAND_LO, PCSTEEL_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCSteel_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -90,10 +109,12 @@ void ProceduralSteelNoise_float(
     p += w * Warp;
 
     float f = PCSteel_Fbm3(p, Detail);
-    float v = PCSteel_Voronoi3(p * max(0.1, Cell));
+    float3 pc = p * max(0.1, Cell);
+    float v = PCSteel_Voronoi3(pc);
 
     // fbm as the main pattern, cells add irregular breakup.
-    Noise = saturate(lerp(f, v, 0.30));
+    // Полоса считается по координатам ячеек — это самый частый слой.
+    Noise = saturate(lerp(0.5, lerp(f, v, 0.30), PCSteel_Band(pc)));
 }
 
 void ProceduralSteelNoise_half(

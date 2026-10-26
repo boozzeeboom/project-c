@@ -1,0 +1,114 @@
+Band-pass batch over the remaining procedural families
+=======================================================
+Project : ProjectC_client
+Engine  : Unity 6000.5.2f1 / URP, Shader Graph 17.5.0
+Date    : 2026-10-26
+Step    : 2u  (follows 2s Concrete, 2t Marble + IronRust)
+
+THRESHOLDS
+----------
+  <P>_BAND_LO = 0.22    <P>_BAND_HI = 0.55      periods per pixel
+  Reference: the user's own PCCobble_Band node (accepted project standard).
+  Meaning  : full detail while the on-screen period is >= ~4.5 px;
+             fades to the layer mean by ~1.8 px period.
+  Not touched: Wood 0.08/0.25, Glass 0.08/0.25 (stricter, already accepted),
+               Bronze (ProceduralBronzeNoise.hlsl is a frozen reference),
+               Fabric_v2 (ProceduralFabricNoise.hlsl already has PCFab_Footprint).
+
+FILES CHANGED (13 HLSL, band prefix ->)
+----------------------------------------
+  ProceduralMarbleVeinNoise.hlsl     PCMar_Fade     (name PCMar_Band already used by
+                                                     the vein-edge fwidth softener)
+  ProceduralIronNoise.hlsl           PCIron_Band
+  ProceduralPlateNoise.hlsl          PCPlate_Band
+  ProceduralBrickNoise.hlsl          PCBrick_Band
+  ProceduralTilesNoise.hlsl          PCTile_Band
+  ProceduralPlasticNoise.hlsl        PCPlast_Band
+  ProceduralParquetNoise.hlsl        PCParq_Band
+  ProceduralSteelNoise.hlsl          PCSteel_Band
+  ProceduralBarkNoise.hlsl           PCBark_Band
+  ProceduralLavaNoise.hlsl           PCLava_Band
+  ProceduralLanternNoise.hlsl        PCLant_Band
+  ProceduralFoliageNoise.hlsl        PCFol_Band
+  ProceduralFabricWeaveNoise.hlsl    PCFabW_Band
+
+WHAT EACH FILE GOT
+------------------
+  1. <P>_Footprint / <P>_Band from the SAME coordinates the noise receives
+     (scale, stretch, rotation, octave multiplier) - never the raw ObjectPos.
+  2. Per-octave falloff inside <P>_Fbm3: only the unresolvable octave fades,
+     and the sum is pulled toward 0.5 (the noise mean).
+  3. Ridges 1-|2s-1| -> sqrt(x*x + k) - sqrt(k) to remove the derivative sign
+     flip at the crest: Plate, Plastic, Bark, FabricWeave, Foliage (k = 1e-4
+     there, because rounding with k = 0.0025 would erase a 0.02-wide twig).
+  4. Grid families band in pre-row-shift space (PCPlate_GridSpace,
+     PCBrick_GridSpace, PCTile_GridSpace, PCParq_CellSpace, PCParq_PlaneSpace):
+     a row offset puts a derivative jump at every row boundary.
+
+FADE TARGETS (fade to 0 = thin lines/dots, 0.5 = continuous field, coverage =
+emissive layers, which must not darken with distance)
+------------------
+  thin -> 0     : seams, rivets, pores, cracks, crazing, scratches, leaf veins,
+                  twigs, pilling, flow lines, mortar/joint lines
+  field -> 0.5  : plate/brick/tile tone, patina, blotches, rust, fbm patches,
+                  leaf tone, slub/fuzz/blotch, steel noise, heat, skin, grime,
+                  scratch and snag ridges
+  coverage      : Lava fissures + flow (~2*W), Lantern pane (~2*W)
+  measured      : Tile crown pi/4 = 0.7854 | Plastic grain 0.225 |
+                  Lantern core 0.576 -> 0.58 | Foliage leaf mask 0.45 |
+                  FabricWeave pilling 0.0096 -> 0
+  special case  : FabricWeave SnagA/B/C fade to 0.5, NOT to 0 - in PCFabW_Ridge
+                  the value 0 is the crest, i.e. "a snag is present"; fading to
+                  0 would smear a scratch across the whole cloth at distance.
+
+NUMERIC MEASUREMENT OF LAYER MEANS
+----------------------------------
+  Measured by porting the exact layer code to C# and averaging:
+    Plastic grain plateau 1-smoothstep(0.10,0.62,WorleyF1)   mean 0.225
+    Plastic flow lines    1-smoothstep(0,0.06,F2-F1)         mean 0.113
+    Lantern core          1-2.2*abs(2*fbm-1)                 mean 0.576
+    FabricWeave pilling   at PillingScale 1                   mean 0.0096
+    Foliage leaf mask     flattened domain (= a plane, because p_d.n = h*Flatten):
+        LeafEdge 0.15 / 0.30 / 0.50 / 0.75 -> 0.5459 / 0.4480 / 0.3327 / 0.2268
+        chosen constant: 0.45 (middle; distant crowns neither lighten nor darken)
+  Gotcha recorded: Unity's Mathf.SmoothStep(from,to,t) is an INTERPOLATOR that
+  returns a value between from and to; it is NOT HLSL smoothstep. A first
+  measurement pass built on it returned meaningless means (leaf 0.51-0.61,
+  pilling 0.777). HLSL smoothstep must be ported as
+  t = clamp((x-a)/(b-a),0,1); return t*t*(3-2*t).
+
+VERIFICATION (agent-side, editor)
+---------------------------------
+  For each changed HLSL guid: every .shadergraph whose text contains that guid
+  was force-reimported (ForceUpdate | ForceSynchronousImport), every material
+  on the resulting shader was drawn on a quad in an EditorPreviewScene through
+  a 64x64 RenderTexture, then ShaderUtil.ShaderHasError and
+  ShaderUtil.GetShaderMessages were read.
+
+    Marble        3 materials
+    IronRust      4
+    Plate         3
+    Brick         5
+    Tiles         9
+    Plastic       3
+    Parquet       3
+    Steel_v2      3   (Shader Graphs/Steel_v2)
+    Bark          3
+    Lava          3
+    Lava_animated 2
+    Lantern       4
+    Foliage       3
+    Fabric        7   (Fabric.shadergraph -> ProceduralFabricWeaveNoise.hlsl)
+    ---
+    graphs=14  materials=55  failing=0
+
+  C# : check_compile_errors -> "No compile errors".
+  Console: no shader errors. The only entries matching "shader" are
+  "Build asset version error ... SourceAssetDB has modification time ..." -
+  the asset database noticing the on-disk edit before the forced import.
+  That is not a compile error and it cleared after the forced import.
+
+NOT RUN (user-side)
+-------------------
+  Visual acceptance of every banded family, Play Mode, F8/F9 stability.
+  No material preset (.mat) was modified; no scene was saved.

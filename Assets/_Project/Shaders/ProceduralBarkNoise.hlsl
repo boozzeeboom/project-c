@@ -64,15 +64,34 @@ float PCBark_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass/Iron) ─────────────
+// Пиксель сцены ≈ 1.37 мм × дистанция: на дальнем плане борозда/чешуйка/разрыв мельче пикселя,
+// и в рельефе это случайный наклон в каждом блоке 2×2 («шум при любом бампе»). Слой с периодом
+// ≤ ~1.8 пикс сводится к среднему, ≥ ~4.5 пикс — отдаётся целиком (пороги PCCobble_Band).
+float PCBark_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCBARK_BAND_LO 0.22
+#define PCBARK_BAND_HI 0.55
+float PCBark_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCBARK_BAND_LO, PCBARK_BAND_HI, PCBark_Footprint(p));
+}
+
 float PCBark_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCBark_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCBark_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCBARK_BAND_LO, PCBARK_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCBark_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -89,9 +108,14 @@ float PCBark_Groove(float s)
 
 // Обратная величина: 1 ровно на «линии» fbm, 0 в стороне. Тонкие гребни —
 // из них собирается чешуйчатость коры (ProceduralBarkSkinDetail).
+// Скруглённый гребень: |x| даёт излом наклона на гребне — в рельефе это смена знака
+// нормали в одном пикселе и мерцающая линия; sqrt(x²+k) — тот же штрих, но гладкий.
 float PCBark_Ridge(float s)
 {
-    return 1.0 - abs(s * 2.0 - 1.0);
+    const float k = 0.0025;
+    float x = s * 2.0 - 1.0;
+    float a = sqrt(x * x + k) - sqrt(k);
+    return 1.0 - a / (sqrt(1.0 + k) - sqrt(k));
 }
 
 // ── Борозды вдоль ствола ─────────────────────────────────────────────────────
@@ -116,7 +140,8 @@ float PCBark_Flutes(float3 ObjectPos, float FurrowScale, float FurrowStretch, fl
     float w = max(0.004, FurrowWidth);
     float crack = saturate(1.0 - smoothstep(0.0, w, d));
     float opened = smoothstep(0.28, 0.78, PCBark_Fbm3(p * 0.30 + 7.7, 2.0));
-    return saturate(crack * lerp(0.40, 1.0, opened));
+    // борозда мельче пикселя — тонкая линия, её среднее ≈ 0
+    return saturate(crack * lerp(0.40, 1.0, opened)) * PCBark_Band(p);
 }
 
 // ── Шкурка ───────────────────────────────────────────────────────────────────
@@ -129,7 +154,7 @@ float PCBark_Skin(float3 ObjectPos, float SkinScale, float SkinStretch, float Sk
 {
     float3 p = ObjectPos * max(0.001, SkinScale) + SkinSeed;
     p.y /= max(0.05, SkinStretch);
-    return saturate(PCBark_Fbm3(p, max(1.1, SkinDetail)));
+    return lerp(0.5, saturate(PCBark_Fbm3(p, max(1.1, SkinDetail))), PCBark_Band(p));
 }
 
 // ── Чешуйчатость ─────────────────────────────────────────────────────────────
@@ -143,7 +168,8 @@ float PCBark_SkinDetail(float3 ObjectPos, float SkinScale, float SkinStretch, fl
 {
     float3 p = ObjectPos * max(0.001, SkinScale) + SkinSeed;
     p.y /= max(0.05, SkinStretch);
-    return saturate(PCBark_Ridge(PCBark_Fbm3(p, 2.4)));
+    // среднее гребня = 0.5 — чешуйчатость плавно исчезает на дистанции
+    return lerp(0.5, saturate(PCBark_Ridge(PCBark_Fbm3(p, 2.4))), PCBark_Band(p));
 }
 
 // ── Короткие поперечные разрывы ──────────────────────────────────────────────
@@ -159,7 +185,8 @@ float PCBark_Breaks(float3 ObjectPos, float BreakScale, float BreakStretch, floa
     float w = max(0.004, BreakWidth);
     float crack = saturate(1.0 - smoothstep(0.0, w, d));
     float patch = smoothstep(0.34, 0.80, PCBark_Fbm3(p * 0.5 + 4.3, 2.0));
-    return crack * patch;
+    // разрыв мельче пикселя — тонкая линия, её среднее ≈ 0
+    return crack * patch * PCBark_Band(p);
 }
 
 // ── Пятно (общий примитив) ───────────────────────────────────────────────────
@@ -171,7 +198,7 @@ float PCBark_Patch(float3 ObjectPos, float PatchScale, float PatchStretch, float
 {
     float3 p = ObjectPos * max(0.001, PatchScale) + PatchSeed;
     p.y /= max(0.05, PatchStretch);
-    return saturate(PCBark_Fbm3(p, 2.0));
+    return lerp(0.5, saturate(PCBark_Fbm3(p, 2.0)), PCBark_Band(p));
 }
 
 void ProceduralBarkFlutes_float(

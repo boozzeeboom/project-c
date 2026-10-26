@@ -75,15 +75,35 @@ float PCPlate_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass/Iron) ─────────────
+// Размер пикселя в периодах уже масштабированной координаты узора. Пиксель сцены ≈ 1.37 мм × дистанция,
+// поэтому на дальнем плане шов/заклёпка/тон пластины/царапина мельче пикселя: в рельефе это случайный
+// наклон в каждом блоке 2×2 → «шум при любом бампе». Слой с периодом ≤ ~1.8 пикс сводится к среднему,
+// ≥ ~4.5 пикс отдаётся целиком. Пороги = значения пользователя из PCCobble_Band (эталон).
+float PCPlate_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCPLATE_BAND_LO 0.22
+#define PCPLATE_BAND_HI 0.55
+float PCPlate_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCPLATE_BAND_LO, PCPLATE_BAND_HI, PCPlate_Footprint(p));
+}
+
 float PCPlate_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCPlate_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCPlate_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCPLATE_BAND_LO, PCPLATE_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCPlate_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -116,10 +136,15 @@ float PCPlate_WorleyF1(float3 p)
     return saturate(minD);
 }
 
-// Ridge: 1 на линии, где fbm проходит через 0.5 (тонкие линии царапин). Механизм бронзы.
+// Ridge: 1 на линии, где fbm проходит через 0.5 (тонкие линии царапин).
+// Скруглённый гребень: |x| даёт излом наклона на гребне — в рельефе это смена знака нормали
+// в одном пикселе и мерцающая линия; sqrt(x²+k) визуально тот же штрих, но гладкий.
 float PCPlate_Ridge(float s)
 {
-    return 1.0 - abs(s * 2.0 - 1.0);
+    const float k = 0.0025;
+    float x = s * 2.0 - 1.0;
+    float a = sqrt(x * x + k) - sqrt(k);
+    return 1.0 - a / (sqrt(1.0 + k) - sqrt(k));
 }
 
 // ── Сетка пластин (общая для швов, тона и заклёпок) ──────────────────────────
@@ -145,6 +170,14 @@ float2 PCPlate_Grid(float3 ObjectPos, float PlateScale, float PlateAspect, float
     return q;
 }
 
+// Координаты сетки ДО сдвига рядов — для полосы пропускания. Сдвиг ряда даёт скачок производной
+// на границе ряда, поэтому считать px по уже сдвинутой q нельзя. Сид на производные не влияет.
+float3 PCPlate_GridSpace(float3 ObjectPos, float PlateScale, float PlateAspect)
+{
+    float3 p = ObjectPos * max(0.001, PlateScale);
+    return float3(p.x, p.y * max(0.05, PlateAspect), p.z);
+}
+
 // ── Швы между пластинами ─────────────────────────────────────────────────────
 // Шов — полоса у границы ячейки. Две ширины, как у кладки: у листа 2:1 шов одной
 // толщины даёт вдвое разную долю по длинной и по короткой стороне.
@@ -155,7 +188,8 @@ float PCPlate_Seams(float3 ObjectPos, float PlateScale, float PlateAspect, float
     // расстояние до ближайшей границы пластины: 0 на границе, 0.5 в центре
     float2 d = min(f, 1.0 - f);
     float edge = min(d.x / max(0.004, SeamWidthX), d.y / max(0.004, SeamWidthY));
-    return saturate(1.0 - smoothstep(0.0, 1.0, edge));
+    // шов мельче пикселя — это тонкая линия, её среднее ≈ 0: гасим, а не размазываем
+    return saturate(1.0 - smoothstep(0.0, 1.0, edge)) * PCPlate_Band(PCPlate_GridSpace(ObjectPos, PlateScale, PlateAspect));
 }
 
 // ── Тон пластины ─────────────────────────────────────────────────────────────
@@ -167,7 +201,9 @@ float PCPlate_Tone(float3 ObjectPos, float PlateScale, float PlateAspect, float 
 {
     float2 q = PCPlate_Grid(ObjectPos, PlateScale, PlateAspect, RowOffset, SeamWarp, PlateSeed);
     float2 cell = floor(q);
-    return saturate(PCPlate_Hash13(float3(cell, PlateSeed + 11.0)));
+    // тон постоянен внутри листа и скачет на его границе: мельче пикселя → среднее 0.5
+    return lerp(0.5, saturate(PCPlate_Hash13(float3(cell, PlateSeed + 11.0))),
+                PCPlate_Band(PCPlate_GridSpace(ObjectPos, PlateScale, PlateAspect)));
 }
 
 // ── Заклёпки ─────────────────────────────────────────────────────────────────
@@ -187,7 +223,8 @@ float PCPlate_Rivets(float3 ObjectPos, float PlateScale, float PlateAspect, floa
                         abs(f.y - round(f.y)) - inset * aspect);
     float dist = length(float2(rel.x, rel.y / aspect));
     float w = max(0.004, RivetWidth);
-    return saturate(1.0 - smoothstep(w * 0.35, w, dist));
+    // диск заклёпки мельче пикселя → среднее покрытие ≈ 0
+    return saturate(1.0 - smoothstep(w * 0.35, w, dist)) * PCPlate_Band(PCPlate_GridSpace(ObjectPos, PlateScale, PlateAspect));
 }
 
 // ── Микрошум листа (механизм бронзы PCBronze_Base) ───────────────────────────
@@ -203,7 +240,8 @@ float PCPlate_Metal(float3 ObjectPos, float MetalScale, float MetalDetail, float
     p += w * MetalWarp;
     float f = PCPlate_Fbm3(p, MetalDetail);
     float v = PCPlate_WorleyF1(p);
-    return saturate(lerp(f, v, 0.30));
+    // на неразрешённом узоре тон уходит в среднее, а не мерцает пятнами
+    return saturate(lerp(0.5, lerp(f, v, 0.30), PCPlate_Band(p)));
 }
 
 // ── Патина (механизм бронзы PCBronze_Blotch + растяжка) ──────────────────────
@@ -213,7 +251,7 @@ float PCPlate_Patina(float3 ObjectPos, float PatinaScale, float PatinaStretch, f
 {
     float3 p = ObjectPos * max(0.001, PatinaScale) + PatinaSeed;
     p.y /= max(0.05, PatinaStretch);
-    return saturate(PCPlate_Fbm3(p, 2.0));
+    return lerp(0.5, saturate(PCPlate_Fbm3(p, 2.0)), PCPlate_Band(p));
 }
 
 // ── Царапины (механизм бронзы) ───────────────────────────────────────────────
@@ -224,14 +262,15 @@ float PCPlate_ScratchDir(float3 ObjectPos, float ScratchScale, float SX, float S
     sp.x *= max(0.05, SX);
     sp.y *= max(0.05, SY);
     sp.z *= max(0.05, SZ);
-    return PCPlate_Ridge(PCPlate_Fbm3(sp, ScratchDetail));
+    // среднее гребня = 0.5 (ниже порога царапин в графе) — линия плавно исчезает на дистанции
+    return lerp(0.5, PCPlate_Ridge(PCPlate_Fbm3(sp, ScratchDetail)), PCPlate_Band(sp));
 }
 
 // Пятна гасящей маски царапин: тот же примитив, что патина, но без растяжки.
 float PCPlate_Blotch(float3 ObjectPos, float BlotchScale, float BlotchSeed)
 {
     float3 pp = ObjectPos * max(0.001, BlotchScale) + BlotchSeed;
-    return saturate(PCPlate_Fbm3(pp, 2.0));
+    return lerp(0.5, saturate(PCPlate_Fbm3(pp, 2.0)), PCPlate_Band(pp));
 }
 
 // ── Обёртки CF-нод (одно-выходные, File-режим) ───────────────────────────────
@@ -391,7 +430,7 @@ void ProceduralPlateScratchC_float(
     float3 sc = ObjectPos * max(0.001, ScratchScale) + ScratchSeed + 41.1;
     sc.xy = float2(sc.x * ca - sc.y * sn, sc.x * sn + sc.y * ca);
     sc.x *= max(0.05, ScratchStretch);
-    ScratchC = PCPlate_Ridge(PCPlate_Fbm3(sc, ScratchDetail));
+    ScratchC = lerp(0.5, PCPlate_Ridge(PCPlate_Fbm3(sc, ScratchDetail)), PCPlate_Band(sc));
 }
 
 void ProceduralPlateScratchC_half(

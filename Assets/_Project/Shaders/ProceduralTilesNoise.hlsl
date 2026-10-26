@@ -78,15 +78,35 @@ float PCTile_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass/Iron) ─────────────
+// Пиксель сцены ≈ 1.37 мм × дистанция: на дальнем плане шов/тон тайла/зерно/пора/кракле/арка
+// мельче пикселя, и в рельефе это случайный наклон в каждом блоке 2×2 («шум при любом бампе»).
+// Слой с периодом ≤ ~1.8 пикс сводится к среднему, ≥ ~4.5 пикс отдаётся целиком.
+// Пороги = значения пользователя из PCCobble_Band (эталон). Сигнатуры CF не меняются.
+float PCTile_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCTILE_BAND_LO 0.22
+#define PCTILE_BAND_HI 0.55
+float PCTile_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCTILE_BAND_LO, PCTILE_BAND_HI, PCTile_Footprint(p));
+}
+
 float PCTile_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCTile_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCTile_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCTILE_BAND_LO, PCTILE_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCTile_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -135,6 +155,14 @@ float2 PCTile_Grid(float3 ObjectPos, float TileScale, float TileAspect, float Ro
     return q;
 }
 
+// Координаты раскладки ДО сдвига рядов — для полосы пропускания: сдвиг ряда даёт скачок
+// производной на границе ряда, поэтому px по сдвинутой q считать нельзя. Сид на производные не влияет.
+float3 PCTile_GridSpace(float3 ObjectPos, float TileScale, float TileAspect)
+{
+    float3 p = ObjectPos * max(0.001, TileScale);
+    return float3(p.x, p.y * max(0.05, TileAspect), p.z);
+}
+
 // Локальная X ТОЙ черепицы, чей «носок» лежит над этой клеткой: у верхнего ряда
 // своя перевязка, поэтому в полосе перекрытия видна не своя черепица, а верхняя.
 float PCTile_UpperX(float2 f, float RowOffset)
@@ -173,7 +201,9 @@ void ProceduralTilesJoints_float(
     float rowd = abs(down - max(0.0, TileTail) * PCTile_Arc(PCTile_UpperX(f, RowOffset)))
         / max(0.004, JointWidthY);
 
-    Joints = saturate(1.0 - smoothstep(0.0, 1.0, min(side, rowd)));
+    Joints = saturate(1.0 - smoothstep(0.0, 1.0, min(side, rowd)))
+        // шов мельче пикселя — тонкая линия, её среднее ≈ 0: гасим, а не размазываем
+        * PCTile_Band(PCTile_GridSpace(ObjectPos, TileScale, TileAspect));
 }
 
 // ── Тон черепицы ─────────────────────────────────────────────────────────────
@@ -194,7 +224,9 @@ void ProceduralTilesTone_float(
     float2 cell = floor(q);
     if (PCTile_Covered(f, RowOffset, TileTail) > 0.5)
         cell = floor(float2(q.x + max(0.0, RowOffset), q.y + 1.0));
-    TileTone = saturate(PCTile_Hash13(float3(cell, TileSeed + 11.0)));
+    // тон постоянен внутри тайла и скачет на его границе: мельче пикселя → среднее 0.5
+    TileTone = lerp(0.5, saturate(PCTile_Hash13(float3(cell, TileSeed + 11.0))),
+                    PCTile_Band(PCTile_GridSpace(ObjectPos, TileScale, TileAspect)));
 }
 
 // ── Поперечная арка тайла ────────────────────────────────────────────────────
@@ -212,7 +244,9 @@ void ProceduralTilesCrown_float(
     float2 f = frac(q);
     float cov = PCTile_Covered(f, RowOffset, TileTail);
     float fx = lerp(f.x, PCTile_UpperX(f, RowOffset), cov);
-    TileCrown = PCTile_Arc(fx);
+    // среднее арки по тайлу = π/4 ≈ 0.7854: мельче пикселя арка даёт средний подъём,
+    // а не случайный наклон в каждом пикселе
+    TileCrown = lerp(0.7854, PCTile_Arc(fx), PCTile_Band(PCTile_GridSpace(ObjectPos, TileScale, TileAspect)));
 }
 
 // ── Зерно ────────────────────────────────────────────────────────────────────
@@ -232,7 +266,7 @@ void ProceduralTilesGrains_float(
 {
     float3 p = ObjectPos * max(0.001, GrainScale) + GrainSeed;
     p.x /= max(1.0, GrainStretch);
-    Grains = saturate(PCTile_Fbm3(p, 2.0));
+    Grains = lerp(0.5, saturate(PCTile_Fbm3(p, 2.0)), PCTile_Band(p));
 }
 
 // ── Поры и раковины обжига ───────────────────────────────────────────────────
@@ -275,7 +309,8 @@ void ProceduralTilesPores_float(
     float radius = w * lerp(0.35, 1.0, rnd);
     // smoothstep от 0.22: примерно треть ячеек без поры
     float exists = smoothstep(0.22, 0.42, PCTile_Hash13(g + 71.0));
-    Pores = saturate(1.0 - smoothstep(radius * 0.40, radius, f1)) * exists;
+    // пора мельче пикселя → среднее покрытие ≈ 0
+    Pores = saturate(1.0 - smoothstep(radius * 0.40, radius, f1)) * exists * PCTile_Band(p);
 }
 
 // ── Кракле глазури ───────────────────────────────────────────────────────────
@@ -303,7 +338,8 @@ void ProceduralTilesCrazing_float(
     float w = max(0.004, CrazeWidth);
     float craze = saturate(1.0 - smoothstep(0.0, w, d));
     float opened = smoothstep(0.30, 0.80, PCTile_Fbm3(p * 0.30 + 7.7, 2.0));
-    Crazing = saturate(craze * lerp(0.35, 1.0, opened));
+    // кракле мельче пикселя — тонкая борозда, её среднее ≈ 0
+    Crazing = saturate(craze * lerp(0.35, 1.0, opened)) * PCTile_Band(p);
 }
 
 // ── Пятно (общий примитив) ───────────────────────────────────────────────────
@@ -321,7 +357,7 @@ void ProceduralTilesPatch_float(
 {
     float3 p = ObjectPos * max(0.001, PatchScale) + PatchSeed;
     p.y /= max(1.0, PatchStretch);
-    Patch = saturate(PCTile_Fbm3(p, 2.0));
+    Patch = lerp(0.5, saturate(PCTile_Fbm3(p, 2.0)), PCTile_Band(p));
 }
 
 // ── Обёртки CF-нод (одно-выходные, File-режим) ───────────────────────────────

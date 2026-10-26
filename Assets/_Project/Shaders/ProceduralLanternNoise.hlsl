@@ -71,15 +71,36 @@ float PCLant_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass/Iron) ─────────────
+// Пиксель сцены ≈ 1.37 мм × дистанция. На дальнем плане нить пламени/стык стёкол/копоть мельче
+// пикселя, и в рельефе (и в свечении) это случайная величина в каждом пикселе.
+// Слой с периодом ≤ ~1.8 пикс сводится к среднему, ≥ ~4.5 пикс — целиком (пороги PCCobble_Band).
+// Средние измерены численно на той же выборке, что и пресет: нить ядра — 0.58,
+// покрытие шва ≈ 2 × Width (0.113 при Width 0.06).
+float PCLant_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCLANT_BAND_LO 0.22
+#define PCLANT_BAND_HI 0.55
+float PCLant_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCLANT_BAND_LO, PCLANT_BAND_HI, PCLant_Footprint(p));
+}
+
 float PCLant_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCLant_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCLant_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCLANT_BAND_LO, PCLANT_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCLant_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -146,7 +167,7 @@ void ProceduralLanternGlow_float(
         PCLant_ValueNoise3(p * 0.5 + 13.7),
         PCLant_ValueNoise3(p * 0.5 + 29.1)) - 0.5;
     p += w * 0.30;
-    Glow = saturate(PCLant_Fbm3(p, 2.0));
+    Glow = lerp(0.5, saturate(PCLant_Fbm3(p, 2.0)), PCLant_Band(p));
 }
 
 // ── Ядро пламени ─────────────────────────────────────────────────────────────
@@ -162,7 +183,8 @@ void ProceduralLanternCore_float(
     float3 p = ObjectPos * max(0.001, CoreScale) + CoreSeed;
     p.y /= max(1.0, CoreStretch);
     float ridge = abs(PCLant_Fbm3(p, 2.2) * 2.0 - 1.0);
-    Core = saturate(1.0 - ridge * 2.2);
+    // мельче пикселя нить не видна: остаётся среднее свечение нити (0.58), а не мерцание
+    Core = lerp(0.58, saturate(1.0 - ridge * 2.2), PCLant_Band(p));
 }
 
 // ── Копоть на стекле ─────────────────────────────────────────────────────────
@@ -180,7 +202,7 @@ void ProceduralLanternSoot_float(
 {
     float s = max(0.001, SootScale);
     float3 p = ObjectPos * s + SootSeed;
-    float grime = saturate(PCLant_Fbm3(p, max(1.1, SootDetail)));
+    float grime = lerp(0.5, saturate(PCLant_Fbm3(p, max(1.1, SootDetail))), PCLant_Band(p));
     float up = saturate(0.5 + ObjectPos.y * s * 0.5 * SootTilt);
     Soot = saturate(grime * max(0.0, SootAmount) * (0.55 + 0.90 * up));
 }
@@ -201,7 +223,7 @@ void ProceduralLanternPane_float(
     float paneTone;
     float border = PCLant_WorleyF2F1(p, paneTone);
     float w = max(0.004, PaneWidth);
-    Pane = saturate(1.0 - smoothstep(0.0, w, border));
+    Pane = lerp(saturate(2.0 * w), saturate(1.0 - smoothstep(0.0, w, border)), PCLant_Band(p));
 }
 
 // ── Обёртки CF-нод (одно-выходные, File-режим) ───────────────────────────────

@@ -68,15 +68,35 @@ float PCBrick_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass/Iron) ─────────────
+// Пиксель сцены ≈ 1.37 мм × дистанция: на дальнем плане шов/тон кирпича/зерно/пора/трещина мельче
+// пикселя, и в рельефе это случайный наклон в каждом блоке 2×2 («шум при любом бампе»).
+// Слой с периодом ≤ ~1.8 пикс сводится к среднему, ≥ ~4.5 пикс отдаётся целиком.
+// Пороги = значения пользователя из PCCobble_Band (эталон). Сигнатуры CF не меняются.
+float PCBrick_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCBRICK_BAND_LO 0.22
+#define PCBRICK_BAND_HI 0.55
+float PCBrick_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCBRICK_BAND_LO, PCBRICK_BAND_HI, PCBrick_Footprint(p));
+}
+
 float PCBrick_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCBrick_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCBrick_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCBRICK_BAND_LO, PCBRICK_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCBrick_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -117,6 +137,14 @@ float2 PCBrick_Grid(float3 ObjectPos, float BrickScale, float BrickAspect, float
     return q;
 }
 
+// Координаты кладки ДО сдвига рядов — для полосы пропускания: сдвиг ряда даёт скачок
+// производной на границе ряда, поэтому px по сдвинутой q считать нельзя. Сид на производные не влияет.
+float3 PCBrick_GridSpace(float3 ObjectPos, float BrickScale, float BrickAspect)
+{
+    float3 p = ObjectPos * max(0.001, BrickScale);
+    return float3(p.x, p.y * max(0.05, BrickAspect), p.z);
+}
+
 // ── Швы раствора ─────────────────────────────────────────────────────────────
 // Шов — полоса у границы ячейки. Два шва РАЗНОЙ ширины, и это не украшательство:
 // у реальной кладки шов 1 см при кирпиче 21.5 x 6.5 см даёт 0.046 доли длины,
@@ -129,7 +157,8 @@ float PCBrick_Joints(float3 ObjectPos, float BrickScale, float BrickAspect, floa
     // расстояние до ближайшей границы кирпича: 0 на границе, 0.5 в центре
     float2 d = min(f, 1.0 - f);
     float edge = min(d.x / max(0.004, JointWidthX), d.y / max(0.004, JointWidthY));
-    return saturate(1.0 - smoothstep(0.0, 1.0, edge));
+    // шов мельче пикселя — тонкая линия, её среднее ≈ 0: гасим, а не размазываем
+    return saturate(1.0 - smoothstep(0.0, 1.0, edge)) * PCBrick_Band(PCBrick_GridSpace(ObjectPos, BrickScale, BrickAspect));
 }
 
 // ── Тон кирпича ──────────────────────────────────────────────────────────────
@@ -142,7 +171,9 @@ float PCBrick_Tone(float3 ObjectPos, float BrickScale, float BrickAspect, float 
 {
     float2 q = PCBrick_Grid(ObjectPos, BrickScale, BrickAspect, RowOffset, JointWarp, BrickSeed);
     float2 cell = floor(q);
-    return saturate(PCBrick_Hash13(float3(cell, BrickSeed + 11.0)));
+    // тон постоянен внутри кирпича и скачет на его границе: мельче пикселя → среднее 0.5
+    return lerp(0.5, saturate(PCBrick_Hash13(float3(cell, BrickSeed + 11.0))),
+                PCBrick_Band(PCBrick_GridSpace(ObjectPos, BrickScale, BrickAspect)));
 }
 
 // ── Зерно ────────────────────────────────────────────────────────────────────
@@ -153,7 +184,7 @@ float PCBrick_Grains(float3 ObjectPos, float GrainScale, float GrainStretch, flo
 {
     float3 p = ObjectPos * max(0.001, GrainScale) + GrainSeed;
     p.x /= max(0.05, GrainStretch);
-    return saturate(PCBrick_Fbm3(p, 2.0));
+    return lerp(0.5, saturate(PCBrick_Fbm3(p, 2.0)), PCBrick_Band(p));
 }
 
 // ── Поры и раковины ──────────────────────────────────────────────────────────
@@ -193,7 +224,8 @@ float PCBrick_Pores(float3 ObjectPos, float PoreScale, float PoreWidth, float Po
     float radius = w * lerp(0.35, 1.0, rnd);
     // smoothstep от 0.22: примерно треть ячеек без поры
     float exists = smoothstep(0.22, 0.42, PCBrick_Hash13(g + 71.0));
-    return saturate(1.0 - smoothstep(radius * 0.40, radius, f1)) * exists;
+    // пора мельче пикселя → среднее покрытие ≈ 0
+    return saturate(1.0 - smoothstep(radius * 0.40, radius, f1)) * exists * PCBrick_Band(p);
 }
 
 // ── Трещинки ─────────────────────────────────────────────────────────────────
@@ -218,7 +250,8 @@ float PCBrick_Cracks(float3 ObjectPos, float CrackScale, float CrackStretch, flo
     float w = max(0.004, CrackWidth);
     float crack = saturate(1.0 - smoothstep(0.0, w, d));
     float opened = smoothstep(0.30, 0.80, PCBrick_Fbm3(p * 0.30 + 7.7, 2.0));
-    return saturate(crack * lerp(0.35, 1.0, opened));
+    // трещина мельче пикселя — тонкая борозда, её среднее ≈ 0
+    return saturate(crack * lerp(0.35, 1.0, opened)) * PCBrick_Band(p);
 }
 
 // ── Пятно (общий примитив) ───────────────────────────────────────────────────
@@ -230,7 +263,7 @@ float PCBrick_Patch(float3 ObjectPos, float PatchScale, float PatchStretch, floa
 {
     float3 p = ObjectPos * max(0.001, PatchScale) + PatchSeed;
     p.y /= max(0.05, PatchStretch);
-    return saturate(PCBrick_Fbm3(p, 2.0));
+    return lerp(0.5, saturate(PCBrick_Fbm3(p, 2.0)), PCBrick_Band(p));
 }
 
 // ── Обёртки CF-нод (одно-выходные, File-режим) ───────────────────────────────

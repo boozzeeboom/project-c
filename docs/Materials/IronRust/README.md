@@ -375,3 +375,38 @@ other values` (`MultiJsonInternal.Parse`). Причина: 33 разделите
 Как смотреть (без Play Mode): открыть любой объект в сцене → наложить
 `Assets/_Project/Materials/Iron/M_PC_IronRust.mat`. Свет ставить спереди-сверху: при
 `Metallic = 0.9` металл без окружения/света физически чёрный (см. `SteelRust/README.md` §5).
+
+## Полоса пропускания рельефа · 26.10.2026 (шаг 2t логики города)
+
+Замечание заказчика: «rust bump показатель у металлических типа iron — тоже шумит». Причина — не позиция
+(в сгенерированном шейдере `PC_PositionOS` = 128 вхождений, `TransformWorldToObject` = **0**, рельеф —
+`PC_NormalFromHeightPrecise`), а **отсутствие полосы пропускания**: у `ProceduralIronNoise.hlsl` её не было
+вообще, плюс `PCIron_Ridge` имел излом `|x|` — на гребне царапины производная меняет знак в пределах пикселя.
+
+Сделано в `Assets/_Project/Shaders/ProceduralIronNoise.hlsl` (сигнатуры CF и порядок слотов не менялись):
+
+* новые `PCIron_Footprint` / `PCIron_Band` и `PCIRON_BAND_LO/HI` = **0.22/0.55** периода на пиксель
+  (значения `PCCobble_Band` заказчика — эталон для всех семейств);
+* затухание октав внутри `PCIron_Fbm3` — октава мельче пикселя уходит в своё среднее (0.5);
+* `PCIron_Ridge` — скруглённый гребень `sqrt(x² + k)`, k = 0.0025;
+* `PCIron_Base` (тон + Worley) → `lerp(0.5, …, Band)`; `PCIron_ScratchDir` → `lerp(0.5, …, Band)`
+  (среднее гребня 0.5 ниже `_Scratch_Threshold` 0.92 — царапина на дистанции исчезает);
+* `PCIron_Blotch` (rust, rust patch, scratch mask) и `ProceduralIronRustD` → `lerp(0.5, …, Band)` —
+  именно они питают `_Rust_Bump`.
+
+Пиксель сцены ≈ **1.37 мм × дистанция в метрах**; период слоя = 1 / (Scale × Detail²), у царапин ещё × Stretch:
+
+| Слой | Пресет | Период | Рельеф начинает гаснуть с |
+|---|---|---|---|
+| Ржавчина `_Rust_Scale` × `_Rust_Detail` | 2.7 × 7.76² ≈ 163 /м | 6 мм | 0.75 м |
+| Царапины `_Scratch_Scale` × `_Scratch_Detail`² × `_Scratch_Stretch` | 3.94 × 4.77² × 18.3 ≈ 1600 /м | 0.6 мм | 0.1 м |
+
+`_Rust_Bump` 0.17 = 1.7 мм — самая заметная составляющая рельефа, поэтому шум был виден прежде всего по ней.
+Если рельеф ржавчины нужен с 3–5 м, уменьшать `_Rust_Scale` до ≤ ≈ 160 / D (2 м → 80, 5 м → 32) и поднимать
+`_Rust_Bump` пропорционально: высота = `_Rust_Bump × 0.01` м, а видимость бампа — уклон ≈ высота / размер детали.
+Пресеты агентом не менялись.
+
+**Проверено агентом:** затронуты `M_PC_IronRust`, `M_PC_IronRust_Lead`, `SMALL_M_PC_IronRust` (больше
+`IronRust.shadergraph` никто не использует; `ProceduralIronNoise.hlsl` guid `96d39cb97210a044f8f84a6cd489862c`);
+принудительный реимпорт графа и offscreen-рендер — `isSupported = true`, `ShaderHasError = false`,
+`GetShaderMessages` ошибок = 0, консоль по «shader» пуста. **Визуал, Play Mode, F8/F9 — `NOT RUN`.**

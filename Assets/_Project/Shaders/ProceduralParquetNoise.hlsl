@@ -49,6 +49,37 @@ float PCParq_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass/Iron) ─────────────
+// Здесь только сетка пластов: шов и тон пласта. На дальнем плане ячейка мельче пикселя — шов даёт
+// случайный наклон в рельефе, а хеш тона — случайную яркость в каждом пикселе. Рисунок дерева берётся
+// из ProceduralWoodNoise.hlsl и получает производные от PlankLocal, там полоса своя и работает сама.
+// Слой с периодом ≤ ~1.8 пикс сводится к среднему, ≥ ~4.5 пикс — отдаётся целиком (пороги PCCobble_Band).
+float PCParq_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCPARQ_BAND_LO 0.22
+#define PCPARQ_BAND_HI 0.55
+float PCParq_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCPARQ_BAND_LO, PCPARQ_BAND_HI, PCParq_Footprint(p));
+}
+
+// Координаты ячейки ДО сдвига рядов: сдвиг даёт скачок производной на границе ряда.
+float3 PCParq_CellSpace(float3 ObjectPos, float PlankScale, float PlankAspect)
+{
+    float2 c = float2(ObjectPos.x, ObjectPos.z * max(0.01, PlankAspect)) * max(0.0001, PlankScale);
+    return float3(c, 0.0);
+}
+
+// То же для раскладки с выбором плоскости по нормали.
+float3 PCParq_PlaneSpace(float2 uv, float PlankScale, float PlankAspect)
+{
+    float2 c = float2(uv.x, uv.y * max(0.01, PlankAspect)) * max(0.0001, PlankScale);
+    return float3(c, 0.0);
+}
+
 // ── Сетка пластов ────────────────────────────────────────────────────────────
 // c.x — вдоль ДЛИНЫ пласта, c.y — поперёк (локальная Z).
 // PlankAspect = длина/ширина: частота по Z умножается на него, поэтому пласт
@@ -119,7 +150,9 @@ void ProceduralParquetJoints_float(
     float dx = min(local.x, 1.0 - local.x) / max(0.0001, JointWidthX);
     float dy = min(local.y, 1.0 - local.y) / max(0.0001, JointWidthY);
 
-    Joints = 1.0 - smoothstep(0.0, 1.0, min(dx, dy));
+    // шов мельче пикселя — тонкая линия, её среднее ≈ 0
+    Joints = (1.0 - smoothstep(0.0, 1.0, min(dx, dy)))
+        * PCParq_Band(PCParq_CellSpace(ObjectPos, PlankScale, PlankAspect));
 }
 
 void ProceduralParquetJoints_half(
@@ -141,7 +174,9 @@ void ProceduralParquetTone_float(
     out float PlankTone)
 {
     float2 c = PCParq_Cell(ObjectPos, PlankScale, PlankAspect, RowOffset, Stagger, PlankWarp, PlankSeed);
-    PlankTone = PCParq_Hash13(float3(floor(c), 5.9 + PlankSeed));
+    // тон постоянен внутри пласта и скачет на его границе: мельче пикселя → среднее 0.5
+    PlankTone = lerp(0.5, PCParq_Hash13(float3(floor(c), 5.9 + PlankSeed)),
+                     PCParq_Band(PCParq_CellSpace(ObjectPos, PlankScale, PlankAspect)));
 }
 
 void ProceduralParquetTone_half(
@@ -225,7 +260,9 @@ void ProceduralParquetJointsFaces_float(
     float dx = min(local.x, 1.0 - local.x) / max(0.0001, JointWidthX);
     float dy = min(local.y, 1.0 - local.y) / max(0.0001, JointWidthY);
 
-    Joints = 1.0 - smoothstep(0.0, 1.0, min(dx, dy));
+    // шов мельче пикселя — тонкая линия, её среднее ≈ 0
+    Joints = (1.0 - smoothstep(0.0, 1.0, min(dx, dy)))
+        * PCParq_Band(PCParq_PlaneSpace(uv, PlankScale, PlankAspect));
 }
 
 void ProceduralParquetJointsFaces_half(
@@ -248,7 +285,9 @@ void ProceduralParquetToneFaces_float(
     PCParq_Axes(ObjectNormal, ObjectPos, uv, depth);
 
     float2 c = PCParq_PlaneCell(uv, PlankScale, PlankAspect, RowOffset, Stagger, PlankWarp, PlankSeed);
-    PlankTone = PCParq_Hash13(float3(floor(c), 5.9 + PlankSeed));
+    // тон постоянен внутри пласта и скачет на его границе: мельче пикселя → среднее 0.5
+    PlankTone = lerp(0.5, PCParq_Hash13(float3(floor(c), 5.9 + PlankSeed)),
+                     PCParq_Band(PCParq_PlaneSpace(uv, PlankScale, PlankAspect)));
 }
 
 void ProceduralParquetToneFaces_half(

@@ -1,0 +1,57 @@
+Material relief band-pass — Marble + IronRust — 2026-10-26
+============================================================
+Trigger (user): "M_PC_Marble тоже шумит, как и rust bump показатель у металлических типа iron".
+
+Root cause: missing band-pass in the relief layers (defect 5). Not position (PC_PositionOS present),
+not DepthNormals (PC_NormalFromHeightPrecise present).
+
+Changed files
+--------------
+Assets/_Project/Shaders/ProceduralMarbleVeinNoise.hlsl   guid 5edf78ec3c4639e42b6465a085d3b63e
+Assets/_Project/Shaders/ProceduralIronNoise.hlsl         guid 96d39cb97210a044f8f84a6cd489862c
+
+New helpers (CF signatures and slot order unchanged)
+----------------------------------------------------
+Marble: PCMar_Footprint, PCMar_Fade, PCMAR_BAND_LO/HI = 0.22/0.55,
+        octave falloff inside PCMar_Fbm3, rounded PCMar_Ridge (k = 0.0025),
+        fade on veins (main/fine, own fbm coords), pits (→0), cloud / crack mask / cracks A,B,C (→0.5).
+Iron:   PCIron_Footprint, PCIron_Band, PCIRON_BAND_LO/HI = 0.22/0.55,
+        octave falloff inside PCIron_Fbm3, rounded PCIron_Ridge (k = 0.0025),
+        band on PCIron_Base, PCIron_ScratchDir, PCIron_Blotch, ProceduralIronRustD (→0.5).
+
+Dependants (whole blast radius)
+-------------------------------
+Marble.shadergraph   -> M_PC_Marble, SMALL_M_PC_Marble
+IronRust.shadergraph -> M_PC_IronRust, M_PC_IronRust_Lead, SMALL_M_PC_IronRust
+No other graph references either HLSL guid.
+
+Verification (agent: forced graph reimport + offscreen render of a quad per material)
+-------------------------------------------------------------------------------------
+M_PC_Marble            supported=True hasError=False errors=0
+SMALL_M_PC_Marble      supported=True hasError=False errors=0
+M_PC_IronRust          supported=True hasError=False errors=0
+M_PC_IronRust_Lead     supported=True hasError=False errors=0
+SMALL_M_PC_IronRust    supported=True hasError=False errors=0
+
+generated Marble  : PC_PositionOS=134  TransformWorldToObject=0  PC_NormalFromHeightPrecise=3
+generated IronRust: PC_PositionOS=128  TransformWorldToObject=0  PC_NormalFromHeightPrecise=3
+
+console filter "shader": empty
+C# : No compile errors
+
+Pixel budget used for the thresholds (FOV 60 deg, 842 px high): 1.37 mm * distance(m).
+Period of a layer = 1 / (Scale * Detail^2), scratches additionally * Stretch.
+
+| Layer                                   | Preset                         | Period  | Band starts | Band kills |
+|-----------------------------------------|--------------------------------|---------|-------------|------------|
+| Marble pits _Pit_Scale 94.9             | 94.9 /m                        | 10.5 mm | 1.7 m       | 4.2 m      |
+| Marble fine vein network (30.83 * 2.3)  | ~71 /m                         | 14 mm   | 2.4 m       | 5.9 m      |
+| Marble cracks (14.38 * 12)              | ~173 /m                        | 5.8 mm  | 0.9 m       | 2.2 m      |
+| IronRust rust (2.7 * 7.76^2)            | ~163 /m                        | 6 mm    | 0.75 m      | 1.9 m      |
+| IronRust scratches (3.94*4.77^2*18.3)   | ~1600 /m                       | 0.6 mm  | 0.1 m       | 0.25 m     |
+
+Tuning rule if relief is wanted at distance D: Scale <= 160 / D, raise *_Bump proportionally
+(height = *_Bump * 0.01 m; visibility = slope ~ height / feature size).
+
+Presets NOT changed by the agent.
+Visual / Play Mode / F8-F9: NOT RUN (user-side).

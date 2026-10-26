@@ -70,15 +70,37 @@ float PCLava_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass/Iron) ─────────────
+// Пиксель сцены ≈ 1.37 мм × дистанция. На дальнем плане трещина/поток/тон плиты мельче пикселя,
+// и в рельефе это случайный наклон в каждом блоке 2×2. Слой с периодом ≤ ~1.8 пикс сводится
+// к среднему, ≥ ~4.5 пикс — целиком (пороги PCCobble_Band).
+// ВАЖНО про эмиссию: линии здесь светятся, поэтому гасятся не в ноль, а в СВОЁ СРЕДНЕЕ
+// покрытие — иначе дальняя лава станет темнее, чем должна (как если бы у текстуры пропал mip).
+// Покрытие полосы ≈ 2 × Width в единицах ячейки — измерено численно: 0.093 при Width 0.06.
+float PCLava_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCLAVA_BAND_LO 0.22
+#define PCLAVA_BAND_HI 0.55
+float PCLava_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCLAVA_BAND_LO, PCLAVA_BAND_HI, PCLava_Footprint(p));
+}
+
 float PCLava_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCLava_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCLava_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCLAVA_BAND_LO, PCLAVA_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCLava_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -142,7 +164,7 @@ void ProceduralLavaFissures_float(
     float plateTone;
     float border = PCLava_WorleyF2F1(p, plateTone);
     float w = max(0.004, CrustWidth);
-    Fissures = saturate(1.0 - smoothstep(0.0, w, border));
+    Fissures = lerp(saturate(2.0 * w), saturate(1.0 - smoothstep(0.0, w, border)), PCLava_Band(p));
 }
 
 // ── Тон плиты корки ──────────────────────────────────────────────────────────
@@ -159,7 +181,8 @@ void ProceduralLavaPlateTone_float(
     p.y /= max(1.0, CrustStretch);
     float plateTone;
     PCLava_WorleyF2F1(p, plateTone);
-    PlateTone = saturate(plateTone);
+    // тон постоянен внутри плиты и скачет на её границе: мельче пикселя → среднее 0.5
+    PlateTone = lerp(0.5, saturate(plateTone), PCLava_Band(p));
 }
 
 // ── Жар ──────────────────────────────────────────────────────────────────────
@@ -181,7 +204,7 @@ void ProceduralLavaHeat_float(
         PCLava_ValueNoise3(p * 0.5 + 17.9),
         PCLava_ValueNoise3(p * 0.5 + 41.7)) - 0.5;
     p += w * 0.35;
-    Heat = saturate(PCLava_Fbm3(p, 2.0));
+    Heat = lerp(0.5, saturate(PCLava_Fbm3(p, 2.0)), PCLava_Band(p));
 }
 
 // ── Линии потока ─────────────────────────────────────────────────────────────
@@ -199,7 +222,7 @@ void ProceduralLavaFlow_float(
     p.y /= max(1.0, FlowStretch);
     float ridge = abs(PCLava_Fbm3(p, 2.0) * 2.0 - 1.0);
     float w = max(0.004, FlowWidth);
-    Flow = saturate(1.0 - smoothstep(0.0, w, ridge));
+    Flow = lerp(saturate(2.0 * w), saturate(1.0 - smoothstep(0.0, w, ridge)), PCLava_Band(p));
 }
 
 // ── Шлаковая корка ───────────────────────────────────────────────────────────
@@ -212,7 +235,7 @@ void ProceduralLavaSkin_float(
     out float Skin)
 {
     float3 p = ObjectPos * max(0.001, SkinScale) + SkinSeed;
-    Skin = saturate(PCLava_Fbm3(p, max(1.1, SkinDetail)));
+    Skin = lerp(0.5, saturate(PCLava_Fbm3(p, max(1.1, SkinDetail))), PCLava_Band(p));
 }
 
 // ── Обёртки CF-нод (одно-выходные, File-режим) ───────────────────────────────

@@ -50,15 +50,35 @@ float PCPlast_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass/Iron) ─────────────
+// Пиксель сцены ≈ 1.37 мм × дистанция: на дальнем плане шагрень/линия спая/потёртость мельче
+// пикселя, и в рельефе это случайный наклон в каждом блоке 2×2 («шум при любом бампе»).
+// Слой с периодом ≤ ~1.8 пикс сводится к среднему, ≥ ~4.5 пикс — отдаётся целиком.
+// Пороги = значения пользователя из PCCobble_Band (эталон). Сигнатуры CF не меняются.
+float PCPlast_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCPLAST_BAND_LO 0.22
+#define PCPLAST_BAND_HI 0.55
+float PCPlast_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCPLAST_BAND_LO, PCPLAST_BAND_HI, PCPlast_Footprint(p));
+}
+
 float PCPlast_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCPlast_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCPlast_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCPLAST_BAND_LO, PCPLAST_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCPlast_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -66,9 +86,14 @@ float PCPlast_Fbm3(float3 p, float detail)
 }
 
 // Ridged: тонкие линии там, где fbm пересекает 0.5.
+// Скруглённый гребень: |x| даёт излом наклона на гребне — в рельефе это смена знака
+// нормали в одном пикселе и мерцающая линия; sqrt(x²+k) — тот же штрих, но гладкий.
 float PCPlast_Ridge(float s)
 {
-    return 1.0 - abs(s * 2.0 - 1.0);
+    const float k = 0.0025;
+    float x = s * 2.0 - 1.0;
+    float a = sqrt(x * x + k) - sqrt(k);
+    return 1.0 - a / (sqrt(1.0 + k) - sqrt(k));
 }
 
 // Worley F1 (3x3x3) — ячейки шагрени.
@@ -136,7 +161,9 @@ float PCPlast_Grain(float3 ObjectPos, float GrainScale, float GrainDetail, float
     float d = PCPlast_Worley1(p);
     float cell = saturate(1.0 - smoothstep(0.10, 0.62, d));
     float uneven = PCPlast_Fbm3(p * 0.06, max(1.1, GrainDetail)) - 0.5;
-    return saturate(cell + uneven * 0.3);
+    // Среднее плато ячейки измерено численно по той же функции Worley: 0.225. Мельче
+    // пикселя шагрень даёт ровный тон, а не случайный наклон в каждом пикселе.
+    return lerp(0.225, saturate(cell + uneven * 0.3), PCPlast_Band(p));
 }
 
 // ── Линии спая / границы потоков расплава ────────────────────────────────────
@@ -146,7 +173,8 @@ float PCPlast_Flow(float3 ObjectPos, float FlowScale, float FlowSeed)
 {
     float3 p = ObjectPos * max(0.001, FlowScale) + FlowSeed;
     float e = PCPlast_WorleyEdge(p);
-    return saturate(1.0 - smoothstep(0.0, 0.06, e));
+    // линия спая мельче пикселя — тонкая линия, её среднее ≈ 0
+    return saturate(1.0 - smoothstep(0.0, 0.06, e)) * PCPlast_Band(p);
 }
 
 // ── Линия разъёма формы ──────────────────────────────────────────────────────
@@ -155,7 +183,10 @@ float PCPlast_Flow(float3 ObjectPos, float FlowScale, float FlowSeed)
 float PCPlast_Seam(float3 ObjectPos, float SeamHeight, float SeamWidth)
 {
     float w = max(0.0005, SeamWidth);
-    return saturate(1.0 - smoothstep(0.0, w, abs(ObjectPos.y - SeamHeight)));
+    // линия разъёма мельче пикселя — тонкая полоса, её среднее ≈ 0.
+    // Полоса считается в единицах ШИРИНЫ шва: период рисунка задаёт именно она, а не мировый масштаб.
+    return saturate(1.0 - smoothstep(0.0, w, abs(ObjectPos.y - SeamHeight)))
+        * PCPlast_Band(ObjectPos / w);
 }
 
 // ── Мелование / выцветание ───────────────────────────────────────────────────
@@ -163,7 +194,7 @@ float PCPlast_Seam(float3 ObjectPos, float SeamHeight, float SeamWidth)
 float PCPlast_Chalk(float3 ObjectPos, float ChalkScale, float ChalkSeed)
 {
     float3 p = ObjectPos * max(0.001, ChalkScale) + ChalkSeed;
-    return saturate(PCPlast_Fbm3(p, 2.0) * 1.6 - 0.3);
+    return lerp(0.5, saturate(PCPlast_Fbm3(p, 2.0) * 1.6 - 0.3), PCPlast_Band(p));
 }
 
 // ── Засаливание / налёт от рук ───────────────────────────────────────────────
@@ -172,7 +203,7 @@ float PCPlast_Chalk(float3 ObjectPos, float ChalkScale, float ChalkSeed)
 float PCPlast_Smudge(float3 ObjectPos, float SmudgeScale, float SmudgeSeed)
 {
     float3 p = ObjectPos * max(0.001, SmudgeScale) + SmudgeSeed;
-    return saturate(smoothstep(0.42, 0.72, PCPlast_Fbm3(p, 2.0)));
+    return lerp(0.5, saturate(smoothstep(0.42, 0.72, PCPlast_Fbm3(p, 2.0))), PCPlast_Band(p));
 }
 
 // ── Потёртости ───────────────────────────────────────────────────────────────
@@ -187,7 +218,8 @@ float PCPlast_Scruff(float3 ObjectPos, float ScruffScale, float ScruffStretch,
     float3 q = p;
     q.xy = float2(p.x * ca - p.y * sn, p.x * sn + p.y * ca);
     q.x *= max(0.05, ScruffStretch);
-    return saturate(PCPlast_Ridge(PCPlast_Fbm3(q, max(1.1, ScruffDetail))));
+    // среднее гребня = 0.5 (ниже порога потёртостей в графе) — штрихи плавно исчезают на дистанции
+    return lerp(0.5, saturate(PCPlast_Ridge(PCPlast_Fbm3(q, max(1.1, ScruffDetail)))), PCPlast_Band(q));
 }
 
 // ── Кромка ───────────────────────────────────────────────────────────────────

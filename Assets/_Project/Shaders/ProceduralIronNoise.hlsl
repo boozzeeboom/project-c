@@ -42,15 +42,36 @@ float PCIron_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Wood/Glass) ─────────────────────
+// Размер пикселя в периодах уже масштабированной координаты узора (Warp и Stretch учтены, т.к.
+// px считается от фактически переданной координаты). Relief = Normal From Height над суммой слоёв:
+// если период слоя мельче ~2 пикс, наклон меняет знак в каждом блоке 2×2 → «шум при любом бампе».
+// Слой с периодом ≤ ~1.8 пикс сводится к своему среднему, ≥ ~4.5 пикс отдаётся целиком.
+// Пороги = значения пользователя из PCCobble_Band (эталон). Сигнатуры CF не меняются.
+float PCIron_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCIRON_BAND_LO 0.22
+#define PCIRON_BAND_HI 0.55
+float PCIron_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCIRON_BAND_LO, PCIRON_BAND_HI, PCIron_Footprint(p));
+}
+
 float PCIron_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCIron_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCIron_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCIRON_BAND_LO, PCIRON_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCIron_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -83,9 +104,14 @@ float PCIron_Voronoi3(float3 p)
 }
 
 // Ridged-преобразование: тонкие линии там, где fbm пересекает 0.5.
+// Скруглённый гребень: |x| даёт излом наклона на гребне — в рельефе это смена знака нормали
+// в одном пикселе и мерцающая линия; sqrt(x²+k) визуально тот же штрих, но гладкий.
 float PCIron_Ridge(float s)
 {
-    return 1.0 - abs(s * 2.0 - 1.0);
+    const float k = 0.0025;
+    float x = s * 2.0 - 1.0;
+    float a = sqrt(x * x + k) - sqrt(k);
+    return 1.0 - a / (sqrt(1.0 + k) - sqrt(k));
 }
 
 // Тон: fbm + Worley из object-координат (FO-safe).
@@ -99,7 +125,8 @@ float PCIron_Base(float3 ObjectPos, float Scale, float Detail, float Warp, float
     p += w * Warp;
     float f = PCIron_Fbm3(p, Detail);
     float v = PCIron_Voronoi3(p);
-    return saturate(lerp(f, v, 0.30));
+    // На неразрешённом узоре тон уходит в своё среднее, а не мерцает пятнами
+    return saturate(lerp(0.5, lerp(f, v, 0.30), PCIron_Band(p)));
 }
 
 // Царапины: растяжка по осям -> полосы (направление задаётся SX/SY/SZ).
@@ -109,14 +136,15 @@ float PCIron_ScratchDir(float3 ObjectPos, float ScratchScale, float SX, float SY
     sp.x *= max(0.05, SX);
     sp.y *= max(0.05, SY);
     sp.z *= max(0.05, SZ);
-    return PCIron_Ridge(PCIron_Fbm3(sp, ScratchDetail));
+    // среднее гребня = 0.5 (ниже порога царапин в графе) — линия плавно исчезает на дистанции
+    return lerp(0.5, PCIron_Ridge(PCIron_Fbm3(sp, ScratchDetail)), PCIron_Band(sp));
 }
 
 // Пятна: крупные низкочастотные области (ржавчина и маска царапин).
 float PCIron_Blotch(float3 ObjectPos, float BlotchScale, float BlotchSeed)
 {
     float3 pp = ObjectPos * max(0.001, BlotchScale) + BlotchSeed;
-    return PCIron_Fbm3(pp, 2.0);
+    return lerp(0.5, PCIron_Fbm3(pp, 2.0), PCIron_Band(pp));
 }
 
 void ProceduralIronBase_float(
@@ -249,7 +277,7 @@ void ProceduralIronRustD_float(
     out float Rust)
 {
     float3 pp = ObjectPos * max(0.001, RustScale) + RustSeed;
-    Rust = PCIron_Fbm3(pp, RustDetail);
+    Rust = lerp(0.5, PCIron_Fbm3(pp, RustDetail), PCIron_Band(pp));
 }
 
 void ProceduralIronRustD_half(

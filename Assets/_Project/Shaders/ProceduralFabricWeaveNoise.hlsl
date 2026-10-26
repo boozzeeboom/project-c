@@ -18,7 +18,8 @@
 //   ProceduralFabricSnagA/B/C + SnagMask — затяжки (механизм царапин бронзы/дерева, 1:1)
 //
 // Хеш без sin (Hoskins-style). Всё считается из object-space координат (FO-safe).
-// PlainWeave использует ddx/ddy позиции (ориентация грани + анти-муар) — только fragment-стадия.
+// ddx/ddy позиции используется в PlainWeave (ориентация грани + анти-муар) и в полосе
+// всех шумовых слоёв (анти-муар) — только fragment-стадия.
 
 #define PCFABW_PI  3.14159265
 #define PCFABW_TAU 6.28318531
@@ -54,24 +55,52 @@ float PCFabW_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса (анти-муар) ───────────────────────────────────────────────────────
+// Порог 0.22 / 0.55 периода на пиксель — стандарт проекта (PCCobble_Band).
+// Полоса считается от ТЕХ ЖЕ координат, что получает шум: у SnagA/B/C они уже
+// анизотропно растянуты по осям, и брать сырой ObjectPos значило бы считать
+// полосу от другого рисунка. ddx/ddy — только fragment (PlainWeave уже так живёт).
+#define PCFABW_BAND_LO 0.22
+#define PCFABW_BAND_HI 0.55
+
+float PCFabW_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+float PCFabW_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCFABW_BAND_LO, PCFABW_BAND_HI, PCFabW_Footprint(p));
+}
+
 float PCFabW_Fbm3(float3 p, float detail)
 {
+    float px = PCFabW_Footprint(p);
+
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCFabW_ValueNoise3(p * freq);
+        // Гаснет именно неразрешимая октава, а не вся сумма: у каждой свой
+        // множитель частоты и, значит, своя полоса в пиксельном масштабе.
+        // Среднее шума — 0.5, поэтому lerp именно к нему.
+        float w = 1.0 - smoothstep(PCFABW_BAND_LO, PCFABW_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCFabW_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
     return sum / 0.875;
 }
 
+// Скруглённый хребет. У 1−|2s−1| производная меняет знак ровно на гребне, и
+// ddx там даёт ступеньку — вблизи это мерцающий пунктир по затяжке.
+// k = 0.0025: дно 0.05, на глаз не отличимо от нуля, но производная непрерывна.
 float PCFabW_Ridge(float s)
 {
-    return 1.0 - abs(s * 2.0 - 1.0);
+    float x = s * 2.0 - 1.0;
+    return saturate(1.0 - sqrt(x * x + 0.0025));
 }
 
 // Круглое сечение нити: 1 на оси нити (t = 0.5), 0 на её краю (|t − 0.5| = hw).
@@ -170,7 +199,8 @@ float PCFabW_Pilling(float3 ObjectPos, float PillingScale, float PillingSeed)
             }
         }
     }
-    return saturate(1.0 - smoothstep(0.10, 0.26, minD));
+    // Катышки — редкие мелкие точки: измеренное среднее 0.0096, вдали гаснут в ноль.
+    return saturate(1.0 - smoothstep(0.10, 0.26, minD)) * PCFabW_Band(p);
 }
 
 void ProceduralFabricSlub_float(
@@ -247,7 +277,10 @@ float PCFabW_SnagDir(float3 ObjectPos, float SnagScale, float SX, float SY, floa
     sp.x *= max(0.05, SX);
     sp.y *= max(0.05, SY);
     sp.z *= max(0.05, SZ);
-    return PCFabW_Ridge(PCFabW_Fbm3(sp, SnagDetail));
+    // Хребет затяжки вдали уходит в своё среднее 0.5: маска «1 − хребет» тогда
+    // читается как «затяжки нет», а не как разлитая царапина по всей ткани.
+    // Гасить в ноль нельзя — 0 это как раз гребень, то есть сплошная затяжка.
+    return lerp(0.5, PCFabW_Ridge(PCFabW_Fbm3(sp, SnagDetail)), PCFabW_Band(sp));
 }
 
 float PCFabW_Blotch(float3 ObjectPos, float BlotchScale, float BlotchSeed)
@@ -307,7 +340,7 @@ void ProceduralFabricSnagC_float(
     float3 sc = ObjectPos * max(0.001, SnagScale) + SnagSeed + 41.1;
     sc.xy = float2(sc.x * ca - sc.y * sn, sc.x * sn + sc.y * ca);
     sc.x *= max(0.05, SnagStretch);
-    SnagC = PCFabW_Ridge(PCFabW_Fbm3(sc, SnagDetail));
+    SnagC = lerp(0.5, PCFabW_Ridge(PCFabW_Fbm3(sc, SnagDetail)), PCFabW_Band(sc));
 }
 
 void ProceduralFabricSnagC_half(

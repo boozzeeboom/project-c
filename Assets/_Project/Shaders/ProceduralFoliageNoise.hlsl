@@ -75,15 +75,46 @@ float PCFol_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса (анти-муар) ───────────────────────────────────────────────────────
+// Порог 0.22 / 0.55 периода на пиксель — стандарт проекта (PCCobble_Band):
+// полный рисунок, пока период ≥ ~4.5 px, и гаснет к среднему слоя при ≤ ~1.8 px.
+// Полоса считается от ТЕХ ЖЕ координат, которые получает шум (включая масштаб,
+// растяжение и множитель октавы), а не от сырого ObjectPos. Ненормированная
+// ObjectPos дала бы верные пороги при одном масштабе и мусор при другом.
+// ddx/ddy законны только во fragment-стадии — все слои листвы живут в ней.
+#define PCFOL_BAND_LO 0.22
+#define PCFOL_BAND_HI 0.55
+
+float PCFol_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+float PCFol_Band(float3 p)
+{
+    return 1.0 - smoothstep(PCFOL_BAND_LO, PCFOL_BAND_HI, PCFol_Footprint(p));
+}
+
+// Среднее маски листа на сплющенном домене, измерено численно на плоскости
+// (сплющивание по нормали сводит касательную плоскость к плоскости домена):
+// LeafEdge 0.15 / 0.30 / 0.50 / 0.75 дают 0.55 / 0.45 / 0.33 / 0.23. Берём
+// 0.45 — при любой кромке дальняя крона не светлеет и не темнеет заметно.
+#define PCFOL_LEAF_MEAN 0.45
+
 float PCFol_Fbm3(float3 p, float detail)
 {
+    float px = PCFol_Footprint(p);
+
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCFol_ValueNoise3(p * freq);
+        // Гаснет ИМЕННО неразрешимая октава, а не вся сумма: у каждой свой
+        // множитель частоты, поэтому и своя полоса в пиксельном масштабе.
+        float w = 1.0 - smoothstep(PCFOL_BAND_LO, PCFOL_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCFol_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -180,7 +211,11 @@ void ProceduralFoliageLeaf_float(
 
     float radius = PCFol_LeafRadius(center);
     float edge = saturate(LeafEdge);
-    Leaf = saturate(1.0 - smoothstep(radius * (1.0 - edge), radius, f1));
+    float mask = saturate(1.0 - smoothstep(radius * (1.0 - edge), radius, f1));
+
+    // Кромки листьев — самый контрастный слой в кроне, и вдали он же самый
+    // шумный: маска уходит в среднее покрытие, крона остаётся массой.
+    Leaf = lerp(PCFOL_LEAF_MEAN, mask, PCFol_Band(p));
 }
 
 // ── Тон листа ────────────────────────────────────────────────────────────────
@@ -199,7 +234,9 @@ void ProceduralFoliageLeafTone_float(
     float3 center;
     PCFol_LeafCell(p, f1, center);
 
-    LeafTone = saturate(PCFol_Hash13(center * 1.31 + 91.3));
+    // Тон постоянен ВНУТРИ листа, но вдали границы листьев уже не разрешаются:
+    // без этой полосы соседние хеши мерцают пятнами. Среднее хеша — 0.5.
+    LeafTone = lerp(0.5, saturate(PCFol_Hash13(center * 1.31 + 91.3)), PCFol_Band(p));
 }
 
 // ── Жилки листа ──────────────────────────────────────────────────────────────
@@ -241,7 +278,8 @@ void ProceduralFoliageLeafVein_float(
     float radius = PCFol_LeafRadius(center);
     float inside = saturate(1.0 - smoothstep(radius * 0.55, radius * 0.90, f1));
 
-    LeafVein = saturate(max(spine, branch) * inside);
+    // Жилки — тонкие линии: вдали гаснут в ноль, как трещины, швы и поры.
+    LeafVein = saturate(max(spine, branch) * inside) * PCFol_Band(p);
 }
 
 // ── Пятно (общий примитив) ───────────────────────────────────────────────────
@@ -272,13 +310,20 @@ void ProceduralFoliageTwigs_float(
     out float Twigs)
 {
     float3 p = ObjectPos * max(0.001, TwigScale) + TwigSeed;
-    float ridge = abs(PCFol_Fbm3(p, 2.0) * 2.0 - 1.0);
+
+    // Скруглённый хребет: у |fbm·2−1| производная меняет знак ровно на гребне,
+    // и ddx там даёт ступеньку — вблизи это мерцающий пунктир по ветке.
+    // k = 1e-4 (дно 0.01) намеренно малое: TwigWidth бывает 0.02, и более
+    // грубое скругление просто съело бы тонкую ветку целиком.
+    float x = PCFol_Fbm3(p, 2.0) * 2.0 - 1.0;
+    float ridge = sqrt(x * x + 1e-4);
 
     float w = max(0.004, TwigWidth);
     float core = 1.0 - smoothstep(0.0, w, ridge);
     float gate = smoothstep(0.52, 0.72, PCFol_Fbm3(p * 0.35 + 11.3, 2.0));
 
-    Twigs = saturate(core * gate);
+    // Ветки — тонкая линия: вдали уходят в ноль.
+    Twigs = saturate(core * gate) * PCFol_Band(p);
 }
 
 // ── Обёртки CF-нод (одно-выходные, File-режим) ───────────────────────────────

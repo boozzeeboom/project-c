@@ -51,15 +51,36 @@ float PCMar_ValueNoise3(float3 p)
     return lerp(ny0, ny1, f.z);
 }
 
+// ── Полоса пропускания (26.10, по образцу Cobble/Concrete/Iron) ─────────────────────
+// Размер пикселя в периодах уже масштабированной координаты узора (Warp/Stretch учтены — px
+// считается от фактически переданной координаты). Слой с периодом ≤ ~1.8 пикс сводится к своему
+// среднему, ≥ ~4.5 пикс отдаётся целиком. Пороги = значения пользователя из PCCobble_Band.
+// ВАЖНО: имя PCMar_Band занято мягкой полосой прожилки (fwidth), поэтому здесь PCMar_Fade.
+// Сигнатуры CF не меняются.
+float PCMar_Footprint(float3 p)
+{
+    return max(length(ddx(p)), length(ddy(p)));
+}
+
+#define PCMAR_BAND_LO 0.22
+#define PCMAR_BAND_HI 0.55
+float PCMar_Fade(float3 p)
+{
+    return 1.0 - smoothstep(PCMAR_BAND_LO, PCMAR_BAND_HI, PCMar_Footprint(p));
+}
+
 float PCMar_Fbm3(float3 p, float detail)
 {
+    // октава мельче пикселя плавно уходит в своё среднее (0.5)
+    float px = PCMar_Footprint(p);
     float sum = 0.0;
     float amp = 0.5;
     float freq = 1.0;
     [unroll]
     for (int o = 0; o < 3; o++)
     {
-        sum += amp * PCMar_ValueNoise3(p * freq);
+        float w = 1.0 - smoothstep(PCMAR_BAND_LO, PCMAR_BAND_HI, px * freq);
+        sum += amp * lerp(0.5, PCMar_ValueNoise3(p * freq), w);
         freq *= max(1.1, detail);
         amp *= 0.5;
     }
@@ -96,13 +117,17 @@ float PCMar_Veins(float3 ObjectPos, float VeinScale, float VeinWidth, float Vein
     float3 q = p + float3(turb, turb * 0.6, turb) * max(0.0, VeinWarp) * 3.0;
     q += Mottle * float3(1.0, 0.6, 1.0) * 4.0;
 
-    float s1 = PCMar_Fbm3(q * float3(1.0, 0.45, 1.0), 2.6);
+    float3 q1 = q * float3(1.0, 0.45, 1.0);
+    float s1 = PCMar_Fbm3(q1, 2.6);
     float d1 = abs(s1 * 2.0 - 1.0);
-    float main = PCMar_Band(d1, width);
+    // На неразрешённом узоре d = |2s−1| в среднем ≈ 0, т.е. fwidth-полоса вырождается в сплошную
+    // половину — поэтому при неразрешённом узоре слой гасится в ноль, а не размазывается.
+    float main = PCMar_Band(d1, width) * PCMar_Fade(q1);
 
-    float s2 = PCMar_Fbm3(q * float3(2.3, 1.05, 2.3) + 27.7, 2.6);
+    float3 q2 = q * float3(2.3, 1.05, 2.3) + 27.7;
+    float s2 = PCMar_Fbm3(q2, 2.6);
     float d2 = abs(s2 * 2.0 - 1.0);
-    float fine = PCMar_Band(d2, width * 0.45) * 0.6;
+    float fine = PCMar_Band(d2, width * 0.45) * 0.6 * PCMar_Fade(q2);
 
     return saturate(max(main, fine));
 }
@@ -117,7 +142,7 @@ float PCMar_Cloud(float3 ObjectPos, float CloudScale, float CloudStretch, float 
     float d = max(1.1, CloudDetail);
     float a = PCMar_Fbm3(float3(p.x * s, p.y, p.z * s), d);
     float b = PCMar_Fbm3(float3(p.x, p.y * s, p.z) + 13.7, d);
-    return saturate(smoothstep(0.3, 0.7, 0.5 * (a + b)));
+    return saturate(lerp(0.5, smoothstep(0.3, 0.7, 0.5 * (a + b)), PCMar_Fade(p)));
 }
 
 // ── Каверны ──────────────────────────────────────────────────────────────────
@@ -146,13 +171,19 @@ float PCMar_Pits(float3 ObjectPos, float PitScale, float PitSeed)
             }
         }
     }
-    return saturate(1.0 - smoothstep(0.06, 0.18, minD));
+    // каверна мельче пикселя → среднее покрытие ≈ 0 (разрежённая сетка, узкий радиус)
+    return saturate(1.0 - smoothstep(0.06, 0.18, minD)) * PCMar_Fade(p);
 }
 
 // ── Трещины (механизм царапин бронзы/дерева, 1:1) ───────────────────────────
 float PCMar_Ridge(float s)
 {
-    return 1.0 - abs(s * 2.0 - 1.0);
+    // Скруглённый гребень: |x| даёт излом наклона на гребне — в рельефе это смена знака нормали
+    // в одном пикселе и мерцающая линия; sqrt(x²+k) — тот же штрих, но гладкий.
+    const float k = 0.0025;
+    float x = s * 2.0 - 1.0;
+    float a = sqrt(x * x + k) - sqrt(k);
+    return 1.0 - a / (sqrt(1.0 + k) - sqrt(k));
 }
 
 float PCMar_CrackDir(float3 ObjectPos, float CrackScale, float SX, float SY, float SZ, float CrackDetail, float CrackSeed)
@@ -161,13 +192,14 @@ float PCMar_CrackDir(float3 ObjectPos, float CrackScale, float SX, float SY, flo
     sp.x *= max(0.05, SX);
     sp.y *= max(0.05, SY);
     sp.z *= max(0.05, SZ);
-    return PCMar_Ridge(PCMar_Fbm3(sp, CrackDetail));
+    // среднее гребня = 0.5 (ниже _Crack_Threshold в графе) — трещина плавно исчезает на дистанции
+    return lerp(0.5, PCMar_Ridge(PCMar_Fbm3(sp, CrackDetail)), PCMar_Fade(sp));
 }
 
 float PCMar_Blotch(float3 ObjectPos, float BlotchScale, float BlotchSeed)
 {
     float3 pp = ObjectPos * max(0.001, BlotchScale) + BlotchSeed;
-    return PCMar_Fbm3(pp, 2.0);
+    return lerp(0.5, PCMar_Fbm3(pp, 2.0), PCMar_Fade(pp));
 }
 
 void ProceduralMarbleMottle_float(
@@ -288,7 +320,7 @@ void ProceduralMarbleCrackC_float(
     float3 sc = ObjectPos * max(0.001, CrackScale) + CrackSeed + 41.1;
     sc.xy = float2(sc.x * ca - sc.y * sn, sc.x * sn + sc.y * ca);
     sc.x *= max(0.05, CrackStretch);
-    CrackC = PCMar_Ridge(PCMar_Fbm3(sc, CrackDetail));
+    CrackC = lerp(0.5, PCMar_Ridge(PCMar_Fbm3(sc, CrackDetail)), PCMar_Fade(sc));
 }
 
 void ProceduralMarbleCrackC_half(

@@ -185,6 +185,13 @@ float PCTile_Covered(float2 f, float RowOffset, float TileTail)
 //   рядовая (по Y) — ДУГА: видимая кромка принадлежит верхнему ряду и повторяет
 //       форму его «носка», поэтому ширина шва по Y задаётся отдельным параметром.
 // Одна общая ширина сделала бы либо желобок вдвое шире кромки, либо наоборот.
+//
+// МЕЛЬТЕШЕНИЕ ШВА (26.10). Шов = JointWidth в долях ТАЙЛА (0.06/0.10, то есть
+// 17–23 мм при тайле 294×230 мм), а полоса PCTile_Band считалась от ПЕРИОДА тайла
+// (0.22 → 0.55) — в 3–4 раза позже, чем шов перестаёт разрешаться. Normal From
+// Height читает разность соседних пикселей, а не наклон: на всём ближнем плане шов
+// был случайным числом в каждом блоке 2×2. Лечение то же, что у Cobble/Plate:
+// полоса по ширине САМОГО шва + стенка не уже двух пикселей.
 void ProceduralTilesJoints_float(
     float3 ObjectPos,
     float TileScale, float TileAspect, float RowOffset, float TileWarp,
@@ -195,15 +202,33 @@ void ProceduralTilesJoints_float(
     float2 f = frac(q);
     // расстояние до ближайшей боковой границы тайла: 0 на границе, 0.5 в центре
     float2 d = min(f, 1.0 - f);
-    float side = d.x / max(0.004, JointWidthX);
 
+    // поля расстояний в ДОЛЯХ ТАЙЛА, до нормировки на ширину шва
+    float sideDist = d.x;
     float down = 1.0 - f.y;
-    float rowd = abs(down - max(0.0, TileTail) * PCTile_Arc(PCTile_UpperX(f, RowOffset)))
-        / max(0.004, JointWidthY);
+    float rowDist = abs(down - max(0.0, TileTail) * PCTile_Arc(PCTile_UpperX(f, RowOffset)));
 
-    Joints = saturate(1.0 - smoothstep(0.0, 1.0, min(side, rowd)))
-        // шов мельче пикселя — тонкая линия, её среднее ≈ 0: гасим, а не размазываем
-        * PCTile_Band(PCTile_GridSpace(ObjectPos, TileScale, TileAspect));
+    // шаг пикселя — по производным САМИХ полей, а не сетки: дуга «носка» наклонная,
+    // поэтому у рядового шва есть X-составляющая, которой у сетки нет, и на самом
+    // носке (Arc → 0) наклон почти вертикальный.
+    float pxSide = max(abs(ddx(sideDist)), abs(ddy(sideDist)));
+    float pxRow = max(abs(ddx(rowDist)), abs(ddy(rowDist)));
+
+    float w0x = max(0.004, JointWidthX);
+    float w0y = max(0.004, JointWidthY);
+    // стенка шва не уже двух пикселей
+    float wX = max(w0x, pxSide * 2.0);
+    float wY = max(w0y, pxRow * 2.0);
+
+    float mask = saturate(1.0 - smoothstep(0.0, 1.0, min(sideDist / wX, rowDist / wY)));
+
+    // полоса по ширине шва: ratio = пиксель / шов, 1.0 — шов ровно в пиксель
+    float ratio = max(pxSide / w0x, pxRow / w0y);
+    float band = 1.0 - smoothstep(0.35, 1.0, ratio);
+
+    // неразрешённый шов сходится не в 0, а в свою долю площади: две полосы по осям
+    float coverage = saturate(w0x + w0y - w0x * w0y);
+    Joints = lerp(coverage, mask, band);
 }
 
 // ── Тон черепицы ─────────────────────────────────────────────────────────────

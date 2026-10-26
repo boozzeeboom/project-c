@@ -171,14 +171,37 @@ float PCCobble_Cracks(float3 ObjectPos, float CrackScale, float CrackStretch, fl
 // ── Швы кладки ───────────────────────────────────────────────────────────────
 // Шов = граница ячейки Worley. Ячейки вытянуты вдоль локальной Y (StoneStretch),
 // поэтому швы идут вдоль стены, а не кольцами.
+//
+// МЕЛЬТЕШЕНИЕ ШВА (26.10). Стенка шва = JointWidth в долях ЯЧЕЙКИ (у M_PC_Cobble
+// 0.08 при StoneScale 2.5 → ≈ 32 мм), а ячейка — 400 мм. Шов перестаёт
+// разрешаться в восемь раз раньше, чем сам камень. PCCobble_Band включается на
+// px ≈ 0.22 ячейки (≈ 64 м по земле), поэтому на всём ближнем плане шов уже
+// меньше пикселя, но ещё отдаётся полностью: Normal From Height читает не наклон,
+// а разность соседних пикселей → шов мельтешит. Лечение то же, что у Plate:
+// полоса по ширине САМОГО шва + стенка не уже двух пикселей.
 float PCCobble_Joints(float3 ObjectPos, float StoneScale, float StoneStretch, float JointWidth, float StoneSeed)
 {
     float3 p = ObjectPos * max(0.001, StoneScale) + StoneSeed;
     p.y /= max(0.05, StoneStretch);
     float cellTone;
     float border = PCCobble_WorleyF2F1(p, cellTone);
-    float w = max(0.004, JointWidth);
-    return saturate(1.0 - smoothstep(0.0, w, border)) * PCCobble_Band(p);
+
+    // шаг пикселя в координатах узора: p уже со Scale и Stretch, анизотропия учтена
+    float px = max(length(ddx(p)), length(ddy(p)));
+
+    float w0 = max(0.004, JointWidth);
+    // стенка шва не уже двух пикселей
+    float w = max(w0, px * 2.0);
+    float mask = saturate(1.0 - smoothstep(0.0, w, border));
+
+    // полоса по ширине шва: ratio = пиксель / шов, 1.0 — шов ровно в пиксель
+    float band = 1.0 - smoothstep(0.35, 1.0, px / w0);
+
+    // неразрешённый шов сходится не в 0, а в свою долю площади. Для F2−F1
+    // доля площади линейна по ширине: замер дал среднее маски 0.142 при
+    // JointWidth 0.08, то есть 1.78 ширины шва.
+    float coverage = saturate(1.78 * w0);
+    return lerp(coverage, mask, band);
 }
 
 // ── Тон камня ────────────────────────────────────────────────────────────────

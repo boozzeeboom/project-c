@@ -181,15 +181,40 @@ float3 PCPlate_GridSpace(float3 ObjectPos, float PlateScale, float PlateAspect)
 // ── Швы между пластинами ─────────────────────────────────────────────────────
 // Шов — полоса у границы ячейки. Две ширины, как у кладки: у листа 2:1 шов одной
 // толщины даёт вдвое разную долю по длинной и по короткой стороне.
+//
+// МЕЛЬТЕШЕНИЕ ШВА (26.10). Шов — ступенька высоты шириной SeamWidth в долях ЯЧЕЙКИ
+// (0.03/0.06), то есть 13–34 мм у SMALL_M_PC_Plate. На 10 м пиксель ≈ 13.7 мм, и шов
+// становится уже пикселя задолго до того, как перестаёт разрешаться САМА пластина
+// (метр). Normal From Height читает не наклон, а разность соседних пикселей, поэтому
+// на этом участке шов — не рельеф, а случайное число в каждом блоке 2×2.
+// Плата за полосу по периоду ячейки (PCPlate_Band) тут не спасает: она включается на
+// px ≈ 0.22 ячейки, то есть в 4–7 раз позже, чем шов перестаёт разрешаться.
+// Лечение: полоса считается по ширине САМОГО шва, а стенка шва не даётся уже двух
+// пикселей — шов на дистанции становится мягче, но не мельтешит.
 float PCPlate_Seams(float3 ObjectPos, float PlateScale, float PlateAspect, float RowOffset, float SeamWarp, float SeamWidthX, float SeamWidthY, float PlateSeed)
 {
     float2 q = PCPlate_Grid(ObjectPos, PlateScale, PlateAspect, RowOffset, SeamWarp, PlateSeed);
     float2 f = frac(q);
     // расстояние до ближайшей границы пластины: 0 на границе, 0.5 в центре
     float2 d = min(f, 1.0 - f);
-    float edge = min(d.x / max(0.004, SeamWidthX), d.y / max(0.004, SeamWidthY));
-    // шов мельче пикселя — это тонкая линия, её среднее ≈ 0: гасим, а не размазываем
-    return saturate(1.0 - smoothstep(0.0, 1.0, edge)) * PCPlate_Band(PCPlate_GridSpace(ObjectPos, PlateScale, PlateAspect));
+
+    // шаг пикселя в координатах сетки. PCPlate_GridSpace — сетка ДО сдвига рядов:
+    // сдвиг даёт скачок производной на границе ряда, по сдвинутой q считать нельзя.
+    float3 gridSpace = PCPlate_GridSpace(ObjectPos, PlateScale, PlateAspect);
+    float2 px = max(abs(ddx(gridSpace.xy)), abs(ddy(gridSpace.xy)));
+
+    float2 w0 = float2(max(0.004, SeamWidthX), max(0.004, SeamWidthY));
+    // стенка шва не уже двух пикселей
+    float2 w = max(w0, px * 2.0);
+    float mask = saturate(1.0 - smoothstep(0.0, 1.0, min(d.x / w.x, d.y / w.y)));
+
+    // полоса по ширине шва: ratio = пиксель / шов, 1.0 — шов ровно в пиксель
+    float ratio = max(px.x / w0.x, px.y / w0.y);
+    float band = 1.0 - smoothstep(0.35, 1.0, ratio);
+
+    // неразрешённый шов сходится не в 0, а в свою долю площади: две полосы по осям
+    float coverage = saturate(w0.x + w0.y - w0.x * w0.y);
+    return lerp(coverage, mask, band);
 }
 
 // ── Тон пластины ─────────────────────────────────────────────────────────────

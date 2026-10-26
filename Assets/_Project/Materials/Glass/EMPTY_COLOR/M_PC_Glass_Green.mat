@@ -25,7 +25,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Edge_Noise_Scale: -0.01
+    - _Scratch_Smoothness: 0.48
+    - _Tone_Base: 5.71
+    - _Tone_Gain: -0.33
     m_Colors:
     - _Glass_Color: {r: 0.14901961, g: 0.34901962, b: 0.27843142, a: 1}
     - _Murk_Color: {r: 0.35781673, g: 0.42448333, b: 0.40095395, a: 1}

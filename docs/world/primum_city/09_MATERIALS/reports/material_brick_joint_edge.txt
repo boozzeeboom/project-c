@@ -1,0 +1,103 @@
+Brick — joint edge aliasing ("the rows seem to wander")
+=======================================================
+Project : ProjectC_client
+Engine  : Unity 6000.5.2f1 / URP, Shader Graph 17.5.0
+File    : Assets/_Project/Shaders/ProceduralBrickNoise.hlsl  ->  PCBrick_Joints
+Date    : 2026-10-26
+Step    : 2v
+
+SYMPTOM (user)
+--------------
+  "inside the grid rows there is strong flicker when the camera moves; the rows
+   seem to wander - but actually it is inside the joint that black/white is being
+   substituted"
+
+WHY THE BAND PASS (STEP 2u) DID NOT COVER THIS
+----------------------------------------------
+  The band compares the PATTERN period to the pixel: for Brick that is one row =
+  149.9 mm, resolved until ~24 m (0.22 brick-cell units = 33 mm per pixel).
+  What is NOT resolved is the joint's own WALL. The joint is 13.5 mm
+  (_Joint_Width_Y 0.09 of a 149.9 mm cell), so it is ~11x finer than the period
+  the band measures. A band cannot help a large-period feature with a sub-pixel
+  edge.
+
+MEASURED (M_PC_Brick: _Brick_Scale 5.8  _Brick_Aspect 1.15
+          _Joint_Width_X 0.055  _Joint_Width_Y 0.09  _Joint_Warp 0)
+  pixel size = 0.00137 m * distance (scene camera, FOV 60, 842 px high)
+
+  dist | pixel  | p99 |dJoints| per pixel | fraction with |dJ| > 0.5 per pixel
+  -----+--------+--------------------------+-----------------------------------
+   2 m |  2.7mm | 0.30                     |  0.0 %
+   5 m |  6.9mm | 0.69                     |  8.5 %
+   8 m | 11.0mm | 0.95                     | 12.3 %
+  10 m | 13.7mm | 1.00                     | 13.7 %
+  20 m | 27.4mm | 1.00                     | 17.1 %
+  30 m | 41.1mm | 1.00                     | 16.8 %
+
+  From ~5 m the joint mask runs 1 -> 0 INSIDE one pixel. Because _Joint_Bump is
+  -0.9 while _Brick_Lift is only 0.15, that same mask is also the relief wall:
+  PC_NormalFromHeightPrecise differentiates the height across one pixel, so
+  adjacent pixels get opposite normals -> alternating light/dark inside the
+  joint, which along a row reads as the row line shifting. That is the
+  "wandering rows".
+
+RULED OUT (measured, not assumed)
+---------------------------------
+  PCBrick_Tone (per-brick cell hash) is NOT the cause. Its discontinuity sits at
+  frac(q.y) = 0, where the joint mask is exactly 1.000, so with _Joint_Amount = 1
+  the tone weight there is 0.000 (0.158 already at 0.75 mm away).
+  The graph has no hard switch either: Brick.shadergraph contains zero
+  Branch / Step / Switch / Sign nodes (only Multiply, Add, Lerp, Smoothstep,
+  Saturate). _Joint_Warp is 0 on every M_PC_* preset.
+
+FIX (PCBrick_Joints; signature and slot order unchanged)
+--------------------------------------------------------
+  1. Wall cannot be narrower than two pixels:  w = max(w0, px * 2.0)
+     Pixel step taken from PCBrick_GridSpace, i.e. the space BEFORE
+     q.x += row * RowOffset - ddx on the shifted q would see a derivative jump
+     at every row boundary and report a wider pixel than there is.
+  2. Band by the JOINT's own width, not the row period:
+        ratio = px / w0                                  (1.0 = wall exactly 1 px)
+        band  = 1 - smoothstep(1.0, 2.5, ratio)
+     (same 0.22 / 0.55 convention, rescaled to the joint instead of the cell)
+  3. Fade target is the joint COVERAGE, not zero:
+        coverage = 0.055 + 0.09 - 0.055*0.09 = 0.14
+     The joint is ~14 % of the area, not a thin line; fading a 14 % feature to 0
+     makes distant walls lighter than their own average.
+
+MEASURED AFTER
+--------------
+  aliasing error = |point sample at pixel centre - 8x8 area average in the pixel|
+
+  dist | before | after
+  -----+--------+-------
+   1 m |  0.001 | 0.001   (unchanged)
+   2 m |  0.006 | 0.006   (unchanged)
+   3 m |  0.013 | 0.013   (unchanged)
+   5 m |  0.030 | 0.020
+   8 m |  0.067 | 0.022
+  10 m |  0.094 | 0.016
+  15 m |  0.149 | 0.000
+  20 m |  0.185 | 0.000
+  30 m |  0.246 | 0.000
+
+  Near range keeps full sharpness - the clamp does not engage until the joint is
+  about 1.5 px. Side effect: from ~8 m the joint is wider than true (1.6x at 8 m,
+  2x at 10 m) and from ~20 m it settles into its 14 % coverage.
+
+VERIFICATION
+------------
+  Brick.shadergraph force-reimported; offscreen quad render for all 5 materials
+  (Brick, M_PC_Brick, M_PC_Brick_Red, M_PC_Brick_Yellow, SMALL_M_PC_Brick):
+  ShaderHasError = false, GetShaderMessages errors = 0.
+  No material preset was modified. No scene was saved.
+
+NOT RUN (user-side)
+-------------------
+  Visual acceptance, Play Mode, F8/F9.
+
+NOTE ON SCOPE
+-------------
+  Tiles (PCTile_Joints), Plate (seams) and Parquet (plank joints) have the same
+  geometry - a small feature carried by a large-period grid - and were NOT
+  changed in this step.

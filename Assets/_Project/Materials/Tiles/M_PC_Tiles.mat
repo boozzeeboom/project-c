@@ -64,7 +64,7 @@ Material:
     - _Craze_Width: 0.045
     - _Gap_Gloss: 0
     - _Joint_Amount: 0.8
-    - _Joint_Bump: -0.44
+    - _Joint_Bump: -0.003
     - _Joint_Width_X: 0.06
     - _Joint_Width_Y: 0.1
     - _Moss_Amount: 2.56
@@ -88,7 +88,7 @@ Material:
     - _Salt_Threshold: 0.58
     - _Smoothness: 0.3
     - _Tile_Aspect: 1.28
-    - _Tile_Crown: 0.18
+    - _Tile_Crown: 0.015
     - _Tile_Gloss: 0.26
     - _Tile_Grain_Amount: 0.35
     - _Tile_Grain_Scale: 55

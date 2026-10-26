@@ -30,11 +30,12 @@ Material:
     - _Metal_Amount: 0.12
     - _Metal_Bump: 0
     - _Metal_Scale: 5
-    - _Patina_Bump: -0.03
+    - _Patina_Bump: -0.0012
     - _Patina_Scale: 3.86
     - _Plate_Aspect: 0.77
     - _Plate_Scale: 2.3
-    - _Seam_Bump: -0.8
+    - _Rivet_Bump: 0.004
+    - _Seam_Bump: -0.004
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: PCMM_Veil
+  m_Shader: {fileID: 4800000, guid: a99caefccffc28f4b872bd1c2f540e1d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Map:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BandShift: 0
+    - _Focus: 0
+    - _Gust: 0
+    - _Opacity: 0.6
+    - _Parallax: 0.28
+    - _Seed: 0
+    m_Colors:
+    - _Band: {r: 0.5, g: 0.58, b: 0, a: 0}
+    - _Dark: {r: 0.027, g: 0.039, b: 0.035, a: 1}
+    - _Edge: {r: 0.28999996, g: 0.34099993, b: 0.29799998, a: 1}
+    - _GustDir: {r: 1, g: -0.2, b: 0, a: 0}
+    - _GustOrigin: {r: 0.5, g: 0.55, b: 0, a: 0}
+    - _PlaneScale: {r: 1.16, g: 1.16, b: 0, a: 0}
+    - _Repeat: {r: 1.7, g: 1.7, b: 0, a: 0}
+    - _Soft: {r: 0.16499996, g: 0.20399997, b: 0.17599997, a: 1}
+    - _Tint: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

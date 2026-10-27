@@ -1,0 +1,46 @@
+ghost construction (host 400x40, «ОДИНОЧНАЯ ИГРА»)
+  [ok  ] host laid out  — 400,0 x 40,0
+  [ok  ] layer has class pc-ghost-layer
+  [ok  ] layer empty before the blow  — 0
+  [ok  ] 13 letters blown (spaces are not letters)  — 13
+  [ok  ] one ghost in the layer  — 1
+  [ok  ] ghost has class pc-ghost
+  [ok  ] ghost pinned to the host box
+  [ok  ] ghost = 2 words + 1 space gap  — 3
+  [ok  ] 2 word rows of letters  — 2
+  [ok  ] 13 glyph labels  — 13
+  [ok  ] every glyph holds one character
+  [ok  ] font size copied from the host  — 24,0
+  [ok  ] host hidden while the copy flies  — 0
+stagger (tick at 100 ms of a 680 ms window)
+  [ok  ] first letter is already moving  — 48,72
+  [ok  ] last letter has not started (20 ms stagger)  — Null
+  [ok  ] blur applied to the moving letter  — System.Collections.Generic.List`1[UnityEngine.UIElements.FilterFunction]
+  [ok  ] blur is still 0 on the untouched letter  — 0,00
+end keyframe (tick at 840 ms, before the 850 ms cleanup)
+  [ok  ] dx inside [22 .. 126]  — 55,0 .. 120,4
+  [ok  ] dir +1 -> every letter goes right
+  [ok  ] dy inside [-47 .. -5]
+  [ok  ] scale inside [1.35 .. 1.85]
+  [ok  ] all letters faded out
+cleanup and restore
+  [ok  ] flight cleaned up at 860 ms (> 850 ms)  — 0
+  [ok  ] host opacity restored  — Null
+whole: a host with element children flies as one piece
+  [ok  ] whole host returns 1 piece  — 1
+  [ok  ] whole ghost keeps both runs  — 2
+  [ok  ] whole ghost copies the two texts  — PROJECT|C
+  [ok  ] whole piece flies left with dir -1  — -40,6
+  [ok  ] the whole flight is the only one in the air  — 1
+restore within a root
+  [ok  ] second blow accepted  — 13
+  [ok  ] RestoreWithin ends every flight under the root  — 2
+  [ok  ] layer empty after restore  — 0
+  [ok  ] host visible again after restore  — Null
+queue limit (max 8)
+  [ok  ] 9th ghost refused at max 8  — 8/10 accepted
+puffs (ceil(13 / 2) = every 7th letter)
+  [ok  ] 2 puffs requested for 13 letters  — 2
+  [ok  ] puff rects are laid out (width > 0.5)  — 20,00
+
+RESULT: PASS (0 failures)

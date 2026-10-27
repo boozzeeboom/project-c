@@ -191,6 +191,12 @@ Assets/Generated_Models/*
 !Assets/_Project/Prefabs/FloatingOrigin/**/*.prefab.meta
 !Assets/_Project/Prefabs/FloatingOrigin/**/*.asset.meta
 
+# ProjectCMainMenu UI prefab — deliberately tracked in git (PCMM step 9).
+# The tracked BootstrapScene references this prefab, so it must live in git or a
+# clean clone gets a missing prefab reference. Narrow exception, same as above.
+!Assets/Aura/Mods/ProjectCMainMenu/Prefabs/ProjectCMainMenuUI.prefab
+!Assets/Aura/Mods/ProjectCMainMenu/Prefabs/ProjectCMainMenuUI.prefab.meta
+
 # BootstrapScene — deliberately tracked in git (T-FO06E): the floating-origin pilot must
 # review and change NetworkManager configuration, which needs reviewable scene history.
 # Exact paths only: every other scene, including its DESKTOP copy, stays with Lore VCS.

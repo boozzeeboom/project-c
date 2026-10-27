@@ -66,9 +66,12 @@
 - [x] перенос «наполнения» в Unity (шейдеры, атмосфера, тросы, сутки, пыль)
 - [x] порт самого меню в Unity, шаги 1–8: дымовые листы, USS, дерево, поле дыма,
   выдувание букв, алтиметр, поведение, наши блоки
-- [ ] шаг 9 — переключение: префаб `ProjectCMainMenuUI` (`UIDocument` + `PanelSettings`),
-  `MainMenuWindow` выключен как откат, `ProjectCMainMenuMenuBridge` перевешен
-  с `main-menu-*` на новое окно
+- [x] шаг 9 — переключение: префаб `ProjectCMainMenuUI` (`UIDocument` + `PCMM_PanelSettings`,
+  ScaleWithScreenSize 1920×1080, Overlay), `Scripts/ProjectCMainMenuUiHost.cs`,
+  `ProjectCMainMenuMenuBridge` перевешен на новое окно; DOM-путь по `main-menu-*`
+  оставлен запасным
+- [ ] включить префаб в `BootstrapScene` и выключить `MainMenu` (откат) — делает
+  пользователь, потому что сцену сохраняет он же
 
 ## 6. Перенос в Unity — что сделано
 
@@ -105,10 +108,11 @@
   нажатие = 1.0, направление от центра панели, источник в UV; `main-menu-root` скрыт → камера
   выключена, открыта под-панель (`display != None`) → `SetFocus(1)` (облака расходятся).
   `MainMenuWindow.cs/uxml/uss` **не тронуты**.
-- **До шага 9 мост смотрит на старое дерево.** `ProjectCMainMenuMenuBridge` ищет
-  `main-menu-buttons` / `main-menu-root`, то есть живёт на `MainMenuWindow`. Новое окно
-  `ProjectCMainMenuWindow` он пока не видит: после включения `ProjectCMainMenuUI` мост
-  придётся перевесить, иначе порывы и фокус завесы перестанут срабатывать.
+- **Мост с шага 9 умеет оба дерева.** `ProjectCMainMenuMenuBridge` сначала ищет
+  `ProjectCMainMenuUiHost` и берёт порывы из `Window.OnBlow`, видимость — из `IsShown`,
+  фокус — из `SettingsOpen || IsIpOpen`. Если хоста в сцене нет, он работает по-старому
+  (`main-menu-buttons` / `main-menu-root` на `MainMenuWindow`), поэтому откат жив.
+- Если включены оба меню, рисуется новое: у его панели `sortingOrder 10`, у старой — 0.
 
 ### 6.3 Что осталось нашим
 
@@ -173,7 +177,7 @@
    раздвигает облака; «НАСТРОЙКИ» и IP-панель расфокусируют завесу; сутки идут по кругу.
 4. Префаб пересобирается меню `Tools/ProjectC/MainMenu/Build Atmosphere Prefab` (идемпотентно).
 
-## 7. Порт меню мода в Unity (шаги 1–8 из 9)
+## 7. Порт меню мода в Unity (шаги 1–9)
 
 Дата: 2026-10-27. Всё лежит в `Assets/Aura/Mods/ProjectCMainMenu/`; план, пределы платформы
 и журнал решений — `docs/UI/MainMenu/02_smoke_menu_port.md`.
@@ -194,6 +198,7 @@
 | 6 | `Scripts/ProjectCMainMenuAltimeter.cs` | лента высот 800/1200/2200/3000 м | `_altimeter_verify.txt` |
 | 7 | `Scripts/ProjectCMainMenuWindow.Behaviour.cs` | сборка/распад частей, кнопки, настройки, вкладки, тосты, густы | `_behaviour_verify.txt` |
 | 8 | `Scripts/ProjectCMainMenuProjectPanels.cs` | наши блоки `.pc-proj-*` | `_project_panels_verify.txt` |
+| 9 | `Scripts/ProjectCMainMenuUiHost.cs`, `Editor/ProjectCMainMenuBuilder.cs` | `UIDocument` + `PCMM_PanelSettings` + префаб, перевес моста | `_step9_verify.txt` |
 
 ### 7.2 Куда переехал каждый наш элемент
 
@@ -222,10 +227,10 @@
 ### 7.3 Что пока остаётся легаси
 
 - `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` + `MainMenuWindow.uxml` +
-  `MainMenuStyles.uss` + `MainMenuPanelSettings.asset` — в сцене остаются включёнными
-  до шага 9 и служат откатом.
-- `ProjectCMainMenuMenuBridge` — читает `main-menu-buttons` / `main-menu-root`, то есть
-  старое дерево; перевешивается на новое окно шагом 9.
+  `MainMenuStyles.uss` + `MainMenuPanelSettings.asset` — остаются в сцене включёнными,
+  пока не включён `ProjectCMainMenuUI`, и служат откатом.
+- `ProjectCMainMenuMenuBridge` — с шага 9 предпочитает `ProjectCMainMenuUiHost`, а путь
+  по `main-menu-*` держит запасным: пока префаб не включён в сцене, работает он.
 - Секции настроек (`GraphicsSettingsSection` / `AudioSettingsSection` /
   `GameplaySettingsSection`) — в новом окне три вкладки `pc-panel-*` пока собраны
   заглушками (`placeholder до AudioMixer` и строка «Страница повторяет … проекта»);
@@ -235,10 +240,12 @@
 ### 7.4 Риск версий: часть файлов вне Git
 
 `.gitignore` исключает `*.prefab`, `*.shader`, `*.shadergraph` и `*.meta`. В репозитории
-лежат скрипты, `PCMM_Menu.uss`, материалы `PCMM_*.mat`, билдер и отчёты `_*_verify.txt`;
-вне репозитория остаются семь шейдеров `Shaders/PCMM_*.shader`, префаб
-`Prefabs/ProjectCMainMenu.prefab` и все GUID-ы. Из чистого клона
-`Tools/ProjectC/MainMenu/Build Atmosphere Prefab` соберёт материалы и префаб, но
-`Shader.Find` вернёт `null` (`[PCMM] shader not found: …`): исходники шейдеров билдер
-не создаёт и должен получить отдельно. `.gitignore` в этом проходе не менялся.
+лежат скрипты, `PCMM_Menu.uss`, материалы `PCMM_*.mat`, `UI/PCMM_PanelSettings.asset`,
+билдер и отчёты `_*_verify.txt`; вне репозитория остаются семь шейдеров
+`Shaders/PCMM_*.shader`, оба префаба (`ProjectCMainMenu.prefab`, `ProjectCMainMenuUI.prefab`)
+и все GUID-ы. Из чистого клона два пункта меню собирают префабы заново
+(`Tools/ProjectC/MainMenu/Build Atmosphere Prefab` — материалы + префаб атмосферы,
+`Build UI Prefab` — панель + префаб меню), но **не** исходники шейдеров: `Shader.Find`
+вернёт `null` (`[PCMM] shader not found: …`), файлы шейдеров нужно переносить отдельно.
+`.gitignore` в этом проходе не менялся.
 

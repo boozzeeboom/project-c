@@ -13,6 +13,9 @@ namespace ProjectCMainMenu
     {
         [Header("References")]
         [SerializeField] private UIDocument menuDocument;
+        [Tooltip("The ported menu (step 9). Resolved at runtime when left empty, because the " +
+                 "UI prefab and this atmosphere prefab are separate assets.")]
+        [SerializeField] private ProjectCMainMenuUiHost uiHost;
         [SerializeField] private ProjectCMainMenuAtmosphere atmosphere;
 
         [Header("Gust response (mod panel defaults)")]
@@ -40,6 +43,7 @@ namespace ProjectCMainMenu
         private bool _lastVisible = true;
         private float _lastFocus = -1f;
         private bool _backdropCleared;
+        private ProjectCMainMenuWindow _hookedWindow;
 
         private void Awake()
         {
@@ -63,6 +67,19 @@ namespace ProjectCMainMenu
             _pollTimer -= Time.unscaledDeltaTime;
             if (_pollTimer > 0f) return;
             _pollTimer = Mathf.Max(0.05f, pollInterval);
+
+            // Step 9: once the ported window is in the scene it IS the menu. It reports its
+            // own gusts, pointer and screen state, so nothing has to be scraped out of a DOM.
+            var host = ResolveUiHost();
+            if (host != null)
+            {
+                var window = host.Window;
+                if (window != null)
+                {
+                    SyncFromWindow(host, window);
+                    return;
+                }
+            }
 
             var root = _root != null && _root.panel != null ? _root : ResolveRoot();
             if (root == null)
@@ -189,6 +206,12 @@ namespace ProjectCMainMenu
             _root = null;
             _buttons = null;
             _backdropCleared = false;
+
+            if (_hookedWindow != null)
+            {
+                _hookedWindow.OnBlow = null;
+                _hookedWindow = null;
+            }
         }
 
         private void OnRootPointerMove(PointerMoveEvent evt)
@@ -259,6 +282,64 @@ namespace ProjectCMainMenu
                 _lastFocus = focus;
                 atmosphere.SetFocus(focus);
             }
+        }
+
+        // ------------------------------------------------- ported window (step 9)
+
+        private ProjectCMainMenuUiHost ResolveUiHost()
+        {
+            if (uiHost != null) return uiHost;
+
+            // inactive objects are skipped on purpose: an inactive host shows no menu, and
+            // the legacy fallback below then keeps the camera hidden as it always did
+            uiHost = Object.FindAnyObjectByType<ProjectCMainMenuUiHost>();
+            return uiHost;
+        }
+
+        /// <summary>
+        /// Same three jobs the DOM path does, but read from the window's own state instead
+        /// of from resolved styles: gusts arrive through OnBlow, visibility through the
+        /// host, and «a sub-screen is open» through SettingsOpen / IsIpOpen.
+        /// </summary>
+        private void SyncFromWindow(ProjectCMainMenuUiHost host, ProjectCMainMenuWindow window)
+        {
+            if (_hookedWindow != window)
+            {
+                if (_hookedWindow != null) _hookedWindow.OnBlow = null;
+                _hookedWindow = window;
+                _hookedWindow.OnBlow = OnWindowBlow;
+            }
+
+            if (atmosphere == null) return;
+
+            var shown = host.IsShown;
+            if (shown != _lastVisible)
+            {
+                _lastVisible = shown;
+                atmosphere.SetVisible(shown);
+            }
+
+            // the altimeter's pointer already comes from the window; the gas reads the
+            // same 0..1 height, flipped to the shader's bottom-up convention
+            if (pointerLiftEnabled) atmosphere.PointerLift = 1f - window.PointerY;
+
+            var focus = window.SettingsOpen || window.IsIpOpen ? 1f : 0f;
+            if (!Mathf.Approximately(focus, _lastFocus))
+            {
+                _lastFocus = focus;
+                atmosphere.SetFocus(focus);
+            }
+        }
+
+        private void OnWindowBlow(ProjectCMainMenuWindow.Gust gust)
+        {
+            if (atmosphere == null) return;
+
+            // Gust.Y is panel space (0 = top); _GustOrigin in PCMM_Veil.shader is quad UV
+            // (0 = bottom), so the origin flips — exactly what the DOM path did when it
+            // built origin01 by hand. The direction is already in screen space.
+            var origin = new Vector2(gust.X, 1f - gust.Y);
+            atmosphere.Blow(new Vector2(gust.DirX, gust.DirY), origin, gust.Strength, gust.DurationMs);
         }
     }
 }

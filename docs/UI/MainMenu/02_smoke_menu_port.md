@@ -1,7 +1,7 @@
 # MainMenu — перенос меню мода в Unity 1в1
 
 > **Дата:** 2026-10-27
-> **Статус:** в работе (шаг 8 из 9)
+> **Статус:** шаги 1–9 сделаны; включение префаба в сцене — за пользователем
 > **Источник истины:** `.Aura/Mods/projectc-main-menu/` (`src/*.js`, `src/ui.css`)
 > **Предыдущая документация меню:** `01_implementation.md`, `ITERATIONS.md`
 
@@ -68,11 +68,13 @@ grayscale() sepia() invert() hue-rotate()`; `text-shadow`; `aspect-ratio`; `tran
 Остальное (раскладка, цвета палитры, тайминги, порядок экранов, подписи, поведение)
 переносится буквально.
 
-### Следствие для шага 9
+### Панель нового окна
 
-`PanelSettings` нового окна обязан быть `ScaleWithScreenSize` с опорой **1920×1080** —
-именно это заменяет все `clamp(min, Nvh|Nvw, max)` из `ui.css`. С `ConstantPixelSize`
-вёрстка поедет.
+`PanelSettings` нового окна — `UI/PCMM_PanelSettings.asset`: `ScaleWithScreenSize` с опорой
+**1920×1080**, `MatchWidthOrHeight`, `match 0`, Screen Space Overlay, `sortingOrder 10`
+(выше старого меню, у которого 0). Именно это заменяет все `clamp(min, Nvh|Nvw, max)`
+из `ui.css`; с `ConstantPixelSize` вёрстка поедет. Тема взята у существующей
+`MainMenuPanelSettings` — её рисуют `TextField` и `DropdownField`.
 
 ## Шаги
 
@@ -163,16 +165,33 @@ grayscale() sepia() invert() hue-rotate()`; `text-shadow`; `aspect-ratio`; `tran
   значение восстановлено); ширина 800 → `.pc-proj-changelog` получает `is-hidden` и `display: none`;
   нажатие «ПОДКЛЮЧИТЬСЯ К СЕРВЕРУ» через 120 мс открывает IP-лист; `Dispose` снимает слой и
   оставляет точку монтирования пустой.
-- [ ] **9. Переключение** — новый префаб `ProjectCMainMenuUI` (`UIDocument` + `PanelSettings`
-  Screen Space Overlay, `ScaleWithScreenSize` 1920×1080), `MainMenuWindow` остаётся
-  выключенным как откат; `ProjectCMainMenuMenuBridge` перевешивается с `main-menu-*`
-  на новое окно (`OnBlow`, `OnAction`, `Hovered`, `SettingsOpen`); затем
-  `check_compile_errors` = 0 и проверка шейдерных ошибок в `get_unity_logs`.
+- [x] **9. Переключение** — `Scripts/ProjectCMainMenuUiHost.cs` + пункт меню
+  `Tools/ProjectC/MainMenu/Build UI Prefab` в `Editor/ProjectCMainMenuBuilder.cs` →
+  `UI/PCMM_PanelSettings.asset` (ScaleWithScreenSize 1920×1080, Screen Space Overlay,
+  sortingOrder 10) и `Prefabs/ProjectCMainMenuUI.prefab` (`UIDocument` + хост, панель,
+  тема и `PCMM_Menu.uss` назначены). `ProjectCMainMenuMenuBridge` перевешен: порывы идут
+  через `Window.OnBlow`, видимость — через `host.IsShown`, фокус — через
+  `SettingsOpen || IsIpOpen`; DOM-путь по `main-menu-*` остался запасным для отката.
+  Проверено численно (`_step9_verify.txt`, **39 проверок, 0 провалов**): префаб из трёх
+  компонентов, ссылки на панель и USS живы, `sortingOrder` 10 против 0 у старого меню,
+  тема — та же `UnityDefaultRuntimeTheme`; заворот `origin.y = 1 − Gust.Y` подтверждён
+  по `_gustOriginTarget` (0.25, 0.10 → 0.2500, 0.9000), направление (0.6, −0.8) дошло
+  нормализованным; `FindAnyObjectByType` находит хост из префаба. Осталось включить
+  префаб в `BootstrapScene` и выключить `MainMenu` — сцену сохраняет пользователь.
 
 ## Что делаем вручную
 
 Play Mode и визуальную приёмку делает пользователь (правило проекта). Агент не сохраняет
 сцены и не запускает Play Mode.
+
+Переключение в `BootstrapScene` — тоже ручное, потому что сцену сохраняет пользователь:
+
+1. перетащить `Assets/Aura/Mods/ProjectCMainMenu/Prefabs/ProjectCMainMenuUI.prefab` в корень сцены;
+2. выключить существующий `MainMenu` — он остаётся в сцене откатом и ничего не стоит включить обратно;
+3. Play: меню мода с атмосферой за ним; сохранить сцену, когда вид устраивает.
+
+Если префаб включён, а `MainMenu` тоже включён — рисуется новое меню (`sortingOrder 10`
+против 0), мост берёт порывы у нового окна, но старое меню продолжает висеть под ним.
 
 ## Что не попадает в Git
 
@@ -409,3 +428,46 @@ Easing переехал в `ProjectCMainMenuPalette`: `EaseOut` = `CubicBezier(0
 Сетевой путь changelog прогнан только до состояния «Загрузка…»: ответ GitHub в проверке не
 ждётся, рендер проверен фикстурой через публичный `RenderChangelog`. Ручная приёмка в
 Play Mode — за пользователем.
+
+### 2026-10-27 — шаг 9: переключение
+
+`ProjectCMainMenuUiHost` — тот самый «кто-то», кто монтирует окно в игру. Сам
+`ProjectCMainMenuWindow` остался чистым C#-объектом: строит дерево кодом, не знает ни
+про `UIDocument`, ни про `PanelSettings`, и по-прежнему получает точку монтирования
+параметром `Mount(VisualElement)`.
+
+Пять решений, которые пришлось принять:
+
+1. **Окно тикает снаружи, а не само.** `Start()` вешает `schedule.Execute(...).Every(16)`
+   на `Ui`, а во время загрузки сцены элемента ещё нет в панели — расписание повисло бы
+   в пустоте. Поэтому хост ставит `AutoTick = false` и сам зовёт `Update(dt)`; внутри
+   `Update` лениво вызывает `Start()`. Порядок детерминирован: смонтировали → панель
+   появилась → первый кадр → `Start()`.
+2. **Монтирование ленивое.** `UIDocument` создаёт `rootVisualElement` в своём `OnEnable`,
+   и порядок компонентов на префабе — не контракт. Хост пробует смонтировать в каждом
+   `Update`, пока не получится, и молчит, пока `root.panel == null`.
+3. **Скрытие меню — это `display: none` на корне документа**, а не `Dispose()`: состояние
+   окна (дисклеймер, changelog, выбранная локаль) переживает уход из меню. `Dispose()`
+   вызывается только в `OnDestroy`.
+4. **Два действия переехали из старого меню.** «Одиночная игра» — `StartHost()` и скрыть
+   меню; «Подключиться» — шаг 8 сам зовёт `ConnectToServer` через шов и сообщает
+   `OnProjectAction("ip-connect")`, по которому хост тоже скрывает меню. Без второго
+   непрозрачная камера атмосферы осталась бы поверх загруженного мира — ровно та
+   регрессия, от которой спасал `Hide()` в `MainMenuWindow`.
+5. **Мост смотрит на окно, а не на DOM.** `OnBlow` отдаёт готовый порыв (`X/Y` в долях
+   панели, `DirX/DirY`, сила, длительность), поэтому скрейпинг `Button`-ов
+   `main-menu-buttons` больше не нужен; фокус берётся из `SettingsOpen || IsIpOpen`, а не
+   из `resolvedStyle`. Старый путь остался целиком: если хоста в сцене нет, мост работает
+   по `main-menu-*`, и откат продолжает жить.
+
+Одна неочевидность: `Gust.Y` считается сверху вниз, а `_GustOrigin` в `PCMM_Veil.shader`
+сравнивается с UV квада, где 0 — снизу (`suv - _GustOrigin.xy`). Мост заворачивает
+`origin.y = 1 − Gust.Y`; проверено на фикстуре 0.10 → 0.9000.
+
+Префаб и панель собирает `Tools/ProjectC/MainMenu/Build UI Prefab` (идемпотентно), тема
+берётся у существующей `MainMenuPanelSettings`, чтобы `TextField`/`DropdownField`
+рисовались как раньше. У нового `PanelSettings` свой ассет и `sortingOrder 10`: старое
+меню осталось на 0, и во время перехода новое рисуется сверху.
+
+Сцена не тронута — включение `ProjectCMainMenuUI` и выключение `MainMenu` осталось выше,
+в разделе про ручные шаги.

@@ -2,8 +2,8 @@
 
 > **Дата:** 2026-08-07
 > **Статус:** ✅ Реализовано — **легаси**: заменяется портом меню мода (см. первый раздел)
-> **Порт меню мода:** `docs/UI/MainMenu/02_smoke_menu_port.md` — шаги 1–8 из 9;
-> это меню остаётся в сцене рабочим как **откат** до шага 9
+> **Порт меню мода:** `docs/UI/MainMenu/02_smoke_menu_port.md` — шаги 1–9;
+> это меню остаётся в сцене рабочим как **откат**, пока не включён префаб `ProjectCMainMenuUI`
 > **Контекст:** `docs/UI/esc-menu/` — EscMenu (переиспользуем секции настроек)
 > **Локализация:** `docs/world/Localization/` — `Loc.cs`
 
@@ -13,20 +13,22 @@
 
 Меню мода переносится в Unity 1в1 — `Assets/Aura/Mods/ProjectCMainMenu/`
 (`ProjectCMainMenuWindow` на трёх `partial`-файлах + `PCMM_Menu.uss`). План, пределы
-платформы и журнал решений — `docs/UI/MainMenu/02_smoke_menu_port.md`, шаги 1–8 из 9 закрыты.
+платформы и журнал решений — `docs/UI/MainMenu/02_smoke_menu_port.md`, шаги 1–9 закрыты.
 
-`MainMenuWindow` из этого документа **не удаляется и не правится**: до шага 9 он остаётся
-включённым в `BootstrapScene` и служит откатом. Шаг 9 добавляет префаб `ProjectCMainMenuUI`
-(`UIDocument` + `PanelSettings`) и выключает `MainMenuWindow`; после этого документ описывает
-только откатное состояние.
+`MainMenuWindow` из этого документа **не удаляется и не правится**: он остаётся в
+`BootstrapScene` включённым и служит откатом. Префаб `ProjectCMainMenuUI`
+(`UIDocument` + `PCMM_PanelSettings` + `ProjectCMainMenuUiHost`) уже собран и лежит рядом;
+чтобы перейти на новое меню, его включают в сцене, а `MainMenu` выключают. После этого
+документ описывает только откатное состояние.
 
 Что это значит практически:
 
-- `ProjectCMainMenuMenuBridge` ищет `main-menu-buttons` / `main-menu-root`, то есть именно это
-  дерево; новое окно он пока не видит и перевешивается шагом 9.
+- `ProjectCMainMenuMenuBridge` смотрит на новое окно, если `ProjectCMainMenuUiHost` есть
+  в сцене, и только иначе возвращается к `main-menu-buttons` / `main-menu-root` из этого
+  дерева.
 - IP-экран, админ-сбросы, changelog, ссылки, дропдаун языка и дисклеймер уже перенесены
-  в новое окно (`.pc-proj-*`) с теми же API — но переключение ещё не сделано,
-  так что в живом меню работает именно код ниже.
+  в новое окно (`.pc-proj-*`) с теми же API. Пока переключение не сделано, в живом меню
+  работает именно код ниже.
 - Секции настроек (`GraphicsSettingsSection` / `AudioSettingsSection` /
   `GameplaySettingsSection`) пока есть только здесь; в новом окне три вкладки собраны
   заглушками.

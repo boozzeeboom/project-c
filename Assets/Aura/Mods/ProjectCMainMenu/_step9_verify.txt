@@ -1,0 +1,55 @@
+step 9 — switch (ProjectCMainMenuUI, PCMM_PanelSettings, bridge re-point)
+
+-- assets --
+  ok   UI prefab exists | Assets/Aura/Mods/ProjectCMainMenu/Prefabs/ProjectCMainMenuUI.prefab
+  ok   panel settings exist | Assets/Aura/Mods/ProjectCMainMenu/UI/PCMM_PanelSettings.asset
+  ok   stylesheet found | Assets/Aura/Mods/ProjectCMainMenu/UI/PCMM_Menu.uss
+
+-- prefab --
+  ok   UIDocument on the prefab
+  ok   ProjectCMainMenuUiHost on the prefab
+  ok   exactly 3 components (Transform + UIDocument + host) | Transform, UIDocument, ProjectCMainMenuUiHost
+  ok   PanelSettings assigned | PCMM_PanelSettings
+  ok   sortingOrder 10 (above the legacy menu) | 10
+  ok   host.document -> its own UIDocument
+  ok   host.styleSheet -> PCMM_Menu.uss | PCMM_Menu
+  ok   host.hideAfterStart serialized
+  ok   host declares [RequireComponent(UIDocument)] | 1
+  ok   window.Mount(VisualElement)
+  ok   window.Update(float)
+  ok   window.Dispose()
+  ok   window.OnBlow is Action<Gust>
+  ok   window.OnAction is Action<string,string>
+  ok   window.AutoTick is settable
+  ok   window.IsIpOpen is readable
+
+-- panel settings --
+  ok   scaleMode = ScaleWithScreenSize | ScaleWithScreenSize
+  ok   scaleMode is NOT ConstantPixelSize
+  ok   referenceResolution = 1920x1080 | (1920, 1080)
+  ok   screenMatchMode = MatchWidthOrHeight | MatchWidthOrHeight
+  ok   renderMode = ScreenSpaceOverlay | ScreenSpaceOverlay
+  ok   sortingOrder = 10 | 10
+  ok   theme present (TextField / DropdownField need it) | UnityDefaultRuntimeTheme
+  ok   theme is the one the project already ships
+  ok   panel draws above the legacy menu | 10 > 0
+  ok   legacy panel is untouched (ConstantPhysicalSize) | ConstantPhysicalSize
+
+-- bridge re-point --
+  ok   bridge exposes OnWindowBlow (window gusts)
+  ok   bridge exposes SyncFromWindow
+  ok   bridge has an atmosphere slot
+  ok   bridge has a uiHost slot
+  ok   origin.x forwarded unchanged | 0.2500, 0.9000
+  ok   origin.y flipped to bottom-up UV (1 - Gust.Y) | 0.2500, 0.9000
+  ok   direction forwarded normalised | 0.6000, -0.8000
+  ok   prefab instantiates
+  ok   FindAnyObjectByType resolves the host (bridge re-point at runtime)
+  ok   host starts hidden? no — visible until an action
+
+-- what is NOT checked here --
+  runtime: the host mounts on the document root and drives Update() — Play Mode is the user's job
+  visual: panel scale on a real screen, menu over the atmosphere layer
+  scene: BootstrapScene still has to be switched by hand (MainMenu off, this prefab on)
+
+-- 39 passed, 0 failed --

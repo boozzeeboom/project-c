@@ -1,0 +1,1888 @@
+/* ============================================================================
+   PCMM_Menu.uss — 1:1 port of .Aura/Mods/projectc-main-menu/src/ui.css
+   ----------------------------------------------------------------------------
+   Source: ui.css, 1781 lines, 193 top-level .pc-* selectors.
+   Target: Unity 6000.5.2f1 / UIElements (URP 17.5.0).
+
+   PORT CONTRACT
+   -------------
+   Every value below is the CSS value resolved at the reference resolution
+   1920x1080.  UI Toolkit has no vw/vh/clamp(), so responsiveness is carried by
+   the PanelSettings instead:
+
+       PanelSettings.scaleMode  = ScaleWithScreenSize
+       PanelSettings.referenceResolution = 1920 x 1080
+       PanelSettings.screenMatchMode      = MatchWidthOrHeight (0.5)
+
+   That reproduces the intent of every `clamp(min, Nvh|Nvw, max)` in the CSS:
+   bounded scaling around the reference layout.  Do not re-introduce px-only
+   assumptions when the panel settings change.
+
+   WHERE THIS FILE DIFFERS FROM ui.css — all verified against this editor by
+   importing a probe sheet per construct (67 + 50 probes, results in
+   docs/UI/MainMenu/02_smoke_menu_port.md).  "OK" = parsed and imported clean.
+
+   UNSUPPORTED PROPERTY / FUNCTION        | REPLACEMENT USED HERE
+   ---------------------------------------|------------------------------------
+   clamp() min() max() calc()             | resolved to px at 1920x1080
+   vh vw rem em ch units                  | resolved to px at 1920x1080
+   transform: translate/scale/rotate      | the longhands translate / scale /
+                                            rotate (all OK, incl. % and deg)
+   cubic-bezier()                         | ease / ease-in / ease-out /
+                                            ease-in-out only
+   background-image: linear-gradient()    | [C#] generated Texture2D, assigned to
+   background-image: radial-gradient()       style.backgroundImage at runtime; a
+                                             solid background-color is left here
+                                             as the fallback
+   filter: brightness()                   | dropped (contrast/opacity/grayscale/
+                                            sepia/invert/hue-rotate/blur are OK)
+   @keyframes / animation-*               | [C#] driver loop (pc-boil, pc-sweep,
+                                            pc-cloud-burst, pc-blob-burst,
+                                            pc-press have no USS equivalent)
+   text-transform                         | [C#] label text is already UPPER CASE
+   font-variant-numeric: tabular-nums     | dropped (no USS equivalent)
+   line-height                            | dropped (unknown property here)
+   font-weight                            | dropped; -unity-font-style only
+   font-size: <percent>                   | resolved to px
+   gap / row-gap / column-gap             | margin-right / margin-bottom on
+                                            children, or C# spacing
+   inset                                  | left / top / right / bottom
+   overflow-x / overflow-y                | overflow only; scrollable areas are
+                                            ScrollView in C# instead
+   outline / outline-offset               | border-width/color + a wrapper
+   box-shadow                             | [C#] a sibling glow element
+   backdrop-filter                        | dropped
+   pointer-events                         | [C#] pickingMode = Ignore
+   cursor: pointer                        | cursor: link
+   text-align                             | -unity-text-align
+   letter-spacing: <em>                   | px, converted per rule below
+   :nth-child(n)  (hard import ERROR)     | explicit .pc-btn-n1 … .pc-btn-n4
+   :first-child    (unknown pseudo class) | explicit class
+   isolation / appearance / text-shadow?  | isolation, appearance dropped;
+                                            text-shadow IS supported and kept
+   z-index                                | dropped — paint order is document
+                                            order in UI Toolkit
+   ::before / ::after                     | real child elements.  Mapping:
+                                              .pc-main::before      -> .pc-main__scrim
+                                              .pc-scan::after       -> .pc-scan__sweep
+                                              .pc-btn-cloud::after  -> .pc-btn-cloud__rim
+                                              .pc-card-cloud::after -> .pc-card-cloud__rim
+                                              .pc-card::before      -> .pc-card__mist
+                                              .pc-card-head::after  -> .pc-card-head__rule
+                                              .pc-tabs::after       -> .pc-tabs__rule
+                                              .pc-tab::after        -> .pc-tab__glow
+                                              .pc-row::before       -> .pc-row__wash
+                                              .pc-select-wrap::after-> .pc-select-wrap__chevron
+   [hidden] attribute                     | .is-hidden  (there is no attribute API)
+   @media (max-height / max-width)        | dropped: PanelSettings scales the
+                                            reference layout instead of reflowing
+   @media (prefers-reduced-motion)        | dropped: no media queries in USS
+
+   KEPT AS-IS BECAUSE IT IS SUPPORTED HERE
+   ---------------------------------------
+   CSS custom properties (--x, var(--x), var(--x, fallback))  — probed OK, and
+   they inherit, so the whole palette is declared once on .pc-ui-root exactly
+   like `:root` in ui.css.  The palette is static: ui.js calls applyPalette()
+   once (line 182) from the constant PALETTE, so nothing here animates with the
+   day/night cycle.
+   filter: blur() / opacity() / contrast() / grayscale() / sepia() / invert() /
+   hue-rotate(); text-shadow; aspect-ratio; -unity-font-style;
+   -unity-text-outline; translate/scale/rotate; transition-*; border-radius in
+   %; -unity-background-scale-mode; -unity-background-image-tint-color;
+   :hover / :active / :focus; attribute selectors.
+
+   THE ONE VALUE THIS FILE CANNOT HOLD
+   -----------------------------------
+   --a, the assembly value (0 = drifting smoke, 1 = a readable form).  ui.js
+   writes it per element per frame, and USS has no way to set a custom property
+   from C# (VisualElement only exposes read-only customStyle).  Every rule that
+   used `var(--a, …)` therefore keeps the correct default here and the animated
+   part — opacity, translate, scale, filter blur — is written inline by
+   ProjectCMainMenuWindow every frame, exactly as ui.js does with setProperty.
+   Rules marked [C#] below are the ones that participate.
+   ============================================================================ */
+
+/* ------------------------------------------------------------------ palette */
+/* ui.js applyPalette() — src/palette.js PALETTE plus the derived translucents.
+   The four smoke sheets (light/dark/wisp/cloud) are procedural textures made by
+   ProjectCMainMenuSmokeTextures and are assigned from C#, not here. */
+
+.pc-ui-root {
+    --pc-sky-top: #d3e2e6;
+    --pc-sky-mid: #e3ebe9;
+    --pc-sky-horizon: #eef2ec;
+
+    --pc-veil-dark: #070a09;
+    --pc-veil-mid: #121711;
+    --pc-veil-soft: #1f2620;
+    --pc-veil-hi: #2b342c;
+    --pc-veil-edge: #4a574c;
+
+    --pc-gas-deep: #0b1f14;
+    --pc-gas-mid: #16412c;
+    --pc-gas-bright: #2f7c50;
+    --pc-gas-accent: #54a373;
+
+    --pc-ink: #eef3ef;
+    --pc-ink-dim: #a8b6ac;
+    --pc-ink-faint: #71806f;
+
+    --pc-panel: rgba(9, 14, 11, 0.78);
+    --pc-panel-edge: rgba(96, 150, 116, 0.28);
+    --pc-accent: #78b891;
+    --pc-accent-soft: rgba(120, 184, 145, 0.16);
+    --pc-shadow: rgba(0, 0, 0, 0.55);
+
+    /* soft charcoal body of a cloud button */
+    --pc-cloud-base: rgba(7, 10, 9, 0.34);
+    --pc-cloud-rim: rgba(238, 242, 236, 0.24);
+
+    /* derived translucents */
+    --pc-scrim: rgba(7, 10, 9, 0.66);
+    --pc-scrim-mid: rgba(7, 10, 9, 0.34);
+    --pc-scrim-fade: rgba(7, 10, 9, 0);
+    --pc-hair: rgba(238, 243, 239, 0.16);
+    --pc-hair-strong: rgba(120, 184, 145, 0.6);
+    --pc-glass: rgba(7, 10, 9, 0.5);
+    --pc-glass-light: rgba(31, 38, 32, 0.3);
+    --pc-glass-2: rgba(7, 10, 9, 0.62);
+    --pc-glass-deep: rgba(18, 23, 17, 0.74);
+    --pc-vig: rgba(7, 10, 9, 0.34);
+    --pc-scanline: rgba(7, 10, 9, 0.07);
+    --pc-sweep: rgba(238, 243, 239, 0.06);
+    --pc-sheen: rgba(238, 243, 239, 0.08);
+    --pc-glow: rgba(84, 163, 115, 0.4);
+    --pc-focus: rgba(120, 184, 145, 0.92);
+    --pc-track: rgba(238, 243, 239, 0.16);
+    --pc-track-2: rgba(7, 10, 9, 0.55);
+    --pc-row: rgba(22, 65, 44, 0.2);
+    --pc-ring: rgba(120, 184, 145, 0.35);
+}
+
+/* .pc-ui-root, .pc-ui-root * { box-sizing: border-box } — USS is always
+   border-box, nothing to declare. */
+
+.pc-ui-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    color: var(--pc-ink);
+    font-size: 14px;
+    -unity-text-align: middle-left;
+    /* font-family: var(--pc-font) — USS has no font-family; the default runtime
+       font is what the legacy MainMenuStyles.uss uses too. */
+    /* pointer-events: none — [C#] pickingMode = Ignore on the root,
+       PickingMode.Position on the interactive subtree. */
+}
+
+/* ------------------------------------------------------------ smoke layer */
+
+.pc-smoke-field {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.pc-smoke-puff {
+    position: absolute;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    border-radius: 50%;
+}
+
+/* ------------------------------------------- letters turning to smoke */
+
+.pc-ghost-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.pc-ghost {
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    background-color: transparent;
+    -unity-text-align: middle-left;
+    filter: none;
+}
+
+.pc-word {
+    white-space: nowrap;
+}
+
+.pc-glyph {
+    transform-origin: 50% 60%;
+}
+
+/* -------------------------------------------------------- scan overlay */
+
+.pc-scan {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.42;
+    /* background-image: radial vignette + repeating scanlines — [C#] one
+       Texture2D built from the same two ramps, assigned at runtime. */
+}
+
+.pc-scan__sweep {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 367px; /* 34vh */
+    /* background: linear-gradient(transparent, --pc-sweep, transparent) — [C#]
+       generated 1x64 ramp texture.  The pc-sweep keyframes (translateY -40vh ->
+       120vh, 11s linear infinite) have no USS equivalent: [C#] driver. */
+}
+
+/* -------------------------------------------------------------- layout */
+
+.pc-ui {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.pc-main {
+    --a: 1;
+    position: relative;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: auto;
+    min-height: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    /* gap: clamp(14px, 2.6vh, 30px) */
+    padding-left: 64px;  /* clamp(16px, 5vw, 64px) -> clamped to 64 */
+    padding-right: 64px;
+    padding-top: 49px;   /* clamp(18px, 4.5vh, 60px) = 48.6 */
+    padding-bottom: 20px; /* clamp(8px, 2vh, 20px) -> clamped to 20 */
+    /* child spacing handled by margins: see .pc-title-block / .pc-nav-row /
+       .pc-menu-note  (USS has no gap) */
+}
+
+/* .pc-main::before — the left scrim that the wordmark sits on */
+.pc-main__scrim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 640px;      /* min(46rem, 88%) */
+    max-width: 88%;
+    opacity: var(--a, 1);
+    /* linear-gradient(to right, --pc-scrim, --pc-scrim-mid 42%, --pc-scrim-fade
+       84%) — [C#] generated horizontal ramp texture. */
+}
+
+/* --------------------------------------------------------------- title */
+
+.pc-title-block {
+    flex-direction: column;
+    max-width: 100%;
+    min-width: 0;
+    opacity: var(--a, 1);
+    /* gap: clamp(6px, 1.1vh, 12px) = 11.88 -> children carry margin-bottom */
+}
+
+/* .pc-title-block.is-forming — filter: blur(calc((1 - --a) * 6px)) — [C#]
+   style.filter = FilterFunction.Blur((1 - a) * 6) while a < 1. */
+
+.pc-eyebrow {
+    margin: 0;
+    margin-bottom: 12px;
+    font-size: 11.5px;      /* clamp(9.5px, 1.1vw, 11.5px) */
+    letter-spacing: 3.5px;  /* 0.3em @ 11.5px */
+    color: var(--pc-accent);
+    opacity: 0.92;
+    /* text-transform: uppercase — [C#] label text. */
+}
+
+/* The wordmark is one text node 'PROJECT' plus a coloured 'C' span in the CSS.
+   A UI Toolkit Label cannot host a child, so .pc-wordmark becomes a row and the
+   two runs are its children.  Font size / spacing / shadow are restated on each
+   run rather than relying on inheritance. */
+.pc-wordmark {
+    flex-direction: row;
+    align-items: flex-start;
+    margin: 0;
+    margin-bottom: 12px;
+    white-space: nowrap;
+}
+
+.pc-wordmark-text {
+    font-size: 78px;        /* clamp(34px, 7.4vw, 78px) */
+    letter-spacing: 11.7px; /* 0.15em @ 78px */
+    color: var(--pc-ink);
+    /* CSS: two shadows (0 2px 28px --pc-shadow, 0 0 3px --pc-glow); USS takes
+       exactly one, so the cast shadow is kept and the 3px glow is dropped. */
+    text-shadow: 0 2px 28px var(--pc-shadow);
+    white-space: nowrap;
+}
+
+.pc-wordmark-c {
+    font-size: 78px;
+    letter-spacing: 4.7px;  /* 0.06em @ 78px */
+    color: var(--pc-accent);
+    text-shadow: 0 2px 28px var(--pc-shadow);
+    white-space: nowrap;
+}
+
+.pc-rule {
+    width: 148px;           /* clamp(56px, 16vw, 148px) -> clamped to 148 */
+    height: 1px;
+    margin-bottom: 12px;
+    /* linear-gradient(90deg, --pc-hair-strong, transparent) — [C#] ramp. */
+}
+
+.pc-subtitle {
+    margin: 0;
+    max-width: 260px;       /* 30ch @ 12px */
+    font-size: 12px;        /* clamp(10px, 1.15vw, 12px) */
+    letter-spacing: 1.9px;  /* 0.16em @ 12px */
+    color: var(--pc-ink-dim);
+    text-shadow: 0 1px 12px var(--pc-shadow);
+    white-space: normal;
+}
+
+/* ----------------------------------------------------------------- nav */
+
+.pc-nav-row {
+    flex-direction: row;
+    align-items: stretch;
+    width: 480px;           /* min(100%, 30rem) */
+    max-width: 100%;
+    margin-top: 28px;       /* gap: clamp(14px, 2.6vh, 30px) = 28 */
+}
+
+.pc-nav {
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: auto;
+    min-width: 0;
+    /* gap: clamp(5px, 1vh, 9px) = 9 — applied per child below, since USS has
+       neither `gap` nor the `+` combinator */
+}
+
+.pc-nav > .pc-btn {
+    margin-top: 9px;        /* gap: clamp(5px, 1vh, 9px) = 9 */
+}
+
+/* USS has no `gap` and no adjacent-sibling (`+`) combinator — `+` is a hard
+   import error. Every gapped container therefore puts the gap on the child
+   margin, and ProjectCMainMenuWindow marks the container's first child with
+   .is-first-in-group to cancel it. */
+.pc-nav > .pc-btn.is-first-in-group {
+    margin-top: 0;
+}
+
+/* ---- the cloud buttons --------------------------------------------------
+   No plate, no frame, no tiled texture: a bank of smoke.  Each blob is one
+   stretch of the procedural cloud sheet, stacked at different sizes, heights
+   and phases so the summed alpha edge is ragged.  Only the label stays crisp. */
+
+.pc-btn {
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin: 0;
+    padding-left: 28px;   /* clamp(18px, 3.2vw, 28px) -> clamped to 28 */
+    padding-right: 28px;
+    padding-top: 15px;    /* clamp(9px, 1.6vh, 15px) -> clamped to 15 */
+    padding-bottom: 15px;
+    border-width: 0;
+    border-radius: 999px;
+    background-color: transparent;
+    color: var(--pc-ink);
+    font-size: 15px;        /* clamp(12.5px, 1.55vw, 15px) */
+    letter-spacing: 2.6px;  /* 0.17em @ 15px */
+    -unity-text-align: middle-left;
+    opacity: var(--a, 1);
+    transition-property: color, translate;
+    transition-duration: 0.24s, 0.34s;
+    transition-timing-function: ease, ease-out;
+    cursor: link;
+}
+
+/* .pc-btn.is-forming — [C#] filter: blur((1 - a) * 5px). */
+
+.pc-btn-cloud {
+    position: absolute;
+    left: -2%;
+    right: -2%;
+    top: -12%;
+    bottom: -12%;
+    opacity: 0.88;      /* calc(0.22 + 0.66 * --a) with --a = 1; [C#] per frame */
+    /* radial-gradient(58% 122% at 46% 53%, --pc-cloud-base, transparent 76%) —
+       [C#] generated elliptical alpha ramp. */
+    filter: blur(4px);
+    scale: 0.97 0.94;
+    transition-property: opacity, scale, filter;
+    transition-duration: 0.38s, 0.46s, 0.38s;
+    transition-timing-function: ease, ease-out, ease;
+}
+
+.pc-btn-cloud__rim {
+    position: absolute;
+    left: 12%;
+    right: 18%;
+    top: -8%;
+    height: 54%;
+    border-radius: 50%;
+    opacity: 0.55;
+    /* radial-gradient(50% 50% at 50% 50%, --pc-cloud-rim, transparent 72%) —
+       [C#] ramp texture. */
+    filter: blur(2px);
+}
+
+.pc-blob {
+    position: absolute;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;  /* CSS: contain */
+    /* background-image: var(--pc-smoke-cloud) — [C#] StyleBackground from
+       ProjectCMainMenuSmokeTextures.Cloud. */
+    /* animation: pc-boil 17s ease-in-out infinite alternate — [C#] driver:
+       translate 0,-3%,+2.4% x -1.4%,+1.8% and scale 1,1 / 1.06,0.94 / .95,1.05 */
+}
+
+/* six overlapping round puffs at their natural shape — different sizes,
+   heights and phases, so no two clouds look the same */
+.pc-blob-a { left: -3%; top: -26%; height: 150%; opacity: 0.46; }
+.pc-blob-b { left: 11%; top: -8%;  height: 122%; opacity: 0.30; }
+.pc-blob-c { left: 25%; top: -34%; height: 172%; opacity: 0.40; }
+.pc-blob-d { left: 40%; top: -14%; height: 134%; opacity: 0.32; }
+.pc-blob-e { left: 55%; top: -30%; height: 166%; opacity: 0.44; }
+.pc-blob-f { left: 70%; top: -10%; height: 128%; opacity: 0.30; }
+.pc-blob-g { left: 84%; top: -24%; height: 152%; opacity: 0.40; }
+
+/* every button condenses its own bank of mist, not the same one four times.
+   ui.css used .pc-nav .pc-btn:nth-child(n); :nth-child is a hard import error
+   in USS, so ProjectCMainMenuWindow adds .pc-btn-n1 … .pc-btn-n4. */
+.pc-btn-n1 .pc-btn-cloud { rotate: -1.6deg; }
+.pc-btn-n2 .pc-btn-cloud { rotate: 1.2deg; }
+.pc-btn-n3 .pc-btn-cloud { rotate: -0.7deg; }
+.pc-btn-n4 .pc-btn-cloud { rotate: 1.9deg; }
+
+.pc-btn-n2 .pc-blob-a { left: 5%;  height: 144%; opacity: 0.58; }
+.pc-btn-n2 .pc-blob-c { left: 40%; height: 196%; opacity: 0.50; }
+.pc-btn-n3 .pc-blob-b { left: 10%; top: -24%; height: 152%; opacity: 0.66; }
+.pc-btn-n3 .pc-blob-e { left: 60%; height: 186%; }
+.pc-btn-n4 .pc-blob-a { left: 8%;  height: 172%; opacity: 0.60; }
+.pc-btn-n4 .pc-blob-d { left: 56%; height: 130%; opacity: 0.72; }
+
+/* hover: the cloud swells and thickens around the text, never becomes a plate */
+.pc-btn:hover,
+.pc-btn.is-hover,
+.pc-btn:focus {
+    color: var(--pc-ink);
+    translate: 4px 0;
+}
+
+.pc-btn:hover .pc-btn-cloud,
+.pc-btn.is-hover .pc-btn-cloud,
+.pc-btn:focus .pc-btn-cloud {
+    opacity: 0.92;
+    filter: blur(4px) contrast(1.24);  /* CSS brightness(1.24) unsupported */
+    scale: 1.06 1.3;
+}
+
+.pc-btn:hover .pc-btn-cloud__rim,
+.pc-btn.is-hover .pc-btn-cloud__rim,
+.pc-btn:focus .pc-btn-cloud__rim {
+    opacity: 1;
+}
+
+.pc-btn:active {
+    translate: 7px 0;
+    scale: 0.996;
+}
+
+/* press: the cloud bursts apart sideways.
+   pc-cloud-burst (340ms forwards) and pc-blob-burst (360ms ease-out forwards)
+   are [C#] drivers: they own opacity/scale/translate for the duration. */
+.pc-btn.is-clearing .pc-btn-cloud {
+    /* keyframe end state, kept so the last authored frame is visible even if
+       the driver is not running */
+    opacity: 0;
+    scale: 1.3 1.6;
+}
+
+.pc-btn.is-clearing .pc-blob {
+    opacity: 0;
+}
+
+/* .pc-btn.is-clearing — animation: pc-press 300ms — [C#] translate 4 -> 9 -> 4px. */
+
+.pc-btn-label {
+    position: relative;
+    min-width: 0;
+    /* CSS: two shadows (16px halo + 4px edge); USS takes one — the halo, which
+       is what keeps the label readable over the smoke. */
+    text-shadow: 0 0 16px rgba(6, 12, 8, 0.92);
+}
+
+/* ---------------------------------------------- altitude tape (altimeter) */
+/* A vertical drum altimeter opposite the buttons: thin graduations, small
+   figures, gas-green anchors on charcoal smoke, both ends of the tape fading
+   out so it has no hard edge.  src/altimeter.js pins 800 / 1200 / 2200 / 3000 m
+   opposite their buttons and slides the tape with the pointer. */
+
+.pc-alt {
+    position: relative;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    align-self: stretch;
+    width: 76px;            /* clamp(52px, 8.6vw, 76px) -> clamped to 76 */
+    overflow: hidden;
+    opacity: var(--a, 1);
+}
+
+.pc-alt-tape {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 15px;
+    transform-origin: 50% 50%;
+    /* mask-image: linear-gradient(to bottom, transparent, #000 7%, #000 93%,
+       transparent) — unsupported.  [C#] two fade strips use generated ramps. */
+}
+
+/* ---- the tape's faded ends, replacing the CSS mask */
+.pc-alt__fade-top {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 7%;
+    /* [C#] ramp texture: --pc-ui-root colour, alpha 1 -> 0 downward */
+}
+
+.pc-alt__fade-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 15px;
+    height: 7%;
+    /* [C#] ramp texture: same colour, alpha 0 -> 1 downward */
+}
+
+.pc-alt-tick {
+    position: absolute;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    height: 0;
+    translate: 0 -50%;
+}
+
+.pc-alt-num {
+    margin-left: auto;
+    margin-right: 4px;      /* gap: 4px */
+    font-size: 8.5px;
+    letter-spacing: 0.2px;  /* 0.02em @ 8.5px */
+    color: var(--pc-ink-faint);
+    opacity: 0.6;
+    -unity-text-align: middle-right;
+    text-shadow: 0 1px 6px var(--pc-shadow);
+}
+
+.pc-alt-unit {
+    margin-left: 1px;
+    font-size: 6.3px;       /* 0.74em @ 8.5px */
+    letter-spacing: 0;
+    opacity: 0.75;
+}
+
+.pc-alt-line {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    width: 9px;
+    height: 1px;
+    opacity: 0.45;
+    /* linear-gradient(90deg, transparent, --pc-ink-faint) — [C#] ramp. */
+}
+
+.pc-alt-tick.is-mid .pc-alt-line {
+    width: 13px;
+    opacity: 0.62;
+}
+
+.pc-alt-tick.is-mid .pc-alt-num {
+    opacity: 0.78;
+}
+
+.pc-alt-tick.is-anchor .pc-alt-line {
+    width: 20px;
+    height: 1.5px;
+    opacity: 0.95;
+    /* linear-gradient(90deg, transparent, --pc-accent 40%, --pc-accent) —
+       [C#] ramp. */
+}
+
+.pc-alt-tick.is-anchor .pc-alt-num {
+    font-size: 11.5px;      /* clamp(9.5px, 1.05vw, 11.5px) */
+    letter-spacing: 0.7px;  /* 0.06em @ 11.5px */
+    color: var(--pc-accent);
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(6, 12, 8, 0.92);
+}
+
+/* the height the pointer is on: a soft gas-green smear that glides to it */
+.pc-alt-band {
+    position: absolute;
+    left: -6px;
+    right: -4px;
+    top: 0;
+    height: 22px;
+    margin-top: -11px;
+    border-radius: 50%;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.24s;
+    transition-timing-function: ease;
+    /* radial-gradient(58% 92% at 62% 50%, --pc-accent-soft, transparent 76%) —
+       [C#] ramp. */
+}
+
+.pc-alt-band.is-on {
+    opacity: 1;
+}
+
+/* the value of the hovered height, in the strip under the tape */
+.pc-alt-readout {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 15px;
+    font-size: 9.5px;
+    letter-spacing: 0.6px;  /* 0.06em @ 9.5px */
+    color: var(--pc-accent);
+    -unity-text-align: middle-right;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.22s;
+    transition-timing-function: ease;
+}
+
+.pc-alt-readout.is-on {
+    opacity: 0.95;
+}
+
+.pc-menu-note {
+    margin: 0;
+    max-width: 300px;       /* 46ch @ 11px */
+    margin-top: 28px;       /* .pc-main gap */
+    font-size: 11px;        /* clamp(9.5px, 1.05vw, 11px) */
+    letter-spacing: 1.8px;  /* 0.16em @ 11px */
+    color: var(--pc-ink-faint);
+    opacity: var(--a, 1);
+    white-space: normal;
+}
+
+/* .pc-menu-note.is-forming — [C#] filter: blur((1 - a) * 4px). */
+
+/* ---------------------------------------------------------------- foot */
+
+.pc-foot {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-left: 28px;    /* clamp(14px, 3.4vw, 28px) -> clamped to 28 */
+    padding-right: 28px;
+    padding-bottom: 18px;  /* clamp(10px, 2vh, 18px) -> clamped to 18 */
+}
+
+.pc-hint,
+.pc-build {
+    margin: 0;
+    min-width: 0;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    border-width: 0;
+    border-radius: 14px;
+    font-size: 11.5px;      /* clamp(9.5px, 1.1vw, 11.5px) */
+    letter-spacing: 0.9px;  /* 0.08em @ 11.5px */
+    color: var(--pc-ink-dim);
+    /* radial-gradient(140% 180% at 20% 50%, --pc-glass, transparent 94%) —
+       [C#] ramp; backdrop-filter: blur(2px) is unsupported. */
+}
+
+.pc-hint {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: auto;
+    max-width: 380px;       /* 62ch @ 11px */
+    margin-right: 24px;     /* .pc-foot gap */
+}
+
+.pc-hint-line {
+    margin: 0;
+    font-size: 11px;        /* clamp(9.5px, 1.05vw, 11px) */
+    white-space: normal;
+}
+
+.pc-hint-keys {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.pc-hint-key {
+    margin-right: 3px;
+    margin-left: 5px;       /* gap: 4px 5px */
+    font-size: 10.5px;      /* clamp(9px, 1vw, 10.5px) */
+    letter-spacing: 1.1px;  /* 0.1em @ 10.5px */
+    color: var(--pc-ink-faint);
+}
+
+.pc-hint-key.is-first-in-group {
+    margin-left: 0;
+}
+
+.pc-build {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    letter-spacing: 1.8px;  /* 0.16em @ 11.5px */
+    color: var(--pc-ink-faint);
+    white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ settings */
+
+.pc-settings {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding-left: 32px;    /* clamp(10px, 3vw, 32px) -> clamped to 32 */
+    padding-right: 32px;
+    padding-top: 86px;     /* clamp(54px, 8vh, 88px) = 86.4 */
+    padding-bottom: 80px;  /* clamp(48px, 8vh, 80px) -> clamped to 80 */
+    opacity: var(--a, 0);
+}
+
+/* ui.css keyed this on [hidden]; there is no attribute API, so C# toggles the
+   class instead. */
+.pc-settings.is-hidden {
+    display: none;
+}
+
+/* .pc-settings.is-open had only `pointer-events: auto`; pickingMode is set from
+   C# instead, so there is no rule for it. */
+
+/* ---- the window is a bank of cloud, not a card -------------------------
+   No surface, no border, no corners: the content hangs inside a drifting bank
+   of smoke whose blobs reach well outside the layout box, so no straight edge
+   of the box is ever visible. */
+
+.pc-card {
+    position: relative;
+    flex-direction: column;
+    width: 640px;           /* min(100%, 40rem) */
+    max-width: 100%;
+    max-height: 100%;
+    min-height: 0;
+    padding-left: 8px;      /* clamp(2px, 0.6vw, 8px) -> clamped to 8 */
+    padding-right: 8px;
+    padding-top: 8px;       /* clamp(2px, 0.8vh, 8px) -> clamped to 8 */
+    padding-bottom: 8px;
+    background-color: transparent;
+    border-width: 0;
+    border-radius: 0;
+    /* transform: translateY((1 - a) * 16px) scale(0.966 + 0.034a) — [C#]
+       translate / scale longhands. */
+}
+
+/* the cloud itself: lumpy blobs around and behind the content */
+.pc-card-cloud {
+    position: absolute;
+    left: -9%;
+    right: -9%;
+    top: -13%;
+    bottom: -13%;
+    opacity: 0.93;          /* calc(0.4 + 0.6 * --a); [C#] per frame */
+    filter: blur(2.5px);
+}
+
+.pc-card-cloud i,
+.pc-cld {
+    position: absolute;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;
+    /* background-image: var(--pc-smoke-cloud) — [C#]
+       animation: pc-boil 23s ease-in-out infinite alternate — [C#] driver. */
+}
+
+.pc-cld-1  { left: -9%;  top: -11%;   width: 47%; opacity: 0.62; }
+.pc-cld-2  { left: 26%;  top: -17%;   width: 41%; opacity: 0.48; }
+.pc-cld-3  { right: -9%; top: -9%;    width: 49%; opacity: 0.58; }
+.pc-cld-4  { left: -13%; top: 26%;    width: 45%; opacity: 0.50; }
+.pc-cld-5  { right: -13%; top: 31%;   width: 43%; opacity: 0.46; }
+.pc-cld-6  { left: -7%;  bottom: -13%; width: 51%; opacity: 0.60; }
+.pc-cld-7  { right: -7%; bottom: -15%; width: 55%; opacity: 0.64; }
+.pc-cld-8  { left: 29%;  bottom: -19%; width: 47%; opacity: 0.50; }
+.pc-cld-9  { left: 31%;  top: 33%;    width: 41%; opacity: 0.30; }
+.pc-cld-10 { left: 61%;  top: 51%;    width: 35%; opacity: 0.24; }
+
+/* one pale wisp along the top edge, where the bank catches the sky */
+.pc-card-cloud__rim {
+    position: absolute;
+    left: 13%;
+    right: 15%;
+    top: 3%;
+    height: 44%;
+    border-radius: 50%;
+    opacity: 0.5;
+    filter: blur(4px);
+    /* radial-gradient(50% 50%, --pc-cloud-rim, transparent 74%) — [C#] ramp. */
+}
+
+/* the mist the text sits in: dense in the middle, gone at the edges, so the
+   labels stay readable without any of it reading as a panel */
+.pc-card__mist {
+    position: absolute;
+    left: 1%;
+    right: 1%;
+    top: 3%;
+    bottom: 3%;
+    border-radius: 48%;     /* CSS: 46% 54% 48% 52% / 52% 44% 56% 48% — USS
+                               has no elliptical (slash) form */
+    filter: blur(18px);
+    opacity: 0.79;          /* calc(0.55 + 0.45 * --a); [C#] per frame */
+    /* three stacked radial-gradients (--pc-glass-deep, --pc-scrim,
+       --pc-glass-2) — [C#] one composited ramp texture, or three sibling
+       elements; the blur above does most of the work either way. */
+}
+
+/* .pc-settings.is-forming .pc-card — [C#] filter: blur((1 - a) * 7px). */
+
+.pc-card-head {
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 26px;    /* clamp(16px, 2.6vw, 26px) -> clamped to 26 */
+    padding-right: 26px;
+    padding-top: 16px;     /* clamp(10px, 1.6vh, 16px) -> clamped to 16 */
+    padding-bottom: 7px;   /* clamp(3px, 0.8vh, 7px) -> clamped to 7 */
+}
+
+/* the divider is a thin drift of smoke: dense in the middle, gone at the ends */
+.pc-card-head__rule {
+    position: absolute;
+    left: 7%;
+    right: 7%;
+    bottom: 0;
+    height: 1px;
+    opacity: 0.6;
+    filter: blur(0.7px);
+    /* linear-gradient(90deg, transparent, --pc-hair 24%, --pc-hair 76%,
+       transparent) — [C#] ramp. */
+}
+
+.pc-card-title {
+    margin: 0;
+    font-size: 13.5px;      /* clamp(11.5px, 1.4vw, 13.5px) */
+    letter-spacing: 4.3px;  /* 0.32em @ 13.5px */
+    color: var(--pc-ink-dim);
+    margin-right: 12px;     /* .pc-card-head gap */
+}
+
+.pc-close {
+    position: relative;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-width: 0;
+    border-radius: 50%;
+    cursor: link;
+    filter: blur(0.3px);
+    transition-property: filter;
+    transition-duration: 0.22s;
+    transition-timing-function: ease;
+    /* background: radial-gradient(58% 58% at 50% 50%, --pc-hair, transparent
+       78%) — [C#] ramp. */
+}
+
+.pc-close:hover,
+.pc-close:focus {
+    filter: blur(0.7px) contrast(1.35);   /* CSS brightness(1.35) unsupported */
+    /* background: radial-gradient(..., --pc-accent-soft, transparent 80%) —
+       [C#] swap the ramp texture. */
+}
+
+.pc-close-line {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 13px;
+    height: 1.5px;
+    margin-left: -6.5px;
+    border-radius: 1px;
+    background-color: var(--pc-ink-dim);
+    filter: blur(0.45px);
+    transition-property: background-color;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+}
+
+/* :nth-child is a hard import error in USS ("Recursive pseudo classes are not
+   supported") — C# adds .pc-close-line-1 / -2 instead. */
+.pc-close-line-1 { rotate: 45deg; }
+.pc-close-line-2 { rotate: -45deg; }
+
+.pc-close:hover .pc-close-line,
+.pc-close:focus .pc-close-line {
+    background-color: var(--pc-accent);
+}
+
+/* ---------------------------------------------------------------- tabs */
+
+.pc-tabs {
+    position: relative;
+    flex-direction: row;
+    padding-left: 26px;    /* clamp(16px, 2.6vw, 26px) -> clamped to 26 */
+    padding-right: 26px;
+    padding-top: 10px;     /* clamp(5px, 1vh, 10px) -> clamped to 10 */
+    padding-bottom: 0;
+    overflow: hidden;      /* CSS overflow-x: auto; USS has no per-axis overflow
+                              — [C#] .pc-tabs is a horizontal ScrollView */
+}
+
+.pc-tabs > .pc-tab {
+    margin-left: 18px;      /* gap: clamp(6px, 1.6vw, 18px) -> clamped to 18 */
+}
+
+.pc-tabs > .pc-tab.is-first-in-group {
+    margin-left: 0;
+}
+
+/* no underline for the bar itself: a haze that dissolves at both ends */
+.pc-tabs__rule {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: 0;
+    height: 1px;
+    opacity: 0.45;
+    filter: blur(0.8px);
+    /* linear-gradient(90deg, transparent, --pc-hair 30%, --pc-hair 70%,
+       transparent) — [C#] ramp. */
+}
+
+.pc-tab {
+    position: relative;
+    overflow: visible;      /* the ::after glow reaches 9px outside the tab; a
+                               TextElement may clip by default */
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    margin: 0;
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-top: 7px;
+    padding-bottom: 10px;
+    background-color: transparent;
+    border-width: 0;
+    color: var(--pc-ink-faint);
+    font-size: 13px;        /* clamp(11.5px, 1.35vw, 13px) */
+    letter-spacing: 2.1px;  /* 0.16em @ 13px */
+    cursor: link;
+    transition-property: color;
+    transition-duration: 0.22s;
+    transition-timing-function: ease;
+}
+
+.pc-tab:hover {
+    color: var(--pc-ink-dim);
+}
+
+/* the active tab is marked by a soft smudge of gas-green smoke, not a line */
+.pc-tab__glow {
+    position: absolute;
+    left: -9px;
+    right: -9px;
+    bottom: 0;
+    height: 9px;
+    border-radius: 50%;
+    opacity: 0;
+    filter: blur(3.5px);
+    transition-property: opacity;
+    transition-duration: 0.28s;
+    transition-timing-function: ease;
+    /* radial-gradient(50% 100% at 50% 50%, --pc-accent, transparent 72%) —
+       [C#] ramp. */
+}
+
+.pc-tab.is-active {
+    color: var(--pc-ink);
+}
+
+.pc-tab.is-active .pc-tab__glow {
+    opacity: 0.5;
+}
+
+/* -------------------------------------------------------------- panels */
+
+.pc-panels {
+    position: relative;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: auto;
+    min-height: 0;
+    padding-left: 16px;    /* clamp(8px, 1.8vw, 16px) -> clamped to 16 */
+    padding-right: 16px;
+    padding-top: 18px;     /* clamp(10px, 1.8vh, 18px) -> clamped to 18 */
+    padding-bottom: 20px;  /* clamp(12px, 2vh, 20px) -> clamped to 20 */
+    /* overflow-y: auto, overscroll-behavior, scrollbar-* — unsupported.
+       [C#] this element is a ScrollView (Vertical, no horizontal). */
+}
+
+.pc-panel {
+    --a: 1;
+    flex-direction: column;
+    opacity: var(--a, 1);
+    /* translate3d((1 - a) * --sx, 0, 0) — [C#] translate longhand; --sx is
+       +20 / -20 px depending on the tab direction. */
+}
+
+.pc-panel.is-hidden {
+    display: none;
+}
+
+/* .pc-panel.is-forming — [C#] filter: blur((1 - a) * 6px). */
+
+/* ----------------------------------------------------------------- rows */
+/* .pc-panel gap: clamp(2px, 0.6vh, 6px) = 6.  USS has no gap, so it is summed
+   into each child's own CSS top margin below. */
+.pc-panel > .pc-row {
+    margin-top: 6px;
+}
+
+.pc-panel > .pc-note-line {
+    margin-top: 18px;      /* 12px CSS margin + 6px gap */
+}
+
+.pc-panel > .pc-group-title {
+    margin-top: 19px;      /* 13px CSS margin + 6px gap */
+}
+
+.pc-panel > .is-first-in-group {
+    margin-top: 0;
+}
+
+.pc-group-title {
+    margin-top: 13px;      /* clamp(7px, 1.4vh, 13px) -> clamped to 13 */
+    margin-bottom: 2px;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 12px;    /* clamp(8px, 1.4vw, 12px) -> clamped to 12 */
+    font-size: 10.5px;     /* clamp(9px, 1.05vw, 10.5px) */
+    letter-spacing: 2.9px; /* 0.28em @ 10.5px */
+    color: var(--pc-accent);
+    opacity: 0.85;
+}
+
+/* .pc-group-title:first-child { margin-top: 2px } — the :first-child pseudo
+   class is unknown to USS, so the builder marks it instead.  Three classes so it
+   beats .pc-panel > .pc-group-title above. */
+.pc-panel > .pc-group-title.is-first-in-group {
+    margin-top: 2px;
+}
+
+.pc-row {
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 14px;    /* clamp(10px, 1.6vw, 14px) -> clamped to 14 */
+    padding-right: 14px;
+    padding-top: 10px;     /* clamp(6px, 1vh, 10px) -> clamped to 10 */
+    padding-bottom: 10px;
+    /* linear-gradient(90deg, --pc-row 0%, transparent 92%) — [C#] ramp. */
+}
+
+/* hovering grows a little smoke in from the left instead of drawing a line */
+.pc-row__wash {
+    position: absolute;
+    left: -12%;
+    top: 0;
+    bottom: 0;
+    width: 46%;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.26s;
+    transition-timing-function: ease;
+    /* radial-gradient(60% 82% at 0% 50%, --pc-row, transparent 74%) — [C#]. */
+}
+
+.pc-row:hover .pc-row__wash {
+    opacity: 1;
+}
+
+.pc-row-text {
+    flex-direction: column;
+    min-width: 0;
+    margin-right: 24px;    /* .pc-row gap: clamp(10px, 2vw, 24px) */
+}
+
+.pc-row-label {
+    font-size: 13px;        /* clamp(11.5px, 1.3vw, 13px) */
+    letter-spacing: 0.5px;  /* 0.04em @ 13px */
+    color: var(--pc-ink);
+    white-space: normal;
+}
+
+.pc-row-note {
+    margin-top: 2px;        /* .pc-row-text gap */
+    font-size: 11px;        /* clamp(9.5px, 1.05vw, 11px) */
+    letter-spacing: 0.7px;  /* 0.06em @ 11px */
+    color: var(--pc-ink-faint);
+    white-space: normal;
+}
+
+.pc-note-line {
+    margin-top: 12px;       /* clamp(6px, 1.2vh, 12px) -> clamped to 12 */
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 12px;     /* clamp(8px, 1.4vw, 12px) -> clamped to 12 */
+    font-size: 11px;        /* clamp(9.5px, 1.05vw, 11px) */
+    letter-spacing: 0.9px;  /* 0.08em @ 11px */
+    color: var(--pc-ink-faint);
+    white-space: normal;
+}
+
+/* ------------------------------------------------------------- controls */
+
+.pc-ctl {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+}
+
+.pc-ctl > .pc-ctl-range,
+.pc-ctl > .pc-range,
+.pc-ctl > .pc-out,
+.pc-ctl > .pc-keys,
+.pc-ctl > .pc-switch,
+.pc-ctl > .pc-select-wrap {
+    margin-left: 10px;      /* gap: 10px */
+}
+
+.pc-ctl > .is-first-in-group {
+    margin-left: 0;
+}
+
+.pc-ctl-range {
+    width: 180px;           /* clamp(104px, 30%, 200px) at the reference card */
+}
+
+.pc-range {
+    width: 100%;
+    height: 18px;
+    margin: 0;
+    background-color: transparent;
+    cursor: link;
+    /* ::-webkit-slider-runnable-track (3px, radius 999, gradient) and
+       ::-webkit-slider-thumb (12px glow dot) have no USS equivalent.
+       [C#] use a Slider with .pc-range-track / .pc-range-thumb children. */
+}
+
+.pc-range-track {
+    height: 3px;
+    border-radius: 999px;
+    /* linear-gradient(90deg, transparent, --pc-track 10%, --pc-track 90%,
+       transparent) — [C#] ramp. */
+}
+
+.pc-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-width: 0;
+    border-radius: 50%;
+    /* radial-gradient(58% 58% at 42% 38%, --pc-ink, --pc-accent 78%) — [C#]
+       ramp; the box-shadow glow becomes a sibling .pc-range-thumb__glow. */
+}
+
+.pc-range-thumb__glow {
+    position: absolute;
+    left: -10px;
+    top: -10px;
+    right: -10px;
+    bottom: -10px;
+    border-radius: 50%;
+    /* box-shadow: 0 0 16px var(--pc-glow) — unsupported; [C#] radial ramp. */
+}
+
+.pc-out {
+    min-width: 34px;        /* 3.4ch @ 12px */
+    font-size: 12px;        /* clamp(10.5px, 1.15vw, 12px) */
+    letter-spacing: 0.7px;  /* 0.06em @ 12px */
+    color: var(--pc-accent);
+    -unity-text-align: middle-right;
+}
+
+.pc-switch {
+    position: relative;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    width: 42px;
+    height: 22px;
+    padding: 0;
+    border-width: 0;
+    border-radius: 999px;
+    cursor: link;
+    transition-property: background-color;
+    transition-duration: 0.24s;
+    transition-timing-function: ease;
+    /* background: radial-gradient(120% 160% at 30% 40%, --pc-track-2,
+       transparent 86%) — [C#] ramp. */
+}
+
+/* .pc-switch[aria-checked='true'] — an attribute selector would work, but there
+   is no attribute API, so C# toggles .is-on; its background and glow are ramp
+   textures assigned at runtime. */
+
+.pc-switch__glow {
+    position: absolute;
+    left: -12px;
+    top: -12px;
+    right: -12px;
+    bottom: -12px;
+    border-radius: 50%;
+    opacity: 0;
+    /* [C#] radial ramp, opacity 1 when .is-on. */
+}
+
+.pc-switch.is-on .pc-switch__glow {
+    opacity: 1;
+}
+
+.pc-switch-knob {
+    position: absolute;
+    left: 3px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    margin-top: -7px;
+    border-radius: 50%;
+    background-color: var(--pc-ink-faint);
+    transition-property: translate, background-color, filter;
+    transition-duration: 0.22s, 0.22s, 0.22s;
+    transition-timing-function: ease-out, ease, ease;
+}
+
+.pc-switch.is-on .pc-switch-knob {
+    translate: 20px 0;
+    background-color: var(--pc-accent);
+    filter: contrast(1.2);
+}
+
+.pc-select-wrap {
+    position: relative;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+}
+
+.pc-select-wrap__chevron {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    margin-top: -4px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-right-color: var(--pc-ink-dim);
+    border-bottom-color: var(--pc-ink-dim);
+    rotate: 45deg;
+}
+
+.pc-select {
+    max-width: 320px;       /* 44vw at the reference width */
+    padding-left: 12px;
+    padding-right: 26px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    border-width: 0;
+    border-radius: 999px;
+    color: var(--pc-ink);
+    font-size: 12.5px;      /* clamp(11px, 1.25vw, 12.5px) */
+    letter-spacing: 0.5px;  /* 0.04em @ 12.5px */
+    cursor: link;
+    transition-property: background-color, filter;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+    /* background: radial-gradient(120% 150% at 26% 40%, --pc-track-2,
+       transparent 88%) — [C#] ramp. */
+}
+
+.pc-select:hover,
+.pc-select:focus {
+    filter: contrast(1.15);   /* stands in for the brightness lift */
+    /* background: radial-gradient(..., --pc-accent-soft, transparent 90%) —
+       [C#] swap the ramp; box-shadow glow becomes .pc-select__glow. */
+}
+
+.pc-select__glow {
+    position: absolute;
+    left: -10px;
+    top: -10px;
+    right: -10px;
+    bottom: -10px;
+    border-radius: 999px;
+    opacity: 0;
+    /* [C#] radial ramp shown on hover/focus. */
+}
+
+.pc-keys {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+}
+
+.pc-keys > .pc-kbd {
+    margin-left: 5px;       /* gap: 5px */
+}
+
+.pc-hint-keys > .pc-kbd {
+    margin-left: 5px;       /* gap: 4px 5px */
+}
+
+.pc-keys > .is-first-in-group {
+    margin-left: 0;
+}
+
+.pc-hint-keys > .is-first-in-group {
+    margin-left: 0;
+}
+
+.pc-kbd {
+    padding-left: 7px;
+    padding-right: 7px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    border-width: 0;
+    border-radius: 999px;
+    color: var(--pc-ink-dim);
+    font-size: 11px;        /* clamp(9.5px, 1.05vw, 11px) */
+    letter-spacing: 1.3px;  /* 0.12em @ 11px */
+    /* background: radial-gradient(120% 160% at 40% 40%, --pc-track-2,
+       transparent 90%) — [C#] ramp. */
+}
+
+/* ---------------------------------------------------------------- focus */
+/* outline / outline-offset are unsupported; a 1px border at 2px offset needs a
+   wrapper.  [C#] adds .is-focused to the control and the border is drawn here. */
+
+.pc-btn:focus,
+.pc-close:focus,
+.pc-tab:focus,
+.pc-select:focus,
+.pc-switch:focus,
+.pc-proj-btn:focus,
+.pc-proj-select:focus,
+.pc-proj-input:focus {
+    border-width: 1px;
+    border-color: var(--pc-focus);
+}
+
+/* ---------------------------------------------------------------- toast */
+
+.pc-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 96px;           /* clamp(52px, 10vh, 96px) -> clamped to 96 */
+    max-width: 480px;       /* min(88vw, 30rem) */
+    margin: 0;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-width: 0;
+    border-radius: 999px;
+    color: var(--pc-ink-dim);
+    font-size: 11.5px;      /* clamp(10px, 1.1vw, 11.5px) */
+    letter-spacing: 1.2px;  /* 0.1em @ 11.5px */
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    opacity: 0;
+    translate: -50% 10px;
+    transition-property: opacity, translate;
+    transition-duration: 0.22s, 0.26s;
+    transition-timing-function: ease, ease-out;
+    /* radial-gradient(140% 180% at 50% 50%, --pc-glass-2, transparent 92%) —
+       [C#] ramp; backdrop-filter: blur(3px) is unsupported. */
+}
+
+.pc-toast.is-on {
+    opacity: 1;
+    translate: -50% 0;
+}
+
+/* ============================================================================
+   ProjectC blocks: IP screen, admin resets, changelog, links, languages,
+   disclaimer.  Mirrors the project's own MainMenuWindow panels.
+   ============================================================================ */
+
+.pc-proj-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    color: var(--pc-ink);
+}
+
+.pc-proj-btn {
+    font-size: 12px;        /* clamp(10px, 1.05vw, 12px) */
+    letter-spacing: 0.7px;  /* 0.06em @ 12px */
+    color: var(--pc-ink);
+    background-color: rgba(12, 20, 15, 0.55);
+    border-width: 1px;
+    border-color: var(--pc-panel-edge);
+    border-radius: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    cursor: link;
+    transition-property: background-color, border-color, color;
+    transition-duration: 0.16s;
+    transition-timing-function: ease;
+}
+
+.pc-proj-btn:hover {
+    background-color: rgba(24, 46, 32, 0.75);
+    border-color: var(--pc-accent);
+    color: #f4faf6;
+}
+
+.pc-proj-btn-quiet {
+    color: var(--pc-ink-dim);
+}
+
+.pc-proj-btn-link {
+    font-size: 10px;
+    letter-spacing: 1.2px;  /* 0.12em @ 10px */
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: rgba(10, 16, 12, 0.5);
+}
+
+.pc-proj-btn-icon {
+    width: 28px;
+    height: 26px;
+    padding: 0;
+    -unity-text-align: middle-center;
+}
+
+.pc-proj-btn-debug {
+    width: 100%;
+    -unity-text-align: middle-left;
+    font-size: 10px;
+    padding-left: 7px;
+    padding-right: 7px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-bottom: 4px;
+}
+
+.pc-proj-btn-debug.is-danger {
+    color: #ffc9b3;
+    border-color: rgba(190, 105, 80, 0.8);
+    background-color: rgba(64, 28, 22, 0.6);
+}
+
+.pc-proj-btn-debug.is-danger:hover {
+    background-color: rgba(120, 45, 30, 0.8);
+    border-color: #ff9a75;
+}
+
+.pc-proj-status {
+    margin-top: 6px;
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
+    font-size: 10px;
+    letter-spacing: 0.5px;  /* 0.05em @ 10px */
+    color: var(--pc-ink-faint);
+    white-space: normal;
+}
+
+.pc-proj-scroll {
+    max-height: 475px;      /* 44vh */
+    padding-right: 4px;
+    /* [C#] ScrollView (Vertical). */
+}
+
+.pc-proj-admin {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    width: 290px;           /* clamp(210px, 19vw, 290px) -> clamped to 290 */
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 9px;
+    padding-bottom: 10px;
+    border-radius: 8px;
+    background-color: rgba(9, 14, 11, 0.72);
+    border-width: 1px;
+    border-color: rgba(150, 78, 62, 0.55);
+    /* backdrop-filter: blur(2px) — unsupported. */
+}
+
+.pc-proj-admin-title {
+    margin-top: 0;
+    margin-bottom: 7px;
+    margin-left: 0;
+    margin-right: 0;
+    font-size: 13px;
+    letter-spacing: 1.8px;  /* 0.14em @ 13px */
+    color: rgb(245, 190, 145);
+}
+
+.pc-proj-changelog {
+    position: absolute;
+    top: 15%;
+    right: 20px;
+    bottom: 15%;
+    width: 410px;           /* clamp(240px, 24vw, 410px) -> clamped to 410 */
+    flex-direction: column;
+    padding: 12px;
+    border-radius: 8px;
+    background-color: rgba(9, 14, 11, 0.72);
+    border-width: 1px;
+    border-color: var(--pc-panel-edge);
+    /* backdrop-filter: blur(2px) — unsupported. */
+}
+
+.pc-proj-changelog.is-hidden {
+    display: none;          /* @media (max-width: 900px) */
+}
+
+.pc-proj-changelog-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.pc-proj-changelog-head > .pc-proj-btn {
+    margin-left: 8px;       /* gap: 8px */
+}
+
+.pc-proj-changelog-title {
+    margin: 0;
+    font-size: 18px;        /* clamp(13px, 1.5vw, 18px) */
+    letter-spacing: 2.9px;  /* 0.16em @ 18px */
+    color: var(--pc-ink);
+}
+
+.pc-proj-changelog-body {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: auto;
+    min-height: 0;
+}
+
+.pc-proj-log {
+    margin-top: 0;
+    margin-bottom: 7px;
+    margin-left: 0;
+    margin-right: 0;
+    font-size: 12px;        /* clamp(10px, 1.05vw, 12px) */
+    letter-spacing: 0.2px;  /* 0.02em @ 12px */
+    color: var(--pc-ink);
+    white-space: normal;    /* CSS pre-wrap; USS has no pre-wrap */
+}
+
+.pc-proj-log.is-heading {
+    margin-top: 6px;
+    font-size: 15px;        /* clamp(11px, 1.2vw, 15px) */
+    -unity-font-style: bold;
+    color: #eaf3ec;
+}
+
+.pc-proj-log.is-bullet {
+    color: var(--pc-ink-dim);
+}
+
+.pc-proj-log.is-milestone {
+    color: rgb(235, 205, 150);
+}
+
+.pc-proj-log.is-error {
+    color: rgb(245, 180, 155);
+}
+
+.pc-proj-divider {
+    height: 1px;
+    margin-top: 6px;
+    margin-bottom: 9px;
+    margin-left: 0;
+    margin-right: 0;
+    background-color: rgba(120, 184, 145, 0.35);
+}
+
+.pc-proj-gap {
+    height: 4px;
+}
+
+.pc-proj-lang {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    translate: -50% 0;
+}
+
+.pc-proj-select {
+    font-size: 11px;
+    letter-spacing: 0.9px;  /* 0.08em @ 11px */
+    color: var(--pc-ink);
+    background-color: rgba(12, 20, 15, 0.62);
+    border-width: 1px;
+    border-color: var(--pc-panel-edge);
+    border-radius: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    cursor: link;
+}
+
+.pc-proj-links {
+    position: absolute;
+    left: 16px;
+    bottom: 14px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: 42%;
+}
+
+.pc-proj-links > .pc-proj-btn {
+    margin-left: 6px;       /* gap: 6px */
+}
+
+.pc-proj-links > .is-first-in-group {
+    margin-left: 0;
+}
+
+.pc-proj-sheet {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    width: 460px;           /* clamp(300px, 34vw, 460px) -> clamped to 460 */
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    border-radius: 12px;
+    background-color: rgba(9, 14, 11, 0.86);
+    border-width: 1px;
+    border-color: var(--pc-panel-edge);
+    /* backdrop-filter: blur(3px) — unsupported.
+       box-shadow: 0 24px 60px rgba(0,0,0,0.55) — unsupported; a sibling
+       .pc-proj-sheet__shadow with a generated ramp stands in. */
+}
+
+.pc-proj-sheet > .pc-proj-label,
+.pc-proj-sheet > .pc-proj-input,
+.pc-proj-sheet > .pc-proj-row,
+.pc-proj-sheet > .pc-proj-btn {
+    margin-top: 10px;       /* gap: 10px */
+}
+
+.pc-proj-sheet > .is-first-in-group {
+    margin-top: 0;
+}
+
+.pc-proj-sheet__shadow {
+    position: absolute;
+    left: -40px;
+    right: -40px;
+    top: 10px;
+    bottom: -50px;
+    border-radius: 50%;
+    /* [C#] soft radial ramp. */
+}
+
+.pc-proj-sheet-title {
+    margin: 0;
+    font-size: 19px;        /* clamp(14px, 1.6vw, 19px) */
+    letter-spacing: 3px;    /* 0.16em @ 19px */
+    color: var(--pc-ink);
+}
+
+.pc-proj-label {
+    margin-top: 4px;
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
+    font-size: 12px;
+    letter-spacing: 0.5px;  /* 0.04em @ 12px */
+    color: var(--pc-ink-dim);
+}
+
+.pc-proj-input {
+    width: 100%;
+    font-size: 13px;
+    -unity-text-align: middle-center;
+    color: var(--pc-ink);
+    background-color: rgba(16, 26, 20, 0.9);
+    border-width: 1px;
+    border-color: var(--pc-panel-edge);
+    border-radius: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.pc-proj-row {
+    flex-direction: row;
+}
+
+.pc-proj-row > .pc-proj-input,
+.pc-proj-row > .pc-proj-btn {
+    margin-left: 8px;       /* gap: 8px */
+}
+
+.pc-proj-row > .is-first-in-group {
+    margin-left: 0;
+}
+
+.pc-proj-disclaimer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.78);
+}
+
+.pc-proj-disclaimer-card {
+    width: 520px;           /* clamp(320px, 42vw, 520px) -> clamped to 520 */
+    max-width: 100%;
+    flex-direction: column;
+    align-items: center;
+    padding-left: 28px;
+    padding-right: 28px;
+    padding-top: 26px;
+    padding-bottom: 22px;
+    border-radius: 12px;
+    background-color: rgba(11, 18, 13, 0.96);
+    border-width: 1px;
+    border-color: rgba(120, 184, 145, 0.45);
+}
+
+.pc-proj-disclaimer-card > .pc-proj-label,
+.pc-proj-disclaimer-card > .pc-proj-disclaimer-body,
+.pc-proj-disclaimer-card > .pc-proj-btn {
+    margin-top: 14px;       /* gap: 14px */
+}
+
+.pc-proj-disclaimer-card > .is-first-in-group {
+    margin-top: 0;
+}
+
+.pc-proj-disclaimer-body {
+    margin: 0;
+    font-size: 15px;        /* clamp(12px, 1.3vw, 15px) */
+    letter-spacing: 0.3px;  /* 0.02em @ 15px */
+    color: var(--pc-ink-dim);
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+
+/* ---------------------------------------------------------------------------
+   Elements this sheet expects from ProjectCMainMenuWindow (step 3/7), kept
+   here so the C# builder and the styling never drift apart:
+
+   .pc-ui-root                      root, palette holder
+     .pc-scan  .pc-smoke-field  .pc-ghost-layer  .pc-proj-layer
+     .pc-ui
+       .pc-main  > .pc-main__scrim, .pc-title-block, .pc-nav-row, .pc-menu-note
+         .pc-title-block > .pc-eyebrow, .pc-wordmark ( > .pc-wordmark-c ),
+                           .pc-rule, .pc-subtitle
+         .pc-nav-row     > .pc-alt ( > .pc-alt-tape, .pc-alt__fade-top,
+                                     .pc-alt__fade-bottom, .pc-alt-band,
+                                     .pc-alt-readout ), .pc-nav
+         .pc-nav         > .pc-btn.pc-btn-n1…4 ( > .pc-btn-cloud
+                                     > .pc-btn-cloud__rim, .pc-blob a…g,
+                                     .pc-btn-label )
+       .pc-foot  > .pc-hint ( > .pc-hint-line, .pc-hint-keys > .pc-hint-key ),
+                   .pc-build
+     .pc-settings > .pc-card ( > .pc-card-cloud ( > .pc-card-cloud__rim,
+                                     .pc-cld.pc-cld-1…10 ),
+                                     .pc-card__mist, .pc-card-head
+                                     ( > .pc-card-title, .pc-close
+                                       > .pc-close-line.pc-close-line-1/2,
+                                       .pc-card-head__rule ),
+                                     .pc-tabs ( > .pc-tabs__rule,
+                                       .pc-tab > .pc-tab__glow ),
+                                     .pc-panels > .pc-panel )
+     .pc-toast
+   --------------------------------------------------------------------------- */

@@ -1,0 +1,164 @@
+ProjectC — main menu smoke port, step 7 (behaviour)
+Unity 6000.5.2f1
+Run 2026-10-27 20:05
+Stage: real EditorWindow panel, 1920 x 1080, AutoTick = false (Update(1/60) by hand)
+
+-- layout
+[PASS] stage laid out at 1920 x 1080 | expected: >= 1919 x 1079 | actual: 1920 x 1080
+       worldBound (x:0.00, y:26.00, width:1920.00, height:1080.00)
+       panel EditorPanel
+-- pre-start
+[PASS] no assembly parts before Start | expected: 0 | actual: 0
+[PASS] Ui holds only the step-3 tree before Start | expected: 5 children | actual: 5
+[PASS] no smoke component before Start | expected: field/blower/altimeter all null | actual: null/null/null
+[PASS] root carries pc-ui-root | expected: true | actual: True
+-- start
+[PASS] seven parts: the six menu parts plus the card | expected: 7 | actual: 7
+[PASS] Ui gains the two smoke layers | expected: 7 children | actual: 7
+[PASS] altimeter, field and blower built | expected: all set | actual: set/set/set
+[PASS] menu starts assembled, card starts closed | expected: MenuA 1 / CardA 0 | actual: MenuA 1 / CardA 0
+[PASS] settings window starts hidden | expected: true | actual: True
+       parts: title=1.000/1.0/d0.000 | btn-host=1.000/1.0/d0.000 | btn-connect=1.000/1.0/d0.000 | btn-settings=1.000/1.0/d0.000 | btn-quit=1.000/1.0/d0.000 | note=1.000/1.0/d0.000 | card=0.000/0.0/d0.000
+-- pointer-hook
+[PASS] pointer moves are hooked on the panel root | expected: panel visualTree | actual: panel visualTree
+-- boot
+[PASS] boot resets all six parts to a = 0 | expected: 0 for 6 parts | actual: title=0.000/1.0/d0.120 | btn-host=0.000/1.0/d0.178 | btn-connect=0.000/1.0/d0.236 | btn-settings=0.000/1.0/d0.294 | btn-quit=0.000/1.0/d0.352 | note=0.000/1.0/d0.410 | card=0.000/0.0/d0.000
+[PASS] boot targets all six parts at 1 | expected: 1 | actual: 1
+[PASS] boot delays are 0.12 + order x 0.058 | expected: 0.12 / 0.178 / 0.236 / 0.294 / 0.352 / 0.41 | actual: title 0.12, btn-host 0.178, btn-connect 0.236, btn-settings 0.294, btn-quit 0.352, note 0.41
+[PASS] all six are forming (opacity < 0.985) | expected: is-forming, opacity 0 | actual: all forming
+[PASS] boot sets inline blur 6 / 5 / 4 px | expected: title 6, buttons 5, note 4 | actual: 6 5 4
+[PASS] button clouds start at 0.22 | expected: 0.22 | actual: 0.22 / 0.22 / 0.22 / 0.22
+[PASS] menu marked is-behind during the rebuild | expected: true | actual: True
+[PASS] main stays visible during the rebuild | expected: Visible | actual: Visible
+-- settle-menu
+[PASS] 400 frames assemble all six parts | expected: a = target = 1 | actual: title=1.000/1.0/d0.000 | btn-host=1.000/1.0/d0.000 | btn-connect=1.000/1.0/d0.000 | btn-settings=1.000/1.0/d0.000 | btn-quit=1.000/1.0/d0.000 | note=1.000/1.0/d0.000 | card=0.000/0.0/d0.000
+[PASS] the stagger delay is spent | expected: 0 | actual: title=1.000/1.0/d0.000 | btn-host=1.000/1.0/d0.000 | btn-connect=1.000/1.0/d0.000 | btn-settings=1.000/1.0/d0.000 | btn-quit=1.000/1.0/d0.000 | note=1.000/1.0/d0.000 | card=0.000/0.0/d0.000
+[PASS] MenuA is the mean of the six parts | expected: 1 | actual: 1
+[PASS] is-behind drops once MenuA passes 0.32 | expected: false | actual: False
+       parts: title=1.000/1.0/d0.000 | btn-host=1.000/1.0/d0.000 | btn-connect=1.000/1.0/d0.000 | btn-settings=1.000/1.0/d0.000 | btn-quit=1.000/1.0/d0.000 | note=1.000/1.0/d0.000 | card=0.000/0.0/d0.000
+-- settle-read
+[PASS] resolved opacity is 1 on all six parts | expected: 1.000 | actual: title=1.000/1.0/d0.000 | btn-host=1.000/1.0/d0.000 | btn-connect=1.000/1.0/d0.000 | btn-settings=1.000/1.0/d0.000 | btn-quit=1.000/1.0/d0.000 | note=1.000/1.0/d0.000 | card=0.000/0.0/d0.000
+[PASS] inline blur is cleared at rest | expected: 0 px | actual: title=1.000/1.0/d0.000 | btn-host=1.000/1.0/d0.000 | btn-connect=1.000/1.0/d0.000 | btn-settings=1.000/1.0/d0.000 | btn-quit=1.000/1.0/d0.000 | note=1.000/1.0/d0.000 | card=0.000/0.0/d0.000
+[PASS] button clouds hand opacity back to the USS state rules | expected: inline opacity = null | actual: null
+[PASS] no part is still forming | expected: false / false | actual: btn False / title False
+[PASS] --a on .pc-main reaches the scrim and the tape | expected: 1.000 / 1.000 | actual: 1.000 / 1.000
+[PASS] card is still hidden | expected: hidden, CardA 0 | actual: True, CardA 0
+-- hover
+[PASS] hover sets the hovered action | expected: settings | actual: settings
+[PASS] hover marks the button is-hover | expected: true | actual: True
+[PASS] hover emits exactly one wind | expected: 1 | actual: 1
+[PASS] hover wind takes the button's side | expected: 1 | actual: 1
+[PASS] hover wind lasts 520 ms | expected: 520 | actual: 520
+[PASS] hover gust strength is 0.5 | expected: 0.5 | actual: 0.5
+[PASS] hover gust direction is (side, -0.12) normalised | expected: 0.993, -0.119 | actual: 0.993, -0.119
+[PASS] hover gust leaves from the button centre | expected: 0.5, 0.076 | actual: 0.5, 0.076
+[PASS] hover gust lasts 520 ms | expected: 520 | actual: 520
+       gust #1 vs WindSeq 1
+-- hover-altimeter
+[PASS] hovering «Настройки» reads 1200 m on the tape | expected: 1200 | actual: 1200 м
+[PASS] the tape band is on while hovered | expected: true | actual: True
+-- unhover
+[PASS] unhover clears the hovered action | expected: null | actual: null
+[PASS] unhover drops is-hover | expected: false | actual: False
+[PASS] the tape band is off again | expected: false | actual: False
+-- press
+[PASS] press busies the menu | expected: true | actual: True
+[PASS] press puts the button into is-clearing | expected: true | actual: True
+[PASS] press wind takes the button's side | expected: 1 | actual: 1
+[PASS] press wind lasts 720 ms | expected: 720 | actual: 720
+[PASS] press gust strength is 1 | expected: 1 | actual: 1
+[PASS] press gust lasts 720 ms | expected: 720 | actual: 720
+[PASS] press takes all menu letters into the air | expected: > 0 | actual: 6
+[PASS] press puts letters and puffs in flight | expected: ghosts > 0, puffs > 0 | actual: ghosts 6, puffs 53
+       blows 6, ghosts 6, puffs 53, last gust (0.500, 0.038) dir (0.99, -0.12) s 1.00 720ms
+-- press-done
+[PASS] the press window ends on its own | expected: false | actual: False
+[PASS] is-clearing is removed again | expected: false | actual: False
+[PASS] the press reports its action once | expected: 1 | actual: 1
+[PASS] the reported action is host | expected: host | actual: host
+[PASS] the reported label is the button label | expected: ОДИНОЧНАЯ ИГРА | actual: ОДИНОЧНАЯ ИГРА
+-- press-air
+[PASS] letters are still in the air after the press | expected: > 0 | actual: 6
+[PASS] the menu is still assembled while its letters fly | expected: 1 | actual: 1
+-- open
+[PASS] open sets the view to settings | expected: open / settings | actual: True / settings
+[PASS] the window leaves is-hidden and takes is-open | expected: visible, is-open, not closing | actual: False, open True, closing False
+[PASS] the open window becomes pickable | expected: Position | actual: Position
+[PASS] the menu is asked to dissolve | expected: 0 | actual: 0
+[PASS] the menu is marked is-behind while the card opens | expected: true | actual: True
+[PASS] the card is opened on order 0 with a 60 ms delay | expected: target 1, delay 0.06 | actual: target 1, delay 0.06
+[PASS] the first tab is opened to the right | expected: dir 1, TabA 0.08, phase in | actual: dir 1, TabA 0.08, phase in
+[PASS] the open gust is 0.85 over 700 ms | expected: 0.85 / 700 | actual: 0.85 / 700
+[PASS] the window's own gust sets the wind | expected: 700 | actual: 700
+       parts: title=1.000/0.0/d0.230 | btn-host=1.000/0.0/d0.184 | btn-connect=1.000/0.0/d0.138 | btn-settings=1.000/0.0/d0.092 | btn-quit=1.000/0.0/d0.046 | note=1.000/0.0/d0.000 | card=0.000/1.0/d0.060
+-- open-settle
+[PASS] the card arrives at 1 | expected: CardA 1, opacity 1.000 | actual: CardA 1, opacity 1
+[PASS] the menu has dissolved to 0 | expected: 0 | actual: 0
+[PASS] the menu is hidden once dissolved | expected: Hidden | actual: Hidden
+[PASS] the scrim and the tape follow the menu down | expected: 0.000 / 0.000 | actual: 0.000 / 0.000
+[PASS] the card blur is cleared at rest | expected: 0 px | actual: 0
+[PASS] the tab phase settles to idle | expected: idle, TabA 1 | actual: idle, TabA 1
+[PASS] the video panel is the active one | expected: 0 / pc-panel-video / video | actual: 0 / pc-panel-video / video
+[PASS] the active panel is at full opacity with no inline blur | expected: opacity 1.000, filter null | actual: 1, Null
+       parts: title=0.000/0.0/d0.000 | btn-host=0.000/0.0/d0.000 | btn-connect=0.000/0.0/d0.000 | btn-settings=0.000/0.0/d0.000 | btn-quit=0.000/0.0/d0.000 | note=0.000/0.0/d0.000 | card=1.000/1.0/d0.000
+-- tab
+[PASS] the tab switch starts its out phase | expected: out / 1 | actual: out / 1
+[PASS] the tab direction is forward | expected: 1 | actual: 1
+[PASS] the tab wind blows against the travel direction | expected: -1 | actual: -1
+[PASS] the tab wind lasts 620 ms | expected: 620 | actual: 620
+[PASS] the tab switch counts as one tab and one wind | expected: 1 | actual: 1
+[PASS] the tab gust leaves the middle of the panel | expected: 0.5, 0.42 | actual: 0.5, 0.42
+[PASS] the tab gust points (-1, -0.14) normalised | expected: -0.99, -0.139 | actual: -0.99, -0.139
+[PASS] the tab gust is 0.7 over 620 ms | expected: 0.7 / 620 | actual: 0.7 / 620
+[PASS] the old panel is still the active one during the out phase | expected: 0 | actual: 0
+-- tab-settle
+[PASS] the tab lands on audio | expected: 1 / audio / pc-panel-audio | actual: 1 / audio / pc-panel-audio
+[PASS] the tab phase settles to idle at 1 | expected: idle, TabA 1 | actual: idle, TabA 1
+[PASS] the audio panel is the visible one | expected: is-active, not hidden | actual: True, False
+[PASS] the video panel is hidden | expected: is-hidden, not active | actual: True, False
+[PASS] the new panel resolves to full opacity | expected: 1.000 | actual: 1
+[PASS] only one tab switch happened | expected: 1 | actual: 1
+[PASS] the outgoing panel spilled its letters | expected: > 6 | actual: 9
+       parts: title=0.000/0.0/d0.000 | btn-host=0.000/0.0/d0.000 | btn-connect=0.000/0.0/d0.000 | btn-settings=0.000/0.0/d0.000 | btn-quit=0.000/0.0/d0.000 | note=0.000/0.0/d0.000 | card=1.000/1.0/d0.000
+-- close
+[PASS] close returns to the menu view | expected: closed / menu | actual: False / menu
+[PASS] the window starts leaving | expected: is-closing, not open | actual: True, False
+[PASS] the closing window stops picking | expected: Ignore | actual: Ignore
+[PASS] the card is sent back to 0 with no delay | expected: target 0, delay 0 | actual: target 0, delay 0
+[PASS] the menu is asked back in | expected: 1 | actual: 1
+[PASS] the menu becomes visible again immediately | expected: Visible | actual: Visible
+[PASS] the menu is still is-behind until it thickens | expected: true | actual: True
+[PASS] the menu re-gathers on a 0.18 s head start | expected: title 0.18, note 0.47 | actual: title 0.18, note 0.47
+[PASS] the tab is reset to idle | expected: idle, TabA 1 | actual: idle, TabA 1
+[PASS] the close gust is 0.72 over 640 ms | expected: 0.72 / 640 | actual: 0.72 / 640
+[PASS] closing the window blows the card's letters | expected: > 6 | actual: 12
+       parts: title=0.000/1.0/d0.180 | btn-host=0.000/1.0/d0.238 | btn-connect=0.000/1.0/d0.296 | btn-settings=0.000/1.0/d0.354 | btn-quit=0.000/1.0/d0.412 | note=0.000/1.0/d0.470 | card=1.000/0.0/d0.000
+-- close-settle
+[PASS] the six parts are back at 1 | expected: a = 1, opacity 1.000 | actual: title=1.000/1.0/d0.000 | btn-host=1.000/1.0/d0.000 | btn-connect=1.000/1.0/d0.000 | btn-settings=1.000/1.0/d0.000 | btn-quit=1.000/1.0/d0.000 | note=1.000/1.0/d0.000 | card=0.000/0.0/d0.000
+[PASS] MenuA is back at 1 | expected: 1 | actual: 1
+[PASS] the card has gone | expected: 0 | actual: 0
+[PASS] the window hides itself once the card is empty | expected: true | actual: True
+[PASS] is-behind is gone again | expected: false | actual: False
+[PASS] the scrim and the tape are back | expected: 1.000 / 1.000 | actual: 1.000 / 1.000
+[PASS] no part is forming | expected: false | actual: False
+       is-closing stays on the window until it is reopened: True
+-- view-settings
+[PASS] setView('settings') returns settings | expected: settings | actual: settings
+[PASS] setView('settings') opens the card and drops the menu | expected: open, CardA 1, MenuA 0 | actual: True, CardA 1, MenuA 0
+-- view-menu
+[PASS] setView('menu') returns menu | expected: menu | actual: menu
+[PASS] setView('menu') closes the card without focusing a button | expected: closed, CardA 0, MenuA 1 | actual: False, CardA 0, MenuA 1
+[PASS] the menu is visible after setView('menu') | expected: Visible | actual: Visible
+-- toast
+[PASS] the toast carries the message | expected: Тест уведомления | actual: Тест уведомления
+[PASS] the toast is shown | expected: is-on | actual: True
+-- toast-off
+[PASS] the toast clears itself after 2.8 s | expected: not is-on | actual: cleared after 2.554 s
+-- dispose
+[PASS] dispose empties the mount point | expected: 0 children | actual: 0
+[PASS] dispose drops the root class | expected: false | actual: False
+[PASS] dispose empties the smoke layers | expected: 0 / 0 | actual: 0 / 0
+       totals: gusts 7, WindSeq 7, TabSeq 1, Blows 15, actions 1
+
+SUMMARY: 120 passed, 0 failed, 120 checks
+RESULT: PASS

@@ -1,0 +1,57 @@
+PCMM smoke field — numeric verification
+======================================
+
+palette easing (CSS cubic-bezier(0,0,0.58,1) = ease-out)
+  [ok  ] EaseOut(0) == 0  — 0.0000
+  [ok  ] EaseOut(1) == 1  — 1.0000
+  [ok  ] EaseOut(0.5) ~ 0.686  — 0.6846
+  [ok  ] EaseOut monotonic over 21 samples
+  curve @0/.25/.5/.75/1: 0.000, 0.378, 0.685, 0.907, 1.000
+gather(rect 400x60 @ 100,200, count 10)
+  [ok  ] field node added to host  — 1
+  [ok  ] field has class pc-smoke-field
+  [ok  ] 10 puffs created  — 10 / 10
+  [ok  ] field node child count == 10  — 10
+  [ok  ] flow.mode == gather  — gather
+  [ok  ] flow.dir == +1  — 1
+  [ok  ] flow.dx > 0 (downwind)  — 317.6
+  [ok  ] flow.dy < 0 (lift)  — -6.9
+  [ok  ] width in [34.5 .. 190]  — 44.4 .. 173.9
+  [ok  ] height/width in [0.78 .. 1.16]  — 0.789 .. 1.131
+  [ok  ] every child has class pc-smoke-puff
+  [ok  ] left/top finite
+  [ok  ] dir +1 -> every puff starts upwind (left of shape)
+  [ok  ] all puffs start invisible (opacity 0)
+determinism (same seed, same rect)
+  [ok  ] two seeded fields give identical puffs  — 8 puffs compared
+  [ok  ] a different seed differs
+queue limit
+  [ok  ] 240 requested -> capped at 96  — 96 / 96
+  [ok  ] max below 16 is raised to 16  — 10
+bright / dark split at 44% of the view height (1080 when detached)
+  [ok  ] every puff uses the sheet its start height asks for  — light=24 dark=24
+  [ok  ] both sheets are actually used  — 24/24 of 48
+mid-flight evaluation (clock-driven, not accumulated)
+  [ok  ] all 10 puffs are mid-flight (progress 0.39..0.50)  — 10/10 visible
+  [ok  ] translate written on all 10  — 10/10
+  [ok  ] scale written on all 10  — 10/10
+  [ok  ] opacity inside (0 .. peak]  — 10/10
+  [ok  ] same timestamp -> identical values  — 0.2983|181.717|0.8510 / 0.2983|181.717|0.8510
+  [ok  ] before their delay puffs stay invisible (300 ms of 500 ms)  — 10/10
+  [ok  ] delayed puffs are still queued  — 10
+  [ok  ] after the delay they are in flight  — 10/10
+expiry
+  [ok  ] still alive at 400 ms  — 12
+  [ok  ] all gone past duration + delay  — 0 / 0
+disperse
+  [ok  ] 12 puffs  — 12
+  [ok  ] mode == disperse  — disperse
+  [ok  ] dir +1 -> dx > 0  — 368.7
+  [ok  ] mean dx inside the travel band [231 .. 495]  — 368.7
+  [ok  ] dir -1 -> dx < 0  — -368.7
+  [ok  ] disperse origins sit on the shape (+/-0.53 w)
+clear
+  [ok  ] clear removes every puff  — 0 / 0
+  [ok  ] clear resets flow to idle  — idle
+
+RESULT: PASS (0 failures)

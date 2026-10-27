@@ -1,0 +1,68 @@
+PCMM step 8 — project panels verification
+unity 6000.5.2f1 · 2026-10-27 20:18:50Z
+
+PASS layer built
+PASS layer is last child of root
+PASS layer has 6 blocks
+PASS block order admin/changelog/lang/links/ip/disclaimer
+PASS layer is click-through
+PASS every block picks (CSS > * { pointer-events: auto })
+PASS layer class
+PASS layer present in snapshot
+PASS changelog url
+PASS disclaimer prefs key
+PASS default port 7777
+PASS admin list is a vertical scroll
+PASS admin has 10 resets
+PASS admin labels match project_panels.js
+PASS only «all» is dangerous
+PASS admin title «[Debug]»
+PASS admin snapshot counts
+PASS five links
+PASS link urls
+PASS link labels order
+PASS links snapshot
+PASS nine locales
+PASS locale select shows one of the nine locale names
+PASS locale select uses pc-proj-select
+PASS ip sheet starts closed
+PASS ip field default 127.0.0.1
+PASS disclaimer display follows PlayerPrefs
+PASS disclaimer body text
+PASS openIp → Flex
+PASS openIp → state
+PASS closeIp → None
+PASS closeIp → state
+PASS ip handed to the application
+PASS ip toast
+PASS ip-connect action
+PASS submit closes the sheet
+PASS blank ip falls back to 127.0.0.1
+PASS reset id reaches PersistenceDebugTools
+PASS status starts with «Сброс: id»
+PASS status carries the tool's line
+PASS debug-reset action
+PASS setStatus
+PASS locale handed to LocaleSelector
+PASS locale state
+PASS locale select value
+PASS locale toast
+PASS locale action
+PASS out-of-range locale ignored
+PASS refresh → «Загрузка…»
+PASS changelog line classes
+PASS changelog line count
+PASS markdown emphasis stripped
+PASS heading text
+PASS empty markdown → one gap
+PASS show → Flex
+PASS accept → pref written
+PASS accept → hidden
+PASS pref restored
+PASS changelog visible at 1920
+PASS changelog hidden under 900 px (media query port)
+PASS connect press opens the ip sheet after PressMs
+PASS dispose drops the layer
+PASS dispose empties the stage
+
+RESULT 63 passed / 0 failed / 63 checks

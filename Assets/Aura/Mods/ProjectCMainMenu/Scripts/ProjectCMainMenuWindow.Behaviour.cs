@@ -249,6 +249,7 @@ namespace ProjectCMainMenu
 
             BuildParts();
             WireEvents();
+            BuildProjectPanels();   // step 8: IP, resets, changelog, links, locale, disclaimer
             HookPointer();
 
             Queue(BootSmoke, 50f);
@@ -1334,6 +1335,9 @@ namespace ProjectCMainMenu
             Blower?.Node?.RemoveFromHierarchy();
 
             Altimeter?.Dispose();
+
+            // the project layer is a sibling of .pc-ui, so it is not carried away with it
+            DisposeProjectPanels();
 
             Ui?.RemoveFromHierarchy();
             Root?.RemoveFromClassList("pc-ui-root");

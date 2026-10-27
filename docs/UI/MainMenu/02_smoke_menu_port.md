@@ -1,7 +1,7 @@
 # MainMenu — перенос меню мода в Unity 1в1
 
 > **Дата:** 2026-10-27
-> **Статус:** в работе (шаг 7 из 9)
+> **Статус:** в работе (шаг 8 из 9)
 > **Источник истины:** `.Aura/Mods/projectc-main-menu/` (`src/*.js`, `src/ui.css`)
 > **Предыдущая документация меню:** `01_implementation.md`, `ITERATIONS.md`
 
@@ -63,7 +63,7 @@ grayscale() sepia() invert() hue-rotate()`; `text-shadow`; `aspect-ratio`; `tran
 | `z-index` | порядок отрисовки = порядок документа |
 | `::before` / `::after` | реальные дочерние элементы (`__scrim`, `__sweep`, …) |
 | `[hidden]` | класс `.is-hidden` (нет API атрибутов) |
-| `@media` | нет медиазапросов; масштабирует `PanelSettings` |
+| `@media` | медиазапросов нет; единственный (`max-width: 900px` у `.pc-proj-changelog`) перенесён порогом в `GeometryChangedEvent` (шаг 8) |
 
 Остальное (раскладка, цвета палитры, тайминги, порядок экранов, подписи, поведение)
 переносится буквально.
@@ -145,11 +145,24 @@ grayscale() sepia() invert() hue-rotate()`; `text-shadow`; `aspect-ratio`; `tran
   `CardA 1`, `Main` Hidden, scrim 0.000; вкладка «Звук» — 0.7 / 620 мс, `WindDir −1`, панель
   ушла и пришла, `TabA 1`; закрытие — 0.72 / 640 мс, задержки возврата 0.18…0.47; `SetView`
   в обе стороны, тост снимается сам, `Dispose` опустошает точку монтирования.
-- [ ] **8. Наши блоки** — `Scripts/ProjectCMainMenuProjectPanels.cs`: IP-экран →
-  `NetworkManagerController.ConnectToServer`, 10 админ-сбросов → `PersistenceDebugTools`,
+- [x] **8. Наши блоки** — `Scripts/ProjectCMainMenuProjectPanels.cs` (третий `partial`):
+  IP-экран → `NetworkManagerController.ConnectToServer`, 10 админ-сбросов → `PersistenceDebugTools`,
   changelog → реальный `UnityWebRequest` (raw GitHub `docs/changelogs.md`),
   5 ссылок → `Application.OpenURL`, 9 локалей → `LocaleSelector`,
   дисклеймер → `PlayerPrefs` `ProjectC.MainMenu.FirstLaunchDisclaimerAccepted`.
+  Проверено численно (`_project_panels_verify.txt`, **63 проверки, 0 провалов**) в реальной панели
+  1920×1080: слой — последний ребёнок `Root`, 6 блоков в порядке
+  admin/changelog/lang/links/ip/disclaimer, слой `pickingMode = Ignore`, все шесть — `Position`;
+  10 сбросов с точными подписями и единственным `is-danger` у `all`; 5 ссылок с точными url;
+  9 локалей, начальное значение — сохранённая; IP-лист закрыт, `openIp`/`closeIp` → Flex/None;
+  `SubmitIp` → адрес и порт 7777 ушли в приложение, тост «Подключение к 10.0.0.7:7777»,
+  действие `ip-connect`, пустое поле → 127.0.0.1; `Сброс: inventory — fake reset inventory`;
+  `de` → `LocaleSelector`, тост «Язык: Deutsch», селект «Deutsch»; changelog — «Загрузка…»,
+  фикстура даёт ровно `heading|gap|divider|bullet|bullet|milestone|plain|heading|gap`,
+  `**жирный** текст` → «жирный текст»; дисклеймер Flex→None и `PlayerPrefs` = 1 (прежнее
+  значение восстановлено); ширина 800 → `.pc-proj-changelog` получает `is-hidden` и `display: none`;
+  нажатие «ПОДКЛЮЧИТЬСЯ К СЕРВЕРУ» через 120 мс открывает IP-лист; `Dispose` снимает слой и
+  оставляет точку монтирования пустой.
 - [ ] **9. Переключение** — новый префаб `ProjectCMainMenuUI` (`UIDocument` + `PanelSettings`
   Screen Space Overlay), `MainMenuWindow` остаётся выключенным как откат; затем
   `check_compile_errors` = 0 и проверка шейдерных ошибок в `get_unity_logs`.
@@ -329,3 +342,52 @@ Easing переехал в `ProjectCMainMenuPalette`: `EaseOut` = `CubicBezier(0
 `.is-clearing` дают только конечное состояние) и все ~40 заглушек `[C#]` под градиентные рампы.
 
 Визуальная приёмка шага в реальной панели — за пользователем.
+
+### 2026-10-27 — шаг 8: наши блоки
+
+`ProjectCMainMenuProjectPanels.cs` — третий `partial` того же класса. Новых правил USS не
+понадобилось: все `pc-proj-*` пришли ещё шагом 2. Слой `.pc-proj-layer` добавляется
+последним ребёнком `Root`, соседом `.pc-ui` — ровно так его перечисляет шапка
+`PCMM_Menu.uss`, и так же его делает `root.append(shell)` в моде. Поэтому он рисуется
+поверх дыма, карточки настроек и тоста.
+
+Где DOM скопировать буквально нельзя и что стоит вместо:
+
+| В моде | В Unity |
+|---|---|
+| `fetch` + `AbortController` + `setTimeout(8000)` | `UnityWebRequest` + `AsyncOperation.completed`; таймер — `schedule.Execute(Abort).StartingIn(8000)`, и `request.timeout = 8` на случай, если окно ещё не в панели и планировщик не тикает |
+| `window.open(url, '_blank')` | `Application.OpenURL` |
+| `localStorage` | `PlayerPrefs` `ProjectC.MainMenu.FirstLaunchDisclaimerAccepted` — тот же ключ, что писал `MainMenuWindow` |
+| `<input type="text">` | `TextField` — единственный настоящий ввод в рантайм-панели |
+| `<select>` + 9 `<option>` | `DropdownField` — единственный нативный попап; сам список выглядит как системное меню, как и `<select>` в браузере |
+| `hidden` / `node.hidden = false` | инлайновый `display: None/Flex` |
+| `el('p', { text })`; `<button>` | `Label`, в том числе кнопки: тема `.unity-button` не должна протекать (то же решение, что в шаге 3) |
+| `.pc-proj-layer > * { pointer-events: auto }` | `pickingMode = Ignore` у слоя и `Position` у каждого из шести блоков |
+| `@media (max-width: 900px)` | порог в `GeometryChangedEvent`: ширина слоя < 900 → `is-hidden` на `.pc-proj-changelog` |
+| `onAction({action, ...extra})` | `OnProjectAction(action, payload)`, сбои — строкой payload |
+
+Четыре вещи, которые выяснились по дороге:
+
+1. **`TextField` и `DropdownField` рисует тема.** Их внутренние элементы несут фон, рамку и
+   отступы `.unity-*`, и получается серая плашка внутри `.pc-proj-input` / `.pc-proj-select`.
+   Своих правил на чужую тему не написать, поэтому `FlattenControl` гасит у двух уровней
+   детей инлайново фон, рамки, отступы и padding — текст, каретка и стрелка попапа целы.
+2. **`Dispose` не уносит слой.** `Dispose()` снимает `.pc-ui`, а `.pc-proj-layer` — его
+   сосед; без `DisposeProjectPanels()` слой остался бы висеть на старой точке монтирования.
+   Сам `Update()` после `Dispose` снова зовёт `Start()` — проверка поэтому перестаёт тикать
+   окно сразу после `Dispose`, иначе слой строится обратно.
+3. **Статус сброса склеен из двух строк.** Мод пишет только «Сброс: id»; здесь к нему
+   добавляется то, что вернул `PersistenceDebugTools` («removed N file(s)…»), иначе
+   админ-панель не сообщает, что именно удалилось: `Сброс: inventory — …`.
+4. **Проверке нужны швы.** `ResetHandler`, `IpConnectHandler`, `LocaleHandler` и
+   `UrlOpenHandler` по умолчанию — настоящие проектные API, но прогон подменяет их: иначе
+   проверка удалила бы сохранения, дозвонилась бы до сервера, открыла бы браузер и записала
+   бы локаль. `PlayerPrefs` дисклеймера проверка запоминает и возвращает назад.
+
+Сознательно **не перенесено**: Esc не закрывает IP-лист (в моде у него тоже нет обработчика,
+только «НАЗАД»), поле IP и селект языка не забирают фокус сами, и раскладка `.pc-proj-*`
+на узких экранах ограничена одним правилом 900 px — других медиазапросов в `project_panels.js` нет.
+
+Сетевой путь changelog прогнан только до состояния «Загрузка…»: ответ GitHub в проверке не
+ждётся, рендер проверен фикстурой через публичный `RenderChangelog`. Ручная приёмка в
+Play Mode — за пользователем.

@@ -289,8 +289,9 @@
     width: 640px;      /* min(46rem, 88%) */
     max-width: 88%;
     opacity: var(--a, 1);
+    background-size: 100% 100%;
     /* linear-gradient(to right, --pc-scrim, --pc-scrim-mid 42%, --pc-scrim-fade
-       84%) — [C#] generated horizontal ramp texture. */
+       84%) — assigned from C# as ProjectCMainMenuRamps.MainScrim(). */
 }
 
 /* --------------------------------------------------------------- title */
@@ -348,9 +349,13 @@
 
 .pc-rule {
     width: 148px;           /* clamp(56px, 16vw, 148px) -> clamped to 148 */
-    height: 1px;
+    height: 2px;            /* CSS 1px; on a scaled panel a 1px box resolves to 0 and
+                               the rule disappears entirely (measured), so it carries
+                               two: 1.3 px at 2/3 scale, 2 px at the reference width. */
     margin-bottom: 12px;
-    /* linear-gradient(90deg, --pc-hair-strong, transparent) — [C#] ramp. */
+    background-size: 100% 100%;
+    /* linear-gradient(90deg, --pc-hair-strong, transparent) — assigned from C# as
+       ProjectCMainMenuRamps.TitleRule(). */
 }
 
 .pc-subtitle {
@@ -434,8 +439,13 @@
     top: -12%;
     bottom: -12%;
     opacity: 0.88;      /* calc(0.22 + 0.66 * --a) with --a = 1; [C#] per frame */
-    /* radial-gradient(58% 122% at 46% 53%, --pc-cloud-base, transparent 76%) —
-       [C#] generated elliptical alpha ramp. */
+    background-size: 100% 100%;
+    /* radial-gradient(58% 122% at 46% 53%, tint, transparent 76%) — assigned from C#
+       as ProjectCMainMenuRamps.ButtonHalo(). The tint is the PALE one, not
+       --pc-cloud-base: a charcoal cloud was authored for a bright sky, while this menu
+       hangs over the veiled atmosphere, where charcoal is invisible — which is why the
+       buttons had no background at all. The charcoal sheets stay on top of the wash, so
+       the button still reads during the bright day phase. */
     filter: blur(4px);
     scale: 0.97 0.94;
     transition-property: opacity, scale, filter;
@@ -451,8 +461,9 @@
     height: 54%;
     border-radius: 50%;
     opacity: 0.55;
+    background-size: 100% 100%;
     /* radial-gradient(50% 50% at 50% 50%, --pc-cloud-rim, transparent 72%) —
-       [C#] ramp texture. */
+       assigned from C# as ProjectCMainMenuRamps.ButtonRim(). */
     filter: blur(2px);
 }
 
@@ -877,8 +888,10 @@
     height: 44%;
     border-radius: 50%;
     opacity: 0.5;
+    background-size: 100% 100%;
     filter: blur(4px);
-    /* radial-gradient(50% 50%, --pc-cloud-rim, transparent 74%) — [C#] ramp. */
+    /* radial-gradient(50% 50%, --pc-cloud-rim, transparent 74%) — assigned from C#
+       as ProjectCMainMenuRamps.CardRim(). */
 }
 
 /* the mist the text sits in: dense in the middle, gone at the edges, so the
@@ -893,9 +906,10 @@
                                has no elliptical (slash) form */
     filter: blur(18px);
     opacity: 0.79;          /* calc(0.55 + 0.45 * --a); [C#] per frame */
-    /* three stacked radial-gradients (--pc-glass-deep, --pc-scrim,
-       --pc-glass-2) — [C#] one composited ramp texture, or three sibling
-       elements; the blur above does most of the work either way. */
+    background-size: 100% 100%;
+    /* three stacked radial-gradients (--pc-glass-deep, --pc-scrim, --pc-glass-2)
+       collapsed into one ramp assigned from C# as ProjectCMainMenuRamps.CardMist();
+       the blur above finishes the edge either way. */
 }
 
 /* .pc-settings.is-forming .pc-card — [C#] filter: blur((1 - a) * 7px). */
@@ -917,11 +931,12 @@
     left: 7%;
     right: 7%;
     bottom: 0;
-    height: 1px;
+    height: 2px;            /* CSS 1px; a 1px box resolves to 0 on a scaled panel */
     opacity: 0.6;
+    background-size: 100% 100%;
     filter: blur(0.7px);
     /* linear-gradient(90deg, transparent, --pc-hair 24%, --pc-hair 76%,
-       transparent) — [C#] ramp. */
+       transparent) — assigned from C# as ProjectCMainMenuRamps.Hairline(). */
 }
 
 .pc-card-title {
@@ -930,6 +945,10 @@
     letter-spacing: 4.3px;  /* 0.32em @ 13.5px */
     color: var(--pc-ink-dim);
     margin-right: 12px;     /* .pc-card-head gap */
+    /* a dark halo, not an outline: pale glyphs on a dark mist read as cut-out and
+       eye-searing without one — the same treatment .pc-btn-label and .pc-subtitle
+       already carry */
+    text-shadow: 0 0 10px rgba(6, 12, 8, 0.88);
 }
 
 .pc-close {
@@ -943,12 +962,13 @@
     border-width: 0;
     border-radius: 50%;
     cursor: link;
+    background-size: 100% 100%;
     filter: blur(0.3px);
     transition-property: filter;
     transition-duration: 0.22s;
     transition-timing-function: ease;
     /* background: radial-gradient(58% 58% at 50% 50%, --pc-hair, transparent
-       78%) — [C#] ramp. */
+       78%) — assigned from C# as ProjectCMainMenuRamps.CloseHalo(). */
 }
 
 .pc-close:hover,
@@ -1010,11 +1030,12 @@
     left: 6%;
     right: 6%;
     bottom: 0;
-    height: 1px;
+    height: 2px;            /* CSS 1px; a 1px box resolves to 0 on a scaled panel */
     opacity: 0.45;
+    background-size: 100% 100%;
     filter: blur(0.8px);
     /* linear-gradient(90deg, transparent, --pc-hair 30%, --pc-hair 70%,
-       transparent) — [C#] ramp. */
+       transparent) — assigned from C# as ProjectCMainMenuRamps.Hairline(). */
 }
 
 .pc-tab {
@@ -1035,6 +1056,7 @@
     font-size: 13px;        /* clamp(11.5px, 1.35vw, 13px) */
     letter-spacing: 2.1px;  /* 0.16em @ 13px */
     cursor: link;
+    text-shadow: 0 0 12px rgba(6, 12, 8, 0.9);
     transition-property: color;
     transition-duration: 0.22s;
     transition-timing-function: ease;
@@ -1042,6 +1064,19 @@
 
 .pc-tab:hover {
     color: var(--pc-ink-dim);
+}
+
+/* the tab is a container so pc-tab__glow can sit outside the text: a TextElement that
+   owns a child stops measuring its own text and collapses to padding. The label must
+   never be squeezed by the row it lives in. */
+.pc-tab__label {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    margin: 0;
+    padding: 0;
+    /* text-shadow does not inherit to the label that actually draws the glyphs */
+    text-shadow: 0 0 12px rgba(6, 12, 8, 0.9);
 }
 
 /* the active tab is marked by a soft smudge of gas-green smoke, not a line */
@@ -1053,12 +1088,14 @@
     height: 9px;
     border-radius: 50%;
     opacity: 0;
+    background-size: 100% 100%;
     filter: blur(3.5px);
     transition-property: opacity;
     transition-duration: 0.28s;
     transition-timing-function: ease;
-    /* radial-gradient(50% 100% at 50% 50%, --pc-accent, transparent 72%) —
-       [C#] ramp. */
+    /* radial-gradient(50% 100% at 50% 50%, --pc-accent, transparent 72%) — assigned
+       from C# as ProjectCMainMenuRamps.TabGlow(). The ramp is what makes the mark a
+       smudge of gas-green smoke instead of the hard bar it used to read as. */
 }
 
 .pc-tab.is-active {
@@ -1146,7 +1183,9 @@
     padding-right: 14px;
     padding-top: 10px;     /* clamp(6px, 1vh, 10px) -> clamped to 10 */
     padding-bottom: 10px;
-    /* linear-gradient(90deg, --pc-row 0%, transparent 92%) — [C#] ramp. */
+    background-size: 100% 100%;
+    /* linear-gradient(90deg, --pc-row 0%, transparent 92%) — assigned from C# as
+       ProjectCMainMenuRamps.RowWash(). */
 }
 
 /* hovering grows a little smoke in from the left instead of drawing a line */
@@ -1178,6 +1217,7 @@
     letter-spacing: 0.5px;  /* 0.04em @ 13px */
     color: var(--pc-ink);
     white-space: normal;
+    text-shadow: 0 0 9px rgba(6, 12, 8, 0.85);
 }
 
 .pc-row-note {
@@ -1186,6 +1226,7 @@
     letter-spacing: 0.7px;  /* 0.06em @ 11px */
     color: var(--pc-ink-faint);
     white-space: normal;
+    text-shadow: 0 0 8px rgba(6, 12, 8, 0.85);
 }
 
 .pc-note-line {
@@ -1198,6 +1239,7 @@
     letter-spacing: 0.9px;  /* 0.08em @ 11px */
     color: var(--pc-ink-faint);
     white-space: normal;
+    text-shadow: 0 0 8px rgba(6, 12, 8, 0.85);
 }
 
 /* ------------------------------------------------------------- controls */
@@ -1241,8 +1283,9 @@
 .pc-range-track {
     height: 3px;
     border-radius: 999px;
+    background-size: 100% 100%;
     /* linear-gradient(90deg, transparent, --pc-track 10%, --pc-track 90%,
-       transparent) — [C#] ramp. */
+       transparent) — assigned from C# as ProjectCMainMenuRamps.RangeTrack(). */
 }
 
 .pc-range-thumb {
@@ -1286,8 +1329,10 @@
     transition-property: background-color;
     transition-duration: 0.24s;
     transition-timing-function: ease;
-    /* background: radial-gradient(120% 160% at 30% 40%, --pc-track-2,
-       transparent 86%) — [C#] ramp. */
+    background-size: 100% 100%;
+    /* background: radial-gradient(120% 160% at 30% 40%, tint, transparent 86%) —
+       assigned from C# as ProjectCMainMenuRamps.SoftPill(). --pc-track-2 is charcoal,
+       which is invisible on the veiled card, so the pale tone is used instead. */
 }
 
 /* .pc-switch[aria-checked='true'] — an attribute selector would work, but there
@@ -1365,8 +1410,10 @@
     transition-property: background-color, filter;
     transition-duration: 0.2s;
     transition-timing-function: ease;
-    /* background: radial-gradient(120% 150% at 26% 40%, --pc-track-2,
-       transparent 88%) — [C#] ramp. */
+    background-size: 100% 100%;
+    /* background: radial-gradient(120% 150% at 26% 40%, tint, transparent 88%) —
+       assigned from C# as ProjectCMainMenuRamps.SoftPill(); the pale tone replaces
+       --pc-track-2 for the same reason as the switch. */
 }
 
 .pc-select:hover,
@@ -1422,8 +1469,9 @@
     color: var(--pc-ink-dim);
     font-size: 11px;        /* clamp(9.5px, 1.05vw, 11px) */
     letter-spacing: 1.3px;  /* 0.12em @ 11px */
-    /* background: radial-gradient(120% 160% at 40% 40%, --pc-track-2,
-       transparent 90%) — [C#] ramp. */
+    background-size: 100% 100%;
+    /* background: radial-gradient(120% 160% at 40% 40%, tint, transparent 90%) —
+       assigned from C# as ProjectCMainMenuRamps.SoftPill(). */
 }
 
 /* ---------------------------------------------------------------- focus */

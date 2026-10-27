@@ -60,7 +60,6 @@ namespace ProjectCMainMenu
         public VisualElement Main { get; private set; }
         public VisualElement MainScrim { get; private set; }
         public VisualElement TitleBlock { get; private set; }
-        public VisualElement Eyebrow { get; private set; }
         public VisualElement Wordmark { get; private set; }
         public VisualElement Rule { get; private set; }
         public VisualElement Subtitle { get; private set; }
@@ -70,7 +69,6 @@ namespace ProjectCMainMenu
         public VisualElement AltTape { get; private set; }
         public VisualElement AltBand { get; private set; }
         public VisualElement AltReadout { get; private set; }
-        public VisualElement MenuNote { get; private set; }
 
         public VisualElement[] NavButtons { get; private set; }
         public VisualElement[] NavButtonLabels { get; private set; }
@@ -90,7 +88,6 @@ namespace ProjectCMainMenu
         public VisualElement Toast { get; private set; }
         public VisualElement ToastLabel { get; private set; }
         public VisualElement Foot { get; private set; }
-        public VisualElement Hint { get; private set; }
 
         // ui.js reads the action off the clicked button; keep the mapping here so
         // step 7 never has to parse class names.
@@ -115,6 +112,10 @@ namespace ProjectCMainMenu
             Root.AddToClassList("pc-ui-root");
             Root.pickingMode = PickingMode.Ignore;
             Root.Add(Ui);
+
+            // the faces live in an asset, not in the stylesheet (see
+            // ProjectCMainMenuWindow.Fonts.cs); the tree has to exist before they are set
+            ApplyFonts();
         }
 
         // ------------------------------------------------------------------
@@ -138,9 +139,9 @@ namespace ProjectCMainMenu
             TitleBlock = El("pc-title-block");
             TitleBlock.pickingMode = PickingMode.Ignore;
 
-            Eyebrow = Txt("THE CLOUDS · ТЕРМИНАЛ ДОСТУПА", "pc-eyebrow");
-            Add(TitleBlock, Eyebrow);
-
+            // ui.js opened the title block with an «eyebrow» line («THE CLOUDS ·
+            // ТЕРМИНАЛ ДОСТУПА»). It is placeholder copy, not part of the project's
+            // identity, so the block starts on the wordmark.
             Wordmark = El("pc-wordmark");
             Wordmark.pickingMode = PickingMode.Ignore;
             Add(Wordmark, Txt("PROJECT", "pc-wordmark-text"));
@@ -161,15 +162,12 @@ namespace ProjectCMainMenu
             Add(NavRow, AltHost);
             Add(NavRow, Nav);
 
-            MenuNote = Txt(Up("В глубине качаются тросы, под ними идёт паром месзия"), "pc-menu-note");
-
             Main = El("pc-main");
             Main.name = "pc-menu-main";
             Main.pickingMode = PickingMode.Ignore;
             Add(Main, MainScrim);
             Add(Main, TitleBlock);
             Add(Main, NavRow);
-            Add(Main, MenuNote);
 
             // ---- settings window --------------------------------------------
             Settings = BuildSettings();
@@ -194,6 +192,9 @@ namespace ProjectCMainMenu
             Ui.Add(Settings);
             Ui.Add(Toast);
             Ui.Add(Foot);
+
+            // the gradients the stylesheet can only describe (see PCMM_Menu.uss)
+            ApplyRamps();
         }
 
         private VisualElement BuildAltimeterHost()
@@ -328,7 +329,12 @@ namespace ProjectCMainMenu
             {
                 var on = i == 0;
 
-                var tab = Txt(Up(Tabs[i].Label), "pc-tab");
+                // A TextElement that owns a child stops measuring its own text: with the glow
+                // inside it the tab collapsed to its padding alone (measured 5.1 px against
+                // 65.6 px for the same label in a plain container), so the three tabs overlapped
+                // inside the 623.7 px bar. The tab is a container now and the label is a child;
+                // class names and nesting stay the same, so the USS rules are unchanged.
+                var tab = El("pc-tab");
                 tab.name = "pc-tab-" + Tabs[i].Id;
                 tab.focusable = true;
                 tab.pickingMode = PickingMode.Position;
@@ -336,6 +342,10 @@ namespace ProjectCMainMenu
                 var glow = El("pc-tab__glow");
                 glow.pickingMode = PickingMode.Ignore;
                 tab.Add(glow);
+
+                var tabLabel = Txt(Up(Tabs[i].Label), "pc-tab__label");
+                tabLabel.pickingMode = PickingMode.Ignore;
+                tab.Add(tabLabel);
 
                 if (on) tab.AddToClassList("is-active");
                 Add(TabsBar, tab);
@@ -393,31 +403,13 @@ namespace ProjectCMainMenu
 
         private VisualElement BuildFoot()
         {
-            var hintLine = Txt(
-                "Кнопки и окна сгущаются из дыма: наведение поднимает дым, нажатие собирает, Esc — распустить.",
-                "pc-hint-line");
-
-            var keys = El("pc-hint-keys");
-            keys.pickingMode = PickingMode.Ignore;
-            Add(keys, Txt("Enter", "pc-kbd"));
-            Add(keys, Txt(Up("выбор"), "pc-hint-key"));
-            Add(keys, Txt("←", "pc-kbd"));
-            Add(keys, Txt("→", "pc-kbd"));
-            Add(keys, Txt(Up("вкладки"), "pc-hint-key"));
-            Add(keys, Txt("Esc", "pc-kbd"));
-            Add(keys, Txt(Up("роспуск"), "pc-hint-key"));
-
-            Hint = El("pc-hint");
-            Hint.pickingMode = PickingMode.Ignore;
-            Add(Hint, hintLine);
-            Add(Hint, keys);
-
-            var build = Txt("PROJECTC · MENU BUILD 0.5.0 · MESMIUM", "pc-build");
-
+            // ui.js filled the footer with the control hint («Кнопки и окна сгущаются
+            // из дыма…» + the Enter/←/→/Esc legend) and the build stamp
+            // («PROJECTC · MENU BUILD 0.5.0 · MESMIUM»). All of it is placeholder copy
+            // that is not part of the project's own interface, so the footer stays in
+            // the tree as an empty host and nothing is drawn on it.
             var foot = El("pc-foot");
             foot.pickingMode = PickingMode.Ignore;
-            foot.Add(Hint);
-            foot.Add(build);
             return foot;
         }
 

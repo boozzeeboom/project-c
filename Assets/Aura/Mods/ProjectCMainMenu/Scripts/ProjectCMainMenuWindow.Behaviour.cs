@@ -285,9 +285,9 @@ namespace ProjectCMainMenu
                 _menuParts.Add(AddPart(NavButtons[i], PartKind.Button, 1 + i, 1f, "btn-" + Buttons[i].Action, cloud));
             }
 
-            var notePart = AddPart(MenuNote, PartKind.Note, 1 + Buttons.Length, 1f, "note");
+            // the note that used to close the menu («В глубине качаются тросы…») is
+            // placeholder copy and is gone, so the last staggered part is the fourth button
             _menuParts.Insert(0, titlePart);
-            _menuParts.Add(notePart);
             _menuMaxOrder = _menuParts.Count - 1;
 
             _cardPart = AddPart(Settings, PartKind.Card, 0, 0f, "card");
@@ -381,6 +381,10 @@ namespace ProjectCMainMenu
         {
             target = target ?? part.El;
             part.LastBlur = px;
+
+            // Dynamic filters abort the panel repaint in this editor — see
+            // ProjectCMainMenuTextBlower.BlurFiltersEnabled.
+            if (!ProjectCMainMenuTextBlower.BlurFiltersEnabled) return;
 
             if (px <= 0.001f)
             {
@@ -769,6 +773,10 @@ namespace ProjectCMainMenu
             var sx = (TabDir > 0 ? 20f : -20f) * (1f - a);
             panel.style.translate = new Translate(Length.Pixels(sx), 0f);
 
+            // Dynamic filters abort the panel repaint in this editor — see
+            // ProjectCMainMenuTextBlower.BlurFiltersEnabled.
+            if (!ProjectCMainMenuTextBlower.BlurFiltersEnabled) return;
+
             if (a < 0.985f)
             {
                 var blur = new FilterFunction(FilterFunctionType.Blur);
@@ -906,7 +914,6 @@ namespace ProjectCMainMenu
             var dir = wind.Dir < 0 ? -1 : 1;
             var duration = wind.DurationMs > 0f ? wind.DurationMs : WindPressMs;
 
-            BlowTextOf(Eyebrow, dir, duration, 16f, 1f, 1);
             BlowTextOf(Wordmark, dir, duration, 22f, 1f, 2, whole: true);
             BlowTextOf(Subtitle, dir, duration, 12f, 1f, 1);
 

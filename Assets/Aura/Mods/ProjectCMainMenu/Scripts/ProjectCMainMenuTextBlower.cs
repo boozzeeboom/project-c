@@ -27,6 +27,19 @@ namespace ProjectCMainMenu
 {
     public sealed class ProjectCMainMenuTextBlower
     {
+        /// <summary>
+        /// Dynamic <c>filter: blur()</c> is OFF by default.
+        ///
+        /// UI Toolkit renders every filter through a nested render pass
+        /// (RenderNestedTrees → RenderNestedPasses). In this editor/runtime that path
+        /// throws <c>Assertion failed</c> out of <c>UIElementsRuntimeUtilityNative.RepaintPanels</c>
+        /// and then fails to bind its nested textures, which aborts the whole panel
+        /// repaint — the settings card stays black. Disabling the filters keeps opacity,
+        /// translate, rotate and scale intact; only the smoke-dissolve softness is lost.
+        /// Set to true to restore the faithful port once the renderer issue is fixed.
+        /// </summary>
+        public static bool BlurFiltersEnabled;
+
         private struct GlyphKey
         {
             public float Offset;
@@ -279,7 +292,7 @@ namespace ProjectCMainMenu
                 style.rotate = new Rotate(new Angle(rot, AngleUnit.Degree));
                 style.scale = new Scale(new Vector2(scale, scale));
                 style.opacity = opacity;
-                style.filter = Blur(blur);
+                if (BlurFiltersEnabled) style.filter = Blur(blur);   // see BlurFiltersEnabled
             }
         }
 
@@ -473,6 +486,11 @@ namespace ProjectCMainMenu
                 if (color.a > 0f) to.style.color = color;
 
                 to.style.unityFontStyleAndWeight = from.resolvedStyle.unityFontStyleAndWeight;
+
+                // the face as well: the wordmark is set in the display face, and a
+                // ghost that fell back to the body face would change shape mid-dissolve
+                var face = from.resolvedStyle.unityFontDefinition;
+                if (face.font != null || face.fontAsset != null) to.style.unityFontDefinition = face;
                 return;
             }
 

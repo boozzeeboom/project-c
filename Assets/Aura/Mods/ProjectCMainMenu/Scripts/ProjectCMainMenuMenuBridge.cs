@@ -25,6 +25,12 @@ namespace ProjectCMainMenu
         [SerializeField] private float pressGustMs = 900f;
         [SerializeField] private float pollInterval = 0.15f;
 
+        [Header("Day cycle response")]
+        [Tooltip("Extra day/night speed added while the settings tabs switch, so the backdrop visibly turns in answer to the interaction. 0 turns the response off.")]
+        [SerializeField, Range(0f, 5f)] private float tabDayBoost = 4f;
+        [Tooltip("How long the tab boost takes to decay back to the atmosphere's baseline speed.")]
+        [SerializeField, Min(0.05f)] private float tabDayBoostSeconds = 2f;
+
         [Header("Pointer lift")]
         [SerializeField] private bool pointerLiftEnabled = true;
 
@@ -44,6 +50,7 @@ namespace ProjectCMainMenu
         private float _lastFocus = -1f;
         private bool _backdropCleared;
         private ProjectCMainMenuWindow _hookedWindow;
+        private int _lastTab = -1;
 
         private void Awake()
         {
@@ -55,6 +62,7 @@ namespace ProjectCMainMenu
             _pollTimer = 0f;
             _lastFocus = -1f;
             _lastVisible = true;
+            _lastTab = -1;
         }
 
         private void OnDisable()
@@ -206,6 +214,7 @@ namespace ProjectCMainMenu
             _root = null;
             _buttons = null;
             _backdropCleared = false;
+            _lastTab = -1;
 
             if (_hookedWindow != null)
             {
@@ -311,6 +320,16 @@ namespace ProjectCMainMenu
             }
 
             if (atmosphere == null) return;
+
+            // the settings tabs answer in the backdrop as well: switching tab kicks the
+            // day/night cycle, so the sky turns while the panels change over and then
+            // eases back to the baseline speed
+            var tab = window.ActiveTab;
+            if (tab != _lastTab)
+            {
+                if (_lastTab >= 0) atmosphere.PulseDaySpeed(tabDayBoost, tabDayBoostSeconds);
+                _lastTab = tab;
+            }
 
             var shown = host.IsShown;
             if (shown != _lastVisible)

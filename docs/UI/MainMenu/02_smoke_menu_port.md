@@ -164,13 +164,31 @@ grayscale() sepia() invert() hue-rotate()`; `text-shadow`; `aspect-ratio`; `tran
   нажатие «ПОДКЛЮЧИТЬСЯ К СЕРВЕРУ» через 120 мс открывает IP-лист; `Dispose` снимает слой и
   оставляет точку монтирования пустой.
 - [ ] **9. Переключение** — новый префаб `ProjectCMainMenuUI` (`UIDocument` + `PanelSettings`
-  Screen Space Overlay), `MainMenuWindow` остаётся выключенным как откат; затем
+  Screen Space Overlay, `ScaleWithScreenSize` 1920×1080), `MainMenuWindow` остаётся
+  выключенным как откат; `ProjectCMainMenuMenuBridge` перевешивается с `main-menu-*`
+  на новое окно (`OnBlow`, `OnAction`, `Hovered`, `SettingsOpen`); затем
   `check_compile_errors` = 0 и проверка шейдерных ошибок в `get_unity_logs`.
 
 ## Что делаем вручную
 
 Play Mode и визуальную приёмку делает пользователь (правило проекта). Агент не сохраняет
 сцены и не запускает Play Mode.
+
+## Что не попадает в Git
+
+`.gitignore` исключает `*.prefab`, `*.shader`, `*.shadergraph` и `*.meta`. В репозитории
+лежат скрипты порта, `PCMM_Menu.uss`, материалы `PCMM_*.mat`, билдер и отчёты
+`_*_verify.txt`. Вне репозитория остаются:
+
+- семь шейдеров `Shaders/PCMM_{Sky,Gas,Stars,Veil,Rope,Hull,Glow}.shader`;
+- префаб `Prefabs/ProjectCMainMenu.prefab`;
+- все `.meta`, то есть GUID-ы — в чистом клоне ссылки `BootstrapScene` на префаб
+  и материалы не разрешатся.
+
+`Tools/ProjectC/MainMenu/Build Atmosphere Prefab` пересоздаёт материалы и префаб, но
+**не** исходники шейдеров: билдер только ищет их через `Shader.Find`, поэтому на чистом
+клоне он сообщит `[PCMM] shader not found: …`. Файлы шейдеров нужно переносить отдельно.
+`.gitignore` в рамках этого прохода не менялся.
 
 ## Журнал
 

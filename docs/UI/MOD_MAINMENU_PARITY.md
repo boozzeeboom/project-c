@@ -11,6 +11,10 @@
 
 ## 1. Таблица соответствия
 
+> Столбец «Решение» фиксирует решения, принятые **на стороне мода** (что и куда переехало
+> в `index.html` / `ui.css`). Все шесть блоков из строк «нет» уже существуют в Unity —
+> см. §7.
+
 | Наш элемент (MainMenuWindow) | В моде | Решение |
 |---|---|---|
 | Заголовок «PROJECT C: THE CLOUDS» | «PROJECT**C**» + «Сектор меззий · терминал доступа» | в моде: заголовок = наше название, eyebrow оставляем как подпись |
@@ -54,9 +58,17 @@
 
 ## 5. Статус
 
+Паритет **в моде** закрыт; в Unity идёт порт меню мода 1в1, шаги **1–8 из 9**.
+План и журнал порта — `docs/UI/MainMenu/02_smoke_menu_port.md`.
+
 - [x] паритет по подписям и блокам в моде
 - [ ] проверка меню мода пользователем
 - [x] перенос «наполнения» в Unity (шейдеры, атмосфера, тросы, сутки, пыль)
+- [x] порт самого меню в Unity, шаги 1–8: дымовые листы, USS, дерево, поле дыма,
+  выдувание букв, алтиметр, поведение, наши блоки
+- [ ] шаг 9 — переключение: префаб `ProjectCMainMenuUI` (`UIDocument` + `PanelSettings`),
+  `MainMenuWindow` выключен как откат, `ProjectCMainMenuMenuBridge` перевешен
+  с `main-menu-*` на новое окно
 
 ## 6. Перенос в Unity — что сделано
 
@@ -93,6 +105,10 @@
   нажатие = 1.0, направление от центра панели, источник в UV; `main-menu-root` скрыт → камера
   выключена, открыта под-панель (`display != None`) → `SetFocus(1)` (облака расходятся).
   `MainMenuWindow.cs/uxml/uss` **не тронуты**.
+- **До шага 9 мост смотрит на старое дерево.** `ProjectCMainMenuMenuBridge` ищет
+  `main-menu-buttons` / `main-menu-root`, то есть живёт на `MainMenuWindow`. Новое окно
+  `ProjectCMainMenuWindow` он пока не видит: после включения `ProjectCMainMenuUI` мост
+  придётся перевесить, иначе порывы и фокус завесы перестанут срабатывать.
 
 ### 6.3 Что осталось нашим
 
@@ -114,6 +130,13 @@
 - Play Mode не запускался (правило проекта): поведение, `[PCMM]`-логи и внешний вид проверяет пользователь.
 - `PCMM_Veil.shader` объявляет `_Soft`, но во фрагменте не использует — безвредно.
 - Шаг 5 плана формально зависит от шага 4 (приёмка в моде); перенос сделан по нажатию Start.
+- Шаг 9: префаб `ProjectCMainMenuUI`, `PanelSettings` `ScaleWithScreenSize` с опорой
+  1920×1080, `MainMenuWindow` остаётся выключенным как откат.
+- Шаг 9: перевесить `ProjectCMainMenuMenuBridge` с `main-menu-*` на `ProjectCMainMenuWindow`
+  (`OnBlow`, `OnAction`, `Hovered`, `SettingsOpen`), иначе 3D-слой не реагирует на меню.
+- Визуальная приёмка блоков шага 8 (`.pc-proj-*`) в реальной панели — за пользователем.
+- `.gitignore` исключает `*.shader`, `*.prefab` и `*.meta`: шейдеры `PCMM_*`, префаб и все
+  GUID-ы вне Git. Билдер меню пересоздаёт материалы и префаб, но **не** исходники шейдеров.
 
 ### 6.6 Исправлено после первого запуска (2026-10-27)
 
@@ -149,4 +172,73 @@
 3. Глазами: за меню небо/звёзды/4 слоя завесы/меззий/3 троса с паромом/пыль; наведение на кнопку
    раздвигает облака; «НАСТРОЙКИ» и IP-панель расфокусируют завесу; сутки идут по кругу.
 4. Префаб пересобирается меню `Tools/ProjectC/MainMenu/Build Atmosphere Prefab` (идемпотентно).
+
+## 7. Порт меню мода в Unity (шаги 1–8 из 9)
+
+Дата: 2026-10-27. Всё лежит в `Assets/Aura/Mods/ProjectCMainMenu/`; план, пределы платформы
+и журнал решений — `docs/UI/MainMenu/02_smoke_menu_port.md`.
+
+Новое окно — `ProjectCMainMenuWindow`, объявленное `public sealed partial` и разложенное по
+трём файлам. UXML нет: дерево строится кодом, единственный источник вида — `PCMM_Menu.uss`
+на опоре 1920×1080.
+
+### 7.1 Файлы по шагам
+
+| Шаг | Файл | Роль | Отчёт |
+|---|---|---|---|
+| 1 | `Scripts/ProjectCMainMenuSmokeTextures.cs` | дымовые листы `Texture2D` + кэш | — |
+| 2 | `UI/PCMM_Menu.uss` | перенос `ui.css` на USS, 197 правил | — |
+| 3 | `Scripts/ProjectCMainMenuWindow.cs` | дерево, 221 элемент | `_tree_verify.txt` |
+| 4 | `Scripts/ProjectCMainMenuSmokeField.cs` | поле дыма под буквами | `_smoke_field_verify.txt` |
+| 5 | `Scripts/ProjectCMainMenuTextBlower.cs` | выдувание букв в дым | `_text_blower_verify.txt` |
+| 6 | `Scripts/ProjectCMainMenuAltimeter.cs` | лента высот 800/1200/2200/3000 м | `_altimeter_verify.txt` |
+| 7 | `Scripts/ProjectCMainMenuWindow.Behaviour.cs` | сборка/распад частей, кнопки, настройки, вкладки, тосты, густы | `_behaviour_verify.txt` |
+| 8 | `Scripts/ProjectCMainMenuProjectPanels.cs` | наши блоки `.pc-proj-*` | `_project_panels_verify.txt` |
+
+### 7.2 Куда переехал каждый наш элемент
+
+| Наш элемент (`MainMenuWindow`) | В новом окне |
+|---|---|
+| `main-host-btn` «ОДИНОЧНАЯ ИГРА» | `.pc-btn` с действием `host`, высота 3000 м |
+| `main-connect-btn` «ПОДКЛЮЧИТЬСЯ К СЕРВЕРУ» | `.pc-btn` `connect` → `OnConnectRequested` → `OpenIp()` |
+| `main-settings-btn` «НАСТРОЙКИ» | `.pc-btn` `settings` → `OpenSettings()` |
+| `main-quit-btn` «ВЫХОД» | `.pc-btn` `quit` |
+| `main-ip-panel` | `.pc-proj-ip`: `pc-proj-ip-field`, `pc-proj-ip-connect`, `pc-proj-ip-back` |
+| `main-debug-panel` | `.pc-proj-admin`: 10 × `pc-proj-reset-<id>` + `pc-proj-admin-status` |
+| `main-changelog-panel` | `.pc-proj-changelog`: `…-head`, `…-refresh`, `…-status`, `…-body` |
+| `main-links` | `.pc-proj-links` + 5 × `pc-proj-link-0…4` |
+| `main-lang-selector` | `.pc-proj-lang` + `pc-proj-lang-select` |
+| Дисклеймер первого запуска | `.pc-proj-disclaimer` |
+
+Слой `.pc-proj-layer` — последний ребёнок `Root`, сосед `.pc-ui`, `pickingMode = Ignore`;
+у каждого из шести блоков `pickingMode = Position`. Поэтому блоки рисуются поверх дыма,
+карточки настроек и тоста, а пустой слой не перехватывает клики у меню.
+
+Настоящие проектные API подключены швами, которые по умолчанию ничем не подменены:
+`NetworkManagerController.ConnectToServer(ip, 7777)`, `PersistenceDebugTools`,
+`LocaleSelector`, `Application.OpenURL`, `PlayerPrefs`
+`ProjectC.MainMenu.FirstLaunchDisclaimerAccepted`.
+
+### 7.3 Что пока остаётся легаси
+
+- `Assets/_Project/Scripts/UI/MainMenu/MainMenuWindow.cs` + `MainMenuWindow.uxml` +
+  `MainMenuStyles.uss` + `MainMenuPanelSettings.asset` — в сцене остаются включёнными
+  до шага 9 и служат откатом.
+- `ProjectCMainMenuMenuBridge` — читает `main-menu-buttons` / `main-menu-root`, то есть
+  старое дерево; перевешивается на новое окно шагом 9.
+- Секции настроек (`GraphicsSettingsSection` / `AudioSettingsSection` /
+  `GameplaySettingsSection`) — в новом окне три вкладки `pc-panel-*` пока собраны
+  заглушками (`placeholder до AudioMixer` и строка «Страница повторяет … проекта»);
+  живые виджеты остаются в старом меню.
+- `EscMenuWindow` (владеет `Esc`) не тронут — новое окно `Esc` не обрабатывает.
+
+### 7.4 Риск версий: часть файлов вне Git
+
+`.gitignore` исключает `*.prefab`, `*.shader`, `*.shadergraph` и `*.meta`. В репозитории
+лежат скрипты, `PCMM_Menu.uss`, материалы `PCMM_*.mat`, билдер и отчёты `_*_verify.txt`;
+вне репозитория остаются семь шейдеров `Shaders/PCMM_*.shader`, префаб
+`Prefabs/ProjectCMainMenu.prefab` и все GUID-ы. Из чистого клона
+`Tools/ProjectC/MainMenu/Build Atmosphere Prefab` соберёт материалы и префаб, но
+`Shader.Find` вернёт `null` (`[PCMM] shader not found: …`): исходники шейдеров билдер
+не создаёт и должен получить отдельно. `.gitignore` в этом проходе не менялся.
 

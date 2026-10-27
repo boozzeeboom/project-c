@@ -77,6 +77,10 @@ namespace ProjectCMainMenu
                 wrapMode = TextureWrapMode.Repeat,
                 filterMode = FilterMode.Trilinear,
                 anisoLevel = 2,
+                // The veils hold this texture only through a MaterialPropertyBlock, and a static
+                // C# reference does not protect an asset: after a scene load
+                // (Resources.UnloadUnusedAssets) the map was released and the smoke vanished.
+                hideFlags = HideFlags.DontSave | HideFlags.DontUnloadUnusedAsset,
             };
             texture.SetPixels32(pixels);
             texture.Apply(true, false);

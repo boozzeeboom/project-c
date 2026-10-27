@@ -48,7 +48,7 @@ namespace ProjectCMainMenu
             shape.enabled = true;
             shape.shapeType = ParticleSystemShapeType.Box;
             shape.scale = new Vector3(24f, 14f, 0.4f);
-            shape.position = new Vector3(0f, 0f, -1f);
+            shape.position = new Vector3(0f, 0f, 1f);
 
             var velocity = _system.velocityOverLifetime;
             velocity.enabled = true;
@@ -108,6 +108,9 @@ namespace ProjectCMainMenu
                 name = "PCMM_WindDot",
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear,
+                // Same lifetime rule as the veil maps: the material holds it natively, and an
+                // asset sweep after a scene load used to drop it.
+                hideFlags = HideFlags.DontSave | HideFlags.DontUnloadUnusedAsset,
             };
             var pixels = new Color32[size * size];
             for (var y = 0; y < size; y++)

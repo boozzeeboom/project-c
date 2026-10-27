@@ -4,6 +4,7 @@
 // driven by the menu's own gestures (Blow / SetFocus) and the day-night clock.
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace ProjectCMainMenu
 {
@@ -70,6 +71,9 @@ namespace ProjectCMainMenu
         private Mesh _quad;
         private int _layer;
         private bool _built;
+
+        // Index of PCMM_Renderer inside ProjectC_URP's renderer list (Assets/_Project/Settings).
+        private const int PcmmRendererIndex = 1;
 
         private float _time;
         private float _qW = 1f;
@@ -145,15 +149,29 @@ namespace ProjectCMainMenu
             atmosphereCamera.nearClipPlane = 0.01f;
             atmosphereCamera.farClipPlane = 10f;
 
+            // The menu renders on its own renderer. ProjectC_URP_Renderer carries the project's
+            // volumetric clouds, edge detection and far-field focus passes, and they run on every
+            // camera except Preview (VolumetricCloudsRenderFeature.cs:246, DistantFocusRenderFeature.cs:78).
+            // On this camera they painted over the Sky quad - the only quad in the Background queue -
+            // while the Transparent layers still survived, so the backdrop looked half applied.
+            // PCMM_Renderer is a copy of that renderer with no features; it sits at index 1.
+            var cameraData = atmosphereCamera.GetUniversalAdditionalCameraData();
+            cameraData.SetRenderer(PcmmRendererIndex);
+            cameraData.renderPostProcessing = false;   // the menu palette must not follow the world Volume
+
             _quad = BuildQuadMesh();
 
+            // Unity's camera looks down +Z (three.js, where this stack was ported from,
+            // looks down -Z). Every quad therefore sits at a POSITIVE local z; with the old
+            // negative values the whole atmosphere was behind the camera and nothing but
+            // the clear colour was ever visible.
             _skyScale = 1.012f;
             _starScale = 1.006f;
-            _sky = MakeQuad("Sky", skyMaterial, -100, -1.000f);
-            _stars = MakeQuad("Stars", starsMaterial, -90, -0.9985f);
+            _sky = MakeQuad("Sky", skyMaterial, -100, 1.000f);
+            _stars = MakeQuad("Stars", starsMaterial, -90, 0.9985f);
             for (var i = 0; i < _veils.Length; i++)
             {
-                var renderer = MakeQuad("Veil_" + i, veilMaterial, 20 + i, -0.998f);
+                var renderer = MakeQuad("Veil_" + i, veilMaterial, 20 + i, 0.998f);
                 _veils[i] = new VeilLayer
                 {
                     Renderer = renderer,
@@ -178,7 +196,7 @@ namespace ProjectCMainMenu
                 renderer.SetPropertyBlock(block);
             }
 
-            _gas = MakeQuad("Gas", gasMaterial, 30, -0.999f);
+            _gas = MakeQuad("Gas", gasMaterial, 30, 0.999f);
 
             _skyMat = _sky.material;
             _starMat = _stars.material;
@@ -320,6 +338,38 @@ namespace ProjectCMainMenu
             }
         }
 
+        // ------------------------------------------------------- day cycle pulse
+
+        private float _dayBoost;
+        private float _dayBoostRate;
+
+        /// <summary>Baseline day/night speed — the inspector's daySpeed slider.</summary>
+        public float DaySpeed
+        {
+            get => daySpeed;
+            set => daySpeed = Mathf.Clamp(value, 0.2f, 3f);
+        }
+
+        /// <summary>Pulse currently added on top of <see cref="DaySpeed"/>; 0 when idle.</summary>
+        public float DayBoost => _dayBoost;
+
+        /// <summary>Speed the cycle is actually running at this frame.</summary>
+        public float CurrentDaySpeed => Mathf.Clamp(daySpeed + _dayBoost, 0.2f, 8f);
+
+        /// <summary>
+        /// Kicks the day/night cycle for a moment: the sky turns visibly faster while
+        /// the gesture lasts, then settles back to <see cref="DaySpeed"/>. The boost
+        /// decays linearly over <paramref name="seconds"/>, so a second gesture mid-decay
+        /// simply raises the peak again instead of restarting a timer.
+        /// </summary>
+        public void PulseDaySpeed(float boost, float seconds)
+        {
+            if (boost <= 0f) return;
+
+            _dayBoost = Mathf.Max(_dayBoost, boost);
+            _dayBoostRate = _dayBoost / Mathf.Max(0.05f, seconds);
+        }
+
         private void Update()
         {
             if (!_built) Build();
@@ -338,7 +388,8 @@ namespace ProjectCMainMenu
             _lift = ProjectCMainMenuPalette.Damp(_lift, liftTarget, 3.2f, dt);
             var dark = Mathf.Pow(Mathf.Clamp01((0.55f - _lift) / 0.55f), 1.3f);
 
-            _dayNight.CycleSeconds = Mathf.Clamp(dayCycleSeconds / Mathf.Max(0.2f, daySpeed), 24f, 1200f);
+            _dayBoost = Mathf.MoveTowards(_dayBoost, 0f, _dayBoostRate * dt);
+            _dayNight.CycleSeconds = Mathf.Clamp(dayCycleSeconds / Mathf.Max(0.2f, CurrentDaySpeed), 24f, 1200f);
             _dayNight.Update(dt);
             _sample = _dayNight.Sample;
 

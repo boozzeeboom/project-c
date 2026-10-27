@@ -16,7 +16,8 @@
 //
 // Two project behaviours had to move off MainMenuWindow to keep the flow identical:
 //
-//   * «ОДИНОЧНАЯ ИГРА» -> NetworkManagerController.StartHost(), then the menu hides;
+//   * «ОДИНОЧНАЯ ИГРА» -> GlobalMotionPilotRuntime.StartPilotHost() (the pilot path the
+//     floating-origin project actually uses), then the menu hides;
 //   * «ПОДКЛЮЧИТЬСЯ» in the IP sheet -> step 8 already calls ConnectToServer through
 //     its IpConnectHandler seam and fires OnProjectAction("ip-connect"), so the menu
 //     hides there too.
@@ -141,6 +142,24 @@ namespace ProjectCMainMenu
 
         private void StartHost()
         {
+            // Pilot first, exactly like MainMenuWindow.OnHostClicked() and NetworkTestMenu.
+            // GlobalMotionPilotRuntime is the only host launcher wired in BootstrapScene: it loads
+            // WorldScene_0_0, retires the legacy scene owners and runs GlobalMotionNetworkStartup.TryPrepare
+            // before NetworkManager.StartHost().
+            //
+            // NetworkManagerController.StartHost() is not an equivalent shortcut here: its profile has
+            // EnforceGlobalContracts=true and protocol 0xF006, so PrepareGlobalMotionStart() demands a
+            // GlobalMotionSessionCoordinator on this same GameObject. No such coordinator exists in the
+            // scenes, so the controller returned silently (UpdateStatus only raises an event, no Debug.Log)
+            // and the game never started.
+            var pilot = Object.FindAnyObjectByType<ProjectC.World.FloatingOrigin.Pilot.GlobalMotionPilotRuntime>();
+            if (pilot != null && pilot.isActiveAndEnabled)
+            {
+                pilot.StartPilotHost();
+                if (hideAfterStart) SetShown(false);
+                return;
+            }
+
             var controller = Object.FindAnyObjectByType<NetworkManagerController>();
             if (controller == null)
             {

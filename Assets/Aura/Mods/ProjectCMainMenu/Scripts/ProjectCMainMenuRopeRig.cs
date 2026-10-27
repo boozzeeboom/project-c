@@ -66,9 +66,9 @@ namespace ProjectCMainMenu
 
             var presets = new[]
             {
-                new { Yc = 0.330f, Sag = 0.052f, Width = 0.0014f, Opacity = 0.26f, Sway = 0.8f, Phase = 0.6f, Z = -0.9965f },
-                new { Yc = 0.215f, Sag = 0.072f, Width = 0.0021f, Opacity = 0.42f, Sway = 1.0f, Phase = 2.3f, Z = -0.9961f },
-                new { Yc = 0.100f, Sag = 0.048f, Width = 0.0016f, Opacity = 0.30f, Sway = 1.2f, Phase = 4.5f, Z = -0.9957f },
+                new { Yc = 0.330f, Sag = 0.052f, Width = 0.0014f, Opacity = 0.26f, Sway = 0.8f, Phase = 0.6f, Z = 0.9965f },
+                new { Yc = 0.215f, Sag = 0.072f, Width = 0.0021f, Opacity = 0.42f, Sway = 1.0f, Phase = 2.3f, Z = 0.9961f },
+                new { Yc = 0.100f, Sag = 0.048f, Width = 0.0016f, Opacity = 0.30f, Sway = 1.2f, Phase = 4.5f, Z = 0.9957f },
             };
 
             for (var i = 0; i < _ropes.Length; i++)
@@ -135,7 +135,7 @@ namespace ProjectCMainMenu
         {
             var cartGo = new GameObject("FerryCart");
             cartGo.transform.SetParent(transform, false);
-            cartGo.transform.localPosition = new Vector3(0f, 0f, -0.9955f);
+            cartGo.transform.localPosition = new Vector3(0f, 0f, 0.9955f);
             _cart = cartGo.transform;
             _cartBlock = new MaterialPropertyBlock();
 
@@ -305,7 +305,7 @@ namespace ProjectCMainMenu
 
             if (_cart != null)
             {
-                _cart.localPosition = new Vector3(here.x, here.y - 1.36f * _scale - 0.012f * _height * depthAmount, -0.9955f);
+                _cart.localPosition = new Vector3(here.x, here.y - 1.36f * _scale - 0.012f * _height * depthAmount, 0.9955f);
             }
             var pendulum = Mathf.Sin(_time * 0.62f + _phase * 0.8f) * 0.014f * swayAmount;
             var targetTilt = Mathf.Clamp(slope, -0.13f, 0.13f) + pendulum;

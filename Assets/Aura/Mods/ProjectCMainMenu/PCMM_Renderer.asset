@@ -1,0 +1,193 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-4923340904266724764
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee2663b47554e0b4c9ab32b58b53f805, type: 3}
+  m_Name: VolumetricCloudsRenderFeature
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.VolumetricCloudsRenderFeature
+  m_Active: 1
+  CloudNoise3D: {fileID: 11700000, guid: 9cec13d467e433748ad1e8856e9403f7, type: 2}
+  ActiveLayerCount: 4
+  Layer0:
+    BottomY: 800
+    TopY: 1200
+    DensityMultiplier: 10
+    CoverageThreshold: 0.1
+    DayRampTop: {r: 1, g: 1, b: 1, a: 1}
+    DayRampMid: {r: 0.7, g: 0.75, b: 0.8, a: 1}
+    DayRampBot: {r: 0.4, g: 0.45, b: 0.55, a: 1}
+    SunsetRampTop: {r: 1, g: 1, b: 1, a: 1}
+    SunsetRampMid: {r: 0.9, g: 0.55, b: 0.45, a: 1}
+    SunsetRampBot: {r: 0.5, g: 0.2, b: 0.2, a: 1}
+  Layer1:
+    BottomY: 1200
+    TopY: 2500
+    DensityMultiplier: 1.88
+    CoverageThreshold: 0.362
+    DayRampTop: {r: 1, g: 1, b: 1, a: 1}
+    DayRampMid: {r: 0.831, g: 0.902, b: 0.945, a: 1}
+    DayRampBot: {r: 0.663, g: 0.8, b: 0.89, a: 1}
+    SunsetRampTop: {r: 1, g: 1, b: 1, a: 1}
+    SunsetRampMid: {r: 1, g: 0.714, b: 0.757, a: 1}
+    SunsetRampBot: {r: 0.804, g: 0.361, b: 0.361, a: 1}
+  Layer2:
+    BottomY: 2000
+    TopY: 4500
+    DensityMultiplier: 1.05
+    CoverageThreshold: 0.496
+    DayRampTop: {r: 1, g: 1, b: 1, a: 1}
+    DayRampMid: {r: 0.88, g: 0.92, b: 0.96, a: 1}
+    DayRampBot: {r: 0.75, g: 0.82, b: 0.9, a: 1}
+    SunsetRampTop: {r: 1, g: 1, b: 1, a: 1}
+    SunsetRampMid: {r: 1, g: 0.8, b: 0.75, a: 1}
+    SunsetRampBot: {r: 0.85, g: 0.55, b: 0.45, a: 1}
+  Layer3:
+    BottomY: 4500
+    TopY: 7000
+    DensityMultiplier: 0.3
+    CoverageThreshold: 0.435
+    DayRampTop: {r: 1, g: 1, b: 1, a: 1}
+    DayRampMid: {r: 0.9, g: 0.93, b: 0.97, a: 1}
+    DayRampBot: {r: 0.8, g: 0.85, b: 0.92, a: 1}
+    SunsetRampTop: {r: 1, g: 1, b: 1, a: 1}
+    SunsetRampMid: {r: 1, g: 0.85, b: 0.8, a: 1}
+    SunsetRampBot: {r: 0.9, g: 0.65, b: 0.55, a: 1}
+  RaymarchSteps: 37
+  MaxRayDistance: 20000
+  LightAbsorption: 0.014
+  Opacity: 1
+  ColorIntensity: 5
+  HeightEdgeSoftness: 0.991
+  NoiseTileSize: 1024
+  CoverageScale: 0.0001
+  DepthFadeDistance: 10
+  LayerNoiseMask: 0
+  DebugDensityScale: 0.05
+  HalfResRender: 1
+  TemporalReprojection: 1
+  BlueNoiseDither: 1
+  BlueNoiseTexture: {fileID: 2800000, guid: cf8182677e251df47bf344fc5ab478b2, type: 3}
+  WindSpeedMultiplier: 0.01
+  DebugDensityDirect: 0
+  DebugLayerMask: 0
+  LocalDensityInfluence: 2
+  DisplacementStrength: 1000
+  OverrideMaterial: {fileID: 0}
+  _cloudsShader: {fileID: 4800000, guid: 5f303c46af965c840a0dbd88f74bb4b0, type: 3}
+--- !u!114 &-597003445878171204
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 231c514bb64b5f44497bc3931feaee74, type: 3}
+  m_Name: EdgeDetectionRenderFeature
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.EdgeDetectionRenderFeature
+  m_Active: 1
+  EdgeColor: {r: 0.10880205, g: 0.10880205, b: 0.14150941, a: 1}
+  EdgeWidth: 1
+  MaxEdgeDistance: 500
+  DepthFalloff: 0.147
+  UseDepthEdges: 1
+  DepthSensitivity: 2.5
+  DepthThreshold: 0.06
+  UseNormalEdges: 1
+  NormalSensitivity: 1.5
+  NormalThreshold: 0.08
+  UseAdaptiveColor: 1
+  AdaptiveStrength: 1
+  UsePencilStroke: 1
+  PencilTaper: 1
+  PencilGrain: 0.3
+  LineSoftness: 0.034
+  OverrideMaterial: {fileID: 0}
+  _edgeDetectionShader: {fileID: 4800000, guid: 684278897d3f4e848be809ed3679c5d0, type: 3}
+  _edgeDetectionMaskShader: {fileID: 4800000, guid: 68cd8d2b66b56a14297b5a2616c5b9f5, type: 3}
+  EnablePerObjectTargets: 1
+--- !u!114 &-435488297958218500
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32ce41df72cd1654ca2684f774f78217, type: 3}
+  m_Name: DistantFocusRenderFeature
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Rendering.DistantFocusRenderFeature
+  m_Active: 1
+  Active: 0
+  DebugView: 0
+  FarStart: 60
+  FarEnd: 300
+  FarStrength: 1
+  CharMax: 40
+  NearStrength: 0.35
+  MaxRadius: 12
+  OverrideMaterial: {fileID: 0}
+  _distantFocusShader: {fileID: 4800000, guid: a3d252714ca399b49aa9da9fa8b65317, type: 3}
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de640fe3d0db1804a85f9fc8f5cadab6, type: 3}
+  m_Name: PCMM_Renderer
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalRendererData
+  debugShaders:
+    debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7, type: 3}
+    hdrDebugViewPS: {fileID: 4800000, guid: 573620ae32aec764abd4d728906d2587, type: 3}
+    probeVolumeSamplingDebugComputeShader: {fileID: 7200000, guid: 53626a513ea68ce47b59dc1299fe3959, type: 3}
+  probeVolumeResources:
+    probeVolumeDebugShader: {fileID: 0}
+    probeVolumeFragmentationDebugShader: {fileID: 0}
+    probeVolumeOffsetDebugShader: {fileID: 0}
+    probeVolumeSamplingDebugShader: {fileID: 0}
+    probeSamplingDebugMesh: {fileID: 0}
+    probeSamplingDebugTexture: {fileID: 0}
+    probeVolumeBlendStatesCS: {fileID: 0}
+  m_RendererFeatures: []
+  m_RendererFeatureMap: bc59bf6e8704b7f7640a085588c7acbb
+  xrSystemData: {fileID: 0}
+  postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
+  m_AssetVersion: 3
+  m_PrepassLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_OpaqueLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_TransparentLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_DefaultStencilState:
+    overrideStencilState: 0
+    stencilReference: 0
+    stencilCompareFunction: 8
+    passOperation: 2
+    failOperation: 0
+    zFailOperation: 0
+  m_ShadowTransparentReceive: 1
+  m_RenderingMode: 2
+  m_DepthPrimingMode: 0
+  m_CopyDepthMode: 0
+  m_DepthAttachmentFormat: 0
+  m_DepthTextureFormat: 0
+  m_AccurateGbufferNormals: 0
+  m_IntermediateTextureMode: 1
+  m_TileOnlyMode: 0

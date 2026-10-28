@@ -284,6 +284,28 @@ MissingReferenceException: The object of type 'UnityEngine.Material' has been de
 старое `dayCycleSeconds = 190`, которое иначе перебило бы новое значение, а префаб агент не
 сохраняет. Ускорение на вкладках/настройках (`PulseDaySpeed`) работает как прежде.
 
+### 5.5 Каскад «Attempted to get a texture (index=27) that is not allocated»
+
+После этого прохода на старте Play каждый кадр сыпалась ошибка
+
+```
+TextureRegistry.GetTexture ← TextureSlotManager.Bind ← UIRenderDevice.EvaluateChain
+  ← RenderTreeManager.RenderSingleTree ← RenderTreeCompositor.RenderNestedPasses
+```
+
+то есть из **вложенных проходов** UI Toolkit — именно так рисуется каждый элемент с
+`filter:` (поддерево в пульную RenderTexture, потом фильтр). Вложенный проход
+ссылался на уже освобождённый id текстуры. В edit mode ошибка не воспроизводится, какая именно
+текстура под id 27 — **не установлено**. Это вторая поломка того же механизма после
+известного обрыва перерисовки при динамическом `filter` (`BlurFiltersEnabled = false`).
+
+Исправление убирает весь путь: из `PCMM_Menu.uss` удалены все 9 статических `filter: blur()`
+(облако кнопки 4 px, его ободок 2 px, банк карточки 2.5 px и его ободок 4 px, свечение вкладки
+3.5 px, два волоска 0.7 / 0.8 px, крестик 0.3 px и его линии 0.45 px). Остался только
+`filter: none` у `.pc-ghost`. Мягкость, которую давали блюры, уже запечена в рампы (smoothstep-спад)
+и в дымовые листы (рваный прозрачный край); кадр заодно дешевле — нет десятков вложенных
+RT-проходов. Если края облаков покажутся жёстче — смягчать текстуры, а не возвращать `filter`.
+
 ---
 
 ## 6. Карта файлов

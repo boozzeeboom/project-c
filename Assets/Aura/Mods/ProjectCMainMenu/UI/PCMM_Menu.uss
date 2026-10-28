@@ -448,10 +448,15 @@
        assigned from C# as ProjectCMainMenuRamps.ButtonHalo(): the charcoal halo the
        blobs condense around, exactly the mod's tone (its alpha is baked for linear
        blending, see ProjectCMainMenuGamma). */
-    filter: blur(4px);
     scale: 0.97 0.94;
-    /* filter is NOT transitioned: an animated filter is the dynamic filter path that
-       breaks the panel repaint (see ProjectCMainMenuTextBlower.BlurFiltersEnabled).
+    /* NO filter here, and nowhere else in this sheet. The mod softens the cloud with
+       filter: blur(4px); in UI Toolkit every filtered element is rendered as a nested
+       pass into a pooled render texture, and that path logged "Attempted to get a
+       texture (index=N) that is not allocated" from RenderNestedPasses every frame
+       (TextureRegistry.GetTexture <- TextureSlotManager.Bind), on top of the dynamic-
+       filter repaint abort (ProjectCMainMenuTextBlower.BlurFiltersEnabled). All nine
+       static blurs are gone: the softness they added is already baked into the ramps
+       (smoothstep falloff) and the puff sheets (ragged transparent rims).
        The swell is slower than the mod's 380/460 ms — at that speed the cloud and its
        pale rim popped on hover. */
     transition-property: opacity, scale;
@@ -471,7 +476,6 @@
     background-size: 100% 100%;
     /* radial-gradient(50% 50% at 50% 50%, --pc-cloud-rim, transparent 72%) —
        assigned from C# as ProjectCMainMenuRamps.ButtonRim(). */
-    filter: blur(2px);
     /* the mod lets the rim jump to 1 on hover; doubled instantly in one frame this was
        the white flash across the button — it fades in with the cloud swell instead */
     transition-property: opacity;
@@ -868,7 +872,6 @@
     top: -13%;
     bottom: -13%;
     opacity: 0.93;          /* calc(0.4 + 0.6 * --a); [C#] per frame */
-    filter: blur(2.5px);
 }
 
 .pc-card-cloud i,
@@ -903,7 +906,6 @@
     height: 44%;
     opacity: 0.5;
     background-size: 100% 100%;
-    filter: blur(4px);
     /* radial-gradient(50% 50%, --pc-cloud-rim, transparent 74%) — assigned from C#
        as ProjectCMainMenuRamps.CardRim(). */
 }
@@ -950,7 +952,6 @@
     height: 2px;            /* CSS 1px; a 1px box resolves to 0 on a scaled panel */
     opacity: 0.6;
     background-size: 100% 100%;
-    filter: blur(0.7px);
     /* linear-gradient(90deg, transparent, --pc-hair 24%, --pc-hair 76%,
        transparent) — assigned from C# as ProjectCMainMenuRamps.Hairline(). */
 }
@@ -975,7 +976,6 @@
     border-width: 0;
     border-radius: 50%;
     background-size: 100% 100%;
-    filter: blur(0.3px);
     /* background: radial-gradient(58% 58% at 50% 50%, --pc-hair, transparent
        78%) — assigned from C# as ProjectCMainMenuRamps.CloseHalo(). */
 }
@@ -997,7 +997,6 @@
     margin-left: -6.5px;
     border-radius: 1px;
     background-color: var(--pc-ink-dim);
-    filter: blur(0.45px);
     transition-property: background-color;
     transition-duration: 0.2s;
     transition-timing-function: ease;
@@ -1043,7 +1042,6 @@
     height: 2px;            /* CSS 1px; a 1px box resolves to 0 on a scaled panel */
     opacity: 0.45;
     background-size: 100% 100%;
-    filter: blur(0.8px);
     /* linear-gradient(90deg, transparent, --pc-hair 30%, --pc-hair 70%,
        transparent) — assigned from C# as ProjectCMainMenuRamps.Hairline(). */
 }
@@ -1094,7 +1092,6 @@
     height: 9px;
     opacity: 0;
     background-size: 100% 100%;
-    filter: blur(3.5px);
     transition-property: opacity;
     transition-duration: 0.28s;
     transition-timing-function: ease;

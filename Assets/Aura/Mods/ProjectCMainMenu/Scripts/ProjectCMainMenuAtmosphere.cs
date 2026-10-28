@@ -49,6 +49,7 @@ namespace ProjectCMainMenu
         }
 
         private readonly VeilLayer[] _veils = new VeilLayer[4];
+        private static readonly int BackdropId = Shader.PropertyToID("_PCMM_Backdrop");
         private static readonly float[] VeilPlaneScale = { 1.16f, 1.28f, 1.41f, 1.55f };
         private static readonly float[] VeilOpacityPreset = { 0.50f, 0.60f, 0.68f, 0.76f };
         private static readonly float[] VeilRepeat = { 1.70f, 1.92f, 2.15f, 2.40f };
@@ -403,6 +404,13 @@ namespace ProjectCMainMenu
                 _skyMat.SetColor("_Low", _sample.SkyLow);
                 _skyMat.SetFloat("_Dim", 0.9f * dark);
             }
+
+            // the sky the translucent layers are blended over, in sRGB luminance: the
+            // atmosphere shaders turn their alpha into an sRGB-equivalent blend with it
+            // (PCMM_Gamma.hlsl), because the mod blends in sRGB and this project in linear
+            var skyLuma = ProjectCMainMenuGamma.Luma(Color.Lerp(_sample.SkyMid, _sample.SkyLow, 0.35f));
+            var dimLuma = Mathf.Lerp(1f, 0.2126f * 0.36f + 0.7152f * 0.45f + 0.0722f * 0.7f, 0.9f * dark);
+            Shader.SetGlobalFloat(BackdropId, Mathf.Clamp01(skyLuma * dimLuma));
 
             // ---- stars ----------------------------------------------------------
             if (_starMat != null)

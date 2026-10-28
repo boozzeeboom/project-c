@@ -1,0 +1,537 @@
+moved=24 skipped=0 failed=255
+OK	01_Characters	-> 05_Residents_EarlyOct/01_Characters
+OK	02_Armor	-> 05_Residents_EarlyOct/02_Armor
+OK	03_Weapons	-> 05_Residents_EarlyOct/03_Weapons
+OK	04_Gadgets	-> 05_Residents_EarlyOct/04_Gadgets
+FAIL	05_Residents_EarlyOct	Cannot move asset from Assets/Generated_Models/05_Residents_EarlyOct to Assets/Generated_Models/05_Residents_EarlyOct/05_Residents_EarlyOct: Trying to move asset as a sub directory of itself Assets/Generated_Models/05_Residents_EarlyOct/05_Residents_EarlyOct
+OK	AsianFemaleFarmerResident	-> 05_Residents_EarlyOct/AsianFemaleFarmerResident
+OK	AsianMaleFarmerResident	-> 05_Residents_EarlyOct/AsianMaleFarmerResident
+FAIL	CL_F_ACC_MANTLE_11_RANGER	Cannot move asset from Assets/Generated_Models/CL_F_ACC_MANTLE_11_RANGER to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_MANTLE_11_RANGER: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_MANTLE_11_RANGER
+FAIL	CL_F_ACC_PAULDRON_01	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_01 to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_01
+FAIL	CL_F_ACC_PAULDRON_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_02_COMPOSITE to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_02_COMPOSITE
+FAIL	CL_F_ACC_PAULDRON_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_03_BRONZE to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_03_BRONZE
+FAIL	CL_F_ACC_PAULDRON_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_04_AGRAV to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_04_AGRAV
+FAIL	CL_F_ACC_PAULDRON_05_MEDICAL	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_05_MEDICAL to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_05_MEDICAL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_05_MEDICAL
+FAIL	CL_F_ACC_PAULDRON_05_MEDICAL_FIELD	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_05_MEDICAL_FIELD to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_05_MEDICAL_FIELD: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_05_MEDICAL_FIELD
+FAIL	CL_F_ACC_PAULDRON_07_THOUGHTS_ENGINEER_v2	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_07_THOUGHTS_ENGINEER_v2 to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_07_THOUGHTS_ENGINEER_v2: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_07_THOUGHTS_ENGINEER_v2
+FAIL	CL_F_ACC_PAULDRON_09_SUPERHEAVY_v3b	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_09_SUPERHEAVY_v3b to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_09_SUPERHEAVY_v3b: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_09_SUPERHEAVY_v3b
+FAIL	CL_F_ACC_PAULDRON_10_TANK	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_10_TANK to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_10_TANK: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_10_TANK
+FAIL	CL_F_ACC_PAULDRON_12_CHROME	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_12_CHROME to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_12_CHROME: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_12_CHROME
+FAIL	CL_F_ACC_PAULDRON_13_RUNIC	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_13_RUNIC to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_13_RUNIC: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_13_RUNIC
+FAIL	CL_F_ACC_PAULDRON_14_KORU	Cannot move asset from Assets/Generated_Models/CL_F_ACC_PAULDRON_14_KORU to Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_14_KORU: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Shoulders/CL_F_ACC_PAULDRON_14_KORU
+FAIL	CL_F_AIRTANK_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_AIRTANK_01_STEEL to Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_AIRTANK_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_AIRTANK_01_STEEL
+FAIL	CL_F_AIRTANK_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_AIRTANK_02_COMPOSITE to Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_AIRTANK_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_AIRTANK_02_COMPOSITE
+FAIL	CL_F_AIRTANK_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_AIRTANK_03_BRONZE to Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_AIRTANK_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_AIRTANK_03_BRONZE
+FAIL	CL_F_AIRTANK_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_AIRTANK_04_AGRAV to Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_AIRTANK_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_AIRTANK_04_AGRAV
+FAIL	CL_F_BACKPACK_05_MEDICAL	Cannot move asset from Assets/Generated_Models/CL_F_BACKPACK_05_MEDICAL to Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_BACKPACK_05_MEDICAL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_BACKPACK_05_MEDICAL
+FAIL	CL_F_BACKPACK_06_CHEMICAL	Cannot move asset from Assets/Generated_Models/CL_F_BACKPACK_06_CHEMICAL to Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_BACKPACK_06_CHEMICAL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_BACKPACK_06_CHEMICAL
+FAIL	CL_F_BACKPACK_07_ENGINEER	Cannot move asset from Assets/Generated_Models/CL_F_BACKPACK_07_ENGINEER to Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_BACKPACK_07_ENGINEER: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_BACKPACK_07_ENGINEER
+FAIL	CL_F_BACKPACK_08_RESEARCH	Cannot move asset from Assets/Generated_Models/CL_F_BACKPACK_08_RESEARCH to Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_BACKPACK_08_RESEARCH: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Backpacks_Airtanks/CL_F_BACKPACK_08_RESEARCH
+FAIL	CL_F_BELT_05_MEDICAL	Cannot move asset from Assets/Generated_Models/CL_F_BELT_05_MEDICAL to Assets/Generated_Models/02_Armor/Utility_Belts/CL_F_BELT_05_MEDICAL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Utility_Belts/CL_F_BELT_05_MEDICAL
+FAIL	CL_F_BELT_06_CHEMICAL	Cannot move asset from Assets/Generated_Models/CL_F_BELT_06_CHEMICAL to Assets/Generated_Models/02_Armor/Utility_Belts/CL_F_BELT_06_CHEMICAL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Utility_Belts/CL_F_BELT_06_CHEMICAL
+FAIL	CL_F_BELT_07_ENGINEER	Cannot move asset from Assets/Generated_Models/CL_F_BELT_07_ENGINEER to Assets/Generated_Models/02_Armor/Utility_Belts/CL_F_BELT_07_ENGINEER: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Utility_Belts/CL_F_BELT_07_ENGINEER
+FAIL	CL_F_BELT_08_RESEARCH	Cannot move asset from Assets/Generated_Models/CL_F_BELT_08_RESEARCH to Assets/Generated_Models/02_Armor/Utility_Belts/CL_F_BELT_08_RESEARCH: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Utility_Belts/CL_F_BELT_08_RESEARCH
+FAIL	CL_F_CHEST_LAMES_09_SUPERHEAVY_v3b	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_LAMES_09_SUPERHEAVY_v3b to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_LAMES_09_SUPERHEAVY_v3b: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_LAMES_09_SUPERHEAVY_v3b
+FAIL	CL_F_CHEST_LAMES_10_TANK	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_LAMES_10_TANK to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_LAMES_10_TANK: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_LAMES_10_TANK
+FAIL	CL_F_CHEST_PLATE_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_01_STEEL to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_01_STEEL
+FAIL	CL_F_CHEST_PLATE_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_02_COMPOSITE to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_02_COMPOSITE
+FAIL	CL_F_CHEST_PLATE_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_03_BRONZE to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_03_BRONZE
+FAIL	CL_F_CHEST_PLATE_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_04_AGRAV to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_04_AGRAV
+FAIL	CL_F_CHEST_PLATE_05_MEDICAL	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_05_MEDICAL to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_05_MEDICAL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_05_MEDICAL
+FAIL	CL_F_CHEST_PLATE_05_MEDICAL_FIELD	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_05_MEDICAL_FIELD to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_05_MEDICAL_FIELD: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_05_MEDICAL_FIELD
+FAIL	CL_F_CHEST_PLATE_07_THOUGHTS_ENGINEER_v2	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_07_THOUGHTS_ENGINEER_v2 to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_07_THOUGHTS_ENGINEER_v2: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_07_THOUGHTS_ENGINEER_v2
+FAIL	CL_F_CHEST_PLATE_09_SUPERHEAVY_v3b	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_09_SUPERHEAVY_v3b to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_09_SUPERHEAVY_v3b: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_09_SUPERHEAVY_v3b
+FAIL	CL_F_CHEST_PLATE_10_TANK	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_10_TANK to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_10_TANK: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_10_TANK
+FAIL	CL_F_CHEST_PLATE_11_RANGER	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_11_RANGER to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_11_RANGER: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_11_RANGER
+FAIL	CL_F_CHEST_PLATE_12_CHROME	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_12_CHROME to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_12_CHROME: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_12_CHROME
+FAIL	CL_F_CHEST_PLATE_13_RUNIC	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_13_RUNIC to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_13_RUNIC: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_13_RUNIC
+FAIL	CL_F_CHEST_PLATE_14_KORU	Cannot move asset from Assets/Generated_Models/CL_F_CHEST_PLATE_14_KORU to Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_14_KORU: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Chest/CL_F_CHEST_PLATE_14_KORU
+FAIL	CL_F_FEET_BOOT_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_01_STEEL to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_01_STEEL
+FAIL	CL_F_FEET_BOOT_03_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_03_COMPOSITE to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_03_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_03_COMPOSITE
+FAIL	CL_F_FEET_BOOT_04_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_04_BRONZE to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_04_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_04_BRONZE
+FAIL	CL_F_FEET_BOOT_05_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_05_AGRAV to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_05_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_05_AGRAV
+FAIL	CL_F_FEET_BOOT_05_MEDICAL	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_05_MEDICAL to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_05_MEDICAL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_05_MEDICAL
+FAIL	CL_F_FEET_BOOT_05_MEDICAL_FIELD	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_05_MEDICAL_FIELD to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_05_MEDICAL_FIELD: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_05_MEDICAL_FIELD
+FAIL	CL_F_FEET_BOOT_07_THOUGHTS_ENGINEER_v2	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_07_THOUGHTS_ENGINEER_v2 to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_07_THOUGHTS_ENGINEER_v2: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_07_THOUGHTS_ENGINEER_v2
+FAIL	CL_F_FEET_BOOT_09_SUPERHEAVY_v3b	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_09_SUPERHEAVY_v3b to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_09_SUPERHEAVY_v3b: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_09_SUPERHEAVY_v3b
+FAIL	CL_F_FEET_BOOT_10_TANK	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_10_TANK to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_10_TANK: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_10_TANK
+FAIL	CL_F_FEET_BOOT_11_RANGER	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_11_RANGER to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_11_RANGER: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_11_RANGER
+FAIL	CL_F_FEET_BOOT_12_CHROME	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_12_CHROME to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_12_CHROME: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_12_CHROME
+FAIL	CL_F_FEET_BOOT_13_RUNIC	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_13_RUNIC to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_13_RUNIC: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_13_RUNIC
+FAIL	CL_F_FEET_BOOT_14_KORU	Cannot move asset from Assets/Generated_Models/CL_F_FEET_BOOT_14_KORU to Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_14_KORU: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Feet/CL_F_FEET_BOOT_14_KORU
+FAIL	CL_F_GADGET_ALTIMETER_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_ALTIMETER_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_ALTIMETER_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_ALTIMETER_01
+FAIL	CL_F_GADGET_FIELDTESTER_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_FIELDTESTER_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_FIELDTESTER_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_FIELDTESTER_01
+FAIL	CL_F_GADGET_GRADAR_01_v2	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_GRADAR_01_v2 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_GRADAR_01_v2: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_GRADAR_01_v2
+FAIL	CL_F_GADGET_GRAVHOOK_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_GRAVHOOK_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_GRAVHOOK_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_GRAVHOOK_01
+FAIL	CL_F_GADGET_GRAVSLED_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_GRAVSLED_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_GRAVSLED_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_GRAVSLED_01
+FAIL	CL_F_GADGET_HEATER_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_HEATER_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_HEATER_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_HEATER_01
+FAIL	CL_F_GADGET_LANDPAD_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_LANDPAD_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_LANDPAD_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_LANDPAD_01
+FAIL	CL_F_GADGET_LEAKLISTENER_01_v2	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_LEAKLISTENER_01_v2 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_LEAKLISTENER_01_v2: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_LEAKLISTENER_01_v2
+FAIL	CL_F_GADGET_LOADBELT_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_LOADBELT_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_LOADBELT_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_LOADBELT_01
+FAIL	CL_F_GADGET_MAGPACK_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_MAGPACK_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_MAGPACK_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_MAGPACK_01
+FAIL	CL_F_GADGET_MESCOLLECTOR_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_MESCOLLECTOR_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_MESCOLLECTOR_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_MESCOLLECTOR_01
+FAIL	CL_F_GADGET_MEZIMETER_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_MEZIMETER_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_MEZIMETER_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_MEZIMETER_01
+FAIL	CL_F_GADGET_SOLTOKEN_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_SOLTOKEN_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_SOLTOKEN_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_SOLTOKEN_01
+FAIL	CL_F_GADGET_SPIRALKEY_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_SPIRALKEY_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_SPIRALKEY_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_SPIRALKEY_01
+FAIL	CL_F_GADGET_STABILIZER_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_STABILIZER_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_STABILIZER_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_STABILIZER_01
+FAIL	CL_F_GADGET_WINCH_01	Cannot move asset from Assets/Generated_Models/CL_F_GADGET_WINCH_01 to Assets/Generated_Models/04_Gadgets/CL_F_GADGET_WINCH_01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/04_Gadgets/CL_F_GADGET_WINCH_01
+FAIL	CL_F_HANDS_BRACER_11_RANGER_v2	Cannot move asset from Assets/Generated_Models/CL_F_HANDS_BRACER_11_RANGER_v2 to Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_BRACER_11_RANGER_v2: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_BRACER_11_RANGER_v2
+FAIL	CL_F_HANDS_BRACER_12_CHROME	Cannot move asset from Assets/Generated_Models/CL_F_HANDS_BRACER_12_CHROME to Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_BRACER_12_CHROME: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_BRACER_12_CHROME
+FAIL	CL_F_HANDS_BRACER_13_RUNIC	Cannot move asset from Assets/Generated_Models/CL_F_HANDS_BRACER_13_RUNIC to Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_BRACER_13_RUNIC: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_BRACER_13_RUNIC
+FAIL	CL_F_HANDS_BRACER_14_KORU	Cannot move asset from Assets/Generated_Models/CL_F_HANDS_BRACER_14_KORU to Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_BRACER_14_KORU: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_BRACER_14_KORU
+FAIL	CL_F_HANDS_GAUNTLET_09_SUPERHEAVY_v3b	Cannot move asset from Assets/Generated_Models/CL_F_HANDS_GAUNTLET_09_SUPERHEAVY_v3b to Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_GAUNTLET_09_SUPERHEAVY_v3b: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_GAUNTLET_09_SUPERHEAVY_v3b
+FAIL	CL_F_HANDS_GAUNTLET_10_TANK	Cannot move asset from Assets/Generated_Models/CL_F_HANDS_GAUNTLET_10_TANK to Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_GAUNTLET_10_TANK: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Hands/CL_F_HANDS_GAUNTLET_10_TANK
+FAIL	CL_F_HEAD_HELMET_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_HEAD_HELMET_01_STEEL to Assets/Generated_Models/02_Armor/Head_Helmet/CL_F_HEAD_HELMET_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Head_Helmet/CL_F_HEAD_HELMET_01_STEEL
+FAIL	CL_F_HEAD_HELMET_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_HEAD_HELMET_02_COMPOSITE to Assets/Generated_Models/02_Armor/Head_Helmet/CL_F_HEAD_HELMET_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Head_Helmet/CL_F_HEAD_HELMET_02_COMPOSITE
+FAIL	CL_F_HEAD_HELMET_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_HEAD_HELMET_03_BRONZE to Assets/Generated_Models/02_Armor/Head_Helmet/CL_F_HEAD_HELMET_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Head_Helmet/CL_F_HEAD_HELMET_03_BRONZE
+FAIL	CL_F_HEAD_HELMET_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_HEAD_HELMET_04_AGRAV to Assets/Generated_Models/02_Armor/Head_Helmet/CL_F_HEAD_HELMET_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Head_Helmet/CL_F_HEAD_HELMET_04_AGRAV
+FAIL	CL_F_LEGS_BELT_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_BELT_01_STEEL to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_01_STEEL
+FAIL	CL_F_LEGS_BELT_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_BELT_02_COMPOSITE to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_02_COMPOSITE
+FAIL	CL_F_LEGS_BELT_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_BELT_03_BRONZE to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_03_BRONZE
+FAIL	CL_F_LEGS_BELT_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_BELT_04_AGRAV to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_04_AGRAV
+FAIL	CL_F_LEGS_BELT_11_RANGER	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_BELT_11_RANGER to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_11_RANGER: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_11_RANGER
+FAIL	CL_F_LEGS_BELT_12_CHROME	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_BELT_12_CHROME to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_12_CHROME: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_12_CHROME
+FAIL	CL_F_LEGS_BELT_13_RUNIC	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_BELT_13_RUNIC to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_13_RUNIC: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_13_RUNIC
+FAIL	CL_F_LEGS_BELT_14_KORU	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_BELT_14_KORU to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_14_KORU: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_BELT_14_KORU
+FAIL	CL_F_LEGS_KNEE_05_MEDICAL	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_KNEE_05_MEDICAL to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_05_MEDICAL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_05_MEDICAL
+FAIL	CL_F_LEGS_KNEE_05_MEDICAL_FIELD	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_KNEE_05_MEDICAL_FIELD to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_05_MEDICAL_FIELD: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_05_MEDICAL_FIELD
+FAIL	CL_F_LEGS_KNEE_07_THOUGHTS_ENGINEER_v2	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_KNEE_07_THOUGHTS_ENGINEER_v2 to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_07_THOUGHTS_ENGINEER_v2: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_07_THOUGHTS_ENGINEER_v2
+FAIL	CL_F_LEGS_KNEE_09_SUPERHEAVY_v3b	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_KNEE_09_SUPERHEAVY_v3b to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_09_SUPERHEAVY_v3b: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_09_SUPERHEAVY_v3b
+FAIL	CL_F_LEGS_KNEE_10_TANK	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_KNEE_10_TANK to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_10_TANK: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_10_TANK
+FAIL	CL_F_LEGS_KNEE_11_RANGER_v2	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_KNEE_11_RANGER_v2 to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_11_RANGER_v2: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_11_RANGER_v2
+FAIL	CL_F_LEGS_KNEE_12_CHROME	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_KNEE_12_CHROME to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_12_CHROME: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_12_CHROME
+FAIL	CL_F_LEGS_KNEE_13_RUNIC	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_KNEE_13_RUNIC to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_13_RUNIC: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_13_RUNIC
+FAIL	CL_F_LEGS_KNEE_14_KORU	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_KNEE_14_KORU to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_14_KORU: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_KNEE_14_KORU
+FAIL	CL_F_LEGS_THIGH_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_01_STEEL to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_01_STEEL
+FAIL	CL_F_LEGS_THIGH_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_02_COMPOSITE to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_02_COMPOSITE
+FAIL	CL_F_LEGS_THIGH_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_03_BRONZE to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_03_BRONZE
+FAIL	CL_F_LEGS_THIGH_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_04_AGRAV to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_04_AGRAV
+FAIL	CL_F_LEGS_THIGH_05_MEDICAL	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_05_MEDICAL to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_05_MEDICAL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_05_MEDICAL
+FAIL	CL_F_LEGS_THIGH_05_MEDICAL_FIELD	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_05_MEDICAL_FIELD to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_05_MEDICAL_FIELD: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_05_MEDICAL_FIELD
+FAIL	CL_F_LEGS_THIGH_07_THOUGHTS_ENGINEER_v2	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_07_THOUGHTS_ENGINEER_v2 to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_07_THOUGHTS_ENGINEER_v2: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_07_THOUGHTS_ENGINEER_v2
+FAIL	CL_F_LEGS_THIGH_09_SUPERHEAVY_v3b	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_09_SUPERHEAVY_v3b to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_09_SUPERHEAVY_v3b: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_09_SUPERHEAVY_v3b
+FAIL	CL_F_LEGS_THIGH_10_TANK	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_10_TANK to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_10_TANK: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_10_TANK
+FAIL	CL_F_LEGS_THIGH_11_RANGER	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_11_RANGER to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_11_RANGER: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_11_RANGER
+FAIL	CL_F_LEGS_THIGH_12_CHROME	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_12_CHROME to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_12_CHROME: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_12_CHROME
+FAIL	CL_F_LEGS_THIGH_13_RUNIC	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_13_RUNIC to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_13_RUNIC: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_13_RUNIC
+FAIL	CL_F_LEGS_THIGH_14_KORU	Cannot move asset from Assets/Generated_Models/CL_F_LEGS_THIGH_14_KORU to Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_14_KORU: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/02_Armor/Legs/CL_F_LEGS_THIGH_14_KORU
+FAIL	CL_F_WPN_AXE_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_AXE_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_AXE_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_AXE_01_STEEL
+FAIL	CL_F_WPN_AXE_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_AXE_02_COMPOSITE to Assets/Generated_Models/03_Weapons/CL_F_WPN_AXE_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_AXE_02_COMPOSITE
+FAIL	CL_F_WPN_AXE_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_AXE_03_BRONZE to Assets/Generated_Models/03_Weapons/CL_F_WPN_AXE_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_AXE_03_BRONZE
+FAIL	CL_F_WPN_AXE_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_WPN_AXE_04_AGRAV to Assets/Generated_Models/03_Weapons/CL_F_WPN_AXE_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_AXE_04_AGRAV
+FAIL	CL_F_WPN_BOW_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_BOW_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_BOW_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_BOW_01_STEEL
+FAIL	CL_F_WPN_BOW_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_BOW_02_COMPOSITE to Assets/Generated_Models/03_Weapons/CL_F_WPN_BOW_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_BOW_02_COMPOSITE
+FAIL	CL_F_WPN_BOW_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_BOW_03_BRONZE to Assets/Generated_Models/03_Weapons/CL_F_WPN_BOW_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_BOW_03_BRONZE
+FAIL	CL_F_WPN_BOW_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_WPN_BOW_04_AGRAV to Assets/Generated_Models/03_Weapons/CL_F_WPN_BOW_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_BOW_04_AGRAV
+FAIL	CL_F_WPN_CANE_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_CANE_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_CANE_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_CANE_01_STEEL
+FAIL	CL_F_WPN_CANE_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_CANE_02_COMPOSITE to Assets/Generated_Models/03_Weapons/CL_F_WPN_CANE_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_CANE_02_COMPOSITE
+FAIL	CL_F_WPN_CANE_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_CANE_03_BRONZE to Assets/Generated_Models/03_Weapons/CL_F_WPN_CANE_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_CANE_03_BRONZE
+FAIL	CL_F_WPN_CANE_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_WPN_CANE_04_AGRAV to Assets/Generated_Models/03_Weapons/CL_F_WPN_CANE_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_CANE_04_AGRAV
+FAIL	CL_F_WPN_GSWORD_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_GSWORD_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_GSWORD_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_GSWORD_01_STEEL
+FAIL	CL_F_WPN_GSWORD_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_GSWORD_02_COMPOSITE to Assets/Generated_Models/03_Weapons/CL_F_WPN_GSWORD_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_GSWORD_02_COMPOSITE
+FAIL	CL_F_WPN_GSWORD_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_GSWORD_03_BRONZE to Assets/Generated_Models/03_Weapons/CL_F_WPN_GSWORD_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_GSWORD_03_BRONZE
+FAIL	CL_F_WPN_GSWORD_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_WPN_GSWORD_04_AGRAV to Assets/Generated_Models/03_Weapons/CL_F_WPN_GSWORD_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_GSWORD_04_AGRAV
+FAIL	CL_F_WPN_KNIFE_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_KNIFE_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_KNIFE_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_KNIFE_01_STEEL
+FAIL	CL_F_WPN_KNIFE_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_KNIFE_02_COMPOSITE to Assets/Generated_Models/03_Weapons/CL_F_WPN_KNIFE_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_KNIFE_02_COMPOSITE
+FAIL	CL_F_WPN_KNIFE_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_KNIFE_03_BRONZE to Assets/Generated_Models/03_Weapons/CL_F_WPN_KNIFE_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_KNIFE_03_BRONZE
+FAIL	CL_F_WPN_KNIFE_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_WPN_KNIFE_04_AGRAV to Assets/Generated_Models/03_Weapons/CL_F_WPN_KNIFE_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_KNIFE_04_AGRAV
+FAIL	CL_F_WPN_PISTOL_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_PISTOL_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_PISTOL_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_PISTOL_01_STEEL
+FAIL	CL_F_WPN_PISTOL_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_PISTOL_02_COMPOSITE to Assets/Generated_Models/03_Weapons/CL_F_WPN_PISTOL_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_PISTOL_02_COMPOSITE
+FAIL	CL_F_WPN_PISTOL_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_PISTOL_03_BRONZE to Assets/Generated_Models/03_Weapons/CL_F_WPN_PISTOL_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_PISTOL_03_BRONZE
+FAIL	CL_F_WPN_PISTOL_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_WPN_PISTOL_04_AGRAV to Assets/Generated_Models/03_Weapons/CL_F_WPN_PISTOL_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_PISTOL_04_AGRAV
+FAIL	CL_F_WPN_RAPIER_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_RAPIER_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_RAPIER_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_RAPIER_01_STEEL
+FAIL	CL_F_WPN_RAPIER_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_RAPIER_02_COMPOSITE to Assets/Generated_Models/03_Weapons/CL_F_WPN_RAPIER_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_RAPIER_02_COMPOSITE
+FAIL	CL_F_WPN_RAPIER_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_RAPIER_03_BRONZE to Assets/Generated_Models/03_Weapons/CL_F_WPN_RAPIER_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_RAPIER_03_BRONZE
+FAIL	CL_F_WPN_RAPIER_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_WPN_RAPIER_04_AGRAV to Assets/Generated_Models/03_Weapons/CL_F_WPN_RAPIER_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_RAPIER_04_AGRAV
+FAIL	CL_F_WPN_SWORD_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_SWORD_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_SWORD_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_SWORD_01_STEEL
+FAIL	CL_F_WPN_SWORD_02_COMPOSITE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_SWORD_02_COMPOSITE to Assets/Generated_Models/03_Weapons/CL_F_WPN_SWORD_02_COMPOSITE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_SWORD_02_COMPOSITE
+FAIL	CL_F_WPN_SWORD_03_BRONZE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_SWORD_03_BRONZE to Assets/Generated_Models/03_Weapons/CL_F_WPN_SWORD_03_BRONZE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_SWORD_03_BRONZE
+FAIL	CL_F_WPN_SWORD_04_AGRAV	Cannot move asset from Assets/Generated_Models/CL_F_WPN_SWORD_04_AGRAV to Assets/Generated_Models/03_Weapons/CL_F_WPN_SWORD_04_AGRAV: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_SWORD_04_AGRAV
+FAIL	CL_F_WPN_XBOW_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_XBOW_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_01_STEEL
+FAIL	CL_F_WPN_XBOW_01_STEEL_2VIEW	Cannot move asset from Assets/Generated_Models/CL_F_WPN_XBOW_01_STEEL_2VIEW to Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_01_STEEL_2VIEW: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_01_STEEL_2VIEW
+FAIL	CL_F_WPN_XBOW_01_STEEL_SIDE	Cannot move asset from Assets/Generated_Models/CL_F_WPN_XBOW_01_STEEL_SIDE to Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_01_STEEL_SIDE: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_01_STEEL_SIDE
+FAIL	CL_F_WPN_XBOW_PROD_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_XBOW_PROD_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_PROD_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_PROD_01_STEEL
+FAIL	CL_F_WPN_XBOW_STOCK_01_STEEL	Cannot move asset from Assets/Generated_Models/CL_F_WPN_XBOW_STOCK_01_STEEL to Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_STOCK_01_STEEL: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/03_Weapons/CL_F_WPN_XBOW_STOCK_01_STEEL
+OK	CargoPlatform_Freighter_v01	-> _Legacy_PreAugust/CargoPlatform_Freighter_v01
+OK	CargoTransport_T21	-> _Legacy_PreAugust/CargoTransport_T21
+OK	Character_17866748877224	-> _Legacy_PreAugust/Character_17866748877224
+OK	Character_HighQuality_Apose	-> _Legacy_PreAugust/Character_HighQuality_Apose
+OK	ElderlyMaleCityResident	-> 05_Residents_EarlyOct/ElderlyMaleCityResident
+OK	FarmerChildCloakScarf	-> 05_Residents_EarlyOct/FarmerChildCloakScarf
+OK	FemaleCharacterMeshBodysuit	-> 05_Residents_EarlyOct/FemaleCharacterMeshBodysuit
+OK	FemaleCityResidentCoat	-> 05_Residents_EarlyOct/FemaleCityResidentCoat
+OK	FemaleFarmerResidentWarm	-> 05_Residents_EarlyOct/FemaleFarmerResidentWarm
+OK	Female_Pilot	-> _Legacy_PreAugust/Female_Pilot
+OK	Female_Pilot_Rigged	-> _Legacy_PreAugust/Female_Pilot_Rigged
+OK	MaleFarmerResident	-> 05_Residents_EarlyOct/MaleFarmerResident
+OK	MalePilotCharacter	-> 05_Residents_EarlyOct/MalePilotCharacter
+OK	MiddleAgedTownswomanAuntie	-> 05_Residents_EarlyOct/MiddleAgedTownswomanAuntie
+FAIL	PC_Char_Adjudicator_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Adjudicator_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Adjudicator_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Adjudicator_Female_APOSE_v01
+FAIL	PC_Char_Adjudicator_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Adjudicator_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Adjudicator_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Adjudicator_Male_APOSE_v01
+FAIL	PC_Char_Blacksmith_Female_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_Blacksmith_Female_APOSE_v02 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Blacksmith_Female_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Blacksmith_Female_APOSE_v02
+FAIL	PC_Char_Blacksmith_Male_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_Blacksmith_Male_APOSE_v02 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Blacksmith_Male_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Blacksmith_Male_APOSE_v02
+FAIL	PC_Char_City_GuildEngineer_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_City_GuildEngineer_APOSE_v02 to Assets/Generated_Models/01_Characters/City/PC_Char_City_GuildEngineer_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/City/PC_Char_City_GuildEngineer_APOSE_v02
+FAIL	PC_Char_City_LowerCraftsman_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_City_LowerCraftsman_APOSE_v02 to Assets/Generated_Models/01_Characters/City/PC_Char_City_LowerCraftsman_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/City/PC_Char_City_LowerCraftsman_APOSE_v02
+FAIL	PC_Char_City_MerchantWoman_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_City_MerchantWoman_APOSE_v02 to Assets/Generated_Models/01_Characters/City/PC_Char_City_MerchantWoman_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/City/PC_Char_City_MerchantWoman_APOSE_v02
+FAIL	PC_Char_City_NP_Official_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_City_NP_Official_APOSE_v02 to Assets/Generated_Models/01_Characters/City/PC_Char_City_NP_Official_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/City/PC_Char_City_NP_Official_APOSE_v02
+FAIL	PC_Char_Creation_Chem_Female_Junior_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Creation_Chem_Female_Junior_APOSE_v01 to Assets/Generated_Models/01_Characters/CreationChem/PC_Char_Creation_Chem_Female_Junior_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/CreationChem/PC_Char_Creation_Chem_Female_Junior_APOSE_v01
+FAIL	PC_Char_Creation_Chem_Female_Senior_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Creation_Chem_Female_Senior_APOSE_v01 to Assets/Generated_Models/01_Characters/CreationChem/PC_Char_Creation_Chem_Female_Senior_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/CreationChem/PC_Char_Creation_Chem_Female_Senior_APOSE_v01
+FAIL	PC_Char_Creation_Chem_Male_Junior_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Creation_Chem_Male_Junior_APOSE_v01 to Assets/Generated_Models/01_Characters/CreationChem/PC_Char_Creation_Chem_Male_Junior_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/CreationChem/PC_Char_Creation_Chem_Male_Junior_APOSE_v01
+FAIL	PC_Char_Creation_Chem_Male_Senior_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Creation_Chem_Male_Senior_APOSE_v01 to Assets/Generated_Models/01_Characters/CreationChem/PC_Char_Creation_Chem_Male_Senior_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/CreationChem/PC_Char_Creation_Chem_Male_Senior_APOSE_v01
+FAIL	PC_Char_Engineer_Female_EastAsian_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Engineer_Female_EastAsian_APOSE_v01 to Assets/Generated_Models/01_Characters/Engineers/PC_Char_Engineer_Female_EastAsian_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Engineers/PC_Char_Engineer_Female_EastAsian_APOSE_v01
+FAIL	PC_Char_Engineer_Female_Nordic_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Engineer_Female_Nordic_APOSE_v01 to Assets/Generated_Models/01_Characters/Engineers/PC_Char_Engineer_Female_Nordic_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Engineers/PC_Char_Engineer_Female_Nordic_APOSE_v01
+FAIL	PC_Char_Engineer_Male_Andean_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Engineer_Male_Andean_APOSE_v01 to Assets/Generated_Models/01_Characters/Engineers/PC_Char_Engineer_Male_Andean_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Engineers/PC_Char_Engineer_Male_Andean_APOSE_v01
+FAIL	PC_Char_Engineer_Male_Himalayan_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Engineer_Male_Himalayan_APOSE_v01 to Assets/Generated_Models/01_Characters/Engineers/PC_Char_Engineer_Male_Himalayan_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Engineers/PC_Char_Engineer_Male_Himalayan_APOSE_v01
+FAIL	PC_Char_Explorer_Female_Atmo_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Explorer_Female_Atmo_APOSE_v01 to Assets/Generated_Models/01_Characters/Explorers/PC_Char_Explorer_Female_Atmo_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Explorers/PC_Char_Explorer_Female_Atmo_APOSE_v01
+FAIL	PC_Char_Explorer_Female_Bio_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Explorer_Female_Bio_APOSE_v01 to Assets/Generated_Models/01_Characters/Explorers/PC_Char_Explorer_Female_Bio_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Explorers/PC_Char_Explorer_Female_Bio_APOSE_v01
+FAIL	PC_Char_Explorer_Male_Atmo_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Explorer_Male_Atmo_APOSE_v01 to Assets/Generated_Models/01_Characters/Explorers/PC_Char_Explorer_Male_Atmo_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Explorers/PC_Char_Explorer_Male_Atmo_APOSE_v01
+FAIL	PC_Char_Explorer_Male_Bio_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Explorer_Male_Bio_APOSE_v01 to Assets/Generated_Models/01_Characters/Explorers/PC_Char_Explorer_Male_Bio_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Explorers/PC_Char_Explorer_Male_Bio_APOSE_v01
+FAIL	PC_Char_Frost_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Frost_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Frost_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Frost_Female_APOSE_v01
+FAIL	PC_Char_Gladiator_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Gladiator_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Gladiator_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Gladiator_Female_APOSE_v01
+FAIL	PC_Char_Gladiator_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Gladiator_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Gladiator_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Gladiator_Male_APOSE_v01
+FAIL	PC_Char_Guild_Creation_Boy_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Creation_Boy_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Creation_Boy_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Creation_Boy_APOSE_v01
+FAIL	PC_Char_Guild_Creation_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Creation_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Creation_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Creation_Female_APOSE_v01
+FAIL	PC_Char_Guild_Creation_Girl_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Creation_Girl_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Creation_Girl_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Creation_Girl_APOSE_v01
+FAIL	PC_Char_Guild_Creation_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Creation_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Creation_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Creation_Male_APOSE_v01
+FAIL	PC_Char_Guild_Secrets_Boy_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Secrets_Boy_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Secrets_Boy_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Secrets_Boy_APOSE_v01
+FAIL	PC_Char_Guild_Secrets_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Secrets_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Secrets_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Secrets_Female_APOSE_v01
+FAIL	PC_Char_Guild_Secrets_Girl_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Secrets_Girl_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Secrets_Girl_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Secrets_Girl_APOSE_v01
+FAIL	PC_Char_Guild_Secrets_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Secrets_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Secrets_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Secrets_Male_APOSE_v01
+FAIL	PC_Char_Guild_Strength_Boy_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Strength_Boy_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Strength_Boy_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Strength_Boy_APOSE_v01
+FAIL	PC_Char_Guild_Strength_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Strength_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Strength_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Strength_Female_APOSE_v01
+FAIL	PC_Char_Guild_Strength_Girl_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Strength_Girl_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Strength_Girl_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Strength_Girl_APOSE_v01
+FAIL	PC_Char_Guild_Strength_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Strength_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Strength_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Strength_Male_APOSE_v01
+FAIL	PC_Char_Guild_Success_Boy_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Success_Boy_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Success_Boy_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Success_Boy_APOSE_v01
+FAIL	PC_Char_Guild_Success_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Success_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Success_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Success_Female_APOSE_v01
+FAIL	PC_Char_Guild_Success_Girl_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Success_Girl_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Success_Girl_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Success_Girl_APOSE_v01
+FAIL	PC_Char_Guild_Success_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Success_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Success_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Success_Male_APOSE_v01
+FAIL	PC_Char_Guild_Thoughts_Boy_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Thoughts_Boy_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Thoughts_Boy_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Thoughts_Boy_APOSE_v01
+FAIL	PC_Char_Guild_Thoughts_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Thoughts_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Thoughts_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Thoughts_Female_APOSE_v01
+FAIL	PC_Char_Guild_Thoughts_Girl_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Thoughts_Girl_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Thoughts_Girl_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Thoughts_Girl_APOSE_v01
+FAIL	PC_Char_Guild_Thoughts_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Guild_Thoughts_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Thoughts_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Guilds/PC_Char_Guild_Thoughts_Male_APOSE_v01
+FAIL	PC_Char_HeavyArmour_Female_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_HeavyArmour_Female_APOSE_v02 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_HeavyArmour_Female_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_HeavyArmour_Female_APOSE_v02
+FAIL	PC_Char_HeavyArmour_Male_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_HeavyArmour_Male_APOSE_v02 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_HeavyArmour_Male_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_HeavyArmour_Male_APOSE_v02
+FAIL	PC_Char_Magistrate_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Magistrate_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Magistrate_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Magistrate_Female_APOSE_v01
+FAIL	PC_Char_Magistrate_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Magistrate_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Magistrate_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Magistrate_Male_APOSE_v01
+FAIL	PC_Char_Marshal_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Marshal_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Marshal_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Marshal_Female_APOSE_v01
+FAIL	PC_Char_Marshal_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Marshal_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Marshal_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Marshal_Male_APOSE_v01
+FAIL	PC_Char_Medic_Female_Junior_CoatWinter_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Medic_Female_Junior_CoatWinter_APOSE_v01 to Assets/Generated_Models/01_Characters/Medics/PC_Char_Medic_Female_Junior_CoatWinter_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Medics/PC_Char_Medic_Female_Junior_CoatWinter_APOSE_v01
+FAIL	PC_Char_Medic_Female_Senior_CoatWinter_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Medic_Female_Senior_CoatWinter_APOSE_v01 to Assets/Generated_Models/01_Characters/Medics/PC_Char_Medic_Female_Senior_CoatWinter_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Medics/PC_Char_Medic_Female_Senior_CoatWinter_APOSE_v01
+FAIL	PC_Char_Medic_Male_Junior_CoatWinter_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Medic_Male_Junior_CoatWinter_APOSE_v01 to Assets/Generated_Models/01_Characters/Medics/PC_Char_Medic_Male_Junior_CoatWinter_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Medics/PC_Char_Medic_Male_Junior_CoatWinter_APOSE_v01
+FAIL	PC_Char_Medic_Male_Senior_CoatWinter_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Medic_Male_Senior_CoatWinter_APOSE_v01 to Assets/Generated_Models/01_Characters/Medics/PC_Char_Medic_Male_Senior_CoatWinter_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Medics/PC_Char_Medic_Male_Senior_CoatWinter_APOSE_v01
+FAIL	PC_Char_Merchant_Intermediary_Female_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_Merchant_Intermediary_Female_APOSE_v02 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Merchant_Intermediary_Female_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Merchant_Intermediary_Female_APOSE_v02
+FAIL	PC_Char_Merchant_Intermediary_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Merchant_Intermediary_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Merchant_Intermediary_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Merchant_Intermediary_Male_APOSE_v01
+FAIL	PC_Char_Mesium_Handler_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Mesium_Handler_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Mesium_Handler_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Mesium_Handler_Female_APOSE_v01
+FAIL	PC_Char_Mesium_Handler_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Mesium_Handler_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Mesium_Handler_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Mesium_Handler_Male_APOSE_v01
+FAIL	PC_Char_Mughal_Guard_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Mughal_Guard_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Mughal_Guard_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Mughal_Guard_Female_APOSE_v01
+FAIL	PC_Char_Mughal_Guard_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Mughal_Guard_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Mughal_Guard_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Mughal_Guard_Male_APOSE_v01
+FAIL	PC_Char_NewGov_Official_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_NewGov_Official_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_NewGov_Official_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_NewGov_Official_Female_APOSE_v01
+FAIL	PC_Char_NewGov_Official_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_NewGov_Official_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_NewGov_Official_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_NewGov_Official_Male_APOSE_v01
+FAIL	PC_Char_Officer_Female_Parade_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Officer_Female_Parade_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Officer_Female_Parade_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Officer_Female_Parade_APOSE_v01
+FAIL	PC_Char_Pilot_Female_Composite_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Female_Composite_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Female_Composite_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Female_Composite_APOSE_v01
+FAIL	PC_Char_Pilot_Female_SteelFull_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Female_SteelFull_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Female_SteelFull_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Female_SteelFull_APOSE_v01
+FAIL	PC_Char_Pilot_Female_Stripped_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Female_Stripped_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Female_Stripped_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Female_Stripped_APOSE_v01
+FAIL	PC_Char_Pilot_Female_VioletJacket_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Female_VioletJacket_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Female_VioletJacket_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Female_VioletJacket_APOSE_v01
+FAIL	PC_Char_Pilot_Male_Composite_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Male_Composite_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Male_Composite_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Male_Composite_APOSE_v01
+FAIL	PC_Char_Pilot_Male_SteelFull_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Male_SteelFull_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Male_SteelFull_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Male_SteelFull_APOSE_v01
+FAIL	PC_Char_Pilot_Male_Stripped_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Male_Stripped_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Male_Stripped_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Male_Stripped_APOSE_v01
+FAIL	PC_Char_Pilot_Male_VioletJacket_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Male_VioletJacket_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Male_VioletJacket_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Male_VioletJacket_APOSE_v01
+FAIL	PC_Char_Pilot_Winter_Female_EastAsian_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Winter_Female_EastAsian_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Winter_Female_EastAsian_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Winter_Female_EastAsian_APOSE_v01
+FAIL	PC_Char_Pilot_Winter_Female_Nordic_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Winter_Female_Nordic_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Winter_Female_Nordic_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Winter_Female_Nordic_APOSE_v01
+FAIL	PC_Char_Pilot_Winter_Male_Andean_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Winter_Male_Andean_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Winter_Male_Andean_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Winter_Male_Andean_APOSE_v01
+FAIL	PC_Char_Pilot_Winter_Male_Himalayan_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Pilot_Winter_Male_Himalayan_APOSE_v01 to Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Winter_Male_Himalayan_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Pilots/PC_Char_Pilot_Winter_Male_Himalayan_APOSE_v01
+FAIL	PC_Char_Rodeo_Winter_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Rodeo_Winter_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Rodeo_Winter_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Rodeo_Winter_Female_APOSE_v01
+FAIL	PC_Char_Rodeo_Winter_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Rodeo_Winter_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Rodeo_Winter_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Rodeo_Winter_Male_APOSE_v01
+FAIL	PC_Char_Salon_Female_Emerald_WhiteHair_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_Salon_Female_Emerald_WhiteHair_APOSE_v02 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Salon_Female_Emerald_WhiteHair_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Salon_Female_Emerald_WhiteHair_APOSE_v02
+FAIL	PC_Char_Salon_Male_Emerald_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Salon_Male_Emerald_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Salon_Male_Emerald_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Salon_Male_Emerald_APOSE_v01
+FAIL	PC_Char_Samurai_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Samurai_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Samurai_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Samurai_Female_APOSE_v01
+FAIL	PC_Char_Samurai_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Samurai_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Samurai_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Samurai_Male_APOSE_v01
+FAIL	PC_Char_Scavenger_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Scavenger_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Scavenger_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Scavenger_Female_APOSE_v01
+FAIL	PC_Char_Scavenger_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Scavenger_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Scavenger_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Scavenger_Male_APOSE_v01
+FAIL	PC_Char_SteamExo_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_SteamExo_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_SteamExo_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_SteamExo_Female_APOSE_v01
+FAIL	PC_Char_SteamExo_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_SteamExo_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_SteamExo_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_SteamExo_Male_APOSE_v01
+FAIL	PC_Char_Stylized_Engineer_Female_Hazard_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Stylized_Engineer_Female_Hazard_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Stylized_Engineer_Female_Hazard_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Stylized_Engineer_Female_Hazard_APOSE_v01
+FAIL	PC_Char_Stylized_Engineer_Male_Hazard_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Stylized_Engineer_Male_Hazard_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Stylized_Engineer_Male_Hazard_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Stylized_Engineer_Male_Hazard_APOSE_v01
+FAIL	PC_Char_Stylized_Female_CoreSuit_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Stylized_Female_CoreSuit_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Stylized_Female_CoreSuit_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Stylized_Female_CoreSuit_APOSE_v01
+FAIL	PC_Char_Stylized_Female_MeshRig_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Stylized_Female_MeshRig_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Stylized_Female_MeshRig_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Stylized_Female_MeshRig_APOSE_v01
+FAIL	PC_Char_Stylized_Medic_Female_Clinical_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Stylized_Medic_Female_Clinical_APOSE_v01 to Assets/Generated_Models/01_Characters/Medics/PC_Char_Stylized_Medic_Female_Clinical_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Medics/PC_Char_Stylized_Medic_Female_Clinical_APOSE_v01
+FAIL	PC_Char_Stylized_Medic_Female_Field_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Stylized_Medic_Female_Field_APOSE_v01 to Assets/Generated_Models/01_Characters/Medics/PC_Char_Stylized_Medic_Female_Field_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Medics/PC_Char_Stylized_Medic_Female_Field_APOSE_v01
+FAIL	PC_Char_Survival_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Survival_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Survival_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Survival_Female_APOSE_v01
+FAIL	PC_Char_Veil_Heavy_Female_PortholeSuit_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Veil_Heavy_Female_PortholeSuit_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Veil_Heavy_Female_PortholeSuit_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Veil_Heavy_Female_PortholeSuit_APOSE_v01
+FAIL	PC_Char_Veil_Heavy_Female_SealedHelmet_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Veil_Heavy_Female_SealedHelmet_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Veil_Heavy_Female_SealedHelmet_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Veil_Heavy_Female_SealedHelmet_APOSE_v01
+FAIL	PC_Char_Veil_Heavy_Male_FilterMask_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Veil_Heavy_Male_FilterMask_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Veil_Heavy_Male_FilterMask_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Veil_Heavy_Male_FilterMask_APOSE_v01
+FAIL	PC_Char_Veil_Heavy_Male_HoodRespirator_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Veil_Heavy_Male_HoodRespirator_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Veil_Heavy_Male_HoodRespirator_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Veil_Heavy_Male_HoodRespirator_APOSE_v01
+FAIL	PC_Char_Wanderer_Female_Dust_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Wanderer_Female_Dust_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Wanderer_Female_Dust_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Wanderer_Female_Dust_APOSE_v01
+FAIL	PC_Char_Wanderer_Male_Dust_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Wanderer_Male_Dust_APOSE_v01 to Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Wanderer_Male_Dust_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Archetypes/PC_Char_Wanderer_Male_Dust_APOSE_v01
+FAIL	PC_Char_Winter_Command_Female_APOSE_v03	Cannot move asset from Assets/Generated_Models/PC_Char_Winter_Command_Female_APOSE_v03 to Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Command_Female_APOSE_v03: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Command_Female_APOSE_v03
+FAIL	PC_Char_Winter_Command_Male_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_Winter_Command_Male_APOSE_v02 to Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Command_Male_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Command_Male_APOSE_v02
+FAIL	PC_Char_Winter_Noble_Female_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Winter_Noble_Female_APOSE_v01 to Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Noble_Female_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Noble_Female_APOSE_v01
+FAIL	PC_Char_Winter_Noble_Male_APOSE_v01	Cannot move asset from Assets/Generated_Models/PC_Char_Winter_Noble_Male_APOSE_v01 to Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Noble_Male_APOSE_v01: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Noble_Male_APOSE_v01
+FAIL	PC_Char_Winter_Officer_Female_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_Winter_Officer_Female_APOSE_v02 to Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Officer_Female_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Officer_Female_APOSE_v02
+FAIL	PC_Char_Winter_Officer_Female_APOSE_v03	Cannot move asset from Assets/Generated_Models/PC_Char_Winter_Officer_Female_APOSE_v03 to Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Officer_Female_APOSE_v03: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Officer_Female_APOSE_v03
+FAIL	PC_Char_Winter_Officer_Male_APOSE_v02	Cannot move asset from Assets/Generated_Models/PC_Char_Winter_Officer_Male_APOSE_v02 to Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Officer_Male_APOSE_v02: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Officer_Male_APOSE_v02
+FAIL	PC_Char_Winter_Scholar_Female_APOSE_v05	Cannot move asset from Assets/Generated_Models/PC_Char_Winter_Scholar_Female_APOSE_v05 to Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Scholar_Female_APOSE_v05: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Scholar_Female_APOSE_v05
+FAIL	PC_Char_Winter_Scholar_Male_APOSE_v05	Cannot move asset from Assets/Generated_Models/PC_Char_Winter_Scholar_Male_APOSE_v05 to Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Scholar_Male_APOSE_v05: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/01_Characters/Winter/PC_Char_Winter_Scholar_Male_APOSE_v05
+OK	PadRing	-> _Legacy_PreAugust/PadRing
+OK	PoorElderlyMaleCityResident	-> 05_Residents_EarlyOct/PoorElderlyMaleCityResident
+OK	Testing blender	-> _Legacy_PreAugust/Testing blender
+OK	_Legacy_PreAugust	-> 05_Residents_EarlyOct/_Legacy_PreAugust
+FAIL	male_character_game_ready	Cannot move asset from Assets/Generated_Models/male_character_game_ready to Assets/Generated_Models/_Legacy_PreAugust/male_character_game_ready: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/_Legacy_PreAugust/male_character_game_ready
+FAIL	male_character_game_ready_rigged	Cannot move asset from Assets/Generated_Models/male_character_game_ready_rigged to Assets/Generated_Models/_Legacy_PreAugust/male_character_game_ready_rigged: Trying to move asset as a sub directory of a directory that does not exist Assets/Generated_Models/_Legacy_PreAugust/male_character_game_ready_rigged
+
+=== RESULT TREE ===
+05_Residents_EarlyOct	direct=16	all=44
+CL_F_ACC_MANTLE_11_RANGER	direct=0	all=0
+CL_F_ACC_PAULDRON_01	direct=0	all=0
+CL_F_ACC_PAULDRON_02_COMPOSITE	direct=0	all=0
+CL_F_ACC_PAULDRON_03_BRONZE	direct=0	all=0
+CL_F_ACC_PAULDRON_04_AGRAV	direct=0	all=0
+CL_F_ACC_PAULDRON_05_MEDICAL	direct=0	all=0
+CL_F_ACC_PAULDRON_05_MEDICAL_FIELD	direct=0	all=0
+CL_F_ACC_PAULDRON_07_THOUGHTS_ENGINEER_v2	direct=0	all=0
+CL_F_ACC_PAULDRON_09_SUPERHEAVY_v3b	direct=0	all=0
+CL_F_ACC_PAULDRON_10_TANK	direct=0	all=0
+CL_F_ACC_PAULDRON_12_CHROME	direct=0	all=0
+CL_F_ACC_PAULDRON_13_RUNIC	direct=0	all=0
+CL_F_ACC_PAULDRON_14_KORU	direct=0	all=0
+CL_F_AIRTANK_01_STEEL	direct=0	all=0
+CL_F_AIRTANK_02_COMPOSITE	direct=0	all=0
+CL_F_AIRTANK_03_BRONZE	direct=0	all=0
+CL_F_AIRTANK_04_AGRAV	direct=0	all=0
+CL_F_BACKPACK_05_MEDICAL	direct=0	all=0
+CL_F_BACKPACK_06_CHEMICAL	direct=0	all=0
+CL_F_BACKPACK_07_ENGINEER	direct=0	all=0
+CL_F_BACKPACK_08_RESEARCH	direct=0	all=0
+CL_F_BELT_05_MEDICAL	direct=0	all=0
+CL_F_BELT_06_CHEMICAL	direct=0	all=0
+CL_F_BELT_07_ENGINEER	direct=0	all=0
+CL_F_BELT_08_RESEARCH	direct=0	all=0
+CL_F_CHEST_LAMES_09_SUPERHEAVY_v3b	direct=0	all=0
+CL_F_CHEST_LAMES_10_TANK	direct=0	all=0
+CL_F_CHEST_PLATE_01_STEEL	direct=0	all=0
+CL_F_CHEST_PLATE_02_COMPOSITE	direct=0	all=0
+CL_F_CHEST_PLATE_03_BRONZE	direct=0	all=0
+CL_F_CHEST_PLATE_04_AGRAV	direct=0	all=0
+CL_F_CHEST_PLATE_05_MEDICAL	direct=0	all=0
+CL_F_CHEST_PLATE_05_MEDICAL_FIELD	direct=0	all=0
+CL_F_CHEST_PLATE_07_THOUGHTS_ENGINEER_v2	direct=0	all=0
+CL_F_CHEST_PLATE_09_SUPERHEAVY_v3b	direct=0	all=0
+CL_F_CHEST_PLATE_10_TANK	direct=0	all=0
+CL_F_CHEST_PLATE_11_RANGER	direct=0	all=0
+CL_F_CHEST_PLATE_12_CHROME	direct=0	all=0
+CL_F_CHEST_PLATE_13_RUNIC	direct=0	all=0
+CL_F_CHEST_PLATE_14_KORU	direct=0	all=0
+CL_F_FEET_BOOT_01_STEEL	direct=0	all=0
+CL_F_FEET_BOOT_03_COMPOSITE	direct=0	all=0
+CL_F_FEET_BOOT_04_BRONZE	direct=0	all=0
+CL_F_FEET_BOOT_05_AGRAV	direct=0	all=0
+CL_F_FEET_BOOT_05_MEDICAL	direct=0	all=0
+CL_F_FEET_BOOT_05_MEDICAL_FIELD	direct=0	all=0
+CL_F_FEET_BOOT_07_THOUGHTS_ENGINEER_v2	direct=0	all=0
+CL_F_FEET_BOOT_09_SUPERHEAVY_v3b	direct=0	all=0
+CL_F_FEET_BOOT_10_TANK	direct=0	all=0
+CL_F_FEET_BOOT_11_RANGER	direct=0	all=0
+CL_F_FEET_BOOT_12_CHROME	direct=0	all=0
+CL_F_FEET_BOOT_13_RUNIC	direct=0	all=0
+CL_F_FEET_BOOT_14_KORU	direct=0	all=0
+CL_F_GADGET_ALTIMETER_01	direct=0	all=0
+CL_F_GADGET_FIELDTESTER_01	direct=0	all=0
+CL_F_GADGET_GRADAR_01_v2	direct=0	all=0
+CL_F_GADGET_GRAVHOOK_01	direct=0	all=0
+CL_F_GADGET_GRAVSLED_01	direct=0	all=0
+CL_F_GADGET_HEATER_01	direct=0	all=0
+CL_F_GADGET_LANDPAD_01	direct=0	all=0
+CL_F_GADGET_LEAKLISTENER_01_v2	direct=0	all=0
+CL_F_GADGET_LOADBELT_01	direct=0	all=0
+CL_F_GADGET_MAGPACK_01	direct=0	all=0
+CL_F_GADGET_MESCOLLECTOR_01	direct=0	all=0
+CL_F_GADGET_MEZIMETER_01	direct=0	all=0
+CL_F_GADGET_SOLTOKEN_01	direct=0	all=0
+CL_F_GADGET_SPIRALKEY_01	direct=0	all=0
+CL_F_GADGET_STABILIZER_01	direct=0	all=0
+CL_F_GADGET_WINCH_01	direct=0	all=0
+CL_F_HANDS_BRACER_11_RANGER_v2	direct=0	all=0
+CL_F_HANDS_BRACER_12_CHROME	direct=0	all=0
+CL_F_HANDS_BRACER_13_RUNIC	direct=0	all=0
+CL_F_HANDS_BRACER_14_KORU	direct=0	all=0
+CL_F_HANDS_GAUNTLET_09_SUPERHEAVY_v3b	direct=0	all=0
+CL_F_HANDS_GAUNTLET_10_TANK	direct=0	all=0
+CL_F_HEAD_HELMET_01_STEEL	direct=0	all=0
+CL_F_HEAD_HELMET_02_COMPOSITE	direct=0	all=0
+CL_F_HEAD_HELMET_03_BRONZE	direct=0	all=0
+CL_F_HEAD_HELMET_04_AGRAV	direct=0	all=0
+CL_F_LEGS_BELT_01_STEEL	direct=0	all=0
+CL_F_LEGS_BELT_02_COMPOSITE	direct=0	all=0
+CL_F_LEGS_BELT_03_BRONZE	direct=0	all=0
+CL_F_LEGS_BELT_04_AGRAV	direct=0	all=0
+CL_F_LEGS_BELT_11_RANGER	direct=0	all=0
+CL_F_LEGS_BELT_12_CHROME	direct=0	all=0
+CL_F_LEGS_BELT_13_RUNIC	direct=0	all=0
+CL_F_LEGS_BELT_14_KORU	direct=0	all=0
+CL_F_LEGS_KNEE_05_MEDICAL	direct=0	all=0
+CL_F_LEGS_KNEE_05_MEDICAL_FIELD	direct=0	all=0
+CL_F_LEGS_KNEE_07_THOUGHTS_ENGINEER_v2	direct=0	all=0
+CL_F_LEGS_KNEE_09_SUPERHEAVY_v3b	direct=0	all=0
+CL_F_LEGS_KNEE_10_TANK	direct=0	all=0
+CL_F_LEGS_KNEE_11_RANGER_v2	direct=0	all=0
+CL_F_LEGS_KNEE_12_CHROME	direct=0	all=0
+CL_F_LEGS_KNEE_13_RUNIC	direct=0	all=0
+CL_F_LEGS_KNEE_14_KORU	direct=0	all=0
+CL_F_LEGS_THIGH_01_STEEL	direct=0	all=0
+CL_F_LEGS_THIGH_02_COMPOSITE	direct=0	all=0
+CL_F_LEGS_THIGH_03_BRONZE	direct=0	all=0
+CL_F_LEGS_THIGH_04_AGRAV	direct=0	all=0
+CL_F_LEGS_THIGH_05_MEDICAL	direct=0	all=0
+CL_F_LEGS_THIGH_05_MEDICAL_FIELD	direct=0	all=0
+CL_F_LEGS_THIGH_07_THOUGHTS_ENGINEER_v2	direct=0	all=0
+CL_F_LEGS_THIGH_09_SUPERHEAVY_v3b	direct=0	all=0
+CL_F_LEGS_THIGH_10_TANK	direct=0	all=0
+CL_F_LEGS_THIGH_11_RANGER	direct=0	all=0
+CL_F_LEGS_THIGH_12_CHROME	direct=0	all=0
+CL_F_LEGS_THIGH_13_RUNIC	direct=0	all=0
+CL_F_LEGS_THIGH_14_KORU	direct=0	all=0
+CL_F_WPN_AXE_01_STEEL	direct=0	all=0
+CL_F_WPN_AXE_02_COMPOSITE	direct=0	all=0
+CL_F_WPN_AXE_03_BRONZE	direct=0	all=0
+CL_F_WPN_AXE_04_AGRAV	direct=0	all=0
+CL_F_WPN_BOW_01_STEEL	direct=0	all=0
+CL_F_WPN_BOW_02_COMPOSITE	direct=0	all=0
+CL_F_WPN_BOW_03_BRONZE	direct=0	all=0
+CL_F_WPN_BOW_04_AGRAV	direct=0	all=0
+CL_F_WPN_CANE_01_STEEL	direct=0	all=0
+CL_F_WPN_CANE_02_COMPOSITE	direct=0	all=0
+CL_F_WPN_CANE_03_BRONZE	direct=0	all=0
+CL_F_WPN_CANE_04_AGRAV	direct=0	all=0
+CL_F_WPN_GSWORD_01_STEEL	direct=0	all=0
+CL_F_WPN_GSWORD_02_COMPOSITE	direct=0	all=0
+CL_F_WPN_GSWORD_03_BRONZE	direct=0	all=0
+CL_F_WPN_GSWORD_04_AGRAV	direct=0	all=0
+CL_F_WPN_KNIFE_01_STEEL	direct=0	all=0
+CL_F_WPN_KNIFE_02_COMPOSITE	direct=0	all=0
+CL_F_WPN_KNIFE_03_BRONZE	direct=0	all=0
+CL_F_WPN_KNIFE_04_AGRAV	direct=0	all=0
+CL_F_WPN_PISTOL_01_STEEL	direct=0	all=0
+CL_F_WPN_PISTOL_02_COMPOSITE	direct=0	all=0
+CL_F_WPN_PISTOL_03_BRONZE	direct=0	all=0
+CL_F_WPN_PISTOL_04_AGRAV	direct=0	all=0
+CL_F_WPN_RAPIER_01_STEEL	direct=0	all=0
+CL_F_WPN_RAPIER_02_COMPOSITE	direct=0	all=0
+CL_F_WPN_RAPIER_03_BRONZE	direct=0	all=0
+CL_F_WPN_RAPIER_04_AGRAV	direct=0	all=0
+CL_F_WPN_SWORD_01_STEEL	direct=0	all=0
+CL_F_WPN_SWORD_02_COMPOSITE	direct=0	all=0
+CL_F_WPN_SWORD_03_BRONZE	direct=0	all=0
+CL_F_WPN_SWORD_04_AGRAV	direct=0	all=0
+CL_F_WPN_XBOW_01_STEEL	direct=0	all=0
+CL_F_WPN_XBOW_01_STEEL_2VIEW	direct=0	all=0
+CL_F_WPN_XBOW_01_STEEL_SIDE	direct=0	all=0
+CL_F_WPN_XBOW_PROD_01_STEEL	direct=0	all=0
+CL_F_WPN_XBOW_STOCK_01_STEEL	direct=0	all=0
+PC_Char_Adjudicator_Female_APOSE_v01	direct=0	all=0
+PC_Char_Adjudicator_Male_APOSE_v01	direct=0	all=0
+PC_Char_Blacksmith_Female_APOSE_v02	direct=0	all=0
+PC_Char_Blacksmith_Male_APOSE_v02	direct=0	all=0
+PC_Char_City_GuildEngineer_APOSE_v02	direct=0	all=0
+PC_Char_City_LowerCraftsman_APOSE_v02	direct=1	all=1
+PC_Char_City_MerchantWoman_APOSE_v02	direct=0	all=0
+PC_Char_City_NP_Official_APOSE_v02	direct=0	all=0
+PC_Char_Creation_Chem_Female_Junior_APOSE_v01	direct=0	all=0
+PC_Char_Creation_Chem_Female_Senior_APOSE_v01	direct=0	all=0
+PC_Char_Creation_Chem_Male_Junior_APOSE_v01	direct=0	all=0
+PC_Char_Creation_Chem_Male_Senior_APOSE_v01	direct=0	all=0
+PC_Char_Engineer_Female_EastAsian_APOSE_v01	direct=0	all=0
+PC_Char_Engineer_Female_Nordic_APOSE_v01	direct=0	all=0
+PC_Char_Engineer_Male_Andean_APOSE_v01	direct=0	all=0
+PC_Char_Engineer_Male_Himalayan_APOSE_v01	direct=0	all=0
+PC_Char_Explorer_Female_Atmo_APOSE_v01	direct=0	all=0
+PC_Char_Explorer_Female_Bio_APOSE_v01	direct=0	all=0
+PC_Char_Explorer_Male_Atmo_APOSE_v01	direct=0	all=0
+PC_Char_Explorer_Male_Bio_APOSE_v01	direct=0	all=0
+PC_Char_Frost_Female_APOSE_v01	direct=0	all=0
+PC_Char_Gladiator_Female_APOSE_v01	direct=0	all=0
+PC_Char_Gladiator_Male_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Creation_Boy_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Creation_Female_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Creation_Girl_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Creation_Male_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Secrets_Boy_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Secrets_Female_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Secrets_Girl_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Secrets_Male_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Strength_Boy_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Strength_Female_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Strength_Girl_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Strength_Male_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Success_Boy_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Success_Female_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Success_Girl_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Success_Male_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Thoughts_Boy_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Thoughts_Female_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Thoughts_Girl_APOSE_v01	direct=0	all=0
+PC_Char_Guild_Thoughts_Male_APOSE_v01	direct=0	all=0
+PC_Char_HeavyArmour_Female_APOSE_v02	direct=0	all=0
+PC_Char_HeavyArmour_Male_APOSE_v02	direct=0	all=0
+PC_Char_Magistrate_Female_APOSE_v01	direct=0	all=0
+PC_Char_Magistrate_Male_APOSE_v01	direct=0	all=0
+PC_Char_Marshal_Female_APOSE_v01	direct=0	all=0
+PC_Char_Marshal_Male_APOSE_v01	direct=0	all=0
+PC_Char_Medic_Female_Junior_CoatWinter_APOSE_v01	direct=0	all=0
+PC_Char_Medic_Female_Senior_CoatWinter_APOSE_v01	direct=0	all=0
+PC_Char_Medic_Male_Junior_CoatWinter_APOSE_v01	direct=0	all=0
+PC_Char_Medic_Male_Senior_CoatWinter_APOSE_v01	direct=0	all=0
+PC_Char_Merchant_Intermediary_Female_APOSE_v02	direct=0	all=0
+PC_Char_Merchant_Intermediary_Male_APOSE_v01	direct=0	all=0
+PC_Char_Mesium_Handler_Female_APOSE_v01	direct=0	all=0
+PC_Char_Mesium_Handler_Male_APOSE_v01	direct=0	all=0
+PC_Char_Mughal_Guard_Female_APOSE_v01	direct=0	all=0
+PC_Char_Mughal_Guard_Male_APOSE_v01	direct=0	all=0
+PC_Char_NewGov_Official_Female_APOSE_v01	direct=0	all=0
+PC_Char_NewGov_Official_Male_APOSE_v01	direct=0	all=0
+PC_Char_Officer_Female_Parade_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Female_Composite_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Female_SteelFull_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Female_Stripped_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Female_VioletJacket_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Male_Composite_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Male_SteelFull_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Male_Stripped_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Male_VioletJacket_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Winter_Female_EastAsian_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Winter_Female_Nordic_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Winter_Male_Andean_APOSE_v01	direct=0	all=0
+PC_Char_Pilot_Winter_Male_Himalayan_APOSE_v01	direct=0	all=0
+PC_Char_Rodeo_Winter_Female_APOSE_v01	direct=0	all=0
+PC_Char_Rodeo_Winter_Male_APOSE_v01	direct=0	all=0
+PC_Char_Salon_Female_Emerald_WhiteHair_APOSE_v02	direct=0	all=0
+PC_Char_Salon_Male_Emerald_APOSE_v01	direct=0	all=0
+PC_Char_Samurai_Female_APOSE_v01	direct=0	all=0
+PC_Char_Samurai_Male_APOSE_v01	direct=0	all=0
+PC_Char_Scavenger_Female_APOSE_v01	direct=0	all=0
+PC_Char_Scavenger_Male_APOSE_v01	direct=0	all=0
+PC_Char_SteamExo_Female_APOSE_v01	direct=0	all=0
+PC_Char_SteamExo_Male_APOSE_v01	direct=0	all=0
+PC_Char_Stylized_Engineer_Female_Hazard_APOSE_v01	direct=0	all=0
+PC_Char_Stylized_Engineer_Male_Hazard_APOSE_v01	direct=0	all=0
+PC_Char_Stylized_Female_CoreSuit_APOSE_v01	direct=0	all=0
+PC_Char_Stylized_Female_MeshRig_APOSE_v01	direct=0	all=0
+PC_Char_Stylized_Medic_Female_Clinical_APOSE_v01	direct=0	all=0
+PC_Char_Stylized_Medic_Female_Field_APOSE_v01	direct=0	all=0
+PC_Char_Survival_Female_APOSE_v01	direct=0	all=0
+PC_Char_Veil_Heavy_Female_PortholeSuit_APOSE_v01	direct=0	all=0
+PC_Char_Veil_Heavy_Female_SealedHelmet_APOSE_v01	direct=0	all=0
+PC_Char_Veil_Heavy_Male_FilterMask_APOSE_v01	direct=0	all=0
+PC_Char_Veil_Heavy_Male_HoodRespirator_APOSE_v01	direct=0	all=0
+PC_Char_Wanderer_Female_Dust_APOSE_v01	direct=0	all=0
+PC_Char_Wanderer_Male_Dust_APOSE_v01	direct=0	all=0
+PC_Char_Winter_Command_Female_APOSE_v03	direct=0	all=0
+PC_Char_Winter_Command_Male_APOSE_v02	direct=0	all=0
+PC_Char_Winter_Noble_Female_APOSE_v01	direct=0	all=0
+PC_Char_Winter_Noble_Male_APOSE_v01	direct=0	all=0
+PC_Char_Winter_Officer_Female_APOSE_v02	direct=0	all=0
+PC_Char_Winter_Officer_Female_APOSE_v03	direct=0	all=0
+PC_Char_Winter_Officer_Male_APOSE_v02	direct=0	all=0
+PC_Char_Winter_Scholar_Female_APOSE_v05	direct=0	all=0
+PC_Char_Winter_Scholar_Male_APOSE_v05	direct=0	all=0
+male_character_game_ready	direct=0	all=0
+male_character_game_ready_rigged	direct=0	all=0

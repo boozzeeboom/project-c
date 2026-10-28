@@ -5,7 +5,7 @@ Usage (via Blender MCP execute_blender_code):
 then call: setup() / import_batch(n) / layout() / finalize() / save()
 """
 import bpy, os, math, json
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 BASE = r"C:/Projects/ProjectC_client/Assets/Generated_Models"
 OUT_BLEND = r"C:/Projects/ProjectC_client/GeneratedModels_Showcase.blend"
@@ -18,6 +18,21 @@ BAND_LABEL = 1.20   # reserved band above each shelf for pack labels
 SHELF_W = 34.0      # max width of one shelf before wrapping
 PACK_GAP = 1.1      # gap between packs (armor sets, weapon families) on one shelf
 PER_ROW = 1000      # build_plan keeps one row per subgroup; real wrapping happens in layout()
+
+S_DOWN = -1.0       # sections stack toward -Y, which reads top-to-bottom in frame
+
+# ---- company formation (section 01).  The FBX characters face +X, so a shelf of
+# them reads as a row of profiles; turning them by -90 deg and stacking them into
+# ranks is what makes a normal perspective camera produce a parade shot.
+CO_FILES = 12       # files (шеренга length) per rank
+CO_FILE_GAP = 0.10  # clearance between neighbours inside a rank
+CO_RANK_GAP = 0.26  # clearance between ranks (front to back)
+CO_STAGGER = 0.5    # odd ranks shift by this fraction of a file pitch
+CO_FACE_DEG = -90.0 # +X facing -> -Y, i.e. toward the camera side
+CO_BACK_GAP = 6.0   # clear strip of ground between the company and the board
+CO_CAPTION = 0.34   # size of the ground caption in front of the company
+CO_GROUP_LINE = 0.20
+COMPANY_LENS = 50.0
 
 COLL_ORDER = ["Guilds", "Pilots", "Medics", "City", "Winter",
               "CreationChem", "Engineers", "Explorers", "Archetypes"]
@@ -411,100 +426,188 @@ def _clear_labels():
         bpy.data.objects.remove(ob, do_unlink=True)
 
 
-def layout():
-    """Stack sections downward in world -Y, which reads top-to-bottom in frame.
+def _coll_objs(key):
+    """Every object inside a collection and its children."""
+    out = []
+    c = bpy.data.collections.get(key)
+    if c is None:
+        return out
+    stack = [c]
+    while stack:
+        cc = stack.pop()
+        out.extend(list(cc.objects))
+        stack.extend(list(cc.children))
+    return out
 
-    +Y is away from the camera so it lands high in the render; going negative
-    puts 01 · CHARACTERS at the top of the image and its title directly above
-    its own rows — the same for every pack label.
+
+def _rot_z_world(objs, deg, pivot):
+    R = Matrix.Rotation(math.radians(deg), 4, "Z")
+    T = Matrix.Translation(pivot) @ R @ Matrix.Translation(-pivot)
+    for o in objs:
+        o.matrix_world = T @ o.matrix_world
+
+
+def layout_company(cx=0.0, cy=0.0):
+    """Line the characters up as a рота: CO_FILES files wide, ranks stacked away from the camera.
+
+    The FBX characters face +X.  Turning each one by CO_FACE_DEG about its own
+    centre makes it face -Y, i.e. the camera side, so a plain perspective camera
+    gets a frontal parade shot instead of a row of profiles.  Ranks are staggered
+    by half a file so the second and third ranks read as rows and not as a wall.
+    """
+    s01 = next(s for s in build_plan() if s["key"] == "01_CHARACTERS")
+    groups, order = {}, []
+    for r in s01["rows"]:
+        for e in r["items"]:
+            g = e["coll"].split("/")[-1]
+            if g not in groups:
+                groups[g] = []
+                order.append(g)
+            groups[g].append(e)
+
+    dims, items = {}, []
+    for g in order:
+        for e in groups[g]:
+            ob = bpy.data.objects.get(e["name"])
+            if ob is None:
+                continue
+            objs = _objs_of(e["name"])
+            mn, mx, hit = _bounds(objs)
+            if not hit:
+                continue
+            if not ob.get("gm_faced"):
+                ctr = Vector(((mn.x + mx.x) / 2.0, (mn.y + mx.y) / 2.0, 0.0))
+                _rot_z_world(objs, CO_FACE_DEG, ctr)
+                ob["gm_faced"] = True
+                bpy.context.view_layer.update()
+                mn, mx, hit = _bounds(objs)
+                if not hit:
+                    continue
+            dims[e["name"]] = (objs, mn, mx, mx.x - mn.x, mx.y - mn.y)
+            items.append((g, e))
+
+    if not items:
+        print("COMPANY: no characters found")
+        return None
+
+    fp = max(dims[e["name"]][3] for _, e in items) + CO_FILE_GAP
+    rp = max(dims[e["name"]][4] for _, e in items) + CO_RANK_GAP
+    ranks = [items[i:i + CO_FILES] for i in range(0, len(items), CO_FILES)]
+    widest = max(len(r) for r in ranks)
+    block_w = widest * fp + CO_STAGGER * fp
+    block_d = len(ranks) * rp
+    x0 = cx - block_w / 2.0
+    y_front = cy - block_d / 2.0
+
+    for ri, rank in enumerate(ranks):
+        off = CO_STAGGER * fp if ri % 2 else 0.0
+        for ci, (g, e) in enumerate(rank):
+            objs, mn, mx, w, d = dims[e["name"]]
+            tx = x0 + off + ci * fp + fp / 2.0
+            ty = y_front + ri * rp + rp / 2.0
+            _move(objs, Vector((tx - (mn.x + mx.x) / 2.0,
+                                ty - (mn.y + mx.y) / 2.0,
+                                -mn.z)))
+
+    lcoll = bpy.data.collections.get("01_CHARACTERS/_LABELS")
+    _label("01 · CHARACTERS   %d   ·   РОТА %d × %d" % (len(items), widest, len(ranks)),
+           Vector((x0, y_front - 1.55, 0.012)), CO_CAPTION, lcoll)
+    line = "   ·   ".join("%s %d" % (g, len(groups[g])) for g in order)
+    gs = min(CO_GROUP_LINE, (block_w * 0.98) / max(len(line) * 0.55, 1.0))
+    _label(line, Vector((x0, y_front - 1.02, 0.012)), gs, lcoll)
+
+    print("COMPANY  %d figures  %d x %d  pitch=%.3f/%.3f  block=%.2f x %.2f"
+          % (len(items), widest, len(ranks), fp, rp, block_w, block_d))
+    return {"x0": x0, "x1": x0 + block_w, "y0": y_front, "y1": y_front + block_d,
+            "files": widest, "ranks": len(ranks)}
+
+
+def _shelf_section(s, M, X0, y):
+    """Place one shelf section (armour / weapons / gadgets / residents); returns the y after it."""
+    lcoll = bpy.data.collections.get(s["key"] + "/_LABELS")
+    _label(s["title"], Vector((X0, y, 0.014)), 0.95, lcoll)
+    y += S_DOWN * BAND_TITLE
+
+    multi = s["key"] in ("02_ARMOR", "03_WEAPONS")
+    rows = [(r["label"] if (multi or i == 0) else "", r["items"])
+            for i, r in enumerate(s["rows"])]
+
+    shelves, cur, x = [], [], 0.0
+    for lab, entries in rows:
+        w = sum(M[e["name"]][3] + GAP for e in entries if e["name"] in M)
+        rw = max(w - GAP, 0.1)
+        if cur and x + rw > SHELF_W:
+            shelves.append(cur)
+            cur, x = [], 0.0
+        cur.append((lab, entries, rw, x))
+        x += rw + PACK_GAP
+    if cur:
+        shelves.append(cur)
+
+    for shelf in shelves:
+        depth = 0.1
+        for lab, entries, rw, xs in shelf:
+            for e in entries:
+                if e["name"] in M:
+                    depth = max(depth, M[e["name"]][4])
+        for lab, entries, rw, xs in shelf:
+            if lab:
+                avail = rw + PACK_GAP * 0.8
+                ls = min(0.40, avail / max(len(lab) * 0.55, 1.0))
+                _label(lab, Vector((X0 + xs, y, 0.014)), max(ls, 0.22), lcoll)
+        y += S_DOWN * BAND_LABEL
+        for lab, entries, rw, xs in shelf:
+            x = X0 + xs
+            yc = y + S_DOWN * depth / 2.0
+            for e in entries:
+                if e["name"] not in M:
+                    continue
+                objs, mn, mx, w, d = M[e["name"]]
+                _move(objs, Vector((x + w / 2.0 - (mn.x + mx.x) / 2.0,
+                                    yc - (mn.y + mx.y) / 2.0,
+                                    -mn.z)))
+                x += w + GAP
+        y += S_DOWN * (depth + SHELF_GAP)
+    return y + S_DOWN * SECTION_GAP
+
+
+def layout():
+    """Build the stage: the character company at the origin, the armour board behind it.
+
+    +Y is away from the camera, so the board lands high in an orthographic frame and
+    the company stands in the clear ground in front of it, camera side.
     """
     bpy.context.view_layer.update()
-    M = _measure_all()
     _clear_labels()
-    S = -1.0                 # layout direction: down the page
     X0 = -SHELF_W / 2.0
-    y = 0.0
 
-    for s in build_plan():
-        lcoll = bpy.data.collections.get(s["key"] + "/_LABELS")
-        _label(s["title"], Vector((X0, y, 0.014)), 0.95, lcoll)
-        y += S * BAND_TITLE
-
-        # ---- build labelled rows / packs
-        rows = []
-        if s["key"] == "01_CHARACTERS":
-            groups, order = {}, []
-            for r in s["rows"]:
-                for e in r["items"]:
-                    if e["coll"] not in groups:
-                        groups[e["coll"]] = []
-                        order.append(e["coll"])
-                    groups[e["coll"]].append(e)
-            for cn in order:
-                items = groups[cn]
-                for i, part in enumerate(_flow_rows(items, M)):
-                    lab = "%s  ·  %d" % (cn.split("/")[-1], len(items)) if i == 0 else ""
-                    rows.append((lab, part))
-        elif s["key"] in ("02_ARMOR", "03_WEAPONS"):
-            for r in s["rows"]:
-                rows.append((r["label"], r["items"]))
-        else:
-            for i, r in enumerate(s["rows"]):
-                rows.append((r["label"] if i == 0 else "", r["items"]))
-
-        # ---- pack the packs into shelves
-        shelves, cur, x = [], [], 0.0
-        for lab, entries in rows:
-            w = sum(M[e["name"]][3] + GAP for e in entries if e["name"] in M)
-            rw = max(w - GAP, 0.1)
-            if cur and x + rw > SHELF_W:
-                shelves.append(cur)
-                cur, x = [], 0.0
-            cur.append((lab, entries, rw, x))
-            x += rw + PACK_GAP
-        if cur:
-            shelves.append(cur)
-
-        # ---- place the shelves: label band, then the shelf itself
-        for shelf in shelves:
-            depth = 0.1
-            for lab, entries, rw, xs in shelf:
-                for e in entries:
-                    if e["name"] in M:
-                        depth = max(depth, M[e["name"]][4])
-            for lab, entries, rw, xs in shelf:
-                if lab:
-                    avail = rw + PACK_GAP * 0.8
-                    ls = min(0.40, avail / max(len(lab) * 0.55, 1.0))
-                    _label(lab, Vector((X0 + xs, y, 0.014)), max(ls, 0.22), lcoll)
-            y += S * BAND_LABEL
-            for lab, entries, rw, xs in shelf:
-                x = X0 + xs
-                yc = y + S * depth / 2.0
-                for e in entries:
-                    if e["name"] not in M:
-                        continue
-                    objs, mn, mx, w, d = M[e["name"]]
-                    _move(objs, Vector((x + w / 2.0 - (mn.x + mx.x) / 2.0,
-                                        yc - (mn.y + mx.y) / 2.0,
-                                        -mn.z)))
-                    x += w + GAP
-            y += S * (depth + SHELF_GAP)
-        y += S * SECTION_GAP
-
-    # ---- centre everything on the origin
+    co = layout_company(0.0, 0.0)
     bpy.context.view_layer.update()
-    allroot = [o for o in bpy.data.objects
-               if o.parent is None and o.name not in ("GROUND", "SUN", "FILL", "CAM_Showcase")
-               and o.type in ("MESH", "EMPTY", "ARMATURE", "FONT", "CURVE")]
-    mn, mx, _ = _bounds(allroot)
-    d = Vector((-(mn.x + mx.x) / 2.0, -(mn.y + mx.y) / 2.0, 0))
-    for o in allroot:
-        o.location = o.location + d
-    bpy.context.scene["gm_extent"] = [X0 + d.x, X0 + SHELF_W + d.x, 0.0 + d.y, y + d.y]
-    size = mx - mn
-    print("LAYOUT done  models=%.1f x %.1f  extent=%.1f x %.1f  objects=%d"
-          % (size.x, size.y, SHELF_W, y, len(M)))
+
+    M = _measure_all()
+    y = 0.0
+    for s in build_plan():
+        if s["key"] == "01_CHARACTERS":
+            continue
+        y = _shelf_section(s, M, X0, y)
+
+    board = []
+    for k in ("02_ARMOR", "03_WEAPONS", "04_GADGETS", "05_RESIDENTS"):
+        board.extend(_coll_objs(k))
+    mn, mx, hit = _bounds(board)
+    dy = ((co["y1"] + CO_BACK_GAP) - mn.y) if hit else 0.0
+    _move(board, Vector((0.0, dy, 0.0)))
+    bpy.context.view_layer.update()
+
+    allobjs = [o for o in bpy.data.objects if o.type in ("MESH", "FONT", "CURVE")
+               and o.name != "GROUND"]
+    mn, mx, _ = _bounds(allobjs)
+    sc = bpy.context.scene
+    sc["gm_company"] = [co["x0"], co["x1"], co["y0"], co["y1"]]
+    sc["gm_extent"] = [mn.x, mx.x, mn.y, mx.y]
+    print("LAYOUT  company=%.1f x %.1f  board_shift=%.1f  scene=%.1f x %.1f  models=%d"
+          % (co["x1"] - co["x0"], co["y1"] - co["y0"], dy,
+             mx.x - mn.x, mx.y - mn.y, len(M)))
 
 
 def _ndc_box(sc, cam, corners):
@@ -591,6 +694,143 @@ def finalize(target=0.94):
           "ndc_x=%.3f..%.3f  ndc_y=%.3f..%.3f"
           % (x1 - x0, y1 - y0, z1 - z0, cd.ortho_scale,
              box[0], box[1], box[2], box[3]))
+
+
+# ---------------------------------------------------------------- company camera
+
+BOARD_KEYS = ("02_ARMOR", "03_WEAPONS", "04_GADGETS", "05_RESIDENTS")
+
+
+def company_cam(lens=None):
+    """Perspective camera for the parade shots (created on first use)."""
+    root = bpy.data.collections.get("GeneratedModels")
+    cam = bpy.data.objects.get("CAM_Company")
+    if cam is None:
+        cd = bpy.data.cameras.new("CAM_Company")
+        cam = bpy.data.objects.new("CAM_Company", cd)
+        _coll("_STAGE", root).objects.link(cam)
+    cd = cam.data
+    cd.type = "PERSP"
+    cd.sensor_fit = "HORIZONTAL"
+    cd.sensor_width = 36.0
+    cd.lens = lens or COMPANY_LENS
+    cd.clip_start = 0.05
+    cd.clip_end = 3000.0
+    return cam
+
+
+def _fit_persp(cam, pts, dirv, target=0.93):
+    """Back the camera off along `dirv` until the point cloud fills `target` of the frame,
+    then pan it until that cloud is centred.  Distance and rotation are solved separately
+    so the pan never moves the camera."""
+    sc = bpy.context.scene
+    cd = cam.data
+    mn = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
+    mx = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
+    ctr = (mn + mx) / 2.0
+    q = dirv.normalized()
+    base = (-q).to_track_quat("-Z", "Y")
+    aspect = sc.render.resolution_y / float(sc.render.resolution_x)
+    tan_h = (cd.sensor_width * 0.5) / cd.lens
+    tan_v = tan_h * aspect
+    dist = max((mx - mn).length, 1.0) * 1.5
+    box = (0.0, 0.0, 0.0, 0.0)
+
+    for _ in range(10):
+        cam.location = ctr + q * dist
+        cam.rotation_euler = base.to_euler()
+        bpy.context.view_layer.update()
+        box = _ndc_box(sc, cam, pts)
+        dist *= max(box[1] - box[0], box[3] - box[2]) / target
+        cam.location = ctr + q * dist
+        cam.rotation_euler = base.to_euler()
+        bpy.context.view_layer.update()
+
+        quat = base.copy()
+        for _ in range(6):
+            box = _ndc_box(sc, cam, pts)
+            cxn = (box[0] + box[1]) / 2.0 - 0.5
+            cyn = (box[2] + box[3]) / 2.0 - 0.5
+            if abs(cxn) < 0.0015 and abs(cyn) < 0.0015:
+                break
+            d = Vector((2.0 * cxn * tan_h, 2.0 * cyn * tan_v, -1.0))
+            quat = quat @ Vector((0.0, 0.0, -1.0)).rotation_difference(d)
+            cam.rotation_euler = quat.to_euler()
+            bpy.context.view_layer.update()
+
+        box = _ndc_box(sc, cam, pts)
+        cx = (box[0] + box[1]) / 2.0 - 0.5
+        cy = (box[2] + box[3]) / 2.0 - 0.5
+        if abs(max(box[1] - box[0], box[3] - box[2]) / target - 1.0) < 0.004 \
+                and abs(cx) < 0.002 and abs(cy) < 0.002:
+            break
+    return box
+
+
+def _pts_box(objs):
+    mn, mx, hit = _bounds(objs)
+    if not hit:
+        return None
+    return [Vector((x, y, z)) for x in (mn.x, mx.x) for y in (mn.y, mx.y) for z in (mn.z, mx.z)]
+
+
+def render_company(target=0.94, out_dir=r"C:/Projects/ProjectC_client/_Showcase"):
+    """Render the company: one overview of the whole block plus the two halves close up.
+
+    The armour board is hidden for these frames, so nothing of section 02-05 sits in
+    the background behind the ranks.
+    """
+    sc = bpy.context.scene
+    cam = company_cam()
+    sc.camera = cam
+
+    chars = [o for o in _coll_objs("01_CHARACTERS") if o.type == "MESH"]
+    labels = [o for o in _coll_objs("01_CHARACTERS/_LABELS") if o.type == "FONT"]
+    if not chars:
+        print("RENDER COMPANY: no characters in scene")
+        return
+
+    def cx_of(o):
+        mw = o.matrix_world
+        return sum((mw @ Vector(c)).x for c in o.bound_box) / 8.0
+
+    mn, mx, _ = _bounds(chars)
+    mid = (mn.x + mx.x) / 2.0
+    halves = {"left": [o for o in chars if cx_of(o) < mid],
+              "right": [o for o in chars if cx_of(o) >= mid]}
+
+    board = []
+    for k in BOARD_KEYS:
+        board.extend(_coll_objs(k))
+    hidden = [(o, o.hide_render) for o in board]
+    for o, _ in hidden:
+        o.hide_render = True
+
+    shots = [("company_overview", 2560, 1440, Vector((0.16, -1.0, 0.46)), 0.94, "all", True),
+             ("company_right", 1920, 1080, Vector((0.10, -1.0, 0.30)), 0.92, "right", False),
+             ("company_left", 1920, 1080, Vector((-0.10, -1.0, 0.30)), 0.92, "left", False)]
+    try:
+        for name, rx, ry, dirv, tgt, which, show_labels in shots:
+            sc.render.resolution_x = rx
+            sc.render.resolution_y = ry
+            for o in labels:
+                o.hide_render = not show_labels
+            pts = _pts_box(chars + labels) if which == "all" else _pts_box(halves[which])
+            if not pts:
+                continue
+            box = _fit_persp(cam, pts, dirv, tgt)
+            sc.render.filepath = os.path.join(out_dir, name + ".png")
+            bpy.ops.render.render(write_still=True)
+            print("SHOT %-18s %dx%d  ndc_x=%.3f..%.3f  ndc_y=%.3f..%.3f"
+                  % (name, rx, ry, box[0], box[1], box[2], box[3]))
+    finally:
+        for o, h in hidden:
+            o.hide_render = h
+        for o in labels:
+            o.hide_render = False
+    sc.render.resolution_x = 1920
+    sc.render.resolution_y = 1080
+    sc.camera = cam
 
 
 def save():

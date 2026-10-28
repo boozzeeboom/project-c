@@ -49,10 +49,33 @@ namespace ProjectCMainMenu
         }
 
         /// <summary>The body face as a dynamic SDF atlas with soft-shadow padding (null if unavailable).</summary>
-        public FontAsset BodyAsset => _bodyAsset != null ? _bodyAsset : _bodyAsset = Build(Body);
+        public FontAsset BodyAsset => Alive(_bodyAsset) ? _bodyAsset : _bodyAsset = Build(Body);
 
         /// <summary>The display face as a dynamic SDF atlas with soft-shadow padding (null if unavailable).</summary>
-        public FontAsset DisplayAsset => _displayAsset != null ? _displayAsset : _displayAsset = Build(Display);
+        public FontAsset DisplayAsset => Alive(_displayAsset) ? _displayAsset : _displayAsset = Build(Display);
+
+        /// <summary>
+        /// The atlas is a runtime object cached on this asset, and this asset outlives a Play
+        /// session when domain reload is off. Unity tears the atlas' material and textures
+        /// down when Play stops, while the FontAsset itself survives; handing that husk to the
+        /// next panel threw MissingReferenceException inside the repaint (TextUtilities
+        /// .GetTextCoreSettingsForElement -> Material.mainTexture), which aborted the whole
+        /// panel and left the second Play session without a menu. So the cache is only reused
+        /// when every part of it is still there.
+        /// </summary>
+        private static bool Alive(FontAsset asset)
+        {
+            if (asset == null || asset.material == null) return false;
+
+            var textures = asset.atlasTextures;
+            if (textures == null || textures.Length == 0) return false;
+            for (var i = 0; i < textures.Length; i++)
+            {
+                if (textures[i] == null) return false;
+            }
+
+            return true;
+        }
 
         private static FontAsset Build(Font font)
         {
@@ -73,6 +96,16 @@ namespace ProjectCMainMenu
 
             asset.name = "PCMM " + font.name + " SDF";
             asset.hideFlags = HideFlags.DontSave;
+            if (asset.material != null) asset.material.hideFlags = HideFlags.DontSave;
+            var textures = asset.atlasTextures;
+            if (textures != null)
+            {
+                for (var i = 0; i < textures.Length; i++)
+                {
+                    if (textures[i] != null) textures[i].hideFlags = HideFlags.DontSave;
+                }
+            }
+
             return asset;
         }
     }

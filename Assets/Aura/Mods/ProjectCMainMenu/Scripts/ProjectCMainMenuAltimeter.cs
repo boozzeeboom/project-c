@@ -69,8 +69,18 @@ namespace ProjectCMainMenu
 
         private const int Step = 100;      // one graduation every 100 m
         private const int LabelEvery = 500; // a small number every 500 m
-        private const float ScrollPixels = 13f; // how far the tape slides over the full pointer sweep
-        private const float Tilt = 0.022f;      // degrees of rotation per scrolled pixel
+        // How far the tape slides over the full pointer sweep. The mod uses 13 px, which on
+        // this panel read as a tape that barely moves; the drum now travels ~3.4x as far,
+        // with a heavier damping so it glides rather than tracks the pointer 1:1.
+        private const float ScrollPixels = 44f;
+        private const float ScrollDamping = 3.4f;
+        private const float Tilt = 0.018f;      // degrees of rotation per scrolled pixel
+        // a slow idle sway, so the tape never sits frozen while the pointer is still
+        private const float SwayPixels = 3.5f;
+        private const float SwaySpeed = 0.42f;  // rad/s
+        // ticks continue this far past the outermost buttons, so the longer slide never
+        // uncovers the end of the tape inside the faded window
+        private const int TapeMargin = 900;
         private const float LabelGap = 15f;     // a small number needs this much room to be shown
 
         private struct Anchor
@@ -99,6 +109,7 @@ namespace ProjectCMainMenu
 
         private float _hostHeight = 1f;
         private float _scroll;
+        private float _swayTime;
         private int? _hoverValue;
         private IVisualElementScheduledItem _watch;
         private int _watchFrames;
@@ -148,8 +159,8 @@ namespace ProjectCMainMenu
 
             var min = values.Count > 0 ? Mathf.Min(values.ToArray()) : 0;
             var max = values.Count > 0 ? Mathf.Max(values.ToArray()) : 0;
-            var lo = Mathf.Max(0, Mathf.RoundToInt((min - 300f) / Step) * Step);
-            var hi = Mathf.RoundToInt((max + 300f) / Step) * Step;
+            var lo = Mathf.Max(0, Mathf.RoundToInt((min - TapeMargin) / (float)Step) * Step);
+            var hi = Mathf.RoundToInt((max + TapeMargin) / (float)Step) * Step;
 
             var anchorValues = new HashSet<int>(values);
 
@@ -320,9 +331,12 @@ namespace ProjectCMainMenu
         {
             var step = Mathf.Clamp(dt, 0f, 0.1f);
             var pointer = ProjectCMainMenuPalette.Clamp(pointerY, 0f, 1f);
-            var scrollTarget = (pointer - 0.5f) * 2f * ScrollPixels;
+            _swayTime += step;
+            var sway = Mathf.Sin(_swayTime * SwaySpeed) * SwayPixels
+                       + Mathf.Sin(_swayTime * SwaySpeed * 2.37f + 1.3f) * SwayPixels * 0.35f;
+            var scrollTarget = (pointer - 0.5f) * 2f * ScrollPixels + sway;
 
-            var next = ProjectCMainMenuPalette.Damp(_scroll, scrollTarget, 6.2f, step);
+            var next = ProjectCMainMenuPalette.Damp(_scroll, scrollTarget, ScrollDamping, step);
             var moved = Mathf.Abs(next - _scroll) > 0.004f;
             _scroll = next;
 

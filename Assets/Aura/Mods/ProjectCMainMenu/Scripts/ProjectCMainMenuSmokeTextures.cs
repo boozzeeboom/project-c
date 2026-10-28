@@ -32,8 +32,13 @@ namespace ProjectCMainMenu
         // the backdrop is what the sheet is drawn over, the opacity the typical element
         // opacity it is drawn at (the transition puffs peak at ~0.46-0.5).
 
-        /// <summary>Pale mist sheet — the transition puffs (mod: smokeImage tint 233,242,236).</summary>
-        public static Texture2D Light => Image(LightTint, 4211, 144, ProjectCMainMenuGamma.Scrim, 0.5f);
+        /// <summary>
+        /// Pale mist sheet — the transition puffs (mod: smokeImage tint 233,242,236). They
+        /// condense over the charcoal button clouds and the card bank, so the alpha is baked
+        /// against that dark backdrop; baked against the brighter scrim they came out ~40%
+        /// too strong there and flashed white on every hover.
+        /// </summary>
+        public static Texture2D Light => Image(LightTint, 4211, 144, 0.18f, 0.46f);
 
         /// <summary>Charcoal smoke sheet — the shadow side (mod: smokeImage tint 9,15,11).</summary>
         public static Texture2D Dark => Image(DarkTint, 9109, 144, ProjectCMainMenuGamma.Sky, 0.5f);

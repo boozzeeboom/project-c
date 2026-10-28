@@ -53,7 +53,11 @@
    box-shadow                             | [C#] a sibling glow element
    backdrop-filter                        | dropped
    pointer-events                         | [C#] pickingMode = Ignore
-   cursor: pointer                        | cursor: link
+   cursor: pointer                        | dropped: any cursor other than the default
+                                            needs a texture at runtime, and USS
+                                            `cursor: link` logged "Runtime cursors other
+                                            than the default cursor need to be defined
+                                            using a texture" on every hover
    text-align                             | -unity-text-align
    letter-spacing: <em>                   | px, converted per rule below
    :nth-child(n)  (hard import ERROR)     | explicit .pc-btn-n1 … .pc-btn-n4
@@ -428,7 +432,6 @@
     transition-property: color, translate;
     transition-duration: 0.24s, 0.34s;
     transition-timing-function: ease, ease-out;
-    cursor: link;
 }
 
 /* .pc-btn.is-forming — [C#] filter: blur((1 - a) * 5px). */
@@ -447,9 +450,13 @@
        blending, see ProjectCMainMenuGamma). */
     filter: blur(4px);
     scale: 0.97 0.94;
-    transition-property: opacity, scale, filter;
-    transition-duration: 0.38s, 0.46s, 0.38s;
-    transition-timing-function: ease, ease-out, ease;
+    /* filter is NOT transitioned: an animated filter is the dynamic filter path that
+       breaks the panel repaint (see ProjectCMainMenuTextBlower.BlurFiltersEnabled).
+       The swell is slower than the mod's 380/460 ms — at that speed the cloud and its
+       pale rim popped on hover. */
+    transition-property: opacity, scale;
+    transition-duration: 0.6s, 0.75s;
+    transition-timing-function: ease-in-out, ease-in-out;
 }
 
 .pc-btn-cloud__rim {
@@ -465,6 +472,11 @@
     /* radial-gradient(50% 50% at 50% 50%, --pc-cloud-rim, transparent 72%) —
        assigned from C# as ProjectCMainMenuRamps.ButtonRim(). */
     filter: blur(2px);
+    /* the mod lets the rim jump to 1 on hover; doubled instantly in one frame this was
+       the white flash across the button — it fades in with the cloud swell instead */
+    transition-property: opacity;
+    transition-duration: 0.6s;
+    transition-timing-function: ease-in-out;
 }
 
 .pc-blob {
@@ -517,14 +529,15 @@
 .pc-btn.is-hover .pc-btn-cloud,
 .pc-btn:focus .pc-btn-cloud {
     opacity: 0.92;
-    filter: blur(4px) contrast(1.24);  /* CSS brightness(1.24) unsupported */
-    scale: 1.06 1.3;
+    /* CSS also lifts brightness(1.24); a filter change on hover is a dynamic filter
+       here, so the swell is carried by opacity and scale alone */
+    scale: 1.05 1.2;
 }
 
 .pc-btn:hover .pc-btn-cloud__rim,
 .pc-btn.is-hover .pc-btn-cloud__rim,
 .pc-btn:focus .pc-btn-cloud__rim {
-    opacity: 1;
+    opacity: 0.85;
 }
 
 .pc-btn:active {
@@ -961,19 +974,16 @@
     padding: 0;
     border-width: 0;
     border-radius: 50%;
-    cursor: link;
     background-size: 100% 100%;
     filter: blur(0.3px);
-    transition-property: filter;
-    transition-duration: 0.22s;
-    transition-timing-function: ease;
     /* background: radial-gradient(58% 58% at 50% 50%, --pc-hair, transparent
        78%) — assigned from C# as ProjectCMainMenuRamps.CloseHalo(). */
 }
 
 .pc-close:hover,
 .pc-close:focus {
-    filter: blur(0.7px) contrast(1.35);   /* CSS brightness(1.35) unsupported */
+    /* the lift is the CloseHaloHover ramp swap (ProjectCMainMenuWindow.Controls); no
+       filter change — that would be a dynamic filter */
     /* background: radial-gradient(..., --pc-accent-soft, transparent 80%) —
        [C#] swap the ramp texture. */
 }
@@ -1055,7 +1065,6 @@
     color: var(--pc-ink-faint);
     font-size: 13px;        /* clamp(11.5px, 1.35vw, 13px) */
     letter-spacing: 2.1px;  /* 0.16em @ 13px */
-    cursor: link;
     transition-property: color;
     transition-duration: 0.22s;
     transition-timing-function: ease;
@@ -1272,7 +1281,6 @@
     height: 18px;
     margin: 0;
     background-color: transparent;
-    cursor: link;
     /* ::-webkit-slider-runnable-track (3px, radius 999, gradient) and
        ::-webkit-slider-thumb (12px glow dot) have no USS equivalent: the track, the
        thumb and the thumb's glow are absolute children, placed from C#
@@ -1336,7 +1344,6 @@
     padding: 0;
     border-width: 0;
     border-radius: 999px;
-    cursor: link;
     transition-property: background-color;
     transition-duration: 0.24s;
     transition-timing-function: ease;
@@ -1376,15 +1383,14 @@
     margin-top: -7px;
     border-radius: 50%;
     background-color: var(--pc-ink-faint);
-    transition-property: translate, background-color, filter;
-    transition-duration: 0.22s, 0.22s, 0.22s;
-    transition-timing-function: ease-out, ease, ease;
+    transition-property: translate, background-color;
+    transition-duration: 0.22s, 0.22s;
+    transition-timing-function: ease-out, ease;
 }
 
 .pc-switch.is-on .pc-switch-knob {
     translate: 20px 0;
     background-color: var(--pc-accent);
-    filter: contrast(1.2);
 }
 
 .pc-select-wrap {
@@ -1419,8 +1425,7 @@
     color: var(--pc-ink);
     font-size: 12.5px;      /* clamp(11px, 1.25vw, 12.5px) */
     letter-spacing: 0.5px;  /* 0.04em @ 12.5px */
-    cursor: link;
-    transition-property: background-color, filter;
+    transition-property: background-color;
     transition-duration: 0.2s;
     transition-timing-function: ease;
     background-size: 100% 100%;
@@ -1430,7 +1435,7 @@
 
 .pc-select:hover,
 .pc-select:focus {
-    filter: contrast(1.15);   /* stands in for the brightness lift */
+    /* the lift is the SelectHover ramp + glow (ProjectCMainMenuWindow.Controls) */
     /* background: radial-gradient(..., --pc-accent-soft, transparent 90%) —
        [C#] swap the ramp; box-shadow glow becomes .pc-select__glow. */
 }
@@ -1572,7 +1577,6 @@
     padding-right: 10px;
     padding-top: 7px;
     padding-bottom: 7px;
-    cursor: link;
     transition-property: background-color, border-color, color;
     transition-duration: 0.16s;
     transition-timing-function: ease;
@@ -1776,7 +1780,6 @@
     padding-right: 10px;
     padding-top: 6px;
     padding-bottom: 6px;
-    cursor: link;
 }
 
 .pc-proj-links {

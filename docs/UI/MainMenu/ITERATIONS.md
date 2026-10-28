@@ -265,3 +265,34 @@
 **Что не тронуто:** `WorldScene_0_0.unity`, `BootstrapScene.unity`, `ProjectC_URP.asset`,
 `PCMM_Renderer.asset`, `BlurFiltersEnabled` (`false`), статические `filter: blur()` в USS,
 `Stars` / `Glow` (аддитивные). Визуальная приёмка и Play Mode — за пользователем.
+
+## Итерация от 2026-10-28 (5) — второй запуск, альтиметр, вспышка на наведении
+
+**Второй Play без меню.** В проекте включены Enter Play Mode Options (`DisableDomainReload,
+DisableSceneReload`), статика переживает сессию. SDF-атлас шрифта, закэшированный на
+`PCMM_Fonts`, переживал Stop, а его материал — нет: первая же отрисовка текста бросала
+`MissingReferenceException` (`TextUtilities.GetTextCoreSettingsForElement` → `Material.mainTexture`)
+внутри `RepaintPanels`, панель оставалась в состоянии «идёт рендер», и дальше каскадом шли
+`InvalidOperationException: VisualElements cannot change their render data …` + `Assertion failed`.
+Исправление: `ProjectCMainMenuFonts.Alive()` — кэш переиспользуется, только если живы
+материал и все текстуры атласа, иначе атлас строится заново; материалу и текстурам ставится
+`HideFlags.DontSave`.
+
+**Варнинг курсора.** `cursor: link` в USS требует текстурного курсора в рантайме — все 8
+деклараций убраны из `PCMM_Menu.uss`. То же свойство есть в `CustomisationWindow.uss`,
+`CharacterWindow.uss`, `MarketWindow.uss` — не тронуты.
+
+**Вспышка на наведении.** Ободок кнопки прыгал 0.55 → 1 за один кадр (без transition),
+облако раздувалось до 1.06 × 1.3 за 0.46 с и меняло `filter` (анимируемый фильтр),
+а светлые пуфы gather были запечены под подложку 0.42 и над тёмным облаком выходили ~на 40%
+ярче. Теперь: ободок — transition 0.6 с до 0.85; облако — 1.05 × 1.2, opacity/scale 0.6/0.75 с
+`ease-in-out`, `filter` из transition и hover-правил убран (также у крестика, селекта, ручки
+переключателя); `SmokeTextures.Light` запечён под подложку 0.18.
+
+**Альтиметр.** Ход ленты 13 → 44 px по всей высоте указателя, демпфирование 6.2 → 3.4 (лента
+догоняет указатель с инерцией), наклон 0.022 → 0.018°/px, тихое покачивание ±3.5 px;
+деления продлены на 900 м за крайние кнопки (40 делений), чтобы конец ленты не открывался.
+
+**Проверка (без Play Mode):** `check_compile_errors` — 0; USS 205 правил, скобки 207/207, деклараций
+`cursor` и `filter: …contrast` — 0; лента за 2 с доходит до −41.5 / +46.3 px (было ±13); у атласа
+материал и текстура `DontSave`.

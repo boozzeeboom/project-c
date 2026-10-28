@@ -54,6 +54,15 @@ namespace ProjectCMainMenu
         public const int DefaultSeed = 9137;
         public const int DefaultMax = 96;
 
+        // The pale sheet (tint 233,242,236) is a near-white mist. In the browser it drifts
+        // over the bright sky and reads as haze; here a press bursts it over the charcoal
+        // button cloud and the dark menu scrim, where the authored peak (~0.55) lands at
+        // ~0.57 sRGB core and flashes white. Every menu button sits below 0.44 of the view
+        // height, so a press is 13/13 pale puffs (measured at 1920x1089: pale 13, charcoal 0,
+        // up to 149 px). Pale puffs therefore draw at this fraction of their authored peak,
+        // which puts the same core at ~0.43 sRGB — translucent smoke instead of a white blob.
+        public const float PalePeak = 0.5f;
+
         private readonly VisualElement _field;
         private readonly List<Puff> _puffs = new List<Puff>();
         private readonly int _limit;
@@ -195,6 +204,12 @@ namespace ProjectCMainMenu
             puff.style.backgroundImage = new StyleBackground(
                 bright ? ProjectCMainMenuSmokeTextures.Light : ProjectCMainMenuSmokeTextures.Dark);
             puff.style.opacity = 0f;   // the keyframes own the opacity from here on
+
+            // keys is built per puff by Gather/Disperse, so scaling it in place is safe
+            if (bright && PalePeak < 1f)
+            {
+                for (var i = 0; i < keys.Length; i++) keys[i].Opacity *= PalePeak;
+            }
 
             _field.Add(puff);
             _puffs.Add(new Puff

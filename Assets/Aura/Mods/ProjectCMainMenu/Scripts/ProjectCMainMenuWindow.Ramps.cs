@@ -46,7 +46,7 @@ namespace ProjectCMainMenu
                 var cloud = NavButtons[i].Q(className: "pc-btn-cloud");
                 if (cloud == null) continue;
 
-                // the pale wash that gives the button a light background at all
+                // the charcoal halo the blobs condense around (--pc-cloud-base)
                 SetRamp(cloud, ProjectCMainMenuRamps.ButtonHalo());
 
                 var hierarchy = cloud.hierarchy;
@@ -55,7 +55,7 @@ namespace ProjectCMainMenu
                     var child = hierarchy[c];
                     if (child.ClassListContains("pc-blob"))
                     {
-                        // the charcoal body of the cloud, on top of the pale wash
+                        // the charcoal body of the cloud, over the charcoal halo
                         SetRamp(child, ProjectCMainMenuSmokeTextures.Cloud);
                     }
                     else if (child.ClassListContains("pc-btn-cloud__rim"))
@@ -78,9 +78,9 @@ namespace ProjectCMainMenu
                     var child = hierarchy[c];
                     if (child.ClassListContains("pc-cld"))
                     {
-                        // the bank is pale: it has to read against the veiled
-                        // atmosphere the way the charcoal sheets read against a sky
-                        SetRamp(child, ProjectCMainMenuSmokeTextures.Light);
+                        // --pc-smoke-cloud: the charcoal puff, like the buttons — the bank
+                        // is a dark cloud in the mod, not a pale one
+                        SetRamp(child, ProjectCMainMenuSmokeTextures.CardCloud);
                     }
                     else if (child.ClassListContains("pc-card-cloud__rim"))
                     {
@@ -116,19 +116,41 @@ namespace ProjectCMainMenu
             var rows = CollectByClass(Settings, "pc-row");
             for (var i = 0; i < rows.Count; i++) SetRamp(rows[i], ProjectCMainMenuRamps.RowWash());
 
-            // .pc-range-track
+            // .pc-row::before — the hover smoke from the left
+            var washes = CollectByClass(Settings, "pc-row__wash");
+            for (var i = 0; i < washes.Count; i++) SetRamp(washes[i], ProjectCMainMenuRamps.RowHover());
+
+            // the slider: track, thumb and the thumb's box-shadow glow
             var tracks = CollectByClass(Settings, "pc-range-track");
             for (var i = 0; i < tracks.Count; i++) SetRamp(tracks[i], ProjectCMainMenuRamps.RangeTrack());
 
-            // .pc-switch / .pc-select / .pc-kbd — pale pills, not charcoal ones
+            var thumbs = CollectByClass(Settings, "pc-range-thumb");
+            for (var i = 0; i < thumbs.Count; i++) SetRamp(thumbs[i], ProjectCMainMenuRamps.RangeThumb());
+
+            var thumbGlows = CollectByClass(Settings, "pc-range-thumb__glow");
+            for (var i = 0; i < thumbGlows.Count; i++) SetRamp(thumbGlows[i], ProjectCMainMenuRamps.ThumbGlow());
+
+            // .pc-switch / .pc-select / .pc-kbd — the mod's charcoal pills (--pc-track-2);
+            // the on / hover swaps are ProjectCMainMenuWindow.Controls'
             var switches = CollectByClass(Settings, "pc-switch");
-            for (var i = 0; i < switches.Count; i++) SetRamp(switches[i], ProjectCMainMenuRamps.SoftPill(0.22f));
+            for (var i = 0; i < switches.Count; i++)
+            {
+                SetRamp(switches[i], switches[i].ClassListContains("is-on")
+                    ? ProjectCMainMenuRamps.SwitchOn()
+                    : ProjectCMainMenuRamps.SwitchOff());
+            }
+
+            var switchGlows = CollectByClass(Settings, "pc-switch__glow");
+            for (var i = 0; i < switchGlows.Count; i++) SetRamp(switchGlows[i], ProjectCMainMenuRamps.SwitchGlow());
 
             var selects = CollectByClass(Settings, "pc-select");
-            for (var i = 0; i < selects.Count; i++) SetRamp(selects[i], ProjectCMainMenuRamps.SoftPill(0.14f));
+            for (var i = 0; i < selects.Count; i++) SetRamp(selects[i], ProjectCMainMenuRamps.SelectIdle());
+
+            var selectGlows = CollectByClass(Settings, "pc-select__glow");
+            for (var i = 0; i < selectGlows.Count; i++) SetRamp(selectGlows[i], ProjectCMainMenuRamps.SelectGlow());
 
             var keys = CollectByClass(Settings, "pc-kbd");
-            for (var i = 0; i < keys.Count; i++) SetRamp(keys[i], ProjectCMainMenuRamps.SoftPill(0.16f));
+            for (var i = 0; i < keys.Count; i++) SetRamp(keys[i], ProjectCMainMenuRamps.KeyCap());
         }
 
         // ---- helpers ---------------------------------------------------------

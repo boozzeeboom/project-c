@@ -28,17 +28,32 @@ namespace ProjectCMainMenu
             public float[] Grid;
         }
 
-        /// <summary>Pale mist sheet — the body of the menu (mod: smokeImage tint 233,242,236).</summary>
-        public static Texture2D Light => Image(LightTint, 4211);
+        // Every sheet's alpha is baked for linear-space blending (ProjectCMainMenuGamma):
+        // the backdrop is what the sheet is drawn over, the opacity the typical element
+        // opacity it is drawn at (the transition puffs peak at ~0.46-0.5).
+
+        /// <summary>Pale mist sheet — the transition puffs (mod: smokeImage tint 233,242,236).</summary>
+        public static Texture2D Light => Image(LightTint, 4211, 144, ProjectCMainMenuGamma.Scrim, 0.5f);
 
         /// <summary>Charcoal smoke sheet — the shadow side (mod: smokeImage tint 9,15,11).</summary>
-        public static Texture2D Dark => Image(DarkTint, 9109);
+        public static Texture2D Dark => Image(DarkTint, 9109, 144, ProjectCMainMenuGamma.Sky, 0.5f);
 
         /// <summary>Horizontally tileable bank of mist (mod: smokeWisp tint 138,150,142).</summary>
         public static Texture2D Wisp => WispSheet(WispTint, 7781);
 
-        /// <summary>The cloud a button is made of (mod: smokePuff tint 22,28,23, size 160).</summary>
-        public static Texture2D Cloud => Puff(CloudTint, 5521, 160);
+        /// <summary>
+        /// The cloud a button is made of (mod: --pc-smoke-cloud = smokePuff tint 22,28,23,
+        /// size 160), drawn over the menu scrim at ~0.88 × 0.3-0.72.
+        /// </summary>
+        public static Texture2D Cloud => Puff(CloudTint, 5521, 160, ProjectCMainMenuGamma.Scrim, 0.40f);
+
+        /// <summary>
+        /// The same --pc-smoke-cloud puff for the settings bank (.pc-card-cloud i), drawn
+        /// over the open sky at ~0.93 × 0.24-0.64. The mod uses the charcoal puff here too —
+        /// not the pale high-frequency smokeImage sheet, which is what made the bank read
+        /// as blotchy white circles.
+        /// </summary>
+        public static Texture2D CardCloud => Puff(CloudTint, 5521, 160, ProjectCMainMenuGamma.Sky, 0.45f);
 
         public static void DisposeAll()
         {
@@ -92,9 +107,11 @@ namespace ProjectCMainMenu
         // --------------------------------------------------------------- sheets
 
         /// <summary>smokeImage(): soft round blob, radial falloff, ragged rim.</summary>
-        public static Texture2D Image(Color32 tint, int seed, int size = 144)
+        public static Texture2D Image(Color32 tint, int seed, int size = 144,
+            float backdrop = -1f, float opacity = 1f)
         {
-            var key = $"img|{tint.r},{tint.g},{tint.b}|{seed}|{size}";
+            var key = $"img|{tint.r},{tint.g},{tint.b}|{seed}|{size}|{Mathf.RoundToInt(backdrop * 1000f)}|{Mathf.RoundToInt(opacity * 1000f)}";
+            var luma = ProjectCMainMenuGamma.Luma(tint);
             if (Cache.TryGetValue(key, out var hit) && hit != null) return hit;
 
             var rng = new ProjectCMainMenuPalette.Mulberry32(seed);
@@ -120,6 +137,7 @@ namespace ProjectCMainMenu
 
                     var a = ProjectCMainMenuPalette.SmoothStep(0.36f, 0.72f, f) * fall;
                     a = a * a * (3f - 2f * a);
+                    if (backdrop >= 0f) a = ProjectCMainMenuGamma.Alpha(a, luma, backdrop, opacity);
 
                     pixels[o++] = new Color32(tint.r, tint.g, tint.b, (byte)Mathf.RoundToInt(Mathf.Clamp01(a) * 255f));
                 }
@@ -129,9 +147,11 @@ namespace ProjectCMainMenu
         }
 
         /// <summary>smokePuff(): one low-frequency lump, lumpy rim, no speckle.</summary>
-        public static Texture2D Puff(Color32 tint, int seed, int size = 160)
+        public static Texture2D Puff(Color32 tint, int seed, int size = 160,
+            float backdrop = -1f, float opacity = 1f)
         {
-            var key = $"puff|{tint.r},{tint.g},{tint.b}|{seed}|{size}";
+            var key = $"puff|{tint.r},{tint.g},{tint.b}|{seed}|{size}|{Mathf.RoundToInt(backdrop * 1000f)}|{Mathf.RoundToInt(opacity * 1000f)}";
+            var luma = ProjectCMainMenuGamma.Luma(tint);
             if (Cache.TryGetValue(key, out var hit) && hit != null) return hit;
 
             var rng = new ProjectCMainMenuPalette.Mulberry32(seed);
@@ -155,6 +175,7 @@ namespace ProjectCMainMenu
                     var fall = 1f - ProjectCMainMenuPalette.SmoothStep(0.16f, 1f, r);
 
                     var a = Mathf.Pow(Mathf.Clamp01(fall), 1.3f) * (0.58f + 0.42f * f);
+                    if (backdrop >= 0f) a = ProjectCMainMenuGamma.Alpha(a, luma, backdrop, opacity);
 
                     pixels[o++] = new Color32(tint.r, tint.g, tint.b, (byte)Mathf.RoundToInt(Mathf.Clamp01(a) * 255f));
                 }

@@ -334,8 +334,9 @@
     letter-spacing: 11.7px; /* 0.15em @ 78px */
     color: var(--pc-ink);
     /* CSS: two shadows (0 2px 28px --pc-shadow, 0 0 3px --pc-glow); USS takes
-       exactly one, so the cast shadow is kept and the 3px glow is dropped. */
-    text-shadow: 0 2px 28px var(--pc-shadow);
+       exactly one. The cast shadow is lost on the dark scrim anyway, while the 3px
+       gas-green glow is what softens the edge of the letters — that one is kept. */
+    text-shadow: 0 0 3px var(--pc-glow);
     white-space: nowrap;
 }
 
@@ -343,7 +344,7 @@
     font-size: 78px;
     letter-spacing: 4.7px;  /* 0.06em @ 78px */
     color: var(--pc-accent);
-    text-shadow: 0 2px 28px var(--pc-shadow);
+    text-shadow: 0 0 3px var(--pc-glow);
     white-space: nowrap;
 }
 
@@ -440,12 +441,10 @@
     bottom: -12%;
     opacity: 0.88;      /* calc(0.22 + 0.66 * --a) with --a = 1; [C#] per frame */
     background-size: 100% 100%;
-    /* radial-gradient(58% 122% at 46% 53%, tint, transparent 76%) — assigned from C#
-       as ProjectCMainMenuRamps.ButtonHalo(). The tint is the PALE one, not
-       --pc-cloud-base: a charcoal cloud was authored for a bright sky, while this menu
-       hangs over the veiled atmosphere, where charcoal is invisible — which is why the
-       buttons had no background at all. The charcoal sheets stay on top of the wash, so
-       the button still reads during the bright day phase. */
+    /* radial-gradient(58% 122% at 46% 53%, --pc-cloud-base, transparent 76%) —
+       assigned from C# as ProjectCMainMenuRamps.ButtonHalo(): the charcoal halo the
+       blobs condense around, exactly the mod's tone (its alpha is baked for linear
+       blending, see ProjectCMainMenuGamma). */
     filter: blur(4px);
     scale: 0.97 0.94;
     transition-property: opacity, scale, filter;
@@ -459,7 +458,8 @@
     right: 18%;
     top: -8%;
     height: 54%;
-    border-radius: 50%;
+    /* no border-radius: UI Toolkit clips a background to it with a crisp edge, and
+       the ramp already fades to nothing inside the box */
     opacity: 0.55;
     background-size: 100% 100%;
     /* radial-gradient(50% 50% at 50% 50%, --pc-cloud-rim, transparent 72%) —
@@ -470,7 +470,7 @@
 .pc-blob {
     position: absolute;
     aspect-ratio: 1;
-    border-radius: 50%;
+    /* no border-radius: the puff sheet carries its own ragged, transparent rim */
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% 100%;  /* CSS: contain */
@@ -551,9 +551,11 @@
 .pc-btn-label {
     position: relative;
     min-width: 0;
-    /* CSS: two shadows (16px halo + 4px edge); USS takes one — the halo, which
-       is what keeps the label readable over the smoke. */
-    text-shadow: 0 0 16px rgba(6, 12, 8, 0.92);
+    /* CSS: two shadows — a 16px halo and a 0 1px 4px edge. USS takes one, and a
+       UI Toolkit text-shadow cannot blur further than the font atlas padding, so the
+       16px halo collapsed into a tight dark contour around every glyph. The 4px edge
+       is the one that actually shows on the charcoal cloud. */
+    text-shadow: 0 1px 4px rgba(4, 8, 6, 0.75);
 }
 
 /* ---------------------------------------------- altitude tape (altimeter) */
@@ -860,11 +862,11 @@
 .pc-cld {
     position: absolute;
     aspect-ratio: 1;
-    border-radius: 50%;
+    /* no border-radius: the puff sheet carries its own transparent rim */
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% 100%;
-    /* background-image: var(--pc-smoke-cloud) — [C#]
+    /* background-image: var(--pc-smoke-cloud) — [C#] ProjectCMainMenuSmokeTextures.CardCloud
        animation: pc-boil 23s ease-in-out infinite alternate — [C#] driver. */
 }
 
@@ -886,7 +888,6 @@
     right: 15%;
     top: 3%;
     height: 44%;
-    border-radius: 50%;
     opacity: 0.5;
     background-size: 100% 100%;
     filter: blur(4px);
@@ -902,14 +903,16 @@
     right: 1%;
     top: 3%;
     bottom: 3%;
-    border-radius: 48%;     /* CSS: 46% 54% 48% 52% / 52% 44% 56% 48% — USS
-                               has no elliptical (slash) form */
-    filter: blur(18px);
+    /* CSS: border-radius 46% 54% 48% 52% / 52% 44% 56% 48% + filter: blur(18px).
+       Neither is used here: a border-radius clips the background with a crisp edge
+       (the hard ellipse around the card), and an 18 px blur costs a nested render
+       pass every frame. ProjectCMainMenuRamps.CardMist() bakes the rounded, feathered
+       shape into the sheet instead. */
     opacity: 0.79;          /* calc(0.55 + 0.45 * --a); [C#] per frame */
     background-size: 100% 100%;
-    /* three stacked radial-gradients (--pc-glass-deep, --pc-scrim, --pc-glass-2)
-       collapsed into one ramp assigned from C# as ProjectCMainMenuRamps.CardMist();
-       the blur above finishes the edge either way. */
+    /* three stacked radial-gradients (--pc-glass-deep 0.74 / --pc-scrim 0.66 /
+       --pc-glass-2 0.62), composited into ONE sheet by ProjectCMainMenuRamps.CardMist()
+       and painted BEHIND the cloud bank, exactly like the CSS z-index: -2. */
 }
 
 /* .pc-settings.is-forming .pc-card — [C#] filter: blur((1 - a) * 7px). */
@@ -945,10 +948,7 @@
     letter-spacing: 4.3px;  /* 0.32em @ 13.5px */
     color: var(--pc-ink-dim);
     margin-right: 12px;     /* .pc-card-head gap */
-    /* a dark halo, not an outline: pale glyphs on a dark mist read as cut-out and
-       eye-searing without one — the same treatment .pc-btn-label and .pc-subtitle
-       already carry */
-    text-shadow: 0 0 10px rgba(6, 12, 8, 0.88);
+    /* no text-shadow: the mod draws the card text bare on the dark mist */
 }
 
 .pc-close {
@@ -1056,7 +1056,6 @@
     font-size: 13px;        /* clamp(11.5px, 1.35vw, 13px) */
     letter-spacing: 2.1px;  /* 0.16em @ 13px */
     cursor: link;
-    text-shadow: 0 0 12px rgba(6, 12, 8, 0.9);
     transition-property: color;
     transition-duration: 0.22s;
     transition-timing-function: ease;
@@ -1075,8 +1074,6 @@
     flex-basis: auto;
     margin: 0;
     padding: 0;
-    /* text-shadow does not inherit to the label that actually draws the glyphs */
-    text-shadow: 0 0 12px rgba(6, 12, 8, 0.9);
 }
 
 /* the active tab is marked by a soft smudge of gas-green smoke, not a line */
@@ -1086,7 +1083,6 @@
     right: -9px;
     bottom: 0;
     height: 9px;
-    border-radius: 50%;
     opacity: 0;
     background-size: 100% 100%;
     filter: blur(3.5px);
@@ -1208,6 +1204,10 @@
 
 .pc-row-text {
     flex-direction: column;
+    /* takes the whole width the control leaves: a shrink-to-content text column
+       re-wraps its own measured width on a scaled panel ("Общая / громкость") */
+    flex-grow: 1;
+    flex-shrink: 1;
     min-width: 0;
     margin-right: 24px;    /* .pc-row gap: clamp(10px, 2vw, 24px) */
 }
@@ -1217,7 +1217,6 @@
     letter-spacing: 0.5px;  /* 0.04em @ 13px */
     color: var(--pc-ink);
     white-space: normal;
-    text-shadow: 0 0 9px rgba(6, 12, 8, 0.85);
 }
 
 .pc-row-note {
@@ -1226,7 +1225,6 @@
     letter-spacing: 0.7px;  /* 0.06em @ 11px */
     color: var(--pc-ink-faint);
     white-space: normal;
-    text-shadow: 0 0 8px rgba(6, 12, 8, 0.85);
 }
 
 .pc-note-line {
@@ -1239,7 +1237,6 @@
     letter-spacing: 0.9px;  /* 0.08em @ 11px */
     color: var(--pc-ink-faint);
     white-space: normal;
-    text-shadow: 0 0 8px rgba(6, 12, 8, 0.85);
 }
 
 /* ------------------------------------------------------------- controls */
@@ -1270,18 +1267,25 @@
 }
 
 .pc-range {
+    position: relative;
     width: 100%;
     height: 18px;
     margin: 0;
     background-color: transparent;
     cursor: link;
     /* ::-webkit-slider-runnable-track (3px, radius 999, gradient) and
-       ::-webkit-slider-thumb (12px glow dot) have no USS equivalent.
-       [C#] use a Slider with .pc-range-track / .pc-range-thumb children. */
+       ::-webkit-slider-thumb (12px glow dot) have no USS equivalent: the track, the
+       thumb and the thumb's glow are absolute children, placed from C#
+       (ProjectCMainMenuWindow.Controls sets their left to the value in percent). */
 }
 
 .pc-range-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
     height: 3px;
+    margin-top: -1.5px;
     border-radius: 999px;
     background-size: 100% 100%;
     /* linear-gradient(90deg, transparent, --pc-track 10%, --pc-track 90%,
@@ -1289,22 +1293,29 @@
 }
 
 .pc-range-thumb {
+    position: absolute;
+    top: 50%;
     width: 12px;
     height: 12px;
+    margin-top: -6px;
+    margin-left: -6px;
     border-width: 0;
     border-radius: 50%;
-    /* radial-gradient(58% 58% at 42% 38%, --pc-ink, --pc-accent 78%) — [C#]
-       ramp; the box-shadow glow becomes a sibling .pc-range-thumb__glow. */
+    background-size: 100% 100%;
+    /* radial-gradient(58% 58% at 42% 38%, --pc-ink, --pc-accent 78%) — assigned
+       from C# as ProjectCMainMenuRamps.RangeThumb(). */
 }
 
+/* box-shadow: 0 0 16px --pc-glow, 0 0 4px --pc-glow — a halo behind the thumb,
+   placed with it (ProjectCMainMenuRamps.ThumbGlow) */
 .pc-range-thumb__glow {
     position: absolute;
-    left: -10px;
-    top: -10px;
-    right: -10px;
-    bottom: -10px;
-    border-radius: 50%;
-    /* box-shadow: 0 0 16px var(--pc-glow) — unsupported; [C#] radial ramp. */
+    top: 50%;
+    width: 32px;
+    height: 32px;
+    margin-top: -16px;
+    margin-left: -16px;
+    background-size: 100% 100%;
 }
 
 .pc-out {
@@ -1330,9 +1341,8 @@
     transition-duration: 0.24s;
     transition-timing-function: ease;
     background-size: 100% 100%;
-    /* background: radial-gradient(120% 160% at 30% 40%, tint, transparent 86%) —
-       assigned from C# as ProjectCMainMenuRamps.SoftPill(). --pc-track-2 is charcoal,
-       which is invisible on the veiled card, so the pale tone is used instead. */
+    /* background: radial-gradient(120% 160% at 30% 40%, --pc-track-2, transparent 86%) —
+       assigned from C# as ProjectCMainMenuRamps.SwitchOff() / SwitchOn() (.is-on). */
 }
 
 /* .pc-switch[aria-checked='true'] — an attribute selector would work, but there
@@ -1345,9 +1355,12 @@
     top: -12px;
     right: -12px;
     bottom: -12px;
-    border-radius: 50%;
     opacity: 0;
-    /* [C#] radial ramp, opacity 1 when .is-on. */
+    background-size: 100% 100%;
+    transition-property: opacity;
+    transition-duration: 0.24s;
+    transition-timing-function: ease;
+    /* box-shadow: 0 0 18px --pc-glow — ProjectCMainMenuRamps.SwitchGlow(), shown with .is-on */
 }
 
 .pc-switch.is-on .pc-switch__glow {
@@ -1411,9 +1424,8 @@
     transition-duration: 0.2s;
     transition-timing-function: ease;
     background-size: 100% 100%;
-    /* background: radial-gradient(120% 150% at 26% 40%, tint, transparent 88%) —
-       assigned from C# as ProjectCMainMenuRamps.SoftPill(); the pale tone replaces
-       --pc-track-2 for the same reason as the switch. */
+    /* background: radial-gradient(120% 150% at 26% 40%, --pc-track-2, transparent 88%) —
+       assigned from C# as ProjectCMainMenuRamps.SelectIdle() / SelectHover(). */
 }
 
 .pc-select:hover,
@@ -1429,9 +1441,13 @@
     top: -10px;
     right: -10px;
     bottom: -10px;
-    border-radius: 999px;
     opacity: 0;
-    /* [C#] radial ramp shown on hover/focus. */
+    background-size: 100% 100%;
+    transition-property: opacity;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+    /* box-shadow: 0 0 16px --pc-glow — ProjectCMainMenuRamps.SelectGlow(), shown on
+       hover / focus by ProjectCMainMenuWindow.Controls. */
 }
 
 .pc-keys {
@@ -1470,24 +1486,29 @@
     font-size: 11px;        /* clamp(9.5px, 1.05vw, 11px) */
     letter-spacing: 1.3px;  /* 0.12em @ 11px */
     background-size: 100% 100%;
-    /* background: radial-gradient(120% 160% at 40% 40%, tint, transparent 90%) —
-       assigned from C# as ProjectCMainMenuRamps.SoftPill(). */
+    /* background: radial-gradient(120% 160% at 40% 40%, --pc-track-2, transparent 90%) —
+       assigned from C# as ProjectCMainMenuRamps.KeyCap(). */
 }
 
 /* ---------------------------------------------------------------- focus */
-/* outline / outline-offset are unsupported; a 1px border at 2px offset needs a
-   wrapper.  [C#] adds .is-focused to the control and the border is drawn here. */
+/* The mod draws its focus ring only on :focus-visible (keyboard focus). USS has no
+   :focus-visible, and :focus also matches a mouse click — a 1px border here drew a hard
+   green box around every tab, select and switch that was clicked, and shifted its
+   content by the border width. The buttons, tabs and controls already have their own
+   hover / focus looks (the cloud swell, the tab colour, the select glow), so only the
+   text input keeps a border, where it marks the caret's field. */
 
-.pc-btn:focus,
-.pc-close:focus,
-.pc-tab:focus,
-.pc-select:focus,
-.pc-switch:focus,
-.pc-proj-btn:focus,
-.pc-proj-select:focus,
 .pc-proj-input:focus {
     border-width: 1px;
     border-color: var(--pc-focus);
+}
+
+.pc-tab:focus {
+    color: var(--pc-ink-dim);
+}
+
+.pc-tab.is-active:focus {
+    color: var(--pc-ink);
 }
 
 /* ---------------------------------------------------------------- toast */

@@ -370,6 +370,11 @@ namespace ProjectCMainMenu
             // ---- the card ---------------------------------------------------
             Card = El("pc-card");
             Card.pickingMode = PickingMode.Position;
+
+            // CSS stacking inside the card: .pc-card-cloud has z-index: -3, the mist
+            // (.pc-card::before) sits at -2, the head / tabs / panels are at 0. The cloud
+            // bank therefore stays behind the mist — it shows as a pale halo around the
+            // glass and through its fading edge, while the text sits on the mist itself.
             Card.Add(CardCloud);
             Card.Add(CardMist);
             Card.Add(CardHead);
@@ -468,6 +473,13 @@ namespace ProjectCMainMenu
             row.pickingMode = PickingMode.Position;
             Add(row, text);
             Add(row, control);
+
+            // .pc-row::before — the smoke that grows in from the left on hover; it sits
+            // behind the content and never takes part in the layout (position: absolute)
+            var wash = El("pc-row__wash");
+            wash.pickingMode = PickingMode.Ignore;
+            row.Add(wash);
+            wash.SendToBack();
             return row;
         }
 
@@ -483,18 +495,22 @@ namespace ProjectCMainMenu
 
         private static VisualElement RangeRow(string label, float value, string note)
         {
-            // CSS styled ::-webkit-slider-*; UI Toolkit has none, so the track and
-            // the thumb are real children (see PCMM_Menu.uss .pc-range-track /
-            // .pc-range-thumb). Step 7 wires the drag.
+            // CSS styled ::-webkit-slider-*; UI Toolkit has none, so the track, the
+            // thumb's glow (its box-shadow) and the thumb are real children, placed by
+            // ProjectCMainMenuWindow.Controls from the value stored in range.userData.
             var track = El("pc-range-track");
             track.pickingMode = PickingMode.Ignore;
+            var glow = El("pc-range-thumb__glow");
+            glow.pickingMode = PickingMode.Ignore;
             var thumb = El("pc-range-thumb");
             thumb.pickingMode = PickingMode.Ignore;
 
             var range = El("pc-range");
             range.pickingMode = PickingMode.Position;
             range.focusable = true;
+            range.userData = value;
             range.Add(track);
+            range.Add(glow);
             range.Add(thumb);
 
             var output = Txt(FormatPercent(value), "pc-out");
@@ -525,8 +541,8 @@ namespace ProjectCMainMenu
         private static VisualElement SelectRow(string label, string[] options, string selected)
         {
             // The mod used a real <select>. UI Toolkit has no styleable one, so the
-            // closed control is a label inside the chevron wrapper; the popup is
-            // step 7's job. Options are kept on the element for it.
+            // closed control is a label inside the chevron wrapper; a click or the arrow
+            // keys step through the options kept on the element.
             var select = Txt(selected ?? (options.Length > 0 ? options[0] : string.Empty), "pc-select");
             select.pickingMode = PickingMode.Position;
             select.focusable = true;
@@ -535,8 +551,13 @@ namespace ProjectCMainMenu
             var chevron = El("pc-select-wrap__chevron");
             chevron.pickingMode = PickingMode.Ignore;
 
+            // box-shadow: 0 0 16px --pc-glow on hover, behind the select
+            var glow = El("pc-select__glow");
+            glow.pickingMode = PickingMode.Ignore;
+
             var wrap = El("pc-select-wrap");
             wrap.pickingMode = PickingMode.Ignore;
+            wrap.Add(glow);
             Add(wrap, select);
             wrap.Add(chevron);
             return Row(label, wrap, null);

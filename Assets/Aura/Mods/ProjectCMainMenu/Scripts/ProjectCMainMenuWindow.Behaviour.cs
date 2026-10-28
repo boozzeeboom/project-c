@@ -1134,29 +1134,11 @@ namespace ProjectCMainMenu
                 });
             }
 
-            // the mod's switchRow: click flips aria-checked, and the USS draws the
-            // knob and the glow from .is-on (there is no attribute API here)
-            WireSwitches(Settings);
+            // the switches, sliders, selects and the close halo: interaction plus the
+            // background swaps an inline ramp needs (ProjectCMainMenuWindow.Controls)
+            WireControls();
 
             if (Root != null) Root.RegisterCallback<KeyDownEvent>(OnKeyDown);
-        }
-
-        private void WireSwitches(VisualElement root)
-        {
-            if (root == null) return;
-
-            var switches = root.Query<VisualElement>(className: "pc-switch").ToList();
-            for (var i = 0; i < switches.Count; i++)
-            {
-                var toggle = switches[i];
-                toggle.RegisterCallback<PointerUpEvent>(_ => toggle.ToggleInClassList("is-on"));
-                toggle.RegisterCallback<KeyDownEvent>(evt =>
-                {
-                    if (!IsActivateKey(evt.keyCode)) return;
-                    evt.StopPropagation();
-                    toggle.ToggleInClassList("is-on");
-                });
-            }
         }
 
         private static bool IsActivateKey(KeyCode key) =>

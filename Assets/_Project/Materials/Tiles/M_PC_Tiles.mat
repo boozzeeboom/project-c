@@ -64,7 +64,7 @@ Material:
     - _Craze_Width: 0.045
     - _Gap_Gloss: 0
     - _Joint_Amount: 0.8
-    - _Joint_Bump: -0.003
+    - _Joint_Bump: -0.01
     - _Joint_Width_X: 0.06
     - _Joint_Width_Y: 0.1
     - _Moss_Amount: 2.56

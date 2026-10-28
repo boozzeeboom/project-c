@@ -35,7 +35,11 @@ namespace ProjectCMainMenu
         [SerializeField, Range(0f, 2f)] private float gasSensitivity = 1f;
         [SerializeField, Range(0f, 2f)] private float windDensity = 1f;
         [SerializeField, Range(0.05f, 0.7f)] private float exitHeight = 0.22f;
-        [SerializeField] private float dayCycleSeconds = 190f;
+        // One full day/night cycle at daySpeed 1. The mod runs 190 s; on the menu that read as
+        // a sky that never changes, so the cycle is 72 s here. The field is new on purpose:
+        // the prefab still serialises the old dayCycleSeconds = 190, which would otherwise
+        // override this default.
+        [SerializeField] private float cycleSeconds = 72f;
         [SerializeField] private int cloudTextureSize = 192;
 
         private struct VeilLayer
@@ -220,7 +224,7 @@ namespace ProjectCMainMenu
                 windDust.ApplyLayer(_layer);
             }
 
-            _dayNight = new ProjectCMainMenuDayNight(0.08f, dayCycleSeconds);
+            _dayNight = new ProjectCMainMenuDayNight(0.08f, cycleSeconds);
             _sample = _dayNight.Sample;
 
             Measure(true);
@@ -296,6 +300,14 @@ namespace ProjectCMainMenu
             }
 
             if (ropeRig != null) ropeRig.Resize(_qW, _qH);
+
+            // the dust fills exactly the visible frame at its plane (wind.js scaleW/scaleH,
+            // pixel = frameH / 300)
+            if (windDust != null)
+            {
+                var frameH = atmosphereCamera != null ? atmosphereCamera.pixelHeight : Screen.height;
+                windDust.SetView(_qW, _qH, frameH);
+            }
         }
 
         /// <summary>One scripted gust: starts now and is back at zero after durationMs.</summary>
@@ -390,7 +402,7 @@ namespace ProjectCMainMenu
             var dark = Mathf.Pow(Mathf.Clamp01((0.55f - _lift) / 0.55f), 1.3f);
 
             _dayBoost = Mathf.MoveTowards(_dayBoost, 0f, _dayBoostRate * dt);
-            _dayNight.CycleSeconds = Mathf.Clamp(dayCycleSeconds / Mathf.Max(0.2f, CurrentDaySpeed), 24f, 1200f);
+            _dayNight.CycleSeconds = Mathf.Clamp(cycleSeconds / Mathf.Max(0.2f, CurrentDaySpeed), 12f, 1200f);
             _dayNight.Update(dt);
             _sample = _dayNight.Sample;
 

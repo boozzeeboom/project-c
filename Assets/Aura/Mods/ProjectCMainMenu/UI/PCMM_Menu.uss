@@ -1665,13 +1665,52 @@
 }
 
 .pc-proj-admin-title {
+    flex-grow: 1;
     margin-top: 0;
-    margin-bottom: 7px;
+    margin-bottom: 0;
     margin-left: 0;
     margin-right: 0;
     font-size: 13px;
     letter-spacing: 1.8px;  /* 0.14em @ 13px */
     color: rgb(245, 190, 145);
+}
+
+/* the head of the [Debug] block: title + fold toggle */
+.pc-proj-admin-head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 7px;
+}
+
+.pc-proj-admin-head > .pc-proj-btn,
+.pc-proj-changelog-head > .pc-proj-collapse {
+    margin-left: 8px;
+}
+
+/* the fold toggle: the same flat plate as the refresh icon, a quieter glyph */
+.pc-proj-collapse {
+    width: 24px;
+    height: 22px;
+    font-size: 14px;
+    color: var(--pc-ink-dim);
+}
+
+/* folded: only the head stays; the absolute changelog lets go of its bottom edge so
+   it shrinks to the head instead of standing as an empty frame */
+.pc-proj-admin.is-collapsed .pc-proj-scroll,
+.pc-proj-admin.is-collapsed .pc-proj-status,
+.pc-proj-changelog.is-collapsed .pc-proj-scroll,
+.pc-proj-changelog.is-collapsed .pc-proj-status {
+    display: none;
+}
+
+.pc-proj-admin.is-collapsed .pc-proj-admin-head,
+.pc-proj-changelog.is-collapsed .pc-proj-changelog-head {
+    margin-bottom: 0;
+}
+
+.pc-proj-changelog.is-collapsed {
+    bottom: auto;
 }
 
 .pc-proj-changelog {
@@ -1705,6 +1744,7 @@
 }
 
 .pc-proj-changelog-title {
+    flex-grow: 1;
     margin: 0;
     font-size: 18px;        /* clamp(13px, 1.5vw, 18px) */
     letter-spacing: 2.9px;  /* 0.16em @ 18px */

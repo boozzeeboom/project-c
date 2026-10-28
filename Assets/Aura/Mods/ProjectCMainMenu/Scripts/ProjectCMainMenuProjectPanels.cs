@@ -192,6 +192,16 @@ namespace ProjectCMainMenu
         {
             var title = Txt("[Debug]", "pc-proj-admin-title");
 
+            var panel = El("pc-proj-admin");
+            panel.name = "pc-proj-admin";
+            panel.pickingMode = PickingMode.Position;
+
+            // the save-reset list can be folded away: the head keeps the title and a toggle
+            var head = El("pc-proj-admin-head");
+            head.pickingMode = PickingMode.Ignore;
+            Add(head, title);
+            Add(head, CollapseToggle(panel, AdminCollapsedKey, "список сбросов"));
+
             var list = NewScroll("pc-proj-admin-list", "pc-proj-scroll");
 
             for (var i = 0; i < DebugButtons.Length; i++)
@@ -209,10 +219,7 @@ namespace ProjectCMainMenu
             _adminStatus = Lbl(string.Empty, "pc-proj-status");
             _adminStatus.name = "pc-proj-admin-status";
 
-            var panel = El("pc-proj-admin");
-            panel.name = "pc-proj-admin";
-            panel.pickingMode = PickingMode.Position;
-            panel.Add(title);
+            panel.Add(head);
             panel.Add(list);
             panel.Add(_adminStatus);
             return panel;
@@ -227,19 +234,21 @@ namespace ProjectCMainMenu
             refresh.tooltip = "Обновить изменения";
             WireActivate(refresh, RefreshChangelog);
 
+            var panel = El("pc-proj-changelog");
+            panel.name = "pc-proj-changelog";
+            panel.pickingMode = PickingMode.Position;
+
             var head = El("pc-proj-changelog-head");
             head.pickingMode = PickingMode.Ignore;
             Add(head, title);
             Add(head, refresh);
+            Add(head, CollapseToggle(panel, ChangelogCollapsedKey, "изменения"));
 
             _changelogStatus = Lbl("Загрузка…", "pc-proj-status");
             _changelogStatus.name = "pc-proj-changelog-status";
 
             _changelogBody = NewScroll("pc-proj-changelog-body", "pc-proj-scroll", "pc-proj-changelog-body");
 
-            var panel = El("pc-proj-changelog");
-            panel.name = "pc-proj-changelog";
-            panel.pickingMode = PickingMode.Position;
             panel.Add(head);
             panel.Add(_changelogStatus);
             panel.Add(_changelogBody);
@@ -873,6 +882,39 @@ namespace ProjectCMainMenu
                 evt.StopPropagation();
                 action();
             });
+        }
+
+        // ---- folding ---------------------------------------------------------
+        // The [Debug] save-reset list and the changelog are both tall blocks over the
+        // atmosphere; each carries a fold toggle in its head. Folded, only the head stays
+        // (.is-collapsed hides the list / status / body in PCMM_Menu.uss). The choice is kept
+        // in PlayerPrefs, so a folded block stays folded on the next launch.
+
+        private const string AdminCollapsedKey = "PCMM.Admin.Collapsed";
+        private const string ChangelogCollapsedKey = "PCMM.Changelog.Collapsed";
+
+        private static VisualElement CollapseToggle(VisualElement panel, string prefsKey, string what)
+        {
+            var toggle = FlatButton(string.Empty, "pc-proj-btn", "pc-proj-btn-icon", "pc-proj-collapse");
+            toggle.name = panel.name + "-collapse";
+
+            void Apply(bool collapsed)
+            {
+                panel.EnableInClassList("is-collapsed", collapsed);
+                ((Label)toggle).text = collapsed ? "+" : "−";
+                toggle.tooltip = (collapsed ? "Развернуть " : "Свернуть ") + what;
+            }
+
+            Apply(PlayerPrefs.GetInt(prefsKey, 0) != 0);
+            WireActivate(toggle, () =>
+            {
+                var collapsed = !panel.ClassListContains("is-collapsed");
+                Apply(collapsed);
+                PlayerPrefs.SetInt(prefsKey, collapsed ? 1 : 0);
+                PlayerPrefs.Save();
+            });
+
+            return toggle;
         }
 
         /// <summary>

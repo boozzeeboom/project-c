@@ -962,7 +962,12 @@
     letter-spacing: 4.3px;  /* 0.32em @ 13.5px */
     color: var(--pc-ink-dim);
     margin-right: 12px;     /* .pc-card-head gap */
-    /* no text-shadow: the mod draws the card text bare on the dark mist */
+    /* The head sits outside the dense part of the mist ellipse (§CardMist rims at
+       0.62 of the inscribed radius), so at day the title and the tabs can land on the
+       open sky. A dark edge keeps them readable there — the same device
+       .pc-btn-label already uses over the cloud buttons; on the dark mist it is
+       invisible. */
+    text-shadow: 0 1px 3px rgba(4, 8, 6, 0.9);
 }
 
 .pc-close {
@@ -996,10 +1001,14 @@
     height: 1.5px;
     margin-left: -6.5px;
     border-radius: 1px;
-    background-color: var(--pc-ink-dim);
+    background-color: var(--pc-ink);
     transition-property: background-color;
     transition-duration: 0.2s;
     transition-timing-function: ease;
+    /* the two bars cannot take a text shadow: the dark base under them is baked into
+       the halo (ProjectCMainMenuRamps.CloseHalo), so the cross reads on the bright
+       sky as well as on the night mist. On that base --pc-ink-dim gave 2.99:1 at day
+       and --pc-ink gives 5.63:1; the hover state is the accent, as in the mod. */
 }
 
 /* :nth-child is a hard import error in USS ("Recursive pseudo classes are not
@@ -1060,7 +1069,12 @@
     padding-bottom: 10px;
     background-color: transparent;
     border-width: 0;
-    color: var(--pc-ink-faint);
+    /* --pc-ink-faint (#71806f) is a mid tone: at 0.44 sRGB it has ~2:1 against both the
+       bright day sky and the night mist, and no shadow can rescue it (a 0.82 shadow only
+       reaches 0.36 sRGB over the sky, still next to the glyph's own tone). The inactive
+       tab therefore takes --pc-ink-dim, and hover / focus take --pc-ink; the active tab is
+       still marked by the gas-green smudge under it. */
+    color: var(--pc-ink-dim);
     font-size: 13px;        /* clamp(11.5px, 1.35vw, 13px) */
     letter-spacing: 2.1px;  /* 0.16em @ 13px */
     transition-property: color;
@@ -1069,7 +1083,7 @@
 }
 
 .pc-tab:hover {
-    color: var(--pc-ink-dim);
+    color: var(--pc-ink);
 }
 
 /* the tab is a container so pc-tab__glow can sit outside the text: a TextElement that
@@ -1081,6 +1095,9 @@
     flex-basis: auto;
     margin: 0;
     padding: 0;
+    /* the tab row is the brightest part of the card at day: the same dark edge as
+       the card title, so an inactive tab never sinks into the sky */
+    text-shadow: 0 1px 4px rgba(4, 8, 6, 0.82);
 }
 
 /* the active tab is marked by a soft smudge of gas-green smoke, not a line */
@@ -1506,7 +1523,7 @@
 }
 
 .pc-tab:focus {
-    color: var(--pc-ink-dim);
+    color: var(--pc-ink);
 }
 
 .pc-tab.is-active:focus {

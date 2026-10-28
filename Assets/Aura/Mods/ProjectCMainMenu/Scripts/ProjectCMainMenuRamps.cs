@@ -85,13 +85,33 @@ namespace ProjectCMainMenu
                 },
                 Sky, 1f);
 
-        /// <summary>.pc-close — radial-gradient(58% 58%, --pc-hair, transparent 78%).</summary>
+        /// <summary>
+        /// .pc-close — radial-gradient(58% 58%, --pc-hair, transparent 78%). The pale ring is
+        /// kept, but a charcoal base is composited under it: the cross is two 1.5 px bars of
+        /// --pc-ink, and the card's top corner sits outside the mist's dense ellipse, so at day
+        /// both bars land on the open sky and the pale ring gave them nothing to read against.
+        /// The base reads 0.375 sRGB over the 0.80 sky and 0.242 over the 0.30 night mist, which
+        /// is 5.63:1 and 9.58:1 for the bars — the same "small dark cloud" the buttons are made of.
+        /// </summary>
         public static Texture2D CloseHalo() =>
-            Elliptical("close-halo", Ink, 0.16f, 0.58f, 0.58f, 0.50f, 0.50f, 0.78f, Mist, 1f);
+            Stacked("close-halo",
+                new[]
+                {
+                    new RadialLayer(Ink, 0.16f, 0.58f, 0.58f, 0.50f, 0.50f, 0.78f),
+                    new RadialLayer(VeilDark, 0.70f, 0.62f, 0.62f, 0.50f, 0.50f, 0.86f),
+                },
+                Sky, 1f, 128, 0.86f);
 
-        /// <summary>.pc-close:hover — radial-gradient(64% 64%, --pc-accent-soft, transparent 80%).</summary>
+        /// <summary>.pc-close:hover — radial-gradient(64% 64%, --pc-accent-soft, transparent
+        /// 80%) over the same charcoal base, so the accent cross stays readable on the sky.</summary>
         public static Texture2D CloseHaloHover() =>
-            Elliptical("close-halo-hover", Accent, 0.16f, 0.64f, 0.64f, 0.50f, 0.50f, 0.80f, Mist, 1f);
+            Stacked("close-halo-hover",
+                new[]
+                {
+                    new RadialLayer(Accent, 0.16f, 0.64f, 0.64f, 0.50f, 0.50f, 0.80f),
+                    new RadialLayer(VeilDark, 0.70f, 0.62f, 0.62f, 0.50f, 0.50f, 0.86f),
+                },
+                Sky, 1f, 128, 0.86f);
 
         /// <summary>
         /// .pc-tab::after — radial-gradient(50% 100% at 50% 50%, --pc-accent, transparent 72%),

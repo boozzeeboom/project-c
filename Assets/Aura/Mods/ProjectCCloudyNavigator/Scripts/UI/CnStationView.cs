@@ -10,6 +10,7 @@
 //
 // Ступени компактности (home.js STAGES): если колонке не хватает высоты, ужимается только кольцо слотов
 // (ниша под фигуру), остальные блоки и ширина станции не меняются.
+using System;
 using ProjectCCloudyNavigator.Data;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -63,6 +64,11 @@ namespace ProjectCCloudyNavigator.UI
         private readonly Label _relCount;
         private readonly VisualElement _relRows;
 
+        private readonly CnSkillsView _skills;
+        private Action<bool> _onOpenSkills;
+        private Action _onOpenCalendar;
+        private Action _onOpenRel;
+
         private string _equipSignature = string.Empty;
         private string _repSignature = string.Empty;
         private int _calWeekday = -1;
@@ -70,6 +76,27 @@ namespace ProjectCCloudyNavigator.UI
         private int _repFit = 6;
 
         public VisualElement Root => _root;
+
+        /// <summary>Запрос графа навыков: false — боевые, true — социальные. Ставит окно.</summary>
+        public Action<bool> OnOpenSkills
+        {
+            get => _onOpenSkills;
+            set => _onOpenSkills = value;
+        }
+
+        /// <summary>Клик по прибору-календарю: полный календарь года. Ставит окно.</summary>
+        public Action OnOpenCalendar
+        {
+            get => _onOpenCalendar;
+            set => _onOpenCalendar = value;
+        }
+
+        /// <summary>Клик по блоку репутации: полный список отношений. Ставит окно.</summary>
+        public Action OnOpenRel
+        {
+            get => _onOpenRel;
+            set => _onOpenRel = value;
+        }
 
         /// <summary>Ниша под превью фигуры (шаг 6): сюда окно кладёт элемент CnPreviewStage.</summary>
         public VisualElement PreviewHost => _previewHost;
@@ -108,6 +135,15 @@ namespace ProjectCCloudyNavigator.UI
             _calCount = CnStyle.Label(string.Empty, "cn-cal__count");
             foot.Add(_calCount);
             cal.Add(foot);
+
+            // Прибор — вход в полный календарь года (как в моде: клик по календарю открывает окно).
+            cal.AddToClassList("cn-clickable");
+            cal.tooltip = "открыть календарь года";
+            cal.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                _onOpenCalendar?.Invoke();
+            });
             _root.Add(cal);
 
             // ---- характеристики
@@ -164,6 +200,11 @@ namespace ProjectCCloudyNavigator.UI
             }
             _root.Add(mods);
 
+            // ---- навыки: шесть слотов и вход в социальный граф (под модулями, над репутацией)
+            _skills = new CnSkillsView();
+            _skills.OnOpen = social => _onOpenSkills?.Invoke(social);
+            _root.Add(_skills.Root);
+
             // ---- репутация: последний гибкий блок
             _rel = CnStyle.Box("cn-rel");
             var relHead = CnStyle.Row("cn-rel__head");
@@ -174,6 +215,13 @@ namespace ProjectCCloudyNavigator.UI
             _rel.Add(relHead);
             _relRows = CnStyle.Box("cn-rel__rows");
             _rel.Add(_relRows);
+            _rel.AddToClassList("cn-clickable");
+            _rel.tooltip = "открыть отношения: фракции и люди";
+            _rel.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                _onOpenRel?.Invoke();
+            });
             _rel.RegisterCallback<GeometryChangedEvent>(_ => FitReputation());
             _root.Add(_rel);
         }
@@ -228,6 +276,7 @@ namespace ProjectCCloudyNavigator.UI
             RefreshHp(feed);
             _credits.text = feed.hasCredits ? FormatCredits(feed.credits) : "—";
             RefreshEquipment(feed);
+            _skills.Refresh(feed);
             RefreshReputation(feed);
         }
 

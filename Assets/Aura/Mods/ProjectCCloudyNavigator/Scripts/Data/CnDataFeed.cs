@@ -19,12 +19,14 @@ using ProjectC.Equipment;
 using ProjectC.Items;
 using ProjectC.Items.Client;
 using ProjectC.Knowledge;
+using ProjectC.Localization;
 using ProjectC.Player;
 using ProjectC.Quests.Client;
 using ProjectC.Quests.UI;
 using ProjectC.Reputation;
 using ProjectC.Ship;
 using ProjectC.Ship.Key;
+using ProjectC.Skills;
 using ProjectC.Stats;
 using ProjectC.Trade.Client;
 using Unity.Netcode;
@@ -149,6 +151,40 @@ namespace ProjectCCloudyNavigator.Data
         public int value;
     }
 
+    /// <summary>Слот навыка — проекция <c>SkillInputService.GetSkillForSlot</c> + имени из <c>SkillNodeConfig</c>.</summary>
+    public struct CnSkillSlotRow
+    {
+        public byte slot;            // (byte)SkillInputSlot: Primary 1, Secondary 2, Slot1…4 = 10…13
+        public string code;          // «ЛКМ», «ПКМ», «1»…«4»
+        public string skillId;
+        public string displayName;
+        public string description;
+        public bool bound;
+        public bool onCooldown;
+        public bool known;
+    }
+
+    /// <summary>Узел графа навыков — проекция <c>SkillNodeConfig</c> + <c>SkillsClientState</c> (выучен / известен).</summary>
+    public struct CnSkillNodeRow
+    {
+        public string skillId;
+        public string displayName;
+        public string description;
+        public byte category;        // SkillCategory: Social 0, Combat 1
+        public int treeX;
+        public int treeY;
+        public bool learned;
+        public bool known;           // выучен или известен (KnownSkillIds) — как knowledgeUnlockType: learned ∪ known
+        public bool alwaysVisible;   // knowledgeUnlockType == AlwaysVisible — единственный навык, видимый без знания
+        public bool active;
+        public float cooldown;
+        public float learnXp;
+        public int requiredStrength;
+        public int requiredDexterity;
+        public int requiredIntelligence;
+        public string[] prerequisites;
+    }
+
     /// <summary>
     /// Читающий слой окна. Держит последнюю прочитанную проекцию и обновляет её по кадру:
     /// снапшоты перечитываются каждый кадр (это копия ссылки, не запрос), тяжёлые источники — по интервалу,
@@ -173,6 +209,13 @@ namespace ProjectCCloudyNavigator.Data
         // Каталог NPC нужен для имён и для подписи «сдать у …»; ищем один раз и только если он есть в сцене.
         private ProjectC.Quests.QuestDatabase _questDatabase;
         private bool _questDatabaseSearched;
+
+        // Каталог навыков — тот же Resources/Skills, что грузит легаси SkillTreeWindow; читается один раз.
+        private SkillNodeConfig[] _skillCatalog;
+        private Dictionary<string, SkillNodeConfig> _skillById;
+        private bool _skillNodesBuilt;
+        private HashSet<string> _skillNodesSigLearned;   // снапшот заменяет набор целиком — следим за ссылкой
+        private HashSet<string> _skillNodesSigKnown;
 
         // --- последняя проекция ---
         public int currentHp { get; private set; }
@@ -209,6 +252,15 @@ namespace ProjectCCloudyNavigator.Data
         public CnFactionRow[] factions { get; private set; }
         public CnNpcRow[] npcs { get; private set; }
 
+        /// <summary>Шесть боевых слотов (SkillInputSlot) в порядке показа: ЛКМ, ПКМ, 1…4.</summary>
+        public CnSkillSlotRow[] skillSlots { get; private set; }
+
+        /// <summary>Каталог навыков из Resources/Skills — тот же, что грузит легаси SkillTreeWindow.</summary>
+        public CnSkillNodeRow[] skillNodes { get; private set; }
+        public bool hasSkills { get; private set; }
+        public int learnedSkillCount { get; private set; }
+        public int knownSkillCount { get; private set; }
+
         public bool hasTime { get; private set; }
         public int year { get; private set; }
         public int month { get; private set; }
@@ -222,6 +274,25 @@ namespace ProjectCCloudyNavigator.Data
         public const int DaysPerWeek = 7;
         public string monthName { get; private set; }
         public float timeOfDay { get; private set; }
+
+        /// <summary>
+        /// Правила календаря из того же <c>CalendarConfig</c>, что читает легаси-окно (30 дней, 12 месяцев):
+        /// окну календаря нужна вся сетка года, а не только текущая дата.
+        /// </summary>
+        public bool hasCalendarRules { get; private set; }
+        public int daysPerMonth { get; private set; }
+        public int monthsPerYear { get; private set; }
+        public string[] monthNames { get; private set; }
+        public float dayCycleRealHours { get; private set; }
+
+        /// <summary>Имя месяца 1…monthsPerYear из CalendarConfig; номер, если имени нет.</summary>
+        public string MonthName(int month)
+        {
+            if (monthNames != null && month >= 1 && month <= monthNames.Length &&
+                !string.IsNullOrEmpty(monthNames[month - 1]))
+                return monthNames[month - 1];
+            return month.ToString();
+        }
 
         public bool hasAltitude { get; private set; }
         public float altitude { get; private set; }          // как легаси AltitudeUI: сырой transform.position.y
@@ -247,8 +318,11 @@ namespace ProjectCCloudyNavigator.Data
             npcs = new CnNpcRow[0];
             trackedQuestId = string.Empty;
             bagLocationId = string.Empty;
+            skillSlots = new CnSkillSlotRow[0];
+            skillNodes = new CnSkillNodeRow[0];
             weekdayName = string.Empty;
             monthName = string.Empty;
+            monthNames = new string[0];
             corridorId = string.Empty;
             corridorDisplayName = string.Empty;
             altitudeStatusName = string.Empty;
@@ -263,6 +337,7 @@ namespace ProjectCCloudyNavigator.Data
             ReadContracts();
             ReadInventory();
             ReadRelations();
+            ReadSkills();
 
             _shipTimer -= dt;
             if (_shipTimer <= 0f)
@@ -913,6 +988,195 @@ namespace ProjectCCloudyNavigator.Data
             _questDatabase = UnityEngine.Object.FindAnyObjectByType<ProjectC.Quests.QuestDatabase>();
         }
 
+        // ------------------------------------------------------------------ навыки
+
+        /// <summary>Слоты в порядке показа — как в легаси-панели: ЛКМ, ПКМ, затем 1…4.</summary>
+        private static readonly SkillInputSlot[] SkillSlotOrder =
+        {
+            SkillInputSlot.Primary, SkillInputSlot.Secondary,
+            SkillInputSlot.Slot1, SkillInputSlot.Slot2, SkillInputSlot.Slot3, SkillInputSlot.Slot4
+        };
+
+        /// <summary>
+        /// Фолбэк подписей слотов — дефолты <c>InputBindingsConfig.combatSkills</c> (01 §2): слоты висят на мыши
+        /// с модификатором, а не на цифрах. Живые подписи берутся из <c>InputBindingsRuntime.GetSkillDisplayName</c>.
+        /// </summary>
+        private static readonly string[] SkillSlotCodes = { "ЛКМ", "ПКМ", "Ctrl+ЛКМ", "Ctrl+ПКМ", "Shift+ЛКМ", "Shift+ПКМ" };
+
+        /// <summary>
+        /// Навыки: шесть слотов (только выученное можно забиндить, поэтому слот = реальный биндинг
+        /// <c>SkillInputService.GetSkillForSlot</c>) и весь каталог для графов. Числа выученных/известных — из
+        /// <c>SkillsClientState</c>; своего состояния окно не вводит.
+        /// </summary>
+        private void ReadSkills()
+        {
+            var state = SkillsClientState.Instance;
+            var input = SkillInputService.Instance;
+
+            learnedSkillCount = state != null ? state.CurrentSkills.Count : 0;
+            knownSkillCount = state != null ? state.KnownSkillIds.Count : 0;
+
+            EnsureSkillCatalog();
+            hasSkills = _skillCatalog != null && _skillCatalog.Length > 0;
+
+            var learned = state != null ? state.CurrentSkills : null;
+            var known = state != null ? state.KnownSkillIds : null;
+
+            ReadSkillSlots(input, learned, known);
+
+            // Узлов столько же, сколько ассетов навыков, и меняются они только новым снапшотом —
+            // пересобираем по смене набора, а не каждый кадр (семь слотов читаются всегда).
+            if (_skillNodesBuilt && ReferenceEquals(learned, _skillNodesSigLearned) &&
+                ReferenceEquals(known, _skillNodesSigKnown)) return;
+
+            _skillNodesBuilt = true;
+            _skillNodesSigLearned = learned;
+            _skillNodesSigKnown = known;
+            ReadSkillNodes(learned, known);
+        }
+
+        private void ReadSkillSlots(SkillInputService input, HashSet<string> learned, HashSet<string> known)
+        {
+            if (skillSlots == null || skillSlots.Length != SkillSlotOrder.Length)
+                skillSlots = new CnSkillSlotRow[SkillSlotOrder.Length];
+
+            for (int i = 0; i < SkillSlotOrder.Length; i++)
+            {
+                var slot = SkillSlotOrder[i];
+                string skillId = input != null ? input.GetSkillForSlot(slot) : string.Empty;
+                if (skillId == null) skillId = string.Empty;
+
+                bool bound = skillId.Length > 0;
+                var cfg = bound ? FindSkill(skillId) : null;
+
+                skillSlots[i] = new CnSkillSlotRow
+                {
+                    slot = (byte)slot,
+                    code = SkillSlotCode(i, slot),
+                    skillId = skillId,
+                    displayName = cfg != null ? SkillName(cfg) : string.Empty,
+                    description = cfg != null ? SkillDescription(cfg) : string.Empty,
+                    bound = bound,
+                    onCooldown = bound && input != null && input.IsOnCooldown(slot),
+                    known = bound && (IsIn(learned, skillId) || IsIn(known, skillId))
+                };
+            }
+        }
+
+        /// <summary>Подпись слота: переназначенная в игре, иначе дефолт биндинга. Своих подписей окно не держит.</summary>
+        private static string SkillSlotCode(int index, SkillInputSlot slot)
+        {
+            var runtime = ProjectC.Input.InputBindingsRuntime.Instance;
+            if (runtime != null)
+            {
+                string label = runtime.GetSkillDisplayName(slot);
+                if (!string.IsNullOrEmpty(label)) return label;
+            }
+
+            return index < SkillSlotCodes.Length ? SkillSlotCodes[index] : slot.ToString();
+        }
+
+        private void ReadSkillNodes(HashSet<string> learned, HashSet<string> known)
+        {
+            if (_skillCatalog == null || _skillCatalog.Length == 0)
+            {
+                skillNodes = new CnSkillNodeRow[0];
+                return;
+            }
+
+            // Порядок как в легаси SkillTreeWindow: узлы без позиции (0,0) — в конце.
+            var ordered = new List<SkillNodeConfig>(_skillCatalog);
+            ordered.Sort((a, b) =>
+            {
+                int yA = (a.treeY == 0 && a.treeX == 0) ? int.MaxValue : a.treeY;
+                int yB = (b.treeY == 0 && b.treeX == 0) ? int.MaxValue : b.treeY;
+                if (yA != yB) return yA.CompareTo(yB);
+                if (a.treeX != b.treeX) return a.treeX.CompareTo(b.treeX);
+                return string.CompareOrdinal(a.skillId, b.skillId);
+            });
+
+            var rows = new CnSkillNodeRow[ordered.Count];
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                var cfg = ordered[i];
+                var pre = cfg.prerequisites;
+                var preIds = new string[0];
+                if (pre != null && pre.Length > 0)
+                {
+                    var buf = new List<string>(pre.Length);
+                    for (int p = 0; p < pre.Length; p++)
+                        if (pre[p] != null && !string.IsNullOrEmpty(pre[p].skillId)) buf.Add(pre[p].skillId);
+                    preIds = buf.ToArray();
+                }
+
+                rows[i] = new CnSkillNodeRow
+                {
+                    skillId = cfg.skillId,
+                    displayName = SkillName(cfg),
+                    description = SkillDescription(cfg),
+                    category = (byte)cfg.category,
+                    treeX = cfg.treeX,
+                    treeY = cfg.treeY,
+                    learned = IsIn(learned, cfg.skillId),
+                    known = IsIn(learned, cfg.skillId) || IsIn(known, cfg.skillId),
+                    alwaysVisible = cfg.knowledgeUnlockType == KnowledgeUnlockType.AlwaysVisible,
+                    active = cfg.isActive,
+                    cooldown = cfg.cooldownSeconds,
+                    learnXp = cfg.LearnXpCost,
+                    requiredStrength = cfg.RequiredStrengthTier,
+                    requiredDexterity = cfg.RequiredDexterityTier,
+                    requiredIntelligence = cfg.RequiredIntelligenceTier,
+                    prerequisites = preIds
+                };
+            }
+
+            skillNodes = rows;
+        }
+
+        private static bool IsIn(HashSet<string> set, string skillId)
+        {
+            return set != null && !string.IsNullOrEmpty(skillId) && set.Contains(skillId);
+        }
+
+        /// <summary>
+        /// Каталог навыков из <c>Resources/Skills</c> — тот же путь, что у <c>SkillsClientState</c> и легаси-дерева.
+        /// Кэш свой (а не <c>TryGetSkillConfig</c>), потому что графу нужны ВСЕ узлы, включая неизвестные и невыученные.
+        /// </summary>
+        private void EnsureSkillCatalog()
+        {
+            if (_skillCatalog != null) return;
+
+            var all = Resources.LoadAll<SkillNodeConfig>("Skills");
+            var list = new List<SkillNodeConfig>(all.Length);
+            for (int i = 0; i < all.Length; i++)
+                if (all[i] != null && !string.IsNullOrEmpty(all[i].skillId)) list.Add(all[i]);
+
+            _skillCatalog = list.ToArray();
+            _skillById = new Dictionary<string, SkillNodeConfig>(_skillCatalog.Length);
+            for (int i = 0; i < _skillCatalog.Length; i++) _skillById[_skillCatalog[i].skillId] = _skillCatalog[i];
+        }
+
+        private SkillNodeConfig FindSkill(string skillId)
+        {
+            if (_skillById == null || string.IsNullOrEmpty(skillId)) return null;
+            return _skillById.TryGetValue(skillId, out var cfg) ? cfg : null;
+        }
+
+        /// <summary>Имя навыка — тем же ключом локализации, что легаси (static.skill.{id}.displayName).</summary>
+        private static string SkillName(SkillNodeConfig cfg)
+        {
+            string fallback = string.IsNullOrEmpty(cfg.displayName) ? cfg.skillId : cfg.displayName;
+            return Loc.Get($"static.skill.{cfg.skillId}.displayName", fallback);
+        }
+
+        private static string SkillDescription(SkillNodeConfig cfg)
+        {
+            string fallback = string.IsNullOrEmpty(cfg.description)
+                ? Loc.Get("ui.skill.no_description")
+                : cfg.description;
+            return Loc.Get($"static.skill.{cfg.skillId}.description", fallback);
+        }
+
         // ------------------------------------------------------------------ время
 
         /// <summary>
@@ -954,6 +1218,7 @@ namespace ProjectCCloudyNavigator.Data
             if (weather == null)
             {
                 hasTime = false;
+                hasCalendarRules = false;
                 return;
             }
 
@@ -970,6 +1235,23 @@ namespace ProjectCCloudyNavigator.Data
             // Подписи недели для прибора-календаря станции — те же имена игры, неделя 7 дней (CalendarConfig).
             if (weekdayNames == null || weekdayNames.Length != DaysPerWeek) weekdayNames = new string[DaysPerWeek];
             for (int i = 0; i < DaysPerWeek; i++) weekdayNames[i] = weather.GetWeekdayName(i);
+
+            // Правила года и имена всех месяцев — для полного календаря; своего календаря окно не держит.
+            var cfg = weather.CalendarConfig;
+            if (cfg != null)
+            {
+                hasCalendarRules = true;
+                daysPerMonth = cfg.daysPerMonth;
+                monthsPerYear = cfg.monthsPerYear;
+                dayCycleRealHours = weather.DayCycleRealHours;
+
+                if (monthNames == null || monthNames.Length != monthsPerYear) monthNames = new string[monthsPerYear];
+                for (int i = 0; i < monthsPerYear; i++) monthNames[i] = weather.GetMonthName(i + 1);
+            }
+            else
+            {
+                hasCalendarRules = false;
+            }
 
             hasTime = true;
         }

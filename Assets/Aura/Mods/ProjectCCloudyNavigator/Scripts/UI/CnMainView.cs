@@ -36,6 +36,7 @@ namespace ProjectCCloudyNavigator.UI
         private const float DockHysteresis = 12f;
 
         private readonly CnActions _actions;
+        private readonly CnPopups _popups;
         private readonly VisualElement _root;
         private readonly VisualElement _header;
         private readonly Label _nowKey;
@@ -52,9 +53,10 @@ namespace ProjectCCloudyNavigator.UI
 
         public VisualElement Root => _root;
 
-        public CnMainView(CnActions actions, CnPopups popups)
+        public CnMainView(CnActions actions, CnPopups popups, CnViewState view)
         {
             _actions = actions;
+            _popups = popups;
 
             _root = CnStyle.Box("cn-main");
 
@@ -64,6 +66,18 @@ namespace ProjectCCloudyNavigator.UI
 
             var legend = CnStyle.Row("cn-hdr__legend");
             legend.Add(CnStyle.Label("Линии — твои дела · каретка — где ты сейчас · справа — что получишь", "cn-hdr__lt"));
+
+            // Явный вход в «ЗАДАНИЯ»: линии открывают попап на своей строке, но без линий нужен вход тоже.
+            var quests = CnStyle.Tag("задания");
+            quests.AddToClassList("cn-hdr__tag");
+            quests.tooltip = "открыть окно заданий";
+            quests.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                _popups?.OpenQuests(null, false);
+            });
+            legend.Add(quests);
+
             legend.Add(CnStyle.Label("[ — окно персонажа", "cn-hdr__key"));
             _header.Add(legend);
 
@@ -81,8 +95,8 @@ namespace ProjectCCloudyNavigator.UI
             _lines = new CnLinesView(Show, line => popups?.OpenQuests(line.id, line.id.StartsWith("c:", System.StringComparison.Ordinal)));
             _root.Add(_lines.Root);
 
-            // ---- док
-            _dock = new CnDockView(actions, Show);
+            // ---- док: шапки корабля и багажа открывают свои окна, плитки переносят предметы
+            _dock = new CnDockView(actions, view, Show, index => _popups?.OpenShip(index), () => _popups?.OpenBag(-1));
             _root.Add(_dock.Root);
         }
 

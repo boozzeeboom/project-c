@@ -19,6 +19,7 @@ namespace ProjectCCloudyNavigator
         private VisualElement _root;
         private readonly CnDataFeed _feed;
         private readonly CnActions _actions;
+        private readonly CnViewState _view;
         private readonly CnStationView _station;
         private readonly CnMainView _main;
         private readonly CnAltRailView _altrail;
@@ -40,14 +41,22 @@ namespace ProjectCCloudyNavigator
         {
             _feed = new CnDataFeed(log);
             _actions = new CnActions();
-            _popups = new CnPopups(_actions);
+            _view = new CnViewState();
+            _popups = new CnPopups(_actions, _view);
             _station = new CnStationView();
-            _main = new CnMainView(_actions, _popups);
+            _main = new CnMainView(_actions, _popups, _view);
             _altrail = new CnAltRailView();
             _motion = new CnMotion();
 
             // Результат действия из попапа показывается строкой «СЕЙЧАС» главного окна — один канал отчёта.
             _popups.OnResult = _main.Report;
+
+            // Слот навыка на станции открывает боевой граф, бирка — социальный.
+            _station.OnOpenSkills = social => _popups.OpenSkills(social);
+
+            // Прибор-календарь и блок репутации станции — входы в свои полные окна.
+            _station.OnOpenCalendar = () => _popups.OpenCalendar();
+            _station.OnOpenRel = () => _popups.OpenRel();
         }
 
         /// <summary>Корень окна. null до Mount.</summary>

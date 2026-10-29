@@ -27,7 +27,10 @@ namespace ProjectCCloudyNavigator.UI
         private const float CargoRowH = 15f;
 
         private readonly CnActions _actions;
+        private readonly CnViewState _view;
         private readonly Action<CnActionResult> _onResult;
+        private readonly Action<int> _onOpenShip;
+        private readonly Action _onOpenBag;
 
         private readonly VisualElement _root;
         private readonly Label _shipSum;
@@ -36,46 +39,69 @@ namespace ProjectCCloudyNavigator.UI
         private readonly Label _bagSum;
         private readonly VisualElement _strip;
 
-        private int _selectedShip;
+        private int _shipCount;
         private string _shipSignature = string.Empty;
         private string _bagSignature = string.Empty;
         private float _height = MinHeight;
 
         public VisualElement Root => _root;
 
-        public CnDockView(CnActions actions, Action<CnActionResult> onResult)
+        public CnDockView(CnActions actions, CnViewState view, Action<CnActionResult> onResult, Action<int> onOpenShip,
+            Action onOpenBag)
         {
             _actions = actions;
+            _view = view != null ? view : new CnViewState();
             _onResult = onResult;
+            _onOpenShip = onOpenShip;
+            _onOpenBag = onOpenBag;
 
             _root = CnStyle.Row("cn-dock");
             _root.style.alignItems = Align.Stretch;
             CnStyle.Fill(_root, CnStyle.Veil, 0.86f);
 
-            // ---- КОРАБЛЬ
+            // ---- КОРАБЛЬ: шапка открывает окно корабля, счётчик «1 / 2» листает корабль
             var ships = CnStyle.Box("cn-ships");
             var shipHead = CnStyle.Row("cn-dock__head");
+            shipHead.AddToClassList("cn-clickable");
+            shipHead.tooltip = "открыть окно корабля";
             shipHead.Add(CnStyle.Label("КОРАБЛЬ", "cn-dock__t"));
-            shipHead.Add(CnStyle.Label("клик — следующий корабль", "cn-dock__hint"));
+            shipHead.Add(CnStyle.Label("клик — окно корабля", "cn-dock__hint"));
             shipHead.Add(CnStyle.Box("cn-grow"));
             _shipSum = CnStyle.Label(string.Empty, "cn-dock__sum");
+            _shipSum.tooltip = "следующий корабль";
             shipHead.Add(_shipSum);
-            shipHead.RegisterCallback<ClickEvent>(_ => NextShip());
+            shipHead.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                _onOpenShip?.Invoke(TargetShipIndexForView());
+            });
+            _shipSum.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                NextShip();
+            });
             ships.Add(shipHead);
 
             _shipBody = CnStyle.Box("cn-ships__body");
             ships.Add(_shipBody);
             _root.Add(ships);
 
-            // ---- БАГАЖ
+            // ---- БАГАЖ: шапка открывает полный багаж
             var bag = CnStyle.Box("cn-bag");
             var bagHead = CnStyle.Row("cn-dock__head");
+            bagHead.AddToClassList("cn-clickable");
+            bagHead.tooltip = "открыть багаж и трюм";
             bagHead.Add(CnStyle.Label("БАГАЖ", "cn-dock__t"));
             _bagHint = CnStyle.Label(string.Empty, "cn-dock__hint");
             bagHead.Add(_bagHint);
             bagHead.Add(CnStyle.Box("cn-grow"));
             _bagSum = CnStyle.Label(string.Empty, "cn-dock__sum");
             bagHead.Add(_bagSum);
+            bagHead.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                _onOpenBag?.Invoke();
+            });
             bag.Add(bagHead);
 
             _strip = CnStyle.Row("cn-bag__strip");
@@ -111,26 +137,15 @@ namespace ProjectCCloudyNavigator.UI
         /// Корабль дока: у консоли трюма — корабль этой консоли (переносить можно только в него), иначе —
         /// выбранный кликом по шапке. -1 — кораблей нет либо консоль чужого корабля.
         /// </summary>
-        public int TargetShipIndex(CnDataFeed feed)
-        {
-            var zone = _actions.Zone;
-            if (zone.allowed && !zone.isMarket && zone.consoleShipNetworkObjectId != 0)
-            {
-                for (int i = 0; i < feed.ships.Length; i++)
-                    if (feed.ships[i].shipNetworkObjectId == zone.consoleShipNetworkObjectId) return i;
-                return -1;
-            }
+        public int TargetShipIndex(CnDataFeed feed) => CnViewState.TargetShip(feed, _view, _actions.Zone);
 
-            if (feed.ships.Length == 0) return -1;
-            return Mathf.Clamp(_selectedShip, 0, feed.ships.Length - 1);
-        }
-
-        private int _shipCount;
+        /// <summary>Тот же выбор, но по последним прочитанным данным — для обработчика клика.</summary>
+        private int TargetShipIndexForView() => _view.selectedShip;
 
         private void NextShip()
         {
             if (_shipCount <= 1) return;
-            _selectedShip = (_selectedShip + 1) % _shipCount;
+            _view.selectedShip = (_view.selectedShip + 1) % _shipCount;
             _shipSignature = string.Empty;
             _bagSignature = string.Empty;
         }
@@ -294,7 +309,13 @@ namespace ProjectCCloudyNavigator.UI
             {
                 var more = CnStyle.Box("cn-bag__more");
                 more.Add(CnStyle.Label("ЕЩЁ " + (feed.bagItems.Length - shown), "cn-bag__moret"));
-                more.tooltip = "полный багаж — в легаси-окне (P), пока полный инвентарь не перенесён";
+                more.tooltip = "открыть полный багаж";
+                more.AddToClassList("cn-clickable");
+                more.RegisterCallback<ClickEvent>(evt =>
+                {
+                    evt.StopPropagation();
+                    _onOpenBag?.Invoke();
+                });
                 if (shown % cols == 0) more.AddToClassList("is-line-first");
                 if (shown < cols) more.AddToClassList("is-first-line");
                 _strip.Add(more);

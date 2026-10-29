@@ -5,6 +5,7 @@
 // Такой же приём, как у ProjectCMainMenuWindow — окно монтируется на любой VisualElement и не владеет панелью.
 //
 // Всё собственное время окна считается в Update(dt) от хоста: setTimeout/@keyframes в порте нет (04 §1).
+using System.Text;
 using ProjectCCloudyNavigator.Actions;
 using ProjectCCloudyNavigator.Data;
 using ProjectCCloudyNavigator.UI;
@@ -31,6 +32,12 @@ namespace ProjectCCloudyNavigator
         private float _lastWidth = -1f;
         private bool _openPending;
         private float _openWait;
+
+        // Последние посчитанные колонки — только для пробника Probe().
+        private float _width;
+        private float _homeW;
+        private float _altW;
+        private float _colW;
 
         /// <summary>Окно читает игру, но не пишет в неё: единственный владелец данных — CnDataFeed.</summary>
         public CnDataFeed Data => _feed;
@@ -227,12 +234,47 @@ namespace ProjectCCloudyNavigator
             float altW = width >= 1200f ? 36f : width >= 920f ? 34f : width >= 760f ? 32f : 30f;
             float colW = width - homeW - altW;
 
+            _width = width;
+            _homeW = homeW;
+            _altW = altW;
+            _colW = colW;
+
             _station.Root.style.width = homeW;
             _altrail.SetWidth(altW);
 
             _root.EnableInClassList("is-narrow", colW < 720f);
             _root.EnableInClassList("is-dock-narrow", colW < 660f);
             _main.SetNarrow(colW < 720f);
+        }
+
+        /// <summary>
+        /// Пробник раскладки: числа окна и дока одной строкой key=value — те же величины, что печатает dockProbe()
+        /// мода (main.js:805-810). Нужен, чтобы сравнивать порт с модом числами, а не на глаз: rowsH —
+        /// фактический замер, rowsEst — старая арифметическая оценка (по ней видно дрейф).
+        /// Из editor-скрипта вызывается без Play Mode.
+        /// </summary>
+        public string Probe()
+        {
+            if (_root == null) return "cn-probe mounted=0";
+
+            var sb = new StringBuilder(256);
+            sb.Append("cn-probe mounted=1");
+            sb.Append(" W=").Append(Mathf.RoundToInt(_width));
+            sb.Append(" H=").Append(Mathf.RoundToInt(_root.layout.height));
+            sb.Append(" homeW=").Append(Mathf.RoundToInt(_homeW));
+            sb.Append(" altW=").Append(Mathf.RoundToInt(_altW));
+            sb.Append(" colW=").Append(Mathf.RoundToInt(_colW));
+            sb.Append(" narrow=").Append(_colW < 720f ? 1 : 0);
+            sb.Append(" dockNarrow=").Append(_colW < 660f ? 1 : 0);
+            sb.Append(" header=").Append(Mathf.RoundToInt(_main.HeaderHeight));
+            sb.Append(" rows=").Append(_main.DockRows);
+            sb.Append(" rowsH=").Append(Mathf.RoundToInt(_main.RowsMeasured));
+            sb.Append(" rowsEst=").Append(Mathf.RoundToInt(_main.RowsEstimated));
+            sb.Append(" free=").Append(Mathf.RoundToInt(_main.DockFree));
+            sb.Append(" cap=").Append(Mathf.RoundToInt(_main.DockCap));
+            sb.Append(" want=").Append(Mathf.RoundToInt(_main.DockTarget));
+            sb.Append(" dock=").Append(Mathf.RoundToInt(_main.DockHeight));
+            return sb.ToString();
         }
 
         public void Dispose()

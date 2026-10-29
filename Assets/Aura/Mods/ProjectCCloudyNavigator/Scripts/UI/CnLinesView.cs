@@ -110,8 +110,21 @@ namespace ProjectCCloudyNavigator.UI
 
         public VisualElement Root => _scroll;
 
-        /// <summary>Высота содержимого ленты — по ней док решает, сколько свободного места внизу колонки.</summary>
+        /// <summary>
+        /// ОЦЕНКА высоты содержимого: арифметика самого вида (content + 10) плюс прикидка карточки наведения.
+        /// Оставлена только как контрольное число в пробнике — раскладку по ней считать нельзя, она не видит
+        /// ни переноса длинного заголовка, ни скроллбара, ни изменения высоты строки не через Render().
+        /// </summary>
         public float ContentHeight { get; private set; }
+
+        /// <summary>
+        /// ФАКТИЧЕСКАЯ высота содержимого ленты — аналог rowsEl.scrollHeight мода (main.js:202). Меряет движок
+        /// раскладки, поэтому сюда попадает всё: перенос подписи, карточка наведения, появившийся скроллбар.
+        /// </summary>
+        public float MeasuredHeight => _rows != null ? _rows.layout.height : 0f;
+
+        /// <summary>Сколько строк сейчас в ленте (мод: #rows &gt; .ln:not(.leaving)).</summary>
+        public int RowCount => _built != null ? _built.Count : 0;
 
         public CnLinesView(Action<CnActionResult> onResult, Action<CnLineModel> onOpen, CnHover hover)
         {

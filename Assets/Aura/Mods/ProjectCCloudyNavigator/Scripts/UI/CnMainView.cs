@@ -52,7 +52,39 @@ namespace ProjectCCloudyNavigator.UI
         private float _modelTimer;
         private List<CnLineModel> _models = new List<CnLineModel>();
 
+        // Последние числа раскладки дока. Пишутся в FitDock, читаются только пробником Probe():
+        // по ним видно, из чего сложилась высота дока, и можно сравнить с dockLimits() мода.
+        private float _dockFree;
+        private float _dockCap;
+        private float _dockTarget;
+        private int _dockRows;
+        private float _rowsMeasured;
+
         public VisualElement Root => _root;
+
+        /// <summary>Свободное место ленты в правой колонке (мод: lim.free).</summary>
+        public float DockFree => _dockFree;
+
+        /// <summary>Потолок дока: min(0.4·H, free) с полом 96 (мод: lim.cap).</summary>
+        public float DockCap => _dockCap;
+
+        /// <summary>Высота, которую док просит сейчас (мод: lim.want).</summary>
+        public float DockTarget => _dockTarget;
+
+        /// <summary>Число строк ленты, участвовавшее в расчёте (мод: lim.rows).</summary>
+        public int DockRows => _dockRows;
+
+        /// <summary>Фактическая высота содержимого ленты (мод: rowsEl.scrollHeight).</summary>
+        public float RowsMeasured => _rowsMeasured;
+
+        /// <summary>Арифметическая оценка того же (для сверки дрейфа).</summary>
+        public float RowsEstimated => _lines.ContentHeight;
+
+        /// <summary>Текущая высота дока.</summary>
+        public float DockHeight => _dock.Height;
+
+        /// <summary>Высота шапки «СЕЙЧАС» (мод: hdr.offsetHeight).</summary>
+        public float HeaderHeight => _header.layout.height;
 
         public CnMainView(CnActions actions, CnPopups popups, CnViewState view, CnTip tip, CnHover hover)
         {
@@ -200,8 +232,15 @@ namespace ProjectCCloudyNavigator.UI
         }
 
         /// <summary>
-        /// fitDock мода: док занимает свободное место ЛЕНТЫ (не станции), от 96 px до 40 % высоты колонки,
-        /// с гистерезисом, чтобы высота не дрожала от пересборок.
+        /// fitDock мода (main.js:199-243) — перенесён вместе с его формулой, а не заменён «сколько осталось места»:
+        ///   colH   = max(120, H − hdr)                  правая колонка целиком
+        ///   rowsH  = scrollHeight ленты                 ФАКТИЧЕСКИЙ замер, не оценка
+        ///   free   = max(0, colH − rowsH − 6)           свободное место ленты
+        ///   cap    = max(96, min(0.4·H, free))          потолок — место ленты, но не больше 40 % окна
+        ///   byRows = cap − (cap − 96)·clamp(rows/5)     высота едет по числу строк: 0 строк → весь потолок, 5 → 96
+        ///   want   = max(96, byRows)
+        /// Гистерезис 12 px — тоже мода: иначе на промежуточных состояниях строка дрожит.
+        /// Станция в расчёте не участвует, поэтому рост дока её не сжимает.
         /// </summary>
         private void FitDock()
         {
@@ -209,14 +248,30 @@ namespace ProjectCCloudyNavigator.UI
             if (float.IsNaN(h) || h <= 0f) return;
 
             float header = _header.layout.height;
-            float free = h - header - _lines.ContentHeight - 6f;
-            float max = Mathf.Max(CnDockView.MinHeight, Mathf.Floor(h * 0.4f));
-            float target = Mathf.Clamp(Mathf.Floor(free), CnDockView.MinHeight, max);
+            if (float.IsNaN(header) || header < 0f) header = 0f;
+
+            float rowsH = _lines.MeasuredHeight;
+            if (float.IsNaN(rowsH) || rowsH < 0f) rowsH = 0f;
+
+            float colH = Mathf.Max(120f, h - header);
+            float free = Mathf.Max(0f, colH - rowsH - 6f);
+            float windowCap = Mathf.Round(h * 0.4f);
+            float cap = Mathf.Max(CnDockView.MinHeight, Mathf.Min(windowCap, free));
+
+            int rows = _lines.RowCount;
+            float byRows = Mathf.Round(cap - (cap - CnDockView.MinHeight) * Mathf.Clamp(rows / 5f, 0f, 1f));
+            float want = Mathf.Max(CnDockView.MinHeight, byRows);
+
+            _dockFree = free;
+            _dockCap = cap;
+            _dockTarget = want;
+            _dockRows = rows;
+            _rowsMeasured = rowsH;
 
             float current = _dock.Height;
-            bool atBound = Mathf.Approximately(target, CnDockView.MinHeight) || Mathf.Approximately(target, max);
-            if (Mathf.Abs(target - current) > DockHysteresis || (atBound && !Mathf.Approximately(target, current)))
-                _dock.SetHeight(target);
+            bool atBound = Mathf.Approximately(want, CnDockView.MinHeight) || Mathf.Approximately(want, cap);
+            if (Mathf.Abs(want - current) > DockHysteresis || (atBound && !Mathf.Approximately(want, current)))
+                _dock.SetHeight(want);
         }
 
         // ------------------------------------------------------------------ модели линий

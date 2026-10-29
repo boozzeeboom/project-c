@@ -29,7 +29,7 @@ namespace ProjectCCloudyNavigator
         private readonly CnMotion _motion;
         private readonly CnTip _tip;
         private readonly CnHover _hover;
-        private CnPreviewStage _preview;
+        private CnFigure _figure;
         private float _lastWidth = -1f;
         private bool _openPending;
         private float _openWait;
@@ -110,21 +110,18 @@ namespace ProjectCCloudyNavigator
             _tip.Mount(_root);          // подсказка выше панелей (ui.js: .tip z-index 80), мышь не ловит
             _root.Add(_motion.Layer);   // слой движения — последним, поверх панелей
 
-            // Превью живёт в сцене, поэтому только в Play Mode: в edit mode GameObject превью попал бы в сцену.
-            if (Application.isPlaying)
-            {
-                _preview = new CnPreviewStage();
-                var figure = _preview.Element;
-                figure.style.width = Length.Percent(100f);
-                figure.style.height = Length.Percent(100f);
-                figure.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain);
-                _station.PreviewHost.Add(figure);
+            // Фигура в нише станции — только средствами UI Toolkit. 3D-вьюер снят: он заводил GameObject-корень
+            // в мировой сцене, а каждый активный корень мировой сцены — участник ребейза floating origin
+            // (GlobalMotionControlledRebaseSlice.cs:1113-1129), и вторая копия с тем же именем валила
+            // транзакцию: duplicate_participant_id:WORLD_SCENE_ROOT/[CN] Preview Stage. Плоская фигура не
+            // создаёт ни одного объекта сцены, поэтому снимается и условие Application.isPlaying.
+            _figure = new CnFigure();
+            _station.PreviewHost.Add(_figure.Root);
 
-                // Клик по фигуре открывает окно внешности игры (пока легаси-окно CustomisationWindow).
-                // Это единственный новый переход из окна наружу, и он не меняет ни одного игрового состояния.
-                _preview.OnClick = OnCharacterClicked;
-                _tip.Hover(figure, () => CnTipCard.Make("ВНЕШНОСТЬ", "фигура персонажа").Foot("клик — изменить внешность"));
-            }
+            // Клик по фигуре открывает окно внешности игры (пока легаси-окно CustomisationWindow).
+            // Это единственный новый переход из окна наружу, и он не меняет ни одного игрового состояния.
+            _figure.OnClick = OnCharacterClicked;
+            _tip.Hover(_figure.Root, () => CnTipCard.Make("ВНЕШНОСТЬ", "фигура персонажа").Foot("клик — изменить внешность"));
 
             _root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
@@ -159,9 +156,6 @@ namespace ProjectCCloudyNavigator
             _popups.Refresh(_feed, step);
             _motion.Tick(step);
             _tip.Tick(step);            // задержка 140 мс — из кадра окна, своих таймеров нет
-
-            // Превью двигается только пока окно открыто: скрытая камера ничего не рендерит (шаг 6).
-            if (_preview != null) _preview.Tick(step);
         }
 
         /// <summary>Слой движения окна: визуальный, состояние игры не читает и не меняет.</summary>
@@ -213,7 +207,6 @@ namespace ProjectCCloudyNavigator
             _altrail.Root.style.opacity = 0f;
             _openPending = true;
             _openWait = 0f;
-            if (_preview != null) _preview.SetVisible(true);
         }
 
         /// <summary>
@@ -224,7 +217,6 @@ namespace ProjectCCloudyNavigator
             if (_root == null) return;
 
             _openPending = false;
-            if (_preview != null) _preview.SetVisible(false);
 
             // Пока идёт рассеивание, корень ещё видим: он больше не должен перехватывать клики — иначе
             // полсекунды после закрытия окно съедает нажатия по окну, которое под ним.
@@ -341,10 +333,10 @@ namespace ProjectCCloudyNavigator
             _tip.Dispose();
             _hover.Dispose();
 
-            if (_preview != null)
+            if (_figure != null)
             {
-                _preview.Dispose();
-                _preview = null;
+                _figure.Dispose();
+                _figure = null;
             }
 
             if (_root != null)

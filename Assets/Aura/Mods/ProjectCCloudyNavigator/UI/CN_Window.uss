@@ -269,6 +269,14 @@
     overflow: hidden;
 }
 
+/* Фигура персонажа: плоская, из Painter2D (CnFigure.cs). Размер сцены задаётся в пикселях
+   из мировой пропорции 0.70 x 1.37, поэтому фигура только масштабируется целиком. */
+.cn-figure {
+    flex-grow: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .cn-cr {
     height: 28px;
     flex-shrink: 0;

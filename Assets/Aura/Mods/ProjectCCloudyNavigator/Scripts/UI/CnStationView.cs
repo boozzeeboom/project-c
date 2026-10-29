@@ -116,7 +116,7 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Клик по слоту кольца: индекс EquipmentData.SlotToIndex (0…9 экипировка, 10…12 модули).</summary>
         public Action<int> OnSlotClick { get; set; }
 
-        /// <summary>Ниша под превью фигуры (шаг 6): сюда окно кладёт элемент CnPreviewStage.</summary>
+        /// <summary>Ниша под фигуру персонажа: сюда окно кладёт элемент <see cref="CnFigure"/>.</summary>
         public VisualElement PreviewHost => _previewHost;
 
         public CnStationView(CnTip tip, CnHover hover)

@@ -3,6 +3,18 @@
 > Правило: окно показывает **только** то, что есть в этой таблице со статусом «есть».
 > «Нет в игре» — либо скрывается, либо вычисляется на клиенте только для показа и помечается в интерфейсе.
 > Пути и имена найдены в коде 2026-10-28; «проверить» — найдено частично, нужна сверка при реализации.
+>
+> **Шаг 0 закрыт (2026-10-29):** мод `v4-2` приведён к этим именам буквально — `state.contracts.active/available/`
+> `canAcceptContracts/marketTimeMultiplier/secondsUntilNextTick/debtAmount/debtLevel`, элементы `ContractDto`
+> (`contractId`, `fromLocationId`/`toLocationId`, `timeRemaining` в секундах, `isReceiptContract`, …);
+> `quests[].objectives[] {description, completed, currentValue, requiredQuantity}`;
+> `state.bag = {locationId, items[], maxSlots, credits}` с `InventoryItemDto`; `ITEM_DEFS[itemId] = {itemName,`
+> `itemType, description, icon, equipSlot, maxStack, weightKg}`; `ships[]` — `hullCurrent/hullMax`,
+> `fuelNormalized/fuelMax`, `cargoUsed/cargoMax`, `moduleCount`, `state`, `flags`, `shipColorR/G/B`,
+> `isEngineRunning`; `modules[] {slotType, installedModule}`; `cargo[shipId].cargoDetail[]` с битовой маской
+> `flags` (бит0 опасный, бит1 хрупкий) и `unitWeight = weightKg`. Колонка «Поле в моде» ниже называет смысл
+> значения; точные идентификаторы брать из этого списка. Всё без игрового источника помечено в моде
+> `Derived`/`*_DERIVED`.
 
 ## 1. Персонаж (домашняя станция)
 
@@ -18,7 +30,7 @@
 | Время, день, месяц, год, фаза | `ProjectC.Core.ServerWeatherController.Instance`: `CurrentGameTime` (`GameTimeData`), `TimeOfDay`, `GetWeekdayName`, `GetMonthName`; фаза — `DayNightController.Instance.CurrentPhase.phaseName` | `OnCalendarChanged` + опрос 2 с (как легаси) | есть |
 | Календарь 12×30, неделя 7 | `CalendarConfig.daysPerMonth=30`, `monthsPerYear=12`, `daysPerWeek=7`, `monthNames/weekdayNames` | — | есть; брать из конфига, не хардкодить |
 | Заметки календаря (`v4.calendar.notes`) | — | — | **нет в игре** → `PlayerPrefs` с префиксом окна, только визуал |
-| Высота / альтиметр | легаси HUD `AltitudeUI`: `ShipController.transform.position.y` + `AltitudeCorridorSystem.Instance` (`AltitudeCorridorData.GetStatus`) | опрос 0.2 с | есть; **проверить floating origin** (`GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset`) — высота должна быть абсолютной |
+| Высота / альтиметр | легаси HUD `AltitudeUI`: `ShipController.transform.position.y` + `AltitudeCorridorSystem.Instance` (`AltitudeCorridorData.GetStatus`) | опрос 0.2 с | есть; **проверить floating origin** (`GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset`) — высота должна быть абсолютной. Коридор брать только из `GetActiveCorridor(shipPos)`: расхождение с демо-коридором мода — проблема D16 в `04` §6 |
 
 ## 2. Репутация и отношения
 

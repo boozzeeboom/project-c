@@ -45,14 +45,29 @@ Inter Regular / Light уже в проекте (`Assets/Aura/Mods/ProjectCMainMe
 | Шаг | Что | Ворота |
 |---|---|---|
 | 0 | **Мод:** слой-адаптер с полями как в C# DTO (`03`), стенды переписаны в этих формах; вычисляемые поля помечены | тесты мода зелёные; поиск по моду не находит полей вне `03` |
+| **0 ✅** | Сделано: `state.contracts.active/available/canAcceptContracts/…`, `objectives[]` → `description/currentValue/requiredQuantity/completed`, `state.bag = {locationId, items[], maxSlots, credits}`, `ITEM_DEFS` (`weightKg`), `ships[]` → `hullCurrent/hullMax/fuelNormalized/fuelMax/cargoUsed/cargoMax/…`, `isEngineRunning`, `modules[] {slotType, installedModule}`, `cargo[shipId].cargoDetail[]` с битовой маской `flags` | 616 проверок в 35 файлах + `v44-names` 20/20; `findstr` по `src/*.js`: `state.cx`, `state.rcpt`, `engineOn`, `ITEMS[` — 0 (единственное совпадение — проба-утверждение `hasEngineOn`) |
 | 1 | **Мод:** снять остаток непереносимого (`01` §3): `box-shadow`-пульсы → ореолы, градиенты → «рампы», grid/gap → flex | число вхождений из `01` §3 → 0 для box-shadow/grid/gap/::before |
+| **1 ✅** | Сделано: `box-shadow`/`::before`/`::after` → реальные дети-ореолы (`.halo-sh/.halo-rad/.halo-in`, канты, волоски, кольца); `display:grid`/`grid-template*`/`gap` → flex + `margin` с `.is-first-in-group`; `outline` → рамки-ореолы. Спецификация для C# — `06_HALOS_AND_FLEX.md` | Счётчики `findstr`: 43/10/11 → **0/0/0**; `grid` 23 → 0; `grid-template*` 26 → 0; `gap:` 115+1 → 0; `outline` 19 → 0. Вёрстка прежняя (станция 4 размера, док 96/187/278/324, строки 44/48, календарь 12×30); тесты `v44-halos` 23/23, `v44-flex` 21/21 и прежние наборы — числа не изменились |
 | 2 | Папка `ProjectCCloudyNavigator`, хост `UIDocument` + `CN_PanelSettings` (Overlay, ScaleWithScreenSize 1920×1080), пустое окно, `CloudyNavigatorHotkey` | 0 ошибок компиляции; легаси P не изменён (diff пуст вне папки) |
+| **2 ✅** | Сделано: `Scripts/CloudyNavigatorHost.cs` (`PanelName = "CloudyNavigator"`, приоритет 60, взаимоисключение с `P` через `IsVisible()/Hide()`), `CloudyNavigatorHotkey.cs` (`Key.LeftBracket` мимо `InputBindingsConfig`), `CloudyNavigatorWindow.cs` (`Mount/Update(dt)/Dispose`), `UI/CN_Window.uss`, `UI/CN_PanelSettings.asset` | `check_compile_errors` — «No compile errors»; `git status --porcelain` — единственная запись `?? Assets/Aura/Mods/ProjectCCloudyNavigator/` |
 | 3 | Провайдеры `Data/*` на чтение + лог `[CN]` сверки с легаси | на одном снапшоте значения провайдера = значения легаси-окна |
 | 4 | USS и дерево по моду (по образцу шагов 2–3 меню) | USS без ошибок импорта, 0 `filter`/`cursor` |
 | 5 | Движение: поле дыма/gather/disperse/swap на `ProjectCMainMenuSmokeField` + `TextBlower` | пул ≤ 48, нет роста дерева после 20 открытий |
 | 6 | Превью 3D (`CnPreviewStage`) | камера выключена, пока окно скрыто; в превью 0 сетевых компонентов |
 | 7 | Действия `CnActions` (только из `02` §7) + регистрация в `UIManager` | Esc закрывает, ввод блокируется, легаси-поведение не изменилось |
 | 8 | Префаб `CloudyNavigatorUI` — пользователь ставит в `BootstrapScene` и сохраняет сцену | приёмка пользователем в Play Mode |
+
+## 4a. Шаг 1: механика замены зафиксирована
+
+Спецификация снятых конструкций — `06_HALOS_AND_FLEX.md`: базовые классы ореолов (`.halo-sh` 4 полосы,
+`.halo-rad`, `.halo-in`), таблицы геометрии/цветов/стопов по каждому хозяину, таблица keyframes с длительностями
+и easing, нерешённые случаи с числами. Там же правило для `grid/gap`:
+
+- **группа с `--g: Npx` → у детей `margin-right`/`margin-bottom` = `Npx`, у первого ребёнка группы `0`**
+  (класс `.is-first-in-group`); позиция в строке переноса — классом, а не `:nth-child()`;
+- `src/flex.js`, `src/halos.js`, CSS-переменные `--g/--hc/--hs/--ht/--hb/--hg` и `MutationObserver` —
+  **механизм мода, в порт не переносится**: в C# классы и отступы зашиваются при построении дерева,
+  «рампа» ореола — запечённая `Texture2D` с гамма-коррекцией вместо градиента.
 
 ## 5. Решения пользователя (2026-10-28)
 
@@ -73,3 +88,4 @@ Inter Regular / Light уже в проекте (`Assets/Aura/Mods/ProjectCMainMe
 | D3 | У `Faction_Bandits` и `Faction_Villagers` нет тиров | те же ассеты | задать тиры; окно показывает «тиры не заданы» |
 | D4 | Клэмп фракционной репутации ±100 в серверном коде не найден поиском | `Quests/Core/QuestWorld.cs` и др. | проверить, где ограничивается значение |
 | D5 | Канал деталей груза: легаси читает `sc.TelemetryCargoState`, а broadcast-кэш `ShipTelemetryClientState` помечен `Obsolete` | `MyShipsTab.cs`, `ShipTelemetryClientState.cs` | выбрать один канал (`ShipCargoClientState.RequestDetail`) |
+| D16 | Коридор высоты: мод держал 1200–4450, в игре `DangerUpper` наступает только выше `max + criticalUpperMargin`. В `BootstrapScene` у `AltitudeCorridorSystem` назначены 5 ассетов: `veil_lower` 100–1500 (140/210.00002), `cloud_layer` 1000–3500 (250/375), `open_sky` 3500–5000 (150/225.00002), `high_altitude` 5000–6500 (150/225.00002), `global` 0–99999 (9999.9/14999.851); `Data/AltitudeCorridors/Corridor_*.asset` в сцену не подключены | `AltitudeCorridorSystem`, `AltitudeCorridorData.GetStatus` | в рантайме проверить `GetActiveCorridor(shipPos)`: по данным в радиусе 500 м побеждает `veil_lower`, дальше `global`; шкала обязана брать границы и статус из игры, а не из демо-переключателя мода |

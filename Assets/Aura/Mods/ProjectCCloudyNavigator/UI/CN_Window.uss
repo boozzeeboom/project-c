@@ -1,0 +1,14 @@
+/* Cloudy Navigator — единственный источник вида окна (шаг 2: только корень).
+   Опора 1920×1080, масштаб делает PanelSettings ScaleWithScreenSize.
+
+   Правила переноса (docs/UI/full rebuild plans/Cloudy_redesign/04_PORT_RULES_AND_PLAN.md §1):
+   без filter / cursor / box-shadow / градиентов / @keyframes / grid / gap / ::before; порядок детей вместо z-index. */
+
+.cn-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: row;
+}

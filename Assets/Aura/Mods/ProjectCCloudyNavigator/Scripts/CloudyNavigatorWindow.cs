@@ -168,6 +168,7 @@ namespace ProjectCCloudyNavigator
             _altrail.Refresh(_feed);
             _popups.Refresh(_feed, step);
             _motion.Tick(step);
+            CnHaloFx.Tick(step);        // keyframes ореолов (06 §8) — тот же кадр окна, своих таймеров нет
             _tip.Tick(step);            // задержка 140 мс — из кадра окна, своих таймеров нет
         }
 
@@ -238,6 +239,7 @@ namespace ProjectCCloudyNavigator
             _hover.Clear();
             _tip.Hide();
             _popups.Close();
+            CnHaloFx.Reset();   // кадр закрытого окна больше не тикает: недожитые импульсы гасим здесь
             _motion.Close(_station.Root, 6, 0.9f);
             _motion.Close(_main.Root, 8, 1f);
             _motion.Close(_altrail.Root, 4, 0.7f);
@@ -342,6 +344,7 @@ namespace ProjectCCloudyNavigator
         public void Dispose()
         {
             _motion.Reset();
+            CnHaloFx.Reset();
             _popups.Dispose();
             _tip.Dispose();
             _hover.Dispose();

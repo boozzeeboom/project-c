@@ -381,11 +381,11 @@ Play Mode не запускался: живое перетаскивание с�
 (`.halo-string`, §6), кольцо терминала (`.halo-endring`), точка двигателя (`.halo-dotglow`, §7).
 Были закрыты до C3: `.ln-hair`, `.halo-rnhair`, `.halo-arrow`, `.halo-tipc1/c2`, `.halo-open`, `.halo-endfill`.
 
-Осталось (следующий шаг): кадровые keyframes §8 одним драйвером (`rwpulse`, `rwtier`, `calpulse`, `calhl`,
-`calhl2`, `won`, `lb-smoke`, `bghit-hl`, `chflash`). Причина не в геометрии: в порте нет хостов `.rw-ring` /
-`.rw-fly` (ряды награды) и `.bg-tile` с состоянием `.on`, а у клеток календаря попапа и HP-полосы нет
-триггера, который мод вешает классами `.pulse` / `.hlp` / `.flash`. По той же причине не поставлены
-кольца `.cm-d`/`.cp-d`, `.sknring`, `.chhp`, `.hm-cr`, `.rl-tsw`, `.rw-*`.
+Кадровые keyframes §8 приехали одним драйвером (`CnHaloFx`); `calpulse`, `calhl2` и `chflash` уже стоят
+на своих хостах и триггерах (проход C3-2). Осталось переносимое, но нечем: `rwpulse`, `rwtier`, `won`,
+`lb-smoke`, `bghit-hl` — в порте нет хостов `.rw-ring` / `.rw-fly` (ряды награды) и `.bg-tile` с
+состоянием `.on`, а у `.ln` нет состояния `.finishing`. По той же причине не поставлены кольца
+`.cm-d`/`.cp-d.sel`, `.sknring`, `.hm-cr`, `.rl-tsw`, `.rw-*`.
 
 ---
 
@@ -623,3 +623,50 @@ Play Mode не запускался: живое перетаскивание с�
   узлов и тросов, канты и разворот заметки кликом требуют приёмки пользователем.
 - Изменённые файлы прохода: `CnRamps.cs`, `CnStyle.cs`, `CnPopup.cs`, `CnTip.cs`, `CnStationView.cs`,
   `CnLinesView.cs`, `CnDockView.cs`, `CnRelGraphView.cs`, `CN_Window.uss`, этот документ.
+
+### Проход C3-2
+
+- `Scripts/UI/CnHaloFx.cs` (новый) — кадровый драйвер §8: одна статическая таблица импульсов, кадр
+  приходит из `CloudyNavigatorWindow.Update(dt)` (`CloudyNavigatorWindow.cs:171`), своих таймеров и
+  `schedule` нет. Импульс живёт на элементе-ореоле, который создан один раз по числам мода и погашен;
+  `Pulse` его показывает, `Tick` разгоняет по `ease-out` (`ProjectCMainMenuPalette.EaseOut`, CSS
+  `cubic-bezier(0, 0, .58, 1)`) и снова гасит. `dt` зажимается 0…0.1 c. Записи с ушедшим из дерева
+  элементом снимаются сами; `RequestClose` и `Dispose` вызывают `Reset()` (`CloudyNavigatorWindow.cs:242`,
+  `:347`) — у закрытого окна кадр больше не тикает, и недожитый импульс остался бы висеть полупогасшим
+  кольцом на клетке календаря или строке HP до следующего открытия.
+- Стоят три keyframe с настоящими триггерами; остальные вешать некуда (нет хоста или нет состояния):
+  - `calpulse` — клетка «сегодня» `.cn-cal__cell`, `0.9` s, scale `1 → 2.07`, opacity `.9 → 0`, триггер —
+    смена дня в `CnStationView.SetToday` (`CnStationView.cs:444`);
+  - `calhl2` — клетка дня попапа `.cn-calp__d`, `0.85` s, scale `1 → 1.9`, opacity `.95 → 0`, триггер —
+    выбор другого дня: `SelectDay` ставит `_pulseDay` (`CnCalendarPanel.cs:485`), импульс играет в
+    `ApplyMarks` (`:474`);
+  - `chflash` — строка `HP`, `0.36` s, scale `1 → 1`, opacity `.9 → 0`, только на смену значения
+    (`CnStationView.cs:491`).
+- `CnStationView`: у ряда HP два кольца — статическое `veilEdge` 1 px (`.halo-chhp`, закрыт остаток §6)
+  и импульсное `accent` 1 px; у всех 7 клеток мини-календаря кольцо `accent` 3 px с погашением.
+  `RefreshHp` сбрасывает `_hpLast`, если HP не пришёл, поэтому возврат данных не даёт ложной вспышки.
+- `CnCalendarPanel`: кольцо `brass` 4 px на каждой интерактивной клетке дня; сетка при выборе не
+  перестраивается (`GridSignature` тот же), поэтому кликнутая клетка доживает до импульса.
+- Проба (edit mode, `execute_code`): `Pulse` на хосте без ореола → `false`; с ореолом → `true`,
+  `count = 1`, `display = Flex`, `opacity = 0.9`, `scale = 1`; повторный `Pulse` на том же элементе дубля
+  не даёт (`count = 1`); траектория при `dt = 0.08` и длительности `0.4` —
+  `opacity .9 → .622 → .386 → .193 → .056 → 0`, `scale 1 → 1.308 → 1.571 → 1.785 → 1.938 → 2`;
+  следующий кадр — `display = None`, `count = 0`; `Reset()` → `opacity 0`, `display = None`, `count = 0`;
+  `dt = 1` зажимается до одного шага 0.1 (`opacity .56`).
+- Станция: у ряда HP `rings = 2`, импульсных `1`, рамка `1 px`, погашено; клеток мини-календаря `7`,
+  импульсное кольцо у всех `7`; `SetToday(3)` → `count 0 → 1`, кольцо клетки `3` стало `Flex`
+  (рамка `3`); повторный `SetToday(3)` дубля не даёт. `RefreshHp`: первый прочитанный HP вспышки не даёт,
+  смена значения даёт `+1`, повтор того же значения — нет, после пропажи данных и возврата — тоже нет.
+- Календарь попапа: `360` клеток; `SelectDay(следующий день)` → `count 0 → 0 → 1` (импульс играет на
+  ближайшем `Refresh` через `ApplyMarks`), кольцо выбранной клетки `Flex`; повторный выбор того же дня —
+  без дубля.
+- Отдельно: первая проба показала, что `Library/ScriptAssemblies/Assembly-CSharp.dll` был на 32 c старше
+  правки `CnHaloFx.cs`, и `Tick` в загруженной сборке ещё проверял `panel` вместо `hierarchy.parent` —
+  импульс снимался первым же кадром (`T` оставался `0`). Все числа выше сняты после принудительной
+  перекомпиляции. Та же ловушка объясняет прежний провал пробы с `NullReferenceException`:
+  `PanThreshold`/`NoteDragThreshold` — `const`, то есть `static`, и читаются только с
+  `BindingFlags.Static|NonPublic` (`3` и `3`).
+- `check_compile_errors` → `No compile errors`. Play Mode не запускался: сами вспышки видны только в
+  рантайме и требуют приёмки пользователем.
+- Изменённые файлы прохода: `CnHaloFx.cs` (новый), `CnStationView.cs`, `CnCalendarPanel.cs`,
+  `CloudyNavigatorWindow.cs`, этот документ.

@@ -61,6 +61,7 @@ namespace ProjectCCloudyNavigator.UI
         private readonly Label _int;
 
         private readonly Label _hpValue;
+        private readonly VisualElement _hpRow;
         private readonly VisualElement _hpFill;
         private readonly Label _credits;
         private readonly VisualElement _cr;
@@ -88,6 +89,7 @@ namespace ProjectCCloudyNavigator.UI
         private string _equipSignature = string.Empty;
         private string _repSignature = string.Empty;
         private int _calWeekday = -1;
+        private int _hpLast = int.MinValue;   // прошлое значение HP: вспышка chflash только на смене
         private float _lastHeight = -1f;
         private int _repFit = 6;
 
@@ -152,6 +154,16 @@ namespace ProjectCCloudyNavigator.UI
                 var cell = CnStyle.Box("cn-cal__cell");
                 if (i == 0) cell.AddToClassList("is-first");
                 CnStyle.Fill(cell, CnStyle.VeilSoft, 0.7f);
+
+                // 06 §6: .cal-cell > .halo-calpulse — рамка 3 px, rgba(120,184,145,.9). 06 §8: calpulse .9 s
+                // (scale 1 → 2.07, opacity .9 → 0). Кольцо погашено, показывает его CnHaloFx на смене дня.
+                var calPulse = CnStyle.Ring(cell, 0f, 3f, CnStyle.Accent, 0.9f);
+                if (calPulse != null)
+                {
+                    calPulse.AddToClassList(CnHaloFx.PulseClass);
+                    calPulse.style.display = DisplayStyle.None;
+                }
+
                 _calCells[i] = cell;
                 week.Add(cell);
 
@@ -210,6 +222,18 @@ namespace ProjectCCloudyNavigator.UI
             _hpValue = CnStyle.Label("—", "cn-hp__v");
             hpRow.Add(_hpValue);
             niche.Add(hpRow);
+
+            // 06 §6: .ch-hp > .halo-chhp — рамка 1 px, rgba(74,87,76,.7). 06 §8: chflash .36 s по смене HP:
+            // в моде keyframe менял цвет рамки, здесь у рамки-импульса тот же вылет и гаснет прозрачность.
+            CnStyle.Ring(hpRow, 0f, 1f, CnStyle.VeilEdge, 0.7f);
+            var hpFlash = CnStyle.Ring(hpRow, 0f, 1f, CnStyle.Accent, 0.9f);
+            if (hpFlash != null)
+            {
+                hpFlash.AddToClassList(CnHaloFx.PulseClass);
+                hpFlash.style.display = DisplayStyle.None;
+            }
+
+            _hpRow = hpRow;
 
             var hpBar = CnStyle.Box("cn-hp__bar");
             CnStyle.Fill(hpBar, CnStyle.DangerLine, 0.35f);
@@ -415,6 +439,9 @@ namespace ProjectCCloudyNavigator.UI
             }
 
             _weekdayNames = names;
+
+            // Пульс клетки «сегодня» (06 §8: calpulse .9 s, scale 1 → 2.07, opacity .9 → 0).
+            if (weekday >= 0 && weekday < _calCells.Length) CnHaloFx.Pulse(_calCells[weekday], 0.9f, 2.07f, 0.9f);
         }
 
         private string WeekdayName(int index)
@@ -456,8 +483,13 @@ namespace ProjectCCloudyNavigator.UI
             {
                 _hpValue.text = "—";
                 _hpFill.style.width = Length.Percent(0f);
+                _hpLast = int.MinValue;
                 return;
             }
+
+            // chflash (06 §8): импульс только на смене значения — первый прочитанный HP вспышкой не считается.
+            if (_hpLast != int.MinValue && _hpLast != feed.currentHp) CnHaloFx.Pulse(_hpRow, 0.36f, 1f, 0.9f);
+            _hpLast = feed.currentHp;
 
             _hpValue.text = feed.currentHp + " / " + feed.maxHp;
             float pct = feed.maxHp > 0 ? Mathf.Clamp01((float)feed.currentHp / feed.maxHp) : 0f;

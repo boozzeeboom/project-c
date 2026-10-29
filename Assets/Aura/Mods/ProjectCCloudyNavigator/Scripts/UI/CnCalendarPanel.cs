@@ -80,6 +80,9 @@ namespace ProjectCCloudyNavigator.UI
         private bool _selectToday;
         private DayForm _form;
 
+        /// <summary>День, на котором нужно проиграть calhl2; выставляется кликом и снимается в ApplyMarks.</summary>
+        private int _pulseDay = int.MinValue;
+
         public CnCalendarPanel(CnTip tip, CnNotesStore notes = null)
         {
             _tip = tip;
@@ -399,6 +402,15 @@ namespace ProjectCCloudyNavigator.UI
 
                 if (interactive)
                 {
+                    // 06 §6: .cm-d/.cp-d > .halo-calhl2 — рамка 4 px, rgba(185,145,90,.95). 06 §8: calhl2 .85 s
+                    // (scale 1 → 1.9, opacity .95 → 0). Кольцо погашено, импульс играет ApplyMarks.
+                    var selPulse = CnStyle.Ring(cell, 0f, 4f, CnStyle.Brass, 0.95f);
+                    if (selPulse != null)
+                    {
+                        selPulse.AddToClassList(CnHaloFx.PulseClass);
+                        selPulse.style.display = DisplayStyle.None;
+                    }
+
                     cell.RegisterCallback<ClickEvent>(evt =>
                     {
                         evt.StopPropagation();
@@ -455,6 +467,13 @@ namespace ProjectCCloudyNavigator.UI
 
             foreach (var pair in _dots)
                 pair.Value.style.display = EventsOn(feed, pair.Key) > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // calhl2 (06 §8): клетка уже получила класс is-sel в этом же проходе, поэтому импульс виден на выбранной.
+            if (_pulseDay != int.MinValue)
+            {
+                if (_cells.TryGetValue(_pulseDay, out var pulseCell)) CnHaloFx.Pulse(pulseCell, 0.85f, 1.9f, 0.95f);
+                _pulseDay = int.MinValue;
+            }
         }
 
         private void SelectDay(int day)
@@ -463,6 +482,7 @@ namespace ProjectCCloudyNavigator.UI
             if (day == _selected) return;
 
             _selected = day;
+            _pulseDay = day;   // calhl2 играет в ApplyMarks: клик дерево не строит (InvalidateDay)
             InvalidateDay();
         }
 

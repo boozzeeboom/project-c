@@ -138,10 +138,15 @@ namespace ProjectCCloudyNavigator.UI
         {
             var ship = feed.ships.Length > 0 ? feed.ships[0] : default;
 
-            string signature = ship.displayName + "|" + ship.modules.Length;
-            for (int i = 0; i < ship.modules.Length; i++)
+            // У корабля по умолчанию (и когда кораблей ещё нет) modules == null: длина читается через проверку,
+            // иначе окно падало бы NRE на первом же кадре до появления корабля в сцене.
+            var modules = ship.modules;
+            int moduleCount = modules != null ? modules.Length : 0;
+
+            string signature = ship.displayName + "|" + moduleCount;
+            for (int i = 0; i < moduleCount; i++)
             {
-                signature += "|" + ship.modules[i].slotType + ":" + ship.modules[i].displayName;
+                signature += "|" + modules[i].slotType + ":" + modules[i].displayName;
             }
 
             if (signature == _moduleSignature) return;

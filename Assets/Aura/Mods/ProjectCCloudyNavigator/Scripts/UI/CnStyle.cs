@@ -83,5 +83,32 @@ namespace ProjectCCloudyNavigator.UI
             spacer.AddToClassList("cn-credits__spacer");
             return spacer;
         }
+
+        /// <summary>
+        /// Бирка действия (приборная бирка мода): высота 28 в полосе 32, капс 10 px, letter-spacing .14em.
+        /// Верхний регистр делает код — в USS text-transform нет (04 §1). Обработчик навешивает вызывающий.
+        /// </summary>
+        public static VisualElement Tag(string caption, string modifier = null)
+        {
+            var tag = new VisualElement();
+            tag.AddToClassList("cn-tag");
+            if (!string.IsNullOrEmpty(modifier)) tag.AddToClassList(modifier);
+            tag.Add(Label(caption == null ? string.Empty : caption.ToUpperInvariant(), "cn-tag__text"));
+            return tag;
+        }
+
+        /// <summary>
+        /// Плитка предмета в доке. blocked — визуальная пометка «сейчас нельзя» (нет курса или нет полной упаковки);
+        /// причину всё равно называет само действие, поэтому обработчик ставится всегда.
+        /// </summary>
+        public static VisualElement Chip(string caption, string tooltip, bool blocked)
+        {
+            var chip = new VisualElement();
+            chip.AddToClassList("cn-chip");
+            if (blocked) chip.AddToClassList("cn-chip--blocked");
+            if (!string.IsNullOrEmpty(tooltip)) chip.tooltip = tooltip;
+            chip.Add(Label(caption, "cn-chip__text"));
+            return chip;
+        }
     }
 }

@@ -169,7 +169,7 @@ namespace ProjectCCloudyNavigator.Data
         // Локальный игрок и его HP (источник — PlayerTarget, как RefreshHpFromNetworkVariable в легаси).
         private PlayerTarget _playerTarget;
 
-        // Каталог NPC нужен только для имён; ищем один раз и только если он есть в сцене.
+        // Каталог NPC нужен для имён и для подписи «сдать у …»; ищем один раз и только если он есть в сцене.
         private ProjectC.Quests.QuestDatabase _questDatabase;
         private bool _questDatabaseSearched;
 
@@ -853,12 +853,7 @@ namespace ProjectCCloudyNavigator.Data
         {
             if (string.IsNullOrEmpty(npcId)) return string.Empty;
 
-            if (!_questDatabaseSearched)
-            {
-                _questDatabaseSearched = true;
-                _questDatabase = UnityEngine.Object.FindAnyObjectByType<ProjectC.Quests.QuestDatabase>();
-            }
-
+            EnsureQuestDatabase();
             if (_questDatabase != null)
             {
                 var npc = _questDatabase.GetNpc(npcId);
@@ -866,6 +861,45 @@ namespace ProjectCCloudyNavigator.Data
             }
 
             return npcId; // имени нет — показываем id, а не выдуманную подпись
+        }
+
+        /// <summary>
+        /// Кто принимает сдачу квеста — по <c>NpcDefinition.GetQuestTurnInIds()</c>. Окно не сдаёт квест само
+        /// (сдача идёт через диалог, 02 §7), поэтому ему нужна только честная подпись «сдать у {NPC}».
+        /// Пустая строка — такого NPC в каталоге нет; подпись тогда не показывается.
+        /// </summary>
+        public string ResolveTurnInNpc(string questId)
+        {
+            if (string.IsNullOrEmpty(questId)) return string.Empty;
+
+            EnsureQuestDatabase();
+            var npcs = _questDatabase != null ? _questDatabase.npcs : null;
+            if (npcs == null) return string.Empty;
+
+            for (int i = 0; i < npcs.Length; i++)
+            {
+                var npc = npcs[i];
+                if (npc == null) continue;
+
+                var turnIns = npc.GetQuestTurnInIds();
+                if (turnIns == null) continue;
+
+                for (int k = 0; k < turnIns.Length; k++)
+                {
+                    if (turnIns[k] != questId) continue;
+                    return string.IsNullOrEmpty(npc.displayName) ? npc.npcId : npc.displayName;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>Каталог NPC/квестов ищется в сцене один раз и только если он там есть.</summary>
+        private void EnsureQuestDatabase()
+        {
+            if (_questDatabaseSearched) return;
+            _questDatabaseSearched = true;
+            _questDatabase = UnityEngine.Object.FindAnyObjectByType<ProjectC.Quests.QuestDatabase>();
         }
 
         // ------------------------------------------------------------------ время

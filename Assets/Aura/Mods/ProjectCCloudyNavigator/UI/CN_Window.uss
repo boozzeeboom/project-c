@@ -432,6 +432,142 @@
     font-size: 9px;
 }
 
+/* ---------------------------------------------------------------- полоса действий и плитки переноса */
+
+/* Полоса выбора: название выбранной строки либо сообщение последнего действия, справа — бирки действий.
+ * Высота 32 — тот же минимум, что у приборных бирок мода (04 §1). */
+.cn-actions {
+    flex-shrink: 0;
+    height: 32px;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 6px;
+    border-top-width: 1px;
+    border-top-color: rgba(96, 150, 116, 0.28);
+}
+
+.cn-actions__title {
+    flex-grow: 1;
+    min-width: 0;
+    font-size: 10px;
+    color: #71806f;
+    overflow: hidden;
+}
+
+.cn-actions__tags {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Бирка действия: высота 28 в полосе 32, капс 10 px, капс задаёт код (text-transform в USS нет). */
+.cn-tag {
+    height: 28px;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-left: 6px;
+    border-width: 1px;
+    border-color: rgba(96, 150, 116, 0.28);
+    border-radius: 1px;
+    justify-content: center;
+    align-items: center;
+}
+
+.cn-tag__text {
+    font-size: 10px;
+    letter-spacing: 0.14px;
+    color: #a8b6ac;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+
+.cn-tag:hover {
+    border-color: rgba(120, 184, 145, 0.55);
+}
+
+.cn-tag:hover .cn-tag__text {
+    color: #eef3ef;
+}
+
+.cn-tag--brass {
+    border-color: rgba(185, 145, 90, 0.55);
+}
+
+.cn-tag--brass .cn-tag__text {
+    color: #b9915a;
+}
+
+.cn-tag--danger {
+    border-color: rgba(122, 36, 32, 0.55);
+}
+
+/* Выбранная строка ленты: заливка ставится кодом (гамма), здесь — только кант и наведение. */
+.cn-line--selected {
+    border-left-color: #b9915a;
+}
+
+.cn-line:hover {
+    border-left-color: rgba(120, 184, 145, 0.55);
+}
+
+/* Плитки предметов в доке: одно нажатие — одна упаковка, курс и число упаковок в подсказке. */
+.cn-chips {
+    flex-direction: row;
+    align-items: center;
+    height: 18px;
+    margin-top: 2px;
+    overflow: hidden;
+}
+
+.cn-chip {
+    height: 18px;
+    padding-left: 5px;
+    padding-right: 5px;
+    margin-right: 4px;
+    border-width: 1px;
+    border-color: rgba(96, 150, 116, 0.28);
+    border-radius: 1px;
+    justify-content: center;
+    align-items: center;
+}
+
+.cn-chip__text {
+    font-size: 9px;
+    color: #a8b6ac;
+    white-space: nowrap;
+}
+
+.cn-chip--blocked {
+    border-color: rgba(122, 36, 32, 0.55);
+}
+
+.cn-chip--blocked .cn-chip__text {
+    color: #4a574c;
+}
+
+.cn-chip__note {
+    font-size: 9px;
+    color: #71806f;
+    white-space: nowrap;
+}
+
+.cn-dock__capval {
+    font-size: 9px;
+    color: #71806f;
+    white-space: nowrap;
+}
+
+.cn-dock__capzone {
+    font-size: 9px;
+    color: #b9915a;
+    white-space: nowrap;
+}
+
+/* Узкий док: второстепенные строки уходят, плитки переноса остаются — по ним идёт действие. */
+.cn-root.is-dock-narrow .cn-dock__row--optional {
+    display: none;
+}
+
 /* ---------------------------------------------------------------- слой движения */
 
 .cn-motion {

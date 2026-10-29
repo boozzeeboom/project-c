@@ -5,6 +5,7 @@
 // Такой же приём, как у ProjectCMainMenuWindow — окно монтируется на любой VisualElement и не владеет панелью.
 //
 // Всё собственное время окна считается в Update(dt) от хоста: setTimeout/@keyframes в порте нет (04 §1).
+using ProjectCCloudyNavigator.Actions;
 using ProjectCCloudyNavigator.Data;
 using ProjectCCloudyNavigator.UI;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace ProjectCCloudyNavigator
     {
         private VisualElement _root;
         private readonly CnDataFeed _feed;
+        private readonly CnActions _actions;
         private readonly CnStationView _station;
         private readonly CnMainView _main;
         private readonly CnAltRailView _altrail;
@@ -29,12 +31,16 @@ namespace ProjectCCloudyNavigator
         /// <summary>Окно читает игру, но не пишет в неё: единственный владелец данных — CnDataFeed.</summary>
         public CnDataFeed Data => _feed;
 
+        /// <summary>Действия окна: единственная точка вызова игровых Request*-методов (02 §7, шаг 7).</summary>
+        public CnActions Actions => _actions;
+
         /// <summary>log — писать ли [CN]-снимок в консоль для сверки с легаси (только диагностика).</summary>
         public CloudyNavigatorWindow(bool log)
         {
             _feed = new CnDataFeed(log);
+            _actions = new CnActions();
             _station = new CnStationView();
-            _main = new CnMainView();
+            _main = new CnMainView(_actions);
             _altrail = new CnAltRailView();
             _motion = new CnMotion();
         }
@@ -93,8 +99,9 @@ namespace ProjectCCloudyNavigator
             }
 
             _feed.Tick(step);
+            _actions.Tick(step);
             _station.Refresh(_feed);
-            _main.Refresh(_feed);
+            _main.Refresh(_feed, step);
             _altrail.Refresh(_feed);
             _motion.Tick(step);
 

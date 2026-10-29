@@ -125,7 +125,7 @@ namespace ProjectCCloudyNavigator
 
             if (styleSheet != null && !root.styleSheets.Contains(styleSheet)) root.styleSheets.Add(styleSheet);
 
-            _window = new CloudyNavigatorWindow();
+            _window = new CloudyNavigatorWindow(debugLogging);
             _window.Mount(root);
 
             ApplyVisibility(_open);

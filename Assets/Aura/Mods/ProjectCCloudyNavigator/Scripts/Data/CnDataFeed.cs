@@ -1,0 +1,893 @@
+// Cloudy Navigator — шаг 3 плана переноса (04_PORT_RULES_AND_PLAN.md §4).
+//
+// Слой данных окна: ТОЛЬКО ЧТЕНИЕ существующих систем игры. Ни одного своего значения «об игре»:
+// каждый ряд — проекция реального DTO или реального компонента. Свои поля есть только там, где значение
+// вычисляется на клиенте для показа (вес багажа, число установленных модулей, формат строки) — они помечены Derived.
+//
+// Почему проекция, а не сами DTO: окну (шаг 4) нужны плоские значения без Unity-объектов и без знания
+// о namespace'ах игровых DTO; кроме того проекция не даёт «протащить» в UI объект, который может умереть.
+//
+// Запросов к серверу здесь нет. Детали груза читаются из уже полученного кэша (`TelemetryCargoState.cargoDetail`,
+// как в легаси MyShipsTab); `ShipCargoClientState.RequestDetail` в этом шаге не вызывается — это действие шага 7 (D5).
+//
+// Время окна — только Tick(dt) от хоста: setTimeout/@keyframes в порте нет (04 §1).
+using System.Collections.Generic;
+using System.Text;
+using ProjectC.Combat;
+using ProjectC.Core;
+using ProjectC.Items;
+using ProjectC.Items.Client;
+using ProjectC.Knowledge;
+using ProjectC.Player;
+using ProjectC.Quests.Client;
+using ProjectC.Quests.UI;
+using ProjectC.Reputation;
+using ProjectC.Ship;
+using ProjectC.Ship.Key;
+using ProjectC.Stats;
+using ProjectC.Trade.Client;
+using Unity.Netcode;
+using UnityEngine;
+
+namespace ProjectCCloudyNavigator.Data
+{
+    /// <summary>Одна цель квеста — проекция <c>ObjectiveProgressDto</c>.</summary>
+    public struct CnQuestGoal
+    {
+        public string description;
+        public bool completed;
+        public int currentValue;
+        public int requiredQuantity;
+    }
+
+    /// <summary>Строка квеста — проекция <c>QuestProgressDto</c>.</summary>
+    public struct CnQuestRow
+    {
+        public string questId;
+        public string displayName;
+        public string currentStageId;
+        public byte state;
+        public bool isTracked;
+        public CnQuestGoal[] goals;
+    }
+
+    /// <summary>Строка контракта — проекция <c>ContractDto</c>.</summary>
+    public struct CnContractRow
+    {
+        public string contractId;
+        public byte type;
+        public string typeLocalizationKey;
+        public string typeUiClass;
+        public byte state;
+        public string itemId;
+        public string displayName;
+        public int quantity;
+        public string fromLocationId;
+        public string toLocationId;
+        public float reward;
+        public float cargoValue;
+        public float timeLimit;
+        public float timeRemaining;
+        public bool isReceiptContract;
+        public bool receiptCargoIssued;
+        public bool isActive;
+    }
+
+    /// <summary>Предмет багажа — проекция <c>InventoryItemDto</c> + вес из <c>ItemData</c>.</summary>
+    public struct CnBagItem
+    {
+        public int itemId;
+        public byte type;
+        public int quantity;
+        public int slotIndex;
+        public int instanceId;
+        public string itemName;
+        public float weightKg;
+    }
+
+    /// <summary>Модуль корабля — проекция <c>ModuleSlot</c> + <c>ShipModule</c>.</summary>
+    public struct CnModuleRow
+    {
+        public string slotType;   // ProjectC.Ship.SlotType.ToString() — имя члена enum, без своей копии
+        public bool isOccupied;
+        public string moduleId;
+        public string displayName;
+        public int powerConsumption;
+        public int cargoSlotsBonus;
+    }
+
+    /// <summary>Строка груза корабля — проекция <c>CargoDetailDto</c>.</summary>
+    public struct CnCargoRow
+    {
+        public string itemId;
+        public string displayName;
+        public int quantity;
+        public float unitWeight;
+        public byte flags;      // бит0 = опасный (IsDangerous), бит1 = хрупкий (IsFragile)
+        public bool dangerous;
+        public bool fragile;
+    }
+
+    /// <summary>Корабль — проекция <c>ShipTelemetryState</c> + слоты + груз.</summary>
+    public struct CnShipRow
+    {
+        public ulong shipNetworkObjectId;
+        public int keyInstanceId;
+        public string displayName;
+        public string className;
+        public Vector3 position;
+        public float fuelNormalized;
+        public float fuelMax;
+        public int hullCurrent;
+        public int hullMax;
+        public int cargoUsed;
+        public int cargoMax;
+        public int moduleCount;
+        public bool isEngineRunning;
+        public CnModuleRow[] modules;
+        public CnCargoRow[] cargoDetail;
+    }
+
+    /// <summary>Фракция — проекция <c>ReputationEntryDto</c> + <c>FactionDefinition.GetTier</c>.</summary>
+    public struct CnFactionRow
+    {
+        public byte wireId;
+        public string displayName;
+        public int value;
+        public bool hasTiers;
+        public string tier;
+        public string ussClass;
+        public Color tierColor;
+    }
+
+    /// <summary>NPC — проекция <c>NpcAttitudeEntryDto</c> + имя из <c>QuestDatabase.GetNpc</c>.</summary>
+    public struct CnNpcRow
+    {
+        public string npcId;
+        public string displayName;
+        public int value;
+    }
+
+    /// <summary>
+    /// Читающий слой окна. Держит последнюю прочитанную проекцию и обновляет её по кадру:
+    /// снапшоты перечитываются каждый кадр (это копия ссылки, не запрос), тяжёлые источники — по интервалу,
+    /// как в легаси (высота и телеметрия 0.2 с, календарь 2 с).
+    /// </summary>
+    public sealed class CnDataFeed
+    {
+        private const float ShipPollInterval = 0.2f;   // как AltitudeUI / MyShipsTab в легаси
+        private const float TimePollInterval = 2f;     // как легаси-календарь
+        private const float LogRepeatInterval = 1f;
+
+        private readonly bool _log;
+
+        private float _shipTimer;
+        private float _timeTimer;
+        private float _logTimer;
+        private string _lastLog;
+
+        // Локальный игрок и его HP (источник — PlayerTarget, как RefreshHpFromNetworkVariable в легаси).
+        private PlayerTarget _playerTarget;
+
+        // Каталог NPC нужен только для имён; ищем один раз и только если он есть в сцене.
+        private ProjectC.Quests.QuestDatabase _questDatabase;
+        private bool _questDatabaseSearched;
+
+        // --- последняя проекция ---
+        public int currentHp { get; private set; }
+        public int maxHp { get; private set; }
+        public bool hasHp { get; private set; }
+
+        public float credits { get; private set; }
+        public bool hasCredits { get; private set; }
+
+        public float strength { get; private set; }
+        public float dexterity { get; private set; }
+        public float intelligence { get; private set; }
+        public bool hasStats { get; private set; }
+
+        public CnQuestRow[] quests { get; private set; }
+        public string trackedQuestId { get; private set; }
+
+        public CnContractRow[] contracts { get; private set; }
+        public bool canAcceptContracts { get; private set; }
+        public float secondsUntilNextTick { get; private set; }
+        public float debtAmount { get; private set; }
+        public int debtLevel { get; private set; }
+
+        public CnBagItem[] bagItems { get; private set; }
+        public int bagMaxSlots { get; private set; }
+        public string bagLocationId { get; private set; }
+
+        public CnShipRow[] ships { get; private set; }
+
+        public CnFactionRow[] factions { get; private set; }
+        public CnNpcRow[] npcs { get; private set; }
+
+        public bool hasTime { get; private set; }
+        public int year { get; private set; }
+        public int month { get; private set; }
+        public int day { get; private set; }
+        public int dayOfYear { get; private set; }
+        public string weekdayName { get; private set; }
+        public string monthName { get; private set; }
+        public float timeOfDay { get; private set; }
+
+        public bool hasAltitude { get; private set; }
+        public float altitude { get; private set; }          // как легаси AltitudeUI: сырой transform.position.y
+        public float rebaseOffsetY { get; private set; }     // Derived-диагностика, не для показа без решения
+        public string corridorId { get; private set; }
+        public string corridorDisplayName { get; private set; }
+        public float corridorMin { get; private set; }
+        public float corridorMax { get; private set; }
+        public float corridorWarningMargin { get; private set; }
+        public float corridorCriticalUpperMargin { get; private set; }
+        public bool corridorIsGlobal { get; private set; }
+        public int altitudeStatusValue { get; private set; }
+        public string altitudeStatusName { get; private set; }
+
+        public CnDataFeed(bool log)
+        {
+            _log = log;
+            quests = new CnQuestRow[0];
+            contracts = new CnContractRow[0];
+            bagItems = new CnBagItem[0];
+            ships = new CnShipRow[0];
+            factions = new CnFactionRow[0];
+            npcs = new CnNpcRow[0];
+            trackedQuestId = string.Empty;
+            bagLocationId = string.Empty;
+            weekdayName = string.Empty;
+            monthName = string.Empty;
+            corridorId = string.Empty;
+            corridorDisplayName = string.Empty;
+            altitudeStatusName = string.Empty;
+        }
+
+        /// <summary>Кадр окна. dt уже зажат хостом.</summary>
+        public void Tick(float dt)
+        {
+            ReadCharacter();
+            ReadQuests();
+            ReadContracts();
+            ReadInventory();
+            ReadRelations();
+
+            _shipTimer -= dt;
+            if (_shipTimer <= 0f)
+            {
+                _shipTimer = ShipPollInterval;
+                ReadShips();
+                ReadAltitude();
+            }
+
+            _timeTimer -= dt;
+            if (_timeTimer <= 0f)
+            {
+                _timeTimer = TimePollInterval;
+                ReadTime();
+            }
+
+            if (!_log) return;
+            _logTimer -= dt;
+            if (_logTimer > 0f) return;
+            _logTimer = LogRepeatInterval;
+
+            // Пишем только при изменении: иначе за сессию консоль съест память.
+            string text = Describe();
+            if (text == _lastLog) return;
+            _lastLog = text;
+            Debug.Log("[CN] " + text);
+        }
+
+        /// <summary>
+        /// Многострочный снимок в ТЕХ ЖЕ форматах, что показывает легаси-окно, — по нему идёт сверка шага 3
+        /// (04 §4, ворота: значения провайдера = значения легаси).
+        /// </summary>
+        public string Describe()
+        {
+            var sb = new StringBuilder(512);
+
+            sb.Append('\n').Append("CN-снимок (сверять с легаси P)")
+              .Append('\n').Append("HP: ").Append(hasHp ? currentHp + "/" + maxHp : "нет данных")
+              .Append('\n').Append("Кредиты: ").Append(hasCredits ? Mathf.FloorToInt(credits).ToString() + " CR" : "нет данных")
+              .Append('\n').Append("STR ").Append(hasStats ? strength.ToString("0.#") : "—")
+              .Append(" · DEX ").Append(hasStats ? dexterity.ToString("0.#") : "—")
+              .Append(" · INT ").Append(hasStats ? intelligence.ToString("0.#") : "—");
+
+            int activeQuests = 0;
+            for (int i = 0; i < quests.Length; i++) if (quests[i].state == 2) activeQuests++; // QuestState.Active
+            sb.Append('\n').Append("Квесты: ").Append(quests.Length).Append(" (активных ").Append(activeQuests).Append(")")
+              .Append(" · слежу: ").Append(string.IsNullOrEmpty(trackedQuestId) ? "нет" : trackedQuestId);
+
+            int activeContracts = 0;
+            for (int i = 0; i < contracts.Length; i++) if (contracts[i].isActive) activeContracts++;
+            sb.Append('\n').Append("Контракты: активных ").Append(activeContracts)
+              .Append(", доступных ").Append(contracts.Length - activeContracts)
+              .Append(", брать можно: ").Append(canAcceptContracts ? "да" : "нет")
+              .Append(", до тика ").Append(FormatTimer(secondsUntilNextTick))
+              .Append(", долг ").Append(Mathf.FloorToInt(debtAmount)).Append(" CR ур.").Append(debtLevel);
+
+            float bagWeight = 0f;
+            for (int i = 0; i < bagItems.Length; i++) bagWeight += bagItems[i].quantity * bagItems[i].weightKg;
+            sb.Append('\n').Append("Багаж: ").Append(bagItems.Length).Append(" поз.")
+              .Append(" · Слоты ").Append(bagItems.Length).Append(" / ").Append(bagMaxSlots)
+              .Append(" · ").Append(bagWeight.ToString("0.0")).Append(" кг")
+              .Append(" · локация ").Append(string.IsNullOrEmpty(bagLocationId) ? "—" : bagLocationId);
+
+            for (int i = 0; i < ships.Length; i++)
+            {
+                var s = ships[i];
+                sb.Append('\n').Append("Корабль ").Append(i + 1).Append(": ").Append(s.displayName)
+                  .Append(" · ").Append(s.className)
+                  .Append(" · Прочность: ").Append(s.hullCurrent).Append('/').Append(s.hullMax)
+                  .Append(" · Топливо: ").Append((s.fuelNormalized * 100f).ToString("0.0")).Append('%')
+                  .Append(" (").Append(s.fuelMax.ToString("0")).Append(" max)")
+                  .Append(" · Груз: ").Append(s.cargoUsed).Append('/').Append(s.cargoMax)
+                  .Append(" · ENGINE ").Append(s.isEngineRunning ? "ON" : "OFF")
+                  .Append(" · модулей ").Append(s.moduleCount)
+                  .Append(" · груз-строк ").Append(s.cargoDetail.Length)
+                  .Append(" · 📍 (").Append(s.position.x.ToString("0.0")).Append(", ")
+                  .Append(s.position.y.ToString("0.0")).Append(", ")
+                  .Append(s.position.z.ToString("0.0")).Append(')');
+            }
+            if (ships.Length == 0) sb.Append('\n').Append("Корабли: нет данных");
+
+            sb.Append('\n').Append("Репутация: ").Append(factions.Length).Append(" фракц.");
+            for (int i = 0; i < factions.Length; i++)
+            {
+                var f = factions[i];
+                sb.Append('\n').Append("  ").Append(f.displayName).Append(' ').Append(f.value);
+                if (f.hasTiers) sb.Append(" · ").Append(f.tier);
+                else sb.Append(" · тиры не заданы");
+            }
+
+            sb.Append('\n').Append("Люди: ").Append(npcs.Length);
+            for (int i = 0; i < npcs.Length; i++)
+                sb.Append('\n').Append("  ").Append(npcs[i].displayName).Append(' ').Append(npcs[i].value);
+
+            sb.Append('\n').Append(hasTime
+                ? "Время: " + year + " г., " + monthName + " " + day + " (" + weekdayName + "), день года " + dayOfYear +
+                  ", TimeOfDay " + timeOfDay.ToString("0.00")
+                : "Время: нет данных");
+
+            sb.Append('\n').Append(hasAltitude
+                ? "Высота: " + altitude.ToString("0.0") + " м · коридор " + corridorDisplayName + " (" + corridorId + ")" +
+                  " [" + corridorMin.ToString("0") + "…" + corridorMax.ToString("0") + "]" +
+                  " · статус " + altitudeStatusName + " · rebase Y " + rebaseOffsetY.ToString("0.0")
+                : "Высота: нет данных");
+
+            return sb.ToString();
+        }
+
+        private static string FormatTimer(float seconds)
+        {
+            if (seconds <= 0f) return "∞";
+            int total = Mathf.FloorToInt(seconds);
+            return (total / 60) + ":" + (total % 60).ToString("00");
+        }
+
+        // ------------------------------------------------------------------ персонаж
+
+        private void ReadCharacter()
+        {
+            var player = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClient?.PlayerObject : null;
+            if (player == null)
+            {
+                _playerTarget = null;
+                hasHp = false;
+                hasStats = false;
+            }
+            else
+            {
+                if (_playerTarget == null) _playerTarget = player.GetComponent<PlayerTarget>();
+
+                if (_playerTarget != null)
+                {
+                    currentHp = _playerTarget.GetCurrentHp();
+                    maxHp = _playerTarget.GetMaxHp();
+                    hasHp = maxHp > 0;
+                }
+                else hasHp = false;
+
+                var stats = StatsClientState.Instance;
+                var snap = stats != null ? stats.CurrentStats : null;
+                if (snap.HasValue)
+                {
+                    var dto = snap.Value;
+                    strength = dto.strength;
+                    dexterity = dto.dexterity;
+                    intelligence = dto.intelligence;
+                    hasStats = true;
+                }
+                else hasStats = false;
+            }
+
+            // Кредиты — как легаси (решение пользователя №4); дубль D1 в InventorySnapshotDto.credits не читаем.
+            var market = MarketClientState.Instance;
+            var marketSnap = market != null ? market.CurrentSnapshot : null;
+            if (marketSnap.HasValue)
+            {
+                credits = marketSnap.Value.credits;
+                hasCredits = true;
+            }
+            else hasCredits = false;
+        }
+
+        // ------------------------------------------------------------------ квесты
+
+        private void ReadQuests()
+        {
+            var tracker = QuestTracker.GetOrFindInstance();
+            trackedQuestId = tracker != null ? tracker.TrackedQuestId : string.Empty;
+
+            var state = QuestClientState.Instance;
+            var snap = state != null ? state.CurrentSnapshot : null;
+            if (!snap.HasValue)
+            {
+                quests = new CnQuestRow[0];
+                return;
+            }
+
+            var dto = snap.Value;
+            var list = dto.quests;
+            if (list == null || list.Length == 0)
+            {
+                quests = new CnQuestRow[0];
+                return;
+            }
+
+            var rows = new CnQuestRow[list.Length];
+            for (int i = 0; i < list.Length; i++)
+            {
+                var q = list[i];
+                var goals = q.objectives ?? new ProjectC.Quests.Dto.ObjectiveProgressDto[0];
+                var goalRows = new CnQuestGoal[goals.Length];
+                for (int g = 0; g < goals.Length; g++)
+                {
+                    var o = goals[g];
+                    goalRows[g] = new CnQuestGoal
+                    {
+                        description = o.description,
+                        completed = o.completed,
+                        currentValue = o.currentValue,
+                        requiredQuantity = o.requiredQuantity
+                    };
+                }
+
+                rows[i] = new CnQuestRow
+                {
+                    questId = q.questId,
+                    displayName = q.displayName,
+                    currentStageId = q.currentStageId,
+                    state = q.state,
+                    // В игре слежение одно: серверное isTracked и локальный QuestTracker могут расходиться —
+                    // окно показывает как легаси, по QuestTracker (03 §3).
+                    isTracked = !string.IsNullOrEmpty(trackedQuestId) && trackedQuestId == q.questId,
+                    goals = goalRows
+                };
+            }
+
+            quests = rows;
+        }
+
+        // ------------------------------------------------------------------ контракты
+
+        private void ReadContracts()
+        {
+            var state = ContractClientState.Instance;
+            var snap = state != null ? state.CurrentSnapshot : null;
+            if (!snap.HasValue)
+            {
+                contracts = new CnContractRow[0];
+                canAcceptContracts = false;
+                secondsUntilNextTick = 0f;
+                debtAmount = 0f;
+                debtLevel = 0;
+                return;
+            }
+
+            var dto = snap.Value;
+            canAcceptContracts = dto.canAcceptContracts;
+            secondsUntilNextTick = dto.secondsUntilNextTick;
+            debtAmount = dto.debtAmount;
+            debtLevel = dto.debtLevel;
+
+            var active = dto.active;
+            var available = dto.available;
+            if (active == null) active = new ProjectC.Trade.Dto.ContractDto[0];
+            if (available == null) available = new ProjectC.Trade.Dto.ContractDto[0];
+
+            var rows = new CnContractRow[active.Length + available.Length];
+            int n = 0;
+            for (int i = 0; i < active.Length; i++) rows[n++] = ProjectContract(active[i], true);
+            for (int i = 0; i < available.Length; i++) rows[n++] = ProjectContract(available[i], false);
+            contracts = rows;
+        }
+
+        private static CnContractRow ProjectContract(ProjectC.Trade.Dto.ContractDto c, bool isActive)
+        {
+            return new CnContractRow
+            {
+                contractId = c.contractId,
+                type = c.type,
+                typeLocalizationKey = c.typeLocalizationKey,
+                typeUiClass = c.typeUiClass,
+                state = c.state,
+                itemId = c.itemId,
+                displayName = c.displayName,
+                quantity = c.quantity,
+                fromLocationId = c.fromLocationId,
+                toLocationId = c.toLocationId,
+                reward = c.reward,
+                cargoValue = c.cargoValue,
+                timeLimit = c.timeLimit,
+                timeRemaining = c.timeRemaining,
+                isReceiptContract = c.isReceiptContract,
+                receiptCargoIssued = c.receiptCargoIssued,
+                isActive = isActive
+            };
+        }
+
+        // ------------------------------------------------------------------ багаж
+
+        private void ReadInventory()
+        {
+            var inv = InventoryClientState.Instance;
+            var snap = inv != null ? inv.CurrentSnapshot : null;
+            if (!snap.HasValue)
+            {
+                bagItems = new CnBagItem[0];
+                bagMaxSlots = 0;
+                bagLocationId = string.Empty;
+                return;
+            }
+
+            var dto = snap.Value;
+            bagMaxSlots = dto.maxSlots;
+            bagLocationId = dto.locationId ?? string.Empty;
+
+            var items = dto.items;
+            if (items == null || items.Length == 0)
+            {
+                bagItems = new CnBagItem[0];
+                return;
+            }
+
+            var rows = new CnBagItem[items.Length];
+            for (int i = 0; i < items.Length; i++)
+            {
+                var it = items[i];
+                var def = inv.GetItemDefinition(it.itemId);
+                rows[i] = new CnBagItem
+                {
+                    itemId = it.itemId,
+                    type = it.type,
+                    quantity = it.quantity,
+                    slotIndex = it.slotIndex,
+                    instanceId = it.instanceId,
+                    itemName = string.IsNullOrEmpty(it.itemName) && def != null ? def.itemName : it.itemName,
+                    weightKg = def != null ? def.weightKg : 0f   // Derived: вес из ItemData, у снапшота его нет
+                };
+            }
+
+            bagItems = rows;
+        }
+
+        // ------------------------------------------------------------------ корабли и высота
+
+        private void ReadShips()
+        {
+            var controllers = CollectShipControllers();
+            if (controllers.Count == 0)
+            {
+                ships = new CnShipRow[0];
+                return;
+            }
+
+            var rows = new CnShipRow[controllers.Count];
+            for (int i = 0; i < controllers.Count; i++)
+            {
+                var sc = controllers[i];
+                var t = sc.TelemetryState;
+
+                var moduleRows = new CnModuleRow[0];
+                var mm = sc.ShipModuleManager;
+                if (mm != null && mm.slots != null && mm.slots.Count > 0)
+                {
+                    moduleRows = new CnModuleRow[mm.slots.Count];
+                    for (int s = 0; s < mm.slots.Count; s++)
+                    {
+                        var slot = mm.slots[s];
+                        var mod = slot.installedModule;
+                        moduleRows[s] = new CnModuleRow
+                        {
+                            slotType = slot.slotType.ToString(),
+                            isOccupied = slot.isOccupied,
+                            moduleId = mod != null ? mod.moduleId : string.Empty,
+                            displayName = mod != null ? mod.displayName : string.Empty,
+                            powerConsumption = mod != null ? mod.powerConsumption : 0,
+                            cargoSlotsBonus = mod != null ? mod.cargoSlotsBonus : 0
+                        };
+                    }
+                }
+
+                var cargoRows = new CnCargoRow[0];
+                // D5: легаси MyShipsTab читает детали из TelemetryCargoState.cargoDetail — берём тот же канал,
+                // чтобы значения совпали при сверке. Обязательный (Obsolete) broadcast-кэш не используется.
+                var cargo = sc.TelemetryCargoState.cargoDetail;
+                if (cargo != null && cargo.Length > 0)
+                {
+                    cargoRows = new CnCargoRow[cargo.Length];
+                    for (int c = 0; c < cargo.Length; c++)
+                    {
+                        var e = cargo[c];
+                        cargoRows[c] = new CnCargoRow
+                        {
+                            itemId = e.itemId,
+                            displayName = e.displayName.ToString(),
+                            quantity = e.quantity,
+                            unitWeight = e.unitWeight,
+                            flags = e.flags,
+                            dangerous = (e.flags & 0x01) != 0,
+                            fragile = (e.flags & 0x02) != 0
+                        };
+                    }
+                }
+
+                string name = t.displayName.ToString();
+                if (string.IsNullOrWhiteSpace(name)) name = sc.gameObject.name;
+
+                rows[i] = new CnShipRow
+                {
+                    shipNetworkObjectId = t.shipNetworkObjectId,
+                    keyInstanceId = t.keyInstanceId,
+                    displayName = name,
+                    className = t.className.ToString(),
+                    position = t.position,
+                    fuelNormalized = t.fuelNormalized,
+                    fuelMax = t.fuelMax,
+                    hullCurrent = t.hullCurrent,
+                    hullMax = t.hullMax,
+                    cargoUsed = t.cargoUsed,
+                    cargoMax = t.cargoMax,
+                    moduleCount = t.moduleCount,
+                    isEngineRunning = sc.IsEngineRunning,
+                    modules = moduleRows,
+                    cargoDetail = cargoRows
+                };
+            }
+
+            ships = rows;
+        }
+
+        /// <summary>
+        /// Список кораблей локального игрока — тот же порядок поиска, что в легаси MyShipsTab.RefreshShipList:
+        /// хост → InventoryWorld.GetMyShips (серверные данные), клиент → Key-предметы через KeyRodInstanceWorld.
+        /// </summary>
+        private List<ShipController> CollectShipControllers()
+        {
+            var result = new List<ShipController>(4);
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return result;
+
+            ulong myId = nm.LocalClientId;
+
+            var invWorld = InventoryWorld.Instance;
+            if (invWorld != null)
+            {
+                var myShips = invWorld.GetMyShips(myId);
+                if (myShips != null)
+                {
+                    foreach (var (_, shipNetId) in myShips)
+                    {
+                        if (!nm.SpawnManager.SpawnedObjects.TryGetValue(shipNetId, out var netObj)) continue;
+                        var sc = netObj.GetComponent<ShipController>();
+                        if (sc != null) result.Add(sc);
+                    }
+                }
+            }
+
+            if (result.Count > 0) return result;
+
+            var inv = InventoryClientState.Instance;
+            var snap = inv != null ? inv.CurrentSnapshot : null;
+            if (!snap.HasValue) return result;
+
+            var items = snap.Value.items;
+            if (items == null || !KeyRodInstanceWorld.IsInitialized) return result;
+
+            for (int i = 0; i < items.Length; i++)
+            {
+                var it = items[i];
+                if ((ItemType)it.type != ItemType.Key) continue;
+                if (it.instanceId <= 0) continue;
+
+                var inst = KeyRodInstanceWorld.GetInstance(it.instanceId);
+                if (inst == null || inst.state != KeyRodInstanceState.Active || inst.registeredShipId == 0) continue;
+                if (!nm.SpawnManager.SpawnedObjects.TryGetValue(inst.registeredShipId, out var netObj)) continue;
+
+                var sc = netObj.GetComponent<ShipController>();
+                if (sc != null) result.Add(sc);
+            }
+
+            return result;
+        }
+
+        private void ReadAltitude()
+        {
+            var sys = AltitudeCorridorSystem.Instance;
+            if (sys == null)
+            {
+                hasAltitude = false;
+                return;
+            }
+
+            // Позиция — как AltitudeUI: у корабля; если корабля ещё нет, у локального игрока.
+            Vector3 position;
+            if (ships.Length > 0) position = ships[0].position;
+            else
+            {
+                var player = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClient?.PlayerObject : null;
+                if (player == null)
+                {
+                    hasAltitude = false;
+                    return;
+                }
+                position = player.transform.position;
+            }
+
+            altitude = position.y;
+            // Floating origin: сырое значение совпадает с легаси-индикатором; сдвиг логируем отдельно как диагностику,
+            // решение «показывать абсолютную высоту» — отдельная задача (03 §1, D16-сосед).
+            rebaseOffsetY = ProjectC.World.FloatingOrigin.Network.GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset.y;
+
+            var corridor = sys.GetActiveCorridor(position);
+            if (corridor == null)
+            {
+                hasAltitude = true;
+                corridorId = string.Empty;
+                corridorDisplayName = string.Empty;
+                altitudeStatusName = "нет коридора";
+                altitudeStatusValue = -1;
+                return;
+            }
+
+            corridorId = corridor.corridorId;
+            corridorDisplayName = corridor.displayName;
+            corridorMin = corridor.minAltitude;
+            corridorMax = corridor.maxAltitude;
+            corridorWarningMargin = corridor.warningMargin;
+            corridorCriticalUpperMargin = corridor.criticalUpperMargin;
+            corridorIsGlobal = corridor.isGlobal;
+
+            var status = sys.ValidateAltitude(position, corridor);
+            altitudeStatusValue = (int)status;
+            altitudeStatusName = status.ToString();
+            hasAltitude = true;
+        }
+
+        // ------------------------------------------------------------------ репутация и люди
+
+        private void ReadRelations()
+        {
+            var rep = ReputationClientState.Instance;
+            var repSnap = rep != null ? rep.CurrentReputation : null;
+            if (repSnap.HasValue)
+            {
+                var dto = repSnap.Value;
+                var entries = dto.entries;
+                if (entries == null || entries.Length == 0)
+                {
+                    factions = new CnFactionRow[0];
+                }
+                else
+                {
+                    var rows = new CnFactionRow[entries.Length];
+                    var catalog = FactionCatalog.Instance;
+                    for (int i = 0; i < entries.Length; i++)
+                    {
+                        var e = entries[i];
+                        var def = catalog != null ? catalog.GetByWireId(e.faction) : null;
+                        bool hasTiers = def != null && def.reputationThresholds != null && def.reputationThresholds.Length > 0;
+
+                        var row = new CnFactionRow
+                        {
+                            wireId = e.faction,
+                            displayName = def != null && !string.IsNullOrEmpty(def.displayName)
+                                ? def.displayName
+                                : "фракция " + e.faction,
+                            value = e.value,
+                            hasTiers = hasTiers
+                        };
+
+                        if (hasTiers)
+                        {
+                            var tier = def.GetTier(e.value);
+                            if (tier != null)
+                            {
+                                row.tier = tier.tier;
+                                row.ussClass = tier.ussClass;
+                                row.tierColor = tier.color;
+                            }
+                        }
+
+                        rows[i] = row;
+                    }
+                    factions = rows;
+                }
+            }
+            else factions = new CnFactionRow[0];
+
+            var att = NpcAttitudeClientState.Instance;
+            var attSnap = att != null ? att.CurrentNpcAttitude : null;
+            if (!attSnap.HasValue)
+            {
+                npcs = new CnNpcRow[0];
+                return;
+            }
+
+            var entriesNpc = attSnap.Value.entries;
+            if (entriesNpc == null || entriesNpc.Length == 0)
+            {
+                npcs = new CnNpcRow[0];
+                return;
+            }
+
+            var npcRows = new CnNpcRow[entriesNpc.Length];
+            for (int i = 0; i < entriesNpc.Length; i++)
+            {
+                var e = entriesNpc[i];
+                npcRows[i] = new CnNpcRow
+                {
+                    npcId = e.npcId,
+                    displayName = ResolveNpcName(e.npcId),
+                    value = e.value
+                };
+            }
+            npcs = npcRows;
+        }
+
+        private string ResolveNpcName(string npcId)
+        {
+            if (string.IsNullOrEmpty(npcId)) return string.Empty;
+
+            if (!_questDatabaseSearched)
+            {
+                _questDatabaseSearched = true;
+                _questDatabase = UnityEngine.Object.FindAnyObjectByType<ProjectC.Quests.QuestDatabase>();
+            }
+
+            if (_questDatabase != null)
+            {
+                var npc = _questDatabase.GetNpc(npcId);
+                if (npc != null && !string.IsNullOrEmpty(npc.displayName)) return npc.displayName;
+            }
+
+            return npcId; // имени нет — показываем id, а не выдуманную подпись
+        }
+
+        // ------------------------------------------------------------------ время
+
+        private void ReadTime()
+        {
+            var weather = ServerWeatherController.Instance;
+            if (weather == null)
+            {
+                hasTime = false;
+                return;
+            }
+
+            var t = weather.CurrentGameTime;
+            year = t.Year;
+            month = t.Month;
+            day = t.Day;
+            dayOfYear = t.DayOfYear;
+            weekdayName = weather.GetWeekdayName(t.Weekday);
+            monthName = weather.GetMonthName(t.Month);
+            timeOfDay = weather.TimeOfDay;
+            hasTime = true;
+        }
+    }
+}

@@ -14,6 +14,11 @@
 // Изоляция от сцены игрока:
 //   • объекты превью лежат на слое 30. Слой в TagManager не заведён, но по индексу работает —
 //     настройки проекта не правятся, а поиск по Assets/_Project не находит ни `<< 30`, ни `.layer = 30`;
+//   • объекты превью помечены HideFlags.DontSave и НЕ попадают в файл сцены. Сохранённая копия
+//     оживает после загрузки без рантайм-материалов (магента) и камера превью рисует её поверх фигуры;
+//   • корень превью уносится в DontDestroyOnLoad и перестаёт быть корнем мировой сцены. Иначе он —
+//     участник ребейза (GlobalMotionControlledRebaseSlice:1113-1129 берёт КАЖДЫЙ активный корень по id
+//     WORLD_SCENE_ROOT/<имя>) и вторая копия с тем же именем валит транзакцию целиком;
 //   • камера превью видит ТОЛЬКО этот слой (`cullingMask = 1 << 30`), поэтому мир в кадр не попадает
 //     и превью не зависит от того, где сейчас игрок и что делает floating origin;
 //   • сетевых компонентов нет по построению: Transform / MeshFilter / MeshRenderer + Camera,
@@ -84,6 +89,17 @@ namespace ProjectCCloudyNavigator.UI
         {
             _root = new GameObject("[CN] Preview Stage");
 
+            // Две преграды от сцены, обе обязательны — без них порт уже ломал игру (регресс T-FO06CY):
+            //   • DontSave — объекты превью не должны сериализоваться в файл сцены. Сохранённая копия
+            //     после загрузки остаётся без рантайм-материалов (магента) и камера превью рисует её
+            //     поверх живой фигуры — в кадре появлялся чужой фон и лишняя модель;
+            //   • DontDestroyOnLoad — объект уходит в свою сцену и перестаёт быть корнем мировой сцены,
+            //     а ребейз перечисляет именно корни мировой сцены (GlobalMotionControlledRebaseSlice:1113-1129).
+            //     Вторая копия с тем же именем валила транзакцию: participant_scope_refused:
+            //     duplicate_participant_id:WORLD_SCENE_ROOT/[CN] Preview Stage.
+            _root.hideFlags = HideFlags.DontSave;
+            if (Application.isPlaying) UnityEngine.Object.DontDestroyOnLoad(_root);
+
             _rig = new GameObject("Rig");
             _rig.transform.SetParent(_root.transform, false);
 
@@ -107,7 +123,13 @@ namespace ProjectCCloudyNavigator.UI
             backdropQuad.layer = PreviewLayer;
             backdropQuad.transform.SetParent(_root.transform, false);
             var backdropCollider = backdropQuad.GetComponent<Collider>();
-            if (backdropCollider != null) UnityEngine.Object.Destroy(backdropCollider);
+            if (backdropCollider != null)
+            {
+                // Сразу выключаем, а Destroy отложен до конца кадра: иначе коллайдер успевает
+                // отработать FixedUpdate (и попасть в сохранённую копию, если её кто-то сохранит).
+                backdropCollider.enabled = false;
+                UnityEngine.Object.Destroy(backdropCollider);
+            }
             backdropQuad.transform.localPosition = new Vector3(0f, 0.86f, 2.5f);
             backdropQuad.transform.localScale = new Vector3(4f, 4f, 1f);
 
@@ -463,9 +485,14 @@ namespace ProjectCCloudyNavigator.UI
             go.layer = PreviewLayer;
             _parts.Add(go);
 
-            // CreatePrimitive сам вешает коллайдер: в превью физики нет, поэтому он уничтожается сразу.
+            // CreatePrimitive сам вешает коллайдер: в превью физики нет, поэтому он выключается сразу и уничтожается —
+            // Destroy отложен до конца кадра, а FixedUpdate может успеть раньше.
             var collider = go.GetComponent<Collider>();
-            if (collider != null) UnityEngine.Object.Destroy(collider);
+            if (collider != null)
+            {
+                collider.enabled = false;
+                UnityEngine.Object.Destroy(collider);
+            }
 
             go.transform.SetParent(_rig.transform, false);
             go.transform.localPosition = position;

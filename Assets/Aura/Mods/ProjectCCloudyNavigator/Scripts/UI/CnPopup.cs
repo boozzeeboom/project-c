@@ -48,6 +48,9 @@ namespace ProjectCCloudyNavigator.UI
 
             _win = CnStyle.Box("cn-pop__win");
             CnStyle.Fill(_win, CnStyle.VeilMid, 0.98f);
+            // Ореол окна (06 §3: .bg-pop/.sh-pop/.cal-more/.rw-fly — 34/20/48, rgba(0,0,0,.55)):
+            // одна тень на все полноразмерные окна, поэтому окно читается над затемнением, а не как плашка.
+            CnStyle.HaloShadow(_win, 34, 20, 48, CnStyle.Shadow, 0.55f);
             _win.RegisterCallback<ClickEvent>(evt => evt.StopPropagation());
             _root.Add(_win);
 

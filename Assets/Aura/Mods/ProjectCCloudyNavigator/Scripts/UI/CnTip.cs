@@ -73,6 +73,8 @@ namespace ProjectCCloudyNavigator.UI
 
             _card = CnStyle.Box("cn-tip__card");
             _card.pickingMode = PickingMode.Ignore;
+            // 06 §3: .tip-card > .halo-tipsh — 26/16/36, rgba(0,0,0,.45). Карточка висит над окном без подложки.
+            CnStyle.HaloShadow(_card, 26, 16, 36, CnStyle.Shadow, 0.45f);
             _card.AddToClassList("is-idle");
             _card.RegisterCallback<GeometryChangedEvent>(_ => Place());
             _layer.Add(_card);

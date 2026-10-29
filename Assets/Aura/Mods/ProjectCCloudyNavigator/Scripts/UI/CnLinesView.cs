@@ -630,6 +630,9 @@ namespace ProjectCCloudyNavigator.UI
             if (row == null) { _hoverId = null; return; }
 
             var el = BuildHover(row.line);
+            // 06 §3: .ln-card > .halo-cardsh — 26/16/36, rgba(0,0,0,.45). Карточка выезжает под строкой
+            // и должна отделяться от соседней строки тенью, а не только рамкой.
+            CnStyle.HaloShadow(el, 26, 16, 36, CnStyle.Shadow, 0.45f);
             int at = _rows.IndexOf(row.el);
             if (at < 0) { _hoverId = null; return; }
 

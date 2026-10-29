@@ -39,6 +39,9 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Поверхность панели/карточки.</summary>
         public static readonly Color Panel = VeilSoft;
 
+        /// <summary>Цвет внешней тени мода (rgba(0,0,0,.45…55)): альфа задаётся вызывающим, здесь только тон.</summary>
+        public static readonly Color Shadow = Color.black;
+
         /// <summary>Шрифт тела на корень: в USS он не наследуется из ресурсов проекта, поэтому ставим кодом.</summary>
         public static void ApplyFont(VisualElement root)
         {
@@ -107,6 +110,58 @@ namespace ProjectCCloudyNavigator.UI
             var deco = Box(className);
             deco.pickingMode = PickingMode.Ignore;
             return deco;
+        }
+
+        /// <summary>
+        /// Тень хоста (бывш. box-shadow, 06 §3): абсолютный ребёнок, вылезающий за хозяина на свои полосы,
+        /// с запечённой рампой в backgroundImage. 9-slice держит толщину полосы, поэтому тень не растягивается
+        /// при смене размера хоста. Ставится ПЕРВЫМ ребёнком — иначе перекроет содержимое.
+        /// Числа мода записаны тремя значениями (--hs / --ht / --hb), поэтому разлёт по бокам один на обе стороны.
+        /// </summary>
+        public static VisualElement HaloShadow(VisualElement host, int spreadX, int top, int bottom,
+            Color tint, float alpha)
+        {
+            if (host == null) return null;
+
+            var halo = Deco("cn-halo");
+            halo.AddToClassList("cn-halo--shadow");
+            halo.style.position = Position.Absolute;
+            halo.style.left = -(float)spreadX;
+            halo.style.top = -(float)top;
+            halo.style.right = -(float)spreadX;
+            halo.style.bottom = -(float)bottom;
+            halo.style.backgroundImage = new StyleBackground(Background.FromTexture2D(
+                CnRamps.Shadow(spreadX, top, spreadX, bottom, tint, alpha)));
+
+            halo.style.unitySliceLeft = spreadX;
+            halo.style.unitySliceTop = top;
+            halo.style.unitySliceRight = spreadX;
+            halo.style.unitySliceBottom = bottom;
+            halo.style.unitySliceType = SliceType.Sliced;
+
+            host.Insert(0, halo);
+            return halo;
+        }
+
+        /// <summary>
+        /// Круглое свечение (бывш. box-shadow без смещения, 06 §3/§7): вылезает на spread во все стороны,
+        /// альфой управляет USS-класс хоста (например .cn-slot.is-hl .cn-halo--glow).
+        /// </summary>
+        public static VisualElement HaloGlow(VisualElement host, int spread, Color tint, float alpha)
+        {
+            if (host == null) return null;
+
+            var halo = Deco("cn-halo");
+            halo.AddToClassList("cn-halo--glow");
+            halo.style.position = Position.Absolute;
+            halo.style.left = -(float)spread;
+            halo.style.top = -(float)spread;
+            halo.style.right = -(float)spread;
+            halo.style.bottom = -(float)spread;
+            halo.style.backgroundImage = new StyleBackground(Background.FromTexture2D(CnRamps.Glow(tint, alpha)));
+
+            host.Insert(0, halo);
+            return halo;
         }
 
         /// <summary>

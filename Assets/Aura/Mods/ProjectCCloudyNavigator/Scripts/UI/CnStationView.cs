@@ -304,6 +304,9 @@ namespace ProjectCCloudyNavigator.UI
             var slot = CnStyle.Box("cn-slot");
             slot.AddToClassList("cn-slot--empty");
             CnStyle.Fill(slot, CnStyle.Veil, 0.4f);
+            // Свечение слота (.hm-slot > .halo-hmslot, 06 §3) пока НЕ ставится: у .cn-slot в USS стоит
+            // overflow: hidden (CN_Window.uss:185), и ореол с отрицательными краями срезается целиком.
+            // Нужен неперекрывающий хозяин-обёртка — записано в отчёт как следующий шаг, а не как сделанное.
             var text = CnStyle.Label(SlotCodes[index], "cn-slot__t");
             slot.Add(text);
             _slots[index] = slot;

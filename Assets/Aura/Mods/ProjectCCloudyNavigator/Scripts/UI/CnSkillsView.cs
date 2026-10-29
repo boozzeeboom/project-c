@@ -65,6 +65,8 @@ namespace ProjectCCloudyNavigator.UI
                 if (i % GridColumns == GridColumns - 1) tile.AddToClassList("cn-skl--row-end");
                 if (i >= GridColumns * (GridRows - 1)) tile.AddToClassList("cn-skl--row-last");
                 CnStyle.Fill(tile, CnStyle.Veil, 0.4f);
+                // Свечение плитки (.sk-slot > .halo-skslot, 06 §3) пока НЕ ставится: у .cn-skl стоит
+                // overflow: hidden (CN_Window.uss:351) — ореол срезается. См. отчёт: нужна обёртка.
 
                 var code = CnStyle.Label(string.Empty, "cn-skl__c");
                 var name = CnStyle.Label(string.Empty, "cn-skl__n");

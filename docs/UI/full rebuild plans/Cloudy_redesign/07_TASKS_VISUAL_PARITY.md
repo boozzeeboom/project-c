@@ -371,10 +371,21 @@ Play Mode не запускался: живое перетаскивание с�
 хозяева стали «протекающими», свечение — полосы 12/12/12 `rgba(120,184,145,.55)` с включением по
 состоянию (`.cn-slot.is-hl`, hover плитки, пустая плитка не светит).
 
-### [ ] C3. `06` §4–§6 и §8
+### [~] C3. `06` §4–§6 и §8
 
-Внутренние ореолы (`.halo-in`), шапки и волоски (`.halo-cap` / `-hair`), кольца, кадровые keyframes —
-не перенесены. Это основной объём «облачности», которой в Unity нет.
+Первый шаг закрыл механику: рампа внутреннего ореола (`CnRamps.Inner` + `CnStyle.HaloInner`), кольца
+(`CnStyle.Ring`), канты (`CnStyle.Cap`) и волоски (`CnStyle.Bar`). Хосты, которым примитивы уже поставлены:
+окно попапа (`.halo-popin`, §4), карточка подсказки (`.halo-tipin`), ниша станции (`.halo-nichen`),
+узел графа (`.halo-rnin`), заметка графа (`.halo-notein`, включая латунный `.min`-вариант и его `ntpulse`),
+волосок календаря станции (`.halo-calhair`, §5), кант плитки бирки (`.halo-cap`), обвязка узла троса
+(`.halo-string`, §6), кольцо терминала (`.halo-endring`), точка двигателя (`.halo-dotglow`, §7).
+Были закрыты до C3: `.ln-hair`, `.halo-rnhair`, `.halo-arrow`, `.halo-tipc1/c2`, `.halo-open`, `.halo-endfill`.
+
+Осталось (следующий шаг): кадровые keyframes §8 одним драйвером (`rwpulse`, `rwtier`, `calpulse`, `calhl`,
+`calhl2`, `won`, `lb-smoke`, `bghit-hl`, `chflash`). Причина не в геометрии: в порте нет хостов `.rw-ring` /
+`.rw-fly` (ряды награды) и `.bg-tile` с состоянием `.on`, а у клеток календаря попапа и HP-полосы нет
+триггера, который мод вешает классами `.pulse` / `.hlp` / `.flash`. По той же причине не поставлены
+кольца `.cm-d`/`.cp-d`, `.sknring`, `.chhp`, `.hm-cr`, `.rl-tsw`, `.rw-*`.
 
 ---
 
@@ -582,3 +593,33 @@ Play Mode не запускался: живое перетаскивание с�
 - `Assets/_Project/**` не менялся; объекты сцены порт не создаёт; Play Mode не запускался.
 - Изменённые файлы прохода: `CnRelNotesStore.cs`, `CnNoteFold.cs`, `CnRelGraphView.cs`, `CN_Window.uss`,
   этот документ.
+
+### Проход C3-1
+
+- `Scripts/UI/CnRamps.cs`: `Inner(band, tint, alpha)` — внутренний ореол (прозрачная середина, цвет на кромке
+  хозяина, спад внутрь на `band` px); кэш общий с тенями и свечением.
+- `Scripts/UI/CnStyle.cs`: `HaloInner` (абсолютный ребёнок с 9-slice-рампой, вставляется первым), `Ring`
+  (рамка с `inset` наружу, `round` для узлов тросов), `Cap` (кант за кромку), `Bar` (волосок по числам мода);
+  `Tag` получил кант под плиткой.
+- Хосты: `CnPopup` (`.halo-popin`), `CnTip.Fill` (`.halo-tipin` — ставится после `Clear`, иначе его снимала
+  пересборка карточки), `CnStationView` (`.halo-nichen`, `.halo-calhair`), `CnLinesView` (`.halo-string`,
+  `.halo-endring`), `CnDockView` (`.halo-dotglow` с гашением при `ENGINE OFF`), `CnRelGraphView`
+  (`.halo-rnin`, `.halo-notein`).
+- `ntpulse` (06 §8) перенесён на свой настоящий субъект: гаснет внутренний ореол свёрнутой заметки
+  (`opacity .62 ↔ 1`), а не сам стикер. Класс `is-lift` по-прежнему ставит окно раз в 1.2 s.
+- Починка разворота свёрнутой заметки: канва ставила `CapturePointer` на `PointerDown`, поэтому
+  производный `ClickEvent` уходил канве, а не стикеру. Теперь указатель захватывается только после порога
+  3 px (`PanThreshold`, как `panning.moved` в `rel-graph.js:1172`); то же для перетаскивания стикера
+  (`NoteDragThreshold`). Побочно восстановлен выбор узла графа кликом.
+- Проба (edit mode, `execute_code`): USS — `606` правил, `importedWithErrors = False`,
+  `importedWithWarnings = False`; `CnRamps.Inner(7, …)` — текстура `22×22`, альфа на кромке `189`,
+  в середине `0`; `HaloInner(…, 12, …)` — ребёнок `0` с `cn-halo--in`, slice `12`, рампа на месте;
+  `Ring(…, 4.5, 3, …, round)` — `left = −4.5`, рамка `3`, радиус `50%`, `pickingMode = Ignore`;
+  `Bar(cal, −1, 5, 1, 13)` — `(−1, 5) 1×13`; кант бирки — `bottom = −1`, высота `1`; свёрнутый стикер —
+  `is-min`, один `cn-halo--in` с `cn-halo--note-in`, рваный край на месте, inline-`opacity` не задан,
+  `pickingMode = Position`; развёрнутый — ореол первым ребёнком, детей `7`; карточка подсказки — один
+  `.cn-halo--in` и оба уголка; окно попапа — один `.cn-halo--in` и тень.
+- `check_compile_errors` → `No compile errors`. Play Mode не запускался: свечение точки двигателя, кольца
+  узлов и тросов, канты и разворот заметки кликом требуют приёмки пользователем.
+- Изменённые файлы прохода: `CnRamps.cs`, `CnStyle.cs`, `CnPopup.cs`, `CnTip.cs`, `CnStationView.cs`,
+  `CnLinesView.cs`, `CnDockView.cs`, `CnRelGraphView.cs`, `CN_Window.uss`, этот документ.

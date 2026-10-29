@@ -51,6 +51,9 @@ namespace ProjectCCloudyNavigator.UI
             // Ореол окна (06 §3: .bg-pop/.sh-pop/.cal-more/.rw-fly — 34/20/48, rgba(0,0,0,.55)):
             // одна тень на все полноразмерные окна, поэтому окно читается над затемнением, а не как плашка.
             CnStyle.HaloShadow(_win, 34, 20, 48, CnStyle.Shadow, 0.55f);
+            // 06 §4: .bg-pop/.sh-pop > .halo-popin — внутренний ореол rgba(47,124,80,.14), радиус 2px.
+            // Без него плотная заливка окна читается плоской плашкой: кромка отделяет её от затемнения.
+            CnStyle.HaloInner(_win, 12, CnStyle.GasBright, 0.14f);
             _win.RegisterCallback<ClickEvent>(evt => evt.StopPropagation());
             _root.Add(_win);
 

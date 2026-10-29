@@ -3840,20 +3840,26 @@
 }
 
 /* Свёрнутая заметка (rel-graph.js:103-111): 44 × 42 без рамки; край и карандаш рисует CnNoteFold.
-   Пульс ntpulse (opacity .62 ↔ 1 за 2.4 s) — USS-переход, класс is-lift ставит окно раз в 1.2 s. */
+   Пульс ntpulse ведёт внутренний ореол стикера, а не он сам (06 §4/§8) — правила ниже. */
 .cn-relg__note.is-min {
     width: 44px;
     min-height: 42px;
     padding: 0;
     border-width: 0;
     background-color: rgba(0, 0, 0, 0);
-    opacity: 0.72;
+}
+
+/* ntpulse (06 §8: 2.4 s ease-in-out, ∞): в моде гаснет .rn-note.min > .halo-notein (opacity .62 ↔ 1),
+   сам стикер не гаснет. Половина цикла — класс is-lift, его ставит окно раз в 1.2 s; прозрачность —
+   USS-переход, поэтому кадрового драйвера у этой анимации нет. */
+.cn-halo--note-in {
+    opacity: 0.62;
     transition-property: opacity;
     transition-duration: 1.2s;
     transition-timing-function: ease-in-out;
 }
 
-.cn-relg__note.is-min.is-lift {
+.cn-relg__note.is-min.is-lift .cn-halo--note-in {
     opacity: 1;
 }
 
@@ -4080,4 +4086,10 @@
 /* `.sk-slot.empty:hover` → 0 в моде: у пустого слота свечения нет. */
 .cn-skl--empty:hover .cn-halo--lit {
     opacity: 0;
+}
+
+/* Кант бирки (06 §5: .lb-plate > .halo-cap): у снятой бирки его нет — display:none состояния .off.
+   Геометрию и цвет ставит CnStyle.Cap, здесь только снятие по состоянию хоста. */
+.cn-tag--off .cn-halo--cap {
+    display: none;
 }

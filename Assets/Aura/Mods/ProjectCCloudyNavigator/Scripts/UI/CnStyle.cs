@@ -168,6 +168,115 @@ namespace ProjectCCloudyNavigator.UI
         }
 
         /// <summary>
+        /// Внутренний ореол (06 §4: .halo-in, бывшая inset-тень): прозрачная середина и цвет на кромке хозяина,
+        /// гаснущий внутрь на band px. Края нулевые — ореол лежит ровно по хозяину и не выходит за его обрезку.
+        /// Ставится ПЕРВЫМ ребёнком: он должен лежать под содержимым.
+        /// </summary>
+        public static VisualElement HaloInner(VisualElement host, int band, Color tint, float alpha)
+        {
+            if (host == null) return null;
+
+            int b = Mathf.Max(1, band);
+            var halo = Deco("cn-halo");
+            halo.AddToClassList("cn-halo--in");
+            halo.style.position = Position.Absolute;
+            halo.style.left = 0f;
+            halo.style.top = 0f;
+            halo.style.right = 0f;
+            halo.style.bottom = 0f;
+            halo.style.backgroundImage = new StyleBackground(Background.FromTexture2D(CnRamps.Inner(b, tint, alpha)));
+
+            halo.style.unitySliceLeft = b;
+            halo.style.unitySliceTop = b;
+            halo.style.unitySliceRight = b;
+            halo.style.unitySliceBottom = b;
+            halo.style.unitySliceType = SliceType.Sliced;
+
+            host.Insert(0, halo);
+            return halo;
+        }
+
+        /// <summary>
+        /// Кольцо-рамка (06 §6: .halo-string / .halo-endring / .halo-calring и прочие border-ореолы):
+        /// абсолютный ребёнок только с рамкой. inset положительный — вылет наружу за хозяина (в моде inset
+        /// записан отрицательным); round — радиус 50% у круглых узлов тросов.
+        /// </summary>
+        public static VisualElement Ring(VisualElement host, float inset, float width, Color tint, float alpha, bool round = false)
+        {
+            if (host == null) return null;
+
+            var color = A(tint, alpha);
+            var ring = Deco("cn-halo");
+            ring.AddToClassList("cn-halo--ring");
+            ring.style.position = Position.Absolute;
+            ring.style.left = -inset;
+            ring.style.top = -inset;
+            ring.style.right = -inset;
+            ring.style.bottom = -inset;
+            ring.style.borderLeftWidth = width;
+            ring.style.borderRightWidth = width;
+            ring.style.borderTopWidth = width;
+            ring.style.borderBottomWidth = width;
+            ring.style.borderLeftColor = color;
+            ring.style.borderRightColor = color;
+            ring.style.borderTopColor = color;
+            ring.style.borderBottomColor = color;
+
+            if (round)
+            {
+                ring.style.borderTopLeftRadius = Length.Percent(50f);
+                ring.style.borderTopRightRadius = Length.Percent(50f);
+                ring.style.borderBottomLeftRadius = Length.Percent(50f);
+                ring.style.borderBottomRightRadius = Length.Percent(50f);
+            }
+
+            host.Add(ring);
+            return ring;
+        }
+
+        /// <summary>
+        /// Кант (06 §5: .lb-plate > .halo-cap): полоса по верхнему или нижнему краю хозяина. outside ставит её
+        /// за кромку, как bottom:-1px мода — кант не отнимает у хозяина пиксель раскладки.
+        /// </summary>
+        public static VisualElement Cap(VisualElement host, bool bottom, Color tint, float alpha,
+            float thickness = 1f, bool outside = true)
+        {
+            if (host == null) return null;
+
+            var cap = Deco("cn-halo");
+            cap.AddToClassList("cn-halo--cap");
+            cap.style.position = Position.Absolute;
+            cap.style.left = 0f;
+            cap.style.right = 0f;
+            cap.style.height = thickness;
+            if (bottom) cap.style.bottom = outside ? -thickness : 0f;
+            else cap.style.top = outside ? -thickness : 0f;
+            cap.style.backgroundColor = A(tint, alpha);
+
+            host.Add(cap);
+            return cap;
+        }
+
+        /// <summary>Волосок по литеральным числам мода (06 §5: .halo-calhair, .halo-rwhair, .halo-tilebar).</summary>
+        public static VisualElement Bar(VisualElement host, float left, float top, float width, float height,
+            Color tint, float alpha)
+        {
+            if (host == null) return null;
+
+            var bar = Deco("cn-halo");
+            bar.AddToClassList("cn-halo--bar");
+            bar.style.position = Position.Absolute;
+            bar.style.left = left;
+            bar.style.top = top;
+            bar.style.width = width;
+            bar.style.height = height;
+            bar.style.backgroundColor = A(tint, alpha);
+
+            host.Add(bar);
+            return bar;
+        }
+
+        /// <summary>
         /// Оценка ширины строки шрифтом Inter (средний глиф ≈ 0.55 em, жирный ≈ 0.6 em) плюс разрядка.
         /// Нужна только раскладке тросов и бирок; если ошиблась на пару пикселей — подпись режется многоточием.
         /// </summary>
@@ -202,6 +311,10 @@ namespace ProjectCCloudyNavigator.UI
             if (Mathf.Abs(tilt) > 0.01f) plate.style.rotate = new Rotate(new Angle(tilt, AngleUnit.Degree));
             Fill(plate, ProjectCMainMenuPalette.Hex("#090e0b"), 0.62f);
             tag.Add(plate);
+
+            // 06 §5: .lb-plate > .halo-cap — латунный кант 1 px по нижней кромке плитки, на 1 px за неё.
+            // У снятой бирки его нет: правило .cn-tag--off .cn-halo--cap в CN_Window.uss.
+            Cap(plate, true, Brass, 1f);
 
             tag.Add(Rivet("cn-tag__riv--a"));
             tag.Add(Label(verb == null ? string.Empty : verb.ToUpperInvariant(), "cn-tag__v"));

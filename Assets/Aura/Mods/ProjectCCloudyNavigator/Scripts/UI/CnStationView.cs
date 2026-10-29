@@ -138,6 +138,10 @@ namespace ProjectCCloudyNavigator.UI
             // ---- прибор-календарь (calendar.js .cal)
             var cal = CnStyle.Box("cn-cal");
             CnStyle.Fill(cal, CnStyle.Veil, 0.6f);
+
+            // 06 §5: .cal > .halo-calhair — латунный волосок 1 × 13 px у левого края прибора (top 5, left −1).
+            CnStyle.Bar(cal, -1f, 5f, 1f, 13f, CnStyle.BrassDeep, 0.65f);
+
             cal.Add(CnStyle.Label("СЕГОДНЯ", "cn-cal__k"));
             _calDate = CnStyle.Label("—", "cn-cal__date");
             cal.Add(_calDate);
@@ -196,6 +200,10 @@ namespace ProjectCCloudyNavigator.UI
             var cent = CnStyle.Box("cn-cent");
 
             var niche = CnStyle.Box("cn-niche");
+
+            // 06 §4: .hm-niche > .halo-nichen — внутренний ореол rgba(47,124,80,.16), радиус 2px.
+            CnStyle.HaloInner(niche, 12, CnStyle.GasBright, 0.16f);
+
             var hpRow = CnStyle.Row("cn-hp");
             hpRow.Add(CnStyle.Label("HP", "cn-hp__k"));
             hpRow.Add(CnStyle.Box("cn-grow"));

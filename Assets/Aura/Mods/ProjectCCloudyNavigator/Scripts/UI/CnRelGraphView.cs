@@ -46,6 +46,8 @@ namespace ProjectCCloudyNavigator.UI
         private const float FoldW = 44f;     // rel-graph.js:103 — .rn-note.min width:44px
         private const float FoldH = 42f;     // rel-graph.js:103 — min-height:42px
         private const int PulseMs = 1200;    // половина цикла ntpulse 2.4 s (rel-graph.js:110-111)
+        private const float PanThreshold = 3f;      // rel-graph.js:1172 — panning.moved включается только после сдвига
+        private const float NoteDragThreshold = 3f; // то же для стикера: клик не должен становиться перетаскиванием
 
         /// <summary>Глаголы рёбер мода (relations.js EDGE_TYPES: type 1…6).</summary>
         private static readonly string[] EdgeNames = { "—", "состоит в", "влияет на", "союз / вражда", "выдаёт / принимает", "награда", "требует" };
@@ -90,10 +92,12 @@ namespace ProjectCCloudyNavigator.UI
         private float _zoom = 1f;
         private Vector2 _pan;
         private bool _dragging;
+        private bool _dragMoved;
         private Vector2 _dragFrom;
         private Vector2 _panFrom;
 
         private string _noteDragId = string.Empty;
+        private bool _noteDragMoved;
         private Vector2 _noteDragFrom;
         private Vector2 _notePosFrom;
 
@@ -199,20 +203,36 @@ namespace ProjectCCloudyNavigator.UI
             _root.Add(body);
 
             // Перетаскивание полотна: захват указателя на канве, сдвиг содержимого через left/top.
+            // Захват ставится НЕ на нажатие, а после порога сдвига: пока указатель захвачен канвой, производный
+            // ClickEvent уходит ей, а не ребёнку — из-за этого не разворачивались свёрнутые заметки и не
+            // выбирались узлы. В моде то же правило — флаг panning.moved (rel-graph.js:1169-1197).
             _canvas.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) return;
                 _dragging = true;
+                _dragMoved = false;
                 _dragFrom = evt.position;
                 _panFrom = _pan;
-                _canvas.CapturePointer(evt.pointerId);
-                evt.StopPropagation();
             });
 
             _canvas.RegisterCallback<PointerMoveEvent>(evt =>
             {
                 if (!_dragging) return;
-                _pan = _panFrom + (Vector2)(evt.position - (Vector3)_dragFrom);
+                if ((evt.pressedButtons & 1) == 0)
+                {
+                    _dragging = false;   // кнопку отпустили вне канвы — панорама кончилась
+                    return;
+                }
+
+                var delta = (Vector2)evt.position - _dragFrom;
+                if (!_dragMoved)
+                {
+                    if (delta.sqrMagnitude < PanThreshold * PanThreshold) return;
+                    _dragMoved = true;
+                    _canvas.CapturePointer(evt.pointerId);
+                }
+
+                _pan = _panFrom + delta;
                 ApplyPan();
             });
 
@@ -220,6 +240,9 @@ namespace ProjectCCloudyNavigator.UI
             {
                 if (!_dragging) return;
                 _dragging = false;
+                if (!_dragMoved) return;
+
+                _dragMoved = false;
                 _canvas.ReleasePointer(evt.pointerId);
             });
 
@@ -300,6 +323,9 @@ namespace ProjectCCloudyNavigator.UI
                 view.AddToClassList(node.kind == 0 ? "is-f" : node.kind == 1 ? "is-n" : "is-q");
                 if (node.kind != 2) CnStyle.Fill(view, CnStyle.VeilSoft, 0.82f);
                 else CnStyle.Fill(view, CnStyle.Veil, 0.72f);
+
+                // 06 §4: .rn > .halo-rnin — внутренний ореол rgba(7,10,9,.8) по кромке узла графа.
+                CnStyle.HaloInner(view, 7, CnStyle.Veil, 0.8f);
 
                 if (ring > 0f)
                     view.Add(new CnRelRing(ring, node.value, node.scaleMin, node.scaleMax,
@@ -550,6 +576,11 @@ namespace ProjectCCloudyNavigator.UI
             if (note.collapsed)
             {
                 view.AddToClassList("is-min");
+
+                // 06 §4: .rn-note.min > .halo-notein — латунный внутренний ореол rgba(141,122,78,.4), и пульс
+                // ntpulse (.62 ↔ 1 за 2.4 s, §8) ведёт именно этот ореол, а не сам стикер, как было в A13.
+                CnStyle.HaloInner(view, 7, CnStyle.BrassDeep, 0.4f)?.AddToClassList("cn-halo--note-in");
+
                 view.Add(new CnNoteFold());
 
                 var folded = note;
@@ -562,6 +593,9 @@ namespace ProjectCCloudyNavigator.UI
                 });
                 return view;
             }
+
+            // 06 §4: .rn-note > .halo-notein — внутренний ореол rgba(7,10,9,.7): плёнка заметки плотнее узла.
+            CnStyle.HaloInner(view, 7, CnStyle.Veil, 0.7f);
 
             // Латунный волосок заметки (rel-graph.js:84: псевдоэлемент before стал ребёнком .halo-rnhair).
             view.Add(CnStyle.Deco("cn-relg__note-hair"));
@@ -640,8 +674,9 @@ namespace ProjectCCloudyNavigator.UI
         }
 
         /// <summary>
-        /// Перетаскивание стикера (rel-graph.js:1048-1072). Указатель захватывает сама заметка, а нажатие не уходит
-        /// в полотно — иначе перетаскивание заметки превращалось бы в панораму графа.
+        /// Перетаскивание стикера (rel-graph.js:1048-1072). Нажатие не уходит в полотно — иначе перетаскивание
+        /// заметки превращалось бы в панораму графа, — но указатель захватывается только после порога сдвига:
+        /// захват на нажатии отдавал бы ClickEvent заметке целиком и съедал бы клик «развернуть» у свёрнутой.
         /// </summary>
         private void Drag(VisualElement view, CnRelNote note)
         {
@@ -652,16 +687,28 @@ namespace ProjectCCloudyNavigator.UI
                 if (IsFieldTarget(evt.target as VisualElement)) return;
 
                 _noteDragId = note.id;
+                _noteDragMoved = false;
                 _noteDragFrom = (Vector2)evt.position;
                 _notePosFrom = new Vector2(note.x, note.y);
-                view.CapturePointer(evt.pointerId);
             });
 
             view.RegisterCallback<PointerMoveEvent>(evt =>
             {
                 if (_noteDragId != note.id) return;
+                if ((evt.pressedButtons & 1) == 0)
+                {
+                    _noteDragId = string.Empty;   // кнопку отпустили вне заметки
+                    return;
+                }
 
                 var delta = (Vector2)evt.position - _noteDragFrom;
+                if (!_noteDragMoved)
+                {
+                    if (delta.sqrMagnitude < NoteDragThreshold * NoteDragThreshold) return;
+                    _noteDragMoved = true;
+                    view.CapturePointer(evt.pointerId);
+                }
+
                 var size = CanvasSize();
                 note.x = Mathf.Clamp(_notePosFrom.x + delta.x, 0f, Mathf.Max(0f, size.x - NoteW));
                 note.y = Mathf.Clamp(_notePosFrom.y + delta.y, 0f, Mathf.Max(0f, size.y - NoteH));
@@ -674,6 +721,9 @@ namespace ProjectCCloudyNavigator.UI
             {
                 if (_noteDragId != note.id) return;
                 _noteDragId = string.Empty;
+                if (!_noteDragMoved) return;
+
+                _noteDragMoved = false;
                 view.ReleasePointer(evt.pointerId);
                 _notes.SetPos(note.id, note.x, note.y);
             });

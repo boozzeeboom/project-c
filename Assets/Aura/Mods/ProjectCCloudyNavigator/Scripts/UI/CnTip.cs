@@ -265,6 +265,11 @@ namespace ProjectCCloudyNavigator.UI
         private void Fill(CnTipCard card)
         {
             _card.Clear();
+
+            // 06 §4: .tip-card > .halo-tipin — внутренний ореол rgba(47,124,80,.14). Ставится после Clear:
+            // содержимое карточки пересобирается на каждом показе, и ореол обязан собираться вместе с ним.
+            CnStyle.HaloInner(_card, 9, CnStyle.GasBright, 0.14f);
+
             _card.Add(Corner("cn-tip__corner--a"));
             _card.Add(Corner("cn-tip__corner--b"));
 

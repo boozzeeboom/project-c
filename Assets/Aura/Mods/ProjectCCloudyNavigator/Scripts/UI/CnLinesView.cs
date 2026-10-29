@@ -447,6 +447,11 @@ namespace ProjectCCloudyNavigator.UI
                 ApplyNodeState(node, state);
                 node.Add(CnStyle.Label(state == "done" ? "✓" : (i + 1).ToString(), "cn-st__glyph"));
                 if (open) node.Add(CnStyle.Deco("cn-st__open"));
+
+                // 06 §6: .st-node > .halo-string — тёмная обвязка inset −4.5, 3 px, радиус 50%: узел
+                // троса читается как намотанный, а не как плоский квадрат. Кольцо вне узла, глиф не кроет.
+                CnStyle.Ring(node, 4.5f, 3f, CnStyle.Veil, 0.55f, true);
+
                 b.Add(node);
 
                 int step = i;
@@ -479,6 +484,10 @@ namespace ProjectCCloudyNavigator.UI
             var endFill = CnStyle.Deco("cn-end__fill");
             endFill.style.backgroundColor = CnStyle.A(line.color, 0.55f);
             endNode.Add(endFill);
+
+            // 06 §6: .end-node > .halo-endring — inset −5, 3 px, rgba(7,10,9,.6), радиус 2px.
+            CnStyle.Ring(endNode, 5f, 3f, CnStyle.Veil, 0.6f);
+
             el.Add(endNode);
 
             // ---- каретка на текущей станции

@@ -119,6 +119,50 @@ namespace ProjectCCloudyNavigator.UI
             return Store(key, size, size, pixels);
         }
 
+        /// <summary>
+        /// Внутренний ореол (.halo-in, 06 §4): в CSS это inset-тень / радиальный градиент «прозрачно до 46%,
+        /// цвет на 100%». Здесь та же монотонная рампа развёрнута внутрь: альфа равна a на кромке хозяина и
+        /// гаснет к нулю на глубине band px. Середина текстуры прозрачна и растягивается 9-slice-ядром,
+        /// поэтому ореол одинаков на узле 44 px и на окне 1200 px.
+        /// </summary>
+        public static Texture2D Inner(int band, Color tint, float alpha)
+        {
+            int b = Mathf.Max(1, band);
+
+            Color corrected = CnStyle.Alpha(tint, alpha, CnStyle.Veil);
+            string key = string.Concat("in", b, ":", Key(corrected));
+
+            if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
+
+            int w = b + ShadowCore + b;
+            int h = w;
+            var pixels = new Color32[w * h];
+            Color32 ink = corrected;
+            ink.a = 0;
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    // 1 у самой кромки хозяина, 0 на глубине band px; в середине — 0.
+                    float fx = 0f;
+                    if (x < b) fx = 1f - (x + 0.5f) / b;
+                    else if (x >= w - b) fx = 1f - (w - 0.5f - x) / b;
+
+                    float fy = 0f;
+                    if (y < b) fy = 1f - (y + 0.5f) / b;
+                    else if (y >= h - b) fy = 1f - (h - 0.5f - y) / b;
+
+                    // Максимум двух полос: угол не темнее стороны, как у радиального градиента мода.
+                    float f = Mathf.Max(fx, fy);
+                    ink.a = (byte)Mathf.RoundToInt(Mathf.Clamp01(f * corrected.a) * 255f);
+                    pixels[y * w + x] = ink;
+                }
+            }
+
+            return Store(key, w, h, pixels);
+        }
+
         /// <summary>Сколько текстур запечено — для пробника окна.</summary>
         public static int Count => Cache.Count;
 

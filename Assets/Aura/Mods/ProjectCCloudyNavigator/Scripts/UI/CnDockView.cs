@@ -201,6 +201,12 @@ namespace ProjectCCloudyNavigator.UI
             var eng = CnStyle.Row("cn-sh__eng");
             var lamp = CnStyle.Deco("cn-sh__lamp");
             lamp.style.backgroundColor = ship.isEngineRunning ? CnStyle.Accent : CnStyle.VeilEdge;
+
+            // 06 §7: .sh-eng > i > .halo-dotglow — круглая рампа 8 px, rgba(120,184,145,.7); у выключенного
+            // двигателя гаснет в 0. Наличие кружка остаётся: он читается и без свечения.
+            var glow = CnStyle.HaloGlow(lamp, 8, CnStyle.Accent, 0.7f);
+            if (glow != null) glow.style.opacity = ship.isEngineRunning ? 1f : 0f;
+
             eng.Add(lamp);
             var engText = CnStyle.Label(ship.isEngineRunning ? "ENGINE ON" : "ENGINE OFF", "cn-sh__engt");
             engText.EnableInClassList("cn-sh__engt--off", !ship.isEngineRunning);

@@ -20,7 +20,10 @@ namespace ProjectCCloudyNavigator
         private readonly CnStationView _station;
         private readonly CnMainView _main;
         private readonly CnAltRailView _altrail;
+        private readonly CnMotion _motion;
         private float _lastWidth = -1f;
+        private bool _openPending;
+        private float _openWait;
 
         /// <summary>Окно читает игру, но не пишет в неё: единственный владелец данных — CnDataFeed.</summary>
         public CnDataFeed Data => _feed;
@@ -32,6 +35,7 @@ namespace ProjectCCloudyNavigator
             _station = new CnStationView();
             _main = new CnMainView();
             _altrail = new CnAltRailView();
+            _motion = new CnMotion();
         }
 
         /// <summary>Корень окна. null до Mount.</summary>
@@ -53,6 +57,7 @@ namespace ProjectCCloudyNavigator
             _root.Add(_station.Root);
             _root.Add(_main.Root);
             _root.Add(_altrail.Root);
+            _root.Add(_motion.Layer);   // слой движения — последним, поверх панелей
 
             _root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
@@ -63,11 +68,55 @@ namespace ProjectCCloudyNavigator
         /// <summary>Кадр окна. dt уже зажат хостом (≤ 0.1 с), чтобы паузы редактора не рвали анимации.</summary>
         public void Update(float dt)
         {
-            // шаг 5+: поле дыма, movement-переходы
-            _feed.Tick(dt);
+            float step = Mathf.Clamp(dt, 0f, 0.1f);
+
+            // Показ: облако собирается по РЕАЛЬНЫМ прямоугольникам, поэтому ждём первого кадра с раскладкой
+            // (но не дольше 0.2 с — иначе блок так и остался бы прозрачным).
+            if (_openPending)
+            {
+                _openWait += step;
+                if (_root.worldBound.width > 1f || _openWait > 0.2f)
+                {
+                    _openPending = false;
+                    _motion.Open(_station.Root, 6, 0.9f);
+                    _motion.Open(_main.Root, 8, 1f, 0.04f);
+                    _motion.Open(_altrail.Root, 4, 0.7f, 0.08f);
+                }
+            }
+
+            _feed.Tick(step);
             _station.Refresh(_feed);
             _main.Refresh(_feed);
             _altrail.Refresh(_feed);
+            _motion.Tick(step);
+        }
+
+        /// <summary>Слой движения окна: визуальный, состояние игры не читает и не меняет.</summary>
+        public CnMotion Motion => _motion;
+
+        /// <summary>Показ: блоки сразу прозрачны, облако собирается, как только посчитана раскладка.</summary>
+        public void RequestOpen()
+        {
+            if (_root == null) return;
+
+            _station.Root.style.opacity = 0f;
+            _main.Root.style.opacity = 0f;
+            _altrail.Root.style.opacity = 0f;
+            _openPending = true;
+            _openWait = 0f;
+        }
+
+        /// <summary>
+        /// Уход: рассеивание стартует, пока раскладка ещё живая; корень прячет хост по <see cref="CnMotion.Busy"/>.
+        /// </summary>
+        public void RequestClose()
+        {
+            if (_root == null) return;
+
+            _openPending = false;
+            _motion.Close(_station.Root, 6, 0.9f);
+            _motion.Close(_main.Root, 8, 1f);
+            _motion.Close(_altrail.Root, 4, 0.7f);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt) => ApplyLayout(evt.newRect.width);
@@ -96,6 +145,8 @@ namespace ProjectCCloudyNavigator
 
         public void Dispose()
         {
+            _motion.Reset();
+
             if (_root != null)
             {
                 _root.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);

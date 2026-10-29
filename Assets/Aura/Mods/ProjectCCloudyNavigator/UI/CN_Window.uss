@@ -431,3 +431,33 @@
 .cn-root.is-narrow .cn-line__sub {
     font-size: 9px;
 }
+
+/* ---------------------------------------------------------------- слой движения */
+
+.cn-motion {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Классы переиспользованных классов меню: их слои и пуфы позиционируются кодом (см. CnMotion),
+ * здесь только рамка слоя — без неё пуфы встанут в поток и разложат панели. */
+.cn-motion .pc-smoke-field,
+.cn-motion .pc-ghost-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.cn-motion .pc-smoke-puff {
+    position: absolute;
+}
+
+.cn-motion .pc-ghost {
+    position: absolute;
+    overflow: visible;
+}

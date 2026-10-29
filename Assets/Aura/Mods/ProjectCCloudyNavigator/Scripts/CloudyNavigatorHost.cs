@@ -58,6 +58,14 @@ namespace ProjectCCloudyNavigator
             // видимость подтверждаем каждый кадр, иначе прозрачный контейнер останется поверх игры и съест клики.
             if (!_open)
             {
+                // Пока идёт рассеивание, корень ещё видим: кадр двигает только движение, данные уже не читаются.
+                if (_window != null && _window.Motion.Busy)
+                {
+                    _window.Update(Mathf.Min(Time.unscaledDeltaTime, 0.1f));
+                    if (!_window.Motion.Busy) ApplyVisibility(false);
+                    return;
+                }
+
                 ApplyVisibility(false);
                 return;
             }
@@ -92,6 +100,8 @@ namespace ProjectCCloudyNavigator
             var ui = UIManager.Instance;
             if (ui != null && !ui.IsPanelOpen(PanelName)) ui.OpenPanel(PanelName, PanelPriority, Hide, gameObject);
 
+            if (_window != null) _window.RequestOpen();
+
             Log("открыто");
         }
 
@@ -100,10 +110,12 @@ namespace ProjectCCloudyNavigator
             if (!_open) return;
             _open = false;
 
-            ApplyVisibility(false);
-
             var ui = UIManager.Instance;
             if (ui != null && ui.IsPanelOpen(PanelName)) ui.ClosePanel(PanelName);
+
+            // Ввод разблокирован сразу (ClosePanel выше), а корень прячется в Update — когда затихнет рассеивание.
+            if (_window != null) _window.RequestClose();
+            else ApplyVisibility(false);
 
             Log("закрыто");
         }

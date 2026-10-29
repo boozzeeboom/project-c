@@ -7,6 +7,8 @@
 //   отказаться от квеста      → НЕ вызывается: сервера отказа нет, только честное сообщение Loc
 //   сдать квест               → НЕ вызывается: сдача идёт через диалог с NPC (02 §7)
 //   контракты                 → ContractClientState.RequestAccept / Complete / Fail / ReceiveCargo
+//   изучить / забыть навык    → SkillsServer.RequestLearnSkillRpc / RequestForgetSkillRpc (публичные RPC,
+//                               те же, что легаси-окно зовёт рефлексией); привязка — SkillInputService.BindSlot
 //   багаж ↔ трюм              → ShipCargoServer.RequestStoreToCargoRpc / RequestRetrieveFromCargoRpc,
 //                               только в триггер-зоне обменника (рынок либо консоль трюма корабля) и только
 //                               кратными курсом упаковки порциями (ExchangeRateEntry.inventoryQty / warehouseQty)
@@ -21,6 +23,7 @@ using ProjectC.Items.Client;
 using ProjectC.Localization;
 using ProjectC.Quests.Client;
 using ProjectC.Quests.UI;
+using ProjectC.Skills;
 using ProjectC.Trade;
 using ProjectC.Trade.Client;
 using ProjectC.Trade.Config;
@@ -223,6 +226,74 @@ namespace ProjectCCloudyNavigator.Actions
             return CnActionResult.Ok(Messages.RequestSent);
         }
 
+        // ------------------------------------------------------------------ навыки
+
+        /// <summary>
+        /// Изучить навык. Клиентского враппера нет: единственный вход — публичный RPC
+        /// <c>SkillsServer.RequestLearnSkillRpc</c> (<c>SendTo.Server</c>, <c>InvokePermission.Owner</c>), его же
+        /// вызывает легаси-окно персонажа и дерево навыков. Сервер отвечает <c>SkillResultDto</c>, снапшот
+        /// приходит событием <c>SkillsClientState.OnSkillsUpdated</c> — окно само не меняет состояние навыков.
+        /// </summary>
+        public CnActionResult LearnSkill(string skillId, string displayName)
+        {
+            if (string.IsNullOrEmpty(skillId)) return CnActionResult.Fail(Messages.NoSkill);
+
+            var server = SkillsServer.Instance;
+            if (server == null) return CnActionResult.Fail(Messages.SkillsServerUnavailable);
+
+            server.RequestLearnSkillRpc(skillId);
+            return CnActionResult.Ok(Messages.LearnSent + ": " + displayName);
+        }
+
+        /// <summary>Забыть навык — тот же путь, что у легаси: <c>SkillsServer.RequestForgetSkillRpc</c>.</summary>
+        public CnActionResult ForgetSkill(string skillId, string displayName)
+        {
+            if (string.IsNullOrEmpty(skillId)) return CnActionResult.Fail(Messages.NoSkill);
+
+            var server = SkillsServer.Instance;
+            if (server == null) return CnActionResult.Fail(Messages.SkillsServerUnavailable);
+
+            server.RequestForgetSkillRpc(skillId);
+            return CnActionResult.Ok(Messages.ForgetSent + ": " + displayName);
+        }
+
+        /// <summary>
+        /// Привязать навык к слоту ввода. Порядок ровно как <c>SkillTreeWindow.OnBindSlotClicked</c>: если навык
+        /// уже стоит в ДРУГОМ слоте — сначала отвязать оттуда, потом привязать к выбранному. Действие локальное:
+        /// биндинг живёт в <c>SkillInputService</c>, а не на сервере.
+        /// </summary>
+        public CnActionResult BindSkillSlot(byte slotValue, string skillId, string slotCode, string displayName)
+        {
+            if (string.IsNullOrEmpty(skillId)) return CnActionResult.Fail(Messages.NoSkill);
+
+            var input = SkillInputService.Instance;
+            if (input == null) return CnActionResult.Fail(Messages.SkillInputUnavailable);
+
+            var target = (SkillInputSlot)slotValue;
+            var old = FindBoundSlot(input, skillId);
+            if (old.HasValue && old.Value != target) input.BindSlot(old.Value, string.Empty);
+
+            input.BindSlot(target, skillId);
+            return CnActionResult.Ok(Messages.Bound + ": " + displayName + " → " + slotCode);
+        }
+
+        /// <summary>Снять навык со слота: <c>BindSlot(slot, "")</c> — тот же приём, каким легаси освобождает слот.</summary>
+        public CnActionResult UnbindSkillSlot(byte slotValue, string slotCode, string displayName)
+        {
+            var input = SkillInputService.Instance;
+            if (input == null) return CnActionResult.Fail(Messages.SkillInputUnavailable);
+
+            input.BindSlot((SkillInputSlot)slotValue, string.Empty);
+            return CnActionResult.Ok(Messages.Unbound + ": " + displayName + " ← " + slotCode);
+        }
+
+        private static SkillInputSlot? FindBoundSlot(SkillInputService input, string skillId)
+        {
+            foreach (var pair in input.GetAllBindings())
+                if (pair.Value == skillId) return pair.Key;
+            return null;
+        }
+
         // ------------------------------------------------------------------ багаж ↔ трюм
 
         /// <summary>Сколько полных упаковок есть у игрока по этому предмету (курс ищется по ItemData.itemName).</summary>
@@ -349,6 +420,11 @@ namespace ProjectCCloudyNavigator.Actions
             public const string NoQuest = "квест не выбран";
             public const string NoContract = "контракт не выбран";
             public const string NoShip = "нет корабля";
+            public const string NoSkill = "навык не выбран";
+            public const string LearnSent = "запрос на изучение отправлен";
+            public const string ForgetSent = "запрос на забывание отправлен";
+            public const string Bound = "навык назначен";
+            public const string Unbound = "навык снят со слота";
             public const string NoRate = "курс обмена не найден";
             public const string RequestSent = "запрос отправлен";
             public const string Tracking = "слежу";
@@ -361,6 +437,8 @@ namespace ProjectCCloudyNavigator.Actions
             public const string ContractUnavailable = "контракт недоступен";
             public const string ContractNotActive = "контракт не активен";
             public const string CargoServerUnavailable = "сервер груза недоступен";
+            public const string SkillsServerUnavailable = "сервер навыков недоступен";
+            public const string SkillInputUnavailable = "служба ввода навыков недоступна";
             public const string RejectUnavailable = "отказ от квеста пока не реализован (ждёт серверную часть)";
 
             public static string NoPack(int need, int gives)

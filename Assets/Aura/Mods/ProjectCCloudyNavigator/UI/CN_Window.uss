@@ -2198,6 +2198,63 @@
     color: #a8b6ac;
 }
 
+.cn-skg__acts {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+    margin-top: 10px;
+}
+
+.cn-skg__blocked {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #71806f;
+    white-space: normal;
+}
+
+.cn-skg__binds {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.cn-skg__bind {
+    height: 24px;
+    padding-left: 8px;
+    padding-right: 8px;
+    margin-top: 4px;
+    margin-right: 4px;
+    align-items: center;
+    justify-content: center;
+    border-width: 1px;
+    border-color: rgba(96, 150, 116, 0.28);
+    overflow: hidden;
+}
+
+.cn-skg__bind:hover {
+    border-color: #a8b6ac;
+}
+
+.cn-skg__bind.is-on {
+    border-color: #78b891;
+}
+
+.cn-skg__bind.is-taken {
+    border-color: rgba(96, 150, 116, 0.16);
+}
+
+.cn-skg__bind.is-cd {
+    border-color: #b9915a;
+}
+
+.cn-skg__bind-t {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #a8b6ac;
+}
+
 /* ======================= кликабельные блоки станции, шапки дока и вход в задания ======================= */
 
 .cn-clickable:hover {

@@ -6,8 +6,11 @@
 // Рёбра — Painter2D 2 px от низа предпосылки к верху зависимого узла; зелёное ребро — предпосылка выучена.
 //
 // Видимость узлов ровно как у легаси (SocialSkillTreeWindow.IsSkillVisible): AlwaysVisible ‖ выучен ‖ известен.
-// Окно не раскрывает скрытые знания и ничего не изучает: запроса изучения на клиенте нет, он идёт серверным RPC
-// SkillsServer.RequestLearnSkillRpc из легаси-окна персонажа.
+//
+// Действия — те же, что в окне персонажа: «ИЗУЧИТЬ»/«ЗАБЫТЬ» идут публичными RPC SkillsServer
+// (RequestLearnSkillRpc / RequestForgetSkillRpc), привязка к слоту — локальный SkillInputService.BindSlot
+// в том же порядке, что OnBindSlotClicked легаси: снять с другого слота, потом привязать к выбранному.
+// Состояние навыков окно не меняет: после запроса оно приходит снапшотом SkillsClientState.
 //
 // Социальный граф дополнительно включает предпосылки, помеченные другим разделом (в ассетах social_basic_talk
 // помечен боевым, хотя от него зависят «Торговля» и «Убеждение»): такой узел помечается «ДРУГОЙ РАЗДЕЛ»,
@@ -15,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using ProjectCCloudyNavigator.Actions;
 using ProjectCCloudyNavigator.Data;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -45,6 +49,8 @@ namespace ProjectCCloudyNavigator.UI
         private readonly ScrollView _scroll;
         private readonly VisualElement _graph;
         private readonly ScrollView _det;
+        private readonly CnActions _actions;
+        private readonly Action<CnActionResult> _report;
 
         private readonly List<Edge> _edges = new List<Edge>(64);
 
@@ -59,8 +65,12 @@ namespace ProjectCCloudyNavigator.UI
             public bool on;
         }
 
-        public CnSkillsPanel()
+        /// <summary>actions — единственный путь к игре; report — строка отчёта главного окна.</summary>
+        public CnSkillsPanel(CnActions actions, Action<CnActionResult> report)
         {
+            _actions = actions;
+            _report = report;
+
             _root = CnStyle.Box("cn-skg");
 
             _tabs = CnStyle.Row("cn-skg__tabs");
@@ -129,6 +139,16 @@ namespace ProjectCCloudyNavigator.UI
                   .Append(n.category).Append(n.treeX).Append(',').Append(n.treeY).Append(';');
             }
 
+            // Слоты не входят в узлы, но от них зависит разметка привязки: смена биндинга должна пересобрать разбор.
+            sb.Append('#');
+            var slots = feed.skillSlots;
+            if (slots != null)
+            {
+                for (int i = 0; i < slots.Length; i++)
+                    sb.Append(slots[i].slot).Append(':').Append(slots[i].skillId)
+                      .Append(slots[i].onCooldown ? 'c' : '.').Append(';');
+            }
+
             return sb.ToString();
         }
 
@@ -168,7 +188,7 @@ namespace ProjectCCloudyNavigator.UI
 
             BuildTabs(all, all.Length);
             BuildGraph(picked, byId, foreign);
-            BuildDetail(picked, byId, foreign);
+            BuildDetail(picked, byId, foreign, feed);
         }
 
         // ------------------------------------------------------------------ вкладки
@@ -376,7 +396,7 @@ namespace ProjectCCloudyNavigator.UI
         // ------------------------------------------------------------------ разбор узла
 
         private void BuildDetail(List<CnSkillNodeRow> picked, Dictionary<string, CnSkillNodeRow> byId,
-            HashSet<string> foreign)
+            HashSet<string> foreign, CnDataFeed feed)
         {
             _det.Clear();
 
@@ -407,6 +427,8 @@ namespace ProjectCCloudyNavigator.UI
             meta.Add(CnStyle.Label(row.active ? "АКТИВНЫЙ" : "ПАССИВНЫЙ", "cn-skg__det-type"));
             if (foreign.Contains(row.skillId)) meta.Add(CnStyle.Label("ДРУГОЙ РАЗДЕЛ", "cn-skg__det-foreign"));
             _det.Add(meta);
+
+            BuildActions(row, feed);
 
             DetailRow("КУЛДАУН", row.active ? row.cooldown.ToString("0.0") + " с" : "не применяется");
             DetailRow("ИЗУЧЕНИЕ", row.learnXp > 0f ? row.learnXp.ToString("0") + " XP" : "бесплатно");
@@ -440,8 +462,114 @@ namespace ProjectCCloudyNavigator.UI
                 }
             }
 
-            _det.Add(CnStyle.Label("изучение и назначение на слот — в окне персонажа (P); это окно только показывает",
+            _det.Add(CnStyle.Label(row.learned
+                    ? "привязка локальная, как в окне персонажа: клик по слоту переназначает навык, повторный — снимает"
+                    : "изучение идёт тем же серверным запросом, что и из окна персонажа (P)",
                 "cn-skg__det-note"));
+        }
+
+        // ------------------------------------------------------------------ действия узла
+
+        /// <summary>
+        /// Действия узла. Набор ровно как в легаси SkillTreeWindow: «изучить» видна только когда выучка возможна,
+        /// «забыть» и шесть слотов — только у выученного (L546-555). Ничего не выполняется без _actions.
+        /// </summary>
+        private void BuildActions(CnSkillNodeRow row, CnDataFeed feed)
+        {
+            var acts = CnStyle.Row("cn-skg__acts");
+
+            if (row.learned)
+            {
+                var forget = CnStyle.Tag("забыть");
+                forget.AddToClassList("is-first");
+                forget.tooltip = "снять навык: слоты, где он стоит, освободятся в игре";
+                forget.RegisterCallback<ClickEvent>(evt =>
+                {
+                    evt.StopPropagation();
+                    SkillAction(_actions != null ? _actions.ForgetSkill(row.skillId, row.displayName) : default);
+                });
+                acts.Add(forget);
+            }
+            else if (row.canLearn)
+            {
+                var learn = CnStyle.Tag("изучить", row.learnXp > 0f ? row.learnXp.ToString("0") + " XP" : null);
+                learn.AddToClassList("is-first");
+                learn.tooltip = "запрос уйдёт на сервер тем же RPC, что из окна персонажа";
+                learn.RegisterCallback<ClickEvent>(evt =>
+                {
+                    evt.StopPropagation();
+                    SkillAction(_actions != null ? _actions.LearnSkill(row.skillId, row.displayName) : default);
+                });
+                acts.Add(learn);
+            }
+            else
+            {
+                acts.Add(CnStyle.Label("предпосылки не выучены — изучение заперто", "cn-skg__blocked"));
+            }
+
+            if (acts.childCount > 0) _det.Add(acts);
+
+            if (!row.learned) return;
+
+            _det.Add(CnStyle.Label("СЛОТЫ", "cn-skg__det-sec"));
+            var binds = CnStyle.Row("cn-skg__binds");
+
+            var slots = feed != null ? feed.skillSlots : null;
+            if (slots == null || slots.Length == 0)
+            {
+                binds.Add(CnStyle.Label("служба ввода навыков недоступна", "cn-skg__blocked"));
+                _det.Add(binds);
+                return;
+            }
+
+            for (int i = 0; i < slots.Length; i++) binds.Add(SlotTag(slots[i], row, i == 0));
+            _det.Add(binds);
+        }
+
+        /// <summary>
+        /// Слот: занят этим навыком — повторный клик снимает; занят другим — показывает, кого заменит;
+        /// перезарядка отмечается отдельно, потому что клиент отдаёт по слоту только флаг IsOnCooldown.
+        /// </summary>
+        private VisualElement SlotTag(CnSkillSlotRow slot, CnSkillNodeRow row, bool first)
+        {
+            bool mine = slot.bound && slot.skillId == row.skillId;
+            bool taken = slot.bound && !mine;
+
+            var tag = CnStyle.Row("cn-skg__bind");
+            if (first) tag.AddToClassList("is-first");
+            if (mine) tag.AddToClassList("is-on");
+            if (taken) tag.AddToClassList("is-taken");
+            if (mine && slot.onCooldown) tag.AddToClassList("is-cd");
+
+            var caption = CnStyle.Label(slot.code, "cn-skg__bind-t");
+            caption.style.color = mine ? CnStyle.Accent : taken ? CnStyle.Dim : CnStyle.Muted;
+            tag.Add(caption);
+
+            tag.tooltip = mine
+                ? slot.code + " · здесь" + (slot.onCooldown ? " · перезарядка" : string.Empty) + " · клик снимает"
+                : taken
+                    ? slot.code + " · занят: " + (string.IsNullOrEmpty(slot.displayName) ? slot.skillId : slot.displayName) +
+                      " · клик заменит"
+                    : slot.code + " · свободен";
+
+            tag.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                if (_actions == null) return;
+
+                SkillAction(mine
+                    ? _actions.UnbindSkillSlot(slot.slot, slot.code, row.displayName)
+                    : _actions.BindSkillSlot(slot.slot, row.skillId, slot.code, row.displayName));
+            });
+
+            return tag;
+        }
+
+        /// <summary>Отчёт строкой «СЕЙЧАС» и пересборка разбора: состояние придёт снапшотом или биндингом.</summary>
+        private void SkillAction(CnActionResult result)
+        {
+            if (result.message != null) _report?.Invoke(result);
+            _signature = string.Empty;
         }
 
         private static bool ContainsSkill(List<CnSkillNodeRow> picked, string skillId)

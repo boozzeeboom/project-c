@@ -50,7 +50,7 @@ namespace ProjectCCloudyNavigator.UI
             _view = view != null ? view : new CnViewState();
 
             _quests = new CnQuestsPanel(actions, Report);
-            _skills = new CnSkillsPanel();
+            _skills = new CnSkillsPanel(actions, Report);
             _calendar = new CnCalendarPanel();
             _rel = new CnRelPanel();
             _ship = new CnShipPanel(actions, _view, Report, OpenBag);

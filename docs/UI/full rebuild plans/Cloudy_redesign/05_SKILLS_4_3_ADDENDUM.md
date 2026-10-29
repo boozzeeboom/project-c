@@ -149,9 +149,18 @@
 | Привязка / отвязка | `SkillInputService.Instance.BindSlot(slot, skillId)` (`""` = отвязать) |
 | Выученные для биндинга | то же событие `OnSkillsUpdated` → `SkillInputService.SetKnownSkills(learned)` |
 
-Кнопки «Изучить» / «Забыть» в 4.3 **не реализуются**: легаси делает это reflection-вызовом
-`ProjectC.Skills.SkillsServer.RequestLearnSkillRpc` / `RequestForgetSkillRpc`, то есть прямого публичного API нет.
-Граф 4.3 — просмотр + привязка на слот; изучение остаётся за легаси-окном `[ИЗУЧИТЬ НАВЫК]` до отдельного решения.
+**Обновлено (порт, слайс 4.3 «действия»).** Кнопки «Изучить» / «Забыть» **реализованы**: оба RPC объявлены
+`public` с `[Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]` —
+`RequestLearnSkillRpc(string, RpcParams)` в `Assets/_Project/Scripts/Skills/SkillsServer.cs:108-109` и
+`RequestForgetSkillRpc(string, RpcParams)` там же `:136-137`. Значит прямой вызов законен, а reflection в
+`SkillTreeWindow` — лишний слой, а не признак закрытого API. Запросы уходят через `CnActions`
+(`LearnSkill` / `ForgetSkill` / `BindSkillSlot` / `UnbindSkillSlot`), состояние окно не меняет: оно приходит
+снапшотом `SkillsClientState.OnSkillsUpdated`.
+
+Граф 4.3 = просмотр + привязка на слот + изучение/забывание. Гейт «изучить» — ровно легаси
+`SkillTreeWindow.CanLearn` (не выучен и все предпосылки выучены); набор кнопок — как в легаси `L546-555`.
+Ограничение API без обхода: по слоту клиент отдаёт только флаг `IsOnCooldown(slot)` — остатка секунд и
+нормализованного прогресса нет нигде, поэтому перезарядка показывается отметкой, а не кольцом прогресса.
 
 ## 8. Действия и запреты (наследуются из `README` и `02`)
 

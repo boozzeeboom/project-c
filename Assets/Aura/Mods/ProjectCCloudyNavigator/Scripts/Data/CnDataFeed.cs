@@ -183,6 +183,8 @@ namespace ProjectCCloudyNavigator.Data
         public int requiredDexterity;
         public int requiredIntelligence;
         public string[] prerequisites;
+        /// <summary>Гейт легаси <c>SkillTreeWindow.CanLearn</c>: не выучен и все предпосылки выучены.</summary>
+        public bool canLearn;
     }
 
     /// <summary>
@@ -1126,11 +1128,27 @@ namespace ProjectCCloudyNavigator.Data
                     requiredStrength = cfg.RequiredStrengthTier,
                     requiredDexterity = cfg.RequiredDexterityTier,
                     requiredIntelligence = cfg.RequiredIntelligenceTier,
-                    prerequisites = preIds
+                    prerequisites = preIds,
+                    canLearn = CanLearn(cfg.skillId, preIds, learned)
                 };
             }
 
             skillNodes = rows;
+        }
+
+        /// <summary>
+        /// Ровно гейт легаси: выученное не учится повторно, а новое требует все предпосылки выученными.
+        /// Уровневые требования (Required*Tier) в легаси-гейте не участвуют — они проверяются сервером.
+        /// </summary>
+        private static bool CanLearn(string skillId, string[] prerequisites, HashSet<string> learned)
+        {
+            if (IsIn(learned, skillId)) return false;
+            if (prerequisites == null) return true;
+
+            for (int i = 0; i < prerequisites.Length; i++)
+                if (!IsIn(learned, prerequisites[i])) return false;
+
+            return true;
         }
 
         private static bool IsIn(HashSet<string> set, string skillId)

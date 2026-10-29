@@ -44,6 +44,7 @@ namespace ProjectCCloudyNavigator.UI
         private readonly Camera _camera;
         private readonly Light _light;
         private readonly RenderTexture _texture;
+        private Color _backdrop;
         private readonly List<Material> _materials = new List<Material>(4);
 
         private bool _visible;
@@ -68,10 +69,14 @@ namespace ProjectCCloudyNavigator.UI
             cameraGo.transform.SetParent(_root.transform, false);
             cameraGo.transform.localPosition = new Vector3(0f, 0.86f, -3f);
 
-            _texture = new RenderTexture(TextureSize, TextureSize, 16, RenderTextureFormat.ARGB32)
+            // Цвет подложки превью — тот же тёмный фон ниши станции. Им заливается весь RT перед каждым кадром.
+            var backdrop = ProjectCMainMenu.ProjectCMainMenuPalette.Hex("#0b100d");
+            _backdrop = new Color(backdrop.r, backdrop.g, backdrop.b, 1f);
+
+            _texture = new RenderTexture(TextureSize, TextureSize, 24, RenderTextureFormat.ARGB32)
             {
                 name = "CN Preview RT",
-                antiAliasing = 2,
+                antiAliasing = 1,   // MSAA не нужен: 256 px и так сглаживается билинейной выборкой
                 filterMode = FilterMode.Bilinear,
                 hideFlags = HideFlags.DontSave,
             };
@@ -81,7 +86,7 @@ namespace ProjectCCloudyNavigator.UI
             _camera.orthographic = true;
             _camera.orthographicSize = OrthoSize;
             _camera.clearFlags = CameraClearFlags.SolidColor;
-            _camera.backgroundColor = new Color(0f, 0f, 0f, 0f);
+            _camera.backgroundColor = _backdrop;
             _camera.cullingMask = 1 << PreviewLayer;
             _camera.nearClipPlane = 0.1f;
             _camera.farClipPlane = 10f;
@@ -113,6 +118,10 @@ namespace ProjectCCloudyNavigator.UI
             _element.RegisterCallback<WheelEvent>(OnWheel);
 
             ApplyRotation();
+
+            // Один кадр в RT сразу после сборки: без него текстура остаётся неинициализированной и UI Toolkit
+            // показывает её как розовую заливку. Дальше кадры рисует Tick, пока окно видимо.
+            RenderOnce();
         }
 
         /// <summary>Элемент превью: кладётся в рамку станции.</summary>
@@ -126,8 +135,10 @@ namespace ProjectCCloudyNavigator.UI
             _visible = visible;
             if (!visible) _dragging = false;
 
-            if (_camera != null) _camera.enabled = visible;
-            if (_light != null) _light.enabled = visible;
+            // Камера не включается никогда: окно рисует превью единым проходом в RenderOnce, иначе движок
+            // рендерил бы её вторым проходом и результат зависел бы от порядка кадров.
+            if (_camera != null) _camera.enabled = false;
+            if (_light != null) _light.enabled = false;
         }
 
         /// <summary>Кадр: инерция, авто-вращение, зум. Пока окно скрыто — ничего не делает.</summary>
@@ -155,6 +166,28 @@ namespace ProjectCCloudyNavigator.UI
 
             if (_camera != null) _camera.orthographicSize = OrthoSize / _zoom;
             ApplyRotation();
+            RenderOnce();
+        }
+
+        /// <summary>
+        /// Один кадр превью в RT. Сначала весь буфер заливается подложкой, потом камера рисует свой вид:
+        /// камера в URP закрашивает только свой viewport, а остальные строки RT остаются такими, какими были, —
+        /// именно так в Play Mode появлялась розовая верхняя половина превью (неинициализированная память
+        /// текстуры). После полной очистки за пределами вида всегда подложка, а не мусор видеопамяти.
+        /// </summary>
+        private void RenderOnce()
+        {
+            if (_texture == null || _camera == null) return;
+
+            var activeBefore = RenderTexture.active;
+            RenderTexture.active = _texture;
+            GL.Clear(true, true, _backdrop);
+            RenderTexture.active = activeBefore;
+
+            if (_light != null) _light.enabled = true;
+            _camera.orthographicSize = OrthoSize / _zoom;
+            _camera.Render();
+            if (_light != null) _light.enabled = false;
         }
 
         public void Dispose()

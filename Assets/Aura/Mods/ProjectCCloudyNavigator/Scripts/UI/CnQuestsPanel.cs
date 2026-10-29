@@ -33,6 +33,7 @@ namespace ProjectCCloudyNavigator.UI
 
         private readonly CnActions _actions;
         private readonly Action<CnActionResult> _onResult;
+        private readonly CnTip _tip;
 
         private readonly VisualElement _root;
         private readonly VisualElement _tabs;
@@ -47,10 +48,11 @@ namespace ProjectCCloudyNavigator.UI
         private string _selected = string.Empty;
         private string _signature = string.Empty;
 
-        public CnQuestsPanel(CnActions actions, Action<CnActionResult> onResult)
+        public CnQuestsPanel(CnActions actions, Action<CnActionResult> onResult, CnTip tip)
         {
             _actions = actions;
             _onResult = onResult;
+            _tip = tip;
 
             _root = CnStyle.Box("cn-qp");
 
@@ -529,7 +531,10 @@ namespace ProjectCCloudyNavigator.UI
             if (disabled != null)
             {
                 tag.AddToClassList("cn-tag--off");
-                tag.tooltip = disabled;
+                tag.tooltip = null;
+
+                // Карточка запертой бирки (quests.js tag title): причина берётся из того же сообщения игры, что в «СЕЙЧАС».
+                _tip?.Hover(tag, () => CnTipCard.Make(verb, value).Row("состояние", "недоступно").Foot(disabled, 1));
             }
 
             tag.RegisterCallback<ClickEvent>(evt =>

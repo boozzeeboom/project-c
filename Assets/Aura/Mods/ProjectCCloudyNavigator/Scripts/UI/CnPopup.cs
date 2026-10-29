@@ -21,6 +21,7 @@ namespace ProjectCCloudyNavigator.UI
         private readonly VisualElement _body;
         private readonly Label _title;
         private readonly Label _sub;
+        private readonly CnTip _tip;
 
         private Action _onClose;
 
@@ -32,8 +33,9 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Контейнер содержимого: сюда панель кладёт своё дерево.</summary>
         public VisualElement Body => _body;
 
-        public CnPopup()
+        public CnPopup(CnTip tip)
         {
+            _tip = tip;
             _root = CnStyle.Box("cn-pop");
             _root.style.display = DisplayStyle.None;
             _root.pickingMode = PickingMode.Position;
@@ -58,7 +60,8 @@ namespace ProjectCCloudyNavigator.UI
 
             var close = CnStyle.Box("cn-pop__x");
             close.Add(CnStyle.Label("✕", "cn-pop__x-t"));
-            close.tooltip = "закрыть";
+            close.tooltip = null;
+            _tip?.Hover(close, () => CnTipCard.Make("ЗАКРЫТЬ", "Esc или клик").Foot("вернуться к окну"));
             close.RegisterCallback<ClickEvent>(evt =>
             {
                 evt.StopPropagation();
@@ -84,6 +87,7 @@ namespace ProjectCCloudyNavigator.UI
             IsOpen = true;
             _root.style.display = DisplayStyle.Flex;
             _root.BringToFront();
+            _tip?.BringToFront();   // подсказка окна остаётся выше попапа (в моде .tip z-index 80)
         }
 
         /// <summary>Закрытие: тело освобождается, вызывающий получает callback (перерисовать ленту, снять фокус).</summary>

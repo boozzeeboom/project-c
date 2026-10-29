@@ -33,6 +33,11 @@ namespace ProjectCCloudyNavigator.UI
         private readonly Label[] _codes = new Label[SlotCount];
         private readonly Label[] _names = new Label[SlotCount];
         private readonly Label _count;
+        private readonly CnTip _tip;
+
+        // Последнее прочитанное состояние слотов — из него собирается карточка наведения (skills.js tooltip).
+        private readonly CnSkillSlotRow[] _slots = new CnSkillSlotRow[SlotCount];
+        private readonly bool[] _bound = new bool[SlotCount];
 
         private string _signature = string.Empty;
 
@@ -41,8 +46,9 @@ namespace ProjectCCloudyNavigator.UI
 
         public VisualElement Root => _root;
 
-        public CnSkillsView()
+        public CnSkillsView(CnTip tip)
         {
+            _tip = tip;
             _root = CnStyle.Box("cn-skills");
 
             var head = CnStyle.Row("cn-skills__head");
@@ -71,6 +77,21 @@ namespace ProjectCCloudyNavigator.UI
                     OnOpen?.Invoke(false);
                 });
 
+                // Карточка слота: клавиша, навык, перезарядка — или честное «навык назначается в окне персонажа (P)».
+                int index = i;
+                _tip?.Hover(tile, () =>
+                {
+                    var row = _slots[index];
+                    string code = string.IsNullOrEmpty(row.code) ? "СЛОТ " + (index + 1) : row.code;
+                    if (!_bound[index])
+                        return CnTipCard.Make(code, "слот пуст").Foot("навык назначается в окне персонажа (P)");
+
+                    var card = CnTipCard.Make(code, string.IsNullOrEmpty(row.displayName) ? row.skillId : row.displayName);
+                    if (row.onCooldown) card.Row("состояние", "перезарядка");
+                    card.Foot("клик — боевой граф навыков");
+                    return card;
+                });
+
                 _tiles[i] = tile;
                 _codes[i] = code;
                 _names[i] = name;
@@ -80,7 +101,9 @@ namespace ProjectCCloudyNavigator.UI
 
             var social = CnStyle.Box("cn-skills__btn");
             social.Add(CnStyle.Label("СОЦИАЛЬНЫЕ НАВЫКИ", "cn-skills__btn-t"));
-            social.tooltip = "граф социальных навыков";
+            social.tooltip = null;
+            _tip?.Hover(social, () => CnTipCard.Make("СОЦИАЛЬНЫЕ НАВЫКИ", "граф общения, торговли и убеждения")
+                .Foot("клик — социальный граф"));
             social.RegisterCallback<ClickEvent>(evt =>
             {
                 evt.StopPropagation();
@@ -122,10 +145,9 @@ namespace ProjectCCloudyNavigator.UI
                 _codes[i].text = FitsInTile(row.code) ? row.code : string.Empty;
                 _names[i].text = has ? Abbreviate(row.displayName) : string.Empty;
 
-                string label = row.code ?? string.Empty;
-                tile.tooltip = has
-                    ? label + " · " + row.displayName + (row.onCooldown ? " · перезарядка" : string.Empty)
-                    : label + " · слот пуст — навык назначается в окне персонажа (P)";
+                _slots[i] = row;
+                _bound[i] = has;
+                tile.tooltip = null;
             }
 
             _count.text = bound + " / " + SlotCount;

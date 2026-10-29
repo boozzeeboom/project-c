@@ -25,6 +25,8 @@ namespace ProjectCCloudyNavigator
         private readonly CnAltRailView _altrail;
         private readonly CnPopups _popups;
         private readonly CnMotion _motion;
+        private readonly CnTip _tip;
+        private readonly CnHover _hover;
         private CnPreviewStage _preview;
         private float _lastWidth = -1f;
         private bool _openPending;
@@ -42,10 +44,18 @@ namespace ProjectCCloudyNavigator
             _feed = new CnDataFeed(log);
             _actions = new CnActions();
             _view = new CnViewState();
-            _popups = new CnPopups(_actions, _view);
-            _station = new CnStationView();
-            _main = new CnMainView(_actions, _popups, _view);
-            _altrail = new CnAltRailView();
+
+            // Два общих слоя порта мода: одна подсказка на всё окно и одна шина наведения.
+            // Виды только зовут _tip.Hover(...) и _hover.Set* — сами ничего не рисуют поверх окна.
+            _tip = new CnTip();
+            _hover = new CnHover();
+            _hover.Changed += OnHoverChanged;
+
+            _popups = new CnPopups(_actions, _view, _tip, _hover);
+
+            _station = new CnStationView(_tip, _hover);
+            _main = new CnMainView(_actions, _popups, _view, _tip, _hover);
+            _altrail = new CnAltRailView(_tip);
             _motion = new CnMotion();
 
             // Результат действия из попапа показывается строкой «СЕЙЧАС» главного окна — один канал отчёта.
@@ -79,6 +89,7 @@ namespace ProjectCCloudyNavigator
             _root.Add(_main.Root);
             _root.Add(_altrail.Root);
             _popups.Mount(_root);      // попапы выше колонок, но ниже слоя движения
+            _tip.Mount(_root);          // подсказка выше панелей (ui.js: .tip z-index 80), мышь не ловит
             _root.Add(_motion.Layer);   // слой движения — последним, поверх панелей
 
             // Превью живёт в сцене, поэтому только в Play Mode: в edit mode GameObject превью попал бы в сцену.
@@ -124,6 +135,7 @@ namespace ProjectCCloudyNavigator
             _altrail.Refresh(_feed);
             _popups.Refresh(_feed, step);
             _motion.Tick(step);
+            _tip.Tick(step);            // задержка 140 мс — из кадра окна, своих таймеров нет
 
             // Превью двигается только пока окно открыто: скрытая камера ничего не рендерит (шаг 6).
             if (_preview != null) _preview.Tick(step);
@@ -154,6 +166,8 @@ namespace ProjectCCloudyNavigator
 
             _openPending = false;
             if (_preview != null) _preview.SetVisible(false);
+            _hover.Clear();
+            _tip.Hide();
             _popups.Close();
             _motion.Close(_station.Root, 6, 0.9f);
             _motion.Close(_main.Root, 8, 1f);
@@ -161,6 +175,42 @@ namespace ProjectCCloudyNavigator
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt) => ApplyLayout(evt.newRect.width);
+
+        /// <summary>
+        /// main.js applyHover(): единственное место, где субъект наведения превращается в подсветку видов.
+        /// Линия глушит соседние строки, слот/характеристика подсвечивают клетку станции, предмет — линии, которым
+        /// он нужен. Связей, которых нет в данных игры, шина не рисует.
+        /// </summary>
+        private void OnHoverChanged(CnHoverSubject subject)
+        {
+            switch (subject.kind)
+            {
+                case CnHoverKind.Line:
+                    _station.SetHighlight(-1, null);
+                    _main.HighlightLine(subject.id);
+                    break;
+
+                case CnHoverKind.Slot:
+                    _main.HighlightNone();
+                    _station.SetHighlight(subject.slot, null);
+                    break;
+
+                case CnHoverKind.Stat:
+                    _main.HighlightNone();
+                    _station.SetHighlight(-1, subject.id);
+                    break;
+
+                case CnHoverKind.Item:
+                    _station.SetHighlight(-1, null);
+                    _main.HighlightItem(subject.id);
+                    break;
+
+                default:
+                    _station.SetHighlight(-1, null);
+                    _main.HighlightNone();
+                    break;
+            }
+        }
 
         /// <summary>
         /// Колонки мода (src/main.js layout()): homeW = 152 / 164 / clamp(0.17·W, 186…226),
@@ -189,6 +239,8 @@ namespace ProjectCCloudyNavigator
         {
             _motion.Reset();
             _popups.Dispose();
+            _tip.Dispose();
+            _hover.Dispose();
 
             if (_preview != null)
             {

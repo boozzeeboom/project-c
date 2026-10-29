@@ -16,14 +16,20 @@ namespace ProjectCCloudyNavigator.UI
     {
         private readonly VisualElement _root;
         private readonly Label _factionCount;
+        private readonly CnTip _tip;
+        private readonly CnRelGraphView _graph;
+        private readonly VisualElement _tabGraph;
+        private readonly VisualElement _tabLists;
+        private VisualElement _lists;
         private readonly Label _npcCount;
         private readonly VisualElement _factions;
         private readonly VisualElement _npcs;
 
         private string _signature = string.Empty;
 
-        public CnRelPanel()
+        public CnRelPanel(CnTip tip)
         {
+            _tip = tip;
             _root = CnStyle.Box("cn-relp");
 
             var head = CnStyle.Row("cn-relp__head");
@@ -56,11 +62,42 @@ namespace ProjectCCloudyNavigator.UI
             right.Add(Wrap(_npcs));
             cols.Add(right);
 
-            _root.Add(cols);
+            _lists = CnStyle.Box("cn-relp__lists");
+            _lists.Add(cols);
+            _lists.Add(CnStyle.Label(
+                "рёбра строятся только по полям ассетов: фракция NPC, выдача и сдача квеста, вражда и союз фракций. " +
+                "Скрытых субъектов граф не рисует — их знание игроку ещё не приходило.", "cn-relp__footer"));
 
-            _root.Add(CnStyle.Label(
-                "связи между субъектами (фракция NPC, кто предлагает квест, кто с кем враждует) строятся по ассетам — " +
-                "граф связей переносится отдельным этапом", "cn-relp__footer"));
+            // Две вкладки: граф связей (как rel-graph.js) и плоские списки репутации.
+            var tabs = CnStyle.Row("cn-relp__tabs");
+            _tabGraph = CnStyle.Tag("граф связей");
+            _tabGraph.AddToClassList("cn-relp__tab");
+            _tabLists = CnStyle.Tag("списки");
+            _tabLists.AddToClassList("cn-relp__tab");
+            tabs.Add(_tabGraph);
+            tabs.Add(_tabLists);
+
+            _graph = new CnRelGraphView(tip);
+
+            var body = CnStyle.Box("cn-relp__body");
+            body.Add(_graph.Root);
+            body.Add(_lists);
+
+            _root.Add(tabs);
+            _root.Add(body);
+
+            _tabGraph.RegisterCallback<ClickEvent>(evt => { evt.StopPropagation(); SetMode(true); });
+            _tabLists.RegisterCallback<ClickEvent>(evt => { evt.StopPropagation(); SetMode(false); });
+            SetMode(true);
+        }
+
+        /// <summary>Вкладка графа или списков. Граф — главный вид, списки остаются справкой по числам.</summary>
+        private void SetMode(bool graph)
+        {
+            _graph.Root.style.display = graph ? DisplayStyle.Flex : DisplayStyle.None;
+            _lists.style.display = graph ? DisplayStyle.None : DisplayStyle.Flex;
+            _tabGraph.EnableInClassList("is-off", !graph);
+            _tabLists.EnableInClassList("is-off", graph);
         }
 
         public VisualElement Build() => _root;
@@ -70,6 +107,9 @@ namespace ProjectCCloudyNavigator.UI
         public void Refresh(CnDataFeed feed)
         {
             if (feed == null) return;
+
+            // Граф обновляется всегда: у него своя сигнатура по узлам и рёбрам, независимая от списков.
+            _graph.Refresh(feed);
 
             string signature = Signature(feed);
             if (signature == _signature) return;
@@ -137,7 +177,7 @@ namespace ProjectCCloudyNavigator.UI
         // ------------------------------------------------------------------ строки
 
         /// <summary>Фракция: имя, тир и шкала от центра −100…+100.</summary>
-        private static VisualElement FactionRow(CnFactionRow faction, bool first)
+        private VisualElement FactionRow(CnFactionRow faction, bool first)
         {
             var row = CnStyle.Box("cn-relp__row");
             if (first) row.AddToClassList("is-first");
@@ -166,7 +206,11 @@ namespace ProjectCCloudyNavigator.UI
             bar.Add(fill);
             row.Add(bar);
 
-            row.tooltip = faction.displayName + " · " + faction.value + " (−100…+100)";
+            // Карточка фракции: значение и диапазон отображения (−100…+100, решение №5), без выдуманных тиров.
+            var card = CnTipCard.Make(faction.displayName, faction.value + " · −100…+100");
+            card.Row("диапазон", "−100…+100");
+            card.Foot(faction.hasTiers ? "тир из ассетов фракции" : "тиры не заданы в ассетах");
+            _tip?.Hover(row, () => card);
             return row;
         }
 
@@ -174,7 +218,7 @@ namespace ProjectCCloudyNavigator.UI
         /// Человек: значение отношения −100…+200. Шкала трёхзонная, ноль на трети — так же, как считается
         /// серверное отношение (03 §4), без своих порогов и подписей.
         /// </summary>
-        private static VisualElement NpcRow(CnNpcRow npc, bool first)
+        private VisualElement NpcRow(CnNpcRow npc, bool first)
         {
             var row = CnStyle.Box("cn-relp__row");
             if (first) row.AddToClassList("is-first");
@@ -204,8 +248,12 @@ namespace ProjectCCloudyNavigator.UI
             bar.Add(fill);
             row.Add(bar);
 
-            row.tooltip = (string.IsNullOrEmpty(npc.displayName) ? npc.npcId : npc.displayName) + " · " + npc.value +
-                          " (−100…+200)";
+            // Карточка человека: NPC attitude остаётся −100…+200 — диапазон игры, не мода.
+            var card = CnTipCard.Make(string.IsNullOrEmpty(npc.displayName) ? npc.npcId : npc.displayName,
+                (npc.value > 0 ? "+" : string.Empty) + npc.value);
+            card.Row("диапазон", "−100…+200");
+            card.Foot("отношение NPC");
+            _tip?.Hover(row, () => card);
             return row;
         }
     }

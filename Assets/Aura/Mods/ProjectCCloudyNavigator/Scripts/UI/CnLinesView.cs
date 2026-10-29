@@ -56,6 +56,8 @@ namespace ProjectCCloudyNavigator.UI
         public string rewardBig;
         public string rewardSmall;
         public bool alarm;
+        /// <summary>Имя предмета линии (контракт — его груз): связь «линия ↔ предмет» для наведения.</summary>
+        public string itemName;
         public string signature;
     }
 
@@ -87,6 +89,8 @@ namespace ProjectCCloudyNavigator.UI
         private float _hoverHeight;
 
         private List<CnLineModel> _models = new List<CnLineModel>();
+        private HashSet<string> _highlight;
+        private readonly CnHover _hover;
         private string _signature = string.Empty;
         private float _rowW = -1f;
         private string _cardLine;
@@ -109,10 +113,11 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Высота содержимого ленты — по ней док решает, сколько свободного места внизу колонки.</summary>
         public float ContentHeight { get; private set; }
 
-        public CnLinesView(Action<CnActionResult> onResult, Action<CnLineModel> onOpen)
+        public CnLinesView(Action<CnActionResult> onResult, Action<CnLineModel> onOpen, CnHover hover)
         {
             _onResult = onResult;
             _onOpen = onOpen;
+            _hover = hover;
 
             _scroll = new ScrollView(ScrollViewMode.Vertical);
             _scroll.AddToClassList("cn-lines");
@@ -204,6 +209,7 @@ namespace ProjectCCloudyNavigator.UI
                 empty.Add(CnStyle.Label("квесты берутся в диалоге с NPC, контракты — на рынке", "cn-lines__empty-s"));
                 _rows.Add(empty);
                 ContentHeight = 64f;
+                _rows.EnableInClassList("is-hlmode", false);
                 return;
             }
 
@@ -223,6 +229,36 @@ namespace ProjectCCloudyNavigator.UI
             }
 
             ContentHeight = content + 10f;
+            ApplyHighlight();
+        }
+
+        /// <summary>
+        /// Подсветка из шины наведения (lines.js setHighlight): .is-hlmode на контейнере и .is-hl/.is-dim на строках.
+        /// USS :not() не поддерживает, поэтому приглушение соседей — отдельным классом, а не селектором.
+        /// </summary>
+        public void SetHighlight(ICollection<string> ids)
+        {
+            _highlight = ids == null || ids.Count == 0 ? null : new HashSet<string>(ids);
+            ApplyHighlight();
+        }
+
+        private void ApplyHighlight()
+        {
+            bool mode = _highlight != null && _highlight.Count > 0;
+            _rows.EnableInClassList("is-hlmode", mode);
+
+            for (int i = 0; i < _built.Count; i++)
+            {
+                var row = _built[i];
+                if (row.el == null) continue;
+
+                bool on = mode && row.line != null && _highlight.Contains(row.line.id);
+                row.el.EnableInClassList("is-hl", on);
+                row.el.EnableInClassList("is-dim", mode && !on);
+
+                // Фон строки ставится кодом, поэтому класс его не заменит: подсвеченная строка заливается заметнее.
+                CnStyle.Fill(row.el, CnStyle.Veil, on ? 0.16f : 0.42f);
+            }
         }
 
         // ------------------------------------------------------------------ геометрия (lines.js geometry)
@@ -325,9 +361,12 @@ namespace ProjectCCloudyNavigator.UI
             row.el = el;
 
             // Наведение (quests.js): панель деталей открывается под строкой и сдвигает соседей вниз.
+            // Одновременно строка становится субъектом шины наведения (main.js setHover) — она глушит соседей.
             string lineId = line.id;
             el.RegisterCallback<PointerEnterEvent>(_ =>
             {
+                _hover?.SetLine(lineId);
+
                 if (_hoverId == lineId && _hoverEl != null) return;
                 _hoverId = lineId;
                 _hoverTimer = 0f;
@@ -336,6 +375,8 @@ namespace ProjectCCloudyNavigator.UI
             });
             el.RegisterCallback<PointerLeaveEvent>(_ =>
             {
+                _hover?.Clear();
+
                 if (_hoverId != lineId) return;
                 _hoverLeave = HoverGrace;
             });

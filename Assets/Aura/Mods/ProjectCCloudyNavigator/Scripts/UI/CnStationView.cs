@@ -59,6 +59,14 @@ namespace ProjectCCloudyNavigator.UI
         private readonly Label _hpValue;
         private readonly VisualElement _hpFill;
         private readonly Label _credits;
+        private readonly VisualElement _cr;
+
+        // Клетки STR/DEX/INT и их ключи: подсветка приходит из шины наведения ключом, как home.setHighlight(stats).
+        private static readonly string[] StatKeys = { "str", "dex", "int" };
+        private readonly VisualElement[] _statCells = new VisualElement[3];
+
+        private readonly CnTip _tip;
+        private readonly CnHover _hover;
 
         private readonly VisualElement _rel;
         private readonly Label _relCount;
@@ -68,6 +76,10 @@ namespace ProjectCCloudyNavigator.UI
         private Action<bool> _onOpenSkills;
         private Action _onOpenCalendar;
         private Action _onOpenRel;
+
+        private string[] _weekdayNames;
+        private readonly string[] _slotItem = new string[13];
+        private bool _hasEquipData;
 
         private string _equipSignature = string.Empty;
         private string _repSignature = string.Empty;
@@ -101,8 +113,11 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Ниша под превью фигуры (шаг 6): сюда окно кладёт элемент CnPreviewStage.</summary>
         public VisualElement PreviewHost => _previewHost;
 
-        public CnStationView()
+        public CnStationView(CnTip tip, CnHover hover)
         {
+            _tip = tip;
+            _hover = hover;
+
             _root = CnStyle.Box("cn-station");
             CnStyle.Fill(_root, CnStyle.Veil, 0.70f);
             _root.RegisterCallback<GeometryChangedEvent>(_ => Fit());
@@ -125,6 +140,9 @@ namespace ProjectCCloudyNavigator.UI
                 CnStyle.Fill(cell, CnStyle.VeilSoft, 0.7f);
                 _calCells[i] = cell;
                 week.Add(cell);
+
+                int day = i;
+                _tip?.Hover(cell, () => CnTipCard.Make(WeekdayName(day), "день недели"));
             }
             cal.Add(week);
 
@@ -137,8 +155,15 @@ namespace ProjectCCloudyNavigator.UI
             cal.Add(foot);
 
             // Прибор — вход в полный календарь года (как в моде: клик по календарю открывает окно).
+            // Наведение показывает карточку дня из тех же данных, что и прибор: своих чисел карточка не считает.
             cal.AddToClassList("cn-clickable");
-            cal.tooltip = "открыть календарь года";
+            _tip?.Hover(cal, () =>
+            {
+                var card = CnTipCard.Make("КАЛЕНДАРЬ", _calDate.text);
+                card.Row("время", _calTime.text);
+                card.Row("год", _calCount.text);
+                return card.Foot("клик — год целиком");
+            });
             cal.RegisterCallback<ClickEvent>(evt =>
             {
                 evt.StopPropagation();
@@ -148,9 +173,9 @@ namespace ProjectCCloudyNavigator.UI
 
             // ---- характеристики
             var stats = CnStyle.Row("cn-stats");
-            _str = AddStat(stats, "STR", true);
-            _dex = AddStat(stats, "DEX", false);
-            _int = AddStat(stats, "INT", false);
+            _str = AddStat(stats, 0, "STR", true);
+            _dex = AddStat(stats, 1, "DEX", false);
+            _int = AddStat(stats, 2, "INT", false);
             _root.Add(stats);
 
             // ---- кольцо слотов: 5 | ниша + кредиты | 5
@@ -178,12 +203,21 @@ namespace ProjectCCloudyNavigator.UI
             niche.Add(_previewHost);
             cent.Add(niche);
 
-            var cr = CnStyle.Box("cn-cr");
-            CnStyle.Fill(cr, CnStyle.Veil, 0.68f);
-            cr.Add(CnStyle.Label("КРЕДИТЫ", "cn-cr__k"));
+            _cr = CnStyle.Box("cn-cr");
+            CnStyle.Fill(_cr, CnStyle.Veil, 0.68f);
+            _cr.Add(CnStyle.Label("КРЕДИТЫ", "cn-cr__k"));
             _credits = CnStyle.Label("—", "cn-cr__v");
-            cr.Add(_credits);
-            cent.Add(cr);
+            _cr.Add(_credits);
+            cent.Add(_cr);
+
+            // Кредиты — тот же субъект наведения, что .hm-cr мода ({stat:'credits'}), плюс карточка с числом.
+            _cr.RegisterCallback<PointerEnterEvent>(_ => _hover?.SetStat("credits"));
+            _cr.RegisterCallback<PointerLeaveEvent>(_ => _hover?.Clear());
+            _tip?.Hover(_cr, () =>
+            {
+                var card = CnTipCard.Make("КРЕДИТЫ", _credits.text);
+                return card.Foot("торговый счёт");
+            });
 
             _fig.Add(cent);
             _fig.Add(SlotColumn(RightSlots));
@@ -201,7 +235,7 @@ namespace ProjectCCloudyNavigator.UI
             _root.Add(mods);
 
             // ---- навыки: шесть слотов и вход в социальный граф (под модулями, над репутацией)
-            _skills = new CnSkillsView();
+            _skills = new CnSkillsView(_tip);
             _skills.OnOpen = social => _onOpenSkills?.Invoke(social);
             _root.Add(_skills.Root);
 
@@ -216,7 +250,11 @@ namespace ProjectCCloudyNavigator.UI
             _relRows = CnStyle.Box("cn-rel__rows");
             _rel.Add(_relRows);
             _rel.AddToClassList("cn-clickable");
-            _rel.tooltip = "открыть отношения: фракции и люди";
+            _tip?.Hover(_rel, () =>
+            {
+                var card = CnTipCard.Make("ОТНОШЕНИЯ", _relCount.text + " фракций");
+                return card.Foot("клик — фракции и люди");
+            });
             _rel.RegisterCallback<ClickEvent>(evt =>
             {
                 evt.StopPropagation();
@@ -228,7 +266,7 @@ namespace ProjectCCloudyNavigator.UI
 
         // ------------------------------------------------------------------ постройка
 
-        private static Label AddStat(VisualElement row, string key, bool first)
+        private Label AddStat(VisualElement row, int index, string key, bool first)
         {
             var cell = CnStyle.Box("cn-stat");
             if (first) cell.AddToClassList("is-first");
@@ -237,6 +275,15 @@ namespace ProjectCCloudyNavigator.UI
             var value = CnStyle.Label("—", "cn-stat__v");
             cell.Add(value);
             row.Add(cell);
+
+            _statCells[index] = cell;
+
+            // Наведение на характеристику — подсветка (.hm-stat.hl мода) и карточка со значением из данных игры.
+            string statKey = StatKeys[index];
+            cell.RegisterCallback<PointerEnterEvent>(_ => _hover?.SetStat(statKey));
+            cell.RegisterCallback<PointerLeaveEvent>(_ => _hover?.Clear());
+            _tip?.Hover(cell, () => CnTipCard.Make(key, value.text).Foot("характеристика персонажа"));
+
             return value;
         }
 
@@ -259,9 +306,15 @@ namespace ProjectCCloudyNavigator.UI
             CnStyle.Fill(slot, CnStyle.Veil, 0.4f);
             var text = CnStyle.Label(SlotCodes[index], "cn-slot__t");
             slot.Add(text);
-            slot.tooltip = SlotNames[index] + " · слот пуст";
             _slots[index] = slot;
             _slotText[index] = text;
+
+            // Наведение на слот (home.js): карточка «что надето» и подсветка этого слота в кольце.
+            int slotIndex = index;
+            slot.RegisterCallback<PointerEnterEvent>(_ => _hover?.SetSlot(slotIndex));
+            slot.RegisterCallback<PointerLeaveEvent>(_ => _hover?.Clear());
+            _tip?.Hover(slot, () => SlotCard(slotIndex));
+
             return slot;
         }
 
@@ -319,8 +372,31 @@ namespace ProjectCCloudyNavigator.UI
                 cell.EnableInClassList("cn-cal__cell--today", today);
                 if (today) cell.style.backgroundColor = CnStyle.GasMid;
                 else CnStyle.Fill(cell, CnStyle.VeilSoft, 0.7f);
-                cell.tooltip = names != null && i < names.Length ? names[i] : string.Empty;
             }
+
+            _weekdayNames = names;
+        }
+
+        private string WeekdayName(int index)
+        {
+            return _weekdayNames != null && index >= 0 && index < _weekdayNames.Length && !string.IsNullOrEmpty(_weekdayNames[index])
+                ? _weekdayNames[index]
+                : "день " + (index + 1);
+        }
+
+        /// <summary>
+        /// Карточка слота (home.js tooltip.hover на hm-slot): что надето и где это меняется.
+        /// Бонусов и веса в порте нет — в mod'е они брались из его демо-таблицы предметов, в игре таких полей здесь нет.
+        /// </summary>
+        private CnTipCard SlotCard(int index)
+        {
+            string item = _slotItem[index];
+            bool empty = string.IsNullOrEmpty(item);
+
+            var card = CnTipCard.Make(SlotNames[index], empty
+                ? (_hasEquipData ? "слот пуст" : "нет данных экипировки")
+                : item);
+            return card.Foot("смена экипировки — в окне персонажа (P)");
         }
 
         private void RefreshStats(CnDataFeed feed)
@@ -348,6 +424,7 @@ namespace ProjectCCloudyNavigator.UI
         private void RefreshEquipment(CnDataFeed feed)
         {
             var names = feed.equipNames;
+            _hasEquipData = feed.hasEquipment;
             string signature = feed.hasEquipment ? "1" : "0";
             if (names != null) signature += "|" + string.Join("|", names);
             if (signature == _equipSignature) return;
@@ -357,15 +434,13 @@ namespace ProjectCCloudyNavigator.UI
             {
                 string item = names != null && i < names.Length ? names[i] : string.Empty;
                 bool empty = string.IsNullOrEmpty(item);
+                _slotItem[i] = item ?? string.Empty;
 
                 var slot = _slots[i];
                 slot.EnableInClassList("cn-slot--empty", empty);
                 CnStyle.Fill(slot, CnStyle.Veil, empty ? 0.4f : 0.72f);
 
                 _slotText[i].text = empty ? SlotCodes[i] : Abbreviate(item);
-                slot.tooltip = SlotNames[i] + " · " + (empty
-                    ? (feed.hasEquipment ? "слот пуст" : "нет данных экипировки")
-                    : item);
             }
         }
 
@@ -400,13 +475,12 @@ namespace ProjectCCloudyNavigator.UI
 
             int shown = Mathf.Min(factions.Length, _repFit);
             for (int i = 0; i < shown; i++) _relRows.Add(RepRow(factions[i], i == 0));
-
             if (factions.Length > shown)
                 _relRows.Add(CnStyle.Label("ещё " + (factions.Length - shown), "cn-rel__more"));
         }
 
         /// <summary>Строка фракции: имя, тир, значение и шкала −100…+100 от центра (решение №5).</summary>
-        private static VisualElement RepRow(CnFactionRow faction, bool first)
+        private VisualElement RepRow(CnFactionRow faction, bool first)
         {
             var row = CnStyle.Box("cn-rep");
             if (first) row.AddToClassList("is-first");
@@ -432,8 +506,48 @@ namespace ProjectCCloudyNavigator.UI
             bar.Add(fill);
             row.Add(bar);
 
-            row.tooltip = faction.displayName + " · " + faction.value + " (−100…+100)";
+            // Карточка репутации: имя, тир, значение и диапазон отображения фракций (−100…+100).
+            _tip?.Hover(row, () =>
+            {
+                var card = CnTipCard.Make(faction.displayName, faction.hasTiers ? faction.tier : "тиры не заданы");
+                card.Row("значение", (faction.value > 0 ? "+" : string.Empty) + faction.value);
+                card.Row("диапазон", "−100…+100");
+                return card.Foot("клик — все отношения");
+            });
+
             return row;
+        }
+
+        /// <summary>
+        /// Подсветка станции из шины наведения (home.setHighlight): слот кольца или характеристика/кредиты.
+        /// Цвет фона ставится кодом — в USS класс не перебьёт заливку, которую виды пишут инлайном.
+        /// </summary>
+        public void SetHighlight(int slot, string stat)
+        {
+            for (int i = 0; i < _slots.Length; i++)
+            {
+                var el = _slots[i];
+                if (el == null) continue;
+
+                bool on = slot == i;
+                el.EnableInClassList("is-hl", on);
+                CnStyle.Fill(el, on ? CnStyle.GasMid : CnStyle.Veil,
+                    on ? 0.38f : el.ClassListContains("cn-slot--empty") ? 0.4f : 0.72f);
+            }
+
+            for (int i = 0; i < _statCells.Length; i++)
+            {
+                var cell = _statCells[i];
+                if (cell == null) continue;
+
+                bool on = !string.IsNullOrEmpty(stat) && StatKeys[i] == stat;
+                cell.EnableInClassList("is-hl", on);
+                CnStyle.Fill(cell, on ? CnStyle.GasMid : CnStyle.Veil, on ? 0.3f : 0.6f);
+            }
+
+            bool credits = stat == "credits";
+            _cr.EnableInClassList("is-hl", credits);
+            CnStyle.Fill(_cr, credits ? CnStyle.GasMid : CnStyle.Veil, credits ? 0.22f : 0.68f);
         }
 
         // ------------------------------------------------------------------ ступени компактности

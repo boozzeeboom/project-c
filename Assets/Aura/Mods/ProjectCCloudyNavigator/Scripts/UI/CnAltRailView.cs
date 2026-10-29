@@ -24,6 +24,8 @@ namespace ProjectCCloudyNavigator.UI
 
         private readonly VisualElement _root;
         private readonly Label _dot;
+        private readonly CnTip _tip;
+        private CnTipCard _card = CnTipCard.Make("ВЫСОТА", "нет данных");
         private readonly VisualElement _scale;
         private readonly VisualElement _ticks;
         private readonly VisualElement _corMin;
@@ -43,8 +45,9 @@ namespace ProjectCCloudyNavigator.UI
 
         public VisualElement Root => _root;
 
-        public CnAltRailView()
+        public CnAltRailView(CnTip tip)
         {
+            _tip = tip;
             _root = CnStyle.Box("cn-altrail");
 
             _dot = CnStyle.Label("К", "cn-ar__dot");
@@ -69,6 +72,9 @@ namespace ProjectCCloudyNavigator.UI
             _scale.Add(_mark);
 
             _root.Add(_scale);
+
+            // Подсказка колонки (alt-rail.js tooltip): коридор, диапазон и статус — всё из живого коридора игры.
+            _tip?.Hover(_root, () => _card);
         }
 
         private static VisualElement Corridor()
@@ -97,7 +103,8 @@ namespace ProjectCCloudyNavigator.UI
             if (!feed.hasAltitude)
             {
                 _value.text = "—";
-                _root.tooltip = "высота: нет данных (корабль не найден)";
+                _root.tooltip = null;
+                _card = CnTipCard.Make("ВЫСОТА", "нет данных").Row("корабль", "не найден");
                 SetStatus(0);
                 if (_hasDomain)
                 {
@@ -110,9 +117,14 @@ namespace ProjectCCloudyNavigator.UI
 
             // Суффикс «м» — только когда колонка ≥ 34 px (как в моде).
             _value.text = feed.altitude.ToString("0") + (_width >= 34f ? " м" : string.Empty);
-            _root.tooltip = (string.IsNullOrEmpty(feed.corridorDisplayName) ? feed.corridorId : feed.corridorDisplayName) +
-                            " · " + feed.corridorMin.ToString("0") + "…" + feed.corridorMax.ToString("0") + " м · " +
-                            feed.altitudeStatusName;
+            _root.tooltip = null;
+            var card = CnTipCard.Make("ВЫСОТА", _value.text);
+            card.Row("коридор", string.IsNullOrEmpty(feed.corridorDisplayName) ? feed.corridorId : feed.corridorDisplayName);
+            card.Row("диапазон", feed.corridorMin.ToString("0") + "…" + feed.corridorMax.ToString("0") + " м");
+            card.Row("статус", feed.altitudeStatusName);
+            card.Foot(feed.corridorIsGlobal ? "глобальный коридор" :
+                "запас: " + feed.corridorWarningMargin.ToString("0") + " / " + feed.corridorCriticalUpperMargin.ToString("0") + " м");
+            _card = card;
             SetStatus(feed.altitudeStatusValue);
 
             float lower = feed.corridorIsGlobal ? 0f : Mathf.Max(0f, feed.corridorWarningMargin);

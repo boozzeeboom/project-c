@@ -16,11 +16,13 @@ using System.Text;
 using ProjectC.Combat;
 using ProjectC.Core;
 using ProjectC.Equipment;
+using ProjectC.Factions;
 using ProjectC.Items;
 using ProjectC.Items.Client;
 using ProjectC.Knowledge;
 using ProjectC.Localization;
 using ProjectC.Player;
+using ProjectC.Quests;
 using ProjectC.Quests.Client;
 using ProjectC.Quests.UI;
 using ProjectC.Reputation;
@@ -151,6 +153,33 @@ namespace ProjectCCloudyNavigator.Data
         public int value;
     }
 
+    /// <summary>
+    /// Узел графа связей: фракция, человек или квест. Узлы строятся только по ВИДИМЫМ субъектам — тем, кого
+    /// прислал сервер (репутация, отношение) или кто есть в видимых заданиях: скрытое знание окно не раскрывает.
+    /// </summary>
+    public struct CnGraphNode
+    {
+        public string key;      // "f:1" / "n:mira_01" / "q:onboarding_alfa"
+        public byte kind;       // 0 фракция, 1 человек, 2 квест
+        public string name;
+        public int value;       // репутация / отношение; у квеста 0
+    }
+
+    /// <summary>
+    /// Ребро графа — только поле ассета: фракция NPC, поведение NPC, вражда/союз фракций, кто предлагает квест,
+    /// кто принимает сдачу, награда, требование. Шесть типов и их номера — как в моде (relations.js, EDGE_TYPES):
+    /// легенда будущего вида переносится один в один, без сдвига на единицу.
+    /// </summary>
+    public struct CnGraphEdge
+    {
+        public string from;
+        public string to;
+        // 1 состоит в, 2 влияет на, 3 союз/вражда, 4 выдаёт/принимает, 5 награда, 6 требует
+        public byte type;
+        public string label;    // глагол ребра (у 2 — дельты, у 5 и 6 — значение условия)
+        public bool negative;   // вражда либо минус в награде/поведении
+    }
+
     /// <summary>Слот навыка — проекция <c>SkillInputService.GetSkillForSlot</c> + имени из <c>SkillNodeConfig</c>.</summary>
     public struct CnSkillSlotRow
     {
@@ -212,6 +241,9 @@ namespace ProjectCCloudyNavigator.Data
         private ProjectC.Quests.QuestDatabase _questDatabase;
         private bool _questDatabaseSearched;
 
+        // Определения фракций тем же путём, что и каталог игры; заполняется лениво (см. FactionDef).
+        private Dictionary<int, FactionDefinition> _factionDefs;
+
         // Каталог навыков — тот же Resources/Skills, что грузит легаси SkillTreeWindow; читается один раз.
         private SkillNodeConfig[] _skillCatalog;
         private Dictionary<string, SkillNodeConfig> _skillById;
@@ -256,6 +288,14 @@ namespace ProjectCCloudyNavigator.Data
 
         /// <summary>Шесть боевых слотов (SkillInputSlot) в порядке показа: ЛКМ, ПКМ, 1…4.</summary>
         public CnSkillSlotRow[] skillSlots { get; private set; }
+
+        /// <summary>Узлы графа связей (фракции, люди, видимые квесты) — только то, что игра уже показала игроку.</summary>
+        public CnGraphNode[] graphNodes { get; private set; }
+
+        /// <summary>Рёбра графа: те же шесть типов, что в моде, каждое — реальное поле ассета.</summary>
+        public CnGraphEdge[] graphEdges { get; private set; }
+
+        public bool hasGraph => graphNodes != null && graphNodes.Length > 0;
 
         /// <summary>Каталог навыков из Resources/Skills — тот же, что грузит легаси SkillTreeWindow.</summary>
         public CnSkillNodeRow[] skillNodes { get; private set; }
@@ -321,6 +361,8 @@ namespace ProjectCCloudyNavigator.Data
             trackedQuestId = string.Empty;
             bagLocationId = string.Empty;
             skillSlots = new CnSkillSlotRow[0];
+            graphNodes = new CnGraphNode[0];
+            graphEdges = new CnGraphEdge[0];
             skillNodes = new CnSkillNodeRow[0];
             weekdayName = string.Empty;
             monthName = string.Empty;
@@ -339,6 +381,7 @@ namespace ProjectCCloudyNavigator.Data
             ReadContracts();
             ReadInventory();
             ReadRelations();
+            ReadGraph();
             ReadSkills();
 
             _shipTimer -= dt;
@@ -873,11 +916,10 @@ namespace ProjectCCloudyNavigator.Data
                 else
                 {
                     var rows = new CnFactionRow[entries.Length];
-                    var catalog = FactionCatalog.Instance;
                     for (int i = 0; i < entries.Length; i++)
                     {
                         var e = entries[i];
-                        var def = catalog != null ? catalog.GetByWireId(e.faction) : null;
+                        var def = FactionDef(e.faction);
                         bool hasTiers = def != null && def.reputationThresholds != null && def.reputationThresholds.Length > 0;
 
                         var row = new CnFactionRow
@@ -937,6 +979,273 @@ namespace ProjectCCloudyNavigator.Data
             npcs = npcRows;
         }
 
+        // ------------------------------------------------------------------ граф связей
+
+        private string _graphSignature = string.Empty;
+
+        /// <summary>
+        /// Граф связей. Узлы — только видимые субъекты: фракции и люди из снапшотов сервера (он присылает лишь
+        /// известные) и задания из QuestClientState. Рёбра — реальные поля ассетов: NpcDefinition.factionRef и
+        /// attitudeLinks, FactionDefinition.combatRelations, GetQuestOfferIds/GetQuestTurnInIds,
+        /// QuestDefinition.factionRef и rewards.reputation, QuestPrerequisite.
+        /// Неизвестные соседи не рисуются даже точкой «?»: их существование — тоже знание, которого у клиента нет.
+        /// Каталог NPC/квестов — QuestWorld.Database (публичный путь host-played сессии); без него остаются
+        /// рёбра между известными фракциями, которые целиком лежат в Resources/Data/Factions.
+        /// Определения фракций — FactionDef(): сначала каталог игры, а если он ещё не создан (в редакторе его нет) —
+        /// те же ассеты из Resources/Data/Factions, иначе имена, тиры и боевые отношения терялись бы целиком.
+        /// </summary>
+        private void ReadGraph()
+        {
+            EnsureQuestDatabase();
+
+            string signature = GraphSignature();
+            if (signature == _graphSignature) return;
+            _graphSignature = signature;
+
+            var factionRows = factions ?? new CnFactionRow[0];
+            var npcRows = npcs ?? new CnNpcRow[0];
+            var questRows = quests ?? new CnQuestRow[0];
+
+            var nodes = new List<CnGraphNode>(factionRows.Length + npcRows.Length + questRows.Length);
+            var factionByWire = new Dictionary<int, string>(factionRows.Length);
+            var npcKeyById = new Dictionary<string, string>(npcRows.Length);
+            var questKeyById = new Dictionary<string, string>(questRows.Length);
+
+            for (int i = 0; i < factionRows.Length; i++)
+            {
+                string key = "f:" + factionRows[i].wireId;
+                factionByWire[factionRows[i].wireId] = key;
+                nodes.Add(new CnGraphNode
+                {
+                    key = key,
+                    kind = 0,
+                    name = factionRows[i].displayName,
+                    value = factionRows[i].value
+                });
+            }
+
+            for (int i = 0; i < npcRows.Length; i++)
+            {
+                if (string.IsNullOrEmpty(npcRows[i].npcId)) continue;
+                string key = "n:" + npcRows[i].npcId;
+                npcKeyById[npcRows[i].npcId] = key;
+                nodes.Add(new CnGraphNode
+                {
+                    key = key,
+                    kind = 1,
+                    // Имя резолвится тем же путём, что и строка панели: displayName у NpcDefinition — ключ локализации.
+                    name = ResolveNpcName(npcRows[i].npcId),
+                    value = npcRows[i].value
+                });
+            }
+
+            for (int i = 0; i < questRows.Length; i++)
+            {
+                if (string.IsNullOrEmpty(questRows[i].questId)) continue;
+                string key = "q:" + questRows[i].questId;
+                questKeyById[questRows[i].questId] = key;
+                nodes.Add(new CnGraphNode
+                {
+                    key = key,
+                    kind = 2,
+                    name = questRows[i].displayName,
+                    value = 0
+                });
+            }
+
+            var edges = new List<CnGraphEdge>(nodes.Count * 2);
+
+            void Add(string from, string to, byte type, string label, bool negative = false)
+            {
+                if (string.IsNullOrEmpty(from) || string.IsNullOrEmpty(to) || from == to) return;
+                edges.Add(new CnGraphEdge { from = from, to = to, type = type, label = label, negative = negative });
+            }
+
+            // 1 и 2: принадлежность NPC фракции и его поведение (AttitudeLink) — только по видимым фракциям.
+            for (int i = 0; i < npcRows.Length; i++)
+            {
+                string npcKey = npcKeyById.TryGetValue(npcRows[i].npcId, out var nk) ? nk : null;
+                if (npcKey == null) continue;
+
+                var def = _questDatabase != null ? _questDatabase.GetNpc(npcRows[i].npcId) : null;
+                if (def == null) continue;
+
+                // Подпись — глагол связи, а не имя NPC: displayName у NpcDefinition это ключ локализации.
+                if (factionByWire.TryGetValue(def.EffectiveFactionWireId, out var ownFaction))
+                    Add(npcKey, ownFaction, 1, "состоит в");
+
+                var links = def.attitudeLinks;
+                if (links == null) continue;
+
+                for (int k = 0; k < links.Length; k++)
+                {
+                    var link = links[k];
+                    if (!factionByWire.TryGetValue(link.EffectiveFactionWireId, out var target)) continue;
+
+                    Add(npcKey, target, 2,
+                        "нравится: " + Signed(link.deltaOnLike) + " · не нравится: " + Signed(link.deltaOnDislike),
+                        link.deltaOnLike < 0);
+                }
+            }
+
+            // 3: вражда и союз между известными фракциями. Нейтралитет не рисуется — это не связь, а её отсутствие.
+            for (int i = 0; i < factionRows.Length; i++)
+            {
+                int wire = factionRows[i].wireId;
+                if (!factionByWire.TryGetValue(wire, out var from)) continue;
+
+                var def = FactionDef(wire);
+                if (def == null || def.combatRelations == null) continue;
+
+                for (int k = 0; k < def.combatRelations.Length; k++)
+                {
+                    var rel = def.combatRelations[k];
+                    if (rel.relation == FactionRelation.Neutral) continue;
+                    if (!factionByWire.TryGetValue(rel.EffectiveTargetWireId, out var to)) continue;
+
+                    bool hostile = rel.relation == FactionRelation.Hostile;
+                    Add(from, to, 3, hostile ? "вражда" : "союз", hostile);
+                }
+            }
+
+            // 4: кто предлагает задание и кто принимает сдачу — у мода один тип с двумя глаголами.
+            for (int i = 0; i < npcRows.Length; i++)
+            {
+                if (!npcKeyById.TryGetValue(npcRows[i].npcId, out var npcKey)) continue;
+
+                var def = _questDatabase != null ? _questDatabase.GetNpc(npcRows[i].npcId) : null;
+                if (def == null) continue;
+
+                var offers = def.GetQuestOfferIds();
+                if (offers != null)
+                {
+                    for (int k = 0; k < offers.Length; k++)
+                        if (questKeyById.TryGetValue(offers[k], out var q)) Add(npcKey, q, 4, "выдаёт");
+                }
+
+                var turnIns = def.GetQuestTurnInIds();
+                if (turnIns == null) continue;
+
+                for (int k = 0; k < turnIns.Length; k++)
+                    if (questKeyById.TryGetValue(turnIns[k], out var q)) Add(npcKey, q, 4, "принимает");
+            }
+
+            // 1, 5 и 6: фракция задания, награда репутацией и предпосылки — всё из QuestDefinition.
+            for (int i = 0; i < questRows.Length; i++)
+            {
+                if (!questKeyById.TryGetValue(questRows[i].questId, out var questKey)) continue;
+
+                var def = _questDatabase != null ? _questDatabase.GetQuest(questRows[i].questId) : null;
+                if (def == null) continue;
+
+                if (factionByWire.TryGetValue(def.EffectiveFactionWireId, out var ownFaction))
+                    Add(questKey, ownFaction, 1, "состоит в");
+
+                var reputation = def.rewards != null ? def.rewards.reputation : null;
+                if (reputation != null)
+                {
+                    for (int k = 0; k < reputation.Length; k++)
+                    {
+                        if (!factionByWire.TryGetValue(reputation[k].EffectiveFactionWireId, out var target)) continue;
+                        Add(questKey, target, 5, "награда " + Signed(reputation[k].value), reputation[k].value < 0);
+                    }
+                }
+
+                var prerequisites = def.prerequisites;
+                if (prerequisites == null) continue;
+
+                for (int k = 0; k < prerequisites.Length; k++)
+                {
+                    var p = prerequisites[k];
+
+                    if (p.type == QuestPrerequisiteType.QuestCompleted)
+                    {
+                        // Условие авторится либо ссылкой, либо строкой (CSV) — обе формы реальны.
+                        string needed = p.requiredQuest != null ? p.requiredQuest.questId : p.stringParam;
+                        if (!string.IsNullOrEmpty(needed) && questKeyById.TryGetValue(needed, out var need))
+                            Add(questKey, need, 6, "требует задание");
+                    }
+                    else if (p.type == QuestPrerequisiteType.ReputationAtLeast)
+                    {
+                        if (factionByWire.TryGetValue(p.EffectiveFactionWireId, out var target))
+                            Add(questKey, target, 6, "нужна репутация ≥ " + p.intParam);
+                    }
+                    else if (p.type == QuestPrerequisiteType.NpcAttitudeAtLeast)
+                    {
+                        string npcId = p.requiredNpc != null ? p.requiredNpc.npcId : p.stringParam;
+                        if (!string.IsNullOrEmpty(npcId) && npcKeyById.TryGetValue(npcId, out var npcKey))
+                            Add(questKey, npcKey, 6, "нужно отношение ≥ " + p.intParam);
+                    }
+                    // HaveItem / FlagIsSet / PlayerFaction — не субъекты графа: рисовать нечего, поэтому пропуск.
+                }
+            }
+
+            graphNodes = nodes.ToArray();
+            graphEdges = edges.ToArray();
+        }
+
+        /// <summary>
+        /// Определение фракции по wireId. Сначала каталог игры (<c>FactionCatalog.Instance</c> создаёт
+        /// <c>NetworkManagerController</c> на клиенте), затем те же ассеты напрямую из Resources/Data/Factions:
+        /// окно — читающий слой и не должно терять имена, тиры и боевые отношения, если каталог ещё не
+        /// сконструирован (в редакторе Instance = null, проверено).
+        /// </summary>
+        private FactionDefinition FactionDef(int wire)
+        {
+            var catalog = FactionCatalog.Instance;
+            if (catalog != null)
+            {
+                var fromCatalog = catalog.GetByWireId(wire);
+                if (fromCatalog != null) return fromCatalog;
+            }
+
+            if (_factionDefs == null)
+            {
+                _factionDefs = new Dictionary<int, FactionDefinition>();
+                var all = Resources.LoadAll<FactionDefinition>("Data/Factions");
+                for (int i = 0; i < all.Length; i++)
+                {
+                    var def = all[i];
+                    if (def == null || _factionDefs.ContainsKey(def.EffectiveWireId)) continue;
+                    _factionDefs[def.EffectiveWireId] = def;
+                }
+            }
+
+            return _factionDefs.TryGetValue(wire, out var found) ? found : null;
+        }
+
+        /// <summary>Знак для подписи ребра: «+3», «−1», «0». Минус типографский — как в остальных подписях окна.</summary>
+        private static string Signed(int value)
+        {
+            if (value > 0) return "+" + value;
+            if (value < 0) return "−" + Mathf.Abs(value);
+            return "0";
+        }
+
+        /// <summary>Пересборка только по смене видимого знания или появлению каталога — не каждый кадр.</summary>
+        private string GraphSignature()
+        {
+            var sb = new StringBuilder(256);
+            sb.Append(_questDatabase != null ? 'D' : '-');
+
+            var factionRows = factions;
+            if (factionRows != null)
+                for (int i = 0; i < factionRows.Length; i++)
+                    sb.Append('f').Append(factionRows[i].wireId).Append(factionRows[i].value).Append(';');
+
+            var npcRows = npcs;
+            if (npcRows != null)
+                for (int i = 0; i < npcRows.Length; i++)
+                    sb.Append('n').Append(npcRows[i].npcId).Append(npcRows[i].value).Append(';');
+
+            var questRows = quests;
+            if (questRows != null)
+                for (int i = 0; i < questRows.Length; i++)
+                    sb.Append('q').Append(questRows[i].questId).Append(questRows[i].state).Append(';');
+
+            return sb.ToString();
+        }
+
         private string ResolveNpcName(string npcId)
         {
             if (string.IsNullOrEmpty(npcId)) return string.Empty;
@@ -944,11 +1253,24 @@ namespace ProjectCCloudyNavigator.Data
             EnsureQuestDatabase();
             if (_questDatabase != null)
             {
-                var npc = _questDatabase.GetNpc(npcId);
-                if (npc != null && !string.IsNullOrEmpty(npc.displayName)) return npc.displayName;
+                string name = NpcName(_questDatabase.GetNpc(npcId));
+                if (!string.IsNullOrEmpty(name)) return name;
             }
 
             return npcId; // имени нет — показываем id, а не выдуманную подпись
+        }
+
+        /// <summary>
+        /// Имя NPC. <c>NpcDefinition.displayName</c> — ключ локализации («loc key в будущем», NpcDefinition.cs:71),
+        /// поэтому Loc.Get; если перевода нет, Loc возвращает фолбэк — npcId, а не сам ключ.
+        /// </summary>
+        private static string NpcName(NpcDefinition def)
+        {
+            if (def == null) return string.Empty;
+
+            string name = Loc.Get(def.displayName, def.npcId);
+            if (!string.IsNullOrWhiteSpace(name)) return name;
+            return def.npcId;
         }
 
         /// <summary>
@@ -975,7 +1297,7 @@ namespace ProjectCCloudyNavigator.Data
                 for (int k = 0; k < turnIns.Length; k++)
                 {
                     if (turnIns[k] != questId) continue;
-                    return string.IsNullOrEmpty(npc.displayName) ? npc.npcId : npc.displayName;
+                    return NpcName(npc);
                 }
             }
 
@@ -987,7 +1309,13 @@ namespace ProjectCCloudyNavigator.Data
         {
             if (_questDatabaseSearched) return;
             _questDatabaseSearched = true;
-            _questDatabase = UnityEngine.Object.FindAnyObjectByType<ProjectC.Quests.QuestDatabase>();
+
+            // QuestWorld.Database — публичный путь к каталогу, которым инициализирован сервер: на host-played
+            // сессии он есть. FindAnyObjectByType<QuestDatabase>() оставлен запасом: он ищет объекты сцены,
+            // а QuestDatabase — ассет, поэтому в редакторе даёт null (проверено пробой).
+            var world = QuestWorld.Instance;
+            if (world != null) _questDatabase = world.Database;
+            if (_questDatabase == null) _questDatabase = UnityEngine.Object.FindAnyObjectByType<ProjectC.Quests.QuestDatabase>();
         }
 
         // ------------------------------------------------------------------ навыки

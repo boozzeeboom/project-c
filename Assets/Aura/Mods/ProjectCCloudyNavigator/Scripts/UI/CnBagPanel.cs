@@ -25,6 +25,8 @@ namespace ProjectCCloudyNavigator.UI
         private readonly CnActions _actions;
         private readonly CnViewState _view;
         private readonly Action<CnActionResult> _onResult;
+        private readonly CnTip _tip;
+        private readonly CnHover _hover;
 
         private readonly VisualElement _root;
         private readonly VisualElement _focus;
@@ -53,11 +55,13 @@ namespace ProjectCCloudyNavigator.UI
             public bool allowed;
         }
 
-        public CnBagPanel(CnActions actions, CnViewState view, Action<CnActionResult> onResult)
+        public CnBagPanel(CnActions actions, CnViewState view, Action<CnActionResult> onResult, CnTip tip, CnHover hover)
         {
             _actions = actions;
             _view = view;
             _onResult = onResult;
+            _tip = tip;
+            _hover = hover;
 
             _root = CnStyle.Box("cn-bgp");
 
@@ -340,7 +344,22 @@ namespace ProjectCCloudyNavigator.UI
             act.EnableInClassList("is-blocked", !available);
             row.Add(act);
 
-            row.tooltip = BuildTooltip(entry, available);
+            // Карточка строки (cargo.js tooltip): предмет, количество, вес, курс обмена и честная причина отказа.
+            var card = CnTipCard.Make(entry.name, "×" + entry.quantity + " · " + entry.weight.ToString("0.0") + " кг");
+            if (!string.IsNullOrEmpty(entry.typeLabel)) card.Row("тип", entry.typeLabel);
+            if (entry.dangerous) card.Row("свойство", "опасный ⚠");
+            if (entry.fragile) card.Row("свойство", "хрупкий ❄");
+            card.Row("курс", string.IsNullOrEmpty(entry.rate) ? "обмена нет" : entry.rate + " · упаковок: " + entry.packs);
+            card.Foot(available
+                ? (entry.fromShip ? "клик — одна упаковка в багаж" : "клик — одна упаковка в трюм")
+                : (!entry.allowed ? _actions.Zone.label : entry.packs <= 0 ? "нет полной упаковки по курсу" : "нет корабля для переноса"),
+                available ? (byte)0 : (byte)1);
+            _tip?.Hover(row, () => card);
+
+            // Наведение на предмет — субъект «предмет»: лента подсвечивает линии, которым он нужен.
+            string hoverName = entry.name;
+            row.RegisterCallback<PointerEnterEvent>(_ => _hover?.SetItem(hoverName));
+            row.RegisterCallback<PointerLeaveEvent>(_ => _hover?.Clear());
 
             if (available)
             {

@@ -3040,17 +3040,22 @@
 }
 
 .cn-bgp__sum {
-    flex-shrink: 1;
-    min-width: 0;
+    flex-shrink: 0;   /* счётчик слотов и веса не сжимается: «0,0 КГ» обрезалось до «0,0 …» */
+    max-width: 64%;   /* защита раскладки для длинной строки трюма корабля */
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: 11px;
     letter-spacing: 1.2px;
     color: #a8b6ac;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .cn-bgp__zone {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 10.5px;
     color: #71806f;
 }
@@ -3182,4 +3187,356 @@
     padding: 14px 12px 14px 12px;
     font-size: 12px;
     color: #71806f;
+}
+
+/* ---------------------------------------------------------------- подсказка (src/ui.js .tip / .tip-card)
+   Один слой на всё окно: карточка не ловит мышь (pickingMode Ignore ставится кодом), появляется по opacity —
+   в моде это .tip { opacity 0 → .on 1, transition .15s }. Градиент подложки заменён плоской заливкой (D25). */
+
+.cn-tip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.cn-tip__card {
+    position: absolute;
+    max-width: 290px;
+    padding: 9px 11px 10px 11px;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.92);
+    background-color: rgba(18, 23, 17, 0.97);
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
+}
+
+.cn-tip__card.is-idle {
+    opacity: 0;
+}
+
+.cn-tip__corner {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border-width: 1px;
+    border-color: rgba(185, 145, 90, 0.55);
+}
+
+.cn-tip__corner--a {
+    left: -1px;
+    top: -1px;
+    border-right-width: 0;
+    border-bottom-width: 0;
+}
+
+.cn-tip__corner--b {
+    right: -1px;
+    bottom: -1px;
+    border-left-width: 0;
+    border-top-width: 0;
+}
+
+.cn-tip__title {
+    font-size: 11.5px;
+    letter-spacing: 1.38px;
+    color: #eef3ef;
+    margin-bottom: 2px;
+    white-space: nowrap;
+}
+
+.cn-tip__sub {
+    font-size: 11px;
+    color: #71806f;
+    letter-spacing: 0.44px;
+    margin-bottom: 6px;
+    white-space: normal;
+}
+
+.cn-tip__row {
+    justify-content: space-between;
+    border-top-width: 1px;
+    border-top-color: rgba(96, 150, 116, 0.16);
+    padding-top: 2px;
+    margin-top: 2px;
+}
+
+.cn-tip__k {
+    font-size: 11.5px;
+    color: #71806f;
+    white-space: nowrap;
+}
+
+.cn-tip__v {
+    font-size: 11.5px;
+    color: #eef3ef;
+    white-space: normal;
+    flex-shrink: 1;
+    -unity-text-align: middle-right;
+}
+
+.cn-tip__foot {
+    margin-top: 6px;
+    font-size: 10.5px;
+    letter-spacing: 0.84px;
+    color: #78b891;
+    white-space: normal;
+}
+
+.cn-tip__foot--warn {
+    color: #c98a4b;
+}
+
+.cn-tip__foot--danger {
+    color: #c05b45;
+}
+
+/* ---------------------------------------------------------------- подсветка из шины наведения
+   home.setHighlight(): .hm-slot.hl / .hm-stat.hl меняют рамку и заливку (заливка — кодом, USS её не перебьёт).
+   lines.js: #rows.hlmode > .ln:not(.hl) — в USS нет :not(), поэтому соседи глушатся классом .is-dim. */
+
+.cn-slot.is-hl,
+.cn-stat.is-hl,
+.cn-cr.is-hl {
+    border-color: #78b891;
+}
+
+.cn-rows.is-hlmode .cn-ln.is-dim {
+    opacity: 0.28;
+}
+
+/* ---------------------------------------------------------------- граф связей (rel-graph.js)
+   Кольца по видам, рёбра Painter2D по шести типам мода, разбор выбранного узла справа.
+   Своей физики нет: раскладка детерминированная, поэтому одинаковый снапшот даёт одну картинку. */
+
+.cn-relp__tabs {
+    flex-direction: row;
+    margin-bottom: 6px;
+}
+
+.cn-relp__tab {
+    margin-right: 6px;
+}
+
+.cn-relp__tab.is-off {
+    opacity: 0.55;
+}
+
+.cn-relp__body {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.cn-relp__lists {
+    flex-grow: 1;
+}
+
+.cn-relg {
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.cn-relg__bar {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.cn-relg__title {
+    font-size: 12px;
+    letter-spacing: 1.4px;
+    color: #eef3ef;
+}
+
+.cn-relg__counts {
+    font-size: 10.5px;
+    color: #71806f;
+    margin-left: 8px;
+}
+
+.cn-relg__btn {
+    padding: 1px 7px;
+    margin-left: 4px;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.90);
+}
+
+.cn-relg__bt {
+    font-size: 11px;
+    color: #a8b6ac;
+}
+
+.cn-relg__legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+
+.cn-relg__chip {
+    flex-direction: row;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.cn-relg__chip-sw {
+    width: 9px;
+    height: 2px;
+    margin-right: 4px;
+}
+
+.cn-relg__chip-t {
+    font-size: 10px;
+    color: #71806f;
+}
+
+.cn-relg__body {
+    flex-direction: row;
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.cn-relg__canvas {
+    flex-grow: 1;
+    min-width: 0;
+    overflow: hidden;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.55);
+    background-color: rgba(7, 10, 9, 0.55);
+}
+
+.cn-relg__content {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.cn-relg__edges {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.cn-relg__node {
+    position: absolute;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 6px;
+    padding-right: 6px;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.90);
+}
+
+.cn-relg__node.is-f {
+    border-color: rgba(120, 184, 145, 0.55);
+}
+
+.cn-relg__node.is-n {
+    border-color: rgba(185, 145, 90, 0.50);
+}
+
+.cn-relg__node.is-q {
+    border-color: rgba(74, 87, 76, 0.70);
+}
+
+.cn-relg__node.is-sel {
+    border-color: #78b891;
+    background-color: rgba(47, 124, 80, 0.28);
+}
+
+.cn-relg__node.is-nb {
+    border-color: #b9915a;
+}
+
+.cn-relg__node.is-dim {
+    opacity: 0.30;
+}
+
+.cn-relg__nd {
+    font-size: 10.5px;
+    color: #eef3ef;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cn-relg__nv {
+    font-size: 10px;
+    color: #a8b6ac;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.cn-relg__det {
+    width: 210px;
+    margin-left: 8px;
+    padding: 6px 8px;
+    flex-direction: column;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.60);
+    background-color: rgba(18, 23, 17, 0.80);
+}
+
+.cn-relg__det-t {
+    font-size: 10.5px;
+    letter-spacing: 1.2px;
+    color: #71806f;
+    margin-bottom: 4px;
+}
+
+.cn-relg__det-name {
+    font-size: 12.5px;
+    color: #eef3ef;
+}
+
+.cn-relg__det-kind {
+    font-size: 10.5px;
+    color: #71806f;
+    margin-bottom: 4px;
+}
+
+.cn-relg__det-line {
+    flex-direction: row;
+    margin-top: 3px;
+}
+
+.cn-relg__det-k {
+    font-size: 10.5px;
+    color: #71806f;
+}
+
+.cn-relg__det-v {
+    font-size: 11px;
+    color: #a8b6ac;
+}
+
+.cn-relg__det-empty {
+    font-size: 10.5px;
+    color: #71806f;
+}
+
+.cn-relg__link {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 3px;
+}
+
+.cn-relg__link-sw {
+    width: 9px;
+    height: 2px;
+    margin-right: 5px;
+}
+
+.cn-relg__link-k {
+    font-size: 10.5px;
+    color: #a8b6ac;
+}
+
+.cn-relg__link-v {
+    font-size: 10.5px;
+    color: #71806f;
+    margin-left: 5px;
 }

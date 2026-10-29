@@ -28,6 +28,8 @@ namespace ProjectCCloudyNavigator.UI
 
         private readonly CnActions _actions;
         private readonly CnViewState _view;
+        private readonly CnTip _tip;
+        private readonly CnHover _hover;
         private readonly Action<CnActionResult> _onResult;
         private readonly Action<int> _onOpenShip;
         private readonly Action _onOpenBag;
@@ -47,10 +49,12 @@ namespace ProjectCCloudyNavigator.UI
         public VisualElement Root => _root;
 
         public CnDockView(CnActions actions, CnViewState view, Action<CnActionResult> onResult, Action<int> onOpenShip,
-            Action onOpenBag)
+            Action onOpenBag, CnTip tip, CnHover hover)
         {
             _actions = actions;
             _view = view != null ? view : new CnViewState();
+            _tip = tip;
+            _hover = hover;
             _onResult = onResult;
             _onOpenShip = onOpenShip;
             _onOpenBag = onOpenBag;
@@ -63,12 +67,14 @@ namespace ProjectCCloudyNavigator.UI
             var ships = CnStyle.Box("cn-ships");
             var shipHead = CnStyle.Row("cn-dock__head");
             shipHead.AddToClassList("cn-clickable");
-            shipHead.tooltip = "открыть окно корабля";
+            shipHead.tooltip = null;
+            _tip?.Hover(shipHead, () => CnTipCard.Make("КОРАБЛЬ", "телеметрия выбранного корабля").Foot("клик — окно корабля"));
             shipHead.Add(CnStyle.Label("КОРАБЛЬ", "cn-dock__t"));
             shipHead.Add(CnStyle.Label("клик — окно корабля", "cn-dock__hint"));
             shipHead.Add(CnStyle.Box("cn-grow"));
             _shipSum = CnStyle.Label(string.Empty, "cn-dock__sum");
-            _shipSum.tooltip = "следующий корабль";
+            _shipSum.tooltip = null;
+            _tip?.Hover(_shipSum, () => CnTipCard.Make("КОРАБЛИ", _shipSum.text).Foot("клик — следующий корабль"));
             shipHead.Add(_shipSum);
             shipHead.RegisterCallback<ClickEvent>(evt =>
             {
@@ -90,7 +96,8 @@ namespace ProjectCCloudyNavigator.UI
             var bag = CnStyle.Box("cn-bag");
             var bagHead = CnStyle.Row("cn-dock__head");
             bagHead.AddToClassList("cn-clickable");
-            bagHead.tooltip = "открыть багаж и трюм";
+            bagHead.tooltip = null;
+            _tip?.Hover(bagHead, () => CnTipCard.Make("БАГАЖ", _bagSum.text).Foot("клик — полный багаж и трюм"));
             bagHead.Add(CnStyle.Label("БАГАЖ", "cn-dock__t"));
             _bagHint = CnStyle.Label(string.Empty, "cn-dock__hint");
             bagHead.Add(_bagHint);
@@ -232,13 +239,16 @@ namespace ProjectCCloudyNavigator.UI
             }
         }
 
-        private static VisualElement Cell(string key, string value, bool first)
+        /// <summary>Ячейка телеметрии: подпись, значение и карточка наведения с тем же значением.</summary>
+        private VisualElement Cell(string key, string value, bool first)
         {
             var cell = CnStyle.Box("cn-sh__cell");
             if (first) cell.AddToClassList("is-first");
             CnStyle.Fill(cell, CnStyle.Veil, 0.55f);
             cell.Add(CnStyle.Label(key.ToUpperInvariant(), "cn-sh__k"));
-            cell.Add(CnStyle.Label(value, "cn-sh__v"));
+            var label = CnStyle.Label(value, "cn-sh__v");
+            cell.Add(label);
+            _tip?.Hover(cell, () => CnTipCard.Make(key, label.text).Foot("телеметрия корабля"));
             return cell;
         }
 
@@ -252,7 +262,21 @@ namespace ProjectCCloudyNavigator.UI
 
             int packs = _actions.PacksForRetrieve(row.itemId, row.quantity);
             string rate = _actions.RetrieveRateLabel(row.itemId);
-            line.tooltip = "в багаж: " + (string.IsNullOrEmpty(rate) ? "курс обмена не задан" : rate + " · упаковок: " + packs);
+
+            // Карточка строки груза: предмет, вес и курс переноса — всё настоящее, без «кг в слотах».
+            var tips = CnTipCard.Make(row.displayName, "×" + row.quantity + " · " +
+                (row.quantity * row.unitWeight).ToString("0") + " кг");
+            if (row.dangerous) tips.Row("свойство", "опасный ⚠");
+            if (row.fragile) tips.Row("свойство", "хрупкий ❄");
+            tips.Row("в багаж", string.IsNullOrEmpty(rate) ? "курс обмена не задан" : rate + " · упаковок: " + packs);
+            tips.Foot(zoneAllowed ? "клик — одна упаковка в багаж" : "подойди к обменнику", zoneAllowed ? (byte)0 : (byte)1);
+            _tip?.Hover(line, () => tips);
+
+            // Наведение на груз — тот же субъект «предмет», что у плитки багажа: лента подсвечивает свои линии.
+            string hoverName = row.displayName;
+            line.RegisterCallback<PointerEnterEvent>(_ => _hover?.SetItem(hoverName));
+            line.RegisterCallback<PointerLeaveEvent>(_ => _hover?.Clear());
+
             line.EnableInClassList("is-blocked", !zoneAllowed || packs <= 0);
 
             string itemId = row.itemId;
@@ -309,7 +333,8 @@ namespace ProjectCCloudyNavigator.UI
             {
                 var more = CnStyle.Box("cn-bag__more");
                 more.Add(CnStyle.Label("ЕЩЁ " + (feed.bagItems.Length - shown), "cn-bag__moret"));
-                more.tooltip = "открыть полный багаж";
+                more.tooltip = null;
+                _tip?.Hover(more, () => CnTipCard.Make("БАГАЖ", "ещё " + (feed.bagItems.Length - shown) + " поз.").Foot("клик — полный багаж"));
                 more.AddToClassList("cn-clickable");
                 more.RegisterCallback<ClickEvent>(evt =>
                 {
@@ -335,8 +360,18 @@ namespace ProjectCCloudyNavigator.UI
 
             int packs = _actions.PacksForStore(item.itemId, item.quantity);
             string rate = _actions.StoreRateLabel(item.itemId);
-            tile.tooltip = name + " ×" + item.quantity + " · " + (item.quantity * item.weightKg).ToString("0.0") + " кг\n" +
-                           "в трюм: " + (string.IsNullOrEmpty(rate) ? "курс обмена не задан" : rate + " · упаковок: " + packs);
+
+            // Карточка плитки (bag.js tooltip.hover): имя, количество, вес и курс — реальные значения снапшота.
+            var tips = CnTipCard.Make(name, "×" + item.quantity + " · " + (item.quantity * item.weightKg).ToString("0.0") + " кг");
+            tips.Row("в трюм", string.IsNullOrEmpty(rate) ? "курс обмена не задан" : rate + " · упаковок: " + packs);
+            bool canStore = zoneAllowed && shipNetId != 0 && packs > 0;
+            tips.Foot(canStore ? "клик — одна упаковка в трюм" : "подойди к обменнику", canStore ? (byte)0 : (byte)1);
+            _tip?.Hover(tile, () => tips);
+
+            string hoverName = name;
+            tile.RegisterCallback<PointerEnterEvent>(_ => _hover?.SetItem(hoverName));
+            tile.RegisterCallback<PointerLeaveEvent>(_ => _hover?.Clear());
+
             tile.EnableInClassList("is-blocked", !zoneAllowed || shipNetId == 0 || packs <= 0);
 
             int itemId = item.itemId;

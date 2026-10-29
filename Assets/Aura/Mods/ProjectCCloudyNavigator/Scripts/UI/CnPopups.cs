@@ -30,7 +30,7 @@ namespace ProjectCCloudyNavigator.UI
             Rel = 7
         }
 
-        private readonly CnPopup _popup = new CnPopup();
+        private readonly CnPopup _popup;
         private readonly CnQuestsPanel _quests;
         private readonly CnSkillsPanel _skills;
         private readonly CnCalendarPanel _calendar;
@@ -45,16 +45,17 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Отчёт о результате действия — ставит главное окно после своей постройки.</summary>
         public Action<CnActionResult> OnResult { get; set; }
 
-        public CnPopups(CnActions actions, CnViewState view)
+        public CnPopups(CnActions actions, CnViewState view, CnTip tip, CnHover hover)
         {
             _view = view != null ? view : new CnViewState();
+            _popup = new CnPopup(tip);
 
-            _quests = new CnQuestsPanel(actions, Report);
-            _skills = new CnSkillsPanel(actions, Report);
-            _calendar = new CnCalendarPanel();
-            _rel = new CnRelPanel();
-            _ship = new CnShipPanel(actions, _view, Report, OpenBag);
-            _bag = new CnBagPanel(actions, _view, Report);
+            _quests = new CnQuestsPanel(actions, Report, tip);
+            _skills = new CnSkillsPanel(actions, Report, tip);
+            _calendar = new CnCalendarPanel(tip);
+            _rel = new CnRelPanel(tip);
+            _ship = new CnShipPanel(actions, _view, Report, OpenBag, tip, hover);
+            _bag = new CnBagPanel(actions, _view, Report, tip, hover);
         }
 
         public VisualElement Root => _popup.Root;

@@ -23,6 +23,7 @@ namespace ProjectCCloudyNavigator.UI
 
         private readonly VisualElement _root;
         private readonly Label _yearLabel;
+        private readonly CnTip _tip;
         private readonly Label _dateLabel;
         private readonly Label _clockLabel;
         private readonly Label _rulesLabel;
@@ -33,8 +34,9 @@ namespace ProjectCCloudyNavigator.UI
         private string _gridSignature = string.Empty;
         private string _sideSignature = string.Empty;
 
-        public CnCalendarPanel()
+        public CnCalendarPanel(CnTip tip)
         {
+            _tip = tip;
             _root = CnStyle.Box("cn-calp");
 
             var head = CnStyle.Row("cn-calp__head");
@@ -223,7 +225,15 @@ namespace ProjectCCloudyNavigator.UI
                 bool today = month == feed.month && d == feed.day;
                 cell.EnableInClassList("is-today", today);
                 CnStyle.Fill(cell, today ? CnStyle.GasMid : CnStyle.VeilSoft, today ? 0.95f : 0.55f);
-                cell.tooltip = d + " " + feed.MonthName(month) + " · " + WeekdayName(feed, weekday);
+                // Карточка дня (calendar.js dayTip): дата, день недели и реальные сроки контрактов на этот день.
+                int day = d;
+                int weekdayIndex = weekday;
+                _tip?.Hover(cell, () =>
+                {
+                    var card = CnTipCard.Make(day + " " + feed.MonthName(month), WeekdayName(feed, weekdayIndex));
+                    if (day == feed.day && month == feed.month) card.Foot("сегодня");
+                    return card;
+                });
 
                 grid.Add(cell);
             }

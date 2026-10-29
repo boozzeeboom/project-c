@@ -44,6 +44,7 @@ namespace ProjectCCloudyNavigator.UI
         private readonly Label _nowTail;
         private readonly CnLinesView _lines;
         private readonly CnDockView _dock;
+        private readonly CnTip _tip;
 
         private string _message = string.Empty;
         private bool _messageOk;
@@ -53,10 +54,11 @@ namespace ProjectCCloudyNavigator.UI
 
         public VisualElement Root => _root;
 
-        public CnMainView(CnActions actions, CnPopups popups, CnViewState view)
+        public CnMainView(CnActions actions, CnPopups popups, CnViewState view, CnTip tip, CnHover hover)
         {
             _actions = actions;
             _popups = popups;
+            _tip = tip;
 
             _root = CnStyle.Box("cn-main");
 
@@ -70,7 +72,7 @@ namespace ProjectCCloudyNavigator.UI
             // Явный вход в «ЗАДАНИЯ»: линии открывают попап на своей строке, но без линий нужен вход тоже.
             var quests = CnStyle.Tag("задания");
             quests.AddToClassList("cn-hdr__tag");
-            quests.tooltip = "открыть окно заданий";
+            _tip?.Hover(quests, () => CnTipCard.Make("ЗАДАНИЯ", "журнал и контракты").Foot("клик — открыть"));
             quests.RegisterCallback<ClickEvent>(evt =>
             {
                 evt.StopPropagation();
@@ -92,16 +94,46 @@ namespace ProjectCCloudyNavigator.UI
             _root.Add(_header);
 
             // ---- лента: клик по телу строки открывает полноразмерное окно заданий
-            _lines = new CnLinesView(Show, line => popups?.OpenQuests(line.id, line.id.StartsWith("c:", System.StringComparison.Ordinal)));
+            _lines = new CnLinesView(Show, line => popups?.OpenQuests(line.id, line.id.StartsWith("c:", System.StringComparison.Ordinal)), hover);
             _root.Add(_lines.Root);
 
             // ---- док: шапки корабля и багажа открывают свои окна, плитки переносят предметы
-            _dock = new CnDockView(actions, view, Show, index => _popups?.OpenShip(index), () => _popups?.OpenBag(-1));
+            _dock = new CnDockView(actions, view, Show, index => _popups?.OpenShip(index), () => _popups?.OpenBag(-1), tip, hover);
             _root.Add(_dock.Root);
         }
 
         /// <summary>Узкая колонка (.narrow мода): мельче имя линии.</summary>
         public void SetNarrow(bool narrow) => _lines.SetNarrow(narrow);
+
+        /// <summary>Подсветка одной линии (main.js applyHover: наведение на линию).</summary>
+        public void HighlightLine(string lineId)
+        {
+            var set = new HashSet<string>();
+            if (!string.IsNullOrEmpty(lineId)) set.Add(lineId);
+            _lines.SetHighlight(set);
+        }
+
+        /// <summary>
+        /// Подсветка линий, которым нужен этот предмет: в моде это bag.usage() по AFFECTS, в игре реальная связь —
+        /// груз контракта (ContractDto.itemId → displayName). Нет совпадений — глушим всё, как «__none__» мода.
+        /// </summary>
+        public void HighlightItem(string itemName)
+        {
+            var set = new HashSet<string>();
+            if (!string.IsNullOrEmpty(itemName))
+            {
+                for (int i = 0; i < _models.Count; i++)
+                {
+                    var line = _models[i];
+                    if (line != null && line.itemName == itemName) set.Add(line.id);
+                }
+            }
+
+            if (set.Count == 0) set.Add("\u0000");
+            _lines.SetHighlight(set);
+        }
+
+        public void HighlightNone() => _lines.SetHighlight(null);
 
         public void Refresh(CnDataFeed feed, float dt)
         {
@@ -340,6 +372,7 @@ namespace ProjectCCloudyNavigator.UI
                 rewardBig = reward,
                 rewardSmall = c.timeLimit > 0f ? "осталось " + FormatTimer(c.timeRemaining) : "без срока",
                 alarm = c.timeLimit > 0f && c.timeRemaining > 0f && c.timeRemaining < 60f,
+                itemName = c.displayName,
             };
 
             line.steps.Add(new CnStep

@@ -51,6 +51,7 @@ namespace ProjectCCloudyNavigator.UI
         private readonly ScrollView _det;
         private readonly CnActions _actions;
         private readonly Action<CnActionResult> _report;
+        private readonly CnTip _tip;
 
         private readonly List<Edge> _edges = new List<Edge>(64);
 
@@ -66,10 +67,11 @@ namespace ProjectCCloudyNavigator.UI
         }
 
         /// <summary>actions — единственный путь к игре; report — строка отчёта главного окна.</summary>
-        public CnSkillsPanel(CnActions actions, Action<CnActionResult> report)
+        public CnSkillsPanel(CnActions actions, Action<CnActionResult> report, CnTip tip)
         {
             _actions = actions;
             _report = report;
+            _tip = tip;
 
             _root = CnStyle.Box("cn-skg");
 
@@ -333,7 +335,13 @@ namespace ProjectCCloudyNavigator.UI
             node.Add(CnStyle.Box("cn-grow"));
             node.Add(CnStyle.Label(n.active ? "A" : "P", n.active ? "cn-skg__type is-on" : "cn-skg__type"));
 
-            node.tooltip = n.displayName + (n.learned ? " · выучен" : " · известен, не выучен");
+            // Карточка узла (skill-graph.js nodeCard): имя, тип, стоимость, состояние изучения и чужая ветка.
+            var card = CnTipCard.Make(n.displayName, n.active ? "активный" : "пассивный");
+            card.Row("стоимость", n.learnXp > 0f ? n.learnXp.ToString("0") + " XP" : "—");
+            card.Row("состояние", n.learned ? "выучен" : n.canLearn ? "можно изучить" : "предпосылки не выучены");
+            if (foreign) card.Row("ветка", "другой раздел");
+            card.Foot("клик — разбор и слоты");
+            _tip?.Hover(node, () => card);
             node.RegisterCallback<ClickEvent>(evt =>
             {
                 evt.StopPropagation();
@@ -482,7 +490,9 @@ namespace ProjectCCloudyNavigator.UI
             {
                 var forget = CnStyle.Tag("забыть");
                 forget.AddToClassList("is-first");
-                forget.tooltip = "снять навык: слоты, где он стоит, освободятся в игре";
+                forget.tooltip = null;
+                _tip?.Hover(forget, () => CnTipCard.Make("ЗАБЫТЬ", row.displayName)
+                    .Foot("слоты, где навык стоит, освободятся в игре"));
                 forget.RegisterCallback<ClickEvent>(evt =>
                 {
                     evt.StopPropagation();
@@ -494,7 +504,10 @@ namespace ProjectCCloudyNavigator.UI
             {
                 var learn = CnStyle.Tag("изучить", row.learnXp > 0f ? row.learnXp.ToString("0") + " XP" : null);
                 learn.AddToClassList("is-first");
-                learn.tooltip = "запрос уйдёт на сервер тем же RPC, что из окна персонажа";
+                learn.tooltip = null;
+                _tip?.Hover(learn, () => CnTipCard.Make("ИЗУЧИТЬ", row.displayName)
+                    .Row("стоимость", row.learnXp > 0f ? row.learnXp.ToString("0") + " XP" : "—")
+                    .Foot("запрос уйдёт на сервер тем же RPC, что из окна персонажа"));
                 learn.RegisterCallback<ClickEvent>(evt =>
                 {
                     evt.StopPropagation();
@@ -545,12 +558,13 @@ namespace ProjectCCloudyNavigator.UI
             caption.style.color = mine ? CnStyle.Accent : taken ? CnStyle.Dim : CnStyle.Muted;
             tag.Add(caption);
 
-            tag.tooltip = mine
-                ? slot.code + " · здесь" + (slot.onCooldown ? " · перезарядка" : string.Empty) + " · клик снимает"
-                : taken
-                    ? slot.code + " · занят: " + (string.IsNullOrEmpty(slot.displayName) ? slot.skillId : slot.displayName) +
-                      " · клик заменит"
-                    : slot.code + " · свободен";
+            // Карточка слота (skills.js bindTip): занят этим навыком / другим / свободен — и что сделает клик.
+            var slotCard = CnTipCard.Make(slot.code, mine ? "здесь: " + row.displayName :
+                taken ? "занят: " + (string.IsNullOrEmpty(slot.displayName) ? slot.skillId : slot.displayName) : "свободен");
+            if (mine && slot.onCooldown) slotCard.Row("состояние", "перезарядка");
+            slotCard.Foot(mine ? "клик — снять привязку" : taken ? "клик — заменить" : "клик — привязать");
+            tag.tooltip = null;
+            _tip?.Hover(tag, () => slotCard);
 
             tag.RegisterCallback<ClickEvent>(evt =>
             {

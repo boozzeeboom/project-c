@@ -27,6 +27,8 @@ namespace ProjectCCloudyNavigator.UI
         private readonly CnViewState _view;
         private readonly Action<CnActionResult> _onResult;
         private readonly Action<int> _onOpenBag;
+        private readonly CnTip _tip;
+        private readonly CnHover _hover;
 
         private readonly VisualElement _root;
         private readonly VisualElement _list;
@@ -37,12 +39,15 @@ namespace ProjectCCloudyNavigator.UI
         private string _signature = string.Empty;
         private string _listSignature = string.Empty;
 
-        public CnShipPanel(CnActions actions, CnViewState view, Action<CnActionResult> onResult, Action<int> onOpenBag)
+        public CnShipPanel(CnActions actions, CnViewState view, Action<CnActionResult> onResult, Action<int> onOpenBag,
+            CnTip tip, CnHover hover)
         {
             _actions = actions;
             _view = view;
             _onResult = onResult;
             _onOpenBag = onOpenBag;
+            _tip = tip;
+            _hover = hover;
 
             _root = CnStyle.Box("cn-shp");
 
@@ -351,10 +356,16 @@ namespace ProjectCCloudyNavigator.UI
                 row.Add(CnStyle.Label(m.isOccupied ? m.powerConsumption + " ед. · груз +" + m.cargoSlotsBonus : "—",
                     "cn-shp__mpower"));
 
-                row.tooltip = m.isOccupied
-                    ? m.slotType + " · " + m.displayName + " · " + m.powerConsumption + " ед. питания · груз +" +
-                      m.cargoSlotsBonus + " слота"
-                    : m.slotType + " · слот пуст";
+                // Карточка модуля (ships.js): слот, модуль, питание и прибавка грузовых слотов — всё из телеметрии.
+                var card = CnTipCard.Make(m.isOccupied ? m.displayName : "пусто", m.slotType);
+                if (m.isOccupied)
+                {
+                    card.Row("питание", m.powerConsumption + " ед.");
+                    card.Row("груз", "+" + m.cargoSlotsBonus + " слота");
+                    card.Foot("модули ставятся в игре — окно только показывает");
+                }
+                else card.Foot("слот пуст");
+                _tip?.Hover(row, () => card);
                 _content.Add(row);
             }
 
@@ -395,9 +406,20 @@ namespace ProjectCCloudyNavigator.UI
                 act.EnableInClassList("is-blocked", !available);
                 row.Add(act);
 
-                row.tooltip = available
-                    ? "курс: " + rate + " · упаковок: " + packs
-                    : !allowed ? _actions.Zone.label : string.IsNullOrEmpty(rate) ? "курс обмена не задан" : "нет полной упаковки";
+                // Карточка строки груза: предмет, вес и курс переноса; тот же субъект «предмет», что в доке и багаже.
+                var card = CnTipCard.Make(c.displayName, "×" + c.quantity + " · " +
+                    (c.quantity * c.unitWeight).ToString("0") + " кг");
+                if (c.dangerous) card.Row("свойство", "опасный ⚠");
+                if (c.fragile) card.Row("свойство", "хрупкий ❄");
+                card.Row("в багаж", string.IsNullOrEmpty(rate) ? "курс обмена не задан" : rate + " · упаковок: " + packs);
+                card.Foot(available ? "клик — одна упаковка в багаж" :
+                    (!allowed ? _actions.Zone.label : string.IsNullOrEmpty(rate) ? "курс обмена не задан" : "нет полной упаковки"),
+                    available ? (byte)0 : (byte)1);
+                _tip?.Hover(row, () => card);
+
+                string hoverName = c.displayName;
+                row.RegisterCallback<PointerEnterEvent>(_ => _hover?.SetItem(hoverName));
+                row.RegisterCallback<PointerLeaveEvent>(_ => _hover?.Clear());
 
                 if (available)
                 {

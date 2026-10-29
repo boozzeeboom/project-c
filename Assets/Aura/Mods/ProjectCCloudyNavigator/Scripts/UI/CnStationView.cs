@@ -20,6 +20,7 @@ namespace ProjectCCloudyNavigator.UI
         private const int EquipSlotCount = 10;     // как EquipSlot в игре
 
         private readonly VisualElement _root;
+        private readonly VisualElement _previewHost;
         private readonly Label _hpValue;
         private readonly VisualElement _hpFill;
         private readonly Label _credits;
@@ -34,15 +35,17 @@ namespace ProjectCCloudyNavigator.UI
 
         public VisualElement Root => _root;
 
+        /// <summary>Рамка под превью фигуры: элемент 3D-сцены вставляет сюда окно (шаг 6).</summary>
+        public VisualElement PreviewHost => _previewHost;
+
         public CnStationView()
         {
             _root = new VisualElement();
             _root.AddToClassList("cn-station");
 
-            var silhouette = new VisualElement();
-            silhouette.AddToClassList("cn-silhouette");
-            silhouette.Add(CnStyle.Label("фигура персонажа", "cn-dim"));
-            _root.Add(silhouette);
+            _previewHost = new VisualElement();
+            _previewHost.AddToClassList("cn-silhouette");
+            _root.Add(_previewHost);
 
             var hpRow = CnStyle.Row(null);
             hpRow.Add(CnStyle.Cap("HP"));

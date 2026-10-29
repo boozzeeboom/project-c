@@ -21,6 +21,7 @@ namespace ProjectCCloudyNavigator
         private readonly CnMainView _main;
         private readonly CnAltRailView _altrail;
         private readonly CnMotion _motion;
+        private CnPreviewStage _preview;
         private float _lastWidth = -1f;
         private bool _openPending;
         private float _openWait;
@@ -59,6 +60,13 @@ namespace ProjectCCloudyNavigator
             _root.Add(_altrail.Root);
             _root.Add(_motion.Layer);   // слой движения — последним, поверх панелей
 
+            // Превью живёт в сцене, поэтому только в Play Mode: в edit mode GameObject превью попал бы в сцену.
+            if (Application.isPlaying)
+            {
+                _preview = new CnPreviewStage();
+                _station.PreviewHost.Add(_preview.Element);
+            }
+
             _root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             parent.Add(_root);
@@ -89,6 +97,9 @@ namespace ProjectCCloudyNavigator
             _main.Refresh(_feed);
             _altrail.Refresh(_feed);
             _motion.Tick(step);
+
+            // Превью двигается только пока окно открыто: скрытая камера ничего не рендерит (шаг 6).
+            if (_preview != null) _preview.Tick(step);
         }
 
         /// <summary>Слой движения окна: визуальный, состояние игры не читает и не меняет.</summary>
@@ -104,6 +115,7 @@ namespace ProjectCCloudyNavigator
             _altrail.Root.style.opacity = 0f;
             _openPending = true;
             _openWait = 0f;
+            if (_preview != null) _preview.SetVisible(true);
         }
 
         /// <summary>
@@ -114,6 +126,7 @@ namespace ProjectCCloudyNavigator
             if (_root == null) return;
 
             _openPending = false;
+            if (_preview != null) _preview.SetVisible(false);
             _motion.Close(_station.Root, 6, 0.9f);
             _motion.Close(_main.Root, 8, 1f);
             _motion.Close(_altrail.Root, 4, 0.7f);
@@ -146,6 +159,12 @@ namespace ProjectCCloudyNavigator
         public void Dispose()
         {
             _motion.Reset();
+
+            if (_preview != null)
+            {
+                _preview.Dispose();
+                _preview = null;
+            }
 
             if (_root != null)
             {

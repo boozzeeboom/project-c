@@ -1,8 +1,15 @@
-/* Cloudy Navigator — единственный источник вида окна (шаг 2: только корень).
-   Опора 1920×1080, масштаб делает PanelSettings ScaleWithScreenSize.
+/* Cloudy Navigator — USS оболочки (шаг 4 плана: docs/UI/full rebuild plans/Cloudy_redesign/04 §4).
+ *
+ * Правила платформы (04 §1, проверены на меню): нет filter/cursor/box-shadow/outline/::before/::after,
+ * нет display: grid и gap (зазор — margin у ребёнка), нет clamp/calc/vh/vw, нет @keyframes и @media.
+ * Размеры — px на опоре 1920×1080 (CN_PanelSettings, ScaleWithScreenSize).
+ * Полупрозрачные заливки задаются из C# через ProjectCMainMenuGamma.Alpha (Linear против sRGB) — здесь только
+ * непрозрачная типографика, волоски и рамки.
+ * Верхний регистр — в C#, а не text-transform: в USS его нет.
+ * Порог ширины — класс .is-narrow / .is-dock-narrow, который ставит C# в GeometryChangedEvent.
+ */
 
-   Правила переноса (docs/UI/full rebuild plans/Cloudy_redesign/04_PORT_RULES_AND_PLAN.md §1):
-   без filter / cursor / box-shadow / градиентов / @keyframes / grid / gap / ::before; порядок детей вместо z-index. */
+/* ---------------------------------------------------------------- корень и колонки */
 
 .cn-root {
     position: absolute;
@@ -11,4 +18,416 @@
     right: 0;
     bottom: 0;
     flex-direction: row;
+    align-items: stretch;
+}
+
+/* Левая станция: ширина задаётся кодом (--homeW мода: 152 / 164 / 186…226 от ширины окна).
+ * Слоты, модель, HP, кредиты, репутация и календарь недвижимы: док живёт только в средней колонке. */
+.cn-station {
+    flex-shrink: 0;
+    flex-direction: column;
+    padding: 10px 8px 8px 8px;
+    border-right-width: 1px;
+    border-right-color: rgba(96, 150, 116, 0.28);
+}
+
+.cn-main {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    flex-direction: column;
+    padding: 8px 10px 8px 10px;
+}
+
+/* Шкала высоты — отдельная третья колонка, правее всей станции (решение пользователя, 04 §5). */
+.cn-altrail {
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-left: 1px;
+    border-left-width: 1px;
+    border-left-color: rgba(141, 122, 78, 0.30);
+}
+
+/* ---------------------------------------------------------------- типографика */
+
+.cn-cap {
+    font-size: 10px;
+    letter-spacing: 0.14px;
+    color: #71806f;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+
+.cn-label {
+    font-size: 11px;
+    color: #a8b6ac;
+    white-space: nowrap;
+}
+
+.cn-value {
+    font-size: 11px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+
+.cn-big {
+    font-size: 13px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+
+.cn-dim {
+    font-size: 11px;
+    color: #71806f;
+    white-space: nowrap;
+}
+
+.cn-brass {
+    font-size: 11px;
+    color: #b9915a;
+    white-space: nowrap;
+}
+
+.cn-hair {
+    height: 1px;
+    background-color: rgba(74, 87, 76, 0.35);
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+/* ---------------------------------------------------------------- станция */
+
+.cn-silhouette {
+    height: 96px;
+    margin-bottom: 6px;
+    border-width: 1px;
+    border-color: rgba(96, 150, 116, 0.28);
+    border-radius: 2px;
+    align-items: center;
+    justify-content: center;
+}
+
+.cn-hp {
+    height: 6px;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.7);
+    border-radius: 2px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.cn-hp__fill {
+    height: 4px;
+    background-color: #54a373;
+}
+
+.cn-credits {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.cn-credits__spacer {
+    flex-grow: 1;
+}
+
+.cn-slots {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.cn-slot {
+    width: 36px;
+    height: 36px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    border-width: 1px;
+    border-color: rgba(96, 150, 116, 0.28);
+    border-radius: 2px;
+    align-items: center;
+    justify-content: center;
+}
+
+.cn-slot__glyph {
+    font-size: 9px;
+    color: #71806f;
+    -unity-font-style: bold;
+}
+
+.cn-modrow {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.cn-modrow__name {
+    flex-grow: 1;
+    min-width: 0;
+    font-size: 10px;
+    color: #a8b6ac;
+    overflow: hidden;
+}
+
+.cn-rep {
+    flex-direction: column;
+    margin-top: 4px;
+}
+
+.cn-rep__row {
+    flex-direction: row;
+    align-items: center;
+    height: 22px;
+}
+
+.cn-rep__name {
+    flex-grow: 1;
+    min-width: 0;
+    font-size: 10px;
+    color: #a8b6ac;
+    overflow: hidden;
+}
+
+.cn-rep__val {
+    font-size: 10px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+}
+
+.cn-cal {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.cn-cal__day {
+    width: 18px;
+    height: 16px;
+    margin-right: 2px;
+    margin-bottom: 2px;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.35);
+    border-radius: 1px;
+    align-items: center;
+    justify-content: center;
+}
+
+.cn-cal__daynum {
+    font-size: 8px;
+    color: #71806f;
+}
+
+.cn-cal__day--today {
+    border-color: #b9915a;
+}
+
+.cn-cal__daynum--today {
+    color: #eef3ef;
+}
+
+/* ---------------------------------------------------------------- шкала высоты */
+
+.cn-altrail__head {
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: #78b891;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+}
+
+.cn-altrail__headlabel {
+    font-size: 9px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+}
+
+.cn-altrail__track {
+    flex-grow: 1;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+.cn-tick {
+    height: 1px;
+    background-color: rgba(120, 184, 145, 0.55);
+    margin-bottom: 1px;
+}
+
+.cn-tick--out {
+    background-color: rgba(194, 91, 69, 0.42);
+}
+
+.cn-tick--mid {
+    height: 1px;
+}
+
+.cn-bound {
+    height: 1px;
+    width: 100%;
+    background-color: #78b891;
+}
+
+.cn-altval {
+    font-size: 11px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+}
+
+.cn-altval__hair {
+    height: 1px;
+    width: 100%;
+    background-color: rgba(201, 162, 39, 0.6);
+    margin-top: 1px;
+}
+
+/* ---------------------------------------------------------------- шапка, лента, док */
+
+.cn-hdr {
+    flex-direction: row;
+    align-items: center;
+    height: 28px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(96, 150, 116, 0.28);
+}
+
+.cn-hdr__title {
+    font-size: 11px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    letter-spacing: 0.14px;
+}
+
+.cn-hdr__spacer {
+    flex-grow: 1;
+}
+
+.cn-lines {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    margin-top: 6px;
+}
+
+.cn-line {
+    flex-direction: row;
+    align-items: center;
+    height: 44px;
+    padding-left: 6px;
+    padding-right: 6px;
+    margin-bottom: 4px;
+    border-left-width: 2px;
+    border-left-color: rgba(96, 150, 116, 0.28);
+    border-radius: 2px;
+}
+
+.cn-line--contract {
+    height: 48px;
+    border-left-color: rgba(141, 122, 78, 0.55);
+}
+
+.cn-line--tracked {
+    border-left-color: #78b891;
+}
+
+.cn-line__body {
+    flex-grow: 1;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.cn-line__title {
+    font-size: 11px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    overflow: hidden;
+}
+
+.cn-line__sub {
+    font-size: 10px;
+    color: #71806f;
+    overflow: hidden;
+}
+
+.cn-line__right {
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    margin-left: 6px;
+}
+
+.cn-dock {
+    flex-shrink: 0;
+    height: 96px;
+    flex-direction: row;
+    margin-top: 6px;
+    border-top-width: 1px;
+    border-top-color: rgba(96, 150, 116, 0.28);
+}
+
+.cn-dock__half {
+    flex-grow: 1;
+    flex-basis: 0px;
+    min-width: 0;
+    flex-direction: column;
+    padding: 6px 6px 4px 6px;
+}
+
+.cn-dock__half--bag {
+    margin-left: 1px;
+    border-left-width: 1px;
+    border-left-color: rgba(96, 150, 116, 0.28);
+}
+
+.cn-dock__cap {
+    flex-direction: row;
+    align-items: center;
+    height: 16px;
+}
+
+.cn-dock__row {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 3px;
+}
+
+.cn-dock__rowname {
+    flex-grow: 1;
+    min-width: 0;
+    font-size: 10px;
+    color: #a8b6ac;
+    overflow: hidden;
+}
+
+.cn-dock__rowval {
+    font-size: 10px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+}
+
+/* Компактный док, когда средняя колонка уже 660 px (те же пороги, что dock-narrow мода). */
+.cn-root.is-dock-narrow .cn-dock {
+    height: 72px;
+}
+
+.cn-root.is-dock-narrow .cn-dock__row {
+    margin-top: 1px;
+}
+
+/* Узкая колонка: подписи мельче, но кнопки не ниже 32 px (04 §1). */
+.cn-root.is-narrow .cn-cap {
+    font-size: 9px;
+}
+
+.cn-root.is-narrow .cn-line__sub {
+    font-size: 9px;
 }

@@ -3443,6 +3443,38 @@
     top: 0;
 }
 
+/* Слой подписей-глаголов поверх тросов и узлов (rel-graph.js .rp-verbs). */
+.cn-relg__verbs {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+/* Подпись на тросе: в моде 9 px капсом с letter-spacing .1em и мягкой подложкой-виньеткой;
+   градиент CSS не переносится, поэтому подложка — плоская плёнка вуали (04 §2). */
+.cn-relg__verb {
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 9px;
+    letter-spacing: 0.9px;
+    white-space: nowrap;
+    color: #a8b6ac;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    background-color: rgba(7, 10, 9, 0.72);
+}
+
+.cn-relg__verb.is-t5 {
+    color: #9fd0b2;
+}
+
+.cn-relg__verb.is-t6 {
+    color: #c9b48a;
+}
+
 .cn-relg__node {
     position: absolute;
     flex-direction: row;

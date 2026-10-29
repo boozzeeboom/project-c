@@ -36,6 +36,9 @@ namespace ProjectCCloudyNavigator.UI
         public static readonly Color DangerInk = ProjectCMainMenuPalette.Hex("#e08a72");   // --danger-ink
         public static readonly Color Danger = ProjectCMainMenuPalette.Hex("#7a2420");
 
+        /// <summary>Тон рваного троса вражды и минуса в награде: в моде это литерал #964e3e (rel-graph.js:354, 356).</summary>
+        public static readonly Color DangerRust = ProjectCMainMenuPalette.Hex("#964e3e");
+
         /// <summary>Поверхность панели/карточки.</summary>
         public static readonly Color Panel = VeilSoft;
 

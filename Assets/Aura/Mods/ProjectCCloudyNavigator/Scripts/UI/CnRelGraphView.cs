@@ -12,6 +12,10 @@
 //
 // Фокус: клик по узлу подсвечивает его рёбра и соседей, повторный клик снимает. Разбор выбранного узла —
 // в правой колонке: вид, значение и список связей теми же глаголами, что на рёбрах.
+//
+// Тросы: дуга с провисом, подложка, двойной трос союза, рваный трос вражды, стрелки-каретки влияния и
+// подпись-глагол на дуге (rel-graph.js:351-502). Геометрия та же, что в моде, но без кадрового качания:
+// раскладка порта детерминированная и один снапшот обязан давать одну картинку.
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -33,6 +37,7 @@ namespace ProjectCCloudyNavigator.UI
         private const float MinZoom = 0.55f;
         private const float MaxZoom = 1.8f;
         private const float ZoomStep = 0.15f;
+        private const float LitWidth = 2.1f;   // rel.css:179 — .rp.focusing .rp-e.lit path{stroke-width:2.1px}
 
         /// <summary>Глаголы рёбер мода (relations.js EDGE_TYPES: type 1…6).</summary>
         private static readonly string[] EdgeNames = { "—", "состоит в", "влияет на", "союз / вражда", "выдаёт / принимает", "награда", "требует" };
@@ -46,6 +51,7 @@ namespace ProjectCCloudyNavigator.UI
         private readonly VisualElement _canvas;
         private readonly VisualElement _content;
         private readonly VisualElement _edges;
+        private readonly VisualElement _verbs;
         private readonly VisualElement _detail;
 
         private readonly List<VisualElement> _nodeViews = new List<VisualElement>(64);
@@ -58,6 +64,10 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Высота узла: у узла с кольцом она равна кольцу плюс поля, поэтому центровка — по ней.</summary>
         private readonly Dictionary<string, float> _nodeHeight = new Dictionary<string, float>(64);
         private float _maxNodeW = NodeW;
+
+        /// <summary>Подписи-глаголы на тросах: по одной на ребро, позиции считает PlaceLabels.</summary>
+        private readonly List<Label> _verbViews = new List<Label>(64);
+        private string _verbsSignature = string.Empty;
 
         private CnGraphNode[] _nodes = new CnGraphNode[0];
         private CnGraphEdge[] _edgeList = new CnGraphEdge[0];
@@ -123,6 +133,11 @@ namespace ProjectCCloudyNavigator.UI
             _edges = CnStyle.Deco("cn-relg__edges");
             _edges.generateVisualContent += OnGenerate;
             _content.Add(_edges);
+
+            // Подписи-глаголы (rel-graph.js .rp-verbs) — отдельный слой: Painter2D текста не рисует,
+            // поэтому глагол ребра это Label, а не примитив. Слой держится выше узлов, как в моде.
+            _verbs = CnStyle.Deco("cn-relg__verbs");
+            _content.Add(_verbs);
 
             _canvas.Add(_content);
             body.Add(_canvas);
@@ -272,6 +287,12 @@ namespace ProjectCCloudyNavigator.UI
             }
 
             _counts.text = factions + " фракции · " + people + " люди · " + quests + " квесты";
+
+            // Подписи пересобираются вместе с данными и держатся поверх узлов (rel-graph.js:130, слои svg → nodes → verbs).
+            _verbs.Clear();
+            _verbViews.Clear();
+            _verbsSignature = string.Empty;
+            _verbs.BringToFront();
             _edges.MarkDirtyRepaint();
         }
 
@@ -294,6 +315,10 @@ namespace ProjectCCloudyNavigator.UI
             _edges.style.top = 0f;
             _edges.style.width = w;
             _edges.style.height = h;
+            _verbs.style.left = 0f;
+            _verbs.style.top = 0f;
+            _verbs.style.width = w;
+            _verbs.style.height = h;
 
             float baseR = Mathf.Min(w, h) * 0.5f - _maxNodeW * 0.6f;
             if (baseR < 40f) baseR = 40f;
@@ -327,6 +352,7 @@ namespace ProjectCCloudyNavigator.UI
 
             ApplyPan();
             _edges.MarkDirtyRepaint();
+            PlaceLabels();
         }
 
         private readonly struct Ring
@@ -368,8 +394,8 @@ namespace ProjectCCloudyNavigator.UI
             if (_edgeList.Length == 0) return;
 
             var p = mgc.painter2D;
-            p.lineWidth = 1.4f;
             p.lineJoin = LineJoin.Round;
+            p.lineCap = LineCap.Round;
 
             for (int i = 0; i < _edgeList.Length; i++)
             {
@@ -378,15 +404,128 @@ namespace ProjectCCloudyNavigator.UI
                 if (!_center.TryGetValue(e.to, out var b)) continue;
 
                 bool lit = string.IsNullOrEmpty(_selected) || e.from == _selected || e.to == _selected;
+                bool focused = lit && !string.IsNullOrEmpty(_selected);
+
                 var color = EdgeColor(e);
                 color.a = lit ? 0.9f : 0.16f;
+                float w = focused ? LitWidth : StrokeWidth(e);
 
-                p.strokeColor = color;
-                p.lineWidth = lit && !string.IsNullOrEmpty(_selected) ? 2f : 1.4f;
-                p.BeginPath();
-                p.MoveTo(a);
-                p.LineTo(b);
-                p.Stroke();
+                Curve(a, b, out var c, out var normal, out float len);
+
+                // Подложка под трос (rel-graph.js:372): тёмная полоса на 2.4 px шире линии держит читаемость
+                // там, где тросы пересекаются.
+                p.strokeColor = lit ? CnStyle.A(CnStyle.Veil, 0.55f) : CnStyle.A(CnStyle.Veil, 0.10f);
+                p.lineWidth = w + 2.4f;
+                StrokeQuad(p, a, c, b, Vector2.zero);
+
+                if (e.type == 3 && !e.negative)
+                {
+                    // Союз — двойной трос (rel-graph.js:410-412): две линии на ±2 px от оси.
+                    p.strokeColor = color;
+                    p.lineWidth = w;
+                    StrokeQuad(p, a, c, b, normal * 2f);
+                    StrokeQuad(p, a, c, b, normal * -2f);
+                }
+                else if (e.type == 3)
+                {
+                    // Вражда — рваный (rel-graph.js:413-421): зигзаг поперёк оси, концы остаются на оси.
+                    p.strokeColor = color;
+                    p.lineWidth = w;
+                    Ragged(p, a, c, b, normal, len);
+                }
+                else
+                {
+                    p.strokeColor = color;
+                    p.lineWidth = w;
+                    StrokeQuad(p, a, c, b, Vector2.zero);
+                }
+
+                // Тип 2 — две стрелки-каретки по дуге (rel-graph.js:425-438).
+                if (e.type == 2) Arrows(p, a, c, b, color);
+            }
+        }
+
+        /// <summary>
+        /// Дуга троса (rel-graph.js:401-405): квадратичная кривая с провисом вниз. Мод качает провис и сдвиг
+        /// по кадровому времени (sag/sway от elapsedT); порт считает ту же геометрию без времени, потому что
+        /// раскладка порта детерминированная — один и тот же снапшот обязан давать одну картинку.
+        /// </summary>
+        private static void Curve(Vector2 a, Vector2 b, out Vector2 c, out Vector2 normal, out float len)
+        {
+            float dx = b.x - a.x;
+            float dy = b.y - a.y;
+            len = Mathf.Max(1f, Mathf.Sqrt(dx * dx + dy * dy));
+            float sag = Mathf.Min(28f, len * 0.12f);   // rel-graph.js:401
+            c = new Vector2((a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f + sag);
+            normal = new Vector2(-dy / len, dx / len);
+        }
+
+        private static Vector2 Point(Vector2 a, Vector2 c, Vector2 b, float t)
+        {
+            float u = 1f - t;
+            return new Vector2(u * u * a.x + 2f * u * t * c.x + t * t * b.x,
+                               u * u * a.y + 2f * u * t * c.y + t * t * b.y);
+        }
+
+        private static void StrokeQuad(Painter2D p, Vector2 a, Vector2 c, Vector2 b, Vector2 offset)
+        {
+            p.BeginPath();
+            p.MoveTo(a + offset);
+            p.QuadraticCurveTo(c + offset, b + offset);
+            p.Stroke();
+        }
+
+        private static void Ragged(Painter2D p, Vector2 a, Vector2 c, Vector2 b, Vector2 normal, float len)
+        {
+            int n = Mathf.Max(8, Mathf.RoundToInt(len / 9f));
+            p.BeginPath();
+            for (int j = 0; j <= n; j++)
+            {
+                var at = Point(a, c, b, (float)j / n);
+                float o = j == 0 || j == n
+                    ? 0f
+                    : (j % 2 == 1 ? 2.6f : -2.6f) * (j % 3 == 0 ? 0.4f : 1f);
+                var pt = at + normal * o;
+                if (j == 0) p.MoveTo(pt);
+                else p.LineTo(pt);
+            }
+            p.Stroke();
+        }
+
+        private static void Arrows(Painter2D p, Vector2 a, Vector2 c, Vector2 b, Color color)
+        {
+            p.fillColor = color;
+            p.BeginPath();
+            for (int k = 0; k < 2; k++)
+            {
+                float t = k == 0 ? 0.34f : 0.66f;   // rel-graph.js:427
+                var at = Point(a, c, b, t);
+                var next = Point(a, c, b, t + 0.02f);
+                float ang = Mathf.Atan2(next.y - at.y, next.x - at.x);
+                const float size = 5f;              // rel-graph.js:431
+                var tip = at + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * size;
+                var left = at + new Vector2(Mathf.Cos(ang + 2.5f), Mathf.Sin(ang + 2.5f)) * size;
+                var right = at + new Vector2(Mathf.Cos(ang - 2.5f), Mathf.Sin(ang - 2.5f)) * size;
+                p.MoveTo(tip);
+                p.LineTo(left);
+                p.LineTo(right);
+                p.ClosePath();
+            }
+            p.Fill();
+        }
+
+        /// <summary>Толщина троса по типу (rel-graph.js:352-357): в моде она — часть стиля ребра.</summary>
+        private static float StrokeWidth(CnGraphEdge e)
+        {
+            switch (e.type)
+            {
+                case 1: return 1.2f;
+                case 2: return 1.2f;
+                case 3: return e.negative ? 1.4f : 1.1f;
+                case 4: return 1f;
+                case 5: return 1.4f;
+                case 6: return 1.1f;
+                default: return 1.2f;
             }
         }
 
@@ -397,14 +536,213 @@ namespace ProjectCCloudyNavigator.UI
             {
                 case 1: return CnStyle.Accent;
                 case 2: return e.negative ? CnStyle.DangerInk : CnStyle.Warn;
-                case 3: return e.negative ? CnStyle.DangerLine : CnStyle.GasAccent;
+                case 3: return e.negative ? CnStyle.DangerRust : CnStyle.GasAccent;
                 case 4: return CnStyle.Muted;
-                case 5: return CnStyle.Brass;
+                case 5: return e.negative ? CnStyle.DangerRust : CnStyle.GasAccent;
+                case 6: return CnStyle.Brass;
                 default: return CnStyle.Dim;
             }
         }
 
         private static string EdgeName(byte type) => type < EdgeNames.Length ? EdgeNames[type] : EdgeNames[0];
+
+        /// <summary>
+        /// Текст подписи-глагола (rel-graph.js:380): у мода полноя подпись — это verb, а если label от него
+        /// отличается, то «verb · label». В порте label уже несёт значение из ассета, а verb — общий глагол типа,
+        /// поэтому повтор слова снимается, как это делает мод для награды.
+        /// </summary>
+        private static string VerbText(CnGraphEdge e)
+        {
+            string verb = EdgeName(e.type);
+            string label = e.label;
+            if (string.IsNullOrEmpty(label) || label == verb) return verb;
+
+            // Награда: «награда +12» → «награда · +12» (rel-graph.js:380).
+            const string reward = "награда ";
+            if (e.type == 5 && label.StartsWith(reward, StringComparison.Ordinal))
+                return verb + " · " + label.Substring(reward.Length);
+
+            // Требование уже начинается с глагола: «требует задание».
+            if (label.StartsWith(verb, StringComparison.Ordinal)) return label;
+
+            // У типов 3 и 4 мод ставит на ребро один из двух глаголов: «союз», «выдаёт», «принимает».
+            if (verb.IndexOf(label, StringComparison.Ordinal) >= 0) return label;
+
+            return verb + " · " + label;
+        }
+
+        // ------------------------------------------------------------------ подписи-глаголы
+
+        /// <summary>
+        /// Подписи-глаголы на тросах (rel-graph.js:447-502): место ищется у опорных точек дуги по списку
+        /// смещений, а занятыми считаются габариты узлов и уже поставленные подписи. Не влезла целиком —
+        /// показывается один глагол; не влез и он — подпись прячется, подробность остаётся в разборе.
+        /// </summary>
+        private void PlaceLabels()
+        {
+            EnsureVerbs();
+            if (_verbViews.Count == 0) return;
+
+            float w = _canvas.layout.width;
+            float h = _canvas.layout.height;
+            if (float.IsNaN(w) || w < 120f) w = 640f;
+            if (float.IsNaN(h) || h < 120f) h = 420f;
+
+            var boxes = new List<Rect>(_nodes.Length + _edgeList.Length);
+            for (int i = 0; i < _nodes.Length; i++)
+            {
+                string key = _nodes[i].key;
+                if (!_center.TryGetValue(key, out var at)) continue;
+                float nw = _nodeWidth.TryGetValue(key, out var storedW) ? storedW : NodeW;
+                float nh = _nodeHeight.TryGetValue(key, out var storedH) ? storedH : NodeH;
+                boxes.Add(new Rect(at.x - nw * 0.5f, at.y - nh * 0.5f, nw, nh));
+            }
+
+            // Связи фокуса получают место первыми (rel-graph.js:455-456), остальные — в порядке данных.
+            // Двумя проходами, а не List.Sort: порядок обязан быть одинаковым на одном и том же снапшоте.
+            bool focused = !string.IsNullOrEmpty(_selected);
+            var order = new List<int>(_edgeList.Length);
+            for (int i = 0; i < _edgeList.Length; i++) if (!focused || Touches(i)) order.Add(i);
+            for (int i = 0; i < _edgeList.Length; i++) if (focused && !Touches(i)) order.Add(i);
+
+            for (int v = 0; v < order.Count; v++)
+            {
+                int i = order[v];
+                var lb = _verbViews[i];
+
+                // При фокусе подписи чужих связей гаснут вместе с тросом (rel-css .rp-e.dim).
+                if (focused && !Touches(i))
+                {
+                    lb.style.display = DisplayStyle.None;
+                    continue;
+                }
+
+                var e = _edgeList[i];
+                if (!_center.TryGetValue(e.from, out var a) || !_center.TryGetValue(e.to, out var b))
+                {
+                    lb.style.display = DisplayStyle.None;
+                    continue;
+                }
+
+                Curve(a, b, out var c, out _, out _);
+
+                // Опорные точки по всей дуге: короткой связи в плотном клубке иначе негде подписать (rel-graph.js:443).
+                var anchors = new[]
+                {
+                    Point(a, c, b, 0.5f), Point(a, c, b, 0.34f), Point(a, c, b, 0.66f),
+                    Point(a, c, b, 0.2f), Point(a, c, b, 0.8f)
+                };
+
+                string full = VerbText(e).ToUpperInvariant();
+                string shortText = EdgeName(e.type).ToUpperInvariant();
+                var fullSize = MeasureVerb(lb, full);
+                var shortSize = full == shortText ? fullSize : MeasureVerb(lb, shortText);
+
+                var box = Fit(anchors, fullSize, boxes, w, h);
+                string text = full;
+                if (box == null && shortSize.x < fullSize.x)
+                {
+                    box = Fit(anchors, shortSize, boxes, w, h);
+                    text = shortText;
+                }
+
+                if (box == null)
+                {
+                    lb.style.display = DisplayStyle.None;
+                    continue;
+                }
+
+                if (lb.text != text) lb.text = text;
+                lb.style.display = DisplayStyle.Flex;
+                lb.style.left = box.Value.x;
+                lb.style.top = box.Value.y;
+                boxes.Add(box.Value);
+            }
+        }
+
+        /// <summary>Подписи создаются по числу рёбер и пересоздаются, когда меняется набор типов.</summary>
+        private void EnsureVerbs()
+        {
+            var sb = new StringBuilder(64);
+            for (int i = 0; i < _edgeList.Length; i++) sb.Append(_edgeList[i].type).Append(',');
+            string signature = sb.ToString();
+            if (signature == _verbsSignature) return;
+            _verbsSignature = signature;
+
+            _verbs.Clear();
+            _verbViews.Clear();
+
+            for (int i = 0; i < _edgeList.Length; i++)
+            {
+                var lb = CnStyle.Label(string.Empty, "cn-relg__verb");
+                lb.pickingMode = PickingMode.Ignore;
+
+                // Цвет подписи по типу (rel.css:244-245): награда — зелёная, требование — латунное.
+                byte type = _edgeList[i].type;
+                if (type == 5) lb.AddToClassList("is-t5");
+                else if (type == 6) lb.AddToClassList("is-t6");
+
+                lb.style.position = Position.Absolute;
+                lb.style.display = DisplayStyle.None;
+                _verbs.Add(lb);
+                _verbViews.Add(lb);
+            }
+        }
+
+        private bool Touches(int index)
+        {
+            var e = _edgeList[index];
+            return e.from == _selected || e.to == _selected;
+        }
+
+        /// <summary>Смещения примерки (rel-graph.js:457) — те же семнадцать пар и в том же порядке.</summary>
+        private static readonly Vector2Int[] LabelOffsets =
+        {
+            new Vector2Int(0, 0), new Vector2Int(0, -1), new Vector2Int(0, 1), new Vector2Int(0, -2),
+            new Vector2Int(0, 2), new Vector2Int(0, -3), new Vector2Int(0, 3), new Vector2Int(0, -4),
+            new Vector2Int(0, 4), new Vector2Int(-1, 0), new Vector2Int(1, 0), new Vector2Int(-1, -1),
+            new Vector2Int(1, 1), new Vector2Int(-1, 1), new Vector2Int(1, -1), new Vector2Int(-2, 0),
+            new Vector2Int(2, 0)
+        };
+
+        private static Rect? Fit(Vector2[] anchors, Vector2 size, List<Rect> taken, float w, float h)
+        {
+            for (int a = 0; a < anchors.Length; a++)
+            {
+                for (int o = 0; o < LabelOffsets.Length; o++)
+                {
+                    var off = LabelOffsets[o];
+                    float x = Mathf.Round(anchors[a].x - size.x * 0.5f + off.x * (size.x * 0.6f));
+                    float y = Mathf.Round(anchors[a].y - size.y * 0.5f + off.y * (size.y + 2f));
+                    if (x < 2f || y < 2f || x + size.x > w - 2f || y + size.y > h - 2f) continue;
+
+                    var box = new Rect(x, y, size.x, size.y);
+                    bool clash = false;
+                    for (int i = 0; i < taken.Count; i++)
+                    {
+                        var t = taken[i];
+                        if (box.xMin < t.xMax && t.xMin < box.xMax && box.yMin < t.yMax && t.yMin < box.yMax)
+                        {
+                            clash = true;
+                            break;
+                        }
+                    }
+
+                    if (!clash) return box;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Габарит подписи: текст плюс поля `.cn-relg__verb` (5 px по бокам, 1 px сверху/снизу).</summary>
+        private static Vector2 MeasureVerb(Label label, string text)
+        {
+            var size = label.MeasureTextSize(text, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined);
+            if (float.IsNaN(size.x) || size.x <= 0f || float.IsNaN(size.y) || size.y <= 0f)
+                return new Vector2(text.Length * 5.6f + 10f, 14f);   // шрифт ещё не разрешён — оценка капса 9 px
+            return new Vector2(size.x + 10f, size.y + 2f);
+        }
 
         // ------------------------------------------------------------------ фокус и разбор
 
@@ -421,6 +759,7 @@ namespace ProjectCCloudyNavigator.UI
             if (string.IsNullOrEmpty(_selected))
             {
                 _edges.MarkDirtyRepaint();
+                PlaceLabels();
                 return;
             }
 
@@ -441,6 +780,7 @@ namespace ProjectCCloudyNavigator.UI
             }
 
             _edges.MarkDirtyRepaint();
+            PlaceLabels();
         }
 
         private CnGraphNode? SelectedNode()
@@ -529,6 +869,8 @@ namespace ProjectCCloudyNavigator.UI
         public void Dispose()
         {
             _edges.generateVisualContent -= OnGenerate;
+            _verbs.Clear();
+            _verbViews.Clear();
             for (int i = 0; i < _nodeViews.Count; i++) _nodeViews[i].RemoveFromHierarchy();
             _nodeViews.Clear();
             _nodeKeys.Clear();

@@ -143,6 +143,7 @@ namespace ProjectCCloudyNavigator.Data
         public string tier;
         public string ussClass;
         public Color tierColor;
+        public int[] tierValues;   // пороги тиров ассета (ReputationTier.value) — риски кольца отношения
     }
 
     /// <summary>NPC — проекция <c>NpcAttitudeEntryDto</c> + имя из <c>QuestDatabase.GetNpc</c>.</summary>
@@ -163,6 +164,12 @@ namespace ProjectCCloudyNavigator.Data
         public byte kind;       // 0 фракция, 1 человек, 2 квест
         public string name;
         public int value;       // репутация / отношение; у квеста 0
+
+        // Кольцо отношения (rel-ring.js): шкала субъекта и цвет дуги берутся из данных, а не из вида.
+        public int scaleMin;    // фракция −100, человек −100
+        public int scaleMax;    // фракция +100, человек +200
+        public Color color;     // цвет тира ассета; Color.clear — у субъекта тиров нет, цвет даёт градиент
+        public int[] tierValues; // пороги тиров для рисок; null — только ноль
     }
 
     /// <summary>
@@ -941,6 +948,12 @@ namespace ProjectCCloudyNavigator.Data
                                 row.ussClass = tier.ussClass;
                                 row.tierColor = tier.color;
                             }
+
+                            // Пороги — только из ассета: кольцо не рисует порогов, которых в игре нет.
+                            var thresholds = def.reputationThresholds;
+                            var values = new int[thresholds.Length];
+                            for (int t = 0; t < thresholds.Length; t++) values[t] = thresholds[t].value;
+                            row.tierValues = values;
                         }
 
                         rows[i] = row;
@@ -1020,7 +1033,11 @@ namespace ProjectCCloudyNavigator.Data
                     key = key,
                     kind = 0,
                     name = factionRows[i].displayName,
-                    value = factionRows[i].value
+                    value = factionRows[i].value,
+                    scaleMin = -100,
+                    scaleMax = 100,
+                    color = factionRows[i].hasTiers ? factionRows[i].tierColor : Color.clear,
+                    tierValues = factionRows[i].tierValues
                 });
             }
 
@@ -1035,7 +1052,11 @@ namespace ProjectCCloudyNavigator.Data
                     kind = 1,
                     // Имя резолвится тем же путём, что и строка панели: displayName у NpcDefinition — ключ локализации.
                     name = ResolveNpcName(npcRows[i].npcId),
-                    value = npcRows[i].value
+                    value = npcRows[i].value,
+                    scaleMin = -100,   // NpcAttitude: −100…+200 (rel-ring.js/relations.js:18)
+                    scaleMax = 200,
+                    color = Color.clear,
+                    tierValues = null
                 });
             }
 

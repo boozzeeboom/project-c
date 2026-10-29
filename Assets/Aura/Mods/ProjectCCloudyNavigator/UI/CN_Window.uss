@@ -3478,6 +3478,24 @@
     opacity: 0.30;
 }
 
+/* Кольцо отношения (rel-ring.js): рисуется Painter2D в CnRelRing, здесь только место в строке узла. */
+.cn-relg__ring {
+    flex-shrink: 0;
+    margin-right: 6px;
+}
+
+.cn-relg__ring-v {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+
 .cn-relg__nd {
     font-size: 10.5px;
     color: #eef3ef;

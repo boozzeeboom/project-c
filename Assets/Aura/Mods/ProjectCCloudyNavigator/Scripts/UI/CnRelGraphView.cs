@@ -26,6 +26,9 @@ namespace ProjectCCloudyNavigator.UI
     {
         private const float NodeW = 112f;
         private const float NodeH = 26f;
+        private const float RingFaction = 38f;   // rel-graph.js:233 — ringSVG(v, 38 · fitK)
+        private const float RingPerson = 30f;    // rel-graph.js:243 — ringSVG(v, 30 · fitK)
+        private const float RingGap = 6f;
         private const float MaxNodeW = 220f;   // потолок для очень длинных имён: дальше работает ellipsis в .cn-relg__nd
         private const float MinZoom = 0.55f;
         private const float MaxZoom = 1.8f;
@@ -51,6 +54,9 @@ namespace ProjectCCloudyNavigator.UI
 
         /// <summary>Ширина конкретного узла: считается из имени и значения, чтобы подпись не резалась.</summary>
         private readonly Dictionary<string, float> _nodeWidth = new Dictionary<string, float>(64);
+
+        /// <summary>Высота узла: у узла с кольцом она равна кольцу плюс поля, поэтому центровка — по ней.</summary>
+        private readonly Dictionary<string, float> _nodeHeight = new Dictionary<string, float>(64);
         private float _maxNodeW = NodeW;
 
         private CnGraphNode[] _nodes = new CnGraphNode[0];
@@ -196,6 +202,7 @@ namespace ProjectCCloudyNavigator.UI
             _nodeKeys.Clear();
             _center.Clear();
             _nodeWidth.Clear();
+            _nodeHeight.Clear();
             _maxNodeW = NodeW;
 
             int factions = 0, people = 0, quests = 0;
@@ -207,39 +214,34 @@ namespace ProjectCCloudyNavigator.UI
                 else quests++;
 
                 var view = CnStyle.Box("cn-relg__node");
-                view.style.height = NodeH;   // ширина — по содержимому, ниже
+
+                // Кольцо отношения (rel-ring.js): у фракции 38 px, у человека 30 px; узел растёт под него.
+                float ring = node.kind == 0 ? RingFaction : node.kind == 1 ? RingPerson : 0f;
+                float nodeH = ring > 0f ? ring + 6f : NodeH;
+                view.style.height = nodeH;
                 view.AddToClassList(node.kind == 0 ? "is-f" : node.kind == 1 ? "is-n" : "is-q");
                 if (node.kind != 2) CnStyle.Fill(view, CnStyle.VeilSoft, 0.82f);
                 else CnStyle.Fill(view, CnStyle.Veil, 0.72f);
 
+                if (ring > 0f)
+                    view.Add(new CnRelRing(ring, node.value, node.scaleMin, node.scaleMax,
+                        node.color, node.color.a > 0.01f, node.tierValues));
+
                 var name = CnStyle.Label(node.name, "cn-relg__nd");
                 view.Add(name);
                 view.Add(CnStyle.Box("cn-grow"));
-
-                Label valueLabel = null;
-                if (node.kind != 2)
-                {
-                    valueLabel = CnStyle.Label((node.value > 0 ? "+" : string.Empty) + node.value, "cn-relg__nv");
-                    valueLabel.style.color = node.value < 0 ? CnStyle.DangerInk : node.value > 0 ? CnStyle.Accent : CnStyle.Dim;
-                    view.Add(valueLabel);
-                }
 
                 // Ширина узла — по фактической ширине текста, а не константой 112 px: в моде узел растёт под имя
                 // (rel.css .rn — padding 0 10px без обрезки), а фиксированная ширина резала «Вольные Пере…».
                 const float padH = 20f;   // .cn-relg__node padding 0 10px
                 float nameW = name.MeasureTextSize(node.name, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
                 if (float.IsNaN(nameW) || nameW <= 0f) nameW = NodeW;   // шрифт ещё не разрешён — не раздуваем узел
-                float nodeW = nameW + padH;
-                if (valueLabel != null)
-                {
-                    float valueW = valueLabel.MeasureTextSize(valueLabel.text, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
-                    if (float.IsNaN(valueW) || valueW < 0f) valueW = 0f;
-                    nodeW += valueW + 4f;   // .cn-relg__nv margin-left 4px
-                }
+                float nodeW = nameW + padH + (ring > 0f ? ring + RingGap : 0f);
 
                 nodeW = Mathf.Clamp(Mathf.Ceil(nodeW), NodeW, MaxNodeW);
                 view.style.width = nodeW;
                 _nodeWidth[node.key] = nodeW;
+                _nodeHeight[node.key] = nodeH;
                 if (nodeW > _maxNodeW) _maxNodeW = nodeW;
 
                 string key = node.key;
@@ -316,8 +318,9 @@ namespace ProjectCCloudyNavigator.UI
                     var at = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
                     var view = _nodeViews[IndexOf(keys[i])];
                     float nodeW = _nodeWidth.TryGetValue(keys[i], out var storedW) ? storedW : NodeW;
+                    float nodeH = _nodeHeight.TryGetValue(keys[i], out var storedH) ? storedH : NodeH;
                     view.style.left = at.x - nodeW * 0.5f;
-                    view.style.top = at.y - NodeH * 0.5f;
+                    view.style.top = at.y - nodeH * 0.5f;
                     _center[keys[i]] = at;
                 }
             }
@@ -530,6 +533,8 @@ namespace ProjectCCloudyNavigator.UI
             _nodeViews.Clear();
             _nodeKeys.Clear();
             _center.Clear();
+            _nodeWidth.Clear();
+            _nodeHeight.Clear();
         }
     }
 }

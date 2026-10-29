@@ -22,6 +22,7 @@ namespace ProjectCCloudyNavigator
         private readonly CnStationView _station;
         private readonly CnMainView _main;
         private readonly CnAltRailView _altrail;
+        private readonly CnPopups _popups;
         private readonly CnMotion _motion;
         private CnPreviewStage _preview;
         private float _lastWidth = -1f;
@@ -39,10 +40,14 @@ namespace ProjectCCloudyNavigator
         {
             _feed = new CnDataFeed(log);
             _actions = new CnActions();
+            _popups = new CnPopups(_actions);
             _station = new CnStationView();
-            _main = new CnMainView(_actions);
+            _main = new CnMainView(_actions, _popups);
             _altrail = new CnAltRailView();
             _motion = new CnMotion();
+
+            // Результат действия из попапа показывается строкой «СЕЙЧАС» главного окна — один канал отчёта.
+            _popups.OnResult = _main.Report;
         }
 
         /// <summary>Корень окна. null до Mount.</summary>
@@ -64,6 +69,7 @@ namespace ProjectCCloudyNavigator
             _root.Add(_station.Root);
             _root.Add(_main.Root);
             _root.Add(_altrail.Root);
+            _popups.Mount(_root);      // попапы выше колонок, но ниже слоя движения
             _root.Add(_motion.Layer);   // слой движения — последним, поверх панелей
 
             // Превью живёт в сцене, поэтому только в Play Mode: в edit mode GameObject превью попал бы в сцену.
@@ -107,6 +113,7 @@ namespace ProjectCCloudyNavigator
             _station.Refresh(_feed);
             _main.Refresh(_feed, step);
             _altrail.Refresh(_feed);
+            _popups.Refresh(_feed, step);
             _motion.Tick(step);
 
             // Превью двигается только пока окно открыто: скрытая камера ничего не рендерит (шаг 6).
@@ -138,6 +145,7 @@ namespace ProjectCCloudyNavigator
 
             _openPending = false;
             if (_preview != null) _preview.SetVisible(false);
+            _popups.Close();
             _motion.Close(_station.Root, 6, 0.9f);
             _motion.Close(_main.Root, 8, 1f);
             _motion.Close(_altrail.Root, 4, 0.7f);
@@ -171,6 +179,7 @@ namespace ProjectCCloudyNavigator
         public void Dispose()
         {
             _motion.Reset();
+            _popups.Dispose();
 
             if (_preview != null)
             {

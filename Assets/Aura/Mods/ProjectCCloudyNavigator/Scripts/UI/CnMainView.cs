@@ -52,7 +52,7 @@ namespace ProjectCCloudyNavigator.UI
 
         public VisualElement Root => _root;
 
-        public CnMainView(CnActions actions)
+        public CnMainView(CnActions actions, CnPopups popups)
         {
             _actions = actions;
 
@@ -77,8 +77,8 @@ namespace ProjectCCloudyNavigator.UI
             _header.Add(now);
             _root.Add(_header);
 
-            // ---- лента
-            _lines = new CnLinesView(Show);
+            // ---- лента: клик по телу строки открывает полноразмерное окно заданий
+            _lines = new CnLinesView(Show, line => popups?.OpenQuests(line.id, line.id.StartsWith("c:", System.StringComparison.Ordinal)));
             _root.Add(_lines.Root);
 
             // ---- док
@@ -112,6 +112,9 @@ namespace ProjectCCloudyNavigator.UI
             FitDock();
             _dock.Refresh(feed);
         }
+
+        /// <summary>Результат действия панели попапа показывается той же строкой «СЕЙЧАС».</summary>
+        public void Report(CnActionResult result) => Show(result);
 
         /// <summary>Результат действия: строка «СЕЙЧАС» на 4 с показывает ответ (латунь — отправлено, красный — нет).</summary>
         private void Show(CnActionResult result)

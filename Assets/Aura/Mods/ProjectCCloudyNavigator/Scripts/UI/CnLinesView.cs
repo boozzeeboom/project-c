@@ -67,12 +67,24 @@ namespace ProjectCCloudyNavigator.UI
         private const float LabelTop = 26f;
         private const float RopeY = 74f;
 
+        // quests.js: панель деталей по наведению — открытие 0.14 с, высота зависит от числа целей.
+        private const float HoverDelay = 0.14f;
+        private const float HoverGrace = 0.12f;   // перенос курсора на панель не закрывает её
+
         private static readonly Color RopeMid = ProjectCMainMenu.ProjectCMainMenuPalette.Hex("#6b786e"); // mixHex(veilEdge, inkDim, .35)
 
         private readonly ScrollView _scroll;
         private readonly VisualElement _rows;
         private readonly List<Row> _built = new List<Row>();
         private readonly Action<CnActionResult> _onResult;
+        private readonly Action<CnLineModel> _onOpen;
+
+        // Панель наведения: строка, на которой стоит курсор, таймер открытия и сам элемент под строкой.
+        private string _hoverId;
+        private float _hoverTimer;
+        private float _hoverLeave;
+        private VisualElement _hoverEl;
+        private float _hoverHeight;
 
         private List<CnLineModel> _models = new List<CnLineModel>();
         private string _signature = string.Empty;
@@ -97,9 +109,10 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Высота содержимого ленты — по ней док решает, сколько свободного места внизу колонки.</summary>
         public float ContentHeight { get; private set; }
 
-        public CnLinesView(Action<CnActionResult> onResult)
+        public CnLinesView(Action<CnActionResult> onResult, Action<CnLineModel> onOpen)
         {
             _onResult = onResult;
+            _onOpen = onOpen;
 
             _scroll = new ScrollView(ScrollViewMode.Vertical);
             _scroll.AddToClassList("cn-lines");
@@ -140,10 +153,30 @@ namespace ProjectCCloudyNavigator.UI
             Rebuild(true);
         }
 
-        /// <summary>Кадр: провис тросов «дышит» (sagOf мода), поэтому тросы перерисовываются, а дерево — нет.</summary>
+        /// <summary>
+        /// Кадр: провис тросов «дышит» (sagOf мода) и открывается панель наведения — это единственное время окна,
+        /// своих setTimeout в порте нет.
+        /// </summary>
         public void Tick(float dt)
         {
             _elapsed += dt;
+
+            if (_hoverId != null && _hoverEl == null)
+            {
+                _hoverTimer += dt;
+                if (_hoverTimer >= HoverDelay) ShowHover(_hoverId);
+            }
+
+            if (_hoverLeave > 0f)
+            {
+                _hoverLeave -= dt;
+                if (_hoverLeave <= 0f)
+                {
+                    _hoverId = null;
+                    HideHover();
+                }
+            }
+
             for (int i = 0; i < _built.Count; i++) _built[i].rope.MarkDirtyRepaint();
         }
 
@@ -159,6 +192,9 @@ namespace ProjectCCloudyNavigator.UI
 
             _rows.Clear();
             _built.Clear();
+            HideHover();
+            _hoverId = null;
+            _hoverTimer = 0f;
 
             float content = 0f;
             if (_models.Count == 0)
@@ -287,6 +323,29 @@ namespace ProjectCCloudyNavigator.UI
             CnStyle.Fill(el, CnStyle.Veil, 0.42f);
             el.style.width = rowW;
             row.el = el;
+
+            // Наведение (quests.js): панель деталей открывается под строкой и сдвигает соседей вниз.
+            string lineId = line.id;
+            el.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                if (_hoverId == lineId && _hoverEl != null) return;
+                _hoverId = lineId;
+                _hoverTimer = 0f;
+                _hoverLeave = 0f;
+                HideHover();
+            });
+            el.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                if (_hoverId != lineId) return;
+                _hoverLeave = HoverGrace;
+            });
+
+            // Клик по телу строки открывает полноразмерное окно заданий на нужной вкладке и с этой строкой.
+            el.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                _onOpen?.Invoke(line);
+            });
 
             if (idx > 0) el.Add(CnStyle.Deco("cn-ln__hair"));
 
@@ -503,6 +562,88 @@ namespace ProjectCCloudyNavigator.UI
                 p.QuadraticCurveTo(new Vector2((x0 + x1) * 0.5f, RopeY + 2f * sag), new Vector2(x1, RopeY));
             }
             p.Stroke();
+        }
+
+        // ------------------------------------------------------------------ панель наведения
+
+        /// <summary>Вставляет панель деталей сразу под строкой: соседи сдвигаются вниз, как в моде.</summary>
+        private void ShowHover(string lineId)
+        {
+            Row row = null;
+            for (int i = 0; i < _built.Count; i++)
+                if (_built[i].line != null && _built[i].line.id == lineId) { row = _built[i]; break; }
+
+            if (row == null) { _hoverId = null; return; }
+
+            var el = BuildHover(row.line);
+            int at = _rows.IndexOf(row.el);
+            if (at < 0) { _hoverId = null; return; }
+
+            _rows.Insert(at + 1, el);
+            _hoverEl = el;
+            row.el.AddToClassList("cn-ln--hover");
+
+            int steps = Mathf.Min(row.line.steps.Count, 5);
+            bool acts = row.line.action != null || row.line.extra.Count > 0 || !string.IsNullOrEmpty(row.line.info);
+            _hoverHeight = 26f + steps * 21f + (acts ? 36f : 0f) + 12f;
+            ContentHeight += _hoverHeight;
+
+            el.RegisterCallback<PointerEnterEvent>(_ => _hoverLeave = 0f);
+            el.RegisterCallback<PointerLeaveEvent>(_ => _hoverLeave = HoverGrace);
+        }
+
+        private void HideHover()
+        {
+            if (_hoverEl != null)
+            {
+                _hoverEl.RemoveFromHierarchy();
+                _hoverEl = null;
+                ContentHeight = Mathf.Max(0f, ContentHeight - _hoverHeight);
+                _hoverHeight = 0f;
+            }
+
+            for (int i = 0; i < _built.Count; i++) _built[i].el?.RemoveFromClassList("cn-ln--hover");
+        }
+
+        /// <summary>Содержимое панели: заголовок, шаги-цели и бирки действий. Новых данных не читает.</summary>
+        private VisualElement BuildHover(CnLineModel line)
+        {
+            var box = CnStyle.Box("cn-hov");
+            box.style.width = Mathf.Max(200f, _rowW - 8f);
+            box.style.borderLeftColor = line.color;
+            CnStyle.Fill(box, CnStyle.VeilMid, 0.96f);
+
+            var head = CnStyle.Row("cn-hov__head");
+            head.Add(CnStyle.Label(line.title, "cn-hov__t"));
+            head.Add(CnStyle.Label(line.tag, "cn-hov__tag"));
+            head.Add(CnStyle.Box("cn-grow"));
+            if (!string.IsNullOrEmpty(line.rewardBig))
+            {
+                string reward = string.IsNullOrEmpty(line.rewardSmall) ? line.rewardBig : line.rewardBig + " · " + line.rewardSmall;
+                head.Add(CnStyle.Label(reward, "cn-hov__r"));
+            }
+            box.Add(head);
+
+            for (int i = 0; i < line.steps.Count; i++)
+            {
+                var step = line.steps[i];
+                var stepRow = CnStyle.Row("cn-hov__step");
+                if (step.done) stepRow.AddToClassList("is-done");
+                if (i == line.cur) stepRow.AddToClassList("is-cur");
+                stepRow.Add(CnStyle.Label(step.done ? "☑" : i == line.cur ? "▸" : "☐", "cn-hov__g"));
+                stepRow.Add(CnStyle.Label(step.label, "cn-hov__n"));
+                stepRow.Add(CnStyle.Box("cn-grow"));
+                stepRow.Add(CnStyle.Label(step.sub, "cn-hov__s"));
+                box.Add(stepRow);
+            }
+
+            var acts = CnStyle.Row("cn-hov__acts");
+            if (line.action != null) acts.Add(MakeActionTag(line.action, 0f));
+            for (int i = 0; i < line.extra.Count; i++) acts.Add(MakeActionTag(line.extra[i], 0f));
+            if (line.action == null && !string.IsNullOrEmpty(line.info)) acts.Add(CnStyle.Label(line.info, "cn-hov__info"));
+            if (acts.childCount > 0) box.Add(acts);
+
+            return box;
         }
 
         // ------------------------------------------------------------------ карточка шага

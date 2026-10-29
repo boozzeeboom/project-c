@@ -77,10 +77,10 @@
 | `@keyframes` | 20 | покадровый C#-драйвер `CnMotion` в `Update(dt)`; в USS `@keyframes` нет |
 | `cursor:` | 55 | отброшено: USS `cursor` не поддерживает (`04` §1) |
 | `position: fixed` | 12 (4 с пробелом + 8 без) | абсолютное позиционирование внутри корня панели |
-| `clip-path` / `<svg>` | 7 / 7 | замены в порте нет: `Painter2D` не использовался, запечённых спрайтов тоже нет |
+| `clip-path` / `<svg>` | 7 / 7 | трос канатной линии и каретка — `Painter2D` в `CnLinesView`; остальные фигуры — элементы с рамками, запечённых спрайтов нет |
 | `localStorage` | 10 | `PlayerPrefs` с префиксом `ProjectC.CloudyNavigator.` (пока один ключ — reduced motion) |
 | `THREE.` | 56 | превью из примитивов на `RenderTexture` (`02` §5, D22) |
-| `clamp()` / `calc()` | в USS нет по правилу | px на опоре 1920×1080 + `PanelSettings` ScaleWithScreenSize |
+| `clamp()` / `calc()` | в USS нет по правилу | пересчёт в C# (`ApplyLayout` на `GeometryChangedEvent`) + панель `ConstantPixelSize`, `scale = 1`: 1 px USS = 1 панельный пиксель |
 
 **Самое заметное визуальное расхождение с модом — отсутствие запечённых рамповых ореолов** (D25): в моде после
 шага 1 они стали реальными детьми-элементами `.halo-sh`/`.halo-rad`, в C# остались волоски и рамки без свечения.

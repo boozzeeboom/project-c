@@ -1,8 +1,9 @@
 # Cloudy Redesign — окно персонажа «Облачная карта» (мод `v4-2`) → игра
 
-> **Статус:** порт выполнен в коде — шаги 0…8 плана `04` §4 закрыты; префаб `CloudyNavigatorUI` установлен в
-> `Assets/_Project/Scenes/BootstrapScene.unity` по прямому указанию пользователя (2026-10-29). Дальше — Play Mode
-> приёмка пользователя: агент Play Mode не запускает.
+> **Статус:** порт выполнен в коде — шаги 0…9 плана `04` §4 закрыты; префаб `CloudyNavigatorUI` установлен в
+> `Assets/_Project/Scenes/BootstrapScene.unity` по прямому указанию пользователя (2026-10-29). Шаг 9 — вторая
+> вёрстка: окно собрано заново по мотиву мода (станция, ленты канатных линий, док, альтиметр), USS переписан.
+> Дальше — Play Mode приёмка пользователя: агент Play Mode не запускает.
 > **Дата:** 2026-10-28 (обновлено 2026-10-29).
 > **Сделано по плану `04` §4:** шаг 0 (мод приведён к именам C# DTO), шаг 1 (тени/псевдоэлементы → ореолы,
 > `grid`/`gap` → flex; счётчики `01` §3 → 0, спецификация в `06_HALOS_AND_FLEX.md`), шаг 2 (каркас
@@ -49,13 +50,18 @@
 | 6 | `a3c1cb4d` | `Scripts/UI/CnPreviewStage.cs` — камера на слое 30 и RenderTexture |
 | 7 | `22a31aa7` | `Scripts/Actions/CnActions.cs` + полоса действий и плитки дока |
 | 8 | `863a9265` | префаб `Prefabs/CloudyNavigatorUI.prefab` и его установка в `BootstrapScene` (сам префаб и сцена в коммит не вошли — `.gitignore`) |
+| 9 | `12453ccf` | пересборка вида по моду: `CnStationView` (`home.js`), новые `CnLinesView` (`lines.js`) и `CnDockView` (`ships.js`), `CnAltRailView` (`alt.css`), `CN_Window.uss` — 197 правил; `CN_PanelSettings` — `sortingOrder 200`, `ConstantPixelSize`, `scale 1` |
 
-Проверено в edit mode (без Play Mode): `check_compile_errors` — «No compile errors»; `CN_Window.uss` — 86 правил,
-`importedWithErrors = False`, `importedWithWarnings = False`; смоук окна (`Mount` → `Update` → `RequestOpen` →
-`RequestClose` → повторное открытие → `Dispose`) без исключений, прозрачность станции 0 → 1 → 0 → 1, `Motion.Busy`
-только во время перехода; вне зоны обменника `StoreToShip`/`RetrieveFromShip` возвращают «подойди к обменнику» и
-игровые `Request*` не вызываются. **Не проверено:** Play Mode (ворота шага 7 — Esc, блокировка ввода, легаси P),
-движение и превью в живом окне, альтиметр с реальным коридором, floating origin.
+Проверено в edit mode (без Play Mode): `check_compile_errors` — «No compile errors»; `CN_Window.uss` — **197 правил**,
+`importedWithErrors = False`, `importedWithWarnings = False`; замер деревом на превью-панели — `outside = 0`
+на 1920×1080, 1600×900, 1280×800, 1024×768, 960×640 и 886×810, станция 226 / 226 / 218 / 186 / 186 / 164,
+шкала 36 / 36 / 36 / 34 / 34 / 32, док 96 (минимум при 0 строк), `cn-root` 1493×847 в окне редактора; подпись
+10 px даёт `h = 13` вместо `22` после сброса дефолтов `UnityDefaultRuntimeTheme` классом `.cn-l`. Смоук окна
+(`Mount` → `Update` → `RequestOpen` → `RequestClose` → повторное открытие → `Dispose`) без исключений, прозрачность
+станции 0 → 1 → 0 → 1, `Motion.Busy` только во время перехода; вне зоны обменника `StoreToShip`/`RetrieveFromShip`
+возвращают «подойди к обменнику» и игровые `Request*` не вызываются. **Не проверено:** Play Mode (ворота шага 7 —
+Esc, блокировка ввода, легаси P), живой вид станции/троса/дока, движение и превью в живом окне, альтиметр
+с реальным коридором, floating origin, рамповые ореолы (D25).
 
 ## Документы
 

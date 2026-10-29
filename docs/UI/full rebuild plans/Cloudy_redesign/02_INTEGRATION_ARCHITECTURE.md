@@ -112,7 +112,7 @@ Assets/Aura/Mods/ProjectCCloudyNavigator/        ← рядом с ProjectCMainM
 ## 9. Фактическая установка (2026-10-29)
 
 - **Префаб:** `Assets/Aura/Mods/ProjectCCloudyNavigator/Prefabs/CloudyNavigatorUI.prefab` — один корень без детей,
-  `active = true`: `Transform` + `UIDocument` (`panelSettings = CN_PanelSettings`, `sortingOrder = 20`) +
+  `active = true`: `Transform` + `UIDocument` (`panelSettings = CN_PanelSettings`, `sortingOrder = 200` — шаг 9a) +
   `CloudyNavigatorHost` (`document` → свой `UIDocument`, `styleSheet` → `CN_Window.uss`, `debugLogging = false`) +
   `CloudyNavigatorHotkey` (`toggleKey = Key.LeftBracket`, значение 11). Зависимости — только 4 файла внутри папки
   порта, внешних ссылок нет (`get_asset_meta`).
@@ -120,8 +120,12 @@ Assets/Aura/Mods/ProjectCCloudyNavigator/        ← рядом с ProjectCMainM
   sibling). `BootstrapScene` — build index 0, грузится первой в Single, `WorldScene_0_0` добавляется аддитивно
   (`ClientSceneLoader.cs:956`, `GlobalMotionPilotRuntime.cs:65`), поэтому глобальный `UIDocument` живёт именно здесь.
   Отдельного контейнера для глобального UI в сцене нет: каждый UI-документ — свой корень.
-- **`sortingOrder = 20`** выбран выше всех 20 существующих `UIDocument`: легаси-панели и HUD — `0`,
-  `ShipCargoConsoleWindow` и `CommPanelWindow` — `10`. `CN_PanelSettings` — Overlay, `ScaleWithScreenSize` 1920×1080.
+- **`sortingOrder = 200`** (шаг 9a; до него было `20`). Сравнивать надо не с `UIDocument`, а с uGUI-канвасами
+  `BootstrapScene`: `HUD_Canvas` (`ControlHintsUI`) — ScreenSpaceOverlay с `sortingOrder = 100`, и при `20` окно
+  гарантированно рисовалось под подсказками управления. 200 — выше HUD (`100`) и легаси-окон, ниже
+  `Customisation` (`300`) и модальных подтверждений (`900`); всего в проекте 24 `PanelSettings` (`ShipHud 50`,
+  `Chart 100`, остальные `0`). **`ConstantPixelSize`, `scale = 1`** — с `ScaleWithScreenSize` 1920×1080 панель
+  получала `scaledPixelsPerPoint 0.7776` при окне редактора 1493×847, то есть 1 px USS не был пикселем экрана.
 - **Ввод подтверждён по коду:** `ProjectSettings.activeInputHandler = 1` (только новый Input System). `P` идёт
   `Resources/InputBindingsConfig.asset` (`GameAction.OpenCharacter`, `Key.P`) → `InputBindingsRuntime.Instance.Config`
   → `NetworkPlayer.Update` (`:1074-1082`) → `Keyboard.current[...].wasPressedThisFrame` (`:2987`) →

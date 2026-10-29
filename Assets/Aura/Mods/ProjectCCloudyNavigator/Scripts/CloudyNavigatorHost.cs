@@ -138,6 +138,9 @@ namespace ProjectCCloudyNavigator
             if (styleSheet != null && !root.styleSheets.Contains(styleSheet)) root.styleSheets.Add(styleSheet);
 
             _window = new CloudyNavigatorWindow(debugLogging);
+            // Окно может попросить закрыть себя (клик по персонажу → окно внешности игры).
+            // Закрытие идёт тем же путём, что Esc и хоткей: ClosePanel + рассеивание, никаких обходных путей.
+            _window.OnRequestHide = Hide;
             _window.Mount(root);
 
             ApplyVisibility(_open);

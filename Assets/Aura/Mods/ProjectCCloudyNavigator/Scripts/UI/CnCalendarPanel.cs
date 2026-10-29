@@ -82,19 +82,37 @@ namespace ProjectCCloudyNavigator.UI
 
             if (!feed.hasTime)
             {
+                // Время игры не прочитано: дату и часы показать нечем, но правила года известны из CalendarConfig.
+                // Сетка строится из правил, без подсветки «сегодня»: пустой экран хуже честной сетки без даты.
                 _clockLabel.text = string.Empty;
-                if (_gridSignature == "none") return;
+                _yearLabel.text = "ГОД —";
+                _dateLabel.text = "время игры недоступно";
+                _rulesLabel.text = feed.hasCalendarRules
+                    ? feed.monthsPerYear + " месяцев × " + feed.daysPerMonth + " дней · неделя " + CnDataFeed.DaysPerWeek
+                    : "правила календаря не заданы";
 
-                _gridSignature = "none";
-                _sideSignature = "none";
-                _yearLabel.text = "—";
-                _dateLabel.text = "нет данных календаря";
-                _rulesLabel.text = string.Empty;
+                string emptyGrid = "none#" + feed.hasCalendarRules + "#" + feed.daysPerMonth + "x" + feed.monthsPerYear;
+                if (emptyGrid != _gridSignature)
+                {
+                    _gridSignature = emptyGrid;
+                    _months.Clear();
 
-                _months.Clear();
-                _months.Add(CnStyle.Label("время игры недоступно — календарь не прочитан", "cn-calp__empty"));
-                _side.Clear();
-                _side.Add(CnStyle.Label("время игры недоступно", "cn-calp__note"));
+                    if (feed.hasCalendarRules && feed.daysPerMonth > 0 && feed.monthsPerYear > 0)
+                        BuildMonths(feed);
+                    else
+                        _months.Add(CnStyle.Label("время игры недоступно — календарь не прочитан", "cn-calp__empty"));
+                }
+
+                const string emptySide = "none";
+                if (emptySide != _sideSignature)
+                {
+                    _sideSignature = emptySide;
+                    _side.Clear();
+                    _side.Add(CnStyle.Label("СЕГОДНЯ", "cn-calp__side-t"));
+                    _side.Add(CnStyle.Label("дата и время не пришли от сервера", "cn-calp__note"));
+                    _side.Add(CnStyle.Label("сетка построена по правилам года из CalendarConfig", "cn-calp__note"));
+                }
+
                 return;
             }
 

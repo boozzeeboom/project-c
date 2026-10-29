@@ -5,6 +5,7 @@
 // Такой же приём, как у ProjectCMainMenuWindow — окно монтируется на любой VisualElement и не владеет панелью.
 //
 // Всё собственное время окна считается в Update(dt) от хоста: setTimeout/@keyframes в порте нет (04 §1).
+using System;
 using System.Text;
 using ProjectCCloudyNavigator.Actions;
 using ProjectCCloudyNavigator.Data;
@@ -88,9 +89,13 @@ namespace ProjectCCloudyNavigator
             _root.AddToClassList("cn-root");
             CnStyle.ApplyFont(_root);
 
-            // Вуаль окна: в моде за интерфейсом стоит облачная сцена, в игре под ним — мир. Подложка взята тёмной
-            // (Veil), альфа проходит гамма-коррекцию (04 §2). Точное значение альфы — вопрос D17, проверить в Play Mode.
-            _root.style.backgroundColor = CnStyle.Alpha(CnStyle.Veil, 0.90f, CnStyle.Veil);
+            // Вуаль окна (D17). В моде за интерфейсом стоит облачная сцена мода, в игре под ним — мир, и он
+            // светлее любой панели. Раньше подложкой считалась сама вуаль: у ProjectCMainMenuGamma.Alpha при
+            // tint == backdrop разность люминансов уходит в ноль и функция возвращает alpha без коррекции
+            // (Gamma.cs:62 — ранний выход), то есть 10 % света мира проходили насквозь и в Linear читались
+            // как оливковое поле. Подложка теперь названа честно — свет мира ≈ 0.35 люминанса, и та же 0.94
+            // даёт в Linear практически непрозрачную поверхность, как задумано в моде.
+            _root.style.backgroundColor = CnStyle.Alpha(CnStyle.Veil, 0.94f, WorldBackdrop);
 
             _root.Add(_station.Root);
             _root.Add(_main.Root);
@@ -108,6 +113,11 @@ namespace ProjectCCloudyNavigator
                 figure.style.height = Length.Percent(100f);
                 figure.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain);
                 _station.PreviewHost.Add(figure);
+
+                // Клик по фигуре открывает окно внешности игры (пока легаси-окно CustomisationWindow).
+                // Это единственный новый переход из окна наружу, и он не меняет ни одного игрового состояния.
+                _preview.OnClick = OnCharacterClicked;
+                _tip.Hover(figure, () => CnTipCard.Make("ВНЕШНОСТЬ", "фигура персонажа").Foot("клик — изменить внешность"));
             }
 
             _root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
@@ -150,6 +160,31 @@ namespace ProjectCCloudyNavigator
 
         /// <summary>Слой движения окна: визуальный, состояние игры не читает и не меняет.</summary>
         public CnMotion Motion => _motion;
+
+        /// <summary>
+        /// Просьба спрятать окно. Ставит хост: легаси-окна (внешность, P) живут в своих PanelSettings с меньшим
+        /// sortingOrder, поэтому перед их показом наша панель должна уйти, иначе она их перекроет.
+        /// </summary>
+        public Action OnRequestHide;
+
+        /// <summary>
+        /// Средний свет мира под окном. Alpha() берёт от подложки только люминансу (Luma), поэтому нейтральный
+        /// серый 0.35 — это и есть «мир в среднем 0.35», без претензий на его цвет.
+        /// </summary>
+        private static readonly Color WorldBackdrop = new Color(0.35f, 0.35f, 0.35f);
+
+        /// <summary>Клик по фигуре: открыть окно внешности игры и уступить ему экран.</summary>
+        private void OnCharacterClicked()
+        {
+            var result = _actions.OpenCustomisation();
+            if (result.ok)
+            {
+                OnRequestHide?.Invoke();
+                return;
+            }
+
+            _main.Report(result);
+        }
 
         /// <summary>Показ: блоки сразу прозрачны, облако собирается, как только посчитана раскладка.</summary>
         public void RequestOpen()

@@ -1,9 +1,15 @@
 // Cloudy Navigator — превью фигуры персонажа в панели станции (шаг 6 плана).
 //
-// В моде здесь трёхмерный гуманоид из примитивов с драгом-вращением, колесом масштаба и авто-вращением
-// (.Aura/Mods/v4-2/src/character.js). Игра не даёт готового «превью-ассета» персонажа, а тащить в окно
-// настоящий префаб нельзя: в нём сетевые компоненты. Поэтому фигура собрана из примитивов — как в моде,
-// и помечена в docs как визуальная копия, а не игровая сущность.
+// В моде здесь трёхмерный гуманоид из примитивов (.Aura/Slices/v4-2/src/character.js). В игре есть НАСТОЯЩАЯ
+// модель игрока, и болванка из капсул — не то, что заказывал пользователь. Поэтому порядок такой:
+//   1) когда в сцене есть локальный игрок — копируется его визуал (ребёнок «Visual_Model») и примитивы убираются;
+//   2) пока игрока нет — показываются примитивы, то есть превью никогда не пустое.
+//
+// Копия — именно копия визуала, а не игрок: GameObject.Instantiate отвязывает объект от сети, а StripNonVisual
+// снимает с копии Animator и все MonoBehaviour. Сетевых компонентов на «Visual_Model» нет по построению префаба,
+// но проверка всё равно идёт по всей ветке: в окно не должен попасть ни один игровой компонент.
+//
+// Клик по фигуре (без драга) — запрос окна внешности: событие OnClick, решение принимает окно (CnActions).
 //
 // Изоляция от сцены игрока:
 //   • объекты превью лежат на слое 30. Слой в TagManager не заведён, но по индексу работает —
@@ -46,15 +52,23 @@ namespace ProjectCCloudyNavigator.UI
         private readonly RenderTexture _texture;
         private Color _backdrop;
         private readonly List<Material> _materials = new List<Material>(4);
+        private readonly List<GameObject> _parts = new List<GameObject>(10);
+
+        private GameObject _model;
+        private float _modelTimer;
 
         private bool _visible;
         private bool _dragging;
         private int _pointerId = -1;
+        private float _dragMoved;
         private float _yaw = 18f;
         private float _pitch;
         private float _yawVelocity;
         private float _zoom = 1f;
         private float _idle = AutorotateDelay;
+
+        /// <summary>Клик по фигуре без драга: окно открывает окно внешности игры.</summary>
+        public Action OnClick;
 
         public CnPreviewStage()
         {
@@ -167,6 +181,17 @@ namespace ProjectCCloudyNavigator.UI
             if (_camera != null) _camera.orthographicSize = OrthoSize / _zoom;
             ApplyRotation();
             RenderOnce();
+
+            // Модель игрока появляется не сразу: локальный игрок спавнится сетью уже после открытия окна.
+            if (_model == null)
+            {
+                _modelTimer -= step;
+                if (_modelTimer <= 0f)
+                {
+                    _modelTimer = 0.5f;
+                    TryAttachPlayerModel();
+                }
+            }
         }
 
         /// <summary>
@@ -216,6 +241,7 @@ namespace ProjectCCloudyNavigator.UI
 
             _dragging = true;
             _pointerId = evt.pointerId;
+            _dragMoved = 0f;
             _yawVelocity = 0f;
             _idle = 0f;
             _element.CapturePointer(evt.pointerId);
@@ -226,6 +252,7 @@ namespace ProjectCCloudyNavigator.UI
             if (!_dragging || evt.pointerId != _pointerId) return;
 
             Vector2 delta = evt.deltaPosition;
+            _dragMoved += delta.magnitude;
             _yaw -= delta.x * 0.6f;
             _pitch = Mathf.Clamp(_pitch - delta.y * 0.4f, -PitchLimit, PitchLimit);
             _yawVelocity = -delta.x * 30f;
@@ -240,6 +267,9 @@ namespace ProjectCCloudyNavigator.UI
             if (_element.HasPointerCapture(evt.pointerId)) _element.ReleasePointer(evt.pointerId);
             _pointerId = -1;
             _idle = 0f;
+
+            // Драг вращает, клик — открывает внешность; порог тот же, что у руки на пиксельном экране (4 px).
+            if (_dragMoved < 4f) OnClick?.Invoke();
         }
 
         private void OnWheel(WheelEvent evt)
@@ -254,6 +284,99 @@ namespace ProjectCCloudyNavigator.UI
         {
             if (_rig == null) return;
             _rig.transform.localRotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        }
+
+        // ------------------------------------------------------------------ настоящая модель игрока
+
+        /// <summary>
+        /// Копия визуала локального игрока вместо болванки. Берётся только ребёнок «Visual_Model»: там меши,
+        /// скелет и материалы персонажа, но нет ни NetworkObject, ни NetworkPlayer. Копия ставится на слой превью,
+        /// поэтому её видит только камера превью, и с живого игрока ничего не снимается.
+        /// </summary>
+        private void TryAttachPlayerModel()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var player = nm != null && nm.LocalClient != null ? nm.LocalClient.PlayerObject : null;
+            if (player == null) return;
+
+            Transform visual = FindChild(player.transform, "Visual_Model");
+            if (visual == null) return;
+
+            _model = UnityEngine.Object.Instantiate(visual.gameObject, _rig.transform, false);
+            _model.name = "Player Model";
+            _model.transform.localPosition = Vector3.zero;
+            _model.transform.localRotation = Quaternion.identity;
+            _model.transform.localScale = Vector3.one;
+
+            StripNonVisual(_model);
+            SetLayerRecursive(_model, PreviewLayer);
+
+            for (int i = 0; i < _parts.Count; i++)
+            {
+                if (_parts[i] != null) UnityEngine.Object.Destroy(_parts[i]);
+            }
+
+            _parts.Clear();
+            RenderOnce();
+        }
+
+        private static Transform FindChild(Transform root, string name)
+        {
+            if (root == null) return null;
+            if (root.name == name) return root;
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform found = FindChild(root.GetChild(i), name);
+                if (found != null) return found;
+            }
+
+            return null;
+        }
+
+        /// <summary>С копии снимается всё, что не рисует: Animator, MonoBehaviour, коллайдеры, тела и источники света.</summary>
+        private static void StripNonVisual(GameObject root)
+        {
+            var behaviours = root.GetComponentsInChildren<MonoBehaviour>(true);
+            for (int i = 0; i < behaviours.Length; i++)
+            {
+                if (behaviours[i] != null) UnityEngine.Object.Destroy(behaviours[i]);
+            }
+
+            var animators = root.GetComponentsInChildren<Animator>(true);
+            for (int i = 0; i < animators.Length; i++)
+            {
+                if (animators[i] != null) UnityEngine.Object.Destroy(animators[i]);
+            }
+
+            var colliders = root.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null) UnityEngine.Object.Destroy(colliders[i]);
+            }
+
+            var bodies = root.GetComponentsInChildren<Rigidbody>(true);
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i] != null) UnityEngine.Object.Destroy(bodies[i]);
+            }
+
+            var lights = root.GetComponentsInChildren<Light>(true);
+            for (int i = 0; i < lights.Length; i++)
+            {
+                if (lights[i] != null) UnityEngine.Object.Destroy(lights[i]);
+            }
+        }
+
+        private static void SetLayerRecursive(GameObject root, int layer)
+        {
+            if (root == null) return;
+            root.layer = layer;
+
+            for (int i = 0; i < root.transform.childCount; i++)
+            {
+                SetLayerRecursive(root.transform.GetChild(i).gameObject, layer);
+            }
         }
 
         // ------------------------------------------------------------------ фигура
@@ -290,6 +413,7 @@ namespace ProjectCCloudyNavigator.UI
             var go = GameObject.CreatePrimitive(type);
             go.name = name;
             go.layer = PreviewLayer;
+            _parts.Add(go);
 
             // CreatePrimitive сам вешает коллайдер: в превью физики нет, поэтому он уничтожается сразу.
             var collider = go.GetComponent<Collider>();

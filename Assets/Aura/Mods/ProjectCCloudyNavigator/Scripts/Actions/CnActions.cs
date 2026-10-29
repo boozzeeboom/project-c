@@ -88,6 +88,22 @@ namespace ProjectCCloudyNavigator.Actions
             Zone = ReadZone();
         }
 
+        // ------------------------------------------------------------------ переходы в окна игры
+
+        /// <summary>
+        /// Открыть окно внешности игры. Пока это легаси-окно <c>CustomisationWindow</c> (T-CUS-06): своего окна
+        /// внешности в переносе ещё нет, а подделывать его данные нельзя. Окно только показывается — ни одно
+        /// состояние персонажа здесь не меняется, сохранение делает само окно по своим кнопкам.
+        /// </summary>
+        public CnActionResult OpenCustomisation()
+        {
+            var window = ProjectC.Customisation.UI.CustomisationWindow.Instance;
+            if (window == null) return CnActionResult.Fail("окно внешности недоступно");
+
+            window.Show();
+            return CnActionResult.Ok("внешность");
+        }
+
         // ------------------------------------------------------------------ зона обменника
 
         /// <summary>

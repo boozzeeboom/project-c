@@ -1560,7 +1560,15 @@ namespace ProjectCCloudyNavigator.Data
 
         private void ReadTime()
         {
+            // Instance выставляется ТОЛЬКО на сервере (ServerWeatherController.OnNetworkSpawn: if (IsServer)
+            // Instance = this, иначе enabled = false и ранний выход). На клиенте синглтон пуст, хотя сам компонент
+            // в сцене есть и получает время ClientRpc-рассылкой: BroadcastCalendarClientRpc / BroadcastTimeOfDayClientRpc
+            // пишут прямо в его поля _gameTime и _timeOfDay (ServerWeatherController.cs:370, 377).
+            // Поэтому при пустом Instance берём тот же компонент из сцены: без этого запасного пути на клиенте
+            // hasTime = false и весь календарь показывал «время игры недоступно».
             var weather = ServerWeatherController.Instance;
+            if (weather == null) weather = Object.FindFirstObjectByType<ServerWeatherController>();
+
             if (weather == null)
             {
                 hasTime = false;

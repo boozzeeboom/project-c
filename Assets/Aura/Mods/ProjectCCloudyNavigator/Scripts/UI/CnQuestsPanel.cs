@@ -175,11 +175,12 @@ namespace ProjectCCloudyNavigator.UI
             var quests = feed.quests ?? new CnQuestRow[0];
             var contracts = feed.contracts ?? new CnContractRow[0];
 
-            var q = Tab("КВЕСТЫ " + quests.Length, _mode == ModeQuests, true, () => SetMode(ModeQuests));
+            // Подписи бирок — как в моде (src/quests.js:515,519): «ЗАДАНИЯ · N» и «КОНТРАКТЫ · N».
+            var q = Tab("ЗАДАНИЯ · " + quests.Length, _mode == ModeQuests, true, () => SetMode(ModeQuests));
             if (_mode == ModeQuests) q.AddToClassList("is-first");
             _tabs.Add(q);
 
-            var c = Tab("КОНТРАКТЫ " + contracts.Length, _mode == ModeContracts, false, () => SetMode(ModeContracts));
+            var c = Tab("КОНТРАКТЫ · " + contracts.Length, _mode == ModeContracts, false, () => SetMode(ModeContracts));
             _tabs.Add(c);
 
             _tabs.Add(CnStyle.Box("cn-grow"));

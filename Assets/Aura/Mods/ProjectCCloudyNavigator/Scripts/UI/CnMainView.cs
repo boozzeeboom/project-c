@@ -45,6 +45,7 @@ namespace ProjectCCloudyNavigator.UI
         private readonly CnLinesView _lines;
         private readonly CnDockView _dock;
         private readonly CnTip _tip;
+        private readonly CnMotion _motion;
 
         private string _message = string.Empty;
         private bool _messageOk;
@@ -86,11 +87,13 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Высота шапки «СЕЙЧАС» (мод: hdr.offsetHeight).</summary>
         public float HeaderHeight => _header.layout.height;
 
-        public CnMainView(CnActions actions, CnPopups popups, CnViewState view, CnTip tip, CnHover hover)
+        public CnMainView(CnActions actions, CnPopups popups, CnViewState view, CnTip tip, CnHover hover,
+            CnMotion motion)
         {
             _actions = actions;
             _popups = popups;
             _tip = tip;
+            _motion = motion;
 
             _root = CnStyle.Box("cn-main");
 
@@ -271,7 +274,12 @@ namespace ProjectCCloudyNavigator.UI
             float current = _dock.Height;
             bool atBound = Mathf.Approximately(want, CnDockView.MinHeight) || Mathf.Approximately(want, cap);
             if (Mathf.Abs(want - current) > DockHysteresis || (atBound && !Mathf.Approximately(want, current)))
+            {
+                // Подъём дока — дымная кромка по верхнему краю (мод: motion.edge при росте дока).
+                // Только на рост и только если панель уже посчитана, иначе первый кадр дымил бы впустую.
+                if (want > current && _root.layout.height > 1f) _motion?.Edge(_dock.Root);
                 _dock.SetHeight(want);
+            }
         }
 
         // ------------------------------------------------------------------ модели линий

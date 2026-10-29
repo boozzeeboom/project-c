@@ -45,16 +45,16 @@ namespace ProjectCCloudyNavigator.UI
         /// <summary>Отчёт о результате действия — ставит главное окно после своей постройки.</summary>
         public Action<CnActionResult> OnResult { get; set; }
 
-        public CnPopups(CnActions actions, CnViewState view, CnTip tip, CnHover hover)
+        public CnPopups(CnActions actions, CnViewState view, CnTip tip, CnHover hover, CnMotion motion)
         {
             _view = view != null ? view : new CnViewState();
             _popup = new CnPopup(tip);
 
-            _quests = new CnQuestsPanel(actions, Report, tip);
+            _quests = new CnQuestsPanel(actions, Report, tip, motion);
             _skills = new CnSkillsPanel(actions, Report, tip);
             _calendar = new CnCalendarPanel(tip);
             _rel = new CnRelPanel(tip);
-            _ship = new CnShipPanel(actions, _view, Report, OpenBag, tip, hover);
+            _ship = new CnShipPanel(actions, _view, Report, OpenBag, tip, hover, motion);
             _bag = new CnBagPanel(actions, _view, Report, tip, hover);
         }
 

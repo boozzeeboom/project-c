@@ -34,6 +34,10 @@ namespace ProjectCCloudyNavigator.UI
         private readonly CnActions _actions;
         private readonly Action<CnActionResult> _onResult;
         private readonly CnTip _tip;
+        private readonly CnMotion _motion;
+
+        /// <summary>Вкладку или фильтр сменили вручную: следующая пересборка идёт через CnMotion.Swap.</summary>
+        private bool _swapPending;
 
         private readonly VisualElement _root;
         private readonly VisualElement _tabs;
@@ -48,11 +52,12 @@ namespace ProjectCCloudyNavigator.UI
         private string _selected = string.Empty;
         private string _signature = string.Empty;
 
-        public CnQuestsPanel(CnActions actions, Action<CnActionResult> onResult, CnTip tip)
+        public CnQuestsPanel(CnActions actions, Action<CnActionResult> onResult, CnTip tip, CnMotion motion)
         {
             _actions = actions;
             _onResult = onResult;
             _tip = tip;
+            _motion = motion;
 
             _root = CnStyle.Box("cn-qp");
 
@@ -107,6 +112,7 @@ namespace ProjectCCloudyNavigator.UI
             _filter = 0;
             _selected = string.Empty;
             _signature = string.Empty;
+            _swapPending = true;
         }
 
         private void SetFilter(int filter)
@@ -115,6 +121,7 @@ namespace ProjectCCloudyNavigator.UI
             _filter = filter;
             _selected = string.Empty;
             _signature = string.Empty;
+            _swapPending = true;
         }
 
         /// <summary>Кадр попапа: пересборка по сигнатуре (данные игры меняются под окном).</summary>
@@ -127,6 +134,21 @@ namespace ProjectCCloudyNavigator.UI
             if (signature == _signature) return;
             _signature = signature;
 
+            // Смена вкладки и фильтра руками — облачный переход (мод: подписи растворяются и собираются
+            // заново). Обновление данных под окном идёт без движения, иначе список дёргался бы каждую секунду.
+            if (_swapPending && _motion != null && _root.layout.width > 1f)
+            {
+                _swapPending = false;
+                _motion.Swap(_root, () => Rebuild(feed));
+                return;
+            }
+
+            _swapPending = false;
+            Rebuild(feed);
+        }
+
+        private void Rebuild(CnDataFeed feed)
+        {
             BuildTabs(feed);
             BuildFilters();
             BuildList(feed);

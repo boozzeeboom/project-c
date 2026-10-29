@@ -59,12 +59,15 @@ namespace ProjectCCloudyNavigator
             _hover = new CnHover();
             _hover.Changed += OnHoverChanged;
 
-            _popups = new CnPopups(_actions, _view, _tip, _hover);
+            // Слой движения создаётся ДО видов: смена вкладки попапа и подъём дока идут через него.
+            // Один слой на всё окно — как в моде, где motion общий для панелей, попапов и дока.
+            _motion = new CnMotion();
+
+            _popups = new CnPopups(_actions, _view, _tip, _hover, _motion);
 
             _station = new CnStationView(_tip, _hover);
-            _main = new CnMainView(_actions, _popups, _view, _tip, _hover);
+            _main = new CnMainView(_actions, _popups, _view, _tip, _hover, _motion);
             _altrail = new CnAltRailView(_tip);
-            _motion = new CnMotion();
 
             // Результат действия из попапа показывается строкой «СЕЙЧАС» главного окна — один канал отчёта.
             _popups.OnResult = _main.Report;
@@ -176,14 +179,14 @@ namespace ProjectCCloudyNavigator
         /// <summary>Клик по фигуре: открыть окно внешности игры и уступить ему экран.</summary>
         private void OnCharacterClicked()
         {
-            var result = _actions.OpenCustomisation();
-            if (result.ok)
-            {
-                OnRequestHide?.Invoke();
-                return;
-            }
+            // Порядок обязателен. UIManager.ClosePanel при закрытии последней панели запирает курсор
+            // (UIManager.cs:349-352: Cursor.lockState = Locked, visible = false). Если показать окно внешности
+            // ДО закрытия, курсор после закрытия останется запертым и в легаси-окне нечем выбрать.
+            // Поэтому сначала уходим, затем показываем: SetOpen(true) выставляет CursorLockMode.None последним.
+            OnRequestHide?.Invoke();
 
-            _main.Report(result);
+            var result = _actions.OpenCustomisation();
+            if (!result.ok) _main.Report(result);
         }
 
         /// <summary>Показ: блоки сразу прозрачны, облако собирается, как только посчитана раскладка.</summary>
@@ -208,6 +211,11 @@ namespace ProjectCCloudyNavigator
 
             _openPending = false;
             if (_preview != null) _preview.SetVisible(false);
+
+            // Пока идёт рассеивание, корень ещё видим: он больше не должен перехватывать клики — иначе
+            // полсекунды после закрытия окно съедает нажатия по окну, которое под ним.
+            _root.pickingMode = PickingMode.Ignore;
+
             _hover.Clear();
             _tip.Hide();
             _popups.Close();

@@ -29,6 +29,10 @@ namespace ProjectCCloudyNavigator.UI
         private readonly Action<int> _onOpenBag;
         private readonly CnTip _tip;
         private readonly CnHover _hover;
+        private readonly CnMotion _motion;
+
+        /// <summary>Вкладку сменили вручную: следующая пересборка идёт через CnMotion.Swap.</summary>
+        private bool _swapPending;
 
         private readonly VisualElement _root;
         private readonly VisualElement _list;
@@ -40,7 +44,7 @@ namespace ProjectCCloudyNavigator.UI
         private string _listSignature = string.Empty;
 
         public CnShipPanel(CnActions actions, CnViewState view, Action<CnActionResult> onResult, Action<int> onOpenBag,
-            CnTip tip, CnHover hover)
+            CnTip tip, CnHover hover, CnMotion motion)
         {
             _actions = actions;
             _view = view;
@@ -48,6 +52,7 @@ namespace ProjectCCloudyNavigator.UI
             _onOpenBag = onOpenBag;
             _tip = tip;
             _hover = hover;
+            _motion = motion;
 
             _root = CnStyle.Box("cn-shp");
 
@@ -98,6 +103,21 @@ namespace ProjectCCloudyNavigator.UI
             if (signature != _signature)
             {
                 _signature = signature;
+
+                // Смена вкладки руками — облачный переход: подписи уносит порыв, новые проявляются
+                // против ветра. Автоматические обновления данных (срок, телеметрия) идут без движения.
+                if (_swapPending && _motion != null && _root.layout.width > 1f)
+                {
+                    _swapPending = false;
+                    _motion.Swap(_root, () =>
+                    {
+                        BuildTabs();
+                        BuildBody(feed, index);
+                    });
+                    return;
+                }
+
+                _swapPending = false;
                 BuildTabs();
                 BuildBody(feed, index);
             }
@@ -237,6 +257,7 @@ namespace ProjectCCloudyNavigator.UI
                     evt.StopPropagation();
                     if (_view.shipTab == tab) return;
                     _view.shipTab = tab;
+                    _swapPending = true;
                     _signature = string.Empty;
                 });
                 _tabs.Add(tag);

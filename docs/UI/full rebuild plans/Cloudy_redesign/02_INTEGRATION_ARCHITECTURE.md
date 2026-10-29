@@ -1,6 +1,8 @@
 # 02 — Архитектура интеграции: окно рядом с легаси, без влияния на игру
 
-> Всё в этом документе — план. Код и ассеты ещё не созданы.
+> **Обновлено 2026-10-29:** документ писался как план. Сейчас код и префаб созданы и окно установлено в
+> `BootstrapScene` — фактическое состояние, цифры и ограничения в **§9** (остальные разделы оставлены как проект
+> архитектуры и ему соответствуют).
 
 ## 1. Что не трогается (красные линии)
 
@@ -106,3 +108,31 @@ Assets/Aura/Mods/ProjectCCloudyNavigator/        ← рядом с ProjectCMainM
 
 Отдельной UI-телеметрии в проекте не найдено. Окно пишет только `Debug.Log` с префиксом `[CN]` за флагом
 `_debugLogging` (как у `CharacterWindow`), чтобы логи Play Mode можно было сверить с легаси.
+
+## 9. Фактическая установка (2026-10-29)
+
+- **Префаб:** `Assets/Aura/Mods/ProjectCCloudyNavigator/Prefabs/CloudyNavigatorUI.prefab` — один корень без детей,
+  `active = true`: `Transform` + `UIDocument` (`panelSettings = CN_PanelSettings`, `sortingOrder = 20`) +
+  `CloudyNavigatorHost` (`document` → свой `UIDocument`, `styleSheet` → `CN_Window.uss`, `debugLogging = false`) +
+  `CloudyNavigatorHotkey` (`toggleKey = Key.LeftBracket`, значение 11). Зависимости — только 4 файла внутри папки
+  порта, внешних ссылок нет (`get_asset_meta`).
+- **В сцене:** `Assets/_Project/Scenes/BootstrapScene.unity`, корневой объект `CloudyNavigatorUI` (68-й, последний
+  sibling). `BootstrapScene` — build index 0, грузится первой в Single, `WorldScene_0_0` добавляется аддитивно
+  (`ClientSceneLoader.cs:956`, `GlobalMotionPilotRuntime.cs:65`), поэтому глобальный `UIDocument` живёт именно здесь.
+  Отдельного контейнера для глобального UI в сцене нет: каждый UI-документ — свой корень.
+- **`sortingOrder = 20`** выбран выше всех 20 существующих `UIDocument`: легаси-панели и HUD — `0`,
+  `ShipCargoConsoleWindow` и `CommPanelWindow` — `10`. `CN_PanelSettings` — Overlay, `ScaleWithScreenSize` 1920×1080.
+- **Ввод подтверждён по коду:** `ProjectSettings.activeInputHandler = 1` (только новый Input System). `P` идёт
+  `Resources/InputBindingsConfig.asset` (`GameAction.OpenCharacter`, `Key.P`) → `InputBindingsRuntime.Instance.Config`
+  → `NetworkPlayer.Update` (`:1074-1082`) → `Keyboard.current[...].wasPressedThisFrame` (`:2987`) →
+  `CharacterWindow.Instance.Toggle()`. `[` читает `CloudyNavigatorHotkey` (`:24`, `:37-40`) прямо из `Keyboard.current`,
+  мимо конфига. В `InputBindingsConfig.asset` нет клавиши `11` (`Key.LeftBracket`) — 24 бинда проверены, конфликта нет;
+  `InputBindingsConfig` и `NetworkPlayer` не менялись (`git status` — чисто вне папки порта и сцены).
+- **Условия открытия те же, что у `P`:** живая сессия и заспавненный локальный игрок (`CloudyNavigatorHotkey.CanToggle`),
+  плюс фокус не в поле ввода. Открытие нового и легаси взаимоисключающее (`Show` прячет легаси, `Update` прячет себя,
+  если легаси открыто по `P`).
+- **В git установка не попала:** `.gitignore:153` исключает `*.prefab`, `.gitignore:182` — `*.meta`. Сцена
+  (`BootstrapScene`) изменена в рабочем дереве на 58 строк (одна `PrefabInstance`). Если сцену закоммитить без префаба
+  и его `.meta`, ссылка разорвётся на клоне — тогда нужен `git add -f` для префаба, его `.meta` и мета скриптов порта.
+- **Не проверено:** поведение в Play Mode (Esc, блокировка ввода, курсор, легаси `P`), движение и превью в живом окне,
+  альтиметр с реальным коридором (D16), floating origin, измерения пула (D20). Это — приёмка пользователя.

@@ -16,9 +16,12 @@
 //     настройки проекта не правятся, а поиск по Assets/_Project не находит ни `<< 30`, ни `.layer = 30`;
 //   • камера превью видит ТОЛЬКО этот слой (`cullingMask = 1 << 30`), поэтому мир в кадр не попадает
 //     и превью не зависит от того, где сейчас игрок и что делает floating origin;
-//   • сетевых компонентов нет по построению: Transform / MeshFilter / MeshRenderer + Camera + Light,
+//   • сетевых компонентов нет по построению: Transform / MeshFilter / MeshRenderer + Camera,
 //     а коллайдеры, которые CreatePrimitive добавляет сам, уничтожаются сразу;
-//   • камера и свет выключены, пока окно скрыто, — скрытое окно не стоит ни одного рендер-прохода.
+//   • камера выключена, пока окно скрыто, — скрытое окно не стоит ни одного рендер-прохода;
+//   • свет сцены на превью не влияет: материал — свой студийный шейдер (Shaders/CN_Preview_studio),
+//     а в сцене нет ни одного Light от порта. Иначе превью зависело бы от Sun/Moon мира
+//     (в BootstrapScene Sun = 0.15, Moon = 1.0) и от ambientMode = Skybox с тёмным небом.
 //
 // Реакция на ввод — как в моде: драг вращает (pitch зажат ±25°), колесо меняет зум 0.8…1.6,
 // через 4 с без ввода включается авто-вращение 12°/с.
@@ -44,14 +47,21 @@ namespace ProjectCCloudyNavigator.UI
         private const float AutorotateDelay = 4f;  // мод: 4 с без ввода
         private const float AutorotateSpeed = 12f; // градусов в секунду
 
+        /// <summary>Имя студийного шейдера превью: свет вшит в него, Light в сцене не нужен.</summary>
+        private const string StudioShaderName = "Aura/CN/Preview Studio";
+
+        /// <summary>Unlit-шейдер градиентной подложки превью.</summary>
+        private const string BackdropShaderName = "Aura/CN/Preview Backdrop";
+
         private readonly VisualElement _element;
         private readonly GameObject _root;
         private readonly GameObject _rig;
         private readonly Camera _camera;
-        private readonly Light _light;
         private readonly RenderTexture _texture;
-        private Color _backdrop;
+        private readonly Texture2D _backdropTex;   // вертикальный градиент студийного фона
+        private Color _backdrop;                   // сплошная очистка камеры
         private readonly List<Material> _materials = new List<Material>(4);
+        private readonly Dictionary<Material, Material> _studioCache = new Dictionary<Material, Material>(8);
         private readonly List<GameObject> _parts = new List<GameObject>(10);
 
         private GameObject _model;
@@ -83,9 +93,33 @@ namespace ProjectCCloudyNavigator.UI
             cameraGo.transform.SetParent(_root.transform, false);
             cameraGo.transform.localPosition = new Vector3(0f, 0.86f, -3f);
 
-            // Цвет подложки превью — тот же тёмный фон ниши станции. Им заливается весь RT перед каждым кадром.
-            var backdrop = ProjectCMainMenu.ProjectCMainMenuPalette.Hex("#0b100d");
-            _backdrop = new Color(backdrop.r, backdrop.g, backdrop.b, 1f);
+            // Подложка: вертикальный градиент (верх светлее) вместо цвета ниши станции. Грид цвета
+            // убирает «дыру в мир» и даёт фигуре контражур, а не сливание с фоном.
+            var top = ProjectCMainMenu.ProjectCMainMenuPalette.Hex("#313f39");
+            var bottom = ProjectCMainMenu.ProjectCMainMenuPalette.Hex("#101814");
+            _backdropTex = BuildBackdropTexture(top, bottom);
+            _backdrop = new Color(bottom.r, bottom.g, bottom.b, 1f);
+
+            // Фон — квад в сцене превью, а не цвет камеры и не Graphics.Blit: при Depth-очистке URP
+            // дописывал в кадр небо мира (розовое небо и диск солнца), и фон переставал быть нашим.
+            var backdropQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            backdropQuad.name = "Backdrop";
+            backdropQuad.layer = PreviewLayer;
+            backdropQuad.transform.SetParent(_root.transform, false);
+            var backdropCollider = backdropQuad.GetComponent<Collider>();
+            if (backdropCollider != null) UnityEngine.Object.Destroy(backdropCollider);
+            backdropQuad.transform.localPosition = new Vector3(0f, 0.86f, 2.5f);
+            backdropQuad.transform.localScale = new Vector3(4f, 4f, 1f);
+
+            var backdropRenderer = backdropQuad.GetComponent<MeshRenderer>();
+            if (backdropRenderer != null)
+            {
+                backdropRenderer.sharedMaterial = CreateBackdropMaterial();
+                backdropRenderer.shadowCastingMode = ShadowCastingMode.Off;
+                backdropRenderer.receiveShadows = false;
+                backdropRenderer.lightProbeUsage = LightProbeUsage.Off;
+                backdropRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            }
 
             _texture = new RenderTexture(TextureSize, TextureSize, 24, RenderTextureFormat.ARGB32)
             {
@@ -108,17 +142,9 @@ namespace ProjectCCloudyNavigator.UI
             _camera.targetTexture = _texture;
             _camera.enabled = false;   // окно закрыто до первого показа
 
-            var lightGo = new GameObject("Preview Light");
-            lightGo.transform.SetParent(_root.transform, false);
-            lightGo.transform.localRotation = Quaternion.Euler(28f, 152f, 0f);
-
-            _light = lightGo.AddComponent<Light>();
-            _light.type = LightType.Directional;
-            _light.intensity = 1.05f;
-            _light.color = new Color(0.93f, 0.96f, 0.93f);
-            _light.shadows = LightShadows.None;
-            _light.cullingMask = 1 << PreviewLayer;
-            _light.enabled = false;
+            // Своего света нет намеренно: он был направлен от камеры в спину фигуры
+            // (Euler(28,152,0) → forward (0.41, −0.47, −0.78)) и вдобавок мог перехватить main light
+            // у игровой камеры. Теперь весь свет считает шейдер CN_Preview_studio.
 
             _element = new VisualElement { name = "cn-preview" };
             _element.style.width = 88f;
@@ -152,7 +178,6 @@ namespace ProjectCCloudyNavigator.UI
             // Камера не включается никогда: окно рисует превью единым проходом в RenderOnce, иначе движок
             // рендерил бы её вторым проходом и результат зависел бы от порядка кадров.
             if (_camera != null) _camera.enabled = false;
-            if (_light != null) _light.enabled = false;
         }
 
         /// <summary>Кадр: инерция, авто-вращение, зум. Пока окно скрыто — ничего не делает.</summary>
@@ -195,10 +220,9 @@ namespace ProjectCCloudyNavigator.UI
         }
 
         /// <summary>
-        /// Один кадр превью в RT. Сначала весь буфер заливается подложкой, потом камера рисует свой вид:
-        /// камера в URP закрашивает только свой viewport, а остальные строки RT остаются такими, какими были, —
-        /// именно так в Play Mode появлялась розовая верхняя половина превью (неинициализированная память
-        /// текстуры). После полной очистки за пределами вида всегда подложка, а не мусор видеопамяти.
+        /// Один кадр превью в RT. Весь буфер заливается фоновым цветом, потом камера рисует вид
+        /// (градиентная подложка и фигура). Полная заливка нужна и для строк вне вьюпорта камеры:
+        /// без неё там остаётся неинициализированная память текстуры (раньше — розовая полоса).
         /// </summary>
         private void RenderOnce()
         {
@@ -209,10 +233,31 @@ namespace ProjectCCloudyNavigator.UI
             GL.Clear(true, true, _backdrop);
             RenderTexture.active = activeBefore;
 
-            if (_light != null) _light.enabled = true;
             _camera.orthographicSize = OrthoSize / _zoom;
             _camera.Render();
-            if (_light != null) _light.enabled = false;
+        }
+
+        /// <summary>Вертикальный градиент фона: две колонки пикселей, растягиваются блитом на весь RT.</summary>
+        private static Texture2D BuildBackdropTexture(Color top, Color bottom)
+        {
+            const int stops = 64;
+            var tex = new Texture2D(2, stops, TextureFormat.RGBA32, false)
+            {
+                name = "CN Preview Backdrop",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                hideFlags = HideFlags.DontSave,
+            };
+
+            for (int y = 0; y < stops; y++)
+            {
+                Color c = Color.Lerp(bottom, top, y / (stops - 1f));   // y = 0 — низ текстуры
+                tex.SetPixel(0, y, c);
+                tex.SetPixel(1, y, c);
+            }
+
+            tex.Apply(false, false);
+            return tex;
         }
 
         public void Dispose()
@@ -231,6 +276,8 @@ namespace ProjectCCloudyNavigator.UI
             }
 
             _materials.Clear();
+
+            if (_backdropTex != null) UnityEngine.Object.Destroy(_backdropTex);
         }
 
         // ------------------------------------------------------------------ ввод
@@ -310,6 +357,7 @@ namespace ProjectCCloudyNavigator.UI
 
             StripNonVisual(_model);
             SetLayerRecursive(_model, PreviewLayer);
+            ApplyStudioMaterials(_model);
 
             for (int i = 0; i < _parts.Count; i++)
             {
@@ -434,19 +482,92 @@ namespace ProjectCCloudyNavigator.UI
             }
         }
 
-        private Material MakeMaterial(string name, Color color)
+        /// <summary>Материал подложки: unlit, только текстура градиента — свет сцены не участвует.</summary>
+        private Material CreateBackdropMaterial()
         {
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null) shader = Shader.Find("Standard");
+            Shader shader = Shader.Find(BackdropShaderName);
+            if (shader == null) shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) shader = Shader.Find("Unlit/Texture");
+            if (shader == null) return null;
 
-            var material = new Material(shader) { name = name };
-            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
-            if (material.HasProperty("_Color")) material.SetColor("_Color", color);
-            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0.2f);
-            if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", 0.2f);
+            var material = new Material(shader) { name = "CN backdrop" };
+            if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", _backdropTex);
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", Color.white);
+            else if (material.HasProperty("_Color")) material.SetColor("_Color", Color.white);
 
             _materials.Add(material);
             return material;
+        }
+
+        /// <summary>
+        /// Студийный материал: свет вшит в шейдер, поэтому Light в сцене и ambient проекта
+        /// на превью не влияют. Если шейдер не попал в сборку — падение на URP Unlit (тоже без света).
+        /// </summary>
+        private Material CreateStudioMaterial(string name, Color color, Texture texture)
+        {
+            Shader shader = Shader.Find(StudioShaderName);
+            if (shader == null) shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) shader = Shader.Find("Unlit/Texture");
+            if (shader == null) return null;
+
+            var material = new Material(shader) { name = name };
+            if (material.HasProperty("_BaseMap") && texture != null) material.SetTexture("_BaseMap", texture);
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+            else if (material.HasProperty("_Color")) material.SetColor("_Color", color);
+            if (material.HasProperty("_StudioGain")) material.SetFloat("_StudioGain", 1f);
+
+            _materials.Add(material);
+            return material;
+        }
+
+        private Material MakeMaterial(string name, Color color) => CreateStudioMaterial(name, color, null);
+
+        /// <summary>
+        /// Студийная копия игрового материала: берётся только base map и base color, остальное
+        /// (металличность, карты нормалей, прозрачность) в 88 px не читается, а без своего света
+        /// модель персонажа была почти чёрной. Исходные материалы игры не меняются — копия наша.
+        /// </summary>
+        private Material StudioFrom(Material source)
+        {
+            if (source == null) return MakeMaterial("CN studio", Color.white);
+
+            if (_studioCache.TryGetValue(source, out Material cached) && cached != null) return cached;
+
+            Texture texture = null;
+            if (source.HasProperty("_BaseMap")) texture = source.GetTexture("_BaseMap");
+            else if (source.HasProperty("_MainTex")) texture = source.GetTexture("_MainTex");
+
+            Color color = Color.white;
+            if (source.HasProperty("_BaseColor")) color = source.GetColor("_BaseColor");
+            else if (source.HasProperty("_Color")) color = source.GetColor("_Color");
+
+            Material material = CreateStudioMaterial(source.name + " (studio)", color, texture);
+            _studioCache[source] = material;
+            return material;
+        }
+
+        /// <summary>Все рендереры копии переводятся на студийный материал и перестают зависеть от света мира.</summary>
+        private void ApplyStudioMaterials(GameObject root)
+        {
+            var renderers = root.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null) continue;
+
+                Material[] source = renderer.sharedMaterials;
+                if (source != null && source.Length > 0)
+                {
+                    var studio = new Material[source.Length];
+                    for (int j = 0; j < source.Length; j++) studio[j] = StudioFrom(source[j]);
+                    renderer.sharedMaterials = studio;
+                }
+
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                renderer.lightProbeUsage = LightProbeUsage.Off;
+                renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            }
         }
     }
 }

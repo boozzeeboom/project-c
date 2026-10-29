@@ -18,6 +18,7 @@
 // раскладка порта детерминированная и один снапшот обязан давать одну картинку.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using ProjectCCloudyNavigator.Data;
 using UnityEngine;
@@ -37,6 +38,7 @@ namespace ProjectCCloudyNavigator.UI
         private const float MinZoom = 0.55f;
         private const float MaxZoom = 1.8f;
         private const float ZoomStep = 0.15f;
+        private const float WheelFactor = 1.12f;   // rel-graph.js:1190 — ×1.12 на щелчок колеса
         private const float LitWidth = 2.1f;   // rel.css:179 — .rp.focusing .rp-e.lit path{stroke-width:2.1px}
 
         /// <summary>Глаголы рёбер мода (relations.js EDGE_TYPES: type 1…6).</summary>
@@ -53,6 +55,7 @@ namespace ProjectCCloudyNavigator.UI
         private readonly VisualElement _edges;
         private readonly VisualElement _verbs;
         private readonly VisualElement _detail;
+        private readonly Label _zoomBadge;
 
         private readonly List<VisualElement> _nodeViews = new List<VisualElement>(64);
         private readonly List<string> _nodeKeys = new List<string>(64);
@@ -140,6 +143,17 @@ namespace ProjectCCloudyNavigator.UI
             _content.Add(_verbs);
 
             _canvas.Add(_content);
+
+            // Бейдж зума и подсказка жестов (rel-graph.js .rp-zoom / .rp-hint2): наложены на полотно, а не
+            // занимают строку шапки, и не берут указатель — иначе они мешали бы перетаскиванию полотна.
+            _zoomBadge = CnStyle.Label(string.Empty, "cn-relg__zoom");
+            _zoomBadge.pickingMode = PickingMode.Ignore;
+            _canvas.Add(_zoomBadge);
+
+            var hint = CnStyle.Label("ТАЩИ ПУСТОЕ — ПАНОРАМА · КОЛЕСО — ЗУМ", "cn-relg__hint");
+            hint.pickingMode = PickingMode.Ignore;
+            _canvas.Add(hint);
+
             body.Add(_canvas);
 
             _detail = CnStyle.Box("cn-relg__det");
@@ -170,6 +184,15 @@ namespace ProjectCCloudyNavigator.UI
                 if (!_dragging) return;
                 _dragging = false;
                 _canvas.ReleasePointer(evt.pointerId);
+            });
+
+            // Колесо — зум вокруг указателя (rel-graph.js:1187-1191). StopPropagation обязателен: то же колесо
+            // не должно одновременно прокручивать содержимое попапа.
+            _canvas.RegisterCallback<WheelEvent>(evt =>
+            {
+                evt.StopPropagation();
+                if (Mathf.Approximately(evt.delta.y, 0f)) return;
+                ZoomByFactor(evt.delta.y > 0f ? WheelFactor : 1f / WheelFactor, _canvas.WorldToLocal((Vector2)evt.mousePosition));
             });
 
             ShowDetail(null);
@@ -302,10 +325,9 @@ namespace ProjectCCloudyNavigator.UI
         /// </summary>
         private void Arrange()
         {
-            float w = _canvas.layout.width;
-            float h = _canvas.layout.height;
-            if (float.IsNaN(w) || w < 120f) w = 640f;
-            if (float.IsNaN(h) || h < 120f) h = 420f;
+            var size = CanvasSize();
+            float w = size.x;
+            float h = size.y;
 
             _content.style.left = 0f;
             _content.style.top = 0f;
@@ -351,8 +373,19 @@ namespace ProjectCCloudyNavigator.UI
             }
 
             ApplyPan();
+            UpdateZoomBadge();
             _edges.MarkDirtyRepaint();
             PlaceLabels();
+        }
+
+        /// <summary>Размер полотна с тем же запасом, что и в Arrange: до первой раскладки layout ещё нулевой.</summary>
+        private Vector2 CanvasSize()
+        {
+            float w = _canvas.layout.width;
+            float h = _canvas.layout.height;
+            if (float.IsNaN(w) || w < 120f) w = 640f;
+            if (float.IsNaN(h) || h < 120f) h = 420f;
+            return new Vector2(w, h);
         }
 
         private readonly struct Ring
@@ -385,6 +418,33 @@ namespace ProjectCCloudyNavigator.UI
         {
             _zoom = Mathf.Clamp(_zoom + delta, MinZoom, MaxZoom);
             Arrange();
+        }
+
+        /// <summary>
+        /// Пропорциональный зум вокруг точки указателя. Кольца масштабируются вокруг центра полотна, поэтому
+        /// полотно сдвигается на разницу положений этой точки: под курсором остаётся тот же участок графа.
+        /// </summary>
+        private void ZoomByFactor(float factor, Vector2 at)
+        {
+            float before = _zoom;
+            float after = Mathf.Clamp(_zoom * factor, MinZoom, MaxZoom);
+            if (Mathf.Approximately(after, before)) return;
+
+            var size = CanvasSize();
+            var center = new Vector2(size.x * 0.5f, size.y * 0.5f);
+            var inContent = at - _pan;
+            var stays = center + (inContent - center) * (after / before);
+
+            _zoom = after;
+            _pan = at - stays;
+            Arrange();
+        }
+
+        /// <summary>Бейдж зума: значение в том же виде, что в моде — «ЗУМ 1.00×» (rel-graph.js:545).</summary>
+        private void UpdateZoomBadge()
+        {
+            if (_zoomBadge == null) return;
+            _zoomBadge.text = "ЗУМ " + _zoom.ToString("0.00", CultureInfo.InvariantCulture) + "×";
         }
 
         // ------------------------------------------------------------------ рёбра

@@ -46,6 +46,7 @@ namespace ProjectCCloudyNavigator.UI
 
         private readonly VisualElement _root;
         private readonly VisualElement _previewHost;
+        private readonly VisualElement _nicheAct;
         private readonly VisualElement _fig;
         private readonly VisualElement[] _slots = new VisualElement[13];
         private readonly Label[] _slotText = new Label[13];
@@ -118,6 +119,9 @@ namespace ProjectCCloudyNavigator.UI
 
         /// <summary>Ниша под фигуру персонажа: сюда окно кладёт элемент <see cref="CnFigure"/>.</summary>
         public VisualElement PreviewHost => _previewHost;
+
+        /// <summary>Строка под фигурой: сюда окно кладёт кнопку «ИЗМЕНИТЬ ВНЕШНОСТЬ» на месте снятого 3D-вьюера.</summary>
+        public VisualElement NicheActionsHost => _nicheAct;
 
         public CnStationView(CnTip tip, CnHover hover)
         {
@@ -207,6 +211,10 @@ namespace ProjectCCloudyNavigator.UI
 
             _previewHost = CnStyle.Box("cn-niche__fig");
             niche.Add(_previewHost);
+
+            // Кнопку сюда кладёт окно: у вида нет действий, он только даёт место под фигурой.
+            _nicheAct = CnStyle.Row("cn-niche__act");
+            niche.Add(_nicheAct);
             cent.Add(niche);
 
             _cr = CnStyle.Box("cn-cr");

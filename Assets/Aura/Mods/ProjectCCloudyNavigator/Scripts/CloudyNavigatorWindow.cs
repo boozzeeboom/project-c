@@ -123,6 +123,19 @@ namespace ProjectCCloudyNavigator
             _figure.OnClick = OnCharacterClicked;
             _tip.Hover(_figure.Root, () => CnTipCard.Make("ВНЕШНОСТЬ", "фигура персонажа").Foot("клик — изменить внешность"));
 
+            // Кнопка на месте снятого 3D-вьюера: тот же переход, что и клик по фигуре, но без догадки,
+            // что фигура кликабельна. Место под неё даёт станция — вид действий не знает.
+            var editLook = CnStyle.Box("cn-niche__btn");
+            editLook.Add(CnStyle.Label("ИЗМЕНИТЬ ВНЕШНОСТЬ", "cn-niche__btn-t"));
+            editLook.tooltip = null;
+            _tip.Hover(editLook, () => CnTipCard.Make("ВНЕШНОСТЬ", "окно внешности игры").Foot("клик — открыть"));
+            editLook.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                OnCharacterClicked();
+            });
+            _station.NicheActionsHost.Add(editLook);
+
             _root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             parent.Add(_root);

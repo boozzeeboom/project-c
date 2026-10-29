@@ -238,6 +238,10 @@ namespace ProjectCCloudyNavigator.UI
             // вместе со своим состоянием и фильтр нельзя было бы снять.
             if (equippable) _filters.Add(FilterTag("НАДЕВАЕМОЕ", CnViewState.FilterEquippable));
 
+            // Выбранный тип остаётся в списке, даже когда таких предметов больше нет: иначе чип исчезает вместе
+            // со своим состоянием и фильтр нельзя снять. В моде список категорий постоянный (bag.js:395).
+            if (_view.bagFilter >= 0 && !types.Contains(_view.bagFilter)) types.Add(_view.bagFilter);
+
             types.Sort();
             for (int i = 0; i < types.Count; i++)
                 _filters.Add(FilterTag(ItemTypeNames.GetDisplayName((ItemType)types[i]), types[i]));
@@ -374,11 +378,29 @@ namespace ProjectCCloudyNavigator.UI
                     shown++;
                 }
 
-                if (shown == 0) _rows.Add(CnStyle.Label("под фильтр ничего не подходит", "cn-bgp__empty"));
+                if (shown == 0) _rows.Add(EmptyFilterReset());
             }
 
             _footer.text = zone.label;
             _footer.EnableInClassList("cn-bgp__zone--on", zone.allowed);
+        }
+
+        /// <summary>
+        /// Пустая строка фильтра снимает фильтр по клику — так же, как в моде `.bg-empty` вызывает
+        /// `resetFilters()` (bag.js:101, 434). Иначе на пустом отборе не видно, как из него выйти.
+        /// </summary>
+        private VisualElement EmptyFilterReset()
+        {
+            var empty = CnStyle.Label("ничего не найдено · сбросить", "cn-bgp__empty");
+            empty.AddToClassList("cn-clickable");
+            empty.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                if (_view.bagFilter == CnViewState.FilterAll) return;
+                _view.bagFilter = CnViewState.FilterAll;
+                _signature = string.Empty;
+            });
+            return empty;
         }
 
         private int Compare(Entry a, Entry b)

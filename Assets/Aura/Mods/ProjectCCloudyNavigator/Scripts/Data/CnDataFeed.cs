@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Text;
 using ProjectC.Combat;
 using ProjectC.Core;
+using ProjectC.Equipment;
 using ProjectC.Items;
 using ProjectC.Items.Client;
 using ProjectC.Knowledge;
@@ -182,6 +183,10 @@ namespace ProjectCCloudyNavigator.Data
         public bool hasCredits { get; private set; }
 
         public float strength { get; private set; }
+
+        /// <summary>Имена надетых предметов по EquipmentData.SlotToIndex; пустая строка — слот пуст.</summary>
+        public string[] equipNames { get; private set; }
+        public bool hasEquipment { get; private set; }
         public float dexterity { get; private set; }
         public float intelligence { get; private set; }
         public bool hasStats { get; private set; }
@@ -210,6 +215,11 @@ namespace ProjectCCloudyNavigator.Data
         public int day { get; private set; }
         public int dayOfYear { get; private set; }
         public string weekdayName { get; private set; }
+        public int weekday { get; private set; }               // GameTimeData.Weekday, с нуля
+        public string[] weekdayNames { get; private set; }     // GetWeekdayName(0…6)
+
+        /// <summary>CalendarConfig.daysPerWeek = 7 (03 §1).</summary>
+        public const int DaysPerWeek = 7;
         public string monthName { get; private set; }
         public float timeOfDay { get; private set; }
 
@@ -248,6 +258,7 @@ namespace ProjectCCloudyNavigator.Data
         public void Tick(float dt)
         {
             ReadCharacter();
+            ReadEquipment();
             ReadQuests();
             ReadContracts();
             ReadInventory();
@@ -904,6 +915,39 @@ namespace ProjectCCloudyNavigator.Data
 
         // ------------------------------------------------------------------ время
 
+        /// <summary>
+        /// Экипировка (D19): <c>EquipmentClientState.CurrentSnapshot.equip</c> → имя предмета из <c>ItemData.itemName</c>.
+        /// Индекс массива — <c>EquipmentData.SlotToIndex</c> (Head..WeaponOff → 0..9, Module1..3 → 10..12). Пустая строка — слот пуст.
+        /// </summary>
+        private void ReadEquipment()
+        {
+            if (equipNames == null || equipNames.Length != EquipmentData.SLOT_COUNT)
+                equipNames = new string[EquipmentData.SLOT_COUNT];
+
+            var state = EquipmentClientState.Instance;
+            var snapshot = state != null ? state.CurrentSnapshot : null;
+
+            // TryGetItemId индексирует массивы без проверки на null: до первого серверного снапшота они пустые.
+            bool valid = snapshot.HasValue && snapshot.Value.equip.slotOccupied != null &&
+                         snapshot.Value.equip.slotItemIds != null &&
+                         snapshot.Value.equip.slotOccupied.Length >= EquipmentData.SLOT_COUNT &&
+                         snapshot.Value.equip.slotItemIds.Length >= EquipmentData.SLOT_COUNT;
+            hasEquipment = valid;
+
+            var inv = InventoryClientState.Instance;
+            for (int i = 0; i < EquipmentData.SLOT_COUNT; i++)
+            {
+                string name = string.Empty;
+                if (valid && snapshot.Value.equip.TryGetItemId(EquipmentData.IndexToSlot(i), out int itemId))
+                {
+                    var def = inv != null ? inv.GetItemDefinition(itemId) : null;
+                    name = def != null && !string.IsNullOrEmpty(def.itemName) ? def.itemName : "#" + itemId;
+                }
+
+                equipNames[i] = name;
+            }
+        }
+
         private void ReadTime()
         {
             var weather = ServerWeatherController.Instance;
@@ -918,9 +962,15 @@ namespace ProjectCCloudyNavigator.Data
             month = t.Month;
             day = t.Day;
             dayOfYear = t.DayOfYear;
+            weekday = t.Weekday;
             weekdayName = weather.GetWeekdayName(t.Weekday);
             monthName = weather.GetMonthName(t.Month);
             timeOfDay = weather.TimeOfDay;
+
+            // Подписи недели для прибора-календаря станции — те же имена игры, неделя 7 дней (CalendarConfig).
+            if (weekdayNames == null || weekdayNames.Length != DaysPerWeek) weekdayNames = new string[DaysPerWeek];
+            for (int i = 0; i < DaysPerWeek; i++) weekdayNames[i] = weather.GetWeekdayName(i);
+
             hasTime = true;
         }
     }

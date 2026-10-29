@@ -1,117 +1,284 @@
-// Cloudy Navigator — левая станция (шаг 4).
+// Cloudy Navigator — левая станция по src/home.js мода.
 //
-// Станция недвижима: её ширина приходит из окна (--homeW мода), высоту и слоты не меняет ни док, ни лента.
-// Внутри — только чтение CnDataFeed: HP (PlayerTarget), кредиты (MarketClientState), слоты экипировки,
-// модули корабля, репутация с тиром, календарь. Свои значения окно не придумывает: если источника нет —
-// прочерк, а не заглушка.
+// Порядок блоков как в моде: шапка → прибор-календарь → STR/DEX/INT → кольцо слотов (5 | ниша + кредиты | 5)
+// → МОДУЛИ I–III → репутация (последний и единственный гибкий блок, тянется до низа панели).
+// Станция недвижима: ширину задаёт окно, высоту — сама колонка; ни лента, ни док её не меняют.
 //
-// 3D-фигура персонажа и шесть боевых слотов навыков (4.3) приходят следующими срезами шага 4: здесь под фигуру
-// оставлена рамка, а не «почти похожий» силуэт.
+// Всё только читает CnDataFeed. Слоты — реальная экипировка (EquipmentClientState, EquipSlot Head…Module3);
+// HP — PlayerTarget; кредиты — MarketClientState (как легаси); репутация — ReputationClientState + тиры ассетов.
+// Где источника нет — прочерк, а не заглушка.
+//
+// Ступени компактности (home.js STAGES): если колонке не хватает высоты, ужимается только кольцо слотов
+// (ниша под фигуру), остальные блоки и ширина станции не меняются.
 using ProjectCCloudyNavigator.Data;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ProjectCCloudyNavigator.UI
 {
-    /// <summary>Левая панель персонажа: HP, кредиты, слоты, модули, репутация, календарь.</summary>
+    /// <summary>Левая панель персонажа.</summary>
     public sealed class CnStationView
     {
-        private const int MaxReputationRows = 6;   // Derived: столько строк влезает в панель при 226 px
-        private const int EquipSlotCount = 10;     // как EquipSlot в игре
+        private const float RingHeight = 200f;      // 5 слотов по 36 + 4 зазора по 5 (home.js --nicheH)
+        private const float RingMin = 108f;          // последняя ступень STAGES
+        private const float SlotGap = 5f;
+        private const float RepRowHeight = 27f;
+
+        /// <summary>EquipSlot Head…WeaponOff → 0…9, Module1…3 → 10…12 (EquipmentData.SlotToIndex).</summary>
+        private static readonly int[] LeftSlots = { 0, 1, 2, 3, 4 };      // Head, Chest, Legs, Feet, Back
+        private static readonly int[] RightSlots = { 5, 6, 7, 8, 9 };     // Hands, Accessory1/2, WeaponMain/Off
+        private static readonly int[] ModuleSlots = { 10, 11, 12 };       // Module1…3
+
+        private static readonly string[] SlotNames =
+        {
+            "Голова", "Торс", "Ноги", "Обувь", "Спина", "Руки", "Аксессуар I", "Аксессуар II",
+            "Основное оружие", "Вторая рука", "Модуль I", "Модуль II", "Модуль III"
+        };
+
+        private static readonly string[] SlotCodes =
+        {
+            "ГОЛ", "ТОР", "НОГ", "ОБВ", "СПН", "РУК", "АК I", "АК II", "ОРЖ", "ЛЕВ", "I", "II", "III"
+        };
 
         private readonly VisualElement _root;
         private readonly VisualElement _previewHost;
+        private readonly VisualElement _fig;
+        private readonly VisualElement[] _slots = new VisualElement[13];
+        private readonly Label[] _slotText = new Label[13];
+
+        private readonly Label _calDate;
+        private readonly VisualElement[] _calCells = new VisualElement[CnDataFeed.DaysPerWeek];
+        private readonly Label _calTime;
+        private readonly Label _calCount;
+
+        private readonly Label _str;
+        private readonly Label _dex;
+        private readonly Label _int;
+
         private readonly Label _hpValue;
         private readonly VisualElement _hpFill;
         private readonly Label _credits;
-        private readonly VisualElement _modules;
-        private readonly Label _repCap;
-        private readonly VisualElement _repRows;
-        private readonly Label _calDate;
-        private readonly Label _calDay;
 
-        private string _moduleSignature = string.Empty;
-        private string _reputationSignature = string.Empty;
+        private readonly VisualElement _rel;
+        private readonly Label _relCount;
+        private readonly VisualElement _relRows;
+
+        private string _equipSignature = string.Empty;
+        private string _repSignature = string.Empty;
+        private int _calWeekday = -1;
+        private float _lastHeight = -1f;
+        private int _repFit = 6;
 
         public VisualElement Root => _root;
 
-        /// <summary>Рамка под превью фигуры: элемент 3D-сцены вставляет сюда окно (шаг 6).</summary>
+        /// <summary>Ниша под превью фигуры (шаг 6): сюда окно кладёт элемент CnPreviewStage.</summary>
         public VisualElement PreviewHost => _previewHost;
 
         public CnStationView()
         {
-            _root = new VisualElement();
-            _root.AddToClassList("cn-station");
+            _root = CnStyle.Box("cn-station");
+            CnStyle.Fill(_root, CnStyle.Veil, 0.70f);
+            _root.RegisterCallback<GeometryChangedEvent>(_ => Fit());
 
-            _previewHost = new VisualElement();
-            _previewHost.AddToClassList("cn-silhouette");
-            _root.Add(_previewHost);
+            // ---- шапка
+            _root.Add(CnStyle.Label("ДОМАШНЯЯ СТАНЦИЯ", "cn-home__kicker"));
 
-            var hpRow = CnStyle.Row(null);
-            hpRow.Add(CnStyle.Cap("HP"));
-            hpRow.Add(CnStyle.Spacer());
-            _hpValue = CnStyle.Label("—", "cn-value");
-            hpRow.Add(_hpValue);
-            _root.Add(hpRow);
+            // ---- прибор-календарь (calendar.js .cal)
+            var cal = CnStyle.Box("cn-cal");
+            CnStyle.Fill(cal, CnStyle.Veil, 0.6f);
+            cal.Add(CnStyle.Label("СЕГОДНЯ", "cn-cal__k"));
+            _calDate = CnStyle.Label("—", "cn-cal__date");
+            cal.Add(_calDate);
 
-            var hp = new VisualElement();
-            hp.AddToClassList("cn-hp");
-            _hpFill = new VisualElement();
-            _hpFill.AddToClassList("cn-hp__fill");
-            hp.Add(_hpFill);
-            _root.Add(hp);
-
-            var creditsRow = CnStyle.Row("cn-credits");
-            creditsRow.Add(CnStyle.Cap("Кредиты"));
-            creditsRow.Add(CnStyle.Spacer());
-            _credits = CnStyle.Label("—", "cn-value");
-            creditsRow.Add(_credits);
-            _root.Add(creditsRow);
-
-            _root.Add(CnStyle.Hair());
-
-            var slots = new VisualElement();
-            slots.AddToClassList("cn-slots");
-            for (int i = 0; i < EquipSlotCount; i++)
+            var week = CnStyle.Row("cn-cal__week");
+            for (int i = 0; i < _calCells.Length; i++)
             {
-                var slot = new VisualElement();
-                slot.AddToClassList("cn-slot");
-                slot.Add(CnStyle.Label("·", "cn-slot__glyph"));
-                slots.Add(slot);
+                var cell = CnStyle.Box("cn-cal__cell");
+                if (i == 0) cell.AddToClassList("is-first");
+                CnStyle.Fill(cell, CnStyle.VeilSoft, 0.7f);
+                _calCells[i] = cell;
+                week.Add(cell);
             }
-            _root.Add(slots);
+            cal.Add(week);
 
-            _modules = new VisualElement();
-            _modules.style.flexDirection = FlexDirection.Column;
-            _root.Add(_modules);
+            var foot = CnStyle.Row("cn-cal__foot");
+            _calTime = CnStyle.Label("—", "cn-cal__time");
+            foot.Add(_calTime);
+            foot.Add(CnStyle.Box("cn-grow"));
+            _calCount = CnStyle.Label(string.Empty, "cn-cal__count");
+            foot.Add(_calCount);
+            cal.Add(foot);
+            _root.Add(cal);
 
-            _root.Add(CnStyle.Hair());
+            // ---- характеристики
+            var stats = CnStyle.Row("cn-stats");
+            _str = AddStat(stats, "STR", true);
+            _dex = AddStat(stats, "DEX", false);
+            _int = AddStat(stats, "INT", false);
+            _root.Add(stats);
 
-            _repCap = CnStyle.Cap("Репутация");
-            _root.Add(_repCap);
+            // ---- кольцо слотов: 5 | ниша + кредиты | 5
+            _fig = CnStyle.Row("cn-fig");
+            _fig.style.alignItems = Align.Stretch;
+            _fig.Add(SlotColumn(LeftSlots));
 
-            _repRows = new VisualElement();
-            _repRows.AddToClassList("cn-rep");
-            _root.Add(_repRows);
+            var cent = CnStyle.Box("cn-cent");
 
-            _root.Add(CnStyle.Hair());
+            var niche = CnStyle.Box("cn-niche");
+            var hpRow = CnStyle.Row("cn-hp");
+            hpRow.Add(CnStyle.Label("HP", "cn-hp__k"));
+            hpRow.Add(CnStyle.Box("cn-grow"));
+            _hpValue = CnStyle.Label("—", "cn-hp__v");
+            hpRow.Add(_hpValue);
+            niche.Add(hpRow);
 
-            _calDate = CnStyle.Label("—", "cn-dim");
-            _root.Add(_calDate);
-            _calDay = CnStyle.Label(string.Empty, "cn-dim");
-            _root.Add(_calDay);
+            var hpBar = CnStyle.Box("cn-hp__bar");
+            CnStyle.Fill(hpBar, CnStyle.DangerLine, 0.35f);
+            _hpFill = CnStyle.Box("cn-hp__fill");
+            hpBar.Add(_hpFill);
+            niche.Add(hpBar);
+
+            _previewHost = CnStyle.Box("cn-niche__fig");
+            niche.Add(_previewHost);
+            cent.Add(niche);
+
+            var cr = CnStyle.Box("cn-cr");
+            CnStyle.Fill(cr, CnStyle.Veil, 0.68f);
+            cr.Add(CnStyle.Label("КРЕДИТЫ", "cn-cr__k"));
+            _credits = CnStyle.Label("—", "cn-cr__v");
+            cr.Add(_credits);
+            cent.Add(cr);
+
+            _fig.Add(cent);
+            _fig.Add(SlotColumn(RightSlots));
+            _root.Add(_fig);
+
+            // ---- модули I–III (вне кольца, высота не сжимается)
+            var mods = CnStyle.Row("cn-mods");
+            for (int i = 0; i < ModuleSlots.Length; i++)
+            {
+                var slot = MakeSlot(ModuleSlots[i]);
+                slot.AddToClassList("cn-slot--mod");
+                if (i == 0) slot.AddToClassList("is-first");
+                mods.Add(slot);
+            }
+            _root.Add(mods);
+
+            // ---- репутация: последний гибкий блок
+            _rel = CnStyle.Box("cn-rel");
+            var relHead = CnStyle.Row("cn-rel__head");
+            relHead.Add(CnStyle.Label("РЕПУТАЦИЯ", "cn-rel__t"));
+            relHead.Add(CnStyle.Box("cn-grow"));
+            _relCount = CnStyle.Label(string.Empty, "cn-rel__n");
+            relHead.Add(_relCount);
+            _rel.Add(relHead);
+            _relRows = CnStyle.Box("cn-rel__rows");
+            _rel.Add(_relRows);
+            _rel.RegisterCallback<GeometryChangedEvent>(_ => FitReputation());
+            _root.Add(_rel);
         }
 
-        /// <summary>Обновляет подписи станции из последнего снимка. Ряды пересобираются только при изменении.</summary>
+        // ------------------------------------------------------------------ постройка
+
+        private static Label AddStat(VisualElement row, string key, bool first)
+        {
+            var cell = CnStyle.Box("cn-stat");
+            if (first) cell.AddToClassList("is-first");
+            CnStyle.Fill(cell, CnStyle.Veil, 0.6f);
+            cell.Add(CnStyle.Label(key, "cn-stat__k"));
+            var value = CnStyle.Label("—", "cn-stat__v");
+            cell.Add(value);
+            row.Add(cell);
+            return value;
+        }
+
+        private VisualElement SlotColumn(int[] indices)
+        {
+            var col = CnStyle.Box("cn-col");
+            for (int i = 0; i < indices.Length; i++)
+            {
+                var slot = MakeSlot(indices[i]);
+                if (i == 0) slot.AddToClassList("is-first");
+                col.Add(slot);
+            }
+            return col;
+        }
+
+        private VisualElement MakeSlot(int index)
+        {
+            var slot = CnStyle.Box("cn-slot");
+            slot.AddToClassList("cn-slot--empty");
+            CnStyle.Fill(slot, CnStyle.Veil, 0.4f);
+            var text = CnStyle.Label(SlotCodes[index], "cn-slot__t");
+            slot.Add(text);
+            slot.tooltip = SlotNames[index] + " · слот пуст";
+            _slots[index] = slot;
+            _slotText[index] = text;
+            return slot;
+        }
+
+        // ------------------------------------------------------------------ данные
+
         public void Refresh(CnDataFeed feed)
         {
             if (feed == null) return;
 
-            RefreshHp(feed);
-            RefreshCredits(feed);
-            RefreshModules(feed);
-            RefreshReputation(feed);
             RefreshCalendar(feed);
+            RefreshStats(feed);
+            RefreshHp(feed);
+            _credits.text = feed.hasCredits ? FormatCredits(feed.credits) : "—";
+            RefreshEquipment(feed);
+            RefreshReputation(feed);
+        }
+
+        /// <summary>Формат легаси «{0:F0} CR» с разрядами, как fmtCR мода.</summary>
+        public static string FormatCredits(float credits)
+        {
+            return Mathf.FloorToInt(credits).ToString("#,0").Replace(',', ' ').Replace('\u00a0', ' ') + " CR";
+        }
+
+        private void RefreshCalendar(CnDataFeed feed)
+        {
+            if (!feed.hasTime)
+            {
+                _calDate.text = "нет данных календаря";
+                _calTime.text = "—";
+                _calCount.text = string.Empty;
+                SetToday(-1, null);
+                return;
+            }
+
+            _calDate.text = feed.monthName + " " + feed.day + " · " + feed.weekdayName;
+
+            int hours = Mathf.FloorToInt(feed.timeOfDay) % 24;
+            int minutes = Mathf.FloorToInt((feed.timeOfDay - Mathf.Floor(feed.timeOfDay)) * 60f);
+            _calTime.text = hours.ToString("00") + ":" + minutes.ToString("00");
+            _calCount.text = feed.year + " Г. · Д " + feed.dayOfYear;
+
+            SetToday(feed.weekday, feed.weekdayNames);
+        }
+
+        private void SetToday(int weekday, string[] names)
+        {
+            if (weekday == _calWeekday) return;
+            _calWeekday = weekday;
+
+            for (int i = 0; i < _calCells.Length; i++)
+            {
+                bool today = i == weekday;
+                var cell = _calCells[i];
+                cell.EnableInClassList("cn-cal__cell--today", today);
+                if (today) cell.style.backgroundColor = CnStyle.GasMid;
+                else CnStyle.Fill(cell, CnStyle.VeilSoft, 0.7f);
+                cell.tooltip = names != null && i < names.Length ? names[i] : string.Empty;
+            }
+        }
+
+        private void RefreshStats(CnDataFeed feed)
+        {
+            _str.text = feed.hasStats ? Mathf.RoundToInt(feed.strength).ToString() : "—";
+            _dex.text = feed.hasStats ? Mathf.RoundToInt(feed.dexterity).ToString() : "—";
+            _int.text = feed.hasStats ? Mathf.RoundToInt(feed.intelligence).ToString() : "—";
         }
 
         private void RefreshHp(CnDataFeed feed)
@@ -126,116 +293,139 @@ namespace ProjectCCloudyNavigator.UI
             _hpValue.text = feed.currentHp + " / " + feed.maxHp;
             float pct = feed.maxHp > 0 ? Mathf.Clamp01((float)feed.currentHp / feed.maxHp) : 0f;
             _hpFill.style.width = Length.Percent(pct * 100f);
+            _hpFill.style.backgroundColor = pct > 0.5f ? CnStyle.GasAccent : pct > 0.25f ? CnStyle.Warn : CnStyle.DangerLine;
         }
 
-        private void RefreshCredits(CnDataFeed feed)
+        private void RefreshEquipment(CnDataFeed feed)
         {
-            // Формат легаси: «Кредиты: {0:F0} CR» (03 §1, решение №4 — источник MarketClientState).
-            _credits.text = feed.hasCredits ? Mathf.FloorToInt(feed.credits) + " CR" : "—";
-        }
+            var names = feed.equipNames;
+            string signature = feed.hasEquipment ? "1" : "0";
+            if (names != null) signature += "|" + string.Join("|", names);
+            if (signature == _equipSignature) return;
+            _equipSignature = signature;
 
-        private void RefreshModules(CnDataFeed feed)
-        {
-            var ship = feed.ships.Length > 0 ? feed.ships[0] : default;
-
-            // У корабля по умолчанию (и когда кораблей ещё нет) modules == null: длина читается через проверку,
-            // иначе окно падало бы NRE на первом же кадре до появления корабля в сцене.
-            var modules = ship.modules;
-            int moduleCount = modules != null ? modules.Length : 0;
-
-            string signature = ship.displayName + "|" + moduleCount;
-            for (int i = 0; i < moduleCount; i++)
+            for (int i = 0; i < _slots.Length; i++)
             {
-                signature += "|" + modules[i].slotType + ":" + modules[i].displayName;
+                string item = names != null && i < names.Length ? names[i] : string.Empty;
+                bool empty = string.IsNullOrEmpty(item);
+
+                var slot = _slots[i];
+                slot.EnableInClassList("cn-slot--empty", empty);
+                CnStyle.Fill(slot, CnStyle.Veil, empty ? 0.4f : 0.72f);
+
+                _slotText[i].text = empty ? SlotCodes[i] : Abbreviate(item);
+                slot.tooltip = SlotNames[i] + " · " + (empty
+                    ? (feed.hasEquipment ? "слот пуст" : "нет данных экипировки")
+                    : item);
             }
-
-            if (signature == _moduleSignature) return;
-            _moduleSignature = signature;
-
-            _modules.Clear();
-
-            // Порядок как в модели мода: МОДУЛЬ I / II / III — это Propulsion / Utility / Special.
-            AddModuleRow("Модуль I", FindModule(ship, "Propulsion"));
-            AddModuleRow("Модуль II", FindModule(ship, "Utility"));
-            AddModuleRow("Модуль III", FindModule(ship, "Special"));
         }
 
-        private static CnModuleRow FindModule(CnShipRow ship, string slotType)
+        /// <summary>Подпись предмета в слоте 36 px: первые буквы имени капсом.</summary>
+        private static string Abbreviate(string name)
         {
-            if (ship.modules == null) return default;
-
-            for (int i = 0; i < ship.modules.Length; i++)
-            {
-                if (ship.modules[i].slotType == slotType) return ship.modules[i];
-            }
-
-            return default;
-        }
-
-        private void AddModuleRow(string caption, CnModuleRow module)
-        {
-            var row = CnStyle.Row("cn-modrow");
-            row.Add(CnStyle.Label(caption, "cn-dim"));
-
-            var name = CnStyle.Label(
-                string.IsNullOrEmpty(module.displayName) ? "пусто" : module.displayName, "cn-modrow__name");
-            name.style.marginLeft = 4f;
-            row.Add(name);
-
-            _modules.Add(row);
+            string trimmed = name.Trim();
+            int length = Mathf.Min(4, trimmed.Length);
+            return trimmed.Substring(0, length).ToUpperInvariant();
         }
 
         private void RefreshReputation(CnDataFeed feed)
         {
-            _repCap.text = "РЕПУТАЦИЯ · " + feed.factions.Length;
+            var factions = feed.factions;
+            _relCount.text = factions.Length > 0 ? factions.Length.ToString() : string.Empty;
 
-            string signature = feed.factions.Length.ToString();
-            int shown = Mathf.Min(feed.factions.Length, MaxReputationRows);
-            for (int i = 0; i < shown; i++)
+            var sb = new System.Text.StringBuilder(64);
+            sb.Append(_repFit).Append('#');
+            for (int i = 0; i < factions.Length; i++)
+                sb.Append(factions[i].wireId).Append(':').Append(factions[i].value).Append(':').Append(factions[i].tier).Append(';');
+
+            string signature = sb.ToString();
+            if (signature == _repSignature) return;
+            _repSignature = signature;
+
+            _relRows.Clear();
+            if (factions.Length == 0)
             {
-                var f = feed.factions[i];
-                signature += "|" + f.wireId + ":" + f.value + ":" + (f.hasTiers ? f.tier : "-");
-            }
-
-            if (signature == _reputationSignature) return;
-            _reputationSignature = signature;
-
-            _repRows.Clear();
-            for (int i = 0; i < shown; i++)
-            {
-                var f = feed.factions[i];
-                var row = CnStyle.Row("cn-rep__row");
-                row.Add(CnStyle.Label(f.displayName, "cn-rep__name"));
-
-                // Диапазон фракций — −100…+100 (решение №5); «тиры не заданы» — честное состояние D3.
-                var value = CnStyle.Label(f.value.ToString(), "cn-rep__val");
-                value.style.color = f.hasTiers ? f.tierColor : CnStyle.Muted;
-                row.Add(value);
-
-                _repRows.Add(row);
-            }
-
-            if (feed.factions.Length == 0)
-            {
-                _repRows.Add(CnStyle.Label("нет известных фракций", "cn-dim"));
-            }
-        }
-
-        private void RefreshCalendar(CnDataFeed feed)
-        {
-            if (!feed.hasTime)
-            {
-                _calDate.text = "календарь: нет данных";
-                _calDay.text = string.Empty;
+                _relRows.Add(CnStyle.Label("нет известных фракций", "cn-rel__empty"));
                 return;
             }
 
-            _calDate.text = feed.monthName + " " + feed.day + " · " + feed.weekdayName;
+            int shown = Mathf.Min(factions.Length, _repFit);
+            for (int i = 0; i < shown; i++) _relRows.Add(RepRow(factions[i], i == 0));
 
-            int hours = Mathf.FloorToInt(feed.timeOfDay);
-            int minutes = Mathf.FloorToInt((feed.timeOfDay - hours) * 60f);
-            _calDay.text = feed.year + " г. · день года " + feed.dayOfYear + " · " +
-                           hours.ToString("00") + ":" + minutes.ToString("00");
+            if (factions.Length > shown)
+                _relRows.Add(CnStyle.Label("ещё " + (factions.Length - shown), "cn-rel__more"));
+        }
+
+        /// <summary>Строка фракции: имя, тир, значение и шкала −100…+100 от центра (решение №5).</summary>
+        private static VisualElement RepRow(CnFactionRow faction, bool first)
+        {
+            var row = CnStyle.Box("cn-rep");
+            if (first) row.AddToClassList("is-first");
+
+            var top = CnStyle.Row("cn-rep__top");
+            top.Add(CnStyle.Label(faction.displayName, "cn-rep__name"));
+            var tier = CnStyle.Label(faction.hasTiers ? faction.tier : "тиры не заданы", "cn-rep__tier");
+            tier.style.color = faction.hasTiers ? faction.tierColor : CnStyle.Dim;
+            top.Add(tier);
+            var value = CnStyle.Label((faction.value > 0 ? "+" : string.Empty) + faction.value, "cn-rep__val");
+            top.Add(value);
+            row.Add(top);
+
+            var bar = CnStyle.Box("cn-rep__bar");
+            CnStyle.Fill(bar, CnStyle.VeilEdge, 0.45f);
+            bar.Add(CnStyle.Deco("cn-rep__mid"));
+
+            float v = Mathf.Clamp(faction.value, -100f, 100f) / 100f;
+            var fill = CnStyle.Deco("cn-rep__fill");
+            fill.style.left = Length.Percent(v >= 0f ? 50f : 50f + v * 50f);
+            fill.style.width = Length.Percent(Mathf.Abs(v) * 50f);
+            fill.style.backgroundColor = faction.hasTiers ? faction.tierColor : CnStyle.Muted;
+            bar.Add(fill);
+            row.Add(bar);
+
+            row.tooltip = faction.displayName + " · " + faction.value + " (−100…+100)";
+            return row;
+        }
+
+        // ------------------------------------------------------------------ ступени компактности
+
+        /// <summary>
+        /// home.js fit(): если высоты колонки не хватает, ужимается кольцо слотов (200 → 108 px). Слоты кольца
+        /// делят его высоту поровну, ширина колонок слотов 36 px не меняется.
+        /// </summary>
+        private void Fit()
+        {
+            float height = _root.resolvedStyle.height;
+            if (float.IsNaN(height) || height <= 0f || Mathf.Abs(height - _lastHeight) < 1f) return;
+            _lastHeight = height;
+
+            // Всё, кроме кольца и гибкой репутации, — фиксированной высоты (меряем по факту).
+            float others = 0f;
+            foreach (var child in _root.Children())
+            {
+                if (child == _fig || child == _rel) continue;
+                var s = child.resolvedStyle;
+                others += child.layout.height + s.marginTop + s.marginBottom;
+            }
+
+            float padding = _root.resolvedStyle.paddingTop + _root.resolvedStyle.paddingBottom;
+            float free = height - padding - others - _fig.resolvedStyle.marginTop - _rel.resolvedStyle.marginTop - 72f;
+            float ring = Mathf.Clamp(Mathf.Floor(free), RingMin, RingHeight);
+
+            _fig.style.height = ring;
+            float slot = Mathf.Floor((ring - 4f * SlotGap) / 5f);
+            for (int i = 0; i < 10; i++) _slots[i].style.height = slot;
+        }
+
+        /// <summary>Сколько строк фракций помещается в гибкий блок без обрезки.</summary>
+        private void FitReputation()
+        {
+            float h = _relRows.layout.height;
+            if (float.IsNaN(h) || h <= 0f) return;
+            int fit = Mathf.Max(1, Mathf.FloorToInt((_rel.layout.height - 22f) / RepRowHeight));
+            if (fit == _repFit) return;
+            _repFit = fit;
+            _repSignature = string.Empty;
         }
     }
 }

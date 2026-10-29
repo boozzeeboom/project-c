@@ -70,7 +70,11 @@ namespace ProjectCCloudyNavigator
             if (Application.isPlaying)
             {
                 _preview = new CnPreviewStage();
-                _station.PreviewHost.Add(_preview.Element);
+                var figure = _preview.Element;
+                figure.style.width = Length.Percent(100f);
+                figure.style.height = Length.Percent(100f);
+                figure.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain);
+                _station.PreviewHost.Add(figure);
             }
 
             _root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
@@ -161,6 +165,7 @@ namespace ProjectCCloudyNavigator
 
             _root.EnableInClassList("is-narrow", colW < 720f);
             _root.EnableInClassList("is-dock-narrow", colW < 660f);
+            _main.SetNarrow(colW < 720f);
         }
 
         public void Dispose()

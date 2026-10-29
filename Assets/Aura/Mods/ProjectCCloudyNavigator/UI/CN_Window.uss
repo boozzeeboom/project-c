@@ -1,15 +1,15 @@
-/* Cloudy Navigator — USS оболочки (шаг 4 плана: docs/UI/full rebuild plans/Cloudy_redesign/04 §4).
+/* Cloudy Navigator — USS окна по src/style.css, src/alt.css и стилям src/ships.js / src/calendar.js мода.
  *
- * Правила платформы (04 §1, проверены на меню): нет filter/cursor/box-shadow/outline/::before/::after,
- * нет display: grid и gap (зазор — margin у ребёнка), нет clamp/calc/vh/vw, нет @keyframes и @media.
- * Размеры — px на опоре 1920×1080 (CN_PanelSettings, ScaleWithScreenSize).
- * Полупрозрачные заливки задаются из C# через ProjectCMainMenuGamma.Alpha (Linear против sRGB) — здесь только
- * непрозрачная типографика, волоски и рамки.
- * Верхний регистр — в C#, а не text-transform: в USS его нет.
- * Порог ширины — класс .is-narrow / .is-dock-narrow, который ставит C# в GeometryChangedEvent.
+ * Правила платформы (04 §1): нет filter/cursor/box-shadow/outline/::before/::after, grid и gap (зазор — margin
+ * ребёнка + .is-first), z-index (порядок = порядок детей), clamp/calc/vh/vw, @keyframes, text-transform.
+ * letter-spacing — в px (em мода × размер шрифта). Полупрозрачные ЗАЛИВКИ ставит код через ProjectCMainMenuGamma
+ * (Linear); здесь — только непрозрачная типографика и волоски/рамки.
+ *
+ * Панель — ConstantPixelSize, scale 1: 1 px рамки = 1 физический пиксель, пороги раскладки мода (760/920/1200 px)
+ * считаются от настоящей ширины экрана.
  */
 
-/* ---------------------------------------------------------------- корень и колонки */
+/* ---------------------------------------------------------------- корень */
 
 .cn-root {
     position: absolute;
@@ -21,551 +21,1325 @@
     align-items: stretch;
 }
 
-/* Левая станция: ширина задаётся кодом (--homeW мода: 152 / 164 / 186…226 от ширины окна).
- * Слоты, модель, HP, кредиты, репутация и календарь недвижимы: док живёт только в средней колонке. */
+/* Тема UnityDefaultRuntimeTheme даёт Label поля и отступы: подпись 11 px занимала 22 px. Сбрасываем классом самой
+ * подписи (.cn-l ставит CnStyle.Label) — та же специфичность, что у классов ниже, поэтому их margin/padding побеждают
+ * по порядку в файле; селектор «.cn-root Label» был бы сильнее и стирал бы их. */
+.cn-l {
+    margin: 0;
+    padding: 0;
+    -unity-paragraph-spacing: 0;
+}
+
+.cn-grow {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+/* ---------------------------------------------------------------- станция (#home, home.js) */
+
 .cn-station {
     flex-shrink: 0;
     flex-direction: column;
-    padding: 10px 8px 8px 8px;
+    padding: 10px 10px 0 10px;
     border-right-width: 1px;
-    border-right-color: rgba(96, 150, 116, 0.28);
+    border-right-color: rgba(141, 122, 78, 0.35);
+    overflow: hidden;
 }
+
+.cn-station > * {
+    margin-top: 8px;
+    flex-shrink: 0;
+}
+
+.cn-station > .cn-home__kicker {
+    margin-top: 0;
+}
+
+.cn-home__kicker {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #71806f;
+}
+
+/* прибор-календарь */
+.cn-cal {
+    padding: 3px 6px 4px 6px;
+    border-width: 1px;
+    border-color: rgba(96, 150, 116, 0.22);
+    border-radius: 2px;
+}
+
+.cn-cal__k {
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    color: #71806f;
+    -unity-font-style: bold;
+}
+
+.cn-cal__date {
+    margin-top: 1px;
+    font-size: 12.5px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.cn-cal__week {
+    margin-top: 3px;
+}
+
+.cn-cal__cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 15px;
+    margin-left: 2px;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.6);
+    border-radius: 1px;
+}
+
+.cn-cal__cell.is-first {
+    margin-left: 0;
+}
+
+.cn-cal__cell--today {
+    border-color: #54a373;
+}
+
+.cn-cal__foot {
+    margin-top: 2px;
+}
+
+.cn-cal__time {
+    font-size: 9.5px;
+    color: #71806f;
+}
+
+.cn-cal__count {
+    font-size: 9px;
+    letter-spacing: 0.7px;
+    color: #8d7a4e;
+}
+
+/* характеристики */
+.cn-stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    padding: 3px 0 3px 0;
+    margin-left: 4px;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.7);
+    border-radius: 2px;
+}
+
+.cn-stat.is-first {
+    margin-left: 0;
+}
+
+.cn-stat__k {
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    color: #71806f;
+}
+
+.cn-stat__v {
+    font-size: 15px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+}
+
+/* кольцо слотов: 36 | ниша + кредиты | 36 */
+.cn-fig {
+    height: 200px;
+}
+
+.cn-col {
+    width: 36px;
+    flex-shrink: 0;
+    flex-direction: column;
+}
+
+.cn-cent {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    margin-left: 6px;
+    margin-right: 6px;
+    flex-direction: column;
+}
+
+.cn-slot {
+    width: 36px;
+    height: 36px;
+    margin-top: 5px;
+    flex-shrink: 0;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.9);
+    border-radius: 2px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.cn-slot.is-first {
+    margin-top: 0;
+}
+
+.cn-slot--empty {
+    border-color: rgba(74, 87, 76, 0.55);
+}
+
+.cn-slot:hover {
+    border-color: #a8b6ac;
+}
+
+.cn-slot__t {
+    font-size: 8px;
+    letter-spacing: 0.4px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+
+.cn-slot--empty .cn-slot__t {
+    color: #4a574c;
+}
+
+.cn-niche {
+    flex-grow: 1;
+    min-height: 0;
+    flex-direction: column;
+}
+
+.cn-hp {
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.cn-hp__k {
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #71806f;
+    -unity-font-style: bold;
+}
+
+.cn-hp__v {
+    font-size: 10px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+
+.cn-hp__bar {
+    height: 3px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+.cn-hp__fill {
+    height: 3px;
+    background-color: #54a373;
+}
+
+.cn-niche__fig {
+    flex-grow: 1;
+    min-height: 0;
+    margin-top: 4px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.cn-cr {
+    height: 28px;
+    flex-shrink: 0;
+    margin-top: 4px;
+    padding: 0 4px 0 4px;
+    justify-content: center;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.7);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.cn-cr__k {
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    color: #71806f;
+    white-space: nowrap;
+}
+
+.cn-cr__v {
+    font-size: 14px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+
+/* модули I–III */
+.cn-mods {
+    justify-content: center;
+}
+
+.cn-station .cn-slot--mod {
+    margin-top: 0;
+    margin-left: 6px;
+}
+
+.cn-station .cn-slot--mod.is-first {
+    margin-left: 0;
+}
+
+/* репутация — последний гибкий блок */
+.cn-station > .cn-rel {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.cn-rel {
+    min-height: 72px;
+    flex-direction: column;
+    padding-top: 6px;
+    padding-bottom: 8px;
+    border-top-width: 1px;
+    border-top-color: rgba(96, 150, 116, 0.18);
+    overflow: hidden;
+}
+
+.cn-rel__head {
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.cn-rel__t {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #71806f;
+    -unity-font-style: bold;
+}
+
+.cn-rel__n {
+    font-size: 10px;
+    color: #8d7a4e;
+}
+
+.cn-rel__rows {
+    flex-grow: 1;
+    flex-direction: column;
+    margin-top: 4px;
+}
+
+.cn-rep {
+    height: 23px;
+    margin-top: 4px;
+    flex-shrink: 0;
+    flex-direction: column;
+}
+
+.cn-rep.is-first {
+    margin-top: 0;
+}
+
+.cn-rep__top {
+    height: 16px;
+}
+
+.cn-rep__name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    font-size: 11px;
+    color: #eef3ef;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-rep__tier {
+    font-size: 9px;
+    letter-spacing: 0.6px;
+    margin-left: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cn-rep__val {
+    min-width: 26px;
+    margin-left: 5px;
+    font-size: 11px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    -unity-text-align: middle-right;
+    flex-shrink: 0;
+}
+
+.cn-rep__bar {
+    height: 3px;
+    margin-top: 3px;
+    border-radius: 1px;
+}
+
+.cn-rep__mid {
+    position: absolute;
+    left: 50%;
+    top: -1px;
+    width: 1px;
+    height: 5px;
+    background-color: #71806f;
+}
+
+.cn-rep__fill {
+    position: absolute;
+    top: 0;
+    height: 3px;
+}
+
+.cn-rel__empty,
+.cn-rel__more {
+    font-size: 10.5px;
+    color: #71806f;
+}
+
+/* ---------------------------------------------------------------- средняя колонка */
 
 .cn-main {
     flex-grow: 1;
     flex-shrink: 1;
     min-width: 0;
     flex-direction: column;
-    padding: 8px 10px 8px 10px;
 }
 
-/* Шкала высоты — отдельная третья колонка, правее всей станции (решение пользователя, 04 §5). */
-.cn-altrail {
-    flex-shrink: 0;
-    flex-direction: column;
-    align-items: flex-end;
-    padding-left: 1px;
-    border-left-width: 1px;
-    border-left-color: rgba(141, 122, 78, 0.30);
-}
-
-/* ---------------------------------------------------------------- типографика */
-
-.cn-cap {
-    font-size: 10px;
-    letter-spacing: 0.14px;
-    color: #71806f;
-    -unity-font-style: bold;
-    white-space: nowrap;
-}
-
-.cn-label {
-    font-size: 11px;
-    color: #a8b6ac;
-    white-space: nowrap;
-}
-
-.cn-value {
-    font-size: 11px;
-    color: #eef3ef;
-    -unity-font-style: bold;
-    white-space: nowrap;
-}
-
-.cn-big {
-    font-size: 13px;
-    color: #eef3ef;
-    -unity-font-style: bold;
-    white-space: nowrap;
-}
-
-.cn-dim {
-    font-size: 11px;
-    color: #71806f;
-    white-space: nowrap;
-}
-
-.cn-brass {
-    font-size: 11px;
-    color: #b9915a;
-    white-space: nowrap;
-}
-
-.cn-hair {
-    height: 1px;
-    background-color: rgba(74, 87, 76, 0.35);
-    margin-top: 6px;
-    margin-bottom: 6px;
-}
-
-/* ---------------------------------------------------------------- станция */
-
-.cn-silhouette {
-    height: 96px;
-    margin-bottom: 6px;
-    border-width: 1px;
-    border-color: rgba(96, 150, 116, 0.28);
-    border-radius: 2px;
-    align-items: center;
-    justify-content: center;
-}
-
-.cn-hp {
-    height: 6px;
-    border-width: 1px;
-    border-color: rgba(74, 87, 76, 0.7);
-    border-radius: 2px;
-    margin-top: 4px;
-    margin-bottom: 4px;
-}
-
-.cn-hp__fill {
-    height: 4px;
-    background-color: #54a373;
-}
-
-.cn-credits {
-    flex-direction: row;
-    align-items: center;
-    margin-top: 2px;
-}
-
-.cn-credits__spacer {
-    flex-grow: 1;
-}
-
-.cn-slots {
-    flex-direction: row;
-    flex-wrap: wrap;
-    margin-top: 6px;
-}
-
-.cn-slot {
-    width: 36px;
-    height: 36px;
-    margin-right: 4px;
-    margin-bottom: 4px;
-    border-width: 1px;
-    border-color: rgba(96, 150, 116, 0.28);
-    border-radius: 2px;
-    align-items: center;
-    justify-content: center;
-}
-
-.cn-slot__glyph {
-    font-size: 9px;
-    color: #71806f;
-    -unity-font-style: bold;
-}
-
-.cn-modrow {
-    flex-direction: row;
-    align-items: center;
-    margin-top: 2px;
-}
-
-.cn-modrow__name {
-    flex-grow: 1;
-    min-width: 0;
-    font-size: 10px;
-    color: #a8b6ac;
-    overflow: hidden;
-}
-
-.cn-rep {
-    flex-direction: column;
-    margin-top: 4px;
-}
-
-.cn-rep__row {
-    flex-direction: row;
-    align-items: center;
-    height: 22px;
-}
-
-.cn-rep__name {
-    flex-grow: 1;
-    min-width: 0;
-    font-size: 10px;
-    color: #a8b6ac;
-    overflow: hidden;
-}
-
-.cn-rep__val {
-    font-size: 10px;
-    color: #eef3ef;
-    -unity-font-style: bold;
-}
-
-.cn-cal {
-    flex-direction: row;
-    flex-wrap: wrap;
-    margin-top: 4px;
-}
-
-.cn-cal__day {
-    width: 18px;
-    height: 16px;
-    margin-right: 2px;
-    margin-bottom: 2px;
-    border-width: 1px;
-    border-color: rgba(74, 87, 76, 0.35);
-    border-radius: 1px;
-    align-items: center;
-    justify-content: center;
-}
-
-.cn-cal__daynum {
-    font-size: 8px;
-    color: #71806f;
-}
-
-.cn-cal__day--today {
-    border-color: #b9915a;
-}
-
-.cn-cal__daynum--today {
-    color: #eef3ef;
-}
-
-/* ---------------------------------------------------------------- шкала высоты */
-
-.cn-altrail__head {
-    width: 16px;
-    height: 16px;
-    border-radius: 8px;
-    border-width: 1px;
-    border-color: #78b891;
-    align-items: center;
-    justify-content: center;
-    margin-top: 2px;
-}
-
-.cn-altrail__headlabel {
-    font-size: 9px;
-    color: #eef3ef;
-    -unity-font-style: bold;
-}
-
-.cn-altrail__track {
-    flex-grow: 1;
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-end;
-    margin-top: 6px;
-    margin-bottom: 6px;
-}
-
-.cn-tick {
-    height: 1px;
-    background-color: rgba(120, 184, 145, 0.55);
-    margin-bottom: 1px;
-}
-
-.cn-tick--out {
-    background-color: rgba(194, 91, 69, 0.42);
-}
-
-.cn-tick--mid {
-    height: 1px;
-}
-
-.cn-bound {
-    height: 1px;
-    width: 100%;
-    background-color: #78b891;
-}
-
-.cn-altval {
-    font-size: 11px;
-    color: #eef3ef;
-    -unity-font-style: bold;
-}
-
-.cn-altval__hair {
-    height: 1px;
-    width: 100%;
-    background-color: rgba(201, 162, 39, 0.6);
-    margin-top: 1px;
-}
-
-/* ---------------------------------------------------------------- шапка, лента, док */
-
+/* шапка (#hdr) */
 .cn-hdr {
-    flex-direction: row;
-    align-items: center;
-    height: 28px;
+    flex-shrink: 0;
+    padding: 8px 16px 8px 16px;
     border-bottom-width: 1px;
-    border-bottom-color: rgba(96, 150, 116, 0.28);
+    border-bottom-color: rgba(141, 122, 78, 0.28);
 }
 
-.cn-hdr__title {
+.cn-hdr__lt {
+    flex-shrink: 1;
+    min-width: 0;
+    font-size: 12px;
+    letter-spacing: 0.24px;
+    color: #a8b6ac;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-hdr__key {
+    flex-shrink: 0;
+    margin-left: 10px;
     font-size: 11px;
+    letter-spacing: 0.44px;
+    color: #71806f;
+    white-space: nowrap;
+}
+
+.cn-now {
+    margin-top: 3px;
+}
+
+.cn-now__k {
+    flex-shrink: 0;
+    margin-right: 8px;
+    font-size: 13px;
+    letter-spacing: 0.8px;
+    color: #78b891;
+    -unity-font-style: bold;
+}
+
+.cn-now__t {
+    flex-shrink: 1;
+    min-width: 0;
+    font-size: 17px;
     color: #eef3ef;
     -unity-font-style: bold;
-    letter-spacing: 0.14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.cn-hdr__spacer {
-    flex-grow: 1;
+.cn-now__tail {
+    flex-shrink: 0;
+    font-size: 17px;
+    color: #c98a4b;
+    white-space: nowrap;
 }
+
+.cn-now__tail--alarm {
+    color: #e08a72;
+}
+
+/* ---------------------------------------------------------------- лента (#lines, lines.js) */
 
 .cn-lines {
     flex-grow: 1;
     flex-shrink: 1;
     min-height: 0;
-    margin-top: 6px;
 }
 
-.cn-line {
-    flex-direction: row;
-    align-items: center;
-    height: 44px;
-    padding-left: 6px;
-    padding-right: 6px;
-    margin-bottom: 4px;
-    border-left-width: 2px;
-    border-left-color: rgba(96, 150, 116, 0.28);
-    border-radius: 2px;
-}
-
-.cn-line--contract {
-    height: 48px;
-    border-left-color: rgba(141, 122, 78, 0.55);
-}
-
-.cn-line--tracked {
-    border-left-color: #78b891;
-}
-
-.cn-line__body {
-    flex-grow: 1;
-    min-width: 0;
+.cn-rows {
     flex-direction: column;
+    padding: 6px 0 4px 0;
+}
+
+.cn-ln {
+    height: 108px;
+    flex-shrink: 0;
+}
+
+.cn-ln__hair {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background-color: rgba(74, 87, 76, 0.22);
+}
+
+.cn-ln__rope {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.cn-ln__title {
+    position: absolute;
+    left: 8px;
+    right: 10px;
+    top: 4px;
+    height: 20px;
+    padding-left: 9px;
+    border-left-width: 3px;
+}
+
+.cn-ln__name {
+    flex-shrink: 0;
+    font-size: 15px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+
+.cn-rows.is-narrow .cn-ln__name {
+    font-size: 14px;
+}
+
+.cn-ln__tag {
+    flex-shrink: 1;
+    min-width: 0;
+    margin-left: 12px;
+    font-size: 11px;
+    letter-spacing: 0.44px;
+    color: #a8b6ac;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-ln__follow {
+    flex-shrink: 0;
+    margin-left: 12px;
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    color: #b9915a;
+    -unity-font-style: bold;
+}
+
+/* станция-шаг */
+.cn-st {
+    position: absolute;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cn-st__name {
+    max-width: 100%;
+    font-size: 13px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    -unity-text-align: upper-center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-st__sub {
+    max-width: 100%;
+    font-size: 12px;
+    color: #a8b6ac;
+    -unity-text-align: upper-center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-st--done .cn-st__name {
+    color: #a8b6ac;
+}
+
+.cn-st--done .cn-st__sub {
+    color: #71806f;
+}
+
+.cn-st--next .cn-st__name {
+    color: #ffffff;
+}
+
+.cn-st--todo .cn-st__name {
+    color: #a8b6ac;
+}
+
+.cn-st__node {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    align-items: center;
     justify-content: center;
 }
 
-.cn-line__title {
+.cn-st:hover .cn-st__node {
+    scale: 1.08 1.08;
+}
+
+.cn-st__glyph {
     font-size: 11px;
+    color: #a8b6ac;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.cn-st--cur .cn-st__glyph,
+.cn-st--next .cn-st__glyph {
+    color: #eef3ef;
+}
+
+.cn-st--done .cn-st__glyph {
+    color: #78b891;
+}
+
+.cn-st__open {
+    position: absolute;
+    left: -8px;
+    top: -8px;
+    right: -8px;
+    bottom: -8px;
+    border-width: 2px;
+    border-color: #eef3ef;
+    border-radius: 24px;
+}
+
+/* терминал награды */
+.cn-end {
+    position: absolute;
+    flex-direction: column;
+}
+
+.cn-end__big {
+    font-size: 15px;
     color: #eef3ef;
     -unity-font-style: bold;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.cn-line__sub {
-    font-size: 10px;
-    color: #71806f;
+.cn-end__small {
+    font-size: 12px;
+    color: #a8b6ac;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-end--alarm .cn-end__small {
+    color: #e08a72;
+    -unity-font-style: bold;
+}
+
+.cn-end__node {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border-width: 2px;
+    border-radius: 2px;
+}
+
+.cn-end__fill {
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    right: 4px;
+    bottom: 4px;
+    border-radius: 1px;
+}
+
+/* каретка */
+.cn-car__pulley {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-width: 1px;
+    border-color: #a8b6ac;
+    border-radius: 3px;
+    background-color: #070a09;
+}
+
+.cn-car {
+    position: absolute;
+    width: 16px;
+    height: 12px;
+    border-width: 1px;
+    border-radius: 2px;
+}
+
+/* приборная бирка (.ln-act / .pin-btn) */
+.cn-tag {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    height: 32px;
+    min-width: 96px;
+    padding: 0 14px 0 14px;
     overflow: hidden;
 }
 
-.cn-line__right {
-    flex-direction: column;
-    align-items: flex-end;
+.cn-ln__act {
+    position: absolute;
+}
+
+.cn-tag__plate {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    border-width: 1px;
+    border-color: rgba(96, 150, 116, 0.28);
+    border-radius: 1px;
+}
+
+.cn-tag__riv {
+    position: absolute;
+    top: 14px;
+    width: 4px;
+    height: 4px;
+    border-width: 1px;
+    border-color: rgba(96, 150, 116, 0.45);
+    border-radius: 2px;
+    background-color: #090e0b;
+}
+
+.cn-tag__riv--a {
+    left: 5px;
+}
+
+.cn-tag__riv--b {
+    right: 5px;
+}
+
+.cn-tag__v {
+    flex-shrink: 0;
+    font-size: 10.5px;
+    letter-spacing: 1.47px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+
+.cn-tag__sep {
+    width: 1px;
+    margin: 4px 10px 4px 10px;
+    align-self: stretch;
+    background-color: rgba(96, 150, 116, 0.22);
+}
+
+.cn-tag__x {
+    flex-shrink: 1;
+    min-width: 0;
+    font-size: 10.5px;
+    letter-spacing: 1.47px;
+    color: #eef3ef;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-tag--solo {
     justify-content: center;
+}
+
+.cn-tag:hover .cn-tag__plate {
+    border-color: #78b891;
+}
+
+.cn-tag:active {
+    translate: 0 1px;
+}
+
+.cn-tag--brass .cn-tag__plate {
+    border-color: rgba(185, 145, 90, 0.6);
+}
+
+.cn-tag--danger .cn-tag__plate {
+    border-color: rgba(150, 78, 62, 0.75);
+}
+
+.cn-tag--danger .cn-tag__v,
+.cn-tag--danger .cn-tag__x {
+    color: #a8b6ac;
+}
+
+.cn-tag--danger:hover .cn-tag__plate {
+    border-color: rgba(190, 96, 76, 0.95);
+}
+
+.cn-tag--danger:hover .cn-tag__v {
+    color: #d0705a;
+}
+
+.cn-tag--off .cn-tag__plate {
+    border-color: rgba(96, 150, 116, 0.24);
+    border-left-color: rgba(168, 182, 172, 0.72);
+}
+
+.cn-tag--off .cn-tag__v,
+.cn-tag--off .cn-tag__x {
+    color: #a8b6ac;
+}
+
+.cn-ln__info {
+    position: absolute;
+    font-size: 12.5px;
+    color: #a8b6ac;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* карточка шага (.ln-card) */
+.cn-card {
+    flex-shrink: 0;
+    flex-direction: column;
+    margin: 2px 8px 10px 8px;
+    padding: 10px 14px 12px 14px;
+    border-width: 1px;
+    border-color: rgba(96, 150, 116, 0.4);
+    border-radius: 2px;
+}
+
+.cn-card__arrow {
+    position: absolute;
+    top: -7px;
+    width: 12px;
+    height: 12px;
+    rotate: 45deg;
+    border-left-width: 1px;
+    border-top-width: 1px;
+    border-color: rgba(96, 150, 116, 0.6);
+    background-color: #16412c;
+}
+
+.cn-card__head {
+    margin-bottom: 8px;
+}
+
+.cn-card__b {
+    flex-shrink: 0;
+    font-size: 13px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+}
+
+.cn-card__h {
+    flex-shrink: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: #a8b6ac;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-card__grid {
+    align-items: flex-start;
+}
+
+.cn-card__cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    margin-left: 16px;
+    flex-direction: column;
+}
+
+.cn-card__cell.is-first {
+    margin-left: 0;
+}
+
+.cn-card__k {
+    font-size: 10.5px;
+    letter-spacing: 1.26px;
+    color: #71806f;
+}
+
+.cn-card__v {
+    margin-top: 2px;
+    font-size: 13px;
+    color: #eef3ef;
+    white-space: normal;
+}
+
+.cn-card__v--good {
+    color: #78b891;
+}
+
+.cn-card__acts {
+    margin-top: 10px;
+}
+
+.cn-card__acts > .cn-tag {
     margin-left: 6px;
 }
+
+.cn-card__acts > .cn-tag.is-first {
+    margin-left: 0;
+}
+
+.cn-lines__empty {
+    flex-direction: column;
+    padding: 18px 16px 18px 16px;
+}
+
+.cn-lines__empty-t {
+    font-size: 11.5px;
+    letter-spacing: 2.3px;
+    color: #78b891;
+    -unity-font-style: bold;
+}
+
+.cn-lines__empty-s {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #71806f;
+}
+
+/* ---------------------------------------------------------------- док КОРАБЛЬ | БАГАЖ */
 
 .cn-dock {
     flex-shrink: 0;
     height: 96px;
-    flex-direction: row;
-    margin-top: 6px;
+    min-height: 96px;
     border-top-width: 1px;
-    border-top-color: rgba(96, 150, 116, 0.28);
+    border-top-color: rgba(141, 122, 78, 0.4);
 }
 
-.cn-dock__half {
+.cn-ships,
+.cn-bag {
     flex-grow: 1;
-    flex-basis: 0px;
+    flex-basis: 0;
     min-width: 0;
+    min-height: 0;
     flex-direction: column;
-    padding: 6px 6px 4px 6px;
+    overflow: hidden;
 }
 
-.cn-dock__half--bag {
-    margin-left: 1px;
+.cn-bag {
     border-left-width: 1px;
-    border-left-color: rgba(96, 150, 116, 0.28);
+    border-left-color: rgba(185, 145, 90, 0.45);
 }
 
-.cn-dock__cap {
-    flex-direction: row;
-    align-items: center;
-    height: 16px;
-}
-
-.cn-dock__row {
-    flex-direction: row;
-    align-items: center;
-    margin-top: 3px;
-}
-
-.cn-dock__rowname {
-    flex-grow: 1;
-    min-width: 0;
-    font-size: 10px;
-    color: #a8b6ac;
-    overflow: hidden;
-}
-
-.cn-dock__rowval {
-    font-size: 10px;
-    color: #eef3ef;
-    -unity-font-style: bold;
-}
-
-/* Компактный док, когда средняя колонка уже 660 px (те же пороги, что dock-narrow мода). */
-.cn-root.is-dock-narrow .cn-dock {
-    height: 72px;
-}
-
-.cn-root.is-dock-narrow .cn-dock__row {
-    margin-top: 1px;
-}
-
-/* Узкая колонка: подписи мельче, но кнопки не ниже 32 px (04 §1). */
-.cn-root.is-narrow .cn-cap {
-    font-size: 9px;
-}
-
-.cn-root.is-narrow .cn-line__sub {
-    font-size: 9px;
-}
-
-/* ---------------------------------------------------------------- полоса действий и плитки переноса */
-
-/* Полоса выбора: название выбранной строки либо сообщение последнего действия, справа — бирки действий.
- * Высота 32 — тот же минимум, что у приборных бирок мода (04 §1). */
-.cn-actions {
-    flex-shrink: 0;
+.cn-dock__head {
     height: 32px;
-    flex-direction: row;
-    align-items: center;
-    margin-top: 6px;
-    border-top-width: 1px;
-    border-top-color: rgba(96, 150, 116, 0.28);
+    flex-shrink: 0;
+    padding: 0 12px 0 12px;
 }
 
-.cn-actions__title {
-    flex-grow: 1;
+.cn-dock__t {
+    flex-shrink: 0;
+    font-size: 11.5px;
+    letter-spacing: 2.3px;
+    color: #78b891;
+    -unity-font-style: bold;
+}
+
+.cn-dock__hint {
+    flex-shrink: 1;
     min-width: 0;
-    font-size: 10px;
+    margin-left: 10px;
+    font-size: 11px;
     color: #71806f;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-dock__hint--zone {
+    color: #b9915a;
+}
+
+.cn-dock__sum {
+    flex-shrink: 0;
+    margin-left: 10px;
+    font-size: 10.5px;
+    letter-spacing: 1.26px;
+    color: #a8b6ac;
+    white-space: nowrap;
+}
+
+.cn-dock__empty {
+    font-size: 11.5px;
+    color: #71806f;
+}
+
+.cn-ships__body {
+    flex-grow: 1;
+    min-height: 0;
+    flex-direction: column;
+    padding: 0 12px 6px 12px;
     overflow: hidden;
 }
 
-.cn-actions__tags {
-    flex-direction: row;
-    align-items: center;
+.cn-sh__main {
+    height: 19px;
     flex-shrink: 0;
 }
 
-/* Бирка действия: высота 28 в полосе 32, капс 10 px, капс задаёт код (text-transform в USS нет). */
-.cn-tag {
-    height: 28px;
-    padding-left: 10px;
-    padding-right: 10px;
-    margin-left: 6px;
+.cn-sh__name {
+    flex-shrink: 1;
+    min-width: 0;
+    font-size: 15px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cn-sh__class {
+    flex-shrink: 0;
+    height: 16px;
+    margin-left: 8px;
+    padding: 0 5px 0 5px;
+    font-size: 9.5px;
+    letter-spacing: 1.33px;
+    color: #71806f;
+    -unity-text-align: middle-center;
     border-width: 1px;
     border-color: rgba(96, 150, 116, 0.28);
     border-radius: 1px;
-    justify-content: center;
-    align-items: center;
 }
 
-.cn-tag__text {
-    font-size: 10px;
-    letter-spacing: 0.14px;
+.cn-sh__eng {
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.cn-sh__lamp {
+    width: 7px;
+    height: 7px;
+    margin-right: 5px;
+    border-radius: 4px;
+}
+
+.cn-sh__engt {
+    font-size: 9.5px;
+    letter-spacing: 1.33px;
     color: #a8b6ac;
+    white-space: nowrap;
+}
+
+.cn-sh__engt--off {
+    color: #71806f;
+}
+
+.cn-sh__grid {
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.cn-sh__cell {
+    flex-direction: column;
+    min-width: 0;
+    margin-left: 6px;
+    padding: 2px 7px 3px 7px;
+    border-width: 1px;
+    border-color: rgba(74, 87, 76, 0.7);
+    border-radius: 2px;
+}
+
+.cn-sh__cell.is-first {
+    margin-left: 0;
+}
+
+.cn-sh__k {
+    font-size: 9px;
+    letter-spacing: 1.08px;
+    color: #71806f;
+    white-space: nowrap;
+}
+
+.cn-sh__v {
+    font-size: 12px;
+    color: #eef3ef;
     -unity-font-style: bold;
     white-space: nowrap;
 }
 
-.cn-tag:hover {
-    border-color: rgba(120, 184, 145, 0.55);
+.cn-sh__crow {
+    height: 15px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 10.5px;
+    color: #a8b6ac;
 }
 
-.cn-tag:hover .cn-tag__text {
+.cn-sh__crow:hover {
+    background-color: rgba(31, 38, 32, 0.6);
+}
+
+.cn-sh__crow--empty,
+.cn-sh__crow--more {
+    margin-top: 5px;
+    color: #71806f;
+}
+
+.cn-sh__cq {
+    min-width: 28px;
+    font-size: 10.5px;
     color: #eef3ef;
+    -unity-font-style: bold;
+    white-space: nowrap;
 }
 
-.cn-tag--brass {
-    border-color: rgba(185, 145, 90, 0.55);
+.cn-sh__cn {
+    flex-shrink: 1;
+    min-width: 0;
+    margin-left: 6px;
+    font-size: 10.5px;
+    color: #a8b6ac;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.cn-tag--brass .cn-tag__text {
-    color: #b9915a;
+.cn-sh__crow.is-blocked .cn-sh__cn,
+.cn-sh__crow.is-blocked .cn-sh__cq {
+    color: #71806f;
 }
 
-.cn-tag--danger {
-    border-color: rgba(122, 36, 32, 0.55);
+.cn-sh__cw {
+    flex-shrink: 0;
+    margin-left: 6px;
+    font-size: 10.5px;
+    color: #71806f;
+    white-space: nowrap;
 }
 
-/* Выбранная строка ленты: заливка ставится кодом (гамма), здесь — только кант и наведение. */
-.cn-line--selected {
-    border-left-color: #b9915a;
-}
-
-.cn-line:hover {
-    border-left-color: rgba(120, 184, 145, 0.55);
-}
-
-/* Плитки предметов в доке: одно нажатие — одна упаковка, курс и число упаковок в подсказке. */
-.cn-chips {
-    flex-direction: row;
-    align-items: center;
-    height: 18px;
-    margin-top: 2px;
+.cn-bag__strip {
+    flex-grow: 1;
+    min-height: 0;
+    padding: 0 12px 6px 12px;
     overflow: hidden;
 }
 
-.cn-chip {
-    height: 18px;
-    padding-left: 5px;
-    padding-right: 5px;
-    margin-right: 4px;
+.cn-tile,
+.cn-bag__more {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    margin-left: 6px;
+    margin-top: 6px;
     border-width: 1px;
-    border-color: rgba(96, 150, 116, 0.28);
-    border-radius: 1px;
+    border-radius: 2px;
+}
+
+.cn-tile {
+    flex-direction: column;
+    padding: 4px 4px 2px 5px;
+    border-color: rgba(74, 87, 76, 0.9);
+    overflow: hidden;
+}
+
+.cn-tile.is-line-first,
+.cn-bag__more.is-line-first {
+    margin-left: 0;
+}
+
+.cn-tile.is-first-line,
+.cn-bag__more.is-first-line {
+    margin-top: 0;
+}
+
+.cn-tile:hover {
+    border-color: #a8b6ac;
+}
+
+.cn-tile.is-blocked {
+    border-color: rgba(74, 87, 76, 0.5);
+}
+
+.cn-tile__name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    font-size: 9.5px;
+    color: #eef3ef;
+    white-space: normal;
+    overflow: hidden;
+}
+
+.cn-tile.is-blocked .cn-tile__name {
+    color: #a8b6ac;
+}
+
+.cn-tile__q {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    -unity-text-align: lower-right;
+}
+
+.cn-bag__more {
+    align-items: center;
     justify-content: center;
+    border-color: rgba(96, 150, 116, 0.5);
+}
+
+.cn-bag__moret {
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    color: #a8b6ac;
+    -unity-font-style: bold;
+}
+
+/* узкий док (.dock-narrow мода): подсказки и бирка класса прячутся, ячейки в один ряд */
+.cn-root.is-dock-narrow .cn-dock__hint,
+.cn-root.is-dock-narrow .cn-sh__class {
+    display: none;
+}
+
+.cn-root.is-dock-narrow .cn-dock__head {
+    padding: 0 8px 0 8px;
+}
+
+.cn-root.is-dock-narrow .cn-ships__body,
+.cn-root.is-dock-narrow .cn-bag__strip {
+    padding: 0 8px 5px 8px;
+}
+
+.cn-root.is-dock-narrow .cn-sh__cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    padding: 2px 4px 3px 4px;
+}
+
+/* ---------------------------------------------------------------- шкала высоты (#altrail, alt.css) */
+
+.cn-altrail {
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: stretch;
+    border-left-width: 1px;
+    border-left-color: rgba(141, 122, 78, 0.3);
+    overflow: hidden;
+}
+
+.cn-ar__dot {
+    flex-shrink: 0;
+    align-self: center;
+    width: 16px;
+    height: 16px;
+    margin-top: 10px;
+    border-width: 1px;
+    border-color: #78b891;
+    border-radius: 8px;
+    font-size: 9px;
+    color: #78b891;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.cn-ar__dot--danger {
+    border-color: #e08a72;
+    color: #e08a72;
+}
+
+.cn-ar__scale {
+    flex-grow: 1;
+    min-height: 40px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+.cn-ar__ticks {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.cn-ar__tk {
+    position: absolute;
+    height: 1px;
+    background-color: rgba(120, 184, 145, 0.55);
+}
+
+.cn-ar__tk--out {
+    background-color: rgba(194, 91, 69, 0.42);
+}
+
+.cn-ar__cor {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #78b891;
+}
+
+.cn-ar__cc {
+    position: absolute;
+    top: -1px;
+    width: 3px;
+    height: 3px;
+    background-color: #78b891;
+}
+
+.cn-ar__mark {
+    position: absolute;
+    left: 0;
+    right: 0;
+    flex-direction: column;
     align-items: center;
 }
 
-.cn-chip__text {
-    font-size: 9px;
-    color: #a8b6ac;
+.cn-ar__v {
+    font-size: 11px;
+    color: #eef3ef;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
     white-space: nowrap;
 }
 
-.cn-chip--blocked {
-    border-color: rgba(122, 36, 32, 0.55);
-}
-
-.cn-chip--blocked .cn-chip__text {
-    color: #4a574c;
-}
-
-.cn-chip__note {
-    font-size: 9px;
-    color: #71806f;
-    white-space: nowrap;
-}
-
-.cn-dock__capval {
-    font-size: 9px;
-    color: #71806f;
-    white-space: nowrap;
-}
-
-.cn-dock__capzone {
-    font-size: 9px;
-    color: #b9915a;
-    white-space: nowrap;
-}
-
-/* Узкий док: второстепенные строки уходят, плитки переноса остаются — по ним идёт действие. */
-.cn-root.is-dock-narrow .cn-dock__row--optional {
-    display: none;
+.cn-ar__hair {
+    width: 100%;
+    height: 1px;
+    margin-top: 2px;
+    background-color: rgba(201, 162, 39, 0.6);
 }
 
 /* ---------------------------------------------------------------- слой движения */
@@ -578,8 +1352,7 @@
     bottom: 0;
 }
 
-/* Классы переиспользованных классов меню: их слои и пуфы позиционируются кодом (см. CnMotion),
- * здесь только рамка слоя — без неё пуфы встанут в поток и разложат панели. */
+/* Классы переиспользованных слоёв меню: пуфы позиционируются кодом (CnMotion), здесь только рамка слоя. */
 .cn-motion .pc-smoke-field,
 .cn-motion .pc-ghost-layer {
     position: absolute;

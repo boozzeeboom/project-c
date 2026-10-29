@@ -23,6 +23,9 @@ namespace ProjectCCloudyNavigator.UI
         private const float RingHeight = 200f;      // 5 слотов по 36 + 4 зазора по 5 (home.js --nicheH)
         private const float RingMin = 108f;          // последняя ступень STAGES
         private const float SlotGap = 5f;
+
+        /// <summary>Индекс первого слота модулей (EquipmentData.SlotToIndex: Module1…3 → 10…12).</summary>
+        public const int FirstModuleSlot = 10;
         private const float RepRowHeight = 27f;
 
         /// <summary>EquipSlot Head…WeaponOff → 0…9, Module1…3 → 10…12 (EquipmentData.SlotToIndex).</summary>
@@ -109,6 +112,9 @@ namespace ProjectCCloudyNavigator.UI
             get => _onOpenRel;
             set => _onOpenRel = value;
         }
+
+        /// <summary>Клик по слоту кольца: индекс EquipmentData.SlotToIndex (0…9 экипировка, 10…12 модули).</summary>
+        public Action<int> OnSlotClick { get; set; }
 
         /// <summary>Ниша под превью фигуры (шаг 6): сюда окно кладёт элемент CnPreviewStage.</summary>
         public VisualElement PreviewHost => _previewHost;
@@ -325,6 +331,14 @@ namespace ProjectCCloudyNavigator.UI
             slot.RegisterCallback<PointerLeaveEvent>(_ => _hover?.Clear());
             _tip?.Hover(slot, () => SlotCard(slotIndex));
 
+            // Клик по слоту — переход к тому, что в нём живёт: экипировка → багаж с фильтром «надеваемое»,
+            // модули → вкладка МОДУЛИ окна корабля. Сам слот ничего не надевает и не снимает.
+            slot.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                OnSlotClick?.Invoke(slotIndex);
+            });
+
             return slot;
         }
 
@@ -395,7 +409,7 @@ namespace ProjectCCloudyNavigator.UI
         }
 
         /// <summary>
-        /// Карточка слота (home.js tooltip.hover на hm-slot): что надето и где это меняется.
+        /// Карточка слота (home.js tooltip.hover на hm-slot): только что надето в этом слоте.
         /// Бонусов и веса в порте нет — в mod'е они брались из его демо-таблицы предметов, в игре таких полей здесь нет.
         /// </summary>
         private CnTipCard SlotCard(int index)
@@ -406,7 +420,11 @@ namespace ProjectCCloudyNavigator.UI
             var card = CnTipCard.Make(SlotNames[index], empty
                 ? (_hasEquipData ? "слот пуст" : "нет данных экипировки")
                 : item);
-            return card.Foot("смена экипировки — в окне персонажа (P)");
+
+            // Подсказка только рассказывает, что надето. Действие — клик, и оно ведёт туда, где предметы лежат.
+            return card.Foot(index >= FirstModuleSlot
+                ? "клик — модули корабля"
+                : "клик — багаж с фильтром «надеваемое»");
         }
 
         private void RefreshStats(CnDataFeed feed)

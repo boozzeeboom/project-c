@@ -21,6 +21,12 @@ namespace ProjectCCloudyNavigator.UI
         public const int TabModules = 1;
         public const int TabCargo = 2;
 
+        /// <summary>Фильтр багажа «всё» — никакого отбора.</summary>
+        public const int FilterAll = -1;
+
+        /// <summary>Фильтр багажа «надеваемое»: у предмета ItemData.equipSlot ≠ None.</summary>
+        public const int FilterEquippable = -2;
+
         /// <summary>Выбранный кликом корабль (индекс в CnDataFeed.ships).</summary>
         public int selectedShip;
 
@@ -32,6 +38,9 @@ namespace ProjectCCloudyNavigator.UI
 
         /// <summary>Сортировка багажа (SortType…SortFragile).</summary>
         public int bagSort;
+
+        /// <summary>Фильтр багажа: FilterAll, FilterEquippable или значение ItemType.</summary>
+        public int bagFilter = FilterAll;
 
         /// <summary>
         /// Корабль, с которым работает док и перенос из багажа игрока: у консоли трюма — только её корабль,

@@ -32,6 +32,7 @@ namespace ProjectCCloudyNavigator.UI
         private readonly VisualElement _focus;
         private readonly Label _summary;
         private readonly VisualElement _sorts;
+        private readonly VisualElement _filters;
         private readonly ScrollView _scroll;
         private readonly VisualElement _rows;
         private readonly Label _footer;
@@ -43,6 +44,8 @@ namespace ProjectCCloudyNavigator.UI
             public bool fromShip;
             public string name;
             public string typeLabel;
+            public int type;
+            public byte equipSlot;
             public int quantity;
             public float weight;
             public bool dangerous;
@@ -79,6 +82,9 @@ namespace ProjectCCloudyNavigator.UI
             _sorts = CnStyle.Row("cn-bgp__sorts");
             _root.Add(_sorts);
 
+            _filters = CnStyle.Row("cn-bgp__sorts");
+            _root.Add(_filters);
+
             _scroll = new ScrollView(ScrollViewMode.Vertical);
             _scroll.AddToClassList("cn-bgp__scroll");
             _scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
@@ -101,13 +107,15 @@ namespace ProjectCCloudyNavigator.UI
 
             BuildFocus(feed);
             BuildSorts();
+            BuildFilters(feed);
             BuildRows(feed);
         }
 
         private string Signature(CnDataFeed feed)
         {
             var sb = new StringBuilder(192);
-            sb.Append(_view.bagFocus).Append('#').Append(_view.bagSort).Append('#').Append(_actions.Zone.label).Append('#');
+            sb.Append(_view.bagFocus).Append('#').Append(_view.bagSort).Append('#').Append(_view.bagFilter)
+              .Append('#').Append(_actions.Zone.label).Append('#');
 
             var ships = feed.ships;
             if (ships != null)
@@ -196,6 +204,71 @@ namespace ProjectCCloudyNavigator.UI
             }
         }
 
+        // ------------------------------------------------------------------ фильтр
+
+        /// <summary>
+        /// Фильтр багажа игрока. Значения — данные, а не подписи: «надеваемое» — это ItemData.equipSlot ≠ None
+        /// у ассета предмета, остальные чипы — реальные ItemType, которые сейчас лежат в багаже. У трюма фильтра
+        /// нет: у груза корабля тип предмета не приходит, и выдумывать его нельзя.
+        /// </summary>
+        private void BuildFilters(CnDataFeed feed)
+        {
+            _filters.Clear();
+            if (_view.bagFocus >= 0)
+            {
+                // У трюма фильтра нет — строка не должна занимать свои 24 px впустую.
+                _filters.style.display = DisplayStyle.None;
+                return;
+            }
+            _filters.style.display = DisplayStyle.Flex;
+
+            _filters.Add(CnStyle.Label("ФИЛЬТР", "cn-bgp__sortk"));
+            _filters.Add(FilterTag("ВСЕ", CnViewState.FilterAll));
+
+            var items = feed.bagItems ?? new CnBagItem[0];
+            bool equippable = _view.bagFilter == CnViewState.FilterEquippable;
+            var types = new List<int>(8);
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (items[i].equipSlot != 0) equippable = true;
+                if (!types.Contains(items[i].type)) types.Add(items[i].type);
+            }
+
+            // Чип живёт, пока в багаже есть надеваемое, либо пока фильтр включён именно он — иначе он бы исчез
+            // вместе со своим состоянием и фильтр нельзя было бы снять.
+            if (equippable) _filters.Add(FilterTag("НАДЕВАЕМОЕ", CnViewState.FilterEquippable));
+
+            types.Sort();
+            for (int i = 0; i < types.Count; i++)
+                _filters.Add(FilterTag(ItemTypeNames.GetDisplayName((ItemType)types[i]), types[i]));
+        }
+
+        private VisualElement FilterTag(string label, int filter)
+        {
+            var tag = CnStyle.Box("cn-bgp__stab");
+            if (_view.bagFilter == filter) tag.AddToClassList("is-on");
+            tag.Add(CnStyle.Label(label, "cn-bgp__stab-t"));
+            tag.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                if (_view.bagFilter == filter) return;
+                _view.bagFilter = filter;
+                _signature = string.Empty;
+            });
+            return tag;
+        }
+
+        /// <summary>Проходит ли строка фильтр. Трюм не фильтруется — у груза нет типа предмета.</summary>
+        private bool Passes(in Entry e)
+        {
+            if (_view.bagFocus >= 0) return true;
+
+            int filter = _view.bagFilter;
+            if (filter == CnViewState.FilterAll) return true;
+            if (filter == CnViewState.FilterEquippable) return e.equipSlot != 0;
+            return e.type == filter;
+        }
+
         // ------------------------------------------------------------------ строки
 
         private void BuildRows(CnDataFeed feed)
@@ -221,6 +294,8 @@ namespace ProjectCCloudyNavigator.UI
                         fromShip = false,
                         name = string.IsNullOrEmpty(it.itemName) ? "#" + it.itemId : it.itemName,
                         typeLabel = ItemTypeNames.GetDisplayName((ItemType)it.type),
+                        type = it.type,
+                        equipSlot = it.equipSlot,
                         quantity = it.quantity,
                         weight = it.quantity * it.weightKg,
                         shipId = shipId,
@@ -291,7 +366,15 @@ namespace ProjectCCloudyNavigator.UI
             }
             else
             {
-                for (int i = 0; i < entries.Count; i++) _rows.Add(Row(entries[i], i == 0));
+                int shown = 0;
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    if (!Passes(entries[i])) continue;
+                    _rows.Add(Row(entries[i], shown == 0));
+                    shown++;
+                }
+
+                if (shown == 0) _rows.Add(CnStyle.Label("под фильтр ничего не подходит", "cn-bgp__empty"));
             }
 
             _footer.text = zone.label;

@@ -78,6 +78,9 @@ namespace ProjectCCloudyNavigator
             // Прибор-календарь и блок репутации станции — входы в свои полные окна.
             _station.OnOpenCalendar = () => _popups.OpenCalendar();
             _station.OnOpenRel = () => _popups.OpenRel();
+
+            // Клик по слоту кольца: экипировка ведёт в багаж с фильтром «надеваемое», модули — во вкладку МОДУЛИ.
+            _station.OnSlotClick = OnSlotClicked;
         }
 
         /// <summary>Корень окна. null до Mount.</summary>
@@ -187,6 +190,17 @@ namespace ProjectCCloudyNavigator
 
             var result = _actions.OpenCustomisation();
             if (!result.ok) _main.Report(result);
+        }
+
+        /// <summary>
+        /// Слот кольца: 0…9 — экипировка (EquipSlot Head…WeaponOff), 10…12 — модули корабля.
+        /// Окно ничего не надевает и не снимает: экипировка показывает багаж с фильтром «надеваемое»,
+        /// модули живут в окне корабля на своей вкладке.
+        /// </summary>
+        private void OnSlotClicked(int index)
+        {
+            if (index >= CnStationView.FirstModuleSlot) _popups.OpenShip(_view.selectedShip, CnViewState.TabModules);
+            else _popups.OpenBag(-1, CnViewState.FilterEquippable);
         }
 
         /// <summary>Показ: блоки сразу прозрачны, облако собирается, как только посчитана раскладка.</summary>

@@ -54,7 +54,7 @@ namespace ProjectCCloudyNavigator.UI
             _skills = new CnSkillsPanel(actions, Report, tip);
             _calendar = new CnCalendarPanel(tip);
             _rel = new CnRelPanel(tip);
-            _ship = new CnShipPanel(actions, _view, Report, OpenBag, tip, hover, motion);
+            _ship = new CnShipPanel(actions, _view, Report, focus => OpenBag(focus), tip, hover, motion);
             _bag = new CnBagPanel(actions, _view, Report, tip, hover);
         }
 
@@ -83,22 +83,28 @@ namespace ProjectCCloudyNavigator.UI
             _popup.Show("НАВЫКИ", social ? "социальные" : "боевые", _skills.Build(), ResetSection);
         }
 
-        /// <summary>Окно корабля: index — корабль, который надо показать первым.</summary>
-        public void OpenShip(int index)
+        /// <summary>Окно корабля: index — корабль, который надо показать первым, tab — сразу нужная вкладка.</summary>
+        public void OpenShip(int index, int tab = CnViewState.TabOverview)
         {
             _view.selectedShip = index < 0 ? 0 : index;
             _section = Section.Ship;
             _ship.Open();
+            _view.shipTab = tab;   // после Open(): он сбрасывает вкладку на обзор
             _popup.Show("КОРАБЛЬ", "телеметрия и модули", _ship.Build(), ResetSection);
         }
 
-        /// <summary>Окно багажа: focusShip −1 — багаж игрока, иначе трюм этого корабля.</summary>
-        public void OpenBag(int focusShip)
+        /// <summary>
+        /// Окно багажа: focusShip −1 — багаж игрока, иначе трюм этого корабля.
+        /// filter — отбор строк багажа игрока (FilterAll / FilterEquippable / ItemType).
+        /// </summary>
+        public void OpenBag(int focusShip, int filter = CnViewState.FilterAll)
         {
             _view.bagFocus = focusShip;
+            _view.bagFilter = filter;
             _section = Section.Bag;
             _bag.Open();
-            _popup.Show("БАГАЖ", "багаж игрока и трюм", _bag.Build(), ResetSection);
+            _popup.Show("БАГАЖ", filter == CnViewState.FilterEquippable ? "надеваемое" : "багаж игрока и трюм",
+                _bag.Build(), ResetSection);
         }
 
         /// <summary>Календарь года: сетка месяцев и сроки контрактов.</summary>

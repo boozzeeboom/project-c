@@ -88,6 +88,7 @@ namespace ProjectCCloudyNavigator.Data
         public int instanceId;
         public string itemName;
         public float weightKg;
+        public byte equipSlot;   // ItemData.equipSlot (0 = EquipSlot.None, т.е. надеть нельзя)
     }
 
     /// <summary>Модуль корабля — проекция <c>ModuleSlot</c> + <c>ShipModule</c>.</summary>
@@ -705,7 +706,9 @@ namespace ProjectCCloudyNavigator.Data
                     slotIndex = it.slotIndex,
                     instanceId = it.instanceId,
                     itemName = string.IsNullOrEmpty(it.itemName) && def != null ? def.itemName : it.itemName,
-                    weightKg = def != null ? def.weightKg : 0f   // Derived: вес из ItemData, у снапшота его нет
+                    weightKg = def != null ? def.weightKg : 0f,   // Derived: вес из ItemData, у снапшота его нет
+                    // Слот экипировки — поле ассета предмета: по нему багаж отличает надеваемое от прочего.
+                    equipSlot = def != null ? (byte)def.equipSlot : (byte)0
                 };
             }
 

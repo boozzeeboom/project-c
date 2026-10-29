@@ -41,6 +41,12 @@ namespace ProjectCCloudyNavigator.UI
         private const float WheelFactor = 1.12f;   // rel-graph.js:1190 — ×1.12 на щелчок колеса
         private const float LitWidth = 2.1f;   // rel.css:179 — .rp.focusing .rp-e.lit path{stroke-width:2.1px}
 
+        private const float NoteW = 152f;    // rel-graph.js:77 — .rn-note width:152px
+        private const float NoteH = 64f;     // rel-graph.js:77 — min-height:64px
+        private const float FoldW = 44f;     // rel-graph.js:103 — .rn-note.min width:44px
+        private const float FoldH = 42f;     // rel-graph.js:103 — min-height:42px
+        private const int PulseMs = 1200;    // половина цикла ntpulse 2.4 s (rel-graph.js:110-111)
+
         /// <summary>Глаголы рёбер мода (relations.js EDGE_TYPES: type 1…6).</summary>
         private static readonly string[] EdgeNames = { "—", "состоит в", "влияет на", "союз / вражда", "выдаёт / принимает", "награда", "требует" };
 
@@ -56,6 +62,10 @@ namespace ProjectCCloudyNavigator.UI
         private readonly VisualElement _verbs;
         private readonly VisualElement _detail;
         private readonly Label _zoomBadge;
+        private readonly CnRelNotesStore _notes;
+        private readonly VisualElement _cableLayer;
+        private readonly VisualElement _noteLayer;
+        private readonly List<VisualElement> _noteViews = new List<VisualElement>(8);
 
         private readonly List<VisualElement> _nodeViews = new List<VisualElement>(64);
         private readonly List<string> _nodeKeys = new List<string>(64);
@@ -83,11 +93,18 @@ namespace ProjectCCloudyNavigator.UI
         private Vector2 _dragFrom;
         private Vector2 _panFrom;
 
+        private string _noteDragId = string.Empty;
+        private Vector2 _noteDragFrom;
+        private Vector2 _notePosFrom;
+
         public VisualElement Root => _root;
 
-        public CnRelGraphView(CnTip tip)
+        /// <summary>notes — хранилище для проверок; без него заметки лежат в Application.persistentDataPath.</summary>
+        public CnRelGraphView(CnTip tip, CnRelNotesStore notes = null)
         {
             _tip = tip;
+            _notes = notes ?? new CnRelNotesStore();
+            _notes.EnsureLoaded();
 
             _root = CnStyle.Box("cn-relg");
 
@@ -118,6 +135,17 @@ namespace ProjectCCloudyNavigator.UI
             });
             bar.Add(reset);
 
+            // Заметка: в моде — ПКМ → «СОЗДАТЬ ЗАМЕТКУ» (rel-graph.js:1161). Контекстного меню у UI Toolkit нет,
+            // поэтому действие вынесено биркой в шапку — иначе возможности было бы не видно.
+            var addNote = CnStyle.Box("cn-relg__btn");
+            addNote.Add(CnStyle.Label("+ ЗАМЕТКА", "cn-relg__bt"));
+            addNote.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                AddNote();
+            });
+            bar.Add(addNote);
+
             _root.Add(bar);
 
             // Легенда: те же шесть типов и те же цвета, что на рёбрах — числа типов не сдвигаются.
@@ -141,6 +169,15 @@ namespace ProjectCCloudyNavigator.UI
             // поэтому глагол ребра это Label, а не примитив. Слой держится выше узлов, как в моде.
             _verbs = CnStyle.Deco("cn-relg__verbs");
             _content.Add(_verbs);
+
+            // Слой тросов заметок и слой самих стикеров. В моде заметки — последний слой полотна, выше слов графа
+            // (rel-graph.js:131-134); тросы идут под стикерами, но над рёбрами и глаголами.
+            _cableLayer = CnStyle.Deco("cn-relg__cables");
+            _cableLayer.generateVisualContent += OnGenerateCables;
+            _content.Add(_cableLayer);
+
+            _noteLayer = CnStyle.Deco("cn-relg__notes");
+            _content.Add(_noteLayer);
 
             _canvas.Add(_content);
 
@@ -194,6 +231,9 @@ namespace ProjectCCloudyNavigator.UI
                 if (Mathf.Approximately(evt.delta.y, 0f)) return;
                 ZoomByFactor(evt.delta.y > 0f ? WheelFactor : 1f / WheelFactor, _canvas.WorldToLocal((Vector2)evt.mousePosition));
             });
+
+            // Пульс свёрнутой заметки: класс-переключатель раз в половину цикла, саму прозрачность ведёт USS-переход.
+            _root.schedule.Execute(ToggleFoldPulse).Every(PulseMs);
 
             ShowDetail(null);
         }
@@ -316,7 +356,23 @@ namespace ProjectCCloudyNavigator.UI
             _verbViews.Clear();
             _verbsSignature = string.Empty;
             _verbs.BringToFront();
+
+            // BringToFront у глаголов опускает слои заметок — возвращаем их наверх в том же порядке, что в моде.
+            _cableLayer.BringToFront();
+            _noteLayer.BringToFront();
+
             _edges.MarkDirtyRepaint();
+
+            // Пока в поле заметки стоит каретка, стикеры не пересобираются: иначе пришедший снапшот вырывал бы
+            // фокус посреди набора. Данные при этом уже приняты — стикеры догонят на ближайшей пересборке.
+            if (!NoteFocused()) RebuildNotes();
+        }
+
+        /// <summary>Есть ли фокус в слое заметок (поля текста и привязки).</summary>
+        private bool NoteFocused()
+        {
+            var focused = _noteLayer.panel?.focusController?.focusedElement as VisualElement;
+            return focused != null && _noteLayer.Contains(focused);
         }
 
         /// <summary>
@@ -375,6 +431,7 @@ namespace ProjectCCloudyNavigator.UI
             ApplyPan();
             UpdateZoomBadge();
             _edges.MarkDirtyRepaint();
+            _cableLayer.MarkDirtyRepaint();
             PlaceLabels();
         }
 
@@ -445,6 +502,273 @@ namespace ProjectCCloudyNavigator.UI
         {
             if (_zoomBadge == null) return;
             _zoomBadge.text = "ЗУМ " + _zoom.ToString("0.00", CultureInfo.InvariantCulture) + "×";
+        }
+
+        // ------------------------------------------------------------------ заметки
+
+        /// <summary>
+        /// Пересборка стикеров. Зовётся при смене данных и после действий над заметкой; текст правится без
+        /// пересборки (иначе поле теряло бы фокус), место — прямо в обработчике перетаскивания.
+        /// </summary>
+        private void RebuildNotes()
+        {
+            for (int i = 0; i < _noteViews.Count; i++) _noteViews[i].RemoveFromHierarchy();
+            _noteViews.Clear();
+
+            var list = _notes.Notes;
+            for (int i = 0; i < list.Count; i++)
+            {
+                var view = BuildNote(list[i]);
+                _noteLayer.Add(view);
+                _noteViews.Add(view);
+            }
+
+            _cableLayer.MarkDirtyRepaint();
+        }
+
+        /// <summary>
+        /// Новая заметка в центре полотна. В моде её создаёт ПКМ → «СОЗДАТЬ ЗАМЕТКУ» (rel-graph.js:1161); в порте —
+        /// бирка в шапке, потому что контекстного меню у UI Toolkit нет, а скрытая клавиша была бы невидимой.
+        /// </summary>
+        private void AddNote()
+        {
+            var size = CanvasSize();
+            int n = _notes.Count;
+            float x = Mathf.Clamp(size.x * 0.5f - NoteW * 0.5f - _pan.x + n % 4 * 18f, 0f, Mathf.Max(0f, size.x - NoteW));
+            float y = Mathf.Clamp(size.y * 0.5f - NoteH * 0.5f - _pan.y + n % 4 * 16f, 0f, Mathf.Max(0f, size.y - NoteH));
+            _notes.Add(x, y);
+            RebuildNotes();
+        }
+
+        private VisualElement BuildNote(CnRelNote note)
+        {
+            var view = CnStyle.Box("cn-relg__note");
+            view.style.left = note.x;
+            view.style.top = note.y;
+            view.style.rotate = new Rotate(new Angle(note.rot, AngleUnit.Degree));
+
+            if (note.collapsed)
+            {
+                view.AddToClassList("is-min");
+                view.Add(new CnNoteFold());
+
+                var folded = note;
+                _tip?.Hover(view, () => CnTipCard.Make("заметка", ShortText(folded.text)).Foot("клик — развернуть"));
+                view.RegisterCallback<ClickEvent>(evt =>
+                {
+                    evt.StopPropagation();
+                    _notes.SetCollapsed(folded.id, false);
+                    RebuildNotes();
+                });
+                return view;
+            }
+
+            // Латунный волосок заметки (rel-graph.js:84: псевдоэлемент before стал ребёнком .halo-rnhair).
+            view.Add(CnStyle.Deco("cn-relg__note-hair"));
+            view.Add(CnStyle.Label("ЗАМЕТКА", "cn-relg__note-k"));
+
+            var text = new TextField { multiline = true, value = note.text ?? string.Empty };
+            text.label = null;
+            text.AddToClassList("cn-relg__note-in");
+            ApplyFieldFont(text);
+            text.RegisterValueChangedCallback(evt => _notes.SetText(note.id, evt.newValue));
+            view.Add(text);
+
+            view.Add(CnStyle.Label("прикрепить к…", "cn-relg__note-lbl"));
+            view.Add(AttachField(note));
+
+            var acts = CnStyle.Row("cn-relg__note-acts");
+            acts.Add(NoteChip("СВЕРНУТЬ", () =>
+            {
+                _notes.SetCollapsed(note.id, true);
+                RebuildNotes();
+            }));
+            acts.Add(NoteChip("УДАЛИТЬ", () =>
+            {
+                _notes.Delete(note.id);
+                RebuildNotes();
+            }));
+            view.Add(acts);
+
+            Drag(view, note);
+            return view;
+        }
+
+        /// <summary>
+        /// Привязка к субъекту. В моде это &lt;select&gt; с известными фракциями и людьми (rel-graph.js:1031-1036);
+        /// известное окна и есть узлы графа (прочих оно не знает), поэтому список — узлы фракций и людей.
+        /// Квесты не предлагаются: заметка привязывается к субъекту, как в моде.
+        /// </summary>
+        private VisualElement AttachField(CnRelNote note)
+        {
+            var choices = new List<string>(_nodes.Length + 1) { "— не прикреплена —" };
+            var keys = new List<string>(_nodes.Length + 1) { null };
+            int current = 0;
+
+            for (int i = 0; i < _nodes.Length; i++)
+            {
+                if (_nodes[i].kind == 2) continue;
+                if (note.attach == _nodes[i].key) current = choices.Count;
+                choices.Add(_nodes[i].name);
+                keys.Add(_nodes[i].key);
+            }
+
+            // Привязка к субъекту, которого нет в текущем снапшоте, не теряется: в моде attach тоже остаётся
+            // (rel-graph.js:988-1005). Показываем её отдельной строкой, чтобы выбор не выглядел сброшенным.
+            if (!string.IsNullOrEmpty(note.attach) && !keys.Contains(note.attach))
+            {
+                current = choices.Count;
+                choices.Add("— " + note.attach + " (субъекта нет в данных) —");
+                keys.Add(note.attach);
+            }
+
+            var field = new DropdownField(null, choices, current);
+            field.AddToClassList("cn-relg__note-sel");
+            field.EnableInClassList("is-on", !string.IsNullOrEmpty(note.attach));
+            ApplyFieldFont(field);
+
+            var captured = keys;
+            field.RegisterValueChangedCallback(_ =>
+            {
+                int index = Mathf.Max(0, field.index);
+                _notes.Attach(note.id, index < captured.Count ? captured[index] : null);
+                field.EnableInClassList("is-on", index > 0);
+                _cableLayer.MarkDirtyRepaint();
+            });
+
+            return field;
+        }
+
+        /// <summary>
+        /// Перетаскивание стикера (rel-graph.js:1048-1072). Указатель захватывает сама заметка, а нажатие не уходит
+        /// в полотно — иначе перетаскивание заметки превращалось бы в панораму графа.
+        /// </summary>
+        private void Drag(VisualElement view, CnRelNote note)
+        {
+            view.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) return;
+                evt.StopPropagation();
+                if (IsFieldTarget(evt.target as VisualElement)) return;
+
+                _noteDragId = note.id;
+                _noteDragFrom = (Vector2)evt.position;
+                _notePosFrom = new Vector2(note.x, note.y);
+                view.CapturePointer(evt.pointerId);
+            });
+
+            view.RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if (_noteDragId != note.id) return;
+
+                var delta = (Vector2)evt.position - _noteDragFrom;
+                var size = CanvasSize();
+                note.x = Mathf.Clamp(_notePosFrom.x + delta.x, 0f, Mathf.Max(0f, size.x - NoteW));
+                note.y = Mathf.Clamp(_notePosFrom.y + delta.y, 0f, Mathf.Max(0f, size.y - NoteH));
+                view.style.left = note.x;
+                view.style.top = note.y;
+                _cableLayer.MarkDirtyRepaint();
+            });
+
+            view.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (_noteDragId != note.id) return;
+                _noteDragId = string.Empty;
+                view.ReleasePointer(evt.pointerId);
+                _notes.SetPos(note.id, note.x, note.y);
+            });
+        }
+
+        /// <summary>Поля и бирки не двигают заметку: иначе набор текста и нажатие кнопки срывали бы её с места.</summary>
+        private static bool IsFieldTarget(VisualElement target)
+        {
+            for (var el = target; el != null; el = el.parent)
+            {
+                if (el is TextField || el is TextInputBaseField<string> || el is DropdownField || el is TextElement || el is Button)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private VisualElement NoteChip(string text, Action onClick)
+        {
+            var chip = CnStyle.Box("cn-relg__note-btn");
+            chip.Add(CnStyle.Label(text, "cn-relg__note-btn-t"));
+
+            var handler = onClick;
+            chip.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+                handler?.Invoke();
+            });
+
+            return chip;
+        }
+
+        /// <summary>Тросы заметок: от центра стикера к центру привязанного узла (rel-graph.js:1116-1150).</summary>
+        private void OnGenerateCables(MeshGenerationContext mgc)
+        {
+            var list = _notes.Notes;
+            if (list.Count == 0) return;
+
+            var p = mgc.painter2D;
+            p.lineJoin = LineJoin.Round;
+            p.lineCap = LineCap.Round;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                var note = list[i];
+                if (string.IsNullOrEmpty(note.attach)) continue;
+                if (!_center.TryGetValue(note.attach, out var node)) continue;
+
+                // Точка крепления — центр стикера: у развёрнутой 152×64, у свёрнутой 44×42 (rel-graph.js:1114-1116).
+                var anchor = new Vector2(note.x + (note.collapsed ? FoldW : NoteW) * 0.5f,
+                                         note.y + (note.collapsed ? FoldH : NoteH) * 0.5f);
+
+                Curve(anchor, node, out var c, out _, out _);
+
+                // Подложка троса держит читаемость поверх рёбер, сам трос — латунный и тоньше ребра.
+                p.strokeColor = CnStyle.A(CnStyle.Veil, 0.5f);
+                p.lineWidth = 3.4f;
+                p.BeginPath();
+                p.MoveTo(anchor);
+                p.QuadraticCurveTo(c, node);
+                p.Stroke();
+
+                p.strokeColor = CnStyle.A(CnStyle.Brass, 0.55f);
+                p.lineWidth = 1.1f;
+                p.BeginPath();
+                p.MoveTo(anchor);
+                p.QuadraticCurveTo(c, node);
+                p.Stroke();
+            }
+        }
+
+        /// <summary>Пульс свёрнутых заметок: прозрачность ведёт USS-переход, здесь только класс-переключатель.</summary>
+        private void ToggleFoldPulse()
+        {
+            for (int i = 0; i < _noteViews.Count; i++)
+            {
+                var note = _noteViews[i];
+                if (!note.ClassListContains("is-min")) continue;
+                note.EnableInClassList("is-lift", !note.ClassListContains("is-lift"));
+            }
+        }
+
+        private static string ShortText(string text)
+        {
+            string trimmed = text ?? string.Empty;
+            return trimmed.Length <= 90 ? trimmed : trimmed.Substring(0, 90) + "…";
+        }
+
+        /// <summary>Шрифт поля: тема панели ставит свой, поэтому SDF задаётся и полю, и его полю ввода.</summary>
+        private static void ApplyFieldFont(VisualElement field)
+        {
+            CnStyle.ApplyFont(field);
+
+            var input = field.Q(className: "unity-base-field__input");
+            if (input != null) CnStyle.ApplyFont(input);
         }
 
         // ------------------------------------------------------------------ рёбра
@@ -929,6 +1253,9 @@ namespace ProjectCCloudyNavigator.UI
         public void Dispose()
         {
             _edges.generateVisualContent -= OnGenerate;
+            _cableLayer.generateVisualContent -= OnGenerateCables;
+            for (int i = 0; i < _noteViews.Count; i++) _noteViews[i].RemoveFromHierarchy();
+            _noteViews.Clear();
             _verbs.Clear();
             _verbViews.Clear();
             for (int i = 0; i < _nodeViews.Count; i++) _nodeViews[i].RemoveFromHierarchy();

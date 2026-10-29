@@ -65,13 +65,19 @@ namespace ProjectCCloudyNavigator.UI
                 if (i % GridColumns == GridColumns - 1) tile.AddToClassList("cn-skl--row-end");
                 if (i >= GridColumns * (GridRows - 1)) tile.AddToClassList("cn-skl--row-last");
                 CnStyle.Fill(tile, CnStyle.Veil, 0.4f);
-                // Свечение плитки (.sk-slot > .halo-skslot, 06 §3) пока НЕ ставится: у .cn-skl стоит
-                // overflow: hidden (CN_Window.uss:351) — ореол срезается. См. отчёт: нужна обёртка.
 
+                // Свечение плитки (06 §3: .sk-slot > .halo-skslot — те же полосы 12/12/12, что у слота
+                // экипировки; в моде включается на hover и гаснет у пустого слота). Обрезка содержимого
+                // ушла во внутренний холдер .cn-skl__in, поэтому плитка больше не режет сама себя.
+                var glow = CnStyle.HaloShadow(tile, 12, 12, 12, CnStyle.Accent, 0.55f);
+                glow?.AddToClassList("cn-halo--lit");
+
+                var inner = CnStyle.Box("cn-skl__in");
                 var code = CnStyle.Label(string.Empty, "cn-skl__c");
                 var name = CnStyle.Label(string.Empty, "cn-skl__n");
-                tile.Add(code);
-                tile.Add(name);
+                inner.Add(code);
+                inner.Add(name);
+                tile.Add(inner);
 
                 tile.RegisterCallback<ClickEvent>(evt =>
                 {

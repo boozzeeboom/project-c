@@ -304,11 +304,18 @@ namespace ProjectCCloudyNavigator.UI
             var slot = CnStyle.Box("cn-slot");
             slot.AddToClassList("cn-slot--empty");
             CnStyle.Fill(slot, CnStyle.Veil, 0.4f);
-            // Свечение слота (.hm-slot > .halo-hmslot, 06 §3) пока НЕ ставится: у .cn-slot в USS стоит
-            // overflow: hidden (CN_Window.uss:185), и ореол с отрицательными краями срезается целиком.
-            // Нужен неперекрывающий хозяин-обёртка — записано в отчёт как следующий шаг, а не как сделанное.
+
+            // Свечение слота (06 §3: .hm-slot > .halo-hmslot — полосы 12/12/12, rgba(120,184,145,.55),
+            // opacity 0→1 при .hl за .15s). Взяты полосы, а не радиальный .halo-rad: рампа полос прозрачна
+            // в середине, поэтому ореол не заливает заливку и подпись слота. Обрезка содержимого ушла
+            // в .cn-slot__in (CN_Window.uss), сам слот больше не режет себя.
+            var glow = CnStyle.HaloShadow(slot, 12, 12, 12, CnStyle.Accent, 0.55f);
+            glow?.AddToClassList("cn-halo--lit");
+
+            var inner = CnStyle.Box("cn-slot__in");
             var text = CnStyle.Label(SlotCodes[index], "cn-slot__t");
-            slot.Add(text);
+            inner.Add(text);
+            slot.Add(inner);
             _slots[index] = slot;
             _slotText[index] = text;
 

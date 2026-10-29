@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: expl_mine
   displayName: "\u041C\u0438\u043D\u0430"
   description: Test skill.
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 325af40c53500274a92511b132df61f7, type: 3}
   category: 1
   discipline: 5
   subtype: 2
@@ -27,12 +27,16 @@ MonoBehaviour:
     floatValue: 0
     multiplier: 0.25
     stringParam: 
+  knowledgeUnlockType: 0
+  knowledgeUnlockId: 
+  knowledgeUnlockDescription: 
   _learnXpCost: 120
   _requiredStrengthTier: 0
   _requiredDexterityTier: 0
   _requiredIntelligenceTier: 1
   treeX: 0
   treeY: 450
+  _allowSelfDamage: 0
   isActive: 1
   cooldownSeconds: 0.5
   attackClip: {fileID: 0}

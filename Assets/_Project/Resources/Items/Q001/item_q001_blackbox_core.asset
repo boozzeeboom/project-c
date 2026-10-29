@@ -15,7 +15,7 @@ MonoBehaviour:
   itemName: item_q001_blackbox_core
   itemType: 7
   description: "\u0427\u0451\u0440\u043D\u044B\u0439 \u044F\u0449\u0438\u043A \u044D\u043A\u0441\u043F\u0435\u0434\u0438\u0446\u0438\u0438"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2c5bf090e320f5142a49f6d92f8ce359, type: 3}
   equipSlot: 0
   maxStack: 1
   weightKg: 0.1

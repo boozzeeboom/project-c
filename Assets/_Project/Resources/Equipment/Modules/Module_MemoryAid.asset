@@ -15,9 +15,15 @@ MonoBehaviour:
   itemName: Memory Aid
   itemType: 1
   description: Helps remember recipes
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 20166d4ab75c4dd479ade960a65c7afb, type: 3}
+  equipSlot: 0
   maxStack: 1
   weightKg: 0.3
+  visualPrefab: {fileID: 0}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
   slot: 21
   moduleType: 0
   tier: 1

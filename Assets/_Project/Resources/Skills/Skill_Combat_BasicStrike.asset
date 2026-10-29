@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: combat_basic_strike
   displayName: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439 \u0443\u0434\u0430\u0440"
   description: Tactical bonus
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 8843e8103ec447b409e95ac9c927d934, type: 3}
   category: 1
   discipline: 1
   subtype: 0
@@ -27,12 +27,16 @@ MonoBehaviour:
     floatValue: 2
     multiplier: 0
     stringParam: 
+  knowledgeUnlockType: 0
+  knowledgeUnlockId: 
+  knowledgeUnlockDescription: 
   _learnXpCost: 0
   _requiredStrengthTier: 0
   _requiredDexterityTier: 0
   _requiredIntelligenceTier: 0
   treeX: 100
   treeY: 0
+  _allowSelfDamage: 0
   isActive: 1
   cooldownSeconds: 0.5
   attackClip: {fileID: 0}

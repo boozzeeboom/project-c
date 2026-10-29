@@ -15,9 +15,15 @@ MonoBehaviour:
   itemName: Mining Helmet
   itemType: 1
   description: Basic mining helmet
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: a0c09653d76e37643892f418b1e282bc, type: 3}
+  equipSlot: 0
   maxStack: 1
   weightKg: 0.5
+  visualPrefab: {fileID: 0}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
   slot: 1
   tier: 1
   strengthBonus: 1
@@ -26,4 +32,5 @@ MonoBehaviour:
   strengthMultiplier: 0
   dexterityMultiplier: 0
   intelligenceMultiplier: 0
+  armorDefense: 0
   requiredSkills: []

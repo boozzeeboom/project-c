@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_ShipKeyLight
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Crafting.RecipeData
   _displayName: "ShipLight \u043A\u043B\u044E\u0447"
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: 83616c0886ff61146909f80ab9b21d89, type: 3}
   _description: "\u0421\u043E\u0431\u0440\u0430\u0442\u044C \u043A\u043B\u044E\u0447
     \u043A\u043E\u0440\u0430\u0431\u043B\u044F"
   _category: 2
@@ -27,5 +27,8 @@ MonoBehaviour:
     quantity: 1
   _craftSeconds: 30
   _recipeId: recipe_ship_key_light
+  _knowledgeUnlockType: 0
+  _knowledgeUnlockId: 
+  _knowledgeUnlockDescription: 
   _requiredSkillLevel: 0
   _requiredSkill: 0

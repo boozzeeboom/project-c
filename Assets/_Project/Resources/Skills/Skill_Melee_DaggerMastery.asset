@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: melee_dagger
   displayName: "\u041C\u0430\u0441\u0442\u0435\u0440 \u043A\u0438\u043D\u0436\u0430\u043B\u0430"
   description: Test skill.
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 598eb1af00433104ea322d90ed3e9e45, type: 3}
   category: 1
   discipline: 2
   subtype: 0
@@ -27,12 +27,16 @@ MonoBehaviour:
     floatValue: 0
     multiplier: 0.15
     stringParam: 
+  knowledgeUnlockType: 0
+  knowledgeUnlockId: 
+  knowledgeUnlockDescription: 
   _learnXpCost: 50
   _requiredStrengthTier: 0
   _requiredDexterityTier: 0
   _requiredIntelligenceTier: 1
   treeX: 0
   treeY: -50
+  _allowSelfDamage: 0
   isActive: 1
   cooldownSeconds: 0.5
   attackClip: {fileID: 0}

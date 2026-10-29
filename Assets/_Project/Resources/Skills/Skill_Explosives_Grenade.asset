@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: expl_grenade
   displayName: "\u0413\u0440\u0430\u043D\u0430\u0442\u0430"
   description: Test skill.
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 3c79f7fb4adeb084f971c4be67f35971, type: 3}
   category: 1
   discipline: 3
   subtype: 1
@@ -27,6 +27,9 @@ MonoBehaviour:
     floatValue: 2
     multiplier: 0.3
     stringParam: 
+  knowledgeUnlockType: 0
+  knowledgeUnlockId: 
+  knowledgeUnlockDescription: 
   _learnXpCost: 0
   _requiredStrengthTier: 0
   _requiredDexterityTier: 0

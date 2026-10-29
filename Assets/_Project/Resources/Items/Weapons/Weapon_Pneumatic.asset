@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: Weapon_Pneumatic
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.WeaponItemData
   itemName: Pneumatic Rifle
-  itemType: 0
+  itemType: 1
   description: Compressed-air rifle. Long range, moderate damage.
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 70ced103ba7f967488a976720068a191, type: 3}
+  equipSlot: 9
   maxStack: 1
   weightKg: 0.1
   visualPrefab: {fileID: 0}
@@ -24,10 +25,14 @@ MonoBehaviour:
   attachRotationOffset: {x: 0, y: 0, z: 0}
   attachScale: {x: 1, y: 1, z: 1}
   weaponClass: 5
+  handling: 1
   damageDice: 8
   baseDamage: 3
   critModifier: 0
   range: 50
   damageType: 1
+  explosionRadius: 0
+  throwRange: 25
+  fuseTimeSec: 0
   requiredProficiency: {fileID: 0}
   minTier: 1

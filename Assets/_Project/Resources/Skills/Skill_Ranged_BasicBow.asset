@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: ranged_basic_bow
   displayName: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439 \u043B\u0443\u043A"
   description: Test skill.
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 3c79f7fb4adeb084f971c4be67f35971, type: 3}
   category: 1
   discipline: 3
   subtype: 3
@@ -27,12 +27,16 @@ MonoBehaviour:
     floatValue: 0
     multiplier: 0.15
     stringParam: 
+  knowledgeUnlockType: 0
+  knowledgeUnlockId: 
+  knowledgeUnlockDescription: 
   _learnXpCost: 0
   _requiredStrengthTier: 0
   _requiredDexterityTier: 0
   _requiredIntelligenceTier: 0
   treeX: 0
   treeY: 200
+  _allowSelfDamage: 0
   isActive: 1
   cooldownSeconds: 0.1
   attackClip: {fileID: 0}

@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: social_basic_talk
   displayName: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439 \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440"
   description: Tactical bonus
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: c79d0589b1d781a409eecdea642bec58, type: 3}
   category: 1
   discipline: 0
   subtype: 0
@@ -27,6 +27,9 @@ MonoBehaviour:
     floatValue: 2
     multiplier: 0
     stringParam: 
+  knowledgeUnlockType: 0
+  knowledgeUnlockId: 
+  knowledgeUnlockDescription: 
   _learnXpCost: 0
   _requiredStrengthTier: 0
   _requiredDexterityTier: 0

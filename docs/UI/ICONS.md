@@ -3,7 +3,7 @@
 Регистр иконок интерфейса: что сгенерировано, где лежит, в каком состоянии.
 Каталог: `Assets/_Project/UI/Icons/`. Правила нэйминга и импорт-настройки — `Assets/_Project/UI/Icons/README.md`.
 
-**Итого: 168 иконок — батч B1 (40) + батч B2 (34) + батч B3 (22) + батч B4 (25) + батч B5 (22) + батч B6 (25).** Статус: `GENERATED / NOT VERIFIED` — импорт-настройки не применялись (`.meta` существуют, но с дефолтным Texture Importer), размеры не выставлены, ни одна иконка не подключена к UI.
+**Итого: 168 иконок — батч B1 (40) + батч B2 (34) + батч B3 (22) + батч B4 (25) + батч B5 (22) + батч B6 (25).** Статус на 2026-10-29: `IMPORTED / PLACED PARTIALLY` — все 168 импортированы как `Sprite` с размером по роли, расставлено 1116 ссылок в восьми Sprite-полях, задействовано 45 иконок. Остальные 123 ждут поля в коде или данных — см. «TODO: расстановка» ниже.
 
 Стиль батча: стимпанк + дизельпанк, западный комикс, тонкий тёмный контур, эмаль по тёмной стали, латунная окантовка, потёртости по кромкам, без встроенного текста. Свечение только функциональное (антиграв, мезий, ядро техники).
 
@@ -508,6 +508,68 @@
 
 ---
 
+## Расстановка по ассетам (2026-10-29)
+
+Проверены все 1562 ScriptableObject'а проекта: полей типа `Sprite` в них всего восемь. По ним расставлены **1116 ссылок**, задействовано **45 иконок** из 168.
+
+| Поле | Правило | Ассетов |
+|---|---|---|
+| `FactionDefinition.iconSprite` | `Icon_Faction_<factionId>` | 10 / 10 |
+| `WeaponItemData.icon` | `Icon_WeaponClass_<weaponClass>` | 10 / 10 |
+| `ModuleItemData.icon` | `Icon_ModuleType_<moduleType>` | 5 / 5 |
+| `ClothingItemData.icon` | `Icon_Slot_<slot>` | 8 / 8 |
+| `SkillNodeConfig.icon` | `Icon_Discipline_<discipline>`, при `discipline = None` — `Icon_SkillCat_<category>` | 29 / 29 |
+| `RecipeData._icon` | `Icon_Craft_<category>` | 3 / 3 |
+| `CraftingStationConfig._icon` | `Icon_Station_<stationType>` | 2 / 2 |
+| `ItemData.icon` | `Icon_Cat_<itemType>` — категорийный плейсхолдер | 1049 / 1049 |
+
+Распределение `ItemData.icon` по категориям: `Equipment` 581, `Food` 173, `Tech` 118, `Resources` 79, `Medical` 45, `Key` 24, `Antigrav` 15, `Meziy` 7, `Fuel` 7.
+
+## TODO: расстановка — что требует кода, данных или настроек
+
+Ниже — ровно то, что нельзя закрыть расстановкой. Ни один пункт не является ошибкой каталога: иконки нарисованы, места подключения нет.
+
+### A. Нужен код UI — иконка есть, Sprite-поля в ассетах нет (104 иконки)
+
+| Набор | Где реально нужен | Чем мешает |
+|---|---|---|
+| `Icon_Damage_*` (5) | тултип оружия и навыка, `DamageType` | тип печатается текстом, поля нет |
+| `Icon_Dice_*` (6) | `DamageDice` рядом с подписью | на иконке нет цифр по канону — подпись текстом обязательна |
+| `Icon_QuestState_*` (6), `Icon_Quest_Obj_*` (8) | квест-лог, деталь квеста | строки рисуются кодом |
+| `Icon_ContractType_*` (3), `Icon_Debt_*` (5) | панель контрактов и долгов | полей нет |
+| `Icon_Relation_*` (3) | `FactionRelation` в графе репутации | поля нет |
+| `Icon_Service_*` (6) | значок услуги у NPC | `NpcService` — это `[Flags]`, нужен выбор глифа по маске, а не одно поле |
+| `Icon_Map_*` (4) | `ChartMarkType` на карте | у метки нет Sprite-поля |
+| `Icon_Altitude_*` (5), `Icon_ShipStatus_*` (11), `Icon_ShipClass_*` (4), `Icon_Hull_*` (2), `Icon_ShipSlot_*` (4), `Icon_Crew_*` (6) | панели корабля, телеметрия | значения приходят из DTO/телеметрии и рисуются кодом |
+| `Icon_Stat_*` (3) | карточка персонажа | `StatsConfig` без Sprite-поля |
+| `Icon_Action_*` (3) | хотбар, `SkillInputSlot` | хотбар строится кодом |
+| `Icon_Skill_*` (4) | `SkillType` в крафте и дереве | поля нет |
+| `Icon_Aoe_*` (5) | подсказка навыка, `AoeFormula` | поля нет |
+| `Icon_Gather_*` (3) | `GatherType` у ресурсного узла | узла в UI ещё нет |
+| `Icon_Know_*` (4) | `RecipeKnowledgeUnlockType` | единственное Sprite-поле `RecipeData` уже занято категорией |
+| `Icon_TradeOp_*` (4) | `TradeOp` в торговле | кнопки рисуются кодом |
+
+### B. Нужны данные — иконка есть, ассета нет (19 иконок)
+
+- `Icon_WeaponClass_Mace` — ни одного `WeaponItemData` с `weaponClass = Mace`.
+- `Icon_ModuleType_Weapon` — ни одного `ModuleItemData` с `moduleType = Weapon`.
+- `Icon_Faction_Cultists`, `_Guards`, `_Resistance`, `_SOL_Patrol`, `_Underground` — в проекте 10 `FactionDefinition` из 15.
+- `Icon_Slot_Accessory`, `_Hands`, `_Legs`, `_Module`, `_WeaponMain`, `_WeaponOff` — нет `ClothingItemData` с такими слотами (оружие берёт иконку класса, а не слота).
+- `Icon_Station_Forge`, `_Loom`, `_Alchemy` — в проекте только `CraftingTable` и `Shipyard`.
+- `Icon_Craft_Module`, `_Consumable`, `_Misc` — в проекте 3 рецепта: `Material`×2 и `Ship`×1.
+
+### C. Требует отдельного решения
+
+1. **`ItemData.icon` на 1049 предметах — категорийный плейсхолдер.** Настоящая иконка предмета требует отдельного арта на каждый предмет; текущая расстановка заменяется полностью, а не дополняется.
+2. **`TradeItemDefinition.icon` (113 ассетов) не расставлен.** У `TradeItemDefinition` нет ни категории, ни типа предмета — только `itemId`/`displayName`/цена. Детерминированного маппинга нет. Варианты: добавить поле категории (код), маппинг по префиксу `itemId` (код) или отдельный арт на каждый товар.
+3. **`NpcDefinition.portrait` (30 ассетов) не расставлен.** Это портреты, а не иконки: в каталоге подходящего арта нет, нужен отдельный батч портретов.
+4. **`.meta` в `.gitignore`** (правило `*.meta`, строка 182): настройки импорта не переносятся через git. На чистой копии их нужно применять заново, либо снять правило для `Assets/_Project/UI/Icons/**/*.png.meta`.
+5. **Max Size 48 не поддерживается.** Для `Quests/Objectives` в README стояло 48 px, `TextureImporter.maxTextureSize` принимает только степени двойки — применено 64. Либо принять 64, либо пересмотреть запись.
+6. **`Skill_Social_BasicTalk` имеет `category = Combat` при `discipline = None`** — получил `Icon_SkillCat_Combat`. Похоже на ошибку данных: социальный навык помечен боевым. Правка в ассете, но это решение владельца данных, а не расстановки.
+7. **24 иконки всё ещё не сгенерированы** (лимит генератора) — см. таблицу «Сколько осталось».
+
+---
+
 ## Сколько осталось
 
 После B5 в каталоге 143 иконки. Ниже — все оставшиеся enum'ы, которые вообще имеют смысл рисовать, с точным числом членов (проверено по коду).
@@ -532,7 +594,8 @@
 
 ## Что осталось
 
-- Применить импорт-настройки к 168 файлам (`Sprite (2D and UI)`, `Sprite Mode Single`, `Alpha Is Transparency` on, mip off, compression none, Filter `Bilinear`, PPU 100, Max Size по роли). Сейчас `.meta` есть, но дефолтные (Texture, mipmaps on, Max Size 2048).
+- ~~Применить импорт-настройки к 168 файлам~~ — применены 2026-10-29: `Sprite (2D and UI)`, `Single`, Alpha Is Transparency on, mip off, compression none, Filter `Bilinear`, PPU 100, Max Size по роли (Categories 128, Factions 32, Relations 64, остальное 64).
+- ~~Расставить иконки по ассетам~~ — расставлено 1116 ссылок в 8 Sprite-полях, задействовано 45 иконок. Остальные 123 — раздел «TODO: расстановка».
 - Сделать downsample эмблем факций и проверить их в 24 px.
 - Перегенерировать `Icon_Damage_Ballistic` (и при необходимости `Icon_Damage_Antigrav`, `Icon_Cat_Fuel`).
 - Перцентрировать `Icon_Slot_Hands`, определиться с 64 px для широких композиций B2.
@@ -556,3 +619,6 @@
 - Батч B6 (25 иконок) сгенерирован и разложен: `Ship/Altitude` (5, `AltitudeStatus`), `Skills/Aoe` (5, `AoeFormula`), `Equipment/ModuleTypes` (4, `ModuleItemData.ModuleType`), `Ship/Classes` (4, `ShipClass`/`ShipFlightClass`), `Trade/Operations` (4, `TradeOp`), `Gathering/Types` (3, `GatherType`). Итого в каталоге **168** файлов — проверено по папкам (5 / 5 / 4 / 4 / 4 / 3). Хвостов в `Assets/Generated_Images/` не осталось.
 - `ShipClass.HeavyI` и `ShipFlightClass.Heavy` — один и тот же третий тир, сжаты в один глиф `Icon_ShipClass_Heavy` (тот же тип документированного сжатия, что `Accessory1/2` и `Module1..3`).
 - Генерация остаточных 24 иконок (`XpSource`, `BodyPresetId`, `ViewDistance`, `CharacterBodyType`, `HairStyleId`, `KnowledgeUnlockType.LearnFirst`) остановлена лимитом генератора: после ~49 изображений за сессию каждый запрос возвращает `Image generation rate limit exceeded`, включая одиночный запрос после девятиминутного ожидания. Имена, папки и домены для них уже зафиксированы в таблице «Сколько осталось» — генерацию можно продолжить одной командой, когда лимит снимется.
+- 2026-10-29: импорт и расстановка выполнены, пока генератор заблокирован. Все 168 PNG переведены в `Sprite` (проверено `LoadAssetAtPath<Sprite>()` 168/168). Расставлено 1116 ссылок: `FactionDefinition.iconSprite` 10, `WeaponItemData.icon` 10, `ModuleItemData.icon` 5, `ClothingItemData.icon` 8, `SkillNodeConfig.icon` 29, `RecipeData._icon` 3, `CraftingStationConfig._icon` 2, `ItemData.icon` 1049 (категорийный плейсхолдер). Задействовано 45 иконок из 168.
+- Выбор `ItemData.icon` = `Icon_Cat_<itemType>` — сознательный компромисс: категорийный глиф вместо отсутствующего арта предмета. Это прямая enum-связь (поле имеет тип `ItemType`), а не выдуманное соответствие, но визуально все 581 предмет категории `Equipment` выглядят одинаково, пока не появится по-предметный арт.
+- Импорт-настройки применены скриптом Unity (`TextureImporter` + `SaveAndReimport`), код проекта не менялся. Попутно обнаружено, что `*.meta` в `.gitignore` проекта — настройки импорта локальны и в коммит не попадают.

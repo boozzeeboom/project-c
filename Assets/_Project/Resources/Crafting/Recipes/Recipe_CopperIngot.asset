@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_CopperIngot
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Crafting.RecipeData
   _displayName: "\u041C\u0435\u0434\u043D\u044B\u0439 \u0441\u043B\u0438\u0442\u043E\u043A"
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: 0e865f03f131c9940b5e88450ab8e51b, type: 3}
   _description: "\u0412\u044B\u043F\u043B\u0430\u0432\u0438\u0442\u044C \u043C\u0435\u0434\u043D\u044B\u0439
     \u0441\u043B\u0438\u0442\u043E\u043A"
   _category: 3
@@ -25,5 +25,8 @@ MonoBehaviour:
     quantity: 1
   _craftSeconds: 10
   _recipeId: recipe_copper_ingot
+  _knowledgeUnlockType: 0
+  _knowledgeUnlockId: 
+  _knowledgeUnlockDescription: 
   _requiredSkillLevel: 0
   _requiredSkill: 0

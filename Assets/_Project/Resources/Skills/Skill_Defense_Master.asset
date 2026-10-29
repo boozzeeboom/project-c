@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: defense_master
   displayName: "\u041C\u0430\u0441\u0442\u0435\u0440 \u0437\u0430\u0449\u0438\u0442\u044B"
   description: 'Test: +3 DEX.'
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: ff0a5cc428a7a95489ac65231fedc606, type: 3}
   category: 1
   discipline: 4
   subtype: 0
@@ -27,13 +27,18 @@ MonoBehaviour:
     floatValue: 3
     multiplier: 0
     stringParam: 
+  knowledgeUnlockType: 0
+  knowledgeUnlockId: 
+  knowledgeUnlockDescription: 
   _learnXpCost: 0
   _requiredStrengthTier: 0
   _requiredDexterityTier: 0
   _requiredIntelligenceTier: 0
   treeX: 300
   treeY: 50
+  _allowSelfDamage: 0
   isActive: 0
+  cooldownSeconds: 0.5
   attackClip: {fileID: 0}
   attackClipSpeed: 1
   aoeFormula: 0
@@ -45,3 +50,19 @@ MonoBehaviour:
   throwRange: 25
   throwScatter: 3
   throwCount: 1
+  rangedMaxRange: 30
+  rangedHitChance: 70
+  castVfxPrefab: {fileID: 0}
+  castSpawnPoint: 0
+  castVfxDuration: 0.3
+  castVfxDelay: 0
+  projectileVfxPrefab: {fileID: 0}
+  projectileSpeed: 30
+  projectileArcHeight: 0
+  projectileTrailMaterial: {fileID: 0}
+  impactVfxPrefab: {fileID: 0}
+  impactScaleByDamage: 0
+  impactColorByDamageType: 1
+  impactVfxDuration: 0.5
+  twoDVfxAnimation: {fileID: 0}
+  twoDFps: 12

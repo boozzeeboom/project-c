@@ -44,7 +44,8 @@ Assets/_Project/UI/Icons/
 ```
 
 Исходники сгенерированы в 1024×1024 RGBA с прозрачным фоном и перенесены в эти каталоги из `Assets/Generated_Images/`.
-Каждый PNG пришёл вместе со своим `.meta`, поэтому GUID'ы **уже существуют** и стабильны — но импорт-настройки в них дефолтные (Texture, mipmaps **on**, Max Size 2048), а не целевые спрайтовые. То есть файл можно адресовать, но как `Sprite` он ещё не импортирован.
+Импорт-настройки применены 2026-10-29: все 168 файлов импортированы как `Sprite (2D and UI)` и резолвятся через `AssetDatabase.LoadAssetAtPath<Sprite>()` (проверено 168/168).
+Сами `.meta` в этом репозитории **не версионируются** (`.gitignore`, правило `*.meta`), поэтому настройки импорта не переезжают через git и на чистой копии проекта их нужно применить заново.
 
 ## Правила нэйминга
 
@@ -87,24 +88,44 @@ Assets/_Project/UI/Icons/
 Имена файлов == имена C# enum-членов (без префикса домена), чтобы маппинг был прямым без таблиц-исключений.
 Значения `None` / `None = 0` иконок не имеют по определению (пустой слот, отсутствие факции, «всегда виден»).
 
-## Настройки импорта (не применены)
+## Расстановка по ассетам (2026-10-29)
 
-Импорт в Unity **не выполнялся** — редактор в момент всех четырёх батчей был недоступен.
+В проекте всего восемь сериализуемых полей типа `Sprite` (проверено обходом всех ScriptableObject'ов через `SerializedObject`). Из них расставлено **1116 ссылок**; задействовано **45 иконок** каталога из 168.
 
-Целевые настройки для всех файлов:
+| Поле | Правило (прямое, без таблиц-исключений) | Ассетов | Что использовано |
+|---|---|---|---|
+| `FactionDefinition.iconSprite` | `Icon_Faction_<factionId>` | 10 / 10 | 10 из 15 эмблем (для остальных пяти нет ассетов) |
+| `WeaponItemData.icon` | `Icon_WeaponClass_<weaponClass>` | 10 / 10 | 8 классов из 9 (`Mace` без ассета) |
+| `ModuleItemData.icon` | `Icon_ModuleType_<moduleType>` | 5 / 5 | 3 типа из 4 (`Weapon` без ассета) |
+| `ClothingItemData.icon` | `Icon_Slot_<slot>` | 8 / 8 | `Head`×2, `Feet`×2, `Chest`×3, `Back`×1 |
+| `SkillNodeConfig.icon` | `discipline != None` → `Icon_Discipline_<discipline>`, иначе `Icon_SkillCat_<category>` | 29 / 29 | 5 дисциплин + 2 категории |
+| `RecipeData._icon` | `Icon_Craft_<category>` | 3 / 3 | `Material`×2, `Ship`×1 |
+| `CraftingStationConfig._icon` | `Icon_Station_<stationType>` | 2 / 2 | `CraftingTable`, `Shipyard` |
+| `ItemData.icon` | `Icon_Cat_<itemType>` | 1049 / 1049 | 9 категорий |
 
-- Texture Type: `Sprite (2D and UI)`
-- Sprite Mode: `Single`
+`ItemData.icon` — **категорийный плейсхолдер, а не иконка предмета**: все 1049 предметов получили глиф своей категории (`Equipment` 581, `Food` 173, `Tech` 118, `Resources` 79, `Medical` 45, `Key` 24, `Antigrav` 15, `Meziy` 7, `Fuel` 7). Заменяется только настоящим артом на каждый предмет.
+
+Подклассы перекрывают базовое правило: у `WeaponItemData`, `ModuleItemData` и `ClothingItemData` стоит своя иконка, а не `Icon_Cat_Equipment`.
+
+Оставшиеся 123 иконки расставить некуда без изменений в коде или данных — перечень в `docs/UI/ICONS.md`, раздел «TODO: расстановка».
+
+## Настройки импорта (применены 2026-10-29)
+
+Применено ко всем 168 файлам:
+
+- Texture Type: `Sprite (2D and UI)`, Sprite Mode `Single`
 - Alpha Is Transparency: `on`
 - Generate Mip Maps: `off` (UI рисуется в фиксированном размере)
-- Wrap Mode: `Clamp`
+- Wrap Mode: `Clamp`, NPOT Scale `None`
 - Compression: `None` (мелкие иконки; иначе полосы на градиентах)
-- Max Size: по роли (см. таблицу выше), Filter Mode `Bilinear`
-- Pixels Per Unit: `100`
+- Filter Mode: `Bilinear`, Pixels Per Unit: `100`
+- Max Size: `Categories` 128, `Factions` 32, `Factions/Relations` 64, всё остальное 64
+
+Расхождение с прежней записью: для `Quests/Objectives` здесь стояло 48 px, но `TextureImporter.maxTextureSize` принимает только степени двойки, поэтому применено 64.
 
 ## Статус
 
-`GENERATED / NOT VERIFIED`. Импорт-настройки не применены (дефолтный Texture Importer), Max Size не выставлены, ни одна иконка не подключена к UI.
+`IMPORTED / PLACED PARTIALLY`. Все 168 файлов импортированы как `Sprite` с Max Size по роли. Расставлено 1116 ссылок в восьми Sprite-полях (таблица выше), задействовано 45 иконок. Остальные 123 ждут поля в коде или данных — не ошибка расстановки, а отсутствующее место подключения.
 Не сгенерированы (обоснование в `docs/UI/ICONS.md`): `CombatSubtype` (designer-only), `WeaponHandling` (дублирует дисциплины), `WeaponClassMask` (flags-зеркало), `DockingStatus` (4 из 7 значений дублируют `NpcShipStatus`), `ContractState` (дублирует `QuestState`), `FactionAttitude` (три состояния = `FactionRelation`), `ShipCrewRespawnPolicy` (авторская политика, не UI), `PilotSeatType` (= `ShipCrewRole`), `ShipModule.ModuleType` (= `SlotType`), валюты и статусы (систем в коде нет).
 Список конкретных иконок и замечаний по каждой — `docs/UI/ICONS.md`.
 

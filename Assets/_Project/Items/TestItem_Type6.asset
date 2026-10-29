@@ -15,4 +15,12 @@ MonoBehaviour:
   itemName: "\u041C\u0435\u0437\u0438\u0439"
   itemType: 5
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 02f433972654c2049aa965240385feb4, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 0.1
+  visualPrefab: {fileID: 0}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}

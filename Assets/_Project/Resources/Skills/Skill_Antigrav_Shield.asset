@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: antigrav_shield
   displayName: "\u0410\u043D\u0442\u0438\u0433\u0440\u0430\u0432-\u0449\u0438\u0442"
   description: Test skill.
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: ff0a5cc428a7a95489ac65231fedc606, type: 3}
   category: 1
   discipline: 4
   subtype: 0
@@ -27,12 +27,16 @@ MonoBehaviour:
     floatValue: 0
     multiplier: 0.2
     stringParam: 
+  knowledgeUnlockType: 0
+  knowledgeUnlockId: 
+  knowledgeUnlockDescription: 
   _learnXpCost: 100
   _requiredStrengthTier: 0
   _requiredDexterityTier: 0
   _requiredIntelligenceTier: 2
   treeX: 50
   treeY: 600
+  _allowSelfDamage: 0
   isActive: 1
   cooldownSeconds: 0.5
   attackClip: {fileID: 0}

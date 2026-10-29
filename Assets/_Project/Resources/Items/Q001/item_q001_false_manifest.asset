@@ -16,7 +16,7 @@ MonoBehaviour:
   itemType: 0
   description: "\u0424\u0430\u043B\u044C\u0448\u0438\u0432\u044B\u0439 \u043C\u0430\u043D\u0438\u0444\u0435\u0441\u0442
     \u043F\u0435\u0440\u0435\u0432\u043E\u0437\u043A\u0438"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: c873dfffcecc95a4e8621793fb76b201, type: 3}
   equipSlot: 0
   maxStack: 1
   weightKg: 0.1

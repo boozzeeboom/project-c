@@ -608,3 +608,15 @@ SetPass — задача Э5, GPU-путь не включали.
 
 **Состояние:** сцена сохранена, `isDirty = false`; **Play Mode не запускался**, визуальная приёмка
 ферм и города — за пользователем.
+
+**Закрытие остатка Э3.1 (тем же вечером):** `PM_DOOR_STONE` вычищен из всех 11 префабов `PM_DOOR_*`
+→ `M_PC_Concrete` (12 слотов в префабах = 2 624 слота в сцене, включая ADMIN-двери и двери ферм);
+эмблемы 5 гильдий + `_EMIT` → `M_PC_Wood_Green` / `M_PC_Tiles_Bordeaux` / `M_PC_Wood_Red` /
+`M_PC_Bronze_Brass` / `M_PC_Wood_Ochre`; `No Name` 7 → `M_PC_Concrete`; пропы ферм: `Lit` и
+`MF_WALL_SHELL` → `M_PC_Concrete`, `character` → `M_PC_Fabric`, `Himalaya_*` → `M_PC_Cobble_Rock`,
+`Himalaya_Persistent_Snow` → `M_PC_Concrete_Limewash`. Новых материалов не создавалось.
+
+Итог: в городе и на фермах — **0 слотов `URP/Lit`**, **53** материала (DoD ≤ 60), `PM_DOOR_STONE` — 0.
+Остаток 511 слотов `URP/Lit` во всём `WorldRoot_0_0` — не город: `RuinsValleys` 496 и горные группы
+`Secund`/`Tertius`/`Quartus` 15. null-слоты (51) — `Empty_visual` без меша, плоскости `pPlane1` и `_CableL`:
+не дефект, не требуют вмешательства.

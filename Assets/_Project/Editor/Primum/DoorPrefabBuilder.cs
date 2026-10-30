@@ -544,9 +544,21 @@ namespace ProjectC.EditorTools
             GameObjectUtility.SetStaticEditorFlags(go, (StaticEditorFlags)0);
         }
 
+        /// <summary>Карта материалов дверей → процедурные материалы проекта (Э3.1: двери без `URP/Lit`).</summary>
+        private static readonly Dictionary<string, string> MatMap = new Dictionary<string, string>
+        {
+            { "PM_DOOR_WOOD_DARK", "Assets/_Project/Materials/Wood/M_PC_Wood_Dark.mat" },
+            { "PM_DOOR_WOOD_MID",  "Assets/_Project/Materials/Wood/M_PC_Wood.mat" },
+            { "PM_DOOR_STONE",     "Assets/_Project/Materials/Concrete/M_PC_Concrete.mat" },
+            { "PM_DOOR_IRON",      "Assets/_Project/Materials/Iron/M_PC_IronRust.mat" },
+            { "PM_DOOR_BRONZE",    "Assets/_Project/Materials/Bronze/M_PC_Bronze.mat" },
+        };
+
         private static Material LoadMat(string name)
         {
-            var m = AssetDatabase.LoadAssetAtPath<Material>(MatDir + "/" + name + ".mat");
+            string mapped;
+            var path = MatMap.TryGetValue(name, out mapped) ? mapped : MatDir + "/" + name + ".mat";
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (m == null) Debug.LogError("[PRIMUM/Doors] Не найден материал: " + name);
             return m;
         }

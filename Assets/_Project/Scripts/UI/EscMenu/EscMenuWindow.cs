@@ -150,17 +150,10 @@ namespace ProjectC.UI.EscMenu
             SetOpen(true);
         }
 
-        /// <summary>Игрок в игре: загружена хотя бы одна WorldScene.</summary>
-        private static bool IsInGame()
-        {
-            int count = UnityEngine.SceneManagement.SceneManager.sceneCount;
-            for (int i = 0; i < count; i++)
-            {
-                if (UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).name.StartsWith("WorldScene"))
-                    return true;
-            }
-            return false;
-        }
+        /// <summary>Игрок в игре: живая сессия и заспавненный локальный игрок.
+        /// Загруженной WorldScene недостаточно: global-пилот оставляет её в памяти после
+        /// «ВЫХОДА В МЕНЮ», и Esc-меню открывалось прямо в главном меню.</summary>
+        private static bool IsInGame() => UIManager.HasLiveGameplaySession;
         public void Show() => SetOpen(true);
         public void Hide() => SetOpen(false);
 

@@ -262,6 +262,27 @@ namespace ProjectC.UI
         }
 
         /// <summary>
+        /// Игра реально идёт: живая сессия и заспавненный локальный игрок.
+        /// Загруженная WorldScene игрой не считается: global-пилот оставляет её в памяти
+        /// после «ВЫХОДА В МЕНЮ», и Esc-меню открывалось прямо поверх главного меню.
+        /// </summary>
+        public static bool HasLiveGameplaySession
+        {
+            get
+            {
+                var networkManager = Unity.Netcode.NetworkManager.Singleton;
+                if (networkManager == null || !networkManager.IsListening || networkManager.ShutdownInProgress)
+                    return false;
+
+                var localClient = networkManager.LocalClient;
+                if (localClient == null) return false;
+
+                var playerObject = localClient.PlayerObject;
+                return playerObject != null && playerObject.IsSpawned;
+            }
+        }
+
+        /// <summary>
         /// Возвращает true, когда любое модальное/игровое UI-окно открыто.
         /// Используется gameplay input-сервисами, чтобы ввод атаки и другие
         /// игровые действия не проходили сквозь UI.
@@ -345,11 +366,21 @@ namespace ProjectC.UI
             // Вызываем callback закрытия
             info.OnClose?.Invoke();
 
-            // Если панелей больше нет — блокируем курсор
+            // Если панелей больше нет и игра идёт — блокируем курсор.
+            // Вне живой сессии (главное меню, загрузка, возврат после «ВЫХОДА В МЕНЮ»)
+            // курсор остаётся свободным: иначе меню остаётся без мыши и не нажимается.
             if (_openPanels.Count == 0)
             {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
+                if (HasLiveGameplaySession)
+                {
+                    Cursor.lockState = CursorLockMode.Locked;
+                    Cursor.visible = false;
+                }
+                else
+                {
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                }
             }
 
             // Звук закрытия

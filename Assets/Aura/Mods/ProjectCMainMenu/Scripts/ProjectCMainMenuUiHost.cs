@@ -22,6 +22,14 @@
 //     its IpConnectHandler seam and fires OnProjectAction("ip-connect"), so the menu
 //     hides there too.
 //
+// «Скрыть» means «когда игра действительно началась», not «когда нажали кнопку»:
+// the pilot loads WorldScene_0_0 and only later spawns the local player, and its own
+// readiness handoff (GlobalMotionPilotRuntime.CloseStartupMenusWhenLocalPlayerReady)
+// cannot see this menu because the legacy MainMenuWindow in BootstrapScene is disabled.
+// So the host owns the same handoff here: it keeps the menu on screen and the cursor
+// free until the local player is spawned, then hides and hands the cursor to the game.
+// When the session ends (Esc -> «ВЫХОД В МЕНЮ») the menu comes back with a free cursor.
+//
 // The second one is not cosmetic. MainMenuWindow.Hide() hid the whole wrapper after a
 // connect; without an equivalent the opaque atmosphere camera would stay on top of the
 // loaded world, which is the exact regression the earlier IsShown() fix addressed.
@@ -44,12 +52,15 @@ namespace ProjectCMainMenu
         [SerializeField] private StyleSheet styleSheet;
 
         [Header("Flow")]
-        [Tooltip("Hide the menu once a game has been started or a server connected.")]
+        [Tooltip("Hide the menu once the local player is actually spawned, and bring it back " +
+                 "when the session ends. The cursor stays free while the menu is visible.")]
         [SerializeField] private bool hideAfterStart = true;
 
         private ProjectCMainMenuWindow _window;
         private bool _disposed;
         private bool _shown = true;
+        private bool _awaitingStart;
+        private bool _sessionWasLive;
 
         public ProjectCMainMenuWindow Window => _window;
         public UIDocument Document => document;
@@ -63,6 +74,8 @@ namespace ProjectCMainMenu
         private void Update()
         {
             if (_disposed) return;
+
+            FollowSessionState();
 
             // UIDocument builds its root in its own OnEnable, and the component order in
             // the prefab is not a contract: mount lazily and let the next frame retry.
@@ -107,6 +120,7 @@ namespace ProjectCMainMenu
 
             _shown = true;
             root.style.display = DisplayStyle.Flex;
+            FreeCursor();
         }
 
         /// <summary>Shows or hides the whole menu. Hiding keeps the window state alive.</summary>
@@ -118,6 +132,78 @@ namespace ProjectCMainMenu
             {
                 document.rootVisualElement.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
             }
+
+            if (shown) FreeCursor();
+        }
+
+        // ------------------------------------------------------- session / cursor
+
+        /// <summary>
+        /// Меню и курсор следуют за реальной сессией, а не за нажатием кнопки.
+        /// Пока локальный игрок не заспавнен, меню остаётся на экране и мышь свободна;
+        /// после спавна меню уходит и мышь забирает игра; конец сессии возвращает меню.
+        /// </summary>
+        private void FollowSessionState()
+        {
+            bool live = IsSessionLive();
+            if (live) _sessionWasLive = true;
+
+            if (_shown) FreeCursor();
+
+            if (_awaitingStart)
+            {
+                if (live && IsLocalPlayerReady())
+                {
+                    _awaitingStart = false;
+                    HideForGameplay();
+                }
+                else if (!live)
+                {
+                    // Запуск не состоялся: меню — единственный путь назад, оставляем его.
+                    _awaitingStart = false;
+                    SetShown(true);
+                }
+
+                return;
+            }
+
+            if (!_shown && _sessionWasLive && !live)
+            {
+                // «ВЫХОД В МЕНЮ»: показываем это меню и отдаём мышь обратно игроку.
+                _sessionWasLive = false;
+                SetShown(true);
+            }
+        }
+
+        /// <summary>Игра забирает мышь только теперь — когда локальный игрок действительно есть.</summary>
+        private void HideForGameplay()
+        {
+            SetShown(false);
+            UnityEngine.Cursor.lockState = UnityEngine.CursorLockMode.Locked;
+            UnityEngine.Cursor.visible = false;
+        }
+
+        private static void FreeCursor()
+        {
+            if (UnityEngine.Cursor.lockState != UnityEngine.CursorLockMode.None)
+                UnityEngine.Cursor.lockState = UnityEngine.CursorLockMode.None;
+            if (!UnityEngine.Cursor.visible) UnityEngine.Cursor.visible = true;
+        }
+
+        private static bool IsSessionLive()
+        {
+            var manager = Unity.Netcode.NetworkManager.Singleton;
+            return manager != null && manager.IsListening && !manager.ShutdownInProgress;
+        }
+
+        private static bool IsLocalPlayerReady()
+        {
+            var manager = Unity.Netcode.NetworkManager.Singleton;
+            if (manager == null || !manager.IsListening) return false;
+
+            var localClient = manager.LocalClient;
+            var player = localClient != null ? localClient.PlayerObject : null;
+            return player != null && player.IsSpawned;
         }
 
         public void Show() => SetShown(true);
@@ -156,7 +242,7 @@ namespace ProjectCMainMenu
             if (pilot != null && pilot.isActiveAndEnabled)
             {
                 pilot.StartPilotHost();
-                if (hideAfterStart) SetShown(false);
+                if (hideAfterStart) _awaitingStart = true;
                 return;
             }
 
@@ -168,7 +254,7 @@ namespace ProjectCMainMenu
             }
 
             controller.StartHost();
-            if (hideAfterStart) SetShown(false);
+            if (hideAfterStart) _awaitingStart = true;
         }
 
         private void Quit()
@@ -184,7 +270,7 @@ namespace ProjectCMainMenu
         private void OnProjectAction(string action, string payload)
         {
             if (!hideAfterStart) return;
-            if (action == "ip-connect") SetShown(false);
+            if (action == "ip-connect") _awaitingStart = true;
         }
     }
 }

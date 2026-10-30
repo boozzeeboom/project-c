@@ -28,7 +28,7 @@ MonoBehaviour:
     floatValue: 5
     multiplier: 0.2
     stringParam: 
-  knowledgeUnlockType: 0
+  knowledgeUnlockType: 5
   knowledgeUnlockId: 
   knowledgeUnlockDescription: 
   _learnXpCost: 100

@@ -1,0 +1,9 @@
+file,bytes,models,geometries,materials,submesh_slots,vertices,polygons,triangles,quads,ngons,median_tris_per_model,meshes_le24tris,hierarchy_depth,used_by_prefab,note
+Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx,2455612,936,935,10,935,22976,16475,37128,15089,880,18,470,1,Ship_havyII_base,плоский список: 1 Null-корень + 935 Mesh-узлов; median 18 тр.
+Assets/_Project/Art/Models/Ships/project-c_ship_light_base_SHIP_GameReady.fbx,2001836,347,345,14,346,23928,46544,46544,0,0,216,0,2,Ship_Light_root_fbx_test,все полигоны триангулированы в источнике
+Assets/_Project/Art/Models/Ships/project-c_ship_light_base_MOTOR_GameReady.fbx,331356,73,72,7,72,3136,6020,6020,0,0,120,26,1,Ship_Light_root_fbx_test,26 мешей <= 24 тр.
+Assets/_Project/Art/Models/Ships/project-c_ship_light_base_ROTOR_GameReady.fbx,85916,10,9,3,9,980,1940,1940,0,0,552,0,1,"Ship_havyII_base (x2), Ship_Light_root_fbx_test, Ship_medium_base (x2)","винт, isReadable=0 в Unity"
+Assets/_Project/Prefabs/Ships/Medium_base/Engine_PDTT_Unit.fbx,48316,9,9,3,9,768,596,1312,568,28,108,0,1,"Ship_havyII_base (x2), Ship_medium_base (x2)",гондола PDTT
+Assets/_Project/Prefabs/Ships/Medium_base/Ship_CargoMedium_Base_1.fbx,371596,94,92,10,97,11230,10517,18010,5184,577,144,2,2,Ship_medium_base,основной корпус среднего
+Assets/_Project/Prefabs/Ships/Medium_base/Ship_CargoMedium_Hull.fbx,345020,81,81,10,86,10354,9843,16506,4544,543,144,2,2,(никем не используется),"дубль Base_1, в префабах не найден — кандидат в архив"
+Assets/_Project/Prefabs/Ships/Medium_base/Prop_Rotor.fbx,19132,2,2,1,2,108,78,192,72,6,96,0,1,(никем не используется),лёгкий пропеллер

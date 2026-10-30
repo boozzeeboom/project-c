@@ -1,0 +1,20 @@
+bucket,example_objects,meshes,triangles,pct_of_hull_tris,merge_verdict,reason
+"Int_* (интерьер: каюты, камбуз, медблок, мостик, трюм, гальюн, коридор)","Int_Cabin, Int_Mess, Int_Medbay, Int_Bridge, Int_Hold",83,6864,18.5,merge per room,"внутри нужна по-комнатная видимость, не по-мешу"
+"Det_* (деталь-объекты одним мешем: разметка, рым-болты, кнехты)","Det_CellMarkings, Det_TieDownRings, Det_DoorHandles, Det_Bollards",21,5992,16.1,merge,"статичный декор, никогда не двигается"
+"UnderHull_* (трубы, хомуты, подвесы, жгуты под днищем)","UnderHull_Pipe, UnderHull_Clamp, UnderHull_Hanger",121,4628,12.5,merge or LOD-cull,с земли не видно; первый кандидат в LOD1
+"Engine_* / Eng_* (трубопроводы, консоли, шкафы, щиты)","Engine_Console, Engine_PipeBracket, Eng_Switchboard, Eng_GMAG",97,3664,9.9,merge,статично; сами двигатели - отдельные вложенные FBX
+"T1_* / T2_* (ярусы и палубы: переборки, полы, потолки, линтели)","T1_Corridor, T2_Mess_WallStb_*, T2_BridgeDeck_*",184,3512,9.5,merge per deck,"лучший разрез и для разрушаемости, и для LOD"
+"Bolt_* (болты, крепёж люков)","Bolt_Hull_Prt_*, Bolt_Hatch1_E_*",90,1800,4.8,delete at LOD1+,median 18 тр./меш - чистый greeble
+"CB_* (поручни, стойки, рамы порталов)","CB_Post, CB_Brace, CB_Rail, CB_PortalFrame",12,1800,4.8,merge,статичный такелаж палубы
+"Contour_* (обводы, рёбра, нав-огни, скула)","Contour_Rib, Contour_NavLens, Contour_Skirt",80,1668,4.5,merge,нав-огни на материале Lamp_*
+Interior_* (потолочные лампы и панели),Interior_CeilingLamp_*,58,1624,4.4,merge,52 меша с материалом Lamp_White -> один бакет
+"Deck_* (палуба, фальшборт, крышки люков)","Deck_Main, Deck_Bulwark, Deck_CapRail, Deck_HatchCover",26,1232,3.3,merge (палубу отдельным сабмешем),по палубе ходит игрок и NavMesh
+"Stair_* / Ladder_* / Well_* (трапы, люки, колодцы)","Stair_T1T2, Ladder_DeckHatch, Well_CoverSection",16,1044,2.8,merge,коллайдеры уже отдельные боксы
+"Bridge_* (мостик: консоли, лампы задач, навес)","Bridge_Console, Bridge_Overhead",28,752,2.0,merge,
+Ramp_* / AftGate_* (аппарель и кормовые ворота),"Ramp_Cargo, Ramp_HingeBarrel, AftGate_HingeLeaf_*",28,640,1.7,KEEP SEPARATE,Ramp_Cargo и Door_AftGate_Port имеют DoorController (анимация)
+"Lgt_* / Keel_* / Shipyard_* / Resv_* (ходовые огни, киль, стапель, пустой корень)","Lgt_Nav, Keel_ServiceLightLens, Shipyard_Plate, Ship_HeavyII",18,560,1.5,merge,
+"Hull_* (обшивка, скула, борт, транзец, брешбл.)","Hull_Side, Hull_Bottom, Hull_BowBlock, Hull_Transom",18,384,1.0,merge,
+Win_* (окна/иллюминаторы),"Win_BaseBow_*, Win_Skylight, Win_Mess",15,288,0.8,merge (glass-бакет),материал Glass_Green_Matte
+Mess_* (камбузная утварь),"Mess_Mug, Mess_Shelf, Mess_MugHandle",8,280,0.8,merge or delete at LOD1,мелочь < 100 тр.
+Door_* (полотна 9 дверей + ручки),"Door_Cabin, Door_Mess, Door_Medbay, Door_Bridge_1/2",18,216,0.6,KEEP SEPARATE,9 DoorController висят на узлах FBX; 12 тр./полотно
+Sill_* (порожки дверей),"Sill_Cabin, Sill_Mess, ...",15,180,0.5,merge,порожек не двигается

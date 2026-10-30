@@ -1,0 +1,277 @@
+[
+ {
+  "guid": "b6678ab526d0c2e41a3d10428b462d76",
+  "count": 956,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_SINGLE_PLANK_A.prefab"
+ },
+ {
+  "guid": "3c92f04950975124783afa8a30b45f5d",
+  "count": 812,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_SINGLE_PANEL_B.prefab"
+ },
+ {
+  "guid": "e99fc18e1bb83304c87397507671b3eb",
+  "count": 518,
+  "path": "Assets\\_Project\\Prefabs\\City\\Lights\\PM_LIGHT_INTERIOR_SCONCE.prefab"
+ },
+ {
+  "guid": "a853b5b4d5e8bb243917f89fa00d697a",
+  "count": 493,
+  "path": "Assets\\_Project\\Prefabs\\City\\Lights\\PM_LIGHT_INTERIOR_TABLE.prefab"
+ },
+ {
+  "guid": "a2dc55f89b504c844a047d7f6a200e27",
+  "count": 453,
+  "path": "Assets\\_Project\\Prefabs\\City\\Lights\\PM_LIGHT_STREET_WALL.prefab"
+ },
+ {
+  "guid": "92e8d6d225782e64b92b6ff9e06e5a0a",
+  "count": 419,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_SINGLE_ARCH_C.prefab"
+ },
+ {
+  "guid": "841a63d69f6a3b54ea6e186e816157c3",
+  "count": 368,
+  "path": "Assets\\_Project\\Prefabs\\City\\Lights\\PM_LIGHT_FACADE_WALL.prefab"
+ },
+ {
+  "guid": "c602dc1f21c9faa479628d6a0f6f7f2c",
+  "count": 323,
+  "path": "Assets\\_Project\\Prefabs\\City\\Lights\\PM_LIGHT_INTERIOR_PENDANT.prefab"
+ },
+ {
+  "guid": "bb3162a0c3e8da041b3142e60295587b",
+  "count": 143,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_PALACE_DOUBLE_A.prefab"
+ },
+ {
+  "guid": "8941ce760a98eb6408f66334d4c7432f",
+  "count": 110,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_DOUBLE_A.prefab"
+ },
+ {
+  "guid": "f2b054b9f23bb354c9d36baa2c36a553",
+  "count": 83,
+  "path": "Assets\\_Project\\Prefabs\\City\\Lights\\PM_LIGHT_STREET_POST.prefab"
+ },
+ {
+  "guid": "8a78c439b48a0bd4dbf43b5011f84a5d",
+  "count": 77,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_PALACE_DOUBLE_C.prefab"
+ },
+ {
+  "guid": "1ba477fc9547e4648bc2961f6482faff",
+  "count": 36,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_GATE_A.prefab"
+ },
+ {
+  "guid": "a5f88bacacc3e814a8fba7d393da7f32",
+  "count": 27,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_SINGLE_WIDE_A.prefab"
+ },
+ {
+  "guid": "445e7593fd6b3f54ea4968e1ba62958a",
+  "count": 12,
+  "path": "Assets\\_Project\\Prefabs\\PickupItem_Test.prefab"
+ },
+ {
+  "guid": "5f4f65cd3d73b0c48a0d4cde309c04d3",
+  "count": 10,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_GATE_B.prefab"
+ },
+ {
+  "guid": "172a127fa0f35124bb11eda19a17b16e",
+  "count": 8,
+  "path": "Assets\\_Project\\Prefabs\\NPC\\[Mira] - DON`T DELETE DEFOULT.prefab"
+ },
+ {
+  "guid": "617c9789828d9cf4d95c01fc83cc8b98",
+  "count": 8,
+  "path": "Assets\\_Project\\Prefabs\\NPC_ZONES\\Npc_peacfull_market_zone Variant.prefab"
+ },
+ {
+  "guid": "7d2558ece4390684b9f65b7fd5e719f5",
+  "count": 7,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_DOOR_PALACE_DOUBLE_B.prefab"
+ },
+ {
+  "guid": "4eaed514469037a4c97b0e356a4ce061",
+  "count": 5,
+  "path": "Assets\\_Project\\Prefabs\\NPC_ZONES\\Pad_01.prefab"
+ },
+ {
+  "guid": "2c75f6da2ba793a4fa4c3cd51e7704ac",
+  "count": 3,
+  "path": "Assets\\_Project\\Prefabs\\NetworkChestContainer_Test.prefab"
+ },
+ {
+  "guid": "5f4dcf8edbc15014d83fd2bcd92d3f67",
+  "count": 2,
+  "path": "Assets\\_Project\\Prefabs\\SPAWN_TEST.prefab"
+ },
+ {
+  "guid": "e75faf5e73c7c3944b3a726fe6584873",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Ship_havyII_base.prefab"
+ },
+ {
+  "guid": "654ed24a62083f443a93a745584c6d14",
+  "count": 1,
+  "path": "Assets\\_Project\\Art\\Models\\Peaks\\Europe_Alps_LowPoly_1.fbx"
+ },
+ {
+  "guid": "7a9c517d79f5dad478d743dd2652cf1d",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Угольщик.prefab"
+ },
+ {
+  "guid": "c0c3cf25155d07444a488e14a40ecb08",
+  "count": 1,
+  "path": "Assets\\_Project\\Art\\Models\\Peaks\\SouthAmerica_Andes_LowPoly_1.fbx"
+ },
+ {
+  "guid": "ab99ba9c40b28b84fa22b64247c5113c",
+  "count": 1,
+  "path": "Assets\\_Project\\Art\\Models\\Peaks\\Himalayi_massiv_northwest_1.fbx"
+ },
+ {
+  "guid": "5661f1364cf80b642905e7a79fcb5dfd",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Торренс.prefab"
+ },
+ {
+  "guid": "45239ae9fd5bdd64dafb2910a927d691",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Альбатрос.prefab"
+ },
+ {
+  "guid": "43e682d0c711e9a489611b5e59d1069d",
+  "count": 1,
+  "path": "Assets\\_Project\\Art\\Models\\Peaks\\NorthAmerica_Rockies_LowPoly_1.fbx"
+ },
+ {
+  "guid": "1e2d8b401f2a125439d5c02b93eeb29a",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Берег.prefab"
+ },
+ {
+  "guid": "c4d2b5ad8c8b04a458e2285699f4aea0",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Летучий.prefab"
+ },
+ {
+  "guid": "ec75e183f0327844cb08299fd2108ebc",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Олимп.prefab"
+ },
+ {
+  "guid": "efa0be701b9576f40bff86242b28061b",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\City\\PRIMUM_CITY.prefab"
+ },
+ {
+  "guid": "bd1076156c9bdd042925404a5f666d88",
+  "count": 1,
+  "path": "Assets\\_Project\\Art\\Models\\Primumfarm_0_0\\project-c_primumfarm_0-0_1_1_spacebunny_1.fbx"
+ },
+ {
+  "guid": "63ec9b91ddcbabc4c8b0fa75b88ba812",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Ship_medium_base.prefab"
+ },
+ {
+  "guid": "f1dfd7bb0a4c6ba479d7d5d88814691a",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Жук.prefab"
+ },
+ {
+  "guid": "5126f1674446bb742996bb08fd308bf9",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Пещера.prefab"
+ },
+ {
+  "guid": "17d138159a0aa7c48a38261299bb3280",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Шмель.prefab"
+ },
+ {
+  "guid": "8256984dcbf64c04b8922c2c32131ae9",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Странник.prefab"
+ },
+ {
+  "guid": "f88cc8ec7bdd02a4c95b6ef9806a9296",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Скат.prefab"
+ },
+ {
+  "guid": "822e0bd9fb98bfc4ea7f82954ec00ab3",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Ветроворот.prefab"
+ },
+ {
+  "guid": "d4bd0bc638874f849bb0e7dac45e4be6",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Цитадель.prefab"
+ },
+ {
+  "guid": "f901f72cf786dfa439c0b2df37a217d1",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Вавилон.prefab"
+ },
+ {
+  "guid": "f8607217a413c20418d71a524d2591b0",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\City\\Doors\\PM_ADM_ENTRANCE_PORTAL.prefab"
+ },
+ {
+  "guid": "cd50dee177b57174cb2645e50b31b70c",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Гигант.prefab"
+ },
+ {
+  "guid": "291c8d6790c39ff4395aaf483341399f",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Мастодонт.prefab"
+ },
+ {
+  "guid": "8af663ff8766d1a409624d9dfd0bdd70",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Сильфида.prefab"
+ },
+ {
+  "guid": "f029b503c412a1f43a43ef1fcadbf0d7",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Река.prefab"
+ },
+ {
+  "guid": "8724ae8f508dbc94f882c0450956dc78",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Лорейн.prefab"
+ },
+ {
+  "guid": "b81f079e28f223d4b9fa06564918bc4c",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Горгона.prefab"
+ },
+ {
+  "guid": "66bf70cbbbf386c44978d50ae286c90a",
+  "count": 1,
+  "path": "Assets\\_Project\\Art\\Models\\Peaks\\Himalayi_massiv_east_1.fbx"
+ },
+ {
+  "guid": "efa6444e986837b4caa16791d3302ff0",
+  "count": 1,
+  "path": "Assets\\_Project\\Materials\\Steel\\archive\\Cube.prefab"
+ },
+ {
+  "guid": "1a20fbd73985e554cac5f37215ef91ff",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\NPC_ZONES\\RepairManager.prefab"
+ },
+ {
+  "guid": "79919f26789a06d4890b3281acdaf191",
+  "count": 1,
+  "path": "Assets\\_Project\\Prefabs\\Ships\\Ship_Light_root_fbx_test.prefab"
+ }
+]

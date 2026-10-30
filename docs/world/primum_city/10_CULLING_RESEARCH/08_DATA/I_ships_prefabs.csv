@@ -1,0 +1,26 @@
+prefab,group,bytes,go_local,go_flat,mr_local,mr_flat,mf_flat,mesh_colliders,box_colliders,capsule_colliders,sphere_colliders,monobehaviours,material_slots_flat,unique_materials,tris_flat,instances_in_scene,lodgroups,nested_fbx,source
+Assets/_Project/Prefabs/Ships/Ship_havyII_base.prefab,HeavyII (player base),712296,476,1452,2,973,973,0,250,0,0,44,973,17,43520,1,0,5,unity-asset+py-yaml
+Assets/_Project/Prefabs/Ships/Ship_Light_root_fbx_test.prefab,Light (fbx test),102707,46,476,2,428,428,2,15,0,0,36,428,25,54528,1,0,3,unity-asset+py-yaml
+Assets/_Project/Prefabs/Ships/Ship_medium_base.prefab,Medium (player base),78029,22,145,2,118,118,3,3,0,0,36,118,17,23006,1,0,5,unity-asset+py-yaml
+Assets/_Project/Prefabs/Ships/DONT-DELETE-NPC REFERENCE SHIP.prefab,NPC template,68915,27,27,6,6,6,27,5,1,1,40,6,1,820,0,0,0,unity-asset
+Assets/_Project/Prefabs/NPC_Ship_HeavyII_03.prefab,NPC variant (HeavyII),19558,5,5,2,2,2,5,3,0,0,11,2,1,24,0,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Альбатрос.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Берег.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Вавилон.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Ветроворот.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Гигант.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Горгона.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Жук.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Летучий.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Лорейн.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Мастодонт.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Олимп.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Пещера.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Река.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Сильфида.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Скат.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Странник.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Торренс.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Угольщик.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Цитадель.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset
+Assets/_Project/Prefabs/Ships/Шмель.prefab,"NPC light (20 шт., ShipPresetCreator)",69000,27,27,6,6,6,27,5,1,1,40,6,1,820,1,0,0,unity-asset

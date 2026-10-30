@@ -1,0 +1,13 @@
+﻿prefab,guid,gameobjects,mesh_renderers,material_slots,unique_materials,colliders,monobehaviours,meshfilters,unique_meshes,tris_per_instance,tris_resolved_meshes,instances_in_scene,renderers_per_slot_detail,scripts
+PM_ADM_ENTRANCE_PORTAL.prefab,f8607217a413c20418d71a524d2591b0,9,8,12,4,3,1,8,8,0,0,1,1slots/cast1;1slots/cast1;1slots/cast1;1slots/cast1;1slots/cast1;3slots/cast1;3slots/cast1;1slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_DOUBLE_A.prefab,8941ce760a98eb6408f66334d4c7432f,6,3,10,5,3,1,3,3,0,0,110,2slots/cast1;4slots/cast1;4slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_GATE_A.prefab,1ba477fc9547e4648bc2961f6482faff,3,1,2,2,2,1,1,1,0,0,36,2slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_GATE_B.prefab,5f4f65cd3d73b0c48a0d4cde309c04d3,3,1,2,2,2,1,1,1,0,0,10,2slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_PALACE_DOUBLE_A.prefab,bb3162a0c3e8da041b3142e60295587b,6,3,7,4,3,1,3,3,0,0,143,3slots/cast1;3slots/cast1;1slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_PALACE_DOUBLE_B.prefab,7d2558ece4390684b9f65b7fd5e719f5,6,3,7,4,3,1,3,3,0,0,7,3slots/cast1;3slots/cast1;1slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_PALACE_DOUBLE_C.prefab,8a78c439b48a0bd4dbf43b5011f84a5d,6,3,7,4,3,1,3,3,0,0,77,3slots/cast1;3slots/cast1;1slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_SINGLE_ARCH_C.prefab,92e8d6d225782e64b92b6ff9e06e5a0a,4,2,4,4,2,1,2,2,0,0,419,3slots/cast1;1slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_SINGLE_NARROW_A.prefab,b450af8166dcf2c40b07c36d9348c800,7,5,5,4,2,1,5,5,0,0,0,1slots/cast1;1slots/cast1;1slots/cast1;1slots/cast1;1slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_SINGLE_PANEL_B.prefab,3c92f04950975124783afa8a30b45f5d,4,2,5,4,2,1,2,2,0,0,812,2slots/cast1;3slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_SINGLE_PLANK_A.prefab,b6678ab526d0c2e41a3d10428b462d76,4,2,5,4,2,1,2,2,0,0,956,3slots/cast1;2slots/cast1,690c139d0b47bd844a49f0ec524b346f
+PM_DOOR_SINGLE_WIDE_A.prefab,a5f88bacacc3e814a8fba7d393da7f32,4,2,6,5,2,1,2,2,0,0,27,2slots/cast1;4slots/cast1,690c139d0b47bd844a49f0ec524b346f

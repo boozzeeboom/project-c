@@ -1,0 +1,15 @@
+scenario,ship,renderers,material_slots,opaque_dc,shadow_dc_2cascade,total_dc_upper,total_dc_lower_1cascade,assumption
+NOW (as built),Ship_havyII_base,973,973,973,1946,2919,1946,"DC = slots x (1 opaque + K теней), K=2 каскада, depth-prepass выключен"
+NOW (as built),Ship_medium_base,118,118,118,236,354,236,все MR castShadows=On
+NOW (as built),Ship_Light_root_fbx_test,428,428,428,856,1284,856,
+NOW (as built),20 NPC (6 MR каждый),120,120,120,240,360,240,
+NOW (as built),ВСЕ КОРАБЛИ (23 инстанса),1639,1639,1639,3278,4917,3278,доля от 21 118 DC кадра (конфиг B) = 23.3% / 15.5%
+"AFTER O1 (1 меш/корабль, сабмеши по материалам)",Ship_havyII_base,4,33,33,66,99,66,корпус 10 + 4 движка x 3 + кресло 1 + 9 дверей + контрейл 1
+AFTER O1,Ship_medium_base,3,24,24,48,72,48,корпус 10-14 + 4 движка x 3
+AFTER O1,Ship_Light_root_fbx_test,3,24,24,48,72,48,корпус 14 + мотор 7 + ротор 3
+AFTER O1,20 NPC,20,20,20,40,60,40,1 материал -> 1 сабмеш
+AFTER O1,ВСЕ КОРАБЛИ,30,101,101,202,303,202,снижение DC в 16 раз
+"AFTER O2 (ячейка разрушения x материал, 8 ячеек)",Ship_havyII_base,12,92,92,184,276,184,8 ячеек x 10 материалов + движки/двери
+AFTER O2,ВСЕ КОРАБЛИ,38,160,160,320,480,320,готово к pre-fractured
+AFTER O2 + LOD1 (50% дистанции),ВСЕ КОРАБЛИ,38,160,80,160,240,160,за пределами LOD0-дистанции половина кораблей рисует LOD1
+SCENE REFERENCE,"вся сцена (конфиг B, замер)",8891,0,21118,0,21118,21118,"02_FACTS_AND_MEASUREMENTS.md:135, C_drawcall_model.csv:3"

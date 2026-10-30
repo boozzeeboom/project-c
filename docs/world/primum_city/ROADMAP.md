@@ -283,6 +283,12 @@ Draw calls и SetPass — на Э5 (GPU-путь не включали).
 
 ### Э5. GPU-путь
 
+> 🔬 **Ресерч culling/visibility (2026-10-30): `10_CULLING_RESEARCH/README.md`.** Ключевое для Э5/Э6:
+> кадр = кадр дверей (17 766/21 118 DC; 5.19 material slot на инстанс); склейку города не отменять,
+> а дробить только после GRD (B2); Umbra закрыта (FO); первый шаг — low-code двери и мерж кораблей,
+> затем GPU Resident Drawer; бюджет L0 пересмотрен (1.5–3k, «≤120» — это L1/L2); корабли — 973 MR,
+> «2 MR» было ошибкой YAML-парса.
+
 Блокер: кастомные шейдеры (`ProjectC/ProceduralSteel` и др.) не поддерживают
 `DOTS_INSTANCING_ON` → при включении Drawer'а ошибки компиляции и «съеденные куски мешей».
 Порядок: адаптировать шейдеры (`#pragma multi_compile _ DOTS_INSTANCING_ON`, `UNITY_DOTS_INSTANCED_PROP`)

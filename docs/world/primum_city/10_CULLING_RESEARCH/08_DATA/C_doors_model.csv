@@ -1,0 +1,12 @@
+﻿prefab,instances,renderers_per_instance,slots_per_instance,renderers_total,slots_total,colliders_per_instance,colliders_total,slots_detail
+PM_ADM_ENTRANCE_PORTAL.prefab,1,8,12,8,12,3,3,1slots/cast1;1slots/cast1;1slots/cast1;1slots/cast1;1slots/cast1;3slots/cast1;3slots/cast1;1slots/cast1
+PM_DOOR_DOUBLE_A.prefab,110,3,10,330,1100,3,330,2slots/cast1;4slots/cast1;4slots/cast1
+PM_DOOR_GATE_A.prefab,36,1,2,36,72,2,72,2slots/cast1
+PM_DOOR_GATE_B.prefab,10,1,2,10,20,2,20,2slots/cast1
+PM_DOOR_PALACE_DOUBLE_A.prefab,143,3,7,429,1001,3,429,3slots/cast1;3slots/cast1;1slots/cast1
+PM_DOOR_PALACE_DOUBLE_B.prefab,7,3,7,21,49,3,21,3slots/cast1;3slots/cast1;1slots/cast1
+PM_DOOR_PALACE_DOUBLE_C.prefab,77,3,7,231,539,3,231,3slots/cast1;3slots/cast1;1slots/cast1
+PM_DOOR_SINGLE_ARCH_C.prefab,419,2,4,838,1676,2,838,3slots/cast1;1slots/cast1
+PM_DOOR_SINGLE_PANEL_B.prefab,812,2,5,1624,4060,2,1624,2slots/cast1;3slots/cast1
+PM_DOOR_SINGLE_PLANK_A.prefab,956,2,5,1912,4780,2,1912,3slots/cast1;2slots/cast1
+PM_DOOR_SINGLE_WIDE_A.prefab,27,2,6,54,162,2,54,2slots/cast1;4slots/cast1

@@ -1,0 +1,16 @@
+﻿scenario,draw_calls,tris_m,note
+"A: as measured (merged chunk x material, doors on, shadow 1000/2)",26981,15.86-16.57,measured 04_OCCLUSION §3
+"B: as measured (shadow 250/1, doors on)",21118,11.61,measured 04_OCCLUSION §3
+A: doors off,4954,15.68,measured
+B: doors off,3352,10.88,measured
+"city unmerged = HEAD (20954 slots), doors as is, shadow250/1",22500,5.84,existing no-door frame 3352 + 19148 extra slots x 1.0
+"city unmerged = HEAD (20954 slots), doors as is, shadow1000/2",33676,5.84,existing no-door frame 4954 + 19148 extra slots x 1.5
+"merge per house/cell (same slots, finer AABB), shadow250/1",21118,11.6 / 15.9,draw calls roughly unchanged; gain only from better culling (visible fraction -20..40%)
+"merge per house/cell + occlusion removes 50% hidden, shadow250/1",12000,~6-8,estimate: at 55% of current DC
+"merge per house/cell (same slots, finer AABB), shadow1000/2",26981,11.6 / 15.9,draw calls roughly unchanged; gain only from better culling (visible fraction -20..40%)
+"merge per house/cell + occlusion removes 50% hidden, shadow1000/2",15000,~6-8,estimate: at 55% of current DC
+A + doors do not cast shadows,17143,15.6,removes door shadow pass
+B + doors do not cast shadows,15541,11.4,removes door shadow pass
+B + doors merged to 1 slot each (2 363 slots),6802,11.4,"atlas merge, keeps interaction"
+"B + doors 1 slot, no shadows",5715,11.4,best door-only win without GPU path
+"GPU Resident Drawer path (city + doors instanced, shaders DOTS-ready)",150-350,~10-15,estimate; requires DOTS_INSTANCING_ON in all city/door shaders; blocked today

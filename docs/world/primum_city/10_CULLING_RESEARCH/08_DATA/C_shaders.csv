@@ -1,0 +1,41 @@
+﻿file,shader_name,dots_instancing_on,unity_dots_instanced_prop,unity_object_to_world,unity_matrix_m,multi_compile_instancing,gpu_instancing_support,bytes
+Assets\_Project\Shaders\Clouds\CloudCommon.hlsl,,0,0,0,0,0,0,7341
+Assets\_Project\Shaders\Clouds\CloudNoise.hlsl,,0,0,0,0,0,0,8853
+Assets\_Project\Shaders\Clouds\VolumetricClouds.shader,Hidden/ProjectC/VolumetricClouds,0,0,0,0,0,0,27906
+Assets\_Project\Shaders\DistantCloudDebug.shader,Project C/Clouds/DistantCloudDebug,0,0,0,0,0,0,1275
+Assets\_Project\Shaders\DistantCloudHSV.shader,Project C/Clouds/DistantCloudHSV,0,0,0,0,0,0,2740
+Assets\_Project\Shaders\DistantFocus.shader,Hidden/ProjectC/DistantFocusFar,0,0,0,0,0,0,4774
+Assets\_Project\Shaders\EarthCurvature.shader,ProjectC/EarthCurvature,0,0,0,0,0,0,2166
+Assets\_Project\Shaders\EdgeDetection.shader,Hidden/ProjectC/EdgeDetection,0,0,0,0,0,0,12877
+Assets\_Project\Shaders\EdgeDetectionMask.shader,Hidden/ProjectC/EdgeDetectionMask,0,0,0,0,0,0,1159
+Assets\_Project\Shaders\Moon\MoonLunarPhase.shader,Project C/Moon/MoonLunarPhase,0,0,1,0,0,0,4060
+Assets\_Project\Shaders\OcclusionDither.shader,ProjectC/OcclusionDither,0,0,0,0,0,0,7129
+Assets\_Project\Shaders\ProceduralBarkNoise.hlsl,,0,0,0,0,0,0,12098
+Assets\_Project\Shaders\ProceduralBrickNoise.hlsl,,0,0,0,0,0,0,26450
+Assets\_Project\Shaders\ProceduralBronzeNoise.hlsl,,0,0,0,0,0,0,8883
+Assets\_Project\Shaders\ProceduralBumpPrecise.hlsl,,0,0,0,0,0,0,3875
+Assets\_Project\Shaders\ProceduralCobbleNoise.hlsl,,0,0,0,0,0,0,13488
+Assets\_Project\Shaders\ProceduralConcreteNoise.hlsl,,0,0,0,0,0,0,14503
+Assets\_Project\Shaders\ProceduralFabricNoise.hlsl,,0,0,0,0,0,0,13645
+Assets\_Project\Shaders\ProceduralFabricWeaveNoise.hlsl,,0,0,0,0,0,0,13661
+Assets\_Project\Shaders\ProceduralFoliageNoise.hlsl,,0,0,0,0,0,0,15670
+Assets\_Project\Shaders\ProceduralGlassNoise.hlsl,,0,0,0,0,0,0,8852
+Assets\_Project\Shaders\ProceduralIronNoise.hlsl,,0,0,0,0,0,0,10475
+Assets\_Project\Shaders\ProceduralLanternNoise.hlsl,,0,0,0,0,0,0,10655
+Assets\_Project\Shaders\ProceduralLavaNoise.hlsl,,0,0,0,0,0,0,11490
+Assets\_Project\Shaders\ProceduralMarbleVeinNoise.hlsl,,0,0,0,0,0,0,13076
+Assets\_Project\Shaders\ProceduralParquetNoise.hlsl,,0,0,0,0,0,0,13400
+Assets\_Project\Shaders\ProceduralPlasticNoise.hlsl,,0,0,0,0,0,0,13054
+Assets\_Project\Shaders\ProceduralPlateNoise.hlsl,,0,0,0,0,0,0,27941
+Assets\_Project\Shaders\ProceduralSteel.shader,ProjectC/ProceduralSteel,0,0,1,0,1,0,18876
+Assets\_Project\Shaders\ProceduralSteelNoise.hlsl,,0,0,0,0,0,0,4129
+Assets\_Project\Shaders\ProceduralTerrainNoise.hlsl,,0,0,0,0,0,0,14214
+Assets\_Project\Shaders\ProceduralTilesNoise.hlsl,,0,0,0,0,0,0,28122
+Assets\_Project\Shaders\ProceduralWoodNoise.hlsl,,0,0,0,0,0,0,12949
+Assets\_Project\Shaders\Skybox\SkyboxBlend.shader,ProjectC/Skybox Blend,0,0,0,0,0,0,1297
+Assets\_Project\Shaders\Stars.shader,Project C/Stars/Stars,0,0,0,0,0,0,1204
+Assets\_Project\Shaders\Stars\Stars.shader,Project C/Stars/Stars,0,0,0,0,0,0,1851
+Assets\_Project\Shaders\TargetOutline.shader,ProjectC/TargetOutline,0,0,0,0,0,0,1941
+Assets\_Project\Shaders\VeilRaymarch.shader,Project C/Clouds/VeilRaymarch,0,0,0,0,0,0,12844
+Assets\_Project\Shaders\VeilRaymarchMesh.shader,Project C/Clouds/VeilRaymarchMesh,0,0,0,0,0,0,13280
+Assets\_Project\Shaders\VeilShader.shader,Project C/Clouds/VeilShader,0,0,0,0,0,0,7320

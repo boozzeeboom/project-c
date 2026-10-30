@@ -1,0 +1,17 @@
+metric;live_scene_mcp_2026-10-30;disk_head_yaml_parse;source
+total_gameobjects;23028;4590 non-stripped GO docs + 4894 stripped + prefab children;MCP lead / C_tools
+mesh_renderers;8863;849 scene-local + prefab instances;MCP lead / C_tools
+mesh_filters;8861;790 scene-local;MCP lead / C_tools
+triangles_total;6838859;5844674 (city only, rebased meshes);MCP lead / 11_mesh_assets.py
+door_controller;2630;2598 door prefab instances;MCP lead / 12_doors_ships.py
+lights;2238;2238 PM_LIGHT_* instances;MCP lead / 03_roots.py
+colliders;18358;12299 box + 34 sphere + 10 capsule + 7 mesh (scene-local);MCP lead / unity_parse
+city_mesh_refs_override;-;16704 m_Mesh override records in PRIMUM_CITY instance;10_city_scene_overrides.py
+city_material_slot_overrides;-;20955 slot override records (49 unique materials);10_city_scene_overrides.py
+city_local_scale_0_01;-;15854 objects;10_city_scene_overrides.py
+city_isactive_off_overrides;-;2228 (prefab asset adds 8207 more);10_city_scene_overrides.py / 09_prefab_mods.py
+rebased_meshes;-;16809 meshes 11953751 verts 6336783 tris;11_mesh_assets.py
+city_referenced_geometry;-;16704 meshes 11042258 verts 5844674 tris 20954 slots;11_mesh_assets.py
+structural_batch_median_aabb_m;-;129.9 (p90 166.6 max 1466.2);16_batch_bounds.py
+prop_median_aabb_m;-;0.4 (n=16125);16_batch_bounds.py
+static_flag_everything_gos;-;2076 (1320 collider holders + 756 none, 0 renderers);15_scene_settings.py

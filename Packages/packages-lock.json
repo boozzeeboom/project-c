@@ -59,7 +59,15 @@
         "com.unity.inputsystem": "1.1.1",
         "com.unity.cloud.gltfast": "6.12.1"
       },
-      "hash": "fb349e357a7793a4466ae777b7a40976b3185176"
+      "hash": "f885fe91a897de24715f219c196f6c92f81b867d"
+    },
+    "com.ramenvr.autopilot": {
+      "version": "file:com.ramenvr.autopilot-1.0.1.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {
+        "com.unity.nuget.mono-cecil": "1.11.6"
+      }
     },
     "com.unity.2d.sprite": {
       "version": "1.0.0",

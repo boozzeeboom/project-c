@@ -376,7 +376,7 @@ def _label(text, loc, size, coll):
     cu.body = text
     cu.size = size
     cu.align_x = "LEFT"
-    cu.align_y = "BOTTOM"
+    cu.align_y = "TOP"      # text hangs below its anchor, so a label never creeps onto the row above
     ob = bpy.data.objects.new("LBL_" + text[:32], cu)
     ob.location = loc
     mat = bpy.data.materials.get("LabelMat")
@@ -447,6 +447,44 @@ def _rot_z_world(objs, deg, pivot):
         o.matrix_world = T @ o.matrix_world
 
 
+CHILD_TOKENS = ("_Boy_", "_Girl_")
+CHILD_HEIGHT = 0.72     # fraction of the 1.0 standard figure height
+
+
+def scale_children(target=CHILD_HEIGHT):
+    """Shrink the _Boy_ / _Girl_ models to a child's height, feet on the ground.
+
+    The generated FBX characters all come in at the same ~1.0 unit height, so the
+    kids read as adults next to their guild colleagues.  Each child is scaled
+    around the centre of its own footprint so it keeps standing on z = 0.
+    """
+    n = 0
+    for o in _coll_objs("01_CHARACTERS"):
+        if o.type != "MESH" or o.get("gm_child"):
+            continue
+        if not any(t in o.name for t in CHILD_TOKENS):
+            continue
+        objs = _objs_of(o.name)
+        mn, mx, hit = _bounds(objs)
+        if not hit:
+            continue
+        h = mx.z - mn.z
+        if h <= 1e-4:
+            continue
+        s = target / h
+        if abs(s - 1.0) < 1e-4:
+            o["gm_child"] = True
+            continue
+        pivot = Vector(((mn.x + mx.x) / 2.0, (mn.y + mx.y) / 2.0, mn.z))
+        T = Matrix.Translation(pivot) @ Matrix.Scale(s, 4) @ Matrix.Translation(-pivot)
+        for ob in objs:
+            ob.matrix_world = T @ ob.matrix_world
+        o["gm_child"] = True
+        n += 1
+    bpy.context.view_layer.update()
+    print("CHILDREN  scaled=%d  target_height=%.2f" % (n, target))
+
+
 def layout_company(cx=0.0, cy=0.0):
     """Line the characters up as a рота: CO_FILES files wide, ranks stacked away from the camera.
 
@@ -456,6 +494,7 @@ def layout_company(cx=0.0, cy=0.0):
     by half a file so the second and third ranks read as rows and not as a wall.
     """
     s01 = next(s for s in build_plan() if s["key"] == "01_CHARACTERS")
+    scale_children()
     groups, order = {}, []
     for r in s01["rows"]:
         for e in r["items"]:
@@ -594,6 +633,7 @@ def layout():
     board = []
     for k in ("02_ARMOR", "03_WEAPONS", "04_GADGETS", "05_RESIDENTS"):
         board.extend(_coll_objs(k))
+    bpy.context.view_layer.update()          # matrix_world of the moved board must be current
     mn, mx, hit = _bounds(board)
     dy = ((co["y1"] + CO_BACK_GAP) - mn.y) if hit else 0.0
     _move(board, Vector((0.0, dy, 0.0)))
@@ -620,7 +660,7 @@ def _ndc_box(sc, cam, corners):
     return min(xs), max(xs), min(ys), max(ys)
 
 
-def finalize(target=0.94):
+def finalize(target=0.94, objs=None):
     """Frame the whole board with an orthographic camera, centred on real bounds.
 
     Orthographic is what makes the stack readable: under perspective at 46 deg the
@@ -648,9 +688,9 @@ def finalize(target=0.94):
     up = q @ Vector((0.0, 1.0, 0.0))
     bpy.context.view_layer.update()
 
-    objs = [o for o in bpy.data.objects
-            if o.name not in ("GROUND", "SUN", "FILL", "CAM_Showcase")
-            and o.type in ("MESH", "FONT", "CURVE")]
+    objs = objs if objs is not None else [o for o in bpy.data.objects
+                                          if o.name not in ("GROUND", "SUN", "FILL", "CAM_Showcase")
+                                          and o.type in ("MESH", "FONT", "CURVE")]
     mn, mx, hit = _bounds(objs)
     if hit:
         pad = 0.25

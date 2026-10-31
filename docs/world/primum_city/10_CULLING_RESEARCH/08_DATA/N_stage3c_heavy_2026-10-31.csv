@@ -43,3 +43,17 @@ measured_2140,finding,cost_owner,large_batches,«H2-батчи (корпус/п�
 measured_2140,bench,autostop,OK,NOTE;playmode=stopped_by_bench — замер сам остановил Play Mode
 measured_2140,rebase,f8_f9,NO_TRANSACTION,transactionsSeen=False; worldRootShift=0.00 на success и rollback; errorsSoFar=0 — долг Stage 3a не закрыт
 next,action,per_part_whole_lodgroup,IMPLEMENTED,«правило поштучное по всему LODGroup (568 рендереров / 572 слота); ожидание d80 ≈1000–1100, d120 ≈900–1050, d200 ≈700–950, d300 ≈650–950»
+measured_2150,run,context,,2026-10-31 21:50:01; PlayMode→Host; quality=Medium; lodBias=1.30; shadowDistance=400; cascades=4; soft=on; coverWholeGroup=True; groupRenderers=568; trackedRuntime=568; BENCH_DONE=OK; 7/7; errors=0
+measured_2150,dc,d80,971,slots=335; casters=302; shadowVisible=141; all=1639; without=668 — лучше обеих прошлых версий
+measured_2150,dc,d120,815,slots=360; casters=213; shadowVisible=153; all=1733; without=918
+measured_2150,dc,d200,1170,PASS; slots=553; casters=225; shadowVisible=185; all=3661; without=2491; запас +130 (10.0 %)
+measured_2150,dc,d200_repeat,1161,PASS; отклонение от d200 = 0.77 %; casters=216; all=3652
+measured_2150,dc,d300,1236,PASS; ХУДШАЯ ПОЗА; slots=604; casters=44; shadowVisible=47; all=3471; without=2235; запас +64 (4.9 %)
+measured_2150,dc,d400,122,LOD1; casters=8; all=2358
+measured_2150,dc,d1200,104,LOD2; casters=0; all=2361
+measured_2150,gate,p2,PASS,d200 1170 / d200_repeat 1161 / d300 1236 при гейте ≤1300
+measured_2150,finding,shadow_visible,d200_185_d300_47,d300=47 — это ровно интерактив вне LODGroup (двери/створки/ModuleSlot/двигатели/VFX); статический корабль целиком перестал быть кастером
+measured_2150,finding,tris,UNUSABLE,d120=−488420; d200=−37616; d300=−26498 — A−B по треугольникам загрязнена, выводить только ship_dc
+measured_2150,open,visual_acceptance,PENDING,переход 140/150 м у статики и ночной режим глазами не проверены
+measured_2150,open,f8_f9,NO_TRANSACTION,transactionsSeen=False; worldRootShift=0.00 на success и rollback — долг Stage 3a не закрыт
+next,action,stage3c_status,GATE_CLOSED,«отчёт §11 и measured_2150 записаны; закрыто замером: d200 1170 / d300 1236; открыто: визуальная приёмка бюджета, F8/F9»

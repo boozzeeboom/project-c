@@ -52,13 +52,13 @@ namespace ProjectC.EditorTools
         private const string RollbackMenu = "ProjectC/Ships/Shadow Budget/Rollback (Stage 3c)";
 
         // ---------------------------------------------------------------- замеры-опоры
-        // Источник: N_stage3c_heavy_runtime_2026-10-31.txt, прогон 2026-10-31 21:40 (shadowDistance 400,
-        // 4 каскада, soft), строка CASE id=d200: dc_all=3852, dc_withoutShip=2491, ship_dc=1361,
-        // slots=546, ship_shadowCasters=416 → 815 теневых draw → 1.96 draw на кастер.
-        // Опора нужна только как ссылка в отчёте: числовая проекция снята (см. Project).
-        private const int MeasuredShipDc200 = 1361;
-        private const int MeasuredSlots200 = 546;
-        private const int MeasuredShadowCasters200 = 416;
+        // Источник: N_stage3c_heavy_runtime_2026-10-31.txt, прогон 2026-10-31 21:50 (shadowDistance 400,
+        // 4 каскада, soft, coverWholeGroup=true), строка CASE id=d200: dc_all=3661, dc_withoutShip=2491,
+        // ship_dc=1170, slots=553, ship_shadowCasters=225 → 617 теневых draw → 2.74 draw на кастер.
+        // Гейт P2 закрыт: d200 1170 / d200_repeat 1161 / d300 1236 (запас d300 = +64).
+        private const int MeasuredShipDc200 = 1170;
+        private const int MeasuredSlots200 = 553;
+        private const int MeasuredShadowCasters200 = 225;
 
         /// <summary>Гейт P2: ship_dc на 200 м при полном корабле в кадре (и на 300 м — худшая поза).</summary>
         private const int GateDc = 1300;
@@ -349,19 +349,19 @@ namespace ProjectC.EditorTools
         /// </summary>
         private static void Project(Inventory inv, LODGroup group, List<string[]> rows, List<string> problems)
         {
-            int shadowDraws = MeasuredShipDc200 - MeasuredSlots200;                 // 815
-            float perCaster = shadowDraws / (float)MeasuredShadowCasters200;        // 1.96
+            int shadowDraws = MeasuredShipDc200 - MeasuredSlots200;                 // 617
+            float perCaster = shadowDraws / (float)MeasuredShadowCasters200;        // 2.74
 
             AddRow(rows, "projection", "dc", "anchor_200m", MeasuredShipDc200.ToString(CultureInfo.InvariantCulture),
-                "замер 2026-10-31 21:40: slots=" + MeasuredSlots200 + "; shadowCasters=" + MeasuredShadowCasters200 +
+                "замер 2026-10-31 21:50: slots=" + MeasuredSlots200 + "; shadowCasters=" + MeasuredShadowCasters200 +
                 "; shadowDraws=" + shadowDraws + "; drawsPerCaster=" + F(perCaster) +
-                "; доли мелочи: " + inv.Slots + " слотов в бюджете");
+                "; мелочи в бюджете: " + inv.Slots + " слотов (бюджет покрывает весь LODGroup)");
 
             AddRow(rows, "projection", "dc", "gate", GateDc.ToString(CultureInfo.InvariantCulture),
-                "закрывать по d200 AND d300; d300 в замере 21:40 = 1612 DC — худшая поза (lodBias 1.3, LOD0 до 390 м)");
+                "ЗАКРЫТ замером 21:50: d200 1170 / d200_repeat 1161 / d300 1236; запас d300 = +64 (4.9 %)");
 
-            AddRow(rows, "projection", "dc", "verdict", "MEASURE_ONLY",
-                "числовая модель снята: 1175 vs факт 1434 и ≈980/≈860 vs факт 1361/1612; ΔDC даёт только прогон Stage 3 Ship Bench");
+            AddRow(rows, "projection", "dc", "verdict", "MEASURED_PASS",
+                "числовая модель снята (три прогноза опровергнуты замером); при подорожании мира запас d300 берётся цветным проходом (604 слота), не тенями");
 
             var lods = group.GetLODs();
             if (lods.Length > 0)

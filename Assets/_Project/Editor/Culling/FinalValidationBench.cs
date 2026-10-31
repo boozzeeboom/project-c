@@ -166,6 +166,13 @@ namespace ProjectC.EditorTools
         private static string _rebasePhaseName = "";
         private static readonly List<string> _rebaseLines = new List<string>();
 
+        // F9 — это откат транзакции: успех = `rolled back ...;restore=True`, а не смена frameGen.
+        // Счётчики запоминаются на момент нажатия, поэтому отфильтрованы от прежних авто-rebase.
+        private static int _rollbackSeen;
+        private static int _rollbackRestoreTrue;
+        private static int _rebaseCompleted;
+        private static bool _f9Pass;
+
         // снимки состояния сцены
         private static Transform _camTransformBefore;
         private static Vector3 _camPosBefore;
@@ -207,8 +214,8 @@ namespace ProjectC.EditorTools
             if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
 
             _runTag = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
-            _outRawPath = Path.Combine(dataDir, "Q_final_validation_" + DateTag + "_raw.txt");
-            _outCsvPath = Path.Combine(dataDir, "Q_final_validation_" + DateTag + ".csv");
+            _outRawPath = Path.Combine(dataDir, "R_stage4c_" + DateTag + "_raw.txt");
+            _outCsvPath = Path.Combine(dataDir, "R_stage4c_" + DateTag + ".csv");
             if (File.Exists(_outRawPath)) File.Delete(_outRawPath);
             if (File.Exists(_outCsvPath)) File.Delete(_outCsvPath);
 
@@ -249,7 +256,7 @@ namespace ProjectC.EditorTools
             SessionState.SetBool(SessionKey, true);
             SessionState.SetInt(SessionKey + ".reloads", 0);
 
-            Append("NOTE;bench=FinalValidationBench;unity=" + Application.unityVersion +
+            Append("NOTE;bench=FinalValidationBench(stage4c);unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart);
             Append(ReadRenderConfigLine());
@@ -641,6 +648,20 @@ namespace ProjectC.EditorTools
             _cityCandidates.Clear();
             _cityBaseModes.Clear();
 
+            // Паритет кандидатов (Stage 4c): независимый скан в тех же правилах, но БЕЗ Off-фильтра.
+            // Внимание: скан идёт после прогрева, когда бюджет уже погасил большинство теней,
+            // поэтому режим Off сам по себе ничего не говорит о «авторском» Off. Единственный
+            // корректный счётчик — принадлежность списку компонента; он считается ниже.
+            int liveAll = 0;
+            for (int i = 0; i < _allRenderers.Length; i++)
+            {
+                var r = _allRenderers[i];
+                if (r == null || !r.enabled) continue;
+                if (IsShipRenderer(r)) continue;
+                if (r.gameObject.layer == DoorLayer) continue;
+                liveAll++;
+            }
+
             // Базовые режимы берём из самого компонента: он собрал их ДО того, как начал гасить
             // тени, а живой скан на этой фазе уже увидел бы Off и запомнил бы его как «базу».
             CollectCityBudgetFromComponent();
@@ -659,14 +680,33 @@ namespace ProjectC.EditorTools
                 }
             }
 
+            // Паритет: liveScan = entries + off_not_in_entries + on_not_in_entries.
+            var entrySet = new HashSet<Renderer>(_cityCandidates);
+            int offNotInEntries = 0, onNotInEntries = 0;
+            for (int i = 0; i < _allRenderers.Length; i++)
+            {
+                var r = _allRenderers[i];
+                if (r == null || !r.enabled) continue;
+                if (IsShipRenderer(r)) continue;
+                if (r.gameObject.layer == DoorLayer) continue;
+                if (entrySet.Contains(r)) continue;
+                if (r.shadowCastingMode == ShadowCastingMode.Off) offNotInEntries++;
+                else onNotInEntries++;
+            }
+
             Debug.Log("[FinalValidation] Рендереров всего=" + _allRenderers.Length +
                       ", корабельных=" + _shipRenderers.Length +
                       ", кандидатов бюджета (наш расчёт)=" + _cityCandidates.Count +
                       ", component entries=" + _budgetEntriesCount +
+                      ", liveScan=" + liveAll + "(offNotInEntries=" + offNotInEntries +
+                      ", onNotInEntries=" + onNotInEntries + ")" +
                       ", ship roots=" + _shipRoots.Length);
             Append("NOTE;renderers;all=" + _allRenderers.Length + ";ships=" + _shipRenderers.Length +
                    ";shipRoots=" + _shipRoots.Length + ";ourCityCandidates=" + _cityCandidates.Count +
-                   ";componentEntries=" + _budgetEntriesCount);
+                   ";componentEntries=" + _budgetEntriesCount +
+                   ";liveScanSameRules=" + liveAll + ";offNotInEntries=" + offNotInEntries +
+                   ";onNotInEntries=" + onNotInEntries +
+                   ";parityNote=scan_after_warmup_budget_already_cut");
         }
 
         private static bool IsShipRenderer(Renderer r)
@@ -1156,6 +1196,10 @@ namespace ProjectC.EditorTools
                         _cumulativeBefore = GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset;
                         _rootBefore = _worldRoot != null ? _worldRoot.position : Vector3.zero;
                         _predictedShiftMagnitude = predicted;
+                        _rollbackSeen = 0;
+                        _rollbackRestoreTrue = 0;
+                        _rebaseCompleted = 0;
+                        _f9Pass = false;
 
                         _playerRoot.position = newPos;
                         Physics.SyncTransforms();
@@ -1175,13 +1219,15 @@ namespace ProjectC.EditorTools
                         break;
                     }
 
-                case 4: // ожидание F9
+                case 4: // ожидание F9 (откат транзакции — это и есть успех)
                     {
-                        bool settled = FrameGenOf() != _frameGenBefore ||
-                                       GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset != _cumulativeBefore;
+                        bool stateChanged = FrameGenOf() != _frameGenBefore ||
+                                            GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset != _cumulativeBefore;
+                        bool settled = stateChanged || _rollbackSeen > 0;
+
                         if (!settled && Time.frameCount - _rebaseStepFrame < RebaseTimeoutFrames) return;
 
-                        if (!settled && _pressAttempts < 6)
+                        if (!settled && _pressAttempts < 3)
                         {
                             Append("REBASE;phase=F9;status=no_transaction_yet;retry=" + (_pressAttempts + 1));
                             PressKey(Key.F9);
@@ -1190,11 +1236,28 @@ namespace ProjectC.EditorTools
                         }
 
                         Vector3 rootAfter = _worldRoot != null ? _worldRoot.position : Vector3.zero;
-                        Append("REBASE;phase=F9_after;" + (settled ? "status=settled" : "status=FAILED_no_transaction") +
+                        float rootShift = Vector3.Distance(rootAfter, _rootBefore);
+
+                        // Успех F9: транзакция прошла и откатилась (restore=True), состояние вернулось
+                        // к исходному: кумулятив/frameGen без изменений, WorldRoot на месте.
+                        _f9Pass = _rollbackRestoreTrue > 0 && !stateChanged && rootShift < 0.01f;
+
+                        string status = stateChanged && _rollbackSeen == 0
+                            ? "FAILED_changed_state_without_rollback"
+                            : _f9Pass
+                                ? "PASS_rollback_restore"
+                                : _rollbackSeen > 0
+                                    ? "rollback_without_restore_true"
+                                    : "FAILED_no_transaction";
+
+                        Append("REBASE;phase=F9_after;status=" + status +
+                               ";f9Pass=" + _f9Pass +
+                               ";rollbackLogs=" + _rollbackSeen +
+                               ";restoreTrue=" + _rollbackRestoreTrue +
                                ";frameGen=" + FrameGenOf() +
                                ";cumulative=" + GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset.ToString("F2") +
                                ";worldRoot=" + rootAfter.ToString("F2") +
-                               ";worldRootShift_m=" + Vector3.Distance(rootAfter, _rootBefore).ToString("F3", CultureInfo.InvariantCulture) +
+                               ";worldRootShift_m=" + rootShift.ToString("F3", CultureInfo.InvariantCulture) +
                                ";predictedShift_m=" + _predictedShiftMagnitude.ToString("F3", CultureInfo.InvariantCulture) +
                                ";player=" + _playerRoot.position.ToString("F2") +
                                ";doors=" + DoorControllerCount() + ";doorRenderers=" + DoorRendererCount() +
@@ -1210,6 +1273,10 @@ namespace ProjectC.EditorTools
                 case 3: // итог
                     {
                         Append("REBASE;phase=summary;pressAttempts=" + _pressAttempts +
+                               ";f9Pass=" + _f9Pass +
+                               ";rollbackLogs=" + _rollbackSeen +
+                               ";restoreTrue=" + _rollbackRestoreTrue +
+                               ";completedLogs=" + _rebaseCompleted +
                                ";errors=" + _errorCount + ";exceptions=" + _exceptionCount +
                                ";baselineErrors=" + _baselineErrorCount + ";shaderErrors=" + _shaderErrorCount +
                                ";hybridEvidence=see_DC_cases");
@@ -1335,6 +1402,12 @@ namespace ProjectC.EditorTools
 
             if (condition.Contains("[T-FO06CY]"))
             {
+                if (condition.Contains("rolled back"))
+                {
+                    _rollbackSeen++;
+                    if (condition.Contains("restore=True")) _rollbackRestoreTrue++;
+                }
+                if (condition.Contains("completed")) _rebaseCompleted++;
                 if (_rebaseLines.Count < 60) _rebaseLines.Add(condition);
             }
 
@@ -1387,12 +1460,14 @@ namespace ProjectC.EditorTools
             if (f == null) return "none";
             var list = f.GetValue(target) as IList;
             if (list == null) return "none";
+            Vector3 rig = _cam != null ? _cam.transform.position : Vector3.zero;
             var sb = new StringBuilder();
             for (int i = 0; i < list.Count && i < 8; i++)
             {
                 var cam = list[i] as Camera;
                 if (i > 0) sb.Append('|');
-                sb.Append(cam != null ? cam.name : "null");
+                if (cam == null) { sb.Append("null"); continue; }
+                sb.Append(cam.name).Append('@').Append(Vector3.Distance(cam.transform.position, rig).ToString("F0"));
             }
             return sb.Length > 0 ? sb.ToString() : "none";
         }
@@ -1433,8 +1508,8 @@ namespace ProjectC.EditorTools
             }
 
             var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            _outRawPath = Path.Combine(projectRoot, DataDir, "Q_final_validation_" + DateTag + "_raw.txt");
-            _outCsvPath = Path.Combine(projectRoot, DataDir, "Q_final_validation_" + DateTag + ".csv");
+            _outRawPath = Path.Combine(projectRoot, DataDir, "R_stage4c_" + DateTag + "_raw.txt");
+            _outCsvPath = Path.Combine(projectRoot, DataDir, "R_stage4c_" + DateTag + ".csv");
             _state = State.WaitPlayMode;
             _stateSince = Now;
             _hostRequested = false;
@@ -1453,6 +1528,447 @@ namespace ProjectC.EditorTools
         static FinalValidationBenchBootstrap()
         {
             FinalValidationBench.ResumeIfRunning();
+        }
+    }
+
+    /// <summary>
+    /// Stage 4c: диагностика паритета кандидатов CityShadowBudget (только чтение, ничего не оптимизирует).
+    /// Отвечает на три вопроса брифа: (1) какие рендереры компонент не взял и почему,
+    /// (2) какие камеры он реально держит в union и какая из них удерживает тени включёнными,
+    /// (3) совпадает ли порог/дистанция с полигоном Stage 4b. Сцену не сохраняет, правок нет.
+    /// Меню: Project C → Culling → Stage 4c → Parity Probe.
+    /// </summary>
+    internal static class Stage4cParityProbe
+    {
+        private const string RunMenu = "Project C/Culling/Stage 4c/Parity Probe";
+        private const string DataDir = "docs/world/primum_city/10_CULLING_RESEARCH/08_DATA";
+
+        private const float BenchFar = 30000f;
+        private const float BenchFov = 60f;
+        private const int WarmupFrames = 400;
+        private const int SettleFrames = 150;
+        private const int DoorLayer = 10;
+        private const string WorldRootName = "WorldRoot_0_0";
+
+        private static readonly Vector3 AuthoredWorldOffset = new Vector3(39936.0f, 2560.03f, 39936.0f);
+        private static readonly Vector3 P1Local = new Vector3(-342.90f, -50.43f, -102.20f);
+
+        private enum PState { Off, WaitPlay, WaitHost, Warmup, AtSpawn, AtP1, Done }
+
+        private static PState _state = PState.Off;
+        private static Camera _cam;
+        private static Transform _worldRoot;
+        private static CityShadowBudget _budget;
+        private static bool _hostRequested;
+        private static int _warmStartFrame;
+        private static int _phaseFrame;
+        private static double _stateSince;
+        private static double _lastHeartbeat;
+        private static string _outPath;
+        private static readonly HashSet<Renderer> _shipSet = new HashSet<Renderer>();
+
+        private static double Now { get { return EditorApplication.timeSinceStartup; } }
+        private static readonly Plane[] _planes = new Plane[6];
+
+        [MenuItem(RunMenu)]
+        public static void Run()
+        {
+            if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("[Stage4cProbe] Уже в Play Mode. Сначала остановить.");
+                return;
+            }
+
+            var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string dataDir = Path.Combine(projectRoot, DataDir);
+            if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
+
+            _outPath = Path.Combine(dataDir, "T_stage4c_probe_" +
+                                   DateTime.Now.ToString("yyyy-MM-dd_HHmmss", CultureInfo.InvariantCulture) + ".txt");
+
+            _state = PState.WaitPlay;
+            _cam = null;
+            _worldRoot = null;
+            _budget = null;
+            _hostRequested = false;
+            _stateSince = Now;
+            _lastHeartbeat = Now;
+
+            Append("PROBE;unity=" + Application.unityVersion + ";scene=" +
+                   SceneManager.GetActiveScene().path + ";dirtyAtStart=" + SceneManager.GetActiveScene().isDirty);
+            Append("PROBE;method=PlayMode_Host→warmup" + WarmupFrames + "fr→dump_at_spawn→pose_P1→wait" +
+                   SettleFrames + "fr→dump_at_P1;read_only_no_scene_save");
+            Debug.Log("[Stage4cProbe] Старт. Файл: " + _outPath);
+
+            EditorApplication.update -= Tick;
+            EditorApplication.update += Tick;
+            EditorApplication.EnterPlaymode();
+        }
+
+        private static void Tick()
+        {
+            try { Step(); }
+            catch (Exception e)
+            {
+                Append("PROBE_ERROR;" + e.GetType().Name + ":" + (e.Message ?? "").Replace(";", ","));
+                Debug.LogError("[Stage4cProbe] Исключение: " + e);
+                Shutdown("EXCEPTION");
+            }
+        }
+
+        private static void Step()
+        {
+            if (Now - _lastHeartbeat > 5.0)
+            {
+                _lastHeartbeat = Now;
+                Append("HEARTBEAT;state=" + _state + ";frame=" + Time.frameCount +
+                       ";playing=" + EditorApplication.isPlaying +
+                       ";hostRequested=" + _hostRequested +
+                       ";rig=" + (_cam != null ? _cam.name : "none") +
+                       ";menu=" + (FindMenu() != null) + ";nmc=" + (FindByTypeName("NetworkManagerController") != null));
+            }
+
+            switch (_state)
+            {
+                case PState.WaitPlay:
+                    if (!EditorApplication.isPlaying) return;
+                    if (Now - _stateSince < 2.0) return;
+                    _state = PState.WaitHost;
+                    _stateSince = Now;
+                    break;
+
+                case PState.WaitHost:
+                    if (TryStartHost())
+                    {
+                        _state = PState.Warmup;
+                        _stateSince = Now;
+                        return;
+                    }
+                    if (Now - _stateSince > 180.0) { Append("PROBE;fail=host_or_rig_timeout"); Shutdown("HOST_TIMEOUT"); }
+                    break;
+
+                case PState.Warmup:
+                    if (Time.frameCount - _warmStartFrame < WarmupFrames) return;
+                    DumpSnapshot("spawn", null);
+                    ApplyP1Pose();
+                    _phaseFrame = Time.frameCount;
+                    _state = PState.AtP1;
+                    break;
+
+                case PState.AtP1:
+                    if (Time.frameCount - _phaseFrame < SettleFrames) return;
+                    DumpSnapshot("P1", null);
+                    DumpVerdict();
+                    _state = PState.Done;
+                    break;
+
+                case PState.Done:
+                    Shutdown("OK");
+                    break;
+            }
+        }
+
+        // ------------------------------------------------------------------ вход в игру
+
+        private static bool TryStartHost()
+        {
+            if (_cam == null) _cam = AcquireRig();
+            if (_cam != null) return WarmupStart();
+
+            if (_hostRequested) return false;
+
+            var nmc = FindByTypeName("NetworkManagerController");
+            var menu = FindMenu();
+            if (nmc == null) return false;
+
+            _hostRequested = true;
+            if (menu != null)
+            {
+                var onClick = menu.GetType().GetMethod("OnHostClicked", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (onClick != null)
+                {
+                    onClick.Invoke(menu, null);
+                    Append("PROBE;host_requested=MainMenuWindow.OnHostClicked");
+                }
+                else
+                {
+                    var start = nmc.GetType().GetMethod("StartHost", BindingFlags.Instance | BindingFlags.Public);
+                    if (start != null) start.Invoke(nmc, null);
+                    Append("PROBE;host_requested=NetworkManagerController.StartHost");
+                }
+            }
+            else
+            {
+                var start = nmc.GetType().GetMethod("StartHost", BindingFlags.Instance | BindingFlags.Public);
+                if (start != null) start.Invoke(nmc, null);
+                Append("PROBE;host_requested=StartHost_no_menu");
+            }
+            return false;
+        }
+
+        private static bool WarmupStart()
+        {
+            if (_warmStartFrame != 0) return true;
+
+            var behaviours = _cam.GetComponentsInParent<MonoBehaviour>(true);
+            for (int i = 0; i < behaviours.Length; i++)
+            {
+                var b = behaviours[i];
+                if (b == null || !b.enabled) continue;
+                string n = b.GetType().Name;
+                if (n == "SpringArmCamera" || n == "ThirdPersonCameraDefault_EmptyTEST") b.enabled = false;
+            }
+
+            _cam.farClipPlane = BenchFar;
+            _cam.fieldOfView = BenchFov;
+            _cam.nearClipPlane = 0.1f;
+
+            _worldRoot = FindWorldRoot();
+            _budget = UnityEngine.Object.FindAnyObjectByType<CityShadowBudget>();
+            _warmStartFrame = Time.frameCount;
+            Append("PROBE;rig=" + _cam.name + ";far=" + _cam.farClipPlane + ";fov=" + _cam.fieldOfView +
+                   ";budgetFound=" + (_budget != null) + ";worldRoot=" + (_worldRoot != null ? "yes" : "no"));
+            return true;
+        }
+
+        private static Camera AcquireRig()
+        {
+            var cams = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            for (int i = 0; i < cams.Length; i++)
+            {
+                var c = cams[i];
+                if (c == null || c.cameraType != CameraType.Game) continue;
+                if (c.targetTexture != null) continue;
+                if (!IsUnderThirdPersonRig(c.transform)) continue;
+                return c;
+            }
+            return null;
+        }
+
+        private static bool IsUnderThirdPersonRig(Transform t)
+        {
+            var node = t;
+            for (int depth = 0; depth < 6 && node != null; depth++)
+            {
+                if (node.name.StartsWith("ThirdPersonCamera", StringComparison.OrdinalIgnoreCase)) return true;
+                node = node.parent;
+            }
+            return false;
+        }
+
+        private static Transform FindWorldRoot()
+        {
+            var roots = SceneManager.GetActiveScene().GetRootGameObjects();
+            for (int i = 0; i < roots.Length; i++)
+                if (roots[i] != null && roots[i].name == WorldRootName) return roots[i].transform;
+            return null;
+        }
+
+        private static Component FindByTypeName(string typeName)
+        {
+            var all = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
+            for (int i = 0; i < all.Length; i++)
+                if (all[i] != null && all[i].GetType().Name == typeName) return all[i];
+            return null;
+        }
+
+        private static Component FindMenu()
+        {
+            return FindByTypeName("MainMenuWindow");
+        }
+
+        private static void ApplyP1Pose()
+        {
+            if (_cam == null) return;
+            Vector3 shift = _worldRoot != null ? _worldRoot.position : Vector3.zero;
+            Vector3 pos = P1Local + AuthoredWorldOffset + shift;
+            _cam.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, 337.5f, 0f));
+            Append("PROBE;pose=P1;campos=" + pos.ToString("F2"));
+        }
+
+        // ------------------------------------------------------------- снимок / диагностика
+
+        private static void DumpSnapshot(string tag, object _)
+        {
+            if (_budget == null) _budget = UnityEngine.Object.FindAnyObjectByType<CityShadowBudget>();
+            if (_cam == null) return;
+
+            var all = UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None);
+            var entries = ReadEntries();
+            var entrySet = new HashSet<Renderer>();
+            for (int i = 0; i < entries.Count; i++) if (entries[i] != null) entrySet.Add(entries[i]);
+
+            var cams = ReadComponentCameras();
+            Vector3 camPos = _cam.transform.position;
+
+            Append("SNAP;tag=" + tag + ";frame=" + Time.frameCount + ";campos=" + camPos.ToString("F2") +
+                   ";allRenderers=" + all.Length + ";entries=" + entries.Count +
+                   ";componentCameras=" + cams.Count);
+
+            // 1. Камеры компонента.
+            for (int i = 0; i < cams.Count; i++)
+            {
+                var c = cams[i];
+                if (c == null) { Append("CAM;tag=" + tag + ";idx=" + i + ";null=True"); continue; }
+                Append("CAM;tag=" + tag + ";idx=" + i + ";name=" + c.name +
+                       ";scene=" + c.gameObject.scene.name +
+                       ";pos=" + c.transform.position.ToString("F2") +
+                       ";distToRig=" + Vector3.Distance(c.transform.position, camPos).ToString("F1") +
+                       ";far=" + c.farClipPlane + ";near=" + c.nearClipPlane +
+                       ";depth=" + c.depth + ";mask=" + c.cullingMask +
+                       ";isRig=" + (c == _cam));
+            }
+
+            // 2. Комплект кандидатов: компонент vs независимый скан (без Off-фильтра).
+            CollectShips(all);
+            int live = 0, liveOn = 0, authoredOff = 0, missingOther = 0;
+            var missingOffNames = new List<string>();
+            for (int i = 0; i < all.Length; i++)
+            {
+                var r = all[i];
+                if (r == null || !r.enabled) continue;
+                if (r.gameObject.layer == DoorLayer) continue;
+                if (_shipSet.Contains(r)) continue;
+                live++;
+                if (r.shadowCastingMode != ShadowCastingMode.Off) { liveOn++; continue; }
+                if (entrySet.Contains(r)) continue;
+                authoredOff++;
+                if (missingOffNames.Count < 12) missingOffNames.Add(r.name + "@" + r.gameObject.layer);
+            }
+            for (int i = 0; i < all.Length; i++)
+            {
+                var r = all[i];
+                if (r == null) continue;
+                if (r.enabled) continue;
+                if (entrySet.Contains(r)) missingOther++; // в списке есть, а уже выключен
+            }
+            Append("SET;tag=" + tag + ";liveEnabled=" + live + ";liveOn=" + liveOn +
+                   ";authoredOff_notInEntries=" + authoredOff +
+                   ";entriesDisabledButListed=" + missingOther +
+                   ";sampleAuthoredOff=" + string.Join("|", missingOffNames.ToArray()));
+
+            // 3. Бакеты дистанции/состояния.
+            int off = 0, onNearRig = 0, onFarRig = 0;
+            var argminFar = new Dictionary<string, int>();
+            int farInFrustum = 0;
+            GeometryUtility.CalculateFrustumPlanes(_cam, _planes);
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var r = entries[i];
+                if (r == null) continue;
+                bool isOff = r.shadowCastingMode == ShadowCastingMode.Off;
+                if (isOff) { off++; continue; }
+
+                float dRig = Vector3.Distance(r.bounds.center, camPos);
+                if (dRig <= 200f) { onNearRig++; continue; }
+                onFarRig++;
+
+                string argmin = "none";
+                float best = float.MaxValue;
+                for (int c = 0; c < cams.Count; c++)
+                {
+                    var cc = cams[c];
+                    if (cc == null) continue;
+                    float d = Vector3.Distance(r.bounds.center, cc.transform.position);
+                    if (d < best) { best = d; argmin = cc.name; }
+                }
+                if (!argminFar.ContainsKey(argmin)) argminFar[argmin] = 0;
+                argminFar[argmin] = argminFar[argmin] + 1;
+                if (GeometryUtility.TestPlanesAABB(_planes, r.bounds)) farInFrustum++;
+            }
+
+            var sb = new StringBuilder();
+            foreach (var kv in argminFar) sb.Append(kv.Key).Append('=').Append(kv.Value).Append('|');
+            Append("BUCKET;tag=" + tag + ";entries=" + entries.Count + ";modeOff=" + off +
+                   ";on_dRig_le200=" + onNearRig + ";on_dRig_gt200=" + onFarRig +
+                   ";on_dRig_gt200_inFrustum=" + farInFrustum +
+                   ";argminCam=" + (sb.Length > 0 ? sb.ToString() : "none"));
+
+            // 4. Гистограмма дистанции до рига для On-записей.
+            int[] bands = new int[6];
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var r = entries[i];
+                if (r == null || r.shadowCastingMode == ShadowCastingMode.Off) continue;
+                float d = Vector3.Distance(r.bounds.center, camPos);
+                int b = d < 150f ? 0 : d < 180f ? 1 : d < 200f ? 2 : d < 220f ? 3 : d < 260f ? 4 : 5;
+                bands[b]++;
+            }
+            Append("DIST;tag=" + tag + ";lt150=" + bands[0] + ";150_180=" + bands[1] + ";180_200=" + bands[2] +
+                   ";200_220=" + bands[3] + ";220_260=" + bands[4] + ";ge260=" + bands[5]);
+        }
+
+        private static void DumpVerdict()
+        {
+            Append("VERDICT;see=BUCKET_on_dRig_gt200_and_argminCam;" +
+                   "expect_component_cut_near_polygon_921_of_1301;polygon_sb200_dc=2423");
+        }
+
+        private static void CollectShips(Renderer[] all)
+        {
+            _shipSet.Clear();
+            var scene = SceneManager.GetActiveScene();
+            foreach (var go in scene.GetRootGameObjects())
+            {
+                if (go == null) continue;
+                if (go.name == WorldRootName) continue;
+                if (go.GetComponentInChildren<ShipRootReference>(true) == null) continue;
+                var rs = go.GetComponentsInChildren<Renderer>(true);
+                for (int i = 0; i < rs.Length; i++) if (rs[i] != null) _shipSet.Add(rs[i]);
+            }
+        }
+
+        private static List<Renderer> ReadEntries()
+        {
+            var result = new List<Renderer>();
+            if (_budget == null) return result;
+            var f = typeof(CityShadowBudget).GetField("_entries", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (f == null) return result;
+            var list = f.GetValue(_budget) as IList;
+            if (list == null) return result;
+            for (int i = 0; i < list.Count; i++)
+            {
+                var entry = list[i];
+                if (entry == null) continue;
+                var rf = entry.GetType().GetField("renderer", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var r = rf != null ? rf.GetValue(entry) as Renderer : null;
+                if (r != null) result.Add(r);
+            }
+            return result;
+        }
+
+        private static List<Camera> ReadComponentCameras()
+        {
+            var result = new List<Camera>();
+            if (_budget == null) return result;
+            var f = typeof(CityShadowBudget).GetField("_cameras", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (f == null) return result;
+            var list = f.GetValue(_budget) as IList;
+            if (list == null) return result;
+            for (int i = 0; i < list.Count; i++)
+            {
+                var c = list[i] as Camera;
+                if (c != null) result.Add(c);
+            }
+            return result;
+        }
+
+        private static void Shutdown(string result)
+        {
+            EditorApplication.update -= Tick;
+            Append("PROBE_DONE;result=" + result + ";sceneSaved=no;push=no;dirtyNow=" +
+                   SceneManager.GetActiveScene().isDirty);
+            _state = PState.Off;
+            Debug.Log("[Stage4cProbe] Завершено: " + result + ". Файл: " + _outPath);
+            if (EditorApplication.isPlayingOrWillChangePlaymode) EditorApplication.ExitPlaymode();
+        }
+
+        private static void Append(string line)
+        {
+            if (string.IsNullOrEmpty(_outPath)) return;
+            try { File.AppendAllText(_outPath, line + Environment.NewLine, Encoding.UTF8); }
+            catch (Exception e) { Debug.LogWarning("[Stage4cProbe] Не удалось записать: " + e.Message); }
         }
     }
 }

@@ -11,6 +11,12 @@
 // кроме кораблей (см. ShipRootReference), слоя дверей (10) и тех, у кого тени уже выключены.
 // Замер Stage 4b (Play Mode, Host, Midday, корабли выключены): P1 3 047 → 2 423 DC при пороге 200 м.
 //
+// T-CULL01 / Stage 4c: в union камер попадали не-геймплейные камеры. AtmosphereCamera живёт в
+// (0,0,0) с far 120 000 и маской только PCMM_Atmosphere, то есть внутри города, но город не рисует;
+// из-за неё 100+ рендереров в 200 м от начала координат оставались кастерами (P1 2 811 вместо 2 423).
+// Теперь в union идут только камеры, которые рисуют слой мира (та же конвенция, что в
+// DoorVisibilityBudget) и дотягиваются до города; при пустом наборе — прежний union (страховка).
+//
 // Чего НЕ делает: не трогает меши, материалы, коллайдеры, Light, SetActive, слой дверей (10) и корабли
 // (у них ShipShadowBudget). Не меняет URP shadowDistance/каскады. Не кэширует мировые позиции — FO-safe.
 // Хостер — тот же скрытый DontDestroyOnLoad-объект ViewDistanceRuntime. Camera.main не используется.
@@ -41,6 +47,10 @@ namespace ProjectC.World
         [Tooltip("Слой дверей игнорируется: его тени ведёт DoorVisibilityBudget.")]
         [SerializeField] private int skippedLayer = 10;
 
+        [Tooltip("Слой-маркер мира: камера участвует в union, только если рисует этот слой " +
+                 "(та же конвенция «геймплейной камеры», что в DoorVisibilityBudget).")]
+        [SerializeField] private int worldCameraLayer = DoorVisibilityBudget.DoorLayer;
+
         // Мир — это не корабль, даже если маркер корабля случайно окажется внутри.
         private const string WorldRootName = "WorldRoot_0_0";
 
@@ -60,6 +70,7 @@ namespace ProjectC.World
 
         private readonly List<Entry> _entries = new List<Entry>();
         private readonly List<Camera> _cameras = new List<Camera>();
+        private readonly List<Camera> _allGameCameras = new List<Camera>();
         private readonly HashSet<Renderer> _shipRenderers = new HashSet<Renderer>();
 
         private float _cameraTimer;
@@ -144,8 +155,12 @@ namespace ProjectC.World
                 return;
             }
 
+            // Камеры сразу после сборки — иначе первые ~секунду бюджет не работает (таймер 1 Гц).
+            RefreshCameras();
+
             Debug.Log("[CityShadowBudget] Рендереров города: " + _entries.Count +
                       ", корабельных исключено: " + _shipRenderers.Count +
+                      ", камер в union: " + _cameras.Count +
                       ", тени off дальше " + shadowOffDistance.ToString("F0") + " м, on ближе " +
                       shadowOnDistance.ToString("F0") + " м.");
         }
@@ -178,6 +193,9 @@ namespace ProjectC.World
         private void RefreshCameras()
         {
             _cameras.Clear();
+            _allGameCameras.Clear();
+
+            int worldMask = 1 << worldCameraLayer;
             var all = FindObjectsByType<Camera>(FindObjectsSortMode.None);
             for (int i = 0; i < all.Length; i++)
             {
@@ -186,8 +204,40 @@ namespace ProjectC.World
                 if (cam.cameraType != CameraType.Game) continue;
                 if (cam.targetTexture != null) continue;
                 if (cam.farClipPlane < 50f) continue;
+
+                _allGameCameras.Add(cam);
+
+                // Камера, которая не рисует мир (меню/атмосфера: только PCMM_Atmosphere),
+                // не должна диктовать дальность теней города.
+                if ((cam.cullingMask & worldMask) == 0) continue;
+
+                // Парковочная камера из загрузочной сцены стоит в 240 км от города:
+                // до города она не дотягивается и в union участвовать не может.
+                if (!ReachesCity(cam)) continue;
+
                 _cameras.Add(cam);
             }
+
+            // Страховка: если мир не попал в маску ни одной камеры, остаёмся на прежнем
+            // поведении (union по всем геймплейным камерам), а не выключаем бюджет целиком.
+            if (_cameras.Count == 0) _cameras.AddRange(_allGameCameras);
+        }
+
+        /// <summary>Есть ли хоть один городской кандидат ближе far-плоскости камеры.</summary>
+        private bool ReachesCity(Camera cam)
+        {
+            if (_entries.Count == 0) return true;
+
+            Vector3 p = cam.transform.position;
+            float far = cam.farClipPlane;
+            float farSqr = far * far;
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                var e = _entries[i];
+                if (e == null || e.renderer == null) continue;
+                if ((e.renderer.bounds.center - p).sqrMagnitude <= farSqr) return true;
+            }
+            return false;
         }
 
         private void UpdateShadows()
@@ -234,6 +284,7 @@ namespace ProjectC.World
             }
             _entries.Clear();
             _cameras.Clear();
+            _allGameCameras.Clear();
             _shipRenderers.Clear();
         }
 

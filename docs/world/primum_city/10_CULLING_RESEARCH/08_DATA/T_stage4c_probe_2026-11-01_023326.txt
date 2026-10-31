@@ -1,0 +1,26 @@
+﻿PROBE;unity=6000.5.2f1;scene=Assets/_Project/Scenes/World/WorldScene_0_0.unity;dirtyAtStart=False
+PROBE;method=PlayMode_Host→warmup400fr→dump_at_spawn→pose_P1→wait150fr→dump_at_P1;read_only_no_scene_save
+HEARTBEAT;state=WaitPlay;frame=1;playing=True;hostRequested=False;rig=none;menu=True;nmc=True
+PROBE;host_requested=MainMenuWindow.OnHostClicked
+PROBE;rig=ThirdPersonCamera_0;far=30000;fov=60;budgetFound=True;worldRoot=yes
+HEARTBEAT;state=Warmup;frame=34;playing=True;hostRequested=True;rig=ThirdPersonCamera_0;menu=True;nmc=True
+HEARTBEAT;state=Warmup;frame=156;playing=True;hostRequested=True;rig=ThirdPersonCamera_0;menu=True;nmc=True
+HEARTBEAT;state=Warmup;frame=319;playing=True;hostRequested=True;rig=ThirdPersonCamera_0;menu=True;nmc=True
+SNAP;tag=spawn;frame=403;campos=(-39980.04, -2618.54, -40298.79);allRenderers=8801;entries=1301;componentCameras=3
+CAM;tag=spawn;idx=0;name=AtmosphereCamera;scene=BootstrapScene;pos=(0.00, 0.00, 0.00);distToRig=56826,5;far=120000;near=0,01;depth=100;mask=512;isRig=False
+CAM;tag=spawn;idx=1;name=MainCamera;scene=BootstrapScene;pos=(239997.00, 3000.00, 159998.00);distToRig=344292,8;far=120000;near=0,3;depth=0;mask=-1;isRig=False
+CAM;tag=spawn;idx=2;name=ThirdPersonCamera_0;scene=WorldScene_0_0;pos=(-39980.04, -2618.54, -40298.79);distToRig=0,0;far=30000;near=0,1;depth=0;mask=-1;isRig=True
+SET;tag=spawn;liveEnabled=1482;liveOn=109;authoredOff_notInEntries=177;entriesDisabledButListed=0;sampleAuthoredOff=_CableL@0|_CableR@0|Ruin_Wall_6@0|SkyDome_Stars@2|Ruin_Slab_3@0|Pad_06@0|Stars@9|PAD-005_label@0|PAD-007_npc@0|Pad_01@0|Pad_04@0|PAD-006_npc@0
+BUCKET;tag=spawn;entries=1301;modeOff=1196;on_dRig_le200=0;on_dRig_gt200=105;on_dRig_gt200_inFrustum=0;argminCam=AtmosphereCamera=105|
+DIST;tag=spawn;lt150=0;150_180=0;180_200=0;200_220=0;220_260=0;ge260=105
+PROBE;pose=P1;campos=(-342.90, -50.40, -358.20)
+HEARTBEAT;state=AtP1;frame=476;playing=True;hostRequested=True;rig=ThirdPersonCamera_0;menu=True;nmc=True
+SNAP;tag=P1;frame=553;campos=(-342.90, -50.40, -358.20);allRenderers=8801;entries=1301;componentCameras=3
+CAM;tag=P1;idx=0;name=AtmosphereCamera;scene=BootstrapScene;pos=(0.00, 0.00, 0.00);distToRig=498,4;far=120000;near=0,01;depth=100;mask=512;isRig=False
+CAM;tag=P1;idx=1;name=MainCamera;scene=BootstrapScene;pos=(239997.00, 3000.00, 159998.00);distToRig=288940,6;far=120000;near=0,3;depth=0;mask=-1;isRig=False
+CAM;tag=P1;idx=2;name=ThirdPersonCamera_0;scene=WorldScene_0_0;pos=(-342.90, -50.40, -358.20);distToRig=0,0;far=30000;near=0,1;depth=0;mask=-1;isRig=True
+SET;tag=P1;liveEnabled=1491;liveOn=352;authoredOff_notInEntries=186;entriesDisabledButListed=0;sampleAuthoredOff=_CableL@0|_CableR@0|SkyDome_Stars@2|Ruin_Beam_1@0|Pad_06@0|Stars@9|PAD-005_label@0|PAD-007_npc@0|Pad_01@0|Pad_04@0|Ruin_Wall_0@0|PAD-006_npc@0
+BUCKET;tag=P1;entries=1301;modeOff=953;on_dRig_le200=243;on_dRig_gt200=105;on_dRig_gt200_inFrustum=0;argminCam=AtmosphereCamera=105|
+DIST;tag=P1;lt150=168;150_180=75;180_200=0;200_220=0;220_260=0;ge260=105
+VERDICT;see=BUCKET_on_dRig_gt200_and_argminCam;expect_component_cut_near_polygon_921_of_1301;polygon_sb200_dc=2423
+PROBE_DONE;result=OK;sceneSaved=no;push=no;dirtyNow=False

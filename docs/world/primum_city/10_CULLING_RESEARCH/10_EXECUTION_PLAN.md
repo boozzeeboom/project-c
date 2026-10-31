@@ -1,9 +1,8 @@
 # 10. План исполнения culling/visibility (Project C)
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
-**Статус:** Stage 0 — pass с оговорками (`T-CULL01/0`); Stage 1 — partial pass (`T-CULL01/H1`:
-240/250 коллайдеров, 9 дверей в FBX, reimport OK); **Stage 2 — conditional pass** (`T-CULL01/H3`:
-P1 27 131 → 6 094 DC, −77.5 %); **Stage 3 — следующий шаг, только `Ship_havyII_base`**.
+**Статус:** Stage 0 — pass с оговорками; Stage 1 — partial pass; Stage 2 — conditional pass
+(P1 27 131 → 6 094); **Stage 3 — P1 pass (973→616 MR), P2 fail (1 538 vs ≤1 300); следующий — Stage 3c (P2 closure).**
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -32,7 +31,8 @@ P1 27 131 → 6 094 DC, −77.5 %); **Stage 3 — следующий шаг, т�
 | 1 | 🟡 partial pass (240/250, 9 doors inside; reimport OK) | Stage 0 | 250 боксов/9 дверей после reimport; 0 missing; scene-diff пуст | агент T-CULL01/H1 | prefab + `H1_prefab_repair.csv` |
 | 2 | ✅ conditional pass (P1 6 094, −77.5 %) | Stage 0 | P1 27 131 → 6 094; повтор +0.25 %; визуал/F8/F9 открыты | агент T-CULL01/H3 | слой + `DoorVisibilityBudget`/`ShadowBudget` |
 | 2b | ✅ done (doors inherited; shadow ≈0) | Stage 2 | 270 дверных рендереров ферм уже на слое 10; ShadowBudget на 5.7–6 км — ≈0 | автоматически | — |
-| 3 | 🟡 ready (only HeavyII) | Stage 1 + ship baseline | **только HeavyII**: 973→~620 slot; другие корабли 0 diff | агент T-CULL01/H2 | `.asset` + LODGroup |
+| 3 | 🟡 P1 pass / P2 fail (1538 vs ≤1300) — Stage 3c | Stage 1 | P1: 973→616 MR, 1538 DC ≤1800; P2 ≤1300 не достигнут | агент T-CULL01/H2b | LOD/merge tuning + замер |
+| 3b | ⛔ blocked by P2 | Stage 3 P2 green | medium/light после зелёного пилота | future agent | — |
 | 4 | ⬜ planned | Stage 2 | DC ≤2 500; Hybrid Batch Group; 0 shader errors; FO | агент T-CULL01/H5 | настройки + шейдеры |
 | 5 | ⬜ planned | Stage 4 зелёный + окклюзия ≥35 % | цвет ±10 %, тени ≤+10 %, Σtris ±0.1 %, DC не растёт | агент T-CULL01/H4 | rebatch-тул + prefab-ассеты |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
@@ -309,10 +309,45 @@ F8/F9 зелёный.
 **Gate Stage 3 (только пилот):** heavy 973 → ~620 slot (P1) / ≤~1 300 DC; LOD работает;
 двери/слоты/reimport/FO/сеть целы; **остальные корабли не изменены** (0 diff в их префабах).
 
+### 5.0. Stage 3 review (Lead, 2026-10-31)
+
+**H2 код:** `0bb07523`; **runtime-замеры:** `bd975340`; пользовательская правка сцены: `6ec32b4e`
+(не агентская, не откатывать). Отчёт: `docs/dev/T-CULL01_STAGE3_REPORT.md`,
+`T-CULL01_STAGE3_PLAYMODE_2026-10-31.md`, CSV `M_stage3_heavy_runtime_2026-10-31.csv`.
+
+| Метрика | Результат | Вердикт |
+|---|---|---|
+| MR heavy | **973 → 616** (P1 greeble) | **PASS** (цель ~620) |
+| DC heavy LOD0 200 м | **1 538** (было 2 916 модель) | P1 ≤1 800 **PASS**; P2 ≤1 300 **FAIL** |
+| DC heavy LOD0 80 м | 1 015 (часть корпуса вне фрустума) | — |
+| DC heavy LOD1 400 м | **235** (57 slot) | PASS |
+| DC heavy LOD2 1200 м | **104** (52 slot) | PASS |
+| Другие корабли | **0 diff** (mtime) | PASS |
+| Двери/коллайдеры/слоты/VFX | целы; 9 дверей тест open/close; 250 Collider; 11 ModuleSlot | PASS |
+| Reimport FBX | H1-R1 verify/apply OK | PASS |
+| LOD пороги | raw 300/900; runtime `lodBias=1.30` → **эффективно 390/1170** | требует решения |
+| F8/F9 | API `no_rebase_plan`, реальный ввод не проверен | OPEN |
+| Визуал LOD/теней | глазами не принят | OPEN |
+
+**Главный вывод:** P1 принят; **P2 не закрыт**: при полном корабле на 200 м 1 538 вместо ≤1 300 (разрыв 238 DC / 18 %).
+По stop-условию **future scale-out (medium/light/NPC) не начинать**, пока P2 не закрыт.
+
+**R0.2 (ship placement / save):** корабль без пилота падает на `DECK` (ожидаемо) и стоит; но
+`ShipPositions.json` содержал позицию свободного падения и телепортировал корабль в пустоту (−41 570 м).
+Агент исправил сохранение на позицию покоя; **но сохранение теперь перекрывает авторский hover 28.42 м над
+`DECK`** — решение за пользователем (удалить/поправить save или оставить). Файл вне репозитория; не трогать без решения.
+
+**Stage 3c (следующий шаг):** закрыть P2 на HeavyII. Brief:
+[`T-CULL01_STAGE3C_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE3C_AGENT_BRIEF.md).
+
+**Вариант 3c:** A) LOD-порог (200 м → LOD1), B) домерж LOD0-статики по материалам/зонам, C) теневой
+бюджет корабля, D) принять 1 538 только по решению пользователя. Рекомендация: A + визуал; если
+неприемлемо — B/C.
+
 ### 5.1. Future scale-out — **не входит в Stage 3**
 
-Выполнять **только после зелёного пилота HeavyII**; это отдельный этап/тикет, когда пайплайн уже
-доказан. Никаких правок этих префабов в Stage 3:
+Выполнять **только после закрытия P2 на HeavyII** (Stage 3c зелёный); это отдельный этап/тикет, когда
+пайплайн уже доказан. Никаких правок этих префабов в Stage 3/3c:
 
 | Объект | MR / slots | Что предстоит | Условие запуска |
 |---|---|---|---|

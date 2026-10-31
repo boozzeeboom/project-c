@@ -472,6 +472,9 @@ namespace ProjectC.EditorTools
             var candidates = new List<MeshRenderer>(512);
             ShipShadowBudget.CollectCandidates(_ship.gameObject, _lodGroup, budget.SmallPartMaxAxis, candidates);
 
+            var covered = new List<MeshRenderer>(1024);
+            ShipShadowBudget.CollectLodGroupRenderers(_lodGroup, covered);
+
             var byBucket = new int[9];
             int slots = 0, casterSlots = 0;
             for (int i = 0; i < candidates.Count; i++)
@@ -487,8 +490,10 @@ namespace ProjectC.EditorTools
             }
 
             Append("SHADOWBUDGET;present=yes;enabled=" + budget.BudgetEnabled +
+                   ";coverWholeGroup=" + budget.CoverWholeLodGroup +
                    ";on_m=" + Fmt(budget.ShadowOnDistance) + ";off_m=" + Fmt(budget.ShadowOffDistance) +
                    ";maxAxis_m=" + Fmt(budget.SmallPartMaxAxis) +
+                   ";groupRenderers=" + covered.Count +
                    ";candidates=" + candidates.Count + ";candidateSlots=" + slots +
                    ";casterSlotsNow=" + casterSlots +
                    ";trackedRuntime=" + budget.TrackedRendererCount +

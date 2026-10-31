@@ -52,14 +52,13 @@ namespace ProjectC.EditorTools
         private const string RollbackMenu = "ProjectC/Ships/Shadow Budget/Rollback (Stage 3c)";
 
         // ---------------------------------------------------------------- замеры-опоры
-        // Источник: N_stage3c_heavy_runtime_2026-10-31.txt, прогон 2026-10-31 21:24 (shadowDistance 400,
-        // 4 каскада, soft), строка CASE id=d200: dc_all=3926, dc_withoutShip=2492, ship_dc=1434,
-        // slots=553, ship_shadowCasters=489 → 881 теневых draw → 1.80 draw на кастер.
-        // Прошлая опора 1538/555/593 снята при shadowDistance=1000 и несравнима — оставлена в отчёте
-        // как историческая (отчёт Stage 3c §9).
-        private const int MeasuredShipDc200 = 1434;
-        private const int MeasuredSlots200 = 553;
-        private const int MeasuredShadowCasters200 = 489;
+        // Источник: N_stage3c_heavy_runtime_2026-10-31.txt, прогон 2026-10-31 21:40 (shadowDistance 400,
+        // 4 каскада, soft), строка CASE id=d200: dc_all=3852, dc_withoutShip=2491, ship_dc=1361,
+        // slots=546, ship_shadowCasters=416 → 815 теневых draw → 1.96 draw на кастер.
+        // Опора нужна только как ссылка в отчёте: числовая проекция снята (см. Project).
+        private const int MeasuredShipDc200 = 1361;
+        private const int MeasuredSlots200 = 546;
+        private const int MeasuredShadowCasters200 = 416;
 
         /// <summary>Гейт P2: ship_dc на 200 м при полном корабле в кадре (и на 300 м — худшая поза).</summary>
         private const int GateDc = 1300;
@@ -342,42 +341,27 @@ namespace ProjectC.EditorTools
         }
 
         /// <summary>
-        /// Проекция ΔDC на позу 200 м. Это НЕ замер: ship_dc = slots_в_кадре + теневые draw.
-        /// С 9.3 бюджет решает по дистанции до КОРАБЛЯ, поэтому на 200 м под отсечение попадает
-        /// ВЕСЬ набор кандидатов, а не доля: модель «219 из 314» опровергнута замером 21:24
-        /// (факт 1434 вместо 1175) и больше не используется.
+        /// Числовая проекция ΔDC снята: две модели уже опровергнуты замером (доля 0.6975 дала 1175
+        /// при факте 1434; корабельное правило дало 1361/1612 вместо оценок ≈980/≈860). Причина —
+        /// теневой проход сидит в крупных слитых батчах, а мелочь даёт ~1 draw на кастер. Поэтому здесь
+        /// остаются только опора прошлого замера и сам гейт: ΔDC считается только прогоном
+        /// Stage 3 Ship Bench (d200 / d200_repeat / d300).
         /// </summary>
         private static void Project(Inventory inv, LODGroup group, List<string[]> rows, List<string> problems)
         {
-            int shadowDraws = MeasuredShipDc200 - MeasuredSlots200;                 // 881
-            float perCaster = shadowDraws / (float)MeasuredShadowCasters200;        // 1.80
+            int shadowDraws = MeasuredShipDc200 - MeasuredSlots200;                 // 815
+            float perCaster = shadowDraws / (float)MeasuredShadowCasters200;        // 1.96
 
             AddRow(rows, "projection", "dc", "anchor_200m", MeasuredShipDc200.ToString(CultureInfo.InvariantCulture),
-                "замер 2026-10-31 21:24: slots=" + MeasuredSlots200 + "; shadowCasters=" + MeasuredShadowCasters200 +
-                "; shadowDraws=" + shadowDraws + "; drawsPerCaster=" + F(perCaster));
-
-            int requiredCulled = Mathf.CeilToInt((MeasuredShipDc200 - GateDc) / perCaster);
-            int culledSlots = inv.Slots;
-            int predicted = MeasuredShipDc200 - Mathf.RoundToInt(culledSlots * perCaster);
-            int bandLow = MeasuredShipDc200 - Mathf.RoundToInt(culledSlots * 2.4f);
-            int bandHigh = MeasuredShipDc200 - Mathf.RoundToInt(culledSlots * 1.3f);
+                "замер 2026-10-31 21:40: slots=" + MeasuredSlots200 + "; shadowCasters=" + MeasuredShadowCasters200 +
+                "; shadowDraws=" + shadowDraws + "; drawsPerCaster=" + F(perCaster) +
+                "; доли мелочи: " + inv.Slots + " слотов в бюджете");
 
             AddRow(rows, "projection", "dc", "gate", GateDc.ToString(CultureInfo.InvariantCulture),
-                "требуется снять слотов теней: " + requiredCulled +
-                " (при " + F(perCaster) + " draw на кастер)");
+                "закрывать по d200 AND d300; d300 в замере 21:40 = 1612 DC — худшая поза (lodBias 1.3, LOD0 до 390 м)");
 
-            AddRow(rows, "projection", "dc", "modelled", predicted.ToString(CultureInfo.InvariantCulture),
-                "правило по дистанции до корабля: снимается весь набор " + culledSlots + " слотов, а не доля; " +
-                "полоса при 1.3…2.4 draw/кастер = " + bandHigh + "…" + bandLow);
-
-            bool plausible = predicted <= GateDc && bandHigh <= GateDc;
-            AddRow(rows, "projection", "dc", "verdict", plausible ? "PROJECTED_ONLY" : "INSUFFICIENT",
-                "ГЕЙТ НЕ ПОДТВЕРЖДЁН: нужен прогон Stage 3 Ship Bench; закрывать по d200 И d300 " +
-                "(d300 = 1611 DC — худшая поза при lodBias 1.3)");
-
-            if (inv.Slots <= requiredCulled)
-                problems.Add("всех кандидатов (" + inv.Slots + " слотов) не хватает, чтобы снять нужные " +
-                             requiredCulled + " слотов теней — гейт этим порогом не закрывается");
+            AddRow(rows, "projection", "dc", "verdict", "MEASURE_ONLY",
+                "числовая модель снята: 1175 vs факт 1434 и ≈980/≈860 vs факт 1361/1612; ΔDC даёт только прогон Stage 3 Ship Bench");
 
             var lods = group.GetLODs();
             if (lods.Length > 0)

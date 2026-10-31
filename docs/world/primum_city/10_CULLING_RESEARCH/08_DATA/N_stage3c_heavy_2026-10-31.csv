@@ -28,4 +28,18 @@ measured,doors,open_close,OK,open: isOpen=True localMove_m=0.15; close: progress
 measured,metric,ship_tris,UNUSABLE,d120=−477396; d200=26188; d300=26058 при 165744 на d80 → A−B по треугольникам загрязнена; выводить только ship_dc
 measured,census,candidates_header,309,vs trackedRuntime=314: 5 частей были в неактивном LOD-уровне в момент census шапки — артефакт момента
 measured,console,errors,0,NavMesh warning=16; ShipCargoVisual boxPrefabs warning=25; meziy/PilotSeat — не относятся к T-CULL01
-next,action,ship_level_gate,IMPLEMENTED,сделано (бюджет решает по дистанции до LODGroup.localReferencePoint); ожидание: d200 ≈920–1100, d300 ≈870–1200, d120 может вырасти до ≈1050–1100; перемерить d200/d200_repeat/d300; замер сам останавливает Play Mode
+next,action,ship_level_gate,REPLACED,дало −73 на 200 м и +1 на 300 м (=1361/1612); заменено на поштучное правило по всему LODGroup (coverWholeLodGroup=true)
+measured_2140,run,context,,2026-10-31 21:40:54; PlayMode→Host; quality=Medium; lodBias=1.30; shadowDistance=400; cascades=4; soft=on; BENCH_DONE=OK; 7/7; errors=0; NOTE;playmode=stopped_by_bench
+measured_2140,dc,d80,1358,slots=335; casters=689; shadowVisible=335; all=2026; without=668 — рост из-за возврата теней дальней половине корпуса
+measured_2140,dc,d120,1165,slots=360; casters=563; all=2083; without=918
+measured_2140,dc,d200,1361,slots=546; casters=416; shadowVisible=285; shadowDraws≈815; 1.96/caster; all=3852; without=2491
+measured_2140,dc,d200_repeat,1361,отклонение 0.00 % от d200
+measured_2140,dc,d300,1612,ХУДШАЯ ПОЗА; slots=604; casters=420; shadowVisible=290; all=3847; without=2235
+measured_2140,dc,d400,134,LOD1; без изменений к 21:24
+measured_2140,dc,d1200,104,LOD2; без изменений к 21:24
+measured_2140,gate,p2,FAIL,d200 1361 (+61, 4.7 %); d300 1612 (+312)
+measured_2140,finding,small_caster_cost,1_draw,«d80: 421→689 casters = +268 DC; d200: 489→416 = −73 DC ⇒ 1 draw на мелкую часть»
+measured_2140,finding,cost_owner,large_batches,«H2-батчи (корпус/палубы/башни) дают ~500–700 из ~815 теневых draw на 200 м; модель 314×1.8=565 неверна»
+measured_2140,bench,autostop,OK,NOTE;playmode=stopped_by_bench — замер сам остановил Play Mode
+measured_2140,rebase,f8_f9,NO_TRANSACTION,transactionsSeen=False; worldRootShift=0.00 на success и rollback; errorsSoFar=0 — долг Stage 3a не закрыт
+next,action,per_part_whole_lodgroup,IMPLEMENTED,«правило поштучное по всему LODGroup (568 рендереров / 572 слота); ожидание d80 ≈1000–1100, d120 ≈900–1050, d200 ≈700–950, d300 ≈650–950»

@@ -5,14 +5,15 @@
 // поэтому 557 статических рендереров LOD0 дают 1 538 DC. Слой дистанции тени не режет —
 // значит дешевле всего убрать ТОЛЬКО теневой проход мелкой статики.
 //
-// Что делает: у мелких статических частей (габарит <= smallPartMaxAxis) гасит
-// Renderer.shadowCastingMode, когда САМ КОРАБЛЬ дальше shadowOffDistance от ближайшей
-// геймплейной камеры, и возвращает авторский режим, когда корабль ближе shadowOnDistance.
-// Решение принимается по дистанции до корабля (localReferencePoint его LODGroup), а не по
-// дистанции до каждой части: корпус 325 м, и при камере в 200–300 м его ближняя половина
-// всё равно ближе 150 м — поштучное правило снимало ~30 частей из 314 (замер Stage 3c:
-// 1538 → 1434 DC). Дистанция до корабля срабатывает ровно один раз — на переходе через порог.
-// Крупные части (корпус, палубы, башни) не трогаются вообще — они не проходят фильтр габарита.
+// Что делает: для каждого рендерера LODGroup корабля гасит Renderer.shadowCastingMode, когда
+// его габаритный центр дальше shadowOffDistance от ближайшей геймплейной камеры, и возвращает
+// авторский режим, когда ближе shadowOnDistance (гистерезис 10 м, тик 3 Гц).
+// Правило поштучное (по дистанции каждой части) и по умолчанию покрывает ВЕСЬ LODGroup, а не только
+// мелочь: замер Stage 3c от 2026-10-31 21:40 показал, что мелкие части (≤8 м) стоят всего
+// ~1 draw на кастер и дают ~314 draw, а основной теневой проход — из крупных слитых батчей
+// (корпус, палубы, башни: ~500–700 draw). Поэтому гейт P2 закрывается только при полном покрытии.
+// Двери/створки, ModuleSlot, PilotSeat, CargoVisual, двигатели и VFX вынесены мержем (H2) ЗА пределы
+// LODGroup — бюджет до них не достаёт by design.
 //
 // Что НЕ делает: не меняет SetActive, Renderer.enabled, коллайдеры, DoorController, материалы,
 // LOD-пороги и сцену; не создаёт объектов; не кэширует мировые позиции (Floating Origin):
@@ -38,11 +39,14 @@ namespace ProjectC.Ship
         [Tooltip("Выключить, чтобы вернуть авторские тени без снятия компонента.")]
         [SerializeField] private bool budgetEnabled = true;
 
-        [Tooltip("Ближе этого расстояния (м) до корабля тень мелкой статики включается обратно — гистерезис.")]
+        [Tooltip("Ближе этого расстояния (м) тень части включается обратно — гистерезис.")]
         [SerializeField] private float shadowOnDistance = 140f;
 
-        [Tooltip("Дальше этого расстояния (м) до корабля тень мелкой статики выключается целиком.")]
+        [Tooltip("Дальше этого расстояния (м) тень части выключается.")]
         [SerializeField] private float shadowOffDistance = 150f;
+
+        [Tooltip("Бюджет покрывает ВСЕ рендереры LODGroup корабля. Выключить — только мелкая статика ≤ smallPartMaxAxis (не закрывает гейт P2).")]
+        [SerializeField] private bool coverWholeLodGroup = true;
 
         [Tooltip("Мелкая статика: максимальная ось мирового габарита, м. Корпус и палубы крупнее — не трогаются.")]
         [SerializeField] private float smallPartMaxAxis = 8f;
@@ -72,13 +76,11 @@ namespace ProjectC.Ship
         private float _cameraTimer;
         private bool _warnedNoLod;
 
-        /// <summary>Текущее решение бюджета: тени мелкой статики включены или сняты.</summary>
-        private bool _anchorShadowsOn = true;
-
         /// <summary>Сколько частей реально участвует в бюджете (диагностика/тул).</summary>
         public int TrackedRendererCount { get { return _entries.Count; } }
 
         public bool BudgetEnabled { get { return budgetEnabled; } }
+        public bool CoverWholeLodGroup { get { return coverWholeLodGroup; } }
         public float ShadowOnDistance { get { return shadowOnDistance; } }
         public float ShadowOffDistance { get { return shadowOffDistance; } }
         public float SmallPartMaxAxis { get { return smallPartMaxAxis; } }
@@ -151,8 +153,9 @@ namespace ProjectC.Ship
                 return;
             }
 
-            var candidates = new List<MeshRenderer>(256);
-            CollectCandidates(gameObject, _lodGroup, smallPartMaxAxis, candidates);
+            var candidates = new List<MeshRenderer>(512);
+            if (coverWholeLodGroup) CollectLodGroupRenderers(_lodGroup, candidates);
+            else CollectCandidates(gameObject, _lodGroup, smallPartMaxAxis, candidates);
 
             int slots = 0;
             for (int i = 0; i < candidates.Count; i++)
@@ -174,10 +177,38 @@ namespace ProjectC.Ship
             RefreshCameras();
 
             if (logOnBuild)
-                Debug.Log("[ShipShadowBudget] " + name + ": мелких частей " + _entries.Count + " (слотов " + slots +
-                          "), решение по дистанции до корабля: off дальше " + shadowOffDistance.ToString("F0") +
-                          " м, обратно ближе " + shadowOnDistance.ToString("F0") + " м, порог габарита " +
-                          smallPartMaxAxis.ToString("F0") + " м, камер " + _cameras.Count + ".");
+                Debug.Log("[ShipShadowBudget] " + name + ": частей в бюджете " + _entries.Count + " (слотов " + slots +
+                          "), покрытие=" + (coverWholeLodGroup ? "весь LODGroup" : "мелкая статика <= " + smallPartMaxAxis.ToString("F0") + " м") +
+                          ", тени off дальше " + shadowOffDistance.ToString("F0") + " м, обратно ближе " +
+                          shadowOnDistance.ToString("F0") + " м, камер " + _cameras.Count + ".");
+        }
+
+        /// <summary>
+        /// Все рендереры LODGroup корабля (все уровни). Фильтр `mr.enabled` здесь СОЗНАТЕЛЬНО не применяется:
+        /// в рантайме LODGroup гасит рендереры неактивных уровней, а список бюджета строится один раз
+        /// в OnEnable — при фильтре по `enabled` в бюджет попал бы только тот уровень, который был активен
+        /// в этот момент. Режим теней живёт на рендерере, поэтому он корректно сработает, когда уровень
+        /// станет активным. Принадлежность к LODGroup — это и фильтр интерактива: мерж H2 оставил вне
+        /// LODGroup двери/створки, ModuleSlot, PilotSeat, CargoVisual, двигатели и VFX.
+        /// </summary>
+        public static void CollectLodGroupRenderers(LODGroup lodGroup, List<MeshRenderer> result)
+        {
+            result.Clear();
+            if (lodGroup == null) return;
+
+            var levels = lodGroup.GetLODs();
+            var seen = new HashSet<MeshRenderer>();
+            for (int level = 0; level < levels.Length; level++)
+            {
+                var renderers = levels[level].renderers;
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    var mr = renderers[i] as MeshRenderer;
+                    if (mr == null || !mr.gameObject.activeInHierarchy) continue;
+                    if (!seen.Add(mr)) continue;
+                    result.Add(mr);
+                }
+            }
         }
 
         /// <summary>
@@ -235,24 +266,12 @@ namespace ProjectC.Ship
         // -------------------------------------------------------------------- тени
 
         /// <summary>
-        /// Решение принимается по дистанции до КОРАБЛЯ, а не до каждой части: корпус 325 м, поэтому
-        /// поштучное правило при 200–300 м снимало только дальний хвост (~30 частей из 314, замер
-        /// Stage 3c: 1538 → 1434 DC). Дистанция до корабля переключает весь бюджетный набор за один шаг
-        /// и даёт предсказуемый выигрыш на любой позе.
+        /// Поштучное правило: у каждой части своя дистанция до камеры. Слияние H2 сделало корпус
+        /// одним рендерером, поэтому крупные батчи переключаются целиком в момент пересечения порога,
+        /// а мелочь — каждая сама; у камеры, снятой с 80–120 м, дальняя половина корпуса тени теряет,
+        /// а ближняя сохраняет.
         /// </summary>
         private void UpdateShadows()
-        {
-            float shipDistance = NearestCameraDistance(ShipAnchor());
-            if (shipDistance < 0f) return;
-
-            bool want = _anchorShadowsOn ? shipDistance <= shadowOffDistance : shipDistance < shadowOnDistance;
-            if (want == _anchorShadowsOn) return;
-
-            _anchorShadowsOn = want;
-            ApplyShadows(want);
-        }
-
-        private void ApplyShadows(bool on)
         {
             for (int i = 0; i < _entries.Count; i++)
             {
@@ -260,20 +279,15 @@ namespace ProjectC.Ship
                 var renderer = entry.renderer;
                 if (renderer == null) continue;
 
-                renderer.shadowCastingMode = on ? entry.baseMode : ShadowCastingMode.Off;
-                entry.shadowsOn = on;
-            }
-        }
+                float nearest = NearestCameraDistance(renderer.bounds.center);
+                if (nearest < 0f) continue;
 
-        /// <summary>
-        /// Точка, от которой LODGroup считает дистанции переключения уровней (`localReferencePoint`),
-        /// в мире. Берётся из текущих трансформов каждый тик — кэша мировых координат нет (Floating Origin).
-        /// </summary>
-        private Vector3 ShipAnchor()
-        {
-            return _lodGroup != null
-                ? _lodGroup.transform.TransformPoint(_lodGroup.localReferencePoint)
-                : transform.position;
+                bool want = entry.shadowsOn ? nearest <= shadowOffDistance : nearest < shadowOnDistance;
+                if (want == entry.shadowsOn) continue;
+
+                entry.shadowsOn = want;
+                renderer.shadowCastingMode = want ? entry.baseMode : ShadowCastingMode.Off;
+            }
         }
 
         /// <summary>Дистанция до ближайшей геймплейной камеры; -1, если камер нет.</summary>
@@ -297,7 +311,6 @@ namespace ProjectC.Ship
         /// </summary>
         public void RestoreShadows()
         {
-            _anchorShadowsOn = true;
             for (int i = 0; i < _entries.Count; i++)
             {
                 var entry = _entries[i];

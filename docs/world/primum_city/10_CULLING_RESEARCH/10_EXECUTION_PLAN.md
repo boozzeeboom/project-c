@@ -1,7 +1,7 @@
 # 10. План исполнения culling/visibility (Project C)
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
-**Статус:** план к исполнению; код не менялся. **Тикет сложного кода:** `T-CULL01` —
+**Статус:** Stage 0 выполнен 2026-10-31 (`T-CULL01/0`), Stage 1+ — план к исполнению. **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
 агенту по одному этапу, когда до этапа дошли. Простые правки — отдельными маленькими коммитами.
@@ -24,7 +24,7 @@
 
 | Stage | Статус | Зависит от | Gate (кратко) | Owner | Артефакт |
 |---|---|---|---|---|---|
-| 0 | ⬜ planned | — | baseline CSV ±5 %, фиксы, F8/F9 | Lead/пользователь | `08_DATA/K_baseline_*.csv` |
+| 0 | ✅ done (F8/F9 без фактического сдвига) | — | baseline CSV ±5 %, фиксы, F8/F9 | Lead/пользователь | `08_DATA/K_baseline_2026-10-31.csv`, `K_stage0_report.md` |
 | 1 | ⬜ planned | Stage 0 | 250 боксов/9 дверей после reimport; 0 missing; scene-diff пуст | агент T-CULL01/H1 | prefab + `H1_prefab_repair.csv` |
 | 2 | ⬜ planned | Stage 0 | 26 981 → 5–9k DC; F8/F9; raycast/физика ок | Lead/H3 | слой + 2 скрипта |
 | 2b | ⬜ planned | Stage 2 (слой) | −270 дверей ферм/≈−640 слотов; тени off | Lead/пользователь | настройки/слой |
@@ -35,6 +35,12 @@
 | 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
 
 Статусы обновлять здесь после каждого gate; коммит этапа — с префиксом `T-CULL01/<H>`.
+
+**Stage 0 (2026-10-31):** baseline — `08_DATA/K_baseline_2026-10-31.csv`, разбор — `08_DATA/K_stage0_report.md`.
+Baseline зафиксирован как **Midday + тени URP 1000/2**: в фазе `Night (Noch)`/`Twilight (Sumerki)` главный свет
+выключен и теневого прохода нет, тот же кадр даёт 17 020 DC вместо 27 131. Оба бага (`Camera.main` в куллере,
+no-op `QualitySettings.shadowDistance`) исправлены. F8/F9 прошли без фактического сдвига мира (фокус уже в кванте),
+поэтому реальный ребейз за порогом `256 м` остаётся открытым — см. `K_stage0_report.md` §6.
 
 ---
 

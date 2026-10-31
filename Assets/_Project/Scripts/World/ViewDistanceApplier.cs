@@ -1,7 +1,7 @@
 // Project C: применение пресета дальности прорисовки (T-LOD01)
 // Static-апplier по образцу GraphicsEffectsApplier: null-safe, правок сцен не требует,
 // сцены с фокусом может не быть (Bootstrap, меню).
-// Владеет: camera.far, QualitySettings.lodBias/shadowDistance,
+// Владеет: camera.far, QualitySettings.lodBias,
 // Terrain_0_0.heightmapPixelError/basemapDistance.
 // НЕ владеет и никогда не выключает: сам террейн (L2-фон всегда видим), чанки стриминга.
 // Мировых Vector3 не хранит — хук Floating Origin не нужен.
@@ -72,7 +72,10 @@ namespace ProjectC.World
             var p = GetPreset(v);
 
             QualitySettings.lodBias = p.lodBias;
-            QualitySettings.shadowDistance = p.shadowDistance;
+            // T-CULL01/Stage 0: присваивание QualitySettings.shadowDistance убрано — URP читает
+            // UniversalRenderPipelineAsset.shadowDistance (ProjectC_URP.asset: 1000 м / 2 каскада),
+            // то есть старый код только делал вид, что управляет тенями. В Stage 0 тени не трогаем;
+            // бюджет shadowCastingMode — отдельный этап (Stage 2/H3).
 
             int camCount = 0;
             foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
@@ -90,7 +93,7 @@ namespace ProjectC.World
                 terrain.basemapDistance = p.terrainBasemapDistance;
             }
 
-            Debug.Log($"[ViewDistance] Пресет {v}: far={p.cameraFar:F0}, lodBias={p.lodBias}, shadow={p.shadowDistance:F0}, " +
+            Debug.Log($"[ViewDistance] Пресет {v}: far={p.cameraFar:F0}, lodBias={p.lodBias}, shadows=URP-ассет(1000/2), " +
                       $"terrainPixelError={p.terrainPixelError}, basemap={p.terrainBasemapDistance}, detailCull={p.detailCullDistance}, fogScale={p.fogScale} " +
                       $"| камер: {camCount}, террейн: {(terrain != null ? terrain.name : "NULL")}");
         }

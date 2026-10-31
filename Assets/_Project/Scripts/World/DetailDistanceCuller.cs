@@ -32,6 +32,10 @@ namespace ProjectC.World
         private readonly List<Group> _groups = new List<Group>();
         private float _timer;
 
+        // T-CULL01/Stage 0: камера-фокус и момент следующего пере-поиска. Camera.main не используется.
+        private Camera _focusCamera;
+        private float _nextFocusSearch;
+
         private void OnEnable()
         {
             Rebuild();
@@ -84,8 +88,8 @@ namespace ProjectC.World
 
         private void Check()
         {
-            var cam = Camera.main;
-            if (cam == null || !cam.isActiveAndEnabled) return;
+            var cam = ResolveFocusCamera();
+            if (cam == null) return;
             Vector3 camPos = cam.transform.position;
 
             float cullDist = ViewDistanceApplier.GetPreset(SettingsManager.ViewDistance).detailCullDistance;
@@ -104,6 +108,76 @@ namespace ProjectC.World
                     if (r != null) r.enabled = !wantCulled;
                 }
             }
+        }
+
+        /// <summary>
+        /// T-CULL01/Stage 0: точка отсчёта дистанции куллинга.
+        /// Camera.main здесь не годится: тег MainCamera есть и у статичной камеры BootstrapScene
+        /// (она в 240 км от города), и у геймплейного рига — Camera.main возвращает статичную,
+        /// поэтому дистанции считались не от игрока и руины выключались целиком.
+        /// Берём активную камеру, ближайшую к самим группам деталей (тот же приём, что
+        /// PrimumLightPool.FindFocusCamera). Позиции читаются живьём — мировых Vector3
+        /// между кадрами не храним (правило Floating Origin); поиск не чаще раза в секунду.
+        /// </summary>
+        private Camera ResolveFocusCamera()
+        {
+            if (_focusCamera != null && _focusCamera.isActiveAndEnabled && Time.unscaledTime < _nextFocusSearch)
+                return _focusCamera;
+
+            _focusCamera = FindFocusCamera();
+            _nextFocusSearch = Time.unscaledTime + 1f;
+            return _focusCamera;
+        }
+
+        /// <summary>Активная камера, у которой ближайшая группа деталей ближе всех остальных камер.</summary>
+        private Camera FindFocusCamera()
+        {
+            if (_groups.Count == 0) return null;
+
+            // Камера должна вообще рисовать слои деталей: меню-камера AtmosphereCamera
+            // (cullingMask = слой PCMM_Atmosphere, far 10) не рендерит руины и не должна задавать их дальность.
+            int detailMask = 0;
+            for (int g = 0; g < _groups.Count; g++)
+            {
+                Group grp = _groups[g];
+                if (grp == null || grp.renderers == null) continue;
+                for (int r = 0; r < grp.renderers.Length; r++)
+                {
+                    if (grp.renderers[r] == null) continue;
+                    detailMask |= 1 << grp.renderers[r].gameObject.layer;
+                }
+            }
+            if (detailMask == 0) return null;
+
+            Camera[] cams = Camera.allCameras;
+            Camera best = null;
+            float bestNearestSqr = float.MaxValue;
+
+            for (int c = 0; c < cams.Length; c++)
+            {
+                Camera cam = cams[c];
+                if (cam == null || !cam.isActiveAndEnabled) continue;
+                if (cam.targetTexture != null) continue; // RT-камеры не рисуют мир в Game View
+                if ((cam.cullingMask & detailMask) == 0) continue;
+                Vector3 camPos = cam.transform.position;
+
+                float nearestSqr = float.MaxValue;
+                for (int g = 0; g < _groups.Count; g++)
+                {
+                    Group grp = _groups[g];
+                    if (grp == null || grp.root == null) continue;
+                    float d = (grp.root.position - camPos).sqrMagnitude;
+                    if (d < nearestSqr) nearestSqr = d;
+                }
+
+                if (nearestSqr < bestNearestSqr)
+                {
+                    bestNearestSqr = nearestSqr;
+                    best = cam;
+                }
+            }
+
+            return best;
         }
     }
 }

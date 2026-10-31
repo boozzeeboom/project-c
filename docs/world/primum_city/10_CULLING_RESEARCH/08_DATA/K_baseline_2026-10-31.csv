@@ -1,0 +1,9 @@
+point,far,shadowDistance,shadowCascades,drawCalls,setPassCalls,triangles,fps,frameCount,gpuCpu,resolution,notes
+P1_tsentr_ploshhadi,30000,1000,2,27131,316,15981018,10.38,5964,RTX3090/i7-8700,1491x847,den Midday forced; dveri on; teni on; shadowCasters=10115; osnovnoy kadr baseline
+P1_tsentr_ploshhadi_repeat,30000,1000,2,27131,315,15981018,12.66,6284,RTX3090/i7-8700,1491x847,den; povtor P1 dlya proverki +-5 protsentov; rashozhdenie 0.00 protsentov
+P2_uzkaya_ulitsa,30000,1000,2,907,169,2248472,12.20,14837,RTX3090/i7-8700,1491x847,den; tochka perevybrana po metodike: svobodnaya liniya vzglyada 45+ m i steny s dvuh storon
+P3_krysha,30000,1000,2,2220,242,3605300,13.62,6092,RTX3090/i7-8700,1491x847,den; krysha +24 m; naklon -18
+P4_port,30000,1000,2,941,152,1091584,13.22,6156,RTX3090/i7-8700,1491x847,den; portovaya tochka bez korabley: tyazhelyy korabl fizicheski v 114 km otsuda
+P1_bez_gorodskih_dverey,30000,1000,2,4607,281,15066522,10.28,14772,RTX3090/i7-8700,1491x847,den; vyklyuchen tolko PRIMUM_DOORS 4949 rendererov; fermy i admin ostavleny; sravnenie s orientirom 4954
+P1_bez_vseh_dverey,30000,1000,2,2730,270,14984274,12.45,6220,RTX3090/i7-8700,1491x847,den; vyklyucheny PRIMUM_DOORS + Primum_farms_DOORS + ADMIN_DOOR_PREFABS
+P1_control_noch,30000,1000,2,17020,287,8772252,9.40,1565,RTX3090/i7-8700,1491x847,NE baseline: nochnaya faza; solntse vyklyucheno; tenevoy prohod otsutstvoval; shadowCasters=0

@@ -1,0 +1,61 @@
+﻿NOTE;bench=FinalValidationBench;unity=6000.5.2f1;date=2026-11-01 02:10:25;scene=Assets/_Project/Scenes/World/WorldScene_0_0.unity;sceneDirtyAtStart=False
+CONFIG;urpAsset=Assets/_Project/Settings/ProjectC_URP.asset;grdMode=1;grdOcclusionInCameras=1;smallMeshScreenPercentage=0;brgStripping=2;shadowDistance=400;shadowCascades=4;softShadows=True;mainShadowmap=2048;qualityLevel=2(Medium);lodBias=0.70
+NOTE;method=PlayMode→Host;warmup=1500fr;settle=40fr;samples=3x gap 8fr;metric=UnityStats median;far=30000;fov=60
+NOTE;budget=game_component_CityShadowBudget_auto_bootstrap;A/B=component.enabled_toggle
+NOTE;ships=A/B_renderer.enabled_runtime;prefab_fbx_scene_untouched
+NOTE;rebase=F8/F9_via_InputSystem.QueueStateEvent(wasPressedThisFrame);player_teleported_past_threshold
+NOTE;phase_forced=12.0;sun=Sun(enabled=True,shadows=Soft,intensity=1.30)
+NOTE;camera;name=ThirdPersonCamera_0;occlusionCulling=True;far=30000;fov=60
+NOTE;budget_found;enabled=True;entriesAtFind=1301;shadowOffDistance=200;shadowOnDistance=180
+NOTE;renderers;all=8801;ships=1350;shipRoots=23;ourCityCandidates=1301;componentEntries=-1
+NOTE;budget_steady;entries=1301;ourCandidates=1301;componentCameras=AtmosphereCamera|MainCamera|ThirdPersonCamera_0;budgetLogs=1
+BUDGET_LOG;0;[CityShadowBudget] Рендереров города: 1301, корабельных исключено: 1285, тени off дальше 200 м, on ближе 180 м.
+CASE;id=P1_noship_budget_on;ships=off;budget=on;budgetEntries=1301;shadowsOff=776;worldpos=(-86.90, -50.40, -358.20);dc=2811;spc=235;tris=15141630;shadowCasters=1018;hybridDC=2636;hybridInstances=17968;srpBatcherDC=14;ms=34.76;fps=30.28;enabledRenderers=6984;inFrustum=3854;cityInFrustum=3854;doorsInFrustum=3154;rawDc=2811|2811|2811;rawShadowCasters=1018|1018|1018
+CASE;id=P1_noship_budget_on_repeat;ships=off;budget=on;budgetEntries=1301;shadowsOff=776;worldpos=(-86.90, -50.40, -358.20);dc=2811;spc=234;tris=15141630;shadowCasters=898;hybridDC=2636;hybridInstances=17968;srpBatcherDC=14;ms=32.30;fps=29.23;enabledRenderers=6984;inFrustum=3854;cityInFrustum=3854;doorsInFrustum=3154;rawDc=2811|2811|2811;rawShadowCasters=887|898|1018
+CASE;id=P1_noship_budget_off;ships=off;budget=off;budgetEntries=0;shadowsOff=0;worldpos=(-86.90, -50.40, -358.20);dc=3047;spc=237;tris=16517786;shadowCasters=1254;hybridDC=2872;hybridInstances=18204;srpBatcherDC=14;ms=32.25;fps=31.98;enabledRenderers=6984;inFrustum=3854;cityInFrustum=3854;doorsInFrustum=3154;rawDc=3047|3047|3047;rawShadowCasters=1254|1254|1254
+CASE;id=P1_real_budget_on;ships=on;budget=on;budgetEntries=1305;shadowsOff=764;worldpos=(-86.90, -50.40, -358.20);dc=2817;spc=229;tris=15144666;shadowCasters=909;hybridDC=2648;hybridInstances=17980;srpBatcherDC=14;ms=27.59;fps=31.00;enabledRenderers=8312;inFrustum=3854;cityInFrustum=3854;doorsInFrustum=3154;rawDc=2817|2817|2817;rawShadowCasters=1030|909|898
+CASE;id=C2_noship_budget_on;ships=off;budget=on;budgetEntries=1305;shadowsOff=804;worldpos=(-126.90, -58.20, -382.20);dc=565;spc=154;tris=3299624;shadowCasters=254;hybridDC=441;hybridInstances=827;srpBatcherDC=4;ms=30.89;fps=31.46;enabledRenderers=6985;inFrustum=165;cityInFrustum=165;doorsInFrustum=77;rawDc=565|565|565;rawShadowCasters=254|254|254
+CASE;id=C2_noship_budget_off;ships=off;budget=off;budgetEntries=0;shadowsOff=0;worldpos=(-126.90, -58.20, -382.20);dc=573;spc=154;tris=3301168;shadowCasters=262;hybridDC=449;hybridInstances=835;srpBatcherDC=4;ms=30.99;fps=31.53;enabledRenderers=6985;inFrustum=165;cityInFrustum=165;doorsInFrustum=77;rawDc=573|573|573;rawShadowCasters=262|262|188
+CASE;id=C3_noship_budget_on;ships=off;budget=on;budgetEntries=1305;shadowsOff=711;worldpos=(-160.00, -27.91, -292.00);dc=987;spc=214;tris=4365944;shadowCasters=304;hybridDC=802;hybridInstances=2104;srpBatcherDC=22;ms=33.08;fps=29.14;enabledRenderers=6985;inFrustum=559;cityInFrustum=559;doorsInFrustum=282;rawDc=987|987|989;rawShadowCasters=304|304|304
+CASE;id=C3_noship_budget_on_repeat;ships=off;budget=on;budgetEntries=1305;shadowsOff=711;worldpos=(-160.00, -27.91, -292.00);dc=993;spc=219;tris=4365956;shadowCasters=304;hybridDC=802;hybridInstances=2104;srpBatcherDC=22;ms=30.90;fps=28.97;enabledRenderers=6985;inFrustum=559;cityInFrustum=559;doorsInFrustum=282;rawDc=993|993|993;rawShadowCasters=304|304|304
+CASE;id=C3_noship_budget_off;ships=off;budget=off;budgetEntries=0;shadowsOff=0;worldpos=(-160.00, -27.91, -292.00);dc=1011;spc=220;tris=4368852;shadowCasters=322;hybridDC=820;hybridInstances=2122;srpBatcherDC=22;ms=40.58;fps=24.04;enabledRenderers=6985;inFrustum=559;cityInFrustum=559;doorsInFrustum=282;rawDc=1011|1011|1011;rawShadowCasters=322|259|322
+REBASE;step=F8;playerFrom=(-44.04, -61.83, -101.96);playerTo=(375.96, -61.83, -101.96);offset=420.0;threshold=256;quantum=256;predictedTranslation=(-256.00, 0.00, 0.00)
+REBASE;phase=F8_before;frameGen=2;cumulative=(-39680.00, -2560.00, -40192.00);worldRoot=(-39680.00, -2560.00, -40192.00);player=(375.96, -61.83, -101.96);doors=2630;doorRenderers=5493;budgetEntries=1305;ships=Ship_medium_base@(119990.70, -80539.34, 119899.60)|Ship_havyII_base@(40063.37, 2480.64, 39867.39)|Ship_Light_root@(119992.70, 7621.52, 119845.40)|Гигант@(117273.50, 3648.78, 107201.10)|Пещера@(110582.30, 3651.53, 108669.50)|Мастодонт@(100810.60, 3652.94, 100497.50)|Странник@(117902.80, 6498.24, 112210.60)|Олимп@(110630.30, 3449.81, 101807.00);errorsSoFar=0
+REBASE_INPUT;key=F8;frame=2009;attempt=1
+REBASE;phase=F8_after;frameGen=3;cumulative=(-39936.00, -2560.00, -40192.00);worldRoot=(-39936.00, -2560.00, -40192.00);worldRootShift_m=256.000;predictedShift_m=256.000;player=(119.96, -61.98, -101.96);doors=2630;doorRenderers=5493;budgetEntries=1305;ships=Ship_medium_base@(119990.70, -80541.16, 119899.60)|Ship_havyII_base@(40063.37, 2480.64, 39867.39)|Ship_Light_root@(119992.70, 7621.52, 119845.40)|Гигант@(117273.10, 3648.91, 107200.90)|Пещера@(110582.00, 3651.66, 108669.20)|Мастодонт@(100810.30, 3653.07, 100497.10)|Странник@(117902.60, 6498.22, 112210.50)|Олимп@(110629.90, 3449.94, 101806.50);frames=1;errorsSoFar=0
+REBASE;step=F9;playerFrom=(119.95, -79.15, -101.97);playerTo=(539.95, -79.15, -101.97);offset=420.0;threshold=256;quantum=256;predictedTranslation=(-512.00, 0.00, 0.00)
+REBASE;phase=F9_before;frameGen=3;cumulative=(-39936.00, -2560.00, -40192.00);worldRoot=(-39936.00, -2560.00, -40192.00);player=(539.95, -79.15, -101.97);doors=2630;doorRenderers=5493;budgetEntries=1305;ships=Ship_medium_base@(119990.70, -80571.52, 119899.60)|Ship_havyII_base@(40063.37, 2480.64, 39867.38)|Ship_Light_root@(119992.70, 7621.52, 119845.40)|Гигант@(117267.20, 3651.15, 107196.50)|Пещера@(110577.60, 3653.91, 108663.30)|Мастодонт@(100805.40, 3655.33, 100491.50)|Странник@(117900.20, 6497.84, 112208.00)|Олимп@(110623.10, 3452.18, 101799.20);errorsSoFar=0
+REBASE_INPUT;key=F9;frame=2040;attempt=2
+REBASE;phase=F9;status=no_transaction_yet;retry=3
+REBASE_INPUT;key=F9;frame=2400;attempt=3
+REBASE;phase=F9;status=no_transaction_yet;retry=4
+REBASE_INPUT;key=F9;frame=2760;attempt=4
+REBASE;phase=F9;status=no_transaction_yet;retry=5
+REBASE_INPUT;key=F9;frame=3120;attempt=5
+REBASE;phase=F9;status=no_transaction_yet;retry=6
+REBASE_INPUT;key=F9;frame=3480;attempt=6
+REBASE;phase=F9_after;status=FAILED_no_transaction;frameGen=3;cumulative=(-39936.00, -2560.00, -40192.00);worldRoot=(-39936.00, -2560.00, -40192.00);worldRootShift_m=0.000;predictedShift_m=512.000;player=(539.94, -1002.07, -101.97);doors=2630;doorRenderers=5493;budgetEntries=1305;ships=Ship_medium_base@(119990.60, -82010.20, 119899.50)|Ship_havyII_base@(40063.37, 2480.64, 39867.36)|Ship_Light_root@(119992.70, 7621.52, 119845.40)|Гигант@(116988.80, 3757.39, 106987.60)|Пещера@(110374.00, 3736.92, 108395.30)|Мастодонт@(100601.90, 3717.03, 100251.80)|Странник@(117784.20, 6479.64, 112092.00)|Олимп@(110316.50, 3517.06, 101469.80);frames=360;errorsSoFar=0
+REBASE;phase=summary;pressAttempts=6;errors=0;exceptions=0;baselineErrors=0;shaderErrors=0;hybridEvidence=see_DC_cases
+REBASE_TRACE;[T-FO06CY] Controlled rebase completed: translation=(-39680.00, -2560.00, -40192.00);origin=Global(39680, 2560, 40192)
+REBASE_TRACE;[T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=(-44.04, -61.83, -101.96)
+REBASE_TRACE;[T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=(-44.04, -61.83, -101.96)
+REBASE_TRACE;[T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=(-44.04, -61.83, -101.96)
+REBASE_TRACE;[T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=(-44.04, -61.83, -101.96)
+REBASE_TRACE;[T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=(-44.04, -61.83, -101.96)
+REBASE_TRACE;[T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=(-44.04, -61.83, -101.96)
+REBASE_TRACE;[T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=(-44.04, -61.83, -101.96)
+REBASE_TRACE;input=QueueStateEvent(F8);frame=2009;attempt=1
+REBASE_TRACE;[T-FO06CY] Controlled rebase completed: translation=(-256.00, 0.00, 0.00);origin=Global(39936, 2560, 40192)
+REBASE_TRACE;input=QueueStateEvent(F9);frame=2040;attempt=2
+REBASE_TRACE;[T-FO06CY] Controlled rebase rolled back: apply_refused:forced_user_validation_failure;restore=True
+REBASE_TRACE;input=QueueStateEvent(F9);frame=2400;attempt=3
+REBASE_TRACE;[T-FO06CY] Controlled rebase rolled back: apply_refused:forced_user_validation_failure;restore=True
+REBASE_TRACE;input=QueueStateEvent(F9);frame=2760;attempt=4
+REBASE_TRACE;[T-FO06CY] Controlled rebase rolled back: apply_refused:forced_user_validation_failure;restore=True
+REBASE_TRACE;input=QueueStateEvent(F9);frame=3120;attempt=5
+REBASE_TRACE;[T-FO06CY] Controlled rebase rolled back: apply_refused:forced_user_validation_failure;restore=True
+REBASE_TRACE;input=QueueStateEvent(F9);frame=3480;attempt=6
+REBASE_TRACE;[T-FO06CY] Controlled rebase rolled back: apply_refused:forced_user_validation_failure;restore=True
+NOTE;post_exit;sceneDirtyAtStart=False;sceneDirtyNow=False
+FINAL_ERRORS;errors=0;exceptions=0;baselineErrors=0;shaderErrors=0;warnings=1042;budgetLogs=4
+BENCH_DONE;result=OK;casesCompleted=9/9;sceneSaved=no;push=no;hold=no

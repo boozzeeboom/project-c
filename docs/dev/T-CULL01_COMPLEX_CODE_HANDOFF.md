@@ -271,9 +271,17 @@ P1/P2: greeble-мерж (973 → ~620 slot), затем LODGroup; P3 (позже
   (−20.5 %, гейт ≤2 500 взят, запас 3.1 %); visual sign-off пользователя 01.11; 150 м = 2 302.
   `smallMeshScreenPercentage` оставлен 0; atlas gain 0; **B2 dry-run = `B2_increases`**.
   Отчёт: `T-CULL01_STAGE4B_REPORT.md`, CSV `P_stage4b_*`, компонент `CityShadowBudget.cs`.
-- **Stage V — final validation:** [`T-CULL01_FINAL_VALIDATION_AGENT_BRIEF.md`](T-CULL01_FINAL_VALIDATION_AGENT_BRIEF.md)
-  (реальный компонент, F8/F9, C3, clean, закрытие).
+- **Stage V — FAIL:** реальный `CityShadowBudget` дал **P1 2 811** (entries 1 301, ожидалось 1 482/2 423);
+  gate 2 500 не взят. F8 PASS (256 м, 0 errors); F9 — rollback `restore=True`, но bench ждал frameGen
+  и записал `FAILED_no_transaction` → критерий неверный. Отчёт: `T-CULL01_FINAL_VALIDATION_REPORT.md`.
+- **Stage 4c** — fix actual gate: [`T-CULL01_STAGE4C_AGENT_BRIEF.md`](T-CULL01_STAGE4C_AGENT_BRIEF.md)
+  (candidate parity, реальный P1 ≤2 500, F9, C3). После 4c — **утверждённые Stage 6 → 7**.
 - Kill: нет Hybrid Batch Group / DC не падает / створки «плывут» → откат.
+
+### 6.6. H5c — actual CityShadowBudget gate + F9 (Stage 4c)
+- Диагностика: почему компонент собрал 1 301 вместо 1 482 (Off-фильтр, момент Build, камеры).
+- Цель: реальный P1 **≤2 500** (бенч 2 423), F8/F9 корректно, сцена чистая.
+- Бриф: `T-CULL01_STAGE4C_AGENT_BRIEF.md`; коммит `T-CULL01/H5c`.
 
 ### 6.5. Stage 5 (B2) — ЗАКРЫТ
 Dry-run: B2 **увеличивает** hybridDC (330 против 160 пар на пилоте); условие окклюзии 0 %.
@@ -281,7 +289,9 @@ Dry-run: B2 **увеличивает** hybridDC (330 против 160 пар н�
 
 ---
 
-## 7. H6 — `VisibilityDirector` (Stage 6, 3–4 недели, опционально/fallback)
+## 7. H6 — `VisibilityDirector` (Stage 6, 3–4 недели) — ✅ УТВЕРЖДЁН
+
+> **Решение пользователя 01.11:** Stage 6 — фундамент будущего, **не опциональный**. Идёт после Stage 4c.
 
 ### 7.1. Цель
 Тонкий слой поверх engine-куллинга: группы/ячейки, мультикамерный union, бюджеты теней, корабли,
@@ -308,7 +318,10 @@ Dry-run: B2 **увеличивает** hybridDC (330 против 160 пар н�
 
 ---
 
-## 8. H7 — HLOD/L1 + L2-импостор / PVS (Stage 7, 6–10 недель, опционально)
+## 8. H7 — HLOD/L1 + L2-импостор / PVS (Stage 7, 6–10 недель) — ✅ УТВЕРЖДЁН
+
+> **Решение пользователя 01.11:** Stage 7 — фундамент дальнего мира/L2, **не опциональный**.
+> Выполняется после Stage 6 (или параллельно, если HLOD-пайплайн не блокируется).
 
 ### 8.1. Цель
 L1 (3–12 км) — 1 меш на блок/квартал; L2 (12–80 км) — 1–2 вызова; PVS — только если L0 <1k обязателен.

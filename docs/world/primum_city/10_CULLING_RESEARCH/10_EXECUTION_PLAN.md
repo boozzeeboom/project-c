@@ -1,12 +1,10 @@
 # 10. План исполнения culling/visibility (Project C)
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
-**Статус:** Stage 0 — pass с оговорками; Stage 1 — partial pass; Stage 2 — conditional pass; Stage 3 — P1/P2 green
-(heavy 616 MR, P2 1 170/1 236); Stage 4 — conditional green (P1 3 031; GRD включён, окклюзия 0 %);
-**Stage 4b — green: P1 3 047 → 2 423 DC (городской бюджет теней 200 м), гейт 2 500 взят; визуально
-принят пользователем 01.11**; **Stage 5 (B2) — закрыт dry-run (`B2_increases`), не делать**;
-Stage 6/7 — опционально, цель уже достигнута. **Следующий шаг — финальная валидация компонента
-CityShadowBudget + F8/F9 + C3, затем закрытие T-CULL01.**
+**Статус:** Stage 0–3 закрыты; Stage 4/4b дали **benchtop 2 423 DC**, но **final validation не прошла:
+реальный `CityShadowBudget` даёт 2 811 DC** (кандидатов 1 301 вместо 1 482) — **Stage 4c fix**; F8 ok,
+F9 требует правки критерия. **Stage 6 и Stage 7 — утверждены пользователем как фундамент, НЕ опциональны**;
+после Stage 4c: Stage 6 → Stage 7. Другие корабли сейчас не делаем.
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -20,8 +18,9 @@ CityShadowBudget + F8/F9 + C3, затем закрытие T-CULL01.**
 2. **Stage 0** — baseline + два фикса; **Stage 1** — корабли P0 (0.5–1 день); **Stage 2** — двери
    (2–4 дня) + бюджет теней; **Stage 2b** — фермы (1 день); **Stage 3** — **только `Ship_havyII_base`**
    (пилот; остальные корабли — future scale-out, не трогаем).
-3. **Stage 4** — GRD + GPU occlusion; **Stage 4b** — городской shadow budget 200 м, **P1 2 423**;
-   **Stage 5/B2 — закрыт dry-run** (`B2_increases`), не делать; **Stage 6/7** — опционально, цель достигнута.
+3. **Stage 4** — GRD + GPU occlusion; **Stage 4b** — городской shadow budget 200 м; **бенч 2 423 DC**,
+   но **final validation 2 811** → **Stage 4c fix**; **Stage 6/7 — утверждены пользователем как
+   фундамент (не опциональны)**: VisibilityDirector → HLOD/L1/L2. Stage 5/B2 закрыт (`B2_increases`).
 4. Сложный код — **7 пакетов H1–H7** в [`T-CULL01`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md);
    простые правки (сцена/слой/настройки/двери) — отдельными коммитами по этому плану.
 5. Каждый этап заканчивается замером по gate и **маленьким коммитом**; без gate следующий этап не
@@ -38,9 +37,12 @@ CityShadowBudget + F8/F9 + C3, затем закрытие T-CULL01.**
 | 3 | ✅ P1/P2 green (conditional: visual/F8 open) | Stage 1 | P1 973→616 MR; P2 d200 1 170 / d300 1 236 ≤1 300; другие 0 diff | агент T-CULL01/H2b | `N_stage3c_*`, `T-CULL01_STAGE3C_REPORT.md` |
 | 3b | ⛔ deferred — **не сейчас** | — | другие корабли типовые; если мешают — выключить рендереры в замере | — | — |
 | 4 | ✅ conditional green — visual OK; gate open | Stage 2 | P1 3 031 (−52.6 %); Hybrid Batch Group ✅; 0 shader errors ✅; **DC ≤2 500 ❌**; окклюзия ≈0 | агент T-CULL01/H5 | настройки + шейдеры + `T-CULL01_STAGE4_REPORT.md` |
-| 4b | ✅ green — visual OK | Stage 4 | P1 3 047 → **2 423** (sb200) / 2 302 (sb150); гейт 2 500 взят; atlas 0 %, B2 `B2_increases`; sm оставлен 0 | агент T-CULL01/H5b | `P_stage4b_*`, `CityShadowBudget.cs`, `T-CULL01_STAGE4B_REPORT.md` |
-| V | 🟡 final validation | Stage 4b | фактический `CityShadowBudget` в игре ≤2 500; F8/F9 реальным вводом; C3; clean | агент T-CULL01/V | `T-CULL01_FINAL_VALIDATION_REPORT.md` |
-| 5 | ⛔ closed by dry-run — **B2 не делать** | Stage 4 + окклюзия ≥35 % (0 %) | dry-run: 330 B2-батча против 160 сейчас (`B2_increases`) | — | — |
+| 4b | ✅ green — visual OK | Stage 4 | бенч P1 **2 423** (sb200); но фактический компонент даёт 2 811 | агент T-CULL01/H5b | `P_stage4b_*`, `CityShadowBudget.cs` |
+| V | ❌ failed gate — 2 811 > 2 500 | Stage 4b | кандидатов 1 301 вместо 1 482; F8 ok, F9 критерий неверен | агент T-CULL01/V | `Q_final_validation_*`, `T-CULL01_FINAL_VALIDATION_REPORT.md` |
+| 4c | 🟡 next — fix actual gate | Stage V | фактический `CityShadowBudget` ≤2 500; F8/F9; C3; clean | агент T-CULL01/H5c | fix + revalidation |
+| 5 | ⛔ closed by dry-run — **B2 не делать** | — | `B2_increases`: 330 батчей против 160 | — | — |
+| 6 | 🟡 approved — required | Stage 4c | VisibilityDirector: culling ≤2 мс; −60…−80 % DC; F8/F9 | агент T-CULL01/H6 | `VisibilityDirector` |
+| 7 | 🟡 approved — required | Stage 6 | HLOD/L1 + L2-импостор/PVS: L1 ≤500, L2 ≤10 | агент T-CULL01/H7 | HLOD/impostor |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
 | 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
 
@@ -497,6 +499,24 @@ shadow budget по дистанции → material/submesh atlas dry-run → **B
 - **Следующий шаг — финальная валидация:**
   [`T-CULL01_FINAL_VALIDATION_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_FINAL_VALIDATION_AGENT_BRIEF.md).
 
+### 6.2. Final Validation — ❌ gate FAIL, нужен Stage 4c
+
+**Факт 01.11 (Play Mode, реальный `CityShadowBudget`):**
+- `CityShadowBudget` собрал **1 301** кандидата (ожидалось ~1 482), off 776; **P1 = 2 811 DC**,
+  повтор 2 811; budget off = 3 047. **Гейт 2 500 не взят: +311 (12.4 %).**
+- P1 с кораблями: 2 817; C2 565; C3 987/993; сцена чистая, prefab/FBX не менялись.
+- F8: сдвиг 256 м, 0 errors — **PASS**.
+- F9: `apply_refused:forced_user_validation_failure` / rollback `restore=True`, но bench ждал смену
+  frameGen и записал `FAILED_no_transaction` — **критерий F9 в bench неверен**, продукт-путь требует
+  отдельной проверки.
+- Причина недобора: компонент собирает 1 301 рендерер вместо 1 482 (разница 181; вероятно фильтр
+  `shadowCastingMode.Off` + момент Build/камеры). Бенч 2 423 с 1 482 кандидатами — **не подтверждён
+  в игре**.
+
+**Stage 4c:** диагностика candidate parity, исправление `CityShadowBudget`/Build, повторная валидация
+P1 ≤2 500 и F9; после этого — утверждённые Stage 6 → Stage 7. Brief:
+[`T-CULL01_STAGE4C_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE4C_AGENT_BRIEF.md).
+
 ---
 
 ## 7. Stage 5 — Воспроизводимость мержа + B2 города — ⛔ ЗАКРЫТ ДАННЫМИ
@@ -511,7 +531,8 @@ unique (mesh, material)-пар, поэтому B2 может **не уменьш
 переклейки обязателен **dry-run на пилоте S9_TRD-S2**: доказать снижение числа hybrid-батчей/DC, иначе
 не делать. Решение о Stage 5 — только явное, после Stage 4b.
 
-**Итог:** Stage 5 **закрыт**; H4 не выполнять. Stage 6/7 — только при новой цели ниже 2 423 DC.
+**Итог:** Stage 5 **закрыт**; H4 не выполнять. **Stage 6 и Stage 7 утверждены пользователем как
+фундамент** — выполняются после Stage 4c, не «по необходимости».
 
 **Сложный код:** `T-CULL01 / H4` (`PrimumCityRebatch` + `mapping.csv` + prefab-ассеты).
 **Почему сложно:** 174 001 scene-override / 34.3 МБ (54.6 % сцены); prefab-источник
@@ -533,10 +554,13 @@ unique (mesh, material)-пар, поэтому B2 может **не уменьш
 
 ---
 
-## 8. Stage 6 — VisibilityDirector (3–4 недели, опционально)
+## 8. Stage 6 — VisibilityDirector (3–4 недели) — ✅ УТВЕРЖДЁН
 
-**Когда:** если нужен мультикамерный union/бюджеты/корабли/интерьеры вне GRD и если Stage 4 не
-покрывает; либо как fallback, если GRD красный.
+**Решение пользователя 01.11:** Stage 6 и Stage 7 **нужны как фундамент будущего**, не опциональны.
+Stage 6 — первый после Stage 4c.
+
+**Когда:** мультикамерный union/бюджеты/корабли/интерьеры; CPU-куллинг; запас под будущий контент.
+Также fallback, если GRD/тени не покроют новые сцены.
 
 **Сложный код:** `T-CULL01 / H6`.
 **Файлы:** новый `C:\Projects\ProjectC_client\Assets\_Project\Scripts\World\VisibilityDirector.cs`
@@ -548,7 +572,10 @@ unique (mesh, material)-пар, поэтому B2 может **не уменьш
 
 ---
 
-## 9. Stage 7 — HLOD/L1 + L2-импостор / PVS (опционально)
+## 9. Stage 7 — HLOD/L1 + L2-импостор / PVS — ✅ УТВЕРЖДЁН
+
+**Решение пользователя 01.11:** Stage 7 нужен как фундамент дальнего мира/L2; не опциональный.
+Выполняется после Stage 6 (или параллельно, если Stage 6 не блокирует HLOD-пайплайн).
 
 **Когда:** нужен L0 <1k или L1/L2; город заморожен; есть бюджет 6–10 недель.
 **Сложный код:** `T-CULL01 / H7` (HLOD-baker/impostor bake/portal-PVS).
@@ -570,8 +597,8 @@ unique (mesh, material)-пар, поэтому B2 может **не уменьш
 | Stage 3 | **другой агент** по `T-CULL01/H2` | `ShipVisualMerger` + LOD |
 | Stage 4 | **другой агент** по `T-CULL01/H5` | GRD/шейдеры |
 | Stage 5 | ⛔ closed (B2 increases) | — | не выполнять |
-| Stage 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
-| Stage 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
+| Stage 6 | **approve** — после 4c | VisibilityDirector: culling ≤2 мс; −60…−80 % DC | агент T-CULL01/H6 | `VisibilityDirector` |
+| Stage 7 | **approve** — после 6 | HLOD/L1 + L2/PVS: L1 ≤500, L2 ≤10 | агент T-CULL01/H7 | HLOD/impostor/PVS |
 
 **Протокол передачи:** перед этапом открыть `T-CULL01`, взять соответствующий раздел `H*`,
 приложить актуальный baseline/ветку и попросить агента:

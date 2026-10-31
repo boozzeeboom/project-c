@@ -6,9 +6,12 @@
 // значит дешевле всего убрать ТОЛЬКО теневой проход мелкой статики.
 //
 // Что делает: у мелких статических частей (габарит <= smallPartMaxAxis) гасит
-// Renderer.shadowCastingMode, когда сама часть дальше shadowOffDistance от ближайшей
-// геймплейной камеры. Правило поштучное (по каждой части, а не по кораблю), поэтому у
-// корабля, снятого с 200 м, ближние части (100–150 м от камеры) тени сохраняют.
+// Renderer.shadowCastingMode, когда САМ КОРАБЛЬ дальше shadowOffDistance от ближайшей
+// геймплейной камеры, и возвращает авторский режим, когда корабль ближе shadowOnDistance.
+// Решение принимается по дистанции до корабля (localReferencePoint его LODGroup), а не по
+// дистанции до каждой части: корпус 325 м, и при камере в 200–300 м его ближняя половина
+// всё равно ближе 150 м — поштучное правило снимало ~30 частей из 314 (замер Stage 3c:
+// 1538 → 1434 DC). Дистанция до корабля срабатывает ровно один раз — на переходе через порог.
 // Крупные части (корпус, палубы, башни) не трогаются вообще — они не проходят фильтр габарита.
 //
 // Что НЕ делает: не меняет SetActive, Renderer.enabled, коллайдеры, DoorController, материалы,
@@ -35,10 +38,10 @@ namespace ProjectC.Ship
         [Tooltip("Выключить, чтобы вернуть авторские тени без снятия компонента.")]
         [SerializeField] private bool budgetEnabled = true;
 
-        [Tooltip("Ближе этого расстояния (м) тень части включается обратно — гистерезис.")]
+        [Tooltip("Ближе этого расстояния (м) до корабля тень мелкой статики включается обратно — гистерезис.")]
         [SerializeField] private float shadowOnDistance = 140f;
 
-        [Tooltip("Дальше этого расстояния (м) тень мелкой части выключается.")]
+        [Tooltip("Дальше этого расстояния (м) до корабля тень мелкой статики выключается целиком.")]
         [SerializeField] private float shadowOffDistance = 150f;
 
         [Tooltip("Мелкая статика: максимальная ось мирового габарита, м. Корпус и палубы крупнее — не трогаются.")]
@@ -68,6 +71,9 @@ namespace ProjectC.Ship
         private float _updateTimer;
         private float _cameraTimer;
         private bool _warnedNoLod;
+
+        /// <summary>Текущее решение бюджета: тени мелкой статики включены или сняты.</summary>
+        private bool _anchorShadowsOn = true;
 
         /// <summary>Сколько частей реально участвует в бюджете (диагностика/тул).</summary>
         public int TrackedRendererCount { get { return _entries.Count; } }
@@ -169,9 +175,9 @@ namespace ProjectC.Ship
 
             if (logOnBuild)
                 Debug.Log("[ShipShadowBudget] " + name + ": мелких частей " + _entries.Count + " (слотов " + slots +
-                          "), тени off дальше " + shadowOffDistance.ToString("F0") + " м, обратно ближе " +
-                          shadowOnDistance.ToString("F0") + " м, порог габарита " + smallPartMaxAxis.ToString("F0") +
-                          " м, камер " + _cameras.Count + ".");
+                          "), решение по дистанции до корабля: off дальше " + shadowOffDistance.ToString("F0") +
+                          " м, обратно ближе " + shadowOnDistance.ToString("F0") + " м, порог габарита " +
+                          smallPartMaxAxis.ToString("F0") + " м, камер " + _cameras.Count + ".");
         }
 
         /// <summary>
@@ -228,7 +234,25 @@ namespace ProjectC.Ship
 
         // -------------------------------------------------------------------- тени
 
+        /// <summary>
+        /// Решение принимается по дистанции до КОРАБЛЯ, а не до каждой части: корпус 325 м, поэтому
+        /// поштучное правило при 200–300 м снимало только дальний хвост (~30 частей из 314, замер
+        /// Stage 3c: 1538 → 1434 DC). Дистанция до корабля переключает весь бюджетный набор за один шаг
+        /// и даёт предсказуемый выигрыш на любой позе.
+        /// </summary>
         private void UpdateShadows()
+        {
+            float shipDistance = NearestCameraDistance(ShipAnchor());
+            if (shipDistance < 0f) return;
+
+            bool want = _anchorShadowsOn ? shipDistance <= shadowOffDistance : shipDistance < shadowOnDistance;
+            if (want == _anchorShadowsOn) return;
+
+            _anchorShadowsOn = want;
+            ApplyShadows(want);
+        }
+
+        private void ApplyShadows(bool on)
         {
             for (int i = 0; i < _entries.Count; i++)
             {
@@ -236,15 +260,20 @@ namespace ProjectC.Ship
                 var renderer = entry.renderer;
                 if (renderer == null) continue;
 
-                float nearest = NearestCameraDistance(renderer.bounds.center);
-                if (nearest < 0f) continue;
-
-                bool want = entry.shadowsOn ? nearest <= shadowOffDistance : nearest < shadowOnDistance;
-                if (want == entry.shadowsOn) continue;
-
-                entry.shadowsOn = want;
-                renderer.shadowCastingMode = want ? entry.baseMode : ShadowCastingMode.Off;
+                renderer.shadowCastingMode = on ? entry.baseMode : ShadowCastingMode.Off;
+                entry.shadowsOn = on;
             }
+        }
+
+        /// <summary>
+        /// Точка, от которой LODGroup считает дистанции переключения уровней (`localReferencePoint`),
+        /// в мире. Берётся из текущих трансформов каждый тик — кэша мировых координат нет (Floating Origin).
+        /// </summary>
+        private Vector3 ShipAnchor()
+        {
+            return _lodGroup != null
+                ? _lodGroup.transform.TransformPoint(_lodGroup.localReferencePoint)
+                : transform.position;
         }
 
         /// <summary>Дистанция до ближайшей геймплейной камеры; -1, если камер нет.</summary>
@@ -268,6 +297,7 @@ namespace ProjectC.Ship
         /// </summary>
         public void RestoreShadows()
         {
+            _anchorShadowsOn = true;
             for (int i = 0; i < _entries.Count; i++)
             {
                 var entry = _entries[i];

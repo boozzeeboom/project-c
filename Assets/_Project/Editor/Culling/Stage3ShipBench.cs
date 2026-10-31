@@ -14,10 +14,12 @@
 //
 // Запуск (важно): замер НЕ входит в Play Mode сам. Раньше он это делал и попадал в пустой мир —
 // открытая на тот момент BootstrapScene без загруженного мира и без персонажа. Порядок такой:
-//   1) Project C → Culling → Stage 3 Ship Bench → Run — взводит замер и пишет шапку файла;
-//   2) обычный старт игры: Play → «Одиночная игра» (Bootstrap сам загрузит мир);
-//   3) замер подхватывает сессию на EnteredPlayMode и дальше идёт сам.
-// Обратный порядок тоже работает: сначала старт игры, потом Run — замер подключится к идущей сессии.
+//   1) обычный старт игры: Play → «Одиночная игра» (Bootstrap сам загрузит мир);
+//   2) Project C → Culling → Stage 3 Ship Bench → Run — замер подключается к идущей сессии
+//      и сразу начинает работу (взведённый заранее Run тоже работает: подхват по EnteredPlayMode).
+//
+// По завершении (любой результат) замер САМ останавливает Play Mode — пользователю не нужно
+// ничего останавливать вручную. Выключается константой StopPlayModeOnFinish.
 //
 // Чего НЕ делает: не сохраняет сцену, не правит ассеты и код, не трогает коллайдеры и материалы.
 // Всё, что меняется (поза камеры, enabled рендереров, enabled DayNightController), живёт только в Play Mode.
@@ -60,6 +62,9 @@ namespace ProjectC.EditorTools
         private const double HostTimeoutSeconds = 300.0;
         private const double RigTimeoutSeconds = 240.0;
         private const double WarmupTimeoutSeconds = 900.0;
+
+        /// <summary>По завершении замера остановить Play Mode самим (пользователь ничего не нажимает).</summary>
+        private const bool StopPlayModeOnFinish = true;
 
         private sealed class DistanceCase
         {
@@ -184,7 +189,7 @@ namespace ProjectC.EditorTools
             Append("NOTE;method=PlayMode→Host;warmup=" + WarmupFrames + "fr;settle=" + SettleFrames +
                    "fr;samples=" + SampleCount + "x gap " + SampleGapFrames +
                    "fr;metric=UnityStats median;far=" + BenchFar + ";fov=" + BenchFov +
-                   ";shipDC=A(ship on)-B(all ship MeshRenderer.enabled=false)");
+                   ";shipDC=A(ship on)-B(all ship MeshRenderer.enabled=false);autoStopPlayMode=" + StopPlayModeOnFinish);
             Append("NOTE;lodThresholds=raw 300/900@FOV60 lodBias1 (Stage 3c, без изменений с Stage 3a); эффективная граница = raw × lodBias (ViewDistanceApplier: Near 0.7 / default 1.0 / Far+Ultra 1.3); порог LOD0 ближе ~281.6 м задать нельзя — P2 закрывается бюджетом теней");
 
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
@@ -1164,8 +1169,12 @@ namespace ProjectC.EditorTools
             _state = State.Off;
             Debug.Log("[Stage3Bench] Завершено: " + result + ". Файл: " + _outPath);
 
-            if (EditorApplication.isPlaying)
-                Debug.Log("[Stage3Bench] Play Mode оставлен запущенным (останавливает пользователь); сцена не сохраняется.");
+            if (StopPlayModeOnFinish && EditorApplication.isPlaying)
+            {
+                Debug.Log("[Stage3Bench] Замер закончен — останавливаю Play Mode сам. Сцена не сохраняется.");
+                Append("NOTE;playmode=stopped_by_bench");
+                EditorApplication.ExitPlaymode();
+            }
         }
 
         private static int Median(List<int> values)

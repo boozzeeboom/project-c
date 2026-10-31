@@ -28,4 +28,4 @@ measured,doors,open_close,OK,open: isOpen=True localMove_m=0.15; close: progress
 measured,metric,ship_tris,UNUSABLE,d120=−477396; d200=26188; d300=26058 при 165744 на d80 → A−B по треугольникам загрязнена; выводить только ship_dc
 measured,census,candidates_header,309,vs trackedRuntime=314: 5 частей были в неактивном LOD-уровне в момент census шапки — артефакт момента
 measured,console,errors,0,NavMesh warning=16; ShipCargoVisual boxPrefabs warning=25; meziy/PilotSeat — не относятся к T-CULL01
-next,action,ship_level_gate,PLANNED,решать по дистанции до корня/LODGroup корабля, а не по bounds.center каждой части; после правки перемерить d200/d200_repeat/d300
+next,action,ship_level_gate,IMPLEMENTED,сделано (бюджет решает по дистанции до LODGroup.localReferencePoint); ожидание: d200 ≈920–1100, d300 ≈870–1200, d120 может вырасти до ≈1050–1100; перемерить d200/d200_repeat/d300; замер сам останавливает Play Mode

@@ -22,7 +22,9 @@
 //
 // Гейт P2 (≤1300 DC на 200 м, корабль целиком в кадре) этот тул НЕ подтверждает:
 // он даёт только prefab-side проверку и проекцию. Подтверждение — Play Mode прогон
-// Project C → Culling → Stage 3 Ship Bench → Run.
+// Project C → Culling → Stage 3 Ship Bench → Run (с 9.3 замер сам останавливает игру).
+// Гейт теперь закрывается по двум позам: d200 (1434 → перебор +134) и d300 (1611 — худшая поза
+// при lodBias 1.3, когда LOD0 держится до 390 м).
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -50,22 +52,17 @@ namespace ProjectC.EditorTools
         private const string RollbackMenu = "ProjectC/Ships/Shadow Budget/Rollback (Stage 3c)";
 
         // ---------------------------------------------------------------- замеры-опоры
-        // Источник: M_stage3_heavy_2026-10-31.csv, строка CASE id=LOD0_full_200m
-        // (lodBias 1.30, Midday, far 30 000, FOV 60): dc_all=4395, dc_withoutShip=2857,
-        // ship_dc=1538, slots=555, shadowCasters=593. Перекрёстная проверка на 400 м:
-        // 178 теневых слотов / 106 кастеров = 1.68, на 200 м — 983 / 593 = 1.66.
-        private const int MeasuredShipDc200 = 1538;
-        private const int MeasuredSlots200 = 555;
-        private const int MeasuredShadowCasters200 = 593;
+        // Источник: N_stage3c_heavy_runtime_2026-10-31.txt, прогон 2026-10-31 21:24 (shadowDistance 400,
+        // 4 каскада, soft), строка CASE id=d200: dc_all=3926, dc_withoutShip=2492, ship_dc=1434,
+        // slots=553, ship_shadowCasters=489 → 881 теневых draw → 1.80 draw на кастер.
+        // Прошлая опора 1538/555/593 снята при shadowDistance=1000 и несравнима — оставлена в отчёте
+        // как историческая (отчёт Stage 3c §9).
+        private const int MeasuredShipDc200 = 1434;
+        private const int MeasuredSlots200 = 553;
+        private const int MeasuredShadowCasters200 = 489;
 
-        /// <summary>Гейт P2: ship_dc на 200 м при полном корабле в кадре.</summary>
+        /// <summary>Гейт P2: ship_dc на 200 м при полном корабле в кадре (и на 300 м — худшая поза).</summary>
         private const int GateDc = 1300;
-
-        /// <summary>
-        /// Доля слотов мелкой статики, которая на позе 200 м была дальше 150 м от камеры
-        /// и при этом в кадре: 219 / 314. Используется только для проекции.
-        /// </summary>
-        private const float FarSlotShare200 = 0.6975f;
 
         // ---------------------------------------------------------------- инварианты H2
         private const int ExpectDoors = 9;
@@ -346,37 +343,37 @@ namespace ProjectC.EditorTools
 
         /// <summary>
         /// Проекция ΔDC на позу 200 м. Это НЕ замер: ship_dc = slots_в_кадре + теневые draw.
-        /// Теневые draw на кастер считаются по опорной строке 200 м (983 / 593), доля слотов
-        /// мелочи, попадающая под отсечение по дистанции, — 219 / 314 с той же позы.
+        /// С 9.3 бюджет решает по дистанции до КОРАБЛЯ, поэтому на 200 м под отсечение попадает
+        /// ВЕСЬ набор кандидатов, а не доля: модель «219 из 314» опровергнута замером 21:24
+        /// (факт 1434 вместо 1175) и больше не используется.
         /// </summary>
         private static void Project(Inventory inv, LODGroup group, List<string[]> rows, List<string> problems)
         {
-            int shadowDraws = MeasuredShipDc200 - MeasuredSlots200;                 // 983
-            float perCaster = shadowDraws / (float)MeasuredShadowCasters200;        // 1.657
+            int shadowDraws = MeasuredShipDc200 - MeasuredSlots200;                 // 881
+            float perCaster = shadowDraws / (float)MeasuredShadowCasters200;        // 1.80
 
             AddRow(rows, "projection", "dc", "anchor_200m", MeasuredShipDc200.ToString(CultureInfo.InvariantCulture),
-                "slots=" + MeasuredSlots200 + "; shadowCasters=" + MeasuredShadowCasters200 +
+                "замер 2026-10-31 21:24: slots=" + MeasuredSlots200 + "; shadowCasters=" + MeasuredShadowCasters200 +
                 "; shadowDraws=" + shadowDraws + "; drawsPerCaster=" + F(perCaster));
 
             int requiredCulled = Mathf.CeilToInt((MeasuredShipDc200 - GateDc) / perCaster);
-            int modelledCulled = Mathf.RoundToInt(inv.Slots * FarSlotShare200);
-            int predicted = MeasuredShipDc200 - Mathf.RoundToInt(modelledCulled * perCaster);
-            int bandPessimistic = MeasuredShipDc200 - Mathf.RoundToInt(modelledCulled * 1.9f);  // меньше отсечения
-            int bandOptimistic = MeasuredShipDc200 - Mathf.RoundToInt(modelledCulled * 1.3f);
-            int floorIfAllCulled = MeasuredShipDc200 - Mathf.RoundToInt(inv.Slots * perCaster);
+            int culledSlots = inv.Slots;
+            int predicted = MeasuredShipDc200 - Mathf.RoundToInt(culledSlots * perCaster);
+            int bandLow = MeasuredShipDc200 - Mathf.RoundToInt(culledSlots * 2.4f);
+            int bandHigh = MeasuredShipDc200 - Mathf.RoundToInt(culledSlots * 1.3f);
 
             AddRow(rows, "projection", "dc", "gate", GateDc.ToString(CultureInfo.InvariantCulture),
                 "требуется снять слотов теней: " + requiredCulled +
                 " (при " + F(perCaster) + " draw на кастер)");
 
             AddRow(rows, "projection", "dc", "modelled", predicted.ToString(CultureInfo.InvariantCulture),
-                "предпосылки: слоты мелочи " + inv.Slots + " × доля дальних " + FarSlotShare200.ToString("F4", CultureInfo.InvariantCulture) +
-                " = " + modelledCulled + " слотов; пол " + floorIfAllCulled +
-                "; band при 1.3…1.9 draw/кастер = " + bandOptimistic + "…" + bandPessimistic);
+                "правило по дистанции до корабля: снимается весь набор " + culledSlots + " слотов, а не доля; " +
+                "полоса при 1.3…2.4 draw/кастер = " + bandHigh + "…" + bandLow);
 
-            bool plausible = predicted <= GateDc && bandPessimistic <= GateDc;
+            bool plausible = predicted <= GateDc && bandHigh <= GateDc;
             AddRow(rows, "projection", "dc", "verdict", plausible ? "PROJECTED_ONLY" : "INSUFFICIENT",
-                "ГЕЙТ НЕ ПОДТВЕРЖДЁН: нужен Play Mode прогон Stage 3 Ship Bench (d200)");
+                "ГЕЙТ НЕ ПОДТВЕРЖДЁН: нужен прогон Stage 3 Ship Bench; закрывать по d200 И d300 " +
+                "(d300 = 1611 DC — худшая поза при lodBias 1.3)");
 
             if (inv.Slots <= requiredCulled)
                 problems.Add("всех кандидатов (" + inv.Slots + " слотов) не хватает, чтобы снять нужные " +
@@ -535,19 +532,38 @@ namespace ProjectC.EditorTools
             rows.Add(new[] { phase, category, item, value, note });
         }
 
+        /// <summary>Фазы, которыми владеет инструмент: при перезаписи они заменяются, остальные строки сохраняются.</summary>
+        private static readonly string[] OwnedPhases =
+            { "applied", "verify", "rollback", "projection", "projection_superseded", "failed", "failed_after_save" };
+
         /// <summary>
-        /// Полная перезапись CSV: файл принадлежит Stage 3c, и в нём осталась мусорная строка
-        /// failed/exception от прерванной попытки с LOD-порогами (вариант A).
+        /// Перезапись блока инструмента с сохранением чужих строк: в этом же файле лежат замеры
+        /// Play Mode (phase=measured/next/...), которые нельзя терять при повторном Verify/Apply/Rollback.
         /// </summary>
         private static void WriteReport(List<string[]> rows)
         {
             string path = AbsoluteProjectPath(ReportRelativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(path));
 
+            var foreign = new List<string>();
+            if (File.Exists(path))
+            {
+                foreach (string line in File.ReadAllLines(path))
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    if (line.StartsWith("phase,", StringComparison.Ordinal)) continue;
+                    string phase = line.Split(',')[0];
+                    if (Array.IndexOf(OwnedPhases, phase) >= 0) continue;
+                    foreign.Add(line);
+                }
+            }
+
             var sb = new StringBuilder();
             sb.AppendLine("phase,category,item,value,note");
             foreach (var r in rows)
                 sb.AppendLine(Csv(r[0]) + "," + Csv(r[1]) + "," + Csv(r[2]) + "," + Csv(r[3]) + "," + Csv(r[4]));
+            foreach (string line in foreign)
+                sb.AppendLine(line);
             File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false));
         }
 

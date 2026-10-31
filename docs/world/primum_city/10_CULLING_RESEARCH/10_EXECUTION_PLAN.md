@@ -79,6 +79,9 @@ Stage 5 — только после зелёного Stage 4. Stage 6/7 — по
 
 ## 2. Stage 0 — Baseline + фиксы (2–3 дня)
 
+**Brief для отдельного агента (Play Mode разрешён пользователем):**
+[`T-CULL01_STAGE0_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE0_AGENT_BRIEF.md).
+
 **Цель:** иметь сравнимые «до/после» и убрать два известных бага.
 
 ### 0.1. Методика и точки

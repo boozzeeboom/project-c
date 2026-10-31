@@ -2,9 +2,9 @@
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
 **Статус:** Stage 0 — pass с оговорками; Stage 1 — partial pass; Stage 2 — conditional pass
-(P1 27 131 → 6 094 — замер при старых тенях, исторический); **Stage 3 — P1 pass (973→616 MR),
-P2 закрыт теневым бюджетом (d200 1 170 / d300 1 236 при ≤1 300)**; открыто: визуал бюджета и F8/F9.
-**Следующий шаг — Stage 3b: раскатка medium/light (после визуального «да»).**
+(P1 6 094 — исторический замер при старых тенях); **Stage 3 — P1 pass (973→616 MR), P2 закрыт
+теневым бюджетом (d200 1 170 / d300 1 236)**; **Stage 4 — следующий шаг**. Другие корабли
+(medium/light/NPC) сейчас **не делаем** — типовые, при помехах в замере выключаем их рендереры.
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -34,7 +34,7 @@ P2 закрыт теневым бюджетом (d200 1 170 / d300 1 236 при 
 | 2 | ✅ conditional pass (P1 6 094, −77.5 %) | Stage 0 | P1 27 131 → 6 094; повтор +0.25 %; визуал/F8/F9 открыты | агент T-CULL01/H3 | слой + `DoorVisibilityBudget`/`ShadowBudget` |
 | 2b | ✅ done (doors inherited; shadow ≈0) | Stage 2 | 270 дверных рендереров ферм уже на слое 10; ShadowBudget на 5.7–6 км — ≈0 | автоматически | — |
 | 3 | ✅ P1/P2 green (conditional: visual/F8 open) | Stage 1 | P1 973→616 MR; P2 d200 1 170 / d300 1 236 ≤1 300; другие 0 diff | агент T-CULL01/H2b | `N_stage3c_*`, `T-CULL01_STAGE3C_REPORT.md` |
-| 3b | 🟡 ready — medium/light rollout | Stage 3 + visual sign-off | heavy не трогать; medium/light ≤; все корабли ≤2 500 | агент T-CULL01/H2c | prefab + отчёт |
+| 3b | ⛔ deferred — **не сейчас** | — | другие корабли типовые; если мешают — выключить рендереры в замере | — | — |
 | 4 | 🟡 ready — после re-baseline | Stage 2 | DC ≤2 500; Hybrid Batch Group; 0 shader errors; FO | агент T-CULL01/H5 | настройки + шейдеры |
 | 5 | ⬜ planned | Stage 4 зелёный + окклюзия ≥35 % | цвет ±10 %, тени ≤+10 %, Σtris ±0.1 %, DC не растёт | агент T-CULL01/H4 | rebatch-тул + prefab-ассеты |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
@@ -360,11 +360,9 @@ CSV `N_stage3c_heavy_2026-10-31.csv`, лог `N_stage3c_heavy_runtime_2026-10-31
 (поручение Stage 3b/Stage 4).
 
 **Открыто:** визуальная приёмка теневого бюджета на 150–300 м и ночью; F8/F9 реальным вводом;
-medium/light не покрыты; старый P1 baseline не перемерен.
+старый P1 baseline не перемерен. **Другие корабли — вне scope сейчас** (типовые; при помехах выключить рендереры).
 
-**Вердикт:** Stage 3c — **conditional pass**; P2 закрыт замером, future scale-out разблокирован
-**только после визуального sign-off**. Brief Stage 3b:
-[`T-CULL01_STAGE3B_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE3B_AGENT_BRIEF.md).
+**Вердикт:** Stage 3c — **conditional pass**; P2 закрыт замером; **другие корабли сейчас не делаем**.
 
 **R0.2 (ship placement / save):** корабль без пилота падает на `DECK` (ожидаемо) и стоит; но
 `ShipPositions.json` содержал позицию свободного падения и телепортировал корабль в пустоту (−41 570 м).
@@ -378,29 +376,30 @@ medium/light не покрыты; старый P1 baseline не перемере
 бюджет корабля, D) принять 1 538 только по решению пользователя. Рекомендация: A + визуал; если
 неприемлемо — B/C.
 
-### 5.1. Stage 3b — future scale-out medium/light (следующий шаг)
+### 5.1. Остальные корабли — **не сейчас, вне scope Stage 4**
 
-**Brief:** [`T-CULL01_STAGE3B_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE3B_AGENT_BRIEF.md).
-Запускать **только после**: (1) P2 heavy закрыт замером — да; (2) **визуального sign-off** теневого
-бюджета heavy; (3) нового baseline при `shadowDistance=400/4` (старый P1 6 094 недействителен).
-Никаких правок heavy/NPC в Stage 3b:
+Решение пользователя 2026-10-31: **medium, light и 20 NPC сейчас не оптимизируем и по одному не смотрим**.
+Они типовые, пойдут по тому же пайплайну HeavyII, когда/если понадобится. Никаких отдельных брифов,
+H1b, LOD/мержей и «проверок каждого корабля» сейчас нет.
 
-| Объект | MR / slots | Что предстоит | Условие запуска |
-|---|---|---|---|
-| `Ship_medium_base` | 118 / 118 | тот же merger/LOD; сохранить `Ship_CargoMedium_Base` (80 MR) | heavy зелёный + visual OK; H1b для medium при необходимости |
-| `Ship_Light_root_fbx_test` | 428 / 428 | тот же merger/LOD; 25 материалов / 3 nested FBX | heavy зелёный + visual OK; H1b при необходимости |
-| 20 NPC-заглушек | 120 / 120 | **не клеить**; только LOD/импостер, если появятся реальные модели | отдельное решение |
+| Объект | Что делаем **сейчас** | Если мешает в кадре/замерах Stage 4 |
+|---|---|---|
+| `Ship_medium_base` | **ничего** | **выключить его MeshRenderer** на время замера, не трогая prefab |
+| `Ship_Light_root_fbx_test` | **ничего** | **выключить его MeshRenderer** на время замера |
+| 20 NPC | **ничего** | **выключить их MeshRenderer** на время замера |
+| `Ship_havyII_base` | пилот, оставить как есть | не трогать |
 
-**Целевые числа Stage 3b:** heavy остаётся ~1 170/1 236 (не трогать); medium/light дают остаток;
-все корабли **≤2 500 DC** (P1/P2), после P3 heavy — ≤480; NPC остаются 360 DC.
-**Не входит:** heavy (уже сделан) и NPC.
+Выключение — **только runtime, для чистоты замера**; не сохранять сцену, не менять префабы.
+Пайплайн HeavyII считается рабочим образцом; future scale-out — отдельным решением позже, не в Stage 4.
 
 ---
 
 ## 6. Stage 4 — GRD + GPU occlusion (2–3 недели)
 
+> **Brief для агента:** [`T-CULL01_STAGE4_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE4_AGENT_BRIEF.md).
 > **Перед стартом:** перемерить baseline при текущих тенях `400 м / 4 каскада / soft on`;
-> старые P1 6 094 / heavy 1 538 — исторические (T-LIGHT01). Stage 3b может идти параллельно.
+> старые P1 6 094 / heavy 1 538 — исторические (T-LIGHT01). **Другие корабли сейчас не трогать**:
+> если мешают в кадре — выключить их `MeshRenderer` на время замера (runtime only, без сохранения сцены).
 
 **Цель:** выйти на 1 500–2 500 DC, включить Hi-Z.
 

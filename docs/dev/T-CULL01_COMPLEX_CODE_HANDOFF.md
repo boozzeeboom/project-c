@@ -133,14 +133,11 @@ P1/P2: greeble-мерж (973 → ~620 slot), затем LODGroup; P3 (позже
 - **Другие корабли — 0 изменений**; scene-diff пустой; H1-R1 сохранён.
 - P2 зелёный (после visual sign-off) разблокирует **Stage 3b**; P3/фрактура — отдельно.
 
-### 3.6. Stage 3b — future scale-out (не входит в H2)
-Запускать после визуального sign-off heavy + нового baseline при `shadowDistance=400/4`.
-Brief: [`T-CULL01_STAGE3B_AGENT_BRIEF.md`](T-CULL01_STAGE3B_AGENT_BRIEF.md).
-- `Ship_medium_base` (118 MR; сохранить вложенный `Ship_CargoMedium_Base` 80 MR);
-- `Ship_Light_root_fbx_test` (428 MR; 25 материалов / 3 nested FBX);
-- H1b для medium/light — только если reimport реально ломает;
-- 20 NPC — не клеить (6 MR/820 тр.); LOD/импостор только при появлении реальных моделей;
-- цель: все корабли 4 917 → ≤2 500 DC (P1/P2), после P3 heavy — ≤480; heavy не трогать.
+### 3.6. Stage 3b — future scale-out (⛔ НЕ СЕЙЧАС)
+Решение пользователя 2026-10-31: medium/light/NPC **сейчас не трогать**; они типовые и пойдут по
+пайплайну HeavyII позже. Если мешают в кадре — выключить их `MeshRenderer` runtime-ом, prefab не менять.
+Отдельный бриф `T-CULL01_STAGE3B_AGENT_BRIEF.md` помечен «отменено/не выполнять»; к нему вернуться
+только по отдельному решению.
 
 ---
 
@@ -252,13 +249,15 @@ Brief: [`T-CULL01_STAGE3B_AGENT_BRIEF.md`](T-CULL01_STAGE3B_AGENT_BRIEF.md).
   `ShipController`/`DoorController` (створки).
 
 ### 6.3. Что сделать
-1. Audit 15+5 `.shadergraph`: включить DOTS/instancing-варианты; проверить 0 `DOTS_INSTANCING_ON`
+1. **Корабли не оптимизировать:** `Ship_havyII_base` не трогать; medium/light/NPC — не менять.
+   Если корабли мешают city-замеру — выключить их `MeshRenderer` runtime-ом (без сохранения сцены).
+2. Audit 15+5 `.shadergraph`: включить DOTS/instancing-варианты; проверить 0 `DOTS_INSTANCING_ON`
    у рукописных шейдеров; не ломать процедурные world-space шумы.
-2. `GraphicsSettings.asset: m_BrgStripping = 2 (KeepAll)`; URP: `m_GPUResidentDrawerMode = 1`,
+3. `GraphicsSettings.asset: m_BrgStripping = 2 (KeepAll)`; URP: `m_GPUResidentDrawerMode = 1`,
    `m_GPUResidentDrawerEnableOcclusionCullingInCameras = 1`; Forward+ уже включён.
-3. Пилот на одном чанке → вся сцена: Frame Debugger `Hybrid Batch Group`; DC/SetPass/tris.
-4. Проверить: двери (створки), тени, материал/эмиссию, F8/F9, 0 shader errors.
-5. Fallback: исключить двери из GRD (`GPUDrivenProcessor`/opt-out) или откатить к 18.10-состоянию
+4. Пилот на одном чанке → вся сцена: Frame Debugger `Hybrid Batch Group`; DC/SetPass/tris.
+5. Проверить: двери (створки), тени, материал/эмиссию, F8/F9, 0 shader errors.
+6. Fallback: исключить двери из GRD (`GPUDrivenProcessor`/opt-out) или откатить к 18.10-состоянию
    (`m_GPUResidentDrawerMode=0`, `m_BrgStripping=0`).
 
 ### 6.4. Приёмка

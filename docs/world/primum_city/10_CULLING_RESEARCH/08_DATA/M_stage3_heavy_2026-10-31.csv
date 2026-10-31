@@ -1,0 +1,104 @@
+phase,category,item,value,note
+dryrun,model,mesh_renderers,973,
+dryrun,model,slots,972,shadow_slots=972; dc_upper(1+2 каскада)=2916
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_AftGate_Port,на узле есть коллайдер (створка),
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_AftGate_Stb,на узле есть коллайдер (створка),
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Bridge_1,на узле есть коллайдер (створка),
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Bridge_2,на узле есть коллайдер (створка),
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Guest,на узле есть коллайдер (створка),
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Landing,на узле есть коллайдер (створка),
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Medbay,на узле есть коллайдер (створка),
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Mess,на узле есть коллайдер (створка),
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Nav,на узле есть коллайдер (створка),
+dryrun,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Ramp_Cargo,на узле есть коллайдер (створка),
+dryrun,plan,fbx_renderers,935,
+dryrun,plan,greeble_sources,378,GrbFine=219 GrbDetail=159
+dryrun,plan,static_unmerged,547,
+dryrun,plan,protected_total,48,"двери/створки, PilotSeat, Slot_Engine, корневой dummy"
+dryrun,plan,p1_groups,10,
+dryrun,plan,lod1_groups,10,
+dryrun,plan,contrail_size_before,72.216;216.360;9.720,"значение, которое ShipContrailVfx вычислял до мержа"
+dryrun,mesh,HeavyII_VIS_GrbDetail_Lamp_Green,360,cell=GrbDetail mat=Lamp_Green (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=10 src_tris=360 verts=600 idx=UInt16
+dryrun,mesh,HeavyII_VIS_GrbDetail_Lamp_Red,360,cell=GrbDetail mat=Lamp_Red (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=10 src_tris=360 verts=600 idx=UInt16
+dryrun,mesh,HeavyII_VIS_GrbDetail_Lamp_White,1324,cell=GrbDetail mat=Lamp_White (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=30 src_tris=1324 verts=2184 idx=UInt16
+dryrun,mesh,HeavyII_VIS_GrbDetail_Metal_Bronze,96,cell=GrbDetail mat=Metal_Bronze (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=2 src_tris=96 verts=160 idx=UInt16
+dryrun,mesh,HeavyII_VIS_GrbDetail_Metal_Bronze_Dark,328,cell=GrbDetail mat=Metal_Bronze_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=4 src_tris=328 verts=624 idx=UInt16
+dryrun,mesh,HeavyII_VIS_GrbDetail_Metal_Rust_Worn,72,cell=GrbDetail mat=Metal_Rust_Worn (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=1 src_tris=72 verts=144 idx=UInt16
+dryrun,mesh,HeavyII_VIS_GrbDetail_Metal_Steel_Dark,6744,cell=GrbDetail mat=Metal_Steel_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=102 src_tris=6744 verts=10556 idx=UInt16
+dryrun,mesh,HeavyII_VIS_GrbFine_Metal_Brass,1744,cell=GrbFine mat=Metal_Brass (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=30 src_tris=1744 verts=3436 idx=UInt16
+dryrun,mesh,HeavyII_VIS_GrbFine_Metal_Bronze_Dark,1060,cell=GrbFine mat=Metal_Bronze_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=17 src_tris=1060 verts=2076 idx=UInt16
+dryrun,mesh,HeavyII_VIS_GrbFine_Metal_Steel_Dark,3904,cell=GrbFine mat=Metal_Steel_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=172 src_tris=3904 verts=7144 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Deck_Plating,380,cell=LOD1 mat=Deck_Plating (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=21 src_tris=380 verts=680 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Glass_Green_Matte,332,cell=LOD1 mat=Glass_Green_Matte (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=16 src_tris=332 verts=612 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Lamp_Green,372,cell=LOD1 mat=Lamp_Green (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=11 src_tris=372 verts=624 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Lamp_Red,372,cell=LOD1 mat=Lamp_Red (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=11 src_tris=372 verts=624 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Lamp_White,2140,cell=LOD1 mat=Lamp_White (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=52 src_tris=2140 verts=3540 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Metal_Brass,3072,cell=LOD1 mat=Metal_Brass (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=98 src_tris=3072 verts=5280 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Metal_Bronze,3880,cell=LOD1 mat=Metal_Bronze (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=136 src_tris=3880 verts=6874 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Metal_Bronze_Dark,8096,cell=LOD1 mat=Metal_Bronze_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=155 src_tris=8096 verts=15448 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Metal_Rust_Worn,72,cell=LOD1 mat=Metal_Rust_Worn (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=1 src_tris=72 verts=144 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD1_Metal_Steel_Dark,11448,cell=LOD1 mat=Metal_Steel_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=205 src_tris=11448 verts=19840 idx=UInt16
+dryrun,mesh,HeavyII_VIS_LOD2_All,30164,src_tris=30164 verts=53666 submeshes=5 idx=UInt16 mats=Metal_Steel_Dark/Metal_Bronze_Dark/Glass_Green_Matte/Lamp_Red/Lamp_Green
+dryrun,tris,p1_greeble,15992,src=15992
+before,model,mesh_renderers,973,
+before,model,slots,972,shadow_slots=972; dc_upper(1+2 каскада)=2916
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_AftGate_Port,на узле есть коллайдер (створка),
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_AftGate_Stb,на узле есть коллайдер (створка),
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Bridge_1,на узле есть коллайдер (створка),
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Bridge_2,на узле есть коллайдер (створка),
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Guest,на узле есть коллайдер (створка),
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Landing,на узле есть коллайдер (створка),
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Medbay,на узле есть коллайдер (створка),
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Mess,на узле есть коллайдер (створка),
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Nav,на узле есть коллайдер (створка),
+before,protected,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Ramp_Cargo,на узле есть коллайдер (створка),
+before,plan,fbx_renderers,935,
+before,plan,greeble_sources,378,GrbFine=219 GrbDetail=159
+before,plan,static_unmerged,547,
+before,plan,protected_total,48,"двери/створки, PilotSeat, Slot_Engine, корневой dummy"
+before,plan,p1_groups,10,
+before,plan,lod1_groups,10,
+before,plan,contrail_size_before,72.216;216.360;9.720,"значение, которое ShipContrailVfx вычислял до мержа"
+applied,mesh,HeavyII_VIS_GrbDetail_Lamp_Green,360,cell=GrbDetail mat=Lamp_Green (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=10 src_tris=360 verts=600 idx=UInt16
+applied,mesh,HeavyII_VIS_GrbDetail_Lamp_Red,360,cell=GrbDetail mat=Lamp_Red (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=10 src_tris=360 verts=600 idx=UInt16
+applied,mesh,HeavyII_VIS_GrbDetail_Lamp_White,1324,cell=GrbDetail mat=Lamp_White (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=30 src_tris=1324 verts=2184 idx=UInt16
+applied,mesh,HeavyII_VIS_GrbDetail_Metal_Bronze,96,cell=GrbDetail mat=Metal_Bronze (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=2 src_tris=96 verts=160 idx=UInt16
+applied,mesh,HeavyII_VIS_GrbDetail_Metal_Bronze_Dark,328,cell=GrbDetail mat=Metal_Bronze_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=4 src_tris=328 verts=624 idx=UInt16
+applied,mesh,HeavyII_VIS_GrbDetail_Metal_Rust_Worn,72,cell=GrbDetail mat=Metal_Rust_Worn (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=1 src_tris=72 verts=144 idx=UInt16
+applied,mesh,HeavyII_VIS_GrbDetail_Metal_Steel_Dark,6744,cell=GrbDetail mat=Metal_Steel_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=102 src_tris=6744 verts=10556 idx=UInt16
+applied,mesh,HeavyII_VIS_GrbFine_Metal_Brass,1744,cell=GrbFine mat=Metal_Brass (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=30 src_tris=1744 verts=3436 idx=UInt16
+applied,mesh,HeavyII_VIS_GrbFine_Metal_Bronze_Dark,1060,cell=GrbFine mat=Metal_Bronze_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=17 src_tris=1060 verts=2076 idx=UInt16
+applied,mesh,HeavyII_VIS_GrbFine_Metal_Steel_Dark,3904,cell=GrbFine mat=Metal_Steel_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=172 src_tris=3904 verts=7144 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Deck_Plating,380,cell=LOD1 mat=Deck_Plating (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=21 src_tris=380 verts=680 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Glass_Green_Matte,332,cell=LOD1 mat=Glass_Green_Matte (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=16 src_tris=332 verts=612 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Lamp_Green,372,cell=LOD1 mat=Lamp_Green (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=11 src_tris=372 verts=624 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Lamp_Red,372,cell=LOD1 mat=Lamp_Red (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=11 src_tris=372 verts=624 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Lamp_White,2140,cell=LOD1 mat=Lamp_White (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=52 src_tris=2140 verts=3540 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Metal_Brass,3072,cell=LOD1 mat=Metal_Brass (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=98 src_tris=3072 verts=5280 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Metal_Bronze,3880,cell=LOD1 mat=Metal_Bronze (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=136 src_tris=3880 verts=6874 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Metal_Bronze_Dark,8096,cell=LOD1 mat=Metal_Bronze_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=155 src_tris=8096 verts=15448 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Metal_Rust_Worn,72,cell=LOD1 mat=Metal_Rust_Worn (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=1 src_tris=72 verts=144 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD1_Metal_Steel_Dark,11448,cell=LOD1 mat=Metal_Steel_Dark (Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx) sources=205 src_tris=11448 verts=19840 idx=UInt16
+applied,mesh,HeavyII_VIS_LOD2_All,30164,src_tris=30164 verts=53666 submeshes=5 idx=UInt16 mats=Metal_Steel_Dark/Metal_Bronze_Dark/Glass_Green_Matte/Lamp_Red/Lamp_Green
+applied,tris,p1_greeble,15992,src=15992
+applied,lod,world_size_m,324.8460,size(local)=27.0705
+applied,lod,lod0_to_lod1,0.9377,300 м @FOV60 lodBias1 (LODUtility: 300.0000 м); renderers=557
+applied,lod,lod1_to_lod2,0.3126,900 м @FOV60 lodBias1 (LODUtility: 900.0001 м); renderers=10
+applied,lod,lod2_cull,0,без cull (решение пользователя)
+applied,lod,lod_bias_note,0.7000,active=Medium lodBias=0.7000; эффективные пороги = 300/900 м × lodBias
+applied,contrail,Ship_havyII_base/ContrailVFX,72.216;216.360;9.720,"UseShipBounds=false, ManualBoundsSize = значение до мержа (поведение не меняется)"
+applied,backup,_local_backups/T-CULL01/Stage3/Ship_havyII_base.prefab.bak,ok,
+after,model,mesh_renderers,616,
+after,model,slots_LOD0,604,вне LODGroup=47 + LOD0=557; shadow_slots=604; dc_upper(1+2 каскада)=1812
+after,model,slots_LOD1,57,вне LODGroup=47 + LOD1=10; shadow_slots=57; dc_upper(1+2 каскада)=171
+after,model,slots_LOD2,52,вне LODGroup=47 + LOD2=5; shadow_slots=52; dc_upper(1+2 каскада)=156
+applied,save,Assets/_Project/Prefabs/Ships/Ship_havyII_base.prefab,ok,mesh-ассетов: 21
+after_reimport,model,mesh_renderers,616,
+after_reimport,model,slots_LOD0,604,вне LODGroup=47 + LOD0=557; shadow_slots=604; dc_upper(1+2 каскада)=1812
+after_reimport,model,slots_LOD1,57,вне LODGroup=47 + LOD1=10; shadow_slots=57; dc_upper(1+2 каскада)=171
+after_reimport,model,slots_LOD2,52,вне LODGroup=47 + LOD2=5; shadow_slots=52; dc_upper(1+2 каскада)=156
+after_reimport,validation,,OK,
+manual_check,h1_r1,ShipPrefabRepair.VerifyAfterReimport+Apply,OK,"после H2: 250 BoxCollider (240 вне FBX / 10 leaf), 9 DoorController, 0 missing; файл префаба не переписан; H1_prefab_repair.csv возвращён к HEAD"
+manual_check,other_ships,Ship_medium_base / Ship_Light_root_fbx_test / NPC,0 diff,"mtime файлов не изменился; изменён только Ship_havyII_base.prefab"
+manual_check,scene,WorldScene_0_0,clean,"isDirty=false; инстанс: 616 MR, 14 исходных overrides, новых нет; сцена не сохранялась"
+manual_check,runtime,Frame Debugger / DC / F8-F9,PENDING,"Play Mode агентом не запускался — замер выполняет пользователь"

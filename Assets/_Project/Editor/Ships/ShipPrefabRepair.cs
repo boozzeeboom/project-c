@@ -538,10 +538,18 @@ namespace ProjectC.EditorTools
                              " (только leaf-створки)");
             if (doors != ExpectedDoorControllers)
                 problems.Add("DoorController: " + doors + " вместо " + ExpectedDoorControllers);
-            if (mr != ExpectedMeshRenderers)
-                problems.Add("MeshRenderer: " + mr + " вместо " + ExpectedMeshRenderers);
-            if (mf != ExpectedMeshFilters)
-                problems.Add("MeshFilter: " + mf + " вместо " + ExpectedMeshFilters);
+            // После H2 (ShipVisualMerger) число MR/MF другое по построению — проверяем инварианты H2.
+            if (FindChild(root.transform, ShipVisualMerger.VisualRootName) != null)
+            {
+                ShipVisualMerger.ValidateMergedState(root, problems);
+            }
+            else
+            {
+                if (mr != ExpectedMeshRenderers)
+                    problems.Add("MeshRenderer: " + mr + " вместо " + ExpectedMeshRenderers);
+                if (mf != ExpectedMeshFilters)
+                    problems.Add("MeshFilter: " + mf + " вместо " + ExpectedMeshFilters);
+            }
             if (missing != 0)
                 problems.Add("missing script references: " + missing);
 

@@ -3,8 +3,10 @@
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
 **Статус:** Stage 0 — pass с оговорками; Stage 1 — partial pass; Stage 2 — conditional pass; Stage 3 — P1/P2 green
 (heavy 616 MR, P2 1 170/1 236); **Stage 4 — conditional green (P1 3 031, −52.6 %, визуально принят
-пользователем; числовой гейт 2 500 не взят, окклюзия 0 %)**; **Stage 4b — следующий шаг (gap close)**;
-Stage 5 (B2) — **на паузе** (условие окклюзии не выполнено, данных о пользе B2 под GRD нет).
+пользователем; числовой гейт 2 500 не взят, окклюзия 0 %)**; **Stage 4b — green по числу
+(P1 3 047 → 2 423 DC при городском бюджете теней 200 м, −20.5 %; гейт 2 500 взят с запасом 3.1 %,
+визуальная приёмка теней ещё за пользователем)**;
+Stage 5 (B2) — **на паузе** (dry-run 4b показал `B2_increases`: 330 батчей против 160 сейчас).
 Другие корабли (medium/light/NPC) сейчас **не делаем** — при помехах выключаем их рендереры.
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
@@ -37,7 +39,7 @@ Stage 5 (B2) — **на паузе** (условие окклюзии не вы�
 | 3 | ✅ P1/P2 green (conditional: visual/F8 open) | Stage 1 | P1 973→616 MR; P2 d200 1 170 / d300 1 236 ≤1 300; другие 0 diff | агент T-CULL01/H2b | `N_stage3c_*`, `T-CULL01_STAGE3C_REPORT.md` |
 | 3b | ⛔ deferred — **не сейчас** | — | другие корабли типовые; если мешают — выключить рендереры в замере | — | — |
 | 4 | ✅ conditional green — visual OK; gate open | Stage 2 | P1 3 031 (−52.6 %); Hybrid Batch Group ✅; 0 shader errors ✅; **DC ≤2 500 ❌**; окклюзия ≈0 | агент T-CULL01/H5 | настройки + шейдеры + `T-CULL01_STAGE4_REPORT.md` |
-| 4b | 🟡 next — gap close | Stage 4 | P1 3 031 → ≤2 500 безопасными рычагами; visual; окклюзия не помогает | агент T-CULL01/H5b | bench + настройки/бюджет |
+| 4b | ✅ green по числу — visual теней open | Stage 4 | P1 3 047 → **2 423** (sb200) / 2 302 (sb150); atlas 0 %, B2 `B2_increases`; sm оставлен 0 | агент T-CULL01/H5b | `P_stage4b_*`, `CityShadowBudget.cs`, `T-CULL01_STAGE4B_REPORT.md` |
 | 5 | ⛔ on hold — **B2 не запускать автоматически** | Stage 4 + окклюзия ≥35 % (не выполнено) | данных о снижении hybridDC от B2 нет; риск роста unique pairs | — | — |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
 | 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
@@ -459,7 +461,7 @@ H1b, LOD/мержей и «проверок каждого корабля» се
 - Открыто: реальный ввод F8/F9, рост DC на C3 (+4.9 %), `lodBias 0.70` при quality Medium
   (числа Stage 3 при 1.30 несравнимы). Визуальный sign-off пользователя по GRD получен 31.10.
 
-### 6.1. Stage 4b — gap close 3 031 → ≤2 500 (следующий шаг)
+### 6.1. Stage 4b — gap close 3 031 → ≤2 500 — ЗАКРЫТ по числу
 
 **Brief:** [`T-CULL01_STAGE4B_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE4B_AGENT_BRIEF.md).
 
@@ -471,6 +473,26 @@ B2-переклейка увеличивает число units/slots (A 698/1 6
 Порядок 4b: новый baseline → `m_SmallMeshScreenPercentage` (если доступен/согласован) → городской
 shadow budget по дистанции → material/submesh atlas dry-run → **B2 dry-run** (не apply). Gate: P1 ≤2 500
 без визуального регресса; если не выходит — зафиксировать и вынести решение по Stage 5/6.
+
+**Результат (2026-11-01).** Отчёт: [`docs/dev/T-CULL01_STAGE4B_REPORT.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE4B_REPORT.md).
+Данные: `08_DATA/P_stage4b_dryrun_2026-10-31.csv`, `P_stage4b_2026-10-31.csv`, четыре
+`P_stage4b_grd_sm*_2026-10-31_raw.txt`. Бенч: `Stage4bGapBench` (11 кейсов), dry-run: `Stage4bDryRun`.
+
+- **Гейт взят:** P1 3 047 → **2 423** DC при городском бюджете теней 200 м (−20.5 %, запас 3.1 %);
+  150 м даёт **2 302** (−24.4 %). Baseline воспроизвёлся (+0.5 % к Stage 4, повтор −0.2 %).
+  `shadowCasters` 1254 → 636, `hybridDC` 2872 → 2255, `tris` 16.52 M → 12.36 M.
+  Механизм: под GRD один снятый кастер снимает ровно один draw call, срез линеен и предсказуем.
+- **`m_SmallMeshScreenPercentage` оставлен 0.** На 0.5 % P1 ухудшился (3 078, `hybridDC` 2 872 → 2 904
+  при падении инстансов 18 204 → 17 832 — culling дробит батчи), 1–2 % дают pop-in и влияют на всю сцену.
+  Свип 0→0.5→1→2 откачен; `git status` по `ProjectC_URP.asset` чист.
+- **Atlas/submesh-мерж закрыт:** `shaderPairsInFrustum == pairsInFrustum` во всех кейсах, gain 0.
+- **B2 закрыт данными:** на пилоте 160 пар против 532 у `J_B`; B2 дал бы 330 батчей
+  (`verdict=B2_increases`), то есть ~6.3× текущего слитого состояния. Автоматического старта Stage 5 нет.
+- **В игру добавлен** `Assets/_Project/Scripts/World/CityShadowBudget.cs`: тени off дальше 200 м,
+  on ближе 180 м, ~3 Гц, слой дверей и корабли исключены, `Application.isPlaying`-guard против
+  edit-mode записи `shadowCastingMode`. Включается сам; выключатель — `AutoBootstrap = false`.
+- **Не сделано:** визуальная приёмка дальних силуэтов теней за 200 м; отдельный прогон steady state самого
+  компонента (эквивалентность 2 423 доказана конструкцией, не замером); F8/F9 реальным вводом; перезамер `C3`.
 
 ---
 

@@ -1,0 +1,6 @@
+﻿case,renderersEnabled,renderersInFrustum,doorsInFrustum,pairsInFrustum,shaderPairsInFrustum,atlasGainPairs,submeshSlotsInFrustum,sm05_renderers,sm05_pairs,sm05_removedPercent,sm1_renderers,sm1_pairs,sm1_removedPercent,sm2_renderers,sm2_pairs,sm2_removedPercent,shadowCastersEstimated,shadowKeep150,shadowCut150,shadowKeep200,shadowCut200,shadowKeep250,shadowCut250,shadowKeep300,shadowCut300
+C1,7282,1200,504,796,796,0,2031,1128,750,5.8,1101,689,13.4,841,648,18.6,1089,643,446,715,374,870,219,902,187
+C2,7282,209,74,86,86,0,308,141,81,5.8,141,81,5.8,141,81,5.8,140,137,3,138,2,139,1,139,1
+C3,7282,538,198,304,304,0,825,447,273,10.2,432,258,15.1,341,215,29.3,337,314,23,330,7,335,2,336,1
+PILOT,7282,971,319,708,708,0,1581,882,689,2.7,855,620,12.4,596,590,16.7,841,453,388,526,315,629,212,701,140
+# B2 DRY RUN pilot=PRIMUM_HOUSES_S9_TRD-S2_P1_45H renderersInSubtree=104 uniqueMeshes=104 uniqueMaterials=33 submeshSlots=160 scenePairs=160 houseAnchors=114 J_sourceObjects=6354 J_A_mergedBatches=52 J_B_houseBatches=532 J_B2_houseLargeBatches=330 verdict=B2_increases

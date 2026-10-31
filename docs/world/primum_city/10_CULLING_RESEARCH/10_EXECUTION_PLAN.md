@@ -1,8 +1,9 @@
 # 10. План исполнения culling/visibility (Project C)
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
-**Статус:** Stage 0 принят с оговорками (`T-CULL01/0`); Stage 1 — **частичный pass** (`T-CULL01/H1`:
-240/250 коллайдеров, 9 дверей остались в FBX, reimport OK); Stage 2 — следующий шаг.
+**Статус:** Stage 0 — pass с оговорками (`T-CULL01/0`); Stage 1 — partial pass (`T-CULL01/H1`:
+240/250 коллайдеров, 9 дверей в FBX, reimport OK); **Stage 2 — conditional pass** (`T-CULL01/H3`:
+P1 27 131 → 6 094 DC, −77.5 %); **Stage 3 — следующий шаг, только `Ship_havyII_base`**.
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -29,9 +30,9 @@
 |---|---|---|---|---|---|
 | 0 | 🟡 done with caveats (R0.1–R0.3) | — | baseline CSV ±5 %, фиксы, F8/F9 | Lead/пользователь | `08_DATA/K_baseline_2026-10-31.csv`, `K_stage0_report.md` |
 | 1 | 🟡 partial pass (240/250, 9 doors inside; reimport OK) | Stage 0 | 250 боксов/9 дверей после reimport; 0 missing; scene-diff пуст | агент T-CULL01/H1 | prefab + `H1_prefab_repair.csv` |
-| 2 | 🟡 ready | Stage 0 + approval на слой | 27 131 → 5–9k DC; F8/F9; raycast/физика ок | агент T-CULL01/H3 | слой + `DoorVisibilityBudget`/`ShadowBudget` |
-| 2b | ⬜ planned | Stage 2 (слой) | −270 дверей ферм/≈−640 слотов; тени off | Lead/пользователь | настройки/слой |
-| 3 | 🟡 heavy pilot only | Stage 1 | **только HeavyII**: 973→~620 slot; другие корабли 0 diff | агент T-CULL01/H2 | `.asset` + LODGroup |
+| 2 | ✅ conditional pass (P1 6 094, −77.5 %) | Stage 0 | P1 27 131 → 6 094; повтор +0.25 %; визуал/F8/F9 открыты | агент T-CULL01/H3 | слой + `DoorVisibilityBudget`/`ShadowBudget` |
+| 2b | ✅ done (doors inherited; shadow ≈0) | Stage 2 | 270 дверных рендереров ферм уже на слое 10; ShadowBudget на 5.7–6 км — ≈0 | автоматически | — |
+| 3 | 🟡 ready (only HeavyII) | Stage 1 + ship baseline | **только HeavyII**: 973→~620 slot; другие корабли 0 diff | агент T-CULL01/H2 | `.asset` + LODGroup |
 | 4 | ⬜ planned | Stage 2 | DC ≤2 500; Hybrid Batch Group; 0 shader errors; FO | агент T-CULL01/H5 | настройки + шейдеры |
 | 5 | ⬜ planned | Stage 4 зелёный + окклюзия ≥35 % | цвет ±10 %, тени ≤+10 %, Σtris ±0.1 %, DC не растёт | агент T-CULL01/H4 | rebatch-тул + prefab-ассеты |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
@@ -219,11 +220,39 @@ scene-diff ≤ нескольких строк (правки только в п�
 **Gate:** 26 981 → **5 000–9 000 DC**; двери в кадре — сотни; тени по согласованному визуалу;
 F8/F9 зелёный; 0 errors.
 
+### 4.0. Stage 2 review (Lead, 2026-10-31)
+
+**Принято условно.** Runtime-замеры (Play Mode Host, Midday, `L_stage2_2026-10-31.csv`):
+- **P1: 27 131 → 6 094 DC (−77.5 %)**, повтор P1 6 109 (**+0.25 %**); SetPass 316→283, tris 15.98→15.09 млн;
+- P2 улица: 907 → **765** (−15.7 %); P3 крыша: 2 220 → **819** (−63.1 %);
+- ночь: 17 020 → **5 019** (−70.5 %); `shadowCasters` 10 115 → 1 083 (P1), слой режет и тени.
+- Двери: 5 493 рендерера на слое 10; `PRIMUM` 6 352 → 859; 2 598 групп теней; 150 м дистанция.
+- Физика/raycast: 200 сэмплов, 0 ignore-пар, 199/200 OverlapSphere на слое 10; маски не ограничены PRIMUM.
+- `DoorVisibilityBudget`/`ShadowBudget` авто-хостятся через `RuntimeInitializeOnLoadMethod` на `ViewDistanceRuntime`;
+  в сцене/Bootstrap ссылок нет; `Camera.main` не используется.
+
+**Гейт Stage 2 достигнут (P1 в коридоре 5–9k).** Условности:
+| ID | Что | Как закрыть |
+|---|---|---|
+| **S2-R1** | В сцене остались **5 346 prefab-override `m_CastShadows: 0`** от edit-mode пробы; сцена была dirty | **уже откатано Lead** (`git checkout`; backup patch — `_local_backups/T-CULL01/Stage2/`), blob = HEAD; при следующем старте переоткрыть сцену |
+| **S2-R2** | Визуальный pop-in дверей на 150 м, тени/ворота/ночь — не проверены глазами | пользователь: 3 точки, день/ночь, скрин/глаза |
+| **S2-R3** | F8/F9 при реальном ребейзе не проверены (Stage 0 R0.1) | вывести фокус за 256 м, F8→F9 |
+| **S2-R4** | Слой в **префабах вне git**; на чистом клоне нужен `Project C → Culling → Door Layer → Apply` | runbook: после импорта/клона запускать инструмент |
+| **S2-R5** | `ShadowBudget` для ферм ≈0: фермы в 5.7–6 км, URP shadowDistance 1000 | не считать выигрышем; двери ферм уже на слое 10 |
+
+### 4.0.1. Stage 2b — закрыт фактически
+
+`Primum_farms_DOORS` (270 MR) — инстансы тех же префабов, слой 10 получен автоматически; отдельный агент
+не нужен. `ShadowBudget` реализован, но при 5.7–6 км от P1 и shadowDistance 1000 даёт ≈0 — оставить как
+задел на будущее. Визуальная проверка ворот — в S2-R2.
+
 ---
 
 ## 4.1. Stage 2b — Фермы: двери + тени (1 день, простые настройки)
 
-**Цель:** убрать 270 дверных рендереров ферм из города и тени 1.27 млн тр.
+**Цель:** убрать 270 дверных рендереров ферм из города и тени 1.27 млн тр. **Фактически уже закрыто:**
+двери ферм — инстансы тех же префабов и получили слой 10 автоматически; `ShadowBudget` на 5.7–6 км
+при shadowDistance 1000 даёт ≈0. Осталась только визуальная проверка (S2-R2).
 
 - `Primum_farms_DOORS` (101 инстанс / **270 MR**) → слой `PRIMUM_DOORS` (тот же, что двери города);
   дистанция дверей 120–150 м.
@@ -237,6 +266,9 @@ F8/F9 зелёный.
 ---
 
 ## 5. Stage 3 — **только `Ship_havyII_base` (пилот)**; остальные корабли — вне scope
+
+> **Brief для агента:** [`T-CULL01_STAGE3_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE3_AGENT_BRIEF.md).
+> **Play Mode** — только с разрешением пользователя; сцена = HEAD, без override-дефекта Stage 2.
 
 **Цель:** доказать весь пайплайн (P1 greeble → P2 LOD → позже P3 фрактура) на **одном тяжёлом
 корабле**. Другие корабли в этих операциях **не трогаем**: medium, light и 20 NPC остаются как есть.

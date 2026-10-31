@@ -2,12 +2,11 @@
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
 **Статус:** Stage 0 — pass с оговорками; Stage 1 — partial pass; Stage 2 — conditional pass; Stage 3 — P1/P2 green
-(heavy 616 MR, P2 1 170/1 236); **Stage 4 — conditional green (P1 3 031, −52.6 %, визуально принят
-пользователем; числовой гейт 2 500 не взят, окклюзия 0 %)**; **Stage 4b — green по числу
-(P1 3 047 → 2 423 DC при городском бюджете теней 200 м, −20.5 %; гейт 2 500 взят с запасом 3.1 %,
-визуальная приёмка теней ещё за пользователем)**;
-Stage 5 (B2) — **на паузе** (dry-run 4b показал `B2_increases`: 330 батчей против 160 сейчас).
-Другие корабли (medium/light/NPC) сейчас **не делаем** — при помехах выключаем их рендереры.
+(heavy 616 MR, P2 1 170/1 236); Stage 4 — conditional green (P1 3 031; GRD включён, окклюзия 0 %);
+**Stage 4b — green: P1 3 047 → 2 423 DC (городской бюджет теней 200 м), гейт 2 500 взят; визуально
+принят пользователем 01.11**; **Stage 5 (B2) — закрыт dry-run (`B2_increases`), не делать**;
+Stage 6/7 — опционально, цель уже достигнута. **Следующий шаг — финальная валидация компонента
+CityShadowBudget + F8/F9 + C3, затем закрытие T-CULL01.**
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -21,8 +20,8 @@ Stage 5 (B2) — **на паузе** (dry-run 4b показал `B2_increases`: 
 2. **Stage 0** — baseline + два фикса; **Stage 1** — корабли P0 (0.5–1 день); **Stage 2** — двери
    (2–4 дня) + бюджет теней; **Stage 2b** — фермы (1 день); **Stage 3** — **только `Ship_havyII_base`**
    (пилот; остальные корабли — future scale-out, не трогаем).
-3. **Stage 4** — GRD + GPU occlusion (2–3 недели); **Stage 5** — переклейка города B2 (2–4 недели,
-   только при зелёном GRD); **Stage 6/7** — VisibilityDirector и HLOD/PVS (опционально).
+3. **Stage 4** — GRD + GPU occlusion; **Stage 4b** — городской shadow budget 200 м, **P1 2 423**;
+   **Stage 5/B2 — закрыт dry-run** (`B2_increases`), не делать; **Stage 6/7** — опционально, цель достигнута.
 4. Сложный код — **7 пакетов H1–H7** в [`T-CULL01`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md);
    простые правки (сцена/слой/настройки/двери) — отдельными коммитами по этому плану.
 5. Каждый этап заканчивается замером по gate и **маленьким коммитом**; без gate следующий этап не
@@ -39,8 +38,9 @@ Stage 5 (B2) — **на паузе** (dry-run 4b показал `B2_increases`: 
 | 3 | ✅ P1/P2 green (conditional: visual/F8 open) | Stage 1 | P1 973→616 MR; P2 d200 1 170 / d300 1 236 ≤1 300; другие 0 diff | агент T-CULL01/H2b | `N_stage3c_*`, `T-CULL01_STAGE3C_REPORT.md` |
 | 3b | ⛔ deferred — **не сейчас** | — | другие корабли типовые; если мешают — выключить рендереры в замере | — | — |
 | 4 | ✅ conditional green — visual OK; gate open | Stage 2 | P1 3 031 (−52.6 %); Hybrid Batch Group ✅; 0 shader errors ✅; **DC ≤2 500 ❌**; окклюзия ≈0 | агент T-CULL01/H5 | настройки + шейдеры + `T-CULL01_STAGE4_REPORT.md` |
-| 4b | ✅ green по числу — visual теней open | Stage 4 | P1 3 047 → **2 423** (sb200) / 2 302 (sb150); atlas 0 %, B2 `B2_increases`; sm оставлен 0 | агент T-CULL01/H5b | `P_stage4b_*`, `CityShadowBudget.cs`, `T-CULL01_STAGE4B_REPORT.md` |
-| 5 | ⛔ on hold — **B2 не запускать автоматически** | Stage 4 + окклюзия ≥35 % (не выполнено) | данных о снижении hybridDC от B2 нет; риск роста unique pairs | — | — |
+| 4b | ✅ green — visual OK | Stage 4 | P1 3 047 → **2 423** (sb200) / 2 302 (sb150); гейт 2 500 взят; atlas 0 %, B2 `B2_increases`; sm оставлен 0 | агент T-CULL01/H5b | `P_stage4b_*`, `CityShadowBudget.cs`, `T-CULL01_STAGE4B_REPORT.md` |
+| V | 🟡 final validation | Stage 4b | фактический `CityShadowBudget` в игре ≤2 500; F8/F9 реальным вводом; C3; clean | агент T-CULL01/V | `T-CULL01_FINAL_VALIDATION_REPORT.md` |
+| 5 | ⛔ closed by dry-run — **B2 не делать** | Stage 4 + окклюзия ≥35 % (0 %) | dry-run: 330 B2-батча против 160 сейчас (`B2_increases`) | — | — |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
 | 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
 
@@ -480,6 +480,7 @@ shadow budget по дистанции → material/submesh atlas dry-run → **B
 
 - **Гейт взят:** P1 3 047 → **2 423** DC при городском бюджете теней 200 м (−20.5 %, запас 3.1 %);
   150 м даёт **2 302** (−24.4 %). Baseline воспроизвёлся (+0.5 % к Stage 4, повтор −0.2 %).
+  **Визуально пользователь проверил 01.11 — «вроде всё окей», visual sign-off получен.**
   `shadowCasters` 1254 → 636, `hybridDC` 2872 → 2255, `tris` 16.52 M → 12.36 M.
   Механизм: под GRD один снятый кастер снимает ровно один draw call, срез линеен и предсказуем.
 - **`m_SmallMeshScreenPercentage` оставлен 0.** На 0.5 % P1 ухудшился (3 078, `hybridDC` 2 872 → 2 904
@@ -491,22 +492,26 @@ shadow budget по дистанции → material/submesh atlas dry-run → **B
 - **В игру добавлен** `Assets/_Project/Scripts/World/CityShadowBudget.cs`: тени off дальше 200 м,
   on ближе 180 м, ~3 Гц, слой дверей и корабли исключены, `Application.isPlaying`-guard против
   edit-mode записи `shadowCastingMode`. Включается сам; выключатель — `AutoBootstrap = false`.
-- **Не сделано:** визуальная приёмка дальних силуэтов теней за 200 м; отдельный прогон steady state самого
-  компонента (эквивалентность 2 423 доказана конструкцией, не замером); F8/F9 реальным вводом; перезамер `C3`.
+- **Не сделано:** отдельный прогон steady state самого компонента (эквивалентность 2 423 доказана
+  конструкцией, не замером); F8/F9 реальным вводом; перезамер `C3`.
+- **Следующий шаг — финальная валидация:**
+  [`T-CULL01_FINAL_VALIDATION_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_FINAL_VALIDATION_AGENT_BRIEF.md).
 
 ---
 
-## 7. Stage 5 — Воспроизводимость мержа + B2 города (2–4 недели, условно)
+## 7. Stage 5 — Воспроизводимость мержа + B2 города — ⛔ ЗАКРЫТ ДАННЫМИ
 
-**Порог:** только если Stage 4 зелёный **и** окклюзия снимает **≥35 %** видимых слотов B2,
-**и** решён отдельный бюджет теней. **Факт Stage 4: окклюзия = 0 %, Stage 4 = conditional, значит
-автоматического старта Stage 5 нет.**
+**Решение:** **B2 не делать.** Stage 4b dry-run на пилоте: 160 текущих пар против 532 у `J_B`;
+B2 дал бы **330** батчей (`verdict=B2_increases`), то есть ~6.3× хуже. Окклюзия = 0 %, условие
+«≥35 %» не выполнено. Stage 5 закрыт; H4 оставлен только как историческая справка, не запускать.
 
 **Дополнительное предупреждение (Lead, 2026-10-31):** данные J показывают, что B2 **увеличивает**
 units/slots относительно A (A 698/1 656 → B2 915/3 182; DC-модель 2 292 → 3 904). Под GRD DC зависит от
 unique (mesh, material)-пар, поэтому B2 может **не уменьшить, а увеличить** hybridDC. До 2–4-недельной
 переклейки обязателен **dry-run на пилоте S9_TRD-S2**: доказать снижение числа hybrid-батчей/DC, иначе
 не делать. Решение о Stage 5 — только явное, после Stage 4b.
+
+**Итог:** Stage 5 **закрыт**; H4 не выполнять. Stage 6/7 — только при новой цели ниже 2 423 DC.
 
 **Сложный код:** `T-CULL01 / H4` (`PrimumCityRebatch` + `mapping.csv` + prefab-ассеты).
 **Почему сложно:** 174 001 scene-override / 34.3 МБ (54.6 % сцены); prefab-источник
@@ -564,9 +569,9 @@ unique (mesh, material)-пар, поэтому B2 может **не уменьш
 | Stage 2b | Lead/пользователь | двери ферм на слой, тени off — простые настройки (1 день) |
 | Stage 3 | **другой агент** по `T-CULL01/H2` | `ShipVisualMerger` + LOD |
 | Stage 4 | **другой агент** по `T-CULL01/H5` | GRD/шейдеры |
-| Stage 5 | **другой агент** по `T-CULL01/H4` | `PrimumCityRebatch` |
-| Stage 6 | **другой агент** по `T-CULL01/H6` | VisibilityDirector |
-| Stage 7 | **другой агент** по `T-CULL01/H7` | HLOD/PVS |
+| Stage 5 | ⛔ closed (B2 increases) | — | не выполнять |
+| Stage 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
+| Stage 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
 
 **Протокол передачи:** перед этапом открыть `T-CULL01`, взять соответствующий раздел `H*`,
 приложить актуальный baseline/ветку и попросить агента:

@@ -180,7 +180,11 @@ P1/P2: greeble-мерж (973 → ~620 slot), затем LODGroup; P3 (позже
 
 ---
 
-## 5. H4 — `PrimumCityRebatch` + manifest (Stage 5, 2–4 недели)
+## 5. H4 — `PrimumCityRebatch` + manifest (Stage 5, 2–4 недели) — ⛔ ЗАКРЫТ ДАННЫМИ
+
+> **Не выполнять.** Stage 4b dry-run на пилоте `S9_TRD-S2`: 160 текущих пар против 532 у `J_B`;
+> B2 дал бы **330** батчей (`verdict=B2_increases`), то есть ~6.3× хуже текущего слитого состояния.
+> Условие «окклюзия ≥35 %» также не выполнено (0 %). H4 оставлен как историческая справка.
 
 ### 5.1. Цель
 Сделать пере-склейку города **воспроизводимой** и, при зелёном GRD, выполнить **B2** (дом × материал,
@@ -263,16 +267,17 @@ P1/P2: greeble-мерж (973 → ~620 slot), затем LODGroup; P3 (позже
 ### 6.4. Приёмка
 - **Факт Stage 4 (2026-10-31):** P1 **6 400 → 3 031 DC (−52.6 %)**, ночь 1 767, PILOT 1 178;
   `hybridDC=2 876 / 18 196 instances`, `srpBatcherDC=8`; 0 shader errors; визуальный sign-off пользователя есть.
-- **DC ≤2 500 — НЕ выполнен** (3 031, +21 %); **GPU occlusion = 0 %** (3 029 без occlusion).
-- **Stage 4b** — gap close: [`T-CULL01_STAGE4B_AGENT_BRIEF.md`](T-CULL01_STAGE4B_AGENT_BRIEF.md)
-  (small-mesh culling / city shadow budget / material-submesh dry-run / B2 dry-run).
+- **Факт Stage 4b (2026-11-01):** городской `CityShadowBudget` 200 м дал **P1 3 047 → 2 423 DC**
+  (−20.5 %, гейт ≤2 500 взят, запас 3.1 %); visual sign-off пользователя 01.11; 150 м = 2 302.
+  `smallMeshScreenPercentage` оставлен 0; atlas gain 0; **B2 dry-run = `B2_increases`**.
+  Отчёт: `T-CULL01_STAGE4B_REPORT.md`, CSV `P_stage4b_*`, компонент `CityShadowBudget.cs`.
+- **Stage V — final validation:** [`T-CULL01_FINAL_VALIDATION_AGENT_BRIEF.md`](T-CULL01_FINAL_VALIDATION_AGENT_BRIEF.md)
+  (реальный компонент, F8/F9, C3, clean, закрытие).
 - Kill: нет Hybrid Batch Group / DC не падает / створки «плывут» → откат.
 
-### 6.5. Stage 5 (B2) — НЕ запускать автоматически
-Условие «окклюзия ≥35 %» **не выполнено (0 %)**; Stage 4 conditional. Данные J: B2 увеличивает
-units/slots относительно A (698/1 656 → 915/3 182; DC-модель 2 292 → 3 904), под GRD может увеличить
-unique (mesh,material)-пары. Перед H4 — dry-run на пилоте S9_TRD-S2, доказать снижение hybridDC; иначе
-не делать. Решение — только явное, после Stage 4b.
+### 6.5. Stage 5 (B2) — ЗАКРЫТ
+Dry-run: B2 **увеличивает** hybridDC (330 против 160 пар на пилоте); условие окклюзии 0 %.
+**H4 не делать; Stage 5 закрыт.** Stage 6/7 — только при новой цели ниже 2 423.
 
 ---
 

@@ -1,0 +1,83 @@
+﻿NOTE;bench=Stage3ShipBench;unity=6000.5.2f1;date=2026-10-31 21:03:31
+NOTE;method=PlayMode→Host;warmup=1500fr;settle=40fr;samples=3x gap 8fr;metric=UnityStats median;far=30000;fov=60;shipDC=A(ship on)-B(all ship MeshRenderer.enabled=false)
+NOTE;lodThresholds=raw 300/900@FOV60 lodBias1 (Stage 3c, без изменений с Stage 3a); эффективная граница = raw × lodBias (ViewDistanceApplier: Near 0.7 / default 1.0 / Far+Ultra 1.3); порог LOD0 ближе ~281.6 м задать нельзя — P2 закрывается бюджетом теней
+NOTE;phase_forced=12.0;sun=Sun(enabled=True,shadows=Soft,intensity=1.30)
+NOTE;camera=ThirdPersonCamera_0;far=30000;fov=60;lodBias=1.30;quality=Medium;shipWorldPos=127.50,-48.72,-68.60
+LODINFO;bias=1.30;size=27.07;worldSize=324.85;LOD0_h=0.937750_r=557_distFov60=300.0;LOD1_h=0.312583_r=10_distFov60=900.0;LOD2_h=0.000000_r=1_distFov60=none
+SHADOWBUDGET;present=yes;enabled=True;on_m=140.00;off_m=150.00;maxAxis_m=8.00;candidates=314;candidateSlots=314;casterSlotsAtBuild=0;trackedRuntime=314;bucketSlots_ceilm=0|125|45|35|45|18|15|7|24
+PROBE;t=0;y=-50.24;vy=-5.96;mass=30000.00;kinematic=False;engineRunning=False;frozenNoPilot=False
+PROBE;frame=0;y=-50.24;vy=-5.96;speed=5.96;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=0;groundDist_m=25.77;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=10;y=-63.63;vy=-13.52;speed=13.52;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=0;groundDist_m=12.39;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=20;y=-70.69;vy=-15.49;speed=15.49;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=2;groundDist_m=5.33;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=30;y=-76.63;vy=-7.06;speed=7.07;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=2;groundDist_m=0.06;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=40;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=50;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=60;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=70;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=80;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=90;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=100;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=110;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=120;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=130;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=140;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=150;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=160;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=170;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=180;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=190;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=200;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=210;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=220;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=230;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=240;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=250;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=260;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=270;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=280;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=290;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=300;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=310;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=320;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=330;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=340;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=350;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=360;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=370;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=380;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=390;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=400;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=410;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=420;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=430;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=440;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=450;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=460;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=470;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=480;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=490;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=500;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=510;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=520;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=530;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=540;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=550;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=560;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=570;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=580;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=590;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+PROBE;frame=600;y=-79.36;vy=0.00;speed=0.00;kinematic=False;engineRunning=False;frozenNoPilot=False;contacts=1;groundDist_m=105.44;worldRoot=-39936.00,-2560.00,-39936.00
+NOTE;ship_hold=kinematic_at_frame=600;y=-79.36;reason=ship_falls_without_pilot_or_engine
+NOTE;ship_meshrenderers=616;merged_renderers=20;doorControllers=9;boxColliders=250;moduleSlots=11
+CASE;id=stability;frames=120;drift_m=0.00;vel_now=0.00,0.00,0.00;vel0=0.00,0.00,0.00;y=-79.36;lossyScale=6.00,0.90,12.00;lodGroupSize=27.07;lodLevels=3
+BENCH_DONE;result=EXCEPTION;casesCompleted=0/7;errors=2;sceneSaved=no;push=no
+NOTE;first_errors=Error: [Stage3Bench] Уже в Play Mode / вход выполняется. Сначала Abort. ‖ Error: [Stage3Bench] Исключение: UnityEngine.MissingReferenceException: The object of type 'UnityEngine.Camera' has been destroyed but you are still trying to access it.
+Your script should either check if it is null or you should not destroy the object.
+  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x00065] in <5bc40c3d370d4c0ba31a7d683af28bc8>:0 
+  at UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) [0x0000a] in <5bc40c3d370d4c0ba31a7d683af28bc8>:0 
+  at UnityEngine.Camera.get_projectionMatrix () [0x00006] in <5bc40c3d370d4c0ba31a7d683af28bc8>:0 
+  at UnityEngine.GeometryUtility.CalculateFrustumPlanes (UnityEngine.Camera camera, UnityEngine.Plane[] planes) [0x00000] in <5bc40c3d370d4c0ba31a7d683af28bc8>:0 
+  at ProjectC.EditorTools.Stage3ShipBench.RunCensus (ProjectC.EditorTools.Stage3ShipBench+DistanceCase c) [0x00000] in C:\Projects\ProjectC_client\Assets\_Project\Editor\Culling\Stage3ShipBench.cs:765 
+  at ProjectC.EditorTools.Stage3ShipBench.StepCase () [0x0002a] in C:\Projects\ProjectC_client\Assets\_Project\Editor\Culling\Stage3ShipBench.cs:692 
+  at ProjectC.EditorTools.Stage3ShipBench.Step () [0x00197] in C:\Projects\ProjectC_client\Assets\_Project\Editor\Culling\Stage3ShipBench.cs:270 
+  at ProjectC.EditorTools.Stage3ShipBench.Tick () [0x00000] in C:\Projects\ProjectC_client\Assets\_Project\Editor\Culling\Stage3ShipBench.cs:205 

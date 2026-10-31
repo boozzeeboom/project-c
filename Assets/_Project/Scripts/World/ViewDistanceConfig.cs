@@ -23,7 +23,7 @@ namespace ProjectC.World
             public float terrainPixelError;
             [Tooltip("Дистанция детальной раскраски террейна (м). Дальше — basemap-фон.")]
             public float terrainBasemapDistance;
-            [Tooltip("УСТАРЕЛО (T-CULL01/Stage 0): тени управляются URP-ассетом (ProjectC_URP: 1000 м / 2 каскада), значение нигде не применяется. Поле оставлено ради совместимости ассетов.")]
+            [Tooltip("УСТАРЕЛО (T-CULL01/Stage 0): тени управляются URP-ассетом (ProjectC_URP: 400 м / 4 каскада), значение нигде не применяется. Поле оставлено ради совместимости ассетов.")]
             public float shadowDistance;
             [Tooltip("Дальше этой дистанции (м) мелкие детали (руины) визуально скрываются.")]
             public float detailCullDistance;

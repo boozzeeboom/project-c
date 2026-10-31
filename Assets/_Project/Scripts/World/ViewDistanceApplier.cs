@@ -73,7 +73,8 @@ namespace ProjectC.World
 
             QualitySettings.lodBias = p.lodBias;
             // T-CULL01/Stage 0: присваивание QualitySettings.shadowDistance убрано — URP читает
-            // UniversalRenderPipelineAsset.shadowDistance (ProjectC_URP.asset: 1000 м / 2 каскада),
+            // UniversalRenderPipelineAsset.shadowDistance (ProjectC_URP.asset: 400 м / 4 каскада,
+            // мягкие тени),
             // то есть старый код только делал вид, что управляет тенями. В Stage 0 тени не трогаем;
             // бюджет shadowCastingMode — отдельный этап (Stage 2/H3).
 

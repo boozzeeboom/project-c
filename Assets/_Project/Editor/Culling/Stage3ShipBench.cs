@@ -12,6 +12,13 @@
 //   5) F8/F9 — тот же путь транзакции Floating Origin (RequestControlledRebase / …WithRollback):
 //      сдвиг WorldRoot_0_0, позиция корабля до/после, ошибки в консоли.
 //
+// Запуск (важно): замер НЕ входит в Play Mode сам. Раньше он это делал и попадал в пустой мир —
+// открытая на тот момент BootstrapScene без загруженного мира и без персонажа. Порядок такой:
+//   1) Project C → Culling → Stage 3 Ship Bench → Run — взводит замер и пишет шапку файла;
+//   2) обычный старт игры: Play → «Одиночная игра» (Bootstrap сам загрузит мир);
+//   3) замер подхватывает сессию на EnteredPlayMode и дальше идёт сам.
+// Обратный порядок тоже работает: сначала старт игры, потом Run — замер подключится к идущей сессии.
+//
 // Чего НЕ делает: не сохраняет сцену, не правит ассеты и код, не трогает коллайдеры и материалы.
 // Всё, что меняется (поза камеры, enabled рендереров, enabled DayNightController), живёт только в Play Mode.
 using System;
@@ -50,7 +57,7 @@ namespace ProjectC.EditorTools
         private const int SampleCount = 3;
         private const int OffSettleFrames = 12;
 
-        private const double HostTimeoutSeconds = 90.0;
+        private const double HostTimeoutSeconds = 300.0;
         private const double RigTimeoutSeconds = 240.0;
         private const double WarmupTimeoutSeconds = 900.0;
 
@@ -105,6 +112,7 @@ namespace ProjectC.EditorTools
         private static double _caseTimeStart;
         private static int _warmStartFrame;
         private static bool _hostRequested, _menuHidden;
+        private static string _hostDiag = "";
         private static int _errorCount;
         private static readonly List<string> _firstErrors = new List<string>();
         private static readonly Plane[] _planes = new Plane[6];
@@ -142,9 +150,9 @@ namespace ProjectC.EditorTools
         [MenuItem(RunMenu)]
         public static void Run()
         {
-            if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode)
+            if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
             {
-                Debug.LogError("[Stage3Bench] Уже в Play Mode / вход выполняется. Сначала Abort.");
+                Debug.LogError("[Stage3Bench] Идёт вход в Play Mode — дождись загрузки мира и нажми Run ещё раз.");
                 return;
             }
 
@@ -179,10 +187,40 @@ namespace ProjectC.EditorTools
                    ";shipDC=A(ship on)-B(all ship MeshRenderer.enabled=false)");
             Append("NOTE;lodThresholds=raw 300/900@FOV60 lodBias1 (Stage 3c, без изменений с Stage 3a); эффективная граница = raw × lodBias (ViewDistanceApplier: Near 0.7 / default 1.0 / Far+Ultra 1.3); порог LOD0 ближе ~281.6 м задать нельзя — P2 закрывается бюджетом теней");
 
-            Debug.Log("[Stage3Bench] Старт. Файл: " + _outPath);
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.update -= Tick;
             EditorApplication.update += Tick;
-            EditorApplication.EnterPlaymode();
+
+            if (EditorApplication.isPlaying)
+                Debug.Log("[Stage3Bench] Замер подключён к идущей сессии Play Mode. Файл: " + _outPath);
+            else
+                Debug.Log("[Stage3Bench] Замер взведён. Нажми Play и стартуй игру как обычно (Bootstrap → «Одиночная игра») — замер начнётся сам. Файл: " + _outPath);
+        }
+
+        /// <summary>
+        /// Замер не входит в Play Mode сам: вход в Play на открытой сцене без мира давал пустой мир
+        /// без персонажа. Сессию подхватываем по событию, а если она уже идёт — сразу из Run().
+        /// </summary>
+        private static void OnPlayModeStateChanged(PlayModeStateChange change)
+        {
+            if (!SessionState.GetBool(SessionKey, false)) return;
+
+            if (change == PlayModeStateChange.EnteredPlayMode)
+            {
+                _state = State.WaitPlayMode;
+                _stateSince = Now;
+                _hostRequested = false;
+                _menuHidden = false;
+                _hostDiag = "";
+                Append("NOTE;playmode=attached_by_event;scene=" +
+                       UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+                Debug.Log("[Stage3Bench] Play Mode начался — замер подхватил сессию.");
+            }
+            else if (change == PlayModeStateChange.ExitingPlayMode && _state != State.Off)
+            {
+                Append("NOTE;playmode=exiting;state=" + _state);
+            }
         }
 
         [MenuItem(AbortMenu)]
@@ -212,6 +250,15 @@ namespace ProjectC.EditorTools
 
         private static void Step()
         {
+            // Play Mode закончился (пользователь остановил игру) — тикер не должен продолжать работу
+            // в edit mode: объекты уже уничтожены и обращение к ним даёт MissingReferenceException.
+            if (_state != State.Off && _state != State.WaitPlayMode && !EditorApplication.isPlaying)
+            {
+                Append("NOTE;playmode_ended=true;state=" + _state);
+                Finish("PLAYMODE_ENDED");
+                return;
+            }
+
             switch (_state)
             {
                 case State.WaitPlayMode:
@@ -223,7 +270,11 @@ namespace ProjectC.EditorTools
                 case State.WaitHost:
                     if (!TryStartHost())
                     {
-                        if (Now - _stateSince > HostTimeoutSeconds) Finish("HOST_TIMEOUT");
+                        if (Now - _stateSince > HostTimeoutSeconds)
+                        {
+                            Append("NOTE;host_timeout_diag=" + _hostDiag);
+                            Finish("HOST_TIMEOUT");
+                        }
                         return;
                     }
                     _state = State.WaitRig; _stateSince = Now;
@@ -288,7 +339,12 @@ namespace ProjectC.EditorTools
 
             var menu = FindByTypeName("MainMenuWindow");
             var nmc = FindByTypeName("NetworkManagerController");
-            if (nmc == null) return false;
+            if (nmc == null)
+            {
+                _hostDiag = "нет NetworkManagerController — мир/бутстрап ещё не загрузился";
+                return false;
+            }
+            if (menu == null) _hostDiag = "нет MainMenuWindow — Host стартуем напрямую через NMC";
 
             if (!_hostRequested)
             {
@@ -429,7 +485,7 @@ namespace ProjectC.EditorTools
                    ";on_m=" + Fmt(budget.ShadowOnDistance) + ";off_m=" + Fmt(budget.ShadowOffDistance) +
                    ";maxAxis_m=" + Fmt(budget.SmallPartMaxAxis) +
                    ";candidates=" + candidates.Count + ";candidateSlots=" + slots +
-                   ";casterSlotsAtBuild=" + casterSlots +
+                   ";casterSlotsNow=" + casterSlots +
                    ";trackedRuntime=" + budget.TrackedRendererCount +
                    ";bucketSlots_ceilm=" + string.Join("|", Array.ConvertAll(byBucket, v => v.ToString())));
         }
@@ -682,6 +738,13 @@ namespace ProjectC.EditorTools
 
         private static void StepCase()
         {
+            if (_cam == null || _ship == null || _lodGroup == null)
+            {
+                Append("NOTE;error=session_lost;case=" + _caseIndex);
+                Finish("SESSION_LOST");
+                return;
+            }
+
             var c = Cases[_caseIndex];
             ApplyPose(c);
 
@@ -762,6 +825,7 @@ namespace ProjectC.EditorTools
 
         private static void RunCensus(DistanceCase c)
         {
+            if (_cam == null) return;
             GeometryUtility.CalculateFrustumPlanes(_cam, _planes);
             Vector3 camPos = _cam.transform.position;
             int visible = 0, enabledCount = 0, slotsVisible = 0, inFrustum = 0, shadowVisible = 0;
@@ -1086,6 +1150,7 @@ namespace ProjectC.EditorTools
         private static void Finish(string result)
         {
             EditorApplication.update -= Tick;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             SessionState.SetBool(SessionKey, false);
             Application.logMessageReceived -= OnLog;
 
@@ -1099,7 +1164,8 @@ namespace ProjectC.EditorTools
             _state = State.Off;
             Debug.Log("[Stage3Bench] Завершено: " + result + ". Файл: " + _outPath);
 
-            if (EditorApplication.isPlayingOrWillChangePlaymode) EditorApplication.ExitPlaymode();
+            if (EditorApplication.isPlaying)
+                Debug.Log("[Stage3Bench] Play Mode оставлен запущенным (останавливает пользователь); сцена не сохраняется.");
         }
 
         private static int Median(List<int> values)
@@ -1153,6 +1219,8 @@ namespace ProjectC.EditorTools
             _cam = null; _worldRoot = null; _ship = null; _lodGroup = null; _shipRenderers = null;
             _caseIndex = 0;
             Append("NOTE;domain_reload=true;restart=" + reloads);
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.update -= Tick;
             EditorApplication.update += Tick;
             Debug.Log("[Stage3Bench] Доменная перезагрузка (#" + reloads + ") — прогон продолжен из SessionState.");

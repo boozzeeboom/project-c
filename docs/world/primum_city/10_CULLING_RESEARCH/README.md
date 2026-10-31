@@ -29,10 +29,11 @@
    (б) **пилот кораблей — только `Ship_havyII_base`**: тяжёлый **973 MR → ~620 slot** за 1–2 дня
    (P3 → ~92 slot); остальные корабли — future scale-out после зелёного пилота, в этих операциях
    не трогаются.
-6. **Главный потолок — GPU:** встроенный **GPU Resident Drawer + GPU occlusion** (URP 17.5 уже умеет
-   Hi-Z + indirect). Блокеры: `BrgStripping = KeepAll` (сейчас 0 = KeepIfEntitiesGraphics) и DOTS-инстансинг
-   в ~20 Shader Graph (город 15 + двери 5); Forward+ уже включён. Ожидание **1 500–2 500** DC за 2–3 недели.
-   Двери в инстансах — десятки (≤~72) пар mesh×material.
+6. **Главный потолок — GPU:** встроенный **GPU Resident Drawer** (URP 17.5) **включён 31.10**
+   (`BrgStripping=2`, GRD mode=1); P1 **6 400 → 3 031 DC (−52.6 %)**, но гейт 2 500 не взят.
+   GPU occlusion в этом мире **≈0**; DC теперь упирается в **unique (mesh,material)-пары**.
+   Дальше — Stage 4b (small-mesh culling / городской shadow budget / dry-run), не B2 автоматически.
+   Старые 26 981 / 6 094 — исторические (тени 1000/2 и 400/4 соответственно).
 7. **Свой код нужен, но не «свой окклюжн-движок»:** тонкий **Visibility/Budget Director** поверх
    engine-куллинга (иерархия групп, мультикамерный union, бюджеты теней, двери/корабли, гистерезис,
    FO-safe, ≤2 мс). Свой GPU-driven BRG — 6–10 недель дубля engine, не первый шаг.

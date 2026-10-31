@@ -1,10 +1,11 @@
 # 10. План исполнения culling/visibility (Project C)
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
-**Статус:** Stage 0 — pass с оговорками; Stage 1 — partial pass; Stage 2 — conditional pass
-(P1 6 094 — исторический замер при старых тенях); **Stage 3 — P1 pass (973→616 MR), P2 закрыт
-теневым бюджетом (d200 1 170 / d300 1 236)**; **Stage 4 — следующий шаг**. Другие корабли
-(medium/light/NPC) сейчас **не делаем** — типовые, при помехах в замере выключаем их рендереры.
+**Статус:** Stage 0 — pass с оговорками; Stage 1 — partial pass; Stage 2 — conditional pass; Stage 3 — P1/P2 green
+(heavy 616 MR, P2 1 170/1 236); **Stage 4 — conditional green (P1 3 031, −52.6 %, визуально принят
+пользователем; числовой гейт 2 500 не взят, окклюзия 0 %)**; **Stage 4b — следующий шаг (gap close)**;
+Stage 5 (B2) — **на паузе** (условие окклюзии не выполнено, данных о пользе B2 под GRD нет).
+Другие корабли (medium/light/NPC) сейчас **не делаем** — при помехах выключаем их рендереры.
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -35,8 +36,9 @@
 | 2b | ✅ done (doors inherited; shadow ≈0) | Stage 2 | 270 дверных рендереров ферм уже на слое 10; ShadowBudget на 5.7–6 км — ≈0 | автоматически | — |
 | 3 | ✅ P1/P2 green (conditional: visual/F8 open) | Stage 1 | P1 973→616 MR; P2 d200 1 170 / d300 1 236 ≤1 300; другие 0 diff | агент T-CULL01/H2b | `N_stage3c_*`, `T-CULL01_STAGE3C_REPORT.md` |
 | 3b | ⛔ deferred — **не сейчас** | — | другие корабли типовые; если мешают — выключить рендереры в замере | — | — |
-| 4 | 🟡 conditional green (P1 3 031, −52.6 %; гейт 2 500 не взят; окклюзия ≈0) | Stage 2 | DC ≤2 500 ❌ (3 031); Hybrid Batch Group ✅ (2 876 батчей / 18 196 инст.); 0 shader errors ✅; FO/двери/тени без измеренных регрессий | агент T-CULL01/H5 | настройки + шейдеры + `T-CULL01_STAGE4_REPORT.md` |
-| 5 | ⬜ planned, но **условие окклюзии не выполнено** (0 %, не ≥35 %) — нужно решение пользователя | Stage 4 (условно) | цвет ±10 %, тени ≤+10 %, Σtris ±0.1 %, DC не растёт | агент T-CULL01/H4 | rebatch-тул + prefab-ассеты |
+| 4 | ✅ conditional green — visual OK; gate open | Stage 2 | P1 3 031 (−52.6 %); Hybrid Batch Group ✅; 0 shader errors ✅; **DC ≤2 500 ❌**; окклюзия ≈0 | агент T-CULL01/H5 | настройки + шейдеры + `T-CULL01_STAGE4_REPORT.md` |
+| 4b | 🟡 next — gap close | Stage 4 | P1 3 031 → ≤2 500 безопасными рычагами; visual; окклюзия не помогает | агент T-CULL01/H5b | bench + настройки/бюджет |
+| 5 | ⛔ on hold — **B2 не запускать автоматически** | Stage 4 + окклюзия ≥35 % (не выполнено) | данных о снижении hybridDC от B2 нет; риск роста unique pairs | — | — |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
 | 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
 
@@ -421,8 +423,8 @@ H1b, LOD/мержей и «проверок каждого корабля» се
 **Действия:** `BrgStripping=2 (KeepAll)`, `GPUResidentDrawerMode=InstancedDrawing`,
 `GPUResidentDrawerEnableOcclusionCullingInCameras=1`; DOTS-варианты в ~20 графах; пилот на одном
 чанке → вся сцена; проверить Hybrid Batch Group, тени, створки дверей, F8/F9.
-**Gate:** DC ≤2 500; 0 shader errors; Hybrid Batch Group; двери/тени/FO ок. Иначе откат
-(как 18.10) и Stage 6 вместо GRD.
+**Gate:** DC ≤2 500; 0 shader errors; Hybrid Batch Group; двери/тени/FO ок. **Факт:** gate не взят
+(3 031), но GRD принят условно по решению пользователя; следующий шаг — **Stage 4b**, не откат.
 
 ### 6.0. Stage 4 review (2026-10-31, `T-CULL01/H5`)
 
@@ -441,6 +443,8 @@ H1b, LOD/мержей и «проверок каждого корабля» се
 
 **Принято условно (решение пользователя 2026-10-31):** GRD остаётся включённым, хотя числовой гейт
 2 500 не взят (3 031). `srpBatcherDC` 6 261 → 8, `hybridDC` = 2 876 на 18 196 инстансов.
+**Визуально пользователь проверил в Play Mode 31.10 — «вроде всё окей»; это visual sign-off для GRD
+(но не отменяет открытые F8/F9 и C3).**
 
 **Ключевые выводы:**
 - **GPU occlusion даёт 0 %:** прогон с `occlusion=0` совпал с включённой (3 029 vs 3 031). Условие Stage 5
@@ -452,15 +456,35 @@ H1b, LOD/мержей и «проверок каждого корабля» се
   исправлен на `UNITY_MATRIX_M`; `shadersWithError = 0`.
 - **Frame Debugger при GRD отдаёт 0 событий** — как доказательство Hybrid Batch Group не годится,
   использовать `UnityStats.hybridBatcherDrawCalls/hybridBatcherInstances`.
-- Открыто: визуальная приёмка GRD, реальный ввод F8/F9, рост DC на C3 (+4.9 %), `lodBias 0.70` при
-  quality Medium (числа Stage 3 несравнимы).
+- Открыто: реальный ввод F8/F9, рост DC на C3 (+4.9 %), `lodBias 0.70` при quality Medium
+  (числа Stage 3 при 1.30 несравнимы). Визуальный sign-off пользователя по GRD получен 31.10.
+
+### 6.1. Stage 4b — gap close 3 031 → ≤2 500 (следующий шаг)
+
+**Brief:** [`T-CULL01_STAGE4B_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE4B_AGENT_BRIEF.md).
+
+Почему не B2 сразу: условие Stage 5 «окклюзия ≥35 %» **не выполнено (0 %)**, а данные J показывают, что
+B2-переклейка увеличивает число units/slots (A 698/1 656 → B2 915/3 182; DC-модель 2 292 → 3 904).
+Под GRD это может **увеличить** число unique (mesh, material)-пар и hybridDC. Сначала — безопасные
+рычаги и dry-run-оценка B2, только потом решение о H4.
+
+Порядок 4b: новый baseline → `m_SmallMeshScreenPercentage` (если доступен/согласован) → городской
+shadow budget по дистанции → material/submesh atlas dry-run → **B2 dry-run** (не apply). Gate: P1 ≤2 500
+без визуального регресса; если не выходит — зафиксировать и вынести решение по Stage 5/6.
 
 ---
 
 ## 7. Stage 5 — Воспроизводимость мержа + B2 города (2–4 недели, условно)
 
 **Порог:** только если Stage 4 зелёный **и** окклюзия снимает **≥35 %** видимых слотов B2,
-**и** решён отдельный бюджет теней. Иначе — не делать; остаётся A.
+**и** решён отдельный бюджет теней. **Факт Stage 4: окклюзия = 0 %, Stage 4 = conditional, значит
+автоматического старта Stage 5 нет.**
+
+**Дополнительное предупреждение (Lead, 2026-10-31):** данные J показывают, что B2 **увеличивает**
+units/slots относительно A (A 698/1 656 → B2 915/3 182; DC-модель 2 292 → 3 904). Под GRD DC зависит от
+unique (mesh, material)-пар, поэтому B2 может **не уменьшить, а увеличить** hybridDC. До 2–4-недельной
+переклейки обязателен **dry-run на пилоте S9_TRD-S2**: доказать снижение числа hybrid-батчей/DC, иначе
+не делать. Решение о Stage 5 — только явное, после Stage 4b.
 
 **Сложный код:** `T-CULL01 / H4` (`PrimumCityRebatch` + `mapping.csv` + prefab-ассеты).
 **Почему сложно:** 174 001 scene-override / 34.3 МБ (54.6 % сцены); prefab-источник

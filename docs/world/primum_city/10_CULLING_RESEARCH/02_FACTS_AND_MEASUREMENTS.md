@@ -189,8 +189,9 @@ far 1000 — не игровой far (30–120 км); одна точка.
 | `m_UseSRPBatcher` | **1** | |
 | `m_SupportsLightLayers` | 0 | rendering layers для света не работают |
 | `m_SupportsHDR` / `m_MSAA` | 0 / 1 | |
-| `m_GPUResidentDrawerMode` | **0 = Disabled** | GPU-путь выключен |
-| `m_GPUResidentDrawerEnableOcclusionCullingInCameras` | **0** | GPU-окклюзия выключена |
+| `m_GPUResidentDrawerMode` | **1 = InstancedDrawing** (Stage 4) | GPU-путь включён; до 31.10 было 0 |
+| `m_GPUResidentDrawerEnableOcclusionCullingInCameras` | **1** | включён, но фактический вклад ≈0 (3 029 без vs 3 031 с) |
+| `m_SmallMeshScreenPercentage` | **0** | встроенный GRD small-mesh culling не включён; кандидат Stage 4b |
 
 ### 6.2 Renderer / глобальные настройки
 
@@ -200,7 +201,8 @@ far 1000 — не игровой far (30–120 км); одна точка.
 | `m_DepthPrimingMode` | 0 | depth priming off |
 | Renderer features | EdgeDetection (`Normal|Depth`), VolumetricClouds (`Depth`), DistantFocus (`Active:0` внутри) | **prepass-путь реален**; фактическое наличие в измеренном кадре — только Frame Debugger/A-B |
 | `m_StaticBatching` (ProjectSettings) | **1** | но 2 076 static GO — **без MeshRenderer** (BC_* коллайдеры, Root, Terrain) → батчить нечего |
-| `m_BrgStripping` (GraphicsSettings) | **0 = KeepIfEntitiesGraphics** | enum: KeepIfEntitiesGraphics=0, StripAll=1, **KeepAll=2**; для GPU RD нужен KeepAll — блокер |
+| `m_BrgStripping` (GraphicsSettings) | **2 = KeepAll** (Stage 4) | enum: KeepIfEntitiesGraphics=0, StripAll=1, **KeepAll=2**; для GPU RD был блокер, снят 31.10 |
+| `m_SmallMeshScreenPercentage` (URP) | 0 | GRD small-mesh culling выключен; см. Stage 4b |
 | `QualitySettings.shadowDistance` | 15–70 | URP **игнорирует** → `ViewDistanceApplier` shadow-пресет = no-op |
 
 ### 6.3 Камеры (live + код)
@@ -306,5 +308,7 @@ far 1000 — не игровой far (30–120 км); одна точка.
 - **Город после склейки — 1 806 slots** (~1.8k DC/проход); гранулярность 130 м — главный дефект
   для окклюзии/LOD; лечится блок/дом, не расклейкой.
 - **Расклейка = 25–40 тыс. DC** (верхняя оценка модели C; verifier: диапазон, не точка); тест E4 — контрольный.
-- **GPU RD** — единственный встроенный FO-safe путь; блокеры: DOTS-шейдеры, `BrgStripping`, тени/створки.
+- **GPU RD** — единственный встроенный FO-safe путь; **с 31.10 включён** (`BrgStripping=2`, GRD mode=1),
+  DOTS-варианты есть; остаточный потолок — **unique (mesh,material)-пары** (P1 3 031), а не рендереры.
+  GPU occlusion в этом мире ≈0.
 - **Low-code двери** — самый дешёвый выигрыш; **Umbra** — закрыта; **корабли** — не проблема.

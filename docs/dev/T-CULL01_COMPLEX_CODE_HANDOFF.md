@@ -261,8 +261,18 @@ P1/P2: greeble-мерж (973 → ~620 slot), затем LODGroup; P3 (позже
    (`m_GPUResidentDrawerMode=0`, `m_BrgStripping=0`).
 
 ### 6.4. Приёмка
-- DC ≤2 500; `Hybrid Batch Group` есть; 0 shader errors; двери/тени/FO без регрессий.
-- Kill: нет Hybrid Batch Group / DC не падает ниже 15 000 на пилоте / створки «плывут» → откат.
+- **Факт Stage 4 (2026-10-31):** P1 **6 400 → 3 031 DC (−52.6 %)**, ночь 1 767, PILOT 1 178;
+  `hybridDC=2 876 / 18 196 instances`, `srpBatcherDC=8`; 0 shader errors; визуальный sign-off пользователя есть.
+- **DC ≤2 500 — НЕ выполнен** (3 031, +21 %); **GPU occlusion = 0 %** (3 029 без occlusion).
+- **Stage 4b** — gap close: [`T-CULL01_STAGE4B_AGENT_BRIEF.md`](T-CULL01_STAGE4B_AGENT_BRIEF.md)
+  (small-mesh culling / city shadow budget / material-submesh dry-run / B2 dry-run).
+- Kill: нет Hybrid Batch Group / DC не падает / створки «плывут» → откат.
+
+### 6.5. Stage 5 (B2) — НЕ запускать автоматически
+Условие «окклюзия ≥35 %» **не выполнено (0 %)**; Stage 4 conditional. Данные J: B2 увеличивает
+units/slots относительно A (698/1 656 → 915/3 182; DC-модель 2 292 → 3 904), под GRD может увеличить
+unique (mesh,material)-пары. Перед H4 — dry-run на пилоте S9_TRD-S2, доказать снижение hybridDC; иначе
+не делать. Решение — только явное, после Stage 4b.
 
 ---
 

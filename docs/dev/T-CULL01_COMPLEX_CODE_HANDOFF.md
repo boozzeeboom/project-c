@@ -87,19 +87,19 @@ prefab-корня, чтобы реимпорт модели их не сноси
 ## 3. H2 — `ShipVisualMerger` + LOD (Stage 3, 3–5 дней)
 
 ### 3.1. Цель
-**Пилот — только тяжёлый `Ship_havyII_base`**, затем раскатка на medium/light; 20 NPC не трогать.
+**Только тяжёлый `Ship_havyII_base`.** Остальные корабли (`Ship_medium_base`, `Ship_Light_root_fbx_test`,
+20 NPC) в H2 **не трогать**: они выносятся в future scale-out после зелёного пилота.
 P1/P2: greeble-мерж (973 → ~620 slot), затем LODGroup; P3 (позже) — «8 ячеек разрушения × материал»
-(973 → ~92). Ожидание: все корабли ~4 917 → ≤2 500 (P1/P2), после P3 — ≤480. 23 инстанса в сцене
-покрываются **3 prefab-ассетами**; NPC (20 × 6 MR / 820 тр.) остаются как есть.
+(973 → ~92). Пилот должен доказать пайплайн; масштабирование на остальные — отдельный этап.
 
 ### 3.2. Входы (absolute)
-- Heavy prefab/FBX (см. H1).
-- `C:\Projects\ProjectC_client\Assets\_Project\Prefabs\Ships\Ship_Light_root_fbx_test.prefab`
-- `C:\Projects\ProjectC_client\Assets\_Project\Prefabs\Ships\Ship_medium_base.prefab`
+- Heavy prefab: `C:\Projects\ProjectC_client\Assets\_Project\Prefabs\Ships\Ship_havyII_base.prefab`
+- Heavy FBX: `C:\Projects\ProjectC_client\Assets\_Project\Art\Models\Ships\HeavyII_base\project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx`
 - Данные: `C:\Projects\ProjectC_client\docs\world\primum_city\10_CULLING_RESEARCH\08_DATA\I_ships_compartments.csv`
   (936 объектов), `I_ships_dc_model.csv`, `I_ships_prefabs.csv`.
 - Паттерн сборки: `C:\Projects\ProjectC_client\Assets\_Project\Editor\ShipPresetCreator.cs` — **40, 526, 578–589**.
 - API-референс: `C:\Projects\ProjectC_client\Assets\_Project\Editor\CombineMeshesToCollider.cs` — **31, 65–183, 114, 172** (нельзя `convex=false`; можно `CombineMeshes`).
+- **Вне scope H2:** `Ship_Light_root_fbx_test.prefab`, `Ship_medium_base.prefab`, 20 NPC — future scale-out.
 
 ### 3.3. Что клеить / что нельзя
 **Клеить:** статик-визуал корпуса/интерьера/двигателей. В префабе **17 material assets** (10 корпусных
@@ -125,14 +125,22 @@ P1/P2: greeble-мерж (973 → ~620 slot), затем LODGroup; P3 (позже
    отдельный GameObject/меш + выпуклый коллайдер (для будущего pre-fractured).
 
 ### 3.5. Приёмка
-- **Пилот heavy:** Frame Debugger на одном стабильном инстансе (после R0.2): 973 → ~620 slot (P1),
-  LOD1/LOD2 на 300/900/2500 м; двери/слоты/cargo/VFX целы; reimport не ломает.
-- **Раскатка medium/light** только после зелёного пилота; medium — с вложенным cargo 80 MR,
-  light — 25 материалов/3 nested FBX; H1b для них — только если reimport реально ломает.
-- **Итог:** DC кораблей ≤2 500 (P1/P2); после P3 heavy — ≤480; NPC не тронуты; F8/F9 зелёный;
-  scene-diff пустой.
+- **Только пилот HeavyII:** Frame Debugger на одном стабильном инстансе (у города/на платформе):
+  973 → ~620 slot (P1), LOD1/LOD2 на 300/900/2500 м; двери/слоты/cargo/VFX целы; reimport не ломает.
+- **P3 heavy** (отдельно, после плана фрактуры): ~92 slot.
+- **Другие корабли — 0 изменений**: `Ship_medium_base`, `Ship_Light_root_fbx_test`, 20 NPC не трогать;
+  в отчёте подтвердить, что их prefab-файлы не менялись.
+- F8/F9 зелёный; scene-diff пустой; FO/сеть/двери целы.
 - Kill: двери/слоты перестали работать; reimport ломает; Σtris расходится >0.1 %; пилот heavy не
-  уложился в gate — раскатку не начинать.
+  уложился в gate — **future scale-out не начинать**.
+
+### 3.6. Future scale-out (не входит в H2)
+После зелёного HeavyII — отдельный этап:
+- `Ship_medium_base` (118 MR; сохранить вложенный `Ship_CargoMedium_Base` 80 MR);
+- `Ship_Light_root_fbx_test` (428 MR; 25 материалов / 3 nested FBX);
+- H1b для medium/light — только если reimport реально ломает;
+- 20 NPC — не клеить (6 MR/820 тр.); LOD/импостор только при появлении реальных моделей;
+- цель: все корабли 4 917 → ≤2 500 DC (P1/P2), после P3 heavy — ≤480.
 
 ---
 

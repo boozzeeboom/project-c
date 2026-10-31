@@ -1,5 +1,9 @@
 # T-CULL01 / Stage 1 — brief для отдельного агента (H1: ShipPrefabRepair)
 
+> **Scope H1 — только `Ship_havyII_base`.** Остальные корабли (`Ship_medium_base`,
+> `Ship_Light_root_fbx_test`, 20 NPC) в этой операции **не трогать**: для них — future scale-out
+> после зелёного пилота HeavyII.
+
 **Дата:** 2026-10-31 · **Проект:** `C:\Projects\ProjectC_client` · **Базовый коммит:** `b507a2a7`
 **Статус:** Stage 0 принят с оговорками; Stage 1 — H1, можно начинать.
 **Play Mode:** для H1 **не требуется**; запускать только с отдельным разрешением пользователя.

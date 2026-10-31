@@ -278,3 +278,12 @@ static не ставить. Первый шаг — **воспроизводим
   `Editor/CombineMeshesToCollider.cs`, `floatingorigin/09S_NEW_CONTENT_PIPELINE.md`.
 - **Веб (30.10.2026):** Asset Store (Amplify, Perfect Culling, Precomputed Culling, GPU Instancer Pro),
   GTA V/DOOM frame studies, Unity Manual 6000.5 (Mesh LOD), NativeTrees/Spatial-Hashing GitHub.
+
+## 11. План исполнения и тикет сложного кода
+
+- **План Stage 0–7 (зависимости, gates, owner, трекер):**
+  [`10_EXECUTION_PLAN.md`](10_EXECUTION_PLAN.md).
+- **Отдельный тикет на сложные части кода H1–H7 (абсолютные пути/строки, шаблон постановки агенту):**
+  [`T-CULL01`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
+- Простые правки (baseline, слой дверей, настройки, фермы) — отдельными маленькими коммитами по плану;
+  сложный код — только по одному пакету H за задачу, после gate предыдущего этапа.

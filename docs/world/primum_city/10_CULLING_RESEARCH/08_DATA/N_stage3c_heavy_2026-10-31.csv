@@ -1,0 +1,13 @@
+phase,category,item,value,note
+verify,lod,thresholds,300.000/900.000,size=27.071; maxLossyScale=12.000; worldSize=324.846; floor для LOD0 при FOV60 = 281.325 м; уровней=3; LOD0 renderers=557; LOD1=10; LOD2=1
+verify,shadow_modes,renderers,616,off=0; расхождений с источником=0
+verify,interactive,outside_lodgroup,47,"slots=47; shadowSlots=47; бюджет их не трогает (двери, створки, слоты, PilotSeat, CargoVisual, двигатели, VFX)"
+verify,params,present,yes,enabled=True; on_m=140.000; off_m=150.000; maxAxis_m=8.000
+verify,inventory,candidates,314,slots=314; casters=314; casterSlots=314; off в префабе=0; LOD-уровни(биты)=1
+verify,inventory,by_max_axis,0|125|45|35|45|18|15|7|24,"рендереров по ceil(maxAxis): 0|1|2|3|4|5|6|7|8 (м, потолок)"
+verify,inventory,slots_by_max_axis,0|125|45|35|45|18|15|7|24,"слотов по ceil(maxAxis): 0|1|2|3|4|5|6|7|8 (м, потолок); порог компонента = 8.000 м"
+projection,dc,anchor_200m,1538,slots=555; shadowCasters=593; shadowDraws=983; drawsPerCaster=1.658
+projection,dc,gate,1300,требуется снять слотов теней: 144 (при 1.658 draw на кастер)
+projection,dc,modelled,1175,предпосылки: слоты мелочи 314 × доля дальних 0.6975 = 219 слотов; пол 1017; band при 1.3…1.9 draw/кастер = 1253…1122
+projection,dc,verdict,PROJECTED_ONLY,ГЕЙТ НЕ ПОДТВЕРЖДЁН: нужен Play Mode прогон Stage 3 Ship Bench (d200)
+verify,validation,,OK,

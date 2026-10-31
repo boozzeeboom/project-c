@@ -34,7 +34,7 @@ namespace ProjectC.EditorTools
         private const string AbortMenu = "Project C/Culling/Stage 3 Ship Bench/Abort";
 
         private const string RelOutPath =
-            "docs/world/primum_city/10_CULLING_RESEARCH/08_DATA/M_stage3_heavy_runtime_2026-10-31.txt";
+            "docs/world/primum_city/10_CULLING_RESEARCH/08_DATA/N_stage3c_heavy_runtime_2026-10-31.txt";
 
         public const string SessionKey = "ProjectC.Stage3ShipBench.Running";
 
@@ -61,14 +61,16 @@ namespace ProjectC.EditorTools
             public bool repeat;
         }
 
+        // Stage 3c: набор точек из брифа — 80/120/200/300/400/1200, повтор на 200 м (±5 %).
         private static readonly List<DistanceCase> Cases = new List<DistanceCase>
         {
-            new DistanceCase { id = "LOD0_80m",  distance = 80f },
-            new DistanceCase { id = "LOD0_80m_repeat", distance = 80f, repeat = true },
-            new DistanceCase { id = "LOD0_full_200m", distance = 200f },
-            new DistanceCase { id = "LOD1_400m", distance = 400f },
-            new DistanceCase { id = "LOD2_1200m", distance = 1200f },
-            new DistanceCase { id = "LOD2_1200m_repeat", distance = 1200f, repeat = true },
+            new DistanceCase { id = "d80",  distance = 80f },
+            new DistanceCase { id = "d120", distance = 120f },
+            new DistanceCase { id = "d200", distance = 200f },
+            new DistanceCase { id = "d200_repeat", distance = 200f, repeat = true },
+            new DistanceCase { id = "d300", distance = 300f },
+            new DistanceCase { id = "d400", distance = 400f },
+            new DistanceCase { id = "d1200", distance = 1200f },
         };
 
         private enum State { Off, WaitPlayMode, WaitHost, WaitRig, EarlyProbe, Warmup, Case, Stability, Doors, Rebase, Done }
@@ -175,7 +177,7 @@ namespace ProjectC.EditorTools
                    "fr;samples=" + SampleCount + "x gap " + SampleGapFrames +
                    "fr;metric=UnityStats median;far=" + BenchFar + ";fov=" + BenchFov +
                    ";shipDC=A(ship on)-B(all ship MeshRenderer.enabled=false)");
-            Append("NOTE;lodThresholds=300/900@lodBias1 → при текущем lodBias эффективные пороги умножаются на lodBias");
+            Append("NOTE;lodThresholds=raw 300/900@FOV60 lodBias1 (Stage 3c, без изменений с Stage 3a); эффективная граница = raw × lodBias (ViewDistanceApplier: Near 0.7 / default 1.0 / Far+Ultra 1.3); порог LOD0 ближе ~281.6 м задать нельзя — P2 закрывается бюджетом теней");
 
             Debug.Log("[Stage3Bench] Старт. Файл: " + _outPath);
             EditorApplication.update -= Tick;
@@ -388,6 +390,72 @@ namespace ProjectC.EditorTools
             Append("NOTE;camera=" + _cam.name + ";far=" + BenchFar + ";fov=" + BenchFov +
                    ";lodBias=" + Fmt(QualitySettings.lodBias) + ";quality=" + QualitySettings.names[QualitySettings.GetQualityLevel()] +
                    ";shipWorldPos=" + Vec(_ship.position));
+            AppendLodInfo();
+            AppendShadowBudgetInfo();
+        }
+
+        /// <summary>
+        /// Состояние бюджета теней (Stage 3c): есть ли компонент, какие параметры и сколько частей
+        /// он ведёт. Классификация берётся из того же ShipShadowBudget.CollectCandidates, что и в рантайме.
+        /// </summary>
+        private static void AppendShadowBudgetInfo()
+        {
+            var budget = _ship != null ? _ship.GetComponent<ShipShadowBudget>() : null;
+            if (budget == null)
+            {
+                Append("SHADOWBUDGET;present=no");
+                Debug.LogWarning("[Stage3Bench] На корабле нет ShipShadowBudget — P2 закрывается только LOD-порогами.");
+                return;
+            }
+
+            var candidates = new List<MeshRenderer>(512);
+            ShipShadowBudget.CollectCandidates(_ship.gameObject, _lodGroup, budget.SmallPartMaxAxis, candidates);
+
+            var byBucket = new int[9];
+            int slots = 0, casterSlots = 0;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                var r = candidates[i];
+                if (r == null) continue;
+                int s = r.sharedMaterials.Length;
+                slots += s;
+                if (r.shadowCastingMode != ShadowCastingMode.Off) casterSlots += s;
+                Vector3 sz = r.bounds.size;
+                float axis = Mathf.Max(sz.x, Mathf.Max(sz.y, sz.z));
+                byBucket[Mathf.Clamp(Mathf.CeilToInt(axis), 0, 8)] += s;
+            }
+
+            Append("SHADOWBUDGET;present=yes;enabled=" + budget.BudgetEnabled +
+                   ";on_m=" + Fmt(budget.ShadowOnDistance) + ";off_m=" + Fmt(budget.ShadowOffDistance) +
+                   ";maxAxis_m=" + Fmt(budget.SmallPartMaxAxis) +
+                   ";candidates=" + candidates.Count + ";candidateSlots=" + slots +
+                   ";casterSlotsAtBuild=" + casterSlots +
+                   ";trackedRuntime=" + budget.TrackedRendererCount +
+                   ";bucketSlots_ceilm=" + string.Join("|", Array.ConvertAll(byBucket, v => v.ToString())));
+        }
+
+        /// <summary>Сырые пороги LODGroup и дистанции перехода при FOV 60 без lodBias (граница выбора = дистанция × lodBias).</summary>
+        private static void AppendLodInfo()
+        {
+            if (_lodGroup == null) return;
+            var lods = _lodGroup.GetLODs();
+            var ls = _lodGroup.transform.lossyScale;
+            float maxScale = Mathf.Max(Mathf.Abs(ls.x), Mathf.Max(Mathf.Abs(ls.y), Mathf.Abs(ls.z)));
+            float worldSize = _lodGroup.size * maxScale;
+            double tan = Math.Tan(BenchFov * 0.5f * Mathf.Deg2Rad);
+            var sb = new StringBuilder();
+            sb.Append("LODINFO;bias=").Append(Fmt(QualitySettings.lodBias));
+            sb.Append(";size=").Append(Fmt(_lodGroup.size)).Append(";worldSize=").Append(Fmt(worldSize));
+            for (int i = 0; i < lods.Length; i++)
+            {
+                sb.Append(";LOD").Append(i).Append("_h=").Append(lods[i].screenRelativeTransitionHeight.ToString("F6", CultureInfo.InvariantCulture));
+                sb.Append("_r=").Append(lods[i].renderers.Length);
+                if (lods[i].screenRelativeTransitionHeight > 0f)
+                    sb.Append("_distFov60=").Append((worldSize / (2.0 * tan * lods[i].screenRelativeTransitionHeight)).ToString("F1", CultureInfo.InvariantCulture));
+                else
+                    sb.Append("_distFov60=none");
+            }
+            Append(sb.ToString());
         }
 
         private static Transform FindWorldRoot()

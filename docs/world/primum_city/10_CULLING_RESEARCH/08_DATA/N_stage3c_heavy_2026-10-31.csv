@@ -6,8 +6,26 @@ verify,params,present,yes,enabled=True; on_m=140.000; off_m=150.000; maxAxis_m=8
 verify,inventory,candidates,314,slots=314; casters=314; casterSlots=314; off в префабе=0; LOD-уровни(биты)=1
 verify,inventory,by_max_axis,0|125|45|35|45|18|15|7|24,"рендереров по ceil(maxAxis): 0|1|2|3|4|5|6|7|8 (м, потолок)"
 verify,inventory,slots_by_max_axis,0|125|45|35|45|18|15|7|24,"слотов по ceil(maxAxis): 0|1|2|3|4|5|6|7|8 (м, потолок); порог компонента = 8.000 м"
-projection,dc,anchor_200m,1538,slots=555; shadowCasters=593; shadowDraws=983; drawsPerCaster=1.658
-projection,dc,gate,1300,требуется снять слотов теней: 144 (при 1.658 draw на кастер)
-projection,dc,modelled,1175,предпосылки: слоты мелочи 314 × доля дальних 0.6975 = 219 слотов; пол 1017; band при 1.3…1.9 draw/кастер = 1253…1122
-projection,dc,verdict,PROJECTED_ONLY,ГЕЙТ НЕ ПОДТВЕРЖДЁН: нужен Play Mode прогон Stage 3 Ship Bench (d200)
+projection_superseded,dc,anchor_200m,1538,slots=555; shadowCasters=593; shadowDraws=983; drawsPerCaster=1.658; опора снята при shadowDistance=1000 — несравнима
+projection_superseded,dc,gate,1300,требуется снять слотов теней: 144 (при 1.658 draw на кастер)
+projection_superseded,dc,modelled,1175,ОПРОВЕРГНУТО замером 21:24 (факт 1434); предпосылки: 314 × доля дальних 0.6975 = 219 слотов; пол 1017; band 1253…1122
+projection_superseded,dc,verdict,SUPERSEDED,заменено строками measured,* ниже
 verify,validation,,OK,
+measured,run,context,,2026-10-31 21:24:47–21:26:58; PlayMode→Host; quality=Medium; lodBias=1.30; shadowDistance=400; cascades=4; soft=on; BENCH_DONE=OK; casesCompleted=7/7; errors=0
+measured,shadow_config,d80_control,1090 vs 1015,+75 DC: на 80 м бюджет неактивен (все части <140 м) → это цена 4 каскадов, чистый контроль конфига теней
+measured,dc,d80,1090,slots=335; casters=421; shadowDraws≈755; draws/кастер=1.79; all=1759; without=669
+measured,dc,d120,948,slots=360; casters=346; shadowDraws≈588; draws/кастер=1.70; all=1867; without=919
+measured,dc,d200,1434,slots=553; casters=489; shadowDraws≈881; draws/кастер=1.80; all=3926; without=2492
+measured,dc,d200_repeat,1427,отклонение от d200 = 0.49 % (±5 % выполнено); all=3919; without=2492
+measured,dc,d300,1611,ХУДШАЯ ФАКТИЧЕСКАЯ ТОЧКА; slots=604; casters=419; shadowDraws≈1007; draws/кастер=2.40; all=3847; without=2236
+measured,dc,d400,134,LOD1; slots=57; casters=20; all=2370; without=2236
+measured,dc,d1200,104,LOD2; slots=52; casters=0; all=2362; without=2258
+measured,gate,p2_200m,FAIL,1434 > 1300 → перебор +134 DC (+10.3 %); повтор 1427 устойчив
+measured,gate,worst_pose,FAIL,при lodBias 1.3 LOD0 держится до 390 м → пик не на 200 м, а на 300 м = 1611 DC
+measured,budget,measured_gain_200m,104 vs stage3,1538 → 1434 (≈58 теневых draw ≈ ~30 частей из 314); модель обещала 219 частей — поштучное правило слабо работает на 325-метровом корпусе
+measured,rebase,f8_f9,NO_TRANSACTION,transactionsSeen=False; worldRootShift_m=0.00 на success и rollback; errorsSoFar=0 → долг Stage 3a не закрыт
+measured,doors,open_close,OK,open: isOpen=True localMove_m=0.15; close: progress=0.00
+measured,metric,ship_tris,UNUSABLE,d120=−477396; d200=26188; d300=26058 при 165744 на d80 → A−B по треугольникам загрязнена; выводить только ship_dc
+measured,census,candidates_header,309,vs trackedRuntime=314: 5 частей были в неактивном LOD-уровне в момент census шапки — артефакт момента
+measured,console,errors,0,NavMesh warning=16; ShipCargoVisual boxPrefabs warning=25; meziy/PilotSeat — не относятся к T-CULL01
+next,action,ship_level_gate,PLANNED,решать по дистанции до корня/LODGroup корабля, а не по bounds.center каждой части; после правки перемерить d200/d200_repeat/d300

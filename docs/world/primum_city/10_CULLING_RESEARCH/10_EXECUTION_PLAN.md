@@ -85,8 +85,8 @@ Stage 2b Фермы: двери на слой, тени off (1 день)        
 Stage 3  Корабли P1/P2: greeble-мерж + LOD (3–5 дней)    — СЛОЖНЫЙ КОД → T-CULL01/H2
 Stage 4  GRD + GPU occlusion (2–3 недели)                — СЛОЖНЫЙ КОД/ШЕЙДЕРЫ → T-CULL01/H5
 Stage 5  Воспроизводимость мержа + B2 города (2–4 нед)   — СЛОЖНЫЙ КОД → T-CULL01/H4
-Stage 6  VisibilityDirector (3–4 недели, опционально)    — СЛОЖНЫЙ КОД → T-CULL01/H6
-Stage 7  HLOD/L1 + L2-импостор / PVS (опционально)       — СЛОЖНЫЙ КОД → T-CULL01/H7
+Stage 6  VisibilityDirector (3–4 недели, ✅ утверждён) — СЛОЖНЫЙ КОД → T-CULL01/H6
+Stage 7  HLOD/L1 + L2-импостор / PVS (✅ утверждён)        — СЛОЖНЫЙ КОД → T-CULL01/H7
 ```
 
 Stage 0–3 можно частично параллелить: Stage 1 не зависит от Stage 2; Stage 3 — после Stage 1.

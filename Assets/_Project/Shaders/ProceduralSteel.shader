@@ -230,7 +230,10 @@ Shader "ProjectC/ProceduralSteel"
                 // FO-safe: весь паттерн — от object-space позиции, нормированной
                 // на масштаб объекта (плотность шума в мировых метрах, сдвиг не влияет).
                 float3 op = input.positionOS;
-                float3 objScale = float3(length(unity_ObjectToWorld[0].xyz), length(unity_ObjectToWorld[1].xyz), length(unity_ObjectToWorld[2].xyz));
+                // UNITY_MATRIX_M, а не unity_ObjectToWorld: тот не определён в DOTS-варианте
+                // (DOTS_INSTANCING_ON, GPU Resident Drawer), из-за чего проход не компилировался.
+                // UNITY_MATRIX_M DOTS-осведомлён и в обычном пути равен unity_ObjectToWorld.
+                float3 objScale = float3(length(UNITY_MATRIX_M[0].xyz), length(UNITY_MATRIX_M[1].xyz), length(UNITY_MATRIX_M[2].xyz));
                 objScale = max(objScale, float3(1e-4, 1e-4, 1e-4));
                 float3 opW = op / objScale;
                 float seed = (float)_Seed;

@@ -35,8 +35,8 @@
 | 2b | ✅ done (doors inherited; shadow ≈0) | Stage 2 | 270 дверных рендереров ферм уже на слое 10; ShadowBudget на 5.7–6 км — ≈0 | автоматически | — |
 | 3 | ✅ P1/P2 green (conditional: visual/F8 open) | Stage 1 | P1 973→616 MR; P2 d200 1 170 / d300 1 236 ≤1 300; другие 0 diff | агент T-CULL01/H2b | `N_stage3c_*`, `T-CULL01_STAGE3C_REPORT.md` |
 | 3b | ⛔ deferred — **не сейчас** | — | другие корабли типовые; если мешают — выключить рендереры в замере | — | — |
-| 4 | 🟡 ready — после re-baseline | Stage 2 | DC ≤2 500; Hybrid Batch Group; 0 shader errors; FO | агент T-CULL01/H5 | настройки + шейдеры |
-| 5 | ⬜ planned | Stage 4 зелёный + окклюзия ≥35 % | цвет ±10 %, тени ≤+10 %, Σtris ±0.1 %, DC не растёт | агент T-CULL01/H4 | rebatch-тул + prefab-ассеты |
+| 4 | 🟡 conditional green (P1 3 031, −52.6 %; гейт 2 500 не взят; окклюзия ≈0) | Stage 2 | DC ≤2 500 ❌ (3 031); Hybrid Batch Group ✅ (2 876 батчей / 18 196 инст.); 0 shader errors ✅; FO/двери/тени без измеренных регрессий | агент T-CULL01/H5 | настройки + шейдеры + `T-CULL01_STAGE4_REPORT.md` |
+| 5 | ⬜ planned, но **условие окклюзии не выполнено** (0 %, не ≥35 %) — нужно решение пользователя | Stage 4 (условно) | цвет ±10 %, тени ≤+10 %, Σtris ±0.1 %, DC не растёт | агент T-CULL01/H4 | rebatch-тул + prefab-ассеты |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
 | 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
 
@@ -423,6 +423,37 @@ H1b, LOD/мержей и «проверок каждого корабля» се
 чанке → вся сцена; проверить Hybrid Batch Group, тени, створки дверей, F8/F9.
 **Gate:** DC ≤2 500; 0 shader errors; Hybrid Batch Group; двери/тени/FO ок. Иначе откат
 (как 18.10) и Stage 6 вместо GRD.
+
+### 6.0. Stage 4 review (2026-10-31, `T-CULL01/H5`)
+
+**Замеры (Play Mode, новый baseline при 400/4/soft; корабли выключены runtime-ом):**
+[`T-CULL01_STAGE4_REPORT.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE4_REPORT.md),
+`08_DATA/O_stage4_*`.
+
+| Точка | baseline | GRD+occ | Δ |
+|---|---:|---:|---:|
+| C1 площадь | 6 400 | **3 031** | −52.6 % |
+| C1 ночь | 5 013 | **1 767** | −64.7 % |
+| C2 улица | 963 | 573 | −40.5 % |
+| C3 крыша | 958 | 1 005 | +4.9 % |
+| PILOT (чанк S9_TRD-S2) | 2 812 | **1 178** | −58.1 % |
+| C1 + heavy | 6 390 | 3 015 | −52.8 % |
+
+**Принято условно (решение пользователя 2026-10-31):** GRD остаётся включённым, хотя числовой гейт
+2 500 не взят (3 031). `srpBatcherDC` 6 261 → 8, `hybridDC` = 2 876 на 18 196 инстансов.
+
+**Ключевые выводы:**
+- **GPU occlusion даёт 0 %:** прогон с `occlusion=0` совпал с включённой (3 029 vs 3 031). Условие Stage 5
+  «окклюзия ≥35 %» не выполняется; Stage 5 требует отдельного решения, а не автоматического старта.
+- **DC теперь упирается в уникальные пары (меш, материал)**, а не в рендереры: 2 267 уникальных мешей на
+  8 801 рендерер; двери (4 949 рендереров, 12 мешей) уже схлопнуты, город — нет.
+- **Все 20 Shader Graph уже имеют `DOTS_INSTANCING_ON`** — правок графов не потребовалось.
+  Единственная ошибка — рукописный `ProjectC/ProceduralSteel` (`unity_ObjectToWorld` в DOTS-варианте),
+  исправлен на `UNITY_MATRIX_M`; `shadersWithError = 0`.
+- **Frame Debugger при GRD отдаёт 0 событий** — как доказательство Hybrid Batch Group не годится,
+  использовать `UnityStats.hybridBatcherDrawCalls/hybridBatcherInstances`.
+- Открыто: визуальная приёмка GRD, реальный ввод F8/F9, рост DC на C3 (+4.9 %), `lodBias 0.70` при
+  quality Medium (числа Stage 3 несравнимы).
 
 ---
 

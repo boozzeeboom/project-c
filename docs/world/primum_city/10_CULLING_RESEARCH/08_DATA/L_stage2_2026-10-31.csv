@@ -1,0 +1,9 @@
+point,dayPhase,layerDist_m,shadowOff_m,doorsInFrustum,doorsKept,kept_pct,doorsShadowOn,drawCalls,setPassCalls,triangles,shadowCasters,fps,frameCount,status,notes
+P1_tsentr_ploshhadi,Midday,150,60,3165,529,16.7,72,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,0,NOT_RUN,"geometric census at P1: fov60 yaw337.5 pitch0 aspect1.761; Play Mode не запускался (правило проекта)"
+P1_tsentr_ploshhadi_repeat,Midday,150,60,3165,529,16.7,72,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,0,NOT_RUN,"повтор P1 для +-5% не выполнялся"
+P2_uzkaya_ulitsa,Midday,150,60,91,91,100.0,55,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,0,NOT_RUN,"улица: все двери ближе 150 м, выигрыша по дистанции нет; тени остаются у 55"
+P3_krysha,Midday,150,60,284,0,0.0,0,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,0,NOT_RUN,"крыша: все двери кадра дальше 150 м, слой отсекает их полностью"
+P1_estimate_after,Midday,150,60,3165,529,16.7,72,8371,ESTIMATE,ESTIMATE,ESTIMATE,ESTIMATE,0,ESTIMATE,"экстраполяция: 4607 (P1 без городских дверей) + 22524 * 529/3165 = 8371 DC; не измерение"
+P1_baseline_ref_doors_on,Midday,0,0,3165,4949,100.0,3165,27131,316,15981018,10115,10.38,5964,REFERENCE,"Stage 0 baseline K_baseline_2026-10-31.csv; двери on; тени on"
+P1_baseline_ref_no_city_doors,Midday,0,0,3165,0,0.0,0,4607,281,15066522,1729,10.28,14772,REFERENCE,"Stage 0: выключен PRIMUM_DOORS (4949 рендереров)"
+P1_baseline_ref_no_doors,Midday,0,0,0,0,0.0,0,2730,270,14984274,1094,12.45,6220,REFERENCE,"Stage 0: выключены PRIMUM_DOORS + Primum_farms_DOORS + ADMIN_DOOR_PREFABS"

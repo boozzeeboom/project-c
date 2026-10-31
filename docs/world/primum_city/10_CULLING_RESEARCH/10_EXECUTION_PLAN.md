@@ -1,8 +1,9 @@
 # 10. План исполнения culling/visibility (Project C)
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
-**Статус:** Stage 0 принят **с оговорками** 2026-10-31 (`T-CULL01/0`); Stage 1 — готов к передаче,
-Stage 2 можно вести параллельно. **Тикет сложного кода:** `T-CULL01` —
+**Статус:** Stage 0 принят с оговорками (`T-CULL01/0`); Stage 1 — **частичный pass** (`T-CULL01/H1`:
+240/250 коллайдеров, 9 дверей остались в FBX, reimport OK); Stage 2 — следующий шаг.
+**Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
 агенту по одному этапу, когда до этапа дошли. Простые правки — отдельными маленькими коммитами.
@@ -26,10 +27,10 @@ Stage 2 можно вести параллельно. **Тикет сложно�
 | Stage | Статус | Зависит от | Gate (кратко) | Owner | Артефакт |
 |---|---|---|---|---|---|
 | 0 | 🟡 done with caveats (R0.1–R0.3) | — | baseline CSV ±5 %, фиксы, F8/F9 | Lead/пользователь | `08_DATA/K_baseline_2026-10-31.csv`, `K_stage0_report.md` |
-| 1 | 🟡 ready for handoff | Stage 0 | 250 боксов/9 дверей после reimport; 0 missing; scene-diff пуст | агент T-CULL01/H1 | prefab + `H1_prefab_repair.csv` |
-| 2 | ⬜ planned | Stage 0 | 26 981 → 5–9k DC; F8/F9; raycast/физика ок | Lead/H3 | слой + 2 скрипта |
+| 1 | 🟡 partial pass (240/250, 9 doors inside; reimport OK) | Stage 0 | 250 боксов/9 дверей после reimport; 0 missing; scene-diff пуст | агент T-CULL01/H1 | prefab + `H1_prefab_repair.csv` |
+| 2 | 🟡 ready | Stage 0 + approval на слой | 27 131 → 5–9k DC; F8/F9; raycast/физика ок | агент T-CULL01/H3 | слой + `DoorVisibilityBudget`/`ShadowBudget` |
 | 2b | ⬜ planned | Stage 2 (слой) | −270 дверей ферм/≈−640 слотов; тени off | Lead/пользователь | настройки/слой |
-| 3 | ⬜ planned | Stage 1 | корабли ≤2 500 DC (P1/P2); 973→~620; двери работают | агент T-CULL01/H2 | `.asset` + LODGroup |
+| 3 | ⬜ planned | Stage 1 + **R0.2** | корабли ≤2 500 DC (P1/P2); 973→~620; двери работают | агент T-CULL01/H2 | `.asset` + LODGroup |
 | 4 | ⬜ planned | Stage 2 | DC ≤2 500; Hybrid Batch Group; 0 shader errors; FO | агент T-CULL01/H5 | настройки + шейдеры |
 | 5 | ⬜ planned | Stage 4 зелёный + окклюзия ≥35 % | цвет ±10 %, тени ≤+10 %, Σtris ±0.1 %, DC не растёт | агент T-CULL01/H4 | rebatch-тул + prefab-ассеты |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
@@ -169,11 +170,38 @@ Stage 3 (H2) — только после R0.2; Stage 5/6 — после R0.1.
 **Gate:** реимпорт FBX не теряет коллайдеры/двери; `DoorController` работает; 0 missing refs;
 scene-diff ≤ нескольких строк (правки только в префабе); F8/F9 зелёный.
 
+### 3.1. Stage 1 review (Lead, 2026-10-31)
+
+**Принято частично.** Фактически после H1 (`870ff534`, живая проверка prefab):
+- быков всего **250**; внутри FBX было **248**, стало **10**; снаружи **240**;
+- 110 user-дерер коллайдеров вынесены в `SHIP_COLLIDERS`; `collider_trees_left_inside_fbx = 0`;
+- 9 `DoorController` и 10 leaf-`BoxCollider` **остались внутри FBX** осознанно: leaf-коллайдер
+  обязан ехать с анимируемым узлом модели, а `DoorController` требует `Collider` на том же объекте;
+- **reimport FBX выполнен**, состояние сохранилось (250/10/9/973 MR, 0 missing), CSV `H1_prefab_repair.csv`;
+- визуал 973 MR/973 MF, source FBX и сцена не менялись; prefab/FBX — вне git (backup:
+  `C:\Projects\ProjectC_client\_local_backups\T-CULL01\H1\Ship_havyII_base.prefab.bak`).
+
+**Остаток H1 (не блокирует Stage 2):**
+| ID | Что | Как закрыть |
+|---|---|---|
+| **H1-R1** | 9 дверей + 10 leaf-коллайдеров остаются в nested FBX | после любого reimport FBX **повторно прогонять** `ProjectC/Ships/Repair Heavy Prefab`; при H2 проверить, что мерж визуала их не сломал |
+| **H1-R2** | `Doors` root не создан (двери на FBX-узлах) | отдельным решением, только если H2/фрактура потребуют вынести створки; сейчас не делать |
+
+**Вердикт:** Stage 1 — **частичный pass**, можно переходить к Stage 2; Stage 3 (H2) дополнительно
+требует **R0.2** (стабилизировать корабль и снять ship-baseline).
+
+**Brief для Stage 1:** [`T-CULL01_STAGE1_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE1_AGENT_BRIEF.md).
+
 ---
 
 ## 4. Stage 2 — Ф0 двери + бюджет теней (3–5 дней)
 
-**Цель:** снять 84 % DC без переделки геометрии.
+> ⚠️ **Нужно разрешение на `ProjectSettings/TagManager.asset`:** новый слой `PRIMUM_DOORS` (слот 10).
+> Без него `layerCullDistances` невозможен; fallback — только per-object distance-менеджер (меньший эффект).
+> **Brief для агента:** [`T-CULL01_STAGE2_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE2_AGENT_BRIEF.md).
+
+**Цель:** снять 84 % DC без переделки геометрии. Контроль — P1 **27 131** (Stage 0, Midday); без городских
+дверей **4 607**, без всех дверей **2 730**.
 
 ### 2.1. Слой дверей
 - Создать слой `PRIMUM_DOORS` (свободен, слот **10**; см. `TagManager.asset`).

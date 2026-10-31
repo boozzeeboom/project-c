@@ -1,0 +1,61 @@
+phase,category,item,value,note
+setup,env,unity,6000.5.2f1,Stage3ShipBench; три прогона 20:09:58 / 20:19:02 / 20:26:40
+setup,bench,script,Assets/_Project/Editor/Culling/Stage3ShipBench.cs,"PlayMode→Host; warmup=1500fr; settle=40fr; samples=3x gap 8fr; metric=UnityStats median"
+setup,env,camera,ThirdPersonCamera_0,"farClipPlane=30000; fov=60; поза переустанавливается каждый тик; дистанции 80/200/400/1200 м"
+setup,env,lod_bias,1.30,"quality=Medium; эффективные пороги LODGroup = 300/900 м × 1.30 = 390/1170 м"
+setup,env,phase_forced,12.0,"DayNightController.SetTimeOfDay(12)+ForceRefresh, компонент после этого выключен"
+setup,env,sun,Sun(enabled=True;shadows=Soft;intensity=1.24),
+setup,env,ship_world,"127.50,-48.72,-68.60","FO-relative на старте; WorldRoot_0_0=-39936,-2560,-39936"
+setup,method,ship_dc,dc_all - dc_withoutShip,"3 сэмпла с кораблём, затем всем ship MeshRenderer.enabled=false + 12 кадров settle, 3 сэмпла без корабля; медиана разности; dc_withoutShip включает город"
+stability,probe,start,"y=-50.25; vy=-5.96; groundDist=25.76","корабль без пилота и без двигателя: ApplyAntiGravity early-return"
+stability,probe,landing,"frame=40; y=-79.27; contacts=1",приземление на DECK
+stability,probe,rest,"frame=50..600; y=-79.36; vy=0.00; contacts=1",дальше не двигается
+stability,case,drift_m,0.00,"stability 120 кадров; vel=0,0,0; на время замеров ship isKinematic=true (runtime only)"
+runtime,model,ship_meshrenderers,616,после H2
+runtime,model,merged_renderers,20,
+runtime,model,lossyScale,"6.00,0.90,12.00",неоднородный масштаб корабля
+runtime,model,lodGroup,"size=27.07; lodLevels=3",
+runtime,case,ship_dc_LOD0_80m,1015,"dc_all=1810; dc_withoutShip=795; slotsVisible=335 (LOD0=296, dyn=39); shadowCasters=349; inFrustum=346/615"
+runtime,case,ship_dc_LOD0_80m_repeat,1015,"тот же прогон; dc_all=1810; dc_withoutShip=795; точное совпадение"
+runtime,case,ship_dc_LOD0_full_200m,1538,"dc_all=4395; dc_withoutShip=2857; slotsVisible=555 (LOD0=509, dyn=46); shadowCasters=593; inFrustum=553; весь корабль в кадре"
+runtime,case,ship_dc_LOD1_400m,235,"dc_all=3386; dc_withoutShip=3151; slotsVisible=57 (LOD1=10, dyn=47); shadowCasters=106; inFrustum=616; rawDcOff=3166|3151|3151 → погрешность ±15"
+runtime,case,ship_dc_LOD2_1200m,104,"dc_all=2398; dc_withoutShip=2294; slotsVisible=52; shadowCasters=0; inFrustum=616"
+runtime,case,ship_dc_LOD2_1200m_repeat,104,"dc_all=2398; dc_withoutShip=2294; точное совпадение"
+runtime,case,reproducibility,100%,повторы 80 м (1015/1015) и 1200 м (104/104) совпали; при требовании ±5 % — норм
+runtime,case,median_noise,15,"run1 LOD2: 89 против 104 при неизменной композиции (rawDc 550|550|565); медиана 3 сэмплов даёт дрожание до ±15 DC"
+runtime,census,LOD_composition,стабильна,"во всех трёх прогонах vis_LOD0/1/2 совпадают: 296/0/0 при 80 м, 0/10/0 при 400 м, 0/0/1 при 1200 м"
+gate,P1,heavy_dc_full_lod0,1538,"гейт ≤~1800: PASS; полный корабль в кадре (200 м)"
+gate,P2,heavy_dc_full_lod0,1538,"гейт ≤~1300 при полном корабле: НЕ достигнут; 1015 (< 1300) получен только при срезанном фрустумом корабле (80 м)"
+gate,P1,heavy_meshrenderers,616,"973 → 616; подтверждено в runtime"
+gate,edit_model,vs_runtime,"LOD0 1812 / LOD1 171 / LOD2 156","замер: LOD0 1538 (85 % модели), LOD1 235 (137 %), LOD2 104 (67 %); ×3-модель не является потолком вне LOD0"
+runtime,integrity,doors,"count=9; active=7; testDoor=Door_Mess",двери coroutine, SetOpenTarget early-return при !isActiveAndEnabled
+runtime,integrity,colliders,250,1 trigger
+runtime,integrity,moduleSlots,11,
+runtime,integrity,PilotSeat,True,
+runtime,integrity,CargoVisual,True,
+runtime,integrity,ContrailVFX,True,"UseShipBounds=False"
+runtime,integrity,engineThrusterVisual,2,
+runtime,doors,open,"isOpen=True; progress=1.00; animating=False; localMove_m=0.15",
+runtime,doors,close,"progress=0.00; localBack_m=0.00","створка вернулась в исходное положение"
+runtime,rebase,RequestControlledRebase,rejected,"no_rebase_plan:localFocus=(21.44,-72.75,113.28); transactionsSeen=False; frames=601"
+runtime,rebase,RequestControlledRebaseWithRollback,rejected,"то же; 0 транзакций за 600 кадров"
+runtime,rebase,shifts,0.00,"worldRootShift=0.00; shipShift=0.00; worldRoot и ship после обоих вызовов не изменились; errorsSoFar=0"
+runtime,rebase,session_auto_rebase,completed,"translation=(-39936.00,-2560.00,-39936.00); [ShipPositionServer] T-FO-PERSIST01 RebaseCorrected offset=(-39936,-2560,-39936) frame=2"
+runtime_fd,frame_debugger,events,217,"снят вручную через manage_profiler (pause → frame_debugger_enable); из bench-цикла SetEnabled возвращает count=0 в 6000.5"
+runtime_fd,pass,main_light_shadows,34,"ThirdPersonCamera_0; события 38–71"
+runtime_fd,pass,depth_normal_prepass,25,события 73–97
+runtime_fd,pass,draw_opaque,31,события 98–128
+runtime_fd,pass,draw_transparent,18,события 135–152
+runtime_fd,limitation,per_mesh_names,absent,"события уровня pass/batch (Shadows.DrawSRPBatcher, QuadTreeBatchNode.Render); FD подтверждает состав проходов и батчинг, не per-slot DC"
+runtime_fail,R0.2,run1_teleport,"frame 100→110: y -79.36 → -41649.59","groundDist=-1 (нет геометрии в 200 км); свободное падение до -24.30 м/с; WorldRoot_0_0 не менялся"
+runtime_fail,R0.2,run2_teleport,"frame 80→90: y -79.36 → -42313.68",то же
+runtime_fail,R0.2,cause,restore_overrides_scene_transform,"ShipPositionServer.RestoreCoroutine (restoreDelaySec≈6 с) применяет сохранённый transform поверх сценового; ApplyRebaseCorrection вычитает только rbx/rby/rbz и не исправляет упавшую координату"
+runtime_fail,R0.2,poisoned_save_before,"px=79953.80; py=-42311.10; pz=79366.48",сохранённая позиция свободного падения; каждая сессия перезаписывала её снова
+runtime_fix,R0.2,save_after,"px=127.37; py=-79.36; pz=-68.60; rbx=-39936; rby=-2560; rbz=-39936; rbFrame=2",телепорт прекратился; при этом сохранение перекрывает авторский hover 28.42 м над DECK
+runtime,evidence,run1,08_DATA/M_stage3_heavy_runtime_2026-10-31_run1.txt,"void-position прогон, 5/5 кейсов: 80 м 804, 400 м 220, 1200 м 89/104"
+runtime,evidence,run2,08_DATA/M_stage3_heavy_runtime_2026-10-31_run2.txt,"void-position прогон, 5/5 кейсов: 80 м 804, 400 м 220, 1200 м 104/104; FD events=0"
+runtime,evidence,run3,08_DATA/M_stage3_heavy_runtime_2026-10-31.txt,"итоговый прогон на DECK, 6/6 кейсов (добавлен LOD0_full_200m)"
+bench,result,BENCH_DONE,"result=OK; casesCompleted=6/6; errors=0","sceneSaved=no; push=no"
+manual_check,visual,LOD-переходы 80/200/400/1200,PENDING,"визуальная приёмка — пользователь"
+manual_check,rebase,F8/F9 реальным вводом,PENDING,"агент вызывал API напрямую и получил no_rebase_plan; нужен реальный ввод"
+manual_check,decision,persisted_ship_position,PENDING,"ShipPositions.json перекрывает авторскую позицию; удалять/править только по решению пользователя"

@@ -101,4 +101,4 @@ after_reimport,validation,,OK,
 manual_check,h1_r1,ShipPrefabRepair.VerifyAfterReimport+Apply,OK,"после H2: 250 BoxCollider (240 вне FBX / 10 leaf), 9 DoorController, 0 missing; файл префаба не переписан; H1_prefab_repair.csv возвращён к HEAD"
 manual_check,other_ships,Ship_medium_base / Ship_Light_root_fbx_test / NPC,0 diff,"mtime файлов не изменился; изменён только Ship_havyII_base.prefab"
 manual_check,scene,WorldScene_0_0,clean,"isDirty=false; инстанс: 616 MR, 14 исходных overrides, новых нет; сцена не сохранялась"
-manual_check,runtime,Frame Debugger / DC / F8-F9,PENDING,"Play Mode агентом не запускался — замер выполняет пользователь"
+manual_check,runtime,Frame Debugger / DC / F8-F9,DONE,"Play Mode выполнен 2026-10-31: ship_dc LOD0 1538 (полный корабль, 200 м) / LOD1 235 / LOD2 104; FD 217 событий (снят вручную); F8/F9 — no_rebase_plan; данные: M_stage3_heavy_runtime_2026-10-31.csv, разбор: docs/dev/T-CULL01_STAGE3_PLAYMODE_2026-10-31.md"

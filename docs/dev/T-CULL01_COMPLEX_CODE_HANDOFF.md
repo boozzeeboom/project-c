@@ -126,20 +126,21 @@ P1/P2: greeble-мерж (973 → ~620 slot), затем LODGroup; P3 (позже
 
 ### 3.5. Приёмка
 - **P1 — PASS:** heavy 973 → **616 MR**, 20 merged meshes; Σtris не изменились; двери/слоты/cargo/VFX целы.
-- **P2 — FAIL:** LODGroup есть, но на 200 м полный корабль = **1 538 DC** при цели ≤1 300 (разрыв 18 %);
-  LOD1 400 м = 235, LOD2 1200 м = 104; runtime `lodBias=1.30` (эффективные пороги 390/1170).
-- **Stage 3c** — отдельный шаг закрытия P2: [`T-CULL01_STAGE3C_AGENT_BRIEF.md`](T-CULL01_STAGE3C_AGENT_BRIEF.md)
-  (LOD-порог / домерж LOD0-статики / теневой бюджет / согласованный gate).
-- **Другие корабли — 0 изменений**; F8/F9 и визуал LOD — открыты; scene-diff пустой.
-- P2 зелёный обязателен до future scale-out; P3/фрактура — отдельно.
+- **P2 — PASS (conditional):** `ShipShadowBudget` (весь LODGroup, поштучно) закрыл гейт:
+  **d200 1 170 / repeat 1 161 / d300 1 236** при ≤1 300; d400 122 / d1200 104.
+  Визуальная цена: у корабля дальше ~150 м пропадает тень статики — нужен sign-off пользователя.
+- **Stage 3c** закрыт; см. `T-CULL01_STAGE3C_REPORT.md`; visual/F8/F9 — открыты.
+- **Другие корабли — 0 изменений**; scene-diff пустой; H1-R1 сохранён.
+- P2 зелёный (после visual sign-off) разблокирует **Stage 3b**; P3/фрактура — отдельно.
 
-### 3.6. Future scale-out (не входит в H2)
-После зелёного HeavyII — отдельный этап:
+### 3.6. Stage 3b — future scale-out (не входит в H2)
+Запускать после визуального sign-off heavy + нового baseline при `shadowDistance=400/4`.
+Brief: [`T-CULL01_STAGE3B_AGENT_BRIEF.md`](T-CULL01_STAGE3B_AGENT_BRIEF.md).
 - `Ship_medium_base` (118 MR; сохранить вложенный `Ship_CargoMedium_Base` 80 MR);
 - `Ship_Light_root_fbx_test` (428 MR; 25 материалов / 3 nested FBX);
 - H1b для medium/light — только если reimport реально ломает;
 - 20 NPC — не клеить (6 MR/820 тр.); LOD/импостор только при появлении реальных моделей;
-- цель: все корабли 4 917 → ≤2 500 DC (P1/P2), после P3 heavy — ≤480.
+- цель: все корабли 4 917 → ≤2 500 DC (P1/P2), после P3 heavy — ≤480; heavy не трогать.
 
 ---
 

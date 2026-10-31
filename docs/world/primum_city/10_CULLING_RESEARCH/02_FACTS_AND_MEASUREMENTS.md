@@ -175,10 +175,15 @@ far 1000 — не игровой far (30–120 км); одна точка.
 
 ### 6.1 URP Asset `ProjectC_URP.asset`
 
+> **Актуально с 2026-10-31 (T-LIGHT01):** `400 м / 4 каскада / soft on`. Всё, что ниже в §7–§8
+> про `shadow 1000 / 2`, — **исторические замеры**; они несравнимы с текущими (DC, тени, baseline).
+
 | Параметр | Значение | Комментарий |
 |---|---|---|
-| `m_ShadowDistance` | **1000** | URP читает из ассета |
-| `m_ShadowCascadeCount` | **2** | `m_Cascade2Split: 0.25` → **0–250 / 250–1000 м** |
+| `m_ShadowDistance` | **400** | URP читает из ассета; было 1000 |
+| `m_ShadowCascadeCount` | **4** | `m_Cascade4Split: {0.04, 0.1, 0.3}` → **0–16 / 16–40 / 40–120 / 120–400 м** |
+| `m_CascadeBorder` | **0.1** | было 0.2 |
+| `m_SoftShadowsSupported` | **1** | Sun.shadows = Soft теперь реально работает |
 | `m_MainLightShadowmapResolution` | 2048 | |
 | `m_AdditionalLightShadowsSupported` | **0** | additional-shadow проходов нет |
 | `m_UseSRPBatcher` | **1** | |

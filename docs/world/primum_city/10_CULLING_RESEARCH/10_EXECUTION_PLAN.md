@@ -2,7 +2,9 @@
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
 **Статус:** Stage 0 — pass с оговорками; Stage 1 — partial pass; Stage 2 — conditional pass
-(P1 27 131 → 6 094); **Stage 3 — P1 pass (973→616 MR), P2 fail (1 538 vs ≤1 300); следующий — Stage 3c (P2 closure).**
+(P1 27 131 → 6 094 — замер при старых тенях, исторический); **Stage 3 — P1 pass (973→616 MR),
+P2 закрыт теневым бюджетом (d200 1 170 / d300 1 236 при ≤1 300)**; открыто: визуал бюджета и F8/F9.
+**Следующий шаг — Stage 3b: раскатка medium/light (после визуального «да»).**
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -31,9 +33,9 @@
 | 1 | 🟡 partial pass (240/250, 9 doors inside; reimport OK) | Stage 0 | 250 боксов/9 дверей после reimport; 0 missing; scene-diff пуст | агент T-CULL01/H1 | prefab + `H1_prefab_repair.csv` |
 | 2 | ✅ conditional pass (P1 6 094, −77.5 %) | Stage 0 | P1 27 131 → 6 094; повтор +0.25 %; визуал/F8/F9 открыты | агент T-CULL01/H3 | слой + `DoorVisibilityBudget`/`ShadowBudget` |
 | 2b | ✅ done (doors inherited; shadow ≈0) | Stage 2 | 270 дверных рендереров ферм уже на слое 10; ShadowBudget на 5.7–6 км — ≈0 | автоматически | — |
-| 3 | 🟡 P1 pass / P2 fail (1538 vs ≤1300) — Stage 3c | Stage 1 | P1: 973→616 MR, 1538 DC ≤1800; P2 ≤1300 не достигнут | агент T-CULL01/H2b | LOD/merge tuning + замер |
-| 3b | ⛔ blocked by P2 | Stage 3 P2 green | medium/light после зелёного пилота | future agent | — |
-| 4 | ⬜ planned | Stage 2 | DC ≤2 500; Hybrid Batch Group; 0 shader errors; FO | агент T-CULL01/H5 | настройки + шейдеры |
+| 3 | ✅ P1/P2 green (conditional: visual/F8 open) | Stage 1 | P1 973→616 MR; P2 d200 1 170 / d300 1 236 ≤1 300; другие 0 diff | агент T-CULL01/H2b | `N_stage3c_*`, `T-CULL01_STAGE3C_REPORT.md` |
+| 3b | 🟡 ready — medium/light rollout | Stage 3 + visual sign-off | heavy не трогать; medium/light ≤; все корабли ≤2 500 | агент T-CULL01/H2c | prefab + отчёт |
+| 4 | 🟡 ready — после re-baseline | Stage 2 | DC ≤2 500; Hybrid Batch Group; 0 shader errors; FO | агент T-CULL01/H5 | настройки + шейдеры |
 | 5 | ⬜ planned | Stage 4 зелёный + окклюзия ≥35 % | цвет ±10 %, тени ≤+10 %, Σtris ±0.1 %, DC не растёт | агент T-CULL01/H4 | rebatch-тул + prefab-ассеты |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
 | 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
@@ -329,8 +331,40 @@ F8/F9 зелёный.
 | F8/F9 | API `no_rebase_plan`, реальный ввод не проверен | OPEN |
 | Визуал LOD/теней | глазами не принят | OPEN |
 
-**Главный вывод:** P1 принят; **P2 не закрыт**: при полном корабле на 200 м 1 538 вместо ≤1 300 (разрыв 238 DC / 18 %).
-По stop-условию **future scale-out (medium/light/NPC) не начинать**, пока P2 не закрыт.
+**Главный вывод Stage 3a:** P1 принят; **P2 тогда не был закрыт** (1 538 vs ≤1 300) — закрыт в Stage 3c.
+
+### 5.0.1. Stage 3c — P2 ЗАКРЫТ (conditional)
+
+**Код/замеры:** `e9fbe199` (ShipShadowBudget), `4a620f70` (T-LIGHT01 shadow config), `517f2f33` /
+`57342a7e` / `6365b098` / `4de67173` (итерации бюджета и бенча). Отчёт: `docs/dev/T-CULL01_STAGE3C_REPORT.md`,
+CSV `N_stage3c_heavy_2026-10-31.csv`, лог `N_stage3c_heavy_runtime_2026-10-31.txt`.
+
+| Точка | ship_dc | Гейт ≤1 300 |
+|---|---:|---|
+| d80 | 971 | — |
+| d120 | 815 | — |
+| **d200** | **1 170** | **PASS** (+130) |
+| **d200_repeat** | **1 161** | **PASS** (Δ 0.77 %) |
+| **d300** | **1 236** | **PASS** (+64, запас 4.9 %) |
+| d400 (LOD1) | 122 | — |
+| d1200 (LOD2) | 104 | — |
+
+**Механизм:** `ShipShadowBudget` (весь LODGroup, поштучно по дистанции; off >150 м, on <140 м) гасит
+тени статики корабля дальше 150 м. На 300 м `shadowVisible=47` — остаётся только интерактив вне LODGroup
+(двери/створки/ModuleSlot/двигатели/VFX). **Визуальная цена:** у корабля дальше ~150 м пропадает тень
+крупных частей; силуэт на земле исчезает. Это **осознанный компромисс**, требует визуального «да» пользователя.
+
+**T-LIGHT01 (не оптимизация, отдельный фикс):** тени переведены на `400 м / 4 каскада / soft on`
+(ближний тексель 3.7 см вместо 57.5 см). **Следствие:** Stage 0/2 и Stage 3a замеры при `1000/2`
+несравнимы с текущими; P1 6 094, heavy 1 538 — исторические. Текущий baseline надо перемерить
+(поручение Stage 3b/Stage 4).
+
+**Открыто:** визуальная приёмка теневого бюджета на 150–300 м и ночью; F8/F9 реальным вводом;
+medium/light не покрыты; старый P1 baseline не перемерен.
+
+**Вердикт:** Stage 3c — **conditional pass**; P2 закрыт замером, future scale-out разблокирован
+**только после визуального sign-off**. Brief Stage 3b:
+[`T-CULL01_STAGE3B_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE3B_AGENT_BRIEF.md).
 
 **R0.2 (ship placement / save):** корабль без пилота падает на `DECK` (ожидаемо) и стоит; но
 `ShipPositions.json` содержал позицию свободного падения и телепортировал корабль в пустоту (−41 570 м).
@@ -344,23 +378,29 @@ F8/F9 зелёный.
 бюджет корабля, D) принять 1 538 только по решению пользователя. Рекомендация: A + визуал; если
 неприемлемо — B/C.
 
-### 5.1. Future scale-out — **не входит в Stage 3**
+### 5.1. Stage 3b — future scale-out medium/light (следующий шаг)
 
-Выполнять **только после закрытия P2 на HeavyII** (Stage 3c зелёный); это отдельный этап/тикет, когда
-пайплайн уже доказан. Никаких правок этих префабов в Stage 3/3c:
+**Brief:** [`T-CULL01_STAGE3B_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE3B_AGENT_BRIEF.md).
+Запускать **только после**: (1) P2 heavy закрыт замером — да; (2) **визуального sign-off** теневого
+бюджета heavy; (3) нового baseline при `shadowDistance=400/4` (старый P1 6 094 недействителен).
+Никаких правок heavy/NPC в Stage 3b:
 
 | Объект | MR / slots | Что предстоит | Условие запуска |
 |---|---|---|---|
-| `Ship_medium_base` | 118 / 118 | тот же merger/LOD; сохранить `Ship_CargoMedium_Base` (80 MR) | пилот heavy зелёный; H1b для medium при необходимости |
-| `Ship_Light_root_fbx_test` | 428 / 428 | тот же merger/LOD; 25 материалов / 3 nested FBX | пилот heavy зелёный; H1b при необходимости |
-| 20 NPC-заглушек | 120 / 120 | **не клеить**; только LOD/импостор, если появятся реальные модели | отдельное решение |
+| `Ship_medium_base` | 118 / 118 | тот же merger/LOD; сохранить `Ship_CargoMedium_Base` (80 MR) | heavy зелёный + visual OK; H1b для medium при необходимости |
+| `Ship_Light_root_fbx_test` | 428 / 428 | тот же merger/LOD; 25 материалов / 3 nested FBX | heavy зелёный + visual OK; H1b при необходимости |
+| 20 NPC-заглушек | 120 / 120 | **не клеить**; только LOD/импостер, если появятся реальные модели | отдельное решение |
 
-**Целевые числа future scale-out:** все корабли 4 917 → **≤2 500 DC** (P1/P2); после P3 heavy —
-≤480 DC; NPC остаются 360 DC. Это **не gate Stage 3**, а цель следующего этапа.
+**Целевые числа Stage 3b:** heavy остаётся ~1 170/1 236 (не трогать); medium/light дают остаток;
+все корабли **≤2 500 DC** (P1/P2), после P3 heavy — ≤480; NPC остаются 360 DC.
+**Не входит:** heavy (уже сделан) и NPC.
 
 ---
 
 ## 6. Stage 4 — GRD + GPU occlusion (2–3 недели)
+
+> **Перед стартом:** перемерить baseline при текущих тенях `400 м / 4 каскада / soft on`;
+> старые P1 6 094 / heavy 1 538 — исторические (T-LIGHT01). Stage 3b может идти параллельно.
 
 **Цель:** выйти на 1 500–2 500 DC, включить Hi-Z.
 

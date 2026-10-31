@@ -74,6 +74,11 @@ namespace ProjectC.World
         private void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
+            // Только в Play Mode: Build()/UpdateShadows() переписывают СЕРИАЛИЗОВАННЫЙ
+            // Renderer.shadowCastingMode. В edit mode это записывает runtime-состояние
+            // в саму сцену (и попадает в сейв) — так в WorldScene_0_0 оказались
+            // 5 346 override'ов m_CastShadows: 0 после edit-mode пробы Stage 2.
+            if (!Application.isPlaying) return;
             Build();
         }
 
@@ -81,6 +86,28 @@ namespace ProjectC.World
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             RestoreCameras();
+            RestoreShadows();
+        }
+
+        /// <summary>
+        /// Возврат исходных режимов теней при выключении. Нужно потому, что сцена не
+        /// перезагружается на выходе из Play Mode (EnterPlayModeOptions): runtime-значения
+        /// shadowCastingMode остаются в объектах сцены и могут попасть в сейв.
+        /// </summary>
+        private void RestoreShadows()
+        {
+            for (int g = 0; g < _groups.Count; g++)
+            {
+                DoorGroup group = _groups[g];
+                if (group.root == null) continue;
+                for (int r = 0; r < group.renderers.Count; r++)
+                {
+                    var renderer = group.renderers[r];
+                    if (renderer == null) continue;
+                    renderer.shadowCastingMode = group.baseModes[r];
+                }
+                group.shadowsOn = true;
+            }
         }
 
         private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, LoadSceneMode mode)

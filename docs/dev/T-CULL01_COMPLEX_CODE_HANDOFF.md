@@ -274,24 +274,27 @@ P1/P2: greeble-мерж (973 → ~620 slot), затем LODGroup; P3 (позже
 - **Stage V — FAIL:** реальный `CityShadowBudget` дал **P1 2 811** (entries 1 301, ожидалось 1 482/2 423);
   gate 2 500 не взят. F8 PASS (256 м, 0 errors); F9 — rollback `restore=True`, но bench ждал frameGen
   и записал `FAILED_no_transaction` → критерий неверный. Отчёт: `T-CULL01_FINAL_VALIDATION_REPORT.md`.
-- **Stage 4c** — fix actual gate: [`T-CULL01_STAGE4C_AGENT_BRIEF.md`](T-CULL01_STAGE4C_AGENT_BRIEF.md)
-  (candidate parity, реальный P1 ≤2 500, F9, C3). После 4c — **утверждённые Stage 6 → 7**.
+- **Stage 4c — PASS:** причина 388 DC — `AtmosphereCamera` (origin, mask атмосферы) в union камер;
+  фикс камер → реальный **P1 2 394 DC** (корабли 2 406), повтор 0.0 %, F8/F9 PASS. Отчёт:
+  `T-CULL01_STAGE4C_REPORT.md`; **Stage 6 → 7 утверждены и следующие**.
 - Kill: нет Hybrid Batch Group / DC не падает / створки «плывут» → откат.
 
-### 6.6. H5c — actual CityShadowBudget gate + F9 (Stage 4c)
-- Диагностика: почему компонент собрал 1 301 вместо 1 482 (Off-фильтр, момент Build, камеры).
-- Цель: реальный P1 **≤2 500** (бенч 2 423), F8/F9 корректно, сцена чистая.
-- Бриф: `T-CULL01_STAGE4C_AGENT_BRIEF.md`; коммит `T-CULL01/H5c`.
+### 6.6. H5c — actual CityShadowBudget gate + F9 (Stage 4c) — ✅ PASS
+- Причина 2 811: `AtmosphereCamera` (origin, mask только атмосферы) удерживал тени 105 рендереров.
+- Фикс: камера участвует только если рисует слой мира и дотягивается до города; `RefreshCameras` в `Build()`.
+- **P1 2 394 / repeat 2 394 (0.0 %) / с кораблями 2 406**; F8/F9 PASS. Отчёт `T-CULL01_STAGE4C_REPORT.md`.
 
 ### 6.5. Stage 5 (B2) — ЗАКРЫТ
 Dry-run: B2 **увеличивает** hybridDC (330 против 160 пар на пилоте); условие окклюзии 0 %.
-**H4 не делать; Stage 5 закрыт.** Stage 6/7 — только при новой цели ниже 2 423.
+**H4 не делать; Stage 5 закрыт.** **Stage 6/7 — утверждены, не опциональны.**
 
 ---
 
 ## 7. H6 — `VisibilityDirector` (Stage 6, 3–4 недели) — ✅ УТВЕРЖДЁН
 
 > **Решение пользователя 01.11:** Stage 6 — фундамент будущего, **не опциональный**. Идёт после Stage 4c.
+> **Brief:** [`T-CULL01_STAGE6_AGENT_BRIEF.md`](T-CULL01_STAGE6_AGENT_BRIEF.md); текущий baseline
+> **P1 2 394 DC**, F8/F9 PASS; Stage 6 не должен ухудшить его.
 
 ### 7.1. Цель
 Тонкий слой поверх engine-куллинга: группы/ячейки, мультикамерный union, бюджеты теней, корабли,
@@ -313,8 +316,11 @@ Dry-run: B2 **увеличивает** hybridDC (330 против 160 пар н�
 6. Не трогать `DoorController`, коллайдеры, `PrimumLightPool`, сеть/физику/VFX.
 
 ### 7.3. Приёмка
-- culling ≤2 мс; −60…−80 % DC без окклюзии; нет артефактов; F8/F9; мультикамера не «держит» мир.
-- Kill: >0.7 мс на MVP / артефакты → урезать гранулярность (только двери/руины).
+- **Foundation:** мультикамерный union работает; группы/FO-safe; существующие бюджеты не дублируются;
+  нет артефактов; F8/F9 PASS.
+- **Performance:** culling ≤2 мс; DC не хуже **2 394**; измеримый выигрыш — фиксировать, но «−60…−80 %»
+  считать stretch-целью, не ломать визуал ради неё.
+- Kill: >0.7 мс на MVP / артефакты → урезать гранулярность (сначала двери/руины/интерьеры).
 
 ---
 

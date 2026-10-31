@@ -92,7 +92,7 @@ Stage 7  HLOD/L1 + L2-импостор / PVS (✅ утверждён)        —
 
 Stage 0–3 можно частично параллелить: Stage 1 не зависит от Stage 2; Stage 3 — после Stage 1.
 Stage 2b — после Stage 2 (тот же слой дверей). Stage 4 — после Stage 2 (нужны измерения и шиммер-настройки).
-Stage 5 — только после зелёного Stage 4. Stage 6/7 — по необходимости.
+Stage 5 — закрыт (B2 increases). **Stage 6 — после Stage 4c (утверждён), Stage 7 — после Stage 6 (утверждён).**
 
 ---
 
@@ -559,6 +559,9 @@ unique (mesh, material)-пар, поэтому B2 может **не уменьш
 
 **Решение пользователя 01.11:** Stage 6 и Stage 7 **нужны как фундамент будущего**, не опциональны.
 Stage 6 — первый после Stage 4c.
+
+> **Brief для агента:** [`T-CULL01_STAGE6_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE6_AGENT_BRIEF.md).
+> Текущий baseline: реальный P1 **2 394 DC** (4c), F8/F9 PASS; Stage 6 не должен ухудшить его.
 
 **Когда:** мультикамерный union/бюджеты/корабли/интерьеры; CPU-куллинг; запас под будущий контент.
 Также fallback, если GRD/тени не покроют новые сцены.

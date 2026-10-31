@@ -30,7 +30,7 @@
 | 1 | 🟡 partial pass (240/250, 9 doors inside; reimport OK) | Stage 0 | 250 боксов/9 дверей после reimport; 0 missing; scene-diff пуст | агент T-CULL01/H1 | prefab + `H1_prefab_repair.csv` |
 | 2 | 🟡 ready | Stage 0 + approval на слой | 27 131 → 5–9k DC; F8/F9; raycast/физика ок | агент T-CULL01/H3 | слой + `DoorVisibilityBudget`/`ShadowBudget` |
 | 2b | ⬜ planned | Stage 2 (слой) | −270 дверей ферм/≈−640 слотов; тени off | Lead/пользователь | настройки/слой |
-| 3 | ⬜ planned | Stage 1 + **R0.2** | корабли ≤2 500 DC (P1/P2); 973→~620; двери работают | агент T-CULL01/H2 | `.asset` + LODGroup |
+| 3 | 🟡 blocked: R0.2; pilot heavy | Stage 1 + R0.2 | пилот тяжёлого: 973→~620 slot; затем все базы ≤2 500 DC | агент T-CULL01/H2 | `.asset` + LODGroup |
 | 4 | ⬜ planned | Stage 2 | DC ≤2 500; Hybrid Batch Group; 0 shader errors; FO | агент T-CULL01/H5 | настройки + шейдеры |
 | 5 | ⬜ planned | Stage 4 зелёный + окклюзия ≥35 % | цвет ±10 %, тени ≤+10 %, Σtris ±0.1 %, DC не растёт | агент T-CULL01/H4 | rebatch-тул + prefab-ассеты |
 | 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
@@ -235,27 +235,51 @@ F8/F9 зелёный.
 
 ---
 
-## 5. Stage 3 — Корабли P1/P2: greeble-мерж + LOD (3–5 дней)
+## 5. Stage 3 — Корабли P1/P2: **пилот тяжёлого**, затем раскатка
 
-**Цель:** тяжёлый 973 MR → ~620 (P1), затем LOD; все корабли ~4 917 → ≤2 500 DC.
+**Цель:** сначала доказать мерж на **одном** тяжёлом `Ship_havyII_base`, потом раскатать на
+`Ship_medium_base` и `Ship_Light_root_fbx_test`; 20 NPC-заглушек **не трогать**. Все корабли в сцене —
+23 инстанса, но работа идёт по **3 prefab-ассетам**, не по инстансам.
+
+| Тип | Prefab | Инстансов в сцене | MR / slots | DC upper (3 прохода) | Что делаем |
+|---|---|---|---|---|---|
+| **HeavyII** | `Ship_havyII_base` | **1** | **973 / 973** | **2 919** | **пилот**: H2 P1/P2, затем P3 |
+| Light | `Ship_Light_root_fbx_test` | 1 | 428 / 428 | 1 284 | раскатка после пилота |
+| Medium | `Ship_medium_base` | 1 | 118 / 118 | 354 | раскатка, сохранить вложенный cargo (80 MR) |
+| NPC-заглушки | 20 префабов по 6 MR | 20 | 120 / 120 | 360 | **не клеить** (820 тр. каждый, 6 MR) |
+| **Всего** | | **23** | **1 639 / 1 639** | **4 917** | |
+
+**3a. Пилот heavy (главный шаг).**
+- Предусловие: **R0.2** — корабль стабилен и ship-baseline снят; сейчас он падает/уезжает.
+- H1 уже сделан для heavy (240/250 коллайдеров; 9 дверей/10 leaf — H1-R1).
+- P1: greeble-мерж (359 объектов) → **973 → ~620 slot**; P2: `LODGroup` (300/900/2500 м);
+  P3 — только после плана фрактуры → ~92 slot.
+- Gate: Frame Debugger на одном стабильном инстансе; двери/cargo/слоты целы; reimport не ломает;
+  heavy ≤~1 800 DC (P1) и ≤~1 300 (P2), визуал ок.
+- **Не раскатывать**, пока пилот не зелёный.
+
+**3b. Раскатка medium + light.**
+- Тот же `ShipVisualMerger`/LOD; для medium сохранить вложенный `Ship_CargoMedium_Base` (80 MR);
+  для light — 25 материалов/3 nested FBX.
+- H1 для light/medium отдельно не делался: их коллайдеры/двери проверить перед мержем
+  (H1b только если reimport реально ломает; не раньше пилота).
+- Gate: все 3 базовых prefab прошли; **DC кораблей ≤2 500** (P1/P2), NPC остаются 120 MR/360 DC;
+  после P3 heavy — **≤480 DC** на все корабли.
+
+**3c. P3 / фрактура — отдельно.**
+- Только heavy, 8 «ячеек разрушения» × материал → ~92 slot; каждый кусок — отдельный GameObject
+  с выпуклым коллайдером. Без входа геймдизайна по фрактуре **не начинать**.
 
 **Сложный код:** `T-CULL01 / H2` (`ShipVisualMerger` + LODGroup builder).
-**Файлы:**
-- Heavy prefab (abs), light/medium prefabs (abs), FBX heavy (936 объектов, 10 материалов корпуса;
-  в префабе **17 material assets** — группировать по ассету, не по имени).
-- Выход: `C:\Projects\ProjectC_client\Assets\_Project\Generated\Ships\<Class>_VIS_<Cell>_<Mat>.asset`
-  (новый каталог; `.asset` **в git**, prefab/FBX — Lore).
-- Референсы: `ShipPresetCreator.cs` (40, 526, 578–589), `CombineMeshesToCollider.cs`
-  (31, 65–183, 114, 172 — **не использовать как есть**: `convex=false` и один меш).
-- Нельзя клеить: 9 дверей, аппарель, `PilotSeat`, 11 `ModuleSlot`, `CargoVisual`,
-  `EngineThrusterVisual`/`ShipPartShake`, `ContrailVFX`, 250 коллайдеров, будущие фрактуры.
+**Файлы/референсы:** heavy/light/medium prefabs, `ShipPresetCreator.cs` (40, 526, 578–589),
+`CombineMeshesToCollider.cs` (31, 65–183, 114, 172 — **не как есть**: `convex=false`/один меш),
+данные `I_ships_*.csv`; выгрузка `.asset` в `Assets/_Project/Generated/Ships/**` (в git),
+prefab/FBX — Lore.
+**Нельзя клеить:** 9 дверей, аппарель, `PilotSeat`, 11 `ModuleSlot`, `CargoVisual`,
+`EngineThrusterVisual`/`ShipPartShake`, `ContrailVFX`, 250 коллайдеров, будущие фрактуры.
 
-**Действия:** P1 — только greeble (`Bolt_*`, `UnderHull_*`, `Interior_*`, `Contour_*`, `Mess_*`,
-`Det_*`: 359 объектов) в 10 сабмешей; P2 — `LODGroup` (300/900/2500 м), LOD1/LOD2.
-P3 (позже, отдельно) — «8 ячеек разрушения × материал» → ~92 slot.
-
-**Gate:** Frame Debugger на одном тяжёлом инстансе (40064, 2512, 39449); reimport не ломает;
-двери/слоты работают; FO/сеть ок; DC кораблей ≤2 500 (P1/P2).
+**Gate Stage 3:** пилот heavy зелёный → раскатка → DC кораблей ≤2 500 (P1/P2);
+после P3 — ≤480; FO/сеть/двери целы; reimport не ломает prefab.
 
 ---
 

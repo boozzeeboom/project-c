@@ -44,7 +44,8 @@
 | 5 | ⛔ closed by dry-run — **B2 не делать** | — | `B2_increases`: 330 батчей против 160 | — | — |
 | 6 | ✅ PASS — foundation + visual OK | Stage 4c | P1 2 378/2 372 (2 388–2 394 без), real 2 362; culling ≈1.3–1.7 мс; F8/F9 PASS | агент T-CULL01/H6 | `S_stage6_*`, `VisibilityDirector.cs`, `T-CULL01_STAGE6_REPORT.md` |
 | 7 | ✅ PASS — L1 46–48 / L2 2; visual OK | Stage 6 | честный L0 **2 341**; HLOD L1 46–48 DC, L2 2 DC; rebake deterministic; F8/F9 PASS | агент T-CULL01/H7 | `U_stage7_*`, `Generated/HLOD`, `T-CULL01_STAGE7_REPORT.md` |
-| 8 | ✅ PASS — P1 **2 229** (−112), двери >150 м = 0; visual за пользователем | Stage 7 | двери L0 режутся по дистанции через `forceRenderingOff`; L1 46 / L2 2 без ухудшения; F8/F9 PASS | агент T-CULL01/H8 | `V_stage8_*`, `VisibilityDirector`, `T-CULL01_STAGE8_REPORT.md` |
+| 8 | ✅ PASS — P1 **2 229** (−112), двери >150 м = 0; visual OK | Stage 7 | двери L0 режутся по дистанции через `forceRenderingOff`; L1 46 / L2 2 без ухудшения; F8/F9 PASS | агент T-CULL01/H8 | `V_stage8_*`, `VisibilityDirector`, `T-CULL01_STAGE8_REPORT.md` |
+| F | 🟡 final acceptance | Stage 8 | обычный запуск: P1 2 229 ±5 %, двери >150=0, L1 46/L2 2; runbook; закрытие T-CULL01 | агент T-CULL01/F | `T-CULL01_FINAL_ACCEPTANCE_REPORT.md` |
 
 Статусы обновлять здесь после каждого gate; коммит этапа — с префиксом `T-CULL01/<H>`.
 
@@ -637,7 +638,8 @@ Stage 6 — первый после Stage 4c.
 - Открыто: визуальная приёмка поп-ина 130–150 м; F9-флакиность прогона 1 (ввод, не куллинг); тик
   директора 0.90 мс (было 0.48) — при добавлении политик разнести на 2 кадра.
 
-Дальше — **финальная приёмка T-CULL01** (закрытие тикета).
+Дальше — **финальная приёмка T-CULL01** (закрытие тикета). Brief:
+[`T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md).
 
 ---
 

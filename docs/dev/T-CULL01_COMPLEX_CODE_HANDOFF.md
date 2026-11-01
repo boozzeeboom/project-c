@@ -384,6 +384,8 @@ L1 (3–12 км) — 1 меш на блок/квартал; L2 (12–80 км) �
   `10_CULLING_RESEARCH/08_DATA/V_stage8_2026-11-01.csv`. Commit `T-CULL01/H8`.
 - **Открыто:** визуальный sign-off pop-in в полосе 130–150 м (день/ночь, улица и полёт) — за
   пользователем; нестабильность F9 (run 1) отнесена к отдельному input/F9-тикету.
+- **Финальная приёмка:** [`T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md`](T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md)
+  — обычный запуск, defaults/bootstrap, runbook, закрытие T-CULL01.
 
 ---
 

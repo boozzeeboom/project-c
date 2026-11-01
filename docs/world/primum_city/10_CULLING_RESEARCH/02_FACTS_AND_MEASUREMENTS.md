@@ -5,9 +5,8 @@
 (`Library/PackageCache`), git, проектные документы. Все противоречия сведены в §11.
 
 > **Текущее состояние (01.11):** GRD + `CityShadowBudget` + `VisibilityDirector` + HLOD L1/L2.
-> **Честный L0 P1 = 2 341 DC**; L1 46–48 DC, L2 2 DC; F8/F9 PASS. **Stage 7 PASS.**
-> Открыто: L0-двери под GRD (`layerCullDistances` не работает; ~137 DC / ~1M тр) → **Stage 8**.
-> Числа ниже — исторические.
+> **L0 P1 = 2 229 DC**; двери >150 м = 0; L1 46 DC, L2 2 DC; F8/F9 PASS. **Stage 8 PASS.**
+> Следующий шаг — финальная приёмка T-CULL01. Числа ниже — исторические.
 
 > «Паспорт сцены»: числа, из которых считаются оценки в `03_MERGE_VS_INDEPENDENT.md`,
 > `04_ARCHITECTURE_OPTIONS.md`, `05_RECOMMENDED_ARCHITECTURE.md`.

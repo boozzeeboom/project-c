@@ -1,6 +1,10 @@
 # CHECKLISTS — быстрые чек-листы контента ×100
 
-Короткие рабочие списки. Полные правила и числа — в [`README.md`](README.md); доказательства — в `_evidence/`.
+Короткие рабочие списки. Полные правила — в модулях ([`SHIPS.md`](SHIPS.md), [`SETTLEMENTS.md`](SETTLEMENTS.md),
+[`LIGHTS.md`](LIGHTS.md), [`CITY_HLOD.md`](CITY_HLOD.md), [`COMMON.md`](COMMON.md)); доказательства — в `_evidence/`.
+
+**Пять решений 2026-11-01:** дома — блочной поставкой (префабов домов нет); HLOD — по факту наполнения (ряд/квартал готов);
+всё в `WorldScene_0_0`; канон масштаба **1.06**; фермы — все под `Primum_farms`, без отдельных слоёв; FBX вне git, префабы можно в git.
 
 ---
 
@@ -39,6 +43,7 @@
 
 **Масштаб:** 1 дом ≈3.4 DC · 5 домов ≈17 DC · 25 ≈85 DC · 250 ≈850 DC (43 % города). Кластер ≤150–200 DC (45–60 домов).
 
+- [ ] Родитель — `WorldRoot_0_0/Primum_farms/<имя>` (без отдельных слоёв по группам); FBX вне git, префаб можно в git.
 - [ ] Геометрия: join `(группа × материал)`, cap **60 000 верт./меш**, `mergeSubMeshes=false`, `RecalculateBounds()`; ≤8 материалов/юнит.
 - [ ] `Build Settlement Colliders…` (Dry Run → Build → Merge): `minWorldSize 0.25`, `minThickness 0.5`, `mergeGap 0.1`, `shipMode=false`.
   Коллайдеры — боксы в `<Root>_Colliders`, **не на узлах FBX**; `convex=true` на статике запрещён; ≈21 бокс/дом (≤30).
@@ -90,6 +95,6 @@
 - [ ] `T-CULL01 Acceptance → Probe`: свет-инварианты + двери (<130 м видны, >150 м = 0).
 - [ ] `Stage 8 Doors → Run Bench`: P1 **2 229 ±5 %**, L1 **46 ±5 %**, L2 **2**, двери >150 м = **0**, `hybridDC > 0`, `srpBatcherDC` мал, F8/F9 PASS.
 - [ ] Сцена не сохранена (`isDirty=false`), `git status` — только ожидаемые файлы; `git diff` просмотрен.
-- [ ] HLOD (если город) перепечён и закоммичен: `Generated/HLOD/**` + `.meta` + манифест.
+- [ ] HLOD перепечён **по факту наполнения** (готов ряд/квартал) и закоммичен: `Generated/HLOD/**` + `.meta` + манифест.
 - [ ] FO-каталог (если `NetworkObject`) пересчитан: Host стартует, `AuditGlobalSceneCatalog` без новых расхождений.
 - [ ] Отчёт/коммит с тикетом; **push не делать**.

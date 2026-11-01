@@ -10,7 +10,9 @@
 
 | Файл | Что внутри |
 |---|---|
-| [`MAIN_PIPELINE_MESH_SHIP_LIGHT/README.md`](MAIN_PIPELINE_MESH_SHIP_LIGHT/README.md) | главный документ: бюджеты, DC-формула, ownership, пайплайн ассета, мердж, материалы, корабли (S/M/L/XL), дома/фермы (5/250), свет, город/HLOD, приёмка, «что не цитировать» |
+| [`MAIN_PIPELINE_MESH_SHIP_LIGHT/README.md`](MAIN_PIPELINE_MESH_SHIP_LIGHT/README.md) | короткий роутер: куда идти, 5 зафиксированных решений, таблица бюджетов |
+| `…/COMMON.md` | общее: бюджеты, DC-формула, ownership, 12 правил, пайплайн Blender→Unity, мердж, материалы, приёмка, «что не цитировать» |
+| `…/SHIPS.md` · `…/SETTLEMENTS.md` · `…/LIGHTS.md` · `…/CITY_HLOD.md` | модули: корабли / дома-фермы / свет / город-HLOD |
 | [`MAIN_PIPELINE_MESH_SHIP_LIGHT/CHECKLISTS.md`](MAIN_PIPELINE_MESH_SHIP_LIGHT/CHECKLISTS.md) | короткие чек-листы: общее / корабль / дом-ферма / свет / город-HLOD / регресс |
 | `MAIN_PIPELINE_MESH_SHIP_LIGHT/_evidence/` | доказательная база: аудит 85 утверждений Stage 0–8 + свет, флот, дома/фермы, город/HLOD, свет, материалы/DC, Blender→Unity |
 

@@ -4,9 +4,9 @@
 **Источники:** живая сцена (Unity MCP read-only), YAML/префабы (парсинг), исходники URP 17.5
 (`Library/PackageCache`), git, проектные документы. Все противоречия сведены в §11.
 
-> **Текущее состояние (01.11):** GRD включён (`BrgStripping=2`, mode=1), `CityShadowBudget` 200 м,
-> тени 400/4/soft, `VisibilityDirector` Stage 6. **Реальный P1 = 2 378/2 372 DC** (реальная игра 2 362)
-> после 4c+6; culling ≈1.3–1.7 мс; F8/F9 PASS. B2 закрыт. **Stage 7 (HLOD/L1/L2) — следующий.**
+> **Текущее состояние (01.11):** GRD + `CityShadowBudget` + `VisibilityDirector` + HLOD L1/L2.
+> **Честный L0 P1 = 2 341 DC**; L1 46–48 DC, L2 2 DC; F8/F9 PASS. **Stage 7 PASS.**
+> Открыто: L0-двери под GRD (`layerCullDistances` не работает; ~137 DC / ~1M тр) → **Stage 8**.
 > Числа ниже — исторические.
 
 > «Паспорт сцены»: числа, из которых считаются оценки в `03_MERGE_VS_INDEPENDENT.md`,

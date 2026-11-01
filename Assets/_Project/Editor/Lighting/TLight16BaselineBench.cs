@@ -79,11 +79,14 @@ namespace ProjectC.EditorTools
         private const string AbortMenuL2B = "Project C/Lighting/T-LIGHT17b ALIC/Abort";
         private const string RunMenuL3 = "Project C/Lighting/T-LIGHT18 focus/Run";
         private const string AbortMenuL3 = "Project C/Lighting/T-LIGHT18 focus/Abort";
+        private const string RunMenuL4 = "Project C/Lighting/T-LIGHT19 cone/Run";
+        private const string AbortMenuL4 = "Project C/Lighting/T-LIGHT19 cone/Abort";
 
-        private enum RunMode { Baseline, L2, L2B, L3 }
+        private enum RunMode { Baseline, L2, L2B, L3, L4 }
 
-        /// <summary>Префикс логов/ошибок: в режимах L2/L2b/L3 не выдаём их за L1.</summary>
+        /// <summary>Префикс логов/ошибок: в режимах L2/L2b/L3/L4 не выдаём их за L1.</summary>
         private static string Tag =>
+            _mode == RunMode.L4 ? "[T-LIGHT19]" :
             _mode == RunMode.L3 ? "[T-LIGHT18]" :
             _mode == RunMode.L2B ? "[T-LIGHT17b]" : _mode == RunMode.L2 ? "[T-LIGHT17]" : "[T-LIGHT16]";
 
@@ -109,6 +112,12 @@ namespace ProjectC.EditorTools
         private const float FocusMoveThresholdM = 2f;
         private const float FocusRotateThresholdDeg = 3f;
         private const float FocusMinIntervalSec = 0.1f;
+
+        /// <summary>T-LIGHT19: конфиг веера, который бенч задаёт явно (должен совпадать с дефолтами пула).</summary>
+        private const float ConeMarginDeg = 6f;
+        private const float ConePreActivationDeg = 5f;
+        private const float ConeRearMeters = 28f;
+        private const float ConePenaltyPerDeg = 1.2f;
 
         private const double HostTimeoutSeconds = 120.0;
         private const double RigTimeoutSeconds = 300.0;
@@ -149,6 +158,13 @@ namespace ProjectC.EditorTools
             // T-LIGHT18: режим фокуса/камер в кейсе (true = кэш+фильтры+триггер L3, false = контроль до L3).
             public bool cfgCameraFilters = true;
             public bool cfgAdaptive = true;
+
+            // T-LIGHT19: режим веера в кейсе (true = конус/веер L4, false = контроль L2/L3 по дистанции).
+            public bool cfgCone = true;
+            public float cfgConeMargin = ConeMarginDeg;
+            public float cfgConeRear = ConeRearMeters;
+            public float cfgConePenalty = ConePenaltyPerDeg;
+            public float cfgConePre = ConePreActivationDeg;
         }
 
         // ------------------------------------------------------------------ состояние
@@ -262,6 +278,27 @@ namespace ProjectC.EditorTools
         private static int _cFocusVersion;
         private static int _cFocusAdaptive;
 
+        // T-LIGHT19: проба веера (180° и 90°) и счётчики конуса/тыла.
+        private static int _coneBaseActive;
+        private static int _coneBaseInFrustum;
+        private static int _coneBaseBehind;
+        private static int _coneTurnFrames = -1;
+        private static double _coneTurnSec = -1.0;
+        private static bool _coneTurnSetChanged;
+        private static int _coneTurnInFrustum = -1;
+        private static int _coneTurnBehind = -1;
+        private static int _coneTurnBehindOutsideRear = -1;
+        private static int _coneTurnActive = -1;
+        private static int _cone90Frames = -1;
+        private static int _cone90InFrustum = -1;
+        private static bool _coneProbeTimeout;
+        private static int _cConeCand;
+        private static int _cRearCand;
+        private static int _cBehindOutsideRear;
+        private static float _cConeHalfH;
+        private static float _cConeHalfV;
+        private static float _cRearRadius;
+
         private static Vector3 _targetPos;
         private static Quaternion _targetRot;
         private static int _settleUntilFrame;
@@ -344,10 +381,17 @@ namespace ProjectC.EditorTools
             StartRun(RunMode.L3);
         }
 
+        [MenuItem(RunMenuL4)]
+        public static void RunL4()
+        {
+            StartRun(RunMode.L4);
+        }
+
         [MenuItem(AbortMenu)]
         [MenuItem(AbortMenuL2)]
         [MenuItem(AbortMenuL2B)]
         [MenuItem(AbortMenuL3)]
+        [MenuItem(AbortMenuL4)]
         public static void Abort()
         {
             Finish("ABORTED_BY_USER", false);
@@ -368,14 +412,16 @@ namespace ProjectC.EditorTools
             if (!Directory.Exists(_csvDirFull)) Directory.CreateDirectory(_csvDirFull);
             string rawDir = Path.Combine(projectRoot, _mode == RunMode.L2 ? "Temp/T-LIGHT17" :
                                                     _mode == RunMode.L2B ? "Temp/T-LIGHT17B" :
-                                                    _mode == RunMode.L3 ? "Temp/T-LIGHT18" : RawDir);
+                                                    _mode == RunMode.L3 ? "Temp/T-LIGHT18" :
+                                                    _mode == RunMode.L4 ? "Temp/T-LIGHT19" : RawDir);
             if (!Directory.Exists(rawDir)) Directory.CreateDirectory(rawDir);
 
             _runTag = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
             _cases = BuildCases();
             string prefix = _mode == RunMode.L2 ? "T-LIGHT17" :
                             _mode == RunMode.L2B ? "T-LIGHT17B" :
-                            _mode == RunMode.L3 ? "T-LIGHT18" : "T-LIGHT16_BASELINE";
+                            _mode == RunMode.L3 ? "T-LIGHT18" :
+                            _mode == RunMode.L4 ? "T-LIGHT19" : "T-LIGHT16_BASELINE";
             _outRawPath = Path.Combine(rawDir, prefix + "_" + DateTag + "_raw.txt");
             _outCsvPath = Path.Combine(_csvDirFull, prefix + "_" + DateTag + ".csv");
             if (File.Exists(_outRawPath)) File.Delete(_outRawPath);
@@ -411,7 +457,8 @@ namespace ProjectC.EditorTools
             Append("NOTE;bench=TLight16BaselineBench;mode=" + _mode + ";unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart +
-                   ";headNote=" + (_mode == RunMode.L3 ? "focus_camera_cache_filters_adaptive_ab"
+                   ";headNote=" + (_mode == RunMode.L4 ? "cone_fan_ab_rear_preactivation_score"
+                                 : _mode == RunMode.L3 ? "focus_camera_cache_filters_adaptive_ab"
                                  : _mode == RunMode.L2B ? "alic_active_set_ab"
                                  : _mode == RunMode.L2 ? "l2_day_gate_split_radius_ab"
                                  : "baseline_instrumentation_only"));
@@ -422,7 +469,9 @@ namespace ProjectC.EditorTools
                    ";samples=" + SampleCount + "x gap " + SampleGapFrames +
                    "fr;metric=UnityStats median;far=" + BenchFar.ToString("F0", CultureInfo.InvariantCulture) +
                    ";fov=" + BenchFov.ToString("F0", CultureInfo.InvariantCulture) + ";near=0.1");
-            Append(_mode == RunMode.L3
+            Append(_mode == RunMode.L4
+                ? "NOTE;behaviour_changed=candidate_selection_by_camera_direction_only;light_policy_unchanged(dayGate/split/radius/cap/enabled/intensity);scene_saved=no;push=no"
+                : _mode == RunMode.L3
                 ? "NOTE;behaviour_changed=focus_cache_filters_adaptive_only;light_policy_unchanged(dayGate/split/radius/enabled/intensity);scene_saved=no;push=no"
                 : _mode == RunMode.L2B
                 ? "NOTE;behaviour_changed=alic_active_set_only;curves_groups_overrides_flicker_unchanged;pool_policy_unchanged;scene_saved=no;push=no"
@@ -444,6 +493,7 @@ namespace ProjectC.EditorTools
             if (_mode == RunMode.L2) return BuildCasesL2();
             if (_mode == RunMode.L2B) return BuildCasesL2B();
             if (_mode == RunMode.L3) return BuildCasesL3();
+            if (_mode == RunMode.L4) return BuildCasesL4();
 
             // Координаты P1/STREET — те же, что в бенче Stage 8 (P1 2 229 DC при hour 12):
             // нужны для контрольного сравнения, что инструментация не изменила поведение.
@@ -520,6 +570,71 @@ namespace ProjectC.EditorTools
 
             Add("FARM", "farm", Vector3.zero, 0f, 18f, false, "control_farm");
             Add("FARM", "farm", Vector3.zero, 0f, 18f, true, "l3_farm");
+
+            return list;
+        }
+
+        /// <summary>
+        /// T-LIGHT19: A/B веера. Каждая точка × час повторяется в двух режимах — coneOff (контроль =
+        /// принятые L2+L3: только дистанция) и coneOn (веер из fieldOfView + R_rear + score).
+        /// Конфиг пула и камер закреплён за принятыми L2/L3, меняется только угловая логика.
+        /// Кейсы сгруппированы по часу: смена часа стоит 200 кадров успокоения.
+        /// </summary>
+        private static List<LightCase> BuildCasesL4()
+        {
+            var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
+            var street = new Vector3(-382.90f, -58.23f, -126.20f);
+
+            var list = new List<LightCase>();
+
+            void Add(string point, string poseKind, Vector3 local, float yaw, float hour, bool cone, string note)
+            {
+                string cfg = cone ? "coneOn" : "coneOff";
+                list.Add(new LightCase
+                {
+                    id = point + "_h" + hour.ToString("F0", CultureInfo.InvariantCulture) + "_" + cfg,
+                    point = point,
+                    poseKind = poseKind,
+                    local = local,
+                    yaw = yaw,
+                    hour = hour,
+                    note = note,
+                    cfgTag = cfg,
+                    // Принятый L2-конфиг пула — между кейсами не меняется.
+                    cfgDayGate = true,
+                    cfgSplit = true,
+                    cfgOutMin = 40,
+                    cfgUseL2 = true,
+                    cfgRadius = 100f,
+                    // Принятый L3-конфиг камер — не предмет этого A/B.
+                    cfgCameraFilters = true,
+                    cfgAdaptive = true,
+                    // Предмет замера.
+                    cfgCone = cone,
+                    cfgConeMargin = ConeMarginDeg,
+                    cfgConeRear = ConeRearMeters,
+                    cfgConePenalty = ConePenaltyPerDeg,
+                    cfgConePre = ConePreActivationDeg,
+                });
+            }
+
+            // P1 — точка жалобы: 12 ч (день, dayGate + activeInFrustum) и 18 ч (окно 17–20).
+            Add("P1", "local", p1, 337.5f, 12f, false, "control_l2_l3_distance_only_day");
+            Add("P1", "local", p1, 337.5f, 12f, true, "l4_cone_day");
+            Add("P1", "local", p1, 337.5f, 18f, false, "control_l2_l3_distance_only_evening");
+            Add("P1", "local", p1, 337.5f, 18f, true, "l4_cone_evening");
+
+            Add("STREET", "local", street, 225f, 18f, false, "control_street");
+            Add("STREET", "local", street, 225f, 18f, true, "l4_street");
+
+            Add("ADMIN", "admin", Vector3.zero, 0f, 18f, false, "control_interior");
+            Add("ADMIN", "admin", Vector3.zero, 0f, 18f, true, "l4_interior");
+
+            Add("FARM", "farm", Vector3.zero, 0f, 18f, false, "control_farm");
+            Add("FARM", "farm", Vector3.zero, 0f, 18f, true, "l4_farm");
+
+            Add("P1", "local", p1, 337.5f, 20f, false, "control_night_full_brightness");
+            Add("P1", "local", p1, 337.5f, 20f, true, "l4_cone_night");
 
             return list;
         }
@@ -1006,6 +1121,21 @@ namespace ProjectC.EditorTools
             _probeTurnTimeout = false;
             _probeTurnSetChanged = false;
 
+            // T-LIGHT19: проба веера перезапускается на каждом кейсе.
+            _coneTurnFrames = -1;
+            _coneTurnSec = -1.0;
+            _coneTurnSetChanged = false;
+            _coneTurnInFrustum = -1;
+            _coneTurnBehind = -1;
+            _coneTurnBehindOutsideRear = -1;
+            _coneTurnActive = -1;
+            _cone90Frames = -1;
+            _cone90InFrustum = -1;
+            _coneProbeTimeout = false;
+            _coneBaseActive = 0;
+            _coneBaseInFrustum = 0;
+            _coneBaseBehind = 0;
+
             _checkMsFrames.Clear();
             _focusMsFrames.Clear();
             _alicMsFrames.Clear();
@@ -1033,11 +1163,18 @@ namespace ProjectC.EditorTools
             }
 
             // T-LIGHT18: режим фокуса/камер — тоже только поля компонента в памяти.
-            if (_mode == RunMode.L3 && _pool != null)
+            if ((_mode == RunMode.L3 || _mode == RunMode.L4) && _pool != null)
             {
                 _pool.ApplyCameraConfig(c.cfgCameraFilters, c.cfgAdaptive,
                                         FocusMoveThresholdM, FocusRotateThresholdDeg, FocusMinIntervalSec);
                 Append("CONFIG;case=" + c.id + ";" + _pool.CameraConfigLine);
+            }
+
+            // T-LIGHT19: режим веера — тоже только поля компонента в памяти.
+            if (_mode == RunMode.L4 && _pool != null)
+            {
+                _pool.ApplyConeConfig(c.cfgCone, c.cfgConeMargin, c.cfgConeRear, c.cfgConePenalty, c.cfgConePre);
+                Append("CONFIG;case=" + c.id + ";" + _pool.ConeConfigLine);
             }
 
             _dc.Clear(); _spc.Clear(); _tris.Clear(); _ms.Clear();
@@ -1192,6 +1329,7 @@ namespace ProjectC.EditorTools
             var c = _cases[_caseIndex];
             ApplyPose(c);
             ApplyProbePose();
+            ApplyConeProbePose();
             SampleProfilers();
 
             // Кадр, в котором камера уже развёрнута на 180° — от него считается задержка реакции.
@@ -1223,6 +1361,12 @@ namespace ProjectC.EditorTools
             if (_mode == RunMode.L3 && _probePhase < 3)
             {
                 if (StepFocusProbe(c)) return;
+            }
+
+            // T-LIGHT19: проба веера — разворот 180° (фазы 0–2) и 90° (3–4), затем возврат позы.
+            if (_mode == RunMode.L4 && _probePhase < 6)
+            {
+                if (StepConeProbe(c)) return;
             }
 
             // реакция на разворот: ждём смены набора пула
@@ -1368,6 +1512,169 @@ namespace ProjectC.EditorTools
             else if (_probePhase == 2) SetProbePose(true);
         }
 
+        // ------------------------------------------------- T-LIGHT19: проба веера
+
+        /// <summary>
+        /// T-LIGHT19: проба веера. Фазы: 0 — разворот на 180° от базовой позы; 1 — ожидание смены набора
+        /// (setVersion); 2 — успокоение и census после разворота (inFrustum/behind/behindOutsideRear),
+        /// затем разворот на 90°; 3 — ожидание смены набора; 4 — census после 90° и возврат базовой позы;
+        /// 5 — успокоение перед сэмплированием DC. Возвращает true, пока проба идёт.
+        /// </summary>
+        private static bool StepConeProbe(LightCase c)
+        {
+            if (_pool == null || _cam == null) { _probePhase = 6; return false; }
+
+            switch (_probePhase)
+            {
+                case 0:
+                    _probeBasePos = _cam.transform.position;
+                    _probeBaseRot = _cam.transform.rotation;
+                    _coneBaseActive = _cActiveTotal;
+                    _coneBaseBehind = _cBehindActive;
+                    _coneBaseInFrustum = _cInFrustumActive;
+                    _probeSetVersionBefore = _pool.SetVersion;
+                    _probeFrame = Time.frameCount;
+                    _probeStartTime = Now;
+                    _probePhase = 1;
+                    TurnProbePose(180f);
+                    Append("CONEPROBE;case=" + c.id + ";phase=turn180;frame=" + _probeFrame +
+                           ";setVersion=" + _probeSetVersionBefore +
+                           ";baseActive=" + _coneBaseActive + ";baseInFrustum=" + _coneBaseInFrustum +
+                           ";baseBehind=" + _coneBaseBehind + ";" + _pool.ConeConfigLine);
+                    return true;
+
+                case 1:
+                    if (_pool.SetVersion != _probeSetVersionBefore)
+                    {
+                        _coneTurnFrames = Time.frameCount - _probeFrame;
+                        _coneTurnSec = Now - _probeStartTime;
+                        _coneTurnSetChanged = true;
+                        Append("CONEPROBE;case=" + c.id + ";phase=turn180_reacted;frames=" + _coneTurnFrames +
+                               ";sec=" + _coneTurnSec.ToString("F3", CultureInfo.InvariantCulture) +
+                               ";setVersion=" + _pool.SetVersion +
+                               ";poolCheckMs=" + _pool.LastCheckMs.ToString("F3", CultureInfo.InvariantCulture));
+                    }
+                    else if (Time.frameCount - _probeFrame > ProbeTimeoutFrames)
+                    {
+                        _coneTurnSetChanged = false;
+                        _coneProbeTimeout = true;
+                        Append("CONEPROBE;case=" + c.id + ";phase=turn180_timeout;frames=" +
+                               (Time.frameCount - _probeFrame) + ";" + _pool.ConeConfigLine);
+                    }
+                    else return true;
+                    _probeFrame = Time.frameCount;
+                    _probePhase = 2;
+                    return true;
+
+                case 2:
+                    if (Time.frameCount - _probeFrame < ProbeSettleFrames) return true;
+                    _coneTurnInFrustum = FrustumCensus();
+                    BehindCensus(out _coneTurnBehind, out _coneTurnBehindOutsideRear);
+                    _coneTurnActive = _pool.ActiveCount;
+                    Append("CONEPROBE;case=" + c.id + ";phase=turn180_settled;inFrustum=" + _coneTurnInFrustum +
+                           ";behind=" + _coneTurnBehind + ";behindOutsideRear=" + _coneTurnBehindOutsideRear +
+                           ";active=" + _coneTurnActive +
+                           ";coneCand=" + _pool.ConeCandidates + ";rearCand=" + _pool.RearCandidates +
+                           ";poolBehindOutsideRear=" + _pool.ActiveBehindOutsideRear);
+                    TurnProbePose(90f);
+                    _probeSetVersionBefore = _pool.SetVersion;
+                    _probeFrame = Time.frameCount;
+                    _probePhase = 3;
+                    return true;
+
+                case 3:
+                    if (_pool.SetVersion != _probeSetVersionBefore)
+                    {
+                        _cone90Frames = Time.frameCount - _probeFrame;
+                        Append("CONEPROBE;case=" + c.id + ";phase=turn90_reacted;frames=" + _cone90Frames);
+                    }
+                    else if (Time.frameCount - _probeFrame > ProbeTimeoutFrames)
+                    {
+                        _coneProbeTimeout = true;
+                        Append("CONEPROBE;case=" + c.id + ";phase=turn90_timeout;frames=" +
+                               (Time.frameCount - _probeFrame));
+                    }
+                    else return true;
+                    _probeFrame = Time.frameCount;
+                    _probePhase = 4;
+                    return true;
+
+                case 4:
+                    if (Time.frameCount - _probeFrame < ProbeSettleFrames) return true;
+                    _cone90InFrustum = FrustumCensus();
+                    Append("CONEPROBE;case=" + c.id + ";phase=turn90_settled;inFrustum=" + _cone90InFrustum +
+                           ";active=" + _pool.ActiveCount);
+                    if (_cam != null) _cam.transform.SetPositionAndRotation(_probeBasePos, _probeBaseRot);
+                    _probeFrame = Time.frameCount;
+                    _probePhase = 5;
+                    return true;
+
+                case 5:
+                    if (Time.frameCount - _probeFrame < ProbeSettleFrames) return true;
+                    _probePhase = 6;
+                    _nextSampleFrame = Time.frameCount + ProbeSettleFrames;
+                    return false;
+            }
+
+            _probePhase = 6;
+            return false;
+        }
+
+        /// <summary>T-LIGHT19: поза пробы — базовая позиция с поворотом на yawDeltaDeg.</summary>
+        private static void TurnProbePose(float yawDeltaDeg)
+        {
+            if (_cam == null) return;
+            _cam.transform.SetPositionAndRotation(_probeBasePos,
+                _probeBaseRot * Quaternion.Euler(0f, yawDeltaDeg, 0f));
+        }
+
+        /// <summary>
+        /// T-LIGHT19: каждый кадр восстанавливает позу текущей фазы пробы (ApplyPose сбрасывает камеру
+        /// в базовую). Вне режима L4 и вне пробы ничего не делает.
+        /// </summary>
+        private static void ApplyConeProbePose()
+        {
+            if (_mode != RunMode.L4 || _cam == null) return;
+            switch (_probePhase)
+            {
+                case 1:
+                case 2: TurnProbePose(180f); break;
+                case 3:
+                case 4: TurnProbePose(90f); break;
+                case 5: _cam.transform.SetPositionAndRotation(_probeBasePos, _probeBaseRot); break;
+            }
+        }
+
+        /// <summary>
+        /// T-LIGHT19: сколько активных ламп за спиной камеры и сколько из них вне тылового радиуса пула.
+        /// Только чтение; позиции берутся живьём (FO-safe).
+        /// </summary>
+        private static void BehindCensus(out int behind, out int behindOutsideRear)
+        {
+            behind = -1;
+            behindOutsideRear = -1;
+            if (_pool == null || _cam == null) return;
+
+            Vector3 camPos = _cam.transform.position;
+            Vector3 fwd = _cam.transform.forward;
+            float rear = _pool.RearRadius;
+            float rearSqr = rear * rear;
+
+            behind = 0;
+            behindOutsideRear = 0;
+            _pool.CopyRegisteredLights(_lightScratch);
+            for (int i = 0; i < _lightScratch.Count; i++)
+            {
+                var l = _lightScratch[i];
+                if (l == null || !l.enabled) continue;
+                Vector3 p = l.transform.position;
+                float dx = p.x - camPos.x, dy = p.y - camPos.y, dz = p.z - camPos.z;
+                if (dx * fwd.x + dy * fwd.y + dz * fwd.z > 0f) continue;
+                behind++;
+                if (dx * dx + dy * dy + dz * dz > rearSqr) behindOutsideRear++;
+            }
+        }
+
         /// <summary>Сколько активных ламп попадает во фрустум текущей камеры (читает пул, ничего не меняет).</summary>
         private static int FrustumCensus()
         {
@@ -1506,6 +1813,13 @@ namespace ProjectC.EditorTools
             _cQuotaDeferred = _pool.KindQuotaDeferred;
             _cQuotaFilled = _pool.KindQuotaFilled;
             _cOutMinUsed = _pool.OutdoorMinSlotsUsed;
+            // T-LIGHT19
+            _cConeCand = _pool.ConeCandidates;
+            _cRearCand = _pool.RearCandidates;
+            _cBehindOutsideRear = _pool.ActiveBehindOutsideRear;
+            _cConeHalfH = _pool.ConeHalfHDeg;
+            _cConeHalfV = _pool.ConeHalfVDeg;
+            _cRearRadius = _pool.RearRadius;
 
             // В Unity 6 VisibleLight выдаёт только CullingResults внутри render-pass, у Camera
             // такого API нет — пишем -1 и отмечаем в raw, чтобы не выдавать пустое значение за 0.
@@ -1649,6 +1963,27 @@ namespace ProjectC.EditorTools
                   .Append(";probeTurnSetChanged=").Append(_probeTurnSetChanged)
                   .Append(";probeTimeout=").Append(_probeTimeout || _probeTurnTimeout);
             }
+            if (_mode == RunMode.L4)
+            {
+                sb.Append(";coneEnabled=").Append(c.cfgCone ? "on" : "off")
+                  .Append(";coneHalfH=").Append(_cConeHalfH.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(";coneHalfV=").Append(_cConeHalfV.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(";rearRadius=").Append(_cRearRadius.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(";coneCand=").Append(_cConeCand)
+                  .Append(";rearCand=").Append(_cRearCand)
+                  .Append(";activeBehindOutsideRear=").Append(_cBehindOutsideRear)
+                  .Append(";coneBaseInFrustum=").Append(_coneBaseInFrustum)
+                  .Append(";coneTurnFrames=").Append(_coneTurnFrames)
+                  .Append(";coneTurnSec=").Append(_coneTurnSec.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(";coneTurnSetChanged=").Append(_coneTurnSetChanged)
+                  .Append(";coneTurnInFrustum=").Append(_coneTurnInFrustum)
+                  .Append(";coneTurnBehind=").Append(_coneTurnBehind)
+                  .Append(";coneTurnBehindOutsideRear=").Append(_coneTurnBehindOutsideRear)
+                  .Append(";coneTurnActive=").Append(_coneTurnActive)
+                  .Append(";cone90Frames=").Append(_cone90Frames)
+                  .Append(";cone90InFrustum=").Append(_cone90InFrustum)
+                  .Append(";coneProbeTimeout=").Append(_coneProbeTimeout);
+            }
             if (_mode == RunMode.L2)
             {
                 sb.Append(";cfg=").Append(c.cfgTag)
@@ -1704,6 +2039,12 @@ namespace ProjectC.EditorTools
                                     "probeReactionFrames,probeReactionSec,probeTurnFrames,probeTurnSec," +
                                     "probeTurnSetChanged,probeTimeout"
                                   : string.Empty) +
+                              (_mode == RunMode.L4
+                                  ? ",coneEnabled,coneHalfH,coneHalfV,rearRadius,coneCand,rearCand," +
+                                    "activeBehindOutsideRear,coneBaseInFrustum,coneTurnFrames,coneTurnSec," +
+                                    "coneTurnSetChanged,coneTurnInFrustum,coneTurnBehind,coneTurnBehindOutsideRear," +
+                                    "coneTurnActive,cone90Frames,cone90InFrustum,coneProbeTimeout"
+                                  : string.Empty) +
                               (_mode == RunMode.L2B
                                   ? ",alicActiveSet,alicSetSize,alicWritesAvg,alicActiveWritesAvg,alicIteratedAvg,alicBaseSweepFrames"
                                   : string.Empty) +
@@ -1757,6 +2098,27 @@ namespace ProjectC.EditorTools
                   .Append(',').Append(_probeTurnSeconds.ToString("F3", CultureInfo.InvariantCulture))
                   .Append(',').Append(_probeTurnSetChanged ? 1 : 0)
                   .Append(',').Append((_probeTimeout || _probeTurnTimeout) ? 1 : 0);
+            }
+            if (_mode == RunMode.L4)
+            {
+                sb.Append(',').Append(c.cfgCone ? 1 : 0)
+                  .Append(',').Append(_cConeHalfH.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_cConeHalfV.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_cRearRadius.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_cConeCand)
+                  .Append(',').Append(_cRearCand)
+                  .Append(',').Append(_cBehindOutsideRear)
+                  .Append(',').Append(_coneBaseInFrustum)
+                  .Append(',').Append(_coneTurnFrames)
+                  .Append(',').Append(_coneTurnSec.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_coneTurnSetChanged ? 1 : 0)
+                  .Append(',').Append(_coneTurnInFrustum)
+                  .Append(',').Append(_coneTurnBehind)
+                  .Append(',').Append(_coneTurnBehindOutsideRear)
+                  .Append(',').Append(_coneTurnActive)
+                  .Append(',').Append(_cone90Frames)
+                  .Append(',').Append(_cone90InFrustum)
+                  .Append(',').Append(_coneProbeTimeout ? 1 : 0);
             }
             if (_mode == RunMode.L2B)
             {

@@ -5,7 +5,8 @@
 **Статус:** ресерч проверен (3 независимых прохода); обязательные корректировки внесены.
 **L1/T-LIGHT16 — PASS**; **L2/T-LIGHT17 — PASS**; **L2b/T-LIGHT17b — PASS** (ALIC 6.81 → 0.16 мс/кадр, −97.6 %);
 **L3/T-LIGHT18 — PASS** (фокус-камера `ThirdPersonCamera_0` в игре 11/11, реакция 1–4 кадра вместо 5–10).
-Следующий — **L4/T-LIGHT19 (конус/веер)**.
+**L4/T-LIGHT19 — PASS** (веер: разворот 180° меняет набор 6/6, `activeBehindOutsideRear` 26–77 → 0–1, доля активных в кадре ×1.1…×5.5, DC без изменений).
+Следующий — **L5/T-LIGHT20 (тюнинг)**.
 **Важно:** T-LIGHT24/25 **удалены**. Финал T-CULL01 — после закрытия светового трека.
 
 ---
@@ -154,6 +155,29 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
   (веер из `fieldOfView`/аспекта, `R_rear` 25–30 м, `score = d + штраф за угол`, гистерезис по углу и радиусу,
   pre-activation; `probeTurnSetChanged` должен стать 1, `activeInFrustum` ≥ 2× контроля).
 
+### 1.4. Результат L4 (T-LIGHT19, 2026-11-01) — PASS
+
+Отчёт: [`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md); CSV: `T-LIGHT19_2026-11-01.csv` (12 кейсов A/B).
+Сцена не сохранялась, `maxActive` 96 и политика `dayGate`/`split`/`radius` без изменений;
+`Light.intensity` по-прежнему не пишется пулом.
+
+| Рычаг | Числа |
+|---|---|
+| веер из FOV (`halfH=50.46`, `halfV=35.00` при fov 60) + `R_rear 28` + score `d + 1.2·угол` | отбор кандидатов по направлению камеры; `false` = точный контроль L2+L3 |
+| разворот 180° | `coneTurnSetChanged` **0/6 → 1/6** (реакция 1–4 кадра, 0.027–0.120 с); `SetVersion` растёт на каждом развороте |
+| «горит за спиной» | `activeBehindOutsideRear` **58/76/26/42/32/77 → 0/0/0/1/0/0**; тыловые лампы в `R_rear` остаются (7/10/40/5) |
+| свет в кадре | доля активных в кадре 37 %→70 % (P1 12ч), 48 %→73 % (P1 18ч), 52 %→73 % (P1 20ч), 11 %→61 % (STREET), 78 %→89 % (FARM); в ADMIN 7 %→8 % (окклюзия стенами — вне L4) |
+| бюджет | `active` 70/96/96/96/32/96 → 37/79/51/96/28/79; `capCut` P1 18ч 26→0, STREET 80→0, ADMIN 474→131 |
+| DC | **совпал во всех 6 парах**: 2265 / 2287 / 734 / 1033 / 446 / 1647 |
+| CPU | `checkMarkerMsAvg` 0.3010–0.3881 мс/кадр (гейт ≤0.5), `poolCheckMs` 1.77–1.86 против 1.81–2.46 в контроле |
+| F8/F9 | **PASS** (`worldRootShift 512.000 = predicted 512.000`) / **PASS_rollback_restore**; `errors=0`, сцена не сохранена |
+
+Оговорки: «`activeInFrustum` ≥ 2× контроля» достигнуто только там, где в кадре есть куда расти
+(STREET ×2.8); на P1/ADMIN/FARM контроль уже упирался в потолок числа ламп в кадре — сравнивать нужно
+долю активных в кадре (см. выше). В интерьере ADMIN доля в кадре почти не изменилась (веер не решает
+окклюзию). `coneSource=fallback` в прогоне не встретился — фокус всегда `camera`. Визуальный sign-off
+(веер при беге/развороте, pop-in, лампы за спиной, интерьеры, вечер 17–20 ч) — за пользователем.
+
 ### L5 — T-LIGHT20: тюнинг/A-B
 
 - Гистерезис, activeRadius 140/100/70, cap 96/128, range 48.3; GPU ms ≤+2; FPS без регресса.
@@ -182,9 +206,8 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 
 ## 4. Следующий шаг
 
-**L4 / T-LIGHT19 — конус/веер:** после разворота 180° по-прежнему 0 из 96 активных в кадре и
-`setVersion` не меняется, поэтому направление камеры — следующий и главный рычаг; после него L5/T-LIGHT20
-(тюнинг), L6/T-LIGHT21 (fade в ALIC).
-Brief: [`T-LIGHT19_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT19_AGENT_BRIEF.md)
-(HEAD `27d84557`; конфиг пула закреплён на принятом L2, меняется только угловая логика; Play Mode — с разрешения).
-Отчёты: [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).
+**L5 / T-LIGHT20 — тюнинг:** принят веер (L4), поэтому следующий шаг — подбор `activeRadius` 140/100/70,
+`cap` 96/128, гистерезиса и `coneMarginDeg`/`conePreActivationDeg` по визуалу; после него L6/T-LIGHT21
+(fade в ALIC). Результаты L4:
+[`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md).
+Отчёты: [`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md) · [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

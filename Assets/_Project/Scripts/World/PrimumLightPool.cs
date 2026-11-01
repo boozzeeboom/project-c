@@ -54,6 +54,20 @@
 //   5. Мировые позиции по-прежнему не кэшируются: сохранённая точка сравнения — только дельта
 //      к следующему кадру и переинициализируется при смене камеры (правило Floating Origin).
 // enabled / intensity / dayGate / split / radius / maxActive не изменены.
+//
+// T-LIGHT19 (L4 светового трека) — только отбор кандидатов и score по НАПРАВЛЕНИЮ камеры:
+//   1. Веер строится из камеры: halfV = fieldOfView/2, halfH = atan(tan(halfV)·aspect). При явном
+//      focus-override (Transform без камеры) берётся сериализованный fallback-угол; источник
+//      пишется как coneSource=camera|fallback. Forward/right/up читаются живьём — мировых кэшей нет.
+//   2. Кандидат на включение: (d ≤ R_on и внутри веера) ИЛИ (d ≤ R_rear). R_rear — «чтобы за спиной
+//      не было чёрной дыры»; он ограничен сверху min(R_on, 30 м) и не заменяет фронтальный веер.
+//   3. Гистерезис: по углу (удержание шире включения на coneMarginDeg) и по радиусу (offDist, как в L1/L2).
+//      Pre-activation: включение уже шире реального поля зрения на conePreActivationDeg, чтобы при
+//      развороте лампа горела к моменту попадания в кадр (настоящий fade — L6/T-LIGHT21).
+//   4. Score при cap: d + anglePenaltyPerDeg · угол, поэтому фронтальные лампы вытесняют боковые/тыловые.
+//      Порядок приёма (pass 0 «уже горит», pass 1 «новые») не изменён.
+// Политика света не тронута: dayGate / split / outMin / radius / maxActive / checkInterval / hysteresis,
+// запись Light.enabled и чтение intensity — как в L2/L3. intensity по-прежнему не пишется.
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
@@ -140,6 +154,25 @@ namespace ProjectC.World
         [Tooltip("Интервал дешёвой проверки состава камер (Camera.allCamerasCount), с. Пересборка кэша — не чаще этого интервала.")]
         [SerializeField, Min(0.1f)] private float focusPoolPollInterval = 1f;
 
+        [Header("T-LIGHT19 (L4): конус/веер отбора кандидатов")]
+        [Tooltip("Отбирать кандидатов по направлению камеры (веер + тыловой радиус + score). Выключено = поведение L2/L3 (только дистанция) — A/B-контроль.")]
+        [SerializeField] private bool coneEnabled = true;
+
+        [Tooltip("Гистерезис по углу: уже горящая лампа гаснет позже включения на эту величину (градусы).")]
+        [SerializeField, Min(0f)] private float coneMarginDeg = 6f;
+
+        [Tooltip("Pre-activation: веер включения шире поля зрения на эту величину (градусы), чтобы при развороте лампа уже горела.")]
+        [SerializeField, Min(0f)] private float conePreActivationDeg = 5f;
+
+        [Tooltip("Тыловой радиус, м: внутри него свет горит независимо от направления («чтобы за спиной не было чёрной дыры»). Ограничен сверху min(радиус, 30 м).")]
+        [SerializeField, Min(0f)] private float rearRadius = 28f;
+
+        [Tooltip("Штраф score за градус угла от forward: score = d + penalty · угол. Фронтальная лампа вытесняет боковую при заполненном cap.")]
+        [SerializeField, Min(0f)] private float anglePenaltyPerDeg = 1.2f;
+
+        [Tooltip("Fallback половины вертикального угла веера (градусы), когда фокус — Transform без камеры.")]
+        [SerializeField, Min(1f)] private float coneHalfAngleFallback = 35f;
+
         private Camera _focusCamera;
         private bool _loggedFocus;
 
@@ -159,6 +192,12 @@ namespace ProjectC.World
         private float[] _sqr = new float[0];
         private bool[] _on = new bool[0];
         private byte[] _kind = new byte[0];
+        // T-LIGHT19: угол от forward и score кандидата (score = d + penalty·угол).
+        private float[] _ang = new float[0];
+        private float[] _score = new float[0];
+        private System.Comparison<int> _cmpDistance;
+        private System.Comparison<int> _cmpScore;
+        private string _lastConeLogSignature = "\u0000";
         private readonly List<int> _cand = new List<int>(256);
         private readonly List<int> _desired = new List<int>(256);
         // T-LIGHT17: «уже горит» и отложенные по резерву интерьеры (второй проход добора).
@@ -367,6 +406,59 @@ namespace ProjectC.World
             _timer = float.MaxValue;
         }
 
+        // ---------------------------------------------------------------- T-LIGHT19
+        // Диагностика веера. Значения меняются только в чеке (только чтение снаружи) либо через
+        // ApplyConeConfig (A/B в памяти, сцена и ассеты не пишутся).
+
+        public bool ConeEnabled => coneEnabled;
+        /// <summary>Половина горизонтального угла веера включения, градусы (FOV + pre-activation).</summary>
+        public float ConeHalfHDeg { get; private set; }
+        /// <summary>Половина вертикального угла веера включения, градусы (FOV + pre-activation).</summary>
+        public float ConeHalfVDeg { get; private set; }
+        /// <summary>Откуда взяты углы веера: camera | fallback | off.</summary>
+        public string ConeSourceName { get; private set; } = "off";
+        /// <summary>Действующий тыловой радиус, м (после клампа min(радиус, 30)).</summary>
+        public float RearRadius => _rearEffective;
+        private float _rearEffective;
+        /// <summary>Кандидаты последнего чека, принятые по фронтальному вееру.</summary>
+        public int ConeCandidates { get; private set; }
+        /// <summary>Кандидаты последнего чека, принятые только по тыловому радиусу.</summary>
+        public int RearCandidates { get; private set; }
+        /// <summary>Активные источники за спиной вне тылового радиуса (в норме 0; в контроле — все тыловые).</summary>
+        public int ActiveBehindOutsideRear { get; private set; }
+
+        /// <summary>Строка конфига L4 для отчёта/CSV.</summary>
+        public string ConeConfigLine
+        {
+            get
+            {
+                return "cone;enabled=" + (coneEnabled ? "on" : "off") +
+                       ";marginDeg=" + coneMarginDeg.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";preDeg=" + conePreActivationDeg.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";rear=" + RearRadius.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";penaltyPerDeg=" + anglePenaltyPerDeg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";fallbackDeg=" + coneHalfAngleFallback.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";halfH=" + ConeHalfHDeg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";halfV=" + ConeHalfVDeg.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";source=" + ConeSourceName;
+            }
+        }
+
+        /// <summary>
+        /// Переключить конфиг L4 на лету (A/B-замер). Меняются только поля компонента в памяти:
+        /// сцена, префабы и ассеты не пишутся. Следующий чек выполняется сразу.
+        /// </summary>
+        public void ApplyConeConfig(bool enabled, float marginDeg, float rearRadiusMeters, float penaltyPerDeg, float preActivationDeg)
+        {
+            coneEnabled = enabled;
+            coneMarginDeg = Mathf.Max(0f, marginDeg);
+            rearRadius = Mathf.Max(0f, rearRadiusMeters);
+            anglePenaltyPerDeg = Mathf.Max(0f, penaltyPerDeg);
+            conePreActivationDeg = Mathf.Max(0f, preActivationDeg);
+            _lastConeLogSignature = "\u0000";
+            _timer = float.MaxValue;
+        }
+
         private void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -441,6 +533,10 @@ namespace ProjectC.World
             _sqr = new float[_lights.Length];
             _on = new bool[_lights.Length];
             _kind = new byte[_lights.Length];
+            _ang = new float[_lights.Length];
+            _score = new float[_lights.Length];
+            if (_cmpDistance == null) _cmpDistance = CompareByDistance;
+            if (_cmpScore == null) _cmpScore = CompareByScore;
             ActiveCount = 0;
             // T-LIGHT18: слой ламп — критерий «камера рисует мир». Считается один раз здесь,
             // чтобы фильтр камер не делал строковых/слоевых операций в чеке.
@@ -504,6 +600,7 @@ namespace ProjectC.World
         private void CheckCore()
         {
             if (_lights.Length == 0) return;
+            if (_cmpDistance == null) { _cmpDistance = CompareByDistance; _cmpScore = CompareByScore; }
 
             Vector3 camPos;
             if (!TryGetFocusPosition(out camPos)) return;
@@ -513,6 +610,70 @@ namespace ProjectC.World
             float onSqr = onDist * onDist;
             float offSqr = offDist * offDist;
             int cap = Mathf.Max(1, maxActive);
+
+            // T-LIGHT19: базис веера. Читается живьём из трансформа фокуса в каждом чеке,
+            // мировых Vector3 не кэшируется (правило Floating Origin).
+            bool coneMode = coneEnabled;
+            Vector3 fwd = Vector3.forward, right = Vector3.right, up = Vector3.up;
+            float tanOnH = 0f, tanOnV = 0f, tanOffH = 0f, tanOffV = 0f;
+            float rearOnSqr = 0f, rearOffSqr = 0f;
+            _rearEffective = 0f;
+            if (coneMode)
+            {
+                Transform anchor = CurrentAnchorTransform();
+                if (anchor == null)
+                {
+                    coneMode = false;
+                }
+                else
+                {
+                    fwd = anchor.forward;
+                    right = anchor.right;
+                    up = anchor.up;
+
+                    float halfV, halfH;
+                    string coneSrc;
+                    ComputeConeAngles(out halfV, out halfH, out coneSrc);
+                    ConeSourceName = coneSrc;
+
+                    // Включение шире реального поля зрения (pre-activation), удержание — ещё шире (гистерезис).
+                    float pre = Mathf.Max(0f, conePreActivationDeg);
+                    float margin = Mathf.Max(0f, coneMarginDeg);
+                    float onH = Mathf.Min(halfH + pre, 89f);
+                    float onV = Mathf.Min(halfV + pre, 89f);
+                    float offH = Mathf.Min(onH + margin, 89f);
+                    float offV = Mathf.Min(onV + margin, 89f);
+                    ConeHalfHDeg = onH;
+                    ConeHalfVDeg = onV;
+                    tanOnH = Mathf.Tan(onH * Mathf.Deg2Rad);
+                    tanOnV = Mathf.Tan(onV * Mathf.Deg2Rad);
+                    tanOffH = Mathf.Tan(offH * Mathf.Deg2Rad);
+                    tanOffV = Mathf.Tan(offV * Mathf.Deg2Rad);
+
+                    // Тыловой радиус «чтобы за спиной не было чёрной дыры»; сверху ограничен min(радиус, 30 м).
+                    _rearEffective = Mathf.Clamp(rearRadius, 0f, Mathf.Min(onDist, 30f));
+                    float rOff = _rearEffective * (1f + Mathf.Max(0f, hysteresis));
+                    rearOnSqr = _rearEffective * _rearEffective;
+                    rearOffSqr = rOff * rOff;
+                }
+            }
+            if (!coneMode)
+            {
+                ConeSourceName = "off";
+                ConeHalfHDeg = 0f;
+                ConeHalfVDeg = 0f;
+                _rearEffective = 0f;
+                rearOnSqr = 0f;
+                rearOffSqr = 0f;
+                // Диагностике «за спиной» нужен живой forward и в контроле.
+                Transform anchorOff = CurrentAnchorTransform();
+                if (anchorOff != null)
+                {
+                    fwd = anchorOff.forward;
+                    right = anchorOff.right;
+                    up = anchorOff.up;
+                }
+            }
 
             // T-LIGHT17: day/night-гейт. intensity ЧИТАЕТСЯ (её владелец — ALIC) и никогда не пишется:
             // погашенный по кривой суток источник не включается и не держится в бюджете.
@@ -525,6 +686,7 @@ namespace ProjectC.World
             _deferred.Clear();
 
             int gateDropped = 0;
+            int coneCand = 0, rearCand = 0;
             for (int i = 0; i < _lights.Length; i++)
             {
                 Light l = _lights[i];
@@ -536,22 +698,79 @@ namespace ProjectC.World
 
                 bool emitting = gateEps < 0f || l.intensity > gateEps;
 
+                if (!coneMode)
+                {
+                    // Контроль A/B — поведение L2/L3: критерий только дистанция.
+                    if (_on[i])
+                    {
+                        // уже горит: держим до внешнего радиуса, но погашенный источник не держим —
+                        // иначе днём половина бюджета занята невидимым светом.
+                        if (d <= offSqr && emitting) _keep.Add(i);
+                        else if (!emitting) gateDropped++;
+                    }
+                    else if (d <= onSqr && emitting)
+                    {
+                        _cand.Add(i);
+                    }
+                    continue;
+                }
+
+                // T-LIGHT19: компоненты дельты в базисе камеры (right/up/forward читаются живьём).
+                float z = dx * fwd.x + dy * fwd.y + dz * fwd.z;
+
                 if (_on[i])
                 {
-                    // уже горит: держим до внешнего радиуса, но погашенный источник не держим —
-                    // иначе днём половина бюджета занята невидимым светом.
-                    if (d <= offSqr && emitting) _keep.Add(i);
+                    // Горящая лампа: тыловой радиус ИЛИ веер с гистерезисом по углу и радиусу.
+                    bool hold = d <= rearOffSqr;
+                    if (!hold && d <= offSqr)
+                    {
+                        float ax = dx * right.x + dy * right.y + dz * right.z;
+                        float ay = dx * up.x + dy * up.y + dz * up.z;
+                        hold = z > 0f && Mathf.Abs(ax) <= tanOffH * z && Mathf.Abs(ay) <= tanOffV * z;
+                    }
+                    if (hold && emitting)
+                    {
+                        _keep.Add(i);
+                        NoteCandidateScore(i, d, z);
+                    }
                     else if (!emitting) gateDropped++;
                 }
-                else if (d <= onSqr && emitting)
+                else
                 {
-                    _cand.Add(i);
+                    bool front = false;
+                    if (d <= onSqr)
+                    {
+                        float ax = dx * right.x + dy * right.y + dz * right.z;
+                        float ay = dx * up.x + dy * up.y + dz * up.z;
+                        front = z > 0f && Mathf.Abs(ax) <= tanOnH * z && Mathf.Abs(ay) <= tanOnV * z;
+                    }
+                    if (!emitting)
+                    {
+                        // погашено по кривой суток — ни в каком случае не включаем
+                    }
+                    else if (front)
+                    {
+                        _cand.Add(i);
+                        coneCand++;
+                        NoteCandidateScore(i, d, z);
+                    }
+                    else if (d <= rearOnSqr)
+                    {
+                        // За спиной, но вплотную — держим свет, чтобы не было чёрной дыры вокруг камеры.
+                        _cand.Add(i);
+                        rearCand++;
+                        NoteCandidateScore(i, d, z);
+                    }
                 }
             }
+            ConeCandidates = coneCand;
+            RearCandidates = rearCand;
 
-            // Порядок приёма: сначала уже горящие (стабильность набора), потом новые — оба по дистанции.
-            _keep.Sort(CompareByDistance);
-            _cand.Sort(CompareByDistance);
+            // Порядок приёма: сначала уже горящие (стабильность набора), потом новые.
+            // В режиме веера сортировка — по score = дистанция + штраф за угол, иначе — по дистанции.
+            System.Comparison<int> cmp = coneMode ? _cmpScore : _cmpDistance;
+            _keep.Sort(cmp);
+            _cand.Sort(cmp);
 
             // T-LIGHT17: резерв бюджета под улицу. Интерьеры не занимают больше cap − outMin
             // слотов, пока уличные кандидаты ещё есть; остаток они добирают второй фазой.
@@ -595,6 +814,7 @@ namespace ProjectC.World
             int aOut = 0, aIn = 0, aFarm = 0, aOther = 0;
             int b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0;
             int zero = 0;
+            int behindOutsideRear = 0;
             for (int i = 0; i < _lights.Length; i++)
             {
                 Light l = _lights[i];
@@ -610,6 +830,11 @@ namespace ProjectC.World
                 if (!_on[i]) continue;
 
                 active++;
+
+                // T-LIGHT19: «горит за спиной и вне тылового радиуса» — гейт «чёрного провала нет/нет утечки».
+                Vector3 bp = l.transform.position;
+                float bz = (bp.x - camPos.x) * fwd.x + (bp.y - camPos.y) * fwd.y + (bp.z - camPos.z) * fwd.z;
+                if (bz <= 0f && _sqr[i] > rearOnSqr) behindOutsideRear++;
 
                 // T-LIGHT16: только чтение — группы, дистанционные buckets, «горит с нулём».
                 switch (_kind[i])
@@ -647,12 +872,32 @@ namespace ProjectC.World
             Bucket140To154 = b3;
             BucketOver154 = b4;
             ActiveIntensityZero = zero;
+            ActiveBehindOutsideRear = behindOutsideRear;
             DayGateDropped = gateDropped;
             KindQuotaDeferred = deferredTotal;
             KindQuotaFilled = filled;
             OutdoorMinSlotsUsed = outMin;
             LastSwitchCount = switches;
             if (switches > 0) SetVersion++;
+
+            // T-LIGHT19: одна строка на состояние веера (углы/тыл/источник), а не каждый чек.
+            string coneSig = coneMode
+                ? "on:" + ConeHalfHDeg.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + "/" +
+                  ConeHalfVDeg.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + "/" +
+                  _rearEffective.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)
+                : "off";
+            if (coneSig != _lastConeLogSignature)
+            {
+                _lastConeLogSignature = coneSig;
+                Debug.Log("[PRIMUM/Lights] cone=" + (coneMode ? "on" : "off") +
+                          " halfH=" + ConeHalfHDeg.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) +
+                          " halfV=" + ConeHalfVDeg.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) +
+                          " rear=" + _rearEffective.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) +
+                          " coneSource=" + ConeSourceName +
+                          " coneCand=" + coneCand + " rearCand=" + rearCand +
+                          " keep=" + _keep.Count + " cand=" + _cand.Count +
+                          " activeBehindOutsideRear=" + behindOutsideRear, this);
+            }
 
             if (!_loggedFocus)
             {
@@ -858,6 +1103,47 @@ namespace ProjectC.World
         }
 
         private int CompareByDistance(int a, int b) => _sqr[a].CompareTo(_sqr[b]);
+
+        /// <summary>T-LIGHT19: score = дистанция + штраф за угол (фронтальные лампы вытесняют боковые при cap).</summary>
+        private int CompareByScore(int a, int b) => _score[a].CompareTo(_score[b]);
+
+        /// <summary>
+        /// T-LIGHT19: угол от forward и score кандидата. Считается только для уже принятых в списки ламп,
+        /// поэтому acos вызывается O(candidates), а не O(2 238).
+        /// </summary>
+        private void NoteCandidateScore(int i, float sqrDist, float forwardDot)
+        {
+            float dist = Mathf.Sqrt(sqrDist);
+            float ang = Mathf.Acos(Mathf.Clamp(forwardDot / Mathf.Max(dist, 1e-4f), -1f, 1f)) * Mathf.Rad2Deg;
+            _ang[i] = ang;
+            _score[i] = dist + Mathf.Max(0f, anglePenaltyPerDeg) * ang;
+        }
+
+        /// <summary>
+        /// T-LIGHT19: половина вертикального/горизонтального угла веера. Для камеры — из fieldOfView и аспекта
+        /// (halfH = atan(tan(halfV)·aspect)), иначе — сериализованный fallback с клампом.
+        /// Мировых позиций не хранит: читает живые параметры камеры в каждом чеке.
+        /// </summary>
+        private void ComputeConeAngles(out float halfVDeg, out float halfHDeg, out string source)
+        {
+            const float aspect169 = 16f / 9f;
+            float aspect = aspect169;
+            halfVDeg = Mathf.Clamp(coneHalfAngleFallback, 5f, 80f);
+            source = "fallback";
+
+            if (focus == null && _focusCamera != null && _focusCamera.fieldOfView > 1f)
+            {
+                halfVDeg = Mathf.Clamp(_focusCamera.fieldOfView * 0.5f, 5f, 80f);
+                aspect = _focusCamera.aspect > 0.01f ? _focusCamera.aspect : aspect169;
+                source = "camera";
+            }
+            else if (Screen.height > 0)
+            {
+                aspect = (float)Screen.width / Screen.height;
+            }
+
+            halfHDeg = Mathf.Clamp(Mathf.Atan(Mathf.Tan(halfVDeg * Mathf.Deg2Rad) * aspect) * Mathf.Rad2Deg, 5f, 85f);
+        }
 
         /// <summary>Принудительно пересобрать список (после добавления/удаления ламп в рантайме).</summary>
         public void Refresh() => Rebuild();

@@ -4,7 +4,9 @@
 **Статус:** Stage 0–8 закрыты. **Stage 6 PASS**; **Stage 7 PASS**: L1 **46–48 DC**, L2 **2 DC**,
 честный L0 **2 341 DC**, rebake детерминирован, F8/F9 PASS; визуально принято пользователем.
 **Stage 8 PASS (2026-11-01):** L0-двери снова режутся по дистанции под GRD → P1 **2 229** (−112),
-двери за 150 м не рисуются, L1 **46** / L2 **2** без ухудшения. Дальше — финальная приёмка T-CULL01.
+двери за 150 м не рисуются, L1 **46** / L2 **2** без ухудшения. **Следующий трек — свет**
+([`LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md)):
+L1/T-LIGHT16 baseline, затем cheap wins/cone/fade; **финальная приёмка T-CULL01 — после света**.
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -657,6 +659,7 @@ Stage 6 — первый после Stage 4c.
 | Stage 6 | **done** — PASS | VisibilityDirector: culling ≤2 мс; foundation | агент T-CULL01/H6 | `VisibilityDirector` |
 | Stage 7 | **done** — PASS | HLOD/L1 + L2/PVS: L1 46–48, L2 2 | агент T-CULL01/H7 | HLOD/impostor |
 | Stage 8 | **done** — PASS | L0 doors under GRD: P1 2 229 (−112), двери >150 м = 0; L1 46 / L2 2 | агент T-CULL01/H8 | `VisibilityDirector` door policy + `V_stage8_*` |
+| L | 🟡 next — light track L1–L7 | Stage 8 + verified light research | light culling/timing; baseline first; T-LIGHT16…23 | агент T-LIGHT16+ | [`LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md) |
 
 **Протокол передачи:** перед этапом открыть `T-CULL01`, взять соответствующий раздел `H*`,
 приложить актуальный baseline/ветку и попросить агента:
@@ -665,6 +668,17 @@ Stage 6 — первый после Stage 4c.
 3. сдать diff + отчёт с замерами по gate;
 4. не запускать Play Mode/не коммитить без разрешения;
 5. при провале gate — откат по чек-листу.
+
+---
+
+## 10.5. Свет — отдельный трек после T-CULL01
+
+- План: [`C:\Projects\ProjectC_client\docs\world\lights\LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md).
+- Ресерч: `docs/world/lights/LIGHT_CULLING_TIMING_RESEARCH.md` (проверен; поправки в плане).
+- Порядок: L1/T-LIGHT16 baseline → T-LIGHT17 ownership/дешёвые победы → T-LIGHT18 фокус →
+  T-LIGHT19 конус → T-LIGHT20 тюнинг → T-LIGHT21 fade в ALIC → T-LIGHT22/23 multi-camera/emissive.
+- **T-LIGHT24/25 удалены** (Forward+/GRD уже; порталов/PVS нет).
+- Финальная приёмка T-CULL01 — **после** светового трека.
 
 ---
 

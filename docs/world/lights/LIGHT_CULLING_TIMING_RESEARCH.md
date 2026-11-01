@@ -4,13 +4,21 @@
 
 **Статус:** ресерч завершён; документ — постановка + рекомендации. Исполнение — отдельный этап после утверждения.
 
+> **Верификация 2026-11-01:** часть исходных утверждений исправлена; актуальный план —
+> [`LIGHT_CULLING_PLAN.md`](LIGHT_CULLING_PLAN.md). Ключевые поправки: проект уже на **Forward+**
+> (`m_RenderingMode:2`), а не Forward; 2 087 — только PRIMUM, **2 238** — с фермами (Stage 6);
+> пул всё ещё `maxActive=96` («лимит снят» только per-object); fade нельзя писать в `Light.intensity`
+> без интеграции с `AdditionalLightIntensityController`; HLOD L2 night atlas уже существует
+> (Stage 7); T-LIGHT24 «переключить Forward+» не нужен. Не реализовывать этот документ буквально —
+> только через `LIGHT_CULLING_PLAN.md`.
+
 **Источник задачи:** последние ~30 коммитов T-CULL01 (оптимизация мешей/теней/куллинга) + проблемы с лампами города PRIMUM. Пользователь: «сейчас у нас убрано ограничение точечных источников света — но они не успевают гаснуть и включаться вокруг персонажа своевременно… визуально уже было бы хорошо если просто свет держался в веере куда смотрит игрок и выключались куда не смотрит».
 
 ---
 
 ## 0. Главный ответ (TL;DR)
 
-1. **Проблема не в количестве ламп, а в логике их включения.** 2 087 источников `Light` (Point, realtime, shadows off) уже лежат в сцене с `enabled=false`; включает их `PrimumLightPool` — до **96** ближайших к **одной** камере в радиусе **140 м**, проверка каждые **0.25 с**, гистерезис **10%**. Это даёт задержку до 250 мс, «прилипание» уже включённых (они держат слоты до 154 м) и конкуренцию светильников позади камеры за те же 96 слотов.
+1. **Проблема не в количестве ламп, а в логике их включения.** Под `PRIMUM_LIGHTS` лежит **2 238** `Light` (Point, realtime, shadows off): `OUT` 753, `IN` 1 334 и **151 фермерская** (`PRIMUM_FARMLIGHT_*`, `m_Enabled:1` override в edit mode). Включает/гасит их `PrimumLightPool` — до **96** ближайших к **одной** камере в радиусе **140 м**, проверка каждые **0.25 с**, гистерезис **10%**. Это даёт задержку до 250 мс, «прилипание» уже включённых (они держат слоты до 154 м) и конкуренцию светильников позади камеры за те же 96 слотов.
 
 2. **Пул не знает, куда смотрит игрок.** Он считает только евклидову дистанцию от выбранной камеры. В плотной застройке светильники за спиной занимают слоты, и видимые спереди включаются с опозданием. Идея пользователя — «веер (конус) впереди + малый радиус сзади» — прямо закрывает этот дефект и дешевле по CPU (угловая фильтрация отсекает ~половину кандидатов до сортировки).
 
@@ -41,11 +49,11 @@
 
 ### 2.1 Источники
 
-- 2 087 `Light` (Point) в `WorldScene_0_0.unity` под `PRIMUM_LIGHTS`: `PRIMUM_OUTLIGHT_*` = 753 (улица/фасад), `PRIMUM_INLIGHT_*` = 1 334 (интерьеры + ADMIN 530). (См. подотчёт A.)
+- **2 238** `Light` в `WorldScene_0_0.unity` под `PRIMUM_LIGHTS`: `PRIMUM_OUTLIGHT_*` = 753 (улица/фасад), `PRIMUM_INLIGHT_*` = 1 334 (интерьеры + ADMIN 530), `PRIMUM_FARMLIGHT_*` = 151 (фермы, включены `m_Enabled:1`). (См. подотчёты A/cc3ad.)
+- Дополнительных `MD2_Lamp_*` **нет** — удалены (`a7cc6db9`); группа ALIC `CityLamps` инертна.
 - 7 префабов `PM_LIGHT_*` (range 3.5–14 м, intensity 1.0–3.0, тёплый цвет), `LightShadows.None`, `LightmapBakeType.Realtime`, `enabled=false` в префабе.
-- Корпуса светят через emissive `PM_LAMP_GLOW_WARM` (URP Unlit HDR).
-- Дополнительные источники: 11 `MD2_Lamp_*` в порту (intensity 50, range 30, shadows off) — управляются `AdditionalLightIntensityController` (группа `CityLamps`).
-- URP: Additional Lights = Per Pixel, per-object limit 4, additional shadows off; главный свет 2048 px / 2 cascades.
+- Корпуса светят через emissive `PM_LAMP_GLOW_WARM` (URP Unlit HDR; HDR off → клип >1).
+- URP: Additional Lights = Per Pixel; per-object limit 4 в ассете, **в Forward+ не применяется**; additional shadows off; **каскадов 4, shadow distance 400** (не 2/1000).
 
 ### 2.2 PrimumLightPool (текущий)
 
@@ -100,7 +108,8 @@
 
 ## 4. Архитектура и ограничения
 
-- **URP Forward/Forward+**: additional lights per-object limit 4 (Forward); Forward+ снимает per-object лимит, но per-camera лимит 256 (desktop) остаётся. В проекте рендер-путь — Forward (по lighting-plan); culling-research упоминает ForwardPlus — уточнить по `ProjectC_URP.asset` (`m_RenderingMode`). GPU Resident Drawer работает только с Forward+/Deferred+.
+- **URP Forward/Forward+**: в проекте **Forward+** (`ProjectC_URP_Renderer.asset m_RenderingMode:2`),
+  per-object limit 4 в Forward+ **не применяется**, per-camera 256; additional shadows off.
 - **Floating Origin**: мировые позиции не хранятся; пул уже frame-local (читает `transform.position` живьём). Любое новое решение должно сохранить это.
 - **Мультикамерность**: VisibilityDirector уже строит union; пул должен использовать его, а не выбирать одну камеру.
 - **Производительность**: culling-бюджет ≤ 2 мс; пул должен уложиться ≤ 0.5 мс.
@@ -137,7 +146,8 @@
 Заменить часть точечных источников на light probes / emissive-only. Уменьшает нагрузку, но теряет динамическое освещение интерьера. Подходит для статичного окружения; realtime point lights оставить для динамических акцентов.
 
 ### Вариант F — Forward+ / GRD / GPU occlusion (инфраструктурный)
-Переключить рендер-путь на Forward+ (снять per-object лимит 4), включить SRP Batcher + GPU Resident Drawer + GPU occlusion. Не решает «включение/выключение», но уменьшает стоимость активных источников и draw calls. Дополняет A/D.
+**Уже включено:** Forward+ (`m_RenderingMode:2`), GRD (`m_GPUResidentDrawerMode:1`), occlusion флаг 1.
+Не «переключать»; дополнительные источники не уменьшает. Дополняет A/D.
 
 ---
 
@@ -175,7 +185,7 @@
 
 **Мультикамерность:** использовать `VisibilityDirector.WorldCameras` union. Лампа активна, если активна для хотя бы одной камеры union (или по ближайшей). Это устраняет «одну камеру».
 
-**LOD (Вариант D):** при d > 60 м (или вне конуса на средней дистанции) гасить Light, оставлять emissive (корпус). Согласовать пороги с HLOD L1 (3 км) и L2 (12 км). На L2 — квад огней из `placement_manifest.csv`.
+**LOD (Вариант D):** при d > 60 м (или вне конуса на средней дистанции) гасить Light, оставлять emissive (корпус). Согласовать пороги с HLOD L1 (3 км) и L2 (12 км). **L2-ночные огни уже запечены в импостор Stage 7** (`PRIMUM_L2_Night`/`PrimumImpostor.shader`); отдельный квад из `placement_manifest.csv` не делать. Учесть HDR off: emissive клипается, без GI/probes гашение Light может дать тёмные фасады.
 
 **Day/night emissive:** добавить контроллер `_BaseColor` для `PM_LAMP_GLOW_WARM` по времени суток (через ALIC или отдельный компонент), чтобы днём корпус не светился как ночью.
 
@@ -186,6 +196,11 @@
 ---
 
 ## 7. Реализация: этапы и гейты
+
+> **Корректировка 2026-11-01:** порядок ниже **устарел**. Актуальный план — `LIGHT_CULLING_PLAN.md`:
+> L1/T-LIGHT16 baseline → T-LIGHT17 ownership/дешёвые победы → T-LIGHT18 фокус → T-LIGHT19 конус →
+> T-LIGHT20 тюнинг → T-LIGHT21 fade в ALIC → T-LIGHT22/23 multi-camera/emissive. **T-LIGHT24/25 удалены.**
+> Fade — только в ALIC (владелец intensity); focus anchor = камера, не игрок.
 
 1. **T-LIGHT16 (исследование/прототип)**: добавить логирование в текущий пул: угловое распределение, сколько кандидатов отсеивается, время Check. Измерить baseline (Play Mode, пользователь).
 2. **T-LIGHT17 (фокус)**: привязать `focus` к Transform игрока/корабля (или SpringArmCamera.TargetTransform). Убрать `FindFocusCamera` или сделать fallback. Гейт: нет регрессии фокуса, checkInterval остаётся 0.25 с.
@@ -227,9 +242,10 @@
 
 ## 10. Открытые вопросы
 
-1. Рендер-путь проекта: Forward или Forward+? (lighting-plan говорит Forward; culling-research — ForwardPlus.) Уточнить по `ProjectC_URP.asset` (`m_RenderingMode`).
-2. Расхождение counts: 1 900 (комментарий пула) / 2 087 (сцена) / 2 238 (culling-research Stage 6). Уточнить при следующем аудите.
-3. Нужен ли отдельный слой для ламп (как двери слой 10) для layerCullDistances? Сейчас лампы на слое PRIMUM (8).
+1. Рендер-путь проекта: **Forward+ (подтверждено, `ProjectC_URP_Renderer.asset m_RenderingMode:2`)**;
+   per-object limit 4 в ассете остаётся, но Forward+ его не применяет; per-camera 256.
+2. Счётчики: **2 087** — только `PRIMUM_LIGHTS`; **2 238** — с фермами (Stage 6); комментарий пула «1 900» устарел.
+3. Нужен ли отдельный слой для ламп (как двери слой 10) для layerCullDistances? Сейчас лампы на слое PRIMUM (8); под GRD `layerCullDistances` всё равно не работает — только через `Light.enabled`/директор.
 4. Должен ли пул учитывать `VisibilityDirector.WorldCameras` union, или достаточно камеры игрока? (мультиплеер: у каждого клиента свой пул — union из одной камеры; union нужен для splitscreen/наблюдателя.)
 5. Пороги LOD света (60 м) — согласовать с HLOD L1 (3 км): возможно, гасить Light раньше (на 100 м), оставлять emissive.
 

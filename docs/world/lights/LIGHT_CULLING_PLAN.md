@@ -1,0 +1,107 @@
+# LIGHT CULLING — план исполнения (T-LIGHT16…T-LIGHT23)
+
+**Дата:** 2026-11-01 · **Проект:** `C:\Projects\ProjectC_client` · **Unity:** 6000.5.2f1 · **URP:** 17.5.0
+**Основание:** `docs/world/lights/LIGHT_CULLING_TIMING_RESEARCH.md` + подотчёты A–E.
+**Статус:** ресерч проверен (3 независимых прохода); обязательные корректировки внесены. План готов к L1.
+**Важно:** T-LIGHT24/25 **удалены**. Финал T-CULL01 — после закрытия светового трека.
+
+---
+
+## 0. Проверенное состояние
+
+| Факт | Значение | Источник |
+|---|---|---|
+| Источники под `PRIMUM_LIGHTS` | **2 238**: `OUT` 753 / `IN` 1 334 (ADMIN 530) + **151 фермерских** (`PRIMUM_FARMLIGHT_*`) | сцена/верификатор cc3ad |
+| Включено в edit mode | **151 ферм-ламп** (`m_Enabled:1` override); `Rebuild()` гасит их при загрузке | сцена |
+| Пул | `maxActive=96`, `activeRadius=140`, `checkInterval=0.25`, `hysteresis=0.1`, `focus=null` | `PrimumLightPool.cs:18-34`; сцена |
+| Фокус | одна камера, перепоиск 1 с, без `cullingMask/targetTexture` | B |
+| Владение `Light.enabled` | `PrimumLightPool` | A/E, директор не пишет |
+| Владение `Light.intensity` | `AdditionalLightIntensityController` (ALIC); flicker INLIGHT → запись каждый кадр | ALIC:440–478 |
+| Рендер-путь | **Forward+** (`ProjectC_URP_Renderer.asset:189 m_RenderingMode:2`); GRD/SRP/occlusion включены | asset / T-LIGHT12 |
+| Лимит камеры | **256 всего** (255 additional + main), per-object 4 в Forward+ **не применяется** | URP source |
+| Тени | 400 м / 4 каскада / soft; additional shadows **off** | URP asset |
+| HDR | **off**; bloom/emissive >1 клипается; GI/probes нет | URP asset / T-LIGHT12 |
+| HLOD | L1 46–48 DC, L2 2 DC; L2 night atlas уже запечён | Stage 7 |
+
+**Ключевое:** проблема не в «снятом лимите», а в логике пула. Но **угол — не единственная и, возможно, не главная причина**: 64 % источников интерьерные, `PRIMUM_OUTLIGHT` днём имеет intensity 0 при 96 включённых, а `range override 48.3 м` у INLIGHT. Сначала — измерение, не конус.
+
+---
+
+## 1. Обязательные корректировки ресерча
+
+1. **Forward+ уже включён** — T-LIGHT24 «переключить Forward+/GRD» **удалён**.
+2. **«Лимит снят» — только per-object.** Пул всё ещё `maxActive=96`.
+3. **Counts:** под `PRIMUM_LIGHTS` — **2 238** (`OUT` 753 + `IN` 1 334 + фермы 151); 2 087 — только `OUT/IN` имена; 151 ферм-ламп включены в edit mode (`m_Enabled:1`) и гасятся `Rebuild()`. Комментарий пула «1 900» устарел.
+4. **MD2_Lamp_\*** удалены (`a7cc6db9`); группа `CityLamps` в ALIC инертна — не учитывать.
+4. **Fade нельзя писать в `Light.intensity`:** intensity принадлежит ALIC, flicker пишет каждый кадр; fade — только через контракт с ALIC/общий множитель.
+5. **Фокус — камера, не Transform игрока:** в режиме корабля камера до ~350 м от игрока; player-focus даст регресс. Anchor = камера, локальный игрок — только override/исключение.
+6. **`VisibilityDirector.WorldCameras`** пересобирается 1 с и пуст на старте; для L1 использовать кэш камер/фолбэк, union — только с per-camera бюджетом.
+7. **Углы конуса — из `Camera.fieldOfView`/аспекта**, не хардкод 70/40; `R_rear ≥ вынос камеры + 2·maxRange` (~25–30 м).
+8. **`cullingMask`, `renderingLayerMask`, `LightLayer`, `Light.shadows` — инертны** в этой конфигурации; работают `enabled` и `range`.
+9. **День/ночь-гейт:** 96 `enabled` с intensity≈0 днём — впустую; добавить.
+10. **HLOD L2 night** уже есть в импостере/шейдере; не строить отдельный квад из `placement_manifest`.
+11. **LOD/emissive:** HDR off + нет GI/probes → гашение Light оставит тёмные фасады; emissive не заменит свет на 60 м без проверки.
+12. **maxActive:** 96 оставить базой; 128/160/192 — только после GPU-гейта (≤+2 мс) и замера lights-per-tile; тихое превышение 256 опасно.
+
+---
+
+## 2. Этапы
+
+### L1 — T-LIGHT16: baseline-инструментация (гейт, без изменения поведения)
+
+- Добавить временные/дебаг-счётчики в `PrimumLightPool` (и маркер Profiler): registered/active/candidates, out/in split, **фермы (151) отдельно**, cap binding, radius buckets, check ms; отдельно ALIC ApplyIntensity ms.
+- Play Mode (пользователь): время суток **17–20 ч** (жалоба) + день/ночь; разворот 180°; 140/100/70 м; cap 96; замер `visibleLights.Length`, GPU ms, FPS.
+- Определить: сколько active имеют intensity≈0; сколько ближайших — интерьерные; гаснут ли 151 ферм после `Rebuild`; связывает ли cap; какова реальная задержка; какая камера выбрана.
+- **Gate:** отчёт с числами и top-причиной; никаких изменений поведения; сцена чистая; commit T-LIGHT16.
+- **Только после этого** выбираем L2/L3.
+
+### L2 — T-LIGHT17: ownership + дешёвые победы
+
+- Зафиксировать карту владения (pool `enabled`, ALIC `intensity`); A/B-флаг и строка отчёта.
+- Day/night-гейт пула (не держать 96 при intensity≈0).
+- Раздельный бюджет out/in; `activeRadius` 140 → 100/70 как конфиг (range 3.5–14 м — это и есть LOD света).
+- Решение по `range override 48.3` (интерьеры светят сквозь стены) — отдельным решением, не «по пути».
+- Gate: субъективно лучше/не хуже; active/intensity корректны; CPU/GPU без регресса; F8/F9.
+
+### L3 — T-LIGHT18: фокус/камера
+
+- Кэш камер, фильтры (Game, no RT, far≥50, слой мира; Atmosphere/парковочная MainCamera исключены), fallback.
+- Anchor = камера; локальный игрок — только явный override; сетевой `LocalClient.PlayerObject`.
+- Адаптивный триггер: сдвиг >2 м / поворот >3°, минимум 0.1 с.
+- Gate: реакция ≤0.15 с, нет «чужой камеры», нет регресса в режиме корабля.
+
+### L4 — T-LIGHT19: конус/веер
+
+- FOV-derived H/V, `R_rear` ≥ вынос + 2·range, score distance+angle, pre-activation; cap 96 (128 только после GPU-гейта).
+- Gate: свет в веере, лампы сзади гаснут, нет pop-in; визуал пользователя.
+
+### L5 — T-LIGHT20: тюнинг/A-B
+
+- Гистерезис, activeRadius 140/100/70, cap 96/128, range 48.3; GPU ms ≤+2; FPS без регресса.
+- Gate: выбранные значения + отчёт; откат конфигом.
+
+### L6 — T-LIGHT21: fade в ALIC
+
+- Fade-множитель живёт в ALIC (владелец intensity); pool передаёт вес/состояние; 0.15/0.30 с.
+- Gate: нет «щелчков», flicker/день-ночь не сломаны.
+
+### L7 — T-LIGHT22/23: multi-camera + day/night emissive (условно)
+
+- Union только при реальной второй камере; per-camera бюджет; fallback. Day/night emissive `PM_LAMP_GLOW_WARM` — отдельная ветка с knob/перепечкой HLOD ClassLamp.
+- T-LIGHT24/25 — **не делать** (Forward+/GRD уже; порталов/PVS нет).
+
+---
+
+## 3. Приёмка трека
+
+- Реакция ≤0.15 с; свет в веере; активных ≤ cap; CPU пула ≤0.5 мс; ALIC не дороже baseline.
+- Нет «щелчков»; flicker/день-ночь; HDR-off артефакты не хуже.
+- F8/F9; L1/L2 HLOD, двери, корабли не сломаны; 0 errors; сцена не сохранена.
+- После L1–L6 — финальная приёмка T-CULL01.
+
+---
+
+## 4. Следующий шаг
+
+**L1 / T-LIGHT16** — только baseline-инструментация. Brief:
+[`T-LIGHT16_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT16_AGENT_BRIEF.md).

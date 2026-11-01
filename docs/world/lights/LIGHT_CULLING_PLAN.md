@@ -150,6 +150,9 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 
 - FOV-derived H/V, `R_rear` ≥ вынос + 2·range, score distance+angle, pre-activation; cap 96 (128 только после GPU-гейта).
 - Gate: свет в веере, лампы сзади гаснут, нет pop-in; визуал пользователя.
+- Brief: [`T-LIGHT19_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT19_AGENT_BRIEF.md)
+  (веер из `fieldOfView`/аспекта, `R_rear` 25–30 м, `score = d + штраф за угол`, гистерезис по углу и радиусу,
+  pre-activation; `probeTurnSetChanged` должен стать 1, `activeInFrustum` ≥ 2× контроля).
 
 ### L5 — T-LIGHT20: тюнинг/A-B
 
@@ -182,5 +185,6 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 **L4 / T-LIGHT19 — конус/веер:** после разворота 180° по-прежнему 0 из 96 активных в кадре и
 `setVersion` не меняется, поэтому направление камеры — следующий и главный рычаг; после него L5/T-LIGHT20
 (тюнинг), L6/T-LIGHT21 (fade в ALIC).
-Brief: [`T-LIGHT18_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT18_AGENT_BRIEF.md).
+Brief: [`T-LIGHT19_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT19_AGENT_BRIEF.md)
+(HEAD `27d84557`; конфиг пула закреплён на принятом L2, меняется только угловая логика; Play Mode — с разрешения).
 Отчёты: [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

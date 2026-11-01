@@ -244,6 +244,12 @@ F8/F9 шли под финальным конфигом (confirm-группа о
   (fade-in 0.15 с обязателен; fade-out 0.30 с — только через контракт «пул спрашивает разрешение на
   выключение», иначе отклоняется; обязательный грейс-период `dayGate` 0.4 с против thrash, т.к. в первых
   кадрах fade-in `intensity ≈ 0` и пул счёл бы лампу погашенной; resync не должен перезапускать fade).
+- **Результат 2026-11-01** (`21fd5a74`, отчёт [`T-LIGHT21_REPORT.md`](T-LIGHT21_REPORT.md), 26 кейсов):
+  fade-in 0.15 с **принят** — `t90` 0.107–0.132 с, кадровый скачок 21–24 % против 100 % в контроле, кривая
+  монотонна, `dc` совпал во всех 13 парах A/B, ALIC 0.035–0.117 мс/кадр, `gateGraceHeld = 0`, F8/F9 PASS,
+  0 errors/shader errors. Fade-out 0.30 с **отклонён как дефолт**: при массовом выходе ламп из набора
+  удержание `Light.enabled` доходило до 75 источников (STREET), 73, 59, 30, 22 против гейта ≤16;
+  механизм оставлен в коде и выключен (`fadeOutSeconds = 0`), гашение остаётся мгновенным.
 
 ### L7 — T-LIGHT22/23: multi-camera + day/night emissive (условно)
 
@@ -263,14 +269,14 @@ F8/F9 шли под финальным конфигом (confirm-группа о
 
 ## 4. Следующий шаг
 
-**L6 / T-LIGHT21 — fade в ALIC:** A/B по 8 осям закрыт, финальный конфиг равен принятому L4
-(`radius 100`, `cap 96`, `hysteresis 0.10`, `margin 6°`, `pre 5°`, `rear 28 м`, `penalty 1.2`),
-поэтому тюнинг не даёт новых дефолтов и очередь переходит к L6: fade-множитель в ALIC
-(владелец `intensity`), пул передаёт вес/состояние, 0.15/0.30 с; гейт — нет «щелчков»,
-flicker и день/ночь не сломаны.
-Brief: [`T-LIGHT21_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT21_AGENT_BRIEF.md)
-(HEAD `3454171f`; Play Mode — с разрешения; fade-in обязателен, fade-out условен; грейс `dayGate` 0.4 с).
+**L6 / T-LIGHT21 закрыт по fade-in; fade-out отклонён** (отчёт [`T-LIGHT21_REPORT.md`](T-LIGHT21_REPORT.md)).
+Принятый дефолт: `fadeInSeconds = 0.15`, `fadeOutSeconds = 0`, грейс `dayGate` 0.4 с, конфиг пула равен L5
+(`radius 100`, `cap 96`, `hysteresis 0.10`, `margin 6°`, `pre 5°`, `rear 28 м`, `penalty 1.2`).
+Следующее: **визуальный sign-off L6** пользователем в Play Mode (плавное появление, мгновенное гашение,
+flicker интерьеров, переходы часа 12→18→20), затем финальная приёмка трека T-CULL01 вместе с
+визуальным sign-off Stage 8 по полосе 130–150 м. Отдельные тикеты: ограничение числа удерживаемых
+источников для возможного возврата fade-out; input-flake F9 (`no_rebase_plan`).
 Открытые темы, вынесенные из L5: интерьерный бюджет/окклюзия ADMIN (веер её не решает),
 предложение по `range` INLIGHT 48.3 м (нужно отдельное одобрение и замер lights-per-tile),
 пространственный индекс для `FindFocusCamera` (O(2 238), 2.4–3.3 мс за вызов).
-Отчёты: [`T-LIGHT20_REPORT.md`](T-LIGHT20_REPORT.md) · [`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md) · [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).
+Отчёты: [`T-LIGHT21_REPORT.md`](T-LIGHT21_REPORT.md) · [`T-LIGHT20_REPORT.md`](T-LIGHT20_REPORT.md) · [`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md) · [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

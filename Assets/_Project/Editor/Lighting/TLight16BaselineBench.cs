@@ -49,6 +49,15 @@
 // и секунд до применения новой фокус-точки (pool.FocusPositionVersion), плюс census activeInFrustum.
 // Отдельно пишется PREGAME-строка: какая камера была у пула в главном меню и какую выбрал бы
 // прежний алгоритм без фильтров. Сцена не сохраняется, push не выполняется.
+// T-LIGHT20 (L5 светового трека) — режим TUNE A/B (меню Project C → Lighting → T-LIGHT20 tune → Run):
+// тот же веер/точки/часы, но значения конфига пула меняются в памяти через ApplyTuneConfig.
+//
+// T-LIGHT21 (L6 светового трека) — режим FADE A/B (меню Project C → Lighting → T-LIGHT21 fade → Run):
+// тот же веер/точки/часы, но ALIC переключается между мгновенной записью (fadeOff = контроль до L6)
+// и fade-in 0.15 с / fade-out 0.30 с через удержание enabled (fadeOn). Профиль включения снимается
+// пробой: перед разворотом камеры проба сбрасывается, ALIC записывает кадры (кадр/вес/яркость),
+// а бенч пишет их в raw-лог как FADEPROFILE вместе с t90, максимальным скачком и счётчиками
+// удержания/грейса. Сцена не сохраняется, push не выполняется.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -83,14 +92,18 @@ namespace ProjectC.EditorTools
         private const string AbortMenuL4 = "Project C/Lighting/T-LIGHT19 cone/Abort";
         private const string RunMenuL5 = "Project C/Lighting/T-LIGHT20 tune/Run";
         private const string AbortMenuL5 = "Project C/Lighting/T-LIGHT20 tune/Abort";
+        private const string RunMenuL6 = "Project C/Lighting/T-LIGHT21 fade/Run";
+        private const string AbortMenuL6 = "Project C/Lighting/T-LIGHT21 fade/Abort";
 
-        private enum RunMode { Baseline, L2, L2B, L3, L4, L5 }
+        private enum RunMode { Baseline, L2, L2B, L3, L4, L5, L6 }
 
-        /// <summary>T-LIGHT20: кейсы L5 — тоже режим веера (те же колонки конуса в отчёте/CSV).</summary>
-        private static bool IsConeMode => _mode == RunMode.L4 || _mode == RunMode.L5;
+        /// <summary>T-LIGHT20: кейсы L5 — тоже режим веера (те же колонки конуса в отчёте/CSV).
+        /// T-LIGHT21: L6 идёт на принятом веере — фаза конуса в кейсах та же.</summary>
+        private static bool IsConeMode => _mode == RunMode.L4 || _mode == RunMode.L5 || _mode == RunMode.L6;
 
-        /// <summary>Префикс логов/ошибок: в режимах L2/L2b/L3/L4 не выдаём их за L1.</summary>
+        /// <summary>Префикс логов/ошибок: в режимах L2/L2b/L3/L4/L5/L6 не выдаём их за L1.</summary>
         private static string Tag =>
+            _mode == RunMode.L6 ? "[T-LIGHT21]" :
             _mode == RunMode.L5 ? "[T-LIGHT20]" :
             _mode == RunMode.L4 ? "[T-LIGHT19]" :
             _mode == RunMode.L3 ? "[T-LIGHT18]" :
@@ -145,6 +158,12 @@ namespace ProjectC.EditorTools
         private const float TuneFinalRear = ConeRearMeters;
         private const float TuneFinalPenalty = ConePenaltyPerDeg;
 
+        /// <summary>T-LIGHT21: параметры fade, которые бенч задаёт явно (должны совпадать с дефолтами ALIC).</summary>
+        private const float FadeInDefaultSec = 0.15f;
+        private const float FadeOutDefaultSec = 0.30f;
+        /// <summary>T-LIGHT21: грейс dayGate в пуле (задаётся не бенчем — только репортится).</summary>
+        private const float GateGraceSeconds = 0.4f;
+
         private const double HostTimeoutSeconds = 120.0;
         private const double RigTimeoutSeconds = 300.0;
         private const double WarmupTimeoutSeconds = 900.0;
@@ -196,6 +215,11 @@ namespace ProjectC.EditorTools
             public string cfgAxis = "base";
             public int cfgMaxActive = TuneBaseMaxActive;
             public float cfgHysteresis = TuneBaseHysteresis;
+
+            // T-LIGHT21: плавность в кейсе (true = fade вкл, false = мгновенно — контроль).
+            public bool cfgFade = true;
+            public float cfgFadeIn = FadeInDefaultSec;
+            public float cfgFadeOut = FadeOutDefaultSec;
         }
 
         // ------------------------------------------------------------------ состояние
@@ -335,6 +359,18 @@ namespace ProjectC.EditorTools
         private static int _cInActive;
         private static int _cInRangeGt20;
 
+        // T-LIGHT21: профиль включения (t90 / максимальный скачок) и счётчики удержания/грейса.
+        private static int _cFadeHeldSteady;
+        private static int _cFadeGraceSteady;
+        private static int _fadeHeldMax;
+        private static int _fadeGraceMax;
+        private static int _fadeProfileFrames = -1;
+        private static float _fadeT90Sec = -1f;
+        private static int _fadeT90Frames = -1;
+        private static float _fadeMaxJumpRatio = -1f;
+        private static float _fadeMaxWeightError = -1f;
+        private static string _fadeProfileLight = "none";
+
         private static Vector3 _targetPos;
         private static Quaternion _targetRot;
         private static int _settleUntilFrame;
@@ -429,12 +465,19 @@ namespace ProjectC.EditorTools
             StartRun(RunMode.L5);
         }
 
+        [MenuItem(RunMenuL6)]
+        public static void RunL6()
+        {
+            StartRun(RunMode.L6);
+        }
+
         [MenuItem(AbortMenu)]
         [MenuItem(AbortMenuL2)]
         [MenuItem(AbortMenuL2B)]
         [MenuItem(AbortMenuL3)]
         [MenuItem(AbortMenuL4)]
         [MenuItem(AbortMenuL5)]
+        [MenuItem(AbortMenuL6)]
         public static void Abort()
         {
             Finish("ABORTED_BY_USER", false);
@@ -457,7 +500,8 @@ namespace ProjectC.EditorTools
                                                     _mode == RunMode.L2B ? "Temp/T-LIGHT17B" :
                                                     _mode == RunMode.L3 ? "Temp/T-LIGHT18" :
                                                     _mode == RunMode.L4 ? "Temp/T-LIGHT19" :
-                                                    _mode == RunMode.L5 ? "Temp/T-LIGHT20" : RawDir);
+                                                    _mode == RunMode.L5 ? "Temp/T-LIGHT20" :
+                                                    _mode == RunMode.L6 ? "Temp/T-LIGHT21" : RawDir);
             if (!Directory.Exists(rawDir)) Directory.CreateDirectory(rawDir);
 
             _runTag = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
@@ -466,7 +510,8 @@ namespace ProjectC.EditorTools
                             _mode == RunMode.L2B ? "T-LIGHT17B" :
                             _mode == RunMode.L3 ? "T-LIGHT18" :
                             _mode == RunMode.L4 ? "T-LIGHT19" :
-                            _mode == RunMode.L5 ? "T-LIGHT20" : "T-LIGHT16_BASELINE";
+                            _mode == RunMode.L5 ? "T-LIGHT20" :
+                            _mode == RunMode.L6 ? "T-LIGHT21" : "T-LIGHT16_BASELINE";
             _outRawPath = Path.Combine(rawDir, prefix + "_" + DateTag + "_raw.txt");
             _outCsvPath = Path.Combine(_csvDirFull, prefix + "_" + DateTag + ".csv");
             if (File.Exists(_outRawPath)) File.Delete(_outRawPath);
@@ -502,7 +547,8 @@ namespace ProjectC.EditorTools
             Append("NOTE;bench=TLight16BaselineBench;mode=" + _mode + ";unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart +
-                   ";headNote=" + (_mode == RunMode.L5 ? "tune_values_ab_on_accepted_cone_l4"
+                   ";headNote=" + (_mode == RunMode.L6 ? "fade_in_alic_ab_015_030_on_accepted_l5"
+                                 : _mode == RunMode.L5 ? "tune_values_ab_on_accepted_cone_l4"
                                  : _mode == RunMode.L4 ? "cone_fan_ab_rear_preactivation_score"
                                  : _mode == RunMode.L3 ? "focus_camera_cache_filters_adaptive_ab"
                                  : _mode == RunMode.L2B ? "alic_active_set_ab"
@@ -515,7 +561,9 @@ namespace ProjectC.EditorTools
                    ";samples=" + SampleCount + "x gap " + SampleGapFrames +
                    "fr;metric=UnityStats median;far=" + BenchFar.ToString("F0", CultureInfo.InvariantCulture) +
                    ";fov=" + BenchFov.ToString("F0", CultureInfo.InvariantCulture) + ";near=0.1");
-            Append(_mode == RunMode.L5
+            Append(_mode == RunMode.L6
+                ? "NOTE;behaviour_changed=fade_multiplier_in_alic_only(fadeIn=0.15,fadeOut=0.30viaHoldEnabled,poolGateGrace=0.4);light_policy_unchanged(dayGate/split/outMin/radius/cap/hysteresis/cone/focus);ownership_unchanged(enabled=pool,intensity=alic);scene_saved=no;push=no"
+                : _mode == RunMode.L5
                 ? "NOTE;behaviour_changed=config_values_only(radius/cap/hysteresis/margin/pre/rear/penalty);cone_logic_unchanged(L4);light_policy_unchanged(dayGate/split/outMin/checkInterval/enabled/intensity);scene_saved=no;push=no"
                 : _mode == RunMode.L4
                 ? "NOTE;behaviour_changed=candidate_selection_by_camera_direction_only;light_policy_unchanged(dayGate/split/radius/cap/enabled/intensity);scene_saved=no;push=no"
@@ -528,6 +576,10 @@ namespace ProjectC.EditorTools
                 : "NOTE;behaviour_unchanged=pool.enabled_intensity_focus_maxActive_radius_untouched;scene_saved=no;push=no");
             Append("NOTE;pool_markers=" + PrimumLightPool.CheckMarkerName + "|" + PrimumLightPool.FocusMarkerName +
                    ";alic_marker=" + AdditionalLightIntensityController.ApplyMarkerName);
+            Append("NOTE;fade_contract=enabledOwner=PrimumLightPool;intensityOwner=AdditionalLightIntensityController;" +
+                   "holdEnabled=ALIC->pool(ask_before_disable);gateGraceSeconds=" + GateGraceSeconds.ToString("F2", CultureInfo.InvariantCulture) +
+                   ";fadeIn=" + FadeInDefaultSec.ToString("F2", CultureInfo.InvariantCulture) +
+                   ";fadeOut=" + FadeOutDefaultSec.ToString("F2", CultureInfo.InvariantCulture));
 
             Debug.Log(Tag + " Старт, кейсов: " + _cases.Count + ". Файл: " + _outRawPath);
 
@@ -543,6 +595,7 @@ namespace ProjectC.EditorTools
             if (_mode == RunMode.L3) return BuildCasesL3();
             if (_mode == RunMode.L4) return BuildCasesL4();
             if (_mode == RunMode.L5) return BuildCasesL5();
+            if (_mode == RunMode.L6) return BuildCasesL6();
 
             // Координаты P1/STREET — те же, что в бенче Stage 8 (P1 2 229 DC при hour 12):
             // нужны для контрольного сравнения, что инструментация не изменила поведение.
@@ -833,6 +886,78 @@ namespace ProjectC.EditorTools
 
             return list;
         }
+
+        /// <summary>
+        /// T-LIGHT21 (L6): A/B плавности на принятом конфиге L5/L4 (radius 100, cap 96, hysteresis 0.10,
+        /// margin 6°, pre 5°, rear 28 м, penalty 1.2). Одна и та же поза/час повторяется в двух режимах:
+        /// fadeOff (мгновенная запись — контроль до L6) и fadeOn (fade-in 0.15 с, fade-out 0.30 с через
+        /// удержание enabled). Меняется только fade-конфиг ALIC в памяти — сцена не записывается.
+        /// </summary>
+        private static List<LightCase> BuildCasesL6()
+        {
+            var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
+            var street = new Vector3(-382.90f, -58.23f, -126.20f);
+
+            var list = new List<LightCase>();
+
+            void F(string point, string poseKind, Vector3 local, float yaw, float hour, bool fade, string note)
+            {
+                string cfg = fade ? "fadeOn" : "fadeOff";
+                list.Add(new LightCase
+                {
+                    id = point + "_h" + hour.ToString("F0", CultureInfo.InvariantCulture) + "_" + cfg,
+                    point = point,
+                    poseKind = poseKind,
+                    local = local,
+                    yaw = yaw,
+                    hour = hour,
+                    note = note,
+                    cfgTag = cfg,
+                    // Политика света — принятые L2/L4/L5, между кейсами не меняется.
+                    cfgDayGate = true,
+                    cfgSplit = true,
+                    cfgOutMin = 40,
+                    cfgUseL2 = true,
+                    cfgRadius = TuneFinalRadius,
+                    cfgCameraFilters = true,
+                    cfgAdaptive = true,
+                    cfgCone = true,
+                    cfgConeMargin = TuneFinalMargin,
+                    cfgConeRear = TuneFinalRear,
+                    cfgConePenalty = TuneFinalPenalty,
+                    cfgConePre = TuneFinalPre,
+                    cfgMaxActive = TuneFinalMaxActive,
+                    cfgHysteresis = TuneFinalHysteresis,
+                    // Предмет замера L6.
+                    cfgFade = fade,
+                    cfgFadeIn = FadeInDefaultSec,
+                    cfgFadeOut = FadeDefaultOut(),
+                });
+            }
+
+            float[] hours = { 12f, 18f, 20f };
+            for (int h = 0; h < hours.Length; h++)
+            {
+                float hour = hours[h];
+                F("P1", "local", p1, 337.5f, hour, false, "control_instant_write_before_L6");
+                F("P1", "local", p1, 337.5f, hour, true, "fade_on");
+                F("STREET", "local", street, 225f, hour, false, "control_street");
+                F("STREET", "local", street, 225f, hour, true, "fade_street");
+                F("ADMIN", "admin", Vector3.zero, 0f, hour, false, "control_interior_flicker");
+                F("ADMIN", "admin", Vector3.zero, 0f, hour, true, "fade_interior_flicker");
+                F("FARM", "farm", Vector3.zero, 0f, hour, false, "control_farm");
+                F("FARM", "farm", Vector3.zero, 0f, hour, true, "fade_farm");
+            }
+
+            // Повтор ключевого кейса (площадь, 18 ч) — стабильность профиля.
+            F("P1", "local", p1, 337.5f, 18f, false, "repeat_control");
+            F("P1", "local", p1, 337.5f, 18f, true, "repeat_fade_on");
+
+            return list;
+        }
+
+        /// <summary>T-LIGHT21: длительность fade-out по умолчанию (fade-out проходит через удержание enabled).</summary>
+        private static float FadeDefaultOut() => FadeOutDefaultSec;
 
         /// <summary>
         /// T-LIGHT17: A/B-кейсы L2. Один и тот же кейс повторяется в разных конфигах пула —
@@ -1261,6 +1386,11 @@ namespace ProjectC.EditorTools
 
             // T-LIGHT17b: зафиксировать режим ALIC рядом с числами (до первого кейса).
             if (_alic != null) Append("ALIC_CONFIG;at_gate;" + _alic.ConfigLine);
+            // T-LIGHT21: контракт fade и режим на входе в замер.
+            if (_alic != null) Append("ALIC_CONFIG;at_gate;" + _alic.FadeConfigLine);
+            if (_pool != null) Append("POOL_GATE;graceSeconds=" + _pool.GateGraceSeconds.ToString("F2", CultureInfo.InvariantCulture) +
+                                      ";holdForFade=" + (_pool.HoldEnabled != null ? "on" : "off") +
+                                      ";heldForFade=" + _pool.HeldForFade + ";gateGraceHeld=" + _pool.GateGraceHeld);
 
             // T-LIGHT18: чем именно пул считает фокус в игре (должна быть ThirdPersonCamera).
             Append("GATE_FOCUS;poolFocus=" + (_pool != null ? _pool.FocusSourceKind + ":" + _pool.FocusSourceName : "none") +
@@ -1340,6 +1470,18 @@ namespace ProjectC.EditorTools
             _alicBaseSweepFrames.Clear();
             _lastProfiledFrame = -1;
 
+            // T-LIGHT21: проба профиля и счётчики удержания/грейса перезапускаются на каждом кейсе.
+            _fadeProfileFrames = -1;
+            _fadeT90Sec = -1f;
+            _fadeT90Frames = -1;
+            _fadeMaxJumpRatio = -1f;
+            _fadeMaxWeightError = -1f;
+            _fadeProfileLight = "none";
+            _fadeHeldMax = 0;
+            _fadeGraceMax = 0;
+            _cFadeHeldSteady = -1;
+            _cFadeGraceSteady = -1;
+
             ForcePhaseSilent(c.hour);
             ApplyPose(c);
 
@@ -1379,6 +1521,22 @@ namespace ProjectC.EditorTools
                                       c.cfgConeMargin, c.cfgConePre, c.cfgConeRear, c.cfgConePenalty);
                 Append("TUNE;case=" + c.id + ";axis=" + c.cfgAxis + ";" + _pool.ConfigLine);
                 Append("TUNE;case=" + c.id + ";axis=" + c.cfgAxis + ";" + _pool.ConeConfigLine);
+            }
+
+            // T-LIGHT21: fade-конфиг ALIC — только поля в памяти; сцена и ассеты не пишутся.
+            if (_mode == RunMode.L6 && _pool != null)
+            {
+                _pool.ApplyTuneConfig(c.cfgRadius, c.cfgMaxActive, c.cfgHysteresis,
+                                      c.cfgConeMargin, c.cfgConePre, c.cfgConeRear, c.cfgConePenalty);
+                Append("CONFIG;case=" + c.id + ";" + _pool.ConfigLine);
+                Append("CONFIG;case=" + c.id + ";" + _pool.ConeConfigLine);
+            }
+
+            if (_mode == RunMode.L6 && _alic != null)
+            {
+                _alic.ApplyFadeConfig(c.cfgFade, c.cfgFadeIn, c.cfgFadeOut);
+                _alic.ResetFadeProfile();
+                Append("FADE;case=" + c.id + ";mode=" + c.cfgTag + ";" + _alic.FadeConfigLine);
             }
 
             _dc.Clear(); _spc.Clear(); _tris.Clear(); _ms.Clear(); _gpu.Clear();
@@ -1742,6 +1900,9 @@ namespace ProjectC.EditorTools
                     _probeFrame = Time.frameCount;
                     _probeStartTime = Now;
                     _probePhase = 1;
+                    // T-LIGHT21: перед разворотом сбрасываем пробу — она поймает первый fade-in
+                    // из ламп, которые пул включит по новому направлению камеры.
+                    if (_mode == RunMode.L6 && _alic != null) _alic.ResetFadeProfile();
                     TurnProbePose(180f);
                     Append("CONEPROBE;case=" + c.id + ";phase=turn180;frame=" + _probeFrame +
                            ";setVersion=" + _probeSetVersionBefore +
@@ -1817,6 +1978,7 @@ namespace ProjectC.EditorTools
 
                 case 5:
                     if (Time.frameCount - _probeFrame < ProbeSettleFrames) return true;
+                    if (_mode == RunMode.L6) WriteFadeProfile(c);
                     _probePhase = 6;
                     _nextSampleFrame = Time.frameCount + ProbeSettleFrames;
                     return false;
@@ -1848,6 +2010,44 @@ namespace ProjectC.EditorTools
                 case 3:
                 case 4: TurnProbePose(90f); break;
                 case 5: _cam.transform.SetPositionAndRotation(_probeBasePos, _probeBaseRot); break;
+            }
+        }
+
+        /// <summary>
+        /// T-LIGHT21: выгрузить пробу профиля включения в raw-лог и запомнить её метрики для CSV.
+        /// Профиль снимается ALIC'ом на лампе, которую пул включил после разворота камеры.
+        /// </summary>
+        private static void WriteFadeProfile(LightCase c)
+        {
+            if (_alic == null) return;
+
+            _fadeProfileFrames = _alic.FadeProfileCount;
+            _fadeProfileLight = _alic.FadeProfileLightName;
+            _fadeT90Frames = _alic.FadeProfileT90Frames;
+            _fadeT90Sec = _alic.FadeProfileT90Sec;
+            _fadeMaxJumpRatio = _alic.FadeProfileMaxJumpRatio;
+            _fadeMaxWeightError = _alic.FadeMaxWeightError;
+
+            Append("FADEPROFILE;case=" + c.id + ";mode=" + c.cfgTag + ";light=" + _fadeProfileLight +
+                   ";frames=" + _fadeProfileFrames +
+                   ";t90f=" + _fadeT90Frames +
+                   ";t90sec=" + _fadeT90Sec.ToString("F3", CultureInfo.InvariantCulture) +
+                   ";maxJumpRatio=" + _fadeMaxJumpRatio.ToString("F3", CultureInfo.InvariantCulture) +
+                   ";maxWeightError=" + _fadeMaxWeightError.ToString("F3", CultureInfo.InvariantCulture) +
+                   ";heldForFade=" + (_pool != null ? _pool.HeldForFade : -1) +
+                   ";gateGraceHeld=" + (_pool != null ? _pool.GateGraceHeld : -1) +
+                   ";fadeActive=" + _alic.FadeActiveCount +
+                   ";inCount=" + _alic.FadeInCount +
+                   ";outCount=" + _alic.FadeOutCount +
+                   ";lastFadeMs=" + _alic.LastFadeMs.ToString("F4", CultureInfo.InvariantCulture) +
+                   ";" + _alic.FadeConfigLine);
+
+            for (int i = 0; i < _fadeProfileFrames; i++)
+            {
+                _alic.GetFadeProfileSample(i, out int frame, out float weight, out float intensity);
+                Append("FADEPROFILE;case=" + c.id + ";frame=" + frame +
+                       ";weight=" + weight.ToString("F3", CultureInfo.InvariantCulture) +
+                       ";intensity=" + intensity.ToString("F4", CultureInfo.InvariantCulture));
             }
         }
 
@@ -2034,6 +2234,10 @@ namespace ProjectC.EditorTools
             _cConeHalfH = _pool.ConeHalfHDeg;
             _cConeHalfV = _pool.ConeHalfVDeg;
             _cRearRadius = _pool.RearRadius;
+            // T-LIGHT21: значения в установившемся состоянии (после успокоения, до проб) —
+            // именно они должны быть 0 после прогрева (никакого thrash от dayGate).
+            _cFadeHeldSteady = _pool.HeldForFade;
+            _cFadeGraceSteady = _pool.GateGraceHeld;
 
             // В Unity 6 VisibleLight выдаёт только CullingResults внутри render-pass, у Camera
             // такого API нет — пишем -1 и отмечаем в raw, чтобы не выдавать пустое значение за 0.
@@ -2148,7 +2352,7 @@ namespace ProjectC.EditorTools
             sb.Append(";alicIntensityZero=").Append(_cAlicZero);
             sb.Append(";alicHour=").Append(_cAlicHour.ToString("F2", CultureInfo.InvariantCulture));
             sb.Append(";alicFlicker=").Append(_cAlicFlicker);
-            if (_mode == RunMode.L2B)
+            if (_mode == RunMode.L2B || _mode == RunMode.L6)
             {
                 sb.Append(";alicActiveSet=").Append(_cAlicActiveSet)
                   .Append(";alicSetSize=").Append(_cAlicSetSize)
@@ -2226,6 +2430,26 @@ namespace ProjectC.EditorTools
                   .Append(";quotaFilled=").Append(_cQuotaFilled)
                   .Append(";outMinUsed=").Append(_cOutMinUsed);
             }
+            if (_mode == RunMode.L6)
+            {
+                sb.Append(";fadeEnabled=").Append(c.cfgFade ? "on" : "off")
+                  .Append(";fadeInSec=").Append(c.cfgFadeIn.ToString("F2", CultureInfo.InvariantCulture))
+                  .Append(";fadeOutSec=").Append(c.cfgFadeOut.ToString("F2", CultureInfo.InvariantCulture))
+                  .Append(";fadeProfileFrames=").Append(_fadeProfileFrames)
+                  .Append(";fadeProfileLight=").Append(_fadeProfileLight)
+                  .Append(";fadeT90Sec=").Append(_fadeT90Sec.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(";fadeT90Frames=").Append(_fadeT90Frames)
+                  .Append(";fadeMaxJumpRatio=").Append(_fadeMaxJumpRatio.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(";fadeMaxWeightError=").Append(_fadeMaxWeightError.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(";fadeHeldForFade=").Append(_fadeHeldMax)
+                  .Append(";fadeGateGraceHeld=").Append(_fadeGraceMax)
+                  .Append(";fadeHeldSteady=").Append(_cFadeHeldSteady)
+                  .Append(";fadeGraceSteady=").Append(_cFadeGraceSteady)
+                  .Append(";fadeActiveCount=").Append(_alic != null ? _alic.FadeActiveCount : -1)
+                  .Append(";fadeInCount=").Append(_alic != null ? _alic.FadeInCount : -1)
+                  .Append(";fadeOutCount=").Append(_alic != null ? _alic.FadeOutCount : -1)
+                  .Append(";fadeLastMs=").Append((_alic != null ? _alic.LastFadeMs : -1).ToString("F4", CultureInfo.InvariantCulture));
+            }
             sb.Append(";note=").Append(c.note);
             Append(sb.ToString());
             AppendCsv(c, dc, spc, tris, gpuMs, ms, fps, checkMs, alicMs, alicWrites, alicActiveWrites, alicIterated, alicBaseSweepFrames);
@@ -2282,8 +2506,14 @@ namespace ProjectC.EditorTools
                                   ? ",tuneAxis,tuneRadius,tuneMaxActive,tuneHysteresis,tuneMargin,tunePre,tuneRear," +
                                     "tunePenalty,inActiveTotal,inActiveRangeGt20"
                                   : string.Empty) +
-                              (_mode == RunMode.L2B
+                              (_mode == RunMode.L2B || _mode == RunMode.L6
                                   ? ",alicActiveSet,alicSetSize,alicWritesAvg,alicActiveWritesAvg,alicIteratedAvg,alicBaseSweepFrames"
+                                  : string.Empty) +
+                              (_mode == RunMode.L6
+                                  ? ",fadeEnabled,fadeInSec,fadeOutSec,fadeProfileFrames,fadeProfileLight,fadeT90Sec," +
+                                    "fadeT90Frames,fadeMaxJumpRatio,fadeMaxWeightError,fadeHeldForFade," +
+                                    "fadeGateGraceHeld,fadeHeldSteady,fadeGraceSteady,fadeActiveCount,fadeInCount," +
+                                    "fadeOutCount,fadeLastMs"
                                   : string.Empty) +
                               (_mode == RunMode.L2
                                   ? ",cfgTag,cfgRadius,cfgDayGate,cfgSplit,cfgOutMin,dayGateDropped,quotaDeferred,quotaFilled,outMinUsed"
@@ -2370,7 +2600,7 @@ namespace ProjectC.EditorTools
                   .Append(',').Append(_cInActive)
                   .Append(',').Append(_cInRangeGt20);
             }
-            if (_mode == RunMode.L2B)
+            if (_mode == RunMode.L2B || _mode == RunMode.L6)
             {
                 sb.Append(',').Append(_cAlicActiveSet ? 1 : 0)
                   .Append(',').Append(_cAlicSetSize)
@@ -2378,6 +2608,26 @@ namespace ProjectC.EditorTools
                   .Append(',').Append(alicActiveWrites.ToString("F1", CultureInfo.InvariantCulture))
                   .Append(',').Append(alicIterated.ToString("F1", CultureInfo.InvariantCulture))
                   .Append(',').Append((int)alicBaseSweepFrames);
+            }
+            if (_mode == RunMode.L6)
+            {
+                sb.Append(',').Append(c.cfgFade ? 1 : 0)
+                  .Append(',').Append(c.cfgFadeIn.ToString("F2", CultureInfo.InvariantCulture))
+                  .Append(',').Append(c.cfgFadeOut.ToString("F2", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_fadeProfileFrames)
+                  .Append(',').Append(_fadeProfileLight)
+                  .Append(',').Append(_fadeT90Sec.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_fadeT90Frames)
+                  .Append(',').Append(_fadeMaxJumpRatio.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_fadeMaxWeightError.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_fadeHeldMax)
+                  .Append(',').Append(_fadeGraceMax)
+                  .Append(',').Append(_cFadeHeldSteady)
+                  .Append(',').Append(_cFadeGraceSteady)
+                  .Append(',').Append(_alic != null ? _alic.FadeActiveCount : -1)
+                  .Append(',').Append(_alic != null ? _alic.FadeInCount : -1)
+                  .Append(',').Append(_alic != null ? _alic.FadeOutCount : -1)
+                  .Append(',').Append((_alic != null ? _alic.LastFadeMs : -1).ToString("F4", CultureInfo.InvariantCulture));
             }
             if (_mode == RunMode.L2)
             {
@@ -2424,6 +2674,13 @@ namespace ProjectC.EditorTools
                 _alicActiveWritesFrames.Add(_alic.ActiveWritesThisFrame);
                 _alicIteratedFrames.Add(_alic.IteratedThisFrame);
                 _alicBaseSweepFrames.Add(_alic.BaseSweepThisFrame ? 1.0 : 0.0);
+            }
+
+            // T-LIGHT21: пики удержания ради fade-out и грейса dayGate за окно кейса.
+            if (_pool != null && _mode == RunMode.L6)
+            {
+                if (_pool.HeldForFade > _fadeHeldMax) _fadeHeldMax = _pool.HeldForFade;
+                if (_pool.GateGraceHeld > _fadeGraceMax) _fadeGraceMax = _pool.GateGraceHeld;
             }
         }
 

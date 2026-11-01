@@ -73,6 +73,15 @@
 //   ApplyTuneConfig(radius, maxActive, hysteresis, margin, pre, rear, penalty) меняет поля компонента
 //   в памяти (A/B) и не пишет сцену/ассеты. Логика отбора (веер L4), фокус (L3), dayGate / split /
 //   outMin / checkInterval и владение enabled/intensity не изменены.
+//
+// T-LIGHT21 (L6 светового трека) — только плавность; владение не нарушено:
+//   1. fade живёт в ALIC (владелец intensity). Пул лишь СПРАШИВАЕТ разрешение на выключение через
+//      HoldEnabled: если ALIC ещё гасит источник, пул откладывает enabled = false на следующий чек
+//      (сам пишет enabled по-прежнему только пул, дедлайн держит ALIC).
+//   2. Грейс-период dayGate (gateGraceSeconds, 0.4 с): в первых кадрах fade-in intensity ≈ 0, и без грейса
+//      день/ночь-гейт счёл бы источник погашенным и выключил его — лампа замигала бы ровно там,
+//      где fade её убирает. Грейс касается только уже включённых источников и только dayGate.
+//   Политика (split / outMin / radius / cap / hysteresis / веер / фокус / checkInterval) не изменена.
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
@@ -129,6 +138,10 @@ namespace ProjectC.World
 
         [Tooltip("Использовать радиус L2 вместо устаревшего activeRadius из сцены (140 м). Выключить = вернуть поведение L1.")]
         [SerializeField] private bool useRadiusL2 = true;
+
+        [Header("T-LIGHT21 (L6): грейс-период день/ночь-гейта")]
+        [Tooltip("Сколько секунд после включения источника day/night-гейт не считает его погашенным. Нужен, потому что в первых кадрах fade-in интенсивность ≈ 0 (владелец — ALIC). 0 = поведение до L6.")]
+        [SerializeField, Min(0f)] private float gateGraceSeconds = 0.4f;
 
         [Tooltip("Радиус включения в режиме L2, м.")]
         [SerializeField, Min(0f)] private float activeRadiusL2 = 100f;
@@ -197,6 +210,9 @@ namespace ProjectC.World
         private float[] _sqr = new float[0];
         private bool[] _on = new bool[0];
         private byte[] _kind = new byte[0];
+        // T-LIGHT21: время включения источника (для грейса dayGate) и флаг «держим enabled ради fade-out».
+        private float[] _enabledAt = new float[0];
+        private bool[] _heldForFade = new bool[0];
         // T-LIGHT19: угол от forward и score кандидата (score = d + penalty·угол).
         private float[] _ang = new float[0];
         private float[] _score = new float[0];
@@ -227,6 +243,19 @@ namespace ProjectC.World
         public bool KindSplitEnabled => kindSplitEnabled;
         public int OutdoorMinSlots => outdoorMinSlots;
         public float DayGateEpsilon => dayGateEpsilon;
+        /// <summary>T-LIGHT21: грейс-период dayGate после включения источника, с.</summary>
+        public float GateGraceSeconds => gateGraceSeconds;
+        /// <summary>T-LIGHT21: сколько источников в последнем чеке держалось грейсом (после прогрева — 0).</summary>
+        public int GateGraceHeld { get; private set; }
+        /// <summary>T-LIGHT21: сколько источников держится включёнными ради fade-out в последнем чеке.</summary>
+        public int HeldForFade { get; private set; }
+
+        /// <summary>
+        /// T-LIGHT21: ALIC (владелец Light.intensity) вешает сюда проверку «держать ли ещё enabled».
+        /// Пул вызывает её только перед записью enabled = false; возврат true — источник остаётся включённым,
+        /// пока ALIC гасит яркость. Решение о выключении всё равно за пулом (он и пишет enabled).
+        /// </summary>
+        public System.Func<Light, bool> HoldEnabled;
         /// <summary>Значение поля активного радиуса, доставшееся от L1 (в сцене — 140 м).</summary>
         public float LegacyActiveRadius => activeRadius;
         /// <summary>Сколько источников выключено в последнем чеке только из-за нулевой яркости.</summary>
@@ -283,7 +312,9 @@ namespace ProjectC.World
                        ";legacyRadius=" + activeRadius.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) +
                        ";maxActive=" + maxActive +
                        ";hysteresis=" + hysteresis.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
-                       ";checkInterval=" + checkInterval.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                       ";checkInterval=" + checkInterval.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";gateGrace=" + gateGraceSeconds.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";holdForFade=" + (HoldEnabled != null ? "on" : "off") + ";";
             }
         }
 
@@ -564,6 +595,9 @@ namespace ProjectC.World
             _kind = new byte[_lights.Length];
             _ang = new float[_lights.Length];
             _score = new float[_lights.Length];
+            // T-LIGHT21: время включения (грейс dayGate) и удержание enabled ради fade-out.
+            _enabledAt = new float[_lights.Length];
+            _heldForFade = new bool[_lights.Length];
             if (_cmpDistance == null) _cmpDistance = CompareByDistance;
             if (_cmpScore == null) _cmpScore = CompareByScore;
             ActiveCount = 0;
@@ -597,7 +631,11 @@ namespace ProjectC.World
                 if (_lights[i] == null) continue;
                 if (_lights[i].enabled) switchedOff++;
                 _lights[i].enabled = false;
+                _enabledAt[i] = float.NegativeInfinity;
+                _heldForFade[i] = false;
             }
+            HeldForFade = 0;
+            GateGraceHeld = 0;
             if (switchedOff > 0) SetVersion++;
         }
 
@@ -715,6 +753,7 @@ namespace ProjectC.World
             _deferred.Clear();
 
             int gateDropped = 0;
+            int graceHeld = 0;
             int coneCand = 0, rearCand = 0;
             for (int i = 0; i < _lights.Length; i++)
             {
@@ -726,6 +765,16 @@ namespace ProjectC.World
                 _sqr[i] = d;
 
                 bool emitting = gateEps < 0f || l.intensity > gateEps;
+
+                // T-LIGHT21: грейс-период после включения. В первых кадрах fade-in интенсивность ≈ 0
+                // (её ещё ведёт ALIC), и без грейса гейт счёл бы источник погашенным и выключил его —
+                // лампа замигала бы ровно там, где fade её убирает. Грейс только для уже включённых.
+                if (!emitting && gateGraceSeconds > 0f && l.enabled &&
+                    Time.time - _enabledAt[i] < gateGraceSeconds)
+                {
+                    emitting = true;
+                    graceHeld++;
+                }
 
                 if (!coneMode)
                 {
@@ -840,6 +889,7 @@ namespace ProjectC.World
 
             int active = 0;
             int switches = 0;
+            int heldForFade = 0;
             int aOut = 0, aIn = 0, aFarm = 0, aOther = 0;
             int b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0;
             int zero = 0;
@@ -850,12 +900,30 @@ namespace ProjectC.World
                 if (l == null) continue;
                 if (l.enabled != _on[i])
                 {
+                    // T-LIGHT21: перед выключением спрашиваем ALIC — если он ещё гасит источник, пул
+                    // откладывает enabled = false на следующий чек. enabled по-прежнему пишет только пул.
+                    if (!_on[i] && TryHoldForFade(i, l))
+                    {
+                        heldForFade++;
+                        continue;
+                    }
+
                     l.enabled = _on[i];
                     switches++;
+                    _heldForFade[i] = false;
+                    _enabledAt[i] = _on[i] ? Time.time : float.NegativeInfinity;
                     // T-LIGHT17b: владелец enabled сообщает о смене набора, чтобы ALIC применил
                     // intensity включённому источнику в этом же кадре.
                     ActiveLightChanged?.Invoke(l, _on[i]);
                 }
+                else if (_heldForFade[i])
+                {
+                    // Источник вернулся в набор до конца гашения: снимаем удержание и сообщаем ALIC,
+                    // что он снова горит (сам enabled не менялся).
+                    _heldForFade[i] = false;
+                    if (_on[i]) ActiveLightChanged?.Invoke(l, true);
+                }
+
                 if (!_on[i]) continue;
 
                 active++;
@@ -903,6 +971,8 @@ namespace ProjectC.World
             ActiveIntensityZero = zero;
             ActiveBehindOutsideRear = behindOutsideRear;
             DayGateDropped = gateDropped;
+            GateGraceHeld = graceHeld;
+            HeldForFade = heldForFade;
             KindQuotaDeferred = deferredTotal;
             KindQuotaFilled = filled;
             OutdoorMinSlotsUsed = outMin;
@@ -1129,6 +1199,30 @@ namespace ProjectC.World
         {
             if (_focusReport.Length > 0) _focusReport.Append(',');
             _focusReport.Append(cameraName).Append(reason == null ? "+" : "-" + reason);
+        }
+
+        /// <summary>
+        /// T-LIGHT21: спросить ALIC, можно ли уже выключать источник. Возврат true — оставляем Light.enabled как есть
+        /// (ALIC гасит яркость), пул выключит его на одном из следующих чеков. Дедлайн удержания — внутри ALIC,
+        /// поэтому при потере события/кадров источник всё равно будет выключен.
+        /// </summary>
+        private bool TryHoldForFade(int index, Light light)
+        {
+            System.Func<Light, bool> hold = HoldEnabled;
+            if (hold == null)
+            {
+                _heldForFade[index] = false;
+                return false;
+            }
+
+            if (hold(light))
+            {
+                _heldForFade[index] = true;
+                return true;
+            }
+
+            _heldForFade[index] = false;
+            return false;
         }
 
         private int CompareByDistance(int a, int b) => _sqr[a].CompareTo(_sqr[b]);

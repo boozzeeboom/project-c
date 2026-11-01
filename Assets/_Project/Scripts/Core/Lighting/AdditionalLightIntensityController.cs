@@ -26,6 +26,20 @@ namespace ProjectC.Core
     ///   • кривые, группы, переопределения, сглаживание и мерцание — без изменений.
     /// Настройки группы, override и flicker продолжают применяться к источнику, как только
     /// он снова попадает в активный набор или в базовую волну.
+    ///
+    /// T-LIGHT21 (L6 светового трека) — плавность включения/гашения. Fade живёт здесь, потому что
+    /// Light.intensity принадлежит этому компоненту (мерцание пишет её каждый кадр):
+    ///   • в LightState добавлены вес fadeWeight (0…1) и цель fadeTarget (0/1); итоговая запись
+    ///     value = smoothedIntensity · flicker · fadeWeight — мерцание остаётся поверх веса,
+    ///     кривая суток и сглаживание не меняются;
+    ///   • включение пулом (ActiveLightChanged) начинает fade-in от нуля за fadeInSeconds (0.15 с),
+    ///     повторный вход/resync уже горящего источника перехода не перезапускает;
+    ///   • fade-out (0.30 с) сделан ТОЛЬКО через контракт с пулом: пул перед записью
+    ///     Light.enabled = false спрашивает HoldEnabled, и, если ALIC ещё гасит, источник
+    ///     остаётся включённым. Владелец enabled — по-прежнему пул, intensity — ALIC;
+    ///   • immediate-пути (старт сцены, правка конфига) веса не сдерживают: там fade не работает,
+    ///     чтобы не было тёмного кадра;
+    ///   • для замера профиля включения пишется проба FADEPROFILE (кадр/вес/яркость, t90, скачок).
     /// </remarks>
     [DisallowMultipleComponent]
     public sealed class AdditionalLightIntensityController : MonoBehaviour
@@ -200,6 +214,16 @@ namespace ProjectC.Core
         [SerializeField] private bool includeInactiveLights = true;
         [SerializeField] private bool controlOnlyAdditionalLights = true;
 
+        [Header("T-LIGHT21: плавность включения/гашения (fade-множитель)")]
+        [Tooltip("Плавно появлять/гасить источник (fade-множитель к Light.intensity). Выключено = мгновенное включение, как до T-LIGHT21 (A/B-контроль).")]
+        [SerializeField] private bool fadeEnabled = true;
+
+        [Tooltip("Время появления источника от 0 до полной яркости, с.")]
+        [SerializeField, Min(0f)] private float fadeInSeconds = 0.15f;
+
+        [Tooltip("Время гашения источника до нуля, с. Пул держит Light.enabled, пока ALIC не закончит переход (жёсткий дедлайн fadeOut + 0.05 с).\n0 = мгновенное гашение (значение по умолчанию). T-LIGHT21 измерил fade-out 0.30 с и отклонил его как дефолт: при массовом выходе ламп из набора удержание достигало 75 источников против гейта ≤16.")]
+        [SerializeField, Min(0f)] private float fadeOutSeconds = 0f;
+
         [Header("Runtime Response")]
         [SerializeField, Min(0.1f)] private float transitionSpeed = 4f;
         [SerializeField] private bool logDiscovery = false;
@@ -274,6 +298,19 @@ namespace ProjectC.Core
             public float flickerStartTime;
             public float flickerEndTime;
             public float flickerDepth;
+
+            // T-LIGHT21: плавность. Вес — множитель к уже посчитанной яркости, поэтому
+            // flicker и кривая суток остаются нетронутыми.
+            /// <summary>Множитель плавности 0…1 (0 = источник погашен, 1 = полная яркость). Старт — 0: первое включение плавное.</summary>
+            public float fadeWeight;
+            /// <summary>Цель веса: 1 = горит/разгорается, 0 = гаснет.</summary>
+            public float fadeTarget = 1f;
+            /// <summary>Время начала текущего fade-in (Time.time) — для t90 и ошибки профиля.</summary>
+            public float fadeInStartTime;
+            /// <summary>Время начала текущего fade-out — основа жёсткого дедлайна удержания enabled.</summary>
+            public float fadeOutStartTime;
+            /// <summary>fade-out уже начат: таймер и счётчик не перезапускаются повторным вопросом пула.</summary>
+            public bool fadeOutActive;
         }
 
         /// <summary>
@@ -330,6 +367,12 @@ namespace ProjectC.Core
         private const float IntensityWriteEpsilon = 1e-4f;
         /// <summary>T-LIGHT17b: относительный порог сдвига группового множителя (доля от множителя).</summary>
         private const float BaseSweepRelativeEpsilon = 0.005f;
+        /// <summary>T-LIGHT21: ниже этого веса источник считается полностью погашенным.</summary>
+        private const float FadeWeightEpsilon = 0.001f;
+        /// <summary>T-LIGHT21: запас жёсткого дедлайна удержания enabled сверх fadeOutSeconds.</summary>
+        private const float FadeOutDeadlineSlack = 0.05f;
+        /// <summary>T-LIGHT21: сколько кадров пробы профиля хранится для отчёта.</summary>
+        private const int FadeProfileCapacity = 64;
 
         /// <summary>Сколько источников в списке отслеживаемых на последнем рескне.</summary>
         public int TrackedLightCount => _trackedLights.Count;
@@ -369,6 +412,110 @@ namespace ProjectC.Core
         public bool BaseSweepThisFrame { get; private set; }
         /// <summary>Групповых множителей изменено в последнем кадре (1/0) — для CSV.</summary>
         public bool MultipliersMovedThisFrame { get; private set; }
+
+        // ---------------------------------------------------------------- T-LIGHT21
+
+        /// <summary>Плавность включена (иначе — поведение до L6: мгновенная запись).</summary>
+        public bool FadeEnabled => fadeEnabled;
+        /// <summary>Длительность fade-in, с.</summary>
+        public float FadeInSeconds => fadeInSeconds;
+        /// <summary>Длительность fade-out, с.</summary>
+        public float FadeOutSeconds => fadeOutSeconds;
+        /// <summary>Сколько активных источников сейчас в переходе (0 &lt; вес &lt; 1).</summary>
+        public int FadeActiveCount { get; private set; }
+        /// <summary>Сколько fade-in'ов начато с запуска (нарастающий итог).</summary>
+        public int FadeInCount { get; private set; }
+        /// <summary>Сколько fade-out'ов начато с запуска (нарастающий итог).</summary>
+        public int FadeOutCount { get; private set; }
+        /// <summary>Максимальное расхождение фактического веса с линейной кривой fade-in (0 = строго линейно).</summary>
+        public float FadeMaxWeightError { get; private set; }
+        /// <summary>Длительность последнего покадрового прохода активного набора (fade + мерцание), мс.</summary>
+        public double LastFadeMs { get; private set; }
+        /// <summary>Сколько кадров записано в пробе профиля включения.</summary>
+        public int FadeProfileCount => _fadeProfileCount;
+        /// <summary>Имя источника, на котором снят профиль включения.</summary>
+        public string FadeProfileLightName => _fadeProfileName;
+        /// <summary>Кадры до 90 % яркости в пробе (–1 = не достигнуто/профиль пуст).</summary>
+        public int FadeProfileT90Frames => _fadeProfileT90Frames;
+        /// <summary>Секунды до 90 % яркости в пробе (–1 = не достигнуто/профиль пуст).</summary>
+        public float FadeProfileT90Sec => _fadeProfileT90Sec;
+        /// <summary>Максимальный скачок яркости за кадр, доля от целевой (1.0 = мгновенное включение).</summary>
+        public float FadeProfileMaxJumpRatio => _fadeProfileMaxJumpRatio;
+
+        private Light _fadeProfileLight;
+        private string _fadeProfileName = "none";
+        private float _fadeProfileStartTime;
+        private int _fadeProfileStartFrame;
+        private float _fadeProfileTarget;
+        private float _fadeProfilePrevValue;
+        private int _fadeProfileT90Frames = -1;
+        private float _fadeProfileT90Sec = -1f;
+        private float _fadeProfileMaxJumpRatio;
+        private int _fadeProfileCount;
+        private readonly int[] _fadeProfileFrames = new int[FadeProfileCapacity];
+        private readonly float[] _fadeProfileWeights = new float[FadeProfileCapacity];
+        private readonly float[] _fadeProfileValues = new float[FadeProfileCapacity];
+
+        /// <summary>Строка конфигурации fade для raw-лога/отчёта (рядом с ConfigLine пула).</summary>
+        public string FadeConfigLine
+        {
+            get
+            {
+                var c = System.Globalization.CultureInfo.InvariantCulture;
+                return "fade;enabled=" + (fadeEnabled ? "on" : "off") +
+                       ";in=" + fadeInSeconds.ToString("F2", c) +
+                       ";out=" + fadeOutSeconds.ToString("F2", c) +
+                       ";gracePool=" + (_pool != null ? _pool.GateGraceSeconds.ToString("F2", c) : "-1") +
+                       ";active=" + FadeActiveCount +
+                       ";inCount=" + FadeInCount +
+                       ";outCount=" + FadeOutCount +
+                       ";heldForFade=" + (_pool != null ? _pool.HeldForFade : -1) +
+                       ";gateGraceHeld=" + (_pool != null ? _pool.GateGraceHeld : -1) +
+                       ";owner=intensity=AdditionalLightIntensityController;enabled=PrimumLightPool";
+            }
+        }
+
+        /// <summary>
+        /// T-LIGHT21: A/B-переключатель плавности в памяти. Сцена и ассеты не пишутся; следующий Apply
+        /// выполняется немедленно (immediate-путь не сдерживается весом, чтобы не было тёмного кадра).
+        /// </summary>
+        public void ApplyFadeConfig(bool enabled, float inSeconds, float outSeconds)
+        {
+            fadeEnabled = enabled;
+            fadeInSeconds = Mathf.Max(0f, inSeconds);
+            fadeOutSeconds = Mathf.Max(0f, outSeconds);
+            _forceApply = true;
+        }
+
+        /// <summary>Сбросить пробу профиля включения (бенч делает это перед разворотом камеры).</summary>
+        public void ResetFadeProfile()
+        {
+            _fadeProfileLight = null;
+            _fadeProfileName = "none";
+            _fadeProfileCount = 0;
+            _fadeProfileT90Frames = -1;
+            _fadeProfileT90Sec = -1f;
+            _fadeProfileMaxJumpRatio = 0f;
+            _fadeProfileTarget = 0f;
+            _fadeProfilePrevValue = 0f;
+            FadeMaxWeightError = 0f;
+        }
+
+        /// <summary>Сэмпл пробы профиля включения: кадр / вес / записанная яркость.</summary>
+        public void GetFadeProfileSample(int index, out int frame, out float weight, out float intensity)
+        {
+            if (index < 0 || index >= _fadeProfileCount)
+            {
+                frame = -1;
+                weight = -1f;
+                intensity = -1f;
+                return;
+            }
+
+            frame = _fadeProfileFrames[index];
+            weight = _fadeProfileWeights[index];
+            intensity = _fadeProfileValues[index];
+        }
 
         /// <summary>
         /// Строка конфигурации ALIC для raw-лога/отчёта: тот же формат, что ConfigLine у пула,
@@ -628,6 +775,19 @@ namespace ProjectC.Core
                 BaseSweepThisFrame = true;
             }
 
+            // T-LIGHT21: immediate-путь (старт сцены, правка конфига/инспектора) весами не сдерживается —
+            // иначе первый кадр после перезагрузки/правки был бы тёмным. Fade остаётся только на включении пулом.
+            if (immediate && fadeEnabled)
+            {
+                foreach (Light active in _activeLights)
+                {
+                    if (active == null || !_states.TryGetValue(active, out LightState state)) continue;
+                    state.fadeWeight = 1f;
+                    state.fadeTarget = 1f;
+                    state.fadeOutActive = false;
+                }
+            }
+
             ApplyActiveCore(blend, now);
             _hasAppliedTime = true;
         }
@@ -758,14 +918,25 @@ namespace ProjectC.Core
         /// <summary>
         /// Покадровый проход T-LIGHT17b: сглаживание перехода и мерцание — только включённым
         /// источникам (70–96 вместо 2 238). Значение пишется, только если реально изменилось.
+        /// T-LIGHT21: здесь же меняется fade-вес — flicker остаётся поверх веса (амплитуда провалов та же),
+        /// а лишние записи появляются только у гаснущих/разгорающихся источников.
         /// </summary>
         private void ApplyActiveCore(float blend, float now)
         {
-            if (_activeLights.Count == 0) return;
+            if (_activeLights.Count == 0)
+            {
+                FadeActiveCount = 0;
+                return;
+            }
 
+            long startTicks = System.Diagnostics.Stopwatch.GetTimestamp();
             float emitEps = EmitEpsilon;
+            float dt = Time.deltaTime;
+            float fadeInRate = fadeInSeconds > 0f ? 1f / fadeInSeconds : float.MaxValue;
+            float fadeOutRate = fadeOutSeconds > 0f ? 1f / fadeOutSeconds : float.MaxValue;
             int iterated = 0;
             int writes = 0;
+            int fading = 0;
 
             foreach (Light light in _activeLights)
             {
@@ -780,14 +951,142 @@ namespace ProjectC.Core
                 state.target = targetIntensity;
                 state.smoothedIntensity = Mathf.Lerp(state.smoothedIntensity, targetIntensity, blend);
 
+                // T-LIGHT21: вес идёт к цели своей скоростью (включение — fadeIn, гашение — fadeOut).
+                // MoveTowards не перескакивает цель, поэтому профиль монотонный и без overshoot.
+                if (fadeEnabled && !Mathf.Approximately(state.fadeWeight, state.fadeTarget))
+                {
+                    float rate = state.fadeTarget > state.fadeWeight ? fadeInRate : fadeOutRate;
+                    state.fadeWeight = Mathf.MoveTowards(state.fadeWeight, state.fadeTarget, rate * dt);
+                }
+
+                if (state.fadeWeight > FadeWeightEpsilon && state.fadeWeight < 1f - FadeWeightEpsilon) fading++;
+
                 float flicker = EvaluateFlickerFactor(light, state, state.group, now);
-                if (WriteIntensity(light, state, state.smoothedIntensity * flicker, emitEps, false))
+                float value = state.smoothedIntensity * flicker * state.fadeWeight;
+                if (WriteIntensity(light, state, value, emitEps, false))
                 {
                     writes++;
                 }
+
+                NoteFadeSample(light, state, value);
             }
 
+            FadeActiveCount = fading;
+            LastFadeMs = (System.Diagnostics.Stopwatch.GetTimestamp() - startTicks) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             AddCounters(iterated, writes, writes, -1);
+        }
+
+        // ---------------------------------------------------------------- T-LIGHT21: fade
+
+        /// <summary>
+        /// Начать fade-in источника, который только что включён пулом. Если вес уже не ноль (resync/re-notify
+        /// горящей лампы или гаснущая лампа вернулась в набор), переход НЕ перезапускается — только цель ставится в 1.
+        /// </summary>
+        private void BeginFadeIn(Light light, LightState state, float targetIntensity)
+        {
+            state.fadeTarget = 1f;
+            state.fadeOutActive = false;
+
+            if (!fadeEnabled || fadeInSeconds <= 0f)
+            {
+                state.fadeWeight = 1f;
+                BeginFadeProfile(light, targetIntensity);
+                return;
+            }
+
+            if (state.fadeWeight > FadeWeightEpsilon) return;
+
+            state.fadeWeight = 0f;
+            state.fadeInStartTime = Time.time;
+            FadeInCount++;
+            BeginFadeProfile(light, targetIntensity);
+        }
+
+        /// <summary>
+        /// T-LIGHT21: пул спрашивает разрешение на запись Light.enabled = false (контракт пула, владение не нарушено).
+        /// Возврат true — источник остаётся включённым, пока ALIC гасит яркость. Дедлайн fadeOut + 0.05 с
+        /// страхует от залипания, если событие/кадры потеряются.
+        /// </summary>
+        private bool ShouldHoldEnabledForFade(Light light)
+        {
+            if (!fadeEnabled || fadeOutSeconds <= 0f) return false;
+            if (light == null) return false;
+            if (!_states.TryGetValue(light, out LightState state)) return false;
+            if (!_activeLights.Contains(light)) return false;
+            if (state.fadeWeight <= FadeWeightEpsilon) return false;
+
+            if (!state.fadeOutActive)
+            {
+                state.fadeOutActive = true;
+                state.fadeOutStartTime = Time.time;
+                FadeOutCount++;
+            }
+            else if (Time.time - state.fadeOutStartTime > fadeOutSeconds + FadeOutDeadlineSlack)
+            {
+                // Дедлайн вышел — не держим: пул выключает источник, следующий вход снова начнётся с нуля.
+                state.fadeOutActive = false;
+                state.fadeTarget = 0f;
+                return false;
+            }
+
+            state.fadeTarget = 0f;
+            return true;
+        }
+
+        /// <summary>
+        /// T-LIGHT21: проба профиля включения. Запоминается один (первый после сброса) источник, чтобы
+        /// отчёт мог показать кадр/вес/яркость, t90 и максимальный скачок за кадр. Только чтение.
+        /// </summary>
+        private void BeginFadeProfile(Light light, float targetValue)
+        {
+            if (_fadeProfileLight != null) return;
+
+            _fadeProfileLight = light;
+            _fadeProfileName = light != null ? light.name : "none";
+            _fadeProfileCount = 0;
+            _fadeProfileT90Frames = -1;
+            _fadeProfileT90Sec = -1f;
+            _fadeProfileMaxJumpRatio = 0f;
+            _fadeProfileStartTime = Time.time;
+            _fadeProfileStartFrame = Time.frameCount;
+            _fadeProfileTarget = targetValue;
+            _fadeProfilePrevValue = 0f;
+            FadeMaxWeightError = 0f;
+        }
+
+        /// <summary>Кадровый сэмпл пробы профиля включения (пишется только для источника пробы).</summary>
+        private void NoteFadeSample(Light light, LightState state, float value)
+        {
+            if (_fadeProfileLight == null || !ReferenceEquals(light, _fadeProfileLight)) return;
+
+            if (_fadeProfileCount < FadeProfileCapacity)
+            {
+                _fadeProfileFrames[_fadeProfileCount] = Time.frameCount;
+                _fadeProfileWeights[_fadeProfileCount] = state.fadeWeight;
+                _fadeProfileValues[_fadeProfileCount] = value;
+                _fadeProfileCount++;
+            }
+
+            if (_fadeProfileTarget > 1e-5f)
+            {
+                float jump = Mathf.Abs(value - _fadeProfilePrevValue) / _fadeProfileTarget;
+                if (jump > _fadeProfileMaxJumpRatio) _fadeProfileMaxJumpRatio = jump;
+            }
+
+            _fadeProfilePrevValue = value;
+
+            if (_fadeProfileT90Frames < 0 && state.fadeWeight >= 0.9f)
+            {
+                _fadeProfileT90Frames = Time.frameCount - _fadeProfileStartFrame;
+                _fadeProfileT90Sec = Time.time - _fadeProfileStartTime;
+            }
+
+            if (fadeEnabled && fadeInSeconds > 0f && state.fadeTarget > 0.5f)
+            {
+                float expected = Mathf.Clamp01((Time.time - _fadeProfileStartTime) / fadeInSeconds);
+                float error = Mathf.Abs(state.fadeWeight - expected);
+                if (error > FadeMaxWeightError) FadeMaxWeightError = error;
+            }
         }
 
         private bool WriteIntensity(Light light, LightState state, float value, float emitEps, bool force)
@@ -920,14 +1219,18 @@ namespace ProjectC.Core
             if (_poolEventHooked) return;
 
             _pool.ActiveLightChanged += OnPoolLightActiveChanged;
+            // T-LIGHT21: пул спрашивает разрешение на выключение — так fade-out остаётся внутри ALIC,
+            // а Light.enabled по-прежнему пишет только пул.
+            _pool.HoldEnabled = ShouldHoldEnabledForFade;
             _poolEventHooked = true;
         }
 
         private void UnhookPool()
         {
-            if (_pool != null && _poolEventHooked)
+            if (_pool != null)
             {
-                _pool.ActiveLightChanged -= OnPoolLightActiveChanged;
+                if (_poolEventHooked) _pool.ActiveLightChanged -= OnPoolLightActiveChanged;
+                _pool.HoldEnabled = null;
             }
 
             _poolEventHooked = false;
@@ -980,24 +1283,40 @@ namespace ProjectC.Core
         /// <summary>
         /// Пул включил/выключил источник. enabled — его владение; здесь мы только держим копию набора
         /// и, если источник включён, сразу выставляем актуальную яркость (иначе был бы тёмный/яркий кадр).
+        /// T-LIGHT21: включение начинает fade-in от нуля (если лампа была погашена), а выключение обнуляет вес,
+        /// чтобы следующее появление снова шло плавно.
         /// </summary>
         private void OnPoolLightActiveChanged(Light light, bool active)
         {
             if (light == null) return;
 
+            LightState state = null;
+            if (_states.TryGetValue(light, out LightState found)) state = found;
+
             if (!active)
             {
                 _activeLights.Remove(light);
+
+                // Источник уже не рисуется. Если это был не fade-out (кончилось удержание/выключил пул),
+                // вес обнуляется — иначе следующее включение стартовало бы с середины и дало скачок.
+                if (state != null && state.fadeTarget > 0.5f)
+                {
+                    state.fadeWeight = 0f;
+                    state.fadeOutActive = false;
+                }
+
                 return;
             }
 
             _activeLights.Add(light);
-            ApplyImmediate(light, EnsureState(light));
+            ApplyImmediate(light, state ?? EnsureState(light));
         }
 
         /// <summary>
         /// Немедленная яркость без мерцания и без сглаживания: источник только что появился в кадре,
         /// его smoothedIntensity мог устареть (пока он был погашен, его никто не обновлял).
+        /// T-LIGHT21: сразу выставляется только «полная» цель, а весовой множитель применяется к записи —
+        /// поэтому включение идёт плавно от 0 и не зависит от предыдущего сглаживания.
         /// </summary>
         private void ApplyImmediate(Light light, LightState state)
         {
@@ -1014,11 +1333,16 @@ namespace ProjectC.Core
             // Провал «из прошлого» не должен сработать в момент включения.
             state.flickerScheduled = false;
 
-            if (WriteIntensity(light, state, targetIntensity, EmitEpsilon, true))
+            BeginFadeIn(light, state, targetIntensity);
+
+            float value = targetIntensity * state.fadeWeight;
+            if (WriteIntensity(light, state, value, EmitEpsilon, true))
             {
                 WritesThisFrame++;
                 ActiveWritesThisFrame++;
             }
+
+            NoteFadeSample(light, state, value);
         }
 
         private LightGroup FindGroup(Light light)

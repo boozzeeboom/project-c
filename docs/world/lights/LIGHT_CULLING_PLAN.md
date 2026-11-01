@@ -3,8 +3,9 @@
 **Дата:** 2026-11-01 · **Проект:** `C:\Projects\ProjectC_client` · **Unity:** 6000.5.2f1 · **URP:** 17.5.0
 **Основание:** `docs/world/lights/LIGHT_CULLING_TIMING_RESEARCH.md` + подотчёты A–E.
 **Статус:** ресерч проверен (3 независимых прохода); обязательные корректировки внесены.
-**L1/T-LIGHT16 — PASS**; **L2/T-LIGHT17 — PASS**; **L2b/T-LIGHT17b — PASS** (ALIC 6.81 → 0.16 мс/кадр, −97.6 %).
-Следующий — **L3/T-LIGHT18 (фокус/камера)**.
+**L1/T-LIGHT16 — PASS**; **L2/T-LIGHT17 — PASS**; **L2b/T-LIGHT17b — PASS** (ALIC 6.81 → 0.16 мс/кадр, −97.6 %);
+**L3/T-LIGHT18 — PASS** (фокус-камера `ThirdPersonCamera_0` в игре 11/11, реакция 1–4 кадра вместо 5–10).
+Следующий — **L4/T-LIGHT19 (конус/веер)**.
 **Важно:** T-LIGHT24/25 **удалены**. Финал T-CULL01 — после закрытия светового трека.
 
 ---
@@ -126,6 +127,25 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 - Адаптивный триггер: сдвиг >2 м / поворот >3°, минимум 0.1 с.
 - Gate: реакция ≤0.15 с, нет «чужой камеры», нет регресса в режиме корабля.
 
+### 1.3. Результат L3 (T-LIGHT18, 2026-11-01) — PASS
+
+Отчёт: [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md); CSV: `T-LIGHT18_2026-11-01.csv` (11 кейсов A/B).
+Сцена не сохранялась, `maxActive` 96 и политика `dayGate`/`split`/`radius` без изменений.
+
+| Рычаг | Числа |
+|---|---|
+| фильтры камер | **11/11** `focusSource=camera:ThirdPersonCamera_0`; `MainCamera-out_of_reach` (лампа 228 645.5 м при far 120 000), `AtmosphereCamera-mask_no_lights`; в меню `FocusCamera=none` вместо камеры меню |
+| кэш вместо перепоиска 1 с | поисков за кейс **2–6 → 1** при стоимости 2.44–3.57 мс за вызов; `setVersion` и `dc` совпали во всех парах |
+| адаптивный триггер (>2 м / >3° / floor 0.1 с) | телепорт 5 м: кадры **5 → 1** (0.188 → 0.035 с); разворот 180°: кадры **8 → 4** (0.262 → 0.124 с); гейт ≤0.15 с пройден |
+| `checkMarkerMsAvg` | 0.2690–0.4615 → **0.2277–0.3832** мс/кадр, то есть чаще чеков не стало |
+| DC / active | **совпали**: 2249/2249, 2273/2273, 534/534, 1041/1041, 446/446; сплит OUT/IN/FARM тот же |
+| F8/F9 | **PASS** (`worldRootShift 256.000 = predicted`) / **PASS_rollback_restore**; `0 errors`, сцена не сохранена |
+| разворот 180° | `probeTurnSetChanged=0` — направление камеры в критерии не входит; 0 из 96 в кадре. Это **не** L3, а L4/T-LIGHT19 |
+
+Оговорки: `focusSearchMs` не уменьшился (поиск редкий, но по-прежнему O(2 238)); в FARM-кейсе
+`NOTE;farm_cluster` пишется каждый кадр и растягивает кейс; один сэмпл `probeTurnSec=29.937` при `frames=2` —
+артефакт блокировки главного потока редактора, опираться на кадры. Визуальный sign-off — за пользователем.
+
 ### L4 — T-LIGHT19: конус/веер
 
 - FOV-derived H/V, `R_rear` ≥ вынос + 2·range, score distance+angle, pre-activation; cap 96 (128 только после GPU-гейта).
@@ -159,7 +179,8 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 
 ## 4. Следующий шаг
 
-**L3 / T-LIGHT18 — фокус/камера:** кэш камер, фильтры, anchor камера, адаптивный триггер;
-после него L4/T-LIGHT19 (конус), L5/T-LIGHT20 (тюнинг), L6/T-LIGHT21 (fade в ALIC).
+**L4 / T-LIGHT19 — конус/веер:** после разворота 180° по-прежнему 0 из 96 активных в кадре и
+`setVersion` не меняется, поэтому направление камеры — следующий и главный рычаг; после него L5/T-LIGHT20
+(тюнинг), L6/T-LIGHT21 (fade в ALIC).
 Brief: [`T-LIGHT18_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT18_AGENT_BRIEF.md).
-Отчёты: [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).
+Отчёты: [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

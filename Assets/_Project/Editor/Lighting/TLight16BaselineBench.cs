@@ -40,6 +40,15 @@
 //   alicAll    — поведение до T-LIGHT17b (запись всем 2 238 каждый кадр) — контроль;
 //   alicActive — запись только активным/изменённым (активный набор пула).
 // Сцена не сохраняется: оба режима живут только в рантайме.
+//
+// T-LIGHT18 (L3 светового трека) — режим FOCUS A/B (меню Project C → Lighting → T-LIGHT18 focus → Run):
+// тот же риг/точки/часы, но камера-фокус пула переключается В ПАМЯТИ между двумя режимами:
+//   focusLegacy — поведение до L3 (любая активная камера, Camera.allCameras раз в секунду);
+//   focusL3     — кэш камер с фильтрами + адаптивный триггер (2 м / 3° / 0.1 с).
+// На каждом кейсе выполняется проба: сдвиг камеры на 5 м и разворот на 180° с замером кадров
+// и секунд до применения новой фокус-точки (pool.FocusPositionVersion), плюс census activeInFrustum.
+// Отдельно пишется PREGAME-строка: какая камера была у пула в главном меню и какую выбрал бы
+// прежний алгоритм без фильтров. Сцена не сохраняется, push не выполняется.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -68,11 +77,14 @@ namespace ProjectC.EditorTools
         private const string AbortMenuL2 = "Project C/Lighting/T-LIGHT17 L2/Abort";
         private const string RunMenuL2B = "Project C/Lighting/T-LIGHT17b ALIC/Run";
         private const string AbortMenuL2B = "Project C/Lighting/T-LIGHT17b ALIC/Abort";
+        private const string RunMenuL3 = "Project C/Lighting/T-LIGHT18 focus/Run";
+        private const string AbortMenuL3 = "Project C/Lighting/T-LIGHT18 focus/Abort";
 
-        private enum RunMode { Baseline, L2, L2B }
+        private enum RunMode { Baseline, L2, L2B, L3 }
 
-        /// <summary>Префикс логов/ошибок: в режимах L2/L2b не выдаём их за L1.</summary>
+        /// <summary>Префикс логов/ошибок: в режимах L2/L2b/L3 не выдаём их за L1.</summary>
         private static string Tag =>
+            _mode == RunMode.L3 ? "[T-LIGHT18]" :
             _mode == RunMode.L2B ? "[T-LIGHT17b]" : _mode == RunMode.L2 ? "[T-LIGHT17]" : "[T-LIGHT16]";
 
         private const string CsvDir = "docs/world/lights";
@@ -89,6 +101,14 @@ namespace ProjectC.EditorTools
         private const int SampleGapFrames = 8;
         private const int SampleCount = 3;
         private const int TurnTimeoutFrames = 240;
+        /// <summary>T-LIGHT18: таймаут пробы фокуса (кадры) и сдвиг камеры в пробе (м).</summary>
+        private const int ProbeTimeoutFrames = 90;
+        private const int ProbeSettleFrames = 12;
+        private const float ProbeTeleportMeters = 5f;
+        /// <summary>T-LIGHT18: пороги L3, которые бенч задаёт явно (должны совпадать с дефолтами пула).</summary>
+        private const float FocusMoveThresholdM = 2f;
+        private const float FocusRotateThresholdDeg = 3f;
+        private const float FocusMinIntervalSec = 0.1f;
 
         private const double HostTimeoutSeconds = 120.0;
         private const double RigTimeoutSeconds = 300.0;
@@ -125,6 +145,10 @@ namespace ProjectC.EditorTools
 
             // T-LIGHT17b: режим ALIC в кейсе (true = активный набор, false = контроль «всем»).
             public bool cfgAlicActiveSet = true;
+
+            // T-LIGHT18: режим фокуса/камер в кейсе (true = кэш+фильтры+триггер L3, false = контроль до L3).
+            public bool cfgCameraFilters = true;
+            public bool cfgAdaptive = true;
         }
 
         // ------------------------------------------------------------------ состояние
@@ -218,6 +242,26 @@ namespace ProjectC.EditorTools
         private static int _turnReactionFrames = -1;
         private static bool _turnTimeout;
 
+        // T-LIGHT18: проба фокуса (сдвиг 5 м + разворот 180°) и снимок кэша камер.
+        private static int _probePhase;
+        private static int _probeFrame = -1;
+        private static int _probeVersionBefore;
+        private static int _probeSetVersionBefore;
+        private static int _probeReactionFrames = -1;
+        private static int _probeTurnReactionFrames = -1;
+        private static double _probeSeconds = -1.0;
+        private static double _probeTurnSeconds = -1.0;
+        private static bool _probeTimeout;
+        private static bool _probeTurnTimeout;
+        private static bool _probeTurnSetChanged;
+        private static Vector3 _probeBasePos;
+        private static Quaternion _probeBaseRot;
+        private static double _probeStartTime;
+        private static bool _preGameFocusLogged;
+        private static int _cFocusPoolSize;
+        private static int _cFocusVersion;
+        private static int _cFocusAdaptive;
+
         private static Vector3 _targetPos;
         private static Quaternion _targetRot;
         private static int _settleUntilFrame;
@@ -294,9 +338,16 @@ namespace ProjectC.EditorTools
             StartRun(RunMode.L2B);
         }
 
+        [MenuItem(RunMenuL3)]
+        public static void RunL3()
+        {
+            StartRun(RunMode.L3);
+        }
+
         [MenuItem(AbortMenu)]
         [MenuItem(AbortMenuL2)]
         [MenuItem(AbortMenuL2B)]
+        [MenuItem(AbortMenuL3)]
         public static void Abort()
         {
             Finish("ABORTED_BY_USER", false);
@@ -316,13 +367,15 @@ namespace ProjectC.EditorTools
             _csvDirFull = Path.Combine(projectRoot, CsvDir);
             if (!Directory.Exists(_csvDirFull)) Directory.CreateDirectory(_csvDirFull);
             string rawDir = Path.Combine(projectRoot, _mode == RunMode.L2 ? "Temp/T-LIGHT17" :
-                                                    _mode == RunMode.L2B ? "Temp/T-LIGHT17B" : RawDir);
+                                                    _mode == RunMode.L2B ? "Temp/T-LIGHT17B" :
+                                                    _mode == RunMode.L3 ? "Temp/T-LIGHT18" : RawDir);
             if (!Directory.Exists(rawDir)) Directory.CreateDirectory(rawDir);
 
             _runTag = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
             _cases = BuildCases();
             string prefix = _mode == RunMode.L2 ? "T-LIGHT17" :
-                            _mode == RunMode.L2B ? "T-LIGHT17B" : "T-LIGHT16_BASELINE";
+                            _mode == RunMode.L2B ? "T-LIGHT17B" :
+                            _mode == RunMode.L3 ? "T-LIGHT18" : "T-LIGHT16_BASELINE";
             _outRawPath = Path.Combine(rawDir, prefix + "_" + DateTag + "_raw.txt");
             _outCsvPath = Path.Combine(_csvDirFull, prefix + "_" + DateTag + ".csv");
             if (File.Exists(_outRawPath)) File.Delete(_outRawPath);
@@ -358,7 +411,8 @@ namespace ProjectC.EditorTools
             Append("NOTE;bench=TLight16BaselineBench;mode=" + _mode + ";unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart +
-                   ";headNote=" + (_mode == RunMode.L2B ? "alic_active_set_ab"
+                   ";headNote=" + (_mode == RunMode.L3 ? "focus_camera_cache_filters_adaptive_ab"
+                                 : _mode == RunMode.L2B ? "alic_active_set_ab"
                                  : _mode == RunMode.L2 ? "l2_day_gate_split_radius_ab"
                                  : "baseline_instrumentation_only"));
             Append("OWNERSHIP;" + PrimumLightPool.OwnershipLine);
@@ -368,7 +422,9 @@ namespace ProjectC.EditorTools
                    ";samples=" + SampleCount + "x gap " + SampleGapFrames +
                    "fr;metric=UnityStats median;far=" + BenchFar.ToString("F0", CultureInfo.InvariantCulture) +
                    ";fov=" + BenchFov.ToString("F0", CultureInfo.InvariantCulture) + ";near=0.1");
-            Append(_mode == RunMode.L2B
+            Append(_mode == RunMode.L3
+                ? "NOTE;behaviour_changed=focus_cache_filters_adaptive_only;light_policy_unchanged(dayGate/split/radius/enabled/intensity);scene_saved=no;push=no"
+                : _mode == RunMode.L2B
                 ? "NOTE;behaviour_changed=alic_active_set_only;curves_groups_overrides_flicker_unchanged;pool_policy_unchanged;scene_saved=no;push=no"
                 : _mode == RunMode.L2
                 ? "NOTE;behaviour_changed=pool_dayGate_split_radius_only;pool_writes_intensity=no;scene_saved=no;push=no"
@@ -387,6 +443,7 @@ namespace ProjectC.EditorTools
         {
             if (_mode == RunMode.L2) return BuildCasesL2();
             if (_mode == RunMode.L2B) return BuildCasesL2B();
+            if (_mode == RunMode.L3) return BuildCasesL3();
 
             // Координаты P1/STREET — те же, что в бенче Stage 8 (P1 2 229 DC при hour 12):
             // нужны для контрольного сравнения, что инструментация не изменила поведение.
@@ -409,6 +466,61 @@ namespace ProjectC.EditorTools
                 new LightCase { id = "FARM_h18", point = "FARM", poseKind = "farm", hour = 18f },
                 new LightCase { id = "FARM_h20", point = "FARM", poseKind = "farm", hour = 20f },
             };
+            return list;
+        }
+
+        /// <summary>
+        /// T-LIGHT18: A/B фокуса/камер. Каждая точка × час повторяется в двух режимах —
+        /// focusLegacy (контроль до L3) и focusL3 (кэш+фильтры+адаптивный триггер),
+        /// чтобы разница в focusSearchMs/реакции списывалась на L3, а не на позу или час.
+        /// Политика света зафиксирована в принятом L2-конфиге (gate on, split on, radius 100).
+        /// </summary>
+        private static List<LightCase> BuildCasesL3()
+        {
+            var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
+            var street = new Vector3(-382.90f, -58.23f, -126.20f);
+
+            var list = new List<LightCase>();
+
+            void Add(string point, string poseKind, Vector3 local, float yaw, float hour, bool filters, string note)
+            {
+                string cfg = filters ? "focusL3" : "focusLegacy";
+                list.Add(new LightCase
+                {
+                    id = point + "_h" + hour.ToString("F0", CultureInfo.InvariantCulture) + "_" + cfg,
+                    point = point,
+                    poseKind = poseKind,
+                    local = local,
+                    yaw = yaw,
+                    hour = hour,
+                    note = note,
+                    cfgTag = filters ? "focusL3" : "focusLegacy",
+                    cfgDayGate = true,
+                    cfgSplit = true,
+                    cfgOutMin = 40,
+                    cfgUseL2 = true,
+                    cfgRadius = 100f,
+                    cfgCameraFilters = filters,
+                    cfgAdaptive = filters,
+                });
+            }
+
+            // P1 — точка жалобы: 12 ч (день) и 18 ч (окно 17–20).
+            Add("P1", "local", p1, 337.5f, 12f, false, "control_before_L3_day");
+            Add("P1", "local", p1, 337.5f, 12f, true, "l3_focus_cache_day");
+            Add("P1", "local", p1, 337.5f, 18f, false, "control_before_L3_evening");
+            Add("P1", "local", p1, 337.5f, 18f, true, "l3_focus_cache_evening");
+
+            Add("STREET", "local", street, 225f, 12f, false, "control_street_day");
+            Add("STREET", "local", street, 225f, 12f, true, "l3_street_day");
+            Add("STREET", "local", street, 225f, 18f, true, "l3_street_evening");
+
+            Add("ADMIN", "admin", Vector3.zero, 0f, 18f, false, "control_interior");
+            Add("ADMIN", "admin", Vector3.zero, 0f, 18f, true, "l3_interior");
+
+            Add("FARM", "farm", Vector3.zero, 0f, 18f, false, "control_farm");
+            Add("FARM", "farm", Vector3.zero, 0f, 18f, true, "l3_farm");
+
             return list;
         }
 
@@ -558,11 +670,13 @@ namespace ProjectC.EditorTools
                 case State.WaitPlayMode:
                     if (!EditorApplication.isPlaying) return;
                     if (Now - _stateSince < 2.0) return;
+                    NotePreGameFocus();
                     _state = State.WaitHost;
                     _stateSince = Now;
                     break;
 
                 case State.WaitHost:
+                    NotePreGameFocus();
                     if (!TryStartHost())
                     {
                         if (Now - _stateSince > HostTimeoutSeconds) Finish("HOST_TIMEOUT", false);
@@ -838,6 +952,16 @@ namespace ProjectC.EditorTools
             // T-LIGHT17b: зафиксировать режим ALIC рядом с числами (до первого кейса).
             if (_alic != null) Append("ALIC_CONFIG;at_gate;" + _alic.ConfigLine);
 
+            // T-LIGHT18: чем именно пул считает фокус в игре (должна быть ThirdPersonCamera).
+            Append("GATE_FOCUS;poolFocus=" + (_pool != null ? _pool.FocusSourceKind + ":" + _pool.FocusSourceName : "none") +
+                   ";poolCamera=" + (_pool != null ? _pool.FocusCameraName : "none") +
+                   ";searches=" + (_pool != null ? _pool.FocusSearchCount : -1) +
+                   ";poolSize=" + (_pool != null ? _pool.FocusPoolSize : -1) +
+                   ";adaptiveChecks=" + (_pool != null ? _pool.FocusAdaptiveChecks : -1) +
+                   ";positionVersion=" + (_pool != null ? _pool.FocusPositionVersion : -1) +
+                   ";rig=" + (_cam != null ? _cam.name : "none") +
+                   ";" + (_pool != null ? _pool.CameraConfigLine : "focus;none"));
+
             bool ok = _cam != null && player && !pcmmShown && !atmosphereCamera && _pool != null && registered >= MinExpectedLights;
             if (!ok)
             {
@@ -871,6 +995,17 @@ namespace ProjectC.EditorTools
             _turnTimeout = false;
             _turnVersionBefore = 0;
 
+            // T-LIGHT18: проба фокуса перезапускается на каждом кейсе.
+            _probePhase = 0;
+            _probeFrame = -1;
+            _probeReactionFrames = -1;
+            _probeTurnReactionFrames = -1;
+            _probeSeconds = -1.0;
+            _probeTurnSeconds = -1.0;
+            _probeTimeout = false;
+            _probeTurnTimeout = false;
+            _probeTurnSetChanged = false;
+
             _checkMsFrames.Clear();
             _focusMsFrames.Clear();
             _alicMsFrames.Clear();
@@ -895,6 +1030,14 @@ namespace ProjectC.EditorTools
                     _alic.ApplyActiveSetConfig(c.cfgAlicActiveSet);
                     Append("CONFIG;case=" + c.id + ";" + _alic.ConfigLine);
                 }
+            }
+
+            // T-LIGHT18: режим фокуса/камер — тоже только поля компонента в памяти.
+            if (_mode == RunMode.L3 && _pool != null)
+            {
+                _pool.ApplyCameraConfig(c.cfgCameraFilters, c.cfgAdaptive,
+                                        FocusMoveThresholdM, FocusRotateThresholdDeg, FocusMinIntervalSec);
+                Append("CONFIG;case=" + c.id + ";" + _pool.CameraConfigLine);
             }
 
             _dc.Clear(); _spc.Clear(); _tris.Clear(); _ms.Clear();
@@ -1048,6 +1191,7 @@ namespace ProjectC.EditorTools
         {
             var c = _cases[_caseIndex];
             ApplyPose(c);
+            ApplyProbePose();
             SampleProfilers();
 
             // Кадр, в котором камера уже развёрнута на 180° — от него считается задержка реакции.
@@ -1072,6 +1216,13 @@ namespace ProjectC.EditorTools
 
                 _censusDone = true;
                 _nextSampleFrame = Time.frameCount;
+            }
+
+            // T-LIGHT18: проба фокуса (сдвиг 5 м + разворот 180°) до сэмплирования DC —
+            // так DC сравнивается на базовой позе, а не на позе пробы.
+            if (_mode == RunMode.L3 && _probePhase < 3)
+            {
+                if (StepFocusProbe(c)) return;
             }
 
             // реакция на разворот: ждём смены набора пула
@@ -1109,6 +1260,190 @@ namespace ProjectC.EditorTools
 
             WriteCaseLine(c);
             BeginCase(_caseIndex + 1);
+        }
+
+        // ------------------------------------------------- T-LIGHT18: проба фокуса
+
+        /// <summary>
+        /// T-LIGHT18: проба реакции фокуса. Фаза 0 — сдвиг камеры на 5 м, фаза 1 — ожидание,
+        /// пока пул применит новую фокус-точку, фаза 2 — разворот на 180° с тем же ожиданием.
+        /// Возвращает true, пока проба идёт (сэмплирование DC в это время не выполняется).
+        /// </summary>
+        private static bool StepFocusProbe(LightCase c)
+        {
+            if (_pool == null || _cam == null) { _probePhase = 3; return false; }
+
+            switch (_probePhase)
+            {
+                case 0:
+                    _probeBasePos = _cam.transform.position;
+                    _probeBaseRot = _cam.transform.rotation;
+                    _probeVersionBefore = _pool.FocusPositionVersion;
+                    _probeSetVersionBefore = _pool.SetVersion;
+                    SetProbePose(false);
+                    _probeFrame = Time.frameCount;
+                    _probeStartTime = Now;
+                    _probePhase = 1;
+                    Append("FOCUSPROBE;case=" + c.id + ";phase=teleport;dist_m=" +
+                           ProbeTeleportMeters.ToString("F1", CultureInfo.InvariantCulture) +
+                           ";frame=" + _probeFrame + ";focusVersion=" + _probeVersionBefore +
+                           ";setVersion=" + _probeSetVersionBefore + ";" + _pool.CameraConfigLine);
+                    return true;
+
+                case 1:
+                    if (_pool.FocusPositionVersion != _probeVersionBefore)
+                    {
+                        _probeReactionFrames = Time.frameCount - _probeFrame;
+                        _probeSeconds = Now - _probeStartTime;
+                        Append("FOCUSPROBE;case=" + c.id + ";phase=teleport_reacted;frames=" + _probeReactionFrames +
+                               ";sec=" + _probeSeconds.ToString("F3", CultureInfo.InvariantCulture) +
+                               ";focusVersion=" + _pool.FocusPositionVersion +
+                               ";setChanged=" + (_pool.SetVersion != _probeSetVersionBefore) +
+                               ";poolCheckMs=" + _pool.LastCheckMs.ToString("F3", CultureInfo.InvariantCulture));
+                        _probeVersionBefore = _pool.FocusPositionVersion;
+                        _probeSetVersionBefore = _pool.SetVersion;
+                        SetProbePose(true);
+                        _probeFrame = Time.frameCount;
+                        _probeStartTime = Now;
+                        _probePhase = 2;
+                        return true;
+                    }
+                    if (Time.frameCount - _probeFrame > ProbeTimeoutFrames)
+                    {
+                        _probeTimeout = true;
+                        Append("FOCUSPROBE;case=" + c.id + ";phase=teleport_timeout;frames=" +
+                               (Time.frameCount - _probeFrame) + ";" + _pool.CameraConfigLine);
+                        FinishProbe();
+                        return false;
+                    }
+                    return true;
+
+                case 2:
+                    if (_pool.FocusPositionVersion != _probeVersionBefore)
+                    {
+                        _probeTurnReactionFrames = Time.frameCount - _probeFrame;
+                        _probeTurnSeconds = Now - _probeStartTime;
+                        _probeTurnSetChanged = _pool.SetVersion != _probeSetVersionBefore;
+                        Append("FOCUSPROBE;case=" + c.id + ";phase=turn_reacted;frames=" + _probeTurnReactionFrames +
+                               ";sec=" + _probeTurnSeconds.ToString("F3", CultureInfo.InvariantCulture) +
+                               ";setChanged=" + _probeTurnSetChanged +
+                               ";activeInFrustumAfterTurn=" + FrustumCensus());
+                        FinishProbe();
+                        return false;
+                    }
+                    if (Time.frameCount - _probeFrame > ProbeTimeoutFrames)
+                    {
+                        _probeTurnTimeout = true;
+                        Append("FOCUSPROBE;case=" + c.id + ";phase=turn_timeout;frames=" +
+                               (Time.frameCount - _probeFrame) + ";" + _pool.CameraConfigLine);
+                        FinishProbe();
+                        return false;
+                    }
+                    return true;
+            }
+
+            FinishProbe();
+            return false;
+        }
+
+        private static void FinishProbe()
+        {
+            _probePhase = 3;
+            // После пробы пул должен вернуть набор базовой позы — даём ему кадры до первого сэмпла.
+            _nextSampleFrame = Time.frameCount + ProbeSettleFrames;
+        }
+
+        /// <summary>Поза пробы: +5 м по X от базовой, на фазе разворота — ещё и 180° по вертикали.</summary>
+        private static void SetProbePose(bool turned)
+        {
+            if (_cam == null) return;
+            Vector3 pos = _probeBasePos + new Vector3(ProbeTeleportMeters, 0f, 0f);
+            Quaternion rot = turned ? _probeBaseRot * Quaternion.Euler(0f, 180f, 0f) : _probeBaseRot;
+            _cam.transform.SetPositionAndRotation(pos, rot);
+        }
+
+        private static void ApplyProbePose()
+        {
+            if (_probePhase == 1) SetProbePose(false);
+            else if (_probePhase == 2) SetProbePose(true);
+        }
+
+        /// <summary>Сколько активных ламп попадает во фрустум текущей камеры (читает пул, ничего не меняет).</summary>
+        private static int FrustumCensus()
+        {
+            if (_pool == null || _cam == null) return -1;
+            GeometryUtility.CalculateFrustumPlanes(_cam, _planes);
+            _pool.CopyRegisteredLights(_lightScratch);
+            int n = 0;
+            for (int i = 0; i < _lightScratch.Count; i++)
+            {
+                var l = _lightScratch[i];
+                if (l == null || !l.enabled) continue;
+                if (GeometryUtility.TestPlanesAABB(_planes, new Bounds(l.transform.position, Vector3.one))) n++;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// T-LIGHT18: снимок фокуса до старта игры (главное меню). Показывает, что выбрал пул при
+        /// включённых фильтрах L3 и что выбрал бы прежний алгоритм без фильтров — прямое доказательство
+        /// требования «на старте нет Atmosphere». Только чтение.
+        /// </summary>
+        private static void NotePreGameFocus()
+        {
+            if (_preGameFocusLogged) return;
+            var pool = UnityEngine.Object.FindAnyObjectByType<PrimumLightPool>();
+            if (pool == null || pool.CheckCount == 0) return;
+            _preGameFocusLogged = true;
+
+            var cams = Camera.allCameras;
+            var camsText = new StringBuilder();
+            for (int i = 0; i < cams.Length; i++)
+            {
+                var cam = cams[i];
+                if (cam == null) continue;
+                if (camsText.Length > 0) camsText.Append(',');
+                camsText.Append(cam.name).Append("(type=").Append(cam.cameraType)
+                        .Append(",far=").Append(cam.farClipPlane.ToString("F0", CultureInfo.InvariantCulture))
+                        .Append(",mask=0x").Append(cam.cullingMask.ToString("X"))
+                        .Append(",active=").Append(cam.isActiveAndEnabled).Append(')');
+            }
+
+            // Какой камерой прежний алгоритм (любая активная камера + ближайший светильник) пользовался бы.
+            var lights = new List<Light>(4096);
+            pool.CopyRegisteredLights(lights);
+            string legacyBest = "none";
+            float legacyNearest = -1f;
+            for (int c = 0; c < cams.Length; c++)
+            {
+                var cam = cams[c];
+                if (cam == null || !cam.isActiveAndEnabled) continue;
+                Vector3 p = cam.transform.position;
+                float nearest = float.MaxValue;
+                for (int i = 0; i < lights.Count; i++)
+                {
+                    if (lights[i] == null) continue;
+                    float d = (lights[i].transform.position - p).sqrMagnitude;
+                    if (d < nearest) nearest = d;
+                }
+                if (nearest < float.MaxValue && (legacyNearest < 0f || nearest < legacyNearest))
+                {
+                    legacyNearest = nearest;
+                    legacyBest = cam.name;
+                }
+            }
+
+            Append("PREGAME;stage=menu;allCameras=" + cams.Length + ";cameras=" + camsText +
+                   ";poolFocus=" + pool.FocusSourceKind + ":" + pool.FocusSourceName +
+                   ";poolCamera=" + pool.FocusCameraName +
+                   ";poolSearches=" + pool.FocusSearchCount +
+                   ";poolChecks=" + pool.CheckCount +
+                   ";lightMask=0x" + pool.LightLayerMask.ToString("X") +
+                   ";legacyRuleWouldPick=" + legacyBest +
+                   ";legacyNearest_m=" + (legacyNearest < 0f
+                        ? "-1"
+                        : Mathf.Sqrt(legacyNearest).ToString("F1", CultureInfo.InvariantCulture)) +
+                   ";" + pool.CameraConfigLine);
         }
 
         /// <summary>Независимый census: активные лампы впереди/позади камеры, в фрустуме, по группам и дистанциям.</summary>
@@ -1161,6 +1496,10 @@ namespace ProjectC.EditorTools
             _cFocusCameraPool = _pool.FocusCameraPool;
             _cFocusName = _pool.FocusSourceName;
             _cFocusKind = _pool.FocusSourceKind;
+            // T-LIGHT18
+            _cFocusPoolSize = _pool.FocusPoolSize;
+            _cFocusVersion = _pool.FocusPositionVersion;
+            _cFocusAdaptive = _pool.FocusAdaptiveChecks;
             _cSetVersion = _pool.SetVersion;
             _cCheckCount = _pool.CheckCount;
             _cDayGateDropped = _pool.DayGateDropped;
@@ -1294,6 +1633,22 @@ namespace ProjectC.EditorTools
             sb.Append(";turn=").Append(c.turn);
             sb.Append(";turnReactionFrames=").Append(_turnReactionFrames);
             sb.Append(";turnTimeout=").Append(_turnTimeout);
+            if (_mode == RunMode.L3)
+            {
+                sb.Append(";focusFilters=").Append(c.cfgCameraFilters ? "on" : "off")
+                  .Append(";focusAdaptive=").Append(c.cfgAdaptive ? "on" : "off")
+                  .Append(";focusCamera=").Append(_pool != null ? _pool.FocusCameraName : "none")
+                  .Append(";focusPoolSize=").Append(_cFocusPoolSize)
+                  .Append(";focusSearches=").Append(_cFocusSearches)
+                  .Append(";focusVersion=").Append(_cFocusVersion)
+                  .Append(";focusAdaptiveChecks=").Append(_cFocusAdaptive)
+                  .Append(";probeReactionFrames=").Append(_probeReactionFrames)
+                  .Append(";probeReactionSec=").Append(_probeSeconds.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(";probeTurnFrames=").Append(_probeTurnReactionFrames)
+                  .Append(";probeTurnSec=").Append(_probeTurnSeconds.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(";probeTurnSetChanged=").Append(_probeTurnSetChanged)
+                  .Append(";probeTimeout=").Append(_probeTimeout || _probeTurnTimeout);
+            }
             if (_mode == RunMode.L2)
             {
                 sb.Append(";cfg=").Append(c.cfgTag)
@@ -1344,6 +1699,11 @@ namespace ProjectC.EditorTools
                               "focusSearchMs,focusSource,alicMs,alicLastMs,alicCallsPerFrame,alicTracked,alicApplied," +
                               "alicActiveApplied,alicIntensityZero,alicHour,visibleLights,dc,spc,tris,gpuMs,ms,fps," +
                               "setVersion,turnReactionFrames,turnTimeout" +
+                              (_mode == RunMode.L3
+                                  ? ",focusFilters,focusAdaptive,focusVersion,focusAdaptiveChecks,focusSearches," +
+                                    "probeReactionFrames,probeReactionSec,probeTurnFrames,probeTurnSec," +
+                                    "probeTurnSetChanged,probeTimeout"
+                                  : string.Empty) +
                               (_mode == RunMode.L2B
                                   ? ",alicActiveSet,alicSetSize,alicWritesAvg,alicActiveWritesAvg,alicIteratedAvg,alicBaseSweepFrames"
                                   : string.Empty) +
@@ -1384,6 +1744,20 @@ namespace ProjectC.EditorTools
               .Append(fps.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
               .Append(_cSetVersion).Append(',')
               .Append(_turnReactionFrames).Append(',').Append(_turnTimeout ? 1 : 0);
+            if (_mode == RunMode.L3)
+            {
+                sb.Append(',').Append(c.cfgCameraFilters ? 1 : 0)
+                  .Append(',').Append(c.cfgAdaptive ? 1 : 0)
+                  .Append(',').Append(_cFocusVersion)
+                  .Append(',').Append(_cFocusAdaptive)
+                  .Append(',').Append(_cFocusSearches)
+                  .Append(',').Append(_probeReactionFrames)
+                  .Append(',').Append(_probeSeconds.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_probeTurnReactionFrames)
+                  .Append(',').Append(_probeTurnSeconds.ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_probeTurnSetChanged ? 1 : 0)
+                  .Append(',').Append((_probeTimeout || _probeTurnTimeout) ? 1 : 0);
+            }
             if (_mode == RunMode.L2B)
             {
                 sb.Append(',').Append(_cAlicActiveSet ? 1 : 0)

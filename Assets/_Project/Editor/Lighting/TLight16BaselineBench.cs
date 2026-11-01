@@ -32,6 +32,14 @@
 //   l2_70    — gate + split + радиус 70 м.
 // В режиме L2 при смене часа успокоение длиннее (200 кадров): ALIC сглаживает intensity с
 // transitionSpeed=4, и на 40 кадрах часть ламп ещё не дошла до нуля — гейт измерился бы ложно.
+//
+// T-LIGHT17b (L2b светового трека) — режим ACTIVE-SET A/B (меню Project C → Lighting →
+// T-LIGHT17b ALIC → Run): тот же риг/точки/часы, но пул зафиксирован в принятом L2-конфиге
+// (gate on, split on, radius 100), а ALIC переключается между двумя режимами в памяти
+// через AdditionalLightIntensityController.ApplyActiveSetConfig:
+//   alicAll    — поведение до T-LIGHT17b (запись всем 2 238 каждый кадр) — контроль;
+//   alicActive — запись только активным/изменённым (активный набор пула).
+// Сцена не сохраняется: оба режима живут только в рантайме.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -58,11 +66,14 @@ namespace ProjectC.EditorTools
         private const string AbortMenu = "Project C/Lighting/T-LIGHT16 Baseline/Abort";
         private const string RunMenuL2 = "Project C/Lighting/T-LIGHT17 L2/Run";
         private const string AbortMenuL2 = "Project C/Lighting/T-LIGHT17 L2/Abort";
+        private const string RunMenuL2B = "Project C/Lighting/T-LIGHT17b ALIC/Run";
+        private const string AbortMenuL2B = "Project C/Lighting/T-LIGHT17b ALIC/Abort";
 
-        private enum RunMode { Baseline, L2 }
+        private enum RunMode { Baseline, L2, L2B }
 
-        /// <summary>Префикс логов/ошибок: в режиме L2 не выдаём его за L1.</summary>
-        private static string Tag => _mode == RunMode.L2 ? "[T-LIGHT17]" : "[T-LIGHT16]";
+        /// <summary>Префикс логов/ошибок: в режимах L2/L2b не выдаём их за L1.</summary>
+        private static string Tag =>
+            _mode == RunMode.L2B ? "[T-LIGHT17b]" : _mode == RunMode.L2 ? "[T-LIGHT17]" : "[T-LIGHT16]";
 
         private const string CsvDir = "docs/world/lights";
         private const string DateTag = "2026-11-01";
@@ -111,6 +122,9 @@ namespace ProjectC.EditorTools
             public int cfgOutMin = 40;
             public bool cfgUseL2;
             public float cfgRadius = 140f;
+
+            // T-LIGHT17b: режим ALIC в кейсе (true = активный набор, false = контроль «всем»).
+            public bool cfgAlicActiveSet = true;
         }
 
         // ------------------------------------------------------------------ состояние
@@ -141,6 +155,11 @@ namespace ProjectC.EditorTools
         private static readonly List<double> _checkMsFrames = new List<double>();
         private static readonly List<double> _focusMsFrames = new List<double>();
         private static readonly List<double> _alicMsFrames = new List<double>();
+        // T-LIGHT17b: покадровые счётчики записи ALIC (средние по окну кейса).
+        private static readonly List<double> _alicWritesFrames = new List<double>();
+        private static readonly List<double> _alicActiveWritesFrames = new List<double>();
+        private static readonly List<double> _alicIteratedFrames = new List<double>();
+        private static readonly List<double> _alicBaseSweepFrames = new List<double>();
         private static int _lastProfiledFrame = -1;
 
         // снимок census текущего кейса
@@ -182,6 +201,14 @@ namespace ProjectC.EditorTools
         private static int _cQuotaDeferred;
         private static int _cQuotaFilled;
         private static int _cOutMinUsed;
+        // T-LIGHT17b
+        private static bool _cAlicActiveSet;
+        private static int _cAlicSetSize;
+        private static int _cAlicWrites;
+        private static int _cAlicActiveWrites;
+        private static int _cAlicIterated;
+        private static int _cAlicBaseSweep;
+        private static int _cAlicResyncs;
         private static bool _visibleLightsNoteWritten;
 
         // реакция на разворот
@@ -261,8 +288,15 @@ namespace ProjectC.EditorTools
             StartRun(RunMode.L2);
         }
 
+        [MenuItem(RunMenuL2B)]
+        public static void RunL2B()
+        {
+            StartRun(RunMode.L2B);
+        }
+
         [MenuItem(AbortMenu)]
         [MenuItem(AbortMenuL2)]
+        [MenuItem(AbortMenuL2B)]
         public static void Abort()
         {
             Finish("ABORTED_BY_USER", false);
@@ -281,12 +315,14 @@ namespace ProjectC.EditorTools
             var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             _csvDirFull = Path.Combine(projectRoot, CsvDir);
             if (!Directory.Exists(_csvDirFull)) Directory.CreateDirectory(_csvDirFull);
-            string rawDir = Path.Combine(projectRoot, _mode == RunMode.L2 ? "Temp/T-LIGHT17" : RawDir);
+            string rawDir = Path.Combine(projectRoot, _mode == RunMode.L2 ? "Temp/T-LIGHT17" :
+                                                    _mode == RunMode.L2B ? "Temp/T-LIGHT17B" : RawDir);
             if (!Directory.Exists(rawDir)) Directory.CreateDirectory(rawDir);
 
             _runTag = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
             _cases = BuildCases();
-            string prefix = _mode == RunMode.L2 ? "T-LIGHT17" : "T-LIGHT16_BASELINE";
+            string prefix = _mode == RunMode.L2 ? "T-LIGHT17" :
+                            _mode == RunMode.L2B ? "T-LIGHT17B" : "T-LIGHT16_BASELINE";
             _outRawPath = Path.Combine(rawDir, prefix + "_" + DateTag + "_raw.txt");
             _outCsvPath = Path.Combine(_csvDirFull, prefix + "_" + DateTag + ".csv");
             if (File.Exists(_outRawPath)) File.Delete(_outRawPath);
@@ -322,15 +358,19 @@ namespace ProjectC.EditorTools
             Append("NOTE;bench=TLight16BaselineBench;mode=" + _mode + ";unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart +
-                   ";headNote=" + (_mode == RunMode.L2 ? "l2_day_gate_split_radius_ab" : "baseline_instrumentation_only"));
+                   ";headNote=" + (_mode == RunMode.L2B ? "alic_active_set_ab"
+                                 : _mode == RunMode.L2 ? "l2_day_gate_split_radius_ab"
+                                 : "baseline_instrumentation_only"));
             Append("OWNERSHIP;" + PrimumLightPool.OwnershipLine);
             Append("NOTE;method=PlayMode→Host(ProjectCMainMenuUiHost.OnMenuAction(host));warmup=" + WarmupFrames +
                    "fr;settle=" + SettleFrames + "fr" +
-                   (_mode == RunMode.L2 ? "(hourSwitch=" + SettleFramesHourSwitch + "fr)" : string.Empty) +
+                   (_mode == RunMode.Baseline ? string.Empty : "(hourSwitch=" + SettleFramesHourSwitch + "fr)") +
                    ";samples=" + SampleCount + "x gap " + SampleGapFrames +
                    "fr;metric=UnityStats median;far=" + BenchFar.ToString("F0", CultureInfo.InvariantCulture) +
                    ";fov=" + BenchFov.ToString("F0", CultureInfo.InvariantCulture) + ";near=0.1");
-            Append(_mode == RunMode.L2
+            Append(_mode == RunMode.L2B
+                ? "NOTE;behaviour_changed=alic_active_set_only;curves_groups_overrides_flicker_unchanged;pool_policy_unchanged;scene_saved=no;push=no"
+                : _mode == RunMode.L2
                 ? "NOTE;behaviour_changed=pool_dayGate_split_radius_only;pool_writes_intensity=no;scene_saved=no;push=no"
                 : "NOTE;behaviour_unchanged=pool.enabled_intensity_focus_maxActive_radius_untouched;scene_saved=no;push=no");
             Append("NOTE;pool_markers=" + PrimumLightPool.CheckMarkerName + "|" + PrimumLightPool.FocusMarkerName +
@@ -346,6 +386,7 @@ namespace ProjectC.EditorTools
         private static List<LightCase> BuildCases()
         {
             if (_mode == RunMode.L2) return BuildCasesL2();
+            if (_mode == RunMode.L2B) return BuildCasesL2B();
 
             // Координаты P1/STREET — те же, что в бенче Stage 8 (P1 2 229 DC при hour 12):
             // нужны для контрольного сравнения, что инструментация не изменила поведение.
@@ -432,6 +473,65 @@ namespace ProjectC.EditorTools
             Add("FARM", "farm", Vector3.zero, 0f, 12f, "l2_100", true, true, true, 100f);
             Add("FARM", "farm", Vector3.zero, 0f, 12f, "l2_70", true, true, true, 70f, false, "radius_must_not_starve_farm");
             Add("FARM", "farm", Vector3.zero, 0f, 18f, "l2_100", true, true, true, 100f);
+
+            return list;
+        }
+
+        /// <summary>
+        /// T-LIGHT17b: A/B активного набора ALIC. Пул зафиксирован в принятом L2-конфиге
+        /// (gate on, split on, outMin 40, радиус 100) — сравниваются только режимы ALIC,
+        /// поэтому разница в alicMs списывается на ограничение записи, а не на политику пула.
+        /// Кейсы группируются по часу: смена часа стоит 200 кадров успокоения, а не 40.
+        /// </summary>
+        private static List<LightCase> BuildCasesL2B()
+        {
+            var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
+            var street = new Vector3(-382.90f, -58.23f, -126.20f);
+
+            var list = new List<LightCase>();
+
+            void Add(string point, string poseKind, Vector3 local, float yaw, float hour,
+                     bool alicActive, string note, string idTag = "")
+            {
+                string cfg = alicActive ? "alicActive" : "alicAll";
+                list.Add(new LightCase
+                {
+                    id = point + "_h" + hour.ToString("F0", CultureInfo.InvariantCulture) + "_" + cfg + idTag,
+                    point = point,
+                    poseKind = poseKind,
+                    local = local,
+                    yaw = yaw,
+                    hour = hour,
+                    note = note,
+                    cfgTag = cfg,
+                    // Политика пула между кейсами не меняется — это принятый L2-конфиг.
+                    cfgDayGate = true,
+                    cfgSplit = true,
+                    cfgOutMin = 40,
+                    cfgUseL2 = true,
+                    cfgRadius = 100f,
+                    cfgAlicActiveSet = alicActive,
+                });
+            }
+
+            float[] hours = { 12f, 18f, 20f };
+
+            for (int h = 0; h < hours.Length; h++)
+            {
+                float hour = hours[h];
+                Add("P1", "local", p1, 337.5f, hour, false, "control_all_lights_every_frame");
+                Add("P1", "local", p1, 337.5f, hour, true, "active_set");
+                Add("STREET", "local", street, 225f, hour, false, "control_all_lights_every_frame");
+                Add("STREET", "local", street, 225f, hour, true, "active_set");
+                Add("ADMIN", "admin", Vector3.zero, 0f, hour, false, "control_all_lights_every_frame");
+                Add("ADMIN", "admin", Vector3.zero, 0f, hour, true, "active_set");
+                Add("FARM", "farm", Vector3.zero, 0f, hour, false, "control_all_lights_every_frame");
+                Add("FARM", "farm", Vector3.zero, 0f, hour, true, "active_set");
+            }
+
+            // Повтор ключевого кейса (площадь, 18 ч) — контроль стабильности ±5 %.
+            Add("P1", "local", p1, 337.5f, 18f, false, "repeat_control", "_repeat");
+            Add("P1", "local", p1, 337.5f, 18f, true, "repeat_active_set", "_repeat");
 
             return list;
         }
@@ -735,6 +835,9 @@ namespace ProjectC.EditorTools
                    ";registered=" + registered + ";minExpected=" + MinExpectedLights +
                    ";cursorLock=" + Cursor.lockState);
 
+            // T-LIGHT17b: зафиксировать режим ALIC рядом с числами (до первого кейса).
+            if (_alic != null) Append("ALIC_CONFIG;at_gate;" + _alic.ConfigLine);
+
             bool ok = _cam != null && player && !pcmmShown && !atmosphereCamera && _pool != null && registered >= MinExpectedLights;
             if (!ok)
             {
@@ -771,23 +874,34 @@ namespace ProjectC.EditorTools
             _checkMsFrames.Clear();
             _focusMsFrames.Clear();
             _alicMsFrames.Clear();
+            _alicWritesFrames.Clear();
+            _alicActiveWritesFrames.Clear();
+            _alicIteratedFrames.Clear();
+            _alicBaseSweepFrames.Clear();
             _lastProfiledFrame = -1;
 
             ForcePhaseSilent(c.hour);
             ApplyPose(c);
 
             // T-LIGHT17: A/B-конфиг пула — только поля компонента в памяти, сцена не пишется.
-            if (_mode == RunMode.L2 && _pool != null)
+            if (_mode != RunMode.Baseline && _pool != null)
             {
                 _pool.ApplyConfig(c.cfgDayGate, c.cfgSplit, c.cfgOutMin, c.cfgUseL2, c.cfgRadius);
                 Append("CONFIG;case=" + c.id + ";" + _pool.ConfigLine);
+
+                // T-LIGHT17b: режим ALIC переключается так же — только поле в памяти.
+                if (_mode == RunMode.L2B && _alic != null)
+                {
+                    _alic.ApplyActiveSetConfig(c.cfgAlicActiveSet);
+                    Append("CONFIG;case=" + c.id + ";" + _alic.ConfigLine);
+                }
             }
 
             _dc.Clear(); _spc.Clear(); _tris.Clear(); _ms.Clear();
             _censusDone = false;
 
             int settle = SettleFrames;
-            if (_mode == RunMode.L2)
+            if (_mode != RunMode.Baseline)
             {
                 // После смены часа ALIC ещё сглаживает intensity: на 40 кадрах гейт увидел бы
                 // не погашенные лампы, а их переход — и «day activeZero=0» измерился бы ложно.
@@ -1072,6 +1186,13 @@ namespace ProjectC.EditorTools
                 _cAlicCallsPerFrame = _alic.ApplyCallsThisFrame;
                 _cAlicHour = _alic.CurrentTimeOfDay;
                 _cAlicFlicker = _alic.FlickerAnyEnabled;
+                _cAlicActiveSet = _alic.ActiveSetEnabled;
+                _cAlicSetSize = _alic.ActiveSetSize;
+                _cAlicWrites = _alic.WritesThisFrame;
+                _cAlicActiveWrites = _alic.ActiveWritesThisFrame;
+                _cAlicIterated = _alic.IteratedThisFrame;
+                _cAlicBaseSweep = _alic.BaseSweepThisFrame ? 1 : 0;
+                _cAlicResyncs = _alic.ActiveSetResyncs;
             }
             else
             {
@@ -1081,6 +1202,13 @@ namespace ProjectC.EditorTools
                 _cAlicZero = -1;
                 _cAlicCallsPerFrame = -1;
                 _cAlicHour = -1f;
+                _cAlicActiveSet = false;
+                _cAlicSetSize = -1;
+                _cAlicWrites = -1;
+                _cAlicActiveWrites = -1;
+                _cAlicIterated = -1;
+                _cAlicBaseSweep = -1;
+                _cAlicResyncs = -1;
             }
 
             if (enabledTotal == 0)
@@ -1104,6 +1232,11 @@ namespace ProjectC.EditorTools
             double alicMs = Avg(_alicMsFrames);
             double checkMs = Avg(_checkMsFrames);
             double focusMs = Avg(_focusMsFrames);
+            // T-LIGHT17b
+            double alicWrites = Avg(_alicWritesFrames);
+            double alicActiveWrites = Avg(_alicActiveWritesFrames);
+            double alicIterated = Avg(_alicIteratedFrames);
+            double alicBaseSweepFrames = Sum(_alicBaseSweepFrames);
 
             var sb = new StringBuilder();
             sb.Append("CASE;id=").Append(c.id);
@@ -1142,6 +1275,16 @@ namespace ProjectC.EditorTools
             sb.Append(";alicIntensityZero=").Append(_cAlicZero);
             sb.Append(";alicHour=").Append(_cAlicHour.ToString("F2", CultureInfo.InvariantCulture));
             sb.Append(";alicFlicker=").Append(_cAlicFlicker);
+            if (_mode == RunMode.L2B)
+            {
+                sb.Append(";alicActiveSet=").Append(_cAlicActiveSet)
+                  .Append(";alicSetSize=").Append(_cAlicSetSize)
+                  .Append(";alicWritesAvg=").Append(alicWrites.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(";alicActiveWritesAvg=").Append(alicActiveWrites.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(";alicIteratedAvg=").Append(alicIterated.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(";alicBaseSweepFrames=").Append((int)alicBaseSweepFrames)
+                  .Append(";alicResyncs=").Append(_cAlicResyncs);
+            }
             sb.Append(";visibleLights=").Append(_cVisibleLights);
             sb.Append(";dc=").Append(dc).Append(";spc=").Append(spc).Append(";tris=").Append(tris);
             sb.Append(";gpuMs=").Append(gpuMs.ToString("F2", CultureInfo.InvariantCulture));
@@ -1162,7 +1305,7 @@ namespace ProjectC.EditorTools
             }
             sb.Append(";note=").Append(c.note);
             Append(sb.ToString());
-            AppendCsv(c, dc, spc, tris, gpuMs, ms, fps, checkMs, alicMs);
+            AppendCsv(c, dc, spc, tris, gpuMs, ms, fps, checkMs, alicMs, alicWrites, alicActiveWrites, alicIterated, alicBaseSweepFrames);
 
             Debug.Log(Tag + " " + c.id + ": dc=" + dc + " active=" + _cActiveTotal +
                       " (OUT " + _cActiveOut + "/IN " + _cActiveIn + "/FARM " + _cActiveFarm + ")" +
@@ -1188,7 +1331,8 @@ namespace ProjectC.EditorTools
         }
 
         private static void AppendCsv(LightCase c, int dc, int spc, int tris, double gpuMs, double ms, double fps,
-                                      double checkMs, double alicMs)
+                                      double checkMs, double alicMs, double alicWrites, double alicActiveWrites,
+                                      double alicIterated, double alicBaseSweepFrames)
         {
             bool writeHeader = !File.Exists(_outCsvPath);
             var sb = new StringBuilder();
@@ -1200,6 +1344,9 @@ namespace ProjectC.EditorTools
                               "focusSearchMs,focusSource,alicMs,alicLastMs,alicCallsPerFrame,alicTracked,alicApplied," +
                               "alicActiveApplied,alicIntensityZero,alicHour,visibleLights,dc,spc,tris,gpuMs,ms,fps," +
                               "setVersion,turnReactionFrames,turnTimeout" +
+                              (_mode == RunMode.L2B
+                                  ? ",alicActiveSet,alicSetSize,alicWritesAvg,alicActiveWritesAvg,alicIteratedAvg,alicBaseSweepFrames"
+                                  : string.Empty) +
                               (_mode == RunMode.L2
                                   ? ",cfgTag,cfgRadius,cfgDayGate,cfgSplit,cfgOutMin,dayGateDropped,quotaDeferred,quotaFilled,outMinUsed"
                                   : string.Empty) +
@@ -1237,6 +1384,15 @@ namespace ProjectC.EditorTools
               .Append(fps.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
               .Append(_cSetVersion).Append(',')
               .Append(_turnReactionFrames).Append(',').Append(_turnTimeout ? 1 : 0);
+            if (_mode == RunMode.L2B)
+            {
+                sb.Append(',').Append(_cAlicActiveSet ? 1 : 0)
+                  .Append(',').Append(_cAlicSetSize)
+                  .Append(',').Append(alicWrites.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append(alicActiveWrites.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append(alicIterated.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append((int)alicBaseSweepFrames);
+            }
             if (_mode == RunMode.L2)
             {
                 sb.Append(',').Append(c.cfgTag)
@@ -1274,6 +1430,15 @@ namespace ProjectC.EditorTools
             if (_checkRecorder.Valid) _checkMsFrames.Add(_checkRecorder.LastValue / 1e6);
             if (_focusRecorder.Valid) _focusMsFrames.Add(_focusRecorder.LastValue / 1e6);
             if (_alicRecorder.Valid) _alicMsFrames.Add(_alicRecorder.LastValue / 1e6);
+
+            // T-LIGHT17b: сколько записей intensity и просмотров делает ALIC за кадр.
+            if (_alic != null)
+            {
+                _alicWritesFrames.Add(_alic.WritesThisFrame);
+                _alicActiveWritesFrames.Add(_alic.ActiveWritesThisFrame);
+                _alicIteratedFrames.Add(_alic.IteratedThisFrame);
+                _alicBaseSweepFrames.Add(_alic.BaseSweepThisFrame ? 1.0 : 0.0);
+            }
         }
 
         // ============================================================ F8 / F9
@@ -1705,6 +1870,14 @@ namespace ProjectC.EditorTools
             double s = 0.0;
             for (int i = 0; i < v.Count; i++) s += v[i];
             return s / v.Count;
+        }
+
+        private static double Sum(List<double> v)
+        {
+            if (v == null || v.Count == 0) return 0.0;
+            double s = 0.0;
+            for (int i = 0; i < v.Count; i++) s += v[i];
+            return s;
         }
     }
 }

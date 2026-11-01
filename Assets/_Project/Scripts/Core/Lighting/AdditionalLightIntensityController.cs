@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using ProjectC.World;
 
 namespace ProjectC.Core
 {
@@ -12,6 +13,20 @@ namespace ProjectC.Core
     /// time-of-day intensity curve plus optional property overrides (range, color, type,
     /// spot angles, shadows, bounce) without touching the authored values stored in the scenes.
     /// </summary>
+    /// <remarks>
+    /// T-LIGHT17b (L2b светового трека). До этой задачи каждый вызов ApplyIntensity писал
+    /// Light.intensity всем 2 238 отслеживаемым источникам (5.4–6.1 мс/кадр) при 70–96
+    /// включённых. Теперь применяется активный набор:
+    ///   • Light.enabled — владелец PrimumLightPool; он отдаёт событие ActiveLightChanged,
+    ///     версию набора (ActiveSetVersion) и копию (CopyActiveLights);
+    ///   • фиктивные/неактивные источники не пишутся покадрово: пул рисует только активные,
+    ///     а его день/ночь-гейт читает intensity — поэтому погашенные источники всё равно
+    ///     получают запись, но только на смене «светит/не светит», а не каждый кадр;
+    ///   • включённый источник получает актуальную яркость тем же кадром (нет тёмного/яркого кадра);
+    ///   • кривые, группы, переопределения, сглаживание и мерцание — без изменений.
+    /// Настройки группы, override и flicker продолжают применяться к источнику, как только
+    /// он снова попадает в активный набор или в базовую волну.
+    /// </remarks>
     [DisallowMultipleComponent]
     public sealed class AdditionalLightIntensityController : MonoBehaviour
     {
@@ -189,6 +204,13 @@ namespace ProjectC.Core
         [SerializeField, Min(0.1f)] private float transitionSpeed = 4f;
         [SerializeField] private bool logDiscovery = false;
 
+        [Header("T-LIGHT17b: активный набор (CPU)")]
+        [Tooltip("Применять Light.intensity только активным (включённым пулом) и изменённым источникам.\nВыключено = поведение до T-LIGHT17b: запись всем отслеживаемым источникам каждый кадр (A/B-контроль).")]
+        [SerializeField] private bool activeSetEnabled = true;
+
+        [Tooltip("Порог изменения группового множителя, после которого переписываются погашенные (неактивные) источники.\nПул читает их intensity в день/ночь-гейте, поэтому значение должно быть свежим, но не обязательно покадровым.")]
+        [SerializeField, Min(0.0001f)] private float baseSweepEpsilon = 0.01f;
+
         [Header("Group Order")]
         [Tooltip("Groups are evaluated from top to bottom. The first matching group controls a light. Keep the catch-all group last.")]
         [SerializeField] private LightGroup[] groups;
@@ -233,6 +255,18 @@ namespace ProjectC.Core
             /// <summary>Интенсивность без мерцания — сюда идёт плавный переход.</summary>
             public float smoothedIntensity;
 
+            // T-LIGHT17b: состояние применения для активного набора.
+            /// <summary>Группа, назначенная источнику (кэш последнего разрешения групп).</summary>
+            public LightGroup group;
+            /// <summary>Индекс группы в массиве groups (–1 = ни одна не подошла).</summary>
+            public int groupIndex = -1;
+            /// <summary>Целевая яркость без мерцания на последнем применении.</summary>
+            public float target;
+            /// <summary>Значение, реально записанное в Light.intensity (для пропуска одинаковых записей).</summary>
+            public float lastWritten = float.PositiveInfinity;
+            /// <summary>Последнее записанное значение было «светит» по порогу день/ночь-гейта пула.</summary>
+            public bool lastWrittenEmitting;
+
             // Мерцание: у каждого источника свой ГПСЧ и свой график провалов.
             public FlickerRandom flickerRandom;
             public bool flickerScheduled;
@@ -272,6 +306,19 @@ namespace ProjectC.Core
         private readonly List<Light> _trackedLights = new List<Light>();
         private readonly Dictionary<Light, LightState> _states = new Dictionary<Light, LightState>();
 
+        // ---------------------------------------------------------------- T-LIGHT17b
+        // Активный набор. Пул — владелец enabled, поэтому его событие/версия — единственный источник
+        // истины о том, какие источники реально в кадре. Мировые Vector3 не кэшируются (правило FO).
+        private PrimumLightPool _pool;
+        private bool _poolEventHooked;
+        private int _poolVersionSeen = -1;
+        private readonly HashSet<Light> _activeLights = new HashSet<Light>();
+        private readonly List<Light> _syncScratch = new List<Light>(512);
+        // Множители групп считаются один раз на кадр (4 кривые) и переиспользуются всеми проходами.
+        private float[] _groupMultipliers = new float[0];
+        private float[] _groupMultipliersApplied = new float[0];
+        private bool _multipliersInitialized;
+
         // ---------------------------------------------------------------- T-LIGHT16
         // Диагностика L1 светового трека: маркер Profiler и счётчики. Ни одна ветка решения
         // (группа, кривая, сглаживание, мерцание, переопределения) не изменена — новые счётчики
@@ -279,6 +326,10 @@ namespace ProjectC.Core
         public const string ApplyMarkerName = "ALIC.ApplyIntensity";
         private static readonly ProfilerMarker ApplyMarker = new ProfilerMarker(ApplyMarkerName);
         private const float IntensityZeroEpsilon = 0.001f;
+        /// <summary>T-LIGHT17b: меньше этого значения запись в Light.intensity не выполняется.</summary>
+        private const float IntensityWriteEpsilon = 1e-4f;
+        /// <summary>T-LIGHT17b: относительный порог сдвига группового множителя (доля от множителя).</summary>
+        private const float BaseSweepRelativeEpsilon = 0.005f;
 
         /// <summary>Сколько источников в списке отслеживаемых на последнем рескне.</summary>
         public int TrackedLightCount => _trackedLights.Count;
@@ -298,6 +349,57 @@ namespace ProjectC.Core
         public float CurrentTimeOfDay => _currentTimeOfDay;
         public bool FlickerAnyEnabled => _anyFlickerEnabled;
         public int GroupCount => groups != null ? groups.Length : 0;
+
+        // ---------------------------------------------------------------- T-LIGHT17b
+        /// <summary>Активный набор включён (T-LIGHT17b): запись только активным/изменённым.</summary>
+        public bool ActiveSetEnabled => activeSetEnabled;
+        /// <summary>Сколько источников в активном наборе (последняя синхронизация с пулом).</summary>
+        public int ActiveSetSize => _activeLights.Count;
+        /// <summary>Пул найден и отдаёт активный набор.</summary>
+        public bool PoolBound => _pool != null;
+        /// <summary>Сколько раз активный набор пересобирался по версии пула.</summary>
+        public int ActiveSetResyncs { get; private set; }
+        /// <summary>Записей Light.intensity за последний кадр.</summary>
+        public int WritesThisFrame { get; private set; }
+        /// <summary>Из них включённым источникам.</summary>
+        public int ActiveWritesThisFrame { get; private set; }
+        /// <summary>Источников просмотрено за последний кадр (включая неактивные в базовой волне).</summary>
+        public int IteratedThisFrame { get; private set; }
+        /// <summary>Базовая волна (все группы) выполнялась в этом кадре.</summary>
+        public bool BaseSweepThisFrame { get; private set; }
+        /// <summary>Групповых множителей изменено в последнем кадре (1/0) — для CSV.</summary>
+        public bool MultipliersMovedThisFrame { get; private set; }
+
+        /// <summary>
+        /// Строка конфигурации ALIC для raw-лога/отчёта: тот же формат, что ConfigLine у пула,
+        /// чтобы владение и режим были зафиксированы рядом с числами.
+        /// </summary>
+        public string ConfigLine
+        {
+            get
+            {
+                var c = System.Globalization.CultureInfo.InvariantCulture;
+                return "alic;activeSet=" + (activeSetEnabled ? "on" : "off") +
+                       ";poolBound=" + (_pool != null) +
+                       ";tracked=" + _trackedLights.Count +
+                       ";active=" + _activeLights.Count +
+                       ";baseSweepEps=" + baseSweepEpsilon.ToString("F4", c) +
+                       ";transitionSpeed=" + transitionSpeed.ToString("F2", c) +
+                       ";flicker=" + (_anyFlickerEnabled ? "on" : "off") +
+                       ";enabledOwner=PrimumLightPool;intensityOwner=AdditionalLightIntensityController";
+            }
+        }
+
+        /// <summary>
+        /// Переключить режим активного набора на лету (A/B-замер). Меняется только поле в памяти:
+        /// сцена и ассеты не пишутся. Следующий Apply выполнит полную волну, чтобы сравнение было честным.
+        /// </summary>
+        public void ApplyActiveSetConfig(bool enabled)
+        {
+            if (activeSetEnabled == enabled) return;
+            activeSetEnabled = enabled;
+            _forceApply = true;
+        }
 
         private DayNightController _dayNightController;
         private float _currentTimeOfDay = 12f;
@@ -353,12 +455,20 @@ namespace ProjectC.Core
         private void Update()
         {
             ApplyCallsThisFrame = 0;
+            WritesThisFrame = 0;
+            ActiveWritesThisFrame = 0;
+            IteratedThisFrame = 0;
+            BaseSweepThisFrame = false;
 
             if (Time.time >= _nextRescanTime)
             {
                 RefreshLights();
                 _nextRescanTime = Time.time + rescanInterval;
             }
+
+            // T-LIGHT17b: пул может появиться после загрузки WorldScene — привязка ленивая.
+            EnsurePoolBinding();
+            SyncActiveSet();
 
             float timeOfDay = ReadTimeOfDay();
             bool timeChanged = !_hasAppliedTime || !Mathf.Approximately(timeOfDay, _currentTimeOfDay);
@@ -374,7 +484,14 @@ namespace ProjectC.Core
             bool forceApply = _forceApply;
             _forceApply = false;
 
-            if (forceApply || timeChanged || _anyFlickerEnabled)
+            EvaluateGroupMultipliers(timeOfDay);
+            MultipliersMovedThisFrame = MultipliersMoved();
+
+            // С активным набором покадровая работа нужна только пока в кадре есть включённые
+            // источники (сглаживание + мерцание); погашенные обновляются базовой волной по изменению.
+            bool perFrame = UsesActiveSet ? _activeLights.Count > 0 : _anyFlickerEnabled;
+
+            if (forceApply || timeChanged || perFrame || MultipliersMovedThisFrame)
             {
                 ApplyIntensity(timeOfDay, forceApply);
             }
@@ -383,11 +500,13 @@ namespace ProjectC.Core
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            UnhookPool();
         }
 
         private void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            UnhookPool();
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -446,6 +565,10 @@ namespace ProjectC.Core
             // Флаг пересчитывается вместе с рескном: включение мерцания в инспекторе в Play Mode
             // подхватывается не позже rescanInterval, без перезапуска.
             RefreshFlickerFlag();
+
+            // T-LIGHT17b: новый набор отслеживаемых источников — повод пересобрать активную копию.
+            EnsurePoolBinding();
+            SyncActiveSet();
         }
 
         private void RefreshFlickerFlag()
@@ -483,10 +606,55 @@ namespace ProjectC.Core
 
         private void ApplyIntensityCore(float timeOfDay, bool immediate)
         {
-            float blend = immediate ? 1f : 1f - Mathf.Exp(-transitionSpeed * Time.deltaTime);
             float now = Time.time;
-            int applied = 0;
-            int activeApplied = 0;
+            float blend = immediate ? 1f : 1f - Mathf.Exp(-transitionSpeed * Time.deltaTime);
+
+            EvaluateGroupMultipliers(timeOfDay);
+
+            if (!UsesActiveSet)
+            {
+                // Поведение до T-LIGHT17b (A/B-контроль и сцены без пула): каждый вызов
+                // пишет intensity всем отслеживаемым источникам.
+                ApplyAllCore(timeOfDay, blend, immediate, now);
+                CommitGroupMultipliers();
+                _hasAppliedTime = true;
+                return;
+            }
+
+            if (immediate || MultipliersMoved())
+            {
+                ApplyBaseSweep(immediate);
+                CommitGroupMultipliers();
+                BaseSweepThisFrame = true;
+            }
+
+            ApplyActiveCore(blend, now);
+            _hasAppliedTime = true;
+        }
+
+        /// <summary>Активный набор используется: включён флагом и пул отдаёт набор.</summary>
+        private bool UsesActiveSet => activeSetEnabled && _pool != null;
+
+        /// <summary>Порог «светит» — тот же, что у день/ночь-гейта пула (он читает intensity).</summary>
+        private float EmitEpsilon
+        {
+            get
+            {
+                float poolEps = _pool != null ? _pool.DayGateEpsilon : 0f;
+                return Mathf.Max(IntensityZeroEpsilon, poolEps);
+            }
+        }
+
+        /// <summary>
+        /// Контрольный путь T-LIGHT17b: ровно прежнее поведение — группа, кривая, сглаживание,
+        /// мерцание и безусловная запись intensity каждому отслеживаемому источнику.
+        /// Нужен для честного A/B: отличается от нового пути только отсутствием фильтра по набору.
+        /// </summary>
+        private void ApplyAllCore(float timeOfDay, float blend, bool immediate, float now)
+        {
+            int iterated = 0;
+            int writes = 0;
+            int activeWrites = 0;
             int zeroTracked = 0;
 
             foreach (Light light in _trackedLights)
@@ -495,6 +663,8 @@ namespace ProjectC.Core
                 {
                     continue;
                 }
+
+                iterated++;
 
                 LightGroup group = FindGroup(light);
 
@@ -508,9 +678,12 @@ namespace ProjectC.Core
                     state.appliedRevision = _settingsRevision;
                 }
 
+                state.group = group;
+
                 float multiplier = group != null ? group.Evaluate(timeOfDay) : 1f;
                 float targetIntensity = Mathf.Max(0f, state.baseIntensity * multiplier);
 
+                state.target = targetIntensity;
                 state.smoothedIntensity = immediate
                     ? targetIntensity
                     : Mathf.Lerp(state.smoothedIntensity, targetIntensity, blend);
@@ -518,18 +691,334 @@ namespace ProjectC.Core
                 // Мерцание накладывается поверх сглаженной яркости: короткий провал не должен
                 // проходить через Lerp, иначе сглаживание его съедает и лампы «не мерцают».
                 float flicker = EvaluateFlickerFactor(light, state, group, now);
-                light.intensity = state.smoothedIntensity * flicker;
+                float value = state.smoothedIntensity * flicker;
+                light.intensity = value;
+                state.lastWritten = value;
+                state.lastWrittenEmitting = value > EmitEpsilon;
 
                 // T-LIGHT16: счётчики (только чтение уже применённого значения).
-                applied++;
-                if (light.enabled) activeApplied++;
-                if (light.intensity <= IntensityZeroEpsilon) zeroTracked++;
+                writes++;
+                if (light.enabled) activeWrites++;
+                if (value <= IntensityZeroEpsilon) zeroTracked++;
             }
 
-            AppliedLastCall = applied;
-            ActiveAppliedLastCall = activeApplied;
-            ZeroIntensityTracked = zeroTracked;
-            _hasAppliedTime = true;
+            AddCounters(iterated, writes, activeWrites, zeroTracked);
+        }
+
+        /// <summary>
+        /// Базовая волна T-LIGHT17b: применяется, когда сдвинулась кривая суток / группа /
+        /// переопределения. Активные источники здесь не трогаются — у них своё покадровое
+        /// сглаживание и мерцание. Погашенным сглаживание не нужно (их не рисуют), но пул ЧИТАЕТ
+        /// их intensity в день/ночь-гейте, поэтому запись делается на смене «светит/не светит»
+        /// и на заметном изменении, а не каждый кадр (70–96 пишутся, 2 100+ — нет).
+        /// </summary>
+        private void ApplyBaseSweep(bool immediate)
+        {
+            float emitEps = EmitEpsilon;
+            int iterated = 0;
+            int writes = 0;
+            int zeroTracked = 0;
+
+            foreach (Light light in _trackedLights)
+            {
+                if (light == null || !_states.TryGetValue(light, out LightState state))
+                {
+                    continue;
+                }
+
+                iterated++;
+                EnsureGroupAssigned(light, state);
+
+                float targetIntensity = Mathf.Max(0f, state.baseIntensity * MultiplierFor(state));
+                state.target = targetIntensity;
+                if (targetIntensity <= IntensityZeroEpsilon) zeroTracked++;
+
+                if (_activeLights.Contains(light))
+                {
+                    continue; // активными занимается покадровый проход
+                }
+
+                state.smoothedIntensity = targetIntensity;
+
+                bool emitting = targetIntensity > emitEps;
+                float writeEps = Mathf.Max(IntensityZeroEpsilon, 0.02f * Mathf.Abs(state.baseIntensity));
+                bool mustWrite = immediate ||
+                                 emitting != state.lastWrittenEmitting ||
+                                 Mathf.Abs(targetIntensity - state.lastWritten) > writeEps;
+
+                if (mustWrite && WriteIntensity(light, state, targetIntensity, emitEps, true))
+                {
+                    writes++;
+                }
+            }
+
+            AddCounters(iterated, writes, 0, zeroTracked);
+        }
+
+        /// <summary>
+        /// Покадровый проход T-LIGHT17b: сглаживание перехода и мерцание — только включённым
+        /// источникам (70–96 вместо 2 238). Значение пишется, только если реально изменилось.
+        /// </summary>
+        private void ApplyActiveCore(float blend, float now)
+        {
+            if (_activeLights.Count == 0) return;
+
+            float emitEps = EmitEpsilon;
+            int iterated = 0;
+            int writes = 0;
+
+            foreach (Light light in _activeLights)
+            {
+                if (light == null || !_states.TryGetValue(light, out LightState state))
+                {
+                    continue;
+                }
+
+                iterated++;
+
+                float targetIntensity = Mathf.Max(0f, state.baseIntensity * MultiplierFor(state));
+                state.target = targetIntensity;
+                state.smoothedIntensity = Mathf.Lerp(state.smoothedIntensity, targetIntensity, blend);
+
+                float flicker = EvaluateFlickerFactor(light, state, state.group, now);
+                if (WriteIntensity(light, state, state.smoothedIntensity * flicker, emitEps, false))
+                {
+                    writes++;
+                }
+            }
+
+            AddCounters(iterated, writes, writes, -1);
+        }
+
+        private bool WriteIntensity(Light light, LightState state, float value, float emitEps, bool force)
+        {
+            if (!force && Mathf.Abs(value - state.lastWritten) < IntensityWriteEpsilon) return false;
+
+            light.intensity = value;
+            state.lastWritten = value;
+            state.lastWrittenEmitting = value > emitEps;
+            return true;
+        }
+
+        /// <summary>Сброс накопленных за кадр счётчиков в публичные свойства (только диагностика).</summary>
+        /// <param name="zeroTracked">Сколько источников погашено; –1 = не пересчитывалось в этом проходе.</param>
+        private void AddCounters(int iterated, int writes, int activeWrites, int zeroTracked)
+        {
+            IteratedThisFrame += iterated;
+            WritesThisFrame += writes;
+            ActiveWritesThisFrame += activeWrites;
+            AppliedLastCall = writes;
+            ActiveAppliedLastCall = activeWrites;
+            if (zeroTracked >= 0) ZeroIntensityTracked = zeroTracked;
+        }
+
+        // ---------------------------------------------------------------- T-LIGHT17b: группы
+
+        private void EvaluateGroupMultipliers(float timeOfDay)
+        {
+            int count = groups != null ? groups.Length : 0;
+
+            if (_groupMultipliers.Length != count)
+            {
+                _groupMultipliers = new float[count];
+                _groupMultipliersApplied = new float[count];
+                _multipliersInitialized = false;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                _groupMultipliers[i] = groups[i] != null ? groups[i].Evaluate(timeOfDay) : 1f;
+            }
+        }
+
+        private bool MultipliersMoved()
+        {
+            if (!_multipliersInitialized) return true;
+
+            for (int i = 0; i < _groupMultipliers.Length; i++)
+            {
+                float value = _groupMultipliers[i];
+                float applied = _groupMultipliersApplied[i];
+                float threshold = Mathf.Max(baseSweepEpsilon, Mathf.Abs(value) * BaseSweepRelativeEpsilon);
+                if (Mathf.Abs(value - applied) > threshold) return true;
+            }
+
+            return false;
+        }
+
+        private void CommitGroupMultipliers()
+        {
+            if (_groupMultipliersApplied.Length != _groupMultipliers.Length)
+            {
+                _groupMultipliersApplied = new float[_groupMultipliers.Length];
+            }
+
+            for (int i = 0; i < _groupMultipliers.Length; i++)
+            {
+                _groupMultipliersApplied[i] = _groupMultipliers[i];
+            }
+
+            _multipliersInitialized = true;
+        }
+
+        private float MultiplierFor(LightState state)
+        {
+            int index = state.groupIndex;
+            if (index < 0 || index >= _groupMultipliers.Length) return 1f;
+            return _groupMultipliers[index];
+        }
+
+        private int FindGroupIndex(Light light)
+        {
+            if (groups == null) return -1;
+
+            for (int i = 0; i < groups.Length; i++)
+            {
+                if (groups[i] != null && groups[i].Matches(light)) return i;
+            }
+
+            return -1;
+        }
+
+        private LightGroup GroupAt(int index)
+        {
+            return index >= 0 && groups != null && index < groups.Length ? groups[index] : null;
+        }
+
+        /// <summary>Разрешение группы + возврат/применение переопределений — только при смене группы или ревизии.</summary>
+        private void EnsureGroupAssigned(Light light, LightState state)
+        {
+            int index = FindGroupIndex(light);
+            LightGroup group = GroupAt(index);
+
+            if (index != state.groupIndex ||
+                !ReferenceEquals(group, state.appliedGroup) ||
+                state.appliedRevision != _settingsRevision)
+            {
+                RestoreBaseline(light, state);
+                ApplyOverrides(light, group);
+                state.appliedGroup = group;
+                state.groupIndex = index;
+                state.appliedRevision = _settingsRevision;
+            }
+
+            state.group = group;
+        }
+
+        // ------------------------------------------------------- T-LIGHT17b: активный набор
+
+        private void EnsurePoolBinding()
+        {
+            if (_pool == null)
+            {
+                _pool = FindAnyObjectByType<PrimumLightPool>();
+                if (_pool == null) return;
+
+                _poolVersionSeen = -1;
+            }
+
+            if (_poolEventHooked) return;
+
+            _pool.ActiveLightChanged += OnPoolLightActiveChanged;
+            _poolEventHooked = true;
+        }
+
+        private void UnhookPool()
+        {
+            if (_pool != null && _poolEventHooked)
+            {
+                _pool.ActiveLightChanged -= OnPoolLightActiveChanged;
+            }
+
+            _poolEventHooked = false;
+            _pool = null;
+            _poolVersionSeen = -1;
+            _activeLights.Clear();
+        }
+
+        /// <summary>
+        /// Пересборка копии активного набора по версии пула. Защищает от потерянного события
+        /// (пул мог пересобраться до привязки) и синхронизирует счётчики после Rebuild.
+        /// </summary>
+        private void SyncActiveSet()
+        {
+            if (_pool == null)
+            {
+                if (_activeLights.Count > 0) _activeLights.Clear();
+                return;
+            }
+
+            int version = _pool.ActiveSetVersion;
+            // Дополнительная защита: если версия не менялась, а пул уже кого-то держит включённым,
+            // значит копия потерялась (например, событие пришло до подписки) — пересобираем.
+            bool stale = _activeLights.Count == 0 && _pool.ActiveCount > 0;
+            if (version == _poolVersionSeen && !stale) return;
+
+            _poolVersionSeen = version;
+            ActiveSetResyncs++;
+            _activeLights.Clear();
+
+            int count = _pool.CopyActiveLights(_syncScratch);
+            for (int i = 0; i < count; i++)
+            {
+                Light light = _syncScratch[i];
+                if (light == null) continue;
+                if (_activeLights.Add(light)) ApplyImmediate(light, EnsureState(light));
+            }
+        }
+
+        private LightState EnsureState(Light light)
+        {
+            if (_states.TryGetValue(light, out LightState state)) return state;
+
+            state = CaptureState(light);
+            if (!_trackedLights.Contains(light)) _trackedLights.Add(light);
+            _states.Add(light, state);
+            return state;
+        }
+
+        /// <summary>
+        /// Пул включил/выключил источник. enabled — его владение; здесь мы только держим копию набора
+        /// и, если источник включён, сразу выставляем актуальную яркость (иначе был бы тёмный/яркий кадр).
+        /// </summary>
+        private void OnPoolLightActiveChanged(Light light, bool active)
+        {
+            if (light == null) return;
+
+            if (!active)
+            {
+                _activeLights.Remove(light);
+                return;
+            }
+
+            _activeLights.Add(light);
+            ApplyImmediate(light, EnsureState(light));
+        }
+
+        /// <summary>
+        /// Немедленная яркость без мерцания и без сглаживания: источник только что появился в кадре,
+        /// его smoothedIntensity мог устареть (пока он был погашен, его никто не обновлял).
+        /// </summary>
+        private void ApplyImmediate(Light light, LightState state)
+        {
+            if (_groupMultipliers.Length == 0 && groups != null && groups.Length > 0)
+            {
+                EvaluateGroupMultipliers(_currentTimeOfDay);
+            }
+
+            EnsureGroupAssigned(light, state);
+
+            float targetIntensity = Mathf.Max(0f, state.baseIntensity * MultiplierFor(state));
+            state.target = targetIntensity;
+            state.smoothedIntensity = targetIntensity;
+            // Провал «из прошлого» не должен сработать в момент включения.
+            state.flickerScheduled = false;
+
+            if (WriteIntensity(light, state, targetIntensity, EmitEpsilon, true))
+            {
+                WritesThisFrame++;
+                ActiveWritesThisFrame++;
+            }
         }
 
         private LightGroup FindGroup(Light light)

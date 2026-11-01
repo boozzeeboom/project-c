@@ -28,6 +28,14 @@
 //   3. радиус L2 (по умолчанию 100 м) вместо устаревшего activeRadius=140 м из сцены —
 //      выключается флагом useRadiusL2, сцена при этом не требуется к перезаписи.
 // Мировых Vector3 пул по-прежнему не кэширует: гейт читает скаляр intensity, а не позицию.
+//
+// T-LIGHT17b (L2b светового трека) — контракт активного набора для ALIC:
+//   ActiveLightChanged   — событие «источник включён/выключен пулом»; ALIC по нему немедленно
+//                          применяет актуальную intensity, чтобы включение не стоило кадра;
+//   ActiveSetVersion     — версия набора (== SetVersion), ALIC сверяет её и пересобирает копию;
+//   CopyActiveLights     — копия набора для синхронизации/диагностики.
+// Политика (dayGate / split OUT-IN / radius) и владение Light.enabled не изменены: пул
+// по-прежнему единственный писатель enabled и НЕ пишет intensity.
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
@@ -141,6 +149,29 @@ namespace ProjectC.World
         public const string OwnershipLine =
             "enabled=PrimumLightPool;intensity=AdditionalLightIntensityController;poolWritesIntensity=no;" +
             "poolWritesRange=no;poolWritesShadows=no;directorWritesLightEnabled=no;focusWrites=no";
+
+        // ---------------------------------------------------------------- T-LIGHT17b
+        // Контракт активного набора. enabled — по-прежнему только пул, поэтому именно он знает,
+        // какие источники реально участвуют в кадре. ALIC (владелец intensity) подписан на событие
+        // и держит копию набора; версия набора защищает от потерянного события.
+
+        /// <summary>Источник включён (true) или выключен (false) пулом. Вызывается в том же кадре, что и запись Light.enabled.</summary>
+        public event System.Action<Light, bool> ActiveLightChanged;
+
+        /// <summary>Версия активного набора: растёт при любом изменении набора, включая пересборку (Rebuild).</summary>
+        public int ActiveSetVersion => SetVersion;
+
+        /// <summary>Копия текущего активного набора (синхронизация/диагностика ALIC).</summary>
+        public int CopyActiveLights(List<Light> into)
+        {
+            if (into == null) return 0;
+            into.Clear();
+            for (int i = 0; i < _lights.Length; i++)
+            {
+                if (_lights[i] != null && _on[i]) into.Add(_lights[i]);
+            }
+            return into.Count;
+        }
 
         /// <summary>Строка параметров пула для отчёта (pool/dayGate/split/radius).</summary>
         public string ConfigLine
@@ -258,10 +289,16 @@ namespace ProjectC.World
                 Debug.LogWarning("[PRIMUM/Lights] Под " + name + " нет ни одного Light — пул простаивает.", this);
             }
             // На старте всё выключено: 2 238 источников не должны попасть в первый кадр.
+            // T-LIGHT17b: если пересборка реально погасила источники, набор изменился — версия
+            // должна вырасти, иначе подписчик (ALIC) не узнает, что активный набор стал пустым.
+            int switchedOff = 0;
             for (int i = 0; i < _lights.Length; i++)
             {
-                if (_lights[i] != null) _lights[i].enabled = false;
+                if (_lights[i] == null) continue;
+                if (_lights[i].enabled) switchedOff++;
+                _lights[i].enabled = false;
             }
+            if (switchedOff > 0) SetVersion++;
         }
 
         /// <summary>T-LIGHT16: группа источника по префиксу имени (OUT / IN / FARM).</summary>
@@ -386,7 +423,14 @@ namespace ProjectC.World
             {
                 Light l = _lights[i];
                 if (l == null) continue;
-                if (l.enabled != _on[i]) { l.enabled = _on[i]; switches++; }
+                if (l.enabled != _on[i])
+                {
+                    l.enabled = _on[i];
+                    switches++;
+                    // T-LIGHT17b: владелец enabled сообщает о смене набора, чтобы ALIC применил
+                    // intensity включённому источнику в этом же кадре.
+                    ActiveLightChanged?.Invoke(l, _on[i]);
+                }
                 if (!_on[i]) continue;
 
                 active++;

@@ -48,6 +48,17 @@ namespace ProjectC.EditorTools
 
         public const string SessionKey = "ProjectC.FinalValidationBench.Running";
 
+        // T-CULL01 / Stage 6 (H6): тот же прогон (Host → риг → прогрев → точки → F8/F9), но A/B — по
+        // VisibilityDirector (CityShadowBudget везде включён), плюс PILOT, culling ms и статистика
+        // директора. Меню: Project C → Culling → Stage 6 Director → Run.
+        private const string Stage6RunMenu = "Project C/Culling/Stage 6 Director/Run";
+        private const string Stage6AbortMenu = "Project C/Culling/Stage 6 Director/Abort";
+        private const string ProfileKey = SessionKey + ".stage6";
+        private const string PilotChunkName = "PRIMUM_HOUSES_S9_TRD-S2_P1_45H";
+        private const float PilotCamDistance = 58f;
+        private const float PilotCamHeight = 24f;
+        private static bool _stage6;
+
         private const float BenchFar = 30000f;
         private const float BenchFov = 60f;
 
@@ -78,6 +89,8 @@ namespace ProjectC.EditorTools
             public float hour;
             public bool shipsVisible;
             public bool budgetOn;
+            public bool directorOn = true;
+            public bool pilot;
         }
 
         private static List<BenchCase> BuildCases()
@@ -85,6 +98,25 @@ namespace ProjectC.EditorTools
             var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
             var c2 = new Vector3(-382.90f, -58.23f, -126.20f);
             var c3 = new Vector3(-416.00f, -27.94f, -36.00f);
+            if (_stage6)
+            {
+                return new List<BenchCase>
+                {
+                    new BenchCase { id = "P1_dir_on", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = true },
+                    new BenchCase { id = "P1_dir_on_repeat", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = true },
+                    new BenchCase { id = "P1_dir_off", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = false },
+                    new BenchCase { id = "P1_real_dir_on", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = true, budgetOn = true, directorOn = true },
+                    new BenchCase { id = "P1_real_dir_off", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = true, budgetOn = true, directorOn = false },
+                    new BenchCase { id = "C2_dir_on", local = c2, yaw = 225f, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = true },
+                    new BenchCase { id = "C2_dir_off", local = c2, yaw = 225f, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = false },
+                    new BenchCase { id = "C3_dir_on", local = c3, yaw = 132f, pitch = -18f, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = true },
+                    new BenchCase { id = "C3_dir_off", local = c3, yaw = 132f, pitch = -18f, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = false },
+                    new BenchCase { id = "PILOT_dir_off", local = Vector3.zero, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = false, pilot = true },
+                    new BenchCase { id = "PILOT_dir_on", local = Vector3.zero, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = true, pilot = true },
+                    new BenchCase { id = "PILOT_dir_on_repeat", local = Vector3.zero, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = true, pilot = true },
+                    new BenchCase { id = "PILOT_dir_off_repeat", local = Vector3.zero, hour = 12f, shipsVisible = false, budgetOn = true, directorOn = false, pilot = true },
+                };
+            }
             return new List<BenchCase>
             {
                 new BenchCase { id = "P1_noship_budget_on", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true },
@@ -102,7 +134,7 @@ namespace ProjectC.EditorTools
         // ------------------------------------------------------------------ состояние
 
         private static State _state = State.Off;
-        private static readonly List<BenchCase> _cases = BuildCases();
+        private static List<BenchCase> _cases = BuildCases();
         private static int _caseIndex;
 
         private static readonly List<int> _dc = new List<int>();
@@ -113,6 +145,14 @@ namespace ProjectC.EditorTools
         private static readonly List<int> _hybridInst = new List<int>();
         private static readonly List<int> _srpDC = new List<int>();
         private static readonly List<double> _ms = new List<double>();
+
+        // Stage 6: culling ms (ProfilerRecorder) — покадрово в окне замера точки.
+        private static Unity.Profiling.ProfilerRecorder _cullRecorder;
+        private static Unity.Profiling.ProfilerRecorder _dirRecorder;
+        private static readonly List<double> _cullMsFrames = new List<double>();
+        private static readonly List<double> _dirMsFrames = new List<double>();
+        private static int _lastProfiledFrame = -1;
+        private static readonly List<string> _directorLogLines = new List<string>();
 
         private static Camera _cam;
         private static Transform _worldRoot;
@@ -203,6 +243,27 @@ namespace ProjectC.EditorTools
         [MenuItem(RunMenu)]
         public static void Run()
         {
+            _stage6 = false;
+            StartRun();
+        }
+
+        [MenuItem(Stage6RunMenu)]
+        public static void RunStage6()
+        {
+            _stage6 = true;
+            StartRun();
+        }
+
+        [MenuItem(Stage6AbortMenu)]
+        public static void AbortStage6()
+        {
+            Finish("ABORTED_BY_USER", false);
+        }
+
+        private static string FilePrefix { get { return _stage6 ? "S_stage6_" : "R_stage4c_"; } }
+
+        private static void StartRun()
+        {
             if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 Debug.LogError("[FinalValidation] Уже в Play Mode / вход выполняется. Сначала Abort.");
@@ -214,8 +275,12 @@ namespace ProjectC.EditorTools
             if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
 
             _runTag = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
-            _outRawPath = Path.Combine(dataDir, "R_stage4c_" + DateTag + "_raw.txt");
-            _outCsvPath = Path.Combine(dataDir, "R_stage4c_" + DateTag + ".csv");
+            _cases = BuildCases();
+            _director = null;
+            _directorFinalWritten = false;
+            _outRawPath = Path.Combine(dataDir, FilePrefix + DateTag + "_raw.txt");
+            _outCsvPath = Path.Combine(dataDir, FilePrefix + DateTag + ".csv");
+            _directorLogLines.Clear();
             if (File.Exists(_outRawPath)) File.Delete(_outRawPath);
             if (File.Exists(_outCsvPath)) File.Delete(_outCsvPath);
 
@@ -254,9 +319,10 @@ namespace ProjectC.EditorTools
             HookLog();
 
             SessionState.SetBool(SessionKey, true);
+            SessionState.SetBool(ProfileKey, _stage6);
             SessionState.SetInt(SessionKey + ".reloads", 0);
 
-            Append("NOTE;bench=FinalValidationBench(stage4c);unity=" + Application.unityVersion +
+            Append("NOTE;bench=FinalValidationBench(" + (_stage6 ? "stage6_director" : "stage4c") + ");unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart);
             Append(ReadRenderConfigLine());
@@ -429,6 +495,7 @@ namespace ProjectC.EditorTools
                         return;
                     }
                     CacheRenderers();
+                    if (_stage6) AppendStage6Gate();
                     _budgetEntriesCount = CountPrivate(_budget, "_entries");
                     Append("NOTE;budget_steady;entries=" + _budgetEntriesCount +
                            ";ourCandidates=" + _cityCandidates.Count +
@@ -556,6 +623,7 @@ namespace ProjectC.EditorTools
 
             _worldRoot = FindWorldRoot();
             ForcePhase(12f);
+            if (_stage6) StartProfilers();
 
             Debug.Log("[FinalValidation] Риг: " + _cam.name + " (far " + _cam.farClipPlane + ", fov " + _cam.fieldOfView +
                       "), отключено компонентов-двигателей камеры: " + disabled +
@@ -769,6 +837,171 @@ namespace ProjectC.EditorTools
             _budgetEntriesCount = CountPrivate(_budget, "_entries");
         }
 
+        // ------------------------------------------------------------ Stage 6 (H6)
+
+        private static VisibilityDirector _director;
+
+        private static VisibilityDirector FindDirector()
+        {
+            if (_director == null) _director = UnityEngine.Object.FindAnyObjectByType<VisibilityDirector>(FindObjectsInactive.Include);
+            return _director;
+        }
+
+        /// <summary>A/B директора: выключение компонента возвращает forceRenderingOff = false всем (OnDisable).</summary>
+        private static void SetDirectorEnabled(bool on)
+        {
+            var d = FindDirector();
+            if (d == null) return;
+            if (d.enabled != on) d.enabled = on;
+        }
+
+        private static string DirectorBrief()
+        {
+            var d = FindDirector();
+            if (d == null) return "director=absent";
+            return "dirEnabled=" + d.enabled + ";dirGroups=" + d.GroupCount + ";dirMembers=" + d.DirectedMemberCount +
+                   ";dirCulled=" + d.CulledCount + ";dirCameras=" + d.CameraCount +
+                   ";dirRebaseResets=" + d.RebaseResets + ";dirRollbackResets=" + d.RollbackResets +
+                   ";dirTeleportResets=" + d.TeleportResets;
+        }
+
+        private static bool _directorFinalWritten;
+
+        /// <summary>Итог директора — пишется, пока Play Mode ещё идёт (после выхода компонент уничтожен).</summary>
+        private static void AppendDirectorFinal()
+        {
+            if (_directorFinalWritten) return;
+            var d = FindDirector();
+            if (d == null) return;
+            _directorFinalWritten = true;
+            Append("DIRECTOR_FINAL;" + DirectorBrief() +
+                   ";groups=" + d.DescribeGroups() + ";cameras=" + d.CameraReport + ";providers=" + d.ProviderReport +
+                   ";ownershipConflicts=" + d.OwnershipConflicts +
+                   ";tickAvgMs=" + d.AvgTickMs.ToString("F4", CultureInfo.InvariantCulture) +
+                   ";tickMaxMs=" + d.MaxTickMs.ToString("F4", CultureInfo.InvariantCulture) + ";ticks=" + d.TickCount);
+        }
+
+        /// <summary>PILOT: камера в 24 м над и 58 м перед центром чанка S9_TRD-S2 (как Stage4GrBench), позиции живые.</summary>
+        private static bool TryPilotPose(out Vector3 pos, out Quaternion rot)
+        {
+            pos = Vector3.zero;
+            rot = Quaternion.identity;
+            if (_worldRoot == null) return false;
+            var city = _worldRoot.Find("PRIMUM");
+            var chunk = city != null ? city.Find(PilotChunkName) : null;
+            if (chunk == null) return false;
+
+            var rs = chunk.GetComponentsInChildren<Renderer>(false);
+            bool has = false;
+            Bounds b = default(Bounds);
+            for (int i = 0; i < rs.Length; i++)
+            {
+                if (rs[i] == null || rs[i].gameObject.layer == DoorLayer) continue;
+                if (!has) { b = rs[i].bounds; has = true; }
+                else b.Encapsulate(rs[i].bounds);
+            }
+            if (!has) return false;
+
+            Vector3 target = b.center;
+            pos = target + new Vector3(0f, PilotCamHeight, -PilotCamDistance);
+            rot = Quaternion.LookRotation((target - pos).normalized, Vector3.up);
+            return true;
+        }
+
+        private static void StartProfilers()
+        {
+            string[] cullNames = { "CullScriptable", "Culling", "SceneCulling" };
+            for (int i = 0; i < cullNames.Length && !_cullRecorder.Valid; i++)
+            {
+                var r = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Render, cullNames[i]);
+                if (r.Valid) { _cullRecorder = r; Append("NOTE;cullRecorder=" + cullNames[i]); }
+                else r.Dispose();
+            }
+            if (!_cullRecorder.Valid) Append("NOTE;cullRecorder=invalid");
+
+            _dirRecorder = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Scripts, VisibilityDirector.ProfilerMarkerName);
+            Append("NOTE;directorRecorder=" + VisibilityDirector.ProfilerMarkerName + ";valid=" + _dirRecorder.Valid);
+        }
+
+        /// <summary>Покадрово: движковый culling (CullScriptable) и тик директора, мс (LastValue = прошлый кадр).</summary>
+        private static void SampleProfilers()
+        {
+            if (!_stage6 || Time.frameCount == _lastProfiledFrame) return;
+            _lastProfiledFrame = Time.frameCount;
+            if (_cullRecorder.Valid) _cullMsFrames.Add(_cullRecorder.LastValue / 1e6);
+            if (_dirRecorder.Valid) _dirMsFrames.Add(_dirRecorder.LastValue / 1e6);
+        }
+
+        /// <summary>
+        /// Гейт «мы в игре, а не в главном меню»: риг ThirdPersonCamera, локальный игрок, живая сессия и
+        /// скрытое MainMenuWindow. Если меню всё ещё видно — скрыть и записать это в raw.
+        /// </summary>
+        private static void AppendStage6Gate()
+        {
+            bool menuVisible = false;
+            var menu = FindByTypeName("MainMenuWindow");
+            if (menu != null)
+            {
+                var f = menu.GetType().GetField("_root", BindingFlags.Instance | BindingFlags.NonPublic);
+                var root = f != null ? f.GetValue(menu) as UnityEngine.UIElements.VisualElement : null;
+                menuVisible = root != null && root.style.display.value != UnityEngine.UIElements.DisplayStyle.None;
+                if (menuVisible)
+                {
+                    var hide = menu.GetType().GetMethod("Hide", BindingFlags.Instance | BindingFlags.Public);
+                    if (hide != null) hide.Invoke(menu, null);
+                }
+            }
+
+            string liveSession = "unknown";
+            var types = typeof(VisibilityDirector).Assembly.GetTypes();
+            for (int i = 0; i < types.Length; i++)
+            {
+                if (types[i].Name != "UIManager") continue;
+                var p = types[i].GetProperty("HasLiveGameplaySession", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                if (p != null) liveSession = Convert.ToString(p.GetValue(null), CultureInfo.InvariantCulture);
+                break;
+            }
+
+            bool player = false;
+            var slice = FindByTypeName("GlobalMotionControlledRebaseSlice");
+            if (slice != null)
+            {
+                var m = slice.GetType().GetMethod("TryResolveLocalPlayer", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (m != null)
+                {
+                    object[] args = { null, null };
+                    player = (bool)m.Invoke(slice, args) && args[0] is Transform;
+                }
+            }
+
+            Append("GATE;inGame;rig=" + (_cam != null ? _cam.name : "none") + ";localPlayer=" + player +
+                   ";liveSession=" + liveSession + ";mainMenuVisibleAtWarmupEnd=" + menuVisible +
+                   (menuVisible ? ";action=menu_hidden_again" : "") + ";" + DirectorBrief());
+            var d = FindDirector();
+            if (d != null)
+                Append("DIRECTOR;groups=" + d.DescribeGroups() + ";cameras=" + d.CameraReport + ";providers=" + d.ProviderReport +
+                       ";ownershipConflicts=" + d.OwnershipConflicts + ";policy=" + d.PolicyEnabled +
+                       ";minPx=" + d.MinScreenPixels.ToString("F1", CultureInfo.InvariantCulture));
+            Debug.Log("[FinalValidation] GATE: rig=" + (_cam != null ? _cam.name : "none") + ", player=" + player +
+                      ", liveSession=" + liveSession + ", menuVisible=" + menuVisible);
+        }
+
+        private static double Avg(List<double> v)
+        {
+            if (v == null || v.Count == 0) return 0.0;
+            double s = 0.0;
+            for (int i = 0; i < v.Count; i++) s += v[i];
+            return s / v.Count;
+        }
+
+        private static double Max(List<double> v)
+        {
+            double m = 0.0;
+            if (v == null) return m;
+            for (int i = 0; i < v.Count; i++) if (v[i] > m) m = v[i];
+            return m;
+        }
+
         // ------------------------------------------------------------------- точки
 
         private static void BeginCase(int index)
@@ -779,6 +1012,10 @@ namespace ProjectC.EditorTools
             var c = _cases[_caseIndex];
             SetShipsVisible(c.shipsVisible);
             SetBudgetEnabled(c.budgetOn);
+            if (_stage6) SetDirectorEnabled(c.directorOn);
+            _cullMsFrames.Clear();
+            _dirMsFrames.Clear();
+            _lastProfiledFrame = -1;
             ApplyPose(c);
             ForcePhaseSilent(c.hour);
 
@@ -806,6 +1043,17 @@ namespace ProjectC.EditorTools
         private static void ApplyPose(BenchCase c)
         {
             if (_cam == null) return;
+            if (c.pilot)
+            {
+                Vector3 pilotPos; Quaternion pilotRot;
+                if (TryPilotPose(out pilotPos, out pilotRot))
+                {
+                    _targetPos = pilotPos;
+                    _targetRot = pilotRot;
+                    _cam.transform.SetPositionAndRotation(_targetPos, _targetRot);
+                    return;
+                }
+            }
             Vector3 shift = _worldRoot != null ? _worldRoot.position : Vector3.zero;
             _targetPos = c.local + AuthoredWorldOffset + shift;
             _targetRot = Quaternion.Euler(c.pitch, c.yaw, 0f);
@@ -816,6 +1064,7 @@ namespace ProjectC.EditorTools
         {
             var c = _cases[_caseIndex];
             ApplyPose(c);
+            SampleProfilers();
 
             if (Time.frameCount < _settleUntilFrame) return;
 
@@ -924,12 +1173,23 @@ namespace ProjectC.EditorTools
             sb.Append(";doorsInFrustum=").Append(_censusDoorsInFrustum);
             sb.Append(";rawDc=").Append(string.Join("|", _dc.ConvertAll(v => v.ToString()).ToArray()));
             sb.Append(";rawShadowCasters=").Append(string.Join("|", _sc.ConvertAll(v => v.ToString()).ToArray()));
+            if (_stage6)
+            {
+                sb.Append(";director=").Append(c.directorOn ? "on" : "off");
+                sb.Append(';').Append(DirectorBrief());
+                sb.Append(";cullMsAvg=").Append(Avg(_cullMsFrames).ToString("F3", CultureInfo.InvariantCulture));
+                sb.Append(";cullMsMax=").Append(Max(_cullMsFrames).ToString("F3", CultureInfo.InvariantCulture));
+                sb.Append(";dirMsFrameAvg=").Append(Avg(_dirMsFrames).ToString("F4", CultureInfo.InvariantCulture));
+                sb.Append(";dirMsFrameMax=").Append(Max(_dirMsFrames).ToString("F4", CultureInfo.InvariantCulture));
+                sb.Append(";profiledFrames=").Append(_cullMsFrames.Count);
+            }
             Append(sb.ToString());
             AppendCsv(c, dc, spc, tris, sc, hybridDC, hybridInst, srpDC, ms, fps);
 
             Debug.Log("[FinalValidation] " + c.id + ": dc=" + dc + " spc=" + spc + " tris=" + tris +
                       " shadowCasters=" + sc + " hybridDC=" + hybridDC + " shadowsOff=" + _censusShadowsOff +
-                      " entries=" + _budgetEntriesCount);
+                      " entries=" + _budgetEntriesCount + (_stage6 ? " " + DirectorBrief() + " cullMs=" +
+                      Avg(_cullMsFrames).ToString("F3", CultureInfo.InvariantCulture) : ""));
         }
 
         private static void AppendCsv(BenchCase c, int dc, int spc, int tris, int sc, int hybridDC, int hybridInst,
@@ -938,7 +1198,8 @@ namespace ProjectC.EditorTools
             bool writeHeader = !File.Exists(_outCsvPath);
             var sb = new StringBuilder();
             if (writeHeader)
-                sb.AppendLine("run,date,case,ships,budget,budgetEntries,shadowsOff,dc,spc,tris,shadowCasters,hybridDC,hybridInstances,srpBatcherDC,ms,fps,enabledRenderers,inFrustum,cityInFrustum,doorsInFrustum,worldpos");
+                sb.AppendLine("run,date,case,ships,budget,budgetEntries,shadowsOff,dc,spc,tris,shadowCasters,hybridDC,hybridInstances,srpBatcherDC,ms,fps,enabledRenderers,inFrustum,cityInFrustum,doorsInFrustum,worldpos" +
+                              (_stage6 ? ",director,dirGroups,dirMembers,dirCulled,dirCameras,cullMsAvg,cullMsMax,dirMsFrameAvg,dirMsFrameMax,dirTickMaxMs" : ""));
             sb.Append(_runTag).Append(',')
               .Append(DateTag).Append(',')
               .Append(c.id).Append(',')
@@ -953,6 +1214,20 @@ namespace ProjectC.EditorTools
               .Append(_censusEnabledTotal).Append(',').Append(_censusInFrustum).Append(',')
               .Append(_censusCity).Append(',').Append(_censusDoorsInFrustum).Append(',')
               .Append('"').Append(_targetPos.ToString("F2")).Append('"');
+            if (_stage6)
+            {
+                var d = FindDirector();
+                sb.Append(',').Append(c.directorOn ? "on" : "off")
+                  .Append(',').Append(d != null ? d.GroupCount : -1)
+                  .Append(',').Append(d != null ? d.DirectedMemberCount : -1)
+                  .Append(',').Append(d != null ? d.CulledCount : -1)
+                  .Append(',').Append(d != null ? d.CameraCount : -1)
+                  .Append(',').Append(Avg(_cullMsFrames).ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(',').Append(Max(_cullMsFrames).ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(',').Append(Avg(_dirMsFrames).ToString("F4", CultureInfo.InvariantCulture))
+                  .Append(',').Append(Max(_dirMsFrames).ToString("F4", CultureInfo.InvariantCulture))
+                  .Append(',').Append(d != null ? d.MaxTickMs.ToString("F4", CultureInfo.InvariantCulture) : "-1");
+            }
             sb.AppendLine();
             try { File.AppendAllText(_outCsvPath, sb.ToString(), Encoding.UTF8); }
             catch (Exception e) { Debug.LogWarning("[FinalValidation] CSV: " + e.Message); }
@@ -965,6 +1240,7 @@ namespace ProjectC.EditorTools
             // FO-тест выполняется в состоянии реальной игры: корабли видимы, бюджет включён.
             SetShipsVisible(true);
             SetBudgetEnabled(true);
+            SetDirectorEnabled(true);
             ApplyPose(_cases[0]);
 
             _rebaseSlice = FindByTypeName("GlobalMotionControlledRebaseSlice") as MonoBehaviour;
@@ -1020,11 +1296,17 @@ namespace ProjectC.EditorTools
                 Debug.LogError("[FinalValidation] Keyboard.current == null — реальный ввод невозможен.");
                 return;
             }
+            // Input System в редакторе отбрасывает клавиатуру без фокуса Game View (Stage 6, прогон 3:
+            // F9 без единого [T-FO06CY]-лога) — перед нажатием фокусируем Game View.
+            var gameViewType = Type.GetType("UnityEditor.GameView,UnityEditor");
+            if (gameViewType != null) EditorWindow.FocusWindowIfItsOpen(gameViewType);
+            var focusedWindow = EditorWindow.focusedWindow;
+            bool focused = focusedWindow != null && gameViewType != null && gameViewType.IsInstanceOfType(focusedWindow);
             InputSystem.QueueStateEvent(kb, new KeyboardState(key));
             _keyReleaseFrame = Time.frameCount + 2;
             _pressAttempts++;
-            _rebaseLines.Add("input=QueueStateEvent(" + key + ");frame=" + Time.frameCount + ";attempt=" + _pressAttempts);
-            Append("REBASE_INPUT;key=" + key + ";frame=" + Time.frameCount + ";attempt=" + _pressAttempts);
+            _rebaseLines.Add("input=QueueStateEvent(" + key + ");frame=" + Time.frameCount + ";attempt=" + _pressAttempts + ";gameViewFocused=" + focused);
+            Append("REBASE_INPUT;key=" + key + ";frame=" + Time.frameCount + ";attempt=" + _pressAttempts + ";gameViewFocused=" + focused);
         }
 
         private static void TickKeyRelease()
@@ -1126,7 +1408,7 @@ namespace ProjectC.EditorTools
                                ";worldRoot=" + _rootBefore.ToString("F2") +
                                ";player=" + _playerRoot.position.ToString("F2") +
                                ";doors=" + DoorControllerCount() + ";doorRenderers=" + DoorRendererCount() +
-                               ";budgetEntries=" + CountPrivate(_budget, "_entries") +
+                               ";budgetEntries=" + CountPrivate(_budget, "_entries") + ";" + DirectorBrief() +
                                ";ships=" + ShipRootsDump() +
                                ";errorsSoFar=" + _errorCount);
 
@@ -1169,7 +1451,7 @@ namespace ProjectC.EditorTools
                                ";predictedShift_m=" + _predictedShiftMagnitude.ToString("F3", CultureInfo.InvariantCulture) +
                                ";player=" + _playerRoot.position.ToString("F2") +
                                ";doors=" + DoorControllerCount() + ";doorRenderers=" + DoorRendererCount() +
-                               ";budgetEntries=" + CountPrivate(_budget, "_entries") +
+                               ";budgetEntries=" + CountPrivate(_budget, "_entries") + ";" + DirectorBrief() +
                                ";ships=" + ShipRootsDump() +
                                ";frames=" + (Time.frameCount - _rebaseStepFrame) + ";errorsSoFar=" + _errorCount);
 
@@ -1209,7 +1491,7 @@ namespace ProjectC.EditorTools
                                ";worldRoot=" + _rootBefore.ToString("F2") +
                                ";player=" + _playerRoot.position.ToString("F2") +
                                ";doors=" + DoorControllerCount() + ";doorRenderers=" + DoorRendererCount() +
-                               ";budgetEntries=" + CountPrivate(_budget, "_entries") +
+                               ";budgetEntries=" + CountPrivate(_budget, "_entries") + ";" + DirectorBrief() +
                                ";ships=" + ShipRootsDump() +
                                ";errorsSoFar=" + _errorCount);
 
@@ -1261,7 +1543,7 @@ namespace ProjectC.EditorTools
                                ";predictedShift_m=" + _predictedShiftMagnitude.ToString("F3", CultureInfo.InvariantCulture) +
                                ";player=" + _playerRoot.position.ToString("F2") +
                                ";doors=" + DoorControllerCount() + ";doorRenderers=" + DoorRendererCount() +
-                               ";budgetEntries=" + CountPrivate(_budget, "_entries") +
+                               ";budgetEntries=" + CountPrivate(_budget, "_entries") + ";" + DirectorBrief() +
                                ";ships=" + ShipRootsDump() +
                                ";frames=" + (Time.frameCount - _rebaseStepFrame) + ";errorsSoFar=" + _errorCount);
 
@@ -1294,6 +1576,7 @@ namespace ProjectC.EditorTools
         {
             if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode)
             {
+                if (_stage6) AppendDirectorFinal();
                 RestoreRuntime();
                 _stateSince = Now;
                 EditorApplication.ExitPlaymode();
@@ -1308,6 +1591,7 @@ namespace ProjectC.EditorTools
         /// <summary>Возвращает всё, что бенч менял в runtime (сцена не сохраняется).</summary>
         private static void RestoreRuntime()
         {
+            try { SetDirectorEnabled(true); } catch (Exception) { }
             try { SetShipsVisible(true); } catch (Exception) { }
 
             for (int i = 0; i < _cityCandidates.Count; i++)
@@ -1341,6 +1625,15 @@ namespace ProjectC.EditorTools
             EditorApplication.update -= Tick;
             SessionState.SetBool(SessionKey, false);
             UnhookLog();
+            if (_cullRecorder.Valid) _cullRecorder.Dispose();
+            if (_dirRecorder.Valid) _dirRecorder.Dispose();
+
+            if (_stage6)
+            {
+                AppendDirectorFinal();
+                for (int i = 0; i < _directorLogLines.Count && i < 8; i++)
+                    Append("DIRECTOR_LOG;" + i + ";" + _directorLogLines[i]);
+            }
 
             Append("FINAL_ERRORS;errors=" + _errorCount +
                    ";exceptions=" + _exceptionCount +
@@ -1399,6 +1692,9 @@ namespace ProjectC.EditorTools
                 _budgetLogCount++;
                 if (_budgetLogLines.Count < 12) _budgetLogLines.Add(condition);
             }
+
+            if (condition.Contains("[VisibilityDirector]") && _directorLogLines.Count < 12)
+                _directorLogLines.Add(condition);
 
             if (condition.Contains("[T-FO06CY]"))
             {
@@ -1508,8 +1804,10 @@ namespace ProjectC.EditorTools
             }
 
             var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            _outRawPath = Path.Combine(projectRoot, DataDir, "R_stage4c_" + DateTag + "_raw.txt");
-            _outCsvPath = Path.Combine(projectRoot, DataDir, "R_stage4c_" + DateTag + ".csv");
+            _stage6 = SessionState.GetBool(ProfileKey, false);
+            _cases = BuildCases();
+            _outRawPath = Path.Combine(projectRoot, DataDir, FilePrefix + DateTag + "_raw.txt");
+            _outCsvPath = Path.Combine(projectRoot, DataDir, FilePrefix + DateTag + ".csv");
             _state = State.WaitPlayMode;
             _stateSince = Now;
             _hostRequested = false;

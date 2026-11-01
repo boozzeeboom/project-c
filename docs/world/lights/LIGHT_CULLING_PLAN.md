@@ -3,7 +3,7 @@
 **Дата:** 2026-11-01 · **Проект:** `C:\Projects\ProjectC_client` · **Unity:** 6000.5.2f1 · **URP:** 17.5.0
 **Основание:** `docs/world/lights/LIGHT_CULLING_TIMING_RESEARCH.md` + подотчёты A–E.
 **Статус:** ресерч проверен (3 независимых прохода); обязательные корректировки внесены.
-**L1/T-LIGHT16 — PASS** (baseline-инструментация, без изменения поведения). Следующий — **L2/T-LIGHT17**.
+**L1/T-LIGHT16 — PASS** (baseline-инструментация, без изменения поведения). **L2/T-LIGHT17 — PASS** (day/night-гейт, резерв OUT/IN, радиус 100). Следующий — **T-LIGHT17b (ALIC CPU)**.
 **Важно:** T-LIGHT24/25 **удалены**. Финал T-CULL01 — после закрытия светового трека.
 
 ---
@@ -84,6 +84,23 @@ CSV: `T-LIGHT16_BASELINE_2026-11-01.csv`. N = **2 238**, registered/active 96, f
 6. **Gate:** day activeZero=0; P1 cap saturation заметно ниже; визуал не хуже; CPU/GPU без регресса; F8/F9; commit T-LIGHT17.
 - **Только после L2** — L3 фокус и L4 конус.
 
+### 1.2. Результат L2 (T-LIGHT17, 2026-11-01) — PASS
+
+Отчёт: [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md); CSV: `T-LIGHT17_2026-11-01.csv` (22 кейса A/B).
+N = 2 238, `maxActive` 96 без изменений, сцена не сохранялась.
+
+| Рычаг | Числа |
+|---|---|
+| day/night-гейт | P1 12 ч `zeroActive` **46 → 0**, `activeOUT` 46 → 0, `activeIN` 50 → **96**; то же на STREET; DC 2242 без изменений, ALIC 5.89 → 5.59 мс |
+| возврат вечером | `l2_100` 18 ч `activeOUT` **46**, 20 ч **46**, `zero` 0 — погашенное днём возвращается вместе с кривой 17–21 ч |
+| резерв OUT/IN | ADMIN `activeOUT` **0 → 27** (`split140`), `quotaDeferred 553`; на площади состав не меняется (46/50) |
+| радиус 100 | P1 12 ч `capSaturated 1 → 0`, `capCut` 174 → 0, `active` 96 → 70; ночью P1/ADMIN набор тот же |
+| радиус 70 | **отклонён**: 96 → 49 ночью, FARM 43 → 21, выигрыша в DC/GPU нет |
+| F8/F9 | **PASS** / **PASS_rollback_restore**, `0 errors`, сцена не сохранена |
+
+Владелец `Light.enabled` — пул, владелец `Light.intensity` — ALIC; пул `intensity` только читает.
+Карта владения и `ConfigLine` пишутся в raw-лог прогона. DC/GPU L2 не меняет — реальный CPU-рычаг это ALIC (T-LIGHT17b).
+
 ### L3 — T-LIGHT18: фокус/камера
 
 - Кэш камер, фильтры (Game, no RT, far≥50, слой мира; Atmosphere/парковочная MainCamera исключены), fallback.
@@ -124,6 +141,7 @@ CSV: `T-LIGHT16_BASELINE_2026-11-01.csv`. N = **2 238**, registered/active 96, f
 
 ## 4. Следующий шаг
 
-**L2 / T-LIGHT17** — ownership + дешёвые победы (day/night gate, split OUT/IN, radius config, A/B).
-Brief: [`T-LIGHT17_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT17_AGENT_BRIEF.md).
-После него — **T-LIGHT17b (ALIC CPU)** и только потом L3 фокус/L4 конус.
+**T-LIGHT17b — ALIC CPU** (обязателен): 5.4–6.1 мс/кадр на 2 238 источниках при 70–96 включённых; ограничить
+`Apply` включёнными/изменёнными группами и обновлять `intensity` при включении, не ломая flicker.
+Затем **L3/T-LIGHT18** (фокус/камера) и **L4/T-LIGHT19** (конус/веер).
+Отчёты: [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

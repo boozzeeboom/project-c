@@ -20,6 +20,18 @@
 // камеры) и возвращаются в Cleanup.
 //
 // Меню: Project C → Lighting → T-LIGHT16 Baseline → Run / Abort.
+//
+// T-LIGHT17 (L2 светового трека) — тот же прогон в режиме A/B (меню Project C → Lighting →
+// T-LIGHT17 L2 → Run): те же точки/часы и тот же камерный риг, но каждый кейс несёт конфиг
+// пула (dayGate / split OUT-IN / радиус) и переключает его через PrimumLightPool.ApplyConfig
+// в памяти. Сцена не сохраняется: A/B живёт только в рантайме.
+//   ctrl140  — L1-поведение (gate off, split off, radius 140) — контроль;
+//   gate140  — только day/night-гейт;
+//   split140 — только резерв бюджета OUT/IN;
+//   l2_100   — gate + split + радиус 100 м;
+//   l2_70    — gate + split + радиус 70 м.
+// В режиме L2 при смене часа успокоение длиннее (200 кадров): ALIC сглаживает intensity с
+// transitionSpeed=4, и на 40 кадрах часть ламп ещё не дошла до нуля — гейт измерился бы ложно.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -39,11 +51,18 @@ using ProjectC.World.FloatingOrigin.Network;
 
 namespace ProjectC.EditorTools
 {
-    /// <summary>T-LIGHT16: baseline-инструментация светового пула PRIMUM (без изменения поведения).</summary>
+    /// <summary>T-LIGHT16: baseline-инструментация светового пула PRIMUM; T-LIGHT17 — режим A/B конфига L2.</summary>
     public static class TLight16BaselineBench
     {
         private const string RunMenu = "Project C/Lighting/T-LIGHT16 Baseline/Run";
         private const string AbortMenu = "Project C/Lighting/T-LIGHT16 Baseline/Abort";
+        private const string RunMenuL2 = "Project C/Lighting/T-LIGHT17 L2/Run";
+        private const string AbortMenuL2 = "Project C/Lighting/T-LIGHT17 L2/Abort";
+
+        private enum RunMode { Baseline, L2 }
+
+        /// <summary>Префикс логов/ошибок: в режиме L2 не выдаём его за L1.</summary>
+        private static string Tag => _mode == RunMode.L2 ? "[T-LIGHT17]" : "[T-LIGHT16]";
 
         private const string CsvDir = "docs/world/lights";
         private const string DateTag = "2026-11-01";
@@ -54,6 +73,8 @@ namespace ProjectC.EditorTools
 
         private const int WarmupFrames = 1500;
         private const int SettleFrames = 40;
+        /// <summary>L2: успокоение после смены часа (ALIC сглаживает intensity с transitionSpeed=4).</summary>
+        private const int SettleFramesHourSwitch = 200;
         private const int SampleGapFrames = 8;
         private const int SampleCount = 3;
         private const int TurnTimeoutFrames = 240;
@@ -82,11 +103,21 @@ namespace ProjectC.EditorTools
             public float hour;
             public bool turn;                  // разворот 180° с замером задержки
             public string note = string.Empty;
+
+            // T-LIGHT17: конфиг пула, который применяется перед кейсом (A/B).
+            public string cfgTag = "ctrl140";
+            public bool cfgDayGate;
+            public bool cfgSplit;
+            public int cfgOutMin = 40;
+            public bool cfgUseL2;
+            public float cfgRadius = 140f;
         }
 
         // ------------------------------------------------------------------ состояние
 
         private static State _state = State.Off;
+        private static RunMode _mode = RunMode.Baseline;
+        private static float _lastHour = 12f;
         private static List<LightCase> _cases = new List<LightCase>();
         private static int _caseIndex;
 
@@ -146,6 +177,11 @@ namespace ProjectC.EditorTools
         private static bool _cAlicFlicker;
         private static int _cSetVersion;
         private static int _cCheckCount;
+        // T-LIGHT17
+        private static int _cDayGateDropped;
+        private static int _cQuotaDeferred;
+        private static int _cQuotaFilled;
+        private static int _cOutMinUsed;
         private static bool _visibleLightsNoteWritten;
 
         // реакция на разворот
@@ -216,36 +252,47 @@ namespace ProjectC.EditorTools
         [MenuItem(RunMenu)]
         public static void Run()
         {
-            StartRun();
+            StartRun(RunMode.Baseline);
+        }
+
+        [MenuItem(RunMenuL2)]
+        public static void RunL2()
+        {
+            StartRun(RunMode.L2);
         }
 
         [MenuItem(AbortMenu)]
+        [MenuItem(AbortMenuL2)]
         public static void Abort()
         {
             Finish("ABORTED_BY_USER", false);
         }
 
-        private static void StartRun()
+        private static void StartRun(RunMode mode)
         {
+            _mode = mode;
+
             if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode)
             {
-                Debug.LogError("[T-LIGHT16] Уже в Play Mode / вход выполняется. Сначала Abort.");
+                Debug.LogError(Tag + " Уже в Play Mode / вход выполняется. Сначала Abort.");
                 return;
             }
 
             var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             _csvDirFull = Path.Combine(projectRoot, CsvDir);
             if (!Directory.Exists(_csvDirFull)) Directory.CreateDirectory(_csvDirFull);
-            string rawDir = Path.Combine(projectRoot, RawDir);
+            string rawDir = Path.Combine(projectRoot, _mode == RunMode.L2 ? "Temp/T-LIGHT17" : RawDir);
             if (!Directory.Exists(rawDir)) Directory.CreateDirectory(rawDir);
 
             _runTag = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
             _cases = BuildCases();
-            _outRawPath = Path.Combine(rawDir, "T-LIGHT16_" + DateTag + "_raw.txt");
-            _outCsvPath = Path.Combine(_csvDirFull, "T-LIGHT16_BASELINE_" + DateTag + ".csv");
+            string prefix = _mode == RunMode.L2 ? "T-LIGHT17" : "T-LIGHT16_BASELINE";
+            _outRawPath = Path.Combine(rawDir, prefix + "_" + DateTag + "_raw.txt");
+            _outCsvPath = Path.Combine(_csvDirFull, prefix + "_" + DateTag + ".csv");
             if (File.Exists(_outRawPath)) File.Delete(_outRawPath);
 
             _dirtyAtStart = SceneManager.GetActiveScene().isDirty;
+            _lastHour = 12f;
 
             _state = State.WaitPlayMode;
             _caseIndex = 0;
@@ -272,19 +319,24 @@ namespace ProjectC.EditorTools
 
             HookLog();
 
-            Append("NOTE;bench=TLight16BaselineBench;unity=" + Application.unityVersion +
+            Append("NOTE;bench=TLight16BaselineBench;mode=" + _mode + ";unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart +
-                   ";headNote=baseline_instrumentation_only");
+                   ";headNote=" + (_mode == RunMode.L2 ? "l2_day_gate_split_radius_ab" : "baseline_instrumentation_only"));
+            Append("OWNERSHIP;" + PrimumLightPool.OwnershipLine);
             Append("NOTE;method=PlayMode→Host(ProjectCMainMenuUiHost.OnMenuAction(host));warmup=" + WarmupFrames +
-                   "fr;settle=" + SettleFrames + "fr;samples=" + SampleCount + "x gap " + SampleGapFrames +
+                   "fr;settle=" + SettleFrames + "fr" +
+                   (_mode == RunMode.L2 ? "(hourSwitch=" + SettleFramesHourSwitch + "fr)" : string.Empty) +
+                   ";samples=" + SampleCount + "x gap " + SampleGapFrames +
                    "fr;metric=UnityStats median;far=" + BenchFar.ToString("F0", CultureInfo.InvariantCulture) +
                    ";fov=" + BenchFov.ToString("F0", CultureInfo.InvariantCulture) + ";near=0.1");
-            Append("NOTE;behaviour_unchanged=pool.enabled_intensity_focus_maxActive_radius_untouched;scene_saved=no;push=no");
+            Append(_mode == RunMode.L2
+                ? "NOTE;behaviour_changed=pool_dayGate_split_radius_only;pool_writes_intensity=no;scene_saved=no;push=no"
+                : "NOTE;behaviour_unchanged=pool.enabled_intensity_focus_maxActive_radius_untouched;scene_saved=no;push=no");
             Append("NOTE;pool_markers=" + PrimumLightPool.CheckMarkerName + "|" + PrimumLightPool.FocusMarkerName +
                    ";alic_marker=" + AdditionalLightIntensityController.ApplyMarkerName);
 
-            Debug.Log("[T-LIGHT16] Старт, кейсов: " + _cases.Count + ". Файл: " + _outRawPath);
+            Debug.Log(Tag + " Старт, кейсов: " + _cases.Count + ". Файл: " + _outRawPath);
 
             EditorApplication.update -= Tick;
             EditorApplication.update += Tick;
@@ -293,6 +345,8 @@ namespace ProjectC.EditorTools
 
         private static List<LightCase> BuildCases()
         {
+            if (_mode == RunMode.L2) return BuildCasesL2();
+
             // Координаты P1/STREET — те же, что в бенче Stage 8 (P1 2 229 DC при hour 12):
             // нужны для контрольного сравнения, что инструментация не изменила поведение.
             var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
@@ -317,6 +371,71 @@ namespace ProjectC.EditorTools
             return list;
         }
 
+        /// <summary>
+        /// T-LIGHT17: A/B-кейсы L2. Один и тот же кейс повторяется в разных конфигах пула —
+        /// так разница списывается на конкретный рычаг (gate / split / radius), а не на точку.
+        /// </summary>
+        private static List<LightCase> BuildCasesL2()
+        {
+            var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
+            var street = new Vector3(-382.90f, -58.23f, -126.20f);
+
+            var list = new List<LightCase>();
+
+            void Add(string point, string poseKind, Vector3 local, float yaw, float hour, string cfgTag,
+                     bool gate, bool split, bool l2, float radius, bool turn = false, string note = "")
+            {
+                list.Add(new LightCase
+                {
+                    id = point + "_h" + hour.ToString("F0", CultureInfo.InvariantCulture) + "_" + cfgTag +
+                         (turn ? "_turn180" : string.Empty),
+                    point = point,
+                    poseKind = poseKind,
+                    local = local,
+                    yaw = yaw,
+                    hour = hour,
+                    turn = turn,
+                    note = note,
+                    cfgTag = cfgTag,
+                    cfgDayGate = gate,
+                    cfgSplit = split,
+                    cfgOutMin = 40,
+                    cfgUseL2 = l2,
+                    cfgRadius = radius,
+                });
+            }
+
+            // P1 (площадь) — главная точка жалобы. Сначала 12 ч: после 1 500 кадров прогрева ALIC
+            // уже выставил OUT-группе точный ноль, поэтому day/night-гейт измеряется честно.
+            Add("P1", "local", p1, 337.5f, 12f, "ctrl140", false, false, false, 140f, false, "control_L1_behaviour");
+            Add("P1", "local", p1, 337.5f, 12f, "gate140", true, false, true, 140f, false, "gate_only");
+            Add("P1", "local", p1, 337.5f, 12f, "split140", false, true, true, 140f, false, "split_only");
+            Add("P1", "local", p1, 337.5f, 12f, "l2_100", true, true, true, 100f, false, "l2_candidate");
+            Add("P1", "local", p1, 337.5f, 12f, "l2_70", true, true, true, 70f, false, "l2_aggressive");
+            Add("P1", "local", p1, 337.5f, 18f, "ctrl140", false, false, false, 140f, false, "evening_control");
+            Add("P1", "local", p1, 337.5f, 18f, "l2_100", true, true, true, 100f);
+            Add("P1", "local", p1, 337.5f, 18f, "l2_70", true, true, true, 70f, false, "evening_transition_17_21");
+            Add("P1", "local", p1, 337.5f, 20f, "l2_100", true, true, true, 100f, false, "night_full_brightness");
+            Add("P1", "local", p1, 337.5f, 18f, "l2_100", true, true, true, 100f, true, "turn_reaction");
+
+            Add("STREET", "local", street, 225f, 12f, "ctrl140", false, false, false, 140f);
+            Add("STREET", "local", street, 225f, 12f, "l2_100", true, true, true, 100f);
+            Add("STREET", "local", street, 225f, 12f, "l2_70", true, true, true, 70f);
+            Add("STREET", "local", street, 225f, 18f, "l2_100", true, true, true, 100f);
+
+            Add("ADMIN", "admin", Vector3.zero, 0f, 12f, "ctrl140", false, false, false, 140f, false, "interior_takes_all_slots");
+            Add("ADMIN", "admin", Vector3.zero, 0f, 12f, "split140", false, true, true, 140f, false, "out_reserve_effect");
+            Add("ADMIN", "admin", Vector3.zero, 0f, 12f, "l2_100", true, true, true, 100f);
+            Add("ADMIN", "admin", Vector3.zero, 0f, 18f, "l2_100", true, true, true, 100f);
+
+            Add("FARM", "farm", Vector3.zero, 0f, 12f, "ctrl140", false, false, false, 140f, false, "farm_budget_no_quota");
+            Add("FARM", "farm", Vector3.zero, 0f, 12f, "l2_100", true, true, true, 100f);
+            Add("FARM", "farm", Vector3.zero, 0f, 12f, "l2_70", true, true, true, 70f, false, "radius_must_not_starve_farm");
+            Add("FARM", "farm", Vector3.zero, 0f, 18f, "l2_100", true, true, true, 100f);
+
+            return list;
+        }
+
         // -------------------------------------------------------------------- тик
 
         private static void Tick()
@@ -324,7 +443,7 @@ namespace ProjectC.EditorTools
             try { Step(); }
             catch (Exception e)
             {
-                Debug.LogError("[T-LIGHT16] Исключение: " + e);
+                Debug.LogError(Tag + " Исключение: " + e);
                 Append("NOTE;exception=" + e.GetType().Name + ":" + (e.Message ?? string.Empty).Replace(";", ","));
                 Finish("EXCEPTION", false);
             }
@@ -403,7 +522,7 @@ namespace ProjectC.EditorTools
                     if (action == null) return false;
                     _hostRequested = true;
                     action.Invoke(pcmm, new object[] { "host", "ОДИНОЧНАЯ ИГРА" });
-                    Debug.Log("[T-LIGHT16] Host запрошен через ProjectCMainMenuUiHost.OnMenuAction(\"host\")");
+                    Debug.Log(Tag + " Host запрошен через ProjectCMainMenuUiHost.OnMenuAction(\"host\")");
                     Append("NOTE;host_start=ProjectCMainMenuUiHost.OnMenuAction(host)");
                     return false;
                 }
@@ -428,7 +547,7 @@ namespace ProjectC.EditorTools
                     else if (start != null) start.Invoke(nmc, null);
                 }
                 else if (start != null) start.Invoke(nmc, null);
-                Debug.Log("[T-LIGHT16] Host запрошен через legacy-путь");
+                Debug.Log(Tag + " Host запрошен через legacy-путь");
             }
 
             if (!_menuHidden && menu != null)
@@ -505,7 +624,7 @@ namespace ProjectC.EditorTools
             ForcePhase(12f);
             StartProfilers();
 
-            Debug.Log("[T-LIGHT16] Риг: " + _cam.name + " (far " + _cam.farClipPlane + ", fov " + _cam.fieldOfView +
+            Debug.Log(Tag + " Риг: " + _cam.name + " (far " + _cam.farClipPlane + ", fov " + _cam.fieldOfView +
                       "), отключено двигателей камеры: " + disabled +
                       ", WorldRoot_0_0=" + (_worldRoot != null ? _worldRoot.position.ToString("F2") : "нет"));
             Append("NOTE;camera;name=" + _cam.name + ";far=" + _cam.farClipPlane.ToString("F0", CultureInfo.InvariantCulture) +
@@ -527,7 +646,7 @@ namespace ProjectC.EditorTools
             var dnc = FindByTypeName("DayNightController");
             if (dnc == null)
             {
-                Debug.LogWarning("[T-LIGHT16] DayNightController не найден — фаза суток не форсирована");
+                Debug.LogWarning(Tag + " DayNightController не найден — фаза суток не форсирована");
                 Append("NOTE;phase_forced=FAILED_no_DayNightController");
                 return;
             }
@@ -619,7 +738,7 @@ namespace ProjectC.EditorTools
             bool ok = _cam != null && player && !pcmmShown && !atmosphereCamera && _pool != null && registered >= MinExpectedLights;
             if (!ok)
             {
-                Debug.LogError("[T-LIGHT16] GATE FAIL: замер не в игре (rig=" + (_cam != null) + ", player=" + player +
+                Debug.LogError(Tag + " GATE FAIL: замер не в игре (rig=" + (_cam != null) + ", player=" + player +
                                ", menu=" + pcmmShown + ", atmosphereCam=" + atmosphereCamera +
                                ", pool=" + (_pool != null) + ", registered=" + registered + ") — прогон остановлен.");
                 Append("GATE;result=FAIL_not_in_game;poolRegistered=" + registered);
@@ -657,14 +776,30 @@ namespace ProjectC.EditorTools
             ForcePhaseSilent(c.hour);
             ApplyPose(c);
 
+            // T-LIGHT17: A/B-конфиг пула — только поля компонента в памяти, сцена не пишется.
+            if (_mode == RunMode.L2 && _pool != null)
+            {
+                _pool.ApplyConfig(c.cfgDayGate, c.cfgSplit, c.cfgOutMin, c.cfgUseL2, c.cfgRadius);
+                Append("CONFIG;case=" + c.id + ";" + _pool.ConfigLine);
+            }
+
             _dc.Clear(); _spc.Clear(); _tris.Clear(); _ms.Clear();
             _censusDone = false;
-            _settleUntilFrame = Time.frameCount + SettleFrames;
+
+            int settle = SettleFrames;
+            if (_mode == RunMode.L2)
+            {
+                // После смены часа ALIC ещё сглаживает intensity: на 40 кадрах гейт увидел бы
+                // не погашенные лампы, а их переход — и «day activeZero=0» измерился бы ложно.
+                if (!Mathf.Approximately(_lastHour, c.hour)) settle = SettleFramesHourSwitch;
+                _lastHour = c.hour;
+            }
+            _settleUntilFrame = Time.frameCount + settle;
             _nextSampleFrame = _settleUntilFrame;
             _caseWindowFrame = Time.frameCount;
             _caseWindowStart = Now;
 
-            Debug.Log("[T-LIGHT16] Кейс " + c.id + " (point=" + c.point + ", hour=" + c.hour +
+            Debug.Log(Tag + " Кейс " + c.id + " (point=" + c.point + ", hour=" + c.hour +
                       ", turn=" + c.turn + ")");
         }
 
@@ -914,6 +1049,10 @@ namespace ProjectC.EditorTools
             _cFocusKind = _pool.FocusSourceKind;
             _cSetVersion = _pool.SetVersion;
             _cCheckCount = _pool.CheckCount;
+            _cDayGateDropped = _pool.DayGateDropped;
+            _cQuotaDeferred = _pool.KindQuotaDeferred;
+            _cQuotaFilled = _pool.KindQuotaFilled;
+            _cOutMinUsed = _pool.OutdoorMinSlotsUsed;
 
             // В Unity 6 VisibleLight выдаёт только CullingResults внутри render-pass, у Camera
             // такого API нет — пишем -1 и отмечаем в raw, чтобы не выдавать пустое значение за 0.
@@ -946,7 +1085,7 @@ namespace ProjectC.EditorTools
 
             if (enabledTotal == 0)
             {
-                Debug.LogError("[T-LIGHT16] 0 активных источников на точке — поза/пул неверны, замер остановлен.");
+                Debug.LogError(Tag + " 0 активных источников на точке — поза/пул неверны, замер остановлен.");
                 Append("NOTE;error=census_zero_active;campos=" + _targetPos.ToString("F1"));
                 Finish("CENSUS_ZERO_ACTIVE", false);
             }
@@ -1012,11 +1151,20 @@ namespace ProjectC.EditorTools
             sb.Append(";turn=").Append(c.turn);
             sb.Append(";turnReactionFrames=").Append(_turnReactionFrames);
             sb.Append(";turnTimeout=").Append(_turnTimeout);
+            if (_mode == RunMode.L2)
+            {
+                sb.Append(";cfg=").Append(c.cfgTag)
+                  .Append(";cfgRadius=").Append(c.cfgRadius.ToString("F0", CultureInfo.InvariantCulture))
+                  .Append(";dayGateDropped=").Append(_cDayGateDropped)
+                  .Append(";quotaDeferred=").Append(_cQuotaDeferred)
+                  .Append(";quotaFilled=").Append(_cQuotaFilled)
+                  .Append(";outMinUsed=").Append(_cOutMinUsed);
+            }
             sb.Append(";note=").Append(c.note);
             Append(sb.ToString());
             AppendCsv(c, dc, spc, tris, gpuMs, ms, fps, checkMs, alicMs);
 
-            Debug.Log("[T-LIGHT16] " + c.id + ": dc=" + dc + " active=" + _cActiveTotal +
+            Debug.Log(Tag + " " + c.id + ": dc=" + dc + " active=" + _cActiveTotal +
                       " (OUT " + _cActiveOut + "/IN " + _cActiveIn + "/FARM " + _cActiveFarm + ")" +
                       " cand=" + _cCandidate + " capCut=" + _cCapCut + " zero=" + _cIntensityZero +
                       " checkMs=" + _cPoolCheckMs.ToString("F3", CultureInfo.InvariantCulture) +
@@ -1051,7 +1199,11 @@ namespace ProjectC.EditorTools
                               "capSaturated,b0_70,b70_100,b100_140,b140_154,b154plus,poolCheckMs,poolCheckMaxMs,checkMarkerMsAvg," +
                               "focusSearchMs,focusSource,alicMs,alicLastMs,alicCallsPerFrame,alicTracked,alicApplied," +
                               "alicActiveApplied,alicIntensityZero,alicHour,visibleLights,dc,spc,tris,gpuMs,ms,fps," +
-                              "setVersion,turnReactionFrames,turnTimeout,note");
+                              "setVersion,turnReactionFrames,turnTimeout" +
+                              (_mode == RunMode.L2
+                                  ? ",cfgTag,cfgRadius,cfgDayGate,cfgSplit,cfgOutMin,dayGateDropped,quotaDeferred,quotaFilled,outMinUsed"
+                                  : string.Empty) +
+                              ",note");
             }
             sb.Append(_runTag).Append(',')
               .Append(DateTag).Append(',')
@@ -1084,11 +1236,23 @@ namespace ProjectC.EditorTools
               .Append(ms.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
               .Append(fps.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
               .Append(_cSetVersion).Append(',')
-              .Append(_turnReactionFrames).Append(',').Append(_turnTimeout ? 1 : 0).Append(',')
-              .Append('"').Append(c.note).Append('"');
+              .Append(_turnReactionFrames).Append(',').Append(_turnTimeout ? 1 : 0);
+            if (_mode == RunMode.L2)
+            {
+                sb.Append(',').Append(c.cfgTag)
+                  .Append(',').Append(c.cfgRadius.ToString("F0", CultureInfo.InvariantCulture))
+                  .Append(',').Append(c.cfgDayGate ? 1 : 0)
+                  .Append(',').Append(c.cfgSplit ? 1 : 0)
+                  .Append(',').Append(c.cfgOutMin)
+                  .Append(',').Append(_cDayGateDropped)
+                  .Append(',').Append(_cQuotaDeferred)
+                  .Append(',').Append(_cQuotaFilled)
+                  .Append(',').Append(_cOutMinUsed);
+            }
+            sb.Append(',').Append('"').Append(c.note).Append('"');
             sb.AppendLine();
             try { File.AppendAllText(_outCsvPath, sb.ToString(), Encoding.UTF8); }
-            catch (Exception e) { Debug.LogWarning("[T-LIGHT16] CSV: " + e.Message); }
+            catch (Exception e) { Debug.LogWarning(Tag + " CSV: " + e.Message); }
         }
 
         // ------------------------------------------------------------ профиллеры
@@ -1100,7 +1264,7 @@ namespace ProjectC.EditorTools
             _alicRecorder = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Scripts, AdditionalLightIntensityController.ApplyMarkerName);
             Append("NOTE;recorders;check=" + _checkRecorder.Valid + ";focus=" + _focusRecorder.Valid + ";alic=" + _alicRecorder.Valid);
             if (!_checkRecorder.Valid)
-                Debug.LogWarning("[T-LIGHT16] ProfilerRecorder(" + PrimumLightPool.CheckMarkerName + ") не валиден — используем Stopwatch-счётчики пула.");
+                Debug.LogWarning(Tag + " ProfilerRecorder(" + PrimumLightPool.CheckMarkerName + ") не валиден — используем Stopwatch-счётчики пула.");
         }
 
         private static void SampleProfilers()
@@ -1123,7 +1287,7 @@ namespace ProjectC.EditorTools
             if (_rebaseSlice == null)
             {
                 Append("REBASE;status=slice_not_found");
-                Debug.LogError("[T-LIGHT16] GlobalMotionControlledRebaseSlice не найден — F8/F9 не проверены.");
+                Debug.LogError(Tag + " GlobalMotionControlledRebaseSlice не найден — F8/F9 не проверены.");
                 _state = State.Cleanup;
                 _stateSince = Now;
                 return;
@@ -1132,7 +1296,7 @@ namespace ProjectC.EditorTools
             _rebasePhase = 0;
             _state = State.Rebase;
             _stateSince = Now;
-            Debug.Log("[T-LIGHT16] F8/F9: срез найден, начинаю фазу 0");
+            Debug.Log(Tag + " F8/F9: срез найден, начинаю фазу 0");
         }
 
         private static void PressKey(Key key)
@@ -1141,7 +1305,7 @@ namespace ProjectC.EditorTools
             if (kb == null)
             {
                 Append("NOTE;error=no_keyboard_device");
-                Debug.LogError("[T-LIGHT16] Keyboard.current == null — реальный ввод невозможен.");
+                Debug.LogError(Tag + " Keyboard.current == null — реальный ввод невозможен.");
                 return;
             }
             var gameViewType = Type.GetType("UnityEditor.GameView,UnityEditor");
@@ -1232,6 +1396,8 @@ namespace ProjectC.EditorTools
             return "poolRegistered=" + _pool.RegisteredCount + ";poolActive=" + _pool.ActiveCount +
                    ";poolOut=" + _pool.ActiveOut + ";poolIn=" + _pool.ActiveIn +
                    ";poolFarm=" + _pool.ActiveFarm + ";poolZero=" + _pool.ActiveIntensityZero +
+                   ";poolGateDropped=" + _pool.DayGateDropped + ";poolRadius=" + _pool.ActiveRadius +
+                   ";poolQuotaDeferred=" + _pool.KindQuotaDeferred + ";poolQuotaFilled=" + _pool.KindQuotaFilled +
                    ";focus=" + _pool.FocusSourceKind + ":" + _pool.FocusSourceName;
         }
 
@@ -1449,7 +1615,7 @@ namespace ProjectC.EditorTools
                    ";csv=" + (_outCsvPath ?? string.Empty) +
                    ";sceneSaved=no;push=no;hold=" + (keepPlaying ? "yes" : "no"));
 
-            Debug.Log("[T-LIGHT16] Завершено: " + result + ". Файл: " + _outRawPath);
+            Debug.Log(Tag + " Завершено: " + result + ". Файл: " + _outRawPath);
 
             if (keepPlaying && EditorApplication.isPlayingOrWillChangePlaymode)
             {
@@ -1465,7 +1631,7 @@ namespace ProjectC.EditorTools
         {
             if (string.IsNullOrEmpty(_outRawPath)) return;
             try { File.AppendAllText(_outRawPath, line + Environment.NewLine, Encoding.UTF8); }
-            catch (Exception e) { Debug.LogWarning("[T-LIGHT16] Не удалось записать строку: " + e.Message); }
+            catch (Exception e) { Debug.LogWarning(Tag + " Не удалось записать строку: " + e.Message); }
         }
 
         // ------------------------------------------------------------- консоль

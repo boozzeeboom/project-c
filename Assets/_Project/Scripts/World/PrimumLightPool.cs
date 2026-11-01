@@ -12,6 +12,22 @@
 // ни одна ветка решения не изменены: все новые чтения идут после того, как набор `_on`
 // уже вычислен, и ничего не пишут в Light. Поля — int/float/имена, мировые Vector3 не
 // кэшируются (правило Floating Origin).
+//
+// T-LIGHT17 (L2 светового трека) — карта владения и дешёвые победы:
+//   Light.enabled   — ТОЛЬКО этот пул (VisibilityDirector для ламп пишет Owner=PrimumLightPool,
+//                     но сам Light.enabled не трогает).
+//   Light.intensity — ТОЛЬКО AdditionalLightIntensityController (ALIC) и его flicker.
+//                     Пул intensity НЕ пишет никогда — он её читает как признак «источник
+//                     реально светит». Пункт 1.4 брифа: intensity не пишется из пула.
+//   focus/камера    — только чтение.
+// Три изменения поведения L2 (все — сериализованные параметры, A/B через ApplyConfig):
+//   1. day/night-гейт: погашенный по кривой суток источник (intensity ≈ 0) не включается и
+//      не держится, поэтому днём невидимые уличные лампы не занимают слоты бюджета;
+//   2. резерв бюджета под улицу (OUT): интерьеры не могут занять cap − outdoorMinSlots,
+//      пока уличные кандидаты ещё есть; остаток слотов они добирают второй фазой;
+//   3. радиус L2 (по умолчанию 100 м) вместо устаревшего activeRadius=140 м из сцены —
+//      выключается флагом useRadiusL2, сцена при этом не требуется к перезаписи.
+// Мировых Vector3 пул по-прежнему не кэширует: гейт читает скаляр intensity, а не позицию.
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
@@ -52,6 +68,25 @@ namespace ProjectC.World
         [Tooltip("Гистерезис (доля радиуса) — уже включённый свет гаснет позже, чем включается новый.")]
         [SerializeField] private float hysteresis = 0.1f;
 
+        [Header("L2 (T-LIGHT17): день/ночь-гейт, бюджет OUT/IN, радиус")]
+        [Tooltip("Не включать и не держать источник, у которого текущая Light.intensity ≈ 0 (ALIC уже выставил ноль по кривой суток). Пул intensity не пишет — только читает.")]
+        [SerializeField] private bool dayGateEnabled = true;
+
+        [Tooltip("Порог яркости, ниже которого источник считается погашенным по времени суток.")]
+        [SerializeField, Min(0f)] private float dayGateEpsilon = 0.002f;
+
+        [Tooltip("Держать резерв слотов под уличные источники (PRIMUM_OUTLIGHT): интерьеры не занимают больше maxActive − резерв, пока уличные кандидаты ещё есть.")]
+        [SerializeField] private bool kindSplitEnabled = true;
+
+        [Tooltip("Резерв слотов под улицу, шт. При maxActive=96 и 40 интерьеры ограничены 56 слотами до второй фазы.")]
+        [SerializeField, Min(0)] private int outdoorMinSlots = 40;
+
+        [Tooltip("Использовать радиус L2 вместо устаревшего activeRadius из сцены (140 м). Выключить = вернуть поведение L1.")]
+        [SerializeField] private bool useRadiusL2 = true;
+
+        [Tooltip("Радиус включения в режиме L2, м.")]
+        [SerializeField, Min(0f)] private float activeRadiusL2 = 100f;
+
         [Header("Точка отсчёта")]
         [Tooltip("Явный фокус (например Transform игрока). Пусто — активная камера, ближайшая к городу.\nCamera.main в этом проекте не годится: на тег MainCamera висят ДВЕ камеры — статичная MainCamera из BootstrapScene и спавнимая ThirdPersonCamera, и Camera.main отдаёт статичную (в 233 км от города).")]
         [SerializeField] private Transform focus;
@@ -66,6 +101,9 @@ namespace ProjectC.World
         private byte[] _kind = new byte[0];
         private readonly List<int> _cand = new List<int>(256);
         private readonly List<int> _desired = new List<int>(256);
+        // T-LIGHT17: «уже горит» и отложенные по резерву интерьеры (второй проход добора).
+        private readonly List<int> _keep = new List<int>(256);
+        private readonly List<int> _deferred = new List<int>(64);
         private float _timer;
         private bool _warned;
 
@@ -74,7 +112,69 @@ namespace ProjectC.World
         /// <summary>Сколько источников зарегистрировано под корнем.</summary>
         public int RegisteredCount => _lights != null ? _lights.Length : 0;
         public int MaxActive => maxActive;
-        public float ActiveRadius => activeRadius;
+        /// <summary>Фактический радиус включения: L2-значение либо устаревшее из сцены (140 м).</summary>
+        public float ActiveRadius => useRadiusL2 ? activeRadiusL2 : activeRadius;
+
+        // ---------------------------------------------------------------- T-LIGHT17
+        // A/B-конфиг L2. Значения живут только в памяти: ApplyConfig не пишет сцену и не
+        // сохраняет ассеты, поэтому прогон A/B не требует сохранения сцены.
+
+        public bool DayGateEnabled => dayGateEnabled;
+        public bool KindSplitEnabled => kindSplitEnabled;
+        public int OutdoorMinSlots => outdoorMinSlots;
+        public float DayGateEpsilon => dayGateEpsilon;
+        /// <summary>Значение поля активного радиуса, доставшееся от L1 (в сцене — 140 м).</summary>
+        public float LegacyActiveRadius => activeRadius;
+        /// <summary>Сколько источников выключено в последнем чеке только из-за нулевой яркости.</summary>
+        public int DayGateDropped { get; private set; }
+        /// <summary>Сколько интерьеров отложено первой фазой ради резерва под улицу.</summary>
+        public int KindQuotaDeferred { get; private set; }
+        /// <summary>Сколько из отложенных вернулось в бюджет второй фазой (резерв не понадобился).</summary>
+        public int KindQuotaFilled { get; private set; }
+        /// <summary>Резерв под улицу, применённый в последнем чеке.</summary>
+        public int OutdoorMinSlotsUsed { get; private set; }
+
+        /// <summary>
+        /// Карта владения светом (пункт 1.4 брифа). Строка попадает в отчёт/CSV прогона,
+        /// чтобы владение было зафиксировано рядом с числами, а не только в комментарии.
+        /// </summary>
+        public const string OwnershipLine =
+            "enabled=PrimumLightPool;intensity=AdditionalLightIntensityController;poolWritesIntensity=no;" +
+            "poolWritesRange=no;poolWritesShadows=no;directorWritesLightEnabled=no;focusWrites=no";
+
+        /// <summary>Строка параметров пула для отчёта (pool/dayGate/split/radius).</summary>
+        public string ConfigLine
+        {
+            get
+            {
+                return "pool;dayGate=" + (dayGateEnabled ? "on" : "off") +
+                       ";dayGateEps=" + dayGateEpsilon.ToString("F4", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";split=" + (kindSplitEnabled ? "on" : "off") +
+                       ";outMin=" + outdoorMinSlots +
+                       ";radiusMode=" + (useRadiusL2 ? "L2" : "L1_legacy") +
+                       ";radius=" + ActiveRadius.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";legacyRadius=" + activeRadius.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";maxActive=" + maxActive +
+                       ";hysteresis=" + hysteresis.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
+                       ";checkInterval=" + checkInterval.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+            }
+        }
+
+        /// <summary>
+        /// Переключить конфиг L2 на лету (A/B-замер). Меняются только поля компонента в памяти:
+        /// сцена, префабы и ассеты не пишутся. Следующий чек выполняется сразу.
+        /// </summary>
+        public void ApplyConfig(bool dayGate, bool splitOutIn, int outMinSlots, bool useL2Radius, float radiusMeters)
+        {
+            dayGateEnabled = dayGate;
+            kindSplitEnabled = splitOutIn;
+            outdoorMinSlots = Mathf.Max(0, outMinSlots);
+            useRadiusL2 = useL2Radius;
+            float r = Mathf.Max(0f, radiusMeters);
+            if (useL2Radius) activeRadiusL2 = r;
+            else activeRadius = r;
+            _timer = float.MaxValue; // пересчитать набор в ближайшем кадре
+        }
 
         // ---------------------------------------------------------------- T-LIGHT16
         // Снимок состояния последнего чека. Только чтение снаружи; поведение не меняет.
@@ -195,15 +295,23 @@ namespace ProjectC.World
             Vector3 camPos;
             if (!TryGetFocusPosition(out camPos)) return;
 
-            float onDist = Mathf.Max(0f, activeRadius);
+            float onDist = Mathf.Max(0f, ActiveRadius);
             float offDist = onDist * (1f + Mathf.Max(0f, hysteresis));
             float onSqr = onDist * onDist;
             float offSqr = offDist * offDist;
             int cap = Mathf.Max(1, maxActive);
 
+            // T-LIGHT17: day/night-гейт. intensity ЧИТАЕТСЯ (её владелец — ALIC) и никогда не пишется:
+            // погашенный по кривой суток источник не включается и не держится в бюджете.
+            float gateEps = dayGateEnabled ? Mathf.Max(0f, dayGateEpsilon) : -1f;
+            bool split = kindSplitEnabled;
+
             _desired.Clear();
             _cand.Clear();
+            _keep.Clear();
+            _deferred.Clear();
 
+            int gateDropped = 0;
             for (int i = 0; i < _lights.Length; i++)
             {
                 Light l = _lights[i];
@@ -213,35 +321,61 @@ namespace ProjectC.World
                 float d = dx * dx + dy * dy + dz * dz;
                 _sqr[i] = d;
 
+                bool emitting = gateEps < 0f || l.intensity > gateEps;
+
                 if (_on[i])
                 {
-                    // уже горит: держим до внешнего радиуса
-                    if (d <= offSqr) _desired.Add(i);
+                    // уже горит: держим до внешнего радиуса, но погашенный источник не держим —
+                    // иначе днём половина бюджета занята невидимым светом.
+                    if (d <= offSqr && emitting) _keep.Add(i);
+                    else if (!emitting) gateDropped++;
                 }
-                else if (d <= onSqr)
+                else if (d <= onSqr && emitting)
                 {
                     _cand.Add(i);
                 }
             }
 
-            int capCut = 0;
-            if (_cand.Count > 0)
+            // Порядок приёма: сначала уже горящие (стабильность набора), потом новые — оба по дистанции.
+            _keep.Sort(CompareByDistance);
+            _cand.Sort(CompareByDistance);
+
+            // T-LIGHT17: резерв бюджета под улицу. Интерьеры не занимают больше cap − outMin
+            // слотов, пока уличные кандидаты ещё есть; остаток они добирают второй фазой.
+            int outMin = split ? Mathf.Clamp(outdoorMinSlots, 0, cap) : 0;
+            int inSoft = cap - outMin;
+            int inCount = 0;
+
+            for (int pass = 0; pass < 2; pass++)
             {
-                _cand.Sort(CompareByDistance);
-                int admitted = 0;
-                for (int i = 0; i < _cand.Count && _desired.Count < cap; i++) { _desired.Add(_cand[i]); admitted++; }
-                capCut = _cand.Count - admitted;
+                List<int> src = pass == 0 ? _keep : _cand;
+                for (int k = 0; k < src.Count; k++)
+                {
+                    int i = src[k];
+                    if (_desired.Count >= cap) continue;
+                    if (split && _kind[i] == KindIn && inCount >= inSoft)
+                    {
+                        // Отложен, а не отброшен: если улица резерв не заберёт, слоты вернутся интерьерам.
+                        _deferred.Add(i);
+                        continue;
+                    }
+                    _desired.Add(i);
+                    if (_kind[i] == KindIn) inCount++;
+                }
             }
 
-            if (_desired.Count > cap)
-            {
-                _desired.Sort(CompareByDistance);
-                _desired.RemoveRange(cap, _desired.Count - cap);
-            }
+            int deferredTotal = _deferred.Count;
+            int filled = 0;
+            for (int k = 0; k < _deferred.Count && _desired.Count < cap; k++) { _desired.Add(_deferred[k]); filled++; }
 
             // применяем разницу
             for (int i = 0; i < _lights.Length; i++) _on[i] = false;
             for (int i = 0; i < _desired.Count; i++) _on[_desired[i]] = true;
+
+            // T-LIGHT17: capCut сохраняет смысл L1 — сколько НОВЫХ радиусных кандидатов не попало
+            // в бюджет (из-за cap и из-за резерва под улицу); считается по уже принятому набору.
+            int capCut = 0;
+            for (int k = 0; k < _cand.Count; k++) if (!_on[_cand[k]]) capCut++;
 
             int active = 0;
             int switches = 0;
@@ -293,6 +427,10 @@ namespace ProjectC.World
             Bucket140To154 = b3;
             BucketOver154 = b4;
             ActiveIntensityZero = zero;
+            DayGateDropped = gateDropped;
+            KindQuotaDeferred = deferredTotal;
+            KindQuotaFilled = filled;
+            OutdoorMinSlotsUsed = outMin;
             LastSwitchCount = switches;
             if (switches > 0) SetVersion++;
 

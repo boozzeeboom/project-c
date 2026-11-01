@@ -1,10 +1,10 @@
 # 10. План исполнения culling/visibility (Project C)
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
-**Статус:** Stage 0–3 закрыты; Stage 4/4b дали **benchtop 2 423 DC**, final validation это не подтвердила
-(2 811) — **Stage 4c fix закрыт: реальный компонент даёт P1 2 394 DC ≤2 500, повтор 0.0 %, F8/F9 PASS**.
-**Stage 6 и Stage 7 — утверждены пользователем как фундамент, НЕ опциональны**; следующий шаг — Stage 6,
-затем Stage 7. Другие корабли сейчас не делаем.
+**Статус:** Stage 0–4c закрыты. **Stage 6 — PASS** (`VisibilityDirector`: P1 2 378/2 372, реальная
+игра 2 362; culling ≈1.3–1.7 мс, F8/F9 PASS; визуально принято). **Stage 6 и Stage 7 утверждены
+пользователем как фундамент, НЕ опциональны; следующий шаг — Stage 7 (HLOD/L1/L2).**
+Другие корабли сейчас не делаем.
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -42,10 +42,8 @@
 | V | ❌ failed gate — 2 811 > 2 500 | Stage 4b | кандидатов 1 301 вместо 1 482; F8 ok, F9 критерий неверен | агент T-CULL01/V | `Q_final_validation_*`, `T-CULL01_FINAL_VALIDATION_REPORT.md` |
 | 4c | ✅ green — gate taken | Stage V | реальный `CityShadowBudget` **2 394 DC** ≤2 500 (запас 106); повтор 2 394 (0.0 %); с кораблями 2 406; F8/F9 PASS; 0 shader errors; clean | агент T-CULL01/H5c | `R_stage4c_*`, `T_stage4c_probe_*`, `T-CULL01_STAGE4C_REPORT.md` |
 | 5 | ⛔ closed by dry-run — **B2 не делать** | — | `B2_increases`: 330 батчей против 160 | — | — |
-| 6 | 🟡 approved — required | Stage 4c | VisibilityDirector: culling ≤2 мс; −60…−80 % DC; F8/F9 | агент T-CULL01/H6 | `VisibilityDirector` |
-| 7 | 🟡 approved — required | Stage 6 | HLOD/L1 + L2-импостор/PVS: L1 ≤500, L2 ≤10 | агент T-CULL01/H7 | HLOD/impostor |
-| 6 | ⬜ optional | Stage 4/5 | culling ≤2 мс; −60…−80 % DC без окклюзии | агент T-CULL01/H6 | VisibilityDirector |
-| 7 | ⬜ optional | Stage 5/6 | L1 ≤500, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor/PVS |
+| 6 | ✅ PASS — foundation + visual OK | Stage 4c | P1 2 378/2 372 (2 388–2 394 без), real 2 362; culling ≈1.3–1.7 мс; F8/F9 PASS | агент T-CULL01/H6 | `S_stage6_*`, `VisibilityDirector.cs`, `T-CULL01_STAGE6_REPORT.md` |
+| 7 | 🟡 next — approved | Stage 6 | HLOD/L1 + L2-импостор/PVS: L1 ≤500 DC, L2 ≤10; FO | агент T-CULL01/H7 | HLOD/impostor |
 
 Статусы обновлять здесь после каждого gate; коммит этапа — с префиксом `T-CULL01/<H>`.
 
@@ -574,12 +572,30 @@ Stage 6 — первый после Stage 4c.
 не трогать `DoorController`/коллайдеры/свет/сеть/VFX.
 **Gate:** culling ≤2 мс; −60…−80 % DC без окклюзии; F8/F9 зелёный.
 
+### 8.0. Stage 6 review (2026-11-01) — ✅ PASS
+
+- **P1:** 2 378 / repeat 2 372 при выключенном директоре 2 388–2 394 (−10…−16); **реальная игра 2 362–2 365**;
+  C3 **−50** (−5 %); PILOT без изменений.
+- **Culling:** ≈1.33–1.69 мс (≤2), директор 0.02 мс/кадр, тик 0.18 мс в среднем (пик 1.08 мс).
+- **Ownership map:** директор пишет только `forceRenderingOff`; бюджеты не дублируются. Найден
+  **pre-existing конфликт** `Primum_farms` (`CityShadowBudget` + `ShadowBudget`) — не исправлялся,
+  нужно решение пользователя.
+- **FO:** F8/F9 PASS (сброс кэшей на success/rollback), 0 errors, сцена чистая.
+- **Ограничение MVP:** гасятся только <2 px группы (в основном фермы/спутники); дома города не гасятся,
+  поэтому выигрыш мал — это foundation, а не «−60…−80 %». Политики дверей/руин/интерьеров/кораблей
+  пока наблюдение; `WorldCamera` в рантайме отсутствует.
+- **Visual sign-off:** пользователь проверил в Play Mode — «вроде всё окей».
+- Отчёт: `docs/dev/T-CULL01_STAGE6_REPORT.md`, `08_DATA/S_stage6_*`.
+
 ---
 
-## 9. Stage 7 — HLOD/L1 + L2-импостор / PVS — ✅ УТВЕРЖДЁН
+## 9. Stage 7 — HLOD/L1 + L2-импостор / PVS — ✅ УТВЕРЖДЁН, СЛЕДУЮЩИЙ
+
+> **Brief для агента:** [`T-CULL01_STAGE7_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE7_AGENT_BRIEF.md).
+> Стартовый baseline: реальный P1 **2 362–2 378 DC**, Stage 6 PASS; L0 не ухудшать.
 
 **Решение пользователя 01.11:** Stage 7 нужен как фундамент дальнего мира/L2; не опциональный.
-Выполняется после Stage 6 (или параллельно, если Stage 6 не блокирует HLOD-пайплайн).
+Выполняется после Stage 6.
 
 **Когда:** нужен L0 <1k или L1/L2; город заморожен; есть бюджет 6–10 недель.
 **Сложный код:** `T-CULL01 / H7` (HLOD-baker/impostor bake/portal-PVS).

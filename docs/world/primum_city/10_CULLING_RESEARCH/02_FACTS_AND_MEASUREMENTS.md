@@ -5,8 +5,9 @@
 (`Library/PackageCache`), git, проектные документы. Все противоречия сведены в §11.
 
 > **Текущее состояние (01.11):** GRD включён (`BrgStripping=2`, mode=1), `CityShadowBudget` 200 м,
-> тени 400/4/soft. **Реальный P1 = 2 394 DC** (корабли 2 406) после Stage 4c-фикса камер; gate 2 500 взят.
-> B2 закрыт dry-run. **Stage 6/7 утверждены как фундамент, не опциональны.** Числа ниже — исторические.
+> тени 400/4/soft, `VisibilityDirector` Stage 6. **Реальный P1 = 2 378/2 372 DC** (реальная игра 2 362)
+> после 4c+6; culling ≈1.3–1.7 мс; F8/F9 PASS. B2 закрыт. **Stage 7 (HLOD/L1/L2) — следующий.**
+> Числа ниже — исторические.
 
 > «Паспорт сцены»: числа, из которых считаются оценки в `03_MERGE_VS_INDEPENDENT.md`,
 > `04_ARCHITECTURE_OPTIONS.md`, `05_RECOMMENDED_ARCHITECTURE.md`.

@@ -116,7 +116,7 @@ O = 106…155 DC постоянной добавки        (небо, UI, TMP, 
 | 3 | **Blender: join** | блок × материал; не склеивать стекло/эмиссию/воду; флэтнить иерархию; ≤4 сабмеша | таблица «блок → меши → тр. → габарит» |
 | 4 | **Экспорт FBX** | `axis_forward=-Z, axis_up=Y, FBX_SCALE_NONE, global_scale=1, use_mesh_modifiers=True, object_types={MESH,EMPTY}`; поставка в `_deliver_*/`, бэкап в `_versions/` | в Unity приходит X≈270° и ×100 — это норма, компенсируется `useFileScale` |
 | 5 | **Импорт Unity** | подмена **по тому же пути/имени** (GUID сохраняется); `.meta` не трогать; `globalScale=1`, `useFileScale=1`, `meshCompression=Off`, `isReadable=Off`, `addColliders=Off`, `generateSecondaryUV=Off`, `bakeAxisConversion=Off`, `indexFormat=UInt16` | габариты Δ ≤0.02 м; 0 missing |
-| 6 | **Y-up rebase мешей** (только город/чанки) | меню `ProjectC/World/PRIMUM/…` (rebase) | verify «1:1 PASS» |
+| 6 | **Y-up rebase мешей** (только город/чанки) | `PrimumMeshRebase`, меню 388 (`ProjectC → World → PRIMUM → …`) | verify «1:1 PASS» |
 | 7 | **Материалы** | палитра `M_PC_*`; подмена по имени (`PrimumMaterialMap`, `material_map.csv`); emissive — `PM_LAMP_GLOW_WARM` | 0 слотов `URP/Lit` после verify; `m_ValidKeywords: []` |
 | 8 | **Префаб** | root scale 1; визуал ребёнком (`MainVisual` для корабля, `SHIP_VISUAL_H2` для heavy); коллайдеры — **отдельные дети** (`SHIP_COLLIDERS`), не внутри FBX; двери — на узлах модели (`DoorController`+`Collider`); свет — отдельные `PM_LIGHT_*` | reimport FBX не сносит коллайдеры/двери |
 | 9 | **Слой и родитель** | город/свет — слой **8** `PRIMUM`; двери — слой **10** `PRIMUM_DOORS`; корабль — корень сцены + `ShipRootReference` + tag `Ship`; фермы/станции — `WorldRoot_0_0/Primum_farms` | слой назначен инструментом, не руками |

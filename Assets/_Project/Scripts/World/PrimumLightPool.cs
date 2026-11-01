@@ -68,6 +68,11 @@
 //      Порядок приёма (pass 0 «уже горит», pass 1 «новые») не изменён.
 // Политика света не тронута: dayGate / split / outMin / radius / maxActive / checkInterval / hysteresis,
 // запись Light.enabled и чтение intensity — как в L2/L3. intensity по-прежнему не пишется.
+//
+// T-LIGHT20 (L5 светового трека) — только ЗНАЧЕНИЯ конфига на уже принятом веере:
+//   ApplyTuneConfig(radius, maxActive, hysteresis, margin, pre, rear, penalty) меняет поля компонента
+//   в памяти (A/B) и не пишет сцену/ассеты. Логика отбора (веер L4), фокус (L3), dayGate / split /
+//   outMin / checkInterval и владение enabled/intensity не изменены.
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
@@ -455,6 +460,30 @@ namespace ProjectC.World
             rearRadius = Mathf.Max(0f, rearRadiusMeters);
             anglePenaltyPerDeg = Mathf.Max(0f, penaltyPerDeg);
             conePreActivationDeg = Mathf.Max(0f, preActivationDeg);
+            _lastConeLogSignature = "\u0000";
+            _timer = float.MaxValue;
+        }
+
+        // ---------------------------------------------------------------- T-LIGHT20
+
+        /// <summary>
+        /// T-LIGHT20 (L5): A/B-тюнинг ЗНАЧЕНИЙ конфига на лету. Меняются только поля компонента в памяти —
+        /// сцена, префабы и ассеты не пишутся. Радиус задаётся в режиме L2 (useRadiusL2), политика
+        /// dayGate / split / outMin / checkInterval, логика фокуса (L3) и веера (L4) не меняются;
+        /// Light.intensity по-прежнему только читается.
+        /// </summary>
+        public void ApplyTuneConfig(float radiusMeters, int maxActiveValue, float hysteresisValue,
+                                    float coneMarginDegValue, float conePreActivationDegValue,
+                                    float rearMeters, float penaltyPerDeg)
+        {
+            useRadiusL2 = true; // значение радиуса задаётся в режиме L2, поведение L1 не возвращаем
+            activeRadiusL2 = Mathf.Max(0f, radiusMeters);
+            maxActive = Mathf.Max(1, maxActiveValue);
+            hysteresis = Mathf.Max(0f, hysteresisValue);
+            coneMarginDeg = Mathf.Max(0f, coneMarginDegValue);
+            conePreActivationDeg = Mathf.Max(0f, conePreActivationDegValue);
+            rearRadius = Mathf.Max(0f, rearMeters);
+            anglePenaltyPerDeg = Mathf.Max(0f, penaltyPerDeg);
             _lastConeLogSignature = "\u0000";
             _timer = float.MaxValue;
         }

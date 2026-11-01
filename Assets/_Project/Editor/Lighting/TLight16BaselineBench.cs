@@ -81,11 +81,17 @@ namespace ProjectC.EditorTools
         private const string AbortMenuL3 = "Project C/Lighting/T-LIGHT18 focus/Abort";
         private const string RunMenuL4 = "Project C/Lighting/T-LIGHT19 cone/Run";
         private const string AbortMenuL4 = "Project C/Lighting/T-LIGHT19 cone/Abort";
+        private const string RunMenuL5 = "Project C/Lighting/T-LIGHT20 tune/Run";
+        private const string AbortMenuL5 = "Project C/Lighting/T-LIGHT20 tune/Abort";
 
-        private enum RunMode { Baseline, L2, L2B, L3, L4 }
+        private enum RunMode { Baseline, L2, L2B, L3, L4, L5 }
+
+        /// <summary>T-LIGHT20: кейсы L5 — тоже режим веера (те же колонки конуса в отчёте/CSV).</summary>
+        private static bool IsConeMode => _mode == RunMode.L4 || _mode == RunMode.L5;
 
         /// <summary>Префикс логов/ошибок: в режимах L2/L2b/L3/L4 не выдаём их за L1.</summary>
         private static string Tag =>
+            _mode == RunMode.L5 ? "[T-LIGHT20]" :
             _mode == RunMode.L4 ? "[T-LIGHT19]" :
             _mode == RunMode.L3 ? "[T-LIGHT18]" :
             _mode == RunMode.L2B ? "[T-LIGHT17b]" : _mode == RunMode.L2 ? "[T-LIGHT17]" : "[T-LIGHT16]";
@@ -118,6 +124,26 @@ namespace ProjectC.EditorTools
         private const float ConePreActivationDeg = 5f;
         private const float ConeRearMeters = 28f;
         private const float ConePenaltyPerDeg = 1.2f;
+
+        /// <summary>
+        /// T-LIGHT20: база тюнинга = принятый конфиг L4 (совпадает с дефолтами пула). Входит в каждую ось A/B,
+        /// чтобы пары сравнивались внутри одного прогона.
+        /// </summary>
+        private const float TuneBaseRadius = 100f;
+        private const int TuneBaseMaxActive = 96;
+        private const float TuneBaseHysteresis = 0.10f;
+
+        /// <summary>
+        /// T-LIGHT20: финальный конфиг. Его меряет confirm-группа в конце прогона, под ним же идут F8/F9.
+        /// После первого прогона сюда вписывается победитель A/B и прогон повторяется.
+        /// </summary>
+        private const float TuneFinalRadius = 100f;
+        private const int TuneFinalMaxActive = 96;
+        private const float TuneFinalHysteresis = 0.10f;
+        private const float TuneFinalMargin = ConeMarginDeg;
+        private const float TuneFinalPre = ConePreActivationDeg;
+        private const float TuneFinalRear = ConeRearMeters;
+        private const float TuneFinalPenalty = ConePenaltyPerDeg;
 
         private const double HostTimeoutSeconds = 120.0;
         private const double RigTimeoutSeconds = 300.0;
@@ -165,6 +191,11 @@ namespace ProjectC.EditorTools
             public float cfgConeRear = ConeRearMeters;
             public float cfgConePenalty = ConePenaltyPerDeg;
             public float cfgConePre = ConePreActivationDeg;
+
+            // T-LIGHT20: ось тюнинга и значения, которые применяются через ApplyTuneConfig.
+            public string cfgAxis = "base";
+            public int cfgMaxActive = TuneBaseMaxActive;
+            public float cfgHysteresis = TuneBaseHysteresis;
         }
 
         // ------------------------------------------------------------------ состояние
@@ -188,6 +219,8 @@ namespace ProjectC.EditorTools
         private static readonly List<int> _spc = new List<int>();
         private static readonly List<int> _tris = new List<int>();
         private static readonly List<double> _ms = new List<double>();
+        // T-LIGHT20: покадровые сэмплы GPU-времени (медиана по 3 сэмплам, шаг 8 кадров).
+        private static readonly List<double> _gpu = new List<double>();
 
         private static Unity.Profiling.ProfilerRecorder _checkRecorder;
         private static Unity.Profiling.ProfilerRecorder _focusRecorder;
@@ -298,6 +331,9 @@ namespace ProjectC.EditorTools
         private static float _cConeHalfH;
         private static float _cConeHalfV;
         private static float _cRearRadius;
+        // T-LIGHT20: вклад range INLIGHT (48.3 м) — сколько активных IN-ламп имеют range > 20 м.
+        private static int _cInActive;
+        private static int _cInRangeGt20;
 
         private static Vector3 _targetPos;
         private static Quaternion _targetRot;
@@ -387,11 +423,18 @@ namespace ProjectC.EditorTools
             StartRun(RunMode.L4);
         }
 
+        [MenuItem(RunMenuL5)]
+        public static void RunL5()
+        {
+            StartRun(RunMode.L5);
+        }
+
         [MenuItem(AbortMenu)]
         [MenuItem(AbortMenuL2)]
         [MenuItem(AbortMenuL2B)]
         [MenuItem(AbortMenuL3)]
         [MenuItem(AbortMenuL4)]
+        [MenuItem(AbortMenuL5)]
         public static void Abort()
         {
             Finish("ABORTED_BY_USER", false);
@@ -413,7 +456,8 @@ namespace ProjectC.EditorTools
             string rawDir = Path.Combine(projectRoot, _mode == RunMode.L2 ? "Temp/T-LIGHT17" :
                                                     _mode == RunMode.L2B ? "Temp/T-LIGHT17B" :
                                                     _mode == RunMode.L3 ? "Temp/T-LIGHT18" :
-                                                    _mode == RunMode.L4 ? "Temp/T-LIGHT19" : RawDir);
+                                                    _mode == RunMode.L4 ? "Temp/T-LIGHT19" :
+                                                    _mode == RunMode.L5 ? "Temp/T-LIGHT20" : RawDir);
             if (!Directory.Exists(rawDir)) Directory.CreateDirectory(rawDir);
 
             _runTag = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
@@ -421,7 +465,8 @@ namespace ProjectC.EditorTools
             string prefix = _mode == RunMode.L2 ? "T-LIGHT17" :
                             _mode == RunMode.L2B ? "T-LIGHT17B" :
                             _mode == RunMode.L3 ? "T-LIGHT18" :
-                            _mode == RunMode.L4 ? "T-LIGHT19" : "T-LIGHT16_BASELINE";
+                            _mode == RunMode.L4 ? "T-LIGHT19" :
+                            _mode == RunMode.L5 ? "T-LIGHT20" : "T-LIGHT16_BASELINE";
             _outRawPath = Path.Combine(rawDir, prefix + "_" + DateTag + "_raw.txt");
             _outCsvPath = Path.Combine(_csvDirFull, prefix + "_" + DateTag + ".csv");
             if (File.Exists(_outRawPath)) File.Delete(_outRawPath);
@@ -457,7 +502,8 @@ namespace ProjectC.EditorTools
             Append("NOTE;bench=TLight16BaselineBench;mode=" + _mode + ";unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart +
-                   ";headNote=" + (_mode == RunMode.L4 ? "cone_fan_ab_rear_preactivation_score"
+                   ";headNote=" + (_mode == RunMode.L5 ? "tune_values_ab_on_accepted_cone_l4"
+                                 : _mode == RunMode.L4 ? "cone_fan_ab_rear_preactivation_score"
                                  : _mode == RunMode.L3 ? "focus_camera_cache_filters_adaptive_ab"
                                  : _mode == RunMode.L2B ? "alic_active_set_ab"
                                  : _mode == RunMode.L2 ? "l2_day_gate_split_radius_ab"
@@ -469,7 +515,9 @@ namespace ProjectC.EditorTools
                    ";samples=" + SampleCount + "x gap " + SampleGapFrames +
                    "fr;metric=UnityStats median;far=" + BenchFar.ToString("F0", CultureInfo.InvariantCulture) +
                    ";fov=" + BenchFov.ToString("F0", CultureInfo.InvariantCulture) + ";near=0.1");
-            Append(_mode == RunMode.L4
+            Append(_mode == RunMode.L5
+                ? "NOTE;behaviour_changed=config_values_only(radius/cap/hysteresis/margin/pre/rear/penalty);cone_logic_unchanged(L4);light_policy_unchanged(dayGate/split/outMin/checkInterval/enabled/intensity);scene_saved=no;push=no"
+                : _mode == RunMode.L4
                 ? "NOTE;behaviour_changed=candidate_selection_by_camera_direction_only;light_policy_unchanged(dayGate/split/radius/cap/enabled/intensity);scene_saved=no;push=no"
                 : _mode == RunMode.L3
                 ? "NOTE;behaviour_changed=focus_cache_filters_adaptive_only;light_policy_unchanged(dayGate/split/radius/enabled/intensity);scene_saved=no;push=no"
@@ -494,6 +542,7 @@ namespace ProjectC.EditorTools
             if (_mode == RunMode.L2B) return BuildCasesL2B();
             if (_mode == RunMode.L3) return BuildCasesL3();
             if (_mode == RunMode.L4) return BuildCasesL4();
+            if (_mode == RunMode.L5) return BuildCasesL5();
 
             // Координаты P1/STREET — те же, что в бенче Stage 8 (P1 2 229 DC при hour 12):
             // нужны для контрольного сравнения, что инструментация не изменила поведение.
@@ -635,6 +684,152 @@ namespace ProjectC.EditorTools
 
             Add("P1", "local", p1, 337.5f, 20f, false, "control_night_full_brightness");
             Add("P1", "local", p1, 337.5f, 20f, true, "l4_cone_night");
+
+            return list;
+        }
+
+        /// <summary>
+        /// T-LIGHT20 (L5): A/B-тюнинг ЗНАЧЕНИЙ конфига на принятом веере L4. Варьируется одна ось за раз,
+        /// остальные значения = база L4 (radius 100, cap 96, hysteresis 0.10, margin 6°, pre 5°, rear 28 м,
+        /// penalty 1.2). База входит в каждую ось, поэтому пары сравниваются внутри одного прогона.
+        /// В конце идёт confirm-группа с финальным конфигом; последний кейс оставляет его в памяти пула,
+        /// поэтому F8/F9 проверяют именно финальный конфиг.
+        /// </summary>
+        private static List<LightCase> BuildCasesL5()
+        {
+            var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
+            var street = new Vector3(-382.90f, -58.23f, -126.20f);
+
+            var list = new List<LightCase>();
+
+            void C(string point, string poseKind, Vector3 local, float yaw, float hour, string axis,
+                   float radius = TuneBaseRadius, int cap = TuneBaseMaxActive, float hyst = TuneBaseHysteresis,
+                   float margin = ConeMarginDeg, float pre = ConePreActivationDeg,
+                   float rear = ConeRearMeters, float pen = ConePenaltyPerDeg, string note = "")
+            {
+                string tag = axis +
+                             "_r" + radius.ToString("F0", CultureInfo.InvariantCulture) +
+                             "_cap" + cap +
+                             "_hy" + hyst.ToString("F2", CultureInfo.InvariantCulture) +
+                             "_mar" + margin.ToString("F0", CultureInfo.InvariantCulture) +
+                             "_pre" + pre.ToString("F0", CultureInfo.InvariantCulture) +
+                             "_rear" + rear.ToString("F0", CultureInfo.InvariantCulture) +
+                             "_pen" + pen.ToString("F1", CultureInfo.InvariantCulture);
+
+                list.Add(new LightCase
+                {
+                    id = point + "_h" + hour.ToString("F0", CultureInfo.InvariantCulture) + "_" + tag,
+                    point = point,
+                    poseKind = poseKind,
+                    local = local,
+                    yaw = yaw,
+                    hour = hour,
+                    note = note,
+                    cfgTag = tag,
+                    // Политика света — принятые L2/L3, между кейсами не меняется.
+                    cfgDayGate = true,
+                    cfgSplit = true,
+                    cfgOutMin = 40,
+                    cfgUseL2 = true,
+                    cfgRadius = radius,
+                    cfgCameraFilters = true,
+                    cfgAdaptive = true,
+                    // Предмет замера — значения конфига при включённом веере.
+                    cfgCone = true,
+                    cfgConeMargin = margin,
+                    cfgConeRear = rear,
+                    cfgConePenalty = pen,
+                    cfgConePre = pre,
+                    cfgAxis = axis,
+                    cfgMaxActive = cap,
+                    cfgHysteresis = hyst,
+                });
+            }
+
+            void Final(string point, string poseKind, Vector3 local, float yaw, float hour, string note)
+            {
+                C(point, poseKind, local, yaw, hour, "final", TuneFinalRadius, TuneFinalMaxActive,
+                  TuneFinalHysteresis, TuneFinalMargin, TuneFinalPre, TuneFinalRear, TuneFinalPenalty, note);
+            }
+
+            // --- 18 ч: радиус (100 = база L4)
+            float[] radii = { 100f, 120f, 140f };
+            for (int i = 0; i < radii.Length; i++)
+            {
+                C("P1", "local", p1, 337.5f, 18f, "radius", radius: radii[i], note: "radius_axis");
+                C("STREET", "local", street, 225f, 18f, "radius", radius: radii[i], note: "radius_axis");
+                C("ADMIN", "admin", Vector3.zero, 0f, 18f, "radius", radius: radii[i], note: "radius_axis");
+                C("FARM", "farm", Vector3.zero, 0f, 18f, "radius", radius: radii[i], note: "radius_axis");
+            }
+
+            // --- 18 ч: maxActive 96 (база) / 128 (только через GPU-гейт)
+            int[] caps = { 96, 128 };
+            for (int i = 0; i < caps.Length; i++)
+            {
+                C("P1", "local", p1, 337.5f, 18f, "cap", cap: caps[i], note: "cap_axis");
+                C("ADMIN", "admin", Vector3.zero, 0f, 18f, "cap", cap: caps[i], note: "cap_axis");
+            }
+
+            // --- 18 ч: гистерезис 0.10 (база) / 0.20
+            float[] hys = { 0.10f, 0.20f };
+            for (int i = 0; i < hys.Length; i++)
+            {
+                C("P1", "local", p1, 337.5f, 18f, "hysteresis", hyst: hys[i], note: "hysteresis_axis");
+                C("STREET", "local", street, 225f, 18f, "hysteresis", hyst: hys[i], note: "hysteresis_axis");
+            }
+
+            // --- 18 ч: угловой гистерезис 6° (база) / 10°
+            float[] margins = { 6f, 10f };
+            for (int i = 0; i < margins.Length; i++)
+            {
+                C("P1", "local", p1, 337.5f, 18f, "margin", margin: margins[i], note: "margin_axis");
+                C("STREET", "local", street, 225f, 18f, "margin", margin: margins[i], note: "margin_axis");
+            }
+
+            // --- 18 ч: pre-activation 0 / 5 (база) / 8
+            float[] pres = { 0f, 5f, 8f };
+            for (int i = 0; i < pres.Length; i++)
+            {
+                C("P1", "local", p1, 337.5f, 18f, "pre", pre: pres[i], note: "pre_axis");
+                C("STREET", "local", street, 225f, 18f, "pre", pre: pres[i], note: "pre_axis");
+            }
+
+            // --- 18 ч: тыловой радиус 20 / 28 (база) / 35 (ожидается кламп 30)
+            float[] rears = { 20f, 28f, 35f };
+            for (int i = 0; i < rears.Length; i++)
+            {
+                C("P1", "local", p1, 337.5f, 18f, "rear", rear: rears[i], note: "rear_axis");
+                C("STREET", "local", street, 225f, 18f, "rear", rear: rears[i], note: "rear_axis");
+            }
+
+            // --- 18 ч: штраф за угол 0.5 / 1.2 (база) / 2.0. Штраф влияет только на порядок при
+            // заполненном cap: на P1 (72–73 кандидата при 96) он не связывает, а в ADMIN связывает (capCut 128),
+            // поэтому ось меряется в обеих позах.
+            float[] pens = { 0.5f, 1.2f, 2.0f };
+            for (int i = 0; i < pens.Length; i++)
+                C("P1", "local", p1, 337.5f, 18f, "penalty", pen: pens[i], note: "penalty_axis_cap_not_binding");
+            for (int i = 0; i < pens.Length; i++)
+                C("ADMIN", "admin", Vector3.zero, 0f, 18f, "penaltyADMIN", pen: pens[i], note: "penalty_axis_cap_binds");
+
+            // --- confirm 18 ч (финальный конфиг)
+            Final("P1", "local", p1, 337.5f, 18f, "final_config");
+            Final("STREET", "local", street, 225f, 18f, "final_config");
+            Final("ADMIN", "admin", Vector3.zero, 0f, 18f, "final_config");
+            Final("FARM", "farm", Vector3.zero, 0f, 18f, "final_config");
+
+            // --- 20 ч: cap и penalty на самой загруженной позе + confirm
+            for (int i = 0; i < caps.Length; i++)
+                C("P1", "local", p1, 337.5f, 20f, "cap20", cap: caps[i], note: "cap_axis_night");
+            for (int i = 0; i < pens.Length; i++)
+                C("P1", "local", p1, 337.5f, 20f, "penalty20", pen: pens[i], note: "penalty_axis_night");
+            Final("P1", "local", p1, 337.5f, 20f, "final_config_night");
+
+            // --- 12 ч: dayGate (intensityZeroActive=0) + confirm; последний кейс оставляет финал для F8/F9
+            C("P1", "local", p1, 337.5f, 12f, "day12", note: "day_gate_zero_check");
+            C("STREET", "local", street, 225f, 12f, "day12", note: "day_gate_zero_check");
+            C("FARM", "farm", Vector3.zero, 0f, 12f, "day12", note: "day_gate_zero_check");
+            Final("P1", "local", p1, 337.5f, 12f, "final_config_day");
+            Final("STREET", "local", street, 225f, 12f, "final_config_day");
 
             return list;
         }
@@ -1163,7 +1358,7 @@ namespace ProjectC.EditorTools
             }
 
             // T-LIGHT18: режим фокуса/камер — тоже только поля компонента в памяти.
-            if ((_mode == RunMode.L3 || _mode == RunMode.L4) && _pool != null)
+            if ((_mode == RunMode.L3 || IsConeMode) && _pool != null)
             {
                 _pool.ApplyCameraConfig(c.cfgCameraFilters, c.cfgAdaptive,
                                         FocusMoveThresholdM, FocusRotateThresholdDeg, FocusMinIntervalSec);
@@ -1171,13 +1366,22 @@ namespace ProjectC.EditorTools
             }
 
             // T-LIGHT19: режим веера — тоже только поля компонента в памяти.
-            if (_mode == RunMode.L4 && _pool != null)
+            if (IsConeMode && _pool != null)
             {
                 _pool.ApplyConeConfig(c.cfgCone, c.cfgConeMargin, c.cfgConeRear, c.cfgConePenalty, c.cfgConePre);
                 Append("CONFIG;case=" + c.id + ";" + _pool.ConeConfigLine);
             }
 
-            _dc.Clear(); _spc.Clear(); _tris.Clear(); _ms.Clear();
+            // T-LIGHT20: значения конфига тюнинга (радиус / cap / гистерезис / угловые запасы / тыл / штраф).
+            if (_mode == RunMode.L5 && _pool != null)
+            {
+                _pool.ApplyTuneConfig(c.cfgRadius, c.cfgMaxActive, c.cfgHysteresis,
+                                      c.cfgConeMargin, c.cfgConePre, c.cfgConeRear, c.cfgConePenalty);
+                Append("TUNE;case=" + c.id + ";axis=" + c.cfgAxis + ";" + _pool.ConfigLine);
+                Append("TUNE;case=" + c.id + ";axis=" + c.cfgAxis + ";" + _pool.ConeConfigLine);
+            }
+
+            _dc.Clear(); _spc.Clear(); _tris.Clear(); _ms.Clear(); _gpu.Clear();
             _censusDone = false;
 
             int settle = SettleFrames;
@@ -1364,7 +1568,7 @@ namespace ProjectC.EditorTools
             }
 
             // T-LIGHT19: проба веера — разворот 180° (фазы 0–2) и 90° (3–4), затем возврат позы.
-            if (_mode == RunMode.L4 && _probePhase < 6)
+            if (IsConeMode && _probePhase < 6)
             {
                 if (StepConeProbe(c)) return;
             }
@@ -1394,6 +1598,8 @@ namespace ProjectC.EditorTools
             _spc.Add(UnityStats.setPassCalls);
             _tris.Add(UnityStats.triangles);
             _ms.Add((double)Time.deltaTime * 1000.0);
+            // T-LIGHT20: GPU-время сэмплируется на каждом из трёх замеров (медиана), не один раз.
+            if (_mode == RunMode.L5) _gpu.Add(ReadGpuMs());
 
             if (_dc.Count == 1 && UnityStats.drawCalls == 0)
             {
@@ -1634,7 +1840,7 @@ namespace ProjectC.EditorTools
         /// </summary>
         private static void ApplyConeProbePose()
         {
-            if (_mode != RunMode.L4 || _cam == null) return;
+            if (!IsConeMode || _cam == null) return;
             switch (_probePhase)
             {
                 case 1:
@@ -1760,6 +1966,8 @@ namespace ProjectC.EditorTools
             _cBehindActive = 0;
             _cInFrustumActive = 0;
             _cActiveAdmin = 0;
+            _cInActive = 0;
+            _cInRangeGt20 = 0;
 
             GeometryUtility.CalculateFrustumPlanes(_cam, _planes);
             Vector3 camPos = _cam.transform.position;
@@ -1778,6 +1986,12 @@ namespace ProjectC.EditorTools
                 else _cBehindActive++;
                 if (GeometryUtility.TestPlanesAABB(_planes, new Bounds(p, Vector3.one))) _cInFrustumActive++;
                 if (l.name.IndexOf("ADMIN", StringComparison.Ordinal) >= 0) _cActiveAdmin++;
+                // T-LIGHT20: вклад диапазона INLIGHT — доля активных IN-ламп с range > 20 м в слотах.
+                if (l.name.IndexOf("PRIMUM_INLIGHT", StringComparison.Ordinal) >= 0)
+                {
+                    _cInActive++;
+                    if (l.range > 20f) _cInRangeGt20++;
+                }
             }
 
             _cRegistered = _pool.RegisteredCount;
@@ -1882,6 +2096,12 @@ namespace ProjectC.EditorTools
             int framesInWindow = Math.Max(1, Time.frameCount - _caseWindowFrame);
             double fps = framesInWindow / seconds;
             double gpuMs = ReadGpuMs();
+            // T-LIGHT20: медиана трёх GPU-сэмплов (шаг 8 кадров) вместо одиночного чтения.
+            if (_mode == RunMode.L5)
+            {
+                double gpuMedian = MedianD(_gpu);
+                if (gpuMedian > 0.0) gpuMs = gpuMedian;
+            }
             double alicMs = Avg(_alicMsFrames);
             double checkMs = Avg(_checkMsFrames);
             double focusMs = Avg(_focusMsFrames);
@@ -1963,7 +2183,7 @@ namespace ProjectC.EditorTools
                   .Append(";probeTurnSetChanged=").Append(_probeTurnSetChanged)
                   .Append(";probeTimeout=").Append(_probeTimeout || _probeTurnTimeout);
             }
-            if (_mode == RunMode.L4)
+            if (IsConeMode)
             {
                 sb.Append(";coneEnabled=").Append(c.cfgCone ? "on" : "off")
                   .Append(";coneHalfH=").Append(_cConeHalfH.ToString("F1", CultureInfo.InvariantCulture))
@@ -1983,6 +2203,19 @@ namespace ProjectC.EditorTools
                   .Append(";cone90Frames=").Append(_cone90Frames)
                   .Append(";cone90InFrustum=").Append(_cone90InFrustum)
                   .Append(";coneProbeTimeout=").Append(_coneProbeTimeout);
+            }
+            if (_mode == RunMode.L5)
+            {
+                sb.Append(";tuneAxis=").Append(c.cfgAxis)
+                  .Append(";tuneRadius=").Append(c.cfgRadius.ToString("F0", CultureInfo.InvariantCulture))
+                  .Append(";tuneMaxActive=").Append(c.cfgMaxActive)
+                  .Append(";tuneHysteresis=").Append(c.cfgHysteresis.ToString("F2", CultureInfo.InvariantCulture))
+                  .Append(";tuneMargin=").Append(c.cfgConeMargin.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(";tunePre=").Append(c.cfgConePre.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(";tuneRear=").Append(c.cfgConeRear.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(";tunePenalty=").Append(c.cfgConePenalty.ToString("F2", CultureInfo.InvariantCulture))
+                  .Append(";inActiveTotal=").Append(_cInActive)
+                  .Append(";inActiveRangeGt20=").Append(_cInRangeGt20);
             }
             if (_mode == RunMode.L2)
             {
@@ -2039,11 +2272,15 @@ namespace ProjectC.EditorTools
                                     "probeReactionFrames,probeReactionSec,probeTurnFrames,probeTurnSec," +
                                     "probeTurnSetChanged,probeTimeout"
                                   : string.Empty) +
-                              (_mode == RunMode.L4
+                              (IsConeMode
                                   ? ",coneEnabled,coneHalfH,coneHalfV,rearRadius,coneCand,rearCand," +
                                     "activeBehindOutsideRear,coneBaseInFrustum,coneTurnFrames,coneTurnSec," +
                                     "coneTurnSetChanged,coneTurnInFrustum,coneTurnBehind,coneTurnBehindOutsideRear," +
                                     "coneTurnActive,cone90Frames,cone90InFrustum,coneProbeTimeout"
+                                  : string.Empty) +
+                              (_mode == RunMode.L5
+                                  ? ",tuneAxis,tuneRadius,tuneMaxActive,tuneHysteresis,tuneMargin,tunePre,tuneRear," +
+                                    "tunePenalty,inActiveTotal,inActiveRangeGt20"
                                   : string.Empty) +
                               (_mode == RunMode.L2B
                                   ? ",alicActiveSet,alicSetSize,alicWritesAvg,alicActiveWritesAvg,alicIteratedAvg,alicBaseSweepFrames"
@@ -2099,7 +2336,7 @@ namespace ProjectC.EditorTools
                   .Append(',').Append(_probeTurnSetChanged ? 1 : 0)
                   .Append(',').Append((_probeTimeout || _probeTurnTimeout) ? 1 : 0);
             }
-            if (_mode == RunMode.L4)
+            if (IsConeMode)
             {
                 sb.Append(',').Append(c.cfgCone ? 1 : 0)
                   .Append(',').Append(_cConeHalfH.ToString("F1", CultureInfo.InvariantCulture))
@@ -2119,6 +2356,19 @@ namespace ProjectC.EditorTools
                   .Append(',').Append(_cone90Frames)
                   .Append(',').Append(_cone90InFrustum)
                   .Append(',').Append(_coneProbeTimeout ? 1 : 0);
+            }
+            if (_mode == RunMode.L5)
+            {
+                sb.Append(',').Append(c.cfgAxis)
+                  .Append(',').Append(c.cfgRadius.ToString("F0", CultureInfo.InvariantCulture))
+                  .Append(',').Append(c.cfgMaxActive)
+                  .Append(',').Append(c.cfgHysteresis.ToString("F2", CultureInfo.InvariantCulture))
+                  .Append(',').Append(c.cfgConeMargin.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append(c.cfgConePre.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append(c.cfgConeRear.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append(c.cfgConePenalty.ToString("F2", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_cInActive)
+                  .Append(',').Append(_cInRangeGt20);
             }
             if (_mode == RunMode.L2B)
             {

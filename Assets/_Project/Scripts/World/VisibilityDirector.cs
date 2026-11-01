@@ -14,8 +14,9 @@
 //   layerCullDistances — DoorVisibilityBudget (слой 10); camera.far — ViewDistanceApplier.
 //   Light.enabled      — PrimumLightPool.
 //   forceRenderingOff  — ТОЛЬКО директор (больше никто в проекте это свойство не пишет), и только
-//                        у направляемых групп: дома города, фермы, спутники. Двери/руины/корабли/
-//                        интерьеры/лампы/сетевые объекты — только наблюдаются (счётчики), не трогаются.
+//                        у направляемых групп: дома города, фермы, спутники, двери (блок на L1/L2 и
+//                        дистанция Stage 8), L1-рендереры и импостор. Руины/корабли/интерьеры/лампы/
+//                        сетевые объекты — только наблюдаются (счётчики), не трогаются.
 //
 // Политика MVP: «под-пиксельный» culling — рендерер направляемой группы гасится через
 // forceRenderingOff, когда его габарит на экране меньше minScreenPixels во ВСЕХ камерах union,
@@ -111,6 +112,16 @@ namespace ProjectC.World
 
         [Tooltip("Гистерезис обратного перехода (доля). < 0 — из манифеста (0.1).")]
         [SerializeField] private float hlodHysteresis = -1f;
+
+        [Header("Двери на L0 под GRD (Stage 8, H8)")]
+        [Tooltip("A/B политики: гасить дверные рендереры дальше doorCullDistance (GRD сам дистанцию не режет).")]
+        [SerializeField] private bool doorCullEnabled = true;
+
+        [Tooltip("Дистанция прорисовки дверей на L0, м. 0 — только HLOD-гашение (поведение Stage 7).")]
+        [SerializeField] private float doorCullDistance = 150f;
+
+        [Tooltip("Гистерезис обратного включения дверей (доля). 10–15 %.")]
+        [SerializeField] private float doorCullHysteresis = 0.1f;
 
         [Header("Камеры и Floating Origin")]
         [Tooltip("Слой-маркер мира: камера в union, только если рисует этот слой.")]
@@ -209,20 +220,29 @@ namespace ProjectC.World
         private int _hlodHidden;
         private readonly int[] _levelCounts = new int[3];
 
-        // Двери блока (слой 10): GPU Resident Drawer игнорирует Camera.layerCullDistances (InstanceCuller смотрит
+        // Двери (слой 10): GPU Resident Drawer игнорирует Camera.layerCullDistances (InstanceCuller смотрит
         // только cullingLayerMask), поэтому 150 м DoorVisibilityBudget для GRD-дверей не срабатывает и около
-        // 25 тыс. инстансов (~137 DC) рисуются на любой дистанции. Когда блок на L1/L2, его двери — часть
-        // L0-представления и гасятся вместе с ним (только forceRenderingOff; DoorController, коллайдеры,
-        // shadowCastingMode и layerCullDistances не трогаются). На L0 (< 3 км) двери не меняются.
+        // 25 тыс. инстансов (~137 DC) рисуются на любой дистанции.
+        // Здесь две причины гашения (то же единственное свойство forceRenderingOff; DoorController,
+        // коллайдеры, shadowCastingMode и layerCullDistances НЕ трогаются):
+        //   1) блок на L1/L2 (Stage 7) — двери блока гасятся вместе с блоком;
+        //   2) дистанция (Stage 8, H8) — на L0 дверь дальше doorCullDistance от ближайшей камеры union
+        //      не рисуется, обратно включается ближе порога с гистерезисом. Это заменяет для GRD тот
+        //      дистанционный отсев, который движок делает для layerCullDistances при обычном рендере.
+        // Двери без HLOD-блока (фермы) получают только дистанционную политику.
         private struct HlodDoor
         {
             public Renderer renderer;
-            public int block;
+            public int block;          // -1: дверь вне HLOD-блока (фермы) → только дистанция
+            public Vector3 offset;     // центр bounds относительно WorldRoot_0_0 (FO-инвариантно)
             public bool hidden;
         }
         private readonly List<HlodDoor> _hlodDoors = new List<HlodDoor>();
         private int _hlodDoorsHidden;
+        private int _doorBlockBound;
+        private int _doorDistanceHidden;
         private const string CityDoorsRootName = "PRIMUM_DOORS";
+        private const string DoorsRootSuffix = "_DOORS";
 
         // ------------------------------------------------------------- публичный API
 
@@ -270,9 +290,37 @@ namespace ProjectC.World
         public int CityLevel { get { return _cityLevel; } }
         /// <summary>L0-участников, погашенных потому, что их чанк на L1/L2.</summary>
         public int HlodHiddenCount { get { return _hlodHidden; } }
-        /// <summary>Дверных рендереров, привязанных к HLOD-блокам / сейчас погашенных (блок на L1/L2).</summary>
-        public int HlodDoorCount { get { return _hlodDoors.Count; } }
+        /// <summary>Дверных рендереров под политикой директора (блок + свободные) / погашенных блоком на L1/L2.</summary>
+        public int HlodDoorCount { get { return _doorBlockBound; } }
         public int HlodDoorsHidden { get { return _hlodDoorsHidden; } }
+
+        // ---- Stage 8: дистанционная политика дверей ----
+
+        /// <summary>A/B дистанционной политики дверей (false — поведение Stage 7).</summary>
+        public bool DoorCullEnabled
+        {
+            get { return doorCullEnabled; }
+            set
+            {
+                if (doorCullEnabled == value) return;
+                doorCullEnabled = value;
+                _forceTick = true;
+            }
+        }
+
+        /// <summary>Дистанция прорисовки дверей на L0, м.</summary>
+        public float DoorCullDistance
+        {
+            get { return doorCullDistance; }
+            set { doorCullDistance = Mathf.Max(0f, value); _forceTick = true; }
+        }
+
+        /// <summary>Всего дверных рендереров под политикой директора (блок + свободные).</summary>
+        public int DoorCullTotal { get { return _hlodDoors.Count; } }
+        /// <summary>Дверных рендереров, привязанных к HLOD-блоку.</summary>
+        public int DoorCullBlockBound { get { return _doorBlockBound; } }
+        /// <summary>Двери, погашенные по дистанции в последнем тике.</summary>
+        public int DoorCullHiddenByDistance { get { return _doorDistanceHidden; } }
         public float NightFactor { get; private set; }
         public string HlodReport { get; private set; }
         public Transform HlodRoot { get { return _hlodRoot != null ? _hlodRoot.transform : null; } }
@@ -789,6 +837,7 @@ namespace ProjectC.World
 
                 UpdateNight();
                 UpdateHlodLevels(origin);
+                UpdateDoors(origin);
                 int hlodHidden = 0;
 
                 for (int i = 0; i < _members.Count; i++)
@@ -903,7 +952,7 @@ namespace ProjectC.World
                 _hlod[i] = b;
             }
             if (_impostor != null) _impostor.forceRenderingOff = true;
-            RestoreHlodDoors();
+            RestoreDoors();
             _cityLevel = 0;
             for (int i = 0; i < _chunkLevel.Length; i++) _chunkLevel[i] = 0;
             _levelCounts[0] = _hlod.Count;
@@ -929,6 +978,8 @@ namespace ProjectC.World
             {
                 DestroyHlodRoot();
                 HlodReport = _manifest == null ? "no_manifest" : "empty_manifest";
+                // Stage 8: дистанционная политика дверей работает и без HLOD.
+                CollectDoors(worldRoot);
                 return;
             }
 
@@ -982,63 +1033,81 @@ namespace ProjectC.World
             }
 
             _levelCounts[0] = _hlod.Count;
-            CollectHlodDoors(worldRoot);
+            CollectDoors(worldRoot);
             HlodReport = "blocks=" + _hlod.Count + "/" + _manifest.blocks.Count + ";missing=" + missing + ";l1Tris=" + triangles +
-                         ";doors=" + _hlodDoors.Count +
+                         ";doors=" + _doorBlockBound + "/" + _hlodDoors.Count +
                          ";impostor=" + (_impostor != null ? "yes" : "no") + ";l1=" + L1Distance.ToString("F0") + ";l2=" +
                          L2Distance.ToString("F0") + ";hyst=" + LodHysteresis.ToString("F2") + ";bakeHash=" +
                          (string.IsNullOrEmpty(_manifest.bakeHash) ? "-" : _manifest.bakeHash.Substring(0, Mathf.Min(8, _manifest.bakeHash.Length)));
         }
 
         /// <summary>
-        /// Двери блоков: PRIMUM_DOORS/&lt;блок&gt; (имена совпадают с чанками PRIMUM) и двери внутри PRIMUM
-        /// (ADMIN_DOOR_PREFABS, ADMIN_ENTRANCE_PORTAL → блок ADMIN). Без блока — не трогаются.
+        /// Двери под политикой директора: PRIMUM_DOORS/&lt;блок&gt; (имена совпадают с чанками PRIMUM) и двери
+        /// внутри PRIMUM (ADMIN_DOOR_PREFABS, ADMIN_ENTRANCE_PORTAL → блок ADMIN) получают блок и гасятся
+        /// вместе с ним на L1/L2. Все остальные двери слоя 10 (в первую очередь фермы, корни *_DOORS) —
+        /// блок = -1: для них действует только дистанционная политика Stage 8.
         /// </summary>
-        private void CollectHlodDoors(Transform worldRoot)
+        private void CollectDoors(Transform worldRoot)
         {
-            RestoreHlodDoors();
+            RestoreDoors();
             _hlodDoors.Clear();
-            if (_hlod.Count == 0 || worldRoot == null) return;
+            _doorBlockBound = 0;
+            _doorDistanceHidden = 0;
+            if (worldRoot == null) return;
 
-            int admin = -1;
-            var byName = new Dictionary<string, int>();
-            for (int i = 0; i < _hlod.Count; i++)
-            {
-                string n = _groups[_hlod[i].chunk].name;
-                if (!byName.ContainsKey(n)) byName.Add(n, i);
-                if (admin < 0 && n.Contains("_ADMIN_")) admin = i;
-            }
+            Vector3 origin = worldRoot.position;
+            var seen = new HashSet<Renderer>();
 
-            var doorsRoot = worldRoot.Find(CityDoorsRootName);
-            if (doorsRoot != null)
+            if (_hlod.Count > 0)
             {
-                for (int c = 0; c < doorsRoot.childCount; c++)
+                int admin = -1;
+                var byName = new Dictionary<string, int>();
+                for (int i = 0; i < _hlod.Count; i++)
                 {
-                    var child = doorsRoot.GetChild(c);
-                    int block;
-                    if (byName.TryGetValue(child.name, out block)) AddHlodDoors(child, block, false);
+                    string n = _groups[_hlod[i].chunk].name;
+                    if (!byName.ContainsKey(n)) byName.Add(n, i);
+                    if (admin < 0 && n.Contains("_ADMIN_")) admin = i;
                 }
-            }
 
-            var city = worldRoot.Find(CityRootName);
-            if (city != null)
-            {
-                for (int c = 0; c < city.childCount; c++)
+                var doorsRoot = worldRoot.Find(CityDoorsRootName);
+                if (doorsRoot != null)
                 {
-                    var child = city.GetChild(c);
-                    int block;
-                    if (!byName.TryGetValue(child.name, out block))
+                    for (int c = 0; c < doorsRoot.childCount; c++)
                     {
-                        // чанк без своего L1 (двери/портал ADMIN) — к блоку ADMIN
-                        if (admin >= 0 && child.name.StartsWith("ADMIN_")) AddHlodDoors(child, admin, true);
-                        continue;
+                        var child = doorsRoot.GetChild(c);
+                        int block;
+                        if (byName.TryGetValue(child.name, out block)) AddDoors(child, block, false, origin, seen);
                     }
-                    AddHlodDoors(child, block, true); // двери внутри самого блока (не участники L0)
                 }
+
+                var city = worldRoot.Find(CityRootName);
+                if (city != null)
+                {
+                    for (int c = 0; c < city.childCount; c++)
+                    {
+                        var child = city.GetChild(c);
+                        int block;
+                        if (!byName.TryGetValue(child.name, out block))
+                        {
+                            // чанк без своего L1 (двери/портал ADMIN) — к блоку ADMIN
+                            if (admin >= 0 && child.name.StartsWith("ADMIN_")) AddDoors(child, admin, true, origin, seen);
+                            continue;
+                        }
+                        AddDoors(child, block, true, origin, seen); // двери внутри самого блока (не участники L0)
+                    }
+                }
+            }
+
+            // Свободные двери (фермы и прочие корни *_DOORS): только дистанция.
+            for (int c = 0; c < worldRoot.childCount; c++)
+            {
+                var child = worldRoot.GetChild(c);
+                if (!child.name.EndsWith(DoorsRootSuffix)) continue;
+                AddDoors(child, -1, false, origin, seen);
             }
         }
 
-        private void AddHlodDoors(Transform root, int block, bool doorsOnly)
+        private void AddDoors(Transform root, int block, bool doorsOnly, Vector3 origin, HashSet<Renderer> seen)
         {
             var rs = root.GetComponentsInChildren<Renderer>(true);
             for (int i = 0; i < rs.Length; i++)
@@ -1047,11 +1116,16 @@ namespace ProjectC.World
                 if (r == null || r.forceRenderingOff) continue;
                 if (doorsOnly && r.gameObject.layer != DoorVisibilityBudget.DoorLayer &&
                     r.GetComponentInParent<DoorController>(true) == null) continue;
-                _hlodDoors.Add(new HlodDoor { renderer = r, block = block, hidden = false });
+                if (seen != null && !seen.Add(r)) continue;
+                _hlodDoors.Add(new HlodDoor
+                {
+                    renderer = r, block = block, offset = r.bounds.center - origin, hidden = false
+                });
+                if (block >= 0) _doorBlockBound++;
             }
         }
 
-        private void RestoreHlodDoors()
+        private void RestoreDoors()
         {
             for (int i = 0; i < _hlodDoors.Count; i++)
             {
@@ -1062,24 +1136,63 @@ namespace ProjectC.World
                 _hlodDoors[i] = d;
             }
             _hlodDoorsHidden = 0;
+            _doorDistanceHidden = 0;
         }
 
-        private void UpdateHlodDoors()
+        /// <summary>
+        /// Один проход по дверям: гашение по блоку (L1/L2) или по дистанции (L0, Stage 8).
+        /// Пишется только forceRenderingOff; у погашенной двери корень может быть выключен — тогда
+        /// тип просто повторяет прошлое решение.
+        /// </summary>
+        private void UpdateDoors(Vector3 origin)
         {
-            int hidden = 0;
+            int hiddenByBlock = 0;
+            int hiddenByDistance = 0;
+
+            bool useDistance = doorCullEnabled && doorCullDistance > 0f && _snapCount > 0 && !_snapOrtho;
+            float offSqr = doorCullDistance * doorCullDistance;
+            float on = doorCullDistance * (1f - Mathf.Clamp(doorCullHysteresis, 0f, 0.5f));
+            float onSqr = on * on;
+
             for (int i = 0; i < _hlodDoors.Count; i++)
             {
                 var d = _hlodDoors[i];
-                bool want = d.block >= 0 && d.block < _hlod.Count && _hlod[d.block].level != 0;
+                if (d.renderer == null) continue;
+
+                bool byBlock = d.block >= 0 && d.block < _hlod.Count && _hlod[d.block].level != 0;
+                bool byDistance = false;
+                if (!byBlock && useDistance)
+                {
+                    float nearest = NearestCameraSqr(origin + d.offset);
+                    byDistance = d.hidden ? nearest > onSqr : nearest > offSqr;
+                }
+
+                bool want = byBlock || byDistance;
                 if (want != d.hidden)
                 {
-                    if (d.renderer != null) d.renderer.forceRenderingOff = want;
+                    d.renderer.forceRenderingOff = want;
                     d.hidden = want;
                     _hlodDoors[i] = d;
                 }
-                if (d.hidden) hidden++;
+
+                if (byBlock) hiddenByBlock++;
+                if (byDistance) hiddenByDistance++;
             }
-            _hlodDoorsHidden = hidden;
+
+            _hlodDoorsHidden = hiddenByBlock;
+            _doorDistanceHidden = hiddenByDistance;
+        }
+
+        /// <summary>Квадрат дистанции до ближайшей камеры снимка тика.</summary>
+        private float NearestCameraSqr(Vector3 worldPoint)
+        {
+            float best = float.MaxValue;
+            for (int c = 0; c < _snapCount; c++)
+            {
+                float s = (worldPoint - _snapPos[c]).sqrMagnitude;
+                if (s < best) best = s;
+            }
+            return best;
         }
 
         private static Renderer CreateHlodRenderer(Transform parent, string name, Mesh mesh, Material material, Vector3 localPosition, int layer)
@@ -1103,7 +1216,7 @@ namespace ProjectC.World
 
         private void DestroyHlodRoot()
         {
-            RestoreHlodDoors();
+            RestoreDoors();
             if (_hlodRoot == null) return;
             if (Application.isPlaying) Destroy(_hlodRoot);
             else DestroyImmediate(_hlodRoot);
@@ -1163,8 +1276,6 @@ namespace ProjectC.World
                 if (b.chunk >= 0 && b.chunk < _chunkLevel.Length) _chunkLevel[b.chunk] = level;
                 _levelCounts[level]++;
             }
-
-            UpdateHlodDoors();
         }
 
         /// <summary>Ближайшая дистанция от камер снимка до AABB (центр, полугабарит).</summary>
@@ -1229,6 +1340,8 @@ namespace ProjectC.World
             if (cameraRescanInterval < 0.1f) cameraRescanInterval = 0.1f;
             if (rebuildInterval < 0.1f) rebuildInterval = 0.1f;
             if (teleportThreshold < 1f) teleportThreshold = 1f;
+            doorCullDistance = Mathf.Max(0f, doorCullDistance);
+            doorCullHysteresis = Mathf.Clamp(doorCullHysteresis, 0f, 0.5f);
         }
     }
 }

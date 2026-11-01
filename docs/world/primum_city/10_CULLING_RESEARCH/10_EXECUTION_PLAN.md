@@ -1,11 +1,10 @@
 # 10. План исполнения culling/visibility (Project C)
 
 **Дата:** 2026-10-31 · **Основание:** `10_CULLING_RESEARCH` (A–J), коммит `6b49ac51`
-**Статус:** Stage 0–7 закрыты. **Stage 6 PASS**; **Stage 7 PASS**: L1 **46–48 DC**, L2 **2 DC**,
+**Статус:** Stage 0–8 закрыты. **Stage 6 PASS**; **Stage 7 PASS**: L1 **46–48 DC**, L2 **2 DC**,
 честный L0 **2 341 DC**, rebake детерминирован, F8/F9 PASS; визуально принято пользователем.
-**Открыт один существенный побочный эффект:** GRD игнорирует `layerCullDistances`, поэтому
-**L0-двери больше не режутся на 150 м** (~137 DC / ~1 млн тр) → **Stage 8: L0 door culling under GRD**
-и финальная приёмка. Другие корабли не делаем.
+**Stage 8 PASS (2026-11-01):** L0-двери снова режутся по дистанции под GRD → P1 **2 229** (−112),
+двери за 150 м не рисуются, L1 **46** / L2 **2** без ухудшения. Дальше — финальная приёмка T-CULL01.
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -45,7 +44,7 @@
 | 5 | ⛔ closed by dry-run — **B2 не делать** | — | `B2_increases`: 330 батчей против 160 | — | — |
 | 6 | ✅ PASS — foundation + visual OK | Stage 4c | P1 2 378/2 372 (2 388–2 394 без), real 2 362; culling ≈1.3–1.7 мс; F8/F9 PASS | агент T-CULL01/H6 | `S_stage6_*`, `VisibilityDirector.cs`, `T-CULL01_STAGE6_REPORT.md` |
 | 7 | ✅ PASS — L1 46–48 / L2 2; visual OK | Stage 6 | честный L0 **2 341**; HLOD L1 46–48 DC, L2 2 DC; rebake deterministic; F8/F9 PASS | агент T-CULL01/H7 | `U_stage7_*`, `Generated/HLOD`, `T-CULL01_STAGE7_REPORT.md` |
-| 8 | 🟡 next — L0 doors under GRD | Stage 7 | двери L0 снова режутся по дистанции; P1 ≤2 341; visual/FO/F8/F9 | агент T-CULL01/H8 | door policy + замер |
+| 8 | ✅ PASS — P1 **2 229** (−112), двери >150 м = 0; visual за пользователем | Stage 7 | двери L0 режутся по дистанции через `forceRenderingOff`; L1 46 / L2 2 без ухудшения; F8/F9 PASS | агент T-CULL01/H8 | `V_stage8_*`, `VisibilityDirector`, `T-CULL01_STAGE8_REPORT.md` |
 
 Статусы обновлять здесь после каждого gate; коммит этапа — с префиксом `T-CULL01/<H>`.
 
@@ -621,19 +620,24 @@ Stage 6 — первый после Stage 4c.
   3.97 мс на телепорте (в полёте по одному блоку).
 - Отчёт: `T-CULL01_STAGE7_REPORT.md`, `U_stage7_*`, `Generated/HLOD/**`.
 
-## 9.1. Stage 8 — L0 door culling under GRD (следующий шаг)
+## 9.1. Stage 8 — L0 door culling under GRD (H8) — ✅ PASS
 
-**Brief:** [`T-CULL01_STAGE8_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_STAGE8_AGENT_BRIEF.md).
+**Отчёт:** [`T-CULL01_STAGE8_REPORT.md`](../../../dev/T-CULL01_STAGE8_REPORT.md); данные `V_stage8_2026-11-01.*`.
 
-Проблема: `layerCullDistances[10]=150` не работает под GRD (`InstanceCuller` смотрит только
-`cullingLayerMask`). Двери L0 на любой дистанции рисуются: ~25k инстансов / ~137 DC / ~1M тр.
-Нужно вернуть дистанционный culling дверей на L0 без изменения `DoorController`/коллайдеров:
-- вариант A: `VisibilityDirector`/`DoorVisibilityBudget` гасит группы дверей (`forceRenderingOff`)
-  дальше 150 м (владелец — один, без двойного toggle);
-- вариант B: opt-out дверей из GRD, чтобы `layerCullDistances` снова работал (сравнить DC);
-- вариант C: per-door distance policy в директоре.
-Gate: P1 **≤2 341** (лучше — ниже), двери/створки/коллайдеры целы, визуал без pop-in, F8/F9.
-После Stage 8 — финальная приёмка T-CULL01.
+Сделано вариантом **A**: `VisibilityDirector` гасит дверные рендереры дальше **150 м** (гистерезис 10 %,
+тик ~3 Гц) тем же единственным `forceRenderingOff`; двери без HLOD-блока (фермы) получили только
+дистанционную политику (block = -1). `DoorController`/коллайдеры/меши/`layerCullDistances` не тронуты.
+Вариант B нереализуем: в 6000.5 у `Renderer` нет per-renderer opt-out из GRD (только отключение GRD целиком).
+
+- **P1 2 229** DC против baseline 2 341 (−112, −4.8 %); `doorsDrawnBeyond150` = **0** (контроль 2 633);
+  `hybridInstances` 4 185 против 17 549; повтор 2 229 (0.0 %).
+- L1 **46** DC / L2 **2** DC — Stage 7 не ухудшен; ночь 2 155 / 465; после F8/F9 P1 2 229.
+- F8 PASS / F9 `PASS_rollback_restore`; 0 errors; 2 630 дверей / 5 493 рендерера / 2 630 коллайдеров целы;
+  open/close двери вживую 0 → 1.000 → 0.000.
+- Открыто: визуальная приёмка поп-ина 130–150 м; F9-флакиность прогона 1 (ввод, не куллинг); тик
+  директора 0.90 мс (было 0.48) — при добавлении политик разнести на 2 кадра.
+
+Дальше — **финальная приёмка T-CULL01** (закрытие тикета).
 
 ---
 
@@ -650,7 +654,7 @@ Gate: P1 **≤2 341** (лучше — ниже), двери/створки/ко�
 | Stage 5 | ⛔ closed (B2 increases) | — | не выполнять |
 | Stage 6 | **done** — PASS | VisibilityDirector: culling ≤2 мс; foundation | агент T-CULL01/H6 | `VisibilityDirector` |
 | Stage 7 | **done** — PASS | HLOD/L1 + L2/PVS: L1 46–48, L2 2 | агент T-CULL01/H7 | HLOD/impostor |
-| Stage 8 | **next** — L0 doors under GRD | вернуть дистанционный culling дверей; P1 ≤2 341 | агент T-CULL01/H8 | door policy + замер |
+| Stage 8 | **done** — PASS | L0 doors under GRD: P1 2 229 (−112), двери >150 м = 0; L1 46 / L2 2 | агент T-CULL01/H8 | `VisibilityDirector` door policy + `V_stage8_*` |
 
 **Протокол передачи:** перед этапом открыть `T-CULL01`, взять соответствующий раздел `H*`,
 приложить актуальный baseline/ветку и попросить агента:

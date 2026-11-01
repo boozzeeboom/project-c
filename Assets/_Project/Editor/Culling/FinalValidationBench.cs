@@ -67,6 +67,16 @@ namespace ProjectC.EditorTools
         private const string Profile7Key = SessionKey + ".stage7";
         private const float FarBench120 = 120000f;
         private static bool _stage7;
+
+        // T-CULL01 / Stage 8 (H8): та же методика и тот же кодовый путь, что у Stage 7 (_stage7 = true),
+        // но A/B — по дистанционной политике дверей VisibilityDirector.DoorCullEnabled, а в кадре
+        // считаются двери нарисованные / погашенные / нарисованные дальше 150 м.
+        // Меню: Project C → Culling → Stage 8 Doors → Run Bench.
+        private const string Stage8RunMenu = "Project C/Culling/Stage 8 Doors/Run Bench";
+        private const string Stage8AbortMenu = "Project C/Culling/Stage 8 Doors/Abort Bench";
+        private const string Profile8Key = SessionKey + ".stage8";
+        private const float DoorGateDistance = 150f;
+        private static bool _stage8;
         private static bool _postPhase;
         private static bool Profiled { get { return _stage6 || _stage7; } }
 
@@ -112,15 +122,49 @@ namespace ProjectC.EditorTools
             public bool post;
             public bool fogOff;
             public float elevation = 2f;
+            // Stage 8
+            public bool doorCullOn = true;
         }
 
-        private static BenchCase Dist(string id, float d, bool hlod, bool cityOff = false, float hour = 12f, bool shot = false, bool post = false)
+        private static BenchCase Dist(string id, float d, bool hlod, bool cityOff = false, float hour = 12f, bool shot = false, bool post = false, bool doorCull = true)
         {
             return new BenchCase
             {
                 id = id, distance = d, hour = hour, shipsVisible = false, budgetOn = true, directorOn = true,
-                hlodOn = hlod, cityOff = cityOff, far = d >= 30000f ? FarBench120 : 0f, shot = shot, post = post
+                hlodOn = hlod, cityOff = cityOff, far = d >= 30000f ? FarBench120 : 0f, shot = shot, post = post,
+                doorCullOn = doorCull
             };
+        }
+
+        private static List<BenchCase> BuildStage8Cases(Vector3 p1)
+        {
+            var list = new List<BenchCase>
+            {
+                // L0 в реальной игре: политика on / off (A/B того же кадра).
+                new BenchCase { id = "P1_doors_on", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true, shot = true },
+                new BenchCase { id = "P1_doors_on_repeat", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true },
+                new BenchCase { id = "P1_doors_off", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true, doorCullOn = false, shot = true },
+                new BenchCase { id = "P1_real_doors_on", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = true, budgetOn = true },
+            };
+            // Лестница дистанций: L0 (0.5 км) и границы L1/L2 — проверить, что Stage 7 не сломан.
+            list.Add(Dist("D0.5k_doors_on", 500f, true));
+            list.Add(Dist("D0.5k_doors_off", 500f, true, doorCull: false));
+            list.Add(Dist("D3k_doors_on", 3000f, true));
+            list.Add(Dist("D5k_doors_on", 5000f, true, shot: true));
+            list.Add(Dist("D5k_doors_off", 5000f, true, doorCull: false));
+            list.Add(Dist("D10k_doors_on", 10000f, true));
+            list.Add(Dist("D10k_doors_on_repeat", 10000f, true));
+            list.Add(Dist("D20k_doors_on", 20000f, true));
+            // Атрибуция города (DC − DC(city_off)) для гейтов L1 46–48 / L2 2 — как в Stage 7.
+            list.Add(Dist("D0.5k_city_off", 500f, true, cityOff: true));
+            list.Add(Dist("D10k_city_off", 10000f, true, cityOff: true));
+            list.Add(Dist("D20k_city_off", 20000f, true, cityOff: true));
+            list.Add(Dist("N0.5k_doors_on", 500f, true, hour: 0f, shot: true));
+            list.Add(Dist("N5k_doors_on", 5000f, true, hour: 0f, shot: true));
+            // После F8/F9: двери едут с миром, политика не залипает на старой позиции.
+            list.Add(new BenchCase { id = "P1_doors_on_postFO", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true, post = true });
+            list.Add(Dist("D10k_doors_on_postFO", 10000f, true, post: true));
+            return list;
         }
 
         private static List<BenchCase> BuildStage7Cases(Vector3 p1)
@@ -174,6 +218,7 @@ namespace ProjectC.EditorTools
             var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
             var c2 = new Vector3(-382.90f, -58.23f, -126.20f);
             var c3 = new Vector3(-416.00f, -27.94f, -36.00f);
+            if (_stage8) return BuildStage8Cases(p1);
             if (_stage7) return BuildStage7Cases(p1);
             if (_stage6)
             {
@@ -257,6 +302,11 @@ namespace ProjectC.EditorTools
         private static bool _censusDone;
         private static int _censusInFrustum;
         private static int _censusDoorsInFrustum;
+        private static int _censusDoorsTotal;
+        private static int _censusDoorsForcedOffTotal;
+        private static int _censusDoorsForcedOffInFrustum;
+        private static int _censusDoorsDrawnInFrustum;
+        private static int _censusDoorsDrawnBeyond;
         private static int _censusEnabledTotal;
         private static int _censusCity;
         private static int _censusShadowsOff;
@@ -322,6 +372,7 @@ namespace ProjectC.EditorTools
         {
             _stage6 = false;
             _stage7 = false;
+            _stage8 = false;
             StartRun();
         }
 
@@ -330,6 +381,7 @@ namespace ProjectC.EditorTools
         {
             _stage6 = true;
             _stage7 = false;
+            _stage8 = false;
             StartRun();
         }
 
@@ -338,7 +390,23 @@ namespace ProjectC.EditorTools
         {
             _stage6 = false;
             _stage7 = true;
+            _stage8 = false;
             StartRun();
+        }
+
+        [MenuItem(Stage8RunMenu)]
+        public static void RunStage8()
+        {
+            _stage6 = false;
+            _stage7 = true;   // тот же кодовый путь (HLOD + гейт меню + F8/F9)
+            _stage8 = true;
+            StartRun();
+        }
+
+        [MenuItem(Stage8AbortMenu)]
+        public static void AbortStage8()
+        {
+            Finish("ABORTED_BY_USER", false);
         }
 
         [MenuItem(Stage7AbortMenu)]
@@ -353,7 +421,7 @@ namespace ProjectC.EditorTools
             Finish("ABORTED_BY_USER", false);
         }
 
-        private static string FilePrefix { get { return _stage7 ? "U_stage7_" : _stage6 ? "S_stage6_" : "R_stage4c_"; } }
+        private static string FilePrefix { get { return _stage8 ? "V_stage8_" : _stage7 ? "U_stage7_" : _stage6 ? "S_stage6_" : "R_stage4c_"; } }
 
         private static void StartRun()
         {
@@ -416,9 +484,10 @@ namespace ProjectC.EditorTools
             SessionState.SetBool(SessionKey, true);
             SessionState.SetBool(ProfileKey, _stage6);
             SessionState.SetBool(Profile7Key, _stage7);
+            SessionState.SetBool(Profile8Key, _stage8);
             SessionState.SetInt(SessionKey + ".reloads", 0);
 
-            Append("NOTE;bench=FinalValidationBench(" + (_stage7 ? "stage7_hlod" : _stage6 ? "stage6_director" : "stage4c") + ");unity=" + Application.unityVersion +
+            Append("NOTE;bench=FinalValidationBench(" + (_stage8 ? "stage8_doors" : _stage7 ? "stage7_hlod" : _stage6 ? "stage6_director" : "stage4c") + ");unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart);
             Append(ReadRenderConfigLine());
@@ -1012,6 +1081,7 @@ namespace ProjectC.EditorTools
                 s += ";hlod=" + d.HlodEnabled + ";hlodBlocks=" + d.HlodBlockCount + ";impostor=" + d.HlodImpostorPresent +
                      ";cityLevel=" + d.CityLevel + ";levels=" + d.HlodLevelCounts.Replace(',', '/') +
                      ";hlodHidden=" + d.HlodHiddenCount + ";hlodDoorsHidden=" + d.HlodDoorsHidden + "/" + d.HlodDoorCount +
+                     ";doorCull=" + d.DoorCullEnabled + ";doorTotal=" + d.DoorCullTotal + ";doorHiddenDist=" + d.DoorCullHiddenByDistance +
                      ";night=" + d.NightFactor.ToString("F2", CultureInfo.InvariantCulture) +
                      ";fog=" + RenderSettings.fog +
                      ";hlodRoot=" + rootState;
@@ -1042,6 +1112,13 @@ namespace ProjectC.EditorTools
         {
             var d = FindDirector();
             if (d != null) d.HlodEnabled = on;
+        }
+
+        /// <summary>A/B дистанционной политики дверей (Stage 8): тот же директор, только флаг политики.</summary>
+        private static void SetDoorCull(bool on)
+        {
+            var d = FindDirector();
+            if (d != null) d.DoorCullEnabled = on;
         }
 
         /// <summary>Атрибуция города: runtime renderer.enabled у PRIMUM / PRIMUM_DOORS / PRIMUM_HLOD (сцена не пишется).</summary>
@@ -1090,7 +1167,7 @@ namespace ProjectC.EditorTools
         {
             if (!_stage7 || !c.shot) return;
             string dir = Path.GetDirectoryName(_outRawPath);
-            string path = Path.Combine(dir, "U_stage7_shot_" + c.id + ".png");
+            string path = Path.Combine(dir, FilePrefix + "shot_" + c.id + ".png");
             try
             {
                 ScreenCapture.CaptureScreenshot(path);
@@ -1279,6 +1356,7 @@ namespace ProjectC.EditorTools
                 SetCityVisible(true);
                 if (c.cityOff) SetCityVisible(false);
                 if (_cam != null) _cam.farClipPlane = c.far > 0f ? c.far : BenchFar;
+                if (_stage8) SetDoorCull(c.doorCullOn);
             }
             _cullMsFrames.Clear();
             _dirMsFrames.Clear();
@@ -1388,6 +1466,11 @@ namespace ProjectC.EditorTools
         {
             _censusInFrustum = 0;
             _censusDoorsInFrustum = 0;
+            _censusDoorsTotal = 0;
+            _censusDoorsForcedOffTotal = 0;
+            _censusDoorsForcedOffInFrustum = 0;
+            _censusDoorsDrawnInFrustum = 0;
+            _censusDoorsDrawnBeyond = 0;
             _censusEnabledTotal = 0;
             _censusCity = 0;
             _censusShadowsOff = 0;
@@ -1395,15 +1478,36 @@ namespace ProjectC.EditorTools
             if (_cam == null || _allRenderers == null) return;
 
             GeometryUtility.CalculateFrustumPlanes(_cam, _planes);
+            float doorGateSqr = DoorGateDistance * DoorGateDistance;
 
             for (int i = 0; i < _allRenderers.Length; i++)
             {
                 var r = _allRenderers[i];
                 if (r == null || !r.enabled) continue;
                 _censusEnabledTotal++;
+
+                bool isDoor = r.gameObject.layer == DoorLayer;
+                if (isDoor)
+                {
+                    _censusDoorsTotal++;
+                    if (r.forceRenderingOff) _censusDoorsForcedOffTotal++;
+                }
+
                 if (!GeometryUtility.TestPlanesAABB(_planes, r.bounds)) continue;
                 _censusInFrustum++;
-                if (r.gameObject.layer == DoorLayer) _censusDoorsInFrustum++;
+
+                if (isDoor)
+                {
+                    _censusDoorsInFrustum++;
+                    // forceRenderingOff снимает инстанс и с GRD, и с обычного пути — «нарисовано» только без него.
+                    if (r.forceRenderingOff) _censusDoorsForcedOffInFrustum++;
+                    else
+                    {
+                        _censusDoorsDrawnInFrustum++;
+                        if ((r.bounds.center - _targetPos).sqrMagnitude > doorGateSqr) _censusDoorsDrawnBeyond++;
+                    }
+                }
+
                 if (!IsShipRenderer(r)) _censusCity++;
             }
 
@@ -1455,6 +1559,10 @@ namespace ProjectC.EditorTools
             sb.Append(";inFrustum=").Append(_censusInFrustum);
             sb.Append(";cityInFrustum=").Append(_censusCity);
             sb.Append(";doorsInFrustum=").Append(_censusDoorsInFrustum);
+            sb.Append(";doorsTotal=").Append(_censusDoorsTotal).Append(";doorsForcedOff=").Append(_censusDoorsForcedOffTotal)
+              .Append(";doorsDrawn=").Append(_censusDoorsDrawnInFrustum)
+              .Append(";doorsDrawnBeyond150=").Append(_censusDoorsDrawnBeyond)
+              .Append(";doorsForcedOffInFrustum=").Append(_censusDoorsForcedOffInFrustum);
             sb.Append(";rawDc=").Append(string.Join("|", _dc.ConvertAll(v => v.ToString()).ToArray()));
             sb.Append(";rawShadowCasters=").Append(string.Join("|", _sc.ConvertAll(v => v.ToString()).ToArray()));
             if (_stage6 || _stage7)
@@ -1489,7 +1597,8 @@ namespace ProjectC.EditorTools
             if (writeHeader)
                 sb.AppendLine("run,date,case,ships,budget,budgetEntries,shadowsOff,dc,spc,tris,shadowCasters,hybridDC,hybridInstances,srpBatcherDC,ms,fps,enabledRenderers,inFrustum,cityInFrustum,doorsInFrustum,worldpos" +
                               (_stage6 ? ",director,dirGroups,dirMembers,dirCulled,dirCameras,cullMsAvg,cullMsMax,dirMsFrameAvg,dirMsFrameMax,dirTickMaxMs" : "") +
-                              (_stage7 ? ",hlod,cityOff,distance_m,far,hour,cityLevel,levels,hlodHidden,dirCulled,night,cullMsAvg,dirMsFrameAvg,dirTickMaxMs" : ""));
+                              (_stage7 ? ",hlod,cityOff,distance_m,far,hour,cityLevel,levels,hlodHidden,dirCulled,night,cullMsAvg,dirMsFrameAvg,dirTickMaxMs" : "") +
+                              (_stage8 ? ",doorCull,doorsTotal,doorsDrawn,doorsDrawnBeyond150,doorsForcedOff,doorHiddenDist" : ""));
             sb.Append(_runTag).Append(',')
               .Append(DateTag).Append(',')
               .Append(c.id).Append(',')
@@ -1535,6 +1644,16 @@ namespace ProjectC.EditorTools
                   .Append(',').Append(Avg(_dirMsFrames).ToString("F4", CultureInfo.InvariantCulture))
                   .Append(',').Append(d != null ? d.MaxTickMs.ToString("F4", CultureInfo.InvariantCulture) : "-1");
             }
+            if (_stage8)
+            {
+                var d = FindDirector();
+                sb.Append(',').Append(c.doorCullOn ? "on" : "off")
+                  .Append(',').Append(_censusDoorsTotal)
+                  .Append(',').Append(_censusDoorsDrawnInFrustum)
+                  .Append(',').Append(_censusDoorsDrawnBeyond)
+                  .Append(',').Append(_censusDoorsForcedOffTotal)
+                  .Append(',').Append(d != null ? d.DoorCullHiddenByDistance : -1);
+            }
             sb.AppendLine();
             try { File.AppendAllText(_outCsvPath, sb.ToString(), Encoding.UTF8); }
             catch (Exception e) { Debug.LogWarning("[FinalValidation] CSV: " + e.Message); }
@@ -1544,9 +1663,10 @@ namespace ProjectC.EditorTools
 
         private static void BeginRebase()
         {
-            // FO-тест выполняется в состоянии реальной игры: корабли видимы, бюджет включён.
+            // FO-тест выполняется в состоянии реальной игры: корабли видимы, бюджет включён, политика дверей — on.
             SetShipsVisible(true);
             SetBudgetEnabled(true);
+            if (_stage8) SetDoorCull(true);
             SetDirectorEnabled(true);
             if (_stage7)
             {
@@ -2133,6 +2253,7 @@ namespace ProjectC.EditorTools
             var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             _stage6 = SessionState.GetBool(ProfileKey, false);
             _stage7 = SessionState.GetBool(Profile7Key, false);
+            _stage8 = SessionState.GetBool(Profile8Key, false);
             _postPhase = false;
             _cases = BuildCases();
             _outRawPath = Path.Combine(projectRoot, DataDir, FilePrefix + DateTag + "_raw.txt");

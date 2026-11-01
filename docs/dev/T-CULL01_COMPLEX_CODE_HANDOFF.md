@@ -358,18 +358,32 @@ L1 (3–12 км) — 1 меш на блок/квартал; L2 (12–80 км) �
   rebake детерминирован (29 файлов побайтно), F8/F9 PASS, 0 errors.
 - Визуально принято пользователем; в отчёте отмечено, что бенч из-за атмосферы не доказывает
   силуэт 20–80 км — sign-off отдельный.
-- **Открыто (Stage 8):** GRD игнорирует `layerCullDistances`; L0-двери рисуются на любой дистанции
-  (~25k инстансов / ~137 DC / ~1M тр); для L1/L2 двери скрываются с блоком.
+- **Закрыто в Stage 8:** GRD игнорирует `layerCullDistances`, поэтому L0-двери рисовались на любой
+  дистанции (~25k инстансов / ~137 DC / ~1M тр); политика дистанционного скрытия дверей перенесена
+  в `VisibilityDirector` (см. §8.5).
 - **Stage 8 brief:** [`T-CULL01_STAGE8_AGENT_BRIEF.md`](T-CULL01_STAGE8_AGENT_BRIEF.md);
-  после Stage 8 — финальная приёмка T-CULL01.
+  Stage 8 — ✅ PASS, следующая работа — финальная приёмка T-CULL01.
 
 ---
 
-## 8.5. H8 — L0 door culling under GRD (Stage 8)
-- Вернуть дистанционный culling дверей на L0 (150 м) без изменения `DoorController`/коллайдеров.
-- Варианты: политика директора/бюджета, opt-out из GRD, гибрид; один владелец `forceRenderingOff`.
-- Gate: P1 ≤2 341, L1/L2 не хуже, двери open/close, F8/F9, visual.
-- Brief: `T-CULL01_STAGE8_AGENT_BRIEF.md`; commit `T-CULL01/H8`.
+## 8.5. H8 — L0 door culling under GRD (Stage 8) — ✅ PASS
+- Цель: вернуть дистанционный culling дверей на L0 (150 м) без изменения `DoorController`/коллайдеров.
+- **Факт:** выбран вариант A — политика в `VisibilityDirector` (`doorCullEnabled`, `doorCullDistance`
+  150 м, гистерезис 10 %), запись **только** `forceRenderingOff`; per-renderer opt-out из GRD в
+  `UnityEngine.Renderer` отсутствует (`unity_reflect`), поэтому вариант B (отключение GRD) отклонён.
+- `HlodDoor.block = -1` — дверь вне HLOD-блока (`Primum_farms_DOORS`, 270 рендереров), скрывается
+  только по дистанции; блочные двери по-прежнему скрываются вместе с блоком на L1/L2.
+  `HlodDoorCount` сохранён как block-bound подмножество (5 223), полный счётчик — `DoorCullTotal`.
+- **Gate:** P1 **2 229** ≤2 341 ✅ (Δ −112 DC, −0.54M тр, −13 364 hybrid instances, повтор 0.0 %);
+  дверей дальше 150 м в кадре **0** против **2 633** в контроле ✅; L1 **46 DC** ✅; L2 **2 DC** ✅;
+  F8/F9 PASS (run 2), 0 errors/exceptions/shader errors ✅; сцена не сохранялась.
+- Runtime-приёмка: <130 м — 913 видимых / 0 скрытых, >165 м — 4 006 скрытых / 0 видимых,
+  `Open()/Close()` работают, 2 630/2 630 `DoorController` с коллайдером и дочерним рендерером.
+  Стоимость директора 0.90 мс/тик (было 0.48), ~0.3 мс/кадр.
+- Отчёт: [`T-CULL01_STAGE8_REPORT.md`](T-CULL01_STAGE8_REPORT.md); данные
+  `10_CULLING_RESEARCH/08_DATA/V_stage8_2026-11-01.csv`. Commit `T-CULL01/H8`.
+- **Открыто:** визуальный sign-off pop-in в полосе 130–150 м (день/ночь, улица и полёт) — за
+  пользователем; нестабильность F9 (run 1) отнесена к отдельному input/F9-тикету.
 
 ---
 

@@ -9,7 +9,8 @@
 **L5/T-LIGHT20 — PASS** (A/B по 8 осям от базы L4; финальный конфиг **совпал с L4**, дефолты в коде не менялись; `coneTurnSetChanged` 111/111, `intensityZeroActive=0`, F8/F9 PASS).
 **L6/T-LIGHT21 — PASS по fade-in** (`t90` 0.107–0.132 с, скачок 21–24 % против 100 %, ALIC 0.035–0.117 мс, DC без изменений; fade-out отклонён по гейту удержаний, `fadeOutSeconds=0`).
 **Световой трек L1–L6 закрыт и принят пользователем** (визуальный sign-off 2026-11-01: «визуально всё ок»).
-Следующий — **финальная приёмка T-CULL01** ([brief](../dev/T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md)).
+Следующий — **финальная приёмка T-CULL01** ([brief](../dev/T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md)) —
+**выполнена 2026-11-01: PASS, T-CULL01 = CLOSED** ([отчёт](../dev/T-CULL01_FINAL_ACCEPTANCE_REPORT.md), §4).
 **Важно:** T-LIGHT24/25 **удалены**, L7/T-LIGHT22–23 **отложены** (реальной второй камеры нет; emissive-ветка — отдельная тема).
 
 ---
@@ -301,9 +302,16 @@ fade-in 0.15 с (fade-out 0), грейс `dayGate` 0.4 с, владение: `en
 
 ## 4. Следующий шаг
 
-**Финальная приёмка T-CULL01** — световой трек закрыт (L1–L6 PASS, L7 отложен), поэтому очередь переходит
-к закрытию тикета: обычный запуск игры, P1 2 229 ±5 %, L1 46 / L2 2, двери >150 м = 0, GRD/HLOD на месте,
-F8/F9, 0 errors, сцена чистая, runbook и закрытие T-CULL01.
-Brief: [`T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md)
-(актуализирован под состояние после света: свет-код не откатывать, DC не менялся, сцену не пересохранять).
+**Финальная приёмка T-CULL01 — выполнена 2026-11-01, PASS; T-CULL01 = CLOSED.**
+Обычный запуск игры: P1 **2 235** (2 229 ±5 %, повтор 0.0 %), двери >150 м = **0**, L1 **46** / L2 **2**,
+`hybridDC` 2 129, F8/F9 PASS, 0 errors; свет-инварианты `ThirdPersonCamera_0`/`camera`,
+`intensityZeroActive=0` днём, `activeOUT=43` вечером, `HeldForFade=0`, `GateGraceHeld=0`, fade-in 0.15 с,
+`dc` не изменился. Отчёт и runbook —
+[`T-CULL01_FINAL_ACCEPTANCE_REPORT.md`](../dev/T-CULL01_FINAL_ACCEPTANCE_REPORT.md).
+
+> **Гигиена стенда (из приёмки):** после световых бенчей перезагружать сцену перед приёмкой.
+> `ApplyTuneConfig`/`ApplyFadeConfig` пишут поля компонента в Play Mode, вход в Play Mode идёт без
+> перезагрузки сцены, поэтому в живых объектах редактора остаются остаточные A/B-значения
+> (`preDeg 8°`, `fadeOut 0.30`), которых нет ни в YAML, ни в дефолтах кода (5° / 0). На DC/двери/HLOD
+> это не влияет, но новая сессия редактора даёт принятые значения.
 Отчёты света: [`T-LIGHT21_REPORT.md`](T-LIGHT21_REPORT.md) · [`T-LIGHT20_REPORT.md`](T-LIGHT20_REPORT.md) · [`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md) · [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

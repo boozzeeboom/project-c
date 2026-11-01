@@ -6,8 +6,11 @@
 - `C:\Projects\ProjectC_client\docs\world\primum_city\10_CULLING_RESEARCH\09_BEAM_COMPARISON_AND_DECISIONS.md`
 - `C:\Projects\ProjectC_client\docs\world\primum_city\10_CULLING_RESEARCH\10_EXECUTION_PLAN.md`
 
-**Статус:** ticket ready; код не начат. **Владелец:** Lead. **Исполнитель сложных пакетов:** отдельный агент,
-по одному этапу (правило Stage gate).
+**Статус:** ✅ **CLOSED (2026-11-01)** — все пакеты H1–H8 закрыты, финальная приёмка PASS.
+**Владелец:** Lead. **Исполнитель сложных пакетов:** отдельный агент, по одному этапу (правило Stage gate).
+**Итог:** L0 **2 235** DC (2 229 ±5 %) — двери >150 м = 0, L1 **46** / L2 **2**, `hybridDC` 2 129,
+F8/F9 PASS, 0 errors; отчёт и runbook —
+[`T-CULL01_FINAL_ACCEPTANCE_REPORT.md`](T-CULL01_FINAL_ACCEPTANCE_REPORT.md).
 **Смысл тикета:** здесь собраны **только сложные/рискованные части кода** с абсолютными путями и
 приёмочными критериями. Простые правки (слой дверей, настройки, baseline) в тикет не входят — они
 делаются маленькими коммитами по `10_EXECUTION_PLAN.md`.
@@ -384,8 +387,14 @@ L1 (3–12 км) — 1 меш на блок/квартал; L2 (12–80 км) �
   `10_CULLING_RESEARCH/08_DATA/V_stage8_2026-11-01.csv`. Commit `T-CULL01/H8`.
 - **Открыто:** визуальный sign-off pop-in в полосе 130–150 м (день/ночь, улица и полёт) — за
   пользователем; нестабильность F9 (run 1) отнесена к отдельному input/F9-тикету.
-- **Финальная приёмка:** [`T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md`](T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md)
+- **Финальная приёмка:** [`T-CULL01_FINAL_ACCEPTANCE_REPORT.md`](T-CULL01_FINAL_ACCEPTANCE_REPORT.md)
   — обычный запуск, defaults/bootstrap, runbook, закрытие T-CULL01.
+- **CLOSED 2026-11-01:** приёмка PASS — P1 **2 235** (2 229 ±5 %, повтор 0.0 %), двери >150 м = **0**,
+  < 130 м — 748/748 видны, L1 **46** / L2 **2**, `hybridDC` 2 129 / `srpBatcherDC` 3, F8 PASS (256.000 =
+  predicted), F9 `PASS_rollback_restore` (2-е нажатие — input-flake), 0 errors; свет-инварианты
+  (`ThirdPersonCamera_0`/`camera`, `intensityZeroActive=0` днём, `activeOUT=43`, held/grace = 0, fade-in 0.15 с).
+  Вне тикета: F9-ввод, PVS (не нужен), двойное владение тенями ферм, световые остатки. Данные —
+  `10_CULLING_RESEARCH/08_DATA/V_final_2026-11-01.*`, проба — `Editor/Culling/T_CULL01AcceptanceProbe.cs`.
 
 ---
 

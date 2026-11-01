@@ -4,9 +4,12 @@
 **Статус:** Stage 0–8 закрыты. **Stage 6 PASS**; **Stage 7 PASS**: L1 **46–48 DC**, L2 **2 DC**,
 честный L0 **2 341 DC**, rebake детерминирован, F8/F9 PASS; визуально принято пользователем.
 **Stage 8 PASS (2026-11-01):** L0-двери снова режутся по дистанции под GRD → P1 **2 229** (−112),
-двери за 150 м не рисуются, L1 **46** / L2 **2** без ухудшения. **Следующий трек — свет**
-([`LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md)):
-L1/T-LIGHT16 baseline, затем cheap wins/cone/fade; **финальная приёмка T-CULL01 — после света**.
+двери за 150 м не рисуются, L1 **46** / L2 **2** без ухудшения. Световой трек L1–L6 закрыт и принят
+пользователем ([`LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md)).
+**Финальная приёмка (2026-11-01) — PASS, T-CULL01 = CLOSED:** обычный запуск игры даёт P1 **2 235**
+(2 229 ±5 %, повтор 0.0 %), двери >150 м = **0**, L1 **46** / L2 **2**, `hybridDC` 2 129,
+F8/F9 PASS, 0 errors; отчёт —
+[`T-CULL01_FINAL_ACCEPTANCE_REPORT.md`](../../../dev/T-CULL01_FINAL_ACCEPTANCE_REPORT.md).
 **Тикет сложного кода:** `T-CULL01` —
 [`docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md`](../../../dev/T-CULL01_COMPLEX_CODE_HANDOFF.md).
 **Правило:** сложные куски кода не делает Lead; они выносятся в `T-CULL01` и передаются отдельному
@@ -48,7 +51,7 @@ L1/T-LIGHT16 baseline, затем cheap wins/cone/fade; **финальная п�
 | 7 | ✅ PASS — L1 46–48 / L2 2; visual OK | Stage 6 | честный L0 **2 341**; HLOD L1 46–48 DC, L2 2 DC; rebake deterministic; F8/F9 PASS | агент T-CULL01/H7 | `U_stage7_*`, `Generated/HLOD`, `T-CULL01_STAGE7_REPORT.md` |
 | 8 | ✅ PASS — P1 **2 229** (−112), двери >150 м = 0; visual OK | Stage 7 | двери L0 режутся по дистанции через `forceRenderingOff`; L1 46 / L2 2 без ухудшения; F8/F9 PASS | агент T-CULL01/H8 | `V_stage8_*`, `VisibilityDirector`, `T-CULL01_STAGE8_REPORT.md` |
 | L | ✅ L1–L6 done (L7 отложен) — visual OK | Stage 8 + light research | T-LIGHT16/17/17b/18/19/20/21 PASS; ALIC 6.81→0.16 мс; веер + тюнинг (финал = L4); fade-in 0.15 с (fade-out отклонён); visual OK; следующий — финальная приёмка T-CULL01 | принят | [`LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md) |
-| F | 🟢 ready — свет L1–L6 закрыт (L7 отложен) | Light L1–L6 done | обычный запуск: P1 2 229 ±5 %, двери >150=0, L1 46/L2 2; runbook; закрытие T-CULL01 | агент T-CULL01/F | `T-CULL01_FINAL_ACCEPTANCE_REPORT.md` |
+| F | ✅ **CLOSED (2026-11-01)** — P1 2 235, двери >150 м = 0, L1 46 / L2 2; runbook записан | свет L1–L6 done | обычный запуск: P1 2 229 ±5 %, двери >150=0, L1 46/L2 2; runbook; закрытие T-CULL01 | агент T-CULL01/F | `T-CULL01_FINAL_ACCEPTANCE_REPORT.md`, `V_final_2026-11-01.*` |
 
 Статусы обновлять здесь после каждого gate; коммит этапа — с префиксом `T-CULL01/<H>`.
 
@@ -643,6 +646,40 @@ Stage 6 — первый после Stage 4c.
 
 Дальше — **финальная приёмка T-CULL01** (закрытие тикета). Brief:
 [`T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md).
+
+---
+
+## 9.2. Финальная приёмка — ✅ PASS, **T-CULL01 = CLOSED** (2026-11-01)
+
+**Отчёт:** [`T-CULL01_FINAL_ACCEPTANCE_REPORT.md`](../../../dev/T-CULL01_FINAL_ACCEPTANCE_REPORT.md);
+данные `08_DATA/V_final_2026-11-01.csv` / `_raw.txt` (Stage 8-бенч, 19/19), проба света/дверей
+`Assets/_Project/Editor/Culling/T_CULL01AcceptanceProbe.cs`.
+
+Обычный запуск игры (меню → «ОДИНОЧНАЯ ИГРА», гейт `pcmmMenuShown=False` + живой риг
+`ThirdPersonCamera_0`), два прогона:
+
+| Гейт | Ожидание | Измерено | Вердикт |
+|---|---|---:|---|
+| L0 P1 | 2 229 ±5 % | **2 235** / повтор 2 235 (Δ 0.0 %) | PASS |
+| Двери > 150 м в кадре | 0 | **0** (контроль 2 633); < 130 м — 748 нарисовано / 0 погашено | PASS |
+| Город L1 / L2 | 46 ±5 % / 2 | **46** (506−460) / **2** (441−439) | PASS |
+| GRD | `hybridDC` > 0, `srpBatcherDC` мал | 2 129 / 3 | PASS |
+| F8 / F9 | реальный ввод, restore=True | F8 с 1-го нажатия (256.000 = predicted); F9 `PASS_rollback_restore` (2-е нажатие) | PASS |
+| Ошибки / сцена | 0 / не сохранена | 0/0/0; `isDirty=False` | PASS |
+| Свет | камера-фокус, zeroActive=0 днём, activeOUT 40–46, held/grace = 0 | `ThirdPersonCamera_0`/`camera`; 0; **43**; 0/0; fade-in 0.15 с | PASS |
+
+**Финальные бюджеты (принято как базовые):** L0 **2 229–2 235** DC (≤2 341), L1 **46** (≤500),
+L2 **2** (≤10), двери >150 м — **0**, culling **0.72–0.93 мс** на L0/L1 (2.16 мс на 20 км — наблюдение),
+тик директора ≈0.90 мс. **Defaults auto-bootstrap:** GRD (mode 1 / occlusion 1 / `BrgStripping=2`),
+`CityShadowBudget` (200/180, 1 301 entry), `VisibilityDirector` (1 000 групп, двери 150 м, HLOD L1/L2),
+HLOD-манифест с 23 блоками + импостор. Слой дверей в префабах и `Ship_havyII_base.prefab` —
+вне git: инструменты `Door Layer → Apply` и `Ships → Repair Heavy Prefab` (runbook в отчёте §5).
+
+**Вынесено отдельно:** F9/input-flake (`no_rebase_plan`, 2 нажатия); PVS не нужен (L0 > 1k);
+pre-existing двойное владение тенями ферм; световые остатки (fade-out с лимитом удерживаемых,
+бюджет/окклюзия ADMIN, `range` INLIGHT 48.3 м, пространственный индекс `FindFocusCamera`, L7 отложен).
+Гигиена стенда: после световых бенчей перезагружать сцену — иначе в живых объектах остаются
+A/B-значения (`pre 8°`, `fadeOut 0.30`), которых нет ни в YAML, ни в дефолтах кода.
 
 ---
 

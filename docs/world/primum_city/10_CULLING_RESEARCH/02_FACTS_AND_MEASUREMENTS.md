@@ -4,9 +4,9 @@
 **Источники:** живая сцена (Unity MCP read-only), YAML/префабы (парсинг), исходники URP 17.5
 (`Library/PackageCache`), git, проектные документы. Все противоречия сведены в §11.
 
-> **Текущее состояние (01.11):** GRD + `CityShadowBudget` + `VisibilityDirector` + HLOD L1/L2.
-> **L0 P1 = 2 229 DC**; двери >150 м = 0; L1 46 DC, L2 2 DC; F8/F9 PASS. **Stage 8 PASS.**
-> Следующий шаг — финальная приёмка T-CULL01. Числа ниже — исторические.
+> **Текущее состояние (01.11, финальная приёмка):** GRD + `CityShadowBudget` + `VisibilityDirector` + HLOD L1/L2.
+> **L0 P1 = 2 229 DC** (приёмка в обычном запуске — **2 235**, повтор 2 235); двери >150 м = 0;
+> L1 46 DC, L2 2 DC; F8/F9 PASS. **Stage 8 PASS; T-CULL01 = CLOSED.** Числа ниже — исторические.
 
 > «Паспорт сцены»: числа, из которых считаются оценки в `03_MERGE_VS_INDEPENDENT.md`,
 > `04_ARCHITECTURE_OPTIONS.md`, `05_RECOMMENDED_ARCHITECTURE.md`.

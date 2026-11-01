@@ -1,13 +1,23 @@
 # T-CULL01 / Final Acceptance — brief для отдельного агента (закрытие тикета)
 
-**Дата:** 2026-11-01 · **Проект:** `C:\Projects\ProjectC_client` · **База:** `14fc1e93`
+**Дата:** 2026-11-01 · **Проект:** `C:\Projects\ProjectC_client` · **База:** `3454171f` (обновить на HEAD при запуске)
 **Scope:** **только финальная приёмка и закрытие T-CULL01.** Никакой новой оптимизации, Stage 6/7/8
 не переделывать, корабли/свет/B2 не трогать.
 **Play Mode:** нужен; только с разрешением пользователя. Сцену не сохранять, push не делать.
 
+> **Актуализация 2026-11-01 (после закрытия светового трека L1–L6).**
+> Световой трек (`T-LIGHT16…T-LIGHT21`) закрыт и принят пользователем: `PrimumLightPool` теперь
+> day/night-гейт + split OUT/IN + radius 100 + фокус-камера L3 + веер L4 (`halfH/halfV` из FOV,
+> `R_rear 28`, `score = d + 1.2·угол`) + fade в ALIC. Это меняет только **набор включённых**
+> источников и CPU, **DC не меняется** (веер: DC совпал во всех парах L4/L5), поэтому критерии
+> приёмки ниже остаются прежними. Не откатывать свет-код и не перезаписывать сцену; если свет
+> мешает замеру — только A/B-конфиг в памяти пула (`ApplyTuneConfig`/`ApplyConeConfig`), без правок сцены.
+
 **Прочитать:**
 - `docs/dev/T-CULL01_STAGE8_REPORT.md` (последний этап)
 - `docs/dev/T-CULL01_STAGE7_REPORT.md`
+- `docs/world/lights/LIGHT_CULLING_PLAN.md` §0–§3 (итоговое состояние света)
+- `docs/world/lights/T-LIGHT21_REPORT.md` (последний этап света, fade)
 - `docs/world/primum_city/10_CULLING_RESEARCH/10_EXECUTION_PLAN.md` §9.1–9.2
 - `docs/dev/T-CULL01_COMPLEX_CODE_HANDOFF.md` §8.5
 

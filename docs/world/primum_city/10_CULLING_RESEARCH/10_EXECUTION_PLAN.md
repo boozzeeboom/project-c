@@ -47,7 +47,7 @@ L1/T-LIGHT16 baseline, затем cheap wins/cone/fade; **финальная п�
 | 6 | ✅ PASS — foundation + visual OK | Stage 4c | P1 2 378/2 372 (2 388–2 394 без), real 2 362; culling ≈1.3–1.7 мс; F8/F9 PASS | агент T-CULL01/H6 | `S_stage6_*`, `VisibilityDirector.cs`, `T-CULL01_STAGE6_REPORT.md` |
 | 7 | ✅ PASS — L1 46–48 / L2 2; visual OK | Stage 6 | честный L0 **2 341**; HLOD L1 46–48 DC, L2 2 DC; rebake deterministic; F8/F9 PASS | агент T-CULL01/H7 | `U_stage7_*`, `Generated/HLOD`, `T-CULL01_STAGE7_REPORT.md` |
 | 8 | ✅ PASS — P1 **2 229** (−112), двери >150 м = 0; visual OK | Stage 7 | двери L0 режутся по дистанции через `forceRenderingOff`; L1 46 / L2 2 без ухудшения; F8/F9 PASS | агент T-CULL01/H8 | `V_stage8_*`, `VisibilityDirector`, `T-CULL01_STAGE8_REPORT.md` |
-| L | 🟡 L1–L4 done — next T-LIGHT20 | Stage 8 + light research | T-LIGHT16/17/17b/18/19 PASS; ALIC 6.81→0.16 мс; веер: за спиной 26–77→0–1, доля в кадре ×1.1…×5.5, DC без изменений; визуал OK; тюнинг — следующий | агент T-LIGHT20 | [`LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md) |
+| L | 🟡 L1–L5 done — next T-LIGHT21 | Stage 8 + light research | T-LIGHT16/17/17b/18/19/20 PASS; ALIC 6.81→0.16 мс; веер принят; тюнинг: финал = L4 (radius 100/cap 96), 111 кейсов, визуал OK; fade — следующий | агент T-LIGHT21 | [`LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md) |
 | F | ⏳ after light track | Light L1–L7 | обычный запуск: P1 2 229 ±5 %, двери >150=0, L1 46/L2 2; runbook; закрытие T-CULL01 | агент T-CULL01/F | `T-CULL01_FINAL_ACCEPTANCE_REPORT.md` |
 
 Статусы обновлять здесь после каждого gate; коммит этапа — с префиксом `T-CULL01/<H>`.
@@ -660,7 +660,7 @@ Stage 6 — первый после Stage 4c.
 | Stage 6 | **done** — PASS | VisibilityDirector: culling ≤2 мс; foundation | агент T-CULL01/H6 | `VisibilityDirector` |
 | Stage 7 | **done** — PASS | HLOD/L1 + L2/PVS: L1 46–48, L2 2 | агент T-CULL01/H7 | HLOD/impostor |
 | Stage 8 | **done** — PASS | L0 doors under GRD: P1 2 229 (−112), двери >150 м = 0; L1 46 / L2 2 | агент T-CULL01/H8 | `VisibilityDirector` door policy + `V_stage8_*` |
-| L | 🟡 L1–L4 done — next T-LIGHT20 | Stage 8 + light research | T-LIGHT16/17/17b/18/19 PASS; веер принят, визуал OK; тюнинг — следующий | агент T-LIGHT20 | [`LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md) |
+| L | 🟡 L1–L5 done — next T-LIGHT21 | Stage 8 + light research | T-LIGHT16/17/17b/18/19/20 PASS; веер + тюнинг приняты (финал = L4), визуал OK; fade — следующий | агент T-LIGHT21 | [`LIGHT_CULLING_PLAN.md`](file:///C:/Projects/ProjectC_client/docs/world/lights/LIGHT_CULLING_PLAN.md) |
 
 **Протокол передачи:** перед этапом открыть `T-CULL01`, взять соответствующий раздел `H*`,
 приложить актуальный baseline/ветку и попросить агента:

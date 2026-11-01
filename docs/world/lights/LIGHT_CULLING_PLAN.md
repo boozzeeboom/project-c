@@ -175,8 +175,18 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 Оговорки: «`activeInFrustum` ≥ 2× контроля» достигнуто только там, где в кадре есть куда расти
 (STREET ×2.8); на P1/ADMIN/FARM контроль уже упирался в потолок числа ламп в кадре — сравнивать нужно
 долю активных в кадре (см. выше). В интерьере ADMIN доля в кадре почти не изменилась (веер не решает
-окклюзию). `coneSource=fallback` в прогоне не встретился — фокус всегда `camera`. Визуальный sign-off
-(веер при беге/развороте, pop-in, лампы за спиной, интерьеры, вечер 17–20 ч) — за пользователем.
+окклюзию). `coneSource=fallback` в прогоне не встретился — фокус всегда `camera`.
+**Визуальный sign-off получен от пользователя 2026-11-01: «визуально всё ок»** (веер при развороте,
+лампы за спиной, интерьеры, вечер) — L4 принят полностью.
+
+### L5 — T-LIGHT20: тюнинг/A-B
+
+- Гистерезис, activeRadius 140/100/70, cap 96/128, range 48.3; GPU ms ≤+2; FPS без регресса.
+- Gate: выбранные значения + отчёт; откат конфигом.
+- Brief: [`T-LIGHT20_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT20_AGENT_BRIEF.md)
+  (A/B по одной оси от базы L4: radius 100/120/140, cap 96/128 только через GPU-гейт ≤+2 мс, hysteresis
+  0.10/0.20, margin 6/10°, pre 0/5/8°, rear 20/28/35, penalty 0.5/1.2/2.0; `range` 48.3 м — только
+  измерение, сцену/префабы не менять; финал фиксируется дефолтами в коде).
 
 ### L5 — T-LIGHT20: тюнинг/A-B
 
@@ -206,8 +216,10 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 
 ## 4. Следующий шаг
 
-**L5 / T-LIGHT20 — тюнинг:** принят веер (L4), поэтому следующий шаг — подбор `activeRadius` 140/100/70,
-`cap` 96/128, гистерезиса и `coneMarginDeg`/`conePreActivationDeg` по визуалу; после него L6/T-LIGHT21
-(fade в ALIC). Результаты L4:
-[`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md).
+**L5 / T-LIGHT20 — тюнинг:** принят веер (L4), поэтому следующий шаг — A/B по одной оси от базы L4
+(`activeRadius` 100/120/140, `cap` 96/128 через GPU-гейт ≤+2 мс, гистерезис, `coneMarginDeg`/
+`conePreActivationDeg`, `rearRadius`, `anglePenaltyPerDeg`), финал — дефолтами в коде; после него
+L6/T-LIGHT21 (fade в ALIC).
+Brief: [`T-LIGHT20_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT20_AGENT_BRIEF.md)
+(HEAD `9fc88aea`; Play Mode — с разрешения; `range` INLIGHT 48.3 м только измеряется, сцена не правится).
 Отчёты: [`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md) · [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

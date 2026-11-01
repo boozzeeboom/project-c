@@ -143,5 +143,6 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 
 **T-LIGHT17b — ALIC CPU** (обязателен): 5.4–6.1 мс/кадр на 2 238 источниках при 70–96 включённых; ограничить
 `Apply` включёнными/изменёнными группами и обновлять `intensity` при включении, не ломая flicker.
+Brief: [`T-LIGHT17B_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT17B_AGENT_BRIEF.md).
 Затем **L3/T-LIGHT18** (фокус/камера) и **L4/T-LIGHT19** (конус/веер).
 Отчёты: [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

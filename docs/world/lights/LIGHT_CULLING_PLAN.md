@@ -7,8 +7,10 @@
 **L3/T-LIGHT18 — PASS** (фокус-камера `ThirdPersonCamera_0` в игре 11/11, реакция 1–4 кадра вместо 5–10).
 **L4/T-LIGHT19 — PASS** (веер: разворот 180° меняет набор 6/6, `activeBehindOutsideRear` 26–77 → 0–1, доля активных в кадре ×1.1…×5.5, DC без изменений).
 **L5/T-LIGHT20 — PASS** (A/B по 8 осям от базы L4; финальный конфиг **совпал с L4**, дефолты в коде не менялись; `coneTurnSetChanged` 111/111, `intensityZeroActive=0`, F8/F9 PASS).
-Следующий — **L6/T-LIGHT21 (fade в ALIC)**.
-**Важно:** T-LIGHT24/25 **удалены**. Финал T-CULL01 — после закрытия светового трека.
+**L6/T-LIGHT21 — PASS по fade-in** (`t90` 0.107–0.132 с, скачок 21–24 % против 100 %, ALIC 0.035–0.117 мс, DC без изменений; fade-out отклонён по гейту удержаний, `fadeOutSeconds=0`).
+**Световой трек L1–L6 закрыт и принят пользователем** (визуальный sign-off 2026-11-01: «визуально всё ок»).
+Следующий — **финальная приёмка T-CULL01** ([brief](../dev/T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md)).
+**Важно:** T-LIGHT24/25 **удалены**, L7/T-LIGHT22–23 **отложены** (реальной второй камеры нет; emissive-ветка — отдельная тема).
 
 ---
 
@@ -250,33 +252,58 @@ F8/F9 шли под финальным конфигом (confirm-группа о
   0 errors/shader errors. Fade-out 0.30 с **отклонён как дефолт**: при массовом выходе ламп из набора
   удержание `Light.enabled` доходило до 75 источников (STREET), 73, 59, 30, 22 против гейта ≤16;
   механизм оставлен в коде и выключен (`fadeOutSeconds = 0`), гашение остаётся мгновенным.
+- **Визуальный sign-off получен от пользователя 2026-11-01: «визуально всё ок»** — плавное появление,
+  мгновенное гашение, flicker интерьеров и переходы часа приняты; L6 закрыт. Остаточный «щелчок» на
+  выключение зафиксирован как известное ограничение (не блокер).
 
 ### L7 — T-LIGHT22/23: multi-camera + day/night emissive (условно)
 
 - Union только при реальной второй камере; per-camera бюджет; fallback. Day/night emissive `PM_LAMP_GLOW_WARM` — отдельная ветка с knob/перепечкой HLOD ClassLamp.
 - T-LIGHT24/25 — **не делать** (Forward+/GRD уже; порталов/PVS нет).
+- **Решение 2026-11-01: отложено.** Реальной второй камеры в игре нет (`VisibilityDirector.WorldCameras`
+  даёт один риг; union нечего объединять), а day/night emissive без HDR/GI/probes требует отдельного
+  визуального ресерча и правки HLOD-импостера. Возвращаться только при появлении второй боевой камеры
+  или отдельного запроса на emissive.
 
 ---
 
-## 3. Приёмка трека
+## 3. Приёмка трека — итог
 
-- Реакция ≤0.15 с; свет в веере; активных ≤ cap; CPU пула ≤0.5 мс; ALIC не дороже baseline.
-- Нет «щелчков»; flicker/день-ночь; HDR-off артефакты не хуже.
-- F8/F9; L1/L2 HLOD, двери, корабли не сломаны; 0 errors; сцена не сохранена.
-- После L1–L6 — финальная приёмка T-CULL01.
+| Этап | Тикет | Итог | Ключевые числа |
+|---|---|---|---|
+| L1 | T-LIGHT16 | PASS | baseline: N=2 238, cap 96 связывает, ALIC 5.4–7.1 мс |
+| L2 | T-LIGHT17 | PASS | day/night-гейт 46→0 нулевых слотов; split OUT/IN (ADMIN OUT 0→27); radius 100 |
+| L2b | T-LIGHT17b | PASS | ALIC **6.81 → 0.16 мс/кадр** (−97.6 %), ~2 239 → ~4 записи/кадр |
+| L3 | T-LIGHT18 | PASS | фокус-камера 11/11, поисков 2–6 → 1, реакция 1–4 кадра |
+| L4 | T-LIGHT19 | PASS | веер: разворот меняет набор 6/6, «за спиной» 26–77 → 0–1, доля в кадре ×1.1…×5.5, DC без изменений |
+| L5 | T-LIGHT20 | PASS | 8 осей A/B, финал = L4 (radius 100 / cap 96 / hyst 0.10 / margin 6° / pre 5° / rear 28 / penalty 1.2), 111 кейсов |
+| L6 | T-LIGHT21 | PASS (fade-in) | `t90` 0.107–0.132 с, скачок 21–24 % против 100 %, ALIC 0.035–0.117 мс, fade-out отклонён |
+| L7 | T-LIGHT22/23 | отложен | вторая камера отсутствует; emissive — отдельная тема |
+
+**Итоговое состояние света (дефолты в коде, сцена не пересохранена):**
+`dayGate=on (eps 0.002)`, `split=on (outMin 40)`, `radius=100`, `maxActive=96`, `hysteresis=0.10`,
+`checkInterval=0.25`, фокус-камера с фильтрами и адаптивным триггером (>2 м / >3° / 0.1 с),
+веер `halfH/halfV` из FOV + `R_rear 28` + `score = d + 1.2·угол` + `margin 6°` / `pre 5°`,
+fade-in 0.15 с (fade-out 0), грейс `dayGate` 0.4 с, владение: `enabled` — пул, `intensity` — ALIC.
+
+**Остаточные темы (вне трека, отдельными тикетами):**
+- fade-out (нужен лимит одновременно удерживаемых источников, гейт ≤16; сейчас мгновенное гашение);
+- интерьерный бюджет/окклюзия ADMIN (96 из 224 кандидатов, `inFrame` 8 %; веер не решает окклюзию);
+- `range` INLIGHT 48.3 м (уменьшение освободило бы бюджет интерьера и тайлы, но правка сцены требует
+  одобрения и замера lights-per-tile);
+- пространственный индекс для `FindFocusCamera` (O(2 238), 2.4–3.3 мс за вызов);
+- input-flake F9 (`no_rebase_plan`, иногда 2 нажатия).
+
+**Дальше — финальная приёмка T-CULL01** (Stage 8 + свет уже приняты визуально; приёмка подтверждает
+воспроизводимость метрик в обычном запуске, а не переделывает этапы).
 
 ---
 
 ## 4. Следующий шаг
 
-**L6 / T-LIGHT21 закрыт по fade-in; fade-out отклонён** (отчёт [`T-LIGHT21_REPORT.md`](T-LIGHT21_REPORT.md)).
-Принятый дефолт: `fadeInSeconds = 0.15`, `fadeOutSeconds = 0`, грейс `dayGate` 0.4 с, конфиг пула равен L5
-(`radius 100`, `cap 96`, `hysteresis 0.10`, `margin 6°`, `pre 5°`, `rear 28 м`, `penalty 1.2`).
-Следующее: **визуальный sign-off L6** пользователем в Play Mode (плавное появление, мгновенное гашение,
-flicker интерьеров, переходы часа 12→18→20), затем финальная приёмка трека T-CULL01 вместе с
-визуальным sign-off Stage 8 по полосе 130–150 м. Отдельные тикеты: ограничение числа удерживаемых
-источников для возможного возврата fade-out; input-flake F9 (`no_rebase_plan`).
-Открытые темы, вынесенные из L5: интерьерный бюджет/окклюзия ADMIN (веер её не решает),
-предложение по `range` INLIGHT 48.3 м (нужно отдельное одобрение и замер lights-per-tile),
-пространственный индекс для `FindFocusCamera` (O(2 238), 2.4–3.3 мс за вызов).
-Отчёты: [`T-LIGHT21_REPORT.md`](T-LIGHT21_REPORT.md) · [`T-LIGHT20_REPORT.md`](T-LIGHT20_REPORT.md) · [`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md) · [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).
+**Финальная приёмка T-CULL01** — световой трек закрыт (L1–L6 PASS, L7 отложен), поэтому очередь переходит
+к закрытию тикета: обычный запуск игры, P1 2 229 ±5 %, L1 46 / L2 2, двери >150 м = 0, GRD/HLOD на месте,
+F8/F9, 0 errors, сцена чистая, runbook и закрытие T-CULL01.
+Brief: [`T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-CULL01_FINAL_ACCEPTANCE_AGENT_BRIEF.md)
+(актуализирован под состояние после света: свет-код не откатывать, DC не менялся, сцену не пересохранять).
+Отчёты света: [`T-LIGHT21_REPORT.md`](T-LIGHT21_REPORT.md) · [`T-LIGHT20_REPORT.md`](T-LIGHT20_REPORT.md) · [`T-LIGHT19_REPORT.md`](T-LIGHT19_REPORT.md) · [`T-LIGHT18_REPORT.md`](T-LIGHT18_REPORT.md) · [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

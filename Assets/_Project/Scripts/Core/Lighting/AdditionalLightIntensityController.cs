@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -271,6 +272,33 @@ namespace ProjectC.Core
         private readonly List<Light> _trackedLights = new List<Light>();
         private readonly Dictionary<Light, LightState> _states = new Dictionary<Light, LightState>();
 
+        // ---------------------------------------------------------------- T-LIGHT16
+        // Диагностика L1 светового трека: маркер Profiler и счётчики. Ни одна ветка решения
+        // (группа, кривая, сглаживание, мерцание, переопределения) не изменена — новые счётчики
+        // только читают то, что и так применяется в этом же вызове.
+        public const string ApplyMarkerName = "ALIC.ApplyIntensity";
+        private static readonly ProfilerMarker ApplyMarker = new ProfilerMarker(ApplyMarkerName);
+        private const float IntensityZeroEpsilon = 0.001f;
+
+        /// <summary>Сколько источников в списке отслеживаемых на последнем рескне.</summary>
+        public int TrackedLightCount => _trackedLights.Count;
+        /// <summary>Сколько источников получило запись intensity в последнем Apply.</summary>
+        public int AppliedLastCall { get; private set; }
+        /// <summary>Из них включённых (не погашенных пулом) — реально влияют на кадр.</summary>
+        public int ActiveAppliedLastCall { get; private set; }
+        /// <summary>Сколько отслеживаемых источников имеют intensity ≈ 0 после Apply.</summary>
+        public int ZeroIntensityTracked { get; private set; }
+        /// <summary>Длительность последнего Apply, мс (Stopwatch, только диагностика).</summary>
+        public double LastApplyMs { get; private set; }
+        public double MaxApplyMs { get; private set; }
+        /// <summary>Сколько раз ApplyIntensity вызван в текущем кадре.</summary>
+        public int ApplyCallsThisFrame { get; private set; }
+        public int ApplyCallCount { get; private set; }
+        /// <summary>Текущее время суток, которое применяет контроллер.</summary>
+        public float CurrentTimeOfDay => _currentTimeOfDay;
+        public bool FlickerAnyEnabled => _anyFlickerEnabled;
+        public int GroupCount => groups != null ? groups.Length : 0;
+
         private DayNightController _dayNightController;
         private float _currentTimeOfDay = 12f;
         private float _nextRescanTime;
@@ -324,6 +352,8 @@ namespace ProjectC.Core
 
         private void Update()
         {
+            ApplyCallsThisFrame = 0;
+
             if (Time.time >= _nextRescanTime)
             {
                 RefreshLights();
@@ -439,8 +469,25 @@ namespace ProjectC.Core
 
         private void ApplyIntensity(float timeOfDay, bool immediate)
         {
+            long startTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+            using (ApplyMarker.Auto())
+            {
+                ApplyIntensityCore(timeOfDay, immediate);
+            }
+            double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - startTicks) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            LastApplyMs = ms;
+            if (ms > MaxApplyMs) MaxApplyMs = ms;
+            ApplyCallsThisFrame++;
+            ApplyCallCount++;
+        }
+
+        private void ApplyIntensityCore(float timeOfDay, bool immediate)
+        {
             float blend = immediate ? 1f : 1f - Mathf.Exp(-transitionSpeed * Time.deltaTime);
             float now = Time.time;
+            int applied = 0;
+            int activeApplied = 0;
+            int zeroTracked = 0;
 
             foreach (Light light in _trackedLights)
             {
@@ -472,8 +519,16 @@ namespace ProjectC.Core
                 // проходить через Lerp, иначе сглаживание его съедает и лампы «не мерцают».
                 float flicker = EvaluateFlickerFactor(light, state, group, now);
                 light.intensity = state.smoothedIntensity * flicker;
+
+                // T-LIGHT16: счётчики (только чтение уже применённого значения).
+                applied++;
+                if (light.enabled) activeApplied++;
+                if (light.intensity <= IntensityZeroEpsilon) zeroTracked++;
             }
 
+            AppliedLastCall = applied;
+            ActiveAppliedLastCall = activeApplied;
+            ZeroIntensityTracked = zeroTracked;
             _hasAppliedTime = true;
         }
 

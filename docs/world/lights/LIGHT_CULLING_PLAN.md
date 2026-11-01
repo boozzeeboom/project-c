@@ -3,7 +3,8 @@
 **Дата:** 2026-11-01 · **Проект:** `C:\Projects\ProjectC_client` · **Unity:** 6000.5.2f1 · **URP:** 17.5.0
 **Основание:** `docs/world/lights/LIGHT_CULLING_TIMING_RESEARCH.md` + подотчёты A–E.
 **Статус:** ресерч проверен (3 независимых прохода); обязательные корректировки внесены.
-**L1/T-LIGHT16 — PASS** (baseline-инструментация, без изменения поведения). **L2/T-LIGHT17 — PASS** (day/night-гейт, резерв OUT/IN, радиус 100). Следующий — **T-LIGHT17b (ALIC CPU)**.
+**L1/T-LIGHT16 — PASS**; **L2/T-LIGHT17 — PASS**; **L2b/T-LIGHT17b — PASS** (ALIC 6.81 → 0.16 мс/кадр, −97.6 %).
+Следующий — **L3/T-LIGHT18 (фокус/камера)**.
 **Важно:** T-LIGHT24/25 **удалены**. Финал T-CULL01 — после закрытия светового трека.
 
 ---
@@ -101,6 +102,23 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 Владелец `Light.enabled` — пул, владелец `Light.intensity` — ALIC; пул `intensity` только читает.
 Карта владения и `ConfigLine` пишутся в raw-лог прогона. DC/GPU L2 не меняет — реальный CPU-рычаг это ALIC (T-LIGHT17b).
 
+### 1.2b. Результат L2b (T-LIGHT17b, 2026-11-01) — PASS
+
+Отчёт: [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md); CSV: `T-LIGHT17B_2026-11-01.csv` (26 кейсов A/B).
+
+| Рычаг | Числа |
+|---|---|
+| ALIC self-time | **6.81 → 0.16 мс/кадр** (медиана), **−97.6 %** (гейт ≤1.0 мс / −70 %) |
+| Записи/кадр | **≈2 239 → ≈4** в установившемся режиме (writes), iterated 2 238 → 96–136 |
+| Кадр целиком | медиана **−13.5 мс**, 12/13 пар в плюс (нативный cost записей вне stopwatch) |
+| DC | совпал во всех 13 парах; P1 12ч 2251/2251, 18ч 2262/2262 |
+| Day/night gate | сохранён: `activeOUT` 0 на 12ч, 40–46 на 18/20ч; `intensityZeroActive` 0 |
+| F8/F9 | PASS / PASS_rollback_restore; 0 errors; сцена не сохранялась |
+| Визуал | sign-off за пользователем: включение лампы без тёмного кадра; flicker интерьеров; скачок часа |
+
+Оговорки: `ZeroIntensityTracked` в active-режиме сменил семантику (диагностика, не поведение);
+`poolCheckMaxMs=8.730` — lifetime max, не per-case; контроль 6.28–7.29 мс vs L2 5.40–6.08 — разные сессии.
+
 ### L3 — T-LIGHT18: фокус/камера
 
 - Кэш камер, фильтры (Game, no RT, far≥50, слой мира; Atmosphere/парковочная MainCamera исключены), fallback.
@@ -141,8 +159,7 @@ N = 2 238, `maxActive` 96 без изменений, сцена не сохра�
 
 ## 4. Следующий шаг
 
-**T-LIGHT17b — ALIC CPU** (обязателен): 5.4–6.1 мс/кадр на 2 238 источниках при 70–96 включённых; ограничить
-`Apply` включёнными/изменёнными группами и обновлять `intensity` при включении, не ломая flicker.
-Brief: [`T-LIGHT17B_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT17B_AGENT_BRIEF.md).
-Затем **L3/T-LIGHT18** (фокус/камера) и **L4/T-LIGHT19** (конус/веер).
-Отчёты: [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).
+**L3 / T-LIGHT18 — фокус/камера:** кэш камер, фильтры, anchor камера, адаптивный триггер;
+после него L4/T-LIGHT19 (конус), L5/T-LIGHT20 (тюнинг), L6/T-LIGHT21 (fade в ALIC).
+Brief: [`T-LIGHT18_AGENT_BRIEF.md`](file:///C:/Projects/ProjectC_client/docs/dev/T-LIGHT18_AGENT_BRIEF.md).
+Отчёты: [`T-LIGHT17B_REPORT.md`](T-LIGHT17B_REPORT.md) · [`T-LIGHT17_REPORT.md`](T-LIGHT17_REPORT.md) · [`T-CULL01_LIGHT_BASELINE_REPORT.md`](T-CULL01_LIGHT_BASELINE_REPORT.md).

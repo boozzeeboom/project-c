@@ -1,0 +1,304 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4671c0dc195ddb547838d052ace1c27f, type: 3}
+  m_Name: PRIMUM_HLOD
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.PrimumHlodManifest
+  format: 1
+  bakeHash: 5253f70a811b4faa418c1df23c05db12bbdc4e39
+  bakeSettings: small=0.25;weld=0.001;raySpacing=0.75;maxRaysPerDir=250000;visMinTris=20000;rayDirs=41;lampPass=glass_non_occluding;windowsLit=55%;atlas=8x4@512x256ss2;rows=0/8/20/45;mips=6;nightScale=4;format=DXT5
+  l1Material: {fileID: 2100000, guid: 21aebf99652118a44bcb77f665ef81b1, type: 2}
+  blocks:
+  - name: PRIMUM_BASE_S0_CITY_P1_00H
+    mesh: {fileID: 4300000, guid: fa0abb1ad8b3ad94c801b31308900c9a, type: 2}
+    pivot: {x: 39593.082, y: 2490.6338, z: 39833.812}
+    size: {x: 1466.1953, y: 35.149414, z: 1059.2969}
+    layer: 8
+    sourceRenderers: 6
+    sourceTriangles: 18466
+    smallRemovedTriangles: 0
+    hiddenRemovedTriangles: 0
+    triangles: 18466
+    vertices: 32204
+    hash: f407d0e93e088d8568f72f32ebe0ff515d2ecea3
+  - name: PRIMUM_ADMIN_S0_ADM_P1_01H
+    mesh: {fileID: 4300000, guid: 424af6f581dbc0b4b8fbb039af785254, type: 2}
+    pivot: {x: 39346.055, y: 2523.1133, z: 40021.062}
+    size: {x: 79.1875, y: 46.117188, z: 142.20312}
+    layer: 8
+    sourceRenderers: 56
+    sourceTriangles: 631694
+    smallRemovedTriangles: 180460
+    hiddenRemovedTriangles: 441130
+    triangles: 10104
+    vertices: 19480
+    hash: 65cecdc2b2bbf6d213a66ef2776b60a2ea717484
+  - name: PRIMUM_HOUSES_S1_GLD_P1_25H
+    mesh: {fileID: 4300000, guid: c8381fdf9f758a34397450cc955aee89, type: 2}
+    pivot: {x: 39508.695, y: 2508.1387, z: 40143.84}
+    size: {x: 34.125, y: 17.430664, z: 147.97656}
+    layer: 8
+    sourceRenderers: 50
+    sourceTriangles: 205928
+    smallRemovedTriangles: 29576
+    hiddenRemovedTriangles: 165457
+    triangles: 10895
+    vertices: 23223
+    hash: 8f773eec3a702b11d4bb4c057ebc9c5dbd785e32
+  - name: PRIMUM_HOUSES_S3_TRD_P2_26H
+    mesh: {fileID: 4300000, guid: 5f52de7c67f4b7f4884163fc96c84160, type: 2}
+    pivot: {x: 39867.71, y: 2492.7654, z: 40021.062}
+    size: {x: 166.39062, y: 11.743652, z: 40.015625}
+    layer: 8
+    sourceRenderers: 35
+    sourceTriangles: 208662
+    smallRemovedTriangles: 18956
+    hiddenRemovedTriangles: 173091
+    triangles: 16615
+    vertices: 38501
+    hash: 1ec058e89b5554069b12a41c8fdb00be23e779fe
+  - name: PRIMUM_HOUSES_S3_TRD-ES_P1_37H
+    mesh: {fileID: 4300000, guid: 4bb43ce419001724a84f1ece01efa147, type: 2}
+    pivot: {x: 39853.344, y: 2492.3667, z: 39982.637}
+    size: {x: 133.6875, y: 10.946289, z: 35.007812}
+    layer: 8
+    sourceRenderers: 30
+    sourceTriangles: 106064
+    smallRemovedTriangles: 5300
+    hiddenRemovedTriangles: 92390
+    triangles: 8374
+    vertices: 16666
+    hash: f389baa36dfaf4f1b63663e67e4bf664e2067d92
+  - name: PRIMUM_HOUSES_S4_TRD-EN_P2_34H
+    mesh: {fileID: 4300000, guid: 85ddfc124b5e71d4d9c3d0f141a5ef87, type: 2}
+    pivot: {x: 40035.242, y: 2485.7114, z: 40062.324}
+    size: {x: 133.79688, y: 10.475586, z: 40.695312}
+    layer: 8
+    sourceRenderers: 28
+    sourceTriangles: 297068
+    smallRemovedTriangles: 40936
+    hiddenRemovedTriangles: 240558
+    triangles: 15574
+    vertices: 34660
+    hash: 4ab51605c472e997cdc0e56eaa939376e2e7cefb
+  - name: PRIMUM_HOUSES_S4_TRD-ES_P2_34H
+    mesh: {fileID: 4300000, guid: f31de86cad7606c46b3574953d9bf9dc, type: 2}
+    pivot: {x: 40035.242, y: 2485.7114, z: 39980.9}
+    size: {x: 133.14062, y: 10.475586, z: 38.484375}
+    layer: 8
+    sourceRenderers: 29
+    sourceTriangles: 188228
+    smallRemovedTriangles: 28920
+    hiddenRemovedTriangles: 149423
+    triangles: 9885
+    vertices: 20580
+    hash: ab7a2927dc3b7f44f9bcbeb18e54524ff93fc169
+  - name: PRIMUM_HOUSES_S5_NE_P1_20H
+    mesh: {fileID: 4300000, guid: 65909182bb8a4d34d8a40c4ed73f13ab, type: 2}
+    pivot: {x: 39593.383, y: 2504.9717, z: 40151.402}
+    size: {x: 156.85938, y: 10.475586, z: 144.63281}
+    layer: 8
+    sourceRenderers: 43
+    sourceTriangles: 175068
+    smallRemovedTriangles: 48016
+    hiddenRemovedTriangles: 121427
+    triangles: 5625
+    vertices: 12735
+    hash: e164d5805d4680e691644bad775e04dae3e898f3
+  - name: PRIMUM_HOUSES_S5_NE_P2_32H
+    mesh: {fileID: 4300000, guid: acc43b939dc7c4d4d82f27777d972bd4, type: 2}
+    pivot: {x: 39562.07, y: 2504.4634, z: 40075.35}
+    size: {x: 40.828125, y: 9.458984, z: 86.9375}
+    layer: 8
+    sourceRenderers: 32
+    sourceTriangles: 405132
+    smallRemovedTriangles: 28532
+    hiddenRemovedTriangles: 366695
+    triangles: 9905
+    vertices: 22163
+    hash: c0bb5ca469c085431df3a77b82b688dad9ca6e6d
+  - name: PRIMUM_HOUSES_S5_NE_P3_22H
+    mesh: {fileID: 4300000, guid: 9c3d482afc9f90d468569e8848e3fc52, type: 2}
+    pivot: {x: 39562.086, y: 2505.207, z: 40168.08}
+    size: {x: 40.703125, y: 10.946289, z: 88.421875}
+    layer: 8
+    sourceRenderers: 30
+    sourceTriangles: 199756
+    smallRemovedTriangles: 17680
+    hiddenRemovedTriangles: 175043
+    triangles: 7033
+    vertices: 14725
+    hash: 737e8bd7ccd173695efd06f62b9454cb1c9e7f44
+  - name: PRIMUM_HOUSES_S6_NQ_P1_29H
+    mesh: {fileID: 4300000, guid: d08f38fc2dc6c924e91986f88ba2b583, type: 2}
+    pivot: {x: 39545.594, y: 2505.041, z: 40277.855}
+    size: {x: 59.234375, y: 10.614258, z: 92.41406}
+    layer: 8
+    sourceRenderers: 48
+    sourceTriangles: 504496
+    smallRemovedTriangles: 79620
+    hiddenRemovedTriangles: 412299
+    triangles: 12577
+    vertices: 28316
+    hash: 0d0587141f93e687dedf6bc2f0bbd3104dea20e2
+  - name: PRIMUM_HOUSES_S7_BIG_P1_02H
+    mesh: {fileID: 4300000, guid: e53914cf61b792b4c8b3c06b51edcac3, type: 2}
+    pivot: {x: 39557.195, y: 2507.866, z: 39865.195}
+    size: {x: 28.828125, y: 16.26416, z: 154.65625}
+    layer: 8
+    sourceRenderers: 22
+    sourceTriangles: 27148
+    smallRemovedTriangles: 264
+    hiddenRemovedTriangles: 25032
+    triangles: 1852
+    vertices: 3824
+    hash: d099afe71c630f19c0c98ae4b1cc3b47d7a2edb9
+  - name: PRIMUM_HOUSES_S8_GW_P1_30H
+    mesh: {fileID: 4300000, guid: 02e41b06e60eeaf488b9b926bf2e98b5, type: 2}
+    pivot: {x: 39459.906, y: 2505.207, z: 40154.453}
+    size: {x: 63.40625, y: 10.946289, z: 95.4375}
+    layer: 8
+    sourceRenderers: 28
+    sourceTriangles: 199084
+    smallRemovedTriangles: 73848
+    hiddenRemovedTriangles: 111925
+    triangles: 13311
+    vertices: 29066
+    hash: 472f9d7b8df7f2165eaab09dda602076f226bf3d
+  - name: PRIMUM_HOUSES_S9_RES-ALLEY_P1_18H
+    mesh: {fileID: 4300000, guid: 0f964056fd17f9a40a76a3e49d22e8c4, type: 2}
+    pivot: {x: 39448.777, y: 2505.6562, z: 39898.547}
+    size: {x: 35.445312, y: 11.844727, z: 110.546875}
+    layer: 8
+    sourceRenderers: 32
+    sourceTriangles: 143092
+    smallRemovedTriangles: 31220
+    hiddenRemovedTriangles: 105219
+    triangles: 6653
+    vertices: 15394
+    hash: 1e8b279f537064f188881bc3e4c2ceccc1cd3a34
+  - name: PRIMUM_HOUSES_S9_RING_P1_22H
+    mesh: {fileID: 4300000, guid: 465b690c92f80eb42ba8570b156b56db, type: 2}
+    pivot: {x: 39467.477, y: 2504.8914, z: 40010.36}
+    size: {x: 139.57812, y: 10.314941, z: 134.1875}
+    layer: 8
+    sourceRenderers: 59
+    sourceTriangles: 302344
+    smallRemovedTriangles: 63264
+    hiddenRemovedTriangles: 225258
+    triangles: 13822
+    vertices: 29556
+    hash: 458e651c348f308a64d9087ac0e8de3ea0c98b21
+  - name: PRIMUM_HOUSES_S9_TRD-N_P1_28H
+    mesh: {fileID: 4300000, guid: b97ea67161e2de343b4b500794a4b482, type: 2}
+    pivot: {x: 39674.008, y: 2498.4126, z: 40069.594}
+    size: {x: 163.98438, y: 10.197266, z: 45.75}
+    layer: 8
+    sourceRenderers: 41
+    sourceTriangles: 159024
+    smallRemovedTriangles: 17364
+    hiddenRemovedTriangles: 129666
+    triangles: 11994
+    vertices: 25803
+    hash: afb1d210e8cd69721ce7a9d0cdfa3049dd14a8fa
+  - name: PRIMUM_HOUSES_S9_TRD-S_P1_16H
+    mesh: {fileID: 4300000, guid: e95008ff682195f4eacc85cdee5271a2, type: 2}
+    pivot: {x: 39674.01, y: 2498.4126, z: 39980.344}
+    size: {x: 163.99219, y: 10.197266, z: 27.96875}
+    layer: 8
+    sourceRenderers: 32
+    sourceTriangles: 103188
+    smallRemovedTriangles: 14148
+    hiddenRemovedTriangles: 81969
+    triangles: 7071
+    vertices: 14597
+    hash: 62b84269eeb85fc245428e5514df6e5730c89cd1
+  - name: PRIMUM_HOUSES_S9_TRD-S2_P1_45H
+    mesh: {fileID: 4300000, guid: 012e73c6fb06a844b84a00fac0177e3a, type: 2}
+    pivot: {x: 39658.5, y: 2502.7407, z: 39930.43}
+    size: {x: 229.17188, y: 20.24414, z: 156.92188}
+    layer: 8
+    sourceRenderers: 104
+    sourceTriangles: 251784
+    smallRemovedTriangles: 39056
+    hiddenRemovedTriangles: 193695
+    triangles: 19033
+    vertices: 42464
+    hash: f786ac2ac84ac11593a23933e17fdee881e4da4c
+  - name: PRIMUM_HOUSES_S2_TRD_P1_28H
+    mesh: {fileID: 4300000, guid: d027dc4301b966f40b6246c48d65fef9, type: 2}
+    pivot: {x: 39678.387, y: 2499.3325, z: 40021.06}
+    size: {x: 173.42969, y: 12.037109, z: 40.679688}
+    layer: 8
+    sourceRenderers: 41
+    sourceTriangles: 248660
+    smallRemovedTriangles: 40820
+    hiddenRemovedTriangles: 193195
+    triangles: 14645
+    vertices: 31273
+    hash: 2ac6163f2325e241ae3fe81ad4d7c38918f813ae
+  - name: PRIMUM_HOUSES_S4_TRD_P3_26H
+    mesh: {fileID: 4300000, guid: 33b679ffbe7a60f489962b16103dada3, type: 2}
+    pivot: {x: 40045.957, y: 2486.3855, z: 40021.062}
+    size: {x: 154.58594, y: 11.82373, z: 38.203125}
+    layer: 8
+    sourceRenderers: 32
+    sourceTriangles: 204060
+    smallRemovedTriangles: 45960
+    hiddenRemovedTriangles: 146562
+    triangles: 11538
+    vertices: 26371
+    hash: f41da63fb8b554ca41c6157fb18d491081f531f4
+  - name: PRIMUM_HOUSES_S3_TRD-EN_P1_37H
+    mesh: {fileID: 4300000, guid: d20112be6f7e3f148833602be2fcb9be, type: 2}
+    pivot: {x: 39853.344, y: 2491.067, z: 40061.65}
+    size: {x: 133.79688, y: 8.34668, z: 38.703125}
+    layer: 8
+    sourceRenderers: 23
+    sourceTriangles: 275256
+    smallRemovedTriangles: 30144
+    hiddenRemovedTriangles: 230353
+    triangles: 14759
+    vertices: 32946
+    hash: b90f1569264a6d8fb708387d7200b07c4c81ffdc
+  - name: PRIMUM_HOUSES_S7_SE_P1_46H
+    mesh: {fileID: 4300000, guid: 0f624dd739606e5469e5a9ecbd8744e9, type: 2}
+    pivot: {x: 39502.242, y: 2506.876, z: 39866.83}
+    size: {x: 88.09375, y: 14.28418, z: 150.32812}
+    layer: 8
+    sourceRenderers: 32
+    sourceTriangles: 382472
+    smallRemovedTriangles: 46156
+    hiddenRemovedTriangles: 317734
+    triangles: 18582
+    vertices: 38819
+    hash: b29f96099c21bc598c18bf2400a76216220300c0
+  - name: PRIMUM_HOUSES_S7_SE_P2_19H
+    mesh: {fileID: 4300000, guid: 0caa63da03f05d24cac5491a29d23785, type: 2}
+    pivot: {x: 39585.72, y: 2503.666, z: 39866.074}
+    size: {x: 83.84375, y: 20.704102, z: 121.99219}
+    layer: 8
+    sourceRenderers: 26
+    sourceTriangles: 170900
+    smallRemovedTriangles: 8044
+    hiddenRemovedTriangles: 154375
+    triangles: 8481
+    vertices: 18539
+    hash: e41a2c105cb08030d08438322d511be4541fc210
+  impostorValid: 1
+  impostorMesh: {fileID: 4300000, guid: 047caaefbf4dfc64799f1d7060d700ba, type: 2}
+  impostorMaterial: {fileID: 2100000, guid: 739bfcb7bc3ece446b1132c41b574f5e, type: 2}
+  cityCenter: {x: 39593.082, y: 2509.6155, z: 39833.812}
+  citySize: {x: 1466.1953, y: 73.11279, z: 1059.2969}
+  impostorHash: 2d0fb2088f0d3442611fd3eec11524b7739ec349
+  l1Distance: 3000
+  l2Distance: 12000
+  hysteresis: 0.1

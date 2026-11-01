@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: PRIMUM_HLOD_L2
+  m_Shader: {fileID: 4800000, guid: ad67700e9df0de242bf861ebee10d91e, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlbedoTex:
+        m_Texture: {fileID: 2800000, guid: f138d60c31424d4439eb68f6c4e09758, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NightTex:
+        m_Texture: {fileID: 2800000, guid: 10029d1c263d7ef42ab220a194c07d76, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Cutoff: 0.5
+    - _HalfW: 919.13715
+    - _LightsFogKeep: 0.6
+    - _Metallic: 0.002
+    - _NightOverride: -1
+    - _NightScale: 4
+    - _Smoothness: 0.248
+    m_Colors:
+    - _Grid: {r: 8, g: 4, b: 0, a: 0}
+    - _RowElev: {r: 0, g: 8, b: 20, a: 45}
+    - _RowHalfH: {r: 40.75004, g: 164.95871, b: 354.80188, a: 691.9668}
+    - _Tint: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

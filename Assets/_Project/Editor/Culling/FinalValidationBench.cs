@@ -59,6 +59,17 @@ namespace ProjectC.EditorTools
         private const float PilotCamHeight = 24f;
         private static bool _stage6;
 
+        // T-CULL01 / Stage 7 (H7): та же методика, A/B по VisibilityDirector.HlodEnabled; камера на 0.5/3/5/10/20/40/80 км
+        // от центра города (манифест HLOD), атрибуция города = DC − DC(city_off), ночь, после F8/F9 —
+        // повтор дальних точек. Меню: Project C → Culling → Stage 7 HLOD → Run Bench.
+        private const string Stage7RunMenu = "Project C/Culling/Stage 7 HLOD/Run Bench";
+        private const string Stage7AbortMenu = "Project C/Culling/Stage 7 HLOD/Abort Bench";
+        private const string Profile7Key = SessionKey + ".stage7";
+        private const float FarBench120 = 120000f;
+        private static bool _stage7;
+        private static bool _postPhase;
+        private static bool Profiled { get { return _stage6 || _stage7; } }
+
         private const float BenchFar = 30000f;
         private const float BenchFov = 60f;
 
@@ -91,6 +102,71 @@ namespace ProjectC.EditorTools
             public bool budgetOn;
             public bool directorOn = true;
             public bool pilot;
+            // Stage 7
+            public bool hlodOn = true;
+            public bool cityOff;
+            public float distance;
+            public float azimuth = 200f;
+            public float far;
+            public bool shot;
+            public bool post;
+            public bool fogOff;
+            public float elevation = 2f;
+        }
+
+        private static BenchCase Dist(string id, float d, bool hlod, bool cityOff = false, float hour = 12f, bool shot = false, bool post = false)
+        {
+            return new BenchCase
+            {
+                id = id, distance = d, hour = hour, shipsVisible = false, budgetOn = true, directorOn = true,
+                hlodOn = hlod, cityOff = cityOff, far = d >= 30000f ? FarBench120 : 0f, shot = shot, post = post
+            };
+        }
+
+        private static List<BenchCase> BuildStage7Cases(Vector3 p1)
+        {
+            var list = new List<BenchCase>
+            {
+                new BenchCase { id = "P1_hlod_on", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true, shot = true },
+                new BenchCase { id = "P1_hlod_on_repeat", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true },
+                new BenchCase { id = "P1_hlod_off", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true, hlodOn = false },
+                new BenchCase { id = "P1_real_hlod_on", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = true, budgetOn = true },
+            };
+            float[] ds = { 500f, 3000f, 5000f, 10000f, 20000f, 40000f, 80000f };
+            string[] tags = { "D0.5k", "D3k", "D5k", "D10k", "D20k", "D40k", "D80k" };
+            for (int i = 0; i < ds.Length; i++)
+            {
+                bool shotOn = ds[i] >= 3000f;
+                bool shotOff = ds[i] >= 3000f && ds[i] <= 20000f;
+                list.Add(Dist(tags[i] + "_hlod_on", ds[i], true, shot: shotOn));
+                list.Add(Dist(tags[i] + "_hlod_off", ds[i], false, shot: shotOff));
+                list.Add(Dist(tags[i] + "_city_off", ds[i], true, cityOff: true));
+            }
+            list.Add(Dist("D10k_hlod_on_repeat", 10000f, true));
+            list.Add(Dist("D20k_hlod_on_repeat", 20000f, true));
+            list.Add(Dist("N5k_hlod_on", 5000f, true, hour: 0f, shot: true));
+            list.Add(Dist("N10k_hlod_on", 10000f, true, hour: 0f, shot: true));
+            list.Add(Dist("N10k_hlod_off", 10000f, false, hour: 0f, shot: true));
+            list.Add(Dist("N20k_hlod_on", 20000f, true, hour: 0f, shot: true));
+            list.Add(Dist("N20k_hlod_off", 20000f, false, hour: 0f, shot: true));
+            // Диагностика силуэта: туман сцены выключен (только runtime, возвращается), камера 8° — иначе
+            // с 3+ км город скрыт туманом и рельефом и L0/L1/L2 нельзя сравнить глазом.
+            float[] vd = { 5000f, 10000f, 20000f, 40000f };
+            string[] vt = { "V5k", "V10k", "V20k", "V40k" };
+            for (int i = 0; i < vd.Length; i++)
+            {
+                var on = Dist(vt[i] + "_hlod_on", vd[i], true, shot: true); on.fogOff = true; on.elevation = 8f; list.Add(on);
+                var off = Dist(vt[i] + "_hlod_off", vd[i], false, shot: true); off.fogOff = true; off.elevation = 8f; list.Add(off);
+            }
+            var n10 = Dist("VN10k_hlod_on", 10000f, true, hour: 0f, shot: true); n10.fogOff = true; n10.elevation = 8f; list.Add(n10);
+            var n10o = Dist("VN10k_hlod_off", 10000f, false, hour: 0f, shot: true); n10o.fogOff = true; n10o.elevation = 8f; list.Add(n10o);
+            var n20 = Dist("VN20k_hlod_on", 20000f, true, hour: 0f, shot: true); n20.fogOff = true; n20.elevation = 8f; list.Add(n20);
+            var n20o = Dist("VN20k_hlod_off", 20000f, false, hour: 0f, shot: true); n20o.fogOff = true; n20o.elevation = 8f; list.Add(n20o);
+            // После F8/F9: те же точки — HLOD/импостор едут с миром, DC тот же.
+            list.Add(new BenchCase { id = "P1_hlod_on_postFO", local = p1, yaw = 337.5f, hour = 12f, shipsVisible = false, budgetOn = true, post = true });
+            list.Add(Dist("D10k_hlod_on_postFO", 10000f, true, post: true, shot: true));
+            list.Add(Dist("D20k_hlod_on_postFO", 20000f, true, post: true, shot: true));
+            return list;
         }
 
         private static List<BenchCase> BuildCases()
@@ -98,6 +174,7 @@ namespace ProjectC.EditorTools
             var p1 = new Vector3(-342.90f, -50.43f, -102.20f);
             var c2 = new Vector3(-382.90f, -58.23f, -126.20f);
             var c3 = new Vector3(-416.00f, -27.94f, -36.00f);
+            if (_stage7) return BuildStage7Cases(p1);
             if (_stage6)
             {
                 return new List<BenchCase>
@@ -244,6 +321,7 @@ namespace ProjectC.EditorTools
         public static void Run()
         {
             _stage6 = false;
+            _stage7 = false;
             StartRun();
         }
 
@@ -251,7 +329,22 @@ namespace ProjectC.EditorTools
         public static void RunStage6()
         {
             _stage6 = true;
+            _stage7 = false;
             StartRun();
+        }
+
+        [MenuItem(Stage7RunMenu)]
+        public static void RunStage7()
+        {
+            _stage6 = false;
+            _stage7 = true;
+            StartRun();
+        }
+
+        [MenuItem(Stage7AbortMenu)]
+        public static void AbortStage7()
+        {
+            Finish("ABORTED_BY_USER", false);
         }
 
         [MenuItem(Stage6AbortMenu)]
@@ -260,7 +353,7 @@ namespace ProjectC.EditorTools
             Finish("ABORTED_BY_USER", false);
         }
 
-        private static string FilePrefix { get { return _stage6 ? "S_stage6_" : "R_stage4c_"; } }
+        private static string FilePrefix { get { return _stage7 ? "U_stage7_" : _stage6 ? "S_stage6_" : "R_stage4c_"; } }
 
         private static void StartRun()
         {
@@ -276,6 +369,8 @@ namespace ProjectC.EditorTools
 
             _runTag = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
             _cases = BuildCases();
+            _postPhase = false;
+            _cityOffDisabled.Clear();
             _director = null;
             _directorFinalWritten = false;
             _outRawPath = Path.Combine(dataDir, FilePrefix + DateTag + "_raw.txt");
@@ -320,9 +415,10 @@ namespace ProjectC.EditorTools
 
             SessionState.SetBool(SessionKey, true);
             SessionState.SetBool(ProfileKey, _stage6);
+            SessionState.SetBool(Profile7Key, _stage7);
             SessionState.SetInt(SessionKey + ".reloads", 0);
 
-            Append("NOTE;bench=FinalValidationBench(" + (_stage6 ? "stage6_director" : "stage4c") + ");unity=" + Application.unityVersion +
+            Append("NOTE;bench=FinalValidationBench(" + (_stage7 ? "stage7_hlod" : _stage6 ? "stage6_director" : "stage4c") + ");unity=" + Application.unityVersion +
                    ";date=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) +
                    ";scene=" + SceneManager.GetActiveScene().path + ";sceneDirtyAtStart=" + _dirtyAtStart);
             Append(ReadRenderConfigLine());
@@ -495,7 +591,8 @@ namespace ProjectC.EditorTools
                         return;
                     }
                     CacheRenderers();
-                    if (_stage6) AppendStage6Gate();
+                    if (Profiled) AppendStage6Gate();
+                    if (_state == State.Off) return; // гейт «в игре» не пройден — прогон уже завершён
                     _budgetEntriesCount = CountPrivate(_budget, "_entries");
                     Append("NOTE;budget_steady;entries=" + _budgetEntriesCount +
                            ";ourCandidates=" + _cityCandidates.Count +
@@ -525,6 +622,28 @@ namespace ProjectC.EditorTools
 
         private static bool TryStartHost()
         {
+            // Новое главное меню (ProjectCMainMenu): тот же путь, что нажатие «ОДИНОЧНАЯ ИГРА» —
+            // OnMenuAction("host") → StartHost() → _awaitingStart; меню и его AtmosphereCamera уходят сами,
+            // когда локальный игрок заспавнен. Раньше бенч звал legacy MainMenuWindow.OnHostClicked():
+            // игра стартовала, но новое меню оставалось на экране (его _awaitingStart не взводился).
+            var pcmm = FindByTypeName("ProjectCMainMenuUiHost");
+            if (pcmm != null)
+            {
+                if (!_hostRequested)
+                {
+                    var action = pcmm.GetType().GetMethod("OnMenuAction", BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (action == null) return false;
+                    _hostRequested = true;
+                    action.Invoke(pcmm, new object[] { "host", "ОДИНОЧНАЯ ИГРА" });
+                    Debug.Log("[FinalValidation] Host запрошен через ProjectCMainMenuUiHost.OnMenuAction(\"host\") (как кнопка «ОДИНОЧНАЯ ИГРА»)");
+                    Append("NOTE;host_start=ProjectCMainMenuUiHost.OnMenuAction(host)");
+                    return false;
+                }
+                // Ждём, пока меню само уйдёт (игрок заспавнен) и появится риг камеры игрока.
+                _menuHidden = !PcmmShown(pcmm);
+                return _menuHidden && TryAcquireRig();
+            }
+
             if (TryAcquireRig()) { _hostRequested = true; _menuHidden = true; return true; }
 
             var menu = FindByTypeName("MainMenuWindow");
@@ -565,6 +684,26 @@ namespace ProjectC.EditorTools
             else if (menu == null) _menuHidden = true;
 
             return _menuHidden;
+        }
+
+        private static bool PcmmShown(Component pcmm)
+        {
+            if (pcmm == null) return false;
+            var p = pcmm.GetType().GetProperty("IsShown", BindingFlags.Instance | BindingFlags.Public);
+            return p != null && (bool)p.GetValue(pcmm);
+        }
+
+        /// <summary>Состояние нового меню: (показано, камера атмосферы включена). Нет меню — (false,false).</summary>
+        private static void ReadPcmmState(out bool shown, out bool atmosphereCamera)
+        {
+            var pcmm = FindByTypeName("ProjectCMainMenuUiHost");
+            shown = PcmmShown(pcmm);
+            atmosphereCamera = false;
+            var atm = FindByTypeName("ProjectCMainMenuAtmosphere");
+            if (atm == null) return;
+            var p = atm.GetType().GetProperty("Camera", BindingFlags.Instance | BindingFlags.Public);
+            var cam = p != null ? p.GetValue(atm) as Camera : null;
+            atmosphereCamera = cam != null && cam.isActiveAndEnabled;
         }
 
         private static bool TryAcquireRig()
@@ -623,7 +762,7 @@ namespace ProjectC.EditorTools
 
             _worldRoot = FindWorldRoot();
             ForcePhase(12f);
-            if (_stage6) StartProfilers();
+            if (Profiled) StartProfilers();
 
             Debug.Log("[FinalValidation] Риг: " + _cam.name + " (far " + _cam.farClipPlane + ", fov " + _cam.fieldOfView +
                       "), отключено компонентов-двигателей камеры: " + disabled +
@@ -859,10 +998,111 @@ namespace ProjectC.EditorTools
         {
             var d = FindDirector();
             if (d == null) return "director=absent";
-            return "dirEnabled=" + d.enabled + ";dirGroups=" + d.GroupCount + ";dirMembers=" + d.DirectedMemberCount +
-                   ";dirCulled=" + d.CulledCount + ";dirCameras=" + d.CameraCount +
-                   ";dirRebaseResets=" + d.RebaseResets + ";dirRollbackResets=" + d.RollbackResets +
-                   ";dirTeleportResets=" + d.TeleportResets;
+            string s = "dirEnabled=" + d.enabled + ";dirGroups=" + d.GroupCount + ";dirMembers=" + d.DirectedMemberCount +
+                       ";dirCulled=" + d.CulledCount + ";dirCameras=" + d.CameraCount +
+                       ";dirRebaseResets=" + d.RebaseResets + ";dirRollbackResets=" + d.RollbackResets +
+                       ";dirTeleportResets=" + d.TeleportResets;
+            if (_stage7)
+            {
+                var root = d.HlodRoot;
+                string rootState = root == null
+                    ? "none"
+                    : (root.parent != null ? root.parent.name : "no_parent") + "@" + root.localPosition.ToString("F2") +
+                      "|worldDelta=" + (_worldRoot != null ? (root.position - _worldRoot.position).magnitude.ToString("F3", CultureInfo.InvariantCulture) : "-");
+                s += ";hlod=" + d.HlodEnabled + ";hlodBlocks=" + d.HlodBlockCount + ";impostor=" + d.HlodImpostorPresent +
+                     ";cityLevel=" + d.CityLevel + ";levels=" + d.HlodLevelCounts.Replace(',', '/') +
+                     ";hlodHidden=" + d.HlodHiddenCount + ";hlodDoorsHidden=" + d.HlodDoorsHidden + "/" + d.HlodDoorCount +
+                     ";night=" + d.NightFactor.ToString("F2", CultureInfo.InvariantCulture) +
+                     ";fog=" + RenderSettings.fog +
+                     ";hlodRoot=" + rootState;
+            }
+            return s;
+        }
+
+        // ------------------------------------------------------------ Stage 7 (H7)
+
+        private static readonly List<Renderer> _cityOffDisabled = new List<Renderer>();
+        private static PrimumHlodManifest _hlodManifest;
+        private static bool _fogSaved;
+        private static bool _fogOriginal;
+
+        /// <summary>Диагностические кадры: RenderSettings.fog выключается только на время точки и возвращается.</summary>
+        private static void SetFogOff(bool off)
+        {
+            if (off)
+            {
+                if (!_fogSaved) { _fogOriginal = RenderSettings.fog; _fogSaved = true; }
+                RenderSettings.fog = false;
+                return;
+            }
+            if (_fogSaved) { RenderSettings.fog = _fogOriginal; _fogSaved = false; }
+        }
+
+        private static void SetHlod(bool on)
+        {
+            var d = FindDirector();
+            if (d != null) d.HlodEnabled = on;
+        }
+
+        /// <summary>Атрибуция города: runtime renderer.enabled у PRIMUM / PRIMUM_DOORS / PRIMUM_HLOD (сцена не пишется).</summary>
+        private static void SetCityVisible(bool visible)
+        {
+            if (visible)
+            {
+                for (int i = 0; i < _cityOffDisabled.Count; i++)
+                    if (_cityOffDisabled[i] != null) _cityOffDisabled[i].enabled = true;
+                _cityOffDisabled.Clear();
+                return;
+            }
+            if (_cityOffDisabled.Count > 0 || _worldRoot == null) return;
+            string[] roots = { "PRIMUM", "PRIMUM_DOORS", VisibilityDirector.HlodRootName };
+            for (int k = 0; k < roots.Length; k++)
+            {
+                var t = _worldRoot.Find(roots[k]);
+                if (t == null) continue;
+                var rs = t.GetComponentsInChildren<Renderer>(true);
+                for (int i = 0; i < rs.Length; i++)
+                {
+                    if (rs[i] == null || !rs[i].enabled) continue;
+                    rs[i].enabled = false;
+                    _cityOffDisabled.Add(rs[i]);
+                }
+            }
+        }
+
+        /// <summary>Камера на дистанции d от центра города (манифест HLOD), азимут az, высота 60 м + 2°, взгляд на центр.</summary>
+        private static bool TryCityPose(BenchCase c, out Vector3 pos, out Quaternion rot)
+        {
+            pos = Vector3.zero;
+            rot = Quaternion.identity;
+            if (_worldRoot == null) return false;
+            if (_hlodManifest == null) _hlodManifest = Resources.Load<PrimumHlodManifest>(PrimumHlodManifest.ResourcePath);
+            if (_hlodManifest == null) return false;
+            Vector3 center = _worldRoot.position + _hlodManifest.cityCenter;
+            float az = c.azimuth * Mathf.Deg2Rad;
+            Vector3 h = new Vector3(Mathf.Sin(az), 0f, Mathf.Cos(az));
+            pos = center + h * c.distance + Vector3.up * (60f + c.distance * Mathf.Tan(c.elevation * Mathf.Deg2Rad));
+            rot = Quaternion.LookRotation((center - pos).normalized, Vector3.up);
+            return true;
+        }
+
+        private static void RequestShot(BenchCase c)
+        {
+            if (!_stage7 || !c.shot) return;
+            string dir = Path.GetDirectoryName(_outRawPath);
+            string path = Path.Combine(dir, "U_stage7_shot_" + c.id + ".png");
+            try
+            {
+                ScreenCapture.CaptureScreenshot(path);
+                Append("SHOT;id=" + c.id + ";path=" + path.Replace('\\', '/'));
+            }
+            catch (Exception e) { Append("SHOT;id=" + c.id + ";error=" + e.Message); }
+        }
+
+        private static int FirstPostIndex()
+        {
+            for (int i = 0; i < _cases.Count; i++) if (_cases[i].post) return i;
+            return -1;
         }
 
         private static bool _directorFinalWritten;
@@ -926,7 +1166,7 @@ namespace ProjectC.EditorTools
         /// <summary>Покадрово: движковый culling (CullScriptable) и тик директора, мс (LastValue = прошлый кадр).</summary>
         private static void SampleProfilers()
         {
-            if (!_stage6 || Time.frameCount == _lastProfiledFrame) return;
+            if (!Profiled || Time.frameCount == _lastProfiledFrame) return;
             _lastProfiledFrame = Time.frameCount;
             if (_cullRecorder.Valid) _cullMsFrames.Add(_cullRecorder.LastValue / 1e6);
             if (_dirRecorder.Valid) _dirMsFrames.Add(_dirRecorder.LastValue / 1e6);
@@ -974,9 +1214,22 @@ namespace ProjectC.EditorTools
                 }
             }
 
+            bool pcmmShown, atmCam;
+            ReadPcmmState(out pcmmShown, out atmCam);
+
             Append("GATE;inGame;rig=" + (_cam != null ? _cam.name : "none") + ";localPlayer=" + player +
                    ";liveSession=" + liveSession + ";mainMenuVisibleAtWarmupEnd=" + menuVisible +
-                   (menuVisible ? ";action=menu_hidden_again" : "") + ";" + DirectorBrief());
+                   (menuVisible ? ";action=menu_hidden_again" : "") +
+                   ";pcmmMenuShown=" + pcmmShown + ";pcmmAtmosphereCamera=" + atmCam +
+                   ";cursorLock=" + UnityEngine.Cursor.lockState + ";" + DirectorBrief());
+            if (_stage7 && (pcmmShown || atmCam || !player))
+            {
+                Debug.LogError("[FinalValidation] GATE FAIL: новое главное меню ещё на экране (shown=" + pcmmShown +
+                               ", atmosphereCamera=" + atmCam + ", player=" + player + ") — замер не в игре, остановлен.");
+                Append("GATE;result=FAIL_menu_or_no_player");
+                Finish("GATE_FAIL_MENU", false);
+                return;
+            }
             var d = FindDirector();
             if (d != null)
                 Append("DIRECTOR;groups=" + d.DescribeGroups() + ";cameras=" + d.CameraReport + ";providers=" + d.ProviderReport +
@@ -1007,17 +1260,36 @@ namespace ProjectC.EditorTools
         private static void BeginCase(int index)
         {
             _caseIndex = index;
-            if (_caseIndex >= _cases.Count) { BeginRebase(); return; }
+            if (_caseIndex >= _cases.Count)
+            {
+                if (_postPhase) { _state = State.Cleanup; _stateSince = Now; }
+                else BeginRebase();
+                return;
+            }
 
             var c = _cases[_caseIndex];
+            if (_stage7 && c.post && !_postPhase) { BeginRebase(); return; }
             SetShipsVisible(c.shipsVisible);
             SetBudgetEnabled(c.budgetOn);
             if (_stage6) SetDirectorEnabled(c.directorOn);
+            if (_stage7)
+            {
+                SetDirectorEnabled(true);
+                SetHlod(c.hlodOn);
+                SetCityVisible(true);
+                if (c.cityOff) SetCityVisible(false);
+                if (_cam != null) _cam.farClipPlane = c.far > 0f ? c.far : BenchFar;
+            }
             _cullMsFrames.Clear();
             _dirMsFrames.Clear();
             _lastProfiledFrame = -1;
             ApplyPose(c);
             ForcePhaseSilent(c.hour);
+            if (_stage7)
+            {
+                SetFogOff(false);           // сначала вернуть фазовое состояние тумана
+                if (c.fogOff) SetFogOff(true);
+            }
 
             _dc.Clear(); _spc.Clear(); _tris.Clear(); _sc.Clear();
             _hybridDC.Clear(); _hybridInst.Clear(); _srpDC.Clear(); _ms.Clear();
@@ -1043,6 +1315,17 @@ namespace ProjectC.EditorTools
         private static void ApplyPose(BenchCase c)
         {
             if (_cam == null) return;
+            if (c.distance > 0f)
+            {
+                Vector3 cityPos; Quaternion cityRot;
+                if (TryCityPose(c, out cityPos, out cityRot))
+                {
+                    _targetPos = cityPos;
+                    _targetRot = cityRot;
+                    _cam.transform.SetPositionAndRotation(_targetPos, _targetRot);
+                    return;
+                }
+            }
             if (c.pilot)
             {
                 Vector3 pilotPos; Quaternion pilotRot;
@@ -1074,6 +1357,7 @@ namespace ProjectC.EditorTools
                 if (_state != State.Point) return;
                 _censusDone = true;
                 _nextSampleFrame = Time.frameCount;
+                RequestShot(c);
             }
 
             if (Time.frameCount < _nextSampleFrame) return;
@@ -1129,7 +1413,7 @@ namespace ProjectC.EditorTools
                 if (r != null && r.shadowCastingMode == ShadowCastingMode.Off) _censusShadowsOff++;
             }
 
-            if (_censusCity == 0)
+            if (_censusCity == 0 && !_stage7)
             {
                 Debug.LogError("[FinalValidation] В кадре 0 городских рендереров: поза/область неверны, замер остановлен.");
                 Append("NOTE;error=census_zero;campos=" + _targetPos.ToString("F1"));
@@ -1173,9 +1457,14 @@ namespace ProjectC.EditorTools
             sb.Append(";doorsInFrustum=").Append(_censusDoorsInFrustum);
             sb.Append(";rawDc=").Append(string.Join("|", _dc.ConvertAll(v => v.ToString()).ToArray()));
             sb.Append(";rawShadowCasters=").Append(string.Join("|", _sc.ConvertAll(v => v.ToString()).ToArray()));
-            if (_stage6)
+            if (_stage6 || _stage7)
             {
                 sb.Append(";director=").Append(c.directorOn ? "on" : "off");
+                if (_stage7)
+                    sb.Append(";hlodCase=").Append(c.hlodOn ? "on" : "off").Append(";cityOff=").Append(c.cityOff)
+                      .Append(";distance_m=").Append(c.distance.ToString("F0", CultureInfo.InvariantCulture))
+                      .Append(";far=").Append(_cam != null ? _cam.farClipPlane.ToString("F0", CultureInfo.InvariantCulture) : "-")
+                      .Append(";hour=").Append(c.hour.ToString("F1", CultureInfo.InvariantCulture));
                 sb.Append(';').Append(DirectorBrief());
                 sb.Append(";cullMsAvg=").Append(Avg(_cullMsFrames).ToString("F3", CultureInfo.InvariantCulture));
                 sb.Append(";cullMsMax=").Append(Max(_cullMsFrames).ToString("F3", CultureInfo.InvariantCulture));
@@ -1188,7 +1477,7 @@ namespace ProjectC.EditorTools
 
             Debug.Log("[FinalValidation] " + c.id + ": dc=" + dc + " spc=" + spc + " tris=" + tris +
                       " shadowCasters=" + sc + " hybridDC=" + hybridDC + " shadowsOff=" + _censusShadowsOff +
-                      " entries=" + _budgetEntriesCount + (_stage6 ? " " + DirectorBrief() + " cullMs=" +
+                      " entries=" + _budgetEntriesCount + (Profiled ? " " + DirectorBrief() + " cullMs=" +
                       Avg(_cullMsFrames).ToString("F3", CultureInfo.InvariantCulture) : ""));
         }
 
@@ -1199,7 +1488,8 @@ namespace ProjectC.EditorTools
             var sb = new StringBuilder();
             if (writeHeader)
                 sb.AppendLine("run,date,case,ships,budget,budgetEntries,shadowsOff,dc,spc,tris,shadowCasters,hybridDC,hybridInstances,srpBatcherDC,ms,fps,enabledRenderers,inFrustum,cityInFrustum,doorsInFrustum,worldpos" +
-                              (_stage6 ? ",director,dirGroups,dirMembers,dirCulled,dirCameras,cullMsAvg,cullMsMax,dirMsFrameAvg,dirMsFrameMax,dirTickMaxMs" : ""));
+                              (_stage6 ? ",director,dirGroups,dirMembers,dirCulled,dirCameras,cullMsAvg,cullMsMax,dirMsFrameAvg,dirMsFrameMax,dirTickMaxMs" : "") +
+                              (_stage7 ? ",hlod,cityOff,distance_m,far,hour,cityLevel,levels,hlodHidden,dirCulled,night,cullMsAvg,dirMsFrameAvg,dirTickMaxMs" : ""));
             sb.Append(_runTag).Append(',')
               .Append(DateTag).Append(',')
               .Append(c.id).Append(',')
@@ -1228,6 +1518,23 @@ namespace ProjectC.EditorTools
                   .Append(',').Append(Max(_dirMsFrames).ToString("F4", CultureInfo.InvariantCulture))
                   .Append(',').Append(d != null ? d.MaxTickMs.ToString("F4", CultureInfo.InvariantCulture) : "-1");
             }
+            if (_stage7)
+            {
+                var d = FindDirector();
+                sb.Append(',').Append(c.hlodOn ? "on" : "off")
+                  .Append(',').Append(c.cityOff ? 1 : 0)
+                  .Append(',').Append(c.distance.ToString("F0", CultureInfo.InvariantCulture))
+                  .Append(',').Append(_cam != null ? _cam.farClipPlane.ToString("F0", CultureInfo.InvariantCulture) : "-1")
+                  .Append(',').Append(c.hour.ToString("F1", CultureInfo.InvariantCulture))
+                  .Append(',').Append(d != null ? d.CityLevel : -1)
+                  .Append(',').Append(d != null ? d.HlodLevelCounts.Replace(',', '/') : "-")
+                  .Append(',').Append(d != null ? d.HlodHiddenCount : -1)
+                  .Append(',').Append(d != null ? d.CulledCount : -1)
+                  .Append(',').Append(d != null ? d.NightFactor.ToString("F2", CultureInfo.InvariantCulture) : "-1")
+                  .Append(',').Append(Avg(_cullMsFrames).ToString("F3", CultureInfo.InvariantCulture))
+                  .Append(',').Append(Avg(_dirMsFrames).ToString("F4", CultureInfo.InvariantCulture))
+                  .Append(',').Append(d != null ? d.MaxTickMs.ToString("F4", CultureInfo.InvariantCulture) : "-1");
+            }
             sb.AppendLine();
             try { File.AppendAllText(_outCsvPath, sb.ToString(), Encoding.UTF8); }
             catch (Exception e) { Debug.LogWarning("[FinalValidation] CSV: " + e.Message); }
@@ -1241,6 +1548,14 @@ namespace ProjectC.EditorTools
             SetShipsVisible(true);
             SetBudgetEnabled(true);
             SetDirectorEnabled(true);
+            if (_stage7)
+            {
+                SetFogOff(false);
+                SetCityVisible(true);
+                SetHlod(true);
+                if (_cam != null) _cam.farClipPlane = BenchFar;
+                ForcePhaseSilent(12f);
+            }
             ApplyPose(_cases[0]);
 
             _rebaseSlice = FindByTypeName("GlobalMotionControlledRebaseSlice") as MonoBehaviour;
@@ -1563,6 +1878,15 @@ namespace ProjectC.EditorTools
                                ";baselineErrors=" + _baselineErrorCount + ";shaderErrors=" + _shaderErrorCount +
                                ";hybridEvidence=see_DC_cases");
                         for (int i = 0; i < _rebaseLines.Count && i < 24; i++) Append("REBASE_TRACE;" + _rebaseLines[i]);
+                        int post = _stage7 && !_postPhase ? FirstPostIndex() : -1;
+                        if (post >= 0)
+                        {
+                            _postPhase = true;
+                            Append("NOTE;post_rebase_cases;from=" + post + ";" + DirectorBrief());
+                            _state = State.Point;
+                            BeginCase(post);
+                            break;
+                        }
                         _state = State.Cleanup;
                         _stateSince = Now;
                         break;
@@ -1576,7 +1900,7 @@ namespace ProjectC.EditorTools
         {
             if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode)
             {
-                if (_stage6) AppendDirectorFinal();
+                if (Profiled) AppendDirectorFinal();
                 RestoreRuntime();
                 _stateSince = Now;
                 EditorApplication.ExitPlaymode();
@@ -1593,6 +1917,9 @@ namespace ProjectC.EditorTools
         {
             try { SetDirectorEnabled(true); } catch (Exception) { }
             try { SetShipsVisible(true); } catch (Exception) { }
+            try { SetCityVisible(true); } catch (Exception) { }
+            try { SetHlod(true); } catch (Exception) { }
+            try { SetFogOff(false); } catch (Exception) { }
 
             for (int i = 0; i < _cityCandidates.Count; i++)
             {
@@ -1628,7 +1955,7 @@ namespace ProjectC.EditorTools
             if (_cullRecorder.Valid) _cullRecorder.Dispose();
             if (_dirRecorder.Valid) _dirRecorder.Dispose();
 
-            if (_stage6)
+            if (Profiled)
             {
                 AppendDirectorFinal();
                 for (int i = 0; i < _directorLogLines.Count && i < 8; i++)
@@ -1805,6 +2132,8 @@ namespace ProjectC.EditorTools
 
             var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             _stage6 = SessionState.GetBool(ProfileKey, false);
+            _stage7 = SessionState.GetBool(Profile7Key, false);
+            _postPhase = false;
             _cases = BuildCases();
             _outRawPath = Path.Combine(projectRoot, DataDir, FilePrefix + DateTag + "_raw.txt");
             _outCsvPath = Path.Combine(projectRoot, DataDir, FilePrefix + DateTag + ".csv");

@@ -69,6 +69,10 @@ namespace ProjectC.World.FloatingOrigin
         /// квантованная математика, но без гейтов ContainsLocal/порога;
         /// финальная проверка представимости сохранена. Чисто аддитивно,
         /// существующие проверки TryCreate не затрагиваются.
+        /// T-FO09H-fix2: фокус внутри фрейма больше НЕ даёт валидный план с
+        /// translation=0 (иначе автотриггер каждые 5с просил транзакцию и
+        /// получал no_rebase_plan); остаток считается в double без
+        /// frame.ToGlobal(), который бросал именно на внефреймовом фокусе.
         /// </summary>
         public static bool TryCreateRecover(LocalCoordinateFrame frame, Vector3 localFocus,
             float threshold, float quantum, out OriginRebasePlan plan)
@@ -88,18 +92,41 @@ namespace ProjectC.World.FloatingOrigin
             double sx = Math.Round((double)localFocus.x / quantum, MidpointRounding.AwayFromZero) * quantum;
             double sy = Math.Round((double)localFocus.y / quantum, MidpointRounding.AwayFromZero) * quantum;
             double sz = Math.Round((double)localFocus.z / quantum, MidpointRounding.AwayFromZero) * quantum;
+            // T-FO09H-fix2: нулевой сдвиг — не recover. Раньше внутри фрейма
+            // возвращался валидный план с translation=0, автотриггер каждые 5с
+            // просил транзакцию, а ExecuteTransaction честно отказывал
+            // (no_rebase_plan) — бесконечный отказ вместо тишины.
+            if (sx == 0d && sy == 0d && sz == 0d)
+                return false;
+            if (!GlobalPosition.IsFiniteValue(sx) || !GlobalPosition.IsFiniteValue(sy) || !GlobalPosition.IsFiniteValue(sz))
+                return false;
+
+            // Остаток считаем в double от того же focus: frame.ToGlobal()
+            // бросает вне ContainsLocal, то есть ровно в том случае, ради
+            // которого этот путь и существует.
+            double rx = (double)localFocus.x - sx;
+            double ry = (double)localFocus.y - sy;
+            double rz = (double)localFocus.z - sz;
+            if (!GlobalPosition.IsFiniteValue(rx) || !GlobalPosition.IsFiniteValue(ry) || !GlobalPosition.IsFiniteValue(rz))
+                return false;
+            if (Math.Abs(rx) > frame.MaxLocalCoordinate || Math.Abs(ry) > frame.MaxLocalCoordinate ||
+                Math.Abs(rz) > frame.MaxLocalCoordinate)
+                return false;
+
             var origin = new GlobalPosition(frame.Origin.X + sx, frame.Origin.Y + sy, frame.Origin.Z + sz);
             var after = frame.WithOrigin(origin);
             if (!after.IsValid)
                 return false;
-            if (!after.TryToLocal(frame.ToGlobal(localFocus), out Vector3 remaining) ||
-                Math.Abs(remaining.x) > threshold || Math.Abs(remaining.y) > threshold || Math.Abs(remaining.z) > threshold)
+            // Представимость остатка в новом фрейме (та же проверка, что давал TryToLocal).
+            if (!after.ContainsLocal(new Vector3((float)rx, (float)ry, (float)rz)))
                 return false;
 
             var translation = new Vector3((float)(frame.Origin.X - origin.X),
                 (float)(frame.Origin.Y - origin.Y), (float)(frame.Origin.Z - origin.Z));
             if (!GlobalPosition.IsFiniteValue(translation.x) || !GlobalPosition.IsFiniteValue(translation.y) ||
                 !GlobalPosition.IsFiniteValue(translation.z))
+                return false;
+            if (translation.x == 0f && translation.y == 0f && translation.z == 0f)
                 return false;
             plan = new OriginRebasePlan(frame, after, translation);
             return true;

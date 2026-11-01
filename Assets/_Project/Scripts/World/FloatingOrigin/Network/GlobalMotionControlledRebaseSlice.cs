@@ -384,6 +384,9 @@ namespace ProjectC.World.FloatingOrigin.Network
             // T-NS-WF10: сдвинуть позиции слотов теснин (иначе мьютекс врёт после F8).
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "TrafficSlotsShifted",
                 "slots=" + ShiftTrafficSlots(plan.LocalTranslation));
+            // T-FO-SAVE-GUARD-FIX: сдвинуть кэш «последней хорошей» точки игрока.
+            GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "PlayerSaveCacheShifted",
+                "points=" + ShiftPlayerSaveCaches(plan.LocalTranslation));
             // T-FO09O: блок локального состояния применён полностью — rollback
             // вправе вернуть его назад. До этой точки отказ = сдвигов не было.
             _localStateShifted = true;
@@ -516,6 +519,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                 // T-NS-WF10: вернуть позиции слотов теснин назад.
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "TrafficSlotsShifted",
                     "slots=" + ShiftTrafficSlots(-request.Plan.LocalTranslation));
+                // T-FO-SAVE-GUARD-FIX: вернуть кэш «последней хорошей» точки назад.
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "PlayerSaveCacheShifted",
+                    "points=" + ShiftPlayerSaveCaches(-request.Plan.LocalTranslation));
                 _localStateShifted = false;
             }
             else
@@ -977,6 +983,22 @@ namespace ProjectC.World.FloatingOrigin.Network
             var tm = ProjectC.PeacefulShip.Network.NpcShipTrafficManager.Instance;
             if (tm == null) return 0;
             try { return tm.ApplyRebaseTranslation(translation); }
+            catch (Exception) { return 0; }
+        }
+
+        /// <summary>
+        /// T-FO-SAVE-GUARD-FIX: сдвиг кэша «последней хорошей» позиции игрока вместе с миром.
+        /// PlayerPositionServer живёт в DontDestroyOnLoad (вне участников), резолв по синглтону.
+        /// Без этого вертикальный ребейс выглядит как падение на 768–2560 м и в сейв
+        /// уезжает ДОсдвиговая точка с новым rbx → следующий старт — спавн в воздухе
+        /// над городом и падение в пустоту, лечится только кнопкой спасения.
+        /// Best-effort, число точек в маркере.
+        /// </summary>
+        private int ShiftPlayerSaveCaches(Vector3 translation)
+        {
+            var server = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance;
+            if (server == null) return 0;
+            try { return server.ApplyRebaseTranslation(translation); }
             catch (Exception) { return 0; }
         }
 

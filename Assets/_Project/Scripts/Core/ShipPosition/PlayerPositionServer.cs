@@ -89,8 +89,14 @@ namespace ProjectC.Core.ShipPosition
                 // хорошую точку вместо точки в пустоте, хорошую обновляем только
                 // валидными сэмплами. Приземлился/телепортировался на твёрдое —
                 // падение прекратилось, сейв возобновляется сам.
+                // T-FO-SAVE-GUARD-FIX: опора под ногами — валидный сэмпл по определению.
+                // Без этой ветки отравленная точка (спавн в воздухе) блокировала
+                // обновление навсегда: curY всегда ниже goodY-60, сейв вечно писал
+                // воздух, и каждый следующий старт снова падал в пустоту.
                 ulong cid = np.OwnerClientId;
-                if (!inShip && _lastGoodPositions.TryGetValue(cid, out Vector3 good))
+                var controller = np.GetComponent<CharacterController>();
+                bool grounded = controller != null && controller.enabled && controller.isGrounded;
+                if (!inShip && !grounded && _lastGoodPositions.TryGetValue(cid, out Vector3 good))
                 {
                     if (pos.y < good.y - MaxFallPerCollectTick)
                     {
@@ -136,6 +142,30 @@ namespace ProjectC.Core.ShipPosition
             {
                 return new List<PlayerPositionSaveData>(_pendingPlayers);
             }
+        }
+
+        /// <summary>
+        /// T-FO-SAVE-GUARD-FIX: сдвиг кэша «последней хорошей» точки вместе с миром.
+        /// Кэш хранит локальные координаты между кадрами; после ребейса (вертикальный
+        /// сдвиг достигает 768–2560 м) сравнение в CollectPlayers видит ложное падение
+        /// и пишет в ShipPositions.json ДОсдвиговую точку вместе с НОВЫМ rbx — следующий
+        /// старт спавнит игрока в воздухе над городом, падение самоподдерживается через
+        /// сессии, а no_rebase_plan в логе — лишь симптом «фокус уже у нуля».
+        /// Вызывается из GlobalMotionControlledRebaseSlice на обоих путях (+T и -T).
+        /// Кэш pending сдвигать не нужно: CollectPlayers и запись файла — один синхронный вызов.
+        /// </summary>
+        public int ApplyRebaseTranslation(Vector3 translation)
+        {
+            if (_lastGoodPositions.Count == 0) return 0;
+            int shifted = 0;
+            var keys = new List<ulong>(_lastGoodPositions.Keys);
+            for (int i = 0; i < keys.Count; i++)
+            {
+                if (!_lastGoodPositions.TryGetValue(keys[i], out Vector3 point)) continue;
+                _lastGoodPositions[keys[i]] = point + translation;
+                shifted++;
+            }
+            return shifted;
         }
 
         public void BeginRestore()

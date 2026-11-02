@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="ds-slider-group">
+        <ui:Label name="ds-slider-label" text="Slider" class="ds-slider-label" />
+        <ui:Slider name="ds-slider" low-value="0" high-value="100" value="50" class="ds-slider" />
+        <ui:Label name="ds-slider-value" text="50" class="ds-slider-value" />
+    </ui:VisualElement>
+</ui:UXML>

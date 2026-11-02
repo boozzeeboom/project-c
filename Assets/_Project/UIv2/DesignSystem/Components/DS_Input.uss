@@ -1,0 +1,33 @@
+@import url("../DesignTokens.uss");
+
+.ds-input-group {
+    flex-direction: column;
+    margin-bottom: var(--space-md);
+}
+
+.ds-input-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+.ds-input-field {
+    height: 32px;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border-width: 1px;
+    border-color: var(--color-bg-elevated);
+    border-radius: var(--radius-md);
+    padding: 0 var(--space-sm);
+    font-size: var(--font-size-md);
+}
+
+.ds-input-field:focus {
+    border-color: var(--color-accent);
+}
+
+.ds-input-hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-top: var(--space-xs);
+}

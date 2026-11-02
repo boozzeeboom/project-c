@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="ds-toast" class="ds-toast">
+        <ui:Label name="ds-toast-message" text="Notification" class="ds-toast-message" />
+        <ui:Button name="ds-toast-close" text="×" class="ds-toast-close" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="ds-modal-overlay" class="ds-modal-overlay">
+        <ui:VisualElement name="ds-modal-panel" class="ds-modal-panel">
+            <ui:VisualElement class="ds-modal-header">
+                <ui:Label name="ds-modal-title" text="Title" class="ds-modal-title" />
+                <ui:Button name="ds-modal-close" text="×" class="ds-modal-close" />
+            </ui:VisualElement>
+            <ui:VisualElement name="ds-modal-body" class="ds-modal-body" />
+            <ui:VisualElement class="ds-modal-footer">
+                <ui:Button name="ds-modal-cancel" text="Cancel" class="ds-button ds-button--secondary" />
+                <ui:Button name="ds-modal-confirm" text="OK" class="ds-button ds-button--primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

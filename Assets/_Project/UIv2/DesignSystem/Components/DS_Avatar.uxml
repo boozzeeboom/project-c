@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="ds-avatar" class="ds-avatar">
+        <ui:Label name="ds-avatar-initials" text="AB" class="ds-avatar-initials" />
+    </ui:VisualElement>
+</ui:UXML>

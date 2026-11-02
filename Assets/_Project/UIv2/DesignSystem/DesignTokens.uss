@@ -1,0 +1,21 @@
+/* DesignTokens.uss — imported from FigCraft variable.export (CSS). */
+/* Source: Assets/_Project/UIv2/Tools/FigCraft/Import\tokens.css */
+
+:root {
+    --color-bg-primary: rgb(18, 22, 30);
+    --color-bg-secondary: rgb(28, 34, 44);
+    --color-text-primary: rgb(235, 238, 245);
+    --color-accent: rgb(70, 130, 200);
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --radius-md: 6px;
+    --font-size-md: 13px;
+}
+
+/* Mode: light */
+.theme-light {
+    --color-bg-primary: rgb(240, 243, 248);
+    --color-text-primary: rgb(20, 24, 32);
+}
+

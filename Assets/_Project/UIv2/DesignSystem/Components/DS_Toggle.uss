@@ -1,0 +1,21 @@
+@import url("../DesignTokens.uss");
+
+.ds-toggle {
+    font-size: var(--font-size-md);
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.ds-toggle .unity-toggle__input {
+    width: 36px;
+    height: 20px;
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--radius-pill);
+    border-width: 1px;
+    border-color: var(--color-bg-elevated);
+}
+
+.ds-toggle:checked .unity-toggle__input {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+}

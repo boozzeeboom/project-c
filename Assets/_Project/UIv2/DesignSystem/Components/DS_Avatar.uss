@@ -1,0 +1,26 @@
+@import url("../DesignTokens.uss");
+
+.ds-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: var(--color-accent);
+    border-radius: var(--radius-pill);
+    align-items: center;
+    justify-content: center;
+}
+
+.ds-avatar--sm {
+    width: 28px;
+    height: 28px;
+}
+
+.ds-avatar--lg {
+    width: 56px;
+    height: 56px;
+}
+
+.ds-avatar-initials {
+    color: rgb(255, 255, 255);
+    font-size: var(--font-size-sm);
+    -unity-font-style: bold;
+}

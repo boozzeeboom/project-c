@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="ds-tabbar">
+        <ui:Button name="ds-tab-1" text="Tab 1" class="ds-tab ds-tab--active" />
+        <ui:Button name="ds-tab-2" text="Tab 2" class="ds-tab" />
+        <ui:Button name="ds-tab-3" text="Tab 3" class="ds-tab" />
+    </ui:VisualElement>
+</ui:UXML><|end|><|start|>write to=assistant<|channel|>analysis<|message|>Created file successfully: C:/Projects/ProjectC_client/Assets/_Project/UIv2/DesignSystem/Components/DS_TabBar.uxml

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="ds-input-group">
+        <ui:Label name="ds-input-label" text="Label" class="ds-input-label" />
+        <ui:TextField name="ds-input-field" class="ds-input-field" />
+        <ui:Label name="ds-input-hint" text="" class="ds-input-hint" />
+    </ui:VisualElement>
+</ui:UXML>

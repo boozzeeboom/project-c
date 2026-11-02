@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="ds-empty-state">
+        <ui:Label name="ds-empty-icon" text="∅" class="ds-empty-icon" />
+        <ui:Label name="ds-empty-title" text="No items" class="ds-empty-title" />
+        <ui:Label name="ds-empty-message" text="There is nothing to show yet." class="ds-empty-message" />
+        <ui:Button name="ds-empty-action" text="Refresh" class="ds-button ds-button--secondary" />
+    </ui:VisualElement>
+</ui:UXML>

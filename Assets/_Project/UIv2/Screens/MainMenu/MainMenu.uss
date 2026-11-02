@@ -1,0 +1,72 @@
+/* MainMenu.uss — UIv2 sandbox example. Uses DesignTokens.uss variables. */
+
+@import url("../DesignSystem/DesignTokens.uss");
+
+.mm-root {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+}
+
+.mm-panel {
+    width: 420px;
+    max-width: 90%;
+    background-color: var(--color-bg-primary);
+    border-width: 2px;
+    border-color: var(--color-accent);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.mm-title {
+    font-size: var(--font-size-xxl);
+    color: var(--color-text-primary);
+    -unity-font-style: bold;
+    margin-bottom: var(--space-xs);
+}
+
+.mm-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-lg);
+}
+
+.mm-buttons {
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.mm-button-primary {
+    height: 36px;
+    background-color: var(--color-accent);
+    color: rgb(255, 255, 255);
+    border-width: 0;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
+    -unity-font-style: bold;
+}
+
+.mm-button-primary:hover {
+    background-color: var(--color-accent-hover);
+}
+
+.mm-button-secondary {
+    height: 32px;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border-width: 1px;
+    border-color: var(--color-accent);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
+}
+
+.mm-status {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}

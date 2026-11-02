@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="root" class="mm-root">
+        <ui:VisualElement name="panel" class="mm-panel">
+            <ui:Label name="title" text="Project C — Main Menu" class="mm-title" />
+            <ui:Label name="subtitle" text="UIv2 Sandbox (Milestone 1)" class="mm-subtitle" />
+            <ui:VisualElement class="mm-buttons">
+                <ui:Button name="btn-play" text="Play" class="mm-button-primary" />
+                <ui:Button name="btn-settings" text="Settings" class="mm-button-secondary" />
+                <ui:Button name="btn-quit" text="Quit" class="mm-button-secondary" />
+            </ui:VisualElement>
+            <ui:Label name="status" text="Status: ready" class="mm-status" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

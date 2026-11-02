@@ -1,0 +1,24 @@
+@import url("../DesignTokens.uss");
+
+.ds-badge {
+    background-color: var(--color-accent);
+    color: rgb(255, 255, 255);
+    font-size: var(--font-size-xs);
+    -unity-font-style: bold;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    align-self: flex-start;
+}
+
+.ds-badge--secondary {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-secondary);
+}
+
+.ds-badge--danger {
+    background-color: var(--color-danger);
+}
+
+.ds-badge--success {
+    background-color: var(--color-success);
+}

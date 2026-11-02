@@ -1,0 +1,29 @@
+@import url("../DesignTokens.uss");
+
+.ds-tabbar {
+    flex-direction: row;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-bg-elevated);
+    margin-bottom: var(--space-md);
+}
+
+.ds-tab {
+    height: 32px;
+    padding: 0 var(--space-md);
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--color-text-secondary);
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: rgba(0, 0, 0, 0);
+    font-size: var(--font-size-md);
+}
+
+.ds-tab:hover {
+    color: var(--color-text-primary);
+}
+
+.ds-tab--active {
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+    -unity-font-style: bold;
+}

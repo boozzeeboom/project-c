@@ -1,0 +1,31 @@
+@import url("../DesignTokens.uss");
+
+.ds-toast {
+    flex-direction: row;
+    align-items: center;
+    background-color: var(--color-bg-elevated);
+    border-left-width: 4px;
+    border-left-color: var(--color-accent);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) var(--space-md);
+    margin-bottom: var(--space-sm);
+}
+
+.ds-toast--success { border-left-color: var(--color-success); }
+.ds-toast--warning { border-left-color: var(--color-warning); }
+.ds-toast--error   { border-left-color: var(--color-danger); }
+
+.ds-toast-message {
+    flex-grow: 1;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.ds-toast-close {
+    width: 20px;
+    height: 20px;
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--color-text-muted);
+    border-width: 0;
+    font-size: var(--font-size-md);
+}

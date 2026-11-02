@@ -1,0 +1,22 @@
+@import url("../DesignTokens.uss");
+
+.ds-slider-group {
+    flex-direction: column;
+    margin-bottom: var(--space-md);
+}
+
+.ds-slider-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+.ds-slider {
+    margin-bottom: var(--space-xs);
+}
+
+.ds-slider-value {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    align-self: flex-end;
+}

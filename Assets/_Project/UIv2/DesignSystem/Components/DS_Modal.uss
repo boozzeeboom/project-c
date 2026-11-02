@@ -1,0 +1,54 @@
+@import url("../DesignTokens.uss");
+
+.ds-modal-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+
+.ds-modal-panel {
+    width: 480px;
+    max-width: 90%;
+    background-color: var(--color-bg-primary);
+    border-width: 1px;
+    border-color: var(--color-bg-elevated);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    flex-direction: column;
+}
+
+.ds-modal-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.ds-modal-title {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-primary);
+    -unity-font-style: bold;
+}
+
+.ds-modal-close {
+    width: 28px;
+    height: 28px;
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--color-text-secondary);
+    border-width: 0;
+    font-size: var(--font-size-xl);
+}
+
+.ds-modal-body {
+    flex-grow: 1;
+    margin-bottom: var(--space-lg);
+}
+
+.ds-modal-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+}

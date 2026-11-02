@@ -1,0 +1,40 @@
+@import url("../DesignTokens.uss");
+
+.ds-button {
+    height: 32px;
+    min-width: 80px;
+    padding: 0 var(--space-md);
+    background-color: var(--color-accent);
+    color: rgb(255, 255, 255);
+    border-width: 0;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
+    -unity-font-style: bold;
+    transition: background-color var(--motion-fast);
+}
+
+.ds-button:hover {
+    background-color: var(--color-accent-hover);
+}
+
+.ds-button:active {
+    background-color: var(--color-accent);
+    opacity: 0.85;
+}
+
+.ds-button--secondary {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border-width: 1px;
+    border-color: var(--color-accent);
+}
+
+.ds-button--danger {
+    background-color: var(--color-danger);
+}
+
+.ds-button--ghost {
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--color-text-primary);
+    border-width: 0;
+}

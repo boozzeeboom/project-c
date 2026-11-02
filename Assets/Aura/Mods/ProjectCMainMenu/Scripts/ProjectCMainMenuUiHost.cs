@@ -28,6 +28,9 @@
 // cannot see this menu because the legacy MainMenuWindow in BootstrapScene is disabled.
 // So the host owns the same handoff here: it keeps the menu on screen and the cursor
 // free until the local player is spawned, then hides and hands the cursor to the game.
+// The click only arms the handoff. "Not listening yet" is not a failure — the pilot
+// loads WorldScene_0_0 and prepares content for several seconds before StartHost() — so
+// only a start that is still silent after StartGraceSeconds counts as failed.
 // When the session ends (Esc -> «ВЫХОД В МЕНЮ») the menu comes back with a free cursor.
 //
 // The second one is not cosmetic. MainMenuWindow.Hide() hid the whole wrapper after a
@@ -60,7 +63,16 @@ namespace ProjectCMainMenu
         private bool _disposed;
         private bool _shown = true;
         private bool _awaitingStart;
+        private bool _startRequested;
+        private double _startRequestedAt;
         private bool _sessionWasLive;
+
+        // The pilot loads WorldScene_0_0 and runs its preparation before it reaches
+        // NetworkManager.StartHost(), so "not listening yet" is the normal state for several
+        // seconds after the click. Only a start that is still not listening after this window
+        // counts as failed; disarming on the first frame kept the menu on screen over the
+        // loaded world and forced the player to press «ОДИНОЧНАЯ ИГРА» again.
+        private const double StartGraceSeconds = 60.0;
 
         public ProjectCMainMenuWindow Window => _window;
         public UIDocument Document => document;
@@ -154,16 +166,29 @@ namespace ProjectCMainMenu
             {
                 if (live && IsLocalPlayerReady())
                 {
-                    _awaitingStart = false;
-                    HideForGameplay();
-                }
-                else if (!live)
-                {
-                    // Запуск не состоялся: меню — единственный путь назад, оставляем его.
-                    _awaitingStart = false;
-                    SetShown(true);
+                    HideAfterStart();
+                    return;
                 }
 
+                if (!live && Time.realtimeSinceStartupAsDouble - _startRequestedAt >= StartGraceSeconds)
+                {
+                    // Запуск не состоялся: меню — единственный путь назад, оставляем его.
+                    // _startRequested stays armed: a slow pilot can still bring the session up
+                    // later, and the net below then hides the menu without another click.
+                    _awaitingStart = false;
+                    SetShown(true);
+                    NotifyStatus("НЕ УДАЛОСЬ ЗАПУСТИТЬ ИГРУ. ПОВТОРИТЕ");
+                }
+
+                return;
+            }
+
+            // Handoff net for a start that was requested once: if the flag was lost (grace
+            // window, another launcher) the menu must still leave the screen when the local
+            // player finally exists, instead of waiting for one more click.
+            if (_startRequested && _shown && live && IsLocalPlayerReady())
+            {
+                HideAfterStart();
                 return;
             }
 
@@ -171,8 +196,31 @@ namespace ProjectCMainMenu
             {
                 // «ВЫХОД В МЕНЮ»: показываем это меню и отдаём мышь обратно игроку.
                 _sessionWasLive = false;
+                _startRequested = false;
+                _awaitingStart = false;
                 SetShown(true);
             }
+        }
+
+        /// <summary>One-shot handoff: clears every waiting flag before the game takes the cursor.</summary>
+        private void HideAfterStart()
+        {
+            Debug.Log("[ProjectCMainMenu] Local player ready, menu hidden; waited " +
+                      (Time.realtimeSinceStartupAsDouble - _startRequestedAt).ToString("0.0") + " s after the click.");
+
+            _awaitingStart = false;
+            _startRequested = false;
+            HideForGameplay();
+        }
+
+        /// <summary>Arms the handoff. The click is not proof of a start, the spawned player is.</summary>
+        private void ArmStartRequest()
+        {
+            if (!hideAfterStart) return;
+
+            _awaitingStart = true;
+            _startRequested = true;
+            _startRequestedAt = Time.realtimeSinceStartupAsDouble;
         }
 
         /// <summary>Игра забирает мышь только теперь — когда локальный игрок действительно есть.</summary>
@@ -228,6 +276,12 @@ namespace ProjectCMainMenu
 
         private void StartHost()
         {
+            // A start is already in flight. GlobalMotionPilotRuntime takes ~30 s in the editor
+            // (WorldScene_0_0 load + content preparation) and freezes the main thread, so the
+            // player will click again; that click must not queue a second attempt or restart
+            // the waiting window. A retry is allowed only after the grace window expired.
+            if (_awaitingStart) return;
+
             // Pilot first, exactly like MainMenuWindow.OnHostClicked() and NetworkTestMenu.
             // GlobalMotionPilotRuntime is the only host launcher wired in BootstrapScene: it loads
             // WorldScene_0_0, retires the legacy scene owners and runs GlobalMotionNetworkStartup.TryPrepare
@@ -241,8 +295,9 @@ namespace ProjectCMainMenu
             var pilot = Object.FindAnyObjectByType<ProjectC.World.FloatingOrigin.Pilot.GlobalMotionPilotRuntime>();
             if (pilot != null && pilot.isActiveAndEnabled)
             {
+                ArmStartRequest();
+                NotifyStatus("ЗАГРУЗКА МИРА…");
                 pilot.StartPilotHost();
-                if (hideAfterStart) _awaitingStart = true;
                 return;
             }
 
@@ -253,8 +308,24 @@ namespace ProjectCMainMenu
                 return;
             }
 
+            ArmStartRequest();
+            NotifyStatus("ЗАГРУЗКА МИРА…");
             controller.StartHost();
-            if (hideAfterStart) _awaitingStart = true;
+        }
+
+        /// <summary>
+        /// Shows «Загрузка мира…» on the menu. The pilot blocks the main thread for tens of
+        /// seconds right after this click, so the visible class is applied synchronously:
+        /// Notify() defers it by one frame to restart its transition, which would land after
+        /// the freeze the message is meant to cover.
+        /// </summary>
+        private void NotifyStatus(string text)
+        {
+            if (_window == null) return;
+
+            _window.Notify(text);
+            if (_window.Toast != null) _window.Toast.AddToClassList("is-on");
+            Debug.Log("[ProjectCMainMenu] " + text);
         }
 
         private void Quit()
@@ -270,7 +341,7 @@ namespace ProjectCMainMenu
         private void OnProjectAction(string action, string payload)
         {
             if (!hideAfterStart) return;
-            if (action == "ip-connect") _awaitingStart = true;
+            if (action == "ip-connect") ArmStartRequest();
         }
     }
 }

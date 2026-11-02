@@ -17,6 +17,15 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         [SerializeField] private GlobalMotionPlayerBootstrap _bootstrap;
         [SerializeField] private bool _autoStartHost = true;
 
+        [Tooltip("Load WorldScene_0_0 in the background while the startup menu is on screen; " +
+                 "the host request then only activates the already loaded scene. Turn off to " +
+                 "restore load-on-click without a code change.")]
+        [SerializeField] private bool _preloadWorldSceneForMenu = true;
+
+        // The same scene PrepareAndStartHost() loads additively once the host is requested.
+        private const string PreloadWorldScenePath = "Assets/_Project/Scenes/World/WorldScene_0_0.unity";
+
+        private AsyncOperation _worldPreload;
         private GlobalMotionNetworkStartup _startup;
         private NetworkManager _manager;
         private Coroutine _startRoutine;
@@ -26,7 +35,40 @@ namespace ProjectC.World.FloatingOrigin.Pilot
 
         private void Start()
         {
-            if (_autoStartHost && Application.isPlaying) StartPilotHost();
+            if (!Application.isPlaying) return;
+
+            if (_autoStartHost)
+            {
+                StartPilotHost();
+                return;
+            }
+
+            // A startup menu owns the host request in BootstrapScene, so the world can be
+            // streamed in behind it: the click then pays only for activation instead of the
+            // whole scene load, which measured ~28 s of frozen main thread in the editor.
+            BeginWorldPreload();
+        }
+
+        /// <summary>
+        /// Loads WorldScene_0_0 additively but leaves it inactive: nothing in the scene runs
+        /// before the host is actually requested. PrepareAndStartHost() activates this same
+        /// AsyncOperation, so the scene is never loaded twice.
+        /// </summary>
+        public void BeginWorldPreload()
+        {
+            if (!Application.isPlaying || !_preloadWorldSceneForMenu) return;
+            if (_worldPreload != null) return;
+            if (TryFindLoadedSceneHandle(PreloadWorldScenePath, out _)) return;
+
+            _worldPreload = SceneManager.LoadSceneAsync(PreloadWorldScenePath, LoadSceneMode.Additive);
+            if (_worldPreload == null)
+            {
+                Debug.LogWarning("[T-FO06L] World preload was not created: " + PreloadWorldScenePath, this);
+                return;
+            }
+
+            _worldPreload.allowSceneActivation = false;
+            Debug.Log("[T-FO06L] World preload started behind the menu; the host request will only activate it.", this);
         }
 
         public void StartPilotHost()
@@ -59,17 +101,30 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
-            const string worldScenePath = "Assets/_Project/Scenes/World/WorldScene_0_0.unity";
+            const string worldScenePath = PreloadWorldScenePath;
             if (!TryFindLoadedSceneHandle(worldScenePath, out var worldScene))
             {
-                var load = SceneManager.LoadSceneAsync(worldScenePath, LoadSceneMode.Additive);
+                // Reuse the preload started behind the menu: its assets are already loaded and
+                // only activation is left. Without a preload this is the original load-on-click.
+                var load = _worldPreload != null
+                    ? _worldPreload
+                    : SceneManager.LoadSceneAsync(worldScenePath, LoadSceneMode.Additive);
                 if (load == null)
                 {
                     _startRequested = false;
                     Debug.LogError("[T-FO06L] Pilot world scene load was not created: " + worldScenePath, this);
                     yield break;
                 }
+
+                if (!load.allowSceneActivation)
+                {
+                    Debug.Log("[T-FO06L] Activating the preloaded world scene (progress=" +
+                        load.progress.ToString("0.00") + ").", this);
+                    load.allowSceneActivation = true;
+                }
+
                 while (!load.isDone) yield return null;
+                if (_worldPreload == load) _worldPreload = null;
                 // Allow SceneManager to publish the final loaded-scene handle before binding content.
                 yield return null;
                 if (!TryFindLoadedSceneHandle(worldScenePath, out worldScene))
@@ -418,6 +473,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         private void OnDestroy()
         {
             if (_activeRequestOwner == this) _activeRequestOwner = null;
+            _worldPreload = null;
             if (_startup != null && _manager != null && !_manager.IsListening)
                 _startup.CancelBeforeStart();
         }

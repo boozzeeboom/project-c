@@ -1,0 +1,102 @@
+phase,category,path,target,note
+analyze/light,ship,Assets/_Project/Prefabs/Ships/Ship_Light_root_fbx_test.prefab,,"root scale=6.00000,0.90000,12.00000"
+analyze/light,model_instance,project-c_ship_light_base_SHIP_GameReady,,Assets/_Project/Art/Models/Ships/project-c_ship_light_base_SHIP_GameReady.fbx
+analyze/light,summary,user_collider_trees,,0
+analyze/light,summary,door_controllers,,1 (ожидается 1)
+analyze/light,door,Ship_Light_root_fbx_test/project-c_ship_light_base_SHIP_GameReady/CABIN_ENTRY_DOOR_PIVOT,,parentHasDoorController=no colliderHere=MeshCollider degenerate=no
+analyze/light,summary,material_slots,,"429 (null=1, unmapped_unique=4)"
+analyze/light,material,M_PC_Bronze,M_PC_Bronze,slots=131 | exists → Assets/_Project/Materials/Bronze/M_PC_Bronze.mat
+analyze/light,material,M_PC_Fabric_Canvas,M_PC_Fabric_Canvas,slots=3 | exists → Assets/_Project/Materials/Fabric/M_PC_Fabric_Canvas.mat
+analyze/light,material,M_PC_Glass_Green,M_PC_Glass_Green,slots=5 | exists → Assets/_Project/Materials/Glass/EMPTY_COLOR/M_PC_Glass_Green.mat
+analyze/light,material,M_PC_Lantern,,slots=5 | UNMAPPED
+analyze/light,material,M_PC_Lantern_Cool,,slots=8 | UNMAPPED
+analyze/light,material,M_PC_Plastic_Blue,,slots=2 | UNMAPPED
+analyze/light,material,M_PC_Plastic_Red,,slots=2 | UNMAPPED
+analyze/light,material,M_PC_Plastic_Rubber,M_PC_Plastic_Rubber,slots=16 | exists → Assets/_Project/Materials/Plastic/M_PC_Plastic_Rubber.mat
+analyze/light,material,M_PC_Steel_v2,M_PC_Steel_v2,slots=69 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/light,material,M_PC_Steel_v2_Hull,M_PC_Steel_v2,slots=44 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/light,material,M_PC_Steel_v2_Hull_Dark,M_PC_Steel_v2,slots=13 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/light,material,M_PC_Steel_v2_Light,M_PC_Steel_v2,slots=87 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/light,material,M_PC_Steel_v2_Safety,M_PC_Steel_v2,slots=43 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/light,summary,mesh_renderers,,428
+analyze/light,summary,colliders,,17
+analyze/light,summary,ship_colliders_root,,present
+analyze/light,summary,global_scene_source_marker,,absent
+analyze/medium,ship,Assets/_Project/Prefabs/Ships/Ship_medium_base.prefab,,"root scale=6.00000,0.90000,12.00000"
+analyze/medium,model_instance,Ship_CargoMedium_Base_1,,Assets/_Project/Prefabs/Ships/Medium_base/Ship_CargoMedium_Base_1.fbx
+analyze/medium,summary,user_collider_trees,,0
+analyze/medium,summary,door_controllers,,1 (ожидается 1)
+analyze/medium,door,Ship_medium_base/Ship_CargoMedium_Base_1/Ship_CargoMedium_Base/Bridge_Door,,parentHasDoorController=no colliderHere=MeshCollider degenerate=no
+analyze/medium,summary,material_slots,,"123 (null=1, unmapped_unique=4)"
+analyze/medium,material,M_PC_Bronze,M_PC_Bronze,slots=6 | exists → Assets/_Project/Materials/Bronze/M_PC_Bronze.mat
+analyze/medium,material,M_PC_Bronze_Brass,M_PC_Bronze,slots=50 | exists → Assets/_Project/Materials/Bronze/M_PC_Bronze.mat
+analyze/medium,material,M_PC_Glass_Green,M_PC_Glass_Green,slots=1 | exists → Assets/_Project/Materials/Glass/EMPTY_COLOR/M_PC_Glass_Green.mat
+analyze/medium,material,M_PC_IronRust,,slots=6 | UNMAPPED
+analyze/medium,material,M_PC_Lantern,,slots=5 | UNMAPPED
+analyze/medium,material,M_PC_Lantern_Cool,,slots=1 | UNMAPPED
+analyze/medium,material,M_PC_Plastic_Rubber,M_PC_Plastic_Rubber,slots=2 | exists → Assets/_Project/Materials/Plastic/M_PC_Plastic_Rubber.mat
+analyze/medium,material,M_PC_Plate,,slots=1 | UNMAPPED
+analyze/medium,material,M_PC_Steel_v2,M_PC_Steel_v2,slots=2 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/medium,material,M_PC_Steel_v2_Dark,M_PC_Steel_v2,slots=36 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/medium,material,M_PC_Steel_v2_Light,M_PC_Steel_v2,slots=8 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/medium,material,M_PC_Steel_v2_Safety,M_PC_Steel_v2,slots=4 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/medium,summary,mesh_renderers,,118
+analyze/medium,summary,colliders,,6
+analyze/medium,summary,ship_colliders_root,,present
+analyze/medium,summary,global_scene_source_marker,,present
+analyze/heavy,ship,Assets/_Project/Prefabs/Ships/Ship_havyII_base.prefab,,"root scale=6.00000,0.90000,12.00000"
+analyze/heavy,model_instance,project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1,,Assets/_Project/Art/Models/Ships/HeavyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1.fbx
+analyze/heavy,summary,user_collider_trees,,0
+analyze/heavy,summary,door_controllers,,9 (ожидается 9)
+analyze/heavy,door,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_AftGate_Port,,parentHasDoorController=no colliderHere=BoxCollider degenerate=no
+analyze/heavy,door,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Bridge_1,,parentHasDoorController=no colliderHere=BoxCollider degenerate=no
+analyze/heavy,door,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Bridge_2,,parentHasDoorController=no colliderHere=BoxCollider degenerate=no
+analyze/heavy,door,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Guest,,parentHasDoorController=no colliderHere=BoxCollider degenerate=no
+analyze/heavy,door,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Landing,,parentHasDoorController=no colliderHere=BoxCollider degenerate=no
+analyze/heavy,door,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Medbay,,parentHasDoorController=no colliderHere=BoxCollider degenerate=no
+analyze/heavy,door,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Mess,,parentHasDoorController=no colliderHere=BoxCollider degenerate=no
+analyze/heavy,door,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Door_Nav,,parentHasDoorController=no colliderHere=BoxCollider degenerate=no
+analyze/heavy,door,Ship_havyII_base/project-c_ship_heavyII_1_cline_deepseek_1_glm-53_1_aura_1_game-ready_1/Ramp_Cargo,,parentHasDoorController=no colliderHere=BoxCollider degenerate=no
+analyze/heavy,summary,material_slots,,"620 (null=1, unmapped_unique=5)"
+analyze/heavy,material,M_PC_Bronze,M_PC_Bronze,slots=6 | exists → Assets/_Project/Materials/Bronze/M_PC_Bronze.mat
+analyze/heavy,material,M_PC_Bronze_Brass,M_PC_Bronze,slots=253 | exists → Assets/_Project/Materials/Bronze/M_PC_Bronze.mat
+analyze/heavy,material,M_PC_Bronze_Dark,M_PC_Bronze,slots=155 | exists → Assets/_Project/Materials/Bronze/M_PC_Bronze.mat
+analyze/heavy,material,M_PC_Glass_Green,M_PC_Glass_Green,slots=18 | exists → Assets/_Project/Materials/Glass/EMPTY_COLOR/M_PC_Glass_Green.mat
+analyze/heavy,material,M_PC_IronRust,,slots=3 | UNMAPPED
+analyze/heavy,material,M_PC_Lantern_Cool,,slots=24 | UNMAPPED
+analyze/heavy,material,M_PC_Lantern_Green,,slots=4 | UNMAPPED
+analyze/heavy,material,M_PC_Lantern_Red,,slots=4 | UNMAPPED
+analyze/heavy,material,M_PC_Plate,,slots=22 | UNMAPPED
+analyze/heavy,material,M_PC_Steel_v2,M_PC_Steel_v2,slots=1 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/heavy,material,M_PC_Steel_v2_Dark,M_PC_Steel_v2,slots=117 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/heavy,material,M_PC_Steel_v2_Light,M_PC_Steel_v2,slots=8 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/heavy,material,M_PC_Steel_v2_Safety,M_PC_Steel_v2,slots=4 | exists → Assets/_Project/Materials/Steel/M_PC_Steel_v2.mat
+analyze/heavy,summary,mesh_renderers,,616
+analyze/heavy,summary,colliders,,250
+analyze/heavy,summary,ship_colliders_root,,present
+analyze/heavy,summary,global_scene_source_marker,,present
+applied/light/palette,summary,Assets/_Project/Prefabs/Ships/Ship_Light_root_fbx_test.prefab,,"renderers=0, slots=0, unmapped=0"
+applied/light/palette,save,Assets/_Project/Prefabs/Ships/Ship_Light_root_fbx_test.prefab,,менять нечего — файл не перезаписан
+applied/medium/palette,summary,Assets/_Project/Prefabs/Ships/Ship_medium_base.prefab,,"renderers=0, slots=0, unmapped=0"
+applied/medium/palette,save,Assets/_Project/Prefabs/Ships/Ship_medium_base.prefab,,менять нечего — файл не перезаписан
+applied/heavy/palette,variant_created,Assets/_Project/Materials/Plate/M_PC_Plate_Bronze.mat,Assets/_Project/Materials/Plate/M_PC_Plate.mat,цветовой наследник палитры (тот же Shader Graph)
+applied/heavy/palette,summary,Assets/_Project/Prefabs/Ships/Ship_havyII_base.prefab,,"renderers=414, slots=414, unmapped=0"
+applied/heavy/palette,save,Assets/_Project/Prefabs/Ships/Ship_havyII_base.prefab,,SaveAsPrefabAsset OK
+verify/light,check,collider_trees_inside_fbx,PASS,0
+verify/light,check,door_controllers,PASS,1
+verify/light,check,nested_door_controllers,PASS,0
+verify/light,check,degenerate_colliders,PASS,0
+verify/light,check,urp_lit_slots,PASS,0
+verify/light,check,missing_scripts,PASS,0
+verify/medium,check,collider_trees_inside_fbx,PASS,0
+verify/medium,check,door_controllers,PASS,1
+verify/medium,check,nested_door_controllers,PASS,0
+verify/medium,check,degenerate_colliders,PASS,0
+verify/medium,check,urp_lit_slots,PASS,0
+verify/medium,check,missing_scripts,PASS,0
+verify/heavy,check,collider_trees_inside_fbx,PASS,0
+verify/heavy,check,door_controllers,PASS,9
+verify/heavy,check,nested_door_controllers,PASS,0
+verify/heavy,check,degenerate_colliders,PASS,0
+verify/heavy,check,urp_lit_slots,PASS,0
+verify/heavy,check,missing_scripts,PASS,0

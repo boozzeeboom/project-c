@@ -1,21 +1,71 @@
-/* DesignTokens.uss — imported from FigCraft variable.export (CSS). */
-/* Source: Assets/_Project/UIv2/Tools/FigCraft/Import\tokens.css */
+/* DesignTokens.uss — generated from v4-2 prototype CSS (aura slice).
+   Source of truth for UIv2 theming. Colors/fonts from src/style.css. */
+
+/* Default font for all UIv2 elements */
+* {
+    -unity-font-definition: url("Fonts/Inter-Regular.asset");
+}
 
 :root {
-    --color-bg-primary: rgb(18, 22, 30);
-    --color-bg-secondary: rgb(28, 34, 44);
-    --color-text-primary: rgb(235, 238, 245);
-    --color-accent: rgb(70, 130, 200);
-    --space-sm: 8px;
-    --space-md: 12px;
-    --space-lg: 16px;
-    --radius-md: 6px;
+    /* === Colors (from v4-2 prototype) === */
+    --color-bg-deep: #070a09;
+    --color-bg-primary: #121711;
+    --color-bg-secondary: #1f2620;
+    --color-bg-elevated: #2b342c;
+    --color-bg-panel: rgba(18, 23, 17, 0.95);
+
+    --color-text-primary: #eef3ef;
+    --color-text-secondary: #a8b6ac;
+    --color-text-muted: #71806f;
+    --color-text-dim: #4a574c;
+
+    --color-accent: #78b891;
+    --color-accent-hover: #9fd0b2;
+    --color-accent-dim: rgba(120, 184, 145, 0.35);
+
+    --color-danger: #c25b45;
+    --color-danger-ink: #e08a72;
+    --color-warning: #c98a4b;
+    --color-warning-ink: #c9b48a;
+    --color-brass: #b9915a;
+    --color-brass-dim: rgba(185, 145, 90, 0.45);
+
+    --color-border: #2b342c;
+    --color-border-accent: rgba(120, 184, 145, 0.55);
+
+    /* === Typography === */
+    --font-family-primary: 'Inter';
+    --font-size-xs: 10px;
+    --font-size-sm: 11px;
     --font-size-md: 13px;
+    --font-size-lg: 15px;
+    --font-size-xl: 18px;
+    --font-size-xxl: 22px;
+
+    /* === Spacing === */
+    --space-xs: 4px;
+    --space-sm: 6px;
+    --space-md: 8px;
+    --space-lg: 12px;
+    --space-xl: 16px;
+    --space-xxl: 24px;
+
+    /* === Radii === */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-pill: 999px;
+
+    /* === Motion === */
+    --motion-fast: 100ms;
+    --motion-normal: 200ms;
+    --motion-slow: 300ms;
 }
 
-/* Mode: light */
+/* Light theme override (not in prototype, but for completeness) */
 .theme-light {
-    --color-bg-primary: rgb(240, 243, 248);
-    --color-text-primary: rgb(20, 24, 32);
+    --color-bg-deep: #f0f3f8;
+    --color-bg-primary: #e8ecf2;
+    --color-text-primary: #121711;
+    --color-accent: #2f7c50;
 }
-

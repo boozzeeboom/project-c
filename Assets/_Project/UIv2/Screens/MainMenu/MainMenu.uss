@@ -1,72 +1,80 @@
-/* MainMenu.uss — UIv2 sandbox example. Uses DesignTokens.uss variables. */
-
-@import url("../DesignSystem/DesignTokens.uss");
+/* MainMenu.uss — test with hardcoded colors (no @import). */
 
 .mm-root {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgb(7, 10, 9);
     display: flex;
 }
 
 .mm-panel {
-    width: 420px;
+    width: 480px;
     max-width: 90%;
-    background-color: var(--color-bg-primary);
-    border-width: 2px;
-    border-color: var(--color-accent);
-    border-radius: var(--radius-lg);
-    padding: var(--space-xl);
+    background-color: rgb(18, 23, 17);
+    border-width: 1px;
+    border-color: rgb(120, 184, 145);
+    border-radius: 8px;
+    padding: 24px;
     flex-direction: column;
     align-items: stretch;
 }
 
 .mm-title {
-    font-size: var(--font-size-xxl);
-    color: var(--color-text-primary);
+    font-size: 22px;
+    color: rgb(238, 243, 239);
     -unity-font-style: bold;
-    margin-bottom: var(--space-xs);
+    margin-bottom: 4px;
 }
 
 .mm-subtitle {
-    font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-lg);
+    font-size: 12px;
+    color: rgb(168, 182, 172);
+    margin-bottom: 12px;
+}
+
+.mm-divider {
+    height: 1px;
+    background-color: rgb(43, 52, 44);
+    margin-bottom: 16px;
 }
 
 .mm-buttons {
     flex-direction: column;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-lg);
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .mm-button-primary {
-    height: 36px;
-    background-color: var(--color-accent);
-    color: rgb(255, 255, 255);
+    height: 38px;
+    background-color: rgb(120, 184, 145);
+    color: rgb(7, 10, 9);
     border-width: 0;
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-md);
+    border-radius: 6px;
+    font-size: 13px;
     -unity-font-style: bold;
 }
 
-.mm-button-primary:hover {
-    background-color: var(--color-accent-hover);
+.mm-button-secondary {
+    height: 34px;
+    background-color: rgb(31, 38, 32);
+    color: rgb(238, 243, 239);
+    border-width: 1px;
+    border-color: rgb(43, 52, 44);
+    border-radius: 6px;
+    font-size: 13px;
 }
 
-.mm-button-secondary {
-    height: 32px;
-    background-color: var(--color-bg-secondary);
-    color: var(--color-text-primary);
-    border-width: 1px;
-    border-color: var(--color-accent);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-md);
+.mm-status-card {
+    background-color: rgb(31, 38, 32);
+    border-radius: 4px;
+    padding: 8px 12px;
+    border-left-width: 3px;
+    border-left-color: rgb(120, 184, 145);
 }
 
 .mm-status {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
+    font-size: 11px;
+    color: rgb(113, 128, 111);
 }

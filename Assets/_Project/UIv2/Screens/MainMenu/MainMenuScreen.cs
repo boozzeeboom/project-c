@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,8 +17,8 @@ namespace ProjectC.UIv2.Screens.MainMenu
         private Button _btnPlay;
         private Button _btnSettings;
         private Button _btnQuit;
-
         private MainMenuViewModel _vm;
+        private bool _built = false;
 
         private void Awake()
         {
@@ -26,19 +27,33 @@ namespace ProjectC.UIv2.Screens.MainMenu
 
             if (mainMenuUxml == null)
                 mainMenuUxml = Resources.Load<VisualTreeAsset>("UIv2/Screens/MainMenu/MainMenu");
-            // Note: USS loaded via inspector ref; no Resources.Load<StyleSheet> fallback (anti-pattern).
         }
 
         private void OnEnable()
         {
+            StartCoroutine(BuildWhenReady());
+        }
+
+        private void OnDisable()
+        {
+            TryUnsubscribe();
+        }
+
+        private IEnumerator BuildWhenReady()
+        {
+            // Wait until UIDocument has mounted its visual tree
+            while (_doc == null || _doc.rootVisualElement == null)
+            {
+                if (_doc == null) _doc = GetComponent<UIDocument>();
+                yield return null;
+            }
             EnsureBuilt();
             TrySubscribe();
         }
 
-        private void OnDisable() => TryUnsubscribe();
-
-        private void EnsureBuilt()
+        public void EnsureBuilt()
         {
+            if (_built) return;
             if (_doc == null) _doc = GetComponent<UIDocument>();
             if (_doc == null || _doc.rootVisualElement == null) return;
             if (mainMenuUxml == null) { Debug.LogError("[MainMenuScreen] UXML not assigned"); return; }
@@ -48,6 +63,7 @@ namespace ProjectC.UIv2.Screens.MainMenu
             if (mainMenuUss != null && !_root.styleSheets.Contains(mainMenuUss))
                 _root.styleSheets.Add(mainMenuUss);
 
+            // Tokens loaded via USS @import in MainMenu.uss.
             _status = _root.Q<Label>("status");
             _btnPlay = _root.Q<Button>("btn-play");
             _btnSettings = _root.Q<Button>("btn-settings");
@@ -58,14 +74,14 @@ namespace ProjectC.UIv2.Screens.MainMenu
             if (_btnQuit != null) { _btnQuit.clicked -= OnQuit; _btnQuit.clicked += OnQuit; }
 
             _root.style.display = DisplayStyle.Flex;
+            _built = true;
+            Debug.Log($"[MainMenuScreen] Built. styleSheets={_root.styleSheets.count}, children={_root.childCount}");
         }
 
         private void TrySubscribe()
         {
             if (_vm != null)
-            {
                 _vm.OnStatusChanged += s => { if (_status != null) _status.text = "Status: " + s; };
-            }
         }
 
         private void TryUnsubscribe() { }

@@ -5,7 +5,6 @@
     justify-content: center;
     padding: var(--space-xxl);
     flex-direction: column;
-    gap: var(--space-sm);
 }
 
 .ds-empty-icon {

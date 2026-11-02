@@ -1,0 +1,184 @@
+/* Home.uss — rich visual, hardcoded colors, USS-compatible only. */
+
+.home-root {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(7, 10, 9);
+    display: flex;
+    overflow: hidden;
+}
+
+.home-panel {
+    width: 560px;
+    max-width: 90%;
+    background-color: rgba(18, 23, 17, 0.95);
+    border-width: 1px;
+    border-color: rgba(120, 184, 145, 0.55);
+    border-radius: 8px;
+    padding: 24px;
+    flex-direction: column;
+}
+
+.home-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.home-title-group {
+    flex-direction: column;
+}
+
+.home-title {
+    font-size: 24px;
+    color: rgb(238, 243, 239);
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+.home-subtitle {
+    font-size: 11px;
+    color: rgb(113, 128, 111);
+}
+
+.home-badge {
+    font-size: 10px;
+    color: rgb(7, 10, 9);
+    background-color: rgb(120, 184, 145);
+    padding: 2px 8px;
+    border-radius: 999px;
+    -unity-font-style: bold;
+    align-self: flex-start;
+}
+
+.home-divider {
+    height: 1px;
+    background-color: rgb(43, 52, 44);
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+
+.home-cards {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.home-card {
+    flex-grow: 1;
+    min-width: 140px;
+    background-color: rgb(31, 38, 32);
+    border-width: 1px;
+    border-color: rgb(43, 52, 44);
+    border-radius: 6px;
+    padding: 12px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    flex-direction: column;
+}
+
+.home-card--accent {
+    border-color: rgb(120, 184, 145);
+    background-color: rgba(120, 184, 145, 0.08);
+}
+
+.home-card-icon {
+    width: 24px;
+    height: 24px;
+    background-color: rgb(120, 184, 145);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.home-card-icon--speed {
+    background-color: rgb(201, 138, 75);
+}
+
+.home-card-icon--fuel {
+    background-color: rgb(194, 91, 69);
+}
+
+.home-card-label {
+    font-size: 10px;
+    color: rgb(113, 128, 111);
+    margin-bottom: 2px;
+}
+
+.home-card-value {
+    font-size: 18px;
+    color: rgb(238, 243, 239);
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.home-card-bar {
+    height: 4px;
+    background-color: rgb(43, 52, 44);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.home-card-bar-fill {
+    height: 4px;
+    width: 70%;
+    background-color: rgb(120, 184, 145);
+    border-radius: 2px;
+}
+
+.home-card-bar-fill--speed {
+    width: 50%;
+    background-color: rgb(201, 138, 75);
+}
+
+.home-card-bar-fill--fuel {
+    width: 87%;
+    background-color: rgb(194, 91, 69);
+}
+
+.home-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.home-btn-primary {
+    height: 36px;
+    padding: 0 16px;
+    background-color: rgb(120, 184, 145);
+    color: rgb(7, 10, 9);
+    border-width: 0;
+    border-radius: 6px;
+    font-size: 13px;
+    -unity-font-style: bold;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.home-btn-secondary {
+    height: 34px;
+    padding: 0 12px;
+    background-color: rgb(31, 38, 32);
+    color: rgb(238, 243, 239);
+    border-width: 1px;
+    border-color: rgb(43, 52, 44);
+    border-radius: 6px;
+    font-size: 13px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.home-status-card {
+    background-color: rgb(31, 38, 32);
+    border-radius: 4px;
+    padding: 8px 12px;
+    border-left-width: 3px;
+    border-left-color: rgb(120, 184, 145);
+}
+
+.home-status {
+    font-size: 11px;
+    color: rgb(113, 128, 111);
+}

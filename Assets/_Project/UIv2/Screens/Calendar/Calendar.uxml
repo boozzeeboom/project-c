@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="root" class="calendar-root">
+        <ui:VisualElement name="panel" class="calendar-panel">
+            <ui:VisualElement name="header" class="calendar-header">
+                <ui:Label text="Calendar" class="calendar-title" />
+                <ui:Label text="Month" class="calendar-subtitle" />
+            </ui:VisualElement>
+            <ui:VisualElement name="grid" class="calendar-grid">
+                <!-- Days generated at runtime -->
+            </ui:VisualElement>
+            <ui:Label name="status" text="Status: ready" class="calendar-status" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

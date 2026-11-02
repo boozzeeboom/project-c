@@ -13,6 +13,18 @@
 | `05_REVERSE_ENGINEERING_NOTES.md` | Заметки по реверс-инжинирингу: Unity UI Toolkit internals, batching, Figma connector, AAA-паттерны. |
 | `06_PERFORMANCE_GUARDRAILS.md` | Бюджеты производительности и guardrails. |
 | `07_DESIGN_TOOLING_AND_FIGMA_FREE.md` | Figma Free vs альтернативы (Penpot, Lunacy, FigCraft) vs «свой визуализатор»: хватит ли бесплатной Figma, рекомендации. |
+| `08_RENDERING_APPROACHES.md` | Рендеринг-подходы для AAA UI: Rive, NoasisGUI, Coherent, WebView, custom shaders, VFX Graph, UITK limitations, архитектура «живого» UI. |
+| `09_DESIGN_PATTERNS.md` | AAA UI design patterns: Living/Adaptive UI, circular progress, halos/glows/particles/blur, glassmorphism, responsive layout, micro-interactions, AAA-примеры. |
+| `10_TOOLING_PIPELINE.md` | UI tooling pipeline: FigCraft, Figma Free, Unity UI Builder, Penpot, Lunacy, Living UI pipeline, AAA visuals, reverse engineering (Sybo, Bungie, Riot). |
+| `11_AGENT_TOOLING.md` | Agent tooling for beautiful UI: custom tools/skills, automation, overcoming UITK limits, living UI workflows, agent-driven examples, roadmap. |
+| `12_OVERCOMING_LIMITS.md` | Overcoming Unity UI limits: Rive, NoasisGUI, Coherent, WebView, custom shaders, VFX Graph, UITK workarounds, combining for AAA. |
+| `13_ENVIRONMENT_SETUP.md` | Environment setup: FigCraft, Rive editor, UI Builder, Figma Free, Penpot, Lunacy, pipeline, AAA "alive" UI, reverse engineering. |
+| `14_AGENT_AUTOMATION.md` | Agent automation for beautiful UI: custom tools/skills, end-to-end pipeline, overcoming UITK limits, living UI, agent self-sufficiency. |
+| `15_OVERCOMING_LIMITS_V2.md` | Overcoming Unity limits V2: Rive CLI (text→.riv), NoasisGUI XAML generation, Shader Graph generation, VFX Graph, UITK workarounds, automation blueprint. |
+| `16_AUTOMATED_PIPELINE.md` | Automated pipeline v4-2→Unity: HTML/CSS/JS→UXML/USS/C#, parsing tools, Unity limitations handling, CI integration. |
+| `16_AUTOMATED_PIPELINE.md` | Automated pipeline HTML/CSS/JS (v4-2) → Unity UI: parsing, tokens, animations, limitations, step-by-step automation, sources. |
+| `11_AGENT_TOOLING.md` | Agent tooling for AAA UI: custom MCP tools, skills, workflows; automating UXML/USS generation, styling, animation; overcoming UITK limitations; living UI workflows; examples (Figma→Unity, Rive→Unity, HTML→Unity). |
+| `08_RENDERING_APPROACHES.md` | Рендеринг-подходы для AAA UI: Rive, NoasisGUI, Coherent Gameface, WebView, custom shaders, VFX Graph, UITK limitations, архитектура «живого» UI, источники. |
 
 ## Краткое резюме
 

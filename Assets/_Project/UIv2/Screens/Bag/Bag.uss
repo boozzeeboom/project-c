@@ -1,0 +1,119 @@
+/* Bag.uss — inventory screen, styled after v4-2. */
+
+.bag-root {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-bg-deep);
+    display: flex;
+}
+
+.bag-panel {
+    width: 560px;
+    max-width: 90%;
+    background-color: var(--color-bg-panel);
+    border-width: 1px;
+    border-color: var(--color-border-accent);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    flex-direction: column;
+}
+
+.bag-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bag-title {
+    font-size: var(--font-size-xxl);
+    color: var(--color-text-primary);
+    -unity-font-style: bold;
+}
+
+.bag-capacity {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.bag-divider {
+    height: 1px;
+    background-color: var(--color-border);
+}
+
+.bag-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-height: 200px;
+}
+
+.bag-slot {
+    width: 64px;
+    height: 64px;
+    background-color: var(--color-bg-secondary);
+    border-width: 1px;
+    border-color: var(--color-border);
+    border-radius: var(--radius-md);
+    align-items: center;
+    justify-content: center;
+    transition: border-color var(--motion-fast), background-color var(--motion-fast);
+}
+
+.bag-slot:hover {
+    border-color: var(--color-accent);
+    background-color: var(--color-bg-elevated);
+}
+
+.bag-slot--filled {
+    border-color: var(--color-border-accent);
+}
+
+.bag-slot-icon {
+    width: 40px;
+    height: 40px;
+    background-color: var(--color-accent-dim);
+    border-radius: var(--radius-sm);
+}
+
+.bag-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.bag-btn {
+    height: 32px;
+    padding: 0 var(--space-md);
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border-width: 1px;
+    border-color: var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
+    transition: border-color var(--motion-fast), background-color var(--motion-fast);
+}
+
+.bag-btn:hover {
+    border-color: var(--color-accent);
+    background-color: var(--color-bg-elevated);
+}
+
+.bag-btn--danger {
+    border-color: var(--color-danger);
+    color: var(--color-danger-ink);
+}
+
+.bag-btn--danger:hover {
+    background-color: var(--color-danger);
+    color: var(--color-bg-deep);
+}
+
+.bag-status {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--radius-sm);
+    border-left-width: 3px;
+    border-left-color: var(--color-accent);
+}

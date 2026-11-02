@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="root" class="ships-root">
+        <ui:VisualElement name="panel" class="ships-panel">
+            <ui:VisualElement class="ships-header">
+                <ui:Label text="Ships" class="ships-title" />
+                <ui:Label text="5 ships" class="ships-count" />
+            </ui:VisualElement>
+            <ui:VisualElement class="ships-divider" />
+            <ui:VisualElement name="list" class="ships-list">
+                <!-- Ship items generated at runtime -->
+            </ui:VisualElement>
+            <ui:VisualElement class="ships-footer">
+                <ui:Button text="Launch" class="ships-btn" />
+                <ui:Button text="Details" class="ships-btn ships-btn--secondary" />
+            </ui:VisualElement>
+            <ui:Label name="status" text="Status: ready" class="ships-status" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML><|end|><|start|><|start|>assistant to=write<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="path">
+C:\Projects\ProjectC_client\Assets\_Project\UIv2\Screens\Ships\Ships.uss

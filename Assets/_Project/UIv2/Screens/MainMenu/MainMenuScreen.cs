@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
+using ProjectC.UIv2.Core.Animation;
 
 namespace ProjectC.UIv2.Screens.MainMenu
 {
@@ -10,6 +11,7 @@ namespace ProjectC.UIv2.Screens.MainMenu
         [Header("UI Assets")]
         [SerializeField] private VisualTreeAsset mainMenuUxml;
         [SerializeField] private StyleSheet mainMenuUss;
+        [SerializeField] private StyleSheet designTokensUss;
 
         private UIDocument _doc;
         private VisualElement _root;
@@ -60,6 +62,9 @@ namespace ProjectC.UIv2.Screens.MainMenu
 
             _root = _doc.rootVisualElement;
 
+            // Add DesignTokens first (variables), then MainMenu USS
+            if (designTokensUss != null && !_root.styleSheets.Contains(designTokensUss))
+                _root.styleSheets.Add(designTokensUss);
             if (mainMenuUss != null && !_root.styleSheets.Contains(mainMenuUss))
                 _root.styleSheets.Add(mainMenuUss);
 
@@ -73,9 +78,19 @@ namespace ProjectC.UIv2.Screens.MainMenu
             if (_btnSettings != null) { _btnSettings.clicked -= OnSettings; _btnSettings.clicked += OnSettings; }
             if (_btnQuit != null) { _btnQuit.clicked -= OnQuit; _btnQuit.clicked += OnQuit; }
 
+            // Hover scale animation on buttons
+            foreach (var btn in new[] { _btnPlay, _btnSettings, _btnQuit })
+            {
+                if (btn == null) continue;
+                btn.RegisterCallback<PointerEnterEvent>(e => StartCoroutine(UIAnimator.Pulse(btn, 1.03f, 0.2f)));
+            }
+
             _root.style.display = DisplayStyle.Flex;
             _built = true;
             Debug.Log($"[MainMenuScreen] Built. styleSheets={_root.styleSheets.count}, children={_root.childCount}");
+
+            // Start fade-in animation
+            StartCoroutine(ProjectC.UIv2.Core.Animation.UIAnimator.FadeIn(_root, 0.25f));
         }
 
         private void TrySubscribe()

@@ -1,0 +1,85 @@
+/* Quests.uss — quests screen, styled after v4-2. */
+
+.quests-root {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-bg-deep, #070a09);
+    display: flex;
+}
+
+.quests-panel {
+    width: 560px;
+    max-width: 90%;
+    background-color: var(--color-bg-panel, #121711);
+    border-width: 1px;
+    border-color: var(--color-border-accent, #78b891);
+    border-radius: var(--radius-lg, 8px);
+    padding: var(--space-xl, 16px);
+    flex-direction: column;
+}
+
+.quests-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quests-title {
+    font-size: var(--font-size-xxl, 22px);
+    color: var(--color-text-primary, #eef3ef);
+    -unity-font-style: bold;
+}
+
+.quests-count {
+    font-size: var(--font-size-sm, 11px);
+    color: var(--color-text-secondary, #a8b6ac);
+}
+
+.quests-divider {
+    height: 1px;
+    background-color: var(--color-border, #2b342c);
+}
+
+.quests-list {
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.quests-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm, 6px) var(--space-md, 8px);
+    background-color: var(--color-bg-secondary, #1f2620);
+    border-width: 1px;
+    border-color: var(--color-border, #2b342c);
+    border-radius: var(--radius-md, 6px);
+}
+
+.quests-item:hover {
+    border-color: var(--color-accent, #78b891);
+    background-color: var(--color-bg-elevated, #2b342c);
+}
+
+.quests-item-name {
+    font-size: var(--font-size-md, 13px);
+    color: var(--color-text-primary, #eef3ef);
+    -unity-font-style: bold;
+}
+
+.quests-item-state {
+    font-size: var(--font-size-xs, 10px);
+    color: var(--color-text-muted, #71806f);
+}
+
+.quests-status {
+    font-size: var(--font-size-xs, 10px);
+    color: var(--color-text-muted, #71806f);
+    padding: var(--space-sm, 6px) var(--space-md, 8px);
+    background-color: var(--color-bg-secondary, #1f2620);
+    border-radius: var(--radius-sm, 4px);
+    border-left-width: 3px;
+    border-left-color: var(--color-accent, #78b891);
+}

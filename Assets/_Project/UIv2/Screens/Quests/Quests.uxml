@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="root" class="quests-root">
+        <ui:VisualElement name="panel" class="quests-panel">
+            <ui:VisualElement name="header" class="quests-header">
+                <ui:Label text="Quests" class="quests-title" />
+                <ui:Label text="6 quests" class="quests-count" />
+            </ui:VisualElement>
+            <ui:VisualElement class="quests-divider" />
+            <ui:VisualElement name="list" class="quests-list">
+                <!-- Quest items generated at runtime -->
+            </ui:VisualElement>
+            <ui:Label name="status" text="Status: ready" class="quests-status" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

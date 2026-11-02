@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="root" class="home-root">
+        <ui:VisualElement name="panel" class="home-panel">
+            <ui:VisualElement class="home-header">
+                <ui:VisualElement class="home-title-group">
+                    <ui:Label text="Cloud Map" class="home-title" />
+                    <ui:Label text="v4.2 visual prototype" class="home-subtitle" />
+                </ui:VisualElement>
+                <ui:VisualElement class="home-badge">v4.2</ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="home-divider" />
+            <ui:VisualElement class="home-cards">
+                <ui:VisualElement class="home-card home-card--accent">
+                    <ui:VisualElement class="home-card-icon" />
+                    <ui:Label text="Altitude" class="home-card-label" />
+                    <ui:Label text="12,450 m" class="home-card-value" />
+                    <ui:VisualElement class="home-card-bar">
+                        <ui:VisualElement class="home-card-bar-fill" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="home-card">
+                    <ui:VisualElement class="home-card-icon home-card-icon--speed" />
+                    <ui:Label text="Speed" class="home-card-label" />
+                    <ui:Label text="24.5 m/s" class="home-card-value" />
+                    <ui:VisualElement class="home-card-bar">
+                        <ui:VisualElement class="home-card-bar-fill home-card-bar-fill--speed" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="home-card">
+                    <ui:VisualElement class="home-card-icon home-card-icon--fuel" />
+                    <ui:Label text="Fuel" class="home-card-label" />
+                    <ui:Label text="87%" class="home-card-value" />
+                    <ui:VisualElement class="home-card-bar">
+                        <ui:VisualElement class="home-card-bar-fill home-card-bar-fill--fuel" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="home-divider" />
+            <ui:VisualElement class="home-buttons">
+                <ui:Button name="btn-open-map" text="Open Map" class="home-btn-primary" />
+                <ui:Button name="btn-cargo" text="Cargo" class="home-btn-secondary" />
+                <ui:Button name="btn-skills" text="Skills" class="home-btn-secondary" />
+                <ui:Button name="btn-quests" text="Quests" class="home-btn-secondary" />
+            </ui:VisualElement>
+            <ui:VisualElement class="home-status-card">
+                <ui:Label name="status" text="Status: ready" class="home-status" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

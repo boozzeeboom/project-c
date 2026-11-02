@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="root" class="bag-root">
+        <ui:VisualElement name="panel" class="bag-panel">
+            <ui:VisualElement class="bag-header">
+                <ui:Label text="Inventory" class="bag-title" />
+                <ui:Label text="24/50" class="bag-capacity" />
+            </ui:VisualElement>
+            <ui:VisualElement class="bag-divider" />
+            <ui:VisualElement name="grid" class="bag-grid">
+                <!-- Slots generated at runtime -->
+            </ui:VisualElement>
+            <ui:VisualElement class="bag-footer">
+                <ui:Button text="Sort" class="bag-btn" />
+                <ui:Button text="Drop" class="bag-btn bag-btn--danger" />
+            </ui:VisualElement>
+            <ui:Label name="status" text="Status: ready" class="bag-status" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

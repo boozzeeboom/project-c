@@ -1,0 +1,149 @@
+phase,category,item,value,note
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb,на узле есть коллайдер (створка),
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb/AftGate_Stb_Handle,интерактив/ссылка скрипта: AftGate_Stb,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb/AftGate_Stb_Kick,интерактив/ссылка скрипта: AftGate_Stb,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb/AftGate_Stb_Stiff0,интерактив/ссылка скрипта: AftGate_Stb,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb/AftGate_Stb_Stiff1,интерактив/ссылка скрипта: AftGate_Stb,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T1_WC,на узле есть коллайдер (створка),
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T1_WC/Door_T1_WC_Handle,интерактив/ссылка скрипта: Door_T1_WC,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T1_WC/Door_T1_WC_Kick,интерактив/ссылка скрипта: Door_T1_WC,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabPrt_04,на узле есть коллайдер (створка),
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabPrt_04/Door_T2_CabPrt_04_Handle,интерактив/ссылка скрипта: Door_T2_CabPrt_04,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabPrt_04/Door_T2_CabPrt_04_Kick,интерактив/ссылка скрипта: Door_T2_CabPrt_04,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabStb_04,на узле есть коллайдер (створка),
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabStb_04/Door_T2_CabStb_04_Handle,интерактив/ссылка скрипта: Door_T2_CabStb_04,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabStb_04/Door_T2_CabStb_04_Kick,интерактив/ссылка скрипта: Door_T2_CabStb_04,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Captain,на узле есть коллайдер (створка),
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Captain/Door_T3_Captain_Handle,интерактив/ссылка скрипта: Door_T3_Captain,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Captain/Door_T3_Captain_Kick,интерактив/ссылка скрипта: Door_T3_Captain,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Radio,на узле есть коллайдер (створка),
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Radio/Door_T3_Radio_Handle,интерактив/ссылка скрипта: Door_T3_Radio,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Radio/Door_T3_Radio_Kick,интерактив/ссылка скрипта: Door_T3_Radio,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt,на узле есть коллайдер (створка),
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt/AftGate_Prt_Handle,интерактив/ссылка скрипта: AftGate_Prt,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt/AftGate_Prt_Kick,интерактив/ссылка скрипта: AftGate_Prt,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt/AftGate_Prt_Stiff0,интерактив/ссылка скрипта: AftGate_Prt,
+dryrun,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt/AftGate_Prt_Stiff1,интерактив/ссылка скрипта: AftGate_Prt,
+dryrun,plan,world_size_m,99.631,порог LOD0 не может быть ближе 0.866×size = 86.280 м
+dryrun,plan,visual_renderers,1678,"сливается=1653 (Fine=124, Core=1529), защищено=25"
+dryrun,plan,merged_tris,28164,verts=54330 (Σ по всем сливаемым рендерерам — инвариант склейки)
+dryrun,plan,lod0_groups,19,
+dryrun,plan,lod1_groups,13,
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Bronze,1500,cell=Core mat=M_PC_Bronze sources=125 src_tris=1500 verts=3000 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Bronze_Brass,4556,cell=Core mat=M_PC_Bronze_Brass sources=361 src_tris=4556 verts=9000 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Bronze_Dark,4864,cell=Core mat=M_PC_Bronze_Dark sources=347 src_tris=4864 verts=9714 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Fabric,636,cell=Core mat=M_PC_Fabric sources=53 src_tris=636 verts=1272 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Glass_Green,384,cell=Core mat=M_PC_Glass_Green sources=32 src_tris=384 verts=768 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_IronRust,96,cell=Core mat=M_PC_IronRust sources=8 src_tris=96 verts=192 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Lantern_Cool,1004,cell=Core mat=M_PC_Lantern_Cool sources=31 src_tris=1004 verts=1936 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Lantern_Green,12,cell=Core mat=M_PC_Lantern_Green sources=1 src_tris=12 verts=24 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Lantern_Red,12,cell=Core mat=M_PC_Lantern_Red sources=1 src_tris=12 verts=24 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Plastic_Red,404,cell=Core mat=M_PC_Plastic_Red sources=5 src_tris=404 verts=776 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Plate,1260,cell=Core mat=M_PC_Plate sources=105 src_tris=1260 verts=2520 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Steel_v2_Dark,6488,cell=Core mat=M_PC_Steel_v2_Dark sources=254 src_tris=6488 verts=11764 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Core_M_PC_Wood,3880,cell=Core mat=M_PC_Wood sources=206 src_tris=3880 verts=7672 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Fine_M_PC_Bronze_Brass,1920,cell=Fine mat=M_PC_Bronze_Brass sources=72 src_tris=1920 verts=3556 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Fine_M_PC_Bronze_Dark,84,cell=Fine mat=M_PC_Bronze_Dark sources=7 src_tris=84 verts=168 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Fine_M_PC_Glass_Green,120,cell=Fine mat=M_PC_Glass_Green sources=1 src_tris=120 verts=264 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Fine_M_PC_Lantern_Cool,144,cell=Fine mat=M_PC_Lantern_Cool sources=12 src_tris=144 verts=288 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Fine_M_PC_Plastic_Red,360,cell=Fine mat=M_PC_Plastic_Red sources=14 src_tris=360 verts=624 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod0_Fine_M_PC_Steel_v2_Dark,440,cell=Fine mat=M_PC_Steel_v2_Dark sources=18 src_tris=440 verts=768 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Bronze,1500,cell=LOD1 mat=M_PC_Bronze sources=125 src_tris=1500 verts=3000 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Bronze_Brass,4556,cell=LOD1 mat=M_PC_Bronze_Brass sources=361 src_tris=4556 verts=9000 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Bronze_Dark,4864,cell=LOD1 mat=M_PC_Bronze_Dark sources=347 src_tris=4864 verts=9714 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Fabric,636,cell=LOD1 mat=M_PC_Fabric sources=53 src_tris=636 verts=1272 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Glass_Green,384,cell=LOD1 mat=M_PC_Glass_Green sources=32 src_tris=384 verts=768 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_IronRust,96,cell=LOD1 mat=M_PC_IronRust sources=8 src_tris=96 verts=192 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Lantern_Cool,1004,cell=LOD1 mat=M_PC_Lantern_Cool sources=31 src_tris=1004 verts=1936 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Lantern_Green,12,cell=LOD1 mat=M_PC_Lantern_Green sources=1 src_tris=12 verts=24 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Lantern_Red,12,cell=LOD1 mat=M_PC_Lantern_Red sources=1 src_tris=12 verts=24 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Plastic_Red,404,cell=LOD1 mat=M_PC_Plastic_Red sources=5 src_tris=404 verts=776 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Plate,1260,cell=LOD1 mat=M_PC_Plate sources=105 src_tris=1260 verts=2520 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Steel_v2_Dark,6488,cell=LOD1 mat=M_PC_Steel_v2_Dark sources=254 src_tris=6488 verts=11764 idx=UInt16
+dryrun,mesh,Albatros_VIS_lod1_LOD1_M_PC_Wood,3880,cell=LOD1 mat=M_PC_Wood sources=206 src_tris=3880 verts=7672 idx=UInt16
+dryrun,tris,lod0_total,28164,src=28164; Δ=0 обязателен
+dryrun,mesh,Albatros_VIS_LOD2_All,25096,src_tris=25096 verts=48662 submeshes=5 idx=UInt16 mats=M_PC_Steel_v2_Dark/M_PC_Bronze_Dark/M_PC_Plate/M_PC_Lantern_Red/M_PC_Lantern_Green
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb,на узле есть коллайдер (створка),
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb/AftGate_Stb_Handle,интерактив/ссылка скрипта: AftGate_Stb,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb/AftGate_Stb_Kick,интерактив/ссылка скрипта: AftGate_Stb,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb/AftGate_Stb_Stiff0,интерактив/ссылка скрипта: AftGate_Stb,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Stb/AftGate_Stb_Stiff1,интерактив/ссылка скрипта: AftGate_Stb,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T1_WC,на узле есть коллайдер (створка),
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T1_WC/Door_T1_WC_Handle,интерактив/ссылка скрипта: Door_T1_WC,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T1_WC/Door_T1_WC_Kick,интерактив/ссылка скрипта: Door_T1_WC,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabPrt_04,на узле есть коллайдер (створка),
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabPrt_04/Door_T2_CabPrt_04_Handle,интерактив/ссылка скрипта: Door_T2_CabPrt_04,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabPrt_04/Door_T2_CabPrt_04_Kick,интерактив/ссылка скрипта: Door_T2_CabPrt_04,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabStb_04,на узле есть коллайдер (створка),
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabStb_04/Door_T2_CabStb_04_Handle,интерактив/ссылка скрипта: Door_T2_CabStb_04,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T2_CabStb_04/Door_T2_CabStb_04_Kick,интерактив/ссылка скрипта: Door_T2_CabStb_04,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Captain,на узле есть коллайдер (створка),
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Captain/Door_T3_Captain_Handle,интерактив/ссылка скрипта: Door_T3_Captain,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Captain/Door_T3_Captain_Kick,интерактив/ссылка скрипта: Door_T3_Captain,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Radio,на узле есть коллайдер (створка),
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Radio/Door_T3_Radio_Handle,интерактив/ссылка скрипта: Door_T3_Radio,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/Door_T3_Radio/Door_T3_Radio_Kick,интерактив/ссылка скрипта: Door_T3_Radio,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt,на узле есть коллайдер (створка),
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt/AftGate_Prt_Handle,интерактив/ссылка скрипта: AftGate_Prt,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt/AftGate_Prt_Kick,интерактив/ссылка скрипта: AftGate_Prt,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt/AftGate_Prt_Stiff0,интерактив/ссылка скрипта: AftGate_Prt,
+before,protected,Альбатрос/MainVisual/projectC_ship_heavYbase_1_1/AftGate_Prt_HingeR/AftGate_Prt_HingeR/AftGate_Prt/AftGate_Prt_Stiff1,интерактив/ссылка скрипта: AftGate_Prt,
+before,plan,world_size_m,99.631,порог LOD0 не может быть ближе 0.866×size = 86.280 м
+before,plan,visual_renderers,1678,"сливается=1653 (Fine=124, Core=1529), защищено=25"
+before,plan,merged_tris,28164,verts=54330 (Σ по всем сливаемым рендерерам — инвариант склейки)
+before,plan,lod0_groups,19,
+before,plan,lod1_groups,13,
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Bronze,1500,cell=Core mat=M_PC_Bronze sources=125 src_tris=1500 verts=3000 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Bronze_Brass,4556,cell=Core mat=M_PC_Bronze_Brass sources=361 src_tris=4556 verts=9000 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Bronze_Dark,4864,cell=Core mat=M_PC_Bronze_Dark sources=347 src_tris=4864 verts=9714 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Fabric,636,cell=Core mat=M_PC_Fabric sources=53 src_tris=636 verts=1272 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Glass_Green,384,cell=Core mat=M_PC_Glass_Green sources=32 src_tris=384 verts=768 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_IronRust,96,cell=Core mat=M_PC_IronRust sources=8 src_tris=96 verts=192 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Lantern_Cool,1004,cell=Core mat=M_PC_Lantern_Cool sources=31 src_tris=1004 verts=1936 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Lantern_Green,12,cell=Core mat=M_PC_Lantern_Green sources=1 src_tris=12 verts=24 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Lantern_Red,12,cell=Core mat=M_PC_Lantern_Red sources=1 src_tris=12 verts=24 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Plastic_Red,404,cell=Core mat=M_PC_Plastic_Red sources=5 src_tris=404 verts=776 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Plate,1260,cell=Core mat=M_PC_Plate sources=105 src_tris=1260 verts=2520 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Steel_v2_Dark,6488,cell=Core mat=M_PC_Steel_v2_Dark sources=254 src_tris=6488 verts=11764 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Core_M_PC_Wood,3880,cell=Core mat=M_PC_Wood sources=206 src_tris=3880 verts=7672 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Fine_M_PC_Bronze_Brass,1920,cell=Fine mat=M_PC_Bronze_Brass sources=72 src_tris=1920 verts=3556 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Fine_M_PC_Bronze_Dark,84,cell=Fine mat=M_PC_Bronze_Dark sources=7 src_tris=84 verts=168 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Fine_M_PC_Glass_Green,120,cell=Fine mat=M_PC_Glass_Green sources=1 src_tris=120 verts=264 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Fine_M_PC_Lantern_Cool,144,cell=Fine mat=M_PC_Lantern_Cool sources=12 src_tris=144 verts=288 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Fine_M_PC_Plastic_Red,360,cell=Fine mat=M_PC_Plastic_Red sources=14 src_tris=360 verts=624 idx=UInt16
+applied,mesh,Albatros_VIS_lod0_Fine_M_PC_Steel_v2_Dark,440,cell=Fine mat=M_PC_Steel_v2_Dark sources=18 src_tris=440 verts=768 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Bronze,1500,cell=LOD1 mat=M_PC_Bronze sources=125 src_tris=1500 verts=3000 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Bronze_Brass,4556,cell=LOD1 mat=M_PC_Bronze_Brass sources=361 src_tris=4556 verts=9000 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Bronze_Dark,4864,cell=LOD1 mat=M_PC_Bronze_Dark sources=347 src_tris=4864 verts=9714 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Fabric,636,cell=LOD1 mat=M_PC_Fabric sources=53 src_tris=636 verts=1272 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Glass_Green,384,cell=LOD1 mat=M_PC_Glass_Green sources=32 src_tris=384 verts=768 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_IronRust,96,cell=LOD1 mat=M_PC_IronRust sources=8 src_tris=96 verts=192 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Lantern_Cool,1004,cell=LOD1 mat=M_PC_Lantern_Cool sources=31 src_tris=1004 verts=1936 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Lantern_Green,12,cell=LOD1 mat=M_PC_Lantern_Green sources=1 src_tris=12 verts=24 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Lantern_Red,12,cell=LOD1 mat=M_PC_Lantern_Red sources=1 src_tris=12 verts=24 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Plastic_Red,404,cell=LOD1 mat=M_PC_Plastic_Red sources=5 src_tris=404 verts=776 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Plate,1260,cell=LOD1 mat=M_PC_Plate sources=105 src_tris=1260 verts=2520 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Steel_v2_Dark,6488,cell=LOD1 mat=M_PC_Steel_v2_Dark sources=254 src_tris=6488 verts=11764 idx=UInt16
+applied,mesh,Albatros_VIS_lod1_LOD1_M_PC_Wood,3880,cell=LOD1 mat=M_PC_Wood sources=206 src_tris=3880 verts=7672 idx=UInt16
+applied,tris,lod0_total,28164,src=28164; Δ=0 обязателен
+applied,mesh,Albatros_VIS_LOD2_All,25096,src_tris=25096 verts=48662 submeshes=5 idx=UInt16 mats=M_PC_Steel_v2_Dark/M_PC_Bronze_Dark/M_PC_Plate/M_PC_Lantern_Red/M_PC_Lantern_Green
+applied,lod,world_size_m,99.631,size(local)=99.631; maxLossyScale=1.000
+applied,lod,lod0_to_lod1,0.575,150 м @FOV60 lodBias1 (LODUtility: 150.000 м); renderers=19
+applied,lod,lod1_to_lod2,0.192,450 м @FOV60 lodBias1 (LODUtility: 450.000 м); renderers=13
+applied,lod,lod2_cull,0,без cull; сабмешей=5
+applied,backup,_local_backups/MAIN_PIPELINE/Albatros/Альбатрос.prefab.bak,ok,полный .prefab до мержа
+after,model,mesh_renderers,63,вне LODGroup=да; материалов в палитре=14
+after,model,slots_LOD0,49,вне LODGroup=30 + LOD0=19; shadow_slots=49; dc_model(2×P+C)=147
+after,model,slots_LOD1,43,вне LODGroup=30 + LOD1=13; shadow_slots=43; dc_model(2×P+C)=129
+after,model,slots_LOD2,35,вне LODGroup=30 + LOD2=5; shadow_slots=35; dc_model(2×P+C)=105
+applied,save,Assets/_Project/Prefabs/Ships/Альбатрос.prefab,ok,mesh-ассетов: 33
+budget_applied,backup,_local_backups/MAIN_PIPELINE/Albatros/Альбатрос.prefab.bak.budget,ok,состояние до бюджета
+budget_applied,component,ShipShadowBudget,added,on_m=140.000; off_m=150.000; coverWholeLodGroup=True; maxAxis_m=8.000
+budget_applied,save,Assets/_Project/Prefabs/Ships/Альбатрос.prefab,ok,компонент на корне
+verify,model,mesh_renderers,63,вне LODGroup=да; материалов в палитре=14
+verify,model,slots_LOD0,49,вне LODGroup=30 + LOD0=19; shadow_slots=49; dc_model(2×P+C)=147
+verify,model,slots_LOD1,43,вне LODGroup=30 + LOD1=13; shadow_slots=43; dc_model(2×P+C)=129
+verify,model,slots_LOD2,35,вне LODGroup=30 + LOD2=5; shadow_slots=35; dc_model(2×P+C)=105
+verify,budget,ShipShadowBudget,present,enabled=True; on_m=140.000; off_m=150.000; coverWholeLodGroup=True; maxAxis_m=8.000
+verify,budget,covered,33,slots=37; caster_slots=37; off_в_префабе=0; покрытие — только LODGroup (двери/слоты/PilotSeat вне его by design)
+verify,validation,,OK,

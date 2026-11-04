@@ -1,0 +1,107 @@
+phase,category,key,value,note
+dryrun,materials,target=M_PC_Concrete,12,
+dryrun,materials,target=M_PC_Parquet,1,
+dryrun,materials,target=M_PC_Bronze_Brass,63,
+dryrun,materials,target=M_PC_Glass_Green,27,
+dryrun,materials,target=M_PC_Steel_v2,31,
+dryrun,materials,target=M_PC_Steel_v2_Dark,16,
+dryrun,materials,target=M_PC_Steel_v2_Hull,8,
+dryrun,materials,target=M_PC_Wood,33,
+dryrun,materials,target=M_PC_Lantern_Green,2,
+dryrun,materials,target=M_PC_Lantern_Red,2,
+dryrun,materials,target=M_PC_Fabric,11,
+dryrun,materials,urp_lit_slots_before,206,
+dryrun,materials,assignments,206,
+apply,materials,target=M_PC_Concrete,12,
+apply,materials,target=M_PC_Parquet,1,
+apply,materials,target=M_PC_Bronze_Brass,63,
+apply,materials,target=M_PC_Glass_Green,27,
+apply,materials,target=M_PC_Steel_v2,31,
+apply,materials,target=M_PC_Steel_v2_Dark,16,
+apply,materials,target=M_PC_Steel_v2_Hull,8,
+apply,materials,target=M_PC_Wood,33,
+apply,materials,target=M_PC_Lantern_Green,2,
+apply,materials,target=M_PC_Lantern_Red,2,
+apply,materials,target=M_PC_Fabric,11,
+apply,materials,urp_lit_slots_before,206,
+apply,materials,assignments,206,
+dryrun,plan,renderers_total,195,
+dryrun,plan,to_merge,195,
+dryrun,plan,protected,0,
+dryrun,plan,groups,17,
+dryrun,group,Hull/M_PC_Concrete,parts=12; tris=750; verts=1268,
+dryrun,group,Hull/M_PC_Parquet,parts=1; tris=12; verts=24,
+dryrun,group,Hull/M_PC_Bronze_Brass,parts=57; tris=2764; verts=4610,
+dryrun,group,Door_Front/M_PC_Bronze_Brass,parts=3; tris=312; verts=512,
+dryrun,group,Door_Front/M_PC_Glass_Green,parts=1; tris=12; verts=24,
+dryrun,group,Door_Front/M_PC_Steel_v2,parts=2; tris=24; verts=48,
+dryrun,group,Door_Rear/M_PC_Bronze_Brass,parts=3; tris=312; verts=512,
+dryrun,group,Door_Rear/M_PC_Glass_Green,parts=1; tris=12; verts=24,
+dryrun,group,Door_Rear/M_PC_Steel_v2,parts=2; tris=24; verts=48,
+dryrun,group,Hull/M_PC_Steel_v2,parts=27; tris=1492; verts=2736,
+dryrun,group,Hull/M_PC_Steel_v2_Dark,parts=16; tris=224; verts=432,
+dryrun,group,Hull/M_PC_Steel_v2_Hull,parts=8; tris=5470; verts=5767,
+dryrun,group,Hull/M_PC_Wood,parts=33; tris=6270; verts=10472,
+dryrun,group,Hull/M_PC_Glass_Green,parts=25; tris=300; verts=600,
+dryrun,group,Hull/M_PC_Lantern_Green,parts=2; tris=24; verts=48,
+dryrun,group,Hull/M_PC_Lantern_Red,parts=2; tris=24; verts=48,
+dryrun,group,Hull/M_PC_Fabric,parts=11; tris=882; verts=1176,
+dryrun,tris,source,18908,
+dryrun,tris,merged,18908,
+dryrun,tris,delta,0,OK
+dryrun,bounds,source_size,4.08x4.60x13.43,
+dryrun,bounds,merged_size,4.08x4.60x13.43,
+dryrun,bounds,shrink_pct,0.000,% от габарита
+dryrun,bounds,merged_inside_source,yes,
+apply,plan,renderers_total,195,
+apply,plan,to_merge,195,
+apply,plan,protected,0,
+apply,plan,groups,17,
+apply,group,Hull/M_PC_Concrete,parts=12; tris=750; verts=1268,
+apply,mesh,Parom_VIS_Hull_M_PC_Concrete,750,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Concrete.asset
+apply,group,Hull/M_PC_Parquet,parts=1; tris=12; verts=24,
+apply,mesh,Parom_VIS_Hull_M_PC_Parquet,12,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Parquet.asset
+apply,group,Hull/M_PC_Bronze_Brass,parts=57; tris=2764; verts=4610,
+apply,mesh,Parom_VIS_Hull_M_PC_Bronze_Brass,2764,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Bronze_Brass.asset
+apply,group,Door_Front/M_PC_Bronze_Brass,parts=3; tris=312; verts=512,
+apply,mesh,Parom_VIS_Door_Front_M_PC_Bronze_Brass,312,Assets/_Project/Generated/Ships/Parom_VIS_Door_Front_M_PC_Bronze_Brass.asset
+apply,group,Door_Front/M_PC_Glass_Green,parts=1; tris=12; verts=24,
+apply,mesh,Parom_VIS_Door_Front_M_PC_Glass_Green,12,Assets/_Project/Generated/Ships/Parom_VIS_Door_Front_M_PC_Glass_Green.asset
+apply,group,Door_Front/M_PC_Steel_v2,parts=2; tris=24; verts=48,
+apply,mesh,Parom_VIS_Door_Front_M_PC_Steel_v2,24,Assets/_Project/Generated/Ships/Parom_VIS_Door_Front_M_PC_Steel_v2.asset
+apply,group,Door_Rear/M_PC_Bronze_Brass,parts=3; tris=312; verts=512,
+apply,mesh,Parom_VIS_Door_Rear_M_PC_Bronze_Brass,312,Assets/_Project/Generated/Ships/Parom_VIS_Door_Rear_M_PC_Bronze_Brass.asset
+apply,group,Door_Rear/M_PC_Glass_Green,parts=1; tris=12; verts=24,
+apply,mesh,Parom_VIS_Door_Rear_M_PC_Glass_Green,12,Assets/_Project/Generated/Ships/Parom_VIS_Door_Rear_M_PC_Glass_Green.asset
+apply,group,Door_Rear/M_PC_Steel_v2,parts=2; tris=24; verts=48,
+apply,mesh,Parom_VIS_Door_Rear_M_PC_Steel_v2,24,Assets/_Project/Generated/Ships/Parom_VIS_Door_Rear_M_PC_Steel_v2.asset
+apply,group,Hull/M_PC_Steel_v2,parts=27; tris=1492; verts=2736,
+apply,mesh,Parom_VIS_Hull_M_PC_Steel_v2,1492,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Steel_v2.asset
+apply,group,Hull/M_PC_Steel_v2_Dark,parts=16; tris=224; verts=432,
+apply,mesh,Parom_VIS_Hull_M_PC_Steel_v2_Dark,224,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Steel_v2_Dark.asset
+apply,group,Hull/M_PC_Steel_v2_Hull,parts=8; tris=5470; verts=5767,
+apply,mesh,Parom_VIS_Hull_M_PC_Steel_v2_Hull,5470,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Steel_v2_Hull.asset
+apply,group,Hull/M_PC_Wood,parts=33; tris=6270; verts=10472,
+apply,mesh,Parom_VIS_Hull_M_PC_Wood,6270,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Wood.asset
+apply,group,Hull/M_PC_Glass_Green,parts=25; tris=300; verts=600,
+apply,mesh,Parom_VIS_Hull_M_PC_Glass_Green,300,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Glass_Green.asset
+apply,group,Hull/M_PC_Lantern_Green,parts=2; tris=24; verts=48,
+apply,mesh,Parom_VIS_Hull_M_PC_Lantern_Green,24,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Lantern_Green.asset
+apply,group,Hull/M_PC_Lantern_Red,parts=2; tris=24; verts=48,
+apply,mesh,Parom_VIS_Hull_M_PC_Lantern_Red,24,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Lantern_Red.asset
+apply,group,Hull/M_PC_Fabric,parts=11; tris=882; verts=1176,
+apply,mesh,Parom_VIS_Hull_M_PC_Fabric,882,Assets/_Project/Generated/Ships/Parom_VIS_Hull_M_PC_Fabric.asset
+apply,tris,source,18908,
+apply,tris,merged,18908,
+apply,tris,delta,0,OK
+apply,bounds,source_size,4.08x4.60x13.43,
+apply,bounds,merged_size,4.08x4.60x13.43,
+apply,bounds,shrink_pct,0.000,% от габарита
+apply,bounds,merged_inside_source,yes,
+state,prefab,mr_total,17,
+state,prefab,mr_merged,17,
+state,prefab,tris_merged,18908,
+state,prefab,bounds_all,4.08x4.60x13.43,
+state,prefab,model_root,ProjectC_ship_parom_city_1_1,
+state,prefab,root_scale,"(1.000, 1.000, 1.000)",
+state,prefab,file_size,169141,

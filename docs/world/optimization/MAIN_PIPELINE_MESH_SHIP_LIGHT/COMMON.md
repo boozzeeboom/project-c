@@ -241,6 +241,7 @@ DC ≈ 2 × (число различных (mesh,материал,настрой
 | `Repair Heavy Prefab` | `ProjectC → Ships → Repair Heavy Prefab (dry-run/apply)`, `Verify (FBX reimport)`, `Rollback` | после каждого reimport FBX корабля, до мержа |
 | `Heavy Visual Merge` | `ProjectC → Ships → Heavy Visual Merge (dry-run)`, `(apply P1+P2)`, `Verify`, `Rollback` | мерж greebles + LODGroup |
 | `Albatros Merge` | `ProjectC → Ships → Albatros (NPC) → 1…9` | готовый образец «повтора по образцу» для нового корабля (§6.5): мерж статики + LOD + бюджет; отчёт `docs/dev/ALBATROS_MERGE_REPORT.md` |
+| `Loreyn Merge` | `ProjectC → Ships → Loreyn (Light) → 1…9` | образец для полосы S (§6.5): палитра `M_PC_*` + мерж статики без LODGroup/бюджета; отчёт `docs/dev/LOREYN_MERGE_REPORT.md` |
 | `Shadow Budget` (ship) | `ProjectC → Ships → Shadow Budget → Apply/Verify/Rollback` | бюджет теней корабля L/XL |
 | `Ship Summary` | `Tools → Project C → Ship Summary` | конфиг/пресеты классов (не DC-инструмент) |
 | `Create Ship Preset` | `Tools → Project C → Create Ship Preset` | заготовка нового корабля |

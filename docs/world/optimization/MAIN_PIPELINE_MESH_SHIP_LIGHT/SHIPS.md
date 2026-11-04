@@ -72,6 +72,9 @@ Medium 73.1 м — 118 MR / 354 DC, HeavyII — 616 MR / 604 слота. Пол�
   либо повтори по образцу с собственным отчётом и инвариантами (абсолютные пороги MR не переноси).
   Готовый образец такого повтора — `AlbatrosVisualMerger.cs` (`ProjectC → Ships → Albatros (NPC)`):
   NPC «Альбатрос», класс L, 1 678 → 63 рендерера, LOD 150/450 м, тени 140/150 м; отчёт — `docs/dev/ALBATROS_MERGE_REPORT.md`.
+  Второй образец, для полосы S — `LoreynVisualMerger.cs` (`ProjectC → Ships → Loreyn (Light)`):
+  «Лорейн» (Light, 5.16 м), палитра `M_PC_*` + мерж 379 → 13 рендереров, LODGroup и ShadowBudget не нужны;
+  отчёт — `docs/dev/LOREYN_MERGE_REPORT.md`.
 
 ---
 

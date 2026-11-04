@@ -25,7 +25,14 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Scratch_Angle: 0.33
+    - _Scratch_Band: 0.14
+    - _Scratch_Mask: 0.5
+    - _Scratch_Mask_Scale: 66.6
+    - _Scratch_Scale: 183.15
+    - _Scratch_Seed: 1.02
+    - _Scratch_Threshold: 0.89
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

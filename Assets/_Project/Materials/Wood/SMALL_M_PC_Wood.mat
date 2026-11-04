@@ -26,9 +26,15 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _Grain_Scale: 3.18
+    - _Pores_Scale: 117.4
     - _Rings_Bump: 0
-    - _Rings_Scale: 57.1
+    - _Rings_Scale: 55.9
+    - _Scratch_Amount: 0.18
     - _Scratch_Bump: 0.0001
+    - _Scratch_Mask: 0.26
+    - _Scratch_Mask_Scale: 2.41
+    - _Scratch_Scale: 10.77
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

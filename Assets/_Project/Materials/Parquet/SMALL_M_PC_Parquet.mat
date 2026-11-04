@@ -40,8 +40,8 @@ Material:
     m_Ints: []
     m_Floats:
     - _Plank_Aspect: 2.81
-    - _Plank_Scale: 1.4
-    - _Rings_Scale: 143
+    - _Plank_Scale: 1.97
+    - _Rings_Scale: 150.9
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -27,7 +27,9 @@ namespace ProjectC.Ship
     /// E-key / F-key: NetworkPlayer вызывает Toggle(). Совместимость с v1 сохранена.
     /// Если на том же GameObject есть MetaRequirement — дверь можно запереть.
     /// </summary>
-    [RequireComponent(typeof(Collider))]
+    // RequireComponent(typeof(Collider)) здесь невыполним: Collider — базовый
+    // нет-инстанцируемый тип, Unity не может его добавить и отказывается добавлять
+    // сам компонент. Наличие коллайдера проверяет EnsureCollider().
     [DisallowMultipleComponent]
     public class DoorController : MonoBehaviour
     {
@@ -266,6 +268,8 @@ namespace ProjectC.Ship
 
         private void Awake()
         {
+            EnsureCollider();
+
             var rootRef = GetComponentInParent<ShipRootReference>();
             if (rootRef != null)
                 ShipController = rootRef.ShipController;
@@ -281,6 +285,8 @@ namespace ProjectC.Ship
         // Свежий компонент: разумные дефолты + пропуск legacy-миграции.
         private void Reset()
         {
+            EnsureCollider();
+
             doorType = DoorType.SlidingSingle;
             slideSide = SlideSide.Right;
             distanceMode = OpenDistanceMode.AutoBySize;
@@ -292,6 +298,20 @@ namespace ProjectC.Ship
             openAngle = 90f;
             doubleOpenAngle = 90f;
             legacyMigrated = true;
+        }
+
+        /// <summary>
+        /// Гарантирует коллайдер на этом объекте. RequireComponent(typeof(Collider))
+        /// невыполним (Collider — базовый нет-инстанцируемый тип), поэтому проверяем
+        /// наличие любого коллайдера и при отсутствии вешаем BoxCollider-зону взаимодействия.
+        /// На существующих дверях ничего не меняет — там коллайдер уже есть.
+        /// </summary>
+        private void EnsureCollider()
+        {
+            if (GetComponent<Collider>() != null) return;
+
+            var box = gameObject.AddComponent<BoxCollider>();
+            box.isTrigger = true; // как у корневой зоны в DoorPrefabBuilder
         }
 
 #if UNITY_EDITOR

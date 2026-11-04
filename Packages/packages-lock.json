@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "app.rive.rive-unity": {
+      "version": "https://github.com/rive-app/rive-unity.git?path=package#v0.5.2",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.shadergraph": "14.0.11"
+      },
+      "hash": "96045d35a50050321be38e041d4aaad625a7bb39"
+    },
     "com.anklebreaker.unity-mcp": {
       "version": "https://github.com/AnkleBreaker-Studio/unity-mcp-plugin.git#main",
       "depth": 0,

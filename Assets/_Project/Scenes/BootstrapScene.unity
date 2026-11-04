@@ -4942,8 +4942,13 @@ MonoBehaviour:
   rescanInterval: 2
   includeInactiveLights: 1
   controlOnlyAdditionalLights: 1
+  fadeEnabled: 1
+  fadeInSeconds: 0.15
+  fadeOutSeconds: 0
   transitionSpeed: 4
   logDiscovery: 0
+  activeSetEnabled: 1
+  baseSweepEpsilon: 0.01
   groups:
   - groupId: PRIMUM_OUTLIGHT
     nameContains: PRIMUM_OUTLIGHT
@@ -17039,6 +17044,7 @@ MonoBehaviour:
   _profile: {fileID: 11400000, guid: 21f017ff137c07945bc4de67e52122a7, type: 2}
   _bootstrap: {fileID: 1151906027}
   _autoStartHost: 0
+  _preloadWorldSceneForMenu: 1
 --- !u!114 &1151906032
 MonoBehaviour:
   m_ObjectHideFlags: 0

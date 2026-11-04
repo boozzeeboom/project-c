@@ -31,6 +31,10 @@ namespace ProjectC.EditorTools
     ///     соседние куски с одинаковым сечением склеиваются в пределах sliceAdaptTol (прямые
     ///     участки — 1 бокс, сужения — детально, напр. нос Deck_Main_Bow); наклонные плоские
     ///     покрываются повёрнутыми боксами 1-в-1;
+    ///   - наклонные серии нарезки: коробочный кусок, стоящий под углом к осям меша (стена под
+    ///     углом в плане, скат), осевая нарезка превращает в «лесенку» из N кусков; подряд
+    ///     идущие куски одного трека заменяются ОДНИМ повёрнутым боксом (ориентация — по
+    ///     нормалям граней), если он не выступает за лесенку дальше допуска ни в одном slab'е;
     ///   - режим корабля (shipMode): без флага static — '<Root>_Colliders' едет с Rigidbody
     ///     как compound-коллайдер (для поселений static дешевле, не включать);
     ///   - точечная нарезка (BuildSlicesDirect): режет всё выделенное с шагом sliceStep,
@@ -84,6 +88,12 @@ namespace ProjectC.EditorTools
 
             [Tooltip("Адаптив нарезки (м, world): соседние куски с сечением, совпадающим в пределах допуска, склеиваются в один (прямая корма — 1 бокс, сужение — детально). 0 — не склеивать, каждый непустой slab своим боксом.")]
             public float sliceAdaptTol = 0.05f;
+
+            [Tooltip("Только осевые куски: не заменять наклонные серии нарезки повёрнутым боксом (прежнее поведение — стена под углом режется лесенкой с шагом).")]
+            public bool sliceAxisOnly = false;
+
+            [Tooltip("Допуск воздуха наклонных боксов (м, world): вместо лесенки мелких осевых кусков slab наклонной/скрученной детали кроется повёрнутым боксом, если лишний объём только по толщине (в среднем не больше допуска) и без пустых окон (проёмы не заливаются). 0 — только без лишнего объёма.")]
+            public float sliceAirTol = 1.0f;
 
             [Tooltip("Режим корабля / движущегося объекта: холдеры, группы и корень генерации НЕ помечаются static, иерархия '<Root>_Colliders' едет вместе с Rigidbody как compound-коллайдер. Для поселений (неподвижных) оставить выключенным — static дешевле для PhysX.")]
             public bool shipMode = false;
@@ -970,8 +980,9 @@ namespace ProjectC.EditorTools
             public Mesh mesh;
             public MeshRenderer renderer;
             public Vector3 worldSize;
-            public int kind; // 0 = бокс, 1 = капсула, 2 = нарезанный на сегменты
+            public int kind; // 0 = бокс, 1 = капсула, 2 = нарезанный на сегменты, 3 = повёрнутый бокс
             public List<SliceBox> slices; // только для kind == 2
+            public SliceBox hull; // только для kind == 3
         }
 
         private class SliceBox
@@ -980,6 +991,15 @@ namespace ProjectC.EditorTools
             public int sub; // индекс связной компоненты внутри slab'а (0..)
             public bool multi; // в slab'е несколько компонент — к имени добавится суффикс Cn
             public Vector3 min, max; // mesh-local AABB куска
+            // Наклонная серия: один повёрнутый бокс вместо лесенки (суффикс R в имени).
+            public bool oriented;
+            public Vector3 obbCenterLocal;      // центр в mesh-local
+            public Vector3 obbAxisX, obbAxisY;  // оси бокса в масштабированном local (|lossyScale|), единичные
+            public Vector3 obbSize;             // размеры в метрах
+            // Геометрия повёрнутого куска slab'а (масштабированный local) — для склейки серий.
+            public List<Vector3> gPts;
+            public List<Vector3> gN;
+            public List<float> gA;
         }
 
         /// <summary>Имя холдера куска: стабильно между запусками (бин + компонента).</summary>
@@ -987,6 +1007,7 @@ namespace ProjectC.EditorTools
         {
             string n = baseName + "_S" + sl.bin.ToString("00");
             if (sl.multi) n += "C" + sl.sub;
+            if (sl.oriented) n += "R";
             return n;
         }
 
@@ -1146,14 +1167,12 @@ namespace ProjectC.EditorTools
                 }
 
                 Vector3 worldPerLocal = AbsVec(go.transform.lossyScale);
-                int longAxis = LongestAxis(f.sharedMesh.bounds.size);
-                float per = worldPerLocal[longAxis] < Epsilon ? 1f : worldPerLocal[longAxis];
                 List<SliceBox> slices = null;
                 // Read/Write у импортированных FBX обычно выключен — это не повод строить габаритный
                 // бокс: данные всё равно читаются через MeshDataArray. dataUnread — только полностью
                 // недоступный меш.
-                slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per,
-                    Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal, out bool unreadMesh);
+                slices = SlicePlanBest(f.sharedMesh, s.sliceStep,
+                    Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal, out bool unreadMesh, !s.sliceAxisOnly, Mathf.Max(0f, s.sliceAirTol));
                 if (unreadMesh) report.unreadSlices++;
 
                 string baseName = HolderNameFor(root.transform, go.transform);
@@ -1176,9 +1195,7 @@ namespace ProjectC.EditorTools
                     DestroyPredecessorHolders(genRoot, go, baseName);
                     foreach (var sl in slices)
                     {
-                        var sb = new Bounds();
-                        sb.SetMinMax(sl.min, sl.max);
-                        AddFittedBox(root, parent, SliceHolderName(baseName, sl), it, sb, s.minThickness, !s.shipMode);
+                        AddSliceBox(root, parent, SliceHolderName(baseName, sl), it, sl, s.minThickness, !s.shipMode);
                         report.created++;
                     }
                     report.slicedMeshes++;
@@ -1195,8 +1212,20 @@ namespace ProjectC.EditorTools
                         report.created++;
                         continue;
                     }
+                    SliceBox hull = s.sliceAxisOnly ? null : OrientedHullBox(f.sharedMesh, worldPerLocal);
+                    if (hull != null && existingNames != null && existingNames.Contains(baseName))
+                    {
+                        report.skippedExists++;
+                        continue;
+                    }
                     Transform parent = ResolveGroup(root, genRoot, groups, s, go);
-                    AddFittedBox(root, parent, baseName, it, f.sharedMesh.bounds, s.minThickness, !s.shipMode);
+                    if (hull != null)
+                    {
+                        DestroyPredecessorHolders(genRoot, go, baseName);
+                        AddObliqueBox(root, parent, baseName, it, hull, s.minThickness, !s.shipMode);
+                    }
+                    else
+                        AddFittedBox(root, parent, baseName, it, f.sharedMesh.bounds, s.minThickness, !s.shipMode);
                     report.created++;
                 }
             }
@@ -1358,10 +1387,8 @@ namespace ProjectC.EditorTools
                 List<SliceBox> slices = null;
                 if (sliceToks.Length == 0 || MatchesAny(upper, sliceToks))
                 {
-                    int longAxis = LongestAxis(f.sharedMesh.bounds.size);
-                    float per = worldPerLocal[longAxis] < Epsilon ? 1f : worldPerLocal[longAxis];
-                    slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per,
-                        Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal, out bool unreadMesh);
+                    slices = SlicePlanBest(f.sharedMesh, s.sliceStep,
+                        Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal, out bool unreadMesh, !s.sliceAxisOnly, Mathf.Max(0f, s.sliceAirTol));
                     if (unreadMesh) report.unreadSlices++;
                 }
 
@@ -1376,9 +1403,7 @@ namespace ProjectC.EditorTools
                     PurgeChildHolders(go.transform, baseName);
                     foreach (var sl in slices)
                     {
-                        var sb = new Bounds();
-                        sb.SetMinMax(sl.min, sl.max);
-                        AddFittedBox(root, go.transform, SliceHolderName(baseName, sl), it, sb, s.minThickness, markStatic);
+                        AddSliceBox(root, go.transform, SliceHolderName(baseName, sl), it, sl, s.minThickness, markStatic);
                         report.created++;
                     }
                     report.slicedMeshes++;
@@ -1392,7 +1417,11 @@ namespace ProjectC.EditorTools
                         continue;
                     }
                     PurgeChildHolders(go.transform, baseName);
-                    AddFittedBox(root, go.transform, baseName, it, f.sharedMesh.bounds, s.minThickness, markStatic);
+                    SliceBox hull = s.sliceAxisOnly ? null : OrientedHullBox(f.sharedMesh, worldPerLocal);
+                    if (hull != null)
+                        AddObliqueBox(root, go.transform, baseName, it, hull, s.minThickness, markStatic);
+                    else
+                        AddFittedBox(root, go.transform, baseName, it, f.sharedMesh.bounds, s.minThickness, markStatic);
                     report.created++;
                 }
             }
@@ -1411,6 +1440,17 @@ namespace ProjectC.EditorTools
             {
                 Transform c = source.GetChild(i);
                 if (c == null) continue;
+                if (c.name == UnitFrameName)
+                {
+                    // Наклонные куски лежат в рамке единичного масштаба под мешем.
+                    for (int j = 0; j < c.childCount; j++)
+                    {
+                        Transform g = c.GetChild(j);
+                        if (g != null && (g.name == baseName || g.name.StartsWith(slicePrefix, StringComparison.Ordinal)))
+                            doomed.Add(g);
+                    }
+                    continue;
+                }
                 if (c.name == baseName || c.name.StartsWith(slicePrefix, StringComparison.Ordinal))
                     doomed.Add(c);
             }
@@ -1552,7 +1592,7 @@ namespace ProjectC.EditorTools
         /// Slab'ы без геометрии (проёмы) пропускаются. Null, если резать нечего.
         /// Бины и порядок компонент детерминированы — имена кусков стабильны.
         /// </summary>
-        private static List<SliceBox> SlicePlan(Mesh mesh, int axis, float stepLocal, float tolWorld, Vector3 worldPerLocal, out bool dataUnread)
+        private static List<SliceBox> SlicePlan(Mesh mesh, int axis, float stepLocal, float tolWorld, Vector3 worldPerLocal, out bool dataUnread, bool allowOblique = true, float airTol = 0f)
         {
             dataUnread = false;
             if (mesh == null || mesh.vertexCount == 0) return null;
@@ -1560,10 +1600,7 @@ namespace ProjectC.EditorTools
             Bounds b = mesh.bounds;
             float len = b.size[axis];
             if (len <= Epsilon || stepLocal <= Epsilon) return null;
-            int k = Mathf.CeilToInt(len / stepLocal);
-            if (k <= 1) return null;
-            if (k > 256) k = 256; // защита от миллиметрового шага на стометровке (корабли: 108 м / 0.5 = 216)
-            float step = len / k; // нормируем: ровные slab'ы ровно покрывают bounds
+            if (Mathf.CeilToInt(len / stepLocal) <= 1) return null;
 
             Vector3[] verts;
             int[] tris;
@@ -1572,6 +1609,613 @@ namespace ProjectC.EditorTools
                 dataUnread = true; // данных нет совсем — резать нечем
                 return null;
             }
+            return SlicePlanCore(verts, tris, b, axis, stepLocal, tolWorld, worldPerLocal, allowOblique, airTol);
+        }
+
+        /// <summary>
+        /// Лучший план нарезки меша: осевой (по локальным осям меша) против нарезки в собственной
+        /// рамке детали. Деталь, наклонённая сразу по двум осям (скат кровли, наклонное стекло),
+        /// в осях меша даёт сетку из десятков кусков на каждый slab — в своей рамке это ряд
+        /// повёрнутых полос. Берётся план с меньшим числом боксов; при равенстве — осевой.
+        /// stepWorld — шаг в метрах.
+        /// </summary>
+        private static List<SliceBox> SlicePlanBest(Mesh mesh, float stepWorld, float tolWorld, Vector3 wpl,
+            out bool dataUnread, bool allowOblique, float airTol)
+        {
+            dataUnread = false;
+            if (mesh == null) return null;
+            int longAxis = LongestAxis(mesh.bounds.size);
+            float per = wpl[longAxis] < Epsilon ? 1f : wpl[longAxis];
+            var best = SlicePlan(mesh, longAxis, stepWorld / per, tolWorld, wpl, out dataUnread, allowOblique, airTol);
+            if (!allowOblique || dataUnread || stepWorld <= Epsilon) return best;
+            if (best == null || best.Count <= 2) return best; // и так один-два бокса — рамки не помогут
+
+            Vector3[] verts;
+            int[] tris;
+            if (!TryReadMeshData(mesh, out verts, out tris)) return best;
+            if (TiltedFraction(verts, tris, wpl) < ObliqueMinTiltFrac) return best; // деталь в осях меша
+            var frames = MeshFrames(verts, tris, wpl, mesh.vertexCount <= FrameTryVertLimit ? 3 : 1);
+            if (frames.Count == 0) return best;
+
+            int bestCount = best != null ? best.Count : int.MaxValue;
+            var fv = new Vector3[verts.Length];
+            foreach (var fr in frames)
+            {
+                Bounds fb = new Bounds();
+                for (int i = 0; i < verts.Length; i++)
+                {
+                    Vector3 p = Vector3.Scale(verts[i], wpl);
+                    fv[i] = new Vector3(Vector3.Dot(p, fr.u), Vector3.Dot(p, fr.v), Vector3.Dot(p, fr.w));
+                    if (i == 0) fb = new Bounds(fv[i], Vector3.zero); else fb.Encapsulate(fv[i]);
+                }
+                // Две длинные оси рамки: какая даст меньше боксов (трапеция кровли — поперёк).
+                Vector3 sz = fb.size;
+                int a0 = LongestAxis(sz);
+                int a1 = -1;
+                for (int a = 0; a < 3; a++)
+                    if (a != a0 && (a1 < 0 || sz[a] > sz[a1])) a1 = a;
+                foreach (int ax in new[] { a0, a1 })
+                {
+                    if (sz[ax] <= stepWorld) continue;
+                    var plan = SlicePlanCore(fv, tris, fb, ax, stepWorld, tolWorld, Vector3.one, true, airTol);
+                    if (plan == null || plan.Count >= bestCount) continue;
+                    best = ToMeshFrame(plan, fr, wpl);
+                    bestCount = plan.Count;
+                }
+            }
+            return best;
+        }
+
+        private const int FrameTryVertLimit = 4000; // больше вершин — пробуем только одну рамку
+        private const float ObliqueMinTiltFrac = 0.05f; // доля площади наклонных граней: меньше — без поворотов (фаски)
+
+        /// <summary>Наклонная грань — нормаль не вдоль оси меша (больше ObliqueMinAngleDeg).</summary>
+        private static bool IsTiltedNormal(Vector3 n)
+        {
+            return MaxAbsComp(n) < Mathf.Cos(ObliqueMinAngleDeg * Mathf.Deg2Rad);
+        }
+
+        /// <summary>Доля площади наклонных граней (масштабированный local). Деталь в осях меша — повороты не нужны.</summary>
+        private static float TiltedFraction(Vector3[] verts, int[] tris, Vector3 wpl)
+        {
+            float total = 0f, tilt = 0f;
+            for (int t = 0; t + 2 < tris.Length; t += 3)
+            {
+                int ia = tris[t], ib = tris[t + 1], ic = tris[t + 2];
+                if (ia < 0 || ib < 0 || ic < 0 || ia >= verts.Length || ib >= verts.Length || ic >= verts.Length) continue;
+                Vector3 a = Vector3.Scale(verts[ia], wpl);
+                Vector3 n = Vector3.Cross(Vector3.Scale(verts[ib], wpl) - a, Vector3.Scale(verts[ic], wpl) - a);
+                float ar = n.magnitude;
+                if (ar < 1e-12f) continue;
+                total += ar;
+                if (IsTiltedNormal(n / ar)) tilt += ar;
+            }
+            return total > 0f ? tilt / total : 0f;
+        }
+
+        private struct MeshFrame
+        {
+            public Vector3 u, v, w; // ортонормированные оси в масштабированном local (|lossyScale|)
+        }
+
+        /// <summary>
+        /// Собственные рамки детали по нормалям граней (площадь-взвешенные кластеры): n1 — главная
+        /// грань, n2 — следующая неколлинеарная. Осевые (совпадающие с осями меша) отбрасываются.
+        /// Сортировка — по объёму OBB, первая рамка — минимального объёма.
+        /// </summary>
+        private static List<MeshFrame> MeshFrames(Vector3[] verts, int[] tris, Vector3 wpl, int maxFrames)
+        {
+            var cd = new List<Vector3>(8);
+            var ca = new List<float>(8);
+            for (int t = 0; t + 2 < tris.Length; t += 3)
+            {
+                int ia = tris[t], ib = tris[t + 1], ic = tris[t + 2];
+                if (ia < 0 || ib < 0 || ic < 0 || ia >= verts.Length || ib >= verts.Length || ic >= verts.Length) continue;
+                Vector3 a = Vector3.Scale(verts[ia], wpl);
+                Vector3 n = Vector3.Cross(Vector3.Scale(verts[ib], wpl) - a, Vector3.Scale(verts[ic], wpl) - a);
+                float ar = n.magnitude * 0.5f;
+                if (ar < 1e-12f) continue;
+                AddNormalCluster(cd, ca, n.normalized, ar);
+            }
+            var res = new List<MeshFrame>();
+            if (cd.Count == 0) return res;
+            var order = new List<int>(cd.Count);
+            for (int c = 0; c < cd.Count; c++) order.Add(c);
+            order.Sort((x, y) => ca[y].CompareTo(ca[x]));
+
+            var cand2 = new List<Vector3>(7);
+            for (int q = 0; q < order.Count && q < 4; q++) cand2.Add(cd[order[q]].normalized);
+            cand2.Add(Vector3.right);
+            cand2.Add(Vector3.up);
+            cand2.Add(Vector3.forward);
+
+            float minCos = Mathf.Cos(ObliqueMinAngleDeg * Mathf.Deg2Rad);
+            var vols = new List<float>();
+            for (int a = 0; a < order.Count && a < 3; a++)
+            {
+                Vector3 n1 = cd[order[a]].normalized;
+                foreach (var raw in cand2)
+                {
+                    Vector3 n2 = raw - n1 * Vector3.Dot(raw, n1);
+                    if (n2.sqrMagnitude < 0.05f) continue;
+                    n2.Normalize();
+                    var fr = new MeshFrame { u = n1, v = n2, w = Vector3.Cross(n1, n2) };
+                    if (MaxAbsComp(fr.u) >= minCos && MaxAbsComp(fr.v) >= minCos && MaxAbsComp(fr.w) >= minCos) continue;
+                    bool dup = false;
+                    foreach (var o in res)
+                        if (SameFrame(o, fr)) { dup = true; break; }
+                    if (dup) continue;
+                    Vector3 mn = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+                    Vector3 mx = -mn;
+                    for (int i = 0; i < verts.Length; i++)
+                    {
+                        Vector3 p = Vector3.Scale(verts[i], wpl);
+                        Vector3 f = new Vector3(Vector3.Dot(p, fr.u), Vector3.Dot(p, fr.v), Vector3.Dot(p, fr.w));
+                        mn = Vector3.Min(mn, f);
+                        mx = Vector3.Max(mx, f);
+                    }
+                    Vector3 d = mx - mn;
+                    res.Add(fr);
+                    vols.Add(d.x * d.y * d.z);
+                }
+            }
+            // По объёму (простая вставка — кандидатов единицы).
+            for (int i = 1; i < res.Count; i++)
+                for (int j = i; j > 0 && vols[j] < vols[j - 1]; j--)
+                {
+                    float tv = vols[j]; vols[j] = vols[j - 1]; vols[j - 1] = tv;
+                    var tf = res[j]; res[j] = res[j - 1]; res[j - 1] = tf;
+                }
+            if (res.Count > maxFrames) res.RemoveRange(maxFrames, res.Count - maxFrames);
+            return res;
+        }
+
+        private static void AddNormalCluster(List<Vector3> cd, List<float> ca, Vector3 n, float a)
+        {
+            for (int c = 0; c < cd.Count; c++)
+            {
+                float dt = Vector3.Dot(n, cd[c].normalized);
+                if (Mathf.Abs(dt) >= ObliqueNormalCos)
+                {
+                    cd[c] += (dt < 0f ? -n : n) * a;
+                    ca[c] += a;
+                    return;
+                }
+            }
+            cd.Add(n * a);
+            ca.Add(a);
+        }
+
+        /// <summary>Рамки совпадают с точностью до перестановки и знака осей.</summary>
+        private static bool SameFrame(MeshFrame a, MeshFrame b)
+        {
+            Vector3[] x = { a.u, a.v, a.w };
+            Vector3[] y = { b.u, b.v, b.w };
+            foreach (var p in x)
+            {
+                bool hit = false;
+                foreach (var q in y)
+                    if (Mathf.Abs(Vector3.Dot(p, q)) >= ObliqueNormalCos) { hit = true; break; }
+                if (!hit) return false;
+            }
+            return true;
+        }
+
+        /// <summary>Куски, посчитанные в рамке детали (метры), → повёрнутые куски в mesh-local.</summary>
+        private static List<SliceBox> ToMeshFrame(List<SliceBox> plan, MeshFrame fr, Vector3 wpl)
+        {
+            var res = new List<SliceBox>(plan.Count);
+            foreach (var sl in plan)
+            {
+                Vector3 cF, ax, ay, size;
+                if (sl.oriented)
+                {
+                    cF = sl.obbCenterLocal;
+                    ax = sl.obbAxisX;
+                    ay = sl.obbAxisY;
+                    size = sl.obbSize;
+                }
+                else
+                {
+                    cF = (sl.min + sl.max) * 0.5f;
+                    ax = Vector3.right;
+                    ay = Vector3.up;
+                    size = sl.max - sl.min;
+                }
+                Vector3 cS = fr.u * cF.x + fr.v * cF.y + fr.w * cF.z;
+                Vector3 axS = (fr.u * ax.x + fr.v * ax.y + fr.w * ax.z).normalized;
+                Vector3 ayS = (fr.u * ay.x + fr.v * ay.y + fr.w * ay.z).normalized;
+                Vector3 cL = new Vector3(
+                    wpl.x < Epsilon ? cS.x : cS.x / wpl.x,
+                    wpl.y < Epsilon ? cS.y : cS.y / wpl.y,
+                    wpl.z < Epsilon ? cS.z : cS.z / wpl.z);
+                res.Add(new SliceBox
+                {
+                    bin = sl.bin,
+                    sub = sl.sub,
+                    multi = sl.multi,
+                    min = cL,
+                    max = cL,
+                    oriented = true,
+                    obbCenterLocal = cL,
+                    obbAxisX = axS,
+                    obbAxisY = ayS,
+                    obbSize = size
+                });
+            }
+            return res;
+        }
+
+        /// <summary>
+        /// Одиночный повёрнутый бокс по собственной рамке детали вместо AABB в осях меша — если
+        /// деталь стоит под углом и рамка заметно (ObbGainMin) экономнее по объёму. Null —
+        /// оставить обычный бокс (осевая деталь, нет данных или выигрыша).
+        /// </summary>
+        private static SliceBox OrientedHullBox(Mesh mesh, Vector3 wpl)
+        {
+            if (mesh == null || mesh.vertexCount == 0) return null;
+            Vector3[] verts;
+            int[] tris;
+            if (!TryReadMeshData(mesh, out verts, out tris)) return null;
+            if (TiltedFraction(verts, tris, wpl) < ObliqueMinTiltFrac) return null;
+            var frames = MeshFrames(verts, tris, wpl, 1);
+            if (frames.Count == 0) return null;
+            MeshFrame fr = frames[0];
+
+            Vector3 mn = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            Vector3 mx = -mn;
+            for (int i = 0; i < verts.Length; i++)
+            {
+                Vector3 p = Vector3.Scale(verts[i], wpl);
+                Vector3 f = new Vector3(Vector3.Dot(p, fr.u), Vector3.Dot(p, fr.v), Vector3.Dot(p, fr.w));
+                mn = Vector3.Min(mn, f);
+                mx = Vector3.Max(mx, f);
+            }
+            Vector3 d = mx - mn;
+            Vector3 ab = Vector3.Scale(mesh.bounds.size, wpl);
+            float volObb = d.x * d.y * d.z;
+            float volAabb = ab.x * ab.y * ab.z;
+            if (!(volObb < volAabb * (1f - ObbGainMin))) return null;
+
+            var plan = new List<SliceBox>(1)
+            {
+                new SliceBox { bin = 0, min = mn, max = mx }
+            };
+            return ToMeshFrame(plan, fr, wpl)[0];
+        }
+
+        private const float ObbGainMin = 0.15f; // повёрнутый одиночный бокс — только если на 15 % меньше AABB
+        private const float SlabObbSlack = 0.05f; // повёрнутый бокс slab'а не больше суммы осевых кусков +5 %
+
+        private const int SlabSplitDepth = 3;        // до 8 повёрнутых боксов на slab
+        private const float SlabSplitGain = 0.3f;    // делим, только если два бокса на 30 % меньше одного
+        private const int SlabSplitCandidates = 24;  // позиций разреза на уровень
+        private const int SlabSplitMaxPolys = 400;   // тяжелее — без деления (только один бокс)
+        private const float SlabMinTiltFrac = 0.1f;  // slab без заметных наклонных граней — не поворачиваем
+
+        /// <summary>Кусок грани внутри slab'а (масштабированный local): полигон и нормаль исходного треугольника.</summary>
+        private class SPoly
+        {
+            public List<Vector3> p;
+            public Vector3 n;
+        }
+
+        private class ObbFit
+        {
+            public Vector3 u, v, w, mn, mx;
+            public float vol;
+            public List<SPoly> polys;
+        }
+
+        private static float PolyArea(List<Vector3> p)
+        {
+            float ar = 0f;
+            for (int q = 1; q + 1 < p.Count; q++)
+                ar += Vector3.Cross(p[q] - p[0], p[q + 1] - p[0]).magnitude * 0.5f;
+            return ar;
+        }
+
+        /// <summary>OBB минимального объёма по рамкам из нормалей граней (+ оси меша).</summary>
+        private static ObbFit FitPolys(List<SPoly> polys)
+        {
+            var cd = new List<Vector3>(8);
+            var ca = new List<float>(8);
+            foreach (var sp in polys)
+            {
+                float ar = PolyArea(sp.p);
+                if (ar > 0f) AddNormalCluster(cd, ca, sp.n, ar);
+            }
+            var order = new List<int>(cd.Count);
+            for (int c = 0; c < cd.Count; c++) order.Add(c);
+            order.Sort((x, y) => ca[y].CompareTo(ca[x]));
+            var n1s = new List<Vector3>(3);
+            for (int q = 0; q < order.Count && q < 2; q++) n1s.Add(cd[order[q]].normalized);
+            n1s.Add(Vector3.right);
+            var cand2 = new List<Vector3>(7);
+            for (int q = 0; q < order.Count && q < 4; q++) cand2.Add(cd[order[q]].normalized);
+            cand2.Add(Vector3.right);
+            cand2.Add(Vector3.up);
+            cand2.Add(Vector3.forward);
+
+            ObbFit best = null;
+            foreach (var n1 in n1s)
+            {
+                foreach (var raw in cand2)
+                {
+                    Vector3 n2 = raw - n1 * Vector3.Dot(raw, n1);
+                    if (n2.sqrMagnitude < 0.05f) continue;
+                    n2.Normalize();
+                    Vector3 n3 = Vector3.Cross(n1, n2);
+                    Vector3 mn = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+                    Vector3 mx = -mn;
+                    foreach (var sp in polys)
+                        foreach (var p in sp.p)
+                        {
+                            Vector3 f = new Vector3(Vector3.Dot(p, n1), Vector3.Dot(p, n2), Vector3.Dot(p, n3));
+                            mn = Vector3.Min(mn, f);
+                            mx = Vector3.Max(mx, f);
+                        }
+                    if (mn.x > mx.x) continue;
+                    Vector3 d = mx - mn;
+                    float vol = d.x * d.y * d.z;
+                    if (best == null || vol < best.vol)
+                        best = new ObbFit { u = n1, v = n2, w = n3, mn = mn, mx = mx, vol = vol, polys = polys };
+                }
+            }
+            return best;
+        }
+
+        /// <summary>Разрезать полигоны плоскостью dot(p, dir) = s.</summary>
+        private static void SplitPolys(List<SPoly> polys, Vector3 dir, float s, List<SPoly> lo, List<SPoly> hi)
+        {
+            foreach (var sp in polys)
+            {
+                var a = ClipPolyPlane(sp.p, dir, s, true);
+                var b = ClipPolyPlane(sp.p, dir, s, false);
+                if (a.Count >= 3) lo.Add(new SPoly { p = a, n = sp.n });
+                if (b.Count >= 3) hi.Add(new SPoly { p = b, n = sp.n });
+            }
+        }
+
+        private static List<Vector3> ClipPolyPlane(List<Vector3> poly, Vector3 dir, float s, bool keepLess)
+        {
+            var out_ = new List<Vector3>(poly.Count + 1);
+            int n = poly.Count;
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 cur = poly[i], prev = poly[(i + n - 1) % n];
+                float dc = Vector3.Dot(cur, dir) - s, dp = Vector3.Dot(prev, dir) - s;
+                bool curIn = keepLess ? dc <= 0f : dc >= 0f;
+                bool prevIn = keepLess ? dp <= 0f : dp >= 0f;
+                if (curIn != prevIn)
+                {
+                    float t = Mathf.Abs(dc - dp) < 1e-12f ? 0f : dp / (dp - dc);
+                    out_.Add(Vector3.Lerp(prev, cur, Mathf.Clamp01(t)));
+                }
+                if (curIn) out_.Add(cur);
+            }
+            return out_;
+        }
+
+        /// <summary>
+        /// Рекурсивное деление геометрии slab'а на повёрнутые боксы: гнутая/скрученная
+        /// пластина делится по сгибу (позиция разреза — на вершинах, вдоль длинной оси OBB),
+        /// пока деление даёт выигрыш объёма SlabSplitGain.
+        /// </summary>
+        private static void SplitFit(List<SPoly> polys, int depth, List<ObbFit> outFits)
+        {
+            ObbFit parent = FitPolys(polys);
+            if (parent == null) return;
+            if (depth >= SlabSplitDepth || polys.Count > SlabSplitMaxPolys) { outFits.Add(parent); return; }
+
+            Vector3 ext = parent.mx - parent.mn;
+            Vector3 dir = parent.u;
+            float lo = parent.mn.x, len = ext.x;
+            if (ext.y >= ext.x && ext.y >= ext.z) { dir = parent.v; lo = parent.mn.y; len = ext.y; }
+            else if (ext.z >= ext.x && ext.z >= ext.y) { dir = parent.w; lo = parent.mn.z; len = ext.z; }
+            if (len <= Epsilon) { outFits.Add(parent); return; }
+
+            var cuts = new List<float>(64);
+            foreach (var sp in polys)
+                foreach (var p in sp.p)
+                {
+                    float s = Vector3.Dot(p, dir);
+                    if (s > lo + len * 0.05f && s < lo + len * 0.95f) cuts.Add(s);
+                }
+            cuts.Sort();
+            var uniq = new List<float>(cuts.Count);
+            foreach (float c in cuts)
+                if (uniq.Count == 0 || c - uniq[uniq.Count - 1] > len * 1e-3f) uniq.Add(c);
+            if (uniq.Count > SlabSplitCandidates)
+            {
+                var sampled = new List<float>(SlabSplitCandidates);
+                for (int i = 0; i < SlabSplitCandidates; i++)
+                    sampled.Add(uniq[i * (uniq.Count - 1) / (SlabSplitCandidates - 1)]);
+                uniq = sampled;
+            }
+            for (int i = 1; i < 4; i++) uniq.Add(lo + len * i * 0.25f); // вершин может не быть внутри
+
+            float bestCost = float.MaxValue;
+            List<SPoly> bestL = null, bestR = null;
+            foreach (float s in uniq)
+            {
+                var L = new List<SPoly>(polys.Count);
+                var R = new List<SPoly>(polys.Count);
+                SplitPolys(polys, dir, s, L, R);
+                if (L.Count == 0 || R.Count == 0) continue;
+                ObbFit fl = FitPolys(L), fr = FitPolys(R);
+                if (fl == null || fr == null) continue;
+                float cost = fl.vol + fr.vol;
+                if (cost < bestCost) { bestCost = cost; bestL = L; bestR = R; }
+            }
+            if (bestL == null || bestCost > parent.vol * (1f - SlabSplitGain)) { outFits.Add(parent); return; }
+            SplitFit(bestL, depth + 1, outFits);
+            SplitFit(bestR, depth + 1, outFits);
+        }
+
+        /// <summary>
+        /// Повёрнутые боксы на геометрию slab'а вместо осевых кусков pieces. Принимаются, если
+        /// боксов меньше и объём не больше суммы кусков (+SlabObbSlack), либо боксов столько же, но
+        /// объём меньше на ObbGainMin. Осевой результат (все рамки вдоль осей меша) — null.
+        /// </summary>
+        private static List<SliceBox> SlabObb(List<SPoly> polys, Vector3 wpl, List<SliceBox> pieces, int bin, float airTol)
+        {
+            float sum = 0f;
+            foreach (var p in pieces)
+            {
+                Vector3 d = Vector3.Scale(p.max - p.min, wpl);
+                sum += Mathf.Max(0f, d.x) * Mathf.Max(0f, d.y) * Mathf.Max(0f, d.z);
+            }
+            if (sum <= 0f || polys.Count == 0) return null;
+
+            var fits = new List<ObbFit>(4);
+            SplitFit(polys, 0, fits);
+            if (fits.Count == 0) return null;
+            float vol = 0f;
+            bool anyOblique = false;
+            float minCos = Mathf.Cos(ObliqueMinAngleDeg * Mathf.Deg2Rad);
+            foreach (var f in fits)
+            {
+                vol += f.vol;
+                if (MaxAbsComp(f.u) < minCos || MaxAbsComp(f.v) < minCos || MaxAbsComp(f.w) < minCos) anyOblique = true;
+            }
+            if (!anyOblique) return null;
+            bool ok = fits.Count < pieces.Count
+                ? vol <= sum * (1f + SlabObbSlack)
+                : fits.Count == pieces.Count && vol <= sum * (1f - ObbGainMin);
+            // Лесенка мелких кусков точнее по объёму, но их десятки: повёрнутый бокс допускается и с
+            // лишним объёмом, если воздух только по толщине (в среднем ≤ airTol) и в плане бокса нет
+            // пустых окон — проёмы и дыры так не заливаются.
+            if (!ok && airTol > 0f && fits.Count * 2 <= pieces.Count)
+            {
+                ok = true;
+                foreach (var f in fits)
+                    if (!CoverageOk(f, airTol)) { ok = false; break; }
+            }
+            if (!ok) return null;
+
+            var res = new List<SliceBox>(fits.Count);
+            foreach (var f in fits)
+            {
+                Vector3 lmin = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+                Vector3 lmax = -lmin;
+                var gp = new List<Vector3>(16);
+                var gn = new List<Vector3>(f.polys.Count);
+                var ga = new List<float>(f.polys.Count);
+                foreach (var sp in f.polys)
+                {
+                    foreach (var p in sp.p)
+                    {
+                        Vector3 l = new Vector3(
+                            wpl.x < Epsilon ? p.x : p.x / wpl.x,
+                            wpl.y < Epsilon ? p.y : p.y / wpl.y,
+                            wpl.z < Epsilon ? p.z : p.z / wpl.z);
+                        lmin = Vector3.Min(lmin, l);
+                        lmax = Vector3.Max(lmax, l);
+                    }
+                    gp.AddRange(sp.p);
+                    float ar = PolyArea(sp.p);
+                    if (ar > 0f) { gn.Add(sp.n); ga.Add(ar); }
+                }
+                Vector3 midS = f.u * ((f.mn.x + f.mx.x) * 0.5f) + f.v * ((f.mn.y + f.mx.y) * 0.5f) + f.w * ((f.mn.z + f.mx.z) * 0.5f);
+                res.Add(new SliceBox
+                {
+                    bin = bin,
+                    min = lmin,
+                    max = lmax,
+                    oriented = true,
+                    obbCenterLocal = new Vector3(
+                        wpl.x < Epsilon ? midS.x : midS.x / wpl.x,
+                        wpl.y < Epsilon ? midS.y : midS.y / wpl.y,
+                        wpl.z < Epsilon ? midS.z : midS.z / wpl.z),
+                    obbAxisX = f.u,
+                    obbAxisY = f.v,
+                    obbSize = f.mx - f.mn,
+                    gPts = gp,
+                    gN = gn,
+                    gA = ga
+                });
+            }
+            return res;
+        }
+
+        private const int CoverSamplesLong = 48;   // сэмплов вдоль длинной оси бокса
+        private const int CoverSamplesMid = 5;     // вдоль средней
+
+        /// <summary>
+        /// Проверка повёрнутого бокса по столбикам вдоль его оси толщины (u — нормаль главной
+        /// грани): столбик должен задевать геометрию. Пустой столбик внутри ряда (с материалом
+        /// по обе стороны) = проём/дыра → нельзя. Пусто с краёв рядов (скошенная кромка) и воздух
+        /// по толщине (толщина бокса минус размах попаданий) в среднем не больше airTol метра.
+        /// </summary>
+        private static bool CoverageOk(ObbFit f, float airTol)
+        {
+            Vector3 ext = f.mx - f.mn;
+            Vector3[] ax = { f.u, f.v, f.w };
+            const int t = 0;
+            int l = 1, m = 2;
+            if (ext[m] > ext[l]) { l = 2; m = 1; }
+            Vector3 dt = ax[t], dl = ax[l], dm = ax[m];
+            float thick = ext[t];
+            if (ext[l] <= Epsilon || ext[m] <= Epsilon) return false;
+
+            int nl = CoverSamplesLong, nm = CoverSamplesMid;
+            float airSum = 0f;
+            int hitCount = 0, endEmpty = 0;
+            bool rowsSeen = false, gapRow = false;
+            var hit = new bool[nl];
+            for (int j = 0; j < nm; j++)
+            {
+                float sm = f.mn[m] + ext[m] * (j + 0.5f) / nm;
+                for (int i = 0; i < nl; i++)
+                {
+                    float sl = f.mn[l] + ext[l] * (i + 0.5f) / nl;
+                    Vector3 org = dl * sl + dm * sm + dt * (f.mn[t] - 1f);
+                    float hMin = float.MaxValue, hMax = float.MinValue;
+                    foreach (var sp in f.polys)
+                    {
+                        var p = sp.p;
+                        for (int q = 1; q + 1 < p.Count; q++)
+                        {
+                            float dist;
+                            if (!RayTriAxis(p[0], p[q], p[q + 1], org, dt, out dist)) continue;
+                            if (dist < hMin) hMin = dist;
+                            if (dist > hMax) hMax = dist;
+                        }
+                    }
+                    hit[i] = hMin <= hMax;
+                    if (hit[i])
+                    {
+                        airSum += Mathf.Max(0f, thick - (hMax - hMin));
+                        hitCount++;
+                    }
+                }
+                int first = -1, last = -1;
+                for (int i = 0; i < nl; i++) if (hit[i]) { if (first < 0) first = i; last = i; }
+                if (first < 0) { endEmpty += nl; if (rowsSeen) gapRow = true; continue; } // пустой ряд
+                if (gapRow) return false;                                       // пустой ряд между заполненными — щель
+                rowsSeen = true;
+                for (int i = first; i <= last; i++) if (!hit[i]) return false;  // дыра внутри ряда
+                endEmpty += first + (nl - 1 - last);
+            }
+            if (hitCount == 0) return false;
+            // Пустота с краёв: средняя глубина по средней оси (площадь пустого / длина).
+            float emptyDepth = endEmpty * (ext[m] / nm) / nl;
+            if (emptyDepth > airTol) return false;
+            return airSum / hitCount <= airTol;
+        }
+
+        private static List<SliceBox> SlicePlanCore(Vector3[] verts, int[] tris, Bounds b, int axis, float stepLocal,
+            float tolWorld, Vector3 worldPerLocal, bool allowOblique, float airTol = 0f)
+        {
+            float len = b.size[axis];
+            if (len <= Epsilon || stepLocal <= Epsilon) return null;
+            int k = Mathf.CeilToInt(len / stepLocal);
+            if (k <= 1) return null;
+            if (k > 256) k = 256; // защита от миллиметрового шага на стометровке (корабли: 108 м / 0.5 = 216)
+            float step = len / k; // нормируем: ровные slab'ы ровно покрывают bounds
+            // Деталь в осях меша (наклонных граней практически нет) — повороты не ищем, это дорого.
+            if (allowOblique && TiltedFraction(verts, tris, worldPerLocal) < ObliqueMinTiltFrac) allowOblique = false;
 
             int c1 = (axis + 1) % 3, c2 = (axis + 2) % 3;
             float minA = b.min[axis];
@@ -1641,6 +2285,7 @@ namespace ProjectC.EditorTools
 
             var res = new List<SliceBox>();
             var pts = new List<Vector3>(96);
+            var slabPolys = new List<SPoly>(32);
             var slabBoxes = new List<SliceBox>(8);
             var rows = new List<float>(64);
             var rowSpans = new List<List<Vector2>>(64);
@@ -1654,12 +2299,29 @@ namespace ProjectC.EditorTools
 
                 // 1) Сечение slab'а (клиппинг треугольников) → точный габарит по c1/c2.
                 pts.Clear();
+                slabPolys.Clear();
+                float slabArea = 0f, slabTilt = 0f;
                 for (int t = 0; t < triCount; t++)
                 {
                     if (tC1Lo[t] > tC1Hi[t]) continue;
                     if (tAHi[t] < lo - qeps || tALo[t] > hi + qeps) continue;
                     var poly = ClipTriToSlab(tA[t], tB[t], tC[t], axis, lo, hi);
                     if (poly.Count > 0) pts.AddRange(poly);
+                    if (allowOblique && poly.Count >= 3)
+                    {
+                        Vector3 sa = Vector3.Scale(tA[t], worldPerLocal);
+                        Vector3 nn = Vector3.Cross(Vector3.Scale(tB[t], worldPerLocal) - sa, Vector3.Scale(tC[t], worldPerLocal) - sa);
+                        float nl = nn.magnitude;
+                        if (nl > 1e-12f)
+                        {
+                            var sp = new List<Vector3>(poly.Count);
+                            foreach (var pp in poly) sp.Add(Vector3.Scale(pp, worldPerLocal));
+                            float ar = PolyArea(sp);
+                            slabArea += ar;
+                            if (IsTiltedNormal(nn / nl)) slabTilt += ar;
+                            slabPolys.Add(new SPoly { p = sp, n = nn / nl });
+                        }
+                    }
                 }
                 if (pts.Count == 0) continue; // дыра в геометрии — куска нет, и это правильно
 
@@ -1763,6 +2425,19 @@ namespace ProjectC.EditorTools
                     slabBoxes.Add(MakeBox(axis, lo, hi, c1, c1min, c1max, c2, c2min, c2max, i));
                 }
 
+                // Наклонный slab (скрученная/наклонная пластина): один повёрнутый бокс по
+                // геометрии slab'а вместо сетки осевых кусков — если он не больше их суммы (проёмы
+                // и разнесённые компоненты так не заливаются).
+                if (allowOblique && slabPolys.Count > 0 && slabTilt >= SlabMinTiltFrac * slabArea)
+                {
+                    var ob = SlabObb(slabPolys, worldPerLocal, slabBoxes, i, airTol);
+                    if (ob != null)
+                    {
+                        slabBoxes.Clear();
+                        slabBoxes.AddRange(ob);
+                    }
+                }
+
                 // Сортировка = стабильный порядок sub в именах кусков.
                 slabBoxes.Sort((x, y) =>
                 {
@@ -1782,13 +2457,410 @@ namespace ProjectC.EditorTools
             }
 
             if (res.Count <= 1) return null;
+            // Наклонные серии: лесенка из кусков, повторяющая коробочную деталь под углом к осям
+            // меша, заменяется одним повёрнутым боксом. Остаток идёт в обычный адаптив.
+            List<SliceBox> oblique = null;
+            if (allowOblique && res.Count >= MinObliqueRun)
+                res = ExtractObliqueRuns(res, axis, tA, tB, tC, tALo, tAHi, tC1Lo, tC1Hi, triCount,
+                    worldPerLocal, qeps, step * worldPerLocal[axis], tolWorld, out oblique);
             // Адаптив: склеить подряд идущие куски с одинаковым сечением (прямые участки —
             // в 1 бокс, перегибы остаются подетально). Пустые бины разбивают серии (дыры не мостим).
             // Опорное сечение — первый кусок серии: суммарный дрейф ограничен допуском.
-            if (tolWorld > 0f)
+            if (tolWorld > 0f && res.Count > 1)
                 res = CoalesceSlices(res, axis, tolWorld, worldPerLocal);
-            if (res.Count <= 1) return null;
+            if (oblique != null) res.AddRange(oblique);
+            if (res.Count == 0) return null;
+            if (res.Count == 1 && !res[0].oriented) return null; // один осевой кусок = габаритный бокс
             return res;
+        }
+
+        // ================= НАКЛОННЫЕ серии нарезки =================
+        //
+        // Осевая нарезка не умеет поворачивать куски: стена, стоящая под углом в плане, даёт
+        // по куску на каждый шаг (лесенка). Здесь куски, которые идут подряд по бинам и
+        // перекрываются по сечению (трек), заменяются одним OBB, если он:
+        //   - заметно повёрнут относительно осей меша (осевые серии склеит CoalesceSlices);
+        //   - по объёму не больше лесенки (+ObliqueVolSlack);
+        //   - в каждом slab'е трека не выступает за фактическую геометрию slab'а больше допуска
+        //     (max(ObliqueMinTol, 2·sliceAdaptTol) или ObliqueRelTol от размера куска — так
+        //     проходит скошенный низ стены, но не «съедается» соседний прямой участок);
+        //   - вдоль оси нарезки не вылезает за трек дальше полушага.
+        // Ориентация — по нормалям граней (площадь-взвешенные кластеры), из кандидатов берётся
+        // фрейм минимального объёма. Всё считается в масштабированном local (|lossyScale|), чтобы
+        // повёрнутый бокс был прямоугольным и в мире при неравномерном масштабе.
+
+        private const int MinObliqueRun = 3;          // короче — выигрыша нет
+        private const float ObliqueMinTol = 0.1f;     // м, минимальный допуск выступа
+        private const float ObliqueRelTol = 0.08f;    // доля размера куска (скошенный низ/верх)
+        private const float ObliqueVolSlack = 0.10f;  // OBB не больше лесенки +10 % (скошенный низ/верх)
+        private const float ObliqueMinAngleDeg = 1f;  // меньше — это осевая серия
+        private const float ObliqueNormalCos = 0.9986f; // 3° — одна грань для кластера нормалей
+        private const string UnitFrameName = "BC_UnitFrame";
+
+        private class SlabGeom
+        {
+            public readonly List<Vector3> pts = new List<Vector3>(32);  // масштабированный local
+            public readonly List<Vector3> nrm = new List<Vector3>(16);
+            public readonly List<float> area = new List<float>(16);
+            public Vector3 min, max; // AABB фактической геометрии slab'а, масштабированный local
+            public float vol;        // объём куска лесенки (м³)
+        }
+
+        private static List<SliceBox> ExtractObliqueRuns(List<SliceBox> bins, int axis,
+            Vector3[] tA, Vector3[] tB, Vector3[] tC, float[] tALo, float[] tAHi, float[] tC1Lo, float[] tC1Hi,
+            int triCount, Vector3 wpl, float qeps, float stepWorld, float tolWorld, out List<SliceBox> oblique)
+        {
+            oblique = null;
+            int c1 = (axis + 1) % 3, c2 = (axis + 2) % 3;
+
+            // 1) Треки: кусок продлевает трек, если он в строго следующем бине и перекрывается
+            // с последним куском трека по обеим осям сечения.
+            var tracks = new List<List<SliceBox>>();
+            var open = new List<List<SliceBox>>();
+            foreach (var box in bins)
+            {
+                for (int r = open.Count - 1; r >= 0; r--)
+                {
+                    var o = open[r];
+                    if (o[o.Count - 1].bin < box.bin - 1) { tracks.Add(o); open.RemoveAt(r); }
+                }
+                // Несколько претендентов (повёрнутые куски гнутой пластины перекрываются по AABB) —
+                // берём трек с близкой ориентацией, затем с большим перекрытием.
+                List<SliceBox> host = null;
+                float hostScore = float.MinValue;
+                foreach (var o in open)
+                {
+                    SliceBox last = o[o.Count - 1];
+                    if (last.bin != box.bin - 1) continue;
+                    if (!RangesOverlap(last, box, c1, qeps) || !RangesOverlap(last, box, c2, qeps)) continue;
+                    float score = OverlapArea(last, box, c1, c2);
+                    if (last.oriented && box.oriented)
+                        score += 1e6f * Mathf.Abs(Vector3.Dot(Vector3.Cross(last.obbAxisX, last.obbAxisY),
+                            Vector3.Cross(box.obbAxisX, box.obbAxisY)));
+                    if (host == null || score > hostScore) { host = o; hostScore = score; }
+                }
+                if (host != null) host.Add(box);
+                else open.Add(new List<SliceBox> { box });
+            }
+            tracks.AddRange(open);
+
+            // 2) Жадно: от начала трека растим серию, пока OBB проходит проверки.
+            float tolAbs = Mathf.Max(ObliqueMinTol, tolWorld * 2f);
+            float axisTol = Mathf.Max(tolAbs, stepWorld * 0.5f);
+            var replaced = new HashSet<SliceBox>();
+            foreach (var tr in tracks)
+            {
+                if (tr.Count < MinObliqueRun) continue;
+                var geo = new SlabGeom[tr.Count];
+                for (int k = 0; k < tr.Count; k++)
+                    geo[k] = GatherSlabGeom(tr[k], axis, c1, tA, tB, tC, tALo, tAHi, tC1Lo, tC1Hi, triCount, wpl, qeps,
+                        Mathf.Max(tolAbs, stepWorld));
+
+                int i = 0;
+                while (i + MinObliqueRun <= tr.Count)
+                {
+                    SliceBox best = null;
+                    int bestJ = -1;
+                    for (int j = i + MinObliqueRun - 1; j < tr.Count; j++)
+                    {
+                        SliceBox fit = FitObliqueRun(tr, geo, i, j, axis, wpl, tolAbs, axisTol);
+                        if (fit == null) break;
+                        best = fit;
+                        bestJ = j;
+                    }
+                    if (best == null) { i++; continue; }
+                    if (oblique == null) oblique = new List<SliceBox>();
+                    oblique.Add(best);
+                    for (int k = i; k <= bestJ; k++) replaced.Add(tr[k]);
+                    i = bestJ + 1;
+                }
+            }
+
+            if (oblique == null) return bins;
+            var rest = new List<SliceBox>(bins.Count);
+            foreach (var b in bins)
+                if (!replaced.Contains(b)) rest.Add(b);
+            return rest;
+        }
+
+        private static float OverlapArea(SliceBox a, SliceBox b, int c1, int c2)
+        {
+            float o1 = Mathf.Max(0f, Mathf.Min(a.max[c1], b.max[c1]) - Mathf.Max(a.min[c1], b.min[c1]));
+            float o2 = Mathf.Max(0f, Mathf.Min(a.max[c2], b.max[c2]) - Mathf.Max(a.min[c2], b.min[c2]));
+            return o1 * o2;
+        }
+
+        private static bool RangesOverlap(SliceBox a, SliceBox b, int d, float eps)
+        {
+            return a.min[d] <= b.max[d] + eps && b.min[d] <= a.max[d] + eps;
+        }
+
+        /// <summary>
+        /// Геометрия куска лесенки в масштабированном local: треугольники в границах slab'а по оси
+        /// нарезки и в AABB куска, расширенном по сечению на marginWorld. Кусок лесенки строится
+        /// по сечению в середине slab'а, поэтому у наклонной детали вещество у краёв slab'а
+        /// выходит за его AABB; запас по сечению сохраняет эти края, но не захватывает
+        /// дальние компоненты (соседняя ножка U-трубы).
+        /// </summary>
+        private static SlabGeom GatherSlabGeom(SliceBox m, int axis, int c1,
+            Vector3[] tA, Vector3[] tB, Vector3[] tC, float[] tALo, float[] tAHi, float[] tC1Lo, float[] tC1Hi,
+            int triCount, Vector3 wpl, float qeps, float marginWorld)
+        {
+            var g = new SlabGeom();
+            Vector3 d = Vector3.Scale(m.max - m.min, wpl);
+            g.vol = m.oriented
+                ? m.obbSize.x * m.obbSize.y * m.obbSize.z
+                : Mathf.Max(0f, d.x) * Mathf.Max(0f, d.y) * Mathf.Max(0f, d.z);
+            if (m.gPts != null && m.gPts.Count > 0)
+            {
+                // Повёрнутый кусок делённого slab'а: своя геометрия, без соседних кусков.
+                g.pts.AddRange(m.gPts);
+                g.nrm.AddRange(m.gN);
+                g.area.AddRange(m.gA);
+                g.min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+                g.max = -g.min;
+                foreach (var p in m.gPts) { g.min = Vector3.Min(g.min, p); g.max = Vector3.Max(g.max, p); }
+                return g;
+            }
+
+            Vector3 lo = m.min, hi = m.max;
+            for (int a = 0; a < 3; a++)
+            {
+                if (a == axis) continue;
+                float mg = wpl[a] < Epsilon ? marginWorld : marginWorld / wpl[a];
+                lo[a] -= mg;
+                hi[a] += mg;
+            }
+
+            g.min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            g.max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            for (int t = 0; t < triCount; t++)
+            {
+                if (tC1Lo[t] > tC1Hi[t]) continue;
+                if (tAHi[t] < lo[axis] - qeps || tALo[t] > hi[axis] + qeps) continue;
+                if (tC1Hi[t] < lo[c1] || tC1Lo[t] > hi[c1]) continue;
+                var poly = new List<Vector3>(6) { tA[t], tB[t], tC[t] };
+                for (int a = 0; a < 3 && poly.Count > 0; a++)
+                {
+                    float e = a == axis ? 0f : qeps;
+                    poly = ClipPolyAxis(poly, a, hi[a] + e, true);
+                    if (poly.Count == 0) break;
+                    poly = ClipPolyAxis(poly, a, lo[a] - e, false);
+                }
+                if (poly.Count < 3) continue;
+
+                for (int q = 0; q < poly.Count; q++) poly[q] = Vector3.Scale(poly[q], wpl);
+                Vector3 n = Vector3.Cross(Vector3.Scale(tB[t] - tA[t], wpl), Vector3.Scale(tC[t] - tA[t], wpl));
+                float nl = n.magnitude;
+                if (nl < 1e-12f) continue;
+                n /= nl;
+                float ar = 0f;
+                for (int q = 1; q + 1 < poly.Count; q++)
+                    ar += Vector3.Cross(poly[q] - poly[0], poly[q + 1] - poly[0]).magnitude * 0.5f;
+                g.pts.AddRange(poly);
+                foreach (var p in poly) { g.min = Vector3.Min(g.min, p); g.max = Vector3.Max(g.max, p); }
+                if (ar > 0f)
+                {
+                    g.nrm.Add(n);
+                    g.area.Add(ar);
+                }
+            }
+            if (g.pts.Count == 0)
+            {
+                g.min = Vector3.Scale(m.min, wpl);
+                g.max = Vector3.Scale(m.max, wpl);
+            }
+            return g;
+        }
+
+        /// <summary>OBB для кусков tr[i..j] либо null, если повёрнутый бокс хуже лесенки.</summary>
+        private static SliceBox FitObliqueRun(List<SliceBox> tr, SlabGeom[] geo, int i, int j, int axis,
+            Vector3 wpl, float tolAbs, float axisTol)
+        {
+            int c1 = (axis + 1) % 3, c2 = (axis + 2) % 3;
+
+            // Кластеры нормалей (без знака), площадь-взвешенные.
+            var cd = new List<Vector3>(8);
+            var ca = new List<float>(8);
+            float vStair = 0f;
+            int npts = 0;
+            for (int k = i; k <= j; k++)
+            {
+                SlabGeom g = geo[k];
+                vStair += g.vol;
+                npts += g.pts.Count;
+                for (int q = 0; q < g.nrm.Count; q++)
+                {
+                    Vector3 n = g.nrm[q];
+                    float a = g.area[q];
+                    int hit = -1;
+                    for (int c = 0; c < cd.Count; c++)
+                    {
+                        float dt = Vector3.Dot(n, cd[c].normalized);
+                        if (Mathf.Abs(dt) >= ObliqueNormalCos)
+                        {
+                            hit = c;
+                            if (dt < 0f) n = -n;
+                            break;
+                        }
+                    }
+                    if (hit < 0) { cd.Add(n * a); ca.Add(a); }
+                    else { cd[hit] += n * a; ca[hit] += a; }
+                }
+            }
+            if (npts < 4 || cd.Count == 0) return null;
+
+            var order = new List<int>(cd.Count);
+            for (int c = 0; c < cd.Count; c++) order.Add(c);
+            order.Sort((x, y) => ca[y].CompareTo(ca[x]));
+
+            var cand2 = new List<Vector3>(7);
+            for (int q = 0; q < order.Count && q < 4; q++) cand2.Add(cd[order[q]].normalized);
+            cand2.Add(Vector3.right);
+            cand2.Add(Vector3.up);
+            cand2.Add(Vector3.forward);
+
+            float bestVol = float.MaxValue;
+            Vector3 bu = Vector3.right, bv = Vector3.up, bw = Vector3.forward;
+            Vector3 bmin = Vector3.zero, bmax = Vector3.zero;
+            for (int a = 0; a < order.Count && a < 2; a++)
+            {
+                Vector3 n1 = cd[order[a]].normalized;
+                foreach (var raw in cand2)
+                {
+                    Vector3 n2 = raw - n1 * Vector3.Dot(raw, n1);
+                    if (n2.sqrMagnitude < 0.05f) continue; // почти параллельно n1
+                    n2.Normalize();
+                    Vector3 n3 = Vector3.Cross(n1, n2);
+                    Vector3 mn, mx;
+                    ProjectRange(geo, i, j, n1, n2, n3, out mn, out mx);
+                    Vector3 d = mx - mn;
+                    float vol = d.x * d.y * d.z;
+                    if (vol < bestVol)
+                    {
+                        bestVol = vol;
+                        bu = n1; bv = n2; bw = n3;
+                        bmin = mn; bmax = mx;
+                    }
+                }
+            }
+            if (bestVol == float.MaxValue) return null;
+
+            // Осевой фрейм — работа CoalesceSlices, тут не трогаем.
+            float minCos = Mathf.Cos(ObliqueMinAngleDeg * Mathf.Deg2Rad);
+            if (MaxAbsComp(bu) >= minCos && MaxAbsComp(bv) >= minCos && MaxAbsComp(bw) >= minCos) return null;
+            if (bestVol > vStair * (1f + ObliqueVolSlack) + 1e-6f) return null;
+
+            var corners = new Vector3[8];
+            for (int idx = 0; idx < 8; idx++)
+            {
+                corners[idx] = bu * ((idx & 4) != 0 ? bmax.x : bmin.x)
+                             + bv * ((idx & 2) != 0 ? bmax.y : bmin.y)
+                             + bw * ((idx & 1) != 0 ? bmax.z : bmin.z);
+            }
+
+            // Вдоль оси нарезки — не дальше полушага за трек.
+            float aLo = float.MaxValue, aHi = float.MinValue;
+            foreach (var c in corners)
+            {
+                if (c[axis] < aLo) aLo = c[axis];
+                if (c[axis] > aHi) aHi = c[axis];
+            }
+            if (geo[i].min[axis] - aLo > axisTol || aHi - geo[j].max[axis] > axisTol) return null;
+
+            // В каждом slab'е — не выступать за кусок лесенки больше допуска.
+            for (int k = i; k <= j; k++)
+            {
+                SlabGeom g = geo[k];
+                Vector3 smin, smax;
+                if (!ObbSlabRange(corners, axis, g.min[axis], g.max[axis], out smin, out smax)) return null;
+                if (!WithinAllow(g, smin, smax, c1, tolAbs) || !WithinAllow(g, smin, smax, c2, tolAbs)) return null;
+            }
+
+            Vector3 midS = bu * ((bmin.x + bmax.x) * 0.5f)
+                         + bv * ((bmin.y + bmax.y) * 0.5f)
+                         + bw * ((bmin.z + bmax.z) * 0.5f);
+            var res = new SliceBox
+            {
+                bin = tr[i].bin,
+                sub = tr[i].sub,
+                multi = tr[i].multi,
+                min = tr[i].min,
+                max = tr[i].max,
+                oriented = true,
+                obbCenterLocal = new Vector3(
+                    wpl.x < Epsilon ? midS.x : midS.x / wpl.x,
+                    wpl.y < Epsilon ? midS.y : midS.y / wpl.y,
+                    wpl.z < Epsilon ? midS.z : midS.z / wpl.z),
+                obbAxisX = bu,
+                obbAxisY = bv,
+                obbSize = bmax - bmin
+            };
+            for (int k = i + 1; k <= j; k++)
+            {
+                res.min = Vector3.Min(res.min, tr[k].min);
+                res.max = Vector3.Max(res.max, tr[k].max);
+            }
+            return res;
+        }
+
+        private static bool WithinAllow(SlabGeom g, Vector3 smin, Vector3 smax, int d, float tolAbs)
+        {
+            float allow = Mathf.Max(tolAbs, ObliqueRelTol * (g.max[d] - g.min[d]));
+            return g.min[d] - smin[d] <= allow && smax[d] - g.max[d] <= allow;
+        }
+
+        private static float MaxAbsComp(Vector3 v)
+        {
+            return Mathf.Max(Mathf.Abs(v.x), Mathf.Max(Mathf.Abs(v.y), Mathf.Abs(v.z)));
+        }
+
+        private static void ProjectRange(SlabGeom[] geo, int i, int j, Vector3 u, Vector3 v, Vector3 w,
+            out Vector3 mn, out Vector3 mx)
+        {
+            mn = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            mx = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            for (int k = i; k <= j; k++)
+            {
+                var pts = geo[k].pts;
+                for (int q = 0; q < pts.Count; q++)
+                {
+                    Vector3 p = pts[q];
+                    float x = Vector3.Dot(p, u), y = Vector3.Dot(p, v), z = Vector3.Dot(p, w);
+                    if (x < mn.x) mn.x = x; if (x > mx.x) mx.x = x;
+                    if (y < mn.y) mn.y = y; if (y > mx.y) mx.y = y;
+                    if (z < mn.z) mn.z = z; if (z > mx.z) mx.z = z;
+                }
+            }
+        }
+
+        /// <summary>AABB части OBB между плоскостями lo..hi по оси нарезки (углы + пересечения 12 рёбер).</summary>
+        private static bool ObbSlabRange(Vector3[] corners, int axis, float lo, float hi, out Vector3 mn, out Vector3 mx)
+        {
+            mn = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            mx = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            bool any = false;
+            for (int idx = 0; idx < 8; idx++)
+            {
+                Vector3 c = corners[idx];
+                if (c[axis] >= lo && c[axis] <= hi) { mn = Vector3.Min(mn, c); mx = Vector3.Max(mx, c); any = true; }
+                for (int bit = 1; bit <= 4; bit <<= 1)
+                {
+                    if ((idx & bit) != 0) continue;
+                    Vector3 o = corners[idx | bit];
+                    for (int pl = 0; pl < 2; pl++)
+                    {
+                        float v = pl == 0 ? lo : hi;
+                        float da = c[axis] - v, db = o[axis] - v;
+                        if (da * db >= 0f) continue;
+                        Vector3 x = Vector3.Lerp(c, o, da / (da - db));
+                        mn = Vector3.Min(mn, x);
+                        mx = Vector3.Max(mx, x);
+                        any = true;
+                    }
+                }
+            }
+            return any;
         }
 
         /// <summary>
@@ -1810,6 +2882,7 @@ namespace ProjectC.EditorTools
             var openRefMax = new List<Vector3>();
             foreach (var box in bins) // bins идут по возрастанию bin (построение послабово)
             {
+                if (box.oriented) { out_.Add(box); continue; } // повёрнутые куски — не по AABB
                 bool extended = false;
                 for (int r = 0; r < open.Count; r++)
                 {
@@ -2101,12 +3174,19 @@ namespace ProjectC.EditorTools
                     // Ось — длиннейшая в ЛОКАЛЬНЫХ bounds (там же лежат вершины).
                     // Брать ось из мировых размеров нельзя: рамка повёрнута (deck: rot 270,90,0),
                     // индексы переставлены, и нарезка пойдёт поперёк сужения.
-                    int longAxis = LongestAxis(f.sharedMesh.bounds.size);
-                    float per = worldPerLocal[longAxis] < Epsilon ? 1f : worldPerLocal[longAxis];
-                    slices = SlicePlan(f.sharedMesh, longAxis, s.sliceStep / per,
-                        Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal, out bool unreadSlice);
+                    slices = SlicePlanBest(f.sharedMesh, s.sliceStep,
+                        Mathf.Max(0f, s.sliceAdaptTol), worldPerLocal, out bool unreadSlice, !s.sliceAxisOnly, Mathf.Max(0f, s.sliceAirTol));
                     if (unreadSlice) report.unreadSlices++; // данных нет совсем — обычный бокс ниже
                     if (slices != null) kind = 2;
+                }
+
+                // Простой бокс детали под углом (скат, наклонное стекло) — повёрнутый по её рамке,
+                // а не AABB в осях меша (тот заливает воздухом весь габарит наклона).
+                SliceBox hull = null;
+                if (kind == 0 && !s.sliceAxisOnly)
+                {
+                    hull = OrientedHullBox(f.sharedMesh, worldPerLocal);
+                    if (hull != null) kind = 3;
                 }
 
                 // Append-режим: уже закрытые меши не дублируем.
@@ -2116,7 +3196,7 @@ namespace ProjectC.EditorTools
                 // а склеенные MG_*-боксы уважаем (не дублируем поверх мержа).
                 if (skipExisting && existing != null)
                 {
-                    bool preciseNames = stableNames && existingNames != null && (kind == 1 || kind == 2);
+                    bool preciseNames = stableNames && existingNames != null && (kind == 1 || kind == 2 || kind == 3);
                     if (preciseNames)
                     {
                         if (IsCoveredByMerged(existing, go))
@@ -2124,7 +3204,7 @@ namespace ProjectC.EditorTools
                             report.skippedExists++;
                             continue;
                         }
-                        if (kind == 1 && existingNames.Contains(HolderNameFor(root.transform, go.transform)))
+                        if ((kind == 1 || kind == 3) && existingNames.Contains(HolderNameFor(root.transform, go.transform)))
                         {
                             report.skippedExists++;
                             continue;
@@ -2157,11 +3237,12 @@ namespace ProjectC.EditorTools
                 {
                     if (kind == 1) report.capsules++; // в dry-режиме capsules = "было бы создано капсул"
                     else if (kind == 2) { report.created += slices.Count; report.slicedMeshes++; }
+                    else if (kind == 3) report.created++;
                     else report.created++; // в dry-режиме created = "было бы создано"
                     continue;
                 }
 
-                items.Add(new Item { source = go, mesh = f.sharedMesh, renderer = r, worldSize = worldSize, kind = kind, slices = slices });
+                items.Add(new Item { source = go, mesh = f.sharedMesh, renderer = r, worldSize = worldSize, kind = kind, slices = slices, hull = hull });
             }
 
             if (dryOnly) return;
@@ -2206,13 +3287,18 @@ namespace ProjectC.EditorTools
                     {
                         // Старые куски этого меша уже снесены выше (purge); чужие префиксы не пересекаются.
                         string sliceName = SliceHolderName(baseName, sl);
-                        var sb = new Bounds();
-                        sb.SetMinMax(sl.min, sl.max);
-                        AddFittedBox(root, parent, sliceName, it, sb, s.minThickness, !s.shipMode);
+                        AddSliceBox(root, parent, sliceName, it, sl, s.minThickness, !s.shipMode);
                         index++;
                         report.created++;
                     }
                     report.slicedMeshes++;
+                }
+                else if (it.kind == 3)
+                {
+                    DestroyPredecessorHolders(genRoot, it.source, null);
+                    AddObliqueBox(root, parent, baseName, it, it.hull, s.minThickness, !s.shipMode);
+                    index++;
+                    report.created++;
                 }
                 else
                 {
@@ -2289,6 +3375,85 @@ namespace ProjectC.EditorTools
             box.center = center;
             box.size = size;
             box.isTrigger = false;
+        }
+
+        /// <summary>Кусок нарезки: осевой — в рамке исходника, наклонный — повёрнутым боксом.</summary>
+        private static void AddSliceBox(GameObject root, Transform parent, string name, Item it, SliceBox sl, float minThickness, bool markStatic)
+        {
+            if (sl.oriented)
+            {
+                AddObliqueBox(root, parent, name, it, sl, minThickness, markStatic);
+                return;
+            }
+            var sb = new Bounds();
+            sb.SetMinMax(sl.min, sl.max);
+            AddFittedBox(root, parent, name, it, sb, minThickness, markStatic);
+        }
+
+        /// <summary>
+        /// Повёрнутый бокс наклонной серии. Холдер — с единичным мировым масштабом: при
+        /// неравномерном масштабе родителя поворот внутри его рамки дал бы перекос, поэтому
+        /// такой холдер кладётся в рамку '<see cref="UnitFrameName"/>' под тем же родителем.
+        /// </summary>
+        private static void AddObliqueBox(GameObject root, Transform parent, string name, Item it, SliceBox sl, float minThickness, bool markStatic)
+        {
+            Transform src = it.source.transform;
+            Vector3 ls = src.lossyScale;
+            Vector3 sgn = new Vector3(ls.x < 0f ? -1f : 1f, ls.y < 0f ? -1f : 1f, ls.z < 0f ? -1f : 1f);
+            Vector3 wx = (src.rotation * Vector3.Scale(sgn, sl.obbAxisX)).normalized;
+            Vector3 wy = (src.rotation * Vector3.Scale(sgn, sl.obbAxisY)).normalized;
+            Vector3 wz = Vector3.Cross(wx, wy).normalized;
+            wy = Vector3.Cross(wz, wx).normalized;
+            Quaternion rot = Quaternion.LookRotation(wz, wy);
+
+            Transform frame = UnitScaleFrame(root, parent, markStatic);
+            var holder = new GameObject(name);
+            Undo.RegisterCreatedObjectUndo(holder, "Create settlement collider");
+            holder.layer = root.layer;
+            holder.isStatic = markStatic;
+            holder.transform.SetParent(frame, false);
+            holder.transform.SetPositionAndRotation(src.TransformPoint(sl.obbCenterLocal), rot);
+            float k = Mathf.Abs(frame.lossyScale.x);
+            holder.transform.localScale = Vector3.one * (k < Epsilon ? 1f : 1f / k);
+
+            var box = holder.AddComponent<BoxCollider>();
+            Vector3 center;
+            Vector3 size;
+            FitBox(new Bounds(Vector3.zero, sl.obbSize), Vector3.one, holder.transform, minThickness, out center, out size);
+            box.center = center;
+            box.size = size;
+            box.isTrigger = false;
+        }
+
+        /// <summary>Родитель с равномерным масштабом — он сам, иначе дочерняя рамка с мировым масштабом 1.</summary>
+        private static Transform UnitScaleFrame(GameObject root, Transform parent, bool markStatic)
+        {
+            Vector3 ls = parent.lossyScale;
+            float mx = Mathf.Max(Mathf.Abs(ls.x), Mathf.Max(Mathf.Abs(ls.y), Mathf.Abs(ls.z)));
+            float mn = Mathf.Min(ls.x, Mathf.Min(ls.y, ls.z));
+            if (mn > Epsilon && mx - mn <= mx * 1e-4f) return parent;
+
+            Transform f = parent.Find(UnitFrameName);
+            if (f == null)
+            {
+                var go = new GameObject(UnitFrameName);
+                Undo.RegisterCreatedObjectUndo(go, "Create settlement collider frame");
+                go.layer = root.layer;
+                go.isStatic = markStatic;
+                f = go.transform;
+                f.SetParent(parent, false);
+            }
+            else
+            {
+                Undo.RecordObject(f, "Settlement collider frame");
+            }
+            f.localPosition = Vector3.zero;
+            f.localRotation = Quaternion.identity;
+            f.localScale = new Vector3(
+                Mathf.Abs(ls.x) < Epsilon ? 1f : 1f / ls.x,
+                Mathf.Abs(ls.y) < Epsilon ? 1f : 1f / ls.y,
+                Mathf.Abs(ls.z) < Epsilon ? 1f : 1f / ls.z);
+            return f;
         }
 
         private static void AddCapsule(GameObject root, Transform parent, string name, Item it, bool markStatic)
@@ -2700,6 +3865,8 @@ namespace ProjectC.EditorTools
                 sliceTokens = s.sliceTokens,
                 sliceStep = s.sliceStep,
                 sliceAdaptTol = s.sliceAdaptTol,
+                sliceAxisOnly = s.sliceAxisOnly,
+                sliceAirTol = s.sliceAirTol,
                 shipMode = s.shipMode,
                 groupByTopLevel = s.groupByTopLevel,
                 skipInactive = s.skipInactive,
@@ -2770,6 +3937,11 @@ namespace ProjectC.EditorTools
                 settings.sliceTokens = EditorGUILayout.TextField("Нарезать только эти имена", settings.sliceTokens ?? "");
                 settings.sliceStep = EditorGUILayout.FloatField("Шаг нарезки (м)", settings.sliceStep);
                 settings.sliceAdaptTol = EditorGUILayout.FloatField("Допуск слияния кусков (м)", settings.sliceAdaptTol);
+                settings.sliceAxisOnly = EditorGUILayout.ToggleLeft("Только осевые куски (без наклонных боксов)", settings.sliceAxisOnly);
+                EditorGUI.BeginDisabledGroup(settings.sliceAxisOnly);
+                settings.sliceAirTol = EditorGUILayout.FloatField("Допуск воздуха наклонных (м)", settings.sliceAirTol);
+                EditorGUI.EndDisabledGroup();
+                EditorGUILayout.LabelField("Выкл. (по умолч.): лесенка нарезки у коробочной детали под углом заменяется одним повёрнутым боксом (суффикс R).", EditorStyles.miniLabel);
             }
             EndSection(openShapes);
 

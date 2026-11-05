@@ -1,5 +1,20 @@
 # Iterations
 
+## 05 ноября 2026
+
+**Тикет:** T-PAROM-23
+**Тема:** `Trolley Prefab` игнорировался — на маршруте оставалась кубическая заглушка.
+**Причина:** `ParomRoute.EnsureTrolley()` сначала подхватывал любого ребёнка с `ParomTrolley` и выходил, не глядя на `_trolleyPrefab`. В `WorldScene_0_0` такая заглушка запечена у `ParomRoute_01` и `ParomRoute_02`: `Box_cargo_Parom` (built-in Cube, scale 3.58×1.41×7.71, материал `M_PC_Concrete`, kinematic Rigidbody, BoxCollider) — отсюда «просто куб блок с материалом» в Play.
+**Исправление:** поле `Trolley Prefab` теперь в приоритете — если оно непустое, запечённая кабинка-ребёнок отключается и удаляется в `Awake` (+ warning в консоль); запечённая используется только при пустом поле. `ParomRouteEditor` предупреждает о таком дубле.
+**Изменённые файлы:**
+- `Assets/_Project/Scripts/World/Parom/ParomRoute.cs`
+- `Assets/_Project/Scripts/World/Parom/Editor/ParomRouteEditor.cs`
+- `docs/world/parom_road/00_PAROM_DESIGN.md`
+
+**Проверки:**
+- Compile (MCP): 0 ошибок компиляции.
+- Play Mode / визуал: за пользователем (агент Play Mode не запускает).
+
 ## Материалы от 04 октября 2026
 
 **Тикет:** T-STEELV2

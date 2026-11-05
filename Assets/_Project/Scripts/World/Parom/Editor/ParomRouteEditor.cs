@@ -60,6 +60,17 @@ namespace ProjectC.World.Parom
                     "Trolley Prefab пуст — в Play построится примитивная кабинка-заглушка. " +
                     "Назначьте FBX-модель кабинки с полом-коллайдером.",
                     MessageType.Info);
+            else
+            {
+                // T-PAROM-23: запечённая в сцене кабинка перекрывала префаб.
+                var baked = route.GetComponentInChildren<ParomTrolley>(true);
+                if (baked != null)
+                    EditorGUILayout.HelpBox(
+                        $"Под веткой уже лежит готовая кабинка '{baked.name}' (ParomTrolley). " +
+                        "При назначенном Trolley Prefab она в рантайме отключается и удаляется — " +
+                        "используется префаб. Удалите этот объект из сцены.",
+                        MessageType.Warning);
+            }
 
             Object mat = so.FindProperty("_cableMaterial").objectReferenceValue;
             if (mat == null)

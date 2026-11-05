@@ -471,15 +471,32 @@ namespace ProjectC.World.Parom
         private void EnsureTrolley()
         {
             if (_trolley != null) return;
-            // Подхватить уже запечённую в сцене кабинку (создана в edit-mode):
-            // поле _trolley не сериализовано, после перезагрузки сцены оно null.
-            // Без этого каждый Play плодил бы дубликаты кабинки.
-            ParomTrolley existing = GetComponentInChildren<ParomTrolley>(true);
-            if (existing != null)
+            // T-PAROM-23: Trolley Prefab из инспектора — приоритет. Раньше первой
+            // подхватывалась ЛЮБАЯ «запечённая» в сцене кабинка (ребёнок с
+            // ParomTrolley), и назначенный префаб молча игнорировался: в ветке
+            // оставалась кубическая заглушка (Box_cargo_Parom, Cube + бетон),
+            // и в Play вместо модели кабинки видно «просто куб».
+            // Запечённая кабинка нужна только когда поле пусто (иначе после
+            // перезагрузки сцены _trolley == null и каждый Play плодил дубли).
+            // Если префаб назначен, лишняя сцена-кабинка отключается и удаляется,
+            // чтобы не висела в мире рядом с префабом.
+            ParomTrolley[] baked = GetComponentsInChildren<ParomTrolley>(true);
+            for (int i = 0; i < baked.Length; i++)
             {
-                _trolley = existing.transform;
-                _trolleyComp = existing;
-                return;
+                ParomTrolley existing = baked[i];
+                if (existing == null) continue;
+                if (_trolleyPrefab == null)
+                {
+                    _trolley = existing.transform;
+                    _trolleyComp = existing;
+                    return;
+                }
+                Debug.LogWarning(
+                    $"[ParomRoute:{name}] в сцене найдена готовая кабинка '{existing.name}', но назначен " +
+                    $"Trolley Prefab '{_trolleyPrefab.name}' — используется префаб, лишняя кабинка удалена из рантайма. " +
+                    "Удалите её из сцены, чтобы не было предупреждения.", existing);
+                existing.gameObject.SetActive(false);
+                Destroy(existing.gameObject);
             }
             GameObject go;
             if (_trolleyPrefab != null)

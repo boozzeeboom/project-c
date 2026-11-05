@@ -2,6 +2,7 @@ using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using ProjectC.World.FloatingOrigin.Network;
 
 namespace ProjectC.World.FloatingOrigin.Pilot
@@ -17,21 +18,19 @@ namespace ProjectC.World.FloatingOrigin.Pilot
         [SerializeField] private GlobalMotionPlayerBootstrap _bootstrap;
         [SerializeField] private bool _autoStartHost = true;
 
-        [Tooltip("Load WorldScene_0_0 in the background while the startup menu is on screen; " +
-                 "the host request then only activates the already loaded scene. Turn off to " +
-                 "restore load-on-click without a code change.")]
-        [SerializeField] private bool _preloadWorldSceneForMenu = true;
+        private const string WorldScenePath = "Assets/_Project/Scenes/World/WorldScene_0_0.unity";
 
-        // The same scene PrepareAndStartHost() loads additively once the host is requested.
-        private const string PreloadWorldScenePath = "Assets/_Project/Scenes/World/WorldScene_0_0.unity";
-
-        private AsyncOperation _worldPreload;
         private GlobalMotionNetworkStartup _startup;
         private NetworkManager _manager;
         private Coroutine _startRoutine;
         private bool _startedByPilot;
         private bool _startRequested;
         private static GlobalMotionPilotRuntime _activeRequestOwner;
+
+        // Экран загрузки мира (создаётся программно, поверх меню).
+        private Canvas _loadingCanvas;
+        private Image _loadingFill;
+        private Text _loadingText;
 
         private void Start()
         {
@@ -43,32 +42,9 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 return;
             }
 
-            // A startup menu owns the host request in BootstrapScene, so the world can be
-            // streamed in behind it: the click then pays only for activation instead of the
-            // whole scene load, which measured ~28 s of frozen main thread in the editor.
-            BeginWorldPreload();
-        }
-
-        /// <summary>
-        /// Loads WorldScene_0_0 additively but leaves it inactive: nothing in the scene runs
-        /// before the host is actually requested. PrepareAndStartHost() activates this same
-        /// AsyncOperation, so the scene is never loaded twice.
-        /// </summary>
-        public void BeginWorldPreload()
-        {
-            if (!Application.isPlaying || !_preloadWorldSceneForMenu) return;
-            if (_worldPreload != null) return;
-            if (TryFindLoadedSceneHandle(PreloadWorldScenePath, out _)) return;
-
-            _worldPreload = SceneManager.LoadSceneAsync(PreloadWorldScenePath, LoadSceneMode.Additive);
-            if (_worldPreload == null)
-            {
-                Debug.LogWarning("[T-FO06L] World preload was not created: " + PreloadWorldScenePath, this);
-                return;
-            }
-
-            _worldPreload.allowSceneActivation = false;
-            Debug.Log("[T-FO06L] World preload started behind the menu; the host request will only activate it.", this);
+            // Меню грузит только себя (как раньше): фоновая предзагрузка мира отключена,
+            // чтобы не нагружать главное меню. Загрузка мира идёт по нажатию «Старт»
+            // и показывается на экране загрузки с прогрессом (см. ShowLoadingScreen).
         }
 
         public void StartPilotHost()
@@ -81,11 +57,16 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             }
             _activeRequestOwner = this;
             _startRequested = true;
+            ShowLoadingScreen();
             _startRoutine = StartCoroutine(PrepareAndStartHost());
         }
 
         private IEnumerator PrepareAndStartHost()
         {
+            ShowLoadingScreen();
+            UpdateLoadingProgress(0f, "Подготовка...");
+            try
+            {
             _manager = GetComponent<NetworkManager>();
             if (_manager == null || _profile == null || _bootstrap == null)
             {
@@ -101,14 +82,11 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
-            const string worldScenePath = PreloadWorldScenePath;
+            const string worldScenePath = WorldScenePath;
             if (!TryFindLoadedSceneHandle(worldScenePath, out var worldScene))
             {
-                // Reuse the preload started behind the menu: its assets are already loaded and
-                // only activation is left. Without a preload this is the original load-on-click.
-                var load = _worldPreload != null
-                    ? _worldPreload
-                    : SceneManager.LoadSceneAsync(worldScenePath, LoadSceneMode.Additive);
+                // Загрузка мира по нажатию «Старт» (без фонового preload).
+                var load = SceneManager.LoadSceneAsync(worldScenePath, LoadSceneMode.Additive);
                 if (load == null)
                 {
                     _startRequested = false;
@@ -116,15 +94,21 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                     yield break;
                 }
 
+                // На всякий случай разрешаем активацию (по умолчанию true, но на случай preload).
                 if (!load.allowSceneActivation)
                 {
-                    Debug.Log("[T-FO06L] Activating the preloaded world scene (progress=" +
+                    Debug.Log("[T-FO06L] Activating the world scene (progress=" +
                         load.progress.ToString("0.00") + ").", this);
                     load.allowSceneActivation = true;
                 }
 
-                while (!load.isDone) yield return null;
-                if (_worldPreload == load) _worldPreload = null;
+                while (!load.isDone)
+                {
+                    float sceneProgress = load.progress;
+                    UpdateLoadingProgress(sceneProgress, "Загрузка мира... " + Mathf.RoundToInt(sceneProgress * 100f) + "%");
+                    yield return null;
+                }
+                UpdateLoadingProgress(1f, "Загрузка мира... 100%");
                 // Allow SceneManager to publish the final loaded-scene handle before binding content.
                 yield return null;
                 if (!TryFindLoadedSceneHandle(worldScenePath, out worldScene))
@@ -222,6 +206,7 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
+            UpdateLoadingProgress(1f, "Подготовка мира...");
             if (!GlobalMotionNetworkStartup.TryPrepare(_manager, _profile, _bootstrap, GlobalMotionStartRole.Host, out _startup, out var error))
             {
                 _startRequested = false;
@@ -242,6 +227,12 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             _startRequested = false;
             yield return CloseStartupMenusWhenLocalPlayerReady();
             _startRoutine = null;
+            }
+            finally
+            {
+                _startRoutine = null;
+                HideLoadingScreen();
+            }
         }
 
         private IEnumerator CloseStartupMenusWhenLocalPlayerReady()
@@ -470,10 +461,108 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             return true;
         }
 
+        private void ShowLoadingScreen()
+        {
+            if (_loadingCanvas != null) return;
+
+            var canvasGo = new GameObject("WorldLoadingScreen");
+            DontDestroyOnLoad(canvasGo);
+            _loadingCanvas = canvasGo.AddComponent<Canvas>();
+            _loadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _loadingCanvas.sortingOrder = 10000;
+            canvasGo.AddComponent<CanvasScaler>();
+            canvasGo.AddComponent<GraphicRaycaster>();
+
+            // Фон
+            var bgGo = new GameObject("Background");
+            bgGo.transform.SetParent(canvasGo.transform, false);
+            var bgImg = bgGo.AddComponent<Image>();
+            bgImg.color = new Color(0f, 0f, 0f, 0.9f);
+            var bgRect = bgGo.GetComponent<RectTransform>();
+            bgRect.anchorMin = Vector2.zero;
+            bgRect.anchorMax = Vector2.one;
+            bgRect.offsetMin = Vector2.zero;
+            bgRect.offsetMax = Vector2.zero;
+
+            // Заголовок
+            var titleGo = new GameObject("Title");
+            titleGo.transform.SetParent(canvasGo.transform, false);
+            var titleText = titleGo.AddComponent<Text>();
+            titleText.text = "Загрузка мира";
+            titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            titleText.fontSize = 32;
+            titleText.alignment = TextAnchor.MiddleCenter;
+            titleText.color = Color.white;
+            var titleRect = titleGo.GetComponent<RectTransform>();
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 80f);
+            titleRect.sizeDelta = new Vector2(600f, 40f);
+
+            // Полоса прогресса (фон)
+            var barBgGo = new GameObject("BarBackground");
+            barBgGo.transform.SetParent(canvasGo.transform, false);
+            var barBgImg = barBgGo.AddComponent<Image>();
+            barBgImg.color = new Color(0.15f, 0.15f, 0.15f, 1f);
+            var barBgRect = barBgGo.GetComponent<RectTransform>();
+            barBgRect.anchorMin = new Vector2(0.5f, 0.5f);
+            barBgRect.anchorMax = new Vector2(0.5f, 0.5f);
+            barBgRect.anchoredPosition = new Vector2(0f, 0f);
+            barBgRect.sizeDelta = new Vector2(500f, 24f);
+
+            // Заполнение
+            var fillGo = new GameObject("Fill");
+            fillGo.transform.SetParent(barBgGo.transform, false);
+            _loadingFill = fillGo.AddComponent<Image>();
+            _loadingFill.color = new Color(0.25f, 0.55f, 0.95f, 1f);
+            _loadingFill.type = Image.Type.Filled;
+            _loadingFill.fillMethod = Image.FillMethod.Horizontal;
+            _loadingFill.fillAmount = 0f;
+            var fillRect = fillGo.GetComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+
+            // Текст прогресса
+            var progressGo = new GameObject("ProgressText");
+            progressGo.transform.SetParent(canvasGo.transform, false);
+            _loadingText = progressGo.AddComponent<Text>();
+            _loadingText.text = "Подготовка... 0%";
+            _loadingText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            _loadingText.fontSize = 18;
+            _loadingText.alignment = TextAnchor.MiddleCenter;
+            _loadingText.color = Color.white;
+            var progressRect = progressGo.GetComponent<RectTransform>();
+            progressRect.anchorMin = new Vector2(0.5f, 0.5f);
+            progressRect.anchorMax = new Vector2(0.5f, 0.5f);
+            progressRect.anchoredPosition = new Vector2(0f, -40f);
+            progressRect.sizeDelta = new Vector2(600f, 30f);
+        }
+
+        private void UpdateLoadingProgress(float progress, string status)
+        {
+            if (_loadingFill != null)
+                _loadingFill.fillAmount = Mathf.Clamp01(progress);
+            if (_loadingText != null)
+                _loadingText.text = status;
+        }
+
+        private void HideLoadingScreen()
+        {
+            if (_loadingCanvas != null)
+            {
+                Destroy(_loadingCanvas.gameObject);
+                _loadingCanvas = null;
+                _loadingFill = null;
+                _loadingText = null;
+            }
+        }
+
         private void OnDestroy()
         {
+            HideLoadingScreen();
             if (_activeRequestOwner == this) _activeRequestOwner = null;
-            _worldPreload = null;
             if (_startup != null && _manager != null && !_manager.IsListening)
                 _startup.CancelBeforeStart();
         }

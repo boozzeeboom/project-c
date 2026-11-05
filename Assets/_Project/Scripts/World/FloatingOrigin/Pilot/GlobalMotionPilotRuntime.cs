@@ -82,6 +82,12 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
+            // Экран загрузки создан в StartPilotHost(); даём панели отрисоваться,
+            // прежде чем LoadSceneAsync заблокирует главный поток на десериализации сцены.
+            UpdateLoadingProgress(0f, "Загрузка мира... 0%");
+            yield return null;
+            yield return null;
+
             const string worldScenePath = WorldScenePath;
             if (!TryFindLoadedSceneHandle(worldScenePath, out var worldScene))
             {
@@ -94,21 +100,21 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                     yield break;
                 }
 
-                // На всякий случай разрешаем активацию (по умолчанию true, но на случай preload).
-                if (!load.allowSceneActivation)
+                // Активация держится выключенной до 0.9: только так AsyncOperation.progress
+                // показывает реальный ход загрузки, а не прыжок 0 -> 1 после активации.
+                load.allowSceneActivation = false;
+                while (load.progress < 0.9f)
                 {
-                    Debug.Log("[T-FO06L] Activating the world scene (progress=" +
-                        load.progress.ToString("0.00") + ").", this);
-                    load.allowSceneActivation = true;
-                }
-
-                while (!load.isDone)
-                {
-                    float sceneProgress = load.progress;
-                    UpdateLoadingProgress(sceneProgress, "Загрузка мира... " + Mathf.RoundToInt(sceneProgress * 100f) + "%");
+                    var loaded = Mathf.Clamp01(load.progress / 0.9f);
+                    UpdateLoadingProgress(loaded * 0.9f,
+                        "Загрузка мира... " + Mathf.RoundToInt(loaded * 100f) + "%");
                     yield return null;
                 }
-                UpdateLoadingProgress(1f, "Загрузка мира... 100%");
+
+                UpdateLoadingProgress(0.9f, "Загрузка мира... 90%");
+                load.allowSceneActivation = true;
+                while (!load.isDone) yield return null;
+                UpdateLoadingProgress(0.94f, "Подготовка мира...");
                 // Allow SceneManager to publish the final loaded-scene handle before binding content.
                 yield return null;
                 if (!TryFindLoadedSceneHandle(worldScenePath, out worldScene))
@@ -206,7 +212,8 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 yield break;
             }
 
-            UpdateLoadingProgress(1f, "Подготовка мира...");
+            UpdateLoadingProgress(0.96f, "Подготовка мира...");
+            yield return null; // дать экрану показать фазу до тяжёлого native preparation
             if (!GlobalMotionNetworkStartup.TryPrepare(_manager, _profile, _bootstrap, GlobalMotionStartRole.Host, out _startup, out var error))
             {
                 _startRequested = false;
@@ -225,7 +232,9 @@ namespace ProjectC.World.FloatingOrigin.Pilot
 
             _startedByPilot = true;
             _startRequested = false;
+            UpdateLoadingProgress(0.98f, "Создание персонажа...");
             yield return CloseStartupMenusWhenLocalPlayerReady();
+            UpdateLoadingProgress(1f, "Готово");
             _startRoutine = null;
             }
             finally
@@ -470,7 +479,10 @@ namespace ProjectC.World.FloatingOrigin.Pilot
             _loadingCanvas = canvasGo.AddComponent<Canvas>();
             _loadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _loadingCanvas.sortingOrder = 10000;
-            canvasGo.AddComponent<CanvasScaler>();
+            var scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
             canvasGo.AddComponent<GraphicRaycaster>();
 
             // Фон

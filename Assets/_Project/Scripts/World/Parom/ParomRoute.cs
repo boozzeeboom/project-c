@@ -65,6 +65,9 @@ namespace ProjectC.World.Parom
         [Tooltip("Провисание троса: доля от длины сегмента (0.05 = 5%).")]
         [Range(0f, 0.2f)] [SerializeField] private float _sagRatio = 0.05f;
 
+        [Tooltip("T-PAROM-27: длина гашения провиса у станций, МЕТРЫ (не доля сегмента!). На сегментах в километры доля 15% гасила почти весь прогиб, и кабина летела по прямой над провисающим тросом.")]
+        [Min(0f)] [SerializeField] private float _sagEaseEndMeters = 30f;
+
         [Tooltip("Точек LineRenderer на сегмент между станциями.")]
         [Range(2, 32)] [SerializeField] private int _pointsPerSegment = 12;
 
@@ -537,23 +540,30 @@ namespace ProjectC.World.Parom
         /// Первая попытка (08) использовала Mathf.SmoothStep — в редакторе
         /// 6000.5.2f1 он не нормализует диапазон (T-PAROM-11) и схлопнул прогиб;
         /// здесь ручной Эрмит (EaseEnds). Тросы и гизмо — по чистому SaggedPoint.
+        /// T-PAROM-27: гашение у станций меряется в МЕТРАХ (`_sagEaseEndMeters`),
+        /// а не долей сегмента. Доля 15% на сегменте 9.4 км — это ~1.4 км: кабина
+        /// шла почти по прямой (8 м прогиба вместо 32 м на 5% пути), а трос
+        /// провисал по синусу — визуально «паром летит над тросами по прямой».
         /// </summary>
         private Vector3 EasedSaggedPoint(Vector3 aW, Vector3 bW, float t)
         {
             Vector3 p = Vector3.Lerp(aW, bW, t);
             float segLen = Vector3.Distance(aW, bW);
-            p.y -= Mathf.Sin(Mathf.PI * t) * segLen * _sagRatio * EaseEnds(t);
+            p.y -= Mathf.Sin(Mathf.PI * t) * segLen * _sagRatio * EaseEnds(t, segLen);
             return p;
         }
 
         /// <summary>
-        /// Ручной smoothstep крайних 15% сегмента. Mathf.SmoothStep не используем
-        /// (см. T-PAROM-11: движковый не нормализует диапазон в 6000.5.2f1).
+        /// Ручной smoothstep на краях сегмента длиной `_sagEaseEndMeters` метров.
+        /// Mathf.SmoothStep не используем (см. T-PAROM-11: движковый не нормализует
+        /// диапазон в 6000.5.2f1). Внутри сегмента трос и кабина идут по одной кривой.
         /// </summary>
-        private static float EaseEnds(float t)
+        private float EaseEnds(float t, float segLen)
         {
-            float a = Mathf.Clamp01(t / 0.15f);
-            float b = Mathf.Clamp01((1f - t) / 0.15f);
+            float endMeters = Mathf.Clamp(_sagEaseEndMeters, 0f, Mathf.Max(segLen * 0.5f, 0f));
+            if (endMeters <= 0.0001f) return 1f;
+            float a = Mathf.Clamp01(t * segLen / endMeters);
+            float b = Mathf.Clamp01((1f - t) * segLen / endMeters);
             a = a * a * (3f - 2f * a);
             b = b * b * (3f - 2f * b);
             return a * b;
@@ -859,6 +869,7 @@ namespace ProjectC.World.Parom
             _cabinHangDepth = Mathf.Max(_cabinHangDepth, 0f);
             _cableLateralOffset = Mathf.Max(_cableLateralOffset, 0f);
             _sagRatio = Mathf.Clamp(_sagRatio, 0f, 0.2f);
+            _sagEaseEndMeters = Mathf.Max(_sagEaseEndMeters, 0f);
             _pointsPerSegment = Mathf.Clamp(_pointsPerSegment, 2, 32);
             _cableWidth = Mathf.Max(_cableWidth, 0.01f);
             if (_stationDwellOverrides != null)

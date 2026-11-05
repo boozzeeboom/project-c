@@ -71,8 +71,7 @@ namespace ProjectC.Core
 
         [Header("Moving Platform")]
         [Tooltip("T-CAM23: камера едет с платформой под целью 1:1, лаг применяется только к локальному движению персонажа по палубе. Без этого камера догоняет паром и дрожит от микроколебаний персонажа относительно палубы.")]
-        [SerializeField] private bool platformFollowEnabled = true;
-        [Tooltip("Маска зонда платформы под целью (палубы/кабинки парома).")]
+        [SerializeField] private bool platformFollowEnabled = true;        [Tooltip("Маска зонда платформы под целью (палубы/кабинки парома).")]
         [SerializeField] private LayerMask platformProbeMask = ~0;
         [Tooltip("Радиус зонда платформы, м.")]
         [SerializeField] private float platformProbeRadius = 0.35f;
@@ -82,6 +81,10 @@ namespace ProjectC.Core
         [SerializeField] private float platformGraceTime = 0.1f;
         [Tooltip("Максимальный скачок платформы за кадр (м); выше — телепорт/restore, follow в этом кадре не применяется.")]
         [SerializeField] private float platformMaxDelta = 2f;
+
+        [Header("Diagnostics")]
+        [Tooltip("T-CAM24: раз в секунду печатать метрики дрожания (шаг цели/камеры, разброс дистанции, dt, follow). Поведение не меняет — только лог.")]
+        [SerializeField] private bool debugJitterProbe = false;
 
         [Header("Wall Recovery")]
         [Tooltip("Максимальная скорость восстановления позиции (m/s)")]
@@ -195,6 +198,15 @@ namespace ProjectC.Core
         private Vector3 _platformLocalOffset;
         private Vector3 _platformLocalVelocity;
         private Collider _targetCollider;
+
+        // T-CAM24: пробник дрожания (только при debugJitterProbe, поведение не меняет).
+        private Vector3 _probeLastTargetPos;
+        private Vector3 _probeLastCamPos;
+        private Vector3 _probeLastPlatformPos;
+        private float _probeDistMin, _probeDistMax;
+        private float _probeMaxTargetStep, _probeMaxCamStep, _probeMaxPlatformStep, _probeMaxDt;
+        private int _probeFrames, _probeHitches, _probeFollowFrames;
+        private float _probeNextLogTime;
 
         private InputAction _lookAction;
         private InputAction _zoomAction;
@@ -619,6 +631,7 @@ namespace ProjectC.Core
             UpdateAdaptiveDistance();
             SmoothPosition(resolvedPos);
             UpdateLookAt();
+            if (debugJitterProbe) AccumulateJitterProbe();
             ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.end", $"pos={transform.position} lagTarget={_lagTargetPos} colliding={_wasColliding} collisionPos={_lastCollisionPos}");
         }
 
@@ -1257,6 +1270,71 @@ namespace ProjectC.Core
             float t = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(lookSmoothTime, 0.001f));
             _smoothLookPos = Vector3.Lerp(_smoothLookPos, lookPoint, t);
             transform.LookAt(_smoothLookPos);
+        }
+
+        /// <summary>
+        /// T-CAM24: пробник дрожи. Раз в секунду печатает шаг цели / шаг камеры (макс за кадр),
+        /// разброс дистанции камера↔цель, dt и число гичхей, кадры в follow платформы,
+        /// максимальный шаг платформы. Читается однозначно:
+        ///  • цель шагает, камера гладкая → дрожит ИСТОЧНИК (сеть/платформа/carry);
+        ///  • цель гладкая, шаг камеры большой или большой разброс dist → дрожит КАМЕРА (фильтр/коллизия);
+        ///  • оба гладкие, а по экрану дёргает → не камера (рендер/перф/UI).
+        /// Поведение не меняет.
+        /// </summary>
+        private void AccumulateJitterProbe()
+        {
+            float dt = Time.deltaTime;
+            Vector3 targetPos = target.position;
+
+            if (_probeFrames == 0)
+            {
+                _probeLastTargetPos = targetPos;
+                _probeLastCamPos = transform.position;
+                _probeLastPlatformPos = _platform != null ? _platform.position : Vector3.zero;
+                _probeDistMin = _probeDistMax = Vector3.Distance(targetPos, transform.position);
+                _probeMaxTargetStep = _probeMaxCamStep = _probeMaxPlatformStep = _probeMaxDt = 0f;
+                _probeHitches = 0;
+                _probeFollowFrames = 0;
+            }
+            else
+            {
+                float targetStep = Vector3.Distance(targetPos, _probeLastTargetPos);
+                float camStep = Vector3.Distance(transform.position, _probeLastCamPos);
+                if (targetStep > _probeMaxTargetStep) _probeMaxTargetStep = targetStep;
+                if (camStep > _probeMaxCamStep) _probeMaxCamStep = camStep;
+                if (dt > _probeMaxDt) _probeMaxDt = dt;
+                if (dt > 0.05f) _probeHitches++;
+                if (_platformFollowing) _probeFollowFrames++;
+
+                float dist = Vector3.Distance(targetPos, transform.position);
+                if (dist < _probeDistMin) _probeDistMin = dist;
+                if (dist > _probeDistMax) _probeDistMax = dist;
+
+                if (_platformFollowing && _platform != null)
+                {
+                    float platStep = (_probeLastPlatformPos - _platform.position).magnitude;
+                    if (platStep > _probeMaxPlatformStep) _probeMaxPlatformStep = platStep;
+                }
+            }
+
+            _probeLastTargetPos = targetPos;
+            _probeLastCamPos = transform.position;
+            if (_platformFollowing && _platform != null) _probeLastPlatformPos = _platform.position;
+            _probeFrames++;
+
+            if (Time.unscaledTime < _probeNextLogTime) return;
+            _probeNextLogTime = Time.unscaledTime + 1f;
+
+            if (_probeFrames > 1)
+            {
+                Debug.Log($"[CAM-JITTER] frames={_probeFrames} follow={_probeFollowFrames} " +
+                          $"targetStepMax={_probeMaxTargetStep * 1000f:F0}mm camStepMax={_probeMaxCamStep * 1000f:F0}mm " +
+                          $"dist={_probeDistMin:F2}..{_probeDistMax:F2}m (spread={(_probeDistMax - _probeDistMin) * 1000f:F0}mm) " +
+                          $"platStepMax={_probeMaxPlatformStep * 1000f:F0}mm dtMax={_probeMaxDt * 1000f:F0}ms hitches={_probeHitches} " +
+                          $"lagSpeed={_lagSpeed:F1} colliding={_wasColliding} target={target.name}", this);
+            }
+
+            _probeFrames = 0;
         }
 
         private void SnapCameraToPosition()

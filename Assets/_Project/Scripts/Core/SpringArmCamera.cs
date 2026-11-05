@@ -72,6 +72,20 @@ namespace ProjectC.Core
         [Header("Moving Platform")]
         [Tooltip("T-CAM23: камера едет с платформой под целью 1:1, лаг применяется только к локальному движению персонажа по палубе. Без этого камера догоняет паром и дрожит от микроколебаний персонажа относительно палубы.")]
         [SerializeField] private bool platformFollowEnabled = true;
+
+        [Header("High Speed")]
+        [Tooltip("T-CAM25: потолок отставания лаг-цели от цели, м. На высокой скорости (админ-бег/noclip) лаг 0.15 с уводил камеру на 7–8 м. 0 = без потолка.")]
+        [SerializeField] private float maxLagDistance = 2.5f;
+        [Tooltip("T-CAM25: с этой скорости (м/с) задержка интерполяции цели начинает уменьшаться (на высокой скорости нужна нулевая задержка).")]
+        [SerializeField] private float targetDelayFadeStartSpeed = 10f;
+        [Tooltip("T-CAM25: на этой скорости (м/с) задержка интерполяции цели = 0.")]
+        [SerializeField] private float targetDelayFadeEndSpeed = 25f;
+        [Tooltip("T-CAM25: с этой скорости (м/с) ужимается сглаживание позиции камеры.")]
+        [SerializeField] private float smoothTightenStartSpeed = 10f;
+        [Tooltip("T-CAM25: на этой скорости (м/с) сглаживание позиции = positionSmoothTime × smoothTightenMinFactor.")]
+        [SerializeField] private float smoothTightenEndSpeed = 30f;
+        [Tooltip("T-CAM25: во сколько раз можно ужать positionSmoothTime на максимальной скорости.")]
+        [Range(0.05f, 1f)] [SerializeField] private float smoothTightenMinFactor = 0.25f;
         [Tooltip("Маска зонда платформы под целью (палубы/кабинки парома).")]
         [SerializeField] private LayerMask platformProbeMask = ~0;
         [Tooltip("Радиус зонда платформы, м.")]
@@ -199,6 +213,14 @@ namespace ProjectC.Core
         private Vector3 _platformLocalOffset;
         private Vector3 _platformLocalVelocity;
         private Collider _targetCollider;
+
+        // T-CAM25: скорость цели (для отключения задержки/сглаживания на высокой скорости)
+        // и кадровый шаг цели (отличает телепорт от лага — старый «снап по дистанции лага»
+        // на 10 м телепортировал камеру при быстром движении).
+        private Vector3 _prevRawTargetPos;
+        private bool _hasRawTargetPos;
+        private float _targetSpeedSmoothed;
+        private float _lastTargetFrameStep;
 
         // T-CAM24: пробник дрожания (только при debugJitterProbe, поведение не меняет).
         private Vector3 _probeLastTargetPos;
@@ -607,11 +629,11 @@ namespace ProjectC.Core
             // и лаг/оценка скорости видели «0 → 18 м/с → 0» каждый тик.
             SampleTargetPosition();
 
-            // Auto-snap при большом скачке (телепорт, загрузка сохранения, респавн).
-            // UpdateLag ловит только >100m; здесь обрабатываем 10-100m.
-            // Проверяем по СЫРОЙ позиции цели: задержка сэмпла не должна маскировать телепорт.
-            float snapDist = Vector3.Distance(_lagTargetPos, target.position);
-            if (snapDist > TeleportSnapDistance)
+            // Auto-snap ТОЛЬКО на телепорт: кадровый шаг цели. Раньше сравнивалась дистанция
+            // «лаг-цель ↔ цель» с 10 м — при высокой скорости (30–50 м/с) лаг честно уезжал
+            // за 10 м и снап срабатывал каждый кадр: визуально камера «прыгает и не успевает».
+            // T-CAM25.
+            if (_lastTargetFrameStep > TeleportSnapDistance)
             {
                 _lagTargetPos = target.position;
                 SnapCameraToPosition();
@@ -860,9 +882,25 @@ namespace ProjectC.Core
         {
             Vector3 raw = target.position;
             float now = Time.time;
-            // В режиме корабля цель двигает NetworkTransform с интерполяцией — сигнал уже
-            // гладкий, доп. задержка там только вредит отзывчивости (лаг в ship выключен).
-            float delay = (_isShip || _platformFollowing) ? 0f : targetSignalDelay;
+
+            // T-CAM25: скорость цели (сглаженная) + кадровый шаг.
+            // Шаг нужен для детекта телепорта, скорость — чтобы гасить задержку/сглаживание
+            // на высокой скорости (12–50 м/с: админ-бег, noclip, транспорт).
+            float rawDt = Mathf.Max(Time.deltaTime, 0.0001f);
+            if (_hasRawTargetPos)
+            {
+                _lastTargetFrameStep = Vector3.Distance(raw, _prevRawTargetPos);
+                float stepSpeed = Mathf.Min(_lastTargetFrameStep / rawDt, 200f);
+                float speedLerp = 1f - Mathf.Exp(-rawDt / 0.15f);
+                _targetSpeedSmoothed = Mathf.Lerp(_targetSpeedSmoothed, stepSpeed, speedLerp);
+            }
+            _prevRawTargetPos = raw;
+            _hasRawTargetPos = true;
+
+            // Задержка интерполяции нужна, чтобы гасить ступеньки сети на обычных скоростях.
+            // На высокой скорости она даёт чистое отставание v·0.07 (3.4 м на 48 м/с) — гасим.
+            float delayScale = 1f - Mathf.InverseLerp(targetDelayFadeStartSpeed, targetDelayFadeEndSpeed, _targetSpeedSmoothed);
+            float delay = (_isShip || _platformFollowing) ? 0f : targetSignalDelay * delayScale;
 
             if (targetSignalInterpolation)
             {
@@ -930,6 +968,12 @@ namespace ProjectC.Core
             _sampledTargetPos = position;
             _prevSampledTargetPos = position;
             _sampledTargetVelocity = Vector3.zero;
+            // T-CAM25: без сброса первый кадр после Snap/телепорта дал бы ложную скорость
+            // (шаг от прошлой точки) и снап/ужатие сработали бы зря.
+            _prevRawTargetPos = position;
+            _hasRawTargetPos = true;
+            _targetSpeedSmoothed = 0f;
+            _lastTargetFrameStep = 0f;
         }
 
         /// <summary>
@@ -962,13 +1006,6 @@ namespace ProjectC.Core
             }
 
             Vector3 delta = _sampledTargetPos - _lagTargetPos;
-
-            float maxLagDist = 10f;
-            if (delta.magnitude > maxLagDist)
-            {
-                delta = delta.normalized * maxLagDist;
-                _lagTargetPos = _sampledTargetPos - delta;
-            }
 
             float lagXZ, lagY;
             float effXZ, effY;
@@ -1025,6 +1062,18 @@ namespace ProjectC.Core
             _lagTargetPos.x += delta.x * lagXZ;
             _lagTargetPos.z += delta.z * lagXZ;
             _lagTargetPos.y += delta.y * lagY;
+
+            // T-CAM25: потолок отставания ПО ДИСТАНЦИИ, а не по времени.
+            // На 30–50 м/с (админ-бег/noclip) лаг 0.15 с давал 4.5–7.5 м отставания, а при
+            // ~10 м старый клэмп ещё и телепортировал лаг-цель — отсюда «прыгает».
+            // На walk/run (0.75–1.2 м) потолок не срабатывает. 0 = без потолка.
+            if (maxLagDistance > 0f)
+            {
+                Vector3 gap = _sampledTargetPos - _lagTargetPos;
+                float gapLen = gap.magnitude;
+                if (gapLen > maxLagDistance)
+                    _lagTargetPos = _sampledTargetPos - gap * (maxLagDistance / gapLen);
+            }
         }
 
         private Vector3 ComputeDesiredPosition()
@@ -1257,6 +1306,11 @@ namespace ProjectC.Core
             // T-CAM14: near-clip constraint вынесен в ResolveCollision — здесь
             // только чистый exp-Lerp, без дополнительных push'ей.
             float smoothTime = ratio < recoveryRatio ? positionSmoothTime * 0.3f : positionSmoothTime;
+
+            // T-CAM25: на высокой скорости сглаживание само по себе даёт хвост v·τ
+            // (48 м/с × 0.04 = 1.9 м). Ужимаем его по скорости — к 30 м/с до 25%.
+            float tighten = Mathf.InverseLerp(smoothTightenStartSpeed, smoothTightenEndSpeed, _targetSpeedSmoothed);
+            smoothTime *= Mathf.Lerp(1f, smoothTightenMinFactor, tighten);
             float t = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(smoothTime, 0.001f));
             Vector3 newPos = Vector3.Lerp(transform.position, cameraTargetPos, t);
 

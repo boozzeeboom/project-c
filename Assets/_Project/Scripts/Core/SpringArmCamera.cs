@@ -27,6 +27,8 @@ namespace ProjectC.Core
     /// positionSmoothTime 0.08→0.04 (возврат к задумке T-CAM10: Lag/Smooth 3.75×).
     /// T-CAM22: вход лага — интерполированный сэмпл цели (гасит ступеньки сетевых
     /// тиков движущихся платформ), anti-pop держится относительно цели, а не мира.
+    /// T-CAM23: если персонаж на движущейся платформе, риг едет с ней 1:1, а лаг
+    /// применяется только к локальному движению по палубе (камера не «догоняет» паром).
     /// </summary>
     public class SpringArmCamera : MonoBehaviour
     {
@@ -66,6 +68,20 @@ namespace ProjectC.Core
         [SerializeField] private bool targetSignalInterpolation = true;
         [Tooltip("T-CAM22: на сколько камера отстаёт от цели, сек. Должно быть ≥ 1 сетевого тика (30 Гц ≈ 0.033; дефолт 0.07 с запасом). 0 = выкл.")]
         [SerializeField] private float targetSignalDelay = 0.07f;
+
+        [Header("Moving Platform")]
+        [Tooltip("T-CAM23: камера едет с платформой под целью 1:1, лаг применяется только к локальному движению персонажа по палубе. Без этого камера догоняет паром и дрожит от микроколебаний персонажа относительно палубы.")]
+        [SerializeField] private bool platformFollowEnabled = true;
+        [Tooltip("Маска зонда платформы под целью (палубы/кабинки парома).")]
+        [SerializeField] private LayerMask platformProbeMask = ~0;
+        [Tooltip("Радиус зонда платформы, м.")]
+        [SerializeField] private float platformProbeRadius = 0.35f;
+        [Tooltip("Глубина зонда ниже низа коллайдера цели, м.")]
+        [SerializeField] private float platformProbeDepth = 0.8f;
+        [Tooltip("Сколько терпеть промах зонда, прежде чем отцепиться (сек) — против фликера на краю палубы.")]
+        [SerializeField] private float platformGraceTime = 0.1f;
+        [Tooltip("Максимальный скачок платформы за кадр (м); выше — телепорт/restore, follow в этом кадре не применяется.")]
+        [SerializeField] private float platformMaxDelta = 2f;
 
         [Header("Wall Recovery")]
         [Tooltip("Максимальная скорость восстановления позиции (m/s)")]
@@ -169,6 +185,16 @@ namespace ProjectC.Core
         private Vector3 _sampledTargetPos;
         private Vector3 _prevSampledTargetPos;
         private Vector3 _sampledTargetVelocity;
+
+        // T-CAM23: платформа под целью и её кадровое смещение (камера едет с ней 1:1).
+        private Transform _platform;
+        private Vector3 _platformLastPos;
+        private float _platformMissTime;
+        private float _platformMoveLatch;
+        private bool _platformFollowing;
+        private Vector3 _platformLocalOffset;
+        private Vector3 _platformLocalVelocity;
+        private Collider _targetCollider;
 
         private InputAction _lookAction;
         private InputAction _zoomAction;
@@ -298,6 +324,8 @@ namespace ProjectC.Core
             // T-CAM22: история сэмплов цели — тот же мировой контракт.
             _sampledTargetPos += translation;
             _prevSampledTargetPos += translation;
+            // T-CAM23: кэш позиции платформы — иначе после ребейза получим фальшивую дельту.
+            _platformLastPos += translation;
             for (int i = 0; i < _targetSamples.Count; i++)
             {
                 TargetSample s = _targetSamples[i];
@@ -336,6 +364,7 @@ namespace ProjectC.Core
             // T-CAM22: историю цели восстановить нельзя (вне структуры снапшота) —
             // стартуем с текущей лаг-цели, чтобы не было рывка из прошлой жизни.
             ResetTargetSamples(_lagTargetPos);
+            ResetPlatformFollow();
             return IsFiniteGlobalMotionCameraState(out error);
         }
 
@@ -429,6 +458,7 @@ namespace ProjectC.Core
                 _lagTargetPos = target.position;
                 _smoothLookPos = target.position + Vector3.up * _currentLookAtHeight;
                 ResetTargetSamples(target.position);
+                ResetPlatformFollow();
             }
         }
 
@@ -463,6 +493,7 @@ namespace ProjectC.Core
                 _lagTargetPos = target.position;
                 _smoothLookPos = target.position + Vector3.up * _targetLookAtHeight;
                 ResetTargetSamples(target.position);
+                ResetPlatformFollow();
             }
         }
 
@@ -549,6 +580,11 @@ namespace ProjectC.Core
             }
 
             ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.begin", $"target={target.name} lagTarget={_lagTargetPos} colliding={_wasColliding}");
+
+            // T-CAM23: сначала подтягиваем риг платформой (если персонаж на движущейся палубе),
+            // потом читаем цель. Так платформа двигает камеру 1:1, и лаг работает только
+            // по локальному движению персонажа относительно палубы.
+            ApplyPlatformFollow();
 
             // T-CAM22: цель читаем через интерполяцию по истории сэмплов.
             // У клиента кабинка парома двигается ступеньками сетевых тиков (30 Гц),
@@ -645,12 +681,155 @@ namespace ProjectC.Core
         }
 
         /// <summary>
+        /// T-CAM23: зонд платформы под целью. Паром/корабль = коллайдер с Rigidbody под ногами
+        /// (та же дисциплина, что в NetworkPlayer.DetectGroundPlatform). Статичная геометрия
+        /// без Rigidbody платформой не считается.
+        /// </summary>
+        private Transform ProbePlatform()
+        {
+            if (target == null) return null;
+
+            if (_targetCollider == null) _targetCollider = target.GetComponentInChildren<Collider>();
+
+            // Старт зонда — от СЕРЕДИНЫ коллайдера цели (SphereCast не видит коллайдеры,
+            // с которыми сфера пересекается в начале свипа — иначе пол под ногами
+            // собственного персонажа «съедался» бы стартовым перекрытием).
+            Vector3 origin;
+            float distance;
+            if (_targetCollider != null)
+            {
+                Bounds bounds = _targetCollider.bounds;
+                origin = new Vector3(bounds.center.x, bounds.center.y, bounds.center.z);
+                distance = (bounds.center.y - bounds.min.y) + platformProbeDepth;
+            }
+            else
+            {
+                origin = target.position + Vector3.up * 0.5f;
+                distance = 0.5f + platformProbeDepth;
+            }
+
+            if (distance <= 0f) return null;
+            if (!Physics.SphereCast(origin, platformProbeRadius, Vector3.down, out RaycastHit hit,
+                    distance, platformProbeMask, QueryTriggerInteraction.Ignore))
+                return null;
+
+            Collider collider = hit.collider;
+            if (collider == null) return null;
+            if (collider.transform == target || collider.transform.IsChildOf(target)) return null;
+            // Чужие персонажи не платформа.
+            if (collider.GetComponentInParent<CharacterController>() != null) return null;
+
+            Rigidbody rb = collider.attachedRigidbody;
+            return rb != null ? rb.transform : null;
+        }
+
+        /// <summary>
+        /// T-CAM23: переносим ВСЁ состояние рига на кадровое смещение платформы под целью.
+        /// Зачем: персонаж на палубе = движение платформы + микроколебания относительно неё
+        /// (лаг физики палубы, кэп/остаток carry, прижим CharacterController). Пока камера
+        /// «догоняет» сумму этих двух слагаемых через лаг, она физически не может быть
+        /// ровной. Передав платформенную часть камере напрямую, оставляем лагу только
+        /// локальное движение — и оно гасится, а не превращается в дрожь мира.
+        /// Локальная скорость (_platformLocalVelocity) затем используется вместо мировой
+        /// скорости цели в dynamic lag / vert-boost: 9 м/с парома — это не скорость персонажа.
+        /// </summary>
+        private void ApplyPlatformFollow()
+        {
+            if (!platformFollowEnabled || _isShip || target == null)
+            {
+                _platform = null;
+                _platformFollowing = false;
+                _platformLocalVelocity = Vector3.zero;
+                return;
+            }
+
+            Transform probe = ProbePlatform();
+            if (probe != null)
+            {
+                _platformMissTime = 0f;
+                if (probe != _platform)
+                {
+                    // Первичная привязка/смена платформы — кэш без рывка.
+                    _platform = probe;
+                    _platformLastPos = probe.position;
+                    _platformLocalOffset = target.position - probe.position;
+                    _platformLocalVelocity = Vector3.zero;
+                    _platformMoveLatch = 0f;
+                    _platformFollowing = false;
+                    return;
+                }
+            }
+            else
+            {
+                if (_platform == null)
+                {
+                    _platformFollowing = false;
+                    _platformLocalVelocity = Vector3.zero;
+                    return;
+                }
+                // Одиночный промах зонда (край палубы, флип) не должен рвать follow:
+                // иначе камера теряет кадр платформы и дёргается на догоне.
+                _platformMissTime += Time.deltaTime;
+                if (_platformMissTime > platformGraceTime)
+                {
+                    _platform = null;
+                    _platformFollowing = false;
+                    _platformMoveLatch = 0f;
+                    _platformLocalVelocity = Vector3.zero;
+                    return;
+                }
+            }
+
+            Vector3 delta = _platform.position - _platformLastPos;
+            _platformLastPos = _platform.position;
+
+            float sqr = delta.sqrMagnitude;
+            bool teleport = sqr > platformMaxDelta * platformMaxDelta;
+            if (teleport)
+                delta = Vector3.zero; // restore/rebase — камеру рывком не тащим
+
+            // Защёлка «платформа реально едет»: на клиенте её трансформ обновляется тиками,
+            // между тиками дельта = 0. Без защёлки режим follow (и delay = 0) флипал бы
+            // каждый тик — это само по себе дрожь.
+            if (sqr > 1e-8f || teleport)
+                _platformMoveLatch = 0.3f;
+            else
+                _platformMoveLatch = Mathf.Max(0f, _platformMoveLatch - Time.deltaTime);
+            _platformFollowing = _platformMoveLatch > 0f;
+
+            if (delta.sqrMagnitude > 0f)
+            {
+                transform.position += delta;
+                _lagTargetPos += delta;
+                _smoothLookPos += delta;
+                _lastCollisionPos += delta;
+                _collisionLagPos += delta;
+                _sampledTargetPos += delta;
+                _prevSampledTargetPos += delta;
+                for (int i = 0; i < _targetSamples.Count; i++)
+                {
+                    TargetSample s = _targetSamples[i];
+                    s.Position += delta;
+                    _targetSamples[i] = s;
+                }
+            }
+
+            // Локальное смещение относительно палубы и его скорость (для dynamic lag).
+            float dt = Mathf.Max(Time.deltaTime, 0.0001f);
+            Vector3 local = target.position - _platform.position;
+            _platformLocalVelocity = teleport ? Vector3.zero : (local - _platformLocalOffset) / dt;
+            _platformLocalOffset = local;
+        }
+
+        /// <summary>
         /// T-CAM22: копит историю позиции цели и возвращает сэмпл на <see cref="targetSignalDelay"/>
         /// назад. Зачем: позиция игрока на движущейся платформе (паром, палуба корабля на
         /// клиенте) — ступенчатая функция сетевого тика. Лаг и оценка скорости по такому
         /// сигналу дрожат («0 м/с → 18 м/с» каждый тик), а каскад exp-фильтров даёт
         /// пилообразный «туда-сюда». Линейная интерполяция между двумя сэмплами
         /// превращает ступеньку в равномерное движение — ценой задержки в один тик.
+        /// T-CAM23: когда камера уже едет с платформой 1:1, остаток сигнала (локальное
+        /// движение персонажа) гладкий — задержка не нужна, отдаём его напрямую.
         /// </summary>
         private void SampleTargetPosition()
         {
@@ -658,7 +837,7 @@ namespace ProjectC.Core
             float now = Time.time;
             // В режиме корабля цель двигает NetworkTransform с интерполяцией — сигнал уже
             // гладкий, доп. задержка там только вредит отзывчивости (лаг в ship выключен).
-            float delay = _isShip ? 0f : targetSignalDelay;
+            float delay = (_isShip || _platformFollowing) ? 0f : targetSignalDelay;
 
             if (!targetSignalInterpolation || delay <= 0f)
             {
@@ -726,6 +905,20 @@ namespace ProjectC.Core
             _sampledTargetVelocity = Vector3.zero;
         }
 
+        /// <summary>
+        /// T-CAM23: сброс привязки к платформе (смена цели, телепорт, restore, ship-режим).
+        /// </summary>
+        private void ResetPlatformFollow()
+        {
+            _platform = null;
+            _platformFollowing = false;
+            _platformMissTime = 0f;
+            _platformMoveLatch = 0f;
+            _platformLocalOffset = Vector3.zero;
+            _platformLocalVelocity = Vector3.zero;
+            _targetCollider = null;
+        }
+
         private void UpdateLag()
         {
             if (!lagEnabled || _isShip || target == null)
@@ -752,11 +945,14 @@ namespace ProjectC.Core
 
             float lagXZ, lagY;
             float effXZ, effY;
+            // T-CAM23: на платформе скорость — локальная (по палубе). Иначе 9 м/с парома
+            // разгоняли dynamic lag и выключали сглаживание как раз для микродрожи.
+            Vector3 speedVector = _platformFollowing ? _platformLocalVelocity : _sampledTargetVelocity;
             if (dynamicLagEnabled)
             {
                 // T-CAM22: скорость — из сглаженного сэмпла цели (см. SampleTargetPosition),
                 // не из остатка пружины. Иначе на ступеньках сети лаг дребезжит.
-                float rawSpeed = Mathf.Min(_sampledTargetVelocity.magnitude, 30f);
+                float rawSpeed = Mathf.Min(speedVector.magnitude, 30f);
                 float speedLerp = 1f - Mathf.Exp(-Time.deltaTime / 0.1f);
                 _lagSpeed = Mathf.Lerp(_lagSpeed, rawSpeed, speedLerp);
                 float speedFactor = Mathf.InverseLerp(0f, 10f, _lagSpeed);
@@ -766,7 +962,7 @@ namespace ProjectC.Core
 
                 // T-CAM17: гистерезис вместо дискретного порога 5 м/с — иначе дребезг
                 // вкл/выкл ровно перед приземлением, где уже активны коллизия+adaptive.
-                float vertSpeed = Mathf.Abs(_sampledTargetVelocity.y);
+                float vertSpeed = Mathf.Abs(speedVector.y);
                 if (_vertBoostActive)
                 {
                     if (vertSpeed < vertBoostExitSpeed)
@@ -788,7 +984,9 @@ namespace ProjectC.Core
             // T-CAM22: задержка сэмпла цели уже съедает отзывчивость — вычитаем её из
             // времени лага, чтобы суммарная инерция осталась спроектированной
             // (walk 0.15/0.05), а не складывалась с ней. Пол 20% — микро-сглаживание.
-            if (targetSignalInterpolation && !_isShip && targetSignalDelay > 0f)
+            // T-CAM23: при follow платформы задержка сэмпла не используется (delay = 0).
+            bool sampledDelayActive = targetSignalInterpolation && !_platformFollowing && !_isShip && targetSignalDelay > 0f;
+            if (sampledDelayActive)
             {
                 effXZ = Mathf.Max(effXZ * 0.2f, effXZ - targetSignalDelay);
                 effY = Mathf.Max(effY * 0.2f, effY - targetSignalDelay);
@@ -1069,6 +1267,7 @@ namespace ProjectC.Core
             _lagTargetPos = target.position;
             _smoothLookPos = target.position + Vector3.up * _currentLookAtHeight;
             ResetTargetSamples(target.position);
+            ResetPlatformFollow();
             transform.position = target.position + dir * _currentDistance + Vector3.up * _currentHeight;
             transform.LookAt(_smoothLookPos);
         }

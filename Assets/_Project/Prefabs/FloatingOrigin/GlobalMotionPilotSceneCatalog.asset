@@ -20,7 +20,7 @@ MonoBehaviour:
     scenes:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       assetPath: Assets/_Project/Scenes/BootstrapScene.unity
-      dependencyHash: bfc40689643a154e6fb8b147ebb3478d
+      dependencyHash: 012373cd555479f4b0fb60f596648716
       inspectedComplete: 1
       saved: 1
       observations:
@@ -331,7 +331,7 @@ MonoBehaviour:
         layoutHash: 2577d86a4de1073611ce7031cd7ddee453eef6f90621ccd1817f5167ed964e7f
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       assetPath: Assets/_Project/Scenes/World/WorldScene_0_0.unity
-      dependencyHash: 0d073a0bfd1e19ed3bec3d219ba9a85f
+      dependencyHash: 7a2bad986a68e1529c04314240239e08
       inspectedComplete: 1
       saved: 1
       observations:
@@ -344,17 +344,17 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 2dc65acba652e3dd8234d2695bc722046a44c8521e11eb960d83f911db946631
+        layoutHash: 875063b18f02402e68aa869e5903ad62c7d602a3e63997bee9e4f48b86e34853
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1177720397:0
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 5dfaa11bf550a8ea6632b129fb83fc3d3eac6c3991ccfce733f3e175574b80f3
+        layoutHash: 6f4d8980b29797fd87f235088ee3d15518b3cbdcfa6de6538e124507f0b5772d
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1266341961:0
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 12b0a03790005460179edac072c98170ec2f0b8c404033460ac2e71cc3bdf04a
+        layoutHash: 35d725fbe9a25f190e285ac0e2a976a2030a78af824b353bd597a92c7bf4ae97
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:1509794190
         parentSourceId: 
         isRoot: 1
@@ -364,7 +364,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 74a04e804168ef0efb32c2fc8fed0b6f0f63bbaaa7400d8dd1d7bd6728c8d12a
+        layoutHash: 4e88e0d1d158945d03da0dc8b11d9a8b5d2b77dfe7aa41c6342265c3968ba12c
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1334246185813415076:2060387816
         parentSourceId: 
         isRoot: 1
@@ -379,12 +379,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 1aa581c3533d6a62572462b33f6f66088af2b05bdf54329ea7ade95ebbf2ade5
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1453572262:0
-        parentSourceId: 
-        isRoot: 1
-        isNetworkObject: 1
-        layoutHash: 64f2af74e0313bc21077dbc195f542cedb369165c609c6e12cf6c6c01cdc5c15
+        layoutHash: 5641e6753436fcca60d6b8877faa34e4070c7dc4abaad285ce7594b25fac5cf8
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1490161952:0
         parentSourceId: 
         isRoot: 1
@@ -404,12 +399,12 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 221bc702415267d2c779398663fa832844cbc7411bb9c1dd467c81d4c70080a0
+        layoutHash: 21b35f4d09618fff4445cdb608621cfcf9d8a6d4bcdf7b819544c1a184e5baf1
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1587185407317693831:333968926
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 9e3d77c4955370da99fd830f59cecf924013143138470b3caf919ccfe5b536e7
+        layoutHash: 63ce681f3624b90162bada7ce53fbb85e7fb598923e2ca69c7559d8dbefe5550
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1615803702:0
         parentSourceId: 
         isRoot: 1
@@ -424,12 +419,7 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 255bc512911c1548d881d18a35fa9a22b167ba88520fcbbf55eba6bdd1827f19
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1683511478:0
-        parentSourceId: 
-        isRoot: 1
-        isNetworkObject: 1
-        layoutHash: 90e0efebdf098508765fe4ec7b12d0264d8d12c52c9b5bf1f4d0a4fc10392a32
+        layoutHash: b4d9fc53c6672b09fbb7bd439efee57614b93a4af9448e54f39a2851e9219ba4
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1739546879:0
         parentSourceId: 
         isRoot: 1
@@ -439,17 +429,12 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: ae05b866e7564d26f506ca04ab5865eb6488d7dafe119eea43183c8ea6df233b
+        layoutHash: 666daaf99671bf85eceb32bdc24dd4729fb5a6f1123167575959e15e4d176af0
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: c01afa02dfacd95f313e7d7bcfbfb75c75b592fd7b3df23ef292ec3327cc3e7c
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:192250732:0
-        parentSourceId: 
-        isRoot: 1
-        isNetworkObject: 1
-        layoutHash: dd5204a0e6ce7f7587959cef043f235215e794768aed71bffe9d26c9cefe1c85
+        layoutHash: 963593c2aa8f8b7cf80057cd767d75506a414f400eda97af020d57c763456aac
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1987571259:0
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -459,17 +444,17 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 8dcf5f3bdcbfc64a79ad35906bd8ed506458aeb3508396db2cafbcdc1cf3fdcf
+        layoutHash: 602e38b3f6a27fe632917fe89beb0bc1c18e56007398806afe0a1a3085da3462
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:226542065:0
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: f797429bf1afb482f61c6e0f1fd3fa9fec7f53044fd1b32fdde64a3bc40022de
+        layoutHash: 3f6dab0c8b65440c9ca847cab208449fc73616e25c4e1c302aaa0f52e4016a42
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:2356130661414943933:1707764219
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 00ec829ac9779914d11101c8ddbb4b3f0a0daf135f846390657ac77cb4ad1b72
+        layoutHash: 8d9afe870588b5e4d6f61f04a4bf4f2152248baf61573b3ae0b42efa78df59ac
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:269601135:0
         parentSourceId: 
         isRoot: 1
@@ -480,71 +465,61 @@ MonoBehaviour:
         isRoot: 1
         isNetworkObject: 0
         layoutHash: 553265a31e401c5d6b06b687af93dd7e58f5991dceca59076eb393c65e4bc08e
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:302175164:0
-        parentSourceId: 
-        isRoot: 1
-        isNetworkObject: 1
-        layoutHash: 8130ab35f5f1052bd1718cb3a5d8f1e13f6888340b95c1c148f9fb8782f2e1c0
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:326467913:0
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: b65bc16c8bae319a062178250b4b0b97bf0a620aba41d4cea15831a24d1b9698
+        layoutHash: 2730d5ea35dd67834eb9f38d5d46600d81ae3728c588809bd2d4c4c3f2bd6274
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:1170723420
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 1aebfbe4fa9e29e7747072429756e1a7316264b18525b3e75a8e6003a023946f
+        layoutHash: 8302442cdfb3e008817e8b04de7ab73a9c0638f72b6214baa4117568fc1e51c6
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:8645957853286282446
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 70c6fca02a86c1560b4eab760074a6312930b569f9c24ea97a4d22dc7df26d53
+        layoutHash: e7ee5dfe7fddac7b888b031d1a09a22f135c2d6407146eaa6f4f7ae39323b322
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:3892824241647204050:432274426
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 357b25d1ae0ea4f9a2143b5b7dcfde25f34c79fdae5f7b9aa6c09d3b9621e80b
+        layoutHash: cfe7076574b8e5b1bdc95c917bce0edb485161db38243cc3226f03da508f8804
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:409003302271648103:2066362739
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 9ec4422626e4b26fa66fcd3fba0be3a3ad1caabdf11e65f88434d2304738b98a
+        layoutHash: a6bd88c0d2acfb32f08033a4b76962b9a9f97dbb9d42c8b2b9424d31db1459a5
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:409548021:0
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 49f37c487c7ab759a763b49e30a5fed80b12645295685d4f11ce9fda731f0a99
+        layoutHash: de976f5c616b4d45708b890a6f10e471c072d41d2e017c605cabe3cc0f8219fa
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:4157880980074026618:1551839791
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: f553f92823c7a384f82560128362cf4d97e74ce515af5f5d4d9a4db6fa29c0e6
+        layoutHash: 089745ae1137a57200ff64ef79c46560a286f752a2c0e8d69f641a3ba3b453e2
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:4375928684233543869:1485405139
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 6bf9b8086ff02e61a6019de76b6ab73eae9d2830af40c1f44e0d05bb74a7ab9a
+        layoutHash: 8588f9db5b0e32aa476b5b311e6ea800aa3ab68b576182de8a6c163ee8187325
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:4649566693282215820:2977119022265116449
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: ec92be8072d3f35e2f65e26f23239143e59cb86b86616e70b917cea3180baec0
+        layoutHash: 46edfe8e07735c70311ce06f821086eb8742c4526e60405b450859e5286ea5aa
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:4649566693282215820:391879212
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: d068222174038cbf3162954fdc14c3bf47bf40bc5b7c788ddae89304ccb3e6e4
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:478164232:0
-        parentSourceId: 
-        isRoot: 1
-        isNetworkObject: 1
-        layoutHash: 7c6d41112137a9d9153bf63e855448275e01618dc3fe9485bb42b281c8000878
+        layoutHash: f143a87dfb39a4d5801f20a2dae04789aeaf5732b3934d207a139f509d7c103f
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:4794494763504228605:453181472
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 2f302510a4abe782f46856b10c22b5f36b19881c2a8244edcc6880076d3edeef
+        layoutHash: 2bb2eb965e184b34d0078ea127efc1770d6a191e6716e433f5587fd1e4cd5dec
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:52261661:0
         parentSourceId: 
         isRoot: 1
@@ -554,7 +529,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 777f896a545abef4f7af1331b5524b9b266427a8a36a0dc49a87ace9f5dbb0bd
+        layoutHash: 26230a42aa86bee01a97771b51e2e5bfdc51146ae49f48dfb1b6b4293829e5a5
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1417069060
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
@@ -619,72 +594,62 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 3ce2e10d2858cbc6988c45dbdf598c43ba49830db0e757ee831b3f9ec1da9c9a
+        layoutHash: fbbaaa62c4fa759c6a08e6ed955a2e1fc2642b8ba925b141c2defb271b3f9723
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:5962711429974873311:1526862534
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 84135a7a0f81979a19cd27201ae7617783996386ffe90e7cb1fb25ce3a0c3052
+        layoutHash: 2b609129cb1a71fd7f6cd2751871cd203bac4ec7bf3053199159c0cd409b50e2
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:613190468:0
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 35b1b121416417f3ef746068538258a154ba931ab8b83dacd7e11f0d67f85a3b
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:616215517:0
-        parentSourceId: 
-        isRoot: 1
-        isNetworkObject: 1
-        layoutHash: 949ffe7d75aedd566357a5ae3be36d047c98ce2da29a9a451e0d91b325bc1993
+        layoutHash: cf8e865abb4a71bc9b994d9da5370e65103e02fc9d373881901b13592138d59f
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:6314410203132540618:744699252
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: d6999cd632f3ff59a1e6bab4ab3accdf793ab5434c7afac217f79cee3e41a07d
+        layoutHash: 0eccc34c14eafb04f9533e991088426ec9fcc17a3c203aa56a8e2f347226985b
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:6321653361273976007:1230577403
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 3a746072d815c357c847d2e851da6de654edd262bfc8c8a7a6b2ab7ecf2d4317
+        layoutHash: 62ab1ae81e74fe91e7a499a7788e257adf2e6aa300107b610d5ad8f28aa31fc9
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:6368427781584931994:1961728343
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: bdfbc3938ba987812b138204c7e4fbf0380a204d3bd6783c20ce9b5b7bfc7d36
+        layoutHash: 8677478a8f9749679063d2848143ff0598a3ca0c0527ef8b6fc31c90d1b8915f
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:6423233993187137997:1961986156
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 4647bb0d5f5df6e232de788f4fddf6d4efc192b3ad08112c9c121800ac24a7d8
+        layoutHash: 4e38b479114f6b0e926b890abb90c2fb3dd00da423973e859e1ac4115360687b
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 49cf828077c8f63d0e916f592386fdf9d76f9711d1bdafe513b3b35431313be3
+        layoutHash: 87b2b857e482bb3e15b81200cb67feaef8790836cbc107678f9759e96d9a108d
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:666140169:0
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: a6c182c46b201613ca997926f26baa6debe8dd5d03e1c5580c76b6ab9845f8cb
+        layoutHash: ab5fb4cf7725555c34aed2ea1e041a8d37a0446b47396b91e7ad4ab344bae91a
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:6716019714239139776:1585813856
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 36caa339d6ff1527b2e8dfe8a0c89ba052d6965d8796778b974f66ee90e4cbe6
+        layoutHash: 835ce5bf51aed239f3d0ed9d0950fd58a9332571831f0bcf6c921ec18233eed0
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:7069497028711984000:1553188250
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: fd2298fd78267d17b43f4a6357cb994b4976b3d58efa6341efbb742479f191fd
+        layoutHash: 92efb1e5e28db4877047e7d24d35f7b8511f232fd477d6b48493ff1d76a4f955
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:7136846278023162379:542155640
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 1b9b765304d067cb275c5d1c6b4e3fd73953e9bec2f1420ea83f2fcd59ddcec3
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:740835310:0
-        parentSourceId: 
-        isRoot: 1
-        isNetworkObject: 1
-        layoutHash: 242d82e6276f22ee995ecb7edc0885f251f0254ff438325b7b5150071402d018
+        layoutHash: 762d3e8069fb74c9f1071fa2a55658b0822b0fcfe7b20a097ca648c7b36b29e4
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:7448045:0
         parentSourceId: 
         isRoot: 1
@@ -724,7 +689,7 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1266341961:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 217d84aba65b69b8d356a2ba773e37079a683772cf39502f4277acc399ab4eeb
+        layoutHash: dad1de805f94254a5841e8f971df56ce76074c76a171b0a5cd51ec3dc60cf8f9
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:583178782
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:182231080:0
         isRoot: 0
@@ -734,7 +699,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 9aebd16ec1fda780f79be4e3684df3374c245c416896b5e8005ce9d11b95011d
+        layoutHash: acd44e8432e6c25bf35f3f7fdd9009ccbaa45235ba9a7e9a9570e8324d2624b7
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1058181883
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
@@ -764,7 +729,7 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 4963eaed8215a93b6cc5288f61b2b9af24fa35ff1dc7d2f6955bfd146371ad26
+        layoutHash: 0537a220bb4252099a426bc9c9af1c30f4dff669fb2e3c7e923a943f8b882b4c
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:801983718
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
@@ -779,17 +744,22 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 85399cd004977f831fbd6a5a1c4ec0063b65f6409191c48a767691f92a98244e
+        layoutHash: f57c55d7901e3d5878325918fc32e44dfa74d55b489947c21a4ae24cf1a50372
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:834841855:0
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 1fc0b8d4b268b8c9567bd070329f89c83f1621323df864fd51e9c25aa4dc91f0
+        layoutHash: f2f6c53cbe9f907a5448b4444ba9bfbf0201eca0a1708260673b9f5942934707
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:154670443
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: b1f61194236c9bb13adb855cc9b9b1cfcc35b939cd010682c8702d7775ce9796
+        layoutHash: e5557cdf2795f7e511a549ab8ed564b46c1465d761e077c2bce680cd5eaebeb1
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1166050885:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 36895cc33a21d95433f12f7489a8d567c60dbfb1ad4065d256a256f8d7adb879
     entries:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:100000:1757335980
@@ -2064,24 +2034,6 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:1453572262:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
-      treatment: 5
-      ownership: 3
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:1490161952:0
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -2226,24 +2178,6 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:1683511478:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
-      treatment: 5
-      ownership: 3
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:1739546879:0
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -2286,24 +2220,6 @@ MonoBehaviour:
         or retire it.'
       treatment: 5
       ownership: 1
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:192250732:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
-      treatment: 5
-      ownership: 3
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -2412,24 +2328,6 @@ MonoBehaviour:
         or retire it.'
       treatment: 5
       ownership: 1
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:302175164:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
-      treatment: 5
-      ownership: 3
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -2605,24 +2503,6 @@ MonoBehaviour:
       parentSourceId: 
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:4649566693282215820:391879212
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
-      treatment: 5
-      ownership: 3
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:478164232:0
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
         or retire it.'
@@ -2964,24 +2844,6 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:616215517:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
-      treatment: 5
-      ownership: 3
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:6314410203132540618:744699252
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -3132,24 +2994,6 @@ MonoBehaviour:
         or retire it.'
       treatment: 5
       ownership: 4
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:740835310:0
-      reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
-        leaves this source exactly as authored and does not place, activate, spawn
-        or retire it.'
-      treatment: 5
-      ownership: 3
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -3538,3 +3382,19 @@ MonoBehaviour:
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1166050885:0
+      reviewNote: "\u043F\u0430\u0440\u043E\u043C 2 \u0432\u0435\u0442\u043A\u0430"
+      treatment: 5
+      ownership: 4
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0

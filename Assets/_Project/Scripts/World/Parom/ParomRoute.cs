@@ -82,6 +82,16 @@ namespace ProjectC.World.Parom
         [Tooltip("Стабильный ID ветки для сейвов/матчинга при restore. Пусто = авто (сцена/имя объекта). Переименование ломает старые сейвы (ветка стартует с начальной).")]
         [SerializeField] private string _routeId = "";
 
+        [Header("Сеть: сглаживание на клиенте (T-PAROM-25)")]
+        [Tooltip("Задержка интерполяции s на клиенте (с). Должна быть ≥ 1 тика сети (30 Гц ≈ 0.033). Кабинка, персонаж на ней и камера едут плавно, а не ступеньками NetworkVariable.")]
+        [Min(0f)] [SerializeField] private float _clientInterpDelay = 0.07f;
+
+        [Tooltip("Скачок s больше этого (м) — restore/телепорт: интерполяцию сбрасываем, без «поездки» через полмира.")]
+        [Min(0f)] [SerializeField] private float _clientInterpSnapDistance = 25f;
+
+        [Tooltip("Подробный лог клиентской интерполяции (раз в секунду).")]
+        [SerializeField] private bool _debugClientInterp = false;
+
         // === Сеть (пишет только сервер) ===
         private readonly NetworkVariable<float> _netS = new NetworkVariable<float>(
             0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -115,6 +125,20 @@ namespace ProjectC.World.Parom
         private float _lastLateral;
         private int _lastPps;
         private bool _warnedInvalid;
+
+        // T-PAROM-25: клиентская интерполяция s (NetworkVariable меняется тиками сети,
+        // между тиками кабинка стояла → ступенька 0.15–0.3 м на 9 м/с, её наследовали
+        // и персонаж (carry по дельте трансформа), и камера).
+        private struct ProgressSample
+        {
+            public float Time;
+            public float S;
+        }
+
+        private readonly List<ProgressSample> _progressSamples = new List<ProgressSample>(32);
+        private float _clientS;
+        private bool _clientSInitialized;
+        private float _interpNextLogTime;
 
         // === Публичное API (только чтение, для UI/дверей/квизов) ===
 
@@ -237,6 +261,8 @@ namespace ProjectC.World.Parom
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            _clientSInitialized = false;
+            _progressSamples.Clear();
             if (IsServer)
             {
                 // Старт ветки: стоим на начальной.
@@ -285,7 +311,7 @@ namespace ProjectC.World.Parom
             }
             else
             {
-                s = _netS.Value;
+                s = SampleClientProgress(Time.time);
                 dir = _netDir.Value;
             }
 
@@ -375,6 +401,92 @@ namespace ProjectC.World.Parom
             _netDir.Value = _serverDir;
             _netDwelling.Value = _serverDwelling;
             _netStation.Value = _serverStation;
+        }
+
+        // --- T-PAROM-25: клиентская интерполяция прогресса ---
+
+        /// <summary>
+        /// Клиент: отдать `s` для рендера кабинки, интерполированный по времени.
+        /// `NetworkVariable` обновляется тиками (30 Гц), поэтому сырое значение — ступенька:
+        /// кабинка стоит 33 мс и прыгает на 0.15–0.3 м (9 м/с). Персонаж наследует её через
+        /// moving-platform carry, и камера честно пытается «догнать» эти ступеньки → «камера
+        /// дёргается, персонаж ровный». Ступеньку надо убирать в источнике, а не фильтром
+        /// в камере: фильтр может лишь выбирать между дрожью мира и сползанием персонажа.
+        /// Решение — стандартный snapshot-интерполятор: история (time, s), рендер на
+        /// `now − _clientInterpDelay` (≥ 1 тика).
+        /// </summary>
+        private float SampleClientProgress(float now)
+        {
+            float net = _netS.Value;
+
+            if (_clientInterpDelay <= 0f)
+            {
+                _progressSamples.Clear();
+                _clientS = net;
+                _clientSInitialized = true;
+                return net;
+            }
+
+            if (!_clientSInitialized)
+            {
+                _progressSamples.Clear();
+                _progressSamples.Add(new ProgressSample { Time = now, S = net });
+                _clientS = net;
+                _clientSInitialized = true;
+                return net;
+            }
+
+            if (_progressSamples.Count > 0)
+            {
+                float last = _progressSamples[_progressSamples.Count - 1].S;
+                if (Mathf.Abs(net - last) > _clientInterpSnapDistance)
+                {
+                    // restore/новая ветка/телепорт сервера — едем сразу, без «пролёта».
+                    _progressSamples.Clear();
+                    _progressSamples.Add(new ProgressSample { Time = now, S = net });
+                    _clientS = net;
+                    if (_debugClientInterp)
+                        Debug.Log($"[ParomRoute:{name}] interp reset: s {last:F1} -> {net:F1}", this);
+                    return net;
+                }
+
+                if (!Mathf.Approximately(net, last))
+                    _progressSamples.Add(new ProgressSample { Time = now, S = net });
+            }
+
+            float keepFrom = now - Mathf.Max(_clientInterpDelay * 2f, 0.2f);
+            while (_progressSamples.Count > 2 && _progressSamples[0].Time < keepFrom)
+                _progressSamples.RemoveAt(0);
+
+            _clientS = EvaluateProgressSample(now - _clientInterpDelay);
+
+            if (_debugClientInterp && Time.unscaledTime >= _interpNextLogTime)
+            {
+                _interpNextLogTime = Time.unscaledTime + 1f;
+                Debug.Log($"[ParomRoute:{name}] interp: net={net:F2} render={_clientS:F2} samples={_progressSamples.Count}", this);
+            }
+
+            return _clientS;
+        }
+
+        private float EvaluateProgressSample(float time)
+        {
+            int count = _progressSamples.Count;
+            if (count == 0) return _netS.Value;
+            if (count == 1) return _progressSamples[0].S;
+            if (time <= _progressSamples[0].Time) return _progressSamples[0].S;
+
+            for (int i = count - 1; i >= 0; i--)
+            {
+                if (_progressSamples[i].Time > time) continue;
+                if (i == count - 1) return _progressSamples[i].S;
+                ProgressSample a = _progressSamples[i];
+                ProgressSample b = _progressSamples[i + 1];
+                float span = b.Time - a.Time;
+                float u = span > 0.0001f ? (time - a.Time) / span : 1f;
+                return Mathf.LerpUnclamped(a.S, b.S, u);
+            }
+            return _progressSamples[0].S;
         }
 
         // --- Путь: живые позиции якорей (FO-safe, без кэша Vector3) ---

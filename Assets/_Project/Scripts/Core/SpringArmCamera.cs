@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -24,6 +25,8 @@ namespace ProjectC.Core
     /// T-CAM14: near-clip constraint вынесен в ResolveCollision (единый источник),
     /// AdaptiveDistance работает поверх отдельной пользовательской zoom-дистанции,
     /// positionSmoothTime 0.08→0.04 (возврат к задумке T-CAM10: Lag/Smooth 3.75×).
+    /// T-CAM22: вход лага — интерполированный сэмпл цели (гасит ступеньки сетевых
+    /// тиков движущихся платформ), anti-pop держится относительно цели, а не мира.
     /// </summary>
     public class SpringArmCamera : MonoBehaviour
     {
@@ -55,6 +58,14 @@ namespace ProjectC.Core
         [SerializeField] private float antiPopTime = 0.2f;
         [Tooltip("T-CAM17: не держать замороженную точку, если цель ушла дальше этого (м) — stale-guard")]
         [SerializeField] private float antiPopStaleDistance = 0.35f;
+        [Tooltip("T-CAM22: держать anti-pop точку ОТНОСИТЕЛЬНО цели, а не мира. На движущейся платформе мировая точка уезжает вместе с паромом → камера дёргается. Выкл = старое поведение.")]
+        [SerializeField] private bool antiPopFollowTarget = true;
+
+        [Header("Target Signal")]
+        [Tooltip("T-CAM22: интерполировать позицию цели по истории сэмплов. Убирает ступеньки сетевых тиков (паром/корабли на клиенте) из входа лага и оценки скорости.")]
+        [SerializeField] private bool targetSignalInterpolation = true;
+        [Tooltip("T-CAM22: на сколько камера отстаёт от цели, сек. Должно быть ≥ 1 сетевого тика (30 Гц ≈ 0.033; дефолт 0.07 с запасом). 0 = выкл.")]
+        [SerializeField] private float targetSignalDelay = 0.07f;
 
         [Header("Wall Recovery")]
         [Tooltip("Максимальная скорость восстановления позиции (m/s)")]
@@ -144,6 +155,20 @@ namespace ProjectC.Core
         private Vector3 _smoothLookPos;
         private bool _vertBoostActive;
         private float _modeSwitchTimer;
+
+        // T-CAM22: история позиции цели для интерполяции ступенчатого сигнала
+        // (сетевые тики парохода/кораблей). Лаг читает _sampledTargetPos, не target.position.
+        private struct TargetSample
+        {
+            public float Time;
+            public Vector3 Position;
+        }
+
+        private const float TeleportSnapDistance = 10f;
+        private readonly List<TargetSample> _targetSamples = new List<TargetSample>(32);
+        private Vector3 _sampledTargetPos;
+        private Vector3 _prevSampledTargetPos;
+        private Vector3 _sampledTargetVelocity;
 
         private InputAction _lookAction;
         private InputAction _zoomAction;
@@ -270,6 +295,15 @@ namespace ProjectC.Core
             // T-CAM17: stale-guard и сглаженный взгляд — тоже мировые точки, едут со сдвигом.
             _collisionLagPos += translation;
             _smoothLookPos += translation;
+            // T-CAM22: история сэмплов цели — тот же мировой контракт.
+            _sampledTargetPos += translation;
+            _prevSampledTargetPos += translation;
+            for (int i = 0; i < _targetSamples.Count; i++)
+            {
+                TargetSample s = _targetSamples[i];
+                s.Position += translation;
+                _targetSamples[i] = s;
+            }
             return IsFiniteGlobalMotionCameraState(out error);
         }
 
@@ -299,6 +333,9 @@ namespace ProjectC.Core
             // привязываем к текущей цели (stale-guard и взгляд стартуют без рывка).
             _collisionLagPos = _lagTargetPos;
             _smoothLookPos = _lagTargetPos + Vector3.up * _currentLookAtHeight;
+            // T-CAM22: историю цели восстановить нельзя (вне структуры снапшота) —
+            // стартуем с текущей лаг-цели, чтобы не было рывка из прошлой жизни.
+            ResetTargetSamples(_lagTargetPos);
             return IsFiniteGlobalMotionCameraState(out error);
         }
 
@@ -345,6 +382,7 @@ namespace ProjectC.Core
             if (!IsFinite(transform.position) || !IsFinite(transform.rotation) ||
                 !IsFinite(_lagTargetPos) || !IsFinite(_lastCollisionPos) ||
                 !IsFinite(_collisionLagPos) || !IsFinite(_smoothLookPos) ||
+                !IsFinite(_sampledTargetPos) || !IsFinite(_prevSampledTargetPos) ||
                 !GlobalPosition.IsFiniteValue(_lagSpeed) ||
                 !GlobalPosition.IsFiniteValue(_collisionExitTime))
             {
@@ -390,6 +428,7 @@ namespace ProjectC.Core
                 target = newTarget;
                 _lagTargetPos = target.position;
                 _smoothLookPos = target.position + Vector3.up * _currentLookAtHeight;
+                ResetTargetSamples(target.position);
             }
         }
 
@@ -401,6 +440,7 @@ namespace ProjectC.Core
         {
             if (target == null) return;
             _lagTargetPos = target.position;
+            ResetTargetSamples(target.position);
             SnapCameraToPosition();
         }
 
@@ -422,6 +462,7 @@ namespace ProjectC.Core
             {
                 _lagTargetPos = target.position;
                 _smoothLookPos = target.position + Vector3.up * _targetLookAtHeight;
+                ResetTargetSamples(target.position);
             }
         }
 
@@ -443,6 +484,7 @@ namespace ProjectC.Core
             _smoothLookPos = target.position + Vector3.up * _currentLookAtHeight;
             _shrinkTimer = 0f;
             _recoverTimer = 0f;
+            ResetTargetSamples(target.position);
 
             bool inGame = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
             Cursor.lockState = inGame ? CursorLockMode.Locked : CursorLockMode.None;
@@ -478,6 +520,7 @@ namespace ProjectC.Core
             _cachedMouseSensitivity = mouseSensitivity;
             _cachedInvertY = invertY;
             _cachedZoomSensitivity = SettingsManager.CameraZoomSensitivity;
+            if (target != null) ResetTargetSamples(target.position);
             _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
             _zoomAction = new InputAction("Zoom", binding: "<Mouse>/scroll/y", expectedControlType: "Float");
         }
@@ -507,10 +550,16 @@ namespace ProjectC.Core
 
             ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.begin", $"target={target.name} lagTarget={_lagTargetPos} colliding={_wasColliding}");
 
+            // T-CAM22: цель читаем через интерполяцию по истории сэмплов.
+            // У клиента кабинка парома двигается ступеньками сетевых тиков (30 Гц),
+            // и лаг/оценка скорости видели «0 → 18 м/с → 0» каждый тик.
+            SampleTargetPosition();
+
             // Auto-snap при большом скачке (телепорт, загрузка сохранения, респавн).
             // UpdateLag ловит только >100m; здесь обрабатываем 10-100m.
+            // Проверяем по СЫРОЙ позиции цели: задержка сэмпла не должна маскировать телепорт.
             float snapDist = Vector3.Distance(_lagTargetPos, target.position);
-            if (snapDist > 10f)
+            if (snapDist > TeleportSnapDistance)
             {
                 _lagTargetPos = target.position;
                 SnapCameraToPosition();
@@ -595,45 +644,129 @@ namespace ProjectC.Core
             }
         }
 
+        /// <summary>
+        /// T-CAM22: копит историю позиции цели и возвращает сэмпл на <see cref="targetSignalDelay"/>
+        /// назад. Зачем: позиция игрока на движущейся платформе (паром, палуба корабля на
+        /// клиенте) — ступенчатая функция сетевого тика. Лаг и оценка скорости по такому
+        /// сигналу дрожат («0 м/с → 18 м/с» каждый тик), а каскад exp-фильтров даёт
+        /// пилообразный «туда-сюда». Линейная интерполяция между двумя сэмплами
+        /// превращает ступеньку в равномерное движение — ценой задержки в один тик.
+        /// </summary>
+        private void SampleTargetPosition()
+        {
+            Vector3 raw = target.position;
+            float now = Time.time;
+            // В режиме корабля цель двигает NetworkTransform с интерполяцией — сигнал уже
+            // гладкий, доп. задержка там только вредит отзывчивости (лаг в ship выключен).
+            float delay = _isShip ? 0f : targetSignalDelay;
+
+            if (!targetSignalInterpolation || delay <= 0f)
+            {
+                _targetSamples.Clear();
+                _sampledTargetPos = raw;
+            }
+            else
+            {
+                if (_targetSamples.Count > 0)
+                {
+                    Vector3 last = _targetSamples[_targetSamples.Count - 1].Position;
+                    // Телепорт/респавн — историю не интерполируем (иначе камера поедет через мир).
+                    if (Vector3.Distance(raw, last) > TeleportSnapDistance)
+                        _targetSamples.Clear();
+                }
+
+                _targetSamples.Add(new TargetSample { Time = now, Position = raw });
+
+                float keepFrom = now - Mathf.Max(delay * 2f, 0.2f);
+                while (_targetSamples.Count > 2 && _targetSamples[0].Time < keepFrom)
+                    _targetSamples.RemoveAt(0);
+
+                _sampledTargetPos = EvaluateTargetSample(now - delay);
+            }
+
+            // T-CAM22: скорость цели считаем по СГЛАЖЕННОМУ сэмплу, а не по сырому
+            // per-frame delta. Раньше «скорость» = |target - lagTarget| / dt — это
+            // не скорость, а остаток пружины: на ступенчатом сигнале она скакала
+            // 0↔18 м/с и дёргала dynamic lag и гистерезис vert-boost.
+            float dt = Mathf.Max(Time.deltaTime, 0.0001f);
+            _sampledTargetVelocity = (_sampledTargetPos - _prevSampledTargetPos) / dt;
+            _prevSampledTargetPos = _sampledTargetPos;
+        }
+
+        private Vector3 EvaluateTargetSample(float time)
+        {
+            int count = _targetSamples.Count;
+            if (count == 0) return target != null ? target.position : Vector3.zero;
+            if (count == 1) return _targetSamples[0].Position;
+            if (time <= _targetSamples[0].Time) return _targetSamples[0].Position;
+
+            for (int i = count - 1; i >= 0; i--)
+            {
+                if (_targetSamples[i].Time > time) continue;
+                if (i == count - 1) return _targetSamples[i].Position;
+                TargetSample a = _targetSamples[i];
+                TargetSample b = _targetSamples[i + 1];
+                float span = b.Time - a.Time;
+                float u = span > 0.0001f ? (time - a.Time) / span : 1f;
+                return Vector3.LerpUnclamped(a.Position, b.Position, u);
+            }
+            return _targetSamples[0].Position;
+        }
+
+        /// <summary>
+        /// T-CAM22: сброс истории цели (смена цели, телепорт, restore, выход из корабля).
+        /// Один сэмпл = немедленное включение без «догонялки» из прошлой жизни.
+        /// </summary>
+        private void ResetTargetSamples(Vector3 position)
+        {
+            _targetSamples.Clear();
+            _targetSamples.Add(new TargetSample { Time = Time.time, Position = position });
+            _sampledTargetPos = position;
+            _prevSampledTargetPos = position;
+            _sampledTargetVelocity = Vector3.zero;
+        }
+
         private void UpdateLag()
         {
             if (!lagEnabled || _isShip || target == null)
             {
-                _lagTargetPos = target != null ? target.position : Vector3.zero;
+                _lagTargetPos = _sampledTargetPos;
                 return;
             }
 
-            float initDist = Vector3.Distance(_lagTargetPos, target.position);
+            float initDist = Vector3.Distance(_lagTargetPos, _sampledTargetPos);
             if (initDist > 100f || _lagTargetPos == Vector3.zero)
             {
-                _lagTargetPos = target.position;
+                _lagTargetPos = _sampledTargetPos;
                 return;
             }
 
-            Vector3 delta = target.position - _lagTargetPos;
+            Vector3 delta = _sampledTargetPos - _lagTargetPos;
 
             float maxLagDist = 10f;
             if (delta.magnitude > maxLagDist)
             {
                 delta = delta.normalized * maxLagDist;
-                _lagTargetPos = target.position - delta;
+                _lagTargetPos = _sampledTargetPos - delta;
             }
 
             float lagXZ, lagY;
+            float effXZ, effY;
             if (dynamicLagEnabled)
             {
-                float rawSpeed = delta.magnitude / Mathf.Max(Time.deltaTime, 0.0001f);
-                rawSpeed = Mathf.Min(rawSpeed, 30f);
+                // T-CAM22: скорость — из сглаженного сэмпла цели (см. SampleTargetPosition),
+                // не из остатка пружины. Иначе на ступеньках сети лаг дребезжит.
+                float rawSpeed = Mathf.Min(_sampledTargetVelocity.magnitude, 30f);
                 float speedLerp = 1f - Mathf.Exp(-Time.deltaTime / 0.1f);
                 _lagSpeed = Mathf.Lerp(_lagSpeed, rawSpeed, speedLerp);
                 float speedFactor = Mathf.InverseLerp(0f, 10f, _lagSpeed);
                 float dynamicMul = Mathf.Lerp(1f, 0.3f, speedFactor);
-                float effXZ = lagHorizontalTime * dynamicMul;
-                float effY = lagVerticalTime * dynamicMul;
+                effXZ = lagHorizontalTime * dynamicMul;
+                effY = lagVerticalTime * dynamicMul;
 
                 // T-CAM17: гистерезис вместо дискретного порога 5 м/с — иначе дребезг
                 // вкл/выкл ровно перед приземлением, где уже активны коллизия+adaptive.
-                float vertSpeed = Mathf.Abs(delta.y) / Mathf.Max(Time.deltaTime, 0.0001f);
+                float vertSpeed = Mathf.Abs(_sampledTargetVelocity.y);
                 if (_vertBoostActive)
                 {
                     if (vertSpeed < vertBoostExitSpeed)
@@ -645,15 +778,24 @@ namespace ProjectC.Core
                 }
                 if (_vertBoostActive)
                     effY *= 0.4f;
-
-                lagXZ = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effXZ, 0.001f));
-                lagY = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effY, 0.001f));
             }
             else
             {
-                lagXZ = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(lagHorizontalTime, 0.001f));
-                lagY = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(lagVerticalTime, 0.001f));
+                effXZ = lagHorizontalTime;
+                effY = lagVerticalTime;
             }
+
+            // T-CAM22: задержка сэмпла цели уже съедает отзывчивость — вычитаем её из
+            // времени лага, чтобы суммарная инерция осталась спроектированной
+            // (walk 0.15/0.05), а не складывалась с ней. Пол 20% — микро-сглаживание.
+            if (targetSignalInterpolation && !_isShip && targetSignalDelay > 0f)
+            {
+                effXZ = Mathf.Max(effXZ * 0.2f, effXZ - targetSignalDelay);
+                effY = Mathf.Max(effY * 0.2f, effY - targetSignalDelay);
+            }
+
+            lagXZ = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effXZ, 0.001f));
+            lagY = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effY, 0.001f));
 
             _lagTargetPos.x += delta.x * lagXZ;
             _lagTargetPos.z += delta.z * lagXZ;
@@ -690,7 +832,7 @@ namespace ProjectC.Core
                 if (!Physics.SphereCast(castOrigin, sphereCastRadius, dir, out RaycastHit hitInfo, remainingDist, collisionMask, QueryTriggerInteraction.Ignore))
                 {
                     if (UseAntiPopHold(currentTime))
-                        return ClampNearClip(_lastCollisionPos, lookTarget, nearClipMin);
+                        return ClampNearClip(GetAntiPopPosition(), lookTarget, nearClipMin);
                     _wasColliding = false;
                     return ClampNearClip(desiredPos, lookTarget, nearClipMin);
                 }
@@ -711,7 +853,7 @@ namespace ProjectC.Core
             }
 
             if (UseAntiPopHold(currentTime))
-                return ClampNearClip(_lastCollisionPos, lookTarget, nearClipMin);
+                return ClampNearClip(GetAntiPopPosition(), lookTarget, nearClipMin);
             _wasColliding = false;
             return ClampNearClip(desiredPos, lookTarget, nearClipMin);
         }
@@ -720,12 +862,29 @@ namespace ProjectC.Core
         /// T-CAM17: держать замороженную точку, только если она свежая.
         /// Если лаг-цель уехала (падение, отъезд от стены) — холд протух, иначе камера
         /// стоит в воздухе/у стены, пока игрок уходит, и затем срывается рывком.
+        /// T-CAM22: с antiPopFollowTarget точка живёт в системе КООРДИНАТ ЦЕЛИ, поэтому
+        /// «протухание» по мировому расстоянию не нужно и вредно: на пароме (9 м/с)
+        /// stale-guard 0.35 м истекает за ~40 мс, холд фактически отключён, и камера
+        /// каждый кадр прыгает между стеной и свободной позицией. Держим окно по времени.
         /// </summary>
         private bool UseAntiPopHold(float currentTime)
         {
             if (!_wasColliding || currentTime - _collisionExitTime >= antiPopTime)
                 return false;
+            if (antiPopFollowTarget) return true;
             return Vector3.Distance(_lagTargetPos, _collisionLagPos) < antiPopStaleDistance;
+        }
+
+        /// <summary>
+        /// T-CAM22: позиция anti-pop холда. При antiPopFollowTarget — точка коллизии,
+        /// перенесённая в текущую систему цели (камера едет вместе с платформой и
+        /// сохраняет дистанцию до неё), иначе — старое поведение (мировая заморозка).
+        /// </summary>
+        private Vector3 GetAntiPopPosition()
+        {
+            return antiPopFollowTarget
+                ? _lagTargetPos + (_lastCollisionPos - _collisionLagPos)
+                : _lastCollisionPos;
         }
 
         private float GetMinimumCameraDistance()
@@ -909,6 +1068,7 @@ namespace ProjectC.Core
             Vector3 dir = new Vector3(-Mathf.Sin(yr) * Mathf.Cos(pr), Mathf.Sin(pr), -Mathf.Cos(yr) * Mathf.Cos(pr));
             _lagTargetPos = target.position;
             _smoothLookPos = target.position + Vector3.up * _currentLookAtHeight;
+            ResetTargetSamples(target.position);
             transform.position = target.position + dir * _currentDistance + Vector3.up * _currentHeight;
             transform.LookAt(_smoothLookPos);
         }

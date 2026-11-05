@@ -46,6 +46,12 @@ namespace ProjectC.World.FloatingOrigin.Network
         public static GlobalMotionRuntimeEvidenceProbe Active { get; private set; }
         public bool CaptureEnabled => _captureEnabled;
 
+        /// <summary>
+        /// Дешёвая проверка для горячих путей: не строить строку payload, если пробник выключен.
+        /// RecordEvent сам no-op при выключенном захвате, но аргумент-строка аллоцируется у вызывающего.
+        /// </summary>
+        public static bool IsActive => Active != null && Active._captureEnabled;
+
         private void Awake()
         {
             if (Active != null && Active != this)

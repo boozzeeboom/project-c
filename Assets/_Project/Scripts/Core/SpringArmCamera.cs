@@ -589,11 +589,13 @@ namespace ProjectC.Core
         {
             if (target == null || Cursor.lockState != CursorLockMode.Locked)
             {
-                ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.skip", $"target={(target != null ? target.name : "<none>")} cursor={Cursor.lockState}");
+                if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.skip", $"target={(target != null ? target.name : "<none>")} cursor={Cursor.lockState}");
                 return;
             }
 
-            ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.begin", $"target={target.name} lagTarget={_lagTargetPos} colliding={_wasColliding}");
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.begin", $"target={target.name} lagTarget={_lagTargetPos} colliding={_wasColliding}");
 
             // T-CAM23: сначала подтягиваем риг платформой (если персонаж на движущейся палубе),
             // потом читаем цель. Так платформа двигает камеру 1:1, и лаг работает только
@@ -634,7 +636,8 @@ namespace ProjectC.Core
             SmoothPosition(resolvedPos);
             UpdateLookAt();
             if (debugJitterProbe) AccumulateJitterProbe();
-            ProjectC.World.FloatingOrigin.Network.GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.end", $"pos={transform.position} lagTarget={_lagTargetPos} colliding={_wasColliding} collisionPos={_lastCollisionPos}");
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("camera", "LateUpdate.end", $"pos={transform.position} lagTarget={_lagTargetPos} colliding={_wasColliding} collisionPos={_lastCollisionPos}");
         }
 
         private void ReadInput()

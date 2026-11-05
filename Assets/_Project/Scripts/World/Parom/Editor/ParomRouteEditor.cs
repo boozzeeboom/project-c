@@ -28,6 +28,32 @@ namespace ProjectC.World.Parom
             }
             GUI.backgroundColor = Color.white;
 
+            EditorGUILayout.Space(10);
+            EditorGUILayout.LabelField("Предвизуал кабинки (отладка)", EditorStyles.boldLabel);
+
+            GUI.backgroundColor = new Color(0.55f, 0.9f, 0.55f);
+            if (GUILayout.Button("👁 Показать префаб на станциях (пересоздать)", GUILayout.Height(28)))
+            {
+                ParomRoutePreview.ShowAtStations(route);
+                SceneView.RepaintAll();
+            }
+            GUI.backgroundColor = new Color(1f, 0.78f, 0.6f);
+            if (GUILayout.Button("Убрать предвизуал", GUILayout.Height(22)))
+            {
+                ParomRoutePreview.Clear(route);
+                SceneView.RepaintAll();
+            }
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.HelpBox(
+                "Временные объекты '__ParomPreview' под веткой: кабинка стоит ровно там, где паром " +
+                "останавливается в игре (якорь + Cabin Hang Depth, yaw вдоль сегмента). В сцену и билд " +
+                "НЕ сохраняются (HideFlags.DontSave), ParomTrolley на них не вешается.\n" +
+                "Повторное нажатие пересоздаёт превью под текущие якоря — так удобно подгонять высоту " +
+                "станций и строить платформы. В Console пишется y якоря, y кабинки и точка посадки " +
+                "(верх +0.3 — тот же расчёт, что GetBoardingPoint).",
+                MessageType.Info);
+
             EditorGUILayout.Space(6);
             EditorGUILayout.LabelField("Проверки", EditorStyles.boldLabel);
 

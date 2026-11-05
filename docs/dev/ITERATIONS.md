@@ -2,6 +2,19 @@
 
 ## 05 ноября 2026
 
+**Тикет:** T-PAROM-24
+**Тема:** Отладочный предвизуал кабинки на станциях — чтобы настраивать высоту точек маршрута и строить платформы посадки.
+**Что сделано:** в инспекторе `ParomRoute` блок «Предвизуал кабинки (отладка)»: кнопка «👁 Показать префаб на станциях (пересоздать)» ставит инстансы `Trolley Prefab` на каждую станцию в игровой позиции (`якорь + Cabin Hang Depth`, yaw вдоль сегмента), повторное нажатие пересоздаёт; «Убрать предвизуал» удаляет. Дублируется пунктами меню `ProjectC → Ships → Parom (Ferry) → Предвизуал … (Selection)`.
+**Безопасность:** превью — дети `__ParomPreview` с `HideFlags.DontSave` (в сцену/билд не попадают, сцена не dirty), коллайдеры выключены, `ParomTrolley` не добавляется (рантайм не подхватит). В Console печатаются `y` якоря, `y` кабинки и точка посадки (верх BoxCollider + 0.3).
+**Файлы:**
+- `Assets/_Project/Scripts/World/Parom/Editor/ParomRoutePreview.cs` (новый)
+- `Assets/_Project/Scripts/World/Parom/Editor/ParomRouteEditor.cs`
+- `docs/world/parom_road/00_PAROM_DESIGN.md`
+
+**Проверено:** на `WorldScene_0_0` / `ParomRoute_01` — создались 2 превью (start/end), повторное нажатие даёт те же 2 (без дублей), `Clear` удаляет, сцена остаётся не dirty; компиляция 0 ошибок.
+
+## 05 ноября 2026
+
 **Тикет:** T-PAROM-23
 **Тема:** `Trolley Prefab` игнорировался — на маршруте оставалась кубическая заглушка.
 **Причина:** `ParomRoute.EnsureTrolley()` сначала подхватывал любого ребёнка с `ParomTrolley` и выходил, не глядя на `_trolleyPrefab`. В `WorldScene_0_0` такая заглушка запечена у `ParomRoute_01` и `ParomRoute_02`: `Box_cargo_Parom` (built-in Cube, scale 3.58×1.41×7.71, материал `M_PC_Concrete`, kinematic Rigidbody, BoxCollider) — отсюда «просто куб блок с материалом» в Play.

@@ -92,6 +92,9 @@ namespace ProjectC.World.Parom
         [Tooltip("Подробный лог клиентской интерполяции (раз в секунду).")]
         [SerializeField] private bool _debugClientInterp = false;
 
+        [Tooltip("T-PAROM-26: синхронизировать физику сразу после переноса кабинки. Без этого кинематический Rigidbody отстаёт на шаг физики (при 9 м/с до 0.18 м): CharacterController прижимается/выталкивается по «старому» полу → микродрожь персонажа и камеры. Выкл = прежнее поведение.")]
+        [SerializeField] private bool _syncPhysicsOnMove = true;
+
         // === Сеть (пишет только сервер) ===
         private readonly NetworkVariable<float> _netS = new NetworkVariable<float>(
             0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -685,6 +688,15 @@ namespace ProjectC.World.Parom
                     _trolley.rotation = Quaternion.RotateTowards(_trolley.rotation, target, 360f * Time.deltaTime);
                 }
             }
+
+            // T-PAROM-26: кабинка — кинематический Rigidbody, который мы двигаем ТРАНСФОРОМ.
+            // PhysX синкается своим шагом (autoSyncTransforms выключен), поэтому коллайдеры
+            // палубы отстают от видимого трансформа: при 9 м/с это до 0.18 м за шаг физики.
+            // Персонаж при этом прижат carry к «свежему» трансформу, а CharacterController
+            // резолвит столкновения по «старому» коллайдеру → прижим/выталкивание каждый
+            // кадр = микродрожь персонажа (и камеры за ним). Синк здесь убирает расхождение.
+            if (_syncPhysicsOnMove)
+                Physics.SyncTransforms();
         }
 
         private void SetVisualsActive(bool active)

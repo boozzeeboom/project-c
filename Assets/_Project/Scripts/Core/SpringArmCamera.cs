@@ -702,7 +702,14 @@ namespace ProjectC.Core
         {
             if (target == null) return null;
 
-            if (_targetCollider == null) _targetCollider = target.GetComponentInChildren<Collider>();
+            // T-CAM24: приоритет — CharacterController цели. GetComponentInChildren<Collider>()
+            // может вернуть коллайдер снаряжения/хитбокса в детях, тогда bounds не про ноги
+            // и зонд уходит не туда (platformFollow молча не включается).
+            if (_targetCollider == null)
+            {
+                _targetCollider = target.GetComponentInChildren<CharacterController>();
+                if (_targetCollider == null) _targetCollider = target.GetComponentInChildren<Collider>();
+            }
 
             // Старт зонда — от СЕРЕДИНЫ коллайдера цели (SphereCast не видит коллайдеры,
             // с которыми сфера пересекается в начале свипа — иначе пол под ногами

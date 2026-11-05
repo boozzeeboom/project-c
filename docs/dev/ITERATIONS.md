@@ -2,6 +2,20 @@
 
 ## 05 ноября 2026
 
+**Тикет:** T-PAROM-26
+**Тема:** Коллайдер палубы парома отстаёт от трансформа кабинки на шаг физики → микродрожь персонажа и камеры.
+**Причина:** кабинка — кинематический `Rigidbody`, двигаемый трансформом; `Physics.autoSyncTransforms` выключен, PhysX видит новую позицию только на шаге физики (при 9 м/с расхождение до 0.18 м). Carry ведёт персонажа по свежему трансформу, а `CharacterController` резолвит по старому коллайдеру → прижим/выталкивание каждый кадр.
+**Что сделано:** `Physics.SyncTransforms()` в конце `ParomRoute.ApplyTrolley` (флаг `_syncPhysicsOnMove`, дефолт вкл) — керри и физика видят одну палубу в одном кадре.
+**Дополнительно:** `SpringArmCamera.ProbePlatform` берёт `CharacterController` цели приоритетно (раньше `GetComponentInChildren<Collider>()` мог вернуть коллайдер снаряжения → зонд платформы уходил не туда и `platformFollow` молча не включался).
+**Файлы:**
+- `Assets/_Project/Scripts/World/Parom/ParomRoute.cs`
+- `Assets/_Project/Scripts/Core/SpringArmCamera.cs`
+- `docs/world/parom_road/02_PAROM_RIDE_POSTMORTEM.md` (§15)
+
+**Проверено:** Compile (MCP) — 0 ошибок. Play Mode — за пользователем.
+
+## 05 ноября 2026
+
 **Тикет:** T-CAM24
 **Тема:** Пробник дрожи камеры + фикс сломанного зума в префабе `ThirdPersonCamera`.
 **Найдено:** в префабе `zoomStepPercent: 50` при коде T-CAM21, который ждёт долю (0.2 = +20%/щелчок). Один щелчок колеса уводил камеру в 0.5 м (внутрь персонажа) или 50 м — на движущемся пароме читается как «камеру мотает». Исправлено через редактор (`SerializedObject`): `zoomStepPercent 50→0.2`, `zoomChaseSpeed 50→8` (код-дефолты).

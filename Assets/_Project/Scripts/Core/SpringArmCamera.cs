@@ -859,13 +859,11 @@ namespace ProjectC.Core
             // гладкий, доп. задержка там только вредит отзывчивости (лаг в ship выключен).
             float delay = (_isShip || _platformFollowing) ? 0f : targetSignalDelay;
 
-            if (!targetSignalInterpolation || delay <= 0f)
+            if (targetSignalInterpolation)
             {
-                _targetSamples.Clear();
-                _sampledTargetPos = raw;
-            }
-            else
-            {
+                // T-CAM24: историю копим ВСЕГДА, даже когда задержка не нужна (follow/ship).
+                // Иначе при выходе из follow (паром встал на стоянку) буфер оказывался пустым,
+                // и первые ~0.07 с камера держала точку цели — разовый «залип» при остановке.
                 if (_targetSamples.Count > 0)
                 {
                     Vector3 last = _targetSamples[_targetSamples.Count - 1].Position;
@@ -876,12 +874,16 @@ namespace ProjectC.Core
 
                 _targetSamples.Add(new TargetSample { Time = now, Position = raw });
 
-                float keepFrom = now - Mathf.Max(delay * 2f, 0.2f);
+                float keepFrom = now - Mathf.Max(Mathf.Max(delay, targetSignalDelay) * 2f, 0.2f);
                 while (_targetSamples.Count > 2 && _targetSamples[0].Time < keepFrom)
                     _targetSamples.RemoveAt(0);
-
-                _sampledTargetPos = EvaluateTargetSample(now - delay);
             }
+            else
+            {
+                _targetSamples.Clear();
+            }
+
+            _sampledTargetPos = delay > 0f ? EvaluateTargetSample(now - delay) : raw;
 
             // T-CAM22: скорость цели считаем по СГЛАЖЕННОМУ сэмплу, а не по сырому
             // per-frame delta. Раньше «скорость» = |target - lagTarget| / dt — это

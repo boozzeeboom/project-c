@@ -45,7 +45,7 @@ namespace ProjectC.World
         private bool _dirty;
         private float _lastSaveTime;
         private float _lastCheckTime;
-        private const float CheckInterval = 1.5f;
+        private const float CheckInterval = 0.5f;
 
         public IReadOnlyList<HouseDiscoveryEntry> Discovered => _discovered;
         public int Count => _discovered.Count;

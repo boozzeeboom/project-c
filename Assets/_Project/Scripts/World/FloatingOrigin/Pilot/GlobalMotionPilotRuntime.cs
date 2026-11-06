@@ -103,7 +103,9 @@ namespace ProjectC.World.FloatingOrigin.Pilot
                 // Активация держится выключенной до 0.9: только так AsyncOperation.progress
                 // показывает реальный ход загрузки, а не прыжок 0 -> 1 после активации.
                 load.allowSceneActivation = false;
-                while (load.progress < 0.9f)
+                // 0.8999, а не 0.9f: progress — float, и точное равенство 0.9f
+                // не гарантировано; иначе цикл мог бы зависнуть навсегда.
+                while (load.progress < 0.8999f)
                 {
                     var loaded = Mathf.Clamp01(load.progress / 0.9f);
                     UpdateLoadingProgress(loaded * 0.9f,

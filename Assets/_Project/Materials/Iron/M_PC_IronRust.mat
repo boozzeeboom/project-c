@@ -51,14 +51,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Edge_Noise_Scale: 0.17
+    - _Edge_Noise_Scale: 0.38
     - _Edge_Noise_Seed: 0
     - _Edge_Position: 0.52
     - _Edge_Wear: 0.43
     - _Edge_Width: 0.13
     - _Metallic: 1.63
     - _Noise_Detail: 0
-    - _Noise_Scale: 5.95
+    - _Noise_Scale: 52.19
     - _Noise_Seed: 1.38
     - _Noise_Warp: 10.37
     - _QueueControl: 0
@@ -70,8 +70,8 @@ Material:
     - _Rust_Patch_Band: 0.46
     - _Rust_Patch_Scale: 2.55
     - _Rust_Patch_Seed: -0.04
-    - _Rust_Patch_Threshold: 0.66
-    - _Rust_Scale: 2.7
+    - _Rust_Patch_Threshold: -0.12
+    - _Rust_Scale: 44.41
     - _Rust_Seed: 6.53
     - _Rust_Smoothness: 0.25
     - _Rust_Threshold: 0.27
@@ -81,7 +81,7 @@ Material:
     - _Scratch_Bump: 0.02
     - _Scratch_Detail: 4.77
     - _Scratch_Mask: 0.25
-    - _Scratch_Mask_Scale: 2.32
+    - _Scratch_Mask_Scale: 17.92
     - _Scratch_Scale: 3.94
     - _Scratch_Seed: 0.3
     - _Scratch_Smoothness: 0.75

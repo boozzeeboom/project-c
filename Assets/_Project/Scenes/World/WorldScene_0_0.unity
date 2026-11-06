@@ -208417,7 +208417,7 @@ Transform:
   m_GameObject: {fileID: 494677037}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 639.71875, y: 27.48, z: -95.39844}
+  m_LocalPosition: {x: 622.93, y: 27.48, z: -58.17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1109996,8 +1109996,8 @@ Transform:
   m_GameObject: {fileID: 1047612272}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071069, y: 0.000000029802319, z: 0.000000029802319, w: 0.70710677}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 99.999985, y: 100.00002, z: 99.99995}
+  m_LocalPosition: {x: -0.02, y: 0, z: -4.94}
+  m_LocalScale: {x: 99.999985, y: 39.205025, z: 99.99995}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1143680997}
@@ -1149007,6 +1149007,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1047612273}
+  - {fileID: 1553144241}
+  - {fileID: 1615029161}
   m_Father: {fileID: 253383635}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1144186102 stripped
@@ -1306561,6 +1306563,59 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.8151, y: 6.6, z: 0.8841}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &1553144240
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1553144241}
+  - component: {fileID: 1553144242}
+  m_Layer: 0
+  m_Name: BC_129D8DEA_HOTEL_SHEET_FACADE_W (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &1553144241
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553144240}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071069, y: 0.000000029802319, z: 0.000000029802319, w: 0.70710677}
+  m_LocalPosition: {x: 0.02, y: 0, z: 4.91}
+  m_LocalScale: {x: 99.999985, y: 39.205025, z: 99.99995}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1143680997}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1553144242
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553144240}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.003333333, y: 0.162, z: 0.1593}
+  m_Center: {x: -2.1579218, y: 0, z: 0.14}
 --- !u!1001 &1553188250
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1325843,6 +1325898,59 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7039837627161056385, guid: 3c92f04950975124783afa8a30b45f5d, type: 3}
   m_PrefabInstance: {fileID: 1614770193}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1615029160
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1615029161}
+  - component: {fileID: 1615029162}
+  m_Layer: 0
+  m_Name: BC_129D8DEA_HOTEL_SHEET_FACADE_W (2)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &1615029161
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1615029160}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071069, y: 0.000000029802319, z: 0.000000029802319, w: 0.70710677}
+  m_LocalPosition: {x: 0.0014833, y: 4.97, z: -0.058418}
+  m_LocalScale: {x: 99.999985, y: 28.192865, z: 81.36996}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1143680997}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1615029162
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1615029160}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.003333333, y: 0.162, z: 0.1593}
+  m_Center: {x: -2.1579218, y: 0, z: 0.14}
 --- !u!1001 &1615058280
 PrefabInstance:
   m_ObjectHideFlags: 0

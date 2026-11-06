@@ -1,3 +1,52 @@
+v0.2.0
+
+World Content & Visual Fill
+
+The world comes alive. Version 0.2.0 is a content milestone: the city of Primum is rebuilt as a real, walkable, optimized world, farms and ships get their final visuals, the UI is ported to the new v4-2 design, and loading/culling/lighting are tuned for performance. No new core mechanics — pure content and polish, as promised for 0.2.0.
+
+Primum (the city)
+- Primum rebuilt from raw import into merged, optimized prefabs: ~20k renderers reduced to ~1.2k, materials reduced 24,378 -> 7,081 slots (105 source names -> 45 targets + 31 variants), zero URP/Lit slots left in city and farms.
+- 10,811 colliders generated for the city (houses 10,355 / base 74 / admin 382) so every building and alley is walkable and collidable.
+- 2,363 doors placed as prefab instances with controllers — enter any building.
+- 2,087 light sources with a nearest-light pool (<=96 active within 140 m) and day/night groups; lamps flicker individually; Forward+ rendering instead of the 4-light-per-object limit.
+- HLOD: city triangles reduced 5.41M -> 267k (-95%) with L1 (>3 km) and L2 (>12 km) impostors; visibility director culls sub-pixel objects; city draw calls 46-48 at L1, 2 at L2.
+- Y-up mesh rebase applied to 22 chunks (1:1 verified, max error 0.00003 m) so procedural materials read correctly on every face.
+- House numbering and discovery: 534 house markers; opening a house's radius (15 m) reveals it on the map; farms always shown. Chart window gains "Houses" (discovered) and "Farms" layers.
+
+Farms
+- Farms 0-0, 0-2 (Timber), 0-3 (Rice), 0-4 (Cereal) and the Mega-Refinery 1 finished: M_PC_* material palette, doors and lamps as prefabs, static merges (90-121 batches per farm), colliders (up to 521 on farm 0-4).
+- Mega-Refinery: 10,106 source meshes merged into 32 batches, 89 colliders (482k triangles, 0 degenerate), 500 door prefabs, 278 lamps, 9 material variants. Pending in-scene placement via Floating Origin pipeline.
+
+Ships
+- 17 NPC ships receive final reference visuals and rebaked deck navmeshes (Heavy, Medium, Light, HeavyII classes); Lorraine (class S) and Albatross get M_PC_* palette, merge and LOD.
+- Ship "Gigant" — the largest ship in the game (floating city for 300+ people) — modeled and registered.
+- Parom (ferry) routes: visual merge of parom + parom-ferma, client-side interpolation of cabin position, physics sync on cabin move, camera follows platform 1:1, edge-damping in meters so the cabin no longer flies straight over sagging cables. Trolley prefab prioritized over baked-in cabin; cabin preview at route stations (editor).
+- HeavyII pilot shadow budget and LOD measured (LOD0 1538 / LOD1 235 / LOD2 104 draw calls).
+
+UI (v4-2 port)
+- Main Menu ported to the mod's v4-2 design: 3D atmosphere (sky, veil, ropes with ferry, dust, day cycle), smoke field, letter blow-out, altimeter ribbon, project blocks; fixes for tab readability, blur cascade, gamma blending; Inter font; fast first-click entry; world preload behind the menu; loading screen with progress on Start.
+- Cloudy Navigator ("Cloud Map") ported steps 0-9 plus A7-A13: data feed, motion layer (48-pool), preview stage with its own camera, actions (quests, contracts, exchange-zone transfer), equipment slots, character preview with studio light, connection graph with sagging cables and sticker notes, calendar with notes, appearance button, skill learn/forget/slot binding, six combat slots, two graphs, navigation to calendar/relations/ship/cargo/quests.
+- 168 new 2D icons imported as sprites and wired into asset Sprite fields across 17 categories (Actions, Categories, Combat, Contracts, Crafting, Equipment, Factions, Gathering, Knowledge, Map, NPC, Quests, Ship, Skills, Stats, Trade, Weapons).
+
+Camera
+- SpringArm camera reworked for moving platforms: samples through target history, anti-pop relative to target, 1:1 platform follow, lag applied only to local motion; no jitter on ferries.
+- High-speed camera (admin run/noclip) no longer lags or jumps: lag capped at 2.5 m, snap removed, interpolation eased above 25 m/s, smoothing squeezed to 25% above 30 m/s.
+- Broken zoom in ThirdPersonCamera prefab fixed (zoomStepPercent 50 -> 0.2, zoomChaseSpeed 50 -> 8).
+
+Loading and culling
+- World loading screen activates the scene after 0.9 with frames for rendering; background world preload disabled in MainMenu.
+- Culling final acceptance (T-CULL01): Stage 8 PASS at 2,229 draw calls (from 27,131 on the heavy city pose), visibility director, shadow budget, HLOD switching. Light tracks L1-L6 closed (fade-in 0.15 s accepted, fade-out 0.30 s rejected by hold gate).
+- Ship and door culling under GRD via VisibilityDirector.
+
+Houses and map
+- House numbering and discovery: 534 numbered house markers; discovering a house (15 m radius) reveals it on the chart; farms always shown; chart gains "Houses" (discovered) and "Farms" layers.
+
+Notes
+- Floating Origin rebasing works (F8/F9 pass on Primum, farms, ships) but runtimeRebaseReadiness remains NOT_READY (contracts/partial runtime evidence) — unchanged from 0.1.91.
+- NPC navigation unchanged (LOS 97% from 0.1.90); terminal pain (docks) is the next focus.
+- Play Mode verification is performed by the user; the agent marks runtime checks as NOT RUN.
+
+----------------------------------
 v0.1.45 
 
 World, Ships & Named Crews

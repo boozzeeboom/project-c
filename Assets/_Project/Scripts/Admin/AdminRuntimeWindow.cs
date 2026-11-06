@@ -396,7 +396,9 @@ namespace ProjectC.Admin
 
         private void BuildHudTab()
         {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
             AddToggle("Perf HUD", _perfVisible, v => { _perfVisible = v; Facade().SetPerfHud(v); });
+#endif
             AddToggle("SceneDebug HUD", _sceneVisible, v => { _sceneVisible = v; Facade().SetSceneHud(v); });
             AddToggle("DayNight overlay", _daynightVisible, v => { _daynightVisible = v; Facade().SetDayNightOverlay(v); });
             AddLabel("NGO:", 13);

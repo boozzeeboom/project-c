@@ -172,6 +172,7 @@ namespace ProjectC.Admin
             return result;
         }
 
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
         // ==================== HUD ====================
 
         /// <summary>PerfHUD: найти или создать (в сценах его нет — см. шапку класса).</summary>
@@ -189,6 +190,7 @@ namespace ProjectC.Admin
         {
             EnsurePerfHud().SetVisible(visible);
         }
+#endif
 
         public void SetSceneHud(bool visible)
         {

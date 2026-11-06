@@ -27,7 +27,7 @@ namespace ProjectC.World
         public Vector3 mapPoint = Vector3.zero;
         public bool hasMapPoint = false;
 
-        public Vector3 MapPosition => hasMapPoint ? mapPoint : transform.position;
+        public Vector3 MapPosition => transform.position;
 
         /// <summary>Название для отображения на карте/табличке.</summary>
         public string DisplayName

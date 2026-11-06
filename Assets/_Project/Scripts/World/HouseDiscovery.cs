@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-
-using ProjectC.Player;
 using UnityEngine;
 using Unity.Netcode;
+using ProjectC.Player;
 
 namespace ProjectC.World
 {
@@ -20,7 +19,6 @@ namespace ProjectC.World
 
     /// <summary>
     /// Discovery домов: открывает дома при подходе (15 м) и запоминает per-player.
-    /// Аналог ChartTrackRecorder: DontDestroyOnLoad, save/load, rebase hook.
     /// </summary>
     [DisallowMultipleComponent]
     public class HouseDiscovery : MonoBehaviour
@@ -36,7 +34,6 @@ namespace ProjectC.World
         }
 
         [Header("Discovery")]
-        [Tooltip("Радиус открытия дома (м).")]
         [SerializeField] private float _discoveryRadius = 15f;
 
         [Header("Сейв")]
@@ -103,20 +100,28 @@ namespace ProjectC.World
 
             if (HouseDiscoveryStore.TryLoad(_clientId, out var data))
             {
+                var markerMap = new Dictionary<string, HouseMarker>();
+                foreach (var mm in FindObjectsByType<HouseMarker>())
+                    if (mm != null && !string.IsNullOrEmpty(mm.houseId) && !markerMap.ContainsKey(mm.houseId))
+                        markerMap[mm.houseId] = mm;
+
                 _discovered.Clear();
+                int skipped = 0;
                 foreach (var d in data.houses)
                 {
+                    if (string.IsNullOrEmpty(d.houseId)) { skipped++; continue; }
+                    if (!markerMap.TryGetValue(d.houseId, out var mk)) { skipped++; continue; }
                     _discovered.Add(new HouseDiscoveryEntry
                     {
                         houseId = d.houseId,
                         number = d.number,
                         chunkId = d.chunkId,
                         city = d.city,
-                        worldPos = new Vector3(d.x, d.y, d.z),
+                        worldPos = mk.MapPosition,
                         utcSeconds = d.utc,
                     });
                 }
-                Debug.Log($"[HouseDiscovery] Loaded {_discovered.Count} домов.");
+                
             }
         }
 
@@ -126,7 +131,6 @@ namespace ProjectC.World
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsListening) return;
 
-            // Найти локального игрока
             NetworkPlayer localPlayer = null;
             var players = nm.SpawnManager?.PlayerObjects;
             if (players != null)
@@ -142,12 +146,14 @@ namespace ProjectC.World
 
             Vector3 pos = localPlayer.transform.position;
 
-            // Все маркеры в загруженных сценах
             var markers = FindObjectsByType<HouseMarker>();
+            
+            
+            
+
             foreach (var m in markers)
             {
                 if (m == null) continue;
-                // Уже открыт?
                 bool already = false;
                 foreach (var d in _discovered)
                 {
@@ -170,7 +176,7 @@ namespace ProjectC.World
                     _discovered.Add(entry);
                     _dirty = true;
                     OnHouseDiscovered?.Invoke(entry);
-                    Debug.Log($"[HouseDiscovery] Открыт дом: {entry.houseId} (dist={dist:F1}m)");
+                    
                 }
             }
         }
@@ -198,7 +204,6 @@ namespace ProjectC.World
             _lastSaveTime = Time.unscaledTime;
         }
 
-        /// <summary>Сдвинуть discovery вместе с миром (Floating Origin).</summary>
         public int ApplyRebaseTranslation(Vector3 translation)
         {
             for (int i = 0; i < _discovered.Count; i++)

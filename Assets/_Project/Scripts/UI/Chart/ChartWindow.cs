@@ -69,7 +69,11 @@ namespace ProjectC.UI.Chart
         private ProjectC.World.ChartMarkType _placeType = ProjectC.World.ChartMarkType.Landmark;
         private readonly System.Collections.Generic.List<Label> _markLabels =
             new System.Collections.Generic.List<Label>();
-        private const int MaxMarkLabels = 24;
+        
+        private readonly System.Collections.Generic.List<Label> _houseLabels =
+            new System.Collections.Generic.List<Label>();
+        private const int MaxHouseLabels = 200;
+private const int MaxMarkLabels = 24;
 
         // WORLD-MAP-PAN: свободный осмотр (иначе только слежение)
         private bool _follow = true;
@@ -100,7 +104,9 @@ namespace ProjectC.UI.Chart
             // Журнал треков пишется всегда (даже с закрытой картой).
             ProjectC.World.ChartTrackRecorder.EnsureExists();
             
-            ProjectC.World.HouseDiscovery.EnsureExists();
+            
+            ProjectC.World.HouseDiscovery.OnHouseDiscovered += _ => { if (IsOpen) UpdateHouseLabels(); };
+ProjectC.World.HouseDiscovery.EnsureExists();
 ProjectC.World.ChartMarkManager.EnsureExists();
 
             if (_doc == null) _doc = GetComponent<UIDocument>();
@@ -468,6 +474,20 @@ ProjectC.World.ChartMarkManager.EnsureExists();
                 _markLabels.Add(ml);
             }
 
+            // Дома: labels с номерами
+            for (int i = 0; i < MaxHouseLabels; i++)
+            {
+                var hl = new Label { text = "" };
+                hl.style.position = Position.Absolute;
+                hl.style.fontSize = 9;
+                hl.style.color = new Color(0.2f, 0.45f, 0.2f);
+                hl.style.unityFontStyleAndWeight = FontStyle.Bold;
+                hl.pickingMode = PickingMode.Ignore;
+                hl.style.display = DisplayStyle.None;
+                _canvas.Add(hl);
+                _houseLabels.Add(hl);
+            }
+
             _built = true;
         }
 
@@ -687,7 +707,10 @@ ProjectC.World.ChartMarkManager.EnsureExists();
                 if (_followButton != null) _followButton.text = "◎ Слежение: выкл";
             }
             UpdateReadout();
-            _canvas?.MarkDirtyRepaint();
+            
+                
+UpdateHouseLabels();
+                _canvas?.MarkDirtyRepaint();
         }
 
         private void HandleCanvasClick(Vector2 local)
@@ -914,7 +937,38 @@ ProjectC.World.ChartMarkManager.EnsureExists();
                 _markLabels[i].style.display = DisplayStyle.None;
         }
 
-        // ==================== PAINT ====================
+        
+    private void UpdateHouseLabels()
+    {
+        if (_canvas == null || !_built) return;
+        var rect = _canvas.contentRect;
+        float w = rect.width, h = rect.height;
+        if (w <= 1f || h <= 1f) return;
+        if (!GetCenter(out float cx, out float cz)) return;
+        Vector3 north = ProjectC.World.WorldNorth.NorthDirection;
+        float k = 1f / _metersPerPixel;
+
+        var hd = ProjectC.World.HouseDiscovery.Instance;
+        int shown = 0;
+        if (hd != null)
+        {
+            foreach (var entry in hd.Discovered)
+            {
+                if (shown >= MaxHouseLabels) break;
+                WorldToMap(entry.worldPos.x, entry.worldPos.z, cx, cz, north, k, w, h, out float mx, out float my);
+                if (mx < -40 || my < -40 || mx > w + 40 || my > h + 40) continue;
+                var lb = _houseLabels[shown++];
+                lb.text = entry.houseId;
+                lb.style.left = mx + 4f;
+                lb.style.top = my - 10f;
+                lb.style.display = DisplayStyle.Flex;
+            }
+        }
+        for (int i = shown; i < _houseLabels.Count; i++)
+            _houseLabels[i].style.display = DisplayStyle.None;
+    }
+
+// ==================== PAINT ====================
 
         private void OnChartPaint(MeshGenerationContext ctx)
         {

@@ -1,5 +1,26 @@
 # Iterations
 
+## 06 ноября 2026
+
+**Тикет:** T-HOUSE01  
+**Тема:** Нумерация домов Примума + discovery на карте (WorldScene_0_0).  
+**Что сделано:** 
+- `HouseMarker` (MonoBehaviour) — маркер дома/фермы для карты.
+- `HouseDiscovery` + `HouseDiscoveryStore` — per-player список открытых домов (радиус 15 м), save/load, Floating Origin hook.
+- `ChartWindow` — слой «Дома» (открытые) + «Фермы» (всегда).
+- `HouseNumberingGenerator` (Editor, меню) — парсит `PRIMUM_DOORS`, группирует по дому, создаёт `HOUSE_SIGNS` (534 маркера с плавающим текстом).
+- Документация: `docs/world/world_map/house_numbering/00_HOUSE_NUMBERING_DISCOVERY.md`.
+
+**Файлы:**
+- `Assets/_Project/Scripts/World/HouseMarker.cs`
+- `Assets/_Project/Scripts/World/HouseDiscovery.cs`
+- `Assets/_Project/Scripts/World/HouseDiscoveryStore.cs`
+- `Assets/_Project/Scripts/UI/Chart/ChartWindow.cs`
+- `Assets/_Project/Editor/HouseNumbering/HouseNumberingGenerator.cs`
+- `Assets/_Project/Scenes/World/WorldScene_0_0.unity`
+
+**Проверено:** Compile (MCP) — 0 ошибок. Play Mode — за пользователем.
+
 ## 05 ноября 2026
 
 **Тикет:** T-CAM25

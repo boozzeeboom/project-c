@@ -17044,7 +17044,6 @@ MonoBehaviour:
   _profile: {fileID: 11400000, guid: 21f017ff137c07945bc4de67e52122a7, type: 2}
   _bootstrap: {fileID: 1151906027}
   _autoStartHost: 0
-  _preloadWorldSceneForMenu: 1
 --- !u!114 &1151906032
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21835,7 +21834,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.UI.MainMenu.MainMenuWindow
   mainUxml: {fileID: 0}
   mainUss: {fileID: 0}
-  versionText: 0.1.94
+  versionText: 0.2.0
   changelogUrl: https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/UI/MainMenu/changelogs.md
   changelogTimeoutSeconds: 8
 --- !u!114 &1567705307

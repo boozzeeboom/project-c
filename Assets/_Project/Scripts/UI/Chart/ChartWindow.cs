@@ -99,7 +99,9 @@ namespace ProjectC.UI.Chart
 
             // Журнал треков пишется всегда (даже с закрытой картой).
             ProjectC.World.ChartTrackRecorder.EnsureExists();
-            ProjectC.World.ChartMarkManager.EnsureExists();
+            
+            ProjectC.World.HouseDiscovery.EnsureExists();
+ProjectC.World.ChartMarkManager.EnsureExists();
 
             if (_doc == null) _doc = GetComponent<UIDocument>();
             if (_doc != null && _doc.panelSettings == null)
@@ -985,7 +987,40 @@ namespace ProjectC.UI.Chart
                 }
             }
 
-            // --- Треки: свой пройденный путь (давность = прозрачность) ---
+            
+            // --- Дома (открытые при подходе) + фермы Примума ---
+            var houseDiscovery = ProjectC.World.HouseDiscovery.Instance;
+            if (houseDiscovery != null)
+            {
+                foreach (var hd in houseDiscovery.Discovered)
+                {
+                    WorldToMap(hd.worldPos.x, hd.worldPos.z, cx, cz, north, k, w, h, out float hx, out float hy);
+                    if (hx < -30 || hy < -30 || hx > w + 30 || hy > h + 30) continue;
+                    painter.fillColor = new Color(0.2f, 0.45f, 0.2f, 0.9f);
+                    painter.BeginPath();
+                    painter.Arc(new Vector2(hx, hy), 4f, 0, 360);
+                    painter.Fill();
+                    // номер
+                    // (отрисовка текста через UIDocument labels — отдельный шаг; здесь только точка)
+                }
+            }
+            // Фермы Примума (всегда видны как поселения)
+            var farmRoot = GameObject.Find("Primum_farms");
+            if (farmRoot != null)
+            {
+                foreach (Transform child in farmRoot.transform)
+                {
+                    Vector3 fp = child.position;
+                    WorldToMap(fp.x, fp.z, cx, cz, north, k, w, h, out float fx, out float fy);
+                    if (fx < -30 || fy < -30 || fx > w + 30 || fy > h + 30) continue;
+                    painter.strokeColor = new Color(0.55f, 0.35f, 0.12f);
+                    painter.lineWidth = 1.5f;
+                    painter.BeginPath();
+                    painter.Arc(new Vector2(fx, fy), 6f, 0, 360);
+                    painter.Stroke();
+                }
+            }
+// --- Треки: свой пройденный путь (давность = прозрачность) ---
             var trackRecorder = ProjectC.World.ChartTrackRecorder.Instance;
             if (trackRecorder != null && trackRecorder.Count > 1)
             {

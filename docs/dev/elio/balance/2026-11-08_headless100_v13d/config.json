@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-08",
+  "experiment": "headless_matrix_100_all_variants_v13d",
+  "engine": "elio_engine.js v1.3d (P0/P1 fixed)",
+  "ai": "elio_ai.js v1.3c",
+  "llm": false,
+  "gamesPerVariant": 100,
+  "baseSeed": 20261108,
+  "variants": {
+    "turnModes": ["cycle", "arrow", "pass"],
+    "deathModes": ["main", "long"],
+    "pawns": [0, 1, 5],
+    "total": 18
+  },
+  "fixedOptions": {
+    "passRule": "random (канон; repeat/back не включены)",
+    "cycleDir": "forward (по умолчанию; reverse не включён)",
+    "firstMovePawn": "true для pawns=5, false для 0/1",
+    "limit": "90 для 0/1, 120 для 5"
+  },
+  "integrityGuard": true,
+  "notes": [
+    "Все три фракции играет встроенный ИИ v1.3c; DeepSeek/LLM не участвует.",
+    "Seeded RNG на каждую игру (mulberry32), seed в results.json.",
+    "10 фигур — канон; 10+1 и 15 — тест-варианты.",
+    "Цикл — исторический режим; Стрелка — соревновательный эталон; Передача — тест."
+  ]
+}

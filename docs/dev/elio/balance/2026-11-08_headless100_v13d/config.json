@@ -19,6 +19,8 @@
     "limit": "90 для 0/1, 120 для 5"
   },
   "integrityGuard": true,
+  "passToFix": false,
+  "passToFixNote": "Pass-строки этого прогона — до AI passTo-фикса; после фикса Pass+Main p1 400 = 27.25/31/40.5. Не смешивать с новыми pass-данными.",
   "notes": [
     "Все три фракции играет встроенный ИИ v1.3c; DeepSeek/LLM не участвует.",
     "Seeded RNG на каждую игру (mulberry32), seed в results.json.",

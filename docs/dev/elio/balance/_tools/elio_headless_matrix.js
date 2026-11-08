@@ -18,6 +18,11 @@ for (const turn of ['cycle', 'arrow', 'pass']) {
     }
   }
 }
+const ALL_VARIANTS = VARIANTS.slice();
+const ONLY = (process.env.ONLY || '').split(',').map(s => s.trim()).filter(Boolean);
+const RUN_VARIANTS = ONLY.length
+  ? ALL_VARIANTS.filter(v => ONLY.includes(v.turn + '+' + v.death + '+p' + v.pawns))
+  : ALL_VARIANTS;
 
 function mulberry32(a) {
   return function () {
@@ -74,10 +79,11 @@ function oneGame(v, gameIndex, variantIndex) {
     const f = s.turnFaction;
     let mv = f === 'zero' ? AI.chooseMove(s, f) : AI.chooseMoveAggressive(s, f);
     const act = mv && (mv.act || {});
+    const passTo = (s.mode.turn === 'pass' && mv && mv.passTo) ? mv.passTo : undefined;
     let r;
-    if (!mv || mv.type === 'skip' || (!act.type && !act.kind)) r = E.skipTurn(s);
-    else if (mv.type === 'support') r = E.applySupport(s, act.zeroId, act.targetId);
-    else r = E.applyMove(s, act.pieceId, act.q, act.r);
+    if (!mv || mv.type === 'skip' || (!act.type && !act.kind)) r = E.skipTurn(s, passTo);
+    else if (mv.type === 'support') r = E.applySupport(s, act.zeroId, act.targetId, passTo);
+    else r = E.applyMove(s, act.pieceId, act.q, act.r, passTo);
     if (r.error) { row.errors.push('action: ' + r.error); row.contaminated = true; break; }
     if (r.record && r.record.kind === 'displace') {
       // легальное оттеснение; проверяем, что клетки согласованы ниже
@@ -107,8 +113,8 @@ function oneGame(v, gameIndex, variantIndex) {
 
 const t0 = Date.now();
 const all = [];
-for (let vi = 0; vi < VARIANTS.length; vi++) {
-  const v = VARIANTS[vi];
+for (const v of RUN_VARIANTS) {
+  const vi = ALL_VARIANTS.indexOf(v);
   const rows = [];
   for (let gi = 0; gi < N; gi++) rows.push(oneGame(v, gi, vi));
   all.push(...rows);
@@ -147,17 +153,22 @@ function aggregate(rows) {
   return g;
 }
 
-const summary = VARIANTS.map((v, vi) => ({
-  ...v,
-  aggregate: aggregate(all.filter(r => r.variantIndex === vi)),
-}));
+const summary = RUN_VARIANTS.map(v => {
+  const vi = ALL_VARIANTS.indexOf(v);
+  return {
+    ...v,
+    aggregate: aggregate(all.filter(r => r.variantIndex === vi)),
+  };
+});
 const out = {
   engine: 'elio_engine.js v1.3d',
   ai: 'elio_ai.js v1.3c',
   date: '2026-11-08',
   baseSeed: BASE_SEED,
   gamesPerVariant: N,
-  variants: VARIANTS.length,
+  variants: RUN_VARIANTS.length,
+  selected: ONLY,
+  passToFix: true,
   games: all.length,
   elapsedSec: +((Date.now() - t0) / 1000).toFixed(1),
   summary,

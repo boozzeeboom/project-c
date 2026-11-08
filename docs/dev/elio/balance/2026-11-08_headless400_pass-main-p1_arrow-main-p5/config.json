@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-08",
+  "experiment": "headless400_pass-main-p1_arrow-main-p5",
+  "engine": "elio_engine.js v1.3d (P0/P1 fixed)",
+  "ai": "elio_ai.js v1.3c",
+  "llm": false,
+  "gamesPerVariant": 400,
+  "totalGames": 800,
+  "baseSeed": 20261108,
+  "variants": [
+    {
+      "turn": "pass",
+      "death": "main",
+      "pawns": 1,
+      "passRule": "random",
+      "cycleDir": "forward",
+      "firstMovePawn": false,
+      "limit": 90,
+      "label": "10+1 C1, Передача + Основной"
+    },
+    {
+      "turn": "arrow",
+      "death": "main",
+      "pawns": 5,
+      "passRule": "random",
+      "cycleDir": "forward",
+      "firstMovePawn": true,
+      "limit": 120,
+      "label": "15 фигур, Стрелка + Основной"
+    }
+  ],
+  "seedNote": "Seed formula same as 100×18: baseSeed + originalVariantIndex*100003 + gameIndex*7919. Original indices: pass+main+p1 = 13, arrow+main+p5 = 8. Arrow first 100 games must reproduce the 100×18 row; pass first 100 differs because of the passTo fix.",
+  "passToFix": true,
+  "passToFixNote": "ИИ v1.3c исправлен: в pass-режиме выбирается один passTo на ход, все кандидаты и фактическое применение используют его. Старый прогон без фикса — results_pass_rng_mismatch.json.",
+  "oldPassRun": "results_pass_rng_mismatch.json",
+  "integrityGuard": true,
+  "notes": [
+    "Оба варианта — тест-варианты, не канон.",
+    "Pass: передача случайная (канон random); стратегия передачи не тестируется.",
+    "15 фигур: 5 пешек, лимит 120, первый ход каждой фракции — пешкой.",
+    "Цель: проверить 400-игровую стабильность выбранной комбинации и найти расхождения кода/доков."
+  ]
+}

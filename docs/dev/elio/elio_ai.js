@@ -125,9 +125,9 @@
   }
 
   // Является ли ход опасным (после того как мы совершили ход, на ту же клетку может зайти соперник без выгоды?)
-  function afterAction(state, act){
-    if(act.type==='move') return E.applyMove(state, act.pieceId, act.q, act.r);
-    if(act.type==='support') return E.applySupport(state, act.zeroId, act.targetId);
+  function afterAction(state, act, passTo){
+    if(act.type==='move') return E.applyMove(state, act.pieceId, act.q, act.r, passTo);
+    if(act.type==='support') return E.applySupport(state, act.zeroId, act.targetId, passTo);
     return {state:E.clone(state), error:'unknown'};
   }
 
@@ -162,15 +162,18 @@
   function chooseMove(state,faction){
     if(state.gameOver) return {};
     if(state.turnFaction!==faction) return {};
+    // В pass-режиме фиксируем одну случайную (канон random) цель передачи на весь ход:
+    // все кандидаты и фактическое применение используют один и тот же passTo.
+    const passTo = state.mode.turn==='pass' ? E.defaultPassTarget(state,faction) : undefined;
     const cands=allCandidates(state,faction);
     if(!cands.length){
-      const sk=E.skipTurn(state);
-      return {type:'skip',state:sk.state};
+      const sk=E.skipTurn(state,passTo);
+      return {type:'skip',state:sk.state,passTo};
     }
     let best=null,bestSc=-Infinity;
     for(const act of cands){
       const sim=E.clone(state);
-      const r=afterAction(sim,act);
+      const r=afterAction(sim,act,passTo);
       if(r.error)continue;
       // считаем давление: сколько наших фигур после хода уязвимо
       const sc0=scoreState(r.state,faction);
@@ -203,15 +206,16 @@
       const scJ=sc + Math.random()*1.5;    // лёгкый tie-break, чтобы партии различались
       if(scJ>bestSc){bestSc=scJ;best=act;}
     }
-    if(!best){ const sk=E.skipTurn(state); return {type:'skip',state:sk.state}; }
-    const final=afterAction(E.clone(state),best);
-    return {type:best.type,state:final.state,act:best};
+    if(!best){ const sk=E.skipTurn(state,passTo); return {type:'skip',state:sk.state,passTo}; }
+    const final=afterAction(E.clone(state),best,passTo);
+    return {type:best.type,state:final.state,act:best,passTo};
   }
 
   function chooseMoveAggressive(state,faction){
     // военные: приоритет захвата, особенно чужой «король» (D1) или заявленный нуль-щит
     if(state.gameOver||state.turnFaction!==faction) return {};
     if(faction==='zero') return chooseMove(state,faction);
+    const passTo = state.mode.turn==='pass' ? E.defaultPassTarget(state,faction) : undefined;
     const cands=allCandidates(state,faction).filter(c=>c.type==='move');
     // приоритет 1: победная смена «короля» (в Основном — всегда;
     // в Длинном — не бросать уже накопленный «Ц» при hold ≥ 1)
@@ -222,14 +226,14 @@
         const t=E.pieceAt(state,c.q,c.r);
         return t&&t.type==='line';
       });
-      if(win){ const r=afterAction(E.clone(state),win); if(!r.error) return {type:'move',state:r.state,act:win}; }
+      if(win){ const r=afterAction(E.clone(state),win,passTo); if(!r.error) return {type:'move',state:r.state,act:win,passTo}; }
     }
     // приоритет 2: смена чужого щитового нуля (ломает поддержку 2)
     const shield=cands.find(c=>{
       const t=E.pieceAt(state,c.q,c.r);
       return t&&E.isNullType(t.type)&&t.supportTarget&&(t.supportTarget!==null);
     });
-    if(shield){ const r=afterAction(E.clone(state),shield); if(!r.error) return {type:'move',state:r.state,act:shield}; }
+    if(shield){ const r=afterAction(E.clone(state),shield,passTo); if(!r.error) return {type:'move',state:r.state,act:shield,passTo}; }
     return chooseMove(state,faction);
   }
 

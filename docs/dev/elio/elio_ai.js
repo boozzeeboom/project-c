@@ -5,7 +5,7 @@
   const E = window.ElioEngine;
 
   function pieceVal(p){
-    const v={line:7,battleship:6,bombardier:4,heavy:5,frigate:3,corvette:2,destroyer:1,parliament:4,free:2,courier:1.5,engineer:2.5,saboteur:2};
+    const v={line:7,battleship:6,bombardier:4,heavy:5,frigate:3,corvette:2,destroyer:1,tender:1,skiff:1,parliament:4,free:2,courier:1.5,engineer:2.5,saboteur:2};
     return v[p.type]||1;
   }
 

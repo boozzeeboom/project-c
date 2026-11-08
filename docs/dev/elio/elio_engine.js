@@ -8,16 +8,19 @@
   const FACTION_NAME = {plus:'Плюсы',minus:'Минусы',zero:'Нули'};
   const FACTION_COLOR = {plus:'#5b9bd5', minus:'#e05a5a', zero:'#9aa0a6'};
 
-  const ZERO_TYPES = ['parliament','free','courier','engineer','saboteur'];
+  const ZERO_TYPES = ['parliament','free','courier','engineer','saboteur','skiff'];
   const TYPE_NAME = {
     line:'Линейный', battleship:'Линкор', bombardier:'Бомбардир', heavy:'Тяжёлый крейсер', frigate:'Фрегат', corvette:'Корвет', destroyer:'Миноносец',
+    tender:'Тендер', skiff:'Скиталец',
     parliament:'Капитан-Линейный', free:'Свободный', courier:'Курьер', engineer:'Инженер', saboteur:'Диверсант'
   };
-  const PIECE_VALUE = {line:7,battleship:6,bombardier:4,heavy:5,frigate:3,corvette:2,destroyer:1,parliament:4,free:2,courier:1.5,engineer:2.5,saboteur:2};
+  const PIECE_VALUE = {line:7,battleship:6,bombardier:4,heavy:5,frigate:3,corvette:2,destroyer:1,tender:1,skiff:1,parliament:4,free:2,courier:1.5,engineer:2.5,saboteur:2};
 
-  // v1.2: только Lineyniy и TК — тяжёлые; корвет больше не «тяжёлый».
+  // v1.3: только Lineyniy и TК — тяжёлые; корвет больше не «тяжёлый».
   function isHeavy(t){ return t==='line'||t==='battleship'||t==='heavy'; }
   function isNullType(t){ return ZERO_TYPES.indexOf(t)!==-1; }
+  function isPawnType(t){ return t==='tender'||t==='skiff'; }
+  function hasPawn(s,f){ return s.pieces.some(p=>p.alive&&!p.inert&&p.faction===f&&isPawnType(p.type)); }
 
   const FIELD_CENTERS = {plus:[0,-3], minus:[-3,3], zero:[3,0]};
   const FIELD_INFO = [
@@ -35,6 +38,8 @@
   const DISPUTED_SET = new Set(DISPUTED.map(d=>d.q+','+d.r));
   const NB = [[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]];
   const LIMIT = 90;
+  const LIMIT15 = 120;
+  const PAWN_LOCAL = ['A11','B6','C1','B2','A3'];
 
   function dist(a,b){const dq=b[0]-a[0],dr=b[1]-a[1];return (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2;}
   function patch(cx,cy){const o=[];for(let q=-2;q<=2;q++)for(let r=-2;r<=2;r++)if(Math.abs(q)+Math.abs(r)+Math.abs(q+r)<=4)o.push([cx+q,cy+r]);return o;}
@@ -151,6 +156,7 @@
     if(!piece||!piece.alive||piece.inert) return [];
     if(state.gameOver) return [];
     if(piece.faction!==state.turnFaction) return [];
+    if(state.pieces15 && !(state.firstMoveDone&&state.firstMoveDone[piece.faction]) && hasPawn(state,piece.faction) && !isPawnType(piece.type)) return [];
     const res=[], seen=new Set();
     const push=(q,r,extra)=>{
       const key=q+','+(extra&&extra.displace?'D':'')+r;
@@ -158,7 +164,7 @@
       seen.add(key); res.push(Object.assign({q,r,capture:false},extra||{},{pieceId}));
     };
     const t=piece.type;
-    if(t==='line'||t==='parliament'||t==='saboteur'){
+    if(t==='line'||t==='parliament'||t==='saboteur'||t==='tender'||t==='skiff'){
       for(const n of neighbors(piece.q,piece.r)) push(n[0],n[1]);
     } else if(t==='battleship'){ straightCandidates(state,piece,12).forEach(c=>push(c.q,c.r));
     } else if(t==='bombardier'){
@@ -245,6 +251,8 @@
   function legalSupportTargets(state,zeroId){
     const z=pieceById(state,zeroId);
     if(!z||!z.alive||z.inert||!isNullType(z.type)||z.faction!==state.turnFaction) return [];
+    if(z.type==='skiff') return [];                    // пешка Нулей не поддерживает
+    if(state.pieces15 && !(state.firstMoveDone&&state.firstMoveDone[z.faction]) && hasPawn(state,z.faction)) return [];
     const out=[];
     for(const n of neighbors(z.q,z.r)){
       const tp=pieceAt(state,n[0],n[1]);
@@ -293,6 +301,8 @@
       pieces:s.pieces.map(p=>({...p})),
       turnFaction:s.turnFaction,
       mode:{...s.mode},
+      pieces15:!!s.pieces15,
+      firstMoveDone:{...(s.firstMoveDone||{plus:false,minus:false,zero:false})},
       cycleDir:s.cycleDir,
       limit:s.limit,
       moveNumber:s.moveNumber,
@@ -347,8 +357,10 @@
       pieces:[],
       turnFaction:startFaction,
       mode:{turn:turnMode, death:o.death||'main'},
+      pieces15:!!o.pieces15,
+      firstMoveDone:{plus:false,minus:false,zero:false},
       cycleDir:o.cycleDir||'forward',       // 'forward' = П→М→Н; 'reverse' = П→Н→М
-      limit:LIMIT,
+      limit:o.pieces15?LIMIT15:LIMIT,
       moveNumber:0,
       hold:{plus:0,minus:0,zero:0},
       lastHolder:null,
@@ -375,6 +387,19 @@
         const c=state.cells.get(sp.q+','+sp.r); if(c)c.piece=p.id; });
     }
     place('plus',PLUS_SETUP); place('minus',MINUS_SETUP); place('zero',ZERO_SETUP);
+    function placePawns(faction,tp){
+      const f=FIELD_INFO.find(x=>x.id===faction);
+      PAWN_LOCAL.forEach(loc=>{
+        const code=f.prefix+'-'+loc;
+        let cell=null;
+        for(const [k,v] of codeMap){ if(v===code){ const [q,r]=k.split(',').map(Number); cell={q,r}; break; } }
+        if(!cell) return;
+        const c=state.cells.get(cell.q+','+cell.r);
+        if(!c||c.piece) return;
+        const p=make(faction,tp); p.q=cell.q; p.r=cell.r; state.pieces.push(p); c.piece=p.id;
+      });
+    }
+    if(state.pieces15){ placePawns('plus','tender'); placePawns('minus','tender'); placePawns('zero','skiff'); }
     return state;
   }
 
@@ -466,6 +491,7 @@
     const p=s.pieces.find(x=>x.id===pieceId&&x.alive&&!x.inert);
     if(!p) return {state:s,record:null,error:'piece not found'};
     if(p.faction!==s.turnFaction) return {state:s,record:null,error:'not your turn'};
+    if(s.pieces15 && !(s.firstMoveDone&&s.firstMoveDone[p.faction]) && hasPawn(s,p.faction) && !isPawnType(p.type)) return {state:s,record:null,error:'first move must be pawn'};
     const moves=legalMoves(s,pieceId);
     const mv=moves.find(m=>m.q===toQ&&m.r===toR);
     if(!mv) return {state:s,record:null,error:'illegal move'};
@@ -500,6 +526,7 @@
     p.q=toQ; p.r=toR;
     const c=s.cells.get(toQ+','+toR);
     if(c)c.piece=p.id;
+    if(s.pieces15 && isPawnType(p.type)) s.firstMoveDone[p.faction]=true;
     validateSupports(s);
     const record={kind:'move',moveNumber:s.moveNumber+1,faction:p.faction,pieceId,from,to:{q:toQ,r:toR},capture:captureRecord,extra:null,holdAfter:{...s.hold}};
     advanceTurn(s,p.faction,record,passTo);
@@ -512,6 +539,8 @@
     const z=s.pieces.find(x=>x.id===zeroId&&x.alive&&!x.inert);
     if(!z) return {state:s,record:null,error:'zero not found'};
     if(z.faction!==s.turnFaction) return {state:s,record:null,error:'not your turn'};
+    if(z.type==='skiff') return {state:s,record:null,error:'skiff cannot support'};
+    if(s.pieces15 && !(s.firstMoveDone&&s.firstMoveDone[z.faction]) && hasPawn(s,z.faction)) return {state:s,record:null,error:'first move must be pawn'};
     if(!isNullType(z.type)) return {state:s,record:null,error:'not a zero'};
     if(targetId!==null){
       const t=s.pieces.find(x=>x.id===targetId&&x.alive&&!x.inert);
@@ -529,6 +558,7 @@
     const a=s.pieces.find(x=>x.id===attackerId&&x.alive&&!x.inert);
     const z=pieceAt(s,zeroQ,zeroR);
     if(!a||!z||!isNeutralZero(z)||a.faction!==s.turnFaction) return {state:s,record:null,error:'bad displace'};
+    if(s.pieces15 && !(s.firstMoveDone&&s.firstMoveDone[a.faction]) && hasPawn(s,a.faction)) return {state:s,record:null,error:'first move must be pawn'};
     const dir=[zeroQ-a.q, zeroR-a.r];
     const pz=[zeroQ+dir[0], zeroR+dir[1]];
     if(!isValidCell(s,pz[0],pz[1])||pieceAt(s,pz[0],pz[1])||(pz[0]===0&&pz[1]===0)||GATE_SET.has(pz[0]+','+pz[1])||DISPUTED_SET.has(pz[0]+','+pz[1])) return {state:s,record:null,error:'bad push'};
@@ -556,8 +586,9 @@
 
   window.ElioEngine={
     FACTIONS, FACTION_NAME, FACTION_COLOR, PIECE_VALUE, TYPE_NAME,
-    isHeavy, isNullType, isNeutralZero, isDeclaredZero, isOnGateOrCenter,
+    isHeavy, isNullType, isPawnType, isNeutralZero, isDeclaredZero, isOnGateOrCenter,
     FIELD_CENTERS, FIELD_INFO, DISPUTED, INNER_GATES, GATE_SET, DISPUTED_SET, NB,
+    PAWN_LOCAL, LIMIT15,
     codeMap, init, clone,
     neighbors, isValidCell:(s,q,r)=>isValidCell(s,q,r), cellAt, pieceAt, occupantAt,
     protLevel, canCapture, canCaptureZero, zeroVulnerability, legalMoves, legalSupportTargets,
@@ -565,11 +596,12 @@
     applyMove, applySupport, applyDisplace, skipTurn,
     cellKey:(q,r)=>q+','+r,
     dist, patch, LIMIT,
-    stateToJSON:(s)=>JSON.parse(JSON.stringify({pieces:s.pieces,turnFaction:s.turnFaction,mode:s.mode,cycleDir:s.cycleDir,limit:s.limit,moveNumber:s.moveNumber,hold:s.hold,lastHolder:s.lastHolder,actedBy:s.actedBy,passLastTarget:s.passLastTarget,passPrevGiver:s.passPrevGiver,passRule:s.passRule,eliminated:s.eliminated,gameOver:s.gameOver,winner:s.winner,winReason:s.winReason,log:s.log})),
-    fromJSON:(j)=>{ const s=init({turn:j.mode.turn,death:j.mode.death,cycleDir:j.cycleDir,passRule:j.passRule}); s.pieces=[];j.pieces.forEach(p=>{const np={...p}; s.pieces.push(np); const c=s.cells.get(np.q+','+np.r); if(c)c.piece=np.id;});
+    stateToJSON:(s)=>JSON.parse(JSON.stringify({pieces:s.pieces,turnFaction:s.turnFaction,mode:s.mode,pieces15:!!s.pieces15,firstMoveDone:s.firstMoveDone,cycleDir:s.cycleDir,limit:s.limit,moveNumber:s.moveNumber,hold:s.hold,lastHolder:s.lastHolder,actedBy:s.actedBy,passLastTarget:s.passLastTarget,passPrevGiver:s.passPrevGiver,passRule:s.passRule,eliminated:s.eliminated,gameOver:s.gameOver,winner:s.winner,winReason:s.winReason,log:s.log})),
+    fromJSON:(j)=>{ const s=init({turn:j.mode.turn,death:j.mode.death,cycleDir:j.cycleDir,passRule:j.passRule,pieces15:!!j.pieces15}); s.pieces=[];j.pieces.forEach(p=>{const np={...p}; s.pieces.push(np); const c=s.cells.get(np.q+','+np.r); if(c)c.piece=np.id;});
       s.turnFaction=j.turnFaction; s.moveNumber=j.moveNumber; s.hold={...j.hold}; s.lastHolder=j.lastHolder;
       s.actedBy={...j.actedBy}; s.passLastTarget={...(j.passLastTarget||{plus:null,minus:null,zero:null})};
       s.passPrevGiver=j.passPrevGiver||null; s.passRule=j.passRule||'random';
+      s.pieces15=!!j.pieces15; s.firstMoveDone={...(j.firstMoveDone||{plus:false,minus:false,zero:false})};
       s.eliminated={...j.eliminated}; s.gameOver=j.gameOver; s.winner=j.winner; s.winReason=j.winReason; s.log=j.log.slice(); return s; },
   };
 })();

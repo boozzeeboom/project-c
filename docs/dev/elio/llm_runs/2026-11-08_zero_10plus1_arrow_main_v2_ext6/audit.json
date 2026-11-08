@@ -1,0 +1,662 @@
+[
+  {
+    "matchNo": 714,
+    "result": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 26
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 26,
+      "ok": true
+    },
+    "llm": {
+      "actions": 10,
+      "moves": 9,
+      "supports": 1,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 6,
+      "gateMoves": 3,
+      "centerTicks": 3,
+      "maxHold": 2,
+      "holdTicks": 1
+    },
+    "ai": {
+      "actions": 16,
+      "moves": 16,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 3,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 7,
+      "centerTicks": 4,
+      "maxHold": 3,
+      "holdTicks": 4,
+      "gateMoves": null
+    },
+    "llmTurns": 10,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 7,
+          "move": 7,
+          "zero": "Z-P22",
+          "target": "Z-P21",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": []
+    }
+  },
+  {
+    "matchNo": 715,
+    "result": {
+      "winner": "plus",
+      "reason": "king",
+      "moves": 10
+    },
+    "replay": {
+      "winner": "plus",
+      "reason": "king",
+      "moves": 10,
+      "ok": true
+    },
+    "llm": {
+      "actions": 4,
+      "moves": 4,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 2,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 2,
+      "osc2": 0,
+      "repeatPiece": 2,
+      "gateMoves": 0,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 6,
+      "moves": 6,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 2,
+      "lineKills": 1,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 4,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [
+        {
+          "i": 3,
+          "move": 4,
+          "errors": [
+            "cell 2,2 -> piece Z-F27 at 1,2",
+            "piece on multiple cells Z-F27",
+            "alive piece not linked to cell Z-C25 3,2"
+          ]
+        },
+        {
+          "i": 4,
+          "move": 5,
+          "errors": [
+            "cell 1,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "cell 2,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "alive piece not linked to cell Z-C25 3,2"
+          ]
+        },
+        {
+          "i": 5,
+          "move": 6,
+          "errors": [
+            "cell 1,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "cell 2,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "alive piece not linked to cell Z-C25 3,2",
+            "two alive pieces on 3,2"
+          ]
+        },
+        {
+          "i": 6,
+          "move": 7,
+          "errors": [
+            "cell 1,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "cell 2,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "alive piece not linked to cell Z-C25 3,2"
+          ]
+        },
+        {
+          "i": 7,
+          "move": 8,
+          "errors": [
+            "cell 1,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "cell 2,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "alive piece not linked to cell Z-C25 3,2"
+          ]
+        },
+        {
+          "i": 8,
+          "move": 9,
+          "errors": [
+            "cell 1,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "cell 2,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "alive piece not linked to cell Z-C25 3,2"
+          ]
+        },
+        {
+          "i": 9,
+          "move": 10,
+          "errors": [
+            "cell 1,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "cell 2,2 -> piece Z-F27 at -1,2",
+            "piece on multiple cells Z-F27",
+            "alive piece not linked to cell Z-C25 3,2"
+          ]
+        }
+      ],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [
+        {
+          "i": 9,
+          "move": 10,
+          "killer": "plus",
+          "victim": "minus",
+          "winner": "plus",
+          "reason": "king"
+        }
+      ]
+    }
+  },
+  {
+    "matchNo": 716,
+    "result": {
+      "winner": "draw",
+      "reason": "draw",
+      "moves": 60
+    },
+    "replay": {
+      "winner": "draw",
+      "reason": "draw",
+      "moves": 60,
+      "ok": true
+    },
+    "llm": {
+      "actions": 24,
+      "moves": 23,
+      "supports": 1,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 16,
+      "osc2": 1,
+      "repeatPiece": 19,
+      "gateMoves": 1,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 36,
+      "moves": 36,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 7,
+      "lineKills": 0,
+      "osc1": 1,
+      "osc2": 0,
+      "repeatPiece": 10,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 24,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [
+        {
+          "i": 26,
+          "move": 27,
+          "errors": [
+            "alive piece off board P-L1 -2,-4",
+            "alive piece not linked to cell P-L1 -2,-4"
+          ]
+        },
+        {
+          "i": 27,
+          "move": 28,
+          "errors": [
+            "alive piece off board P-L1 -2,-4",
+            "alive piece not linked to cell P-L1 -2,-4"
+          ]
+        },
+        {
+          "i": 28,
+          "move": 29,
+          "errors": [
+            "alive piece off board P-L1 -2,-4",
+            "alive piece not linked to cell P-L1 -2,-4"
+          ]
+        },
+        {
+          "i": 29,
+          "move": 30,
+          "errors": [
+            "alive piece off board P-L1 -2,-4",
+            "alive piece not linked to cell P-L1 -2,-4"
+          ]
+        }
+      ],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 7,
+          "move": 7,
+          "zero": "Z-P21",
+          "target": "Z-P22",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": []
+    }
+  },
+  {
+    "matchNo": 717,
+    "result": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 19
+    },
+    "replay": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 19,
+      "ok": true
+    },
+    "llm": {
+      "actions": 9,
+      "moves": 9,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 2,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 2,
+      "osc2": 2,
+      "repeatPiece": 6,
+      "gateMoves": 2,
+      "centerTicks": 7,
+      "maxHold": 2,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 10,
+      "moves": 10,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 1,
+      "centerTicks": 0,
+      "maxHold": 3,
+      "holdTicks": 3
+    },
+    "llmTurns": 9,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [
+        {
+          "i": 6,
+          "move": 7,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30",
+            "alive piece not linked to cell Z-E23 4,1"
+          ]
+        },
+        {
+          "i": 7,
+          "move": 8,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 8,
+          "move": 9,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 9,
+          "move": 10,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 10,
+          "move": 11,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 11,
+          "move": 12,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 12,
+          "move": 13,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 13,
+          "move": 14,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 14,
+          "move": 15,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 15,
+          "move": 16,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 16,
+          "move": 17,
+          "errors": [
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30"
+          ]
+        },
+        {
+          "i": 17,
+          "move": 18,
+          "errors": [
+            "cell 2,2 -> piece Z-C25 at 1,2",
+            "piece on multiple cells Z-C25",
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30",
+            "alive piece not linked to cell Z-E23 3,2"
+          ]
+        },
+        {
+          "i": 18,
+          "move": 19,
+          "errors": [
+            "cell 2,2 -> piece Z-C25 at 1,2",
+            "piece on multiple cells Z-C25",
+            "cell 3,1 -> piece Z-S30 at 2,1",
+            "piece on multiple cells Z-S30",
+            "alive piece not linked to cell Z-E23 3,2"
+          ]
+        }
+      ],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": []
+    }
+  },
+  {
+    "matchNo": 718,
+    "result": {
+      "winner": "plus",
+      "reason": "king",
+      "moves": 9
+    },
+    "replay": {
+      "winner": "plus",
+      "reason": "king",
+      "moves": 9,
+      "ok": true
+    },
+    "llm": {
+      "actions": 4,
+      "moves": 3,
+      "supports": 1,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 2,
+      "gateMoves": 2,
+      "centerTicks": 2,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 5,
+      "moves": 5,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 2,
+      "lineKills": 1,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 4,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [
+        {
+          "i": 6,
+          "move": 6,
+          "line": "M-L11",
+          "attackers": [
+            "P-B4"
+          ],
+          "linePos": "-5,5"
+        },
+        {
+          "i": 7,
+          "move": 7,
+          "line": "M-L11",
+          "attackers": [
+            "P-B4"
+          ],
+          "linePos": "-5,5"
+        }
+      ],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 7,
+          "move": 7,
+          "zero": "Z-P22",
+          "target": "Z-P21",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": [
+        {
+          "i": 8,
+          "move": 9,
+          "killer": "plus",
+          "victim": "minus",
+          "winner": "plus",
+          "reason": "king"
+        }
+      ]
+    }
+  },
+  {
+    "matchNo": 719,
+    "result": {
+      "winner": "plus",
+      "reason": "hold",
+      "moves": 31
+    },
+    "replay": {
+      "winner": "plus",
+      "reason": "hold",
+      "moves": 31,
+      "ok": true
+    },
+    "llm": {
+      "actions": 7,
+      "moves": 7,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 5,
+      "gateMoves": 4,
+      "centerTicks": 1,
+      "maxHold": 2,
+      "holdTicks": 1
+    },
+    "ai": {
+      "actions": 24,
+      "moves": 24,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 4,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 7,
+      "centerTicks": 5,
+      "maxHold": 3,
+      "holdTicks": 3,
+      "gateMoves": null
+    },
+    "llmTurns": 7,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": []
+    }
+  }
+]

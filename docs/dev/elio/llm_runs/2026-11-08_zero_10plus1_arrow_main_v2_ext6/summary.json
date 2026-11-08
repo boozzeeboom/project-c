@@ -1,0 +1,70 @@
+{
+  "runId": "2026-11-08_zero_10plus1_arrow_main_v2_ext6",
+  "date": "2026-11-08",
+  "engine": "elio_engine.js v1.3 (unfixed P0 bugs)",
+  "promptVersion": "zero-doctrine-v2-action-list",
+  "config": {
+    "turnMode": "arrow",
+    "deathMode": "main",
+    "pawns": 1,
+    "limit": 60,
+    "games": 6,
+    "startMatchNo": 714
+  },
+  "result": {
+    "games": 6,
+    "wins": 1,
+    "draws": 1,
+    "losses": 4,
+    "byGame": [
+      { "matchNo": 714, "winner": "minus", "reason": "hold", "moves": 26, "clean": true },
+      { "matchNo": 715, "winner": "plus", "reason": "king", "moves": 10, "clean": false, "contamination": "LLM zero displace x2; board corruption" },
+      { "matchNo": 716, "winner": "draw", "reason": "draw", "moves": 60, "clean": false, "contamination": "AI Plus Line P-L1 moved off-board (-2,-4)" },
+      { "matchNo": 717, "winner": "zero", "reason": "hold", "moves": 19, "clean": false, "contamination": "LLM zero displace x2; board corruption" },
+      { "matchNo": 718, "winner": "plus", "reason": "king", "moves": 9, "clean": true },
+      { "matchNo": 719, "winner": "plus", "reason": "hold", "moves": 31, "clean": true }
+    ]
+  },
+  "cleanSubset": {
+    "games": [714, 718, 719],
+    "wins": 0,
+    "draws": 0,
+    "losses": 3
+  },
+  "contaminatedSubset": {
+    "games": [715, 716, 717],
+    "wins": 1,
+    "draws": 1,
+    "losses": 1
+  },
+  "llmMetrics": {
+    "actions": 58,
+    "moves": 55,
+    "supports": 3,
+    "skips": 0,
+    "displaces": 4,
+    "displacesIllegal": true,
+    "captures": 0,
+    "lineKills": 0,
+    "supportNull": 0,
+    "noopSupports": 0,
+    "osc1": 20,
+    "osc2": 3,
+    "repeatPiece": 40,
+    "gateMoves": 12,
+    "centerTicks": 13,
+    "maxHoldByLlmAction": 2,
+    "maxHoldReached": 3
+  },
+  "aiMetrics": {
+    "actions": 97,
+    "displaces": 0
+  },
+  "lineDeaths": 2,
+  "audit": "audit.json",
+  "notes": [
+    "v2-ext6 не даёт чистой победы: 717 contaminated, 716 contaminated, 715 contaminated.",
+    "Единственная чистая победа v2 — 711 (пилот v2).",
+    "Перед следующей итерацией доктрины нужны P0-фиксы движка (AUDIT_V13D.md)."
+  ]
+}

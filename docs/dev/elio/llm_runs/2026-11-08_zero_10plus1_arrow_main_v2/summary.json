@@ -1,6 +1,7 @@
 {
   "runId": "2026-11-08_zero_10plus1_arrow_main_v2",
   "promptVersion": "zero-doctrine-v2-action-list",
+  "engine": "elio_engine.js v1.3 (P0 bugs; see ../../AUDIT_V13D.md)",
   "config": {
     "date": "2026-11-08",
     "experiment": "zero_deepseek_vs_2ai_10plus1_arrow_main_v2",
@@ -32,31 +33,41 @@
         "winner": "zero",
         "reason": "hold",
         "moves": 20,
-        "lineDeaths": 0
+        "lineDeaths": 0,
+        "clean": true
       },
       {
         "matchNo": 712,
         "winner": "minus",
         "reason": "hold",
         "moves": 30,
-        "lineDeaths": 0
+        "lineDeaths": 0,
+        "clean": false,
+        "contamination": "LLM zero displace; board corruption; 23 integrity errors"
       },
       {
         "matchNo": 713,
         "winner": "plus",
         "reason": "king",
         "moves": 20,
-        "lineDeaths": 1
+        "lineDeaths": 1,
+        "clean": true
       }
     ],
     "wins": 1,
     "draws": 0,
     "losses": 2,
+    "cleanGames": [711, 713],
+    "contaminatedGames": [712],
+    "cleanWins": 1,
+    "cleanDraws": 0,
+    "cleanLosses": 1,
     "llm": {
       "actions": 23,
       "moves": 19,
       "supports": 4,
       "skips": 0,
+      "displaces": 1,
       "captures": 0,
       "lineKills": 0,
       "osc": 4,

@@ -1,6 +1,11 @@
 {
   "date": "2026-11-08",
   "experiment": "zero_deepseek_vs_2ai_10plus1_arrow_main_v2",
+  "engine": "elio_engine.js v1.3 (P0 bugs; see ../../AUDIT_V13D.md)",
+  "contamination": {
+    "games": [712],
+    "reason": "LLM zero displace; applyMove board corruption; 23 integrity errors"
+  },
   "model": {
     "id": "deepseek-v4.1-flash",
     "providerID": "opencode-go",

@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-08",
+  "experiment": "zero_deepseek_vs_2ai_10plus1_arrow_main_v2_ext6",
+  "engine": "elio_engine.js v1.3 (unfixed P0 bugs: off-board 1-step moves, displace board corruption, zero displace)",
+  "model": {
+    "id": "deepseek-v4.1-flash",
+    "providerID": "opencode-go",
+    "variant": "low"
+  },
+  "faction": "zero",
+  "turnMode": "arrow",
+  "deathMode": "main",
+  "pawns": 1,
+  "firstMovePawn": false,
+  "limit": 60,
+  "games": 6,
+  "startMatchNo": 714,
+  "topActions": 16,
+  "prompt": "prompt.txt",
+  "promptVersion": "zero-doctrine-v2-action-list",
+  "notes": [
+    "Продолжение v2 тем же промптом и условиями.",
+    "715, 716, 717 — contaminated (см. audit.json и AUDIT_V13D.md).",
+    "Чистая подвыборка: 714, 718, 719."
+  ]
+}

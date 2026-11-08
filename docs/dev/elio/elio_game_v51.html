@@ -44,7 +44,15 @@
         <h3>Режим игры</h3>
         <div class="status-row">
           <label for="selTurn">Порядок хода:</label>
-          <select id="selTurn"><option value="cycle">Цикл</option><option value="arrow">Стрелка</option></select>
+          <select id="selTurn"><option value="cycle">Цикл</option><option value="arrow">Стрелка</option><option value="pass">Передача</option></select>
+        </div>
+        <div class="status-row" id="passRow" style="display:none">
+          <label for="selPassTo">Передать:</label>
+          <select id="selPassTo"></select>
+        </div>
+        <div class="status-row" id="cycleDirRow">
+          <label for="selCycleDir">Цикл:</label>
+          <select id="selCycleDir"><option value="forward">П → М → Н</option><option value="reverse">П → Н → М</option></select>
         </div>
         <div class="status-row">
           <label for="selDeath">Тип игры:</label>
@@ -109,15 +117,31 @@ const AI = window.ElioAI;
 const REC = window.ElioRecorder;
 
 let state = E.init({turn: document.getElementById('selTurn').value,
-                    death: document.getElementById('selDeath').value});
+                    death: document.getElementById('selDeath').value,
+                    cycleDir: document.getElementById('selCycleDir').value});
 let autoPlay = false;
 let autoTimer = null;
 
 const svg = document.getElementById('board');
 
+function passTarget(){
+  return state.mode.turn==='pass' ? document.getElementById('selPassTo').value : undefined;
+}
+function refreshPassChoice(){
+  const row=document.getElementById('passRow');
+  const sel=document.getElementById('selPassTo');
+  document.getElementById('cycleDirRow').style.display = state.mode.turn==='cycle'?'':'none';
+  if(state.mode.turn!=='pass'){ row.style.display='none'; return; }
+  row.style.display='';
+  const opts=E.legalPassTargets(state,state.turnFaction);
+  const prev=sel.value;
+  sel.innerHTML=opts.map(f=>'<option value="'+f+'">'+E.FACTION_NAME[f]+'</option>').join('');
+  if(opts.indexOf(prev)>=0) sel.value=prev; else if(opts.length) sel.value=opts[0];
+}
+
 function onMoveRequest(pieceId,q,r){
   if(state.gameOver) return;
-  const r2 = E.applyMove(state, pieceId, q, r);
+  const r2 = E.applyMove(state, pieceId, q, r, passTarget());
   if(r2.error){ alert('Недопустимый ход: '+r2.error); return; }
   state = r2.state;
   REC.addMove(r2.record);
@@ -162,6 +186,7 @@ function updateUI(){
   const logEl = document.getElementById('log');
   logEl.textContent = REC.exportText();
   logEl.scrollTop = logEl.scrollHeight;
+  refreshPassChoice();
 }
 
 function applyAction(mv){
@@ -183,7 +208,7 @@ function applyAction(mv){
 
 function onSupportRequest(zeroId,targetId){
   if(state.gameOver) return;
-  const r=E.applySupport(state, zeroId, targetId);
+  const r=E.applySupport(state, zeroId, targetId, passTarget());
   if(r.error){ alert('Недопустимая поддержка: '+r.error); return; }
   state=r.state;
   if(r.record) REC.addMove(r.record);
@@ -198,7 +223,8 @@ function onSupportRequest(zeroId,targetId){
 function newGame(){
   stopAuto();
   state = E.init({turn: document.getElementById('selTurn').value,
-                  death: document.getElementById('selDeath').value});
+                  death: document.getElementById('selDeath').value,
+                  cycleDir: document.getElementById('selCycleDir').value});
   REC.reset();
   B.clearSelection();
   B.render(state);
@@ -210,6 +236,7 @@ function newGame(){
 document.getElementById('btnNew').addEventListener('click', newGame);
 document.getElementById('selTurn').addEventListener('change', newGame);
 document.getElementById('selDeath').addEventListener('change', newGame);
+document.getElementById('selCycleDir').addEventListener('change', newGame);
 
 document.getElementById('btnAiMove').addEventListener('click', function(){
   if(state.gameOver) return;
@@ -266,7 +293,7 @@ document.getElementById('btnExport').addEventListener('click', function(){
 
 // replay
 document.getElementById('btnReplayStart').addEventListener('click', function(){
-  const s = REC.startReplay();
+  const s = REC.startReplay(document.getElementById('selTurn').value, document.getElementById('selDeath').value);
   state = s;
   B.clearSelection();
   B.render(state);
@@ -296,7 +323,7 @@ document.getElementById('btnReplayAll').addEventListener('click', function(){
     if(res.error) alert('Replay error: '+res.error);
   }
   if(REC.getReplayIndex()===0 && REC.getMoves().length>0 && !REC.getReplayState()){
-    REC.startReplay();
+    REC.startReplay(document.getElementById('selTurn').value, document.getElementById('selDeath').value);
     state=REC.getReplayState();
     B.render(state); updateUI();
   }

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Эльо — макет полей v7 (спорные земли повернуты на 180)</title>
+<style>
+  :root { --bg:#1a1a2e; --panel:#23234a; --gold:#c9a227; --plus:#5b9bd5; --minus:#e05a5a; --zero:#9aa0a6; --text:#e8e8f0; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--text); font-family:'Segoe UI',Georgia,serif; }
+  h1 { margin:0 0 6px; color:var(--gold); letter-spacing:1px; }
+  .subtitle { opacity:.7; font-size:13px; margin-bottom:12px; }
+  .layout { display:flex; gap:16px; flex-wrap:wrap; }
+  .board-wrap { flex:1 1 700px; min-width:700px; }
+  svg { background:radial-gradient(circle at 50% 40%, #2a2a4e 0%, #12122a 100%); border:2px solid var(--gold); border-radius:12px; display:block; width:100%; height:auto; }
+  .side { flex:0 0 260px; }
+  .card { background:var(--panel); border:1px solid #3a3a6a; border-radius:10px; padding:12px; margin-bottom:12px; }
+  .card h3 { margin:0 0 8px; color:var(--gold); font-size:15px; }
+  .legend { display:flex; flex-direction:column; gap:6px; font-size:13px; }
+  .legend-item { display:flex; align-items:center; gap:8px; }
+  .dot { width:14px; height:14px; border-radius:50%; border:2px solid #fff; }
+  .btn { background:var(--gold); color:#1a1a2e; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; margin-right:6px; margin-bottom:6px; }
+  .btn:hover { filter:brightness(1.15); }
+  .info { font-size:13px; line-height:1.5; min-height:60px; }
+  .info b { color:var(--gold); }
+  .hexcell { cursor:pointer; }
+  .hexcell:hover { filter:brightness(1.35); }
+  .cellsel { stroke:var(--gold) !important; stroke-width:3 !important; }
+  .piece.blocked { opacity:.25; }
+  .link { stroke:#c9a227; stroke-width:1.5; stroke-dasharray:6 4; opacity:.7; fill:none; }
+  .linklabel { fill:#c9a227; font-size:10px; text-anchor:middle; }
+  footer { margin-top:12px; font-size:11px; opacity:.5; }
+</style>
+</head>
+<body>
+  <h1>Эльо — макет полей v7</h1>
+  <div class="subtitle">Спорные земли повернуты на 180° (остриё к полю, основание к центру). Гексагональные клетки + связи.</div>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <svg id="board" viewBox="0 0 900 720"></svg>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h3>Легенда</h3>
+        <div class="legend">
+          <div class="legend-item"><span class="dot" style="background:var(--plus)"></span> Плюсы</div>
+          <div class="legend-item"><span class="dot" style="background:var(--minus)"></span> Минусы</div>
+          <div class="legend-item"><span class="dot" style="background:var(--zero)"></span> Нули</div>
+          <div class="legend-item"><span style="color:var(--gold);font-weight:bold">К</span> — Капитан (1-й ранг)</div>
+          <div class="legend-item"><span style="color:var(--gold);font-weight:bold">Ф</span> — Фрегат (2-й ранг)</div>
+          <div class="legend-item"><span style="color:var(--gold);font-weight:bold">Н</span> — Нуль (0 ранг)</div>
+          <div class="legend-item"><span style="color:#c9a227">--- dashed ---</span> переходы между зонами</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Погода</h3>
+        <button class="btn" onclick="toggleWeather()">Переключить</button>
+        <button class="btn" onclick="clearSel()">Сброс</button>
+        <div id="weather" style="margin-top:8px;font-size:13px;">Погода выключена</div>
+      </div>
+      <div class="card">
+        <h3>Клетка</h3>
+        <div id="info" class="info">Кликните по клетке.</div>
+      </div>
+    </div>
+  </div>
+  <footer>docs/dev/elio/ · макет v7</footer>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const board = document.getElementById('board');
+const SQ3 = Math.sqrt(3);
+
+const CENTER = { x: 450, y: 390 };
+const R_ORBIT = 220;
+const HEX_SIZE = 120;
+const CELL_SIZE = HEX_SIZE / 3;
+const SMALL_HEX = 22;
+
+const FIELDS = [
+  { id:'A', name:'Плюсы',  faction:'plus',  color:'#5b9bd5', cx:CENTER.x,               cy:CENTER.y - R_ORBIT },
+  { id:'B', name:'Минусы', faction:'minus', color:'#e05a5a', cx:CENTER.x - R_ORBIT*SQ3/2, cy:CENTER.y + R_ORBIT/2 },
+  { id:'C', name:'Нули',   faction:'zero',  color:'#9aa0a6', cx:CENTER.x + R_ORBIT*SQ3/2, cy:CENTER.y + R_ORBIT/2 },
+];
+
+function hexPoints(cx, cy, s) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI/180 * (60*i - 30);
+    pts.push((cx + s*Math.cos(a)).toFixed(1) + ',' + (cy + s*Math.sin(a)).toFixed(1));
+  }
+  return pts.join(' ');
+}
+function cellCenter(cx, cy, q, r) {
+  return { x: cx + CELL_SIZE*SQ3*(q + r/2), y: cy + CELL_SIZE*1.5*r };
+}
+
+const cells = [];
+
+FIELDS.forEach(f => {
+  const g = document.createElementNS(NS, 'g');
+  const outline = document.createElementNS(NS, 'polygon');
+  outline.setAttribute('points', hexPoints(f.cx, f.cy, HEX_SIZE));
+  outline.setAttribute('fill', f.color + '14');
+  outline.setAttribute('stroke', f.color);
+  outline.setAttribute('stroke-width', '2.5');
+  g.appendChild(outline);
+
+  for (let q = -2; q <= 2; q++) {
+    for (let r = -2; r <= 2; r++) {
+      if (Math.abs(q) + Math.abs(r) + Math.abs(-q - r) > 4) continue;
+      const { x, y } = cellCenter(f.cx, f.cy, q, r);
+      const poly = document.createElementNS(NS, 'polygon');
+      poly.setAttribute('points', hexPoints(x, y, CELL_SIZE - 1));
+      poly.setAttribute('fill', f.color + '18');
+      poly.setAttribute('stroke', '#6a6a9a');
+      poly.setAttribute('stroke-width', '1');
+      poly.setAttribute('class', 'hexcell');
+      poly.dataset.field = f.id; poly.dataset.q = q; poly.dataset.r = r;
+      poly.addEventListener('click', () => selectCell(f, q, r));
+      g.appendChild(poly);
+      cells.push({ field: f.id, q, r, x, y, el: poly, piece: null });
+    }
+  }
+
+  const label = document.createElementNS(NS, 'text');
+  label.setAttribute('x', f.cx);
+  label.setAttribute('y', f.cy - HEX_SIZE - 12);
+  label.setAttribute('text-anchor', 'middle');
+  label.setAttribute('fill', f.color);
+  label.setAttribute('font-size', '15');
+  label.setAttribute('font-weight', 'bold');
+  label.textContent = f.name;
+  g.appendChild(label);
+
+  board.appendChild(g);
+});
+
+// --- основание ---
+const baseR = 70;
+const basePts = [
+  [CENTER.x, CENTER.y - baseR],
+  [CENTER.x - baseR*SQ3/2, CENTER.y + baseR/2],
+  [CENTER.x + baseR*SQ3/2, CENTER.y + baseR/2],
+];
+const baseTri = document.createElementNS(NS, 'polygon');
+baseTri.setAttribute('points', basePts.map(p => p.join(',')).join(' '));
+baseTri.setAttribute('fill', '#c9a22718');
+baseTri.setAttribute('stroke', '#c9a227');
+baseTri.setAttribute('stroke-width', '2');
+board.appendChild(baseTri);
+
+const baseCells = [
+  { x: CENTER.x, y: CENTER.y, type: 'center' },
+  { x: CENTER.x, y: CENTER.y - 34, type: 'support' },
+  { x: CENTER.x - 30, y: CENTER.y + 20, type: 'support' },
+  { x: CENTER.x + 30, y: CENTER.y + 20, type: 'support' },
+];
+baseCells.forEach(c => {
+  const circle = document.createElementNS(NS, 'circle');
+  circle.setAttribute('cx', c.x); circle.setAttribute('cy', c.y);
+  circle.setAttribute('r', c.type === 'center' ? 16 : 11);
+  circle.setAttribute('fill', c.type === 'center' ? '#c9a22733' : '#4a4a7a66');
+  circle.setAttribute('stroke', '#c9a227');
+  circle.setAttribute('stroke-width', c.type === 'center' ? '2' : '1');
+  circle.setAttribute('class', 'hexcell');
+  circle.addEventListener('click', () => selectBase(c));
+  board.appendChild(circle);
+  if (c.type === 'center') {
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', c.x); t.setAttribute('y', c.y + 5);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('fill', '#c9a227');
+    t.setAttribute('font-size', '13'); t.setAttribute('font-weight', 'bold');
+    t.textContent = 'Ц';
+    board.appendChild(t);
+  }
+});
+
+const baseLabel = document.createElementNS(NS, 'text');
+baseLabel.setAttribute('x', CENTER.x); baseLabel.setAttribute('y', CENTER.y + baseR + 18);
+baseLabel.setAttribute('text-anchor', 'middle'); baseLabel.setAttribute('fill', '#c9a227');
+baseLabel.setAttribute('font-size', '12'); baseLabel.textContent = 'ОСНОВАНИЕ';
+board.appendChild(baseLabel);
+
+// --- спорные земли: повернуты на 180 (остриё к полю, основание к центру) ---
+const disputedCenters = [
+  { id:'AB', x: (FIELDS[0].cx + FIELDS[1].cx)/2, y: (FIELDS[0].cy + FIELDS[1].cy)/2 },
+  { id:'AC', x: (FIELDS[0].cx + FIELDS[2].cx)/2, y: (FIELDS[0].cy + FIELDS[2].cy)/2 },
+  { id:'BC', x: (FIELDS[1].cx + FIELDS[2].cx)/2, y: (FIELDS[1].cy + FIELDS[2].cy)/2 },
+];
+
+disputedCenters.forEach(d => {
+  const ang = Math.atan2(CENTER.y - d.y, CENTER.x - d.x);
+  const perp = ang + Math.PI/2;
+  const dist = 18;
+  // остриё (1 гекс) — ближе к полю (противоположная сторона от центра)
+  const tipX = d.x - Math.cos(ang) * dist * 0.8;
+  const tipY = d.y - Math.sin(ang) * dist * 0.8;
+  // основание (2 гекса) — ближе к центру
+  const baseX = d.x + Math.cos(ang) * dist * 0.5;
+  const baseY = d.y + Math.sin(ang) * dist * 0.5;
+  const hex1 = { x: baseX + Math.cos(perp) * SMALL_HEX * 0.9, y: baseY + Math.sin(perp) * SMALL_HEX * 0.9 };
+  const hex2 = { x: baseX - Math.cos(perp) * SMALL_HEX * 0.9, y: baseY - Math.sin(perp) * SMALL_HEX * 0.9 };
+  const tip = { x: tipX, y: tipY };
+
+  [tip, hex1, hex2].forEach((h, i) => {
+    const poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('points', hexPoints(h.x, h.y, SMALL_HEX));
+    poly.setAttribute('fill', '#8a8ab022');
+    poly.setAttribute('stroke', '#8a8ab0');
+    poly.setAttribute('stroke-width', '1.2');
+    poly.setAttribute('class', 'hexcell');
+    poly.addEventListener('click', () => selectDisputed(d.id, i));
+    board.appendChild(poly);
+  });
+
+  const lab = document.createElementNS(NS, 'text');
+  lab.setAttribute('x', d.x); lab.setAttribute('y', d.y - 30);
+  lab.setAttribute('text-anchor', 'middle'); lab.setAttribute('fill', '#8a8ab0');
+  lab.setAttribute('font-size', '10'); lab.textContent = d.id;
+  board.appendChild(lab);
+});
+
+// --- связи/переходы ---
+FIELDS.forEach((f, idx) => {
+  const line0 = document.createElementNS(NS, 'line');
+  line0.setAttribute('x1', f.cx); line0.setAttribute('y1', f.cy);
+  line0.setAttribute('x2', CENTER.x); line0.setAttribute('y2', CENTER.y);
+  line0.setAttribute('class', 'link');
+  board.appendChild(line0);
+
+  const d1 = disputedCenters[idx];
+  const d2 = disputedCenters[(idx + 2) % 3];
+  [d1, d2].forEach(d => {
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', f.cx); line.setAttribute('y1', f.cy);
+    line.setAttribute('x2', d.x); line.setAttribute('y2', d.y);
+    line.setAttribute('class', 'link');
+    board.appendChild(line);
+  });
+});
+
+FIELDS.forEach((f, idx) => {
+  const targets = [CENTER, disputedCenters[idx], disputedCenters[(idx+2)%3]];
+  targets.forEach(t => {
+    const mx = (f.cx + t.x) / 2;
+    const my = (f.cy + t.y) / 2;
+    const ang = Math.atan2(t.y - f.cy, t.x - f.cx);
+    const tri = document.createElementNS(NS, 'polygon');
+    const size = 6;
+    const p1 = `${mx + size*Math.cos(ang)},${my + size*Math.sin(ang)}`;
+    const p2 = `${mx + size*Math.cos(ang+2.5)},${my + size*Math.sin(ang+2.5)}`;
+    const p3 = `${mx + size*Math.cos(ang-2.5)},${my + size*Math.sin(ang-2.5)}`;
+    tri.setAttribute('points', `${p1} ${p2} ${p3}`);
+    tri.setAttribute('fill', '#c9a227');
+    tri.setAttribute('opacity', '0.7');
+    board.appendChild(tri);
+  });
+});
+
+const linkLabel = document.createElementNS(NS, 'text');
+linkLabel.setAttribute('x', (FIELDS[0].cx + disputedCenters[0].x)/2);
+linkLabel.setAttribute('y', (FIELDS[0].cy + disputedCenters[0].y)/2 - 6);
+linkLabel.setAttribute('class', 'linklabel');
+linkLabel.textContent = 'переход';
+board.appendChild(linkLabel);
+
+// --- фигуры ---
+function place(fieldId, faction, types) {
+  const list = cells.filter(c => c.field === fieldId);
+  list.sort((a, b) => Math.hypot(b.x - CENTER.x, b.y - CENTER.y) - Math.hypot(a.x - CENTER.x, a.y - CENTER.y));
+  const chosen = list.slice(0, 5);
+  types.forEach((t, i) => {
+    const cell = chosen[i];
+    if (!cell) return;
+    const color = faction === 'plus' ? '#5b9bd5' : faction === 'minus' ? '#e05a5a' : '#9aa0a6';
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'piece');
+    const circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', cell.x); circle.setAttribute('cy', cell.y);
+    circle.setAttribute('r', t === 'K' ? 11 : t === 'F' ? 9 : 7);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('stroke', '#fff');
+    circle.setAttribute('stroke-width', '1.5');
+    g.appendChild(circle);
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('x', cell.x); txt.setAttribute('y', cell.y + 4);
+    txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('fill', '#fff');
+    txt.setAttribute('font-size', t === 'K' ? 11 : t === 'F' ? 9 : 8);
+    txt.setAttribute('font-weight', 'bold');
+    txt.textContent = t;
+    g.appendChild(txt);
+    board.appendChild(g);
+    cell.piece = { faction, type: t };
+  });
+}
+place('A', 'plus',  ['K','K','F','F','F']);
+place('B', 'minus', ['K','K','F','F','F']);
+place('C', 'zero',  ['N','N','N','N','N']);
+
+// --- интерактив ---
+let selectedEl = null;
+function clearSel() {
+  if (selectedEl) selectedEl.classList.remove('cellsel');
+  selectedEl = null;
+  document.getElementById('info').textContent = 'Кликните по клетке.';
+}
+function selectCell(field, q, r) {
+  const cell = cells.find(c => c.field === field.id && c.q === q && c.r === r);
+  if (!cell) return;
+  if (selectedEl) selectedEl.classList.remove('cellsel');
+  selectedEl = cell.el; cell.el.classList.add('cellsel');
+  const p = cell.piece ? `${cell.piece.faction} / ${cell.piece.type}` : 'пусто';
+  document.getElementById('info').innerHTML =
+    `<b>Поле:</b> ${field.name} (${field.id})<br><b>Клетка:</b> q=${q}, r=${r}<br><b>Фигура:</b> ${p}`;
+}
+function selectBase(c) {
+  if (selectedEl) selectedEl.classList.remove('cellsel');
+  selectedEl = null;
+  document.getElementById('info').innerHTML =
+    `<b>Основание:</b> ${c.type === 'center' ? 'центральная клетка' : 'клетка поддержки'}<br>Центр нужно удержать 3 хода.`;
+}
+function selectDisputed(id, i) {
+  if (selectedEl) selectedEl.classList.remove('cellsel');
+  selectedEl = null;
+  document.getElementById('info').innerHTML =
+    `<b>Спорная земля:</b> ${id}, клетка ${i + 1} из 3<br>Нейтральная зона; нули принимают сторону соседа.`;
+}
+
+let weatherOn = false;
+function toggleWeather() {
+  weatherOn = !weatherOn;
+  const names = { plus:'Плюсы', minus:'Минусы', zero:'Нули' };
+  if (!weatherOn) {
+    document.querySelectorAll('.piece').forEach(p => p.classList.remove('blocked'));
+    document.getElementById('weather').textContent = 'Погода выключена';
+    return;
+  }
+  const fac = ['plus','minus','zero'][Math.floor(Math.random()*3)];
+  const byColor = { '#5b9bd5':'plus', '#e05a5a':'minus', '#9aa0a6':'zero' };
+  document.querySelectorAll('.piece').forEach(p => {
+    const fill = p.querySelector('circle').getAttribute('fill');
+    if (byColor[fill] === fac) p.classList.add('blocked');
+  });
+  document.getElementById('weather').textContent = `Погода ВКЛ. В шторме: ${names[fac]}`;
+}
+</script>
+</body>
+</html>

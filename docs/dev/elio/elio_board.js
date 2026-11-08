@@ -1,4 +1,4 @@
-// Elio board renderer + interaction
+// Elio board renderer + interaction (v1.3)
 // Depends on window.ElioEngine
 (function(){
   const E = window.ElioEngine;

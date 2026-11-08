@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Эльо — поле v20 (цикличные сектора, спорные у центра)</title>
+<style>
+  :root { --bg:#1a1a2e; --panel:#23234a; --gold:#c9a227; --plus:#5b9bd5; --minus:#e05a5a; --zero:#9aa0a6; --text:#e8e8f0; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--text); font-family:'Segoe UI',Georgia,serif; }
+  h1 { margin:0 0 6px; color:var(--gold); letter-spacing:1px; }
+  .subtitle { opacity:.7; font-size:13px; margin-bottom:12px; line-height:1.4; }
+  .layout { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+  .board-wrap { flex:1 1 620px; min-width:620px; }
+  svg { background:radial-gradient(circle at 50% 45%, #2a2a4e 0%, #12122a 100%); border:2px solid var(--gold); border-radius:12px; display:block; width:100%; height:auto; }
+  .side { flex:0 0 270px; }
+  .card { background:var(--panel); border:1px solid #3a3a6a; border-radius:10px; padding:12px; margin-bottom:12px; }
+  .card h3 { margin:0 0 8px; color:var(--gold); font-size:15px; }
+  .legend { display:flex; flex-direction:column; gap:6px; font-size:13px; }
+  .legend-item { display:flex; align-items:center; gap:8px; }
+  .dot { width:14px; height:14px; border-radius:50%; border:2px solid #fff; flex:0 0 auto; }
+  .swatch { width:16px; height:16px; border-radius:3px; border:1px dashed #fff; flex:0 0 auto; }
+  .btn { background:var(--gold); color:#1a1a2e; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; margin-right:6px; margin-bottom:6px; }
+  .btn:hover { filter:brightness(1.15); }
+  .info { font-size:13px; line-height:1.5; min-height:64px; }
+  .info b { color:var(--gold); }
+  .hexcell { cursor:pointer; }
+  .hexcell:hover { filter:brightness(1.4); }
+  .cellsel { stroke:var(--gold) !important; stroke-width:3 !important; }
+  .piece.blocked { opacity:.22; }
+  footer { margin-top:12px; font-size:11px; opacity:.5; }
+</style>
+</head>
+<body>
+  <h1>Эльо — поле v20 (цикличные сектора, спорные у центра)</h1>
+  <div class="subtitle">
+    Одно непрерывное кольцо из 120 гексов (R=6, r=1). Вороной-разделение на 3 сектора — цикличные (округлые) поля.
+    12 спорных клеток на границах у центра (4 на сектор) соединяют сектора в одно кольцо. Центр пуст (треугольник позже).
+  </div>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <svg id="board" viewBox="0 0 900 800"></svg>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h3>Легенда</h3>
+        <div class="legend">
+          <div class="legend-item"><span class="dot" style="background:var(--plus)"></span> Плюсы</div>
+          <div class="legend-item"><span class="dot" style="background:var(--minus)"></span> Минусы</div>
+          <div class="legend-item"><span class="dot" style="background:var(--zero)"></span> Нули</div>
+          <div class="legend-item"><span class="swatch" style="background:#8a8ab033"></span> Спорная (у центра)</div>
+          <div class="legend-item"><span style="color:var(--gold);font-weight:bold">К</span> — Капитан (1-й ранг)</div>
+          <div class="legend-item"><span style="color:var(--gold);font-weight:bold">Ф</span> — Фрегат (2-й ранг)</div>
+          <div class="legend-item"><span style="color:var(--gold);font-weight:bold">Н</span> — Нуль (0 ранг)</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Погода</h3>
+        <button class="btn" onclick="toggleWeather()">Переключить</button>
+        <button class="btn" onclick="clearSel()">Сброс</button>
+        <div id="weather" style="margin-top:8px;font-size:13px;">Погода выключена</div>
+      </div>
+      <div class="card">
+        <h3>Клетка</h3>
+        <div id="info" class="info">Кликните по клетке.</div>
+      </div>
+    </div>
+  </div>
+  <footer>docs/dev/elio/ · макет v20 · цикличные сектора, спорные у центра</footer>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const board = document.getElementById('board');
+const SQ3 = Math.sqrt(3);
+
+const S = 26;                          // радиус клетки
+const ORIGIN = { x: 450, y: 400 };     // центр доски
+const R = 6;                           // внешний радиус кольца
+const r = 1;                           // внутренний радиус (пустой центр)
+
+const NB = [[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]];
+
+function axialToPx(q, r) {
+  return { x: ORIGIN.x + 1.5*S*q, y: ORIGIN.y + SQ3*S*(r + q/2) };
+}
+function hexPoints(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI/180 * (60*i);
+    pts.push((cx + size*Math.cos(a)).toFixed(1) + ',' + (cy + size*Math.sin(a)).toFixed(1));
+  }
+  return pts.join(' ');
+}
+function dist(a, b) {
+  const dq = b[0]-a[0], dr = b[1]-a[1];
+  return (Math.abs(dq) + Math.abs(dr) + Math.abs(dq+dr))/2;
+}
+
+// Кольцо: клетки с дистанцией от r+1 до R
+const ring = [];
+for (let q = -R; q <= R; q++) for (let r2 = -R; r2 <= R; r2++) {
+  const d = dist([0,0],[q,r2]);
+  if (d >= r+1 && d <= R) ring.push([q,r2]);
+}
+
+// Вороной: 3 семени на кольце
+const seeds = [[0,-(R-1)], [-(R-1), R-1], [R-1, 0]];
+const sectorOf = {};
+const sectors = [[], [], []];
+for (const c of ring) {
+  let best = 0, bestD = 1e9;
+  for (let i = 0; i < 3; i++) {
+    const d = dist(c, seeds[i]);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  sectorOf[c[0]+','+c[1]] = best;
+  sectors[best].push(c);
+}
+
+// Спорные: 3 ближайшие к центру клетки границы на каждый сектор
+const allBoundary = [];
+for (const c of ring) {
+  const s = sectorOf[c[0]+','+c[1]];
+  for (const d of NB) {
+    const n = [c[0]+d[0], c[1]+d[1]];
+    const key = n[0]+','+n[1];
+    if (sectorOf[key] !== undefined && sectorOf[key] !== s) {
+      allBoundary.push(c);
+      break;
+    }
+  }
+}
+const disputedSet = new Set();
+for (let i = 0; i < 3; i++) {
+  const b = allBoundary.filter(c => sectorOf[c[0]+','+c[1]] === i);
+  b.sort((a, c2) => dist([0,0], a) - dist([0,0], c2));
+  for (let j = 0; j < 3; j++) {
+    if (b[j]) disputedSet.add(b[j][0]+','+b[j][1]);
+  }
+}
+
+const SECTOR_COLORS = ['#5b9bd5', '#e05a5a', '#9aa0a6'];
+const SECTOR_NAMES = ['Плюсы', 'Минусы', 'Нули'];
+const SECTOR_FACTIONS = ['plus', 'minus', 'zero'];
+
+// Рисуем клетки
+const cellIndex = [];
+ring.forEach(c => {
+  const p = axialToPx(c[0], c[1]);
+  const poly = document.createElementNS(NS, 'polygon');
+  poly.setAttribute('points', hexPoints(p.x, p.y, S - 1));
+  const sec = sectorOf[c[0]+','+c[1]];
+  const isDisputed = disputedSet.has(c[0]+','+c[1]);
+  if (isDisputed) {
+    poly.setAttribute('fill', '#8a8ab018');
+    poly.setAttribute('stroke', '#8a8ab0');
+    poly.setAttribute('stroke-dasharray', '5 4');
+    poly.setAttribute('stroke-width', '1.2');
+  } else {
+    poly.setAttribute('fill', SECTOR_COLORS[sec] + '22');
+    poly.setAttribute('stroke', SECTOR_COLORS[sec] + '66');
+    poly.setAttribute('stroke-width', '1');
+  }
+  poly.setAttribute('class', 'hexcell');
+  poly.addEventListener('click', () => selectCell(c[0], c[1], sec, isDisputed));
+  board.appendChild(poly);
+  cellIndex.push({ q:c[0], r:c[1], sector:sec, disputed:isDisputed, x:p.x, y:p.y, el:poly, piece:null });
+});
+
+// Подписи секторов
+for (let i = 0; i < 3; i++) {
+  const cells = sectors[i].filter(c => !disputedSet.has(c[0]+','+c[1]));
+  const cx = cells.reduce((s,c) => s + axialToPx(c[0],c[1]).x, 0) / cells.length;
+  const cy = cells.reduce((s,c) => s + axialToPx(c[0],c[1]).y, 0) / cells.length;
+  const label = document.createElementNS(NS, 'text');
+  label.setAttribute('x', cx);
+  label.setAttribute('y', cy);
+  label.setAttribute('text-anchor', 'middle');
+  label.setAttribute('fill', SECTOR_COLORS[i]);
+  label.setAttribute('font-size', '16');
+  label.setAttribute('font-weight', 'bold');
+  label.setAttribute('letter-spacing', '2');
+  label.textContent = SECTOR_NAMES[i];
+  board.appendChild(label);
+}
+
+// --- фигуры ---
+function place(sectorIdx, faction, types) {
+  const list = cellIndex.filter(c => c.sector === sectorIdx && !c.disputed);
+  list.sort((a, b) => Math.atan2(a.y - ORIGIN.y, a.x - ORIGIN.x) - Math.atan2(b.y - ORIGIN.y, b.x - ORIGIN.x));
+  const n = list.length;
+  const chosen = types.map((t, i) => list[Math.floor(i * n / types.length) % n]);
+  const color = faction === 'plus' ? '#5b9bd5' : faction === 'minus' ? '#e05a5a' : '#9aa0a6';
+  types.forEach((t, i) => {
+    const cell = chosen[i];
+    if (!cell) return;
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'piece');
+    const circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', cell.x); circle.setAttribute('cy', cell.y);
+    circle.setAttribute('r', t === 'K' ? 8 : t === 'F' ? 7 : 5);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('stroke', '#fff');
+    circle.setAttribute('stroke-width', '1.5');
+    g.appendChild(circle);
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('x', cell.x); txt.setAttribute('y', cell.y + 3);
+    txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('fill', '#fff');
+    txt.setAttribute('font-size', t === 'K' ? 8 : t === 'F' ? 7 : 6);
+    txt.setAttribute('font-weight', 'bold');
+    txt.textContent = t;
+    g.appendChild(txt);
+    board.appendChild(g);
+    cell.piece = { faction, type: t };
+  });
+}
+place(0, 'plus',  ['K','K','F','F','F']);
+place(1, 'minus', ['K','K','F','F','F']);
+place(2, 'zero',  ['N','N','N','N','N']);
+
+// --- интерактив ---
+let selectedEl = null;
+function clearSel() {
+  if (selectedEl) selectedEl.classList.remove('cellsel');
+  selectedEl = null;
+  document.getElementById('info').textContent = 'Кликните по клетке.';
+}
+function selectCell(q, r, sec, isDisputed) {
+  const cell = cellIndex.find(c => c.q === q && c.r === r);
+  if (!cell) return;
+  if (selectedEl) selectedEl.classList.remove('cellsel');
+  selectedEl = cell.el; cell.el.classList.add('cellsel');
+  const p = cell.piece ? `${cell.piece.faction} / ${cell.piece.type}` : 'пусто';
+  const name = SECTOR_NAMES[sec];
+  const type = isDisputed ? 'Спорная (на границе)' : 'Поле ' + name;
+  document.getElementById('info').innerHTML =
+    `<b>${type}</b><br>Клетка: q=${q}, r=${r}<br>Фигура: ${p}`;
+}
+
+let weatherOn = false;
+function toggleWeather() {
+  weatherOn = !weatherOn;
+  const names = { plus:'Плюсы', minus:'Минусы', zero:'Нули' };
+  if (!weatherOn) {
+    document.querySelectorAll('.piece').forEach(p => p.classList.remove('blocked'));
+    document.getElementById('weather').textContent = 'Погода выключена';
+    return;
+  }
+  const fac = ['plus','minus','zero'][Math.floor(Math.random()*3)];
+  const byColor = { '#5b9bd5':'plus', '#e05a5a':'minus', '#9aa0a6':'zero' };
+  document.querySelectorAll('.piece').forEach(p => {
+    const fill = p.querySelector('circle').getAttribute('fill');
+    if (byColor[fill] === fac) p.classList.add('blocked');
+  });
+  document.getElementById('weather').textContent = `Погода ВКЛ. В шторме: ${names[fac]}`;
+}
+</script>
+</body>
+</html>

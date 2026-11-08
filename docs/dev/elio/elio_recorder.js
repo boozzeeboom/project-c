@@ -1,5 +1,5 @@
-// Elio recorder v1.2: лог move / skip / support / displace + replay.
-// Зависит от window.ElioEngine v1.2.
+// Elio recorder v1.3: лог move / skip / support / displace / pass + replay.
+// Зависит от window.ElioEngine v1.3.
 (function(){
   const E = window.ElioEngine;
   let moves=[];      // массив записей хода
@@ -17,10 +17,11 @@
     moves.forEach(m=>{
       const cap  = m.capture ? ` x${m.capture.pieceId}` : '';
       const push = kind(m)==='displace' ? ` → ${m.to&&m.to.q},${m.to&&m.to.r}` : '';
-      if(kind(m)==='skip') lines.push(`${m.moveNumber}. SKIP ${E.FACTION_NAME[m.faction]}`);
-      else if(kind(m)==='support') lines.push(`${m.moveNumber}. Поддержка ${m.pieceId} → ${m.targetId}`);
-      else if(kind(m)==='displace') lines.push(`${m.moveNumber}. Оттеснение ${m.pieceId}: ${m.from&&m.from.q},${m.from&&m.from.r} → ${m.to&&m.to.q},${m.to&&m.to.r}`)
-      else lines.push(`${m.moveNumber}. ${m.pieceId} ${m.from.q},${m.from.r} → ${m.to.q},${m.to.r}${cap}`);
+      const pass = m.passTo ? ` → передача: ${E.FACTION_NAME[m.passTo]}` : '';
+      if(kind(m)==='skip') lines.push(`${m.moveNumber}. SKIP ${E.FACTION_NAME[m.faction]}${pass}`);
+      else if(kind(m)==='support') lines.push(`${m.moveNumber}. Поддержка ${m.pieceId} → ${m.targetId}${pass}`);
+      else if(kind(m)==='displace') lines.push(`${m.moveNumber}. Оттеснение ${m.pieceId}: ${m.from&&m.from.q},${m.from&&m.from.r} → ${m.to&&m.to.q},${m.to&&m.to.r}${pass}`)
+      else lines.push(`${m.moveNumber}. ${m.pieceId} ${m.from.q},${m.from.r} → ${m.to.q},${m.to.r}${cap}${pass}`);
     });
     return lines.join('\n');
   }
@@ -34,20 +35,19 @@
     return moves.length;
   }
 
-  function startReplay(){
-    replayState=E.init();   // дефолт режим; для стрелки потребуется переигрывать списком spin-ов, см. note ниже
+  function startReplay(mode, death){
+    replayState=E.init({turn:mode||'cycle', death:death||'main'});
     replayIndex=0; return replayState;
   }
 
   function replayOne(s,m){
     const k=kind(m);
-    // для режима «Стрелка» выставляем фракцию хода из записи (spin уже сохранён в faction)
-    if(s.mode.turn==='arrow'){ s.turnFaction=m.faction; }
-    if(k==='skip') return E.skipTurn(s);
-    if(k==='support') return E.applySupport(s,m.pieceId||m.zeroId, m.targetId);
-    if(k==='displace'){ s.turnFaction=m.faction; return E.applyDisplace(s, m.pieceId, (m.from&&m.from.q), (m.from&&m.from.r)); }
+    // фракция хода восстанавливается из записи для всех режимов
     s.turnFaction=m.faction;
-    return E.applyMove(s, m.pieceId, m.to.q, m.to.r);
+    if(k==='skip') return E.skipTurn(s,m.passTo);
+    if(k==='support') return E.applySupport(s,m.pieceId||m.zeroId, m.targetId, m.passTo);
+    if(k==='displace'){ return E.applyDisplace(s, m.pieceId, (m.from&&m.from.q), (m.from&&m.from.r), m.passTo); }
+    return E.applyMove(s, m.pieceId, m.to.q, m.to.r, m.passTo);
   }
 
   function stepReplay(){

@@ -1,7 +1,8 @@
-// Elio engine v1.2 «Нейтралитет» — регламент ELIO_RULES_FINAL.md v1.2
+// Elio engine v1.3 — регламент ELIO_RULES_FINAL.md v1.3
 // Основные нововведения: нейтральный/заявленный нуль, поддержка 1→1, оттеснение,
-// счёт «Ц» по ФРАКЦИИ + правило полного круга, два режима хода (Цикл/Стрелка),
+// счёт «Ц» по ФРАКЦИИ + правило полного круга, три режима хода (Цикл/Стрелка/Передача),
 // два типа игры (Основной D1 = «убил=победил», Длинный D2 = выбывание), лимит 90.
+// v1.3: инертные фигуры не удерживают «Ц»; pass-режим с passRule random/repeat/back.
 (function(){
   const FACTIONS = ['plus','minus','zero'];
   const FACTION_NAME = {plus:'Плюсы',minus:'Минусы',zero:'Нули'};
@@ -31,6 +32,7 @@
   ];
   const INNER_GATES = ['0,-1','-1,1','1,0'];   // жёлтые ворота
   const GATE_SET = new Set(INNER_GATES);
+  const DISPUTED_SET = new Set(DISPUTED.map(d=>d.q+','+d.r));
   const NB = [[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]];
   const LIMIT = 90;
 
@@ -116,7 +118,7 @@
     }
     return level;
   }
-  function canCapture(attacker,target){
+  function canCapture(state,attacker,target){
     if(isNullType(attacker.type)) return false;         // нули не бьют
     if(isNullType(target.type)) return canCaptureZero(state,attacker.faction,target);
     const lv=protLevel(state,target);
@@ -180,6 +182,7 @@
         if((Math.abs(q)+Math.abs(r)+Math.abs(q+r))/2!==2)continue;
         const tq=piece.q+q, tr=piece.r+r;
         if(!isValidCell(state,tq,tr))continue;
+        // прыжок Корвета может пересекать «Ц»; приземление на «Ц» всё равно только с ворот (ниже)
         push(tq,tr);
       }
     } else if(t==='destroyer'){
@@ -188,7 +191,9 @@
         const tq=piece.q+d[0]*2, tr=piece.r+d[1]*2;
         if(!isValidCell(state,tq,tr))continue;
         if(pieceAt(state,tq,tr))continue;
-        const mid=pieceAt(state,piece.q+d[0],piece.r+d[1]);
+        const midQ=piece.q+d[0], midR=piece.r+d[1];
+        if(midQ===0&&midR===0)continue;
+        const mid=pieceAt(state,midQ,midR);
         if(mid)continue;
         push(tq,tr,{dash:true});
       }
@@ -229,7 +234,7 @@
         const dz=[zp.q-piece.q, zp.r-piece.r];
         const pz=[zp.q+dz[0], zp.r+dz[1]];
         if(isValidCell(state,pz[0],pz[1])&&!pieceAt(state,pz[0],pz[1])
-           &&pz[0]!==0&&pz[1]!==0&&!INNER_GATES.includes(pz[0]+','+pz[1])){
+           &&pz[0]!==0&&pz[1]!==0&&!GATE_SET.has(pz[0]+','+pz[1])&&!DISPUTED_SET.has(pz[0]+','+pz[1])){
           out.push({pieceId,q:zp.q,r:zp.r,displace:true,pushTo:{q:pz[0],r:pz[1]},capture:false});
         }
       }
@@ -294,6 +299,9 @@
       hold:{...s.hold},
       lastHolder:s.lastHolder,
       actedBy:{...s.actedBy},
+      passLastTarget:{...(s.passLastTarget||{plus:null,minus:null,zero:null})},
+      passPrevGiver:s.passPrevGiver||null,
+      passRule:s.passRule||'random',
       eliminated:{...s.eliminated},
       gameOver:s.gameOver,
       winner:s.winner,
@@ -330,17 +338,24 @@
 
   function init(opts){
     const o=opts||{};
+    const turnMode=o.turn||'cycle';
+    // В «Стрелке» первый ход случайный (лучший баланс после строгих правил).
+    // В «Цикле» и «Передаче» первый ход — у Плюсов.
+    const startFaction=o.startFaction||(turnMode==='arrow'?FACTIONS[Math.floor(Math.random()*3)]:'plus');
     const state={
       cells:new Map(),
       pieces:[],
-      turnFaction:'plus',
-      mode:{turn:o.turn||'cycle', death:o.death||'main'},
+      turnFaction:startFaction,
+      mode:{turn:turnMode, death:o.death||'main'},
       cycleDir:o.cycleDir||'forward',       // 'forward' = П→М→Н; 'reverse' = П→Н→М
       limit:LIMIT,
       moveNumber:0,
       hold:{plus:0,minus:0,zero:0},
       lastHolder:null,
       actedBy:{plus:false,minus:false,zero:false},
+      passLastTarget:{plus:null,minus:null,zero:null},
+      passPrevGiver:null,
+      passRule:o.passRule||'random',
       eliminated:{plus:false,minus:false},
       gameOver:false, winner:null, winReason:null,
       log:[],
@@ -363,7 +378,37 @@
     return state;
   }
 
+  function isFactionEliminated(s,f){ return f!=='zero' && !!s.eliminated[f]; }
+
+  // Кому можно передать ход: не себе, не выбывшему и не тому же, кому передавал в прошлый раз.
+  // Если других активных нет — ограничение снимается, чтобы партия не зависла.
+  function legalPassTargets(s,giver){
+    if(s.mode.turn!=='pass') return [];
+    const others=FACTIONS.filter(f=>f!==giver&&!isFactionEliminated(s,f));
+    if(s.passRule==='random') return others;
+    if(s.passRule==='back'){
+      const prev=s.passPrevGiver||null;
+      const fresh=others.filter(f=>f!==prev);
+      return fresh.length?fresh:others;
+    }
+    const last=(s.passLastTarget&&s.passLastTarget[giver])||null;
+    const fresh=others.filter(f=>f!==last);
+    return fresh.length?fresh:others;
+  }
+
+  // Случайный выбор для ИИ/авто (как в тестовом harness): человек выбирает в UI.
+  function defaultPassTarget(s,giver){
+    const legal=legalPassTargets(s,giver);
+    if(!legal.length) return null;
+    return legal[Math.floor(Math.random()*legal.length)];
+  }
+
+  function validPassTarget(s,giver,target){
+    return legalPassTargets(s,giver).indexOf(target)!==-1;
+  }
+
   function nextTurn(s){
+    if(s.mode.turn==='pass') return defaultPassTarget(s,s.turnFaction)||s.turnFaction;
     if(s.mode.turn==='arrow'){
       return FACTIONS[Math.floor(Math.random()*3)];
     }
@@ -385,7 +430,7 @@
     }
   }
 
-  function advanceTurn(s,prevFaction,record){
+  function advanceTurn(s,prevFaction,record,passTo){
     s.actedBy[prevFaction]=true;
     s.moveNumber++;
     const allActed=FACTIONS.every(f=>s.actedBy[f]);
@@ -395,12 +440,29 @@
       if(cp){ s.gameOver=true; s.winner=cp.faction; s.winReason='limit'; }
       else { s.gameOver=true; s.winner=null; s.winReason='draw'; }
     }
-    if(!s.gameOver) s.turnFaction=nextTurn(s);
+    if(!s.gameOver){
+      if(s.mode.turn==='pass'){
+        if(!s.passLastTarget) s.passLastTarget={plus:null,minus:null,zero:null};
+        if(s.passPrevGiver===undefined) s.passPrevGiver=null;
+        const target=(passTo&&validPassTarget(s,prevFaction,passTo))?passTo:defaultPassTarget(s,prevFaction);
+        if(target){
+          s.turnFaction=target;
+          s.passLastTarget[prevFaction]=target;
+          s.passPrevGiver=prevFaction;
+          if(record){ record.passFrom=prevFaction; record.passTo=target; }
+        } else {
+          s.turnFaction=nextTurn(s);
+        }
+      } else {
+        s.turnFaction=nextTurn(s);
+      }
+    }
     if(record) s.log.push(record);
   }
 
-  function applyMove(state,pieceId,toQ,toR){
+  function applyMove(state,pieceId,toQ,toR,passTo){
     const s=cloneState(state);
+    if(s.mode.turn==='pass'&&passTo&&!validPassTarget(s,s.turnFaction,passTo)) return {state:s,record:null,error:'illegal pass target'};
     const p=s.pieces.find(x=>x.id===pieceId&&x.alive&&!x.inert);
     if(!p) return {state:s,record:null,error:'piece not found'};
     if(p.faction!==s.turnFaction) return {state:s,record:null,error:'not your turn'};
@@ -420,7 +482,7 @@
       if(c2)c2.piece=zero.id;
       validateSupports(s);
       const record={kind:'displace',moveNumber:s.moveNumber+1,faction:p.faction,pieceId,from,to:{q:toQ,r:toR},pushTo:mv.pushTo,extra:null,capture:null};
-      advanceTurn(s,p.faction,record);
+      advanceTurn(s,p.faction,record,passTo);
       return {state:s,record,error:null};
     }
     if(target&&target.faction!==p.faction){
@@ -440,12 +502,13 @@
     if(c)c.piece=p.id;
     validateSupports(s);
     const record={kind:'move',moveNumber:s.moveNumber+1,faction:p.faction,pieceId,from,to:{q:toQ,r:toR},capture:captureRecord,extra:null,holdAfter:{...s.hold}};
-    advanceTurn(s,p.faction,record);
+    advanceTurn(s,p.faction,record,passTo);
     return {state:s,record,error:null};
   }
 
-  function applySupport(state,zeroId,targetId){
+  function applySupport(state,zeroId,targetId,passTo){
     const s=cloneState(state);
+    if(s.mode.turn==='pass'&&passTo&&!validPassTarget(s,s.turnFaction,passTo)) return {state:s,record:null,error:'illegal pass target'};
     const z=s.pieces.find(x=>x.id===zeroId&&x.alive&&!x.inert);
     if(!z) return {state:s,record:null,error:'zero not found'};
     if(z.faction!==s.turnFaction) return {state:s,record:null,error:'not your turn'};
@@ -456,18 +519,19 @@
     }
     z.supportTarget=targetId;
     const record={kind:'support',moveNumber:s.moveNumber+1,faction:z.faction,pieceId:zeroId,targetId,from:null,to:null,capture:null,extra:null,holdAfter:{...s.hold}};
-    advanceTurn(s,z.faction,record);
+    advanceTurn(s,z.faction,record,passTo);
     return {state:s,record,error:null};
   }
 
-  function applyDisplace(state,attackerId,zeroQ,zeroR){
+  function applyDisplace(state,attackerId,zeroQ,zeroR,passTo){
     const s=cloneState(state);
+    if(s.mode.turn==='pass'&&passTo&&!validPassTarget(s,s.turnFaction,passTo)) return {state:s,record:null,error:'illegal pass target'};
     const a=s.pieces.find(x=>x.id===attackerId&&x.alive&&!x.inert);
     const z=pieceAt(s,zeroQ,zeroR);
     if(!a||!z||!isNeutralZero(z)||a.faction!==s.turnFaction) return {state:s,record:null,error:'bad displace'};
     const dir=[zeroQ-a.q, zeroR-a.r];
     const pz=[zeroQ+dir[0], zeroR+dir[1]];
-    if(!isValidCell(s,pz[0],pz[1])||pieceAt(s,pz[0],pz[1])||pz[0]===0&&pz[1]===0) return {state:s,record:null,error:'bad push'};
+    if(!isValidCell(s,pz[0],pz[1])||pieceAt(s,pz[0],pz[1])||(pz[0]===0&&pz[1]===0)||GATE_SET.has(pz[0]+','+pz[1])||DISPUTED_SET.has(pz[0]+','+pz[1])) return {state:s,record:null,error:'bad push'};
     s.cells.set(zeroQ+','+zeroR,{...s.cells.get(zeroQ+','+zeroR),piece:null});
     z.q=pz[0]; z.r=pz[1];
     const c2=s.cells.get(pz[0]+','+pz[1]);
@@ -475,15 +539,16 @@
     validateSupports(s);
     const zeroQ2=z.q, zeroR2=z.r;
     const record={kind:'displace',moveNumber:s.moveNumber+1,faction:a.faction,pieceId:attackerId,from:{q:zeroQ,r:zeroR},to:{q:zeroQ2,r:zeroR2},capture:null,extra:null,holdAfter:{...s.hold}};
-    advanceTurn(s,a.faction,record);
+    advanceTurn(s,a.faction,record,passTo);
     return {state:s,record,error:null};
   }
 
-  function skipTurn(state){
+  function skipTurn(state,passTo){
     const s=cloneState(state);
+    if(s.mode.turn==='pass'&&passTo&&!validPassTarget(s,s.turnFaction,passTo)) return {state:s,record:null,error:'illegal pass target'};
     const prev=s.turnFaction;
     const record={kind:'skip',moveNumber:s.moveNumber+1,faction:prev,holdAfter:{...s.hold}};
-    advanceTurn(s,prev,record);
+    advanceTurn(s,prev,record,passTo);
     return {state:s,record};
   }
 
@@ -492,16 +557,19 @@
   window.ElioEngine={
     FACTIONS, FACTION_NAME, FACTION_COLOR, PIECE_VALUE, TYPE_NAME,
     isHeavy, isNullType, isNeutralZero, isDeclaredZero, isOnGateOrCenter,
-    FIELD_CENTERS, FIELD_INFO, DISPUTED, INNER_GATES, GATE_SET, NB,
+    FIELD_CENTERS, FIELD_INFO, DISPUTED, INNER_GATES, GATE_SET, DISPUTED_SET, NB,
     codeMap, init, clone,
     neighbors, isValidCell:(s,q,r)=>isValidCell(s,q,r), cellAt, pieceAt, occupantAt,
     protLevel, canCapture, canCaptureZero, zeroVulnerability, legalMoves, legalSupportTargets,
+    legalPassTargets, defaultPassTarget, validPassTarget,
     applyMove, applySupport, applyDisplace, skipTurn,
     cellKey:(q,r)=>q+','+r,
     dist, patch, LIMIT,
-    stateToJSON:(s)=>JSON.parse(JSON.stringify({pieces:s.pieces,turnFaction:s.turnFaction,mode:s.mode,cycleDir:s.cycleDir,limit:s.limit,moveNumber:s.moveNumber,hold:s.hold,lastHolder:s.lastHolder,actedBy:s.actedBy,eliminated:s.eliminated,gameOver:s.gameOver,winner:s.winner,winReason:s.winReason,log:s.log})),
-    fromJSON:(j)=>{ const s=init({turn:j.mode.turn,death:j.mode.death,cycleDir:j.cycleDir}); s.pieces=[];j.pieces.forEach(p=>{const np={...p}; s.pieces.push(np); const c=s.cells.get(np.q+','+np.r); if(c)c.piece=np.id;});
+    stateToJSON:(s)=>JSON.parse(JSON.stringify({pieces:s.pieces,turnFaction:s.turnFaction,mode:s.mode,cycleDir:s.cycleDir,limit:s.limit,moveNumber:s.moveNumber,hold:s.hold,lastHolder:s.lastHolder,actedBy:s.actedBy,passLastTarget:s.passLastTarget,passPrevGiver:s.passPrevGiver,passRule:s.passRule,eliminated:s.eliminated,gameOver:s.gameOver,winner:s.winner,winReason:s.winReason,log:s.log})),
+    fromJSON:(j)=>{ const s=init({turn:j.mode.turn,death:j.mode.death,cycleDir:j.cycleDir,passRule:j.passRule}); s.pieces=[];j.pieces.forEach(p=>{const np={...p}; s.pieces.push(np); const c=s.cells.get(np.q+','+np.r); if(c)c.piece=np.id;});
       s.turnFaction=j.turnFaction; s.moveNumber=j.moveNumber; s.hold={...j.hold}; s.lastHolder=j.lastHolder;
-      s.actedBy={...j.actedBy}; s.eliminated={...j.eliminated}; s.gameOver=j.gameOver; s.winner=j.winner; s.winReason=j.winReason; s.log=j.log.slice(); return s; },
+      s.actedBy={...j.actedBy}; s.passLastTarget={...(j.passLastTarget||{plus:null,minus:null,zero:null})};
+      s.passPrevGiver=j.passPrevGiver||null; s.passRule=j.passRule||'random';
+      s.eliminated={...j.eliminated}; s.gameOver=j.gameOver; s.winner=j.winner; s.winReason=j.winReason; s.log=j.log.slice(); return s; },
   };
 })();

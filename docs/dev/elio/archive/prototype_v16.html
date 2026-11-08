@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Эльо — поле v16 (спорные у центра, по правилам)</title>
+<style>
+  :root { --bg:#1a1a2e; --panel:#23234a; --gold:#c9a227; --plus:#5b9bd5; --minus:#e05a5a; --zero:#9aa0a6; --text:#e8e8f0; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--text); font-family:'Segoe UI',Georgia,serif; }
+  h1 { margin:0 0 6px; color:var(--gold); letter-spacing:1px; }
+  .subtitle { opacity:.7; font-size:13px; margin-bottom:12px; line-height:1.4; }
+  .layout { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+  .board-wrap { flex:1 1 620px; min-width:620px; }
+  svg { background:radial-gradient(circle at 50% 45%, #2a2a4e 0%, #12122a 100%); border:2px solid var(--gold); border-radius:12px; display:block; width:100%; height:auto; }
+  .side { flex:0 0 270px; }
+  .card { background:var(--panel); border:1px solid #3a3a6a; border-radius:10px; padding:12px; margin-bottom:12px; }
+  .card h3 { margin:0 0 8px; color:var(--gold); font-size:15px; }
+  .legend { display:flex; flex-direction:column; gap:6px; font-size:13px; }
+  .legend-item { display:flex; align-items:center; gap:8px; }
+  .dot { width:14px; height:14px; border-radius:50%; border:2px solid #fff; flex:0 0 auto; }
+  .swatch { width:16px; height:16px; border-radius:3px; border:1px dashed #fff; flex:0 0 auto; }
+  .btn { background:var(--gold); color:#1a1a2e; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; margin-right:6px; margin-bottom:6px; }
+  .btn:hover { filter:brightness(1.15); }
+  .info { font-size:13px; line-height:1.5; min-height:64px; }
+  .info b { color:var(--gold); }
+  .hexcell { cursor:pointer; }
+  .hexcell:hover { filter:brightness(1.4); }
+  .cellsel { stroke:var(--gold) !important; stroke-width:3 !important; }
+  .piece.blocked { opacity:.22; }
+  footer { margin-top:12px; font-size:11px; opacity:.5; }
+</style>
+</head>
+<body>
+  <h1>Эльо — поле v16 (спорные у центра)</h1>
+  <div class="subtitle">
+    3 поля по 19 гексов (flat-top, D=5) + 3 спорные земли по 3 гекса в зазорах у центра
+    (основание к полю, остриё к центру). Треугольник основания — отдельно в центре.
+  </div>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <svg id="board" viewBox="0 0 900 800"></svg>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h3>Легенда</h3>
+        <div class="legend">
+          <div class="legend-item"><span class="dot" style="background:var(--plus)"></span> Плюсы — 19 клеток</div>
+          <div class="legend-item"><span class="dot" style="background:var(--minus)"></span> Минусы — 19 клеток</div>
+          <div class="legend-item"><span class="dot" style="background:var(--zero)"></span> Нули — 19 клеток</div>
+          <div class="legend-item"><span class="swatch" style="background:#8a8ab033"></span> Спорная земля (3 гекса, у центра)</div>
+          <div class="legend-item"><span style="color:var(--gold);font-weight:bold">К</span> — Капитан (1-й ранг)</div>
+          <div class="legend-item"><span style="color:var(--gold);font-weight:bold">Ф</span> — Фрегат (2-й ранг)</div>
+          <div class="legend-item"><span style="color:var(--gold);font-weight:bold">Н</span> — Нуль (0 ранг)</div>
+          <div class="legend-item"><span style="color:var(--gold)">△</span> — основание (центр)</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Погода</h3>
+        <button class="btn" onclick="toggleWeather()">Переключить</button>
+        <button class="btn" onclick="clearSel()">Сброс</button>
+        <div id="weather" style="margin-top:8px;font-size:13px;">Погода выключена</div>
+      </div>
+      <div class="card">
+        <h3>Клетка</h3>
+        <div id="info" class="info">Кликните по клетке.</div>
+      </div>
+    </div>
+  </div>
+  <footer>docs/dev/elio/ · макет v16 · спорные у центра, D=5</footer>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const board = document.getElementById('board');
+const SQ3 = Math.sqrt(3);
+
+const S = 30;                          // радиус клетки
+const ORIGIN = { x: 450, y: 400 };     // центр доски
+const D = 5;                           // гекс-дистанция от центра до центров полей
+const BASE_R = 55;                     // радиус треугольника основания
+
+const NB = [[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]];
+
+const FIELD_OFFSETS = [];
+for (let q = -2; q <= 2; q++) for (let r = -2; r <= 2; r++) {
+  if (Math.abs(q) + Math.abs(r) + Math.abs(q + r) <= 4) FIELD_OFFSETS.push([q, r]);
+}
+
+// Центры полей в flat-top axial
+const FIELD_CENTERS = {
+  plus:  [0, -D],
+  minus: [-D, D],
+  zero:  [D, 0],
+};
+
+// Спорные земли: 3 клетки в зазоре у центра, остриё к центру
+const DISPUTED = {
+  plus:  [[-1,-1],[0,-1],[0,-2]],       // у поля плюсов
+  minus: [[-2,1],[-1,1],[-2,2]],         // у поля минусов
+  zero:  [[1,0],[2,0],[1,1]],            // у поля нулей
+};
+
+const FIELD_INFO = [
+  { id:'plus',  name:'ПЛЮСЫ',  color:'#5b9bd5', faction:'plus',  center: FIELD_CENTERS.plus,  disputed: DISPUTED.plus,  labelDy:-1 },
+  { id:'minus', name:'МИНУСЫ', color:'#e05a5a', faction:'minus', center: FIELD_CENTERS.minus, disputed: DISPUTED.minus, labelDy:1 },
+  { id:'zero',  name:'НУЛИ',   color:'#9aa0a6', faction:'zero',  center: FIELD_CENTERS.zero,  disputed: DISPUTED.zero,  labelDy:1 },
+];
+
+function axialToPx(q, r) {
+  return { x: ORIGIN.x + 1.5*S*q, y: ORIGIN.y + SQ3*S*(r + q/2) };
+}
+function hexPoints(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI/180 * (60*i);
+    pts.push((cx + size*Math.cos(a)).toFixed(1) + ',' + (cy + size*Math.sin(a)).toFixed(1));
+  }
+  return pts.join(' ');
+}
+function unionOutline(cells) {
+  const set = new Set(cells.map(c => c[0] + ',' + c[1]));
+  const edges = [];
+  for (const c of cells) {
+    const p = axialToPx(c[0], c[1]);
+    const v = [];
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI/180 * (60*i);
+      v.push([p.x + S*Math.cos(a), p.y + S*Math.sin(a)]);
+    }
+    for (let i = 0; i < 6; i++) {
+      const n = [c[0] + NB[i][0], c[1] + NB[i][1]];
+      if (!set.has(n[0] + ',' + n[1])) edges.push([v[i], v[(i+1)%6]]);
+    }
+  }
+  const pk = p => p[0].toFixed(3) + ',' + p[1].toFixed(3);
+  const map = new Map();
+  for (const e of edges) map.set(pk(e[0]), e);
+  const used = new Set();
+  for (const e0 of edges) {
+    if (used.has(e0)) continue;
+    const loop = [e0[0]];
+    let cur = e0, guard = 0;
+    while (guard++ < 400) {
+      used.add(cur);
+      loop.push(cur[1]);
+      const next = map.get(pk(cur[1]));
+      if (!next || used.has(next)) break;
+      cur = next;
+    }
+    return loop.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  }
+  return '';
+}
+
+const cellIndex = [];
+
+FIELD_INFO.forEach(f => {
+  const fc = f.center;
+  const fieldCells = FIELD_OFFSETS.map(o => [fc[0]+o[0], fc[1]+o[1]]);
+  const disputedCells = f.disputed;
+
+  // клетки поля
+  fieldCells.forEach(c => {
+    const p = axialToPx(c[0], c[1]);
+    const poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('points', hexPoints(p.x, p.y, S - 1));
+    poly.setAttribute('fill', f.color + '22');
+    poly.setAttribute('stroke', f.color + '66');
+    poly.setAttribute('stroke-width', '1');
+    poly.setAttribute('class', 'hexcell');
+    poly.addEventListener('click', () => selectCell(f.id, c[0], c[1]));
+    board.appendChild(poly);
+    cellIndex.push({ field:f.id, q:c[0], r:c[1], kind:'field', x:p.x, y:p.y, el:poly, piece:null });
+  });
+
+  // спорные клетки
+  disputedCells.forEach((c, i) => {
+    const p = axialToPx(c[0], c[1]);
+    const poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('points', hexPoints(p.x, p.y, S - 1));
+    poly.setAttribute('fill', f.color + '12');
+    poly.setAttribute('stroke', f.color + 'aa');
+    poly.setAttribute('stroke-dasharray', '5 4');
+    poly.setAttribute('stroke-width', '1.2');
+    poly.setAttribute('class', 'hexcell');
+    poly.addEventListener('click', () => selectDisputed(f.id, i));
+    board.appendChild(poly);
+    cellIndex.push({ field:f.id, q:c[0], r:c[1], kind:'disputed', idx:i, x:p.x, y:p.y, el:poly, piece:null });
+  });
+
+  // общий контур поля + спорной земли
+  const allCells = fieldCells.concat(disputedCells);
+  const outline = document.createElementNS(NS, 'polygon');
+  outline.setAttribute('points', unionOutline(allCells));
+  outline.setAttribute('fill', 'none');
+  outline.setAttribute('stroke', f.color);
+  outline.setAttribute('stroke-width', '2.5');
+  outline.setAttribute('stroke-linejoin', 'round');
+  board.appendChild(outline);
+
+  // название поля
+  const fcp = axialToPx(f.center[0], f.center[1]);
+  const label = document.createElementNS(NS, 'text');
+  label.setAttribute('x', fcp.x);
+  label.setAttribute('y', fcp.y + (f.id === 'plus' ? -4.2*S : 4.4*S));
+  label.setAttribute('text-anchor', 'middle');
+  label.setAttribute('fill', f.color);
+  label.setAttribute('font-size', '15');
+  label.setAttribute('font-weight', 'bold');
+  label.setAttribute('letter-spacing', '2');
+  label.textContent = f.name;
+  board.appendChild(label);
+});
+
+// ---------- треугольник основания ----------
+const basePts = [
+  [ORIGIN.x, ORIGIN.y - BASE_R],
+  [ORIGIN.x - BASE_R*SQ3/2, ORIGIN.y + BASE_R/2],
+  [ORIGIN.x + BASE_R*SQ3/2, ORIGIN.y + BASE_R/2],
+];
+const baseTri = document.createElementNS(NS, 'polygon');
+baseTri.setAttribute('points', basePts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '));
+baseTri.setAttribute('fill', '#c9a22718');
+baseTri.setAttribute('stroke', '#c9a227');
+baseTri.setAttribute('stroke-width', '2');
+board.appendChild(baseTri);
+
+basePts.forEach(p => {
+  const node = document.createElementNS(NS, 'circle');
+  node.setAttribute('cx', p[0]); node.setAttribute('cy', p[1]);
+  node.setAttribute('r', 10);
+  node.setAttribute('fill', '#4a4a7a88');
+  node.setAttribute('stroke', '#c9a227');
+  node.setAttribute('stroke-width', '1.2');
+  node.setAttribute('class', 'hexcell');
+  node.addEventListener('click', () => selectBase());
+  board.appendChild(node);
+});
+
+const core = document.createElementNS(NS, 'circle');
+core.setAttribute('cx', ORIGIN.x); core.setAttribute('cy', ORIGIN.y);
+core.setAttribute('r', 16);
+core.setAttribute('fill', '#c9a22733');
+core.setAttribute('stroke', '#c9a227');
+core.setAttribute('stroke-width', '2');
+core.setAttribute('class', 'hexcell');
+core.addEventListener('click', () => selectBase());
+board.appendChild(core);
+
+const coreTxt = document.createElementNS(NS, 'text');
+coreTxt.setAttribute('x', ORIGIN.x); coreTxt.setAttribute('y', ORIGIN.y + 5);
+coreTxt.setAttribute('text-anchor', 'middle');
+coreTxt.setAttribute('fill', '#e8c84a');
+coreTxt.setAttribute('font-size', '13');
+coreTxt.setAttribute('font-weight', 'bold');
+coreTxt.textContent = 'Ц';
+board.appendChild(coreTxt);
+
+const baseLabel = document.createElementNS(NS, 'text');
+baseLabel.setAttribute('x', ORIGIN.x);
+baseLabel.setAttribute('y', ORIGIN.y + BASE_R + 20);
+baseLabel.setAttribute('text-anchor', 'middle');
+baseLabel.setAttribute('fill', '#c9a227');
+baseLabel.setAttribute('font-size', '11');
+baseLabel.setAttribute('letter-spacing', '2');
+baseLabel.textContent = 'ОСНОВАНИЕ';
+board.appendChild(baseLabel);
+
+// ---------- фигуры ----------
+function place(fieldId, faction, types) {
+  const f = FIELD_INFO.find(x => x.id === fieldId);
+  const list = cellIndex.filter(c => c.field === fieldId && c.kind === 'field');
+  list.sort((a, b) => Math.atan2(a.y - (f.center[1]*SQ3*S + ORIGIN.y), a.x - (1.5*S*f.center[0] + ORIGIN.x)) - Math.atan2(b.y - (f.center[1]*SQ3*S + ORIGIN.y), b.x - (1.5*S*f.center[0] + ORIGIN.x)));
+  const n = list.length;
+  const chosen = types.map((t, i) => list[Math.floor(i * n / types.length) % n]);
+  const color = faction === 'plus' ? '#5b9bd5' : faction === 'minus' ? '#e05a5a' : '#9aa0a6';
+  types.forEach((t, i) => {
+    const cell = chosen[i];
+    if (!cell) return;
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'piece');
+    const circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', cell.x); circle.setAttribute('cy', cell.y);
+    circle.setAttribute('r', t === 'K' ? 10 : t === 'F' ? 9 : 7);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('stroke', '#fff');
+    circle.setAttribute('stroke-width', '1.5');
+    g.appendChild(circle);
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('x', cell.x); txt.setAttribute('y', cell.y + 4);
+    txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('fill', '#fff');
+    txt.setAttribute('font-size', t === 'K' ? 10 : t === 'F' ? 9 : 8);
+    txt.setAttribute('font-weight', 'bold');
+    txt.textContent = t;
+    g.appendChild(txt);
+    board.appendChild(g);
+    cell.piece = { faction, type: t };
+  });
+}
+place('plus',  'plus',  ['K','K','F','F','F']);
+place('minus', 'minus', ['K','K','F','F','F']);
+place('zero',  'zero',  ['N','N','N','N','N']);
+
+// ---------- интерактив ----------
+let selectedEl = null;
+function clearSel() {
+  if (selectedEl) selectedEl.classList.remove('cellsel');
+  selectedEl = null;
+  document.getElementById('info').textContent = 'Кликните по клетке.';
+}
+function selectCell(fieldId, q, r) {
+  const cell = cellIndex.find(c => c.field === fieldId && c.kind === 'field' && c.q === q && c.r === r);
+  if (!cell) return;
+  if (selectedEl) selectedEl.classList.remove('cellsel');
+  selectedEl = cell.el; cell.el.classList.add('cellsel');
+  const p = cell.piece ? `${cell.piece.faction} / ${cell.piece.type}` : 'пусто';
+  const f = FIELD_INFO.find(x => x.id === fieldId);
+  document.getElementById('info').innerHTML =
+    `<b>Поле:</b> ${f.name}<br><b>Клетка:</b> q=${q}, r=${r}<br><b>Фигура:</b> ${p}`;
+}
+function selectDisputed(fieldId, i) {
+  const cell = cellIndex.find(c => c.field === fieldId && c.kind === 'disputed' && c.idx === i);
+  if (cell) { if (selectedEl) selectedEl.classList.remove('cellsel'); selectedEl = cell.el; cell.el.classList.add('cellsel'); }
+  const f = FIELD_INFO.find(x => x.id === fieldId);
+  document.getElementById('info').innerHTML =
+    `<b>Спорная земля:</b> ${f.name}<br>Гекс ${i + 1} из 3<br>Основание к полю, остриё к центру.`;
+}
+function selectBase() {
+  if (selectedEl) selectedEl.classList.remove('cellsel');
+  selectedEl = null;
+  document.getElementById('info').innerHTML =
+    `<b>Основание:</b> треугольник в центре<br>4 клетки: центр + 3 поддержки.<br>Удерживать центр 3 хода.`;
+}
+
+let weatherOn = false;
+function toggleWeather() {
+  weatherOn = !weatherOn;
+  const names = { plus:'Плюсы', minus:'Минусы', zero:'Нули' };
+  if (!weatherOn) {
+    document.querySelectorAll('.piece').forEach(p => p.classList.remove('blocked'));
+    document.getElementById('weather').textContent = 'Погода выключена';
+    return;
+  }
+  const fac = ['plus','minus','zero'][Math.floor(Math.random()*3)];
+  const byColor = { '#5b9bd5':'plus', '#e05a5a':'minus', '#9aa0a6':'zero' };
+  document.querySelectorAll('.piece').forEach(p => {
+    const fill = p.querySelector('circle').getAttribute('fill');
+    if (byColor[fill] === fac) p.classList.add('blocked');
+  });
+  document.getElementById('weather').textContent = `Погода ВКЛ. В шторме: ${names[fac]}`;
+}
+</script>
+</body>
+</html>

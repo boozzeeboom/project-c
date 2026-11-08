@@ -156,7 +156,7 @@
     if(!piece||!piece.alive||piece.inert) return [];
     if(state.gameOver) return [];
     if(piece.faction!==state.turnFaction) return [];
-    if(state.pieces15 && !(state.firstMoveDone&&state.firstMoveDone[piece.faction]) && hasPawn(state,piece.faction) && !isPawnType(piece.type)) return [];
+    if(state.firstMovePawn && !(state.firstMoveDone&&state.firstMoveDone[piece.faction]) && hasPawn(state,piece.faction) && !isPawnType(piece.type)) return [];
     const res=[], seen=new Set();
     const push=(q,r,extra)=>{
       const key=q+','+(extra&&extra.displace?'D':'')+r;
@@ -252,7 +252,7 @@
     const z=pieceById(state,zeroId);
     if(!z||!z.alive||z.inert||!isNullType(z.type)||z.faction!==state.turnFaction) return [];
     if(z.type==='skiff') return [];                    // пешка Нулей не поддерживает
-    if(state.pieces15 && !(state.firstMoveDone&&state.firstMoveDone[z.faction]) && hasPawn(state,z.faction)) return [];
+    if(state.firstMovePawn && !(state.firstMoveDone&&state.firstMoveDone[z.faction]) && hasPawn(state,z.faction)) return [];
     const out=[];
     for(const n of neighbors(z.q,z.r)){
       const tp=pieceAt(state,n[0],n[1]);
@@ -301,7 +301,8 @@
       pieces:s.pieces.map(p=>({...p})),
       turnFaction:s.turnFaction,
       mode:{...s.mode},
-      pieces15:!!s.pieces15,
+      pawns:s.pawns||0,
+      firstMovePawn:!!s.firstMovePawn,
       firstMoveDone:{...(s.firstMoveDone||{plus:false,minus:false,zero:false})},
       cycleDir:s.cycleDir,
       limit:s.limit,
@@ -349,6 +350,7 @@
   function init(opts){
     const o=opts||{};
     const turnMode=o.turn||'cycle';
+    const pawnCount = o.pawns!=null ? Math.max(0, Math.min(5, parseInt(o.pawns,10)||0)) : (o.pieces15?5:0);
     // В «Стрелке» первый ход случайный (лучший баланс после строгих правил).
     // В «Цикле» и «Передаче» первый ход — у Плюсов.
     const startFaction=o.startFaction||(turnMode==='arrow'?FACTIONS[Math.floor(Math.random()*3)]:'plus');
@@ -357,10 +359,11 @@
       pieces:[],
       turnFaction:startFaction,
       mode:{turn:turnMode, death:o.death||'main'},
-      pieces15:!!o.pieces15,
+      pawns:pawnCount,
+      firstMovePawn:o.firstMovePawn!=null?!!o.firstMovePawn:pawnCount>=5,
       firstMoveDone:{plus:false,minus:false,zero:false},
       cycleDir:o.cycleDir||'forward',       // 'forward' = П→М→Н; 'reverse' = П→Н→М
-      limit:o.pieces15?LIMIT15:LIMIT,
+      limit:pawnCount>=5?LIMIT15:LIMIT,
       moveNumber:0,
       hold:{plus:0,minus:0,zero:0},
       lastHolder:null,
@@ -389,7 +392,8 @@
     place('plus',PLUS_SETUP); place('minus',MINUS_SETUP); place('zero',ZERO_SETUP);
     function placePawns(faction,tp){
       const f=FIELD_INFO.find(x=>x.id===faction);
-      PAWN_LOCAL.forEach(loc=>{
+      const cells=state.pawns>=5?PAWN_LOCAL:['C1'];
+      cells.forEach(loc=>{
         const code=f.prefix+'-'+loc;
         let cell=null;
         for(const [k,v] of codeMap){ if(v===code){ const [q,r]=k.split(',').map(Number); cell={q,r}; break; } }
@@ -399,7 +403,7 @@
         const p=make(faction,tp); p.q=cell.q; p.r=cell.r; state.pieces.push(p); c.piece=p.id;
       });
     }
-    if(state.pieces15){ placePawns('plus','tender'); placePawns('minus','tender'); placePawns('zero','skiff'); }
+    if(state.pawns>0){ placePawns('plus','tender'); placePawns('minus','tender'); placePawns('zero','skiff'); }
     return state;
   }
 
@@ -491,7 +495,7 @@
     const p=s.pieces.find(x=>x.id===pieceId&&x.alive&&!x.inert);
     if(!p) return {state:s,record:null,error:'piece not found'};
     if(p.faction!==s.turnFaction) return {state:s,record:null,error:'not your turn'};
-    if(s.pieces15 && !(s.firstMoveDone&&s.firstMoveDone[p.faction]) && hasPawn(s,p.faction) && !isPawnType(p.type)) return {state:s,record:null,error:'first move must be pawn'};
+    if(s.firstMovePawn && !(s.firstMoveDone&&s.firstMoveDone[p.faction]) && hasPawn(s,p.faction) && !isPawnType(p.type)) return {state:s,record:null,error:'first move must be pawn'};
     const moves=legalMoves(s,pieceId);
     const mv=moves.find(m=>m.q===toQ&&m.r===toR);
     if(!mv) return {state:s,record:null,error:'illegal move'};
@@ -526,7 +530,7 @@
     p.q=toQ; p.r=toR;
     const c=s.cells.get(toQ+','+toR);
     if(c)c.piece=p.id;
-    if(s.pieces15 && isPawnType(p.type)) s.firstMoveDone[p.faction]=true;
+    if((s.pawns||0)>0 && isPawnType(p.type)) s.firstMoveDone[p.faction]=true;
     validateSupports(s);
     const record={kind:'move',moveNumber:s.moveNumber+1,faction:p.faction,pieceId,from,to:{q:toQ,r:toR},capture:captureRecord,extra:null,holdAfter:{...s.hold}};
     advanceTurn(s,p.faction,record,passTo);
@@ -540,7 +544,7 @@
     if(!z) return {state:s,record:null,error:'zero not found'};
     if(z.faction!==s.turnFaction) return {state:s,record:null,error:'not your turn'};
     if(z.type==='skiff') return {state:s,record:null,error:'skiff cannot support'};
-    if(s.pieces15 && !(s.firstMoveDone&&s.firstMoveDone[z.faction]) && hasPawn(s,z.faction)) return {state:s,record:null,error:'first move must be pawn'};
+    if(s.firstMovePawn && !(s.firstMoveDone&&s.firstMoveDone[z.faction]) && hasPawn(s,z.faction)) return {state:s,record:null,error:'first move must be pawn'};
     if(!isNullType(z.type)) return {state:s,record:null,error:'not a zero'};
     if(targetId!==null){
       const t=s.pieces.find(x=>x.id===targetId&&x.alive&&!x.inert);
@@ -558,7 +562,7 @@
     const a=s.pieces.find(x=>x.id===attackerId&&x.alive&&!x.inert);
     const z=pieceAt(s,zeroQ,zeroR);
     if(!a||!z||!isNeutralZero(z)||a.faction!==s.turnFaction) return {state:s,record:null,error:'bad displace'};
-    if(s.pieces15 && !(s.firstMoveDone&&s.firstMoveDone[a.faction]) && hasPawn(s,a.faction)) return {state:s,record:null,error:'first move must be pawn'};
+    if(s.firstMovePawn && !(s.firstMoveDone&&s.firstMoveDone[a.faction]) && hasPawn(s,a.faction)) return {state:s,record:null,error:'first move must be pawn'};
     const dir=[zeroQ-a.q, zeroR-a.r];
     const pz=[zeroQ+dir[0], zeroR+dir[1]];
     if(!isValidCell(s,pz[0],pz[1])||pieceAt(s,pz[0],pz[1])||(pz[0]===0&&pz[1]===0)||GATE_SET.has(pz[0]+','+pz[1])||DISPUTED_SET.has(pz[0]+','+pz[1])) return {state:s,record:null,error:'bad push'};
@@ -596,12 +600,12 @@
     applyMove, applySupport, applyDisplace, skipTurn,
     cellKey:(q,r)=>q+','+r,
     dist, patch, LIMIT,
-    stateToJSON:(s)=>JSON.parse(JSON.stringify({pieces:s.pieces,turnFaction:s.turnFaction,mode:s.mode,pieces15:!!s.pieces15,firstMoveDone:s.firstMoveDone,cycleDir:s.cycleDir,limit:s.limit,moveNumber:s.moveNumber,hold:s.hold,lastHolder:s.lastHolder,actedBy:s.actedBy,passLastTarget:s.passLastTarget,passPrevGiver:s.passPrevGiver,passRule:s.passRule,eliminated:s.eliminated,gameOver:s.gameOver,winner:s.winner,winReason:s.winReason,log:s.log})),
-    fromJSON:(j)=>{ const s=init({turn:j.mode.turn,death:j.mode.death,cycleDir:j.cycleDir,passRule:j.passRule,pieces15:!!j.pieces15}); s.pieces=[];j.pieces.forEach(p=>{const np={...p}; s.pieces.push(np); const c=s.cells.get(np.q+','+np.r); if(c)c.piece=np.id;});
+    stateToJSON:(s)=>JSON.parse(JSON.stringify({pieces:s.pieces,turnFaction:s.turnFaction,mode:s.mode,pawns:s.pawns||0,firstMovePawn:!!s.firstMovePawn,firstMoveDone:s.firstMoveDone,cycleDir:s.cycleDir,limit:s.limit,moveNumber:s.moveNumber,hold:s.hold,lastHolder:s.lastHolder,actedBy:s.actedBy,passLastTarget:s.passLastTarget,passPrevGiver:s.passPrevGiver,passRule:s.passRule,eliminated:s.eliminated,gameOver:s.gameOver,winner:s.winner,winReason:s.winReason,log:s.log})),
+    fromJSON:(j)=>{ const s=init({turn:j.mode.turn,death:j.mode.death,cycleDir:j.cycleDir,passRule:j.passRule,pawns:j.pawns!=null?j.pawns:(j.pieces15?5:0),firstMovePawn:j.firstMovePawn}); s.pieces=[];j.pieces.forEach(p=>{const np={...p}; s.pieces.push(np); const c=s.cells.get(np.q+','+np.r); if(c)c.piece=np.id;});
       s.turnFaction=j.turnFaction; s.moveNumber=j.moveNumber; s.hold={...j.hold}; s.lastHolder=j.lastHolder;
       s.actedBy={...j.actedBy}; s.passLastTarget={...(j.passLastTarget||{plus:null,minus:null,zero:null})};
       s.passPrevGiver=j.passPrevGiver||null; s.passRule=j.passRule||'random';
-      s.pieces15=!!j.pieces15; s.firstMoveDone={...(j.firstMoveDone||{plus:false,minus:false,zero:false})};
+      s.pawns=j.pawns!=null?j.pawns:(j.pieces15?5:0); s.firstMovePawn=!!j.firstMovePawn; s.firstMoveDone={...(j.firstMoveDone||{plus:false,minus:false,zero:false})};
       s.eliminated={...j.eliminated}; s.gameOver=j.gameOver; s.winner=j.winner; s.winReason=j.winReason; s.log=j.log.slice(); return s; },
   };
 })();

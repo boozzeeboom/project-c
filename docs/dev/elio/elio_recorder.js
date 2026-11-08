@@ -35,8 +35,8 @@
     return moves.length;
   }
 
-  function startReplay(mode, death, pieces15){
-    replayState=E.init({turn:mode||'cycle', death:death||'main', pieces15:!!pieces15});
+  function startReplay(mode, death, pawns){
+    replayState=E.init({turn:mode||'cycle', death:death||'main', pawns:pawns||0});
     replayIndex=0; return replayState;
   }
 

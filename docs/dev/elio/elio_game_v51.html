@@ -55,7 +55,8 @@
           <select id="selCycleDir"><option value="forward">П → М → Н</option><option value="reverse">П → Н → М</option></select>
         </div>
         <div class="status-row">
-          <label><input type="checkbox" id="chk15"> 15 фигур (пешки)</label>
+          <label for="selPawns">Пешки:</label>
+          <select id="selPawns"><option value="0">10 фигур</option><option value="1">10+1 (C1)</option><option value="5">10+5 (15 фигур)</option></select>
         </div>
         <div class="status-row">
           <label for="selDeath">Тип игры:</label>
@@ -122,7 +123,7 @@ const REC = window.ElioRecorder;
 let state = E.init({turn: document.getElementById('selTurn').value,
                     death: document.getElementById('selDeath').value,
                     cycleDir: document.getElementById('selCycleDir').value,
-                    pieces15: document.getElementById('chk15').checked});
+                    pawns: parseInt(document.getElementById('selPawns').value,10)});
 let autoPlay = false;
 let autoTimer = null;
 
@@ -229,7 +230,7 @@ function newGame(){
   state = E.init({turn: document.getElementById('selTurn').value,
                   death: document.getElementById('selDeath').value,
                   cycleDir: document.getElementById('selCycleDir').value,
-                  pieces15: document.getElementById('chk15').checked});
+                  pawns: parseInt(document.getElementById('selPawns').value,10)});
   REC.reset();
   B.clearSelection();
   B.render(state);
@@ -242,7 +243,7 @@ document.getElementById('btnNew').addEventListener('click', newGame);
 document.getElementById('selTurn').addEventListener('change', newGame);
 document.getElementById('selDeath').addEventListener('change', newGame);
 document.getElementById('selCycleDir').addEventListener('change', newGame);
-document.getElementById('chk15').addEventListener('change', newGame);
+document.getElementById('selPawns').addEventListener('change', newGame);
 
 document.getElementById('btnAiMove').addEventListener('click', function(){
   if(state.gameOver) return;
@@ -299,7 +300,7 @@ document.getElementById('btnExport').addEventListener('click', function(){
 
 // replay
 document.getElementById('btnReplayStart').addEventListener('click', function(){
-  const s = REC.startReplay(document.getElementById('selTurn').value, document.getElementById('selDeath').value, document.getElementById('chk15').checked);
+  const s = REC.startReplay(document.getElementById('selTurn').value, document.getElementById('selDeath').value, parseInt(document.getElementById('selPawns').value,10));
   state = s;
   B.clearSelection();
   B.render(state);
@@ -329,7 +330,7 @@ document.getElementById('btnReplayAll').addEventListener('click', function(){
     if(res.error) alert('Replay error: '+res.error);
   }
   if(REC.getReplayIndex()===0 && REC.getMoves().length>0 && !REC.getReplayState()){
-    REC.startReplay(document.getElementById('selTurn').value, document.getElementById('selDeath').value, document.getElementById('chk15').checked);
+    REC.startReplay(document.getElementById('selTurn').value, document.getElementById('selDeath').value, parseInt(document.getElementById('selPawns').value,10));
     state=REC.getReplayState();
     B.render(state); updateUI();
   }

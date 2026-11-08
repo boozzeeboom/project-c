@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Эльо — игра v51 (прототип)</title>
+<style>
+  :root { --bg:#1a1a2e; --panel:#23234a; --gold:#c9a227; --plus:#5b9bd5; --minus:#e05a5a; --zero:#9aa0a6; --text:#e8e8f0; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--text); font-family:'Segoe UI',Georgia,serif; }
+  h1 { margin:0 0 6px; color:var(--gold); letter-spacing:1px; }
+  .subtitle { opacity:.7; font-size:13px; margin-bottom:12px; line-height:1.4; }
+  .layout { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+  .board-wrap { flex:1 1 640px; min-width:640px; }
+  svg { background:radial-gradient(circle at 50% 45%, #2a2a4e 0%, #12122a 100%); border:2px solid var(--gold); border-radius:12px; display:block; width:100%; height:auto; }
+  .side { flex:0 0 300px; }
+  .card { background:var(--panel); border:1px solid #3a3a6a; border-radius:10px; padding:12px; margin-bottom:12px; }
+  .card h3 { margin:0 0 8px; color:var(--gold); font-size:15px; }
+  .btn { background:var(--gold); color:#1a1a2e; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; margin-right:6px; margin-bottom:6px; }
+  .btn:hover { filter:brightness(1.15); }
+  .btn.secondary { background:#3a3a6a; color:#e8e8f0; }
+  .info { font-size:13px; line-height:1.5; min-height:64px; }
+  .info b { color:var(--gold); }
+  .hexcell { cursor:pointer; }
+  .hexcell:hover { filter:brightness(1.4); }
+  .cellsel { stroke:var(--gold) !important; stroke-width:3 !important; }
+  .status-row { display:flex; justify-content:space-between; font-size:13px; margin:4px 0; }
+  .turn { font-size:16px; font-weight:bold; margin-bottom:8px; }
+  .log { height:220px; overflow:auto; font-family:monospace; font-size:11px; background:#12122a; padding:8px; border-radius:6px; white-space:pre-wrap; }
+  .holdbar { display:flex; gap:8px; margin:6px 0; }
+  .hold { flex:1; text-align:center; padding:4px; border-radius:6px; font-size:12px; }
+  footer { margin-top:12px; font-size:11px; opacity:.5; }
+  textarea { width:100%; height:80px; background:#12122a; color:#e8e8f0; border:1px solid #3a3a6a; border-radius:6px; font-family:monospace; font-size:11px; }
+</style>
+</head>
+<body>
+  <h1>Эльо — игра (прототип v51)</h1>
+  <div class="subtitle">3 игрока: Плюсы / Минусы / Нули. Клик по своей фигуре → подсветка ходов → клик по цели. ИИ и турнир доступны в панели.</div>
+  <div class="layout">
+    <div class="board-wrap">
+      <svg id="board" viewBox="0 0 850 800"></svg>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h3>Режим игры</h3>
+        <div class="status-row">
+          <label for="selTurn">Порядок хода:</label>
+          <select id="selTurn"><option value="cycle">Цикл</option><option value="arrow">Стрелка</option></select>
+        </div>
+        <div class="status-row">
+          <label for="selDeath">Тип игры:</label>
+          <select id="selDeath"><option value="main">Основной (убил=победил)</option><option value="long">Длинный (выбывание)</option></select>
+        </div>
+        <div class="status-row"><span>Ход:</span><span id="moveNum">0</span> / 90</div>
+        <div class="status-row"><span>Причина:</span><span id="winReason"></span></div>
+      </div>
+      <div class="card">
+        <h3>Статус</h3>
+        <div id="turn" class="turn">Ход: Плюсы</div>
+        <div class="holdbar">
+          <div class="hold" style="background:#5b9bd533;color:#5b9bd5">П: <span id="holdPlus">0</span>/3</div>
+          <div class="hold" style="background:#e05a5a33;color:#e05a5a">М: <span id="holdMinus">0</span>/3</div>
+          <div class="hold" style="background:#9aa0a633;color:#9aa0a6">Н: <span id="holdZero">0</span>/3</div>
+        </div>
+        <div class="status-row"><span>Военные П/М:</span><span id="mainCount">10 / 10</span></div>
+        <div class="status-row"><span>Нулей:</span><span id="nullCount">10</span></div>
+        <div class="status-row"><span>Линейные П/М:</span><span id="lineCount">1 / 1</span></div>
+        <div id="gameOver" style="margin-top:8px;color:#c9a227;font-weight:bold;"></div>
+      </div>
+      <div class="card">
+        <h3>Клетка</h3>
+        <div id="info" class="info">Кликните по клетке.</div>
+      </div>
+      <div class="card">
+        <h3>Управление</h3>
+        <button class="btn" id="btnNew">Новая игра</button>
+        <button class="btn secondary" id="btnAiMove">Ход ИИ</button>
+        <button class="btn secondary" id="btnAuto">Авто-игра (3 агента)</button>
+        <button class="btn secondary" id="btnStop">Стоп</button>
+        <button class="btn secondary" id="btnExport">Экспорт лога</button>
+      </div>
+      <div class="card">
+        <h3>Лог ходов</h3>
+        <div id="log" class="log"></div>
+      </div>
+      <div class="card">
+        <h3>Воспроизведение</h3>
+        <button class="btn secondary" id="btnReplayStart">Start</button>
+        <button class="btn secondary" id="btnReplayStep">Step</button>
+        <button class="btn secondary" id="btnReplayAll">Play All</button>
+        <div style="font-size:12px;margin-top:6px;">Позиция: <span id="replayPos">0</span></div>
+      </div>
+      <div class="card">
+        <h3>Импорт лога (JSON)</h3>
+        <textarea id="importArea"></textarea>
+        <button class="btn secondary" id="btnImport">Импорт</button>
+      </div>
+    </div>
+  </div>
+  <footer>docs/dev/elio/ · макет v51 · игра</footer>
+
+<script src="elio_engine.js"></script>
+<script src="elio_board.js"></script>
+<script src="elio_ai.js"></script>
+<script src="elio_recorder.js"></script>
+<script>
+const E = window.ElioEngine;
+const B = window.ElioBoard;
+const AI = window.ElioAI;
+const REC = window.ElioRecorder;
+
+let state = E.init({turn: document.getElementById('selTurn').value,
+                    death: document.getElementById('selDeath').value});
+let autoPlay = false;
+let autoTimer = null;
+
+const svg = document.getElementById('board');
+
+function onMoveRequest(pieceId,q,r){
+  if(state.gameOver) return;
+  const r2 = E.applyMove(state, pieceId, q, r);
+  if(r2.error){ alert('Недопустимый ход: '+r2.error); return; }
+  state = r2.state;
+  REC.addMove(r2.record);
+  updateUI();
+  B.render(state);
+  // if game over show
+  if(state.gameOver){
+    document.getElementById('gameOver').textContent = 'Победа: ' + E.FACTION_NAME[state.winner] + ' ('+state.winReason+')';
+    stopAuto();
+  }
+}
+
+B.init(svg, onMoveRequest, onSupportRequest);
+B.render(state);
+
+function updateUI(){
+  const E2=E;
+  document.getElementById('turn').textContent = 'Ход: ' + E.FACTION_NAME[state.turnFaction];
+  document.getElementById('turn').style.color = E.FACTION_COLOR[state.turnFaction];
+  document.getElementById('holdPlus').textContent  = state.hold.plus;
+  document.getElementById('holdMinus').textContent = state.hold.minus;
+  document.getElementById('holdZero').textContent  = state.hold.zero;
+  const pm = state.pieces.filter(p=>p.alive && p.faction==='plus').length;
+  const mm = state.pieces.filter(p=>p.alive && p.faction==='minus').length;
+  const zn = state.pieces.filter(p=>p.alive && p.faction==='zero').length;
+  const lp = state.pieces.filter(p=>p.alive && p.faction==='plus' && p.type==='line').length;
+  const lm = state.pieces.filter(p=>p.alive && p.faction==='minus' && p.type==='line').length;
+  document.getElementById('mainCount').textContent = pm + ' / ' + mm;
+  document.getElementById('nullCount').textContent = zn;
+  document.getElementById('lineCount').textContent = lp + ' / ' + lm;
+  document.getElementById('moveNum').textContent = state.moveNumber;
+  const reasonRu = {
+    king: 'гибель Линейного (короля)',
+    hold: 'удержание «Ц» 3 круга',
+    limit: 'лимит 90 — «Ц» занят стоящим',
+    draw: 'лимит 90 — «Ц» пуст, ничья',
+    zeros_last: 'обе военные фракции выбыли — победа Нулей',
+    null: ''
+  };
+  document.getElementById('winReason').textContent = state.gameOver ? (reasonRu[state.winReason]||state.winReason||'') : '';
+  // log
+  const logEl = document.getElementById('log');
+  logEl.textContent = REC.exportText();
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function applyAction(mv){
+  // применяем любое действие ИИ: move / support / skip (ветом режим)
+  if(mv.type==='skip'){ state=mv.state||E.skipTurn(state).state; }
+  else if(mv.type==='support'){ state=mv.state||E.applySupport(state, mv.zeroId, mv.targetId).state; }
+  else { state=mv.state||E.applyMove(state, mv.pieceId, mv.q, mv.r).state; }
+  // лог: REC.addMove из record (дечки из движка в state.log)
+  const lastRec = state.log[state.log.length-1];
+  if(lastRec) REC.addMove(lastRec);
+  updateUI();
+  B.render(state);
+  if(state.gameOver){
+    document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья') +
+      (state.winReason?(' ('+(state.winReason||'')+')'):'');
+    stopAuto();
+  }
+}
+
+function onSupportRequest(zeroId,targetId){
+  if(state.gameOver) return;
+  const r=E.applySupport(state, zeroId, targetId);
+  if(r.error){ alert('Недопустимая поддержка: '+r.error); return; }
+  state=r.state;
+  if(r.record) REC.addMove(r.record);
+  updateUI();
+  B.render(state);
+  if(state.gameOver){
+    document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья');
+    stopAuto();
+  }
+}
+
+function newGame(){
+  stopAuto();
+  state = E.init({turn: document.getElementById('selTurn').value,
+                  death: document.getElementById('selDeath').value});
+  REC.reset();
+  B.clearSelection();
+  B.render(state);
+  document.getElementById('gameOver').textContent='';
+  document.getElementById('replayPos').textContent='0';
+  updateUI();
+}
+
+document.getElementById('btnNew').addEventListener('click', newGame);
+document.getElementById('selTurn').addEventListener('change', newGame);
+document.getElementById('selDeath').addEventListener('change', newGame);
+
+document.getElementById('btnAiMove').addEventListener('click', function(){
+  if(state.gameOver) return;
+  const f=state.turnFaction;
+  const mv = (f==='zero') ? AI.chooseMove(state,f) : AI.chooseMoveAggressive(state,f);
+  if(mv&&mv.type==='skip'){ state=mv.state||E.skipTurn(state).state; }
+  else if(mv&&mv.type==='support'){ state=state; if(mv.state){ state=mv.state; } else { state=E.applySupport(state, mv.zeroId, mv.targetId).state; } }
+  else if(mv&&mv.type==='move'){ state=state; if(mv.state){ state=mv.state; } else { state=E.applyMove(state, mv.pieceId, mv.q, mv.r).state; } }
+  const lastRec=state.log[state.log.length-1];
+  if(lastRec) REC.addMove(lastRec);
+  updateUI();
+  B.render(state);
+  if(state.gameOver) document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья');
+});
+
+function doAutoStep(){
+  if(state.gameOver){ stopAuto(); return; }
+  const f=state.turnFaction;
+  const mv = (f==='zero') ? AI.chooseMove(state,f) : AI.chooseMoveAggressive(state,f);
+  if(mv&&mv.type==='skip'){ state=mv.state||E.skipTurn(state).state; }
+  else if(mv&&mv.type==='support'){ if(mv.state){ state=mv.state; } else { state=E.applySupport(state, mv.zeroId, mv.targetId).state; } }
+  else if(mv&&mv.type==='move'){ if(mv.state){ state=mv.state; } else { state=E.applyMove(state, mv.pieceId, mv.q, mv.r).state; } }
+  if(!state.gameOver && autoPlay){ autoTimer = setTimeout(doAutoStep, 250); }
+  const lastRec=state.log[state.log.length-1];
+  if(lastRec) REC.addMove(lastRec);
+  updateUI();
+  B.render(state);
+  if(state.gameOver){
+    document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья');
+    stopAuto();
+  }
+}
+function startAuto(){
+  if(autoPlay) return;
+  autoPlay=true;
+  doAutoStep();
+}
+function stopAuto(){
+  autoPlay=false;
+  if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+}
+document.getElementById('btnAuto').addEventListener('click', startAuto);
+document.getElementById('btnStop').addEventListener('click', stopAuto);
+
+document.getElementById('btnExport').addEventListener('click', function(){
+  const txt = REC.exportJSON();
+  const blob = new Blob([txt], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='elio_game.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// replay
+document.getElementById('btnReplayStart').addEventListener('click', function(){
+  const s = REC.startReplay();
+  state = s;
+  B.clearSelection();
+  B.render(state);
+  updateUI();
+  document.getElementById('replayPos').textContent = REC.getReplayIndex();
+});
+document.getElementById('btnReplayStep').addEventListener('click', function(){
+  const res = REC.stepReplay();
+  state = res.state;
+  B.clearSelection();
+  B.render(state);
+  updateUI();
+  document.getElementById('replayPos').textContent = REC.getReplayIndex();
+  if(res.error) alert('Replay error: '+res.error);
+});
+document.getElementById('btnReplayAll').addEventListener('click', function(){
+  let i=0;
+  function step(){
+    if(REC.getReplayIndex() >= REC.getMoves().length) return;
+    const res = REC.stepReplay();
+    state=res.state;
+    B.clearSelection();
+    B.render(state);
+    updateUI();
+    document.getElementById('replayPos').textContent = REC.getReplayIndex();
+    if(!res.done && !res.error) setTimeout(step, 400);
+    if(res.error) alert('Replay error: '+res.error);
+  }
+  if(REC.getReplayIndex()===0 && REC.getMoves().length>0 && !REC.getReplayState()){
+    REC.startReplay();
+    state=REC.getReplayState();
+    B.render(state); updateUI();
+  }
+  step();
+});
+
+document.getElementById('btnImport').addEventListener('click', function(){
+  const txt = document.getElementById('importArea').value.trim();
+  if(!txt) return;
+  try {
+    const n = REC.importJSON(txt);
+    alert('Импортировано ходов: '+n);
+  } catch(e){
+    alert('Ошибка импорта: '+e.message);
+  }
+});
+
+updateUI();
+</script>
+</body>
+</html>

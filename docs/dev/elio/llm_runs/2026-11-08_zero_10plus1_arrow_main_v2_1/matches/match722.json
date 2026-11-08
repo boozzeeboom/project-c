@@ -1,0 +1,135 @@
+{
+ "matchNo": 722,
+ "assign": {
+  "deepseek": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 1,
+ "winner": "plus",
+ "reason": "king",
+ "moves": 8,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 1,
+   "raw": "{\"plan\":\"Свободные нули стягиваю к центру и жёлтым воротам, чтобы блокировать линии и готовить заход на «Ц»; Скиталец остаётся темпом на C1. Держу Линейных прикрытыми и не заявляю нейтралей без нужды.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "Свободные нули стягиваю к центру и жёлтым воротам, чтобы блокировать линии и готовить заход на «Ц»; Скиталец остаётся темпом на C1. Держу Линейных прикрытыми и не заявляю нейтралей без нужды.",
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 4,
+   "raw": "{\"plan\":\"Продолжаю вести свободный нуль по прямой к центру/жёлтым воротам (B1 → (1,0)), создавая блокирующее тело на линии тяжёлых. Скиталец на C1 остаётся темпом; поддержки не трачу, пока нет угрозы Линейному или «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":1,\"r\":0}}",
+   "plan": "Продолжаю вести свободный нуль по прямой к центру/жёлтым воротам (B1 → (1,0)), создавая блокирующее тело на линии тяжёлых. Скиталец на C1 остаётся темпом; поддержки не трачу, пока нет угрозы Линейному или «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -3,
+    "r": 3,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -5,
+    "r": 5,
+    "capture": true
+   },
+   "ai": true,
+   "winner": "plus",
+   "reason": "king",
+   "after": 8
+  }
+ ]
+}

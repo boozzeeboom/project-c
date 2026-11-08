@@ -1,10 +1,11 @@
 {
   "experiment": "deepseek_zero_vs_2ai_10plus1_arrow_main",
-  "engine": "elio_engine.js v1.3 (P0 bugs found: off-board 1-step moves, displace board corruption, zero displace; see ../../AUDIT_V13D.md)",
+  "engine": "v1.3d — P0/P1 fixed. Runs v1/v2/v2-ext6 were played on pre-fix v1.3; v2.1 is the first clean run. See ../../AUDIT_V13D.md.",
   "notes": [
     "Для графиков прогресса используйте clean*-поля: contaminated-игры нельзя смешивать с чистыми.",
     "v1 не является проверкой доктрины: action list показывал только поддержки.",
-    "712, 715, 716, 717 contaminated (displace / off-board); 717-победа не считается доказательством."
+    "712, 715, 716, 717 contaminated (displace / off-board); 717-победа не считается доказательством.",
+    "v2.1 (721–726) — 0 contaminated; 725 — чистая победа; остальные 5 — 0 center ticks."
   ],
   "runs": [
     {
@@ -112,6 +113,45 @@
       "cleanLineDeaths": 2,
       "contaminatedGames": [712, 715, 716, 717],
       "note": "Единственная чистая победа v2 — 711. Contaminated-победы/ничьи не считаются прогрессом."
+    },
+    {
+      "runId": "2026-11-08_zero_10plus1_arrow_main_v2_1",
+      "date": "2026-11-08",
+      "engine": "elio_engine.js v1.3d (P0/P1 fixed)",
+      "promptVersion": "zero-doctrine-v2-action-list",
+      "games": 6,
+      "wins": 1,
+      "draws": 0,
+      "losses": 5,
+      "contaminatedGames": [],
+      "cleanGames": 6,
+      "cleanWins": 1,
+      "cleanDraws": 0,
+      "cleanLosses": 5,
+      "avgMoves": 29.8,
+      "cleanAvgMoves": 29.8,
+      "llmActions": 47,
+      "llmMoves": 44,
+      "llmSupports": 3,
+      "displaces": 0,
+      "osc1": 3,
+      "osc2": 2,
+      "repeatPiece": 30,
+      "gateMoves": 8,
+      "centerTicks": 3,
+      "maxHoldByLlmAction": 2,
+      "cleanMaxHold": 3,
+      "zeroHoldMaxByGame": {
+        "721": 0,
+        "722": 0,
+        "723": 0,
+        "724": 0,
+        "725": 3,
+        "726": 0
+      },
+      "lineDeaths": 1,
+      "plans": 47,
+      "note": "Первый чистый прогон: 0 contaminated, 0 illegal, 0 integrity. 725 — чистая победа удержанием; остальные 5 — 0 center ticks. Осцилляции 3/44 (6.8%)."
     }
   ]
 }

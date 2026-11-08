@@ -20,7 +20,7 @@
       const pass = m.passTo ? ` → передача: ${E.FACTION_NAME[m.passTo]}` : '';
       if(kind(m)==='skip') lines.push(`${m.moveNumber}. SKIP ${E.FACTION_NAME[m.faction]}${pass}`);
       else if(kind(m)==='support') lines.push(`${m.moveNumber}. Поддержка ${m.pieceId} → ${m.targetId}${pass}`);
-      else if(kind(m)==='displace') lines.push(`${m.moveNumber}. Оттеснение ${m.pieceId}: ${m.from&&m.from.q},${m.from&&m.from.r} → ${m.to&&m.to.q},${m.to&&m.to.r}${pass}`)
+      else if(kind(m)==='displace') lines.push(`${m.moveNumber}. Оттеснение ${m.pieceId}: нуль ${m.from&&m.from.q},${m.from&&m.from.r} → ${m.to&&m.to.q},${m.to&&m.to.r}${pass}`)
       else lines.push(`${m.moveNumber}. ${m.pieceId} ${m.from.q},${m.from.r} → ${m.to.q},${m.to.r}${cap}${pass}`);
     });
     return lines.join('\n');

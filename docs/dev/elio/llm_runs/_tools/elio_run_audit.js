@@ -134,9 +134,10 @@ for (const m of matches) {
   let s = s0;
   const llm = { actions: 0, moves: 0, supports: 0, skips: 0, displaces: 0, captures: 0, lineKills: 0, supportNull: 0, noopSupports: 0, osc1: 0, osc2: 0, repeatPiece: 0, gateMoves: 0, centerTicks: 0, maxHold: 0, holdTicks: 0 };
   const ai = { actions: 0, moves: 0, supports: 0, skips: 0, displaces: 0, captures: 0, lineKills: 0, osc1: 0, osc2: 0, repeatPiece: 0, centerTicks: 0, maxHold: 0, holdTicks: 0 };
-  const flags = { staleSupports: [], integrity: [], illegal: [], outsideDisplayed: [], missedLineDefense: [], noDefenseAvailable: [], centerOpportunities: [], supportTargets: [], lineDeaths: [], fallbacks: 0, errors: [] };
+  const flags = { staleSupports: [], integrity: [], illegal: [], outsideDisplayed: [], missedLineDefense: [], noDefenseAvailable: [], centerOpportunities: [], supportTargets: [], lineDeaths: [], plans: [], displaceEvents: [], fallbacks: 0, errors: [] };
   const lastFrom = {}; const posHistory = {}; const lastMovePiece = { plus: null, minus: null, zero: null };
   let llmTurns = 0;
+  let zeroHoldMax = 0;
   let broke = false;
   for (let i = 0; i < (m.log || []).length; i++) {
     const entry = m.log[i];
@@ -175,6 +176,7 @@ for (const m of matches) {
         flags.supportTargets.push({ i, move: s.moveNumber, zero: a.zeroId, target: a.targetId, targetType: t ? t.type : null, targetFaction: t ? t.faction : null, nullTarget: a.targetId === null });
         if (a.targetId === null) llm.supportNull++;
       }
+      if (entry.plan) flags.plans.push({ i, move: s.moveNumber, plan: entry.plan, act: a });
     }
     const b = isLLM ? llm : ai;
     b.actions++;
@@ -193,6 +195,7 @@ for (const m of matches) {
     if (entry.winner !== undefined && (entry.winner || null) !== (s.winner || null)) flags.errors.push({ i, winnerLog: entry.winner, winnerReplay: s.winner });
     if (entry.reason !== undefined && (entry.reason || null) !== (s.winReason || null)) flags.errors.push({ i, reasonLog: entry.reason, reasonReplay: s.winReason });
     const rec = res.record || {};
+    if (rec.kind === 'displace') flags.displaceEvents.push({ i, move: s.moveNumber, f, isLLM, pieceId: rec.pieceId, zeroFrom: rec.from, zeroTo: rec.to, attackerPos: rec.attackerPos });
     if (a.kind === 'move') {
       b.moves++;
       if (rec.kind === 'displace' || a.displace) b.displaces++;
@@ -224,13 +227,12 @@ for (const m of matches) {
       if (lastMovePiece[f] === a.pieceId) b.repeatPiece++;
       lastMovePiece[f] = a.pieceId;
     }
-    // центр и hold
+    // центр и hold (учитываем hold именно действующей стороны)
     const cp = E.occupantAt(s);
     if (cp && cp.faction === f) b.centerTicks++;
-    for (const x of ['plus', 'minus', 'zero']) {
-      if (s.hold[x] > (prevHold[x] || 0)) b.holdTicks++;
-      if (s.hold[x] > b.maxHold) b.maxHold = s.hold[x];
-    }
+    if (s.hold[f] > (prevHold[f] || 0)) b.holdTicks++;
+    if (s.hold[f] > b.maxHold) b.maxHold = s.hold[f];
+    if (s.hold.zero > zeroHoldMax) zeroHoldMax = s.hold.zero;
     // целостность / залипшие щиты
     const ie = integrity(s);
     if (ie.length) flags.integrity.push({ i, move: s.moveNumber, errors: ie });
@@ -247,7 +249,7 @@ for (const m of matches) {
     matchNo: m.matchNo,
     result: { winner: m.winner || 'draw', reason: m.reason || 'draw', moves: m.moves },
     replay: { winner: s.winner || 'draw', reason: s.winReason || 'draw', moves: s.moveNumber, ok: replayOk },
-    llm, ai, llmTurns,
+    llm, ai, llmTurns, zeroHoldMax,
     flags: {
       fallbacks: flags.fallbacks,
       errors: flags.errors,
@@ -260,6 +262,8 @@ for (const m of matches) {
       centerOpportunities: flags.centerOpportunities,
       supportTargets: flags.supportTargets,
       lineDeaths: flags.lineDeaths,
+      plans: flags.plans,
+      displaceEvents: flags.displaceEvents,
     },
   });
 }
@@ -278,5 +282,7 @@ for (const r of report) {
     centerOpportunities: r.flags.centerOpportunities.length,
     lineDeaths: r.flags.lineDeaths.length,
     supportTargets: r.flags.supportTargets.length,
+    plans: r.flags.plans.length,
+    displaceEvents: r.flags.displaceEvents.length,
   }));
 }

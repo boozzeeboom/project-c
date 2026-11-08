@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-08",
+  "experiment": "zero_deepseek_vs_2ai_10plus1_arrow_main_v2_1",
+  "engine": "elio_engine.js v1.3d (P0/P1 fixed: off-board, displace corruption, zero displace, stale supports, king/hold, axis push, recorder)",
+  "model": {
+    "id": "deepseek-v4.1-flash",
+    "providerID": "opencode-go",
+    "variant": "low"
+  },
+  "faction": "zero",
+  "turnMode": "arrow",
+  "deathMode": "main",
+  "pawns": 1,
+  "firstMovePawn": false,
+  "limit": 60,
+  "games": 6,
+  "startMatchNo": 721,
+  "topActions": 16,
+  "prompt": "prompt.txt",
+  "promptVersion": "zero-doctrine-v2-action-list",
+  "changesFromV2": [
+    "P0-1: legalMoves не выпускает одношаговые фигуры за доску.",
+    "P0-2: оттеснение больше не разрушает доску; атакующий остаётся, нуль сдвигается.",
+    "P0-3: Нули не могут оттеснять.",
+    "P0-4: applyDisplace проверяет соседство/тип/цель.",
+    "P1-1: залипшие щиты сбрасываются при дистанции >1.",
+    "P1-2: hold не перекрывает king в одном полуходе.",
+    "P1-3: оттеснение по осям q=0/r=0 разрешено.",
+    "P1-4: replay оттеснения согласован с записью.",
+    "Арена: integrity-guard после каждого действия + логирование raw/plan.",
+    "Промпт намеренно не менялся; action list изменился только за счёт удаления нелегальных действий (P0), чтобы изолировать эффект фиксов движка."
+  ]
+}

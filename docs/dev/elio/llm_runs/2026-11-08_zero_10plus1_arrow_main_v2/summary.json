@@ -75,7 +75,12 @@
       "repeatPiece": 12,
       "gateMoves": 6,
       "centerTicks": 7,
-      "maxHold": 3
+      "maxHold": 3,
+      "zeroHoldMaxByGame": {
+        "711": 3,
+        "712": 0,
+        "713": 0
+      }
     },
     "ai": {
       "actions": 47,

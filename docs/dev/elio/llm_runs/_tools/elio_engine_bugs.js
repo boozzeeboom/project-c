@@ -186,8 +186,8 @@ function dist(a, b) { return E.dist([a.q, a.r], [b.q, b.r]); }
   place(s, eng, 4, 1);
   place(s, z, 3, 1);
   const lv = E.protLevel(s, z);
-  rec('zero_engineer_aura', '0 (по одной трактовке §9) или 1 (аура Инженера)',
-    String(lv), lv === 0, 'если 1 — нуль не пробивается лёгкими, это меняет баланс');
+  rec('zero_engineer_aura', '1 (принято: аура Инженера действует и на Нулей; §9 обновлён)',
+    String(lv), lv === 1, 'щит 1 от своего Инженера; щит 2 — только поддержкой другого нуля');
 })();
 
 // 8. Лимит 90 против 120.
@@ -202,8 +202,8 @@ function dist(a, b) { return E.dist([a.q, a.r], [b.q, b.r]); }
     '10+1: 90 (в rules §12.3; в тесте арены 60)',
     String(b), b === 90);
   rec('limit_15',
-    '15 фигур: 120 (§13/§23) или 90 (§12.3)',
-    String(c), c === 120, 'в документе §12.3 сказано «90 во всех режимах» — противоречие');
+    '15 фигур: 120 (тест; §12.3 исправлен)',
+    String(c), c === 120, '10/10+1 — 90, 15 — 120');
 })();
 
 // 9. Скиталец не поддерживает.
@@ -246,8 +246,7 @@ function dist(a, b) { return E.dist([a.q, a.r], [b.q, b.r]); }
   rec('center_zero_vulnerable', "'both'", String(v), v === 'both');
 })();
 
-// 12. applyMove-оттеснение: военная фигура должна либо остаться на месте (и её клетка цела),
-// либо встать на клетку нуля. Сейчас клетка атакующего очищается, а сам он никуда не ставится.
+// 12. applyMove-оттеснение: атакующий остаётся на своей клетке, нуль сдвигается.
 (function () {
   const s = E.init({ turn: 'plus', death: 'main', pawns: 0 });
   clearBoard(s);
@@ -269,19 +268,11 @@ function dist(a, b) { return E.dist([a.q, a.r], [b.q, b.r]); }
   const zeroOld = st.cells.get('1,-2');
   const zeroNew = st.cells.get('1,-3');
   const issues = [];
+  if (bbP.q !== 1 || bbP.r !== -1) issues.push('атакующий должен остаться на (1,-1), а он в ' + bbP.q + ',' + bbP.r);
   if (!oldBb || oldBb.piece !== bb.id) issues.push('клетка атакующего (1,-1) не содержит его: ' + (oldBb ? oldBb.piece : 'null'));
   if (!zeroOld || zeroOld.piece !== null) issues.push('клетка нуля (1,-2) всё ещё содержит: ' + (zeroOld ? zeroOld.piece : 'null'));
   if (!zeroNew || zeroNew.piece !== zP.id) issues.push('нуль (1,-3) не привязан');
-  if (bbP.q === 1 && bbP.r === -1) {
-    // остался на месте — тогда его клетка должна быть цела
-    if (!oldBb || oldBb.piece !== bb.id) issues.push('атакующий остался на (1,-1), но клетка очищена');
-  } else if (bbP.q === 1 && bbP.r === -2) {
-    // встал на клетку нуля
-    if (!zeroOld || zeroOld.piece !== bb.id) issues.push('атакующий встал на (1,-2), но клетка не привязана');
-  } else {
-    issues.push('атакующий в неожиданной позиции ' + bbP.q + ',' + bbP.r);
-  }
-  rec('applyMove_displace_integrity', 'нет рассогласования клеток/фигур', issues.length ? issues.join('; ') : 'ок', issues.length === 0);
+  rec('applyMove_displace_integrity', 'атакующий на месте, клетки согласованы', issues.length ? issues.join('; ') : 'ок', issues.length === 0);
 })();
 
 // 13. Одношаговые фигуры не должны уходить за доску.
@@ -323,7 +314,7 @@ function dist(a, b) { return E.dist([a.q, a.r], [b.q, b.r]); }
   const replay = E.applyDisplace(E.clone(s), recMove.pieceId, recMove.from.q, recMove.from.r);
   rec('recorder_displace_replay',
     'replay должен применять оттеснение без ошибки',
-    replay.error ? 'ошибка: ' + replay.error : 'успешно (но from атакующего используется как позиция нуля)',
+    replay.error ? 'ошибка: ' + replay.error : 'успешно',
     !replay.error,
     'applyMove.from=' + JSON.stringify(recMove.from) + ', to=' + JSON.stringify(recMove.to));
 })();

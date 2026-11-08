@@ -43,7 +43,7 @@
       const lv=E.protLevel(state,p);
       s += lv===2?12:(lv===1?5:0);
     }
-    //零 на «Ц» своей фракции и его щиты (для Нулей)
+    // Нули на «Ц» своей фракции и их щиты (для Нулей)
     for(const zb of state.pieces.filter(z=>z.alive&&E.isNullType(z.type)&&z.q===0&&z.r===0)){
       if(zb.faction===faction) s+=30;
       for(const n of E.neighbors(0,0)){
@@ -144,7 +144,7 @@
         }
         if(p.supportTarget) out.push({type:'support',zeroId:p.id,targetId:null});
       } else {
-        for(const mv of E.legalMoves(state,p.id)) out.push({type:'move',pieceId:p.id,q:mv.q,r:mv.r,capture:mv.capture});
+        for(const mv of E.legalMoves(state,p.id)) out.push({type:'move',pieceId:p.id,q:mv.q,r:mv.r,capture:mv.capture,displace:mv.displace});
       }
     }
     return out;

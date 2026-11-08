@@ -54,7 +54,16 @@
     "gateMoves": 12,
     "centerTicks": 13,
     "maxHoldByLlmAction": 2,
-    "maxHoldReached": 3
+    "maxHoldReached": 3,
+    "zeroHoldMaxByGame": {
+      "714": 2,
+      "715": 0,
+      "716": 0,
+      "717": 3,
+      "718": 0,
+      "719": 1
+    },
+    "cleanMaxHold": 2
   },
   "aiMetrics": {
     "actions": 97,

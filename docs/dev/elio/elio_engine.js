@@ -159,6 +159,7 @@
     if(state.firstMovePawn && !(state.firstMoveDone&&state.firstMoveDone[piece.faction]) && hasPawn(state,piece.faction) && !isPawnType(piece.type)) return [];
     const res=[], seen=new Set();
     const push=(q,r,extra)=>{
+      if(!isValidCell(state,q,r)) return;          // не выпускаем фигуры за доску
       const key=q+','+(extra&&extra.displace?'D':'')+r;
       if(seen.has(key)) return;
       seen.add(key); res.push(Object.assign({q,r,capture:false},extra||{},{pieceId}));
@@ -233,15 +234,17 @@
         if(!GATE_SET.has(k)) out.pop();
       }
     }
-    // Оттеснение нейтральных нулей
-    for(const n of neighbors(piece.q,piece.r)){
-      const zp=pieceAt(state,n[0],n[1]);
-      if(zp&&isNeutralZero(zp)){
-        const dz=[zp.q-piece.q, zp.r-piece.r];
-        const pz=[zp.q+dz[0], zp.r+dz[1]];
-        if(isValidCell(state,pz[0],pz[1])&&!pieceAt(state,pz[0],pz[1])
-           &&pz[0]!==0&&pz[1]!==0&&!GATE_SET.has(pz[0]+','+pz[1])&&!DISPUTED_SET.has(pz[0]+','+pz[1])){
-          out.push({pieceId,q:zp.q,r:zp.r,displace:true,pushTo:{q:pz[0],r:pz[1]},capture:false});
+    // Оттеснение нейтральных нулей — только военной фигурой (§7)
+    if(!isNullType(piece.type)){
+      for(const n of neighbors(piece.q,piece.r)){
+        const zp=pieceAt(state,n[0],n[1]);
+        if(zp&&isNeutralZero(zp)){
+          const dz=[zp.q-piece.q, zp.r-piece.r];
+          const pz=[zp.q+dz[0], zp.r+dz[1]];
+          if(isValidCell(state,pz[0],pz[1])&&!pieceAt(state,pz[0],pz[1])
+             &&!(pz[0]===0&&pz[1]===0)&&!GATE_SET.has(pz[0]+','+pz[1])&&!DISPUTED_SET.has(pz[0]+','+pz[1])){
+            out.push({pieceId,q:zp.q,r:zp.r,displace:true,pushTo:{q:pz[0],r:pz[1]},capture:false});
+          }
         }
       }
     }
@@ -271,6 +274,8 @@
       // снимаем щиты на инертных
       state.pieces.forEach(p=>{ if(p.supportTarget){ const t=pieceById(state,p.supportTarget); if(!t||t.inert||!t.alive) p.supportTarget=null; } });
       if(state.eliminated.plus&&state.eliminated.minus){
+        // В текущем Длинном режиме недостижимо: после первой гибели Линейного
+        // фигуры фракции инертны, а Нули не бьют. Оставлено для книжного режима §14.
         state.gameOver=true; state.winner='zero'; state.winReason='zeros_last';
       }
     }
@@ -282,9 +287,8 @@
     s.pieces.forEach(p=>{
       if(!p.supportTarget) return;
       const t=s.pieces.find(x=>x.id===p.supportTarget);
-      if(!t||!t.alive) { p.supportTarget=null; return; }
-      // дистанция должна остаться 1; если нет — щит сбрасывается
-      if(dist([p.q,p.r],[t.q,t.r])!==1 || isNullType(t.type)&&t.inert){ if(t.inert) p.supportTarget=null; }
+      // §8: щит живёт, пока нуль рядом, цель жива и не инертна
+      if(!t||!t.alive||t.inert||dist([p.q,p.r],[t.q,t.r])!==1) p.supportTarget=null;
     });
   }
 
@@ -463,7 +467,12 @@
     s.actedBy[prevFaction]=true;
     s.moveNumber++;
     const allActed=FACTIONS.every(f=>s.actedBy[f]);
-    if(allActed){ s.actedBy={plus:false,minus:false,zero:false}; tickCircle(s); }
+    if(allActed){
+      s.actedBy={plus:false,minus:false,zero:false};
+      // Если этот же полуход уже закончил партию (например, убит Линейный),
+      // тик «Ц» не должен перекрывать немедленную победу.
+      if(!s.gameOver) tickCircle(s);
+    }
     if(!s.gameOver&&s.moveNumber>=s.limit){
       const cp=occupantAt(s);
       if(cp){ s.gameOver=true; s.winner=cp.faction; s.winReason='limit'; }
@@ -503,15 +512,21 @@
     let captureRecord=null;
     const target=pieceAt(s,toQ,toR);
     if(mv.displace){
-      // оттеснение: пушим нуля на mv.pushTo
+      // Оттеснение: атакующий остаётся на месте, нуль сдвигается на mv.pushTo (§7).
+      if(isNullType(p.type)) return {state:s,record:null,error:'zeroes cannot displace'};
       const zero=pieceAt(s,toQ,toR);
-      if(!zero){ return {state:s,record:null,error:'bad displace cell'}; }
-      s.cells.set(from.q+','+from.r,{...s.cells.get(from.q+','+from.r),piece:null});
+      if(!zero||!isNeutralZero(zero)) return {state:s,record:null,error:'bad displace cell'};
+      const zc=s.cells.get(toQ+','+toR);
+      if(zc) zc.piece=null;                       // старая клетка нуля
       zero.q=mv.pushTo.q; zero.r=mv.pushTo.r;
       const c2=s.cells.get(mv.pushTo.q+','+mv.pushTo.r);
       if(c2)c2.piece=zero.id;
+      if((s.pawns||0)>0 && isPawnType(p.type)) s.firstMoveDone[p.faction]=true;
       validateSupports(s);
-      const record={kind:'displace',moveNumber:s.moveNumber+1,faction:p.faction,pieceId,from,to:{q:toQ,r:toR},pushTo:mv.pushTo,extra:null,capture:null};
+      const record={kind:'displace',moveNumber:s.moveNumber+1,faction:p.faction,pieceId,
+        from:{q:toQ,r:toR},to:{q:zero.q,r:zero.r},pushTo:{q:zero.q,r:zero.r},
+        attackerId:p.id,attackerPos:{q:p.q,r:p.r},
+        holdAfter:{...s.hold},extra:null,capture:null};
       advanceTurn(s,p.faction,record,passTo);
       return {state:s,record,error:null};
     }
@@ -561,7 +576,8 @@
     if(s.mode.turn==='pass'&&passTo&&!validPassTarget(s,s.turnFaction,passTo)) return {state:s,record:null,error:'illegal pass target'};
     const a=s.pieces.find(x=>x.id===attackerId&&x.alive&&!x.inert);
     const z=pieceAt(s,zeroQ,zeroR);
-    if(!a||!z||!isNeutralZero(z)||a.faction!==s.turnFaction) return {state:s,record:null,error:'bad displace'};
+    if(!a||isNullType(a.type)||!z||!isNeutralZero(z)||a.faction!==s.turnFaction) return {state:s,record:null,error:'bad displace'};
+    if(dist([a.q,a.r],[zeroQ,zeroR])!==1) return {state:s,record:null,error:'not adjacent'};
     if(s.firstMovePawn && !(s.firstMoveDone&&s.firstMoveDone[a.faction]) && hasPawn(s,a.faction)) return {state:s,record:null,error:'first move must be pawn'};
     const dir=[zeroQ-a.q, zeroR-a.r];
     const pz=[zeroQ+dir[0], zeroR+dir[1]];
@@ -570,9 +586,13 @@
     z.q=pz[0]; z.r=pz[1];
     const c2=s.cells.get(pz[0]+','+pz[1]);
     if(c2)c2.piece=z.id;
+    if((s.pawns||0)>0 && isPawnType(a.type)) s.firstMoveDone[a.faction]=true;
     validateSupports(s);
     const zeroQ2=z.q, zeroR2=z.r;
-    const record={kind:'displace',moveNumber:s.moveNumber+1,faction:a.faction,pieceId:attackerId,from:{q:zeroQ,r:zeroR},to:{q:zeroQ2,r:zeroR2},capture:null,extra:null,holdAfter:{...s.hold}};
+    const record={kind:'displace',moveNumber:s.moveNumber+1,faction:a.faction,pieceId:attackerId,
+      from:{q:zeroQ,r:zeroR},to:{q:zeroQ2,r:zeroR2},pushTo:{q:zeroQ2,r:zeroR2},
+      attackerId:a.id,attackerPos:{q:a.q,r:a.r},
+      capture:null,extra:null,holdAfter:{...s.hold}};
     advanceTurn(s,a.faction,record,passTo);
     return {state:s,record,error:null};
   }

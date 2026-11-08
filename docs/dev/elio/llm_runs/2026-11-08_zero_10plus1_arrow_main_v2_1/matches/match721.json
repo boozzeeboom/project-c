@@ -1,0 +1,466 @@
+{
+ "matchNo": 721,
+ "assign": {
+  "deepseek": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 1,
+ "winner": "minus",
+ "reason": "hold",
+ "moves": 31,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 2,
+   "raw": "{\"plan\":\"«Ц» пуст, Скиталец пока вне списка доступных ходов — веду свободного нуля к центру, чтобы блокировать подходы военных и держать темп к воротам. Поддержку не трачу: она ничего не защищает и не стравливает.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "«Ц» пуст, Скиталец пока вне списка доступных ходов — веду свободного нуля к центру, чтобы блокировать подходы военных и держать темп к воротам. Поддержку не трачу: она ничего не защищает и не стравливает.",
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": 1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -2,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-L1",
+    "q": -1,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 0,
+    "r": -5,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 8,
+   "raw": "{\"plan\":\"«Ц» всё ещё пуст, Скиталец недоступен — продолжаю вести свободного нуля вглубь к центру, сокращая дистанцию до ворот и перекрывая диагонали Линкоров. Поддержки не нужны: явной угрозы Линейному нет.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":1,\"r\":1}}",
+   "plan": "«Ц» всё ещё пуст, Скиталец недоступен — продолжаю вести свободного нуля вглубь к центру, сокращая дистанцию до ворот и перекрывая диагонали Линкоров. Поддержки не нужны: явной угрозы Линейному нет.",
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -1,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F10",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": 0,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 2,
+     "r": 2
+    }
+   },
+   "move": 15,
+   "raw": "{\"plan\":\"Минусы захватили «Ц» — теперь моя задача не дать им удержать три круга: тяну курьера к центру, чтобы при освобождении «Ц» успеть войти, и не усиливаю лидера. Поддержки оставляю на случай прямой угрозы Линейному.\",\"kind\":\"move\",\"pieceId\":\"Z-C25\",\"to\":{\"q\":2,\"r\":2}}",
+   "plan": "Минусы захватили «Ц» — теперь моя задача не дать им удержать три круга: тяну курьера к центру, чтобы при освобождении «Ц» успеть войти, и не усиливаю лидера. Поддержки оставляю на случай прямой угрозы Линейному.",
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -2,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T32",
+    "q": -2,
+    "r": 2,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 2,
+     "r": 1
+    }
+   },
+   "move": 22,
+   "raw": "{\"plan\":\"Минусы уже один круг удержали «Ц» — нужно давить темп и быть готовым войти, если Фрегат собьют. Ведя курьера к центру, заодно не даю Минусам спокойно усиливаться; поддержку берегу.\",\"kind\":\"move\",\"pieceId\":\"Z-C25\",\"to\":{\"q\":2,\"r\":1}}",
+   "plan": "Минусы уже один круг удержали «Ц» — нужно давить темп и быть готовым войти, если Фрегат собьют. Ведя курьера к центру, заодно не даю Минусам спокойно усиливаться; поддержку берегу.",
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F3",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 24
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F3",
+    "q": -1,
+    "r": -1,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 25
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": 0,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 26
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": -2,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 27
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -1,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 28
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": -1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 29
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -3,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 30
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 1,
+     "r": 2
+    }
+   },
+   "move": 30,
+   "raw": "{\"plan\":\"Минусы на втором круге удержания — критично. Пробить их Фрегат я не могу, поэтому вывожу курьера прямо к центру: если Плюсы собьют Фрегат, войду первым; заодно держу давление у «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-C25\",\"to\":{\"q\":1,\"r\":2}}",
+   "plan": "Минусы на втором круге удержания — критично. Пробить их Фрегат я не могу, поэтому вывожу курьера прямо к центру: если Плюсы собьют Фрегат, войду первым; заодно держу давление у «Ц».",
+   "winner": "minus",
+   "reason": "hold",
+   "after": 31
+  }
+ ]
+}

@@ -27,8 +27,8 @@
       "repeatPiece": 6,
       "gateMoves": 3,
       "centerTicks": 3,
-      "maxHold": 2,
-      "holdTicks": 1
+      "maxHold": 1,
+      "holdTicks": 0
     },
     "ai": {
       "actions": 16,
@@ -42,11 +42,12 @@
       "osc2": 0,
       "repeatPiece": 7,
       "centerTicks": 4,
-      "maxHold": 3,
-      "holdTicks": 4,
+      "maxHold": 2,
+      "holdTicks": 0,
       "gateMoves": null
     },
     "llmTurns": 10,
+    "zeroHoldMax": 2,
     "flags": {
       "fallbacks": 0,
       "errors": [],
@@ -68,7 +69,9 @@
           "nullTarget": false
         }
       ],
-      "lineDeaths": []
+      "lineDeaths": [],
+      "plans": [],
+      "displaceEvents": []
     }
   },
   {
@@ -119,6 +122,7 @@
       "gateMoves": null
     },
     "llmTurns": 4,
+    "zeroHoldMax": 0,
     "flags": {
       "fallbacks": 0,
       "errors": [],
@@ -216,6 +220,39 @@
           "winner": "plus",
           "reason": "king"
         }
+      ],
+      "plans": [],
+      "displaceEvents": [
+        {
+          "i": 3,
+          "move": 4,
+          "f": "zero",
+          "isLLM": true,
+          "pieceId": "Z-C25",
+          "zeroFrom": {
+            "q": 3,
+            "r": 2
+          },
+          "zeroTo": {
+            "q": 2,
+            "r": 2
+          }
+        },
+        {
+          "i": 4,
+          "move": 5,
+          "f": "zero",
+          "isLLM": true,
+          "pieceId": "Z-C25",
+          "zeroFrom": {
+            "q": 3,
+            "r": 2
+          },
+          "zeroTo": {
+            "q": 1,
+            "r": 2
+          }
+        }
       ]
     }
   },
@@ -267,6 +304,7 @@
       "gateMoves": null
     },
     "llmTurns": 24,
+    "zeroHoldMax": 0,
     "flags": {
       "fallbacks": 0,
       "errors": [],
@@ -321,7 +359,9 @@
           "nullTarget": false
         }
       ],
-      "lineDeaths": []
+      "lineDeaths": [],
+      "plans": [],
+      "displaceEvents": []
     }
   },
   {
@@ -367,10 +407,11 @@
       "osc2": 0,
       "repeatPiece": 1,
       "centerTicks": 0,
-      "maxHold": 3,
-      "holdTicks": 3
+      "maxHold": 0,
+      "holdTicks": 0
     },
     "llmTurns": 9,
+    "zeroHoldMax": 3,
     "flags": {
       "fallbacks": 0,
       "errors": [],
@@ -494,7 +535,40 @@
       "noDefenseAvailable": [],
       "centerOpportunities": [],
       "supportTargets": [],
-      "lineDeaths": []
+      "lineDeaths": [],
+      "plans": [],
+      "displaceEvents": [
+        {
+          "i": 6,
+          "move": 7,
+          "f": "zero",
+          "isLLM": true,
+          "pieceId": "Z-E23",
+          "zeroFrom": {
+            "q": 4,
+            "r": 1
+          },
+          "zeroTo": {
+            "q": 3,
+            "r": 1
+          }
+        },
+        {
+          "i": 17,
+          "move": 18,
+          "f": "zero",
+          "isLLM": true,
+          "pieceId": "Z-E23",
+          "zeroFrom": {
+            "q": 3,
+            "r": 2
+          },
+          "zeroTo": {
+            "q": 2,
+            "r": 2
+          }
+        }
+      ]
     }
   },
   {
@@ -545,6 +619,7 @@
       "gateMoves": null
     },
     "llmTurns": 4,
+    "zeroHoldMax": 0,
     "flags": {
       "fallbacks": 0,
       "errors": [],
@@ -594,7 +669,9 @@
           "winner": "plus",
           "reason": "king"
         }
-      ]
+      ],
+      "plans": [],
+      "displaceEvents": []
     }
   },
   {
@@ -625,8 +702,8 @@
       "repeatPiece": 5,
       "gateMoves": 4,
       "centerTicks": 1,
-      "maxHold": 2,
-      "holdTicks": 1
+      "maxHold": 1,
+      "holdTicks": 0
     },
     "ai": {
       "actions": 24,
@@ -641,10 +718,11 @@
       "repeatPiece": 7,
       "centerTicks": 5,
       "maxHold": 3,
-      "holdTicks": 3,
+      "holdTicks": 2,
       "gateMoves": null
     },
     "llmTurns": 7,
+    "zeroHoldMax": 1,
     "flags": {
       "fallbacks": 0,
       "errors": [],
@@ -656,7 +734,9 @@
       "noDefenseAvailable": [],
       "centerOpportunities": [],
       "supportTargets": [],
-      "lineDeaths": []
+      "lineDeaths": [],
+      "plans": [],
+      "displaceEvents": []
     }
   }
 ]

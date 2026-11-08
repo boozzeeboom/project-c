@@ -1,0 +1,77 @@
+{
+  "runId": "2026-11-08_zero_10plus1_arrow_main_v2_1",
+  "date": "2026-11-08",
+  "engine": "elio_engine.js v1.3d (P0/P1 fixed)",
+  "promptVersion": "zero-doctrine-v2-action-list",
+  "config": {
+    "turnMode": "arrow",
+    "deathMode": "main",
+    "pawns": 1,
+    "limit": 60,
+    "games": 6,
+    "startMatchNo": 721
+  },
+  "result": {
+    "games": 6,
+    "wins": 1,
+    "draws": 0,
+    "losses": 5,
+    "contaminated": 0,
+    "clean": {
+      "wins": 1,
+      "draws": 0,
+      "losses": 5
+    },
+    "byGame": [
+      { "matchNo": 721, "winner": "minus", "reason": "hold", "moves": 31, "clean": true },
+      { "matchNo": 722, "winner": "plus", "reason": "king", "moves": 8, "clean": true },
+      { "matchNo": 723, "winner": "plus", "reason": "hold", "moves": 38, "clean": true },
+      { "matchNo": 724, "winner": "minus", "reason": "hold", "moves": 37, "clean": true },
+      { "matchNo": 725, "winner": "zero", "reason": "hold", "moves": 42, "clean": true },
+      { "matchNo": 726, "winner": "minus", "reason": "hold", "moves": 23, "clean": true }
+    ]
+  },
+  "llmMetrics": {
+    "actions": 47,
+    "moves": 44,
+    "supports": 3,
+    "skips": 0,
+    "displaces": 0,
+    "captures": 0,
+    "lineKills": 0,
+    "supportNull": 0,
+    "noopSupports": 0,
+    "osc1": 3,
+    "osc2": 2,
+    "repeatPiece": 30,
+    "gateMoves": 8,
+    "centerTicks": 3,
+    "maxHoldByLlmAction": 2,
+    "zeroHoldMaxByGame": {
+      "721": 0,
+      "722": 0,
+      "723": 0,
+      "724": 0,
+      "725": 3,
+      "726": 0
+    },
+    "cleanMaxHold": 3,
+    "plans": 47
+  },
+  "aiMetrics": {
+    "actions": 132,
+    "moves": 132,
+    "captures": 6,
+    "lineKills": 1,
+    "displaces": 1
+  },
+  "lineDeaths": 1,
+  "audit": "audit.json",
+  "notes": [
+    "0 contaminated, 0 illegal, 0 integrity, 0 stale supports — первый полностью чистый прогон v2.",
+    "725 — чистая победа удержанием: zeroHoldMax=3, план модели читается как осмысленная стратегия центра.",
+    "В остальных 5 играх zeroHoldMax=0: Нули не удержали «Ц» ни одного тика.",
+    "Осцилляции: 3/44 (6.8 %) против 20/55 (36 %) в v2-ext6; 724/726 всё ещё дают возвраты.",
+    "Движок v1.3d подтверждён: единственное displace (725, военный ИИ) корректно, доска цела."
+  ]
+}

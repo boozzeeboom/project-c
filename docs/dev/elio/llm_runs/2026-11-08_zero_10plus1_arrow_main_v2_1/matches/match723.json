@@ -1,0 +1,564 @@
+{
+ "matchNo": 723,
+ "assign": {
+  "deepseek": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 1,
+ "winner": "plus",
+ "reason": "hold",
+ "moves": 38,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F28",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 0,
+   "raw": "{\"plan\":\"Ц пуст, круг только начался; военные ещё не выдвинулись. Веду Свободного к центру/воротам, не заявляю нейтральных нулей без нужды.\",\"kind\":\"move\",\"pieceId\":\"Z-F28\",\"to\":{\"q\":1,\"r\":1}}",
+   "plan": "Ц пуст, круг только начался; военные ещё не выдвинулись. Веду Свободного к центру/воротам, не заявляю нейтральных нулей без нужды.",
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C26",
+    "to": {
+     "q": 2,
+     "r": -2
+    }
+   },
+   "move": 1,
+   "raw": "{\"plan\":\"Держу курс к центру; подтягиваю Курьера ближе к «Ц»/воротам, пока военные не выдвинулись. Поддержки пока не нужны — угроз Линейным нет.\",\"kind\":\"move\",\"pieceId\":\"Z-C26\",\"to\":{\"q\":2,\"r\":-2}}",
+   "plan": "Держу курс к центру; подтягиваю Курьера ближе к «Ц»/воротам, пока военные не выдвинулись. Поддержки пока не нужны — угроз Линейным нет.",
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C26",
+    "to": {
+     "q": 1,
+     "r": -1
+    }
+   },
+   "move": 4,
+   "raw": "{\"plan\":\"Ц всё ещё пуст, военные не дошли. Продолжаю вести Курьера к центру, чтобы первым подойти к воротам.\",\"kind\":\"move\",\"pieceId\":\"Z-C26\",\"to\":{\"q\":1,\"r\":-1}}",
+   "plan": "Ц всё ещё пуст, военные не дошли. Продолжаю вести Курьера к центру, чтобы первым подойти к воротам.",
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F10",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -2,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -3,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C6",
+    "q": -1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -2,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -2,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C6",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -2,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C26",
+    "to": {
+     "q": 0,
+     "r": -1
+    }
+   },
+   "move": 22,
+   "raw": "{\"plan\":\"Военные ещё не заняли «Ц»; мой Курьер ближе всех к центру. Веду его дальше к воротам, чтобы занять «Ц» раньше Тендеров.\",\"kind\":\"move\",\"pieceId\":\"Z-C26\",\"to\":{\"q\":0,\"r\":-1}}",
+   "plan": "Военные ещё не заняли «Ц»; мой Курьер ближе всех к центру. Веду его дальше к воротам, чтобы занять «Ц» раньше Тендеров.",
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 0,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 24
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 25
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 1,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 26
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 27
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 0,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 28
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T32",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 29
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "support",
+    "zeroId": "Z-P22",
+    "targetId": "Z-P21"
+   },
+   "move": 29,
+   "raw": "{\"plan\":\"Плюсы заняли «Ц» Миноносцем — выбить не можем, значит играем на выживание и подготовку. Ставлю непробиваемый щит 2 на своего Линейного, чтобы исключить мгновенную победу врага.\",\"kind\":\"support\",\"zeroId\":\"Z-P22\",\"targetId\":\"Z-P21\"}",
+   "plan": "Плюсы заняли «Ц» Миноносцем — выбить не можем, значит играем на выживание и подготовку. Ставлю непробиваемый щит 2 на своего Линейного, чтобы исключить мгновенную победу врага.",
+   "winner": null,
+   "reason": null,
+   "after": 30
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C6",
+    "q": 1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 31
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 32
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C26",
+    "to": {
+     "q": -1,
+     "r": 0
+    }
+   },
+   "move": 32,
+   "raw": "{\"plan\":\"Плюсы удерживают «Ц» (Hold P1) — выбить не могу, но Минусы скоро надавят на их Миноносца. Держу Курьера у ворот Плюсов, чтобы первым войти, когда «Ц» освободится.\",\"kind\":\"move\",\"pieceId\":\"Z-C26\",\"to\":{\"q\":-1,\"r\":0}}",
+   "plan": "Плюсы удерживают «Ц» (Hold P1) — выбить не могу, но Минусы скоро надавят на их Миноносца. Держу Курьера у ворот Плюсов, чтобы первым войти, когда «Ц» освободится.",
+   "winner": null,
+   "reason": null,
+   "after": 33
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -1,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 34
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 1,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 35
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": 0,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 36
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 0,
+    "r": 2,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 37
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "support",
+    "zeroId": "Z-P21",
+    "targetId": "Z-P22"
+   },
+   "move": 37,
+   "raw": "{\"plan\":\"Плюсы на Hold 2 — их Миноносца на «Ц» выбить не могу, надежда на давление Минусов. Пока держу Курьера рядом с «Ц» и страхую второго Линейного непробиваемым щитом.\",\"kind\":\"support\",\"zeroId\":\"Z-P21\",\"targetId\":\"Z-P22\"}",
+   "plan": "Плюсы на Hold 2 — их Миноносца на «Ц» выбить не могу, надежда на давление Минусов. Пока держу Курьера рядом с «Ц» и страхую второго Линейного непробиваемым щитом.",
+   "winner": "plus",
+   "reason": "hold",
+   "after": 38
+  }
+ ]
+}

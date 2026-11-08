@@ -1,0 +1,46 @@
+{
+  "date": "2026-11-08",
+  "experiment": "zero_mix_pass-main-p1_arrow-main-p5",
+  "engine": "elio_engine.js v1.3d (P0/P1 fixed)",
+  "ai": "elio_ai.js v1.3c + passTo fix (one pass target per turn)",
+  "model": {
+    "id": "deepseek-v4.1-flash",
+    "providerID": "opencode-go",
+    "variant": "low"
+  },
+  "faction": "zero",
+  "games": 10,
+  "setups": [
+    {
+      "label": "pass+main+10+1",
+      "games": 5,
+      "matchNos": [731, 732, 733, 734, 735],
+      "turn": "pass",
+      "death": "main",
+      "pawns": 1,
+      "firstMovePawn": false,
+      "limit": 90,
+      "passRule": "random"
+    },
+    {
+      "label": "arrow+main+15",
+      "games": 5,
+      "matchNos": [736, 737, 738, 739, 740],
+      "turn": "arrow",
+      "death": "main",
+      "pawns": 5,
+      "firstMovePawn": true,
+      "limit": 120,
+      "passRule": "n/a"
+    }
+  ],
+  "prompt": "prompt.txt",
+  "promptVersion": "zero-doctrine-v2-action-list",
+  "notes": [
+    "DeepSeek только за Нулей; Плюсы/Минусы — ИИ v1.3c.",
+    "10+1 и 15 — тест-варианты, не канон.",
+    "Pass: передача случайная; LLM не выбирает получателя (арена передаёт случайный passTo и логирует его).",
+    "15 фигур: первый ход каждой фракции — пешкой; лимит 120.",
+    "Это пилот 5+5, не полноценная статистика."
+  ]
+}

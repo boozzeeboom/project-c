@@ -1,0 +1,1975 @@
+[
+  {
+    "matchNo": 731,
+    "result": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 16
+    },
+    "replay": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 16,
+      "ok": true
+    },
+    "llm": {
+      "actions": 6,
+      "moves": 5,
+      "supports": 1,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "gateMoves": 3,
+      "centerTicks": 4,
+      "maxHold": 3,
+      "holdTicks": 2
+    },
+    "ai": {
+      "actions": 10,
+      "moves": 10,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 1,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 6,
+    "zeroHoldMax": 3,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [
+        {
+          "i": 8,
+          "move": 8,
+          "line": "M-L11",
+          "attackers": [
+            "P-B4"
+          ],
+          "linePos": "-5,5"
+        }
+      ],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 8,
+          "move": 8,
+          "zero": "Z-P21",
+          "target": "Z-P22",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 1,
+          "move": 1,
+          "plan": "Ц пуст, Скиталец в C1 — веду эскорт к центру, подтягивая ближайшего Свободного к C1 для поддержки и прикрытия ворот. Держу Линейных нейтральными, пока военные связывают друг друга.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "Продолжаю стягивать Свободного к центру (A12→ближе к C1), чтобы иметь рядом щит для Скитальца и ворот. Военные пока связаны друг другом — Линейные не под ударом.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 6,
+          "move": 6,
+          "plan": "Свободный уже почти в центре — захожу на (0,0), чтобы занять/перекрыть подход к воротам и обеспечить щит Скитальцу у «Ц». Военные тратят ходы друг на друга, Линейные пока в безопасности.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 8,
+          "move": 8,
+          "plan": "Остаюсь на «Ц», не сходя с него — любой move обнулит Hold. Свободной поддержки к F28 нет, поэтому трачу ход на щит 2 для Линейного P22 в B4, рядом с которым стоят оба вражеских Линкора — это защищает от мгновенного проигрыша.",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P21",
+            "targetId": "Z-P22",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 12,
+          "move": 12,
+          "plan": "Остаюсь на «Ц» (F28 не двигаю) и одновременно продвигаю Курьера C26 к центру — к подходу ворот/«Ц», чтобы иметь вторую фигуру для смены/щита. Щит на P22 уже стоит, повторять поддержку не буду.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C26",
+            "q": 1,
+            "r": -2,
+            "displace": false
+          }
+        },
+        {
+          "i": 15,
+          "move": 15,
+          "plan": "До победы остался один круг — Hold Z2. Ставлю Курьера C26 в соседнюю с «Ц» клетку (0,-1), чтобы следующим ходом дать F28 щит 2 и не оставить «Ц» без защиты.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C26",
+            "q": 0,
+            "r": -1,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 732,
+    "result": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 28
+    },
+    "replay": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 28,
+      "ok": true
+    },
+    "llm": {
+      "actions": 12,
+      "moves": 12,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 3,
+      "osc2": 0,
+      "repeatPiece": 9,
+      "gateMoves": 6,
+      "centerTicks": 8,
+      "maxHold": 2,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 16,
+      "moves": 16,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 2,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 12,
+    "zeroHoldMax": 3,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 1,
+          "move": 1,
+          "plan": "«Ц» пуст — гонка важнее поддержек. Скиталец в C1 пойдёт к жёлтым воротам следующим темпом, а свободного Z-F27 двигаю к центру, чтобы иметь блок/подход к воротам.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 5,
+          "move": 5,
+          "plan": "«Ц» всё ещё пуст, поэтому продолжаю гонку: двигаю Курьера по линии к центру (0,2), Скиталец в C1 остаётся темпом к жёлтым воротам. Поддержки не трачу — они ничего не защищают и не стравливают.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": 0,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 7,
+          "move": 7,
+          "plan": "Курьер уже на подходе (MZ-2), продолжаю вести его внутрь к (0,1) — ближе к «Ц»/жёлтым воротам. Скиталец в C1 держит второй темп; поддержки не нужны, пока «Ц» пуст.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": 0,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 9,
+          "move": 9,
+          "plan": "Курьер дошёл до MZ-1 и уже рядом с «Ц». Веду его на (1,0) — это ближайший шаг к центру/воротам; займу «Ц» первой же возможностью, пока военные ещё далеко.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 12,
+          "move": 12,
+          "plan": "Курьер на Z-A1, и (0,0) — это «Ц». Захватываю центр сейчас, чтобы начать отсчёт Hold; следующими ходами подведу соседнего нуля на поддержку.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 14,
+          "move": 14,
+          "plan": "Держу «Ц» Курьером и подвожу Свободного Z-F27 на (1,0) — в соседнюю клетку, чтобы следующим ходом дать Курьеру щит 2. Без щита стоящего на «Ц» легко выбить.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 16,
+          "move": 16,
+          "plan": "Hold 1/3 уже идёт. Поддержки на C25 в списке нет, поэтому подвигаю Z-F27 на (1,1) — второе соседнее с «Ц» поле, откуда в следующий раз должен появиться support на стоящего Курьера.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 18,
+          "move": 18,
+          "plan": "Курьер держит «Ц» (Hold 1). Поддержки к C25 всё ещё нет — значит Z-F27 не сосед центра; ставлю его на (1,0), клетку вплотную к «Ц», чтобы следующим ходом дать щит 2.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 20,
+          "move": 20,
+          "plan": "Hold 2/3 — этот круг решающий. Курьер остаётся на «Ц», а Z-F27 ставлю на соседнюю клетку-(1,2), чтобы перекрыть/заблокировать подход к воротам и не дать военным войти в центр.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 22,
+          "move": 22,
+          "plan": "Hold 2/3, до победы один круг. Курьер остаётся на «Ц», а Z-F27 возвращаю на соседнюю с центром клетку (1,0) — там он перекрывает подход и готов прикрыть/восстановить позицию, если враг сунется к воротам.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 24,
+          "move": 24,
+          "plan": "Позиция стабильна: «Ц» за Нулями, Hold 2/3. Курьера не трогаю, Z-F27 сдвигаю на (2,0) для перекрытия подхода — этот круг должен закрыть третий Hold.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 26,
+          "move": 26,
+          "plan": "Hold по-прежнему 2/3 — «Ц» держится, враги не вошли. Курьер стоит, Z-F27 подвожу на (1,0) вплотную к центру для блокировки подхода.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 733,
+    "result": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 31
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 31,
+      "ok": true
+    },
+    "llm": {
+      "actions": 10,
+      "moves": 8,
+      "supports": 2,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 6,
+      "gateMoves": 4,
+      "centerTicks": 5,
+      "maxHold": 1,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 21,
+      "moves": 21,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 5,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 6,
+      "centerTicks": 5,
+      "maxHold": 2,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 10,
+    "zeroHoldMax": 2,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 12,
+          "move": 12,
+          "zero": "Z-P22",
+          "target": "Z-P21",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        },
+        {
+          "i": 18,
+          "move": 18,
+          "zero": "Z-P21",
+          "target": "Z-P22",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "«Ц» пуст, поэтому гонка в приоритете: двигаю Свободного к центральной зоне/воротам, не заявляя нулей. Линейные пока не под прямым ударом Бомбардиров — щит поставлю, если появится угроза.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 7,
+          "move": 7,
+          "plan": "Продолжаю гонку к центру/воротам: Свободный идёт к (1,0), ближе всего к центральной зоне. Линейные пока не под ударом — щит поставлю при появлении Бомбардира в радиусе.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 9,
+          "move": 9,
+          "plan": "«Ц» пуст, и Свободный в одном шаге от центра — занимаю (0,0), начиная отсчёт Hold. Следующим ходом подведу соседнего нуля на поддержку, чтобы щит 2 защитил стоящего на «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 12,
+          "move": 12,
+          "plan": "Держу Z-F27 на «Ц» (Hold 1). Поддержки стоящему на «Ц» пока нет в списке, поэтому страхую Линейного Z-P21 от Бомбардиров (M-B14 на A6) через Z-P22; следующим ходом подтяну нуля в сосед к «Ц» для щита 2.",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P22",
+            "targetId": "Z-P21",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 14,
+          "move": 14,
+          "plan": "Z-F28 идёт в (1,1) — вплотную к «Ц», чтобы следующим ходом дать щит 2 держащему центр Z-F27. Hold растёт, Линейный Z-P21 уже под щитом.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 16,
+          "move": 16,
+          "plan": "Z-F28 встаёт в (1,0) — сосед «Ц», чтобы следующим ходом закрыть держащего Z-F27 щитом 2. Стоящий на «Ц» не двигаю, Hold продолжает расти.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 18,
+          "move": 18,
+          "plan": "Щит на Z-P21 уже стоит, теперь закрываю второго Линейного: Z-P21 -> Z-P22, чтобы оба К-Линейных были под защитой 2 от Бомбардира M-B14. Z-F27 продолжает держать «Ц».",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P21",
+            "targetId": "Z-P22",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 23,
+          "move": 23,
+          "plan": "«Ц» занял Фрегат Минусов, выбить его нельзя — перевожу Z-F28 на (1,-1), ближайший к центру/воротам вектор, чтобы держать давление и войти, если фрегат уйдёт. Оба Линейных уже под щитом.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 1,
+            "r": -1,
+            "displace": false
+          }
+        },
+        {
+          "i": 25,
+          "move": 25,
+          "plan": "Фрегат Минусов на «Ц» не выбить, но если Плюсы его убьют, центр освободится. Держу Z-F28 вплотную к «Ц» с другой стороны — (0,-1), чтобы занять центр сразу, как он освободится; оба Линейных уже под щитом 2.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 0,
+            "r": -1,
+            "displace": false
+          }
+        },
+        {
+          "i": 28,
+          "move": 28,
+          "plan": "Минусы на Hold 2 — их фрегат на «Ц» может закрыть игру. Мне остаётся держать нуля вплотную к центру: перевожу Z-F28 на (-1,0), на случай если Плюсы снимут фрегат и «Ц» освободится.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": -1,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 734,
+    "result": {
+      "winner": "plus",
+      "reason": "king",
+      "moves": 8
+    },
+    "replay": {
+      "winner": "plus",
+      "reason": "king",
+      "moves": 8,
+      "ok": true
+    },
+    "llm": {
+      "actions": 3,
+      "moves": 3,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 2,
+      "gateMoves": 2,
+      "centerTicks": 1,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 5,
+      "moves": 5,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 2,
+      "lineKills": 1,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 3,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [
+        {
+          "i": 6,
+          "move": 6,
+          "line": "M-L11",
+          "attackers": [
+            "P-B4"
+          ],
+          "linePos": "-5,5"
+        }
+      ],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [
+        {
+          "i": 7,
+          "move": 8,
+          "killer": "plus",
+          "victim": "minus",
+          "winner": "plus",
+          "reason": "king"
+        }
+      ],
+      "plans": [
+        {
+          "i": 2,
+          "move": 2,
+          "plan": "Ц пуст, Скиталец пока недоступен. Подтягиваю свободный нуль к центру: (2,0) — кратчайший шаг к «Ц». Следующим ходом поведу Скитальца к жёлтым воротам, а нулём буду блокировать подходы.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 4,
+          "move": 4,
+          "plan": "Z-F27 уже вышел на B1 у самого центра. Продолжаю тем же курсом на (1,0), чтобы встать на подходе к «Ц» и воротам. Скиталец пока недоступен для хода — следующим ходом поведу его к жёлтым воротам, а этот нуль оставлю блокировать подход.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 6,
+          "move": 6,
+          "plan": "Свободный нуль уже в центре поля, следующий шаг — (0,0), то есть непосредственно на «Ц»/центральный гекс. Занимаю его и далее буду держать щит соседним нулём; военные потратят ходы на подход.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 735,
+    "result": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 49
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 49,
+      "ok": true
+    },
+    "llm": {
+      "actions": 17,
+      "moves": 17,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 1,
+      "osc2": 0,
+      "repeatPiece": 11,
+      "gateMoves": 1,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 32,
+      "moves": 32,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 3,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 7,
+      "centerTicks": 4,
+      "maxHold": 3,
+      "holdTicks": 2,
+      "gateMoves": null
+    },
+    "llmTurns": 17,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [
+        {
+          "i": 5,
+          "move": 5,
+          "line": "M-L11",
+          "attackers": [
+            "P-B4"
+          ],
+          "linePos": "-5,5"
+        },
+        {
+          "i": 16,
+          "move": 16,
+          "line": "P-L1",
+          "attackers": [
+            "M-B14"
+          ],
+          "linePos": "-1,-4"
+        }
+      ],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 1,
+          "move": 1,
+          "plan": "Ц пусто, гонку начинаю сразу: Свободный идёт в сторону центра/ворот, поддержку не трачу на первый ход.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 2,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 5,
+          "move": 5,
+          "plan": "Продолжаю гонку к центру: Свободный смещается к нулевым координатам, где вероятны ворота и «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 0,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 8,
+          "move": 8,
+          "plan": "Свободный уже на узле MZ-1 — продолжаю тем же курсом к воротам/«Ц», не сбиваясь на поддержку.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 0,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 14,
+          "move": 14,
+          "plan": "Свободный идёт по узлам MZ, продолжаю путь вперёд по коридору ворот; «Ц» всё ещё пусто — держу темп.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 16,
+          "move": 16,
+          "plan": "«Ц» пусто, угроз Линейным пока нет — продолжаю движение Свободного к центру, выбираю шаг вглубь доски.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 21,
+          "move": 21,
+          "plan": "Перестаю гонять Свободного туда-обратно: свежий Курьер идёт вперёд к границе секторов и воротам, «Ц» пока пусто.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": 0,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 24,
+          "move": 24,
+          "plan": "Курьер на MZ-2 — это коридор секторов к центру; продолжаю по нему, чтобы выйти к жёлтым воротам и «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": -1,
+            "r": 3,
+            "displace": false
+          }
+        },
+        {
+          "i": 26,
+          "move": 26,
+          "plan": "Курьер прошёл MZ-коридор в сектор Минусов; продолжаю вглубь по границе, ища жёлтые ворота к «Ц». Нейтральный нуль уязвимости не имеет, риск минимален.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": -2,
+            "r": 3,
+            "displace": false
+          }
+        },
+        {
+          "i": 28,
+          "move": 28,
+          "plan": "Курьер уже в среднем кольце сектора Минусов — тяну его дальше к центру (C1), где вероятны ворота; параллельно Свободный остаётся в своём секторе как резерв.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": -2,
+            "r": 4,
+            "displace": false
+          }
+        },
+        {
+          "i": 31,
+          "move": 31,
+          "plan": "Курьер кружит в секторе Минусов без пользы — переключаюсь на Инженера в своём секторе и двигаю его вглубь (3,2), к внутренним кольцам и воротам.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-E23",
+            "q": 3,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 33,
+          "move": 33,
+          "plan": "Свободный на внешнем кольце A12 — тяну его внутрь к среднему кольцу (1,0), чтобы выйти к центру сектора и воротам.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 35,
+          "move": 35,
+          "plan": "Минусы заняли «Ц» (Hold 1) — выбить нельзя, но их гибель от Плюсов обнулит Hold. Держу Свободного на воротах Z-A1 и подтягиваю Инженера вглубь, чтобы быть готовым занять «Ц» при освобождении.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-E23",
+            "q": 2,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 37,
+          "move": 37,
+          "plan": "Свободный замер на воротах Z-A1 — это наш вход в «Ц», держу его. Инженера веду по внешнему кольцу к той же зоне, чтобы иметь второй заход на «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-E23",
+            "q": 1,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 40,
+          "move": 40,
+          "plan": "Минусы на Hold 2 — их победа близка, но остановить может только Плюс. Готовлю второй заход на «Ц»: Инженер идёт на A12, Свободный держит ворота A1.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-E23",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 42,
+          "move": 42,
+          "plan": "Держу Свободного на воротах Z-A1: как только «Ц» освободится, он войдёт первым. Инженера увожу с затора на A12 вглубь, чтобы не мешать входу.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-E23",
+            "q": 2,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 44,
+          "move": 44,
+          "plan": "«Ц» держат Минусы, Hold 2 — ситуация вне моего контроля, но готовность сохраняю: Свободный на A1, Инженер рядом, Скиталец в C1. Продолжаю манёвр Инженером по кольцу.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-E23",
+            "q": 2,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 46,
+          "move": 46,
+          "plan": "«Ц» занят, Hold 2 — тянуть дальше бессмысленно, пробую сдвинуть Свободного с ворот вглубь (1,1), чтобы проверить подход к «Ц» и не держать фигуру запертой.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 736,
+    "result": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 29
+    },
+    "replay": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 29,
+      "ok": true
+    },
+    "llm": {
+      "actions": 14,
+      "moves": 12,
+      "supports": 2,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 3,
+      "osc2": 0,
+      "repeatPiece": 6,
+      "gateMoves": 3,
+      "centerTicks": 7,
+      "maxHold": 2,
+      "holdTicks": 1
+    },
+    "ai": {
+      "actions": 15,
+      "moves": 15,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 1,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 2,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "llmTurns": 14,
+    "zeroHoldMax": 3,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [
+        {
+          "i": 24,
+          "move": 24,
+          "line": "P-L1",
+          "attackers": [
+            "M-B14"
+          ],
+          "linePos": "-1,-4"
+        }
+      ],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 17,
+          "move": 17,
+          "zero": "Z-P22",
+          "target": "Z-P21",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        },
+        {
+          "i": 24,
+          "move": 24,
+          "zero": "Z-P21",
+          "target": "Z-P22",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 4,
+          "move": 4,
+          "plan": "«Ц» пусто, гонка важнее всего: веду Скитальца Z-S45 максимальным шагом к жёлтым воротам, чтобы занять «Ц» раньше Плюсов и Минусов. Поддержку не трачу — она не защищает «Ц» и не стравливает военных.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S45",
+            "q": 2,
+            "r": -2,
+            "displace": false
+          }
+        },
+        {
+          "i": 5,
+          "move": 5,
+          "plan": "Z-S45 уже у жёлтых ворот; веду его на (3,-2) — занимаю «Ц» и запускаю Hold, пока Плюсы и Минусы ещё не подошли. Дальше щитую стоящего на «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S45",
+            "q": 3,
+            "r": -2,
+            "displace": false
+          }
+        },
+        {
+          "i": 6,
+          "move": 6,
+          "plan": "Состояние откатилось — Z-S45 снова на A3, значит вход на (3,-2) не прошёл. Снова веду его к жёлтым воротам на (2,-2), откуда в следующий ход попробую зайти на «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S45",
+            "q": 2,
+            "r": -2,
+            "displace": false
+          }
+        },
+        {
+          "i": 8,
+          "move": 8,
+          "plan": "Z-S45 стоит у ворот на PZ-2, «Ц» всё ещё пусто — завожу его на (3,-2), чтобы занять центр и включить Hold. Если вход не пройдёт, следующим ходом подтяну Z-S44.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S45",
+            "q": 3,
+            "r": -2,
+            "displace": false
+          }
+        },
+        {
+          "i": 9,
+          "move": 9,
+          "plan": "Вход на (3,-2) второй раз откатился — значит это не та грань ворот. Пробую другую клетку подхода: веду Z-S44 на (2,-1), чтобы оспорить жёлтые ворота с другой стороны и не терять темп.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S44",
+            "q": 2,
+            "r": -1,
+            "displace": false
+          }
+        },
+        {
+          "i": 13,
+          "move": 13,
+          "plan": "Плюсовой Тендер P-T31 уже выполз к PZ-2, так что гонку нельзя отдавать. Жёлтые ворота ближе всего к C1 — двигаю Z-S43 на (2,0), чтобы выйти на подход к «Ц» и перекрыть Плюсам дорогу.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 14,
+          "move": 14,
+          "plan": "Путь к воротам проясняется: Z-S43 идёт C1→B1, клетки ряда «1» — жёлтые ворота, а с A1 будет вход на «Ц». Двигаю Z-S43 на (1,0), чтобы первым встать на ворота и следом зайти в центр.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 15,
+          "move": 15,
+          "plan": "Z-S43 уже на жёлтых воротах A1 — единственный вход на «Ц». Захожу на (0,0), чтобы занять пустой центр и запустить Hold.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 16,
+          "move": 16,
+          "plan": "Z-S43 занял «Ц» — теперь надо дотерпеть три круга. Поддержки на клетку «Ц» пока нет, поэтому подтягиваю второго Скитальца Z-S44 на (1,0) к жёлтым воротам как подкрепление и страховку, если S43 собьют.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S44",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 17,
+          "move": 17,
+          "plan": "«Ц» держим, но Z-S43 уязвим, а щитовать его нечем; зато мой Линейный Z-P21 стоит вплотную к вражеским Фрегатам (A7/A8) — его смерть = мгновенное поражение. Ставлю щит 2 поддержкой Z-P22→Z-P21, чтобы обезопасить короля.",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P22",
+            "targetId": "Z-P21",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 18,
+          "move": 18,
+          "plan": "«Ц» наш, Hold пока 0 — нужно пережить круг. Вражеские Тендеры P-T34 и M-T39 уже на B1, поэтому ставлю Z-F29 на (2,-1) в коридор ворот, чтобы перекрыть им подход к A1 и входу в «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F29",
+            "q": 2,
+            "r": -1,
+            "displace": false
+          }
+        },
+        {
+          "i": 24,
+          "move": 24,
+          "plan": "Hold Z1 уже есть — держим «Ц» ещё два круга. Пока S43 нечем щитовать, закрываю главную уязвимость: мои Линейные Z-P21 и Z-P22 теперь прикрывают друг друга щитами, так что Бомбардир их не вскроет и мгновенного поражения не будет.",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P21",
+            "targetId": "Z-P22",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 26,
+          "move": 26,
+          "plan": "Hold Z2 — остался один полный круг до победы. Z-S43 держит «Ц», Линейные под щитами; двигаю Z-F28 на (3,-1) в коридор подхода, чтобы перекрыть линию вражеским Фрегатам и не терять темп хода.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 3,
+            "r": -1,
+            "displace": false
+          }
+        },
+        {
+          "i": 27,
+          "move": 27,
+          "plan": "До победы один круг: ждём хода Минусов, после чего Hold станет Z3. Пока Z-S43 держит «Ц», а оба Линейных под щитами, продолжаю перекрывать подходы — двигаю Z-F28 на (3,0), чтобы занять линию у ворот.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 737,
+    "result": {
+      "winner": "minus",
+      "reason": "king",
+      "moves": 27
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "king",
+      "moves": 27,
+      "ok": true
+    },
+    "llm": {
+      "actions": 9,
+      "moves": 7,
+      "supports": 2,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "gateMoves": 3,
+      "centerTicks": 2,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 18,
+      "moves": 18,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 3,
+      "lineKills": 1,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 4,
+      "maxHold": 0,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 9,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 9,
+          "move": 9,
+          "zero": "Z-P21",
+          "target": "Z-P22",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        },
+        {
+          "i": 20,
+          "move": 20,
+          "zero": "Z-P22",
+          "target": "Z-P21",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": [
+        {
+          "i": 26,
+          "move": 27,
+          "killer": "minus",
+          "victim": "plus",
+          "winner": "minus",
+          "reason": "king"
+        }
+      ],
+      "plans": [
+        {
+          "i": 0,
+          "move": 0,
+          "plan": "«Ц» пуст — гонка приоритетна. Веду Скитальца Z-S43 из C1 к жёлтым воротам, чтобы занять «Ц» и начать счётчик Hold.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 7,
+          "move": 7,
+          "plan": "«Ц» пуст, гонка — приоритет. Продолжаю вести Скитальца Z-S43 из B1 дальше к жёлтым воротам, не тратя ход на поддержку.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 8,
+          "move": 8,
+          "plan": "«Ц» всё ещё пуст, гонка — приоритет. Продолжаю движение Скитальцем Z-S43 вглубь к воротам/«Ц», не отвлекаясь на поддержку.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 9,
+          "move": 9,
+          "plan": "Скиталец уже на «Ц» — держу его и коплю Hold. Поддержки именно на «Ц» в списке нет, поэтому усиливаю щитом свой Капитан-Линейный Z-P22 (его смерть = мгновенная победа врага) — приоритет №1.",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P21",
+            "targetId": "Z-P22",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 18,
+          "move": 18,
+          "plan": "«Ц» занят Тендером Плюсов — выбить не могу. Двигаю Скитальца по подходам к «Ц», чтобы быть готовым занять/блокировать, если клетка освободится.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S42",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 19,
+          "move": 19,
+          "plan": "«Ц» у Плюсов, выбить нечем. Вывожу Скитальца Z-S42 на (1,0) — вплотную к «Ц», чтобы занять его при освобождении/блокировать подходы.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S42",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 20,
+          "move": 20,
+          "plan": "«Ц» у Плюсов — выбить не могу. Мой Линейный Z-P21 стоит в зоне вражеских фигур (A7), его гибель = мгновенная победа врага, поэтому накрываю его щитом 2 от Z-P22.",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P22",
+            "targetId": "Z-P21",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 21,
+          "move": 21,
+          "plan": "«Ц» у Плюсов, снять нечем. Продолжаю подтягивать резерв к «Ц», чтобы при освобождении клетки сразу занять и включить Hold — двигаю Z-S41 ближе к центру.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S41",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 24,
+          "move": 24,
+          "plan": "У Плюсов Hold 1 — времени мало. Продолжаю подтягивать нулей по маршруту к «Ц» (Z-F27 на (2,0)), чтобы быть вплотную и занять/заблокировать при освобождении клетки.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 738,
+    "result": {
+      "winner": "plus",
+      "reason": "hold",
+      "moves": 36
+    },
+    "replay": {
+      "winner": "plus",
+      "reason": "hold",
+      "moves": 36,
+      "ok": true
+    },
+    "llm": {
+      "actions": 12,
+      "moves": 11,
+      "supports": 1,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 6,
+      "gateMoves": 3,
+      "centerTicks": 3,
+      "maxHold": 1,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 24,
+      "moves": 24,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 2,
+      "captures": 2,
+      "lineKills": 0,
+      "osc1": 1,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 8,
+      "maxHold": 2,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 12,
+    "zeroHoldMax": 2,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 22,
+          "move": 22,
+          "zero": "Z-P21",
+          "target": "Z-P22",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 1,
+          "move": 1,
+          "plan": "Держу темп: Скиталец в C1 — самый быстрый путь к жёлтым воротам и «Ц». Веду его вперёд к центру, пока военные заняты друг другом, и готовлю почву для нуля на «Ц» с поддержкой.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 2,
+          "move": 2,
+          "plan": "Продолжаю гонку Скитальцем к воротам/«Ц», не тратя ход на пассивную поддержку. Держу нейтральных нулей уязвимыми, чтобы связывать военных.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "Продолжаю движение Скитальцем по линии к воротам/«Ц» — назад не хожу. Военные пока не угрожают Линейным напрямую, поддержка подождёт.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 5,
+          "move": 5,
+          "plan": "Скиталец уже держит «Ц» (Hold Z1) — не ухожу с него. Подтягиваю второго Скитальца в (1,1), откуда он встанет в (1,0) рядом с «Ц» и даст поддержку щита 2.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S42",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 6,
+          "move": 6,
+          "plan": "Второй Скиталец выходит на (1,0) — вплотную к «Ц». Следующим ходом дам стоящему на «Ц» щит 2, чтобы его не выбили.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S42",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 15,
+          "move": 15,
+          "plan": "«Ц» занял тендер Минусов — выбить нельзя, поэтому готовлю гонку: веду Скитальца к центру, чтобы встать рядом с «Ц» и при случае сразу занять/поддержать. Линейные пока вне прямой угрозы.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S41",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 16,
+          "move": 16,
+          "plan": "Медленно подтягиваю резерв к «Ц»: Свободный идёт в (0,2) — ближний к центру узел, откуда можно давить на ворота и готовить смену тендера Минусов. Поддержку не трачу, пока Линейным ничто не угрожает.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 0,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 17,
+          "move": 17,
+          "plan": "«Ц» — это (0,0). Ставлю Свободного в (0,1), прямо у «Ц»: как только тендер Минусов уйдёт или погибнет, займу центр мгновенно; заодно это узел для поддержки.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F27",
+            "q": 0,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 20,
+          "move": 20,
+          "plan": "Держусь в шаге от «Ц»: Свободный стоит на (0,1), а Курьера веду в (0,2), чтобы иметь вторую фигуру у центра для поддержки и мгновенного занятия, когда тендеры Плюсов/Минусов освободят «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": 0,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 22,
+          "move": 22,
+          "plan": "Бомбардиры обоих флотов уже рядом с моими Линейными — их прыжок бьёт открытого Линейного, а гибель Линейного = чужак победа. Ставлю щит 2 на более центрального Линейного Z-P22; к «Ц» вернусь, как только тендеры начнут драться.",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P21",
+            "targetId": "Z-P22",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 30,
+          "move": 30,
+          "plan": "Плюсы уже на Hold P1 — их надо срочно сбить, но выбить тендер нельзя. Готовлю двухфигурную схему: Свободный стоит у «Ц» (0,1), Курьер идёт в (0,2), чтобы после освобождения центра встать рядом и дать щит 2.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": 0,
+            "r": 2,
+            "displace": false
+          }
+        },
+        {
+          "i": 35,
+          "move": 35,
+          "plan": "Плюсы на Hold P2 — этот круг может стать победным для них, а выбить тендер с «Ц» нельзя. Всё равно достраиваю позицию: Курьер идёт в (0,2), чтобы держать центр под давлением сразу после освобождения.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C25",
+            "q": 0,
+            "r": 2,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": [
+        {
+          "i": 28,
+          "move": 29,
+          "f": "minus",
+          "isLLM": false,
+          "pieceId": "M-D19",
+          "zeroFrom": {
+            "q": 0,
+            "r": 2
+          },
+          "zeroTo": {
+            "q": 1,
+            "r": 2
+          },
+          "attackerPos": {
+            "q": -1,
+            "r": 2
+          }
+        },
+        {
+          "i": 34,
+          "move": 35,
+          "f": "minus",
+          "isLLM": false,
+          "pieceId": "M-D19",
+          "zeroFrom": {
+            "q": 0,
+            "r": 2
+          },
+          "zeroTo": {
+            "q": 1,
+            "r": 2
+          },
+          "attackerPos": {
+            "q": -1,
+            "r": 2
+          }
+        }
+      ]
+    }
+  },
+  {
+    "matchNo": 739,
+    "result": {
+      "winner": "plus",
+      "reason": "hold",
+      "moves": 18
+    },
+    "replay": {
+      "winner": "plus",
+      "reason": "hold",
+      "moves": 18,
+      "ok": true
+    },
+    "llm": {
+      "actions": 7,
+      "moves": 7,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 2,
+      "osc2": 0,
+      "repeatPiece": 2,
+      "gateMoves": 0,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 11,
+      "moves": 11,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 1,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 3,
+      "maxHold": 3,
+      "holdTicks": 1,
+      "gateMoves": null
+    },
+    "llmTurns": 7,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 1,
+          "move": 1,
+          "plan": "«Ц» пуст; веду Скитальца Z-S43 с C1 к жёлтым воротам, чтобы занять центр и запустить Hold. Остальные нули пока держу нейтральными для блокировки линий.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 2,
+          "move": 2,
+          "plan": "Z-S43 продолжает путь к жёлтым воротам и «Ц» — двигаю его дальше по линии, не тратя ход на преждевременную поддержку. Плюсы и Минусы ещё не выдвинули Линейных под угрозу.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "Z-S43 вернулся на C1 — не повторяю往返; продвигаю другого Скитальца Z-S45 к воротам/«Ц» по линии (2,-2). Пока угроз Линейным нет, поддержку не трачу.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S45",
+            "q": 2,
+            "r": -2,
+            "displace": false
+          }
+        },
+        {
+          "i": 9,
+          "move": 9,
+          "plan": "«Ц» занят тендером Плюсов, выбить не могу — блокирую подход к жёлтым воротам и подтягиваю Скитальца Z-S45 (PZ-2) вплотную к «Ц», чтобы занять его сразу после освобождения. Поддержку пока не трачу: прямых угроз Линейным нет.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S45",
+            "q": 3,
+            "r": -2,
+            "displace": false
+          }
+        },
+        {
+          "i": 10,
+          "move": 10,
+          "plan": "Плюсы лидируют по Hold (1) — их тендер на «Ц» сам по себе слаб, и Минусы могут его снять. Сам продвигаю свежего Скитальца Z-S44 к «Ц»/воротам, чтобы перехватить центр после освобождения, и не трачу поддержку без угрозы Линейным.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S44",
+            "q": 2,
+            "r": -1,
+            "displace": false
+          }
+        },
+        {
+          "i": 11,
+          "move": 11,
+          "plan": "«Ц» всё ещё держит тендер Плюсов; Минусам выгодно его снять, а я готовлю перехват. Веду свежего Свободного Z-F28 в зону ворот/«Ц» (3,-1), чтобы иметь фигуру рядом и не терять темп.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F28",
+            "q": 3,
+            "r": -1,
+            "displace": false
+          }
+        },
+        {
+          "i": 16,
+          "move": 16,
+          "plan": "Плюсы на Hold 2 — критично снять их тендер с «Ц»; этим займутся Минусы, а я подтягиваю Курьера Z-C26 к воротам/«Ц» (4,-2), чтобы быть готовым занять центр сразу после освобождения. Поддержка не нужна: Линейным пока ничто не угрожает.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-C26",
+            "q": 4,
+            "r": -2,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 740,
+    "result": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 18
+    },
+    "replay": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 18,
+      "ok": true
+    },
+    "llm": {
+      "actions": 5,
+      "moves": 5,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "gateMoves": 3,
+      "centerTicks": 3,
+      "maxHold": 3,
+      "holdTicks": 1
+    },
+    "ai": {
+      "actions": 13,
+      "moves": 13,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 1,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "llmTurns": 5,
+    "zeroHoldMax": 3,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 2,
+          "move": 2,
+          "plan": "Ц пуст, поэтому веду темпового Скитальца S43 с C1 к воротам/центру, сохраняя нулей нейтральными и не заявляя их без нужды.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 5,
+          "move": 5,
+          "plan": "Ц пуст — продолжаю гонку: веду S43 дальше по линии к центру/жёлтым воротам, нулей держу нейтральными.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 6,
+          "move": 6,
+          "plan": "S43 продолжает марш по прямой к центру (0,0) — это и есть путь к воротам/«Ц»; поддержки не нужны, пока угроз Линейным нет.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 8,
+          "move": 8,
+          "plan": "S43 держит «Ц» (Hold Z1) — снимать его нельзя. Подвожу второй Скиталец S42 по той же оси к (2,0), чтобы следующим ходом встать рядом на поддержку «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S42",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 17,
+          "move": 17,
+          "plan": "Hold Z2 — ещё круг до победы. Ставлю S42 на (1,0), соседнюю к «Ц» клетку, чтобы следующим ходом дать щит 2 стоящему на «Ц» S43; S43 не снимаю.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S42",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  }
+]

@@ -1,0 +1,72 @@
+{
+  "runId": "2026-11-08_zero_mix_pass-main-p1_arrow-main-p5",
+  "date": "2026-11-08",
+  "engine": "elio_engine.js v1.3d",
+  "ai": "elio_ai.js v1.3c + passTo fix",
+  "promptVersion": "zero-doctrine-v2-action-list",
+  "config": {
+    "games": 10,
+    "setups": [
+      { "label": "pass+main+10+1", "games": 5, "limit": 90, "pawns": 1, "firstMovePawn": false },
+      { "label": "arrow+main+15", "games": 5, "limit": 120, "pawns": 5, "firstMovePawn": true }
+    ]
+  },
+  "result": {
+    "games": 10,
+    "wins": 4,
+    "draws": 0,
+    "losses": 6,
+    "contaminated": 0,
+    "clean": { "wins": 4, "draws": 0, "losses": 6 },
+    "bySetup": {
+      "pass+main+10+1": { "games": 5, "wins": 2, "draws": 0, "losses": 3, "contaminated": 0 },
+      "arrow+main+15": { "games": 5, "wins": 2, "draws": 0, "losses": 3, "contaminated": 0 }
+    },
+    "byGame": [
+      { "matchNo": 731, "setup": "pass+main+10+1", "winner": "zero", "reason": "hold", "moves": 16 },
+      { "matchNo": 732, "setup": "pass+main+10+1", "winner": "zero", "reason": "hold", "moves": 28 },
+      { "matchNo": 733, "setup": "pass+main+10+1", "winner": "minus", "reason": "hold", "moves": 31 },
+      { "matchNo": 734, "setup": "pass+main+10+1", "winner": "plus", "reason": "king", "moves": 8 },
+      { "matchNo": 735, "setup": "pass+main+10+1", "winner": "minus", "reason": "hold", "moves": 49 },
+      { "matchNo": 736, "setup": "arrow+main+15", "winner": "zero", "reason": "hold", "moves": 29 },
+      { "matchNo": 737, "setup": "arrow+main+15", "winner": "minus", "reason": "king", "moves": 27 },
+      { "matchNo": 738, "setup": "arrow+main+15", "winner": "plus", "reason": "hold", "moves": 36 },
+      { "matchNo": 739, "setup": "arrow+main+15", "winner": "plus", "reason": "hold", "moves": 18 },
+      { "matchNo": 740, "setup": "arrow+main+15", "winner": "zero", "reason": "hold", "moves": 18 }
+    ]
+  },
+  "llmMetrics": {
+    "pass+main+10+1": {
+      "actions": 48, "moves": 45, "supports": 3, "osc1": 4, "osc2": 0,
+      "repeatPiece": 31, "gateMoves": 16, "centerTicks": 18, "lineDeaths": 1,
+      "zeroHoldMaxByGame": { "731": 3, "732": 3, "733": 2, "734": 0, "735": 0 },
+      "plans": 48
+    },
+    "arrow+main+15": {
+      "actions": 47, "moves": 42, "supports": 5, "osc1": 5, "osc2": 0,
+      "repeatPiece": 20, "gateMoves": 12, "centerTicks": 15, "lineDeaths": 1,
+      "zeroHoldMaxByGame": { "736": 3, "737": 0, "738": 2, "739": 0, "740": 3 },
+      "plans": 47
+    },
+    "total": {
+      "actions": 95, "moves": 87, "supports": 8, "osc1": 9, "osc2": 0,
+      "repeatPiece": 51, "gateMoves": 28, "centerTicks": 33, "lineDeaths": 2,
+      "plans": 95,
+      "displaces": 0
+    }
+  },
+  "aiBaseline": {
+    "pass+main+10+1": { "games": 400, "zeroWinrate": 40.5 },
+    "arrow+main+15": { "games": 400, "zeroWinrate": 40.0 }
+  },
+  "audit": "audit.json",
+  "passToFix": true,
+  "notes": [
+    "4–0–6 (40 %); по 2/5 в каждом сетапе.",
+    "DeepSeek ровно на уровне AI-базы Нулей: 40.5 % / 40.0 %.",
+    "Все 4 победы — hold; в поражениях 733/738 Нули доходили до Hold 2.",
+    "0 contaminated, 0 illegal, 0 integrity, 0 stale, 0 fallback.",
+    "15-фигурный 736 — пример осмысленного использования 5 скитальцев.",
+    "5 игр на сетап — пилот, ±~20 п.п."
+  ]
+}

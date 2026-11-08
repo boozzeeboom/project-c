@@ -152,6 +152,44 @@
       "lineDeaths": 1,
       "plans": 47,
       "note": "Первый чистый прогон: 0 contaminated, 0 illegal, 0 integrity. 725 — чистая победа удержанием; остальные 5 — 0 center ticks. Осцилляции 3/44 (6.8%)."
+    },
+    {
+      "runId": "2026-11-08_zero_mix_pass-main-p1_arrow-main-p5",
+      "date": "2026-11-08",
+      "engine": "elio_engine.js v1.3d + passTo fix",
+      "promptVersion": "zero-doctrine-v2-action-list",
+      "games": 10,
+      "wins": 4,
+      "draws": 0,
+      "losses": 6,
+      "contaminatedGames": [],
+      "cleanGames": 10,
+      "cleanWins": 4,
+      "cleanDraws": 0,
+      "cleanLosses": 6,
+      "bySetup": {
+        "pass+main+10+1": { "games": 5, "wins": 2, "draws": 0, "losses": 3 },
+        "arrow+main+15": { "games": 5, "wins": 2, "draws": 0, "losses": 3 }
+      },
+      "avgMoves": 26.0,
+      "llmActions": 95,
+      "llmMoves": 87,
+      "llmSupports": 8,
+      "displaces": 0,
+      "osc1": 9,
+      "osc2": 0,
+      "repeatPiece": 51,
+      "gateMoves": 28,
+      "centerTicks": 33,
+      "maxHoldByLlmAction": 3,
+      "cleanMaxHold": 3,
+      "zeroHoldMaxByGame": {
+        "731": 3, "732": 3, "733": 2, "734": 0, "735": 0,
+        "736": 3, "737": 0, "738": 2, "739": 0, "740": 3
+      },
+      "lineDeaths": 2,
+      "plans": 95,
+      "note": "4–0–6 (40 %); по 2/5 в каждом сетапе; ровно AI-база Нулей 40.5/40.0 %. 0 contaminated; passTo fix."
     }
   ]
 }

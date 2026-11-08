@@ -1,0 +1,506 @@
+{
+ "matchNo": 733,
+ "assign": {
+  "deepseek": "zero"
+ },
+ "mode": {
+  "turn": "pass",
+  "death": "main"
+ },
+ "pawns": 1,
+ "winner": "minus",
+ "reason": "hold",
+ "moves": 31,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -1,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 3,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"«Ц» пуст, поэтому гонка в приоритете: двигаю Свободного к центральной зоне/воротам, не заявляя нулей. Линейные пока не под прямым ударом Бомбардиров — щит поставлю, если появится угроза.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "«Ц» пуст, поэтому гонка в приоритете: двигаю Свободного к центральной зоне/воротам, не заявляя нулей. Линейные пока не под прямым ударом Бомбардиров — щит поставлю, если появится угроза.",
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -2,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 7,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Продолжаю гонку к центру/воротам: Свободный идёт к (1,0), ближе всего к центральной зоне. Линейные пока не под ударом — щит поставлю при появлении Бомбардира в радиусе.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":1,\"r\":0}}",
+   "plan": "Продолжаю гонку к центру/воротам: Свободный идёт к (1,0), ближе всего к центральной зоне. Линейные пока не под ударом — щит поставлю при появлении Бомбардира в радиусе.",
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": 0,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 0,
+     "r": 0
+    }
+   },
+   "move": 9,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"«Ц» пуст, и Свободный в одном шаге от центра — занимаю (0,0), начиная отсчёт Hold. Следующим ходом подведу соседнего нуля на поддержку, чтобы щит 2 защитил стоящего на «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":0,\"r\":0}}",
+   "plan": "«Ц» пуст, и Свободный в одном шаге от центра — занимаю (0,0), начиная отсчёт Hold. Следующим ходом подведу соседнего нуля на поддержку, чтобы щит 2 защитил стоящего на «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": 0,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "support",
+    "zeroId": "Z-P22",
+    "targetId": "Z-P21"
+   },
+   "move": 12,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Держу Z-F27 на «Ц» (Hold 1). Поддержки стоящему на «Ц» пока нет в списке, поэтому страхую Линейного Z-P21 от Бомбардиров (M-B14 на A6) через Z-P22; следующим ходом подтяну нуля в сосед к «Ц» для щита 2.\",\"kind\":\"support\",\"zeroId\":\"Z-P22\",\"targetId\":\"Z-P21\"}",
+   "plan": "Держу Z-F27 на «Ц» (Hold 1). Поддержки стоящему на «Ц» пока нет в списке, поэтому страхую Линейного Z-P21 от Бомбардиров (M-B14 на A6) через Z-P22; следующим ходом подтяну нуля в сосед к «Ц» для щита 2.",
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -1,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F28",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 14,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Z-F28 идёт в (1,1) — вплотную к «Ц», чтобы следующим ходом дать щит 2 держащему центр Z-F27. Hold растёт, Линейный Z-P21 уже под щитом.\",\"kind\":\"move\",\"pieceId\":\"Z-F28\",\"to\":{\"q\":1,\"r\":1}}",
+   "plan": "Z-F28 идёт в (1,1) — вплотную к «Ц», чтобы следующим ходом дать щит 2 держащему центр Z-F27. Hold растёт, Линейный Z-P21 уже под щитом.",
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -1,
+    "r": -1,
+    "capture": true
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F28",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 16,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Z-F28 встаёт в (1,0) — сосед «Ц», чтобы следующим ходом закрыть держащего Z-F27 щитом 2. Стоящий на «Ц» не двигаю, Hold продолжает расти.\",\"kind\":\"move\",\"pieceId\":\"Z-F28\",\"to\":{\"q\":1,\"r\":0}}",
+   "plan": "Z-F28 встаёт в (1,0) — сосед «Ц», чтобы следующим ходом закрыть держащего Z-F27 щитом 2. Стоящий на «Ц» не двигаю, Hold продолжает расти.",
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "support",
+    "zeroId": "Z-P21",
+    "targetId": "Z-P22"
+   },
+   "move": 18,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"Щит на Z-P21 уже стоит, теперь закрываю второго Линейного: Z-P21 -> Z-P22, чтобы оба К-Линейных были под защитой 2 от Бомбардира M-B14. Z-F27 продолжает держать «Ц».\",\"kind\":\"support\",\"zeroId\":\"Z-P21\",\"targetId\":\"Z-P22\"}",
+   "plan": "Щит на Z-P21 уже стоит, теперь закрываю второго Линейного: Z-P21 -> Z-P22, чтобы оба К-Линейных были под защитой 2 от Бомбардира M-B14. Z-F27 продолжает держать «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F10",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": 0,
+    "r": 0,
+    "capture": true
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -3,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F28",
+    "to": {
+     "q": 1,
+     "r": -1
+    }
+   },
+   "move": 23,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"«Ц» занял Фрегат Минусов, выбить его нельзя — перевожу Z-F28 на (1,-1), ближайший к центру/воротам вектор, чтобы держать давление и войти, если фрегат уйдёт. Оба Линейных уже под щитом.\",\"kind\":\"move\",\"pieceId\":\"Z-F28\",\"to\":{\"q\":1,\"r\":-1}}",
+   "plan": "«Ц» занял Фрегат Минусов, выбить его нельзя — перевожу Z-F28 на (1,-1), ближайший к центру/воротам вектор, чтобы держать давление и войти, если фрегат уйдёт. Оба Линейных уже под щитом.",
+   "winner": null,
+   "reason": null,
+   "after": 24
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -1,
+    "r": -1,
+    "capture": true
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 25
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F28",
+    "to": {
+     "q": 0,
+     "r": -1
+    }
+   },
+   "move": 25,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Фрегат Минусов на «Ц» не выбить, но если Плюсы его убьют, центр освободится. Держу Z-F28 вплотную к «Ц» с другой стороны — (0,-1), чтобы занять центр сразу, как он освободится; оба Линейных уже под щитом 2.\",\"kind\":\"move\",\"pieceId\":\"Z-F28\",\"to\":{\"q\":0,\"r\":-1}}",
+   "plan": "Фрегат Минусов на «Ц» не выбить, но если Плюсы его убьют, центр освободится. Держу Z-F28 вплотную к «Ц» с другой стороны — (0,-1), чтобы занять центр сразу, как он освободится; оба Линейных уже под щитом 2.",
+   "winner": null,
+   "reason": null,
+   "after": 26
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": 1,
+    "r": -2,
+    "capture": true
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 27
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 1,
+    "r": -2,
+    "capture": true
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 28
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F28",
+    "to": {
+     "q": -1,
+     "r": 0
+    }
+   },
+   "move": 28,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Минусы на Hold 2 — их фрегат на «Ц» может закрыть игру. Мне остаётся держать нуля вплотную к центру: перевожу Z-F28 на (-1,0), на случай если Плюсы снимут фрегат и «Ц» освободится.\",\"kind\":\"move\",\"pieceId\":\"Z-F28\",\"to\":{\"q\":-1,\"r\":0}}",
+   "plan": "Минусы на Hold 2 — их фрегат на «Ц» может закрыть игру. Мне остаётся держать нуля вплотную к центру: перевожу Z-F28 на (-1,0), на случай если Плюсы снимут фрегат и «Ц» освободится.",
+   "winner": null,
+   "reason": null,
+   "after": 29
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 30
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 1,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": "minus",
+   "reason": "hold",
+   "after": 31
+  }
+ ]
+}

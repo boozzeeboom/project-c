@@ -64,10 +64,10 @@ function selectActions(acts, faction) {
   }
   return picked.slice(0, 16);
 }
-function apply(s, a) {
-  if (a.kind === 'skip') return E.skipTurn(s);
-  if (a.kind === 'support') return E.applySupport(s, a.zeroId, a.targetId);
-  return E.applyMove(s, a.pieceId, a.q, a.r);
+function apply(s, a, passTo) {
+  if (a.kind === 'skip') return E.skipTurn(s, passTo);
+  if (a.kind === 'support') return E.applySupport(s, a.zeroId, a.targetId, passTo);
+  return E.applyMove(s, a.pieceId, a.q, a.r, passTo);
 }
 function integrity(s) {
   const errs = [];
@@ -129,8 +129,14 @@ if (!paths.length) paths.push(OUT + 'elio_zero_test.json');
 const matches = loadMatches(paths);
 const report = [];
 for (const m of matches) {
-  const s0 = E.init({ turn: 'arrow', death: 'main', pawns: 1 });
-  s0.limit = 60;
+  const s0 = E.init({
+    turn: m.mode && m.mode.turn ? m.mode.turn : 'arrow',
+    death: m.mode && m.mode.death ? m.mode.death : 'main',
+    pawns: m.pawns || 0,
+    firstMovePawn: (m.pawns || 0) >= 5,
+    passRule: 'random',
+  });
+  s0.limit = m.limit || ((m.reason === 'limit' || m.reason === 'draw') ? m.moves : ((m.pawns || 0) >= 5 ? 120 : 90));
   let s = s0;
   const llm = { actions: 0, moves: 0, supports: 0, skips: 0, displaces: 0, captures: 0, lineKills: 0, supportNull: 0, noopSupports: 0, osc1: 0, osc2: 0, repeatPiece: 0, gateMoves: 0, centerTicks: 0, maxHold: 0, holdTicks: 0 };
   const ai = { actions: 0, moves: 0, supports: 0, skips: 0, displaces: 0, captures: 0, lineKills: 0, osc1: 0, osc2: 0, repeatPiece: 0, centerTicks: 0, maxHold: 0, holdTicks: 0 };
@@ -188,7 +194,7 @@ for (const m of matches) {
       const z = s.pieces.find(p => p.id === a.zeroId);
       if (z && (z.supportTarget || null) === (a.targetId || null)) { if (isLLM) llm.noopSupports++; }
     }
-    const res = apply(s, a);
+    const res = apply(s, a, entry.passTo);
     if (res.error) { flags.errors.push({ i, move: s.moveNumber, error: res.error, act: a }); break; }
     s = res.state;
     if (entry.after !== undefined && entry.after !== s.moveNumber) flags.errors.push({ i, after: entry.after, replayAfter: s.moveNumber });

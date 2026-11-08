@@ -1,0 +1,284 @@
+{
+ "matchNo": 740,
+ "assign": {
+  "deepseek": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 5,
+ "winner": "zero",
+ "reason": "hold",
+ "moves": 18,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T34",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T39",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 2,
+   "raw": "{\"plan\":\"Ц пуст, поэтому веду темпового Скитальца S43 с C1 к воротам/центру, сохраняя нулей нейтральными и не заявляя их без нужды.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "Ц пуст, поэтому веду темпового Скитальца S43 с C1 к воротам/центру, сохраняя нулей нейтральными и не заявляя их без нужды.",
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -1,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 5,
+   "raw": "{\"plan\":\"Ц пуст — продолжаю гонку: веду S43 дальше по линии к центру/жёлтым воротам, нулей держу нейтральными.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":1,\"r\":0}}",
+   "plan": "Ц пуст — продолжаю гонку: веду S43 дальше по линии к центру/жёлтым воротам, нулей держу нейтральными.",
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 0,
+     "r": 0
+    }
+   },
+   "move": 6,
+   "raw": "{\"plan\":\"S43 продолжает марш по прямой к центру (0,0) — это и есть путь к воротам/«Ц»; поддержки не нужны, пока угроз Линейным нет.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":0,\"r\":0}}",
+   "plan": "S43 продолжает марш по прямой к центру (0,0) — это и есть путь к воротам/«Ц»; поддержки не нужны, пока угроз Линейным нет.",
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T36",
+    "q": -2,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S42",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 8,
+   "raw": "{\"plan\":\"S43 держит «Ц» (Hold Z1) — снимать его нельзя. Подвожу второй Скиталец S42 по той же оси к (2,0), чтобы следующим ходом встать рядом на поддержку «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-S42\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "S43 держит «Ц» (Hold Z1) — снимать его нельзя. Подвожу второй Скиталец S42 по той же оси к (2,0), чтобы следующим ходом встать рядом на поддержку «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": -1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T32",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": 0,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T36",
+    "q": -1,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": 1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S42",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 17,
+   "raw": "{\"plan\":\"Hold Z2 — ещё круг до победы. Ставлю S42 на (1,0), соседнюю к «Ц» клетку, чтобы следующим ходом дать щит 2 стоящему на «Ц» S43; S43 не снимаю.\",\"kind\":\"move\",\"pieceId\":\"Z-S42\",\"to\":{\"q\":1,\"r\":0}}",
+   "plan": "Hold Z2 — ещё круг до победы. Ставлю S42 на (1,0), соседнюю к «Ц» клетку, чтобы следующим ходом дать щит 2 стоящему на «Ц» S43; S43 не снимаю.",
+   "winner": "zero",
+   "reason": "hold",
+   "after": 18
+  }
+ ]
+}

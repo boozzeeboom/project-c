@@ -1,0 +1,416 @@
+{
+ "matchNo": 737,
+ "assign": {
+  "deepseek": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 5,
+ "winner": "minus",
+ "reason": "king",
+ "moves": 27,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 0,
+   "raw": "{\"plan\":\"«Ц» пуст — гонка приоритетна. Веду Скитальца Z-S43 из C1 к жёлтым воротам, чтобы занять «Ц» и начать счётчик Hold.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "«Ц» пуст — гонка приоритетна. Веду Скитальца Z-S43 из C1 к жёлтым воротам, чтобы занять «Ц» и начать счётчик Hold.",
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T36",
+    "q": -2,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T38",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T31",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-L1",
+    "q": -1,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 0,
+    "r": -5,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 7,
+   "raw": "{\"plan\":\"«Ц» пуст, гонка — приоритет. Продолжаю вести Скитальца Z-S43 из B1 дальше к жёлтым воротам, не тратя ход на поддержку.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":1,\"r\":0}}",
+   "plan": "«Ц» пуст, гонка — приоритет. Продолжаю вести Скитальца Z-S43 из B1 дальше к жёлтым воротам, не тратя ход на поддержку.",
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 0,
+     "r": 0
+    }
+   },
+   "move": 8,
+   "raw": "{\"plan\":\"«Ц» всё ещё пуст, гонка — приоритет. Продолжаю движение Скитальцем Z-S43 вглубь к воротам/«Ц», не отвлекаясь на поддержку.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":0,\"r\":0}}",
+   "plan": "«Ц» всё ещё пуст, гонка — приоритет. Продолжаю движение Скитальцем Z-S43 вглубь к воротам/«Ц», не отвлекаясь на поддержку.",
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "support",
+    "zeroId": "Z-P21",
+    "targetId": "Z-P22"
+   },
+   "move": 9,
+   "raw": "{\"plan\":\"Скиталец уже на «Ц» — держу его и коплю Hold. Поддержки именно на «Ц» в списке нет, поэтому усиливаю щитом свой Капитан-Линейный Z-P22 (его смерть = мгновенная победа врага) — приоритет №1.\",\"kind\":\"support\",\"zeroId\":\"Z-P21\",\"targetId\":\"Z-P22\"}",
+   "plan": "Скиталец уже на «Ц» — держу его и коплю Hold. Поддержки именно на «Ц» в списке нет, поэтому усиливаю щитом свой Капитан-Линейный Z-P22 (его смерть = мгновенная победа врага) — приоритет №1.",
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T32",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F10",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": 1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T32",
+    "q": 0,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T32",
+    "q": 0,
+    "r": 0,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F3",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T34",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S42",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 18,
+   "raw": "{\"plan\":\"«Ц» занят Тендером Плюсов — выбить не могу. Двигаю Скитальца по подходам к «Ц», чтобы быть готовым занять/блокировать, если клетка освободится.\",\"kind\":\"move\",\"pieceId\":\"Z-S42\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "«Ц» занят Тендером Плюсов — выбить не могу. Двигаю Скитальца по подходам к «Ц», чтобы быть готовым занять/блокировать, если клетка освободится.",
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S42",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 19,
+   "raw": "{\"plan\":\"«Ц» у Плюсов, выбить нечем. Вывожу Скитальца Z-S42 на (1,0) — вплотную к «Ц», чтобы занять его при освобождении/блокировать подходы.\",\"kind\":\"move\",\"pieceId\":\"Z-S42\",\"to\":{\"q\":1,\"r\":0}}",
+   "plan": "«Ц» у Плюсов, выбить нечем. Вывожу Скитальца Z-S42 на (1,0) — вплотную к «Ц», чтобы занять его при освобождении/блокировать подходы.",
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "support",
+    "zeroId": "Z-P22",
+    "targetId": "Z-P21"
+   },
+   "move": 20,
+   "raw": "{\"plan\":\"«Ц» у Плюсов — выбить не могу. Мой Линейный Z-P21 стоит в зоне вражеских фигур (A7), его гибель = мгновенная победа врага, поэтому накрываю его щитом 2 от Z-P22.\",\"kind\":\"support\",\"zeroId\":\"Z-P22\",\"targetId\":\"Z-P21\"}",
+   "plan": "«Ц» у Плюсов — выбить не могу. Мой Линейный Z-P21 стоит в зоне вражеских фигур (A7), его гибель = мгновенная победа врага, поэтому накрываю его щитом 2 от Z-P22.",
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S41",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 21,
+   "raw": "{\"plan\":\"«Ц» у Плюсов, снять нечем. Продолжаю подтягивать резерв к «Ц», чтобы при освобождении клетки сразу занять и включить Hold — двигаю Z-S41 ближе к центру.\",\"kind\":\"move\",\"pieceId\":\"Z-S41\",\"to\":{\"q\":1,\"r\":1}}",
+   "plan": "«Ц» у Плюсов, снять нечем. Продолжаю подтягивать резерв к «Ц», чтобы при освобождении клетки сразу занять и включить Hold — двигаю Z-S41 ближе к центру.",
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-B14",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 24
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 24,
+   "raw": "{\"plan\":\"У Плюсов Hold 1 — времени мало. Продолжаю подтягивать нулей по маршруту к «Ц» (Z-F27 на (2,0)), чтобы быть вплотную и занять/заблокировать при освобождении клетки.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "У Плюсов Hold 1 — времени мало. Продолжаю подтягивать нулей по маршруту к «Ц» (Z-F27 на (2,0)), чтобы быть вплотную и занять/заблокировать при освобождении клетки.",
+   "winner": null,
+   "reason": null,
+   "after": 25
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-B14",
+    "q": -1,
+    "r": -1,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 26
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-B14",
+    "q": -1,
+    "r": -4,
+    "capture": true
+   },
+   "ai": true,
+   "winner": "minus",
+   "reason": "king",
+   "after": 27
+  }
+ ]
+}

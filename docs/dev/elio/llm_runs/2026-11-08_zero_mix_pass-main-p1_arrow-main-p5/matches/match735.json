@@ -1,0 +1,803 @@
+{
+ "matchNo": 735,
+ "assign": {
+  "deepseek": "zero"
+ },
+ "mode": {
+  "turn": "pass",
+  "death": "main"
+ },
+ "pawns": 1,
+ "winner": "minus",
+ "reason": "hold",
+ "moves": 49,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 2,
+     "r": 1
+    }
+   },
+   "move": 1,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"Ц пусто, гонку начинаю сразу: Свободный идёт в сторону центра/ворот, поддержку не трачу на первый ход.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":2,\"r\":1}}",
+   "plan": "Ц пусто, гонку начинаю сразу: Свободный идёт в сторону центра/ворот, поддержку не трачу на первый ход.",
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T32",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -3,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 0,
+     "r": 1
+    }
+   },
+   "move": 5,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Продолжаю гонку к центру: Свободный смещается к нулевым координатам, где вероятны ворота и «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":0,\"r\":1}}",
+   "plan": "Продолжаю гонку к центру: Свободный смещается к нулевым координатам, где вероятны ворота и «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -3,
+    "r": 3,
+    "capture": true
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-L1",
+    "q": -1,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 0,
+     "r": 2
+    }
+   },
+   "move": 8,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"Свободный уже на узле MZ-1 — продолжаю тем же курсом к воротам/«Ц», не сбиваясь на поддержку.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":0,\"r\":2}}",
+   "plan": "Свободный уже на узле MZ-1 — продолжаю тем же курсом к воротам/«Ц», не сбиваясь на поддержку.",
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 0,
+    "r": -5,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-B14",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F10",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 1,
+     "r": 2
+    }
+   },
+   "move": 14,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Свободный идёт по узлам MZ, продолжаю путь вперёд по коридору ворот; «Ц» всё ещё пусто — держу темп.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":1,\"r\":2}}",
+   "plan": "Свободный идёт по узлам MZ, продолжаю путь вперёд по коридору ворот; «Ц» всё ещё пусто — держу темп.",
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-B14",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 16,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"«Ц» пусто, угроз Линейным пока нет — продолжаю движение Свободного к центру, выбираю шаг вглубь доски.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":1,\"r\":1}}",
+   "plan": "«Ц» пусто, угроз Линейным пока нет — продолжаю движение Свободного к центру, выбираю шаг вглубь доски.",
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": -1,
+    "r": -1,
+    "capture": true
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -1,
+    "r": -1,
+    "capture": true
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -4,
+    "r": 5,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 0,
+     "r": 2
+    }
+   },
+   "move": 21,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"Перестаю гонять Свободного туда-обратно: свежий Курьер идёт вперёд к границе секторов и воротам, «Ц» пока пусто.\",\"kind\":\"move\",\"pieceId\":\"Z-C25\",\"to\":{\"q\":0,\"r\":2}}",
+   "plan": "Перестаю гонять Свободного туда-обратно: свежий Курьер идёт вперёд к границе секторов и воротам, «Ц» пока пусто.",
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -3,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 24
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": -1,
+     "r": 3
+    }
+   },
+   "move": 24,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"Курьер на MZ-2 — это коридор секторов к центру; продолжаю по нему, чтобы выйти к жёлтым воротам и «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-C25\",\"to\":{\"q\":-1,\"r\":3}}",
+   "plan": "Курьер на MZ-2 — это коридор секторов к центру; продолжаю по нему, чтобы выйти к жёлтым воротам и «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 25
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F3",
+    "q": 1,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 26
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": -2,
+     "r": 3
+    }
+   },
+   "move": 26,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Курьер прошёл MZ-коридор в сектор Минусов; продолжаю вглубь по границе, ища жёлтые ворота к «Ц». Нейтральный нуль уязвимости не имеет, риск минимален.\",\"kind\":\"move\",\"pieceId\":\"Z-C25\",\"to\":{\"q\":-2,\"r\":3}}",
+   "plan": "Курьер прошёл MZ-коридор в сектор Минусов; продолжаю вглубь по границе, ища жёлтые ворота к «Ц». Нейтральный нуль уязвимости не имеет, риск минимален.",
+   "winner": null,
+   "reason": null,
+   "after": 27
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": 0,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 28
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": -2,
+     "r": 4
+    }
+   },
+   "move": 28,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"Курьер уже в среднем кольце сектора Минусов — тяну его дальше к центру (C1), где вероятны ворота; параллельно Свободный остаётся в своём секторе как резерв.\",\"kind\":\"move\",\"pieceId\":\"Z-C25\",\"to\":{\"q\":-2,\"r\":4}}",
+   "plan": "Курьер уже в среднем кольце сектора Минусов — тяну его дальше к центру (C1), где вероятны ворота; параллельно Свободный остаётся в своём секторе как резерв.",
+   "winner": null,
+   "reason": null,
+   "after": 29
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F3",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 30
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 31
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-E23",
+    "to": {
+     "q": 3,
+     "r": 2
+    }
+   },
+   "move": 31,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"Курьер кружит в секторе Минусов без пользы — переключаюсь на Инженера в своём секторе и двигаю его вглубь (3,2), к внутренним кольцам и воротам.\",\"kind\":\"move\",\"pieceId\":\"Z-E23\",\"to\":{\"q\":3,\"r\":2}}",
+   "plan": "Курьер кружит в секторе Минусов без пользы — переключаюсь на Инженера в своём секторе и двигаю его вглубь (3,2), к внутренним кольцам и воротам.",
+   "winner": null,
+   "reason": null,
+   "after": 32
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F3",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 33
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 33,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Свободный на внешнем кольце A12 — тяну его внутрь к среднему кольцу (1,0), чтобы выйти к центру сектора и воротам.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":1,\"r\":0}}",
+   "plan": "Свободный на внешнем кольце A12 — тяну его внутрь к среднему кольцу (1,0), чтобы выйти к центру сектора и воротам.",
+   "winner": null,
+   "reason": null,
+   "after": 34
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": 0,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 35
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-E23",
+    "to": {
+     "q": 2,
+     "r": 2
+    }
+   },
+   "move": 35,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Минусы заняли «Ц» (Hold 1) — выбить нельзя, но их гибель от Плюсов обнулит Hold. Держу Свободного на воротах Z-A1 и подтягиваю Инженера вглубь, чтобы быть готовым занять «Ц» при освобождении.\",\"kind\":\"move\",\"pieceId\":\"Z-E23\",\"to\":{\"q\":2,\"r\":2}}",
+   "plan": "Минусы заняли «Ц» (Hold 1) — выбить нельзя, но их гибель от Плюсов обнулит Hold. Держу Свободного на воротах Z-A1 и подтягиваю Инженера вглубь, чтобы быть готовым занять «Ц» при освобождении.",
+   "winner": null,
+   "reason": null,
+   "after": 36
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 37
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-E23",
+    "to": {
+     "q": 1,
+     "r": 2
+    }
+   },
+   "move": 37,
+   "passTo": "minus",
+   "raw": "{\"plan\":\"Свободный замер на воротах Z-A1 — это наш вход в «Ц», держу его. Инженера веду по внешнему кольцу к той же зоне, чтобы иметь второй заход на «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-E23\",\"to\":{\"q\":1,\"r\":2}}",
+   "plan": "Свободный замер на воротах Z-A1 — это наш вход в «Ц», держу его. Инженера веду по внешнему кольцу к той же зоне, чтобы иметь второй заход на «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 38
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -3,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "plus",
+   "winner": null,
+   "reason": null,
+   "after": 39
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 40
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-E23",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 40,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"Минусы на Hold 2 — их победа близка, но остановить может только Плюс. Готовлю второй заход на «Ц»: Инженер идёт на A12, Свободный держит ворота A1.\",\"kind\":\"move\",\"pieceId\":\"Z-E23\",\"to\":{\"q\":1,\"r\":1}}",
+   "plan": "Минусы на Hold 2 — их победа близка, но остановить может только Плюс. Готовлю второй заход на «Ц»: Инженер идёт на A12, Свободный держит ворота A1.",
+   "winner": null,
+   "reason": null,
+   "after": 41
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F10",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 42
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-E23",
+    "to": {
+     "q": 2,
+     "r": 1
+    }
+   },
+   "move": 42,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"Держу Свободного на воротах Z-A1: как только «Ц» освободится, он войдёт первым. Инженера увожу с затора на A12 вглубь, чтобы не мешать входу.\",\"kind\":\"move\",\"pieceId\":\"Z-E23\",\"to\":{\"q\":2,\"r\":1}}",
+   "plan": "Держу Свободного на воротах Z-A1: как только «Ц» освободится, он войдёт первым. Инженера увожу с затора на A12 вглубь, чтобы не мешать входу.",
+   "winner": null,
+   "reason": null,
+   "after": 43
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 44
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-E23",
+    "to": {
+     "q": 2,
+     "r": 2
+    }
+   },
+   "move": 44,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"«Ц» держат Минусы, Hold 2 — ситуация вне моего контроля, но готовность сохраняю: Свободный на A1, Инженер рядом, Скиталец в C1. Продолжаю манёвр Инженером по кольцу.\",\"kind\":\"move\",\"pieceId\":\"Z-E23\",\"to\":{\"q\":2,\"r\":2}}",
+   "plan": "«Ц» держат Минусы, Hold 2 — ситуация вне моего контроля, но готовность сохраняю: Свободный на A1, Инженер рядом, Скиталец в C1. Продолжаю манёвр Инженером по кольцу.",
+   "winner": null,
+   "reason": null,
+   "after": 45
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F3",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": null,
+   "reason": null,
+   "after": 46
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 46,
+   "passTo": "plus",
+   "raw": "{\"plan\":\"«Ц» занят, Hold 2 — тянуть дальше бессмысленно, пробую сдвинуть Свободного с ворот вглубь (1,1), чтобы проверить подход к «Ц» и не держать фигуру запертой.\",\"kind\":\"move\",\"pieceId\":\"Z-F27\",\"to\":{\"q\":1,\"r\":1}}",
+   "plan": "«Ц» занят, Hold 2 — тянуть дальше бессмысленно, пробую сдвинуть Свободного с ворот вглубь (1,1), чтобы проверить подход к «Ц» и не держать фигуру запертой.",
+   "winner": null,
+   "reason": null,
+   "after": 47
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T31",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "minus",
+   "winner": null,
+   "reason": null,
+   "after": 48
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -1,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "passTo": "zero",
+   "winner": "minus",
+   "reason": "hold",
+   "after": 49
+  }
+ ]
+}

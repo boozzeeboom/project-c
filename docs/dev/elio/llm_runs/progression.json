@@ -1,0 +1,41 @@
+{
+  "experiment": "deepseek_zero_vs_2ai_10plus1_arrow_main",
+  "runs": [
+    {
+      "runId": "2026-11-08_zero_10plus1_arrow_main",
+      "date": "2026-11-08",
+      "promptVersion": "zero-doctrine-v1",
+      "actionList": "supports-first (bug: top-16 all supports)",
+      "games": 3,
+      "wins": 0,
+      "draws": 1,
+      "losses": 2,
+      "avgMoves": 39.3,
+      "llmActions": 47,
+      "llmMoves": 0,
+      "llmSupports": 47,
+      "noopSupports": 13,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "lineDeaths": 1
+    },
+    {
+      "runId": "2026-11-08_zero_10plus1_arrow_main_v2",
+      "date": "2026-11-08",
+      "promptVersion": "zero-doctrine-v2-action-list",
+      "actionList": "10 moves (gates/center first) + 6 supports",
+      "games": 3,
+      "wins": 1,
+      "draws": 0,
+      "losses": 2,
+      "avgMoves": 23.3,
+      "llmActions": 23,
+      "llmMoves": 19,
+      "llmSupports": 4,
+      "noopSupports": 0,
+      "centerTicks": 7,
+      "maxHold": 3,
+      "lineDeaths": 1
+    }
+  ]
+}

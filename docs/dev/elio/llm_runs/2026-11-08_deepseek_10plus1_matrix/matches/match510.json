@@ -1,0 +1,575 @@
+{
+ "matchNo": 510,
+ "assign": {
+  "deepseek": "zero"
+ },
+ "mode": {
+  "turn": "cycle",
+  "death": "long"
+ },
+ "pawns": 1,
+ "winner": "zero",
+ "reason": "hold",
+ "moves": 39,
+ "log": [
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": 5,
+     "r": 1
+    }
+   },
+   "move": 2,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -1,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": 0,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": 4,
+     "r": 2
+    }
+   },
+   "move": 5,
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": -2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -3,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": 3,
+     "r": 3
+    }
+   },
+   "move": 8,
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F10",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -1,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": 2,
+     "r": 4
+    }
+   },
+   "move": 11,
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": 0,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": 1,
+     "r": 4
+    }
+   },
+   "move": 14,
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C6",
+    "q": -1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": 1,
+     "r": 3
+    }
+   },
+   "move": 17,
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": 2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": 0,
+     "r": 3
+    }
+   },
+   "move": 20,
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": 1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": 0,
+     "r": 2
+    }
+   },
+   "move": 23,
+   "winner": null,
+   "reason": null,
+   "after": 24
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C6",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 25
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 26
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": -1,
+     "r": 2
+    }
+   },
+   "move": 26,
+   "winner": null,
+   "reason": null,
+   "after": 27
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -1,
+    "r": -5,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 28
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": 0,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 29
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": -1,
+     "r": 1
+    }
+   },
+   "move": 29,
+   "winner": null,
+   "reason": null,
+   "after": 30
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T31",
+    "q": -1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 31
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T32",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 32
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P21",
+    "to": {
+     "q": 0,
+     "r": 0
+    }
+   },
+   "move": 32,
+   "winner": null,
+   "reason": null,
+   "after": 33
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B2",
+    "q": -1,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 34
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -3,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 35
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P22",
+    "to": {
+     "q": 5,
+     "r": 0
+    }
+   },
+   "move": 35,
+   "winner": null,
+   "reason": null,
+   "after": 36
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C6",
+    "q": 0,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 37
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -3,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 38
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-P22",
+    "to": {
+     "q": 4,
+     "r": 0
+    }
+   },
+   "move": 38,
+   "winner": "zero",
+   "reason": "hold",
+   "after": 39
+  }
+ ]
+}

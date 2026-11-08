@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-08",
+  "experiment": "zero_deepseek_vs_2ai_10plus1_arrow_main",
+  "model": {
+    "id": "deepseek-v4.1-flash",
+    "providerID": "opencode-go",
+    "variant": "low"
+  },
+  "faction": "zero",
+  "turnMode": "arrow",
+  "deathMode": "main",
+  "pawns": 1,
+  "firstMovePawn": false,
+  "limit": 60,
+  "games": 3,
+  "topActions": 16,
+  "prompt": "prompt.txt",
+  "arena": "C:/Users/leon7/AppData/Local/Temp/opencode/elio_arena.js"
+}

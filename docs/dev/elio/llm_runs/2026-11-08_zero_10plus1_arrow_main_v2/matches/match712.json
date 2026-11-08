@@ -1,0 +1,443 @@
+{
+ "matchNo": 712,
+ "assign": {
+  "deepseek": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 1,
+ "winner": "minus",
+ "reason": "hold",
+ "moves": 30,
+ "log": [
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": -1,
+     "r": 2
+    }
+   },
+   "move": 0,
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D17",
+    "q": -2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": -1,
+     "r": 1
+    }
+   },
+   "move": 2,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-F20",
+    "q": -2,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F27",
+    "to": {
+     "q": 0,
+     "r": 0
+    }
+   },
+   "move": 5,
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 2,
+     "r": 2
+    }
+   },
+   "move": 6,
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-E23",
+    "to": {
+     "q": 3,
+     "r": 1
+    },
+    "displace": true
+   },
+   "move": 7,
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": 0,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "support",
+    "zeroId": "Z-P21",
+    "targetId": "Z-P22"
+   },
+   "move": 10,
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": 0,
+    "r": 0,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": 0,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F10",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -3,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 0,
+     "r": 2
+    }
+   },
+   "move": 16,
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C15",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 1,
+     "r": 2
+    }
+   },
+   "move": 18,
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 20,
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C5",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-C6",
+    "q": -1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 24
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -2,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 25
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -2,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 26
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "support",
+    "zeroId": "Z-P22",
+    "targetId": "Z-P21"
+   },
+   "move": 26,
+   "winner": null,
+   "reason": null,
+   "after": 27
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 27,
+   "winner": null,
+   "reason": null,
+   "after": 28
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-C25",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 28,
+   "winner": null,
+   "reason": null,
+   "after": 29
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": 0,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": "minus",
+   "reason": "hold",
+   "after": 30
+  }
+ ]
+}

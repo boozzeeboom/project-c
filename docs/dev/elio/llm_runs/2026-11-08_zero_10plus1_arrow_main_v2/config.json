@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-08",
+  "experiment": "zero_deepseek_vs_2ai_10plus1_arrow_main_v2",
+  "model": {
+    "id": "deepseek-v4.1-flash",
+    "providerID": "opencode-go",
+    "variant": "low"
+  },
+  "faction": "zero",
+  "turnMode": "arrow",
+  "deathMode": "main",
+  "pawns": 1,
+  "firstMovePawn": false,
+  "limit": 60,
+  "games": 3,
+  "topActions": 16,
+  "prompt": "prompt.txt",
+  "changesFromV1": [
+    "В список действий для Нулей добавлены move (до 10) и support (до 6), а не только support.",
+    "В промпт добавлен явный запрет support-only и требование двигать фигуру к Ц/блокировать угрозу."
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "date": "2026-11-08",
+  "experiment": "deepseek_10plus1_arrow_matrix",
+  "model": {
+    "id": "deepseek-v4.1-flash",
+    "providerID": "opencode-go",
+    "variant": "low"
+  },
+  "pawns": 1,
+  "firstMovePawn": false,
+  "matrix": {
+    "turnModes": ["arrow", "pass", "cycle"],
+    "deathModes": ["main", "long"],
+    "games": 10,
+    "limit": 60,
+    "wins": 1,
+    "draws": 0,
+    "losses": 9,
+    "byMode": {
+      "arrow+main": "0-2",
+      "arrow+long": "0-2",
+      "pass+main": "0-2",
+      "pass+long": "0-1",
+      "cycle+main": "0-2",
+      "cycle+long": "1-1"
+    }
+  },
+  "twoLLM": {
+    "turnMode": "arrow",
+    "deathMode": "main",
+    "games": 3,
+    "limit": 30,
+    "wins": 2,
+    "draws": 0,
+    "losses": 1,
+    "note": "DeepSeek x2 vs one AI; wins by Plus and Minus, loss to AI Minus."
+  }
+}

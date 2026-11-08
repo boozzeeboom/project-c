@@ -1,0 +1,153 @@
+{
+ "matchNo": 509,
+ "assign": {
+  "deepseek": "minus"
+ },
+ "mode": {
+  "turn": "cycle",
+  "death": "main"
+ },
+ "pawns": 1,
+ "winner": "plus",
+ "reason": "king",
+ "moves": 10,
+ "log": [
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "minus",
+   "act": {
+    "kind": "move",
+    "pieceId": "M-D17",
+    "to": {
+     "q": -3,
+     "r": 2
+    }
+   },
+   "move": 1,
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "zero",
+   "act": {
+    "type": "support",
+    "zeroId": "Z-P22",
+    "targetId": "Z-S33"
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "minus",
+   "act": {
+    "kind": "move",
+    "pieceId": "M-B14",
+    "to": {
+     "q": -2,
+     "r": 3
+    }
+   },
+   "move": 4,
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "zero",
+   "act": {
+    "type": "support",
+    "zeroId": "Z-S30",
+    "targetId": "Z-S33"
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -3,
+    "r": 3,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "minus",
+   "act": {
+    "kind": "move",
+    "pieceId": "M-B14",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 7,
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "zero",
+   "act": {
+    "type": "support",
+    "zeroId": "Z-P22",
+    "targetId": null
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -5,
+    "r": 5,
+    "capture": true
+   },
+   "ai": true,
+   "winner": "plus",
+   "reason": "king",
+   "after": 10
+  }
+ ]
+}

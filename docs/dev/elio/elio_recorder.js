@@ -5,8 +5,9 @@
   let moves=[];      // массив записей хода
   let replayIndex=0;
   let replayState=null;
+  let gameSettings={};
 
-  function reset(){ moves=[]; replayIndex=0; replayState=null; }
+  function reset(settings){ moves=[]; replayIndex=0; replayState=null; gameSettings={...(settings||{})}; }
   function addMove(record){ if(record) moves.push(record); }
   function getMoves(){ return moves.slice(); }
 
@@ -26,17 +27,18 @@
     return lines.join('\n');
   }
   function kind(m){ return m.kind||'move'; }
-  function exportJSON(){ return JSON.stringify({moves:moves}, null, 2); }
+  function exportJSON(){ return JSON.stringify({settings:gameSettings,moves:moves}, null, 2); }
 
   function importJSON(jsonStr){
     const obj=JSON.parse(jsonStr);
     moves=obj.moves||[];
+    gameSettings={...(obj.settings||{})};
     replayIndex=0; replayState=null;
     return moves.length;
   }
 
-  function startReplay(mode, death, pawns){
-    replayState=E.init({turn:mode||'cycle', death:death||'main', pawns:pawns||0});
+  function startReplay(mode, death, pawns, cycleDir, holdTarget){
+    replayState=E.init({turn:mode||'cycle', death:death||'main', pawns:pawns||0, cycleDir:cycleDir||'forward', holdTarget:holdTarget||3});
     replayIndex=0; return replayState;
   }
 
@@ -74,5 +76,5 @@
   function getReplayState(){return replayState;}
 
   window.ElioRecorder={reset,addMove,getMoves,exportText,exportJSON,importJSON,
-    startReplay,stepReplay,replayTo,getReplayIndex,getReplayState};
+    startReplay,stepReplay,replayTo,getReplayIndex,getReplayState,getSettings:()=>({...gameSettings})};
 })();

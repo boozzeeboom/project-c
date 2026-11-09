@@ -1,6 +1,6 @@
-// Elio engine v1.3 — регламент ELIO_RULES_FINAL.md v1.3
+// Elio engine v1.4 — регламент ELIO_RULES_FINAL.md v1.4
 // Основные нововведения: нейтральный/заявленный нуль, поддержка 1→1, оттеснение,
-// счёт «Ц» по ФРАКЦИИ + правило полного круга, три режима хода (Цикл/Стрелка/Передача),
+// счёт «Ц» по ФРАКЦИИ + следующие собственные ходы держателя (holdTarget), три режима хода,
 // два типа игры (Основной D1 = «убил=победил», Длинный D2 = выбывание), лимит 90.
 // v1.3: инертные фигуры не удерживают «Ц»; pass-режим с passRule random/repeat/back.
 (function(){
@@ -310,6 +310,7 @@
       firstMoveDone:{...(s.firstMoveDone||{plus:false,minus:false,zero:false})},
       cycleDir:s.cycleDir,
       limit:s.limit,
+      holdTarget:s.holdTarget||3,
       moveNumber:s.moveNumber,
       hold:{...s.hold},
       lastHolder:s.lastHolder,
@@ -368,6 +369,7 @@
       firstMoveDone:{plus:false,minus:false,zero:false},
       cycleDir:o.cycleDir||'forward',       // 'forward' = П→М→Н; 'reverse' = П→Н→М
       limit:pawnCount>=5?LIMIT15:LIMIT,
+      holdTarget:Math.max(1,Math.min(9,parseInt(o.holdTarget,10)||3)),
       moveNumber:0,
       hold:{plus:0,minus:0,zero:0},
       lastHolder:null,
@@ -450,34 +452,24 @@
     return FACTIONS[(idx+step+3)%3];
   }
 
-  function tickCircle(s){
+  function updateHold(s,nextFaction){
     const cp=occupantAt(s);
-    if(cp){
-      const f=cp.faction;   // у нулей faction='zero' — счёт по фракции
-      if(s.lastHolder===f) s.hold[f]+=1; else s.hold[f]=1;
-      FACTIONS.forEach(x=>{ if(x!==f) s.hold[x]=0; });
-      s.lastHolder=f;
-      if(s.hold[f]>=3){ s.gameOver=true; s.winner=f; s.winReason='hold'; }
-    } else {
-      s.hold={plus:0,minus:0,zero:0}; s.lastHolder=null;
+    const continued=cp&&s.lastHolder===cp.faction;
+    if(!continued){
+      s.hold={plus:0,minus:0,zero:0};
+      s.lastHolder=cp?cp.faction:null;
+    }
+    // Вход на «Ц» только регистрирует держателя. Тик даёт начало его следующего собственного хода.
+    if(continued&&nextFaction===cp.faction){
+      const f=cp.faction;
+      s.hold[f]+=1;
+      if(s.hold[f]>=(s.holdTarget||3)){ s.gameOver=true; s.winner=f; s.winReason='hold'; }
     }
   }
 
   function advanceTurn(s,prevFaction,record,passTo){
     s.actedBy[prevFaction]=true;
     s.moveNumber++;
-    const allActed=FACTIONS.every(f=>s.actedBy[f]);
-    if(allActed){
-      s.actedBy={plus:false,minus:false,zero:false};
-      // Если этот же полуход уже закончил партию (например, убит Линейный),
-      // тик «Ц» не должен перекрывать немедленную победу.
-      if(!s.gameOver) tickCircle(s);
-    }
-    if(!s.gameOver&&s.moveNumber>=s.limit){
-      const cp=occupantAt(s);
-      if(cp){ s.gameOver=true; s.winner=cp.faction; s.winReason='limit'; }
-      else { s.gameOver=true; s.winner=null; s.winReason='draw'; }
-    }
     if(!s.gameOver){
       if(s.mode.turn==='pass'){
         if(!s.passLastTarget) s.passLastTarget={plus:null,minus:null,zero:null};
@@ -494,6 +486,12 @@
       } else {
         s.turnFaction=nextTurn(s);
       }
+      updateHold(s,s.turnFaction);
+    }
+    if(!s.gameOver&&s.moveNumber>=s.limit){
+      const cp=occupantAt(s);
+      if(cp){ s.gameOver=true; s.winner=cp.faction; s.winReason='limit'; }
+      else { s.gameOver=true; s.winner=null; s.winReason='draw'; }
     }
     if(record) s.log.push(record);
   }
@@ -620,8 +618,8 @@
     applyMove, applySupport, applyDisplace, skipTurn,
     cellKey:(q,r)=>q+','+r,
     dist, patch, LIMIT,
-    stateToJSON:(s)=>JSON.parse(JSON.stringify({pieces:s.pieces,turnFaction:s.turnFaction,mode:s.mode,pawns:s.pawns||0,firstMovePawn:!!s.firstMovePawn,firstMoveDone:s.firstMoveDone,cycleDir:s.cycleDir,limit:s.limit,moveNumber:s.moveNumber,hold:s.hold,lastHolder:s.lastHolder,actedBy:s.actedBy,passLastTarget:s.passLastTarget,passPrevGiver:s.passPrevGiver,passRule:s.passRule,eliminated:s.eliminated,gameOver:s.gameOver,winner:s.winner,winReason:s.winReason,log:s.log})),
-    fromJSON:(j)=>{ const s=init({turn:j.mode.turn,death:j.mode.death,cycleDir:j.cycleDir,passRule:j.passRule,pawns:j.pawns!=null?j.pawns:(j.pieces15?5:0),firstMovePawn:j.firstMovePawn}); s.pieces=[];j.pieces.forEach(p=>{const np={...p}; s.pieces.push(np); const c=s.cells.get(np.q+','+np.r); if(c)c.piece=np.id;});
+    stateToJSON:(s)=>JSON.parse(JSON.stringify({pieces:s.pieces,turnFaction:s.turnFaction,mode:s.mode,pawns:s.pawns||0,firstMovePawn:!!s.firstMovePawn,firstMoveDone:s.firstMoveDone,cycleDir:s.cycleDir,limit:s.limit,holdTarget:s.holdTarget||3,moveNumber:s.moveNumber,hold:s.hold,lastHolder:s.lastHolder,actedBy:s.actedBy,passLastTarget:s.passLastTarget,passPrevGiver:s.passPrevGiver,passRule:s.passRule,eliminated:s.eliminated,gameOver:s.gameOver,winner:s.winner,winReason:s.winReason,log:s.log})),
+    fromJSON:(j)=>{ const s=init({turn:j.mode.turn,death:j.mode.death,cycleDir:j.cycleDir,passRule:j.passRule,pawns:j.pawns!=null?j.pawns:(j.pieces15?5:0),firstMovePawn:j.firstMovePawn,holdTarget:j.holdTarget}); s.pieces=[];j.pieces.forEach(p=>{const np={...p}; s.pieces.push(np); const c=s.cells.get(np.q+','+np.r); if(c)c.piece=np.id;});
       s.turnFaction=j.turnFaction; s.moveNumber=j.moveNumber; s.hold={...j.hold}; s.lastHolder=j.lastHolder;
       s.actedBy={...j.actedBy}; s.passLastTarget={...(j.passLastTarget||{plus:null,minus:null,zero:null})};
       s.passPrevGiver=j.passPrevGiver||null; s.passRule=j.passRule||'random';

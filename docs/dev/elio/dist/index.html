@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101514">
+<title>Эльо — игра трёх сил</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #101514; --surface: rgba(26, 33, 31, .86); --surface-solid: #1a211f;
+  --surface-2: rgba(255,255,255,.045); --line: rgba(255,255,255,.095);
+  --text: #f0eee7; --muted: #98a39e; --gold: #d8bd7a; --gold-bright: #f0d99b;
+  --plus: #72b7d2; --minus: #df8178; --zero: #b6bdb7; --success: #88c9a5;
+  --danger: #ef8d82; --radius: 20px; --header-h: 76px;
+  font-family: "Segoe UI", Inter, system-ui, sans-serif; font-synthesis: none;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+body { overflow: hidden; }
+button, select, textarea { font: inherit; }
+button { color: inherit; }
+button:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+button { -webkit-tap-highlight-color: transparent; }
+button:disabled { opacity: .42; cursor: not-allowed !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.icon { width: 19px; height: 19px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.app { height: 100dvh; display: grid; grid-template-rows: var(--header-h) minmax(0,1fr); position: relative; isolation: isolate; }
+.app::before { content: ''; position: fixed; inset: 0; z-index: -2; background: radial-gradient(ellipse at 45% 40%, #24312c 0, #141c19 40%, #0d1211 85%); }
+.app::after { content: ''; position: fixed; inset: 0; z-index: -1; opacity: .17; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.2'/%3E%3C/svg%3E"); }
+.topbar { display: flex; align-items: center; gap: 24px; padding: 0 28px; border-bottom: 1px solid var(--line); background: rgba(13,18,17,.72); backdrop-filter: blur(20px); z-index: 20; }
+.brand { display: flex; align-items: center; gap: 13px; min-width: 220px; }
+.brand-mark { width: 38px; height: 42px; color: var(--gold); }
+.brand-name { font-family: Georgia, "Times New Roman", serif; font-size: 25px; letter-spacing: .16em; line-height: 1; }
+.brand-sub { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .22em; margin-top: 6px; }
+.view-switch { margin-inline: auto; display: flex; padding: 4px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.035); position: relative; }
+.view-switch button { border: 0; background: transparent; min-width: 100px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600; transition: color .2s, background .25s, box-shadow .25s; }
+.view-switch button.active { color: #1b211e; background: var(--gold); box-shadow: 0 4px 18px #d8bd7a25; }
+.header-actions { display: flex; gap: 8px; }
+.icon-btn { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); display: inline-grid; place-items: center; cursor: pointer; transition: background .2s, border-color .2s, transform .2s; }
+.icon-btn:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.2); }
+.icon-btn:active { transform: scale(.95); }
+.game-layout { min-height: 0; display: grid; grid-template-columns: minmax(0,1fr) 336px; }
+.board-area { min-width: 0; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.board-stage { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.board-stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at center, transparent 45%, rgba(7,11,10,.35)); z-index: 2; }
+#board2d, #board3d { position: absolute; inset: 0; transition: opacity .3s ease, transform .4s cubic-bezier(.2,.8,.2,1); }
+#board2d { display: grid; place-items: center; padding: 12px 12px 4px; }
+#board2d svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+#board3d { opacity: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 38%, rgba(35,62,74,.55) 0, rgba(15,25,32,.34) 36%, rgba(5,9,13,.08) 72%), radial-gradient(circle at 50% 52%, rgba(216,189,122,.1), transparent 55%); }
+#board3d canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.app[data-view="3d"] #board2d { opacity: 0; pointer-events: none; transform: scale(.96); }
+.app[data-view="3d"] #board3d { opacity: 1; pointer-events: auto; }
+.board-stage.switching #board2d, .board-stage.switching #board3d { opacity: 0; transform: scale(.97); }
+.view-note { position: absolute; z-index: 4; left: 20px; top: 18px; display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; pointer-events: none; }
+.view-note::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px var(--success); }
+.board-actions { position: absolute; right: 18px; top: 14px; z-index: 5; display: flex; gap: 7px; }
+.board-actions .icon-btn { background: rgba(16,21,20,.68); backdrop-filter: blur(12px); }
+.turn-banner { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 10px; background: rgba(16,21,20,.78); border: 1px solid var(--line); backdrop-filter: blur(16px); border-radius: 100px; padding: 8px 16px 8px 9px; box-shadow: 0 8px 30px #0003; white-space: nowrap; }
+.turn-orb { width: 28px; height: 28px; border-radius: 50%; background: var(--turn-color,var(--plus)); box-shadow: inset 0 0 0 5px #ffffff12, 0 0 20px color-mix(in srgb, var(--turn-color) 35%, transparent); }
+.turn-copy { font-size: 12px; color: var(--muted); }
+.turn-copy strong { display: block; color: var(--text); font-size: 13px; font-weight: 600; }
+.bottom-bar { min-height: 76px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 24px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgba(13,18,17,.6); }
+.action-btn { border: 1px solid var(--line); border-radius: 12px; min-height: 44px; padding: 0 16px; background: var(--surface-2); display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background .2s, transform .2s, border-color .2s; }
+.action-btn:hover { background: rgba(255,255,255,.085); border-color: rgba(255,255,255,.18); }
+.action-btn:active { transform: translateY(1px); }
+.action-btn.primary { background: var(--gold); color: #19201d; border-color: var(--gold); }
+.action-btn.primary:hover { background: var(--gold-bright); }
+.action-btn.active { color: var(--gold-bright); border-color: #d8bd7a66; background: #d8bd7a12; }
+.sidebar { border-left: 1px solid var(--line); background: rgba(16,22,20,.74); backdrop-filter: blur(22px); min-height: 0; display: flex; flex-direction: column; }
+.side-tabs { display: flex; gap: 20px; padding: 0 22px; border-bottom: 1px solid var(--line); flex: 0 0 55px; }
+.side-tab { border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; padding: 0; position: relative; cursor: pointer; }
+.side-tab.active { color: var(--text); }
+.side-tab.active::after { content: ''; position: absolute; bottom: -1px; height: 2px; background: var(--gold); left: 0; right: 0; }
+.side-content { overflow: auto; min-height: 0; padding: 20px 20px 28px; scrollbar-width: thin; scrollbar-color: #ffffff20 transparent; }
+.side-pane { display: none; animation: pane-in .25s ease; }
+.side-pane.active { display: block; }
+@keyframes pane-in { from { opacity: 0; transform: translateY(5px); } }
+.section-label { color: var(--muted); text-transform: uppercase; letter-spacing: .14em; font-size: 9px; font-weight: 700; margin: 2px 0 12px; }
+.factions { display: grid; gap: 8px; }
+.faction-card { border: 1px solid var(--line); background: rgba(255,255,255,.025); border-radius: 14px; padding: 12px; transition: border-color .3s, background .3s; position: relative; overflow: hidden; }
+.faction-card.current { border-color: color-mix(in srgb, var(--faction) 45%, transparent); background: color-mix(in srgb, var(--faction) 7%, transparent); }
+.faction-card.current::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 2px; background: var(--faction); }
+.faction-head { display: flex; align-items: center; gap: 10px; }
+.faction-symbol { color: var(--faction); font-family: Prata,serif; font-size: 22px; width: 26px; text-align: center; }
+.faction-name { font-size: 13px; font-weight: 600; }
+.faction-role { color: var(--muted); font-size: 10px; margin-top: 2px; }
+.faction-count { margin-left: auto; font-size: 11px; color: var(--muted); }
+.hold-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.hold-label { color: var(--muted); font-size: 9px; margin-right: auto; }
+.hold-dot { width: 21px; height: 4px; background: #ffffff12; border-radius: 5px; transition: background .3s, box-shadow .3s; }
+.hold-dot.filled { background: var(--faction); box-shadow: 0 0 8px color-mix(in srgb, var(--faction) 40%, transparent); }
+.center-card { margin-top: 18px; padding: 16px; border: 1px solid #d8bd7a25; border-radius: 15px; background: linear-gradient(135deg,#d8bd7a0d,transparent); display: flex; align-items: center; gap: 14px; }
+.center-emblem { color: var(--gold); font-family: Prata,serif; font-size: 27px; width: 43px; height: 43px; display: grid; place-items: center; border: 1px solid #d8bd7a40; transform: rotate(30deg); border-radius: 9px; }
+.center-emblem span { transform: rotate(-30deg); }
+.center-title { font-size: 12px; font-weight: 600; }
+.center-desc { color: var(--muted); font-size: 10px; line-height: 1.5; margin-top: 3px; }
+.selection-card { margin-top: 20px; min-height: 124px; }
+.selection-empty { color: var(--muted); font-size: 11px; line-height: 1.65; padding: 4px 0 12px; }
+.piece-title { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.piece-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--piece-color); }
+.piece-meta { font-size: 10px; color: var(--muted); line-height: 1.7; }
+.piece-desc { font-size: 11px; color: #c5ccc7; line-height: 1.6; margin-top: 9px; }
+.selection-actions { display: flex; gap: 7px; margin-top: 12px; }
+.selection-actions .action-btn { min-height: 36px; font-size: 10px; padding: 0 11px; }
+.match-meta { display: flex; justify-content: space-between; padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+.match-meta strong { color: var(--text); font-weight: 500; }
+.history-list { display: grid; gap: 2px; }
+.history-item { display: grid; grid-template-columns: 25px 1fr; gap: 9px; padding: 10px 4px; border-bottom: 1px solid #ffffff08; font-size: 11px; line-height: 1.5; animation: pane-in .25s ease; }
+.history-num { color: #68736e; font-variant-numeric: tabular-nums; }
+.history-item strong { color: var(--faction); font-weight: 600; }
+.history-empty { color: var(--muted); font-size: 12px; text-align: center; line-height: 1.7; padding: 48px 18px; }
+.history-tools { display: flex; gap: 8px; margin-bottom: 14px; }
+.history-tools .action-btn { flex: 1; padding: 0 10px; font-size: 10px; }
+.replay-controls { display: flex; gap: 6px; margin: 12px 0 18px; }
+.replay-controls .action-btn { flex: 1; padding: 0 8px; font-size: 10px; }
+.hex { cursor: pointer; transition: filter .18s, opacity .2s; }
+.hex:hover { filter: brightness(1.35); }
+.hex.selected { stroke: var(--gold-bright) !important; stroke-width: 2.6 !important; filter: drop-shadow(0 0 5px #d8bd7a80); }
+.cell-code { pointer-events: none; user-select: none; }
+.target { pointer-events: none; animation: target-pulse 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes target-pulse { 50% { opacity: .58; transform: scale(.82); } }
+.piece-2d { pointer-events: none; }
+.piece-2d text { user-select: none; }
+.piece-tooltip { position: absolute; z-index: 8; width: max-content; max-width: 250px; padding: 11px 13px; border: 1px solid #d8bd7a45; border-radius: 12px; background: rgba(18,25,22,.96); box-shadow: 0 10px 35px #0008; backdrop-filter: blur(14px); pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .12s; }
+.piece-tooltip.visible { opacity: 1; visibility: visible; }
+.piece-tooltip strong { display: block; color: var(--tooltip-color,var(--gold-bright)); font-size: 12px; margin-bottom: 4px; }
+.piece-tooltip span { display: block; color: var(--muted); font-size: 10px; margin-bottom: 6px; }
+.piece-tooltip p { margin: 0; color: #d2d8d3; font-size: 10px; line-height: 1.5; }
+.center-countdown { position: absolute; z-index: 5; left: 50%; bottom: 16px; transform: translateX(-50%); max-width: calc(100% - 32px); padding: 8px 14px; border: 1px solid var(--line); border-radius: 100px; background: rgba(16,21,20,.86); backdrop-filter: blur(12px); color: var(--muted); font-size: 11px; text-align: center; white-space: nowrap; pointer-events: none; }
+.center-countdown.active { color: var(--gold-bright); border-color: #d8bd7a55; }
+.support-line { pointer-events: none; stroke-dasharray: 4 4; animation: dash 12s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -100; } }
+#loading { position: absolute; inset: 0; z-index: 7; display: none; place-items: center; background: #101514d9; backdrop-filter: blur(8px); }
+#loading.visible { display: grid; }
+.loader-inner { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: .04em; }
+.loader-ring { width: 42px; height: 42px; border: 1px solid #d8bd7a30; border-top-color: var(--gold); border-radius: 50%; margin: 0 auto 16px; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.toast-stack { position: fixed; z-index: 100; right: 22px; bottom: 22px; width: min(360px,calc(100vw - 32px)); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.toast { pointer-events: auto; display: grid; grid-template-columns: 32px 1fr 24px; align-items: center; gap: 10px; padding: 13px 12px; border-radius: 15px; background: rgba(29,37,34,.92); border: 1px solid var(--line); box-shadow: 0 18px 55px #0007; backdrop-filter: blur(20px); animation: toast-in .4s cubic-bezier(.16,1,.3,1); overflow: hidden; position: relative; }
+.toast.leaving { animation: toast-out .3s ease forwards; }
+.toast-icon { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px; color: var(--toast-color,var(--plus)); background: color-mix(in srgb, var(--toast-color,var(--plus)) 12%, transparent); }
+.toast-title { font-size: 12px; font-weight: 600; }
+.toast-text { color: var(--muted); font-size: 10px; line-height: 1.5; margin-top: 2px; }
+.toast-close { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 3px; }
+.toast::after { content: ''; position: absolute; bottom: 0; left: 0; height: 2px; background: var(--toast-color,var(--plus)); animation: toast-life var(--duration,4s) linear forwards; }
+@keyframes toast-in { from { opacity: 0; transform: translateX(25px) scale(.96); } }
+@keyframes toast-out { to { opacity: 0; transform: translateX(20px) scale(.97); } }
+@keyframes toast-life { from { width: 100%; } to { width: 0; } }
+.modal-layer { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgba(5,9,8,.62); backdrop-filter: blur(12px); opacity: 0; visibility: hidden; transition: opacity .22s, visibility .22s; }
+.modal-layer.open { opacity: 1; visibility: visible; }
+.modal { width: min(570px,100%); max-height: min(760px,calc(100dvh - 40px)); overflow: auto; border: 1px solid rgba(255,255,255,.12); border-radius: 24px; background: rgba(27,35,32,.92); box-shadow: 0 30px 100px #0009; transform: translateY(15px) scale(.98); transition: transform .3s cubic-bezier(.16,1,.3,1); }
+.modal-layer.open .modal { transform: none; }
+.modal-head { padding: 24px 26px 16px; display: flex; align-items: flex-start; gap: 16px; }
+.modal-kicker { color: var(--gold); text-transform: uppercase; letter-spacing: .16em; font-size: 9px; font-weight: 700; margin-bottom: 7px; }
+.modal-title { font-family: Prata,Georgia,serif; font-size: 24px; font-weight: 400; margin: 0; }
+.modal-close { margin-left: auto; flex: 0 0 auto; }
+.modal-body { padding: 0 26px 24px; color: #bcc5bf; font-size: 12px; line-height: 1.75; }
+.modal-body p { margin: 0 0 14px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 9px; padding: 16px 26px 22px; border-top: 1px solid var(--line); }
+.settings-grid { display: grid; gap: 18px; }
+.setting-label { display: block; color: var(--text); font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+.setting-hint { color: var(--muted); font-size: 10px; margin: -3px 0 9px; }
+.option-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+.option { position: relative; }
+.option input { position: absolute; opacity: 0; }
+.option span { min-height: 48px; padding: 8px; display: grid; place-items: center; text-align: center; border-radius: 11px; border: 1px solid var(--line); background: #ffffff03; color: var(--muted); font-size: 10px; cursor: pointer; transition: .2s; }
+.option input:checked + span { color: var(--gold-bright); background: #d8bd7a10; border-color: #d8bd7a70; }
+.option input:focus-visible + span { outline: 2px solid var(--gold); }
+.rules-intro { color: var(--text); font-family: Prata,serif; font-size: 17px; line-height: 1.6; margin-bottom: 18px !important; }
+.rule-block { padding: 14px 0; border-top: 1px solid var(--line); }
+.rule-block h3 { color: var(--gold-bright); font-family: Manrope,sans-serif; font-size: 12px; margin: 0 0 5px; }
+.rule-block p { margin: 0; font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; font-size: 10px; color: var(--muted); }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+textarea#importArea { width: 100%; min-height: 180px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; background: #0f1513; color: var(--text); padding: 12px; font: 11px/1.5 monospace; }
+.result-emblem { font-family: Prata,serif; font-size: 52px; color: var(--gold); text-align: center; margin: 2px 0 16px; }
+.mobile-handle { display: none; }
+@media (max-width: 1000px) {
+  .game-layout { grid-template-columns: minmax(0,1fr) 290px; }
+  .topbar { padding: 0 18px; gap: 12px; }
+  .brand { min-width: 160px; }
+  .brand-sub { display: none; }
+  .view-switch button { min-width: 78px; }
+}
+@media (max-width: 760px) {
+  :root { --header-h: 64px; }
+  .app { grid-template-rows: var(--header-h) minmax(0,1fr); }
+  .topbar { padding: 0 12px; gap: 8px; }
+  .brand { min-width: 0; margin-right: auto; }
+  .brand-mark { width: 28px; height: 33px; }
+  .brand-name { font-size: 19px; }
+  .brand-sub { display: none; }
+  .view-switch { margin: 0; }
+  .view-switch button { min-width: 59px; height: 34px; font-size: 11px; padding: 0 8px; }
+  .view-switch .icon { display: none; }
+  .header-actions { gap: 5px; }
+  .header-actions .icon-btn { width: 36px; height: 38px; }
+  #btnHistoryTop { display: none; }
+  .game-layout { display: block; position: relative; }
+  .board-area { height: 100%; }
+  .board-stage { padding-bottom: 0; }
+  #board2d { padding: 38px 2px 2px; }
+  .turn-banner { top: 10px; padding: 5px 12px 5px 6px; }
+  .turn-orb { width: 24px; height: 24px; }
+  .turn-copy { font-size: 9px; }
+  .turn-copy strong { font-size: 11px; }
+  .view-note { display: none; }
+  .board-actions { right: 8px; top: 60px; }
+  .board-actions .icon-btn { width: 36px; height: 36px; }
+  .bottom-bar { min-height: 67px; gap: 7px; padding: 10px 10px calc(10px + env(safe-area-inset-bottom)); }
+  .bottom-bar .action-btn { flex: 1; padding: 0 8px; font-size: 10px; min-height: 43px; }
+  .bottom-bar .action-btn .icon { width: 17px; }
+  .sidebar { position: absolute; z-index: 12; left: 8px; right: 8px; bottom: 73px; max-height: min(54dvh,480px); border: 1px solid var(--line); border-radius: 20px; background: rgba(20,27,24,.94); box-shadow: 0 18px 50px #0008; transform: translateY(calc(100% + 90px)); transition: transform .35s cubic-bezier(.16,1,.3,1); }
+  .sidebar.mobile-open { transform: none; }
+  .mobile-handle { display: block; width: 36px; height: 4px; border-radius: 4px; background: #ffffff25; margin: 8px auto -5px; }
+  .side-tabs { flex-basis: 45px; }
+  .side-content { padding: 15px; }
+  .factions { grid-template-columns: repeat(3,1fr); }
+  .faction-card { padding: 9px 7px; }
+  .faction-head { gap: 4px; flex-wrap: wrap; }
+  .faction-symbol { font-size: 17px; width: 19px; }
+  .faction-name { font-size: 10px; }
+  .faction-role, .faction-count { display: none; }
+  .hold-row { gap: 4px; margin-top: 7px; }
+  .hold-label { font-size: 8px; }
+  .hold-dot { width: 13px; }
+  .center-card { display: none; }
+  .selection-card { margin-top: 12px; min-height: 80px; }
+  .selection-empty { padding: 0; }
+  .match-meta { margin-top: 8px; padding-top: 10px; }
+  .toast-stack { right: 16px; bottom: calc(82px + env(safe-area-inset-bottom)); }
+  .modal-layer { padding: 12px; align-items: end; }
+  .modal { max-height: calc(100dvh - 24px); border-radius: 23px; }
+  .modal-head { padding: 21px 20px 13px; }
+  .modal-body { padding: 0 20px 20px; }
+  .modal-footer { padding: 14px 20px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-cube" viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.5 2c-.8.5-1.3 1-1.3 2M12 16.8v.1"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l-2-.7-.6-1.4.9-1.9-2.1-2.1-1.9.9-1.4-.6-.7-2h-3l-.7 2-1.4.6-1.9-.9-2.1 2.1.9 1.9-.6 1.4-2 .7v3l2 .7.6 1.4-.9 1.9 2.1 2.1 1.9-.9 1.4.6.7 2h3l.7-2 1.4-.6 1.9.9 2.1-2.1-.9-1.9.6-1.4 2-.7Z" transform="scale(.82) translate(2.6 2.6)"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3ZM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6M4.8 15a8 8 0 1 0 .5-7.8L4 10"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M4 17v4h16v-4"/></symbol>
+</defs></svg>
+<div class="app" id="app" data-view="2d">
+<header class="topbar">
+  <div class="brand" aria-label="Эльо">
+    <svg class="brand-mark" viewBox="0 0 42 46" fill="none"><path d="m21 2 18 10v22L21 44 3 34V12L21 2Z" stroke="currentColor"/><path d="m21 9 12 7v14l-12 7-12-7V16l12-7Z" stroke="currentColor" opacity=".45"/><path d="M21 14v18M13 18l16 10M29 18 13 28" stroke="currentColor"/></svg>
+    <div><div class="brand-name">ЭЛЬО</div><div class="brand-sub">Игра трёх сил</div></div>
+  </div>
+  <div class="view-switch" role="group" aria-label="Вид доски">
+    <button id="view2d" class="active" aria-pressed="true"><svg class="icon"><use href="#i-grid"/></svg>2D</button>
+    <button id="view3d" aria-pressed="false"><svg class="icon"><use href="#i-cube"/></svg>3D</button>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" id="btnHistoryTop" title="Журнал партии" aria-label="Журнал партии"><svg class="icon"><use href="#i-history"/></svg></button>
+    <button class="icon-btn" id="btnRules" title="Правила" aria-label="Правила"><svg class="icon"><use href="#i-help"/></svg></button>
+    <button class="icon-btn" id="btnSettings" title="Новая игра и настройки" aria-label="Новая игра и настройки"><svg class="icon"><use href="#i-settings"/></svg></button>
+  </div>
+</header>
+<main class="game-layout">
+  <section class="board-area" aria-label="Игровая доска">
+    <div class="board-stage" id="boardStage">
+      <div id="board2d"><svg id="board" viewBox="0 0 850 800" role="img" aria-label="Гексагональная доска Эльо"></svg></div>
+      <div id="board3d" aria-label="Объёмная доска Эльо"></div>
+      <div class="view-note" id="viewNote">Тактический вид · нажмите на фигуру</div>
+      <div class="turn-banner" id="turnBanner"><div class="turn-orb"></div><div class="turn-copy">Сейчас ходит<strong id="turnText">Плюсы</strong></div></div>
+      <div class="board-actions"><button class="icon-btn" id="btnResetCamera" title="Центрировать доску" aria-label="Центрировать доску"><svg class="icon"><use href="#i-reset"/></svg></button></div>
+      <div class="center-countdown" id="centerCountdown">Центр свободен</div>
+      <div class="piece-tooltip" id="pieceTooltip" role="tooltip"></div>
+      <div id="loading"><div class="loader-inner"><div class="loader-ring"></div><span id="loadingText">Собираем объёмную доску…</span></div></div>
+    </div>
+    <div class="bottom-bar">
+      <button class="action-btn" id="btnPanel"><svg class="icon"><use href="#i-info"/></svg><span>Состояние</span></button>
+      <button class="action-btn" id="btnAi"><svg class="icon"><use href="#i-spark"/></svg><span>Ход ИИ</span></button>
+      <button class="action-btn" id="btnAuto"><svg class="icon"><use href="#i-play"/></svg><span>Авто-игра</span></button>
+      <button class="action-btn primary" id="btnNew"><svg class="icon"><use href="#i-plus"/></svg><span>Новая игра</span></button>
+    </div>
+  </section>
+  <aside class="sidebar" id="sidebar" aria-label="Информация о партии">
+    <div class="mobile-handle"></div>
+    <div class="side-tabs" role="tablist">
+      <button class="side-tab active" id="tabStatus" role="tab" aria-selected="true">Партия</button>
+      <button class="side-tab" id="tabHistory" role="tab" aria-selected="false">Журнал <span id="historyCount"></span></button>
+    </div>
+    <div class="side-content">
+      <section class="side-pane active" id="paneStatus" role="tabpanel">
+        <div class="section-label">Равновесие сил</div>
+        <div class="factions" id="factions"></div>
+        <div class="center-card"><div class="center-emblem"><span>Ц</span></div><div><div class="center-title" id="centerTitle">Центр свободен</div><div class="center-desc" id="centerDesc">Три собственных хода до победы.</div></div></div>
+        <section class="selection-card"><div class="section-label">Выбранная фигура</div><div id="selectionInfo" class="selection-empty">Выберите фигуру активной фракции.<br>Доступные действия появятся на доске.</div></section>
+        <div class="match-meta"><span>Полуход <strong id="moveNum">0 / 90</strong></span><span id="modeLabel">Цикл · Основной</span></div>
+      </section>
+      <section class="side-pane" id="paneHistory" role="tabpanel">
+        <div class="history-tools"><button class="action-btn" id="btnExport"><svg class="icon"><use href="#i-download"/></svg>Экспорт</button><button class="action-btn" id="btnImport"><svg class="icon"><use href="#i-upload"/></svg>Импорт</button></div>
+        <div class="section-label">Воспроизведение</div>
+        <div class="replay-controls"><button class="action-btn" id="btnReplayStart">В начало</button><button class="action-btn" id="btnReplayStep">Шаг</button><button class="action-btn" id="btnReplayAll">Все ходы</button></div>
+        <div class="section-label">Ходы партии · <span id="replayPos">текущая</span></div>
+        <div class="history-list" id="historyList"><div class="history-empty">Здесь появится история.<br>Каждое решение имеет значение.</div></div>
+      </section>
+    </div>
+  </aside>
+</main>
+</div>
+<div class="toast-stack" id="toasts" aria-live="polite" aria-atomic="false"></div>
+<div class="modal-layer" id="modalLayer" role="presentation">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><div><div class="modal-kicker" id="modalKicker">Эльо</div><h2 class="modal-title" id="modalTitle"></h2></div><button class="icon-btn modal-close" id="modalClose" aria-label="Закрыть"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </section>
+</div>
+<script src="elio_engine.js"></script>
+<script src="elio_ai.js"></script>
+<script src="elio_recorder.js"></script>
+<script type="module">
+let THREE, FBXLoader, OrbitControls, RoomEnvironment, loader;
+const E = window.ElioEngine, AI = window.ElioAI, REC = window.ElioRecorder;
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+const COLORS = { plus: '#72b7d2', minus: '#df8178', zero: '#b6bdb7' };
+const SYMBOLS = { plus: '+', minus: '−', zero: '0' };
+const ROLES = { plus: 'Военная фракция', minus: 'Военная фракция', zero: 'Парламент · поддержка' };
+const SHORT = { line:'Л', battleship:'Лк', bombardier:'Бм', frigate:'Ф', corvette:'Кв', destroyer:'Мн', tender:'Т', skiff:'Ск', parliament:'КЛ', free:'Св', courier:'Ку', engineer:'Ин', saboteur:'Ди' };
+const DESCRIPTIONS = {
+  line:'Один шаг в любом направлении. Тяжёлая фигура и главная цель противника.',
+  battleship:'Любая дистанция по прямой. Тяжёлая фигура, пробивает защиту 1.',
+  bombardier:'Прыжок на 2–3 клетки по прямой через фигуры, но не через «Ц».',
+  frigate:'До двух клеток по прямой. Не перепрыгивает фигуры.', corvette:'Прыжок ровно на две клетки, в том числе через «Ц».',
+  destroyer:'Один шаг или рывок на две клетки по свободной прямой.', tender:'Пешка Плюсов или Минусов. Один шаг в любом направлении.', skiff:'Пешка Нулей. Один шаг, не поддерживает другие фигуры.',
+  parliament:'Один шаг. Может поддержать соседнюю фигуру абсолютным щитом.', free:'До трёх клеток по прямой. Может поддерживать соседей.',
+  courier:'До четырёх клеток по прямой. Может поддерживать соседей.', engineer:'До двух клеток по прямой. Даёт соседям пассивную защиту 1.', saboteur:'Один шаг. Может поддержать соседнюю фигуру.'
+};
+const REASONS = { king:'гибель Линейного', hold:'удержание «Ц»', limit:'лимит ходов', draw:'«Ц» свободен на лимите', zeros_last:'обе военные выбыли' };
+let settings = { turn:'cycle', death:'main', cycleDir:'forward', pawns:0, holdTarget:3 };
+const turnWord=n=>n===1?'ход':n<5?'хода':'ходов';
+let state = E.init(settings), selectedId = null, legalTargets = [], supportTargets = [], view = '2d';
+let gameMode = 'coop', humanFaction = 'plus';
+let autoPlay = false, autoTimer = null, replayTimer = null, aiChainTimer = null, modalDismissible = true, lastFocused = null, gameOverShown = false;
+
+function svgEl(tag, attrs = {}, text) {
+  const el = document.createElementNS(NS, tag);
+  Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v));
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+function axialToPx(q,r) { return { x:425 + 60*q, y:440 + Math.sqrt(3)*40*(r+q/2) }; }
+function axialTo3D(q,r) { return new THREE.Vector3(1.5*q, 0, Math.sqrt(3)*(r+q/2)); }
+function hexPoints(cx,cy,size) { return Array.from({length:6},(_,i)=>`${(cx+size*Math.cos(Math.PI/3*i)).toFixed(1)},${(cy+size*Math.sin(Math.PI/3*i)).toFixed(1)}`).join(' '); }
+function esc(value) { const d=document.createElement('div'); d.textContent=String(value ?? ''); return d.innerHTML; }
+function hidePieceTooltip(){ $('pieceTooltip').classList.remove('visible'); }
+function showPieceTooltip(p,clientX,clientY){
+  if(!p){hidePieceTooltip();return;}
+  const tip=$('pieceTooltip'),stage=$('boardStage').getBoundingClientRect(),code=E.codeMap.get(p.q+','+p.r)||`${p.q}, ${p.r}`;
+  const status=p.inert?'Инертная фигура':E.isNullType(p.type)?(E.isNeutralZero(p)?'Нейтральный · неуязвим':'Заявленный · уязвим'):`Защита ${E.protLevel(state,p)}`;
+  tip.style.setProperty('--tooltip-color',COLORS[p.faction]);
+  tip.innerHTML=`<strong>${esc(E.TYPE_NAME[p.type])}</strong><span>${esc(E.FACTION_NAME[p.faction])} · ${esc(code)} · ${esc(status)}</span><p>${esc(DESCRIPTIONS[p.type])}</p>`;
+  tip.classList.add('visible');
+  const x=Math.min(stage.width-tip.offsetWidth-10,Math.max(10,clientX-stage.left+16));
+  const y=Math.min(stage.height-tip.offsetHeight-10,Math.max(10,clientY-stage.top+16));
+  tip.style.left=x+'px';tip.style.top=y+'px';
+}
+
+function toast(title, text='', type='info', duration=4000) {
+  const colors={info:COLORS.plus,success:'#88c9a5',warning:'#d8bd7a',error:'#ef8d82'};
+  const icons={info:'i-info',success:'i-check',warning:'i-info',error:'i-close'};
+  const el=document.createElement('div'); el.className='toast'; el.style.setProperty('--toast-color',colors[type]); el.style.setProperty('--duration',duration+'ms');
+  el.innerHTML=`<div class="toast-icon"><svg class="icon"><use href="#${icons[type]}"/></svg></div><div><div class="toast-title">${esc(title)}</div>${text?`<div class="toast-text">${esc(text)}</div>`:''}</div><button class="toast-close" aria-label="Закрыть"><svg class="icon"><use href="#i-close"/></svg></button>`;
+  $('toasts').prepend(el); while($('toasts').children.length>3) $('toasts').lastElementChild.remove();
+  let timer=setTimeout(remove,duration);
+  function remove(){ clearTimeout(timer); if(!el.isConnected)return; el.classList.add('leaving'); setTimeout(()=>el.remove(),300); }
+  el.querySelector('button').onclick=remove; el.onmouseenter=()=>clearTimeout(timer); el.onmouseleave=()=>timer=setTimeout(remove,1600);
+}
+function openModal({title,kicker='Эльо',body,buttons=[],dismissible=true}) {
+  lastFocused=document.activeElement; modalDismissible=dismissible; $('modalKicker').textContent=kicker; $('modalTitle').textContent=title; $('modalBody').innerHTML=body; $('modalFooter').innerHTML=''; $('modalClose').style.visibility=dismissible?'visible':'hidden';
+  buttons.forEach(b=>{ const btn=document.createElement('button'); btn.className='action-btn'+(b.primary?' primary':''); btn.textContent=b.label; btn.onclick=()=>{ if(b.close!==false)closeModal(); b.action?.(); }; $('modalFooter').appendChild(btn); });
+  $('modalLayer').classList.add('open'); setTimeout(()=>($('modalFooter').querySelector('.primary')||$('modalClose')).focus(),50);
+}
+function closeModal(){ $('modalLayer').classList.remove('open'); lastFocused?.focus?.(); }
+$('modalClose').onclick=closeModal;
+$('modalLayer').addEventListener('pointerdown',e=>{ if(e.target===$('modalLayer')&&modalDismissible)closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('modalLayer').classList.contains('open')&&modalDismissible)closeModal(); });
+
+function showRules(){
+  openModal({title:'Три силы. Один центр.',kicker:'Краткие правила',body:`<p class="rules-intro">Космические флоты борются за власть, а Нули решают, кому достанется равновесие.</p>
+  <div class="rule-block"><h3>Как сделать ход</h3><p>Выберите фигуру активной фракции, затем подсвеченную клетку. Нули не атакуют: вместо перемещения они могут установить или снять поддержку соседней фигуры.</p></div>
+  <div class="rule-block"><h3>Как победить</h3><p>Уничтожьте вражеского Линейного в Основном режиме или удерживайте «Ц» ${settings.holdTarget} ${turnWord(settings.holdTarget)}. Вход не засчитывается: при стандартной тройке Плюсы побеждают в начале своего четвёртого хода на «Ц». Войти в центр можно только с золотых ворот. На лимите побеждает держатель центра.</p></div>
+  <div class="rule-block"><h3>Защита и поддержка</h3><p>Линейный и Инженер дают соседям защиту 1 — её пробивают только тяжёлые Линейный и Линкор. Поддержка Нулей даёт защиту 2, которую нельзя пробить, пока жив поддерживающий нуль.</p></div>
+  <div class="rule-block"><h3>Нейтралитет</h3><p>Нуль без поддержки вне «Ц» и ворот неуязвим. Военная фигура может оттеснить его на одну клетку, оставшись на месте. Поддержка — добровольная заявка: она делает нуль уязвимым.</p></div>
+  <div class="legend"><span><i style="background:#d8bd7a"></i>перемещение</span><span><i style="background:#df8178"></i>взятие</span><span><i style="background:#72b7d2"></i>оттеснение</span><span><i style="background:#b6bdb7"></i>поддержка</span></div>`});
+}
+function showSettings(){
+  const option=(name,value,label,checked)=>`<label class="option"><input type="radio" name="${name}" value="${value}" ${checked?'checked':''}><span>${label}</span></label>`;
+  openModal({title:'Новая партия',kicker:'Параметры игры',body:`<div class="settings-grid">
+  <div><span class="setting-label">Сценарий партии</span><div class="option-grid" style="grid-template-columns:repeat(2,1fr)">${option('gameMode','coop','Совместная',gameMode==='coop')}${option('gameMode','ai','Против ИИ',gameMode==='ai')}</div><div class="setting-hint" id="gameModeHint" style="margin:8px 0 0"></div></div>
+  <div id="factionSetting"><span class="setting-label">За кого играете</span><div class="option-grid">${option('humanFaction','plus','Плюсы',humanFaction==='plus')}${option('humanFaction','minus','Минусы',humanFaction==='minus')}${option('humanFaction','zero','Нули',humanFaction==='zero')}</div></div>
+  <div><span class="setting-label">Порядок хода</span><div class="option-grid">${option('turn','cycle','Цикл',settings.turn==='cycle')}${option('turn','arrow','Стрелка',settings.turn==='arrow')}${option('turn','pass','Передача',settings.turn==='pass')}</div><div class="setting-hint" style="margin:8px 0 0">Стрелка выбирает фракцию случайно; в Передаче игрок сам назначает следующего.</div></div>
+  <div><span class="setting-label">Условие гибели Линейного</span><div class="option-grid" style="grid-template-columns:repeat(2,1fr)">${option('death','main','Основной · победа',settings.death==='main')}${option('death','long','Длинный · выбывание',settings.death==='long')}</div></div>
+  <div><span class="setting-label">Удержание «Ц» для победы</span><div class="option-grid" style="grid-template-columns:repeat(5,1fr)">${[1,2,3,4,5].map(n=>option('holdTarget',n,`${n} ${turnWord(n)}`,settings.holdTarget===n)).join('')}</div><div class="setting-hint" style="margin:8px 0 0">Считаются следующие собственные ходы держателя. При трёх победа наступает в начале четвёртого хода на «Ц», включая вход.</div></div>
+  <div><span class="setting-label">Состав флота</span><div class="option-grid">${option('pawns','0','Классика · 10',settings.pawns===0)}${option('pawns','1','10 + 1 пешка',settings.pawns===1)}${option('pawns','5','Расширенный · 15',settings.pawns===5)}</div><div class="setting-hint" style="margin:8px 0 0">Варианты с пешками экспериментальные; 15 фигур увеличивают лимит до 120.</div></div>
+  <div id="cycleSetting"><span class="setting-label">Направление цикла</span><div class="option-grid" style="grid-template-columns:repeat(2,1fr)">${option('cycleDir','forward','П → М → Н',settings.cycleDir==='forward')}${option('cycleDir','reverse','П → Н → М',settings.cycleDir==='reverse')}</div></div></div>`,
+  buttons:[{label:'Отмена'},{label:'Начать партию',primary:true,action:()=>{ const data=new FormData(); document.querySelectorAll('#modalBody input:checked').forEach(i=>data.append(i.name,i.value)); gameMode=data.get('gameMode'); humanFaction=data.get('humanFaction')||humanFaction; settings={turn:data.get('turn'),death:data.get('death'),cycleDir:data.get('cycleDir'),pawns:Number(data.get('pawns')),holdTarget:Number(data.get('holdTarget'))}; newGame(); }}]});
+  const update=()=>{
+    const ai=document.querySelector('input[name="gameMode"]:checked')?.value==='ai';
+    $('factionSetting').style.display=ai?'block':'none';
+    $('gameModeHint').textContent=ai?'ИИ будет управлять двумя фракциями, которые вы не выбрали.':'Все фракции управляются игроками на этом устройстве.';
+    const cycle=document.querySelector('input[name="turn"]:checked')?.value==='cycle';
+    $('cycleSetting').style.display=cycle?'block':'none';
+  };
+  document.querySelectorAll('input[name="turn"],input[name="gameMode"]').forEach(i=>i.onchange=update); update();
+}
+function showImport(){
+  openModal({title:'Импорт журнала',kicker:'Воспроизведение',body:'<p>Вставьте JSON, экспортированный из Эльо. После импорта используйте «В начало», «Шаг» или «Все ходы».</p><textarea id="importArea" spellcheck="false" placeholder="{ &quot;moves&quot;: [...] }"></textarea>',buttons:[{label:'Отмена'},{label:'Импортировать',primary:true,action:()=>{try{const n=REC.importJSON($('importArea').value.trim());setTab('history');toast('Журнал загружен',`${n} ходов готовы к воспроизведению`,'success');}catch(e){toast('Не удалось импортировать',e.message,'error');}}}]});
+}
+
+function buildBoard2D(){
+  const svg=$('board'); svg.innerHTML='';
+  const defs=svgEl('defs'); defs.innerHTML='<radialGradient id="cellGlow"><stop offset="0" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>'; svg.appendChild(defs);
+  const cells=document.createElementNS(NS,'g'); cells.id='cells'; svg.appendChild(cells);
+  const all=[...state.cells.values()].sort((a,b)=>a.r-b.r);
+  all.forEach(c=>{
+    const p=axialToPx(c.q,c.r), gate=E.GATE_SET.has(c.q+','+c.r), center=c.q===0&&c.r===0;
+    const color=center||gate?'#d8bd7a':c.color;
+    const poly=svgEl('polygon',{points:hexPoints(p.x,p.y,38.5),fill:color+(center?'24':gate?'1c':'0e'),stroke:color+(center?'bb':gate?'88':'55'),'stroke-width':center?2:1,class:'hex','data-q':c.q,'data-r':c.r,tabindex:0,role:'button','aria-label':`${c.code||'клетка'} ${c.q},${c.r}`});
+    if(c.kind==='disputed')poly.setAttribute('stroke-dasharray','4 4');
+    poly.addEventListener('click',()=>handleCell(c.q,c.r)); poly.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();handleCell(c.q,c.r);}});
+    poly.addEventListener('pointermove',e=>showPieceTooltip(E.pieceAt(state,c.q,c.r),e.clientX,e.clientY));poly.addEventListener('pointerleave',hidePieceTooltip);cells.appendChild(poly);
+    const text=svgEl('text',{x:p.x,y:p.y+26,'text-anchor':'middle',fill:center?'#d8bd7a':'#87938d','font-size':center?11:7.5,'font-weight':600,class:'cell-code'},center?'Ц':c.code); cells.appendChild(text);
+  });
+  E.FIELD_INFO.forEach(f=>{const p=axialToPx(f.center[0],f.center[1]);const y=f.id==='plus'?p.y-216:p.y+211;svg.appendChild(svgEl('text',{x:p.x,y,'text-anchor':'middle',fill:COLORS[f.id],'font-size':12,'font-weight':600,'letter-spacing':4,opacity:.7},f.name));});
+  svg.appendChild(svgEl('g',{id:'supportLines'})); svg.appendChild(svgEl('g',{id:'targets'})); svg.appendChild(svgEl('g',{id:'pieces'}));
+}
+function render2D(){
+  const lines=$('supportLines'), targets=$('targets'), pieces=$('pieces'); if(!lines)return;
+  lines.innerHTML=''; targets.innerHTML=''; pieces.innerHTML='';
+  document.querySelectorAll('.hex').forEach(el=>el.classList.toggle('selected',el.dataset.q==String(selectedPiece()?.q)&&el.dataset.r==String(selectedPiece()?.r)));
+  state.pieces.filter(p=>p.alive&&p.supportTarget).forEach(p=>{const t=state.pieces.find(x=>x.id===p.supportTarget&&x.alive);if(!t)return;const a=axialToPx(p.q,p.r),b=axialToPx(t.q,t.r);lines.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#d8bd7a','stroke-width':1.5,opacity:.65,class:'support-line'}));});
+  legalTargets.forEach(t=>{const p=axialToPx(t.q,t.r),color=t.capture?'#df8178':t.displace?'#72b7d2':'#d8bd7a';targets.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:t.capture?29:10,fill:t.capture?'transparent':color+'55',stroke:color,'stroke-width':t.capture?2:1.5,class:'target'}));});
+  supportTargets.forEach(id=>{const t=state.pieces.find(x=>x.id===id);if(!t)return;const p=axialToPx(t.q,t.r);targets.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:31,fill:'none',stroke:'#b6bdb7','stroke-width':2,'stroke-dasharray':'3 3',class:'target'}));});
+  state.pieces.filter(p=>p.alive).forEach(p=>{
+    const pos=axialToPx(p.q,p.r), color=COLORS[p.faction], g=svgEl('g',{class:'piece-2d',opacity:p.inert?.35:1});
+    g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y+3,r:21,fill:'#050806',opacity:.45}));
+    g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:20,fill:'#17201d',stroke:color,'stroke-width':p.id===selectedId?3:1.8}));
+    g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:16,fill:color,opacity:E.isNullType(p.type)?.24:.32}));
+    if(p.type==='line')g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:24,fill:'none',stroke:'#d8bd7a','stroke-width':1.4}));
+    if(E.isNullType(p.type)&&!p.supportTarget)g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:23,fill:'none',stroke:color,'stroke-width':1,'stroke-dasharray':'2 4',opacity:.7}));
+    g.appendChild(svgEl('text',{x:pos.x,y:pos.y+4,'text-anchor':'middle',fill:p.inert?'#87938d':'#f0eee7','font-size':SHORT[p.type]?.length>1?10:12,'font-weight':700},SHORT[p.type]||p.type[0])); pieces.appendChild(g);
+  });
+}
+
+let renderer,scene,camera,controls,raycaster,pointer,threeReady=false,threeInitializing=null;
+const pieceMeshes=new Map(), highlightMeshes=[], cellMeshes=[], tweens=[], modelCache=new Map();
+let interactables=[];
+const MODEL_MAP={plus:{line:'Plus-Linear.fbx',battleship:'Plus-HeavyCruiser.fbx',frigate:'Plus-Frigate.fbx',corvette:'Plus-Corvette.fbx',destroyer:'Plus-Destroyer.fbx',bombardier:'Plus-Frigate.fbx'},minus:{line:'Minus-Linear.fbx',battleship:'Minus-HeavyCruiser.fbx',frigate:'Minus-Frigate.fbx',corvette:'Minus-Corvette.fbx',destroyer:'Minus-Destroyer.fbx',bombardier:'Minus-Frigate.fbx'},zero:{parliament:'Zero-CaptainLinear.fbx',free:'Zero-Free.fbx',courier:'Zero-Courier.fbx',engineer:'Zero-Engineer.fbx',saboteur:'Zero-Divergent.fbx'}};
+const THREE_COLORS={plus:'#58c8f2',minus:'#ff7d72',zero:'#d3dbd5'};
+function createDust(){const positions=[];for(let i=0;i<280;i++){const angle=i*2.399963,radius=15+(i%73)*.14;positions.push(Math.cos(angle)*radius,.3+(i%37)*.16,Math.sin(angle)*radius);}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));scene.add(new THREE.Points(geo,new THREE.PointsMaterial({color:0xd8bd7a,size:.04,transparent:true,opacity:.32,depthWrite:false})));}
+function createBoardBase(){const p=E.FIELD_INFO.map(f=>axialTo3D(f.center[0],f.center[1]));const shape=new THREE.Shape();shape.moveTo(p[0].x,-p[0].z);shape.lineTo(p[1].x,-p[1].z);shape.lineTo(p[2].x,-p[2].z);shape.closePath();const geo=new THREE.ExtrudeGeometry(shape,{depth:.16,bevelEnabled:true,bevelThickness:.05,bevelSize:.05,bevelSegments:2});const base=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x5b5138,metalness:.78,roughness:.28}));base.rotation.x=-Math.PI/2;base.position.y=-.48;base.receiveShadow=true;scene.add(base);const halo=new THREE.Mesh(new THREE.TorusGeometry(10.2,.025,8,128),new THREE.MeshBasicMaterial({color:0xd8bd7a,transparent:true,opacity:.18}));halo.rotation.x=Math.PI/2;halo.position.y=-.25;scene.add(halo);}
+async function init3D(){
+  if(threeReady)return; if(threeInitializing)return threeInitializing;
+  threeInitializing=(async()=>{
+    $('loading').classList.add('visible');
+    if(!THREE){
+      $('loadingText').textContent='Подключаем объёмный рендер…';
+      await new Promise((resolve,reject)=>{
+        const script=document.createElement('script');
+        script.src='vendor/three/elio-three.bundle.js';
+        script.onload=resolve;
+        script.onerror=()=>reject(new Error('Не найден vendor/three/elio-three.bundle.js. Загрузите файл на сайт рядом с index.html.'));
+        document.head.appendChild(script);
+      });
+      const api=window.__ElioThree;
+      if(!api)throw new Error('Не удалось инициализировать локальный Three.js.');
+      THREE=api.THREE; FBXLoader=api.FBXLoader; OrbitControls=api.OrbitControls; RoomEnvironment=api.RoomEnvironment; loader=new FBXLoader();
+    }
+    const host=$('board3d'); scene=new THREE.Scene(); scene.fog=new THREE.FogExp2(0x111917,.0085);
+    camera=new THREE.PerspectiveCamera(42,1,.1,200); renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.0; host.appendChild(renderer.domElement);
+    const pmrem=new THREE.PMREMGenerator(renderer); scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;
+    controls=new OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=.07; controls.minDistance=17; controls.maxDistance=48; controls.maxPolarAngle=Math.PI*.46; controls.minPolarAngle=.15; controls.enablePan=false;
+    scene.add(new THREE.HemisphereLight(0xdfe9e5,0x1c2d2a,1.25));
+    const sun=new THREE.DirectionalLight(0xffe7bd,3.8); sun.position.set(-13,27,10); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-18; sun.shadow.camera.right=18; sun.shadow.camera.top=18; sun.shadow.camera.bottom=-18; sun.shadow.bias=-.00012; scene.add(sun);
+    const fill=new THREE.DirectionalLight(0x7fc9df,2.1); fill.position.set(15,10,-12); scene.add(fill);
+    const rim=new THREE.DirectionalLight(0xd8bd7a,1.2); rim.position.set(0,12,-20); scene.add(rim);
+    const ground=new THREE.Mesh(new THREE.CircleGeometry(28,64),new THREE.MeshStandardMaterial({color:0x0d1418,metalness:.2,roughness:.84}));ground.rotation.x=-Math.PI/2;ground.position.y=-.42;ground.receiveShadow=true;scene.add(ground);
+    createDust(); createBoardBase();
+    const HEX_COLORS={plus:0x246d8f,minus:0x84302b,zero:0x52645d,disputed:0x48506c,center:0xa98c47,gate:0x9b8148};
+    const hexGeo=new THREE.CylinderGeometry(.88,.88,.18,6);
+    state.cells.forEach(c=>{const gate=E.GATE_SET.has(c.q+','+c.r),center=c.q===0&&c.r===0;const color=HEX_COLORS[center?'center':gate?'gate':c.fieldId]||HEX_COLORS.disputed;const baseColor=new THREE.Color(color);const mat=new THREE.MeshStandardMaterial({color:baseColor,metalness:.42,roughness:.54});const m=new THREE.Mesh(hexGeo,mat);m.rotation.y=Math.PI/6;const p=axialTo3D(c.q,c.r);m.position.set(p.x,-.12,p.z);m.receiveShadow=true;m.castShadow=true;m.userData={type:'cell',q:c.q,r:c.r};scene.add(m);cellMeshes.push(m);const edge=new THREE.LineSegments(new THREE.EdgesGeometry(hexGeo),new THREE.LineBasicMaterial({color:center?0xf0d99b:c.kind==='disputed'?0x969bc0:baseColor.clone().lerp(new THREE.Color(0xffffff),.34)}));edge.rotation.copy(m.rotation);edge.position.set(p.x,-.01,p.z);scene.add(edge);addLabel3D(center?'Ц':c.code,p,center||gate?'#f0d99b':'#aab7b0');});
+    createArrow3D(); raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();renderer.domElement.addEventListener('pointerdown',on3DPointer);renderer.domElement.addEventListener('pointermove',on3DHover);renderer.domElement.addEventListener('pointerleave',hidePieceTooltip);new ResizeObserver(resize3D).observe(host);resize3D();resetCamera();
+    const paths=new Set();Object.values(MODEL_MAP).forEach(types=>Object.values(types).forEach(p=>paths.add(p)));let loaded=0;
+    await Promise.allSettled([...paths].map(async path=>{try{const obj=await new Promise((resolve,reject)=>loader.load('3d/export/'+path,resolve,undefined,reject));normalizeModel(obj);modelCache.set(path,obj);}catch(e){console.warn('Модель недоступна:',path);}finally{$('loadingText').textContent=`Загрузка флота · ${++loaded} / ${paths.size}`;}}));
+    threeReady=true;sync3D();animate3D();$('loading').classList.remove('visible');
+  })(); return threeInitializing;
+}
+function normalizeModel(obj){const box=new THREE.Box3().setFromObject(obj),size=box.getSize(new THREE.Vector3());const scale=1.34/Math.max(size.x,size.y,size.z,.01);obj.scale.setScalar(scale);obj.updateMatrixWorld(true);const scaled=new THREE.Box3().setFromObject(obj),center=scaled.getCenter(new THREE.Vector3());obj.position.sub(center);obj.position.y-=scaled.min.y-center.y;obj.updateMatrixWorld(true);const fixed=new THREE.Box3().setFromObject(obj),fixedCenter=fixed.getCenter(new THREE.Vector3());obj.position.x-=fixedCenter.x;obj.position.z-=fixedCenter.z;obj.position.y-=fixed.min.y;obj.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;}});}
+function addLabel3D(text,pos,color){if(!text)return;const c=document.createElement('canvas');c.width=128;c.height=64;const x=c.getContext('2d');x.fillStyle=color;x.font='600 26px "Segoe UI", system-ui, sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,64,32);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:.75,depthWrite:false}));s.position.set(pos.x,.05,pos.z+.43);s.scale.set(1.1,.55,1);scene.add(s);}
+let arrowGroup,arrowMat;
+function createArrow3D(){arrowGroup=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(9.1,.055,8,96),new THREE.MeshStandardMaterial({color:0x8c7747,metalness:.8,roughness:.35}));ring.rotation.x=Math.PI/2;arrowGroup.add(ring);arrowMat=new THREE.MeshStandardMaterial({color:0x72b7d2,emissive:0x223333});const cone=new THREE.Mesh(new THREE.ConeGeometry(.28,.85,6),arrowMat);cone.rotation.x=Math.PI/2;cone.position.set(0,.12,9.1);arrowGroup.add(cone);arrowGroup.position.y=-.2;scene.add(arrowGroup);}
+function resize3D(){if(!renderer)return;const r=$('board3d').getBoundingClientRect();if(!r.width||!r.height)return;camera.aspect=r.width/r.height;camera.updateProjectionMatrix();renderer.setSize(r.width,r.height,false);}
+function resetCamera(){if(!camera)return;const mobile=innerWidth<760;camera.position.set(0,mobile?24:21,mobile?24:22);controls.target.set(0,0,0);controls.update();}
+function fallbackPiece(p){const group=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:THREE_COLORS[p.faction],metalness:.68,roughness:.27});const base=new THREE.Mesh(new THREE.CylinderGeometry(.34,.43,.14,24),mat);group.add(base);const body=new THREE.Mesh(p.type==='line'?new THREE.ConeGeometry(.28,.95,6):new THREE.CylinderGeometry(.15,.27,.62,10),mat);body.position.y=.43;group.add(body);return group;}
+function stylizePiece(group,p){const base=new THREE.Color(THREE_COLORS[p.faction]);const metal=base.clone();group.traverse(m=>{if(!m.isMesh)return;const source=Array.isArray(m.material)?m.material:[m.material];const styled=source.map(src=>{const mat=src.clone();mat.color=metal.clone();if(src.map)mat.map=src.map;mat.metalness=.58;mat.roughness=.22;mat.envMapIntensity=1.18;if(p.type==='line'||p.type==='parliament')mat.emissive=base.clone().multiplyScalar(.16);else mat.emissive=base.clone().multiplyScalar(.055);if(p.inert){mat.color.multiplyScalar(.45);mat.transparent=true;mat.opacity=.72;}return mat;});m.material=Array.isArray(m.material)?styled:styled[0];m.castShadow=true;m.receiveShadow=true;});}
+function ensureMesh(p){if(pieceMeshes.has(p.id))return pieceMeshes.get(p.id);let mesh;if(!E.isPawnType(p.type)&&modelCache.has(MODEL_MAP[p.faction]?.[p.type]))mesh=modelCache.get(MODEL_MAP[p.faction][p.type]).clone(true);else mesh=fallbackPiece(p);stylizePiece(mesh,p);const group=new THREE.Group();group.add(mesh);group.userData={type:'piece',id:p.id};group.position.copy(axialTo3D(p.q,p.r));scene.add(group);pieceMeshes.set(p.id,group);return group;}
+function sync3D(movedId=null){if(!threeReady)return;const alive=new Set();state.pieces.filter(p=>p.alive).forEach(p=>{alive.add(p.id);const m=ensureMesh(p),target=axialTo3D(p.q,p.r);if(p.id===movedId&&m.position.distanceTo(target)>.01)tweens.push({mesh:m,from:m.position.clone(),to:target,start:performance.now(),duration:380});else m.position.copy(target);m.visible=true;});pieceMeshes.forEach((m,id)=>{if(!alive.has(id)){scene.remove(m);pieceMeshes.delete(id);}});renderHighlights3D();updateArrow(false);}
+function renderHighlights3D(){
+  highlightMeshes.forEach(m=>scene.remove(m));highlightMeshes.length=0;interactables=[...pieceMeshes.values(),...cellMeshes];if(!threeReady)return;
+  legalTargets.forEach(t=>{
+    const color=t.capture?0xff6f61:t.displace?0x52d9ff:0xffe39a;
+    const geometry=t.capture?new THREE.TorusGeometry(.61,.075,10,40):new THREE.SphereGeometry(.27,20,14);
+    const m=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,depthWrite:false,depthTest:false}));
+    if(t.capture)m.rotation.x=Math.PI/2;
+    m.position.copy(axialTo3D(t.q,t.r));m.position.y=t.capture?.24:.42;m.renderOrder=20;
+    m.userData={type:'target',q:t.q,r:t.r,mode:'move',pulse:true};scene.add(m);highlightMeshes.push(m);interactables.push(m);
+  });
+  supportTargets.forEach(id=>{const p=state.pieces.find(x=>x.id===id);if(!p)return;const m=new THREE.Mesh(new THREE.TorusGeometry(.55,.055,10,40),new THREE.MeshBasicMaterial({color:0xffe39a,depthTest:false,depthWrite:false}));m.rotation.x=Math.PI/2;m.position.copy(axialTo3D(p.q,p.r));m.position.y=.24;m.renderOrder=20;m.userData={type:'target',mode:'support',targetId:id,pulse:true};scene.add(m);highlightMeshes.push(m);interactables.push(m);});
+}
+function on3DPointer(e){if(!threeReady||e.button!==0)return;const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(interactables,true);for(const h of hits){let o=h.object;while(o&&!o.userData.type)o=o.parent;if(!o)continue;const d=o.userData;if(d.type==='target'){if(d.mode==='support')requestSupport(selectedId,d.targetId);else requestMove(selectedId,d.q,d.r);}else if(d.type==='piece')selectOrInspect(d.id);else if(d.type==='cell')handleCell(d.q,d.r);return;}clearSelection();}
+function on3DHover(e){
+  if(!threeReady||e.buttons){hidePieceTooltip();return;}
+  const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);
+  const hit=raycaster.intersectObjects([...pieceMeshes.values()],true)[0];if(!hit){hidePieceTooltip();return;}
+  let o=hit.object;while(o&&!o.userData.id)o=o.parent;showPieceTooltip(state.pieces.find(p=>p.id===o?.userData.id),e.clientX,e.clientY);
+}
+function animate3D(){requestAnimationFrame(animate3D);const now=performance.now();for(let i=tweens.length-1;i>=0;i--){const t=tweens[i],k=Math.min(1,(now-t.start)/t.duration),ease=1-Math.pow(1-k,3);t.mesh.position.lerpVectors(t.from,t.to,ease);t.mesh.position.y+=Math.sin(k*Math.PI)*.6;if(k===1)tweens.splice(i,1);}highlightMeshes.forEach((m,i)=>{if(m.userData.pulse){m.scale.setScalar(1.08+Math.sin(now*.006+i)*.22);m.material.opacity=.78+Math.sin(now*.006+i)*.22;}});controls.update();renderer.render(scene,camera);}
+function updateArrow(animate=true){if(!arrowGroup)return;arrowGroup.visible=state.mode.turn==='arrow';if(!arrowGroup.visible)return;arrowMat.color.set(COLORS[state.turnFaction]);const angles={plus:Math.PI,minus:-Math.PI/3,zero:Math.PI/3};if(animate)tweens.push({mesh:arrowGroup,from:arrowGroup.position,to:arrowGroup.position,start:performance.now(),duration:1});arrowGroup.rotation.y=angles[state.turnFaction]||0;}
+
+function selectedPiece(){return state.pieces.find(p=>p.id===selectedId&&p.alive)||null;}
+function clearSelection(){selectedId=null;legalTargets=[];supportTargets=[];renderAll();}
+function selectOrInspect(id){
+  if(state.gameOver)return;const p=state.pieces.find(x=>x.id===id&&x.alive);if(!p)return;
+  if(selectedId&&supportTargets.includes(id)){requestSupport(selectedId,id);return;}
+  const target=legalTargets.find(t=>t.q===p.q&&t.r===p.r);if(target){requestMove(selectedId,p.q,p.r);return;}
+  if(p.faction===state.turnFaction&&!p.inert){selectedId=id;legalTargets=E.legalMoves(state,id);supportTargets=E.isNullType(p.type)?E.legalSupportTargets(state,id):[];renderAll();}
+  else{selectedId=id;legalTargets=[];supportTargets=[];renderAll();}
+}
+function handleCell(q,r){const p=E.pieceAt(state,q,r);if(selectedId){const t=legalTargets.find(x=>x.q===q&&x.r===r);if(t){requestMove(selectedId,q,r);return;}if(p&&supportTargets.includes(p.id)){requestSupport(selectedId,p.id);return;}}if(p)selectOrInspect(p.id);else{selectedId=null;legalTargets=[];supportTargets=[];renderAll();}}
+function passTarget(){if(state.mode.turn!=='pass')return undefined;return E.legalPassTargets(state,state.turnFaction)[0];}
+function requestPassIfNeeded(action){
+  if(state.mode.turn!=='pass'){action();return;}
+  const opts=E.legalPassTargets(state,state.turnFaction);if(opts.length<2){action(opts[0]);return;}
+  openModal({title:'Передать ход',kicker:'Дипломатическое решение',body:'<p>Выберите фракцию, которая будет действовать следующей. Это решение — часть вашего хода.</p><div class="option-grid" style="grid-template-columns:repeat(2,1fr)">'+opts.map(f=>`<button class="action-btn pass-choice" data-faction="${f}" style="min-height:58px;color:${COLORS[f]}">${E.FACTION_NAME[f]}</button>`).join('')+'</div>',dismissible:false});
+  document.querySelectorAll('.pass-choice').forEach(b=>b.onclick=()=>{const f=b.dataset.faction;closeModal();action(f);});
+}
+function commitMove(pieceId,q,r,passTo){
+  const moved=state.pieces.find(p=>p.id===pieceId), captured=E.pieceAt(state,q,r);const result=E.applyMove(state,pieceId,q,r,passTo);if(result.error){toast('Ход недоступен',humanError(result.error),'error');return;}
+  state=result.state;REC.addMove(result.record);selectedId=null;legalTargets=[];supportTargets=[];afterAction(moved?.id,captured);
+}
+function requestMove(pieceId,q,r){if(state.gameOver)return;requestPassIfNeeded(passTo=>commitMove(pieceId,q,r,passTo));}
+function requestSupport(zeroId,targetId){if(state.gameOver)return;requestPassIfNeeded(passTo=>{const result=E.applySupport(state,zeroId,targetId,passTo);if(result.error){toast('Поддержка недоступна',humanError(result.error),'error');return;}state=result.state;REC.addMove(result.record);selectedId=null;legalTargets=[];supportTargets=[];afterAction(zeroId,null);});}
+function humanError(e){return ({'illegal move':'Эта клетка недоступна для выбранной фигуры.','not your turn':'Сейчас ходит другая фракция.','first move must be pawn':'Первый ход этой фракции должен сделать пешка.','illegal pass target':'Этой фракции нельзя передать ход.'})[e]||e;}
+function afterAction(movedId,captured){
+  renderAll(movedId);if(captured)toast('Фигура снята с доски',E.TYPE_NAME[captured.type]+' · '+E.FACTION_NAME[captured.faction],'warning');
+  if(state.gameOver){stopAuto();stopAiChain();if(!gameOverShown){gameOverShown=true;setTimeout(showGameOver,500);}return;}
+  if(gameMode==='ai'&&state.turnFaction!==humanFaction)scheduleAiChain();
+}
+function stopAiChain(){clearTimeout(aiChainTimer);aiChainTimer=null;}
+function scheduleAiChain(delay=650){stopAiChain();aiChainTimer=setTimeout(()=>{aiChainTimer=null;if(gameMode==='ai'&&!state.gameOver&&state.turnFaction!==humanFaction)applyAi();},delay);}
+function applyAi(){
+  if(state.gameOver)return;if(gameMode==='ai'&&state.turnFaction===humanFaction)return;const f=state.turnFaction,mv=f==='zero'?AI.chooseMove(state,f):AI.chooseMoveAggressive(state,f);if(!mv||!mv.type)return;
+  if(mv.state)state=mv.state;else if(mv.type==='skip')state=E.skipTurn(state).state;else if(mv.type==='support')state=E.applySupport(state,mv.zeroId,mv.targetId).state;else state=E.applyMove(state,mv.pieceId,mv.q,mv.r).state;
+  const record=state.log.at(-1);if(record)REC.addMove(record);selectedId=null;legalTargets=[];supportTargets=[];afterAction(mv.act?.pieceId||mv.act?.zeroId,null);
+}
+function startAuto(){if(autoPlay)return;autoPlay=true;$('btnAuto').classList.add('active');$('btnAuto').innerHTML='<svg class="icon"><use href="#i-pause"/></svg><span>Пауза</span>';const step=()=>{if(!autoPlay)return;if(state.gameOver){stopAuto();return;}applyAi();autoTimer=setTimeout(step,650);};step();}
+function stopAuto(){autoPlay=false;clearTimeout(autoTimer);clearTimeout(replayTimer);$('btnAuto').classList.remove('active');$('btnAuto').innerHTML='<svg class="icon"><use href="#i-play"/></svg><span>Авто-игра</span>';}
+function newGame(){stopAuto();stopAiChain();state=E.init(settings);REC.reset(settings);selectedId=null;legalTargets=[];supportTargets=[];gameOverShown=false;syncNewMeshes();renderAll();const scenario=gameMode==='ai'?`Против ИИ · вы: ${E.FACTION_NAME[humanFaction]}`:'Совместная партия';toast('Новая партия',`${scenario} · ${modeNames.turn[settings.turn]} · ${modeNames.death[settings.death]}`,'success');if(gameMode==='ai'&&state.turnFaction!==humanFaction)scheduleAiChain(800);}
+function syncNewMeshes(){pieceMeshes.forEach(m=>scene?.remove(m));pieceMeshes.clear();tweens.length=0;if(threeReady)sync3D();}
+function showGameOver(){const winner=state.winner?E.FACTION_NAME[state.winner]:'Ничья';openModal({title:winner==='Ничья'?'Равновесие сохранено':winner+' победили',kicker:'Партия завершена',body:`<div class="result-emblem">${state.winner?SYMBOLS[state.winner]:'◇'}</div><p style="text-align:center">${REASONS[state.winReason]||'Игра завершена'}. Партия окончена на ${state.moveNumber}-м полуходе.</p>`,buttons:[{label:'Посмотреть доску'},{label:'Новая партия',primary:true,action:showSettings}]});}
+
+function renderAll(movedId=null){
+  render2D();if(threeReady&&view==='3d')sync3D(movedId);renderUI();
+}
+function renderUI(){
+  const f=state.turnFaction;$('turnText').textContent=E.FACTION_NAME[f];$('turnBanner').style.setProperty('--turn-color',COLORS[f]);
+  $('moveNum').textContent=`${state.moveNumber} / ${state.limit}`;$('modeLabel').textContent=`${gameMode==='ai'?'Против ИИ':'Совместная'} · ${modeNames.turn[state.mode.turn]} · ${modeNames.death[state.mode.death]}`;$('historyCount').textContent=REC.getMoves().length?`· ${REC.getMoves().length}`:'';
+  $('factions').innerHTML=E.FACTIONS.map(f=>{const count=state.pieces.filter(p=>p.alive&&p.faction===f).length,remaining=Math.max(0,state.holdTarget-state.hold[f]);return `<div class="faction-card ${f===state.turnFaction&&!state.gameOver?'current':''}" style="--faction:${COLORS[f]}"><div class="faction-head"><div class="faction-symbol">${SYMBOLS[f]}</div><div><div class="faction-name">${E.FACTION_NAME[f]}</div><div class="faction-role">${ROLES[f]}</div></div><div class="faction-count">${count} фиг.</div></div><div class="hold-row"><span class="hold-label">Ц · осталось ${remaining}</span>${Array.from({length:state.holdTarget},(_,i)=>`<i class="hold-dot ${i<state.hold[f]?'filled':''}"></i>`).join('')}</div></div>`;}).join('');
+  const cp=E.occupantAt(state),remaining=cp?Math.max(0,state.holdTarget-state.hold[cp.faction]):state.holdTarget;
+  $('centerTitle').textContent=cp?'Центр · '+E.FACTION_NAME[cp.faction]:'Центр свободен';
+  $('centerDesc').textContent=cp?`${E.FACTION_NAME[cp.faction]}: ${remaining} ${turnWord(remaining)} до победы`:`Для победы удерживайте «Ц» ${state.holdTarget} ${turnWord(state.holdTarget)}.`;
+  $('centerCountdown').textContent=cp&&!state.gameOver?`${E.FACTION_NAME[cp.faction]} победят в начале своего хода · осталось ${remaining}`:state.gameOver?'Партия завершена':'Центр свободен';
+  $('centerCountdown').classList.toggle('active',!!cp&&!state.gameOver);
+  const p=selectedPiece();if(!p){$('selectionInfo').className='selection-empty';$('selectionInfo').innerHTML=gameMode==='ai'?(state.turnFaction===humanFaction?`Вы играете за ${E.FACTION_NAME[humanFaction]}.<br>Доступные действия появятся на доске.`:'ИИ выполняет ход.<br>Очередь скоро вернётся к вам.'):'Выберите фигуру активной фракции.<br>Доступные действия появятся на доске.';}
+  else{const code=E.codeMap.get(p.q+','+p.r)||`${p.q}, ${p.r}`,protection=E.protLevel(state,p);let status=E.isNullType(p.type)?(p.supportTarget?'Поддержка → '+p.supportTarget:E.isNeutralZero(p)?'Нейтральный · неуязвим':'Заявленный · уязвим'):`Защита ${protection}`;if(p.inert)status='Инертная фигура';$('selectionInfo').className='';$('selectionInfo').innerHTML=`<div class="piece-title" style="--piece-color:${COLORS[p.faction]}"><i class="piece-dot"></i>${E.TYPE_NAME[p.type]}</div><div class="piece-meta">${E.FACTION_NAME[p.faction]} · ${code}<br>${esc(status)}</div><div class="piece-desc">${DESCRIPTIONS[p.type]}</div>${p.faction===state.turnFaction&&E.isNullType(p.type)&&p.supportTarget?'<div class="selection-actions"><button class="action-btn" id="btnRemoveSupport">Снять поддержку</button></div>':''}`;$('btnRemoveSupport')?.addEventListener('click',()=>requestSupport(p.id,null));}
+  const aiOpponent=gameMode==='ai';$('btnAi').disabled=state.gameOver||aiOpponent;$('btnAuto').disabled=state.gameOver||aiOpponent;$('btnAi').title=aiOpponent?'В режиме против ИИ ходы соперников выполняются автоматически':'Сделать ход за текущую фракцию';$('btnAuto').title=aiOpponent?'Недоступно в режиме против ИИ':'Автоматическая партия трёх фракций';renderHistory();
+}
+const modeNames={turn:{cycle:'Цикл',arrow:'Стрелка',pass:'Передача'},death:{main:'Основной',long:'Длинный'}};
+function recordText(m){const code=(pos)=>E.codeMap.get(pos.q+','+pos.r)||`${pos.q},${pos.r}`;if(m.kind==='skip')return 'пропуск хода';if(m.kind==='support')return `${m.pieceId} поддерживает ${m.targetId||'никого'}`;if(m.kind==='displace')return `${m.pieceId} оттесняет нуль на ${code(m.to)}`;return `${m.pieceId} · ${code(m.from)} → ${code(m.to)}${m.capture?' · взятие':''}`;}
+function renderHistory(){const moves=REC.getMoves();$('historyList').innerHTML=moves.length?moves.map((m,i)=>`<div class="history-item" style="--faction:${COLORS[m.faction]}"><span class="history-num">${String(i+1).padStart(2,'0')}</span><div><strong>${E.FACTION_NAME[m.faction]}</strong><br>${esc(recordText(m))}${m.passTo?`<br><span style="color:var(--muted)">Ход → ${E.FACTION_NAME[m.passTo]}</span>`:''}</div></div>`).reverse().join(''):'<div class="history-empty">Здесь появится история.<br>Каждое решение имеет значение.</div>';}
+async function setView(next){
+  if(next===view)return;stopAuto();$('boardStage').classList.add('switching');
+  if(next==='3d'){try{await init3D();}catch(e){console.error(e);$('loading').classList.remove('visible');$('boardStage').classList.remove('switching');toast('3D недоступен',e?.message||'Проверьте WebGL и файлы Three.js. 2D-режим продолжает работать.','error',7000);return;}}
+  view=next;$('app').dataset.view=next;['2d','3d'].forEach(v=>{$('view'+v).classList.toggle('active',v===next);$('view'+v).setAttribute('aria-pressed',v===next);});$('viewNote').textContent=next==='3d'?'Объёмный вид · вращайте доску движением':'Тактический вид · нажмите на фигуру';
+  setTimeout(()=>{$('boardStage').classList.remove('switching');if(next==='3d'){resize3D();sync3D();}},280);
+}
+function setTab(name){const history=name==='history';['Status','History'].forEach(n=>{$('tab'+n).classList.toggle('active',(n==='History')===history);$('tab'+n).setAttribute('aria-selected',(n==='History')===history);$('pane'+n).classList.toggle('active',(n==='History')===history);});if(innerWidth<=760)$('sidebar').classList.add('mobile-open');}
+$('view2d').onclick=()=>setView('2d');$('view3d').onclick=()=>setView('3d');$('btnRules').onclick=showRules;$('btnSettings').onclick=showSettings;$('btnNew').onclick=showSettings;$('btnAi').onclick=()=>{stopAuto();applyAi();};$('btnAuto').onclick=()=>autoPlay?stopAuto():startAuto();$('btnResetCamera').onclick=()=>{if(view==='3d')resetCamera();else toast('Доска уже центрирована','В 2D вся партия всегда перед глазами.','info',2200);};
+$('btnPanel').onclick=()=>{if($('sidebar').classList.contains('mobile-open'))$('sidebar').classList.remove('mobile-open');else setTab('status');};if(innerWidth>760)$('btnPanel').style.display='none';
+$('tabStatus').onclick=()=>setTab('status');$('tabHistory').onclick=()=>setTab('history');$('btnHistoryTop').onclick=()=>setTab('history');$('btnImport').onclick=showImport;
+$('btnExport').onclick=()=>{const blob=new Blob([REC.exportJSON()],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='elio_game.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Журнал экспортирован','Файл elio_game.json сохранён.','success');};
+$('btnReplayStart').onclick=()=>{stopAuto();stopAiChain();if(!REC.getMoves().length){toast('Пока нет ходов','Сыграйте партию или импортируйте журнал.','info');return;}const saved=REC.getSettings();state=REC.startReplay(saved.turn||state.mode.turn,saved.death||state.mode.death,saved.pawns??state.pawns,saved.cycleDir||state.cycleDir,saved.holdTarget||state.holdTarget);selectedId=null;legalTargets=[];supportTargets=[];syncNewMeshes();renderAll();$('replayPos').textContent='0 / '+REC.getMoves().length;};
+$('btnReplayStep').onclick=()=>{stopAuto();stopAiChain();const r=REC.stepReplay();if(r.error){toast('Ошибка воспроизведения',r.error,'error');return;}state=r.state;syncNewMeshes();renderAll();$('replayPos').textContent=REC.getReplayIndex()+' / '+REC.getMoves().length;if(r.done)toast('Конец журнала','Воспроизведение завершено.','success');};
+$('btnReplayAll').onclick=()=>{stopAuto();stopAiChain();if(!REC.getMoves().length)return;if(!REC.getReplayState())$('btnReplayStart').click();const step=()=>{const r=REC.stepReplay();if(r.error){toast('Ошибка воспроизведения',r.error,'error');return;}state=r.state;syncNewMeshes();renderAll();$('replayPos').textContent=REC.getReplayIndex()+' / '+REC.getMoves().length;if(!r.done)replayTimer=setTimeout(step,420);};step();};
+window.addEventListener('resize',()=>{if(innerWidth>760){$('sidebar').classList.remove('mobile-open');$('btnPanel').style.display='none';}else $('btnPanel').style.display='inline-flex';resize3D();});
+buildBoard2D();REC.reset(settings);renderAll();
+window.__elio={getState:()=>state,getView:()=>view,setView,selectPiece:selectOrInspect,move:requestMove,support:requestSupport,newGame:()=>newGame(),getSelected:()=>selectedId,getLegalTargets:()=>legalTargets,getMode:()=>({gameMode,humanFaction}),isAiBusy:()=>aiChainTimer!==null};
+</script>
+</body>
+</html>

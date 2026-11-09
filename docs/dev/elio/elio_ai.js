@@ -1,5 +1,5 @@
 // Elio AI v1.4 — работает с нейтралитетом/заявкой, поддержкой 1→1, режимами хода/смерти, лимитом 90.
-// v1.4: приоритет срыва чужого hold=2, его щита и выдвижение в ворота.
+// v1.4: приоритет срыва чужого удержания за собственный ход до победы.
 // В Длинном режиме ИИ не бросает уже накопленный «Ц» (hold ≥ 1) ради убийства Линейного: это выбывание, не победа.
 (function(){
   const E = window.ElioEngine;
@@ -23,7 +23,7 @@
     for(const o of ['plus','minus','zero']){
       if(o===faction)continue;
       const enemyHold=state.hold[o]||0;
-      s -= enemyHold*8+(enemyHold>=2?180:0);
+      s -= enemyHold*8+(enemyHold>=(state.holdTarget||3)-1?180:0);
     }
     // держатель «Ц» сейчас; критично: защита держателя
     const cp=E.occupantAt(state);
@@ -38,8 +38,8 @@
       } else {
         s += 8;
       }
-      // При чужом hold=2 выдвижение в ворота важнее обычного локального взятия.
-      if(cp.faction!==faction&&(state.hold[cp.faction]||0)>=2){
+      // За один собственный ход до чужой победы выдвижение в ворота важнее обычного взятия.
+      if(cp.faction!==faction&&(state.hold[cp.faction]||0)>=(state.holdTarget||3)-1){
         for(const key of E.GATE_SET){
           const [q,r]=key.split(',').map(Number);
           const p=E.pieceAt(state,q,r);

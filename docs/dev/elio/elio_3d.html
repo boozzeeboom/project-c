@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Эльо — 3D прототип</title>
+<style>
+  :root { --bg:#1a1a2e; --panel:#23234a; --gold:#c9a227; --plus:#5b9bd5; --minus:#e05a5a; --zero:#9aa0a6; --text:#e8e8f0; }
+  * { box-sizing:border-box; }
+  body { margin:0; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Segoe UI',Georgia,serif; }
+  #ui { position:absolute; top:10px; right:10px; width:320px; max-height:95vh; overflow:auto; background:rgba(35,35,74,0.9); border:1px solid #3a3a6a; border-radius:10px; padding:10px; font-size:13px; z-index:10; backdrop-filter: blur(5px); }
+  .card { margin-bottom:10px; }
+  .card h3 { margin:0 0 6px; color:var(--gold); font-size:14px; }
+  .btn { background:var(--gold); color:#1a1a2e; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; margin-right:4px; margin-bottom:4px; }
+  .btn.secondary { background:#3a3a6a; color:#e8e8f0; }
+  .status-row { display:flex; justify-content:space-between; margin:3px 0; }
+  .holdbar { display:flex; gap:6px; margin:6px 0; }
+  .hold { flex:1; text-align:center; padding:3px; border-radius:6px; font-size:12px; }
+  #info { min-height:40px; }
+  #log { height:180px; overflow:auto; font-family:monospace; font-size:11px; background:#12122a; padding:6px; border-radius:6px; white-space:pre-wrap; }
+  select { background:#23234a; color:#e8e8f0; border:1px solid #3a3a6a; border-radius:4px; }
+  #loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.7); padding:20px; border-radius:10px; font-size:16px; z-index:20; }
+  /* Тосты */
+  #toast-container { position:fixed; bottom:20px; right:20px; z-index:100; display:flex; flex-direction:column; gap:8px; }
+  .toast { padding:10px 16px; border-radius:8px; color:#fff; font-size:13px; min-width:200px; max-width:320px; opacity:0; transform:translateX(100%); transition:all 0.3s ease; box-shadow:0 4px 12px rgba(0,0,0,0.3); }
+  .toast.show { opacity:1; transform:translateX(0); }
+  .toast.info { background:rgba(91,155,213,0.9); }
+  .toast.success { background:rgba(76,175,80,0.9); }
+  .toast.warning { background:rgba(201,162,39,0.9); color:#1a1a2e; }
+  .toast.error { background:rgba(224,90,90,0.9); }
+  /* Попап */
+  #modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:200; display:none; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
+  #modal-overlay.show { display:flex; }
+  #modal-box { background:var(--panel); border:1px solid #3a3a6a; border-radius:12px; padding:20px; max-width:480px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.4); animation:modalIn 0.25s ease; }
+  @keyframes modalIn { from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); } }
+  #modal-box h3 { margin:0 0 10px; color:var(--gold); }
+  #modal-box p { margin:0 0 16px; line-height:1.5; }
+  #modal-box .btn-row { display:flex; gap:8px; justify-content:flex-end; }
+  /* Переключатель 2D/3D */
+  #view-toggle { position:absolute; top:10px; left:10px; z-index:10; background:rgba(35,35,74,0.9); border:1px solid #3a3a6a; border-radius:8px; padding:4px; display:flex; gap:4px; }
+  #view-toggle button { background:transparent; color:#e8e8f0; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; }
+  #view-toggle button.active { background:var(--gold); color:#1a1a2e; }
+</style>
+</head>
+<body>
+<div id="loading">Загрузка моделей...</div>
+<div id="view-toggle">
+  <button id="btnView2D">2D</button>
+  <button id="btnView3D" class="active">3D</button>
+</div>
+<div id="toast-container"></div>
+<div id="modal-overlay">
+  <div id="modal-box">
+    <h3 id="modal-title"></h3>
+    <p id="modal-text"></p>
+    <div class="btn-row" id="modal-buttons"></div>
+  </div>
+</div>
+<div id="ui">
+  <div class="card">
+    <h3>Режим игры</h3>
+    <div class="status-row"><label>Порядок хода:</label>
+      <select id="selTurn"><option value="cycle">Цикл</option><option value="arrow">Стрелка</option><option value="pass">Передача</option></select>
+    </div>
+    <div class="status-row" id="passRow" style="display:none"><label>Передать:</label>
+      <select id="selPassTo"></select>
+    </div>
+    <div class="status-row" id="cycleDirRow"><label>Цикл:</label>
+      <select id="selCycleDir"><option value="forward">П → М → Н</option><option value="reverse">П → Н → М</option></select>
+    </div>
+    <div class="status-row"><label>Пешки:</label>
+      <select id="selPawns"><option value="0">10 фигур</option><option value="1">10+1 (C1)</option><option value="5">10+5 (15 фигур)</option></select>
+    </div>
+    <div class="status-row"><label>Тип игры:</label>
+      <select id="selDeath"><option value="main">Основной (убил=победил)</option><option value="long">Длинный (выбывание)</option></select>
+    </div>
+    <div class="status-row"><span>Ход:</span><span id="moveNum">0</span> / 90</div>
+    <div class="status-row"><span>Причина:</span><span id="winReason"></span></div>
+  </div>
+  <div class="card">
+    <h3>Статус</h3>
+    <div id="turn" class="turn" style="font-size:16px;font-weight:bold;margin-bottom:6px;">Ход: Плюсы</div>
+    <div class="holdbar">
+      <div class="hold" style="background:#5b9bd533;color:#5b9bd5">П: <span id="holdPlus">0</span>/3</div>
+      <div class="hold" style="background:#e05a5a33;color:#e05a5a">М: <span id="holdMinus">0</span>/3</div>
+      <div class="hold" style="background:#9aa0a633;color:#9aa0a6">Н: <span id="holdZero">0</span>/3</div>
+    </div>
+    <div class="status-row"><span>Военные П/М:</span><span id="mainCount">10 / 10</span></div>
+    <div class="status-row"><span>Нулей:</span><span id="nullCount">10</span></div>
+    <div class="status-row"><span>Линейные П/М:</span><span id="lineCount">1 / 1</span></div>
+    <div id="gameOver" style="margin-top:8px;color:#c9a227;font-weight:bold;"></div>
+  </div>
+  <div class="card">
+    <h3>Клетка</h3>
+    <div id="info">Кликните по фигуре.</div>
+  </div>
+  <div class="card">
+    <h3>Управление</h3>
+    <button class="btn" id="btnNew">Новая игра</button>
+    <button class="btn secondary" id="btnAiMove">Ход ИИ</button>
+    <button class="btn secondary" id="btnAuto">Авто-игра</button>
+    <button class="btn secondary" id="btnStop">Стоп</button>
+  </div>
+  <div class="card">
+    <h3>Лог ходов</h3>
+    <div id="log" class="log"></div>
+  </div>
+</div>
+
+<script src="elio_engine.js"></script>
+<script src="elio_ai.js"></script>
+<script src="elio_recorder.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const E = window.ElioEngine;
+const AI = window.ElioAI;
+const REC = window.ElioRecorder;
+
+const SCALE = 1.0;
+const SQ3 = Math.sqrt(3);
+function axialTo3D(q,r){
+  const x = SCALE * 1.5 * q;
+  const z = SCALE * SQ3 * (r + q/2);
+  return new THREE.Vector3(x, 0, z);
+}
+
+// Scene setup
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 45, 70);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0,0,0);
+
+// Lighting
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff4e0, 1.6);
+sun.position.set(50, 80, 50);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x88aaff, 0.3);
+fill.position.set(-30, 20, -40);
+scene.add(fill);
+const point = new THREE.PointLight(0xffaa44, 0.8, 100);
+point.position.set(0, 30, 0);
+scene.add(point);
+
+// State
+let state = E.init({turn:'cycle', death:'main', cycleDir:'forward', pawns:0});
+window.state = state;
+let autoPlay = false;
+let autoTimer = null;
+let selectedPieceId = null;
+let legalTargets = [];
+let supportTargets = [];
+let pieceMeshes = {};
+window.pieceMeshes = pieceMeshes;
+let highlightMeshes = [];
+let interactables = [];
+window.getInteractables = () => interactables;
+let tweens = [];
+const clock = new THREE.Clock();
+Object.defineProperty(window, '__selectedPieceId', { get: () => selectedPieceId });
+window.getHighlightCount = () => highlightMeshes.length;
+window.getTweens = () => tweens.map(t=>t.type);
+
+// Model paths
+const MODEL_MAP = {
+  plus: { line:'Plus-Linear.fbx', battleship:'Plus-HeavyCruiser.fbx', frigate:'Plus-Frigate.fbx', corvette:'Plus-Corvette.fbx', destroyer:'Plus-Destroyer.fbx', bombardier:'Plus-Frigate.fbx' },
+  minus: { line:'Minus-Linear.fbx', battleship:'Minus-HeavyCruiser.fbx', frigate:'Minus-Frigate.fbx', corvette:'Minus-Corvette.fbx', destroyer:'Minus-Destroyer.fbx', bombardier:'Minus-Frigate.fbx' },
+  zero: { parliament:'Zero-CaptainLinear.fbx', free:'Zero-Free.fbx', courier:'Zero-Courier.fbx', engineer:'Zero-Engineer.fbx', saboteur:'Zero-Divergent.fbx' }
+};
+
+const loader = new FBXLoader();
+const modelCache = {};
+
+function normalizeModel(obj) {
+  const box = new THREE.Box3().setFromObject(obj);
+  const center = box.getCenter(new THREE.Vector3());
+  obj.position.sub(center);
+  const box2 = new THREE.Box3().setFromObject(obj);
+  obj.position.y -= box2.min.y;
+  return obj;
+}
+
+function loadModel(path) {
+  return new Promise((resolve, reject) => {
+    if (modelCache[path]) { resolve(modelCache[path].clone()); return; }
+    loader.load('3d/export/' + path, (obj) => {
+      normalizeModel(obj);
+      modelCache[path] = obj;
+      resolve(obj.clone());
+    }, undefined, reject);
+  });
+}
+
+function pieceModelKey(piece) {
+  const f = piece.faction === 'plus' ? 'plus' : piece.faction === 'minus' ? 'minus' : 'zero';
+  return MODEL_MAP[f][piece.type];
+}
+
+function ensurePieceMesh(piece) {
+  if (pieceMeshes[piece.id]) return pieceMeshes[piece.id];
+  let mesh;
+  if (piece.type === 'pawn' || piece.type === 'tender' || piece.type === 'skiff') {
+    const geo = new THREE.CylinderGeometry(0.2, 0.3, 0.5, 8);
+    const mat = new THREE.MeshStandardMaterial({ color: E.FACTION_COLOR[piece.faction], metalness:0.5, roughness:0.4 });
+    mesh = new THREE.Mesh(geo, mat);
+  } else {
+    const key = pieceModelKey(piece);
+    if (!key || !modelCache[key]) return null;
+    mesh = modelCache[key].clone();
+    // сохранить оригинальные материалы модели
+  }
+  mesh.userData = { type:'piece', id: piece.id };
+  const pos = axialTo3D(piece.q, piece.r);
+  mesh.position.copy(pos);
+  mesh.castShadow = true;
+  scene.add(mesh);
+  pieceMeshes[piece.id] = mesh;
+  interactables.push(mesh);
+  return mesh;
+}
+
+function removePieceMesh(id) {
+  const m = pieceMeshes[id];
+  if (!m) return;
+  const startScale = m.scale.clone();
+  tweens.push({ type:'scale', mesh:m, startScale, t:0, duration:0.3, onComplete: () => {
+    scene.remove(m);
+    delete pieceMeshes[id];
+  }});
+}
+
+function syncPieces(st, movedId, capturedId) {
+  st.pieces.filter(p=>p.alive).forEach(p => {
+    const mesh = ensurePieceMesh(p);
+    if (!mesh) return;
+    const target = axialTo3D(p.q, p.r);
+    if (p.id === movedId) {
+      tweens.push({ type:'pos', mesh, startPos:mesh.position.clone(), endPos:target, t:0, duration:0.4, onComplete:null });
+    } else {
+      mesh.position.copy(target);
+    }
+  });
+  if (capturedId) removePieceMesh(capturedId);
+  const aliveIds = new Set(st.pieces.filter(p=>p.alive).map(p=>p.id));
+  Object.keys(pieceMeshes).forEach(id => {
+    if (!aliveIds.has(id)) removePieceMesh(id);
+  });
+}
+
+function clearHighlights() {
+  highlightMeshes.forEach(m => scene.remove(m));
+  highlightMeshes = [];
+  interactables = Object.values(pieceMeshes);
+}
+
+function showHighlights() {
+  clearHighlights();
+  const sphereGeo = new THREE.SphereGeometry(0.8, 12, 8);
+  legalTargets.forEach(t => {
+    const mat = new THREE.MeshStandardMaterial({ color: t.capture ? 0xff4444 : (t.displace ? 0x4d9fff : 0xffffff), transparent:true, opacity:0.5 });
+    const m = new THREE.Mesh(sphereGeo, mat);
+    const pos = axialTo3D(t.q, t.r);
+    pos.y = 0.8;
+    m.position.copy(pos);
+    m.userData = { type:'target', q:t.q, r:t.r, mode:'move' };
+    scene.add(m);
+    highlightMeshes.push(m);
+    interactables.push(m);
+  });
+  supportTargets.forEach(id => {
+    const tp = state.pieces.find(x=>x.id===id);
+    if (!tp) return;
+    const mat = new THREE.MeshStandardMaterial({ color: 0xc9a227, transparent:true, opacity:0.7 });
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.7,12,8), mat);
+    const pos = axialTo3D(tp.q, tp.r);
+    pos.y = 0.8;
+    m.position.copy(pos);
+    m.userData = { type:'target', q:tp.q, r:tp.r, mode:'support', targetId:id };
+    scene.add(m);
+    highlightMeshes.push(m);
+    interactables.push(m);
+  });
+}
+
+function highlightSelected(id) {
+  Object.keys(pieceMeshes).forEach(pid => {
+    pieceMeshes[pid].scale.set(1,1,1);
+  });
+  if (id && pieceMeshes[id]) pieceMeshes[id].scale.set(1.3,1.3,1.3);
+}
+
+function clearSelection() {
+  selectedPieceId = null;
+  legalTargets = [];
+  supportTargets = [];
+  clearHighlights();
+  highlightSelected(null);
+}
+
+function passTarget() {
+  return state.mode.turn==='pass' ? document.getElementById('selPassTo').value : undefined;
+}
+function refreshPassChoice() {
+  const row = document.getElementById('passRow');
+  const sel = document.getElementById('selPassTo');
+  document.getElementById('cycleDirRow').style.display = state.mode.turn==='cycle'?'':'none';
+  if (state.mode.turn!=='pass') { row.style.display='none'; return; }
+  row.style.display='';
+  const opts = E.legalPassTargets(state, state.turnFaction);
+  const prev = sel.value;
+  sel.innerHTML = opts.map(f=>'<option value="'+f+'">'+E.FACTION_NAME[f]+'</option>').join('');
+  if (opts.indexOf(prev)>=0) sel.value = prev; else if (opts.length) sel.value = opts[0];
+}
+
+// === ТОСТЫ ===
+function showToast(msg, type='info', duration=3000) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// === ПОПАПЫ ===
+function showModal(title, text, buttons=[]) {
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-text').textContent = text;
+  const btnRow = document.getElementById('modal-buttons');
+  btnRow.innerHTML = '';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'btn' + (b.secondary ? ' secondary' : '');
+    btn.textContent = b.label;
+    btn.onclick = () => { overlay.classList.remove('show'); if (b.onClick) b.onClick(); };
+    btnRow.appendChild(btn);
+  });
+  if (buttons.length === 0) {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = 'OK';
+    btn.onclick = () => overlay.classList.remove('show');
+    btnRow.appendChild(btn);
+  }
+  overlay.classList.add('show');
+}
+
+// === ПЕРЕКЛЮЧЕНИЕ 2D/3D ===
+document.getElementById('btnView2D').addEventListener('click', () => {
+  window.location.href = 'elio_game_v51.html';
+});
+document.getElementById('btnView3D').addEventListener('click', () => {
+  // уже в 3D
+});
+
+function updateUI() {
+  document.getElementById('turn').textContent = 'Ход: ' + E.FACTION_NAME[state.turnFaction];
+  document.getElementById('turn').style.color = E.FACTION_COLOR[state.turnFaction];
+  document.getElementById('holdPlus').textContent = state.hold.plus;
+  document.getElementById('holdMinus').textContent = state.hold.minus;
+  document.getElementById('holdZero').textContent = state.hold.zero;
+  const pm = state.pieces.filter(p=>p.alive && p.faction==='plus').length;
+  const mm = state.pieces.filter(p=>p.alive && p.faction==='minus').length;
+  const zn = state.pieces.filter(p=>p.alive && p.faction==='zero').length;
+  const lp = state.pieces.filter(p=>p.alive && p.faction==='plus' && p.type==='line').length;
+  const lm = state.pieces.filter(p=>p.alive && p.faction==='minus' && p.type==='line').length;
+  document.getElementById('mainCount').textContent = pm + ' / ' + mm;
+  document.getElementById('nullCount').textContent = zn;
+  document.getElementById('lineCount').textContent = lp + ' / ' + lm;
+  document.getElementById('moveNum').textContent = state.moveNumber;
+  const reasonRu = { king:'гибель Линейного', hold:'удержание Ц 3 следующих собственных хода', limit:'лимит 90', draw:'ничья', zeros_last:'обе военные выбыли', null:'' };
+  document.getElementById('winReason').textContent = state.gameOver ? (reasonRu[state.winReason]||state.winReason||'') : '';
+  const logEl = document.getElementById('log');
+  logEl.textContent = REC.exportText();
+  logEl.scrollTop = logEl.scrollHeight;
+  refreshPassChoice();
+  arrowGroup.visible = (state.mode.turn==='arrow');
+  if (arrowGroup.visible) setArrowColor(state.turnFaction);
+  if (state.gameOver) {
+    document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья') + (state.winReason?(' ('+state.winReason+')'):'');
+  } else {
+    document.getElementById('gameOver').textContent = '';
+  }
+}
+
+function onMoveRequest(pieceId, q, r) {
+  if (state.gameOver) return;
+  const captured = state.pieces.find(p=>p.alive && p.q===q && p.r===r && p.id!==pieceId);
+  const r2 = E.applyMove(state, pieceId, q, r, passTarget());
+  if (r2.error) { alert('Недопустимый ход: ' + r2.error); return; }
+  syncPieces(r2.state, pieceId, captured ? captured.id : null);
+  state = r2.state;
+  REC.addMove(r2.record || state.log[state.log.length-1]);
+  clearSelection();
+  updateUI();
+  animateArrowTo(state.turnFaction);
+  if (state.gameOver) {
+    document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья');
+    showToast('Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья'), 'success');
+  } else {
+    showToast(E.FACTION_NAME[state.turnFaction] + ' ходит', 'info', 1500);
+  }
+}
+
+function onSupportRequest(zeroId, targetId) {
+  if (state.gameOver) return;
+  const r = E.applySupport(state, zeroId, targetId, passTarget());
+  if (r.error) { alert('Недопустимая поддержка: ' + r.error); return; }
+  syncPieces(r.state, zeroId, null);
+  state = r.state;
+  if (r.record) REC.addMove(r.record);
+  clearSelection();
+  updateUI();
+  animateArrowTo(state.turnFaction);
+  if (state.gameOver) {
+    document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья');
+  }
+}
+
+// Pointer interaction
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+window.raycaster = raycaster;
+function onPointerDown(event) {
+  if (event.target !== renderer.domElement) return;
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(interactables, true);
+  let hit = null;
+  for (const h of hits) {
+    let o = h.object;
+    while (o && !o.userData?.type) o = o.parent;
+    if (o && o.userData?.type) { hit = o; break; }
+  }
+  if (!hit) { clearSelection(); return; }
+  if (hit.userData.type === 'target') {
+    const t = hit.userData;
+    if (t.mode === 'support') onSupportRequest(selectedPieceId, t.targetId);
+    else onMoveRequest(selectedPieceId, t.q, t.r);
+    return;
+  }
+  if (hit.userData.type === 'piece') {
+    const pid = hit.userData.id;
+    const p = state.pieces.find(x=>x.id===pid);
+    if (p && p.faction === state.turnFaction && !state.gameOver && !p.inert) {
+      selectedPieceId = p.id;
+      legalTargets = E.legalMoves(state, p.id);
+      supportTargets = E.isNullType(p.type) ? E.legalSupportTargets(state, p.id) : [];
+      showHighlights();
+      highlightSelected(p.id);
+      document.getElementById('info').innerHTML = `<b>Фигура:</b> ${p.id} (${p.faction})`;
+    } else clearSelection();
+  }
+}
+renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+// AI move
+function applyAction(mv) {
+  if (mv.type==='skip') state = mv.state || E.skipTurn(state).state;
+  else if (mv.type==='support') state = mv.state || E.applySupport(state, mv.zeroId, mv.targetId).state;
+  else state = mv.state || E.applyMove(state, mv.pieceId, mv.q, mv.r).state;
+  const lastRec = state.log[state.log.length-1];
+  if (lastRec) REC.addMove(lastRec);
+  syncPieces(state, null, null);
+  updateUI();
+  animateArrowTo(state.turnFaction);
+  if (state.gameOver) {
+    document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья');
+  }
+}
+
+document.getElementById('btnAiMove').addEventListener('click', function(){
+  if (state.gameOver) return;
+  const f = state.turnFaction;
+  const mv = (f==='zero') ? AI.chooseMove(state,f) : AI.chooseMoveAggressive(state,f);
+  if (mv && mv.type==='skip') state = mv.state || E.skipTurn(state).state;
+  else if (mv && mv.type==='support') { if (mv.state) state = mv.state; else state = E.applySupport(state, mv.zeroId, mv.targetId).state; }
+  else if (mv && mv.type==='move') { if (mv.state) state = mv.state; else state = E.applyMove(state, mv.pieceId, mv.q, mv.r).state; }
+  const lastRec = state.log[state.log.length-1];
+  if (lastRec) REC.addMove(lastRec);
+  syncPieces(state, null, null);
+  updateUI();
+  animateArrowTo(state.turnFaction);
+  if (state.gameOver) document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья');
+});
+
+// Auto play
+function doAutoStep() {
+  if (state.gameOver) { stopAuto(); return; }
+  const f = state.turnFaction;
+  const mv = (f==='zero') ? AI.chooseMove(state,f) : AI.chooseMoveAggressive(state,f);
+  if (mv && mv.type==='skip') state = mv.state || E.skipTurn(state).state;
+  else if (mv && mv.type==='support') { if (mv.state) state = mv.state; else state = E.applySupport(state, mv.zeroId, mv.targetId).state; }
+  else if (mv && mv.type==='move') { if (mv.state) state = mv.state; else state = E.applyMove(state, mv.pieceId, mv.q, mv.r).state; }
+  const lastRec = state.log[state.log.length-1];
+  if (lastRec) REC.addMove(lastRec);
+  syncPieces(state, null, null);
+  updateUI();
+  animateArrowTo(state.turnFaction);
+  if (state.gameOver) { document.getElementById('gameOver').textContent = 'Победа: ' + (state.winner?E.FACTION_NAME[state.winner]:'ничья'); stopAuto(); return; }
+  if (autoPlay) autoTimer = setTimeout(doAutoStep, 300);
+}
+function startAuto() { if (autoPlay) return; autoPlay=true; doAutoStep(); }
+function stopAuto() { autoPlay=false; if (autoTimer){ clearTimeout(autoTimer); autoTimer=null; } }
+document.getElementById('btnAuto').addEventListener('click', startAuto);
+document.getElementById('btnStop').addEventListener('click', stopAuto);
+
+// New game
+function newGame() {
+  stopAuto();
+  state = E.init({ turn: document.getElementById('selTurn').value,
+                   death: document.getElementById('selDeath').value,
+                   cycleDir: document.getElementById('selCycleDir').value,
+                   pawns: parseInt(document.getElementById('selPawns').value,10) });
+  REC.reset();
+  clearSelection();
+  Object.keys(pieceMeshes).forEach(id => { scene.remove(pieceMeshes[id]); delete pieceMeshes[id]; });
+  syncPieces(state, null, null);
+  document.getElementById('gameOver').textContent='';
+  updateUI();
+  showToast('Новая игра', 'success');
+  arrowGroup.visible = (state.mode.turn==='arrow');
+  if (arrowGroup.visible) { arrowGroup.rotation.y = FACTION_ANGLE[state.turnFaction]||0; setArrowColor(state.turnFaction); }
+  if (window.innerGears) window.innerGears.forEach(g => { g.rotation.y = 0; });
+}
+document.getElementById('btnNew').addEventListener('click', newGame);
+document.getElementById('selTurn').addEventListener('change', newGame);
+document.getElementById('selDeath').addEventListener('change', newGame);
+document.getElementById('selCycleDir').addEventListener('change', newGame);
+document.getElementById('selPawns').addEventListener('change', newGame);
+
+// Animation loop
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  for (let i = tweens.length-1; i>=0; i--) {
+    const tw = tweens[i];
+    tw.t += dt;
+    const k = Math.min(tw.t / tw.duration, 1);
+    const e = k < 0.5 ? 2*k*k : 1 - Math.pow(-2*k+2, 2)/2;
+    if (tw.type === 'pos') {
+      tw.mesh.position.lerpVectors(tw.startPos, tw.endPos, e);
+    } else if (tw.type === 'scale') {
+      const s = 1 - e;
+      tw.mesh.scale.set(s, s, s);
+    } else if (tw.type === 'arrow') {
+      tw.group.rotation.y = tw.start + (tw.end - tw.start) * e;
+    }
+    if (k >= 1) {
+      if (tw.type === 'scale' && tw.onComplete) tw.onComplete();
+      tweens.splice(i,1);
+    }
+  }
+  // внутренние шестерни вращаются вместе с главной (одинаковый угол)
+  if (window.innerGears) {
+    window.innerGears.forEach(g => { g.rotation.y = 0; });
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// === ДОСКА ===
+function addLabel(text, pos) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#e8e8f0';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 64, 32);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent:true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.position.set(pos.x, 0.3, pos.z);
+  sprite.scale.set(1.6, 0.8, 1);
+  scene.add(sprite);
+}
+
+// Процедурная доска из гексов
+const hexGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.2, 6);
+function addCell(q,r,color) {
+  const isGate = E.GATE_SET.has(q+','+r);
+  const c = isGate ? 0xc9a227 : color;
+  const mat = new THREE.MeshStandardMaterial({ color: c, metalness:0.2, roughness:0.6, transparent:true, opacity:0.75 });
+  const m = new THREE.Mesh(hexGeo, mat);
+  m.rotation.y = Math.PI/6;
+  const pos = axialTo3D(q,r);
+  m.position.set(pos.x, -0.1, pos.z);
+  m.receiveShadow = true;
+  scene.add(m);
+  const code = E.codeMap.get(q+','+r);
+  if (code) addLabel(code, pos);
+}
+E.FIELD_INFO.forEach(f => {
+  const cells = E.patch(f.center[0], f.center[1]);
+  cells.forEach(c => addCell(c[0], c[1], f.color));
+});
+E.DISPUTED.forEach(d => addCell(d.q, d.r, 0x8a8ab0));
+const cm = new THREE.Mesh(new THREE.CylinderGeometry(0.95,0.95,0.25,6), new THREE.MeshStandardMaterial({color:0xc9a227, metalness:0.3, roughness:0.5, transparent:true, opacity:0.8}));
+cm.rotation.y = Math.PI/6;
+const cpos = axialTo3D(0,0);
+cm.position.set(cpos.x, -0.125, cpos.z);
+cm.receiveShadow = true;
+scene.add(cm);
+addLabel('Ц', cpos);
+
+// === ШЕСТЕРНЯ ===
+function createGear(radius, teeth, thickness, color, innerRatio) {
+  innerRatio = innerRatio || 0.3;
+  const shape = new THREE.Shape();
+  const innerRadius = radius * 0.4;
+  const baseRadius = radius * 0.85;
+  const toothAngle = (2*Math.PI/teeth);
+  for (let i=0; i<teeth; i++) {
+    const a0 = i*toothAngle;
+    const a1 = a0 + toothAngle*0.25;
+    const a2 = a0 + toothAngle*0.75;
+    const a3 = a0 + toothAngle;
+    if (i===0) shape.moveTo(Math.cos(a0)*baseRadius, Math.sin(a0)*baseRadius);
+    else shape.lineTo(Math.cos(a0)*baseRadius, Math.sin(a0)*baseRadius);
+    shape.lineTo(Math.cos(a1)*radius, Math.sin(a1)*radius);
+    shape.lineTo(Math.cos(a2)*radius, Math.sin(a2)*radius);
+    shape.lineTo(Math.cos(a3)*baseRadius, Math.sin(a3)*baseRadius);
+  }
+  const hole = new THREE.Path();
+  hole.absarc(0,0, innerRadius, 0, Math.PI*2, false);
+  shape.holes.push(hole);
+  const geo = new THREE.ExtrudeGeometry(shape, {depth: thickness, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2});
+  geo.center();
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color, metalness:0.85, roughness:0.15}));
+  mesh.rotation.x = -Math.PI/2;
+  // ось вращения (вертикальный стержень)
+  const ax = new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2, thickness+2.0, 8), new THREE.MeshStandardMaterial({color:0xffffff, metalness:0.9, roughness:0.1}));
+  ax.position.set(0, (thickness+2.0)/2, 0);
+  mesh.add(ax);
+  return mesh;
+}
+
+const arrowGroup = new THREE.Group();
+arrowGroup.visible = false;
+// главная шестерня с большим отверстием
+const mainGear = createGear(9.5, 48, 0.6, 0xd4a017, 0.55);
+arrowGroup.add(mainGear);
+const arrowMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+const pointer = new THREE.Mesh(new THREE.ConeGeometry(0.6,2.0,8), arrowMat);
+pointer.position.set(0, 0.8, 9.5);
+pointer.rotation.x = -Math.PI/2;
+arrowGroup.add(pointer);
+// внутренний механизм (3 шестерни, 1в1 как большая, но меньше)
+window.innerGears = [];
+const gearDefs = [
+  {r:4.0, teeth:24, color:0xb8860b, pos:[0,0,0], speed:-2.0},
+  {r:2.5, teeth:16, color:0xb8860b, pos:[6.5,0,0], speed:3.0},
+  {r:1.8, teeth:12, color:0xb8860b, pos:[-3.0,0,5.2], speed:-4.0},
+];
+gearDefs.forEach(def => {
+  const g = createGear(def.r, def.teeth, 0.5, def.color, 0.4);
+  g.position.set(def.pos[0], -0.8, def.pos[2]);
+  g.userData.speed = def.speed;
+  arrowGroup.add(g);
+  window.innerGears.push(g);
+});
+arrowGroup.position.set(0, -0.8, 0);
+scene.add(arrowGroup);
+window.arrowGroup = arrowGroup;
+const FACTION_ANGLE = { plus: Math.PI, minus: -Math.PI/3, zero: Math.PI/3 };
+
+function setArrowColor(faction) {
+  const c = (faction==='plus') ? 0x5b9bd5 : (faction==='minus') ? 0xe05a5a : 0x9aa0a6;
+  arrowMat.color.setHex(c);
+}
+
+function animateArrowTo(faction) {
+  if (state.mode.turn !== 'arrow') { arrowGroup.visible = false; return; }
+  arrowGroup.visible = true;
+  setArrowColor(faction);
+  const target = FACTION_ANGLE[faction] || 0;
+  const start = arrowGroup.rotation.y;
+  const twoPi = Math.PI*2;
+  let delta = target - (start % twoPi);
+  if (delta <= 0) delta += twoPi;
+  const spins = Math.PI*4;
+  const end = start + delta + spins;
+  const tw = { type:'arrow', group: arrowGroup, start, end, t:0, duration:1.0 };
+  tweens.push(tw);
+}
+
+// === ЗАГРУЗКА МОДЕЛЕЙ ===
+async function initModels() {
+  const jobs = [];
+  for (const faction in MODEL_MAP) {
+    for (const type in MODEL_MAP[faction]) {
+      jobs.push(loadModel(MODEL_MAP[faction][type]));
+    }
+  }
+  await Promise.all(jobs);
+  document.getElementById('loading').style.display = 'none';
+}
+
+initModels().then(() => {
+  syncPieces(state, null, null);
+  updateUI();
+}).catch(err => { console.error('init error', err); });
+
+window.__app = { getState: ()=>state, pieceMeshes, clearSelection, showHighlights, axialTo3D, syncPieces, onMoveRequest, onSupportRequest, updateUI,
+  selectPiece: (id) => {
+    const p = state.pieces.find(x=>x.id===id);
+    if (!p) return 'no piece';
+    selectedPieceId = id;
+    legalTargets = E.legalMoves(state, id);
+    supportTargets = E.isNullType(p.type) ? E.legalSupportTargets(state, id) : [];
+    showHighlights();
+    highlightSelected(id);
+    return {id, moves: legalTargets.length, supports: supportTargets.length};
+  }
+};
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 // Headless-матрица Эльо v1.3d: 100 партий на каждую вариацию, без LLM.
 // 3 порядка хода × 2 типа игры × 3 варианта пешек = 18 вариаций.
-// ИИ v1.3c играет все три фракции; seeded RNG; integrity-guard.
+// ИИ играет все три фракции; seeded RNG; integrity-guard.
 const fs = require('fs');
 const path = require('path');
 const E = (() => { global.window = global; require(path.join(__dirname, '..', '..', 'elio_engine.js')); return window.ElioEngine; })();
@@ -162,7 +162,7 @@ const summary = RUN_VARIANTS.map(v => {
 });
 const out = {
   engine: 'elio_engine.js v1.3d',
-  ai: 'elio_ai.js v1.3c',
+  ai: 'elio_ai.js v1.4',
   date: '2026-11-08',
   baseSeed: BASE_SEED,
   gamesPerVariant: N,

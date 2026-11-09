@@ -1,6 +1,6 @@
-// Elio AI v1.3c — работает с нейтралитетом/заявкой, поддержкой 1→1, режимами хода/смерти, лимитом 90.
-// v1.3c: запрет пустых поддержек (повтор той же цели), анти-осцилляция (не возвращать фигуру назад),
-// в Длинном режиме ИИ не бросает уже накопленный «Ц» (hold ≥ 1) ради убийства Линейного: это выбывание, не победа.
+// Elio AI v1.4 — работает с нейтралитетом/заявкой, поддержкой 1→1, режимами хода/смерти, лимитом 90.
+// v1.4: приоритет срыва чужого hold=2, его щита и выдвижение в ворота.
+// В Длинном режиме ИИ не бросает уже накопленный «Ц» (hold ≥ 1) ради убийства Линейного: это выбывание, не победа.
 (function(){
   const E = window.ElioEngine;
 
@@ -22,7 +22,8 @@
     s += (state.hold[faction]||0)*10;
     for(const o of ['plus','minus','zero']){
       if(o===faction)continue;
-      s -= (state.hold[o]||0)*8;
+      const enemyHold=state.hold[o]||0;
+      s -= enemyHold*8+(enemyHold>=2?180:0);
     }
     // держатель «Ц» сейчас; критично: защита держателя
     const cp=E.occupantAt(state);
@@ -36,6 +37,14 @@
         s -= 14;
       } else {
         s += 8;
+      }
+      // При чужом hold=2 выдвижение в ворота важнее обычного локального взятия.
+      if(cp.faction!==faction&&(state.hold[cp.faction]||0)>=2){
+        for(const key of E.GATE_SET){
+          const [q,r]=key.split(',').map(Number);
+          const p=E.pieceAt(state,q,r);
+          if(p&&p.faction===faction)s+=18;
+        }
       }
     }
     // поддержка есть? (для военных ещё щит на себя/Линейного)
@@ -171,7 +180,12 @@
       return {type:'skip',state:sk.state,passTo};
     }
     let best=null,bestSc=-Infinity;
+    const centerPiece=E.occupantAt(state);
     for(const act of cands){
+      if(state.mode.death==='long'&&centerPiece&&centerPiece.faction===faction&&(state.hold[faction]||0)>=1&&act.type==='move'&&act.pieceId===centerPiece.id){
+        const target=E.pieceAt(state,act.q,act.r);
+        if(target&&target.type==='line')continue;
+      }
       const sim=E.clone(state);
       const r=afterAction(sim,act,passTo);
       if(r.error)continue;
@@ -221,14 +235,22 @@
     // в Длинном — не бросать уже накопленный «Ц» при hold ≥ 1)
     const cp=E.occupantAt(state);
     const onCenter=cp&&cp.faction===faction;
-    if(state.mode.death!=='long'||!onCenter||(state.hold[faction]||0)>=1){
+    if(state.mode.death==='main'||!onCenter||(state.hold[faction]||0)<1){
       const win=cands.find(c=>{
         const t=E.pieceAt(state,c.q,c.r);
         return t&&t.type==='line';
       });
       if(win){ const r=afterAction(E.clone(state),win,passTo); if(!r.error) return {type:'move',state:r.state,act:win,passTo}; }
     }
-    // приоритет 2: смена чужого щитового нуля (ломает поддержку 2)
+    // Сначала срываем чужое удержание, а не берём произвольный щит на другом краю доски.
+    const centerUrgent=cp&&cp.faction!==faction&&(state.hold[cp.faction]||0)>=2;
+    const centerCapture=centerUrgent&&cands.find(c=>c.q===0&&c.r===0&&c.capture);
+    if(centerCapture){ const r=afterAction(E.clone(state),centerCapture,passTo); if(!r.error) return {type:'move',state:r.state,act:centerCapture,passTo}; }
+    const centerShield=centerUrgent&&cands.find(c=>{
+      const t=E.pieceAt(state,c.q,c.r);
+      return t&&E.isNullType(t.type)&&t.supportTarget===cp.id;
+    });
+    if(centerShield){ const r=afterAction(E.clone(state),centerShield,passTo); if(!r.error) return {type:'move',state:r.state,act:centerShield,passTo}; }
     const shield=cands.find(c=>{
       const t=E.pieceAt(state,c.q,c.r);
       return t&&E.isNullType(t.type)&&t.supportTarget&&(t.supportTarget!==null);
